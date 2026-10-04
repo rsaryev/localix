@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bun run build",
+  "buildCommand": "cd ../.. && bunx turbo build --filter=@localixai/landing",
   "outputDirectory": "dist",
   "redirects": [
     {
