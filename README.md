@@ -274,8 +274,8 @@ localix file.ts  # open a file
 
 Localix is in **beta**. Releases are cut from `main`, listed on the
 [Releases](https://github.com/rsaryev/localix/releases) page and described in
-[CHANGELOG.md](CHANGELOG.md). Installers come first for macOS (Apple silicon and Intel), with Windows
-and Linux to follow. Expect rough edges and breaking changes before 1.0.
+[CHANGELOG.md](CHANGELOG.md). Installers come first for macOS (Apple silicon and Intel), with
+Windows and Linux to follow. Expect rough edges and breaking changes before 1.0.
 
 ## Security and privacy
 
