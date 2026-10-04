@@ -1,0 +1,163 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["./packages/oxlint-rules/src/index.ts"],
+  "plugins": ["typescript", "react", "react-hooks", "unicorn", "import", "jsx-a11y"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    // Accessibility floor. Split by MEASUREMENT, not by taste: every rule below that reports nothing
+    // today is an error, so it can never start reporting quietly. The rest carry their current count
+    // and the reason they are not enforced yet — a list of known debt, not a backlog nobody reads.
+    // Re-measure with `oxlint` before promoting one.
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-ambiguous-text": "error",
+    "jsx-a11y/anchor-is-valid": "error",
+    "jsx-a11y/aria-activedescendant-has-tabindex": "error",
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/aria-proptypes": "error",
+    "jsx-a11y/aria-role": "error",
+    "jsx-a11y/aria-unsupported-elements": "error",
+    "jsx-a11y/autocomplete-valid": "error",
+    "jsx-a11y/html-has-lang": "error",
+    "jsx-a11y/iframe-has-title": "error",
+    "jsx-a11y/img-redundant-alt": "error",
+    "jsx-a11y/lang": "error",
+    "jsx-a11y/mouse-events-have-key-events": "error",
+    "jsx-a11y/no-access-key": "error",
+    "jsx-a11y/no-aria-hidden-on-focusable": "error",
+    "jsx-a11y/no-distracting-elements": "error",
+    "jsx-a11y/no-interactive-element-to-noninteractive-role": "error",
+    "jsx-a11y/no-redundant-roles": "error",
+    "jsx-a11y/scope": "error",
+    "jsx-a11y/tabindex-no-positive": "error",
+    // Not enforced yet, with the count that made the call:
+    // 51 — real debt. Many are labels wrapping a custom control the rule cannot follow, but not all of them are.
+    "jsx-a11y/label-has-associated-control": "warn",
+    // 43 — an overlay that opens in order to be typed into legitimately takes focus; kept visible rather than enforced.
+    "jsx-a11y/no-autofocus": "warn",
+    // 16 — rows and cards that respond to a click. Each needs a real keyboard path, one surface at a time.
+    "jsx-a11y/no-static-element-interactions": "warn",
+    // 14 — genuine keyboard gaps, listed as debt rather than hidden.
+    "jsx-a11y/click-events-have-key-events": "warn",
+    // 14 — same class as above, seen from the element's side.
+    "jsx-a11y/no-noninteractive-element-interactions": "warn",
+    // 11 — a scroll container made focusable so the keyboard can reach it; correct often enough to not enforce yet.
+    "jsx-a11y/no-noninteractive-tabindex": "warn",
+    // 8 — icon-only controls whose name arrives through a tooltip the rule cannot see.
+    "jsx-a11y/control-has-associated-label": "warn",
+    // 8 — the counterpart of the click-events debt.
+    "jsx-a11y/interactive-supports-focus": "warn",
+    // 3 — product screen recordings with no caption track yet.
+    "jsx-a11y/media-has-caption": "warn",
+    // 3 — deliberate list/option composition.
+    "jsx-a11y/no-noninteractive-element-to-interactive-role": "warn",
+    // 1 — the rule's support table predates ARIA 1.3, where `aria-description` became GLOBAL. The
+    // workbench sash carries it deliberately and six tests pin it; the rule is what is stale.
+    "jsx-a11y/role-supports-aria-props": "warn",
+    // 2 — Radix supplies `aria-expanded` / `aria-controls` at runtime on an `asChild` trigger, which a static rule cannot see.
+    "jsx-a11y/role-has-required-aria-props": "warn",
+    // 1 — children arrive through a props spread.
+    "jsx-a11y/anchor-has-content": "warn",
+    // 1 — children arrive through a props spread.
+    "jsx-a11y/heading-has-content": "warn",
+    // 209 — stylistic, not an access defect: our overlay triggers carry `role=\"button\"` / `role=\"combobox\"` on the element Radix hands them through `asChild`.
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "localix/no-adhoc-focus-ring": "error",
+    "localix/no-global-key-listener": "error",
+    "localix/no-ground-token-on-control": "error",
+    "localix/no-hardcoded-colors": "error",
+    "localix/no-off-scale-radius": "error",
+    "localix/props-type-naming": "error",
+    "react/react-in-jsx-scope": "off",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-misused-spread": "error",
+    "typescript/restrict-template-expressions": "error",
+    "typescript/no-base-to-string": "error",
+    "typescript/switch-exhaustiveness-check": [
+      "error",
+      {
+        "allowDefaultCaseForExhaustiveSwitch": false
+      }
+    ],
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-unnecessary-boolean-literal-compare": "error",
+    "typescript/no-unnecessary-template-expression": "error",
+    "typescript/no-redundant-type-constituents": "error",
+    "typescript/prefer-optional-chain": "error",
+    "typescript/no-explicit-any": [
+      "warn",
+      {
+        "ignoreRestArgs": true
+      }
+    ],
+    "react/jsx-key": "error",
+    "react/jsx-no-target-blank": "error",
+    "react/jsx-no-constructed-context-values": "error",
+    "react/no-object-type-as-default-prop": "error",
+    "react/no-unstable-nested-components": "error",
+    "react/self-closing-comp": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "unicorn/error-message": "error",
+    "unicorn/no-new-array": "error",
+    "unicorn/no-useless-fallback-in-spread": "error",
+    "unicorn/no-useless-promise-resolve-reject": "error",
+    "unicorn/no-useless-spread": "error",
+    "unicorn/prefer-array-find": "error",
+    "unicorn/prefer-array-flat-map": "error",
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/prefer-number-properties": "error",
+    "unicorn/prefer-string-starts-ends-with": "error",
+    "unicorn/throw-new-error": "error",
+    "no-unneeded-ternary": "error",
+    "no-useless-return": "error",
+    "typescript/unbound-method": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.test.mjs", "**/*.spec.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "unicorn/error-message": "off",
+        // False positive on `await expect(...).rejects.toThrow(...)`: bun-types declares the
+        // `rejects` matchers as returning void, but at runtime they return a Promise that MUST be
+        // awaited or the assertion races the test. Production code keeps the rule.
+        "typescript/await-thenable": "off"
+      }
+    },
+    {
+      "files": ["plugins/**/*.mjs"],
+      "rules": {
+        "typescript/consistent-type-imports": "off"
+      }
+    },
+    {
+      "files": [
+        "plugins/documents/backend/documents/drivers/docx.ts",
+        "plugins/documents/backend/documents/drivers/doc.ts",
+        "apps/api/src/features/agent-core/tools/web/readable-extract.ts"
+      ],
+      // The /// <reference> to documents/drivers/vendor.d.ts is load-bearing, not legacy:
+      // packages/tui type-checks apps/api sources through a project that does not pick
+      // vendor.d.ts up from `include`, so dropping it makes `turndown` implicitly `any`.
+      "rules": {
+        "typescript/triple-slash-reference": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/dist",
+    "**/out",
+    "**/.turbo",
+    "**/*.d.ts",
+    "apps/landing/src/generated",
+    "apps/ui/test-results",
+    "extend",
+    "vendor"
+  ]
+}

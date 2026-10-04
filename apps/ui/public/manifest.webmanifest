@@ -1,0 +1,26 @@
+{
+  "name": "Localix",
+  "short_name": "Localix",
+  "description": "Open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["developer", "productivity"],
+  "background_color": "#070707",
+  "theme_color": "#070707",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    {
+      "src": "/icon-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ]
+}

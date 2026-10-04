@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-site="landing">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Localix — One workspace for you and a team of agents</title>
+    <meta
+      name="description"
+      content="Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases."
+    />
+    <link rel="canonical" href="https://localix.ai/" />
+    <meta name="theme-color" content="#070707" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Localix" />
+    <meta property="og:url" content="https://localix.ai/" />
+    <meta property="og:title" content="Localix — One workspace for you and a team of agents" />
+    <meta
+      property="og:description"
+      content="Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases."
+    />
+    <meta property="og:image" content="https://localix.ai/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Localix — One workspace for you and a team of agents" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Localix — One workspace for you and a team of agents" />
+    <meta
+      name="twitter:description"
+      content="Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases."
+    />
+    <meta name="twitter:image" content="https://localix.ai/og.png" />
+    <meta name="twitter:image:alt" content="Localix — One workspace for you and a team of agents" />
+    <!-- The theme is chosen before the first paint, from the saved choice and then the system
+         setting, so neither theme flashes the other. The static markup stays dark: without script
+         the page is still a complete, readable dark page. -->
+    <script>
+      ;(function () {
+        var theme = 'dark'
+        try {
+          var saved = localStorage.getItem('localix-theme')
+          theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark'
+        } catch (error) {}
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+      })()
+    </script>
+    <style>
+      html {
+        background: #070707;
+        color-scheme: dark;
+      }
+      html[data-theme='light'] {
+        background: #fafafa;
+        color-scheme: light;
+      }
+    </style>
+    <!-- Sections fade in on scroll only where the observer that un-hides them exists; everywhere
+         else (no script, an old browser, reduced motion) the content simply stays visible. -->
+    <script>
+      if (
+        'IntersectionObserver' in window &&
+        !matchMedia('(prefers-reduced-motion: reduce)').matches
+      ) {
+        document.documentElement.classList.add('reveal-ready')
+      }
+    </script>
+    <!-- Semantic structured data; no rating, review, price, or release is implied. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Localix",
+        "applicationCategory": "DeveloperApplication",
+        "url": "https://localix.ai/",
+        "description": "Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.",
+        "image": "https://localix.ai/og.png",
+        "author": { "@type": "Organization", "name": "Localix", "url": "https://localix.ai/" }
+      }
+    </script>
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+    <meta name="application-name" content="Localix" />
+    <meta name="apple-mobile-web-app-title" content="Localix" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

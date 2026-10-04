@@ -1,0 +1,28 @@
+{
+  "name": "@localix-plugin/trading",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependencies for the bundled Trading Workspace. The registered surface exposes public market research and chart controls; ccxt stays self-contained here.",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@localixai/agent": "workspace:*",
+    "ccxt": "^4.5.65",
+    "hono": "^4.12.30",
+    "lucide-react": "^1.24.0",
+    "protobufjs": "^7.5.3",
+    "react": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/source-lint": "workspace:*",
+    "@types/react": "^19.2.17",
+    "lightweight-charts": "^5.2.0",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.4"
+  }
+}

@@ -1,0 +1,201 @@
+import type { PluginAgentDirectory } from '@localixai/plugin-sdk/backend'
+import type { z } from 'zod'
+
+import {
+  createKanbanTaskSchema,
+  updateKanbanTaskSchema,
+  type BoardEvent,
+  type CreateKanbanTaskRequest,
+  type KanbanBoard,
+  type KanbanMove,
+  type KanbanOrigin,
+  type KanbanTask,
+  type UpdateKanbanTaskRequest,
+} from '../shared/contracts'
+import { BoardRefusal } from '../shared/errors'
+import type { KanbanActor } from '../shared/rules'
+import {
+  applyMoves,
+  createTask,
+  removeTask,
+  requireTask,
+  takeTask,
+  updateTask,
+  type Assignment,
+} from './operations'
+import { openBoardStore, type BoardStore } from './store'
+
+/** The board a call acts on: the chat it belongs to, and that chat's owner. */
+export interface BoardSeat {
+  userId: string
+  sessionId: string
+}
+
+export interface BoardServiceDeps {
+  /** The session's plugin folder; the host rejects a session the user does not own. */
+  resolveDir: (userId: string, sessionId: string) => Promise<string>
+  /** The agents a card may be assigned to. Absent: a card cannot name one. */
+  agents?: PluginAgentDirectory
+  now?: () => string
+}
+
+const strip = (reference: string) => reference.trim().replace(/^@/, '').trim()
+
+/** An input the contract refuses is the caller's to fix, so it answers as a refusal naming the field. */
+function parseInput<S extends z.ZodType>(schema: S, raw: unknown): z.output<S> {
+  const parsed = schema.safeParse(raw)
+  if (parsed.success) return parsed.data
+  const issue = parsed.error.issues[0]
+  const field = issue?.path.map(String).join('.') || 'input'
+  throw new BoardRefusal(400, 'invalid_task', `${field}: ${issue?.message ?? 'invalid'}`)
+}
+
+/**
+ * The board's service: each write validates its input, resolves the assignment against the agent
+ * registry, and runs as ONE operation behind the board's queue.
+ *
+ * The registry is asked BEFORE the queue is entered. It is an outside lookup that can be slow,
+ * and a queue held across it would stall every other write to the board for its length.
+ */
+export function createBoardService(deps: BoardServiceDeps) {
+  const now = deps.now ?? (() => new Date().toISOString())
+  const storeOf = async (seat: BoardSeat): Promise<BoardStore> =>
+    openBoardStore(await deps.resolveDir(seat.userId, seat.sessionId))
+
+  async function resolveAssignment(
+    seat: BoardSeat,
+    reference: string | null | undefined,
+  ): Promise<Assignment | undefined> {
+    if (reference === undefined) return undefined
+    if (reference === null) return { agentId: null, assignee: null }
+    if (!deps.agents)
+      throw new BoardRefusal(409, 'agents_unavailable', 'This board cannot assign agents here.')
+    const wanted = strip(reference)
+    const agents = await deps.agents.list(seat.userId, seat.sessionId)
+    const agent =
+      agents.find((candidate) => candidate.id === wanted) ??
+      agents.find((candidate) => candidate.handle === wanted)
+    if (agent) return { agentId: agent.id, assignee: agent.handle }
+    const available = agents.map((candidate) => `@${candidate.handle} (${candidate.id})`).join(', ')
+    throw new BoardRefusal(
+      404,
+      'agent_unavailable',
+      `No agent "${reference}" here. ${available ? `Available: ${available}.` : 'No agents are available.'}`,
+    )
+  }
+
+  const announce = (seat: BoardSeat, type: 'task.created' | 'task.updated', task: KanbanTask) =>
+    ({ type, sessionId: seat.sessionId, task }) satisfies BoardEvent
+
+  return {
+    async read(seat: BoardSeat): Promise<KanbanBoard> {
+      return (await storeOf(seat)).read()
+    },
+
+    async get(seat: BoardSeat, id: string): Promise<KanbanTask> {
+      return requireTask(await (await storeOf(seat)).read(), id)
+    },
+
+    async create(
+      seat: BoardSeat,
+      raw: CreateKanbanTaskRequest,
+      origin: KanbanOrigin,
+    ): Promise<KanbanTask> {
+      const input = parseInput(createKanbanTaskSchema, raw)
+      const assignment = (await resolveAssignment(seat, input.agent)) ?? {
+        agentId: null,
+        assignee: null,
+      }
+      return (await storeOf(seat)).update((board) => {
+        const { board: next, task } = createTask(
+          board,
+          {
+            title: input.title,
+            description: input.description ?? '',
+            status: input.status ?? 'backlog',
+            kind: input.kind ?? 'task',
+            parentTaskId: input.parentTaskId ?? null,
+            dependsOn: input.dependsOn ?? [],
+            attachedPaths: input.attachedPaths ?? [],
+            labels: input.labels ?? [],
+            priority: input.priority ?? 0,
+            subtasks: input.subtasks ?? [],
+          },
+          assignment,
+          origin,
+          now(),
+        )
+        return { board: next, events: [announce(seat, 'task.created', task)], result: task }
+      })
+    },
+
+    async update(
+      seat: BoardSeat,
+      id: string,
+      raw: UpdateKanbanTaskRequest,
+      actor: KanbanActor,
+    ): Promise<KanbanTask> {
+      const { expectedUpdatedAt, agent, ...patch } = parseInput(updateKanbanTaskSchema, raw)
+      const assignment = await resolveAssignment(seat, agent)
+      return (await storeOf(seat)).update((board) => {
+        const { board: next, task } = updateTask(
+          board,
+          id,
+          patch,
+          {
+            actor,
+            ...(expectedUpdatedAt ? { expectedUpdatedAt } : {}),
+            ...(assignment ? { assignment } : {}),
+          },
+          now(),
+        )
+        return { board: next, events: [announce(seat, 'task.updated', task)], result: task }
+      })
+    },
+
+    async move(seat: BoardSeat, moves: readonly KanbanMove[], actor: KanbanActor) {
+      return (await storeOf(seat)).update((board) => {
+        const { board: next, tasks } = applyMoves(board, moves, actor, now())
+        return {
+          board: next,
+          events: tasks.map((task) => announce(seat, 'task.updated', task)),
+          result: tasks,
+        }
+      })
+    },
+
+    async remove(seat: BoardSeat, id: string): Promise<void> {
+      await (
+        await storeOf(seat)
+      ).update((board) => {
+        const { board: next, pruned } = removeTask(board, id, now())
+        return {
+          board: next,
+          events: [
+            { type: 'task.deleted', sessionId: seat.sessionId, taskId: id } satisfies BoardEvent,
+            ...pruned.map((task) => announce(seat, 'task.updated', task)),
+          ],
+          result: undefined,
+        }
+      })
+    },
+
+    async take(
+      seat: BoardSeat,
+      id: string,
+      taker: { agentId: string; assignee: string },
+    ): Promise<KanbanTask> {
+      return (await storeOf(seat)).update((board) => {
+        const { board: next, task } = takeTask(board, id, taker, now())
+        return { board: next, events: [announce(seat, 'task.updated', task)], result: task }
+      })
+    },
+
+    /** Follow one board's changes; resolves once the session's ownership was checked. */
+    async subscribe(seat: BoardSeat, listener: (event: BoardEvent) => void): Promise<() => void> {
+      return (await storeOf(seat)).subscribe(listener)
+    },
+  }
+}
+
+export type BoardService = ReturnType<typeof createBoardService>

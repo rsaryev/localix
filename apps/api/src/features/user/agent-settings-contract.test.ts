@@ -1,0 +1,179 @@
+import { describe, expect, test } from 'bun:test'
+import {
+  agentSettingsSchema,
+  migrateLegacyResearchSettings,
+  normalizeAgentSettings,
+} from './contracts'
+
+describe('agentSettingsSchema — only executable settings are advertised', () => {
+  test('migrates the legacy private-network policy without retaining old web tool settings', () => {
+    const legacy = {
+      schemaVersion: 1,
+      webFetch: { allowPrivate: true },
+      webSearch: { provider: 'brave' },
+    }
+    expect(agentSettingsSchema.parse(migrateLegacyResearchSettings(legacy))).toEqual({
+      schemaVersion: 1,
+      research: { allowPrivate: true },
+    })
+    expect(normalizeAgentSettings(legacy)).toEqual({
+      schemaVersion: 1,
+      research: { allowPrivate: true },
+    })
+  })
+
+  test('stores availability, assignment, and reasoning in one workload route', () => {
+    expect(
+      agentSettingsSchema.parse({
+        modelRouting: {
+          titleGeneration: {
+            enabled: false,
+            providerConnectionId: 'conn',
+            modelId: 'gpt-5.6',
+            reasoningEffort: 'off',
+          },
+          inlineCompletion: { enabled: true },
+          session: {
+            reasoningPreferences: [
+              {
+                providerId: 'openai',
+                modelId: 'openai/gpt-5.6',
+                effort: 'low',
+              },
+              {
+                providerId: 'openrouter',
+                modelId: 'openrouter/gpt-5.6',
+                effort: 'off',
+              },
+            ],
+          },
+        },
+      }),
+    ).toMatchObject({
+      modelRouting: {
+        titleGeneration: {
+          enabled: false,
+          providerConnectionId: 'conn',
+          modelId: 'gpt-5.6',
+          reasoningEffort: 'off',
+        },
+        inlineCompletion: { enabled: true },
+        session: {
+          reasoningPreferences: [
+            { providerId: 'openai', modelId: 'openai/gpt-5.6', effort: 'low' },
+            {
+              providerId: 'openrouter',
+              modelId: 'openrouter/gpt-5.6',
+              effort: 'off',
+            },
+          ],
+        },
+      },
+    })
+  })
+
+  test('accepts per-route reasoning effort and rejects unknown values', () => {
+    const input = {
+      modelRouting: {
+        delegation: {
+          providerConnectionId: 'delegate-conn',
+          modelId: 'delegate-model',
+          reasoningEffort: 'low',
+        },
+        titleGeneration: {
+          providerConnectionId: 'conn',
+          modelId: 'model',
+          reasoningEffort: 'max',
+        },
+      },
+    } as const
+    expect(agentSettingsSchema.parse(input)).toEqual(input)
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: {
+          titleGeneration: {
+            providerConnectionId: 'conn',
+            modelId: 'model',
+            reasoningEffort: 'turbo',
+          },
+        },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects model-routing keys outside the shared workload catalog', () => {
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: { autocomplete: { enabled: true } },
+      }),
+    ).toThrow()
+    // The summarizer's route went with LLM compaction (the migration strips stored copies).
+    expect(() =>
+      agentSettingsSchema.parse({ modelRouting: { compression: { modelId: 'model' } } }),
+    ).toThrow()
+  })
+
+  test('rejects partial assignments and reasoning without a model', () => {
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: { compression: { providerConnectionId: 'conn' } },
+      }),
+    ).toThrow()
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: { compression: { reasoningEffort: 'low' } },
+      }),
+    ).toThrow()
+  })
+
+  test('validates the bounded provider/model reasoning memory inside each route', () => {
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: {
+          session: {
+            reasoningPreferences: [{ providerId: '', modelId: 'm', effort: 'low' }],
+          },
+        },
+      }),
+    ).toThrow()
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: {
+          session: {
+            reasoningPreferences: Array.from({ length: 51 }, (_, index) => ({
+              providerId: 'p',
+              modelId: `p/m-${index}`,
+              effort: 'low',
+            })),
+          },
+        },
+      }),
+    ).toThrow()
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: {
+          session: {
+            reasoningPreferences: [
+              { providerId: 'p', modelId: 'm', effort: 'low' },
+              { providerId: 'p', modelId: 'm', effort: 'max' },
+            ],
+          },
+        },
+      }),
+    ).toThrow()
+  })
+
+  test('drops the removed schema-only fallback surfaces', () => {
+    const parsed = agentSettingsSchema.parse({
+      maxTurns: 12,
+      fallbackTargets: [{ providerId: 'openai', modelId: 'gpt' }],
+      auxiliaryRouting: {
+        compression: [{ providerId: 'openai', modelId: 'gpt' }],
+      },
+    })
+
+    expect(parsed).toEqual({ maxTurns: 12 })
+    expect('fallbackTargets' in parsed).toBe(false)
+    expect('auxiliaryRouting' in parsed).toBe(false)
+  })
+})

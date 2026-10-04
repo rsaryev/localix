@@ -1,0 +1,34 @@
+{
+  "name": "@localix-plugin/template",
+  "version": "0.1.0",
+  "private": true,
+  "description": "System Overview plugin and reference template with a native Bun backend.",
+  "type": "module",
+  "scripts": {
+    "prepare:sdk": "bunx turbo build --filter=@localixai/plugin-sdk --output-logs=errors-only",
+    "dev": "bun run prepare:sdk && bun preview/serve.ts",
+    "build": "bun run prepare:sdk && bun run type-check && vite build && bun build backend/index.ts --target=bun --outfile=dist/backend/index.js",
+    "preview": "bun preview/serve.ts --preview",
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "type-check:tests": "tsc --noEmit -p tsconfig.tests.json",
+    "test": "bun test ui backend shared"
+  },
+  "dependencies": {
+    "@localixai/plugin-sdk": "workspace:*",
+    "hono": "^4.12.30",
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/bun": "^1.3.14",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "turbo": "^2.10.8",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4"
+  }
+}

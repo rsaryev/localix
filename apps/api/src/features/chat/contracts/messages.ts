@@ -1,0 +1,71 @@
+import { z } from 'zod'
+
+import { clientToolSurfaceSchema } from './session'
+import { MAX_MESSAGE_BINDINGS_TOTAL_BYTES } from './message-binding-bytes'
+import {
+  messageAttachmentSchema,
+  messageBindingSchema,
+  messageBindingsSchema,
+  messageContextBindingSchema,
+  messageInvocationBindingSchema,
+} from './message-bindings-input'
+
+export { MAX_MESSAGE_BINDINGS_TOTAL_BYTES }
+export {
+  messageAttachmentSchema,
+  messageBindingSchema,
+  messageBindingsSchema,
+  messageContextBindingSchema,
+  messageInvocationBindingSchema,
+}
+export type {
+  MessageAttachment,
+  MessageBinding,
+  MessageContextBinding,
+  MessageInvocationBinding,
+} from '@localixai/agent'
+
+/** Per-message binding guards: cap count and total encoded payload (~25MB). */
+export const sendMessageRequestSchema = z
+  .object({
+    prompt: z.string().trim(),
+    /**
+     * Ephemeral client transcript identity used only to correlate a busy-send's
+     * durable queue row with its optimistic UI row. It is never a persisted
+     * message id and older/non-UI clients may omit it.
+     */
+    clientMessageId: z.string().min(1).max(160).optional(),
+    /** Capabilities of the client surface initiating this turn. */
+    toolSurface: clientToolSurfaceSchema.optional(),
+    bindings: messageBindingsSchema.optional(),
+    /**
+     * Hide the user turn in the transcript (the model still sees it) — for MACHINE-COMPOSED
+     * prompts the user triggered but did not type, e.g. an extension-owned analysis wizard:
+     * the intent was collected in UI controls, so echoing the wall of task text adds nothing.
+     */
+    isInternal: z.boolean().optional(),
+  })
+  .refine((v) => v.prompt.length > 0 || (v.bindings?.length ?? 0) > 0, {
+    message: 'Message must include text or a binding',
+  })
+
+export const improvePromptRequestSchema = z.object({
+  prompt: z.string().trim().min(1),
+})
+
+/**
+ * Unified tool interaction endpoint.
+ *
+ * action:
+ *   'kill'     — abort a running bash/process tool (payload ignored)
+ *   'respond'  — answer a HITL prompt         (payload: { answers: unknown })
+ *   'dismiss'  — cancel a HITL prompt         (payload ignored)
+ *   <custom>   — any action registered via AsyncToolRegistry
+ *
+ * toolCallId doubles as the HITL requestId for ask/quiz tools (they are the same value).
+ */
+export const toolInteractSchema = z.object({
+  toolCallId: z.string().min(1),
+  action: z.string().min(1),
+  payload: z.unknown().optional(),
+})

@@ -1,0 +1,43 @@
+/*
+  The flow library's theme, answered by the host's tokens — ONCE, for every board.
+
+  Its stylesheet paints a white ground, grey minimap and blue selection of its own; each board used
+  to override a few of those with `!` classes and forgot the rest (the database diagram's selection
+  box stayed the library's blue). Every `--xy-*` variable a board can show is set here, on the
+  board's frame, so a board inherits the app's theme, including the macOS glass one, and none
+  restates it.
+
+  The RAW theme variables (`--border`, `--status-info`), never Tailwind's `--color-*`: the theme is
+  declared `@theme inline`, so the `--color-*` names are inlined into utilities and do not exist as
+  custom properties — a `var(--color-status-warning)` here resolved to nothing, and an SVG fill
+  that resolves to nothing is black.
+
+  No ground coat: the hosting pane already paints one, and under glass the ground tokens carry
+  alpha, so a second pane-sized coat compounds into an opaque slab.
+*/
+.localix-canvas {
+  --xy-background-color: transparent;
+  --xy-background-pattern-dots-color: var(--border);
+  --xy-edge-stroke: var(--text-faint);
+  --xy-edge-stroke-selected: var(--status-info);
+  --xy-connectionline-stroke: var(--status-info);
+  --xy-handle-background-color: var(--text-faint);
+  --xy-handle-border-color: var(--background);
+  --xy-node-color: var(--foreground);
+  --xy-node-background-color: var(--card);
+  --xy-node-border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  --xy-node-border-radius: 0.5rem;
+  --xy-node-boxshadow-hover: none;
+  --xy-node-boxshadow-selected: 0 0 0 2px color-mix(in srgb, var(--status-info) 35%, transparent);
+  --xy-node-group-background-color: transparent;
+  --xy-selection-background-color: color-mix(in srgb, var(--status-info) 8%, transparent);
+  --xy-selection-border: 1px solid color-mix(in srgb, var(--status-info) 55%, transparent);
+  --xy-minimap-background-color: var(--background);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--background) 82%, transparent);
+  --xy-minimap-mask-stroke-color: var(--border);
+  --xy-minimap-node-background-color: var(--text-faint);
+  --xy-minimap-node-stroke-color: transparent;
+  --xy-edge-label-background-color: var(--background);
+  --xy-edge-label-color: var(--text-soft);
+  --xy-attribution-background-color: transparent;
+}

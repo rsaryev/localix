@@ -1,0 +1,53 @@
+{
+  "name": "localix",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Localix command-line launcher — open a folder or file in the desktop app.",
+  "keywords": [
+    "ai",
+    "assistant",
+    "cli",
+    "launcher",
+    "local"
+  ],
+  "homepage": "https://localix.ai",
+  "bugs": {
+    "url": "https://github.com/rsaryev/localix/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rsaryev/localix.git",
+    "directory": "packages/cli"
+  },
+  "bin": {
+    "localix": "./bin/localix.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "!src/**/*.test.ts",
+    "server",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs",
+    "type-check": "tsc --noEmit",
+    "test": "bun test src",
+    "clean": "shx rm -rf server .turbo"
+  },
+  "dependencies": {
+    "@localixai/os-open": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "bun": ">=1.3.0",
+    "node": ">=18.0.0"
+  }
+}

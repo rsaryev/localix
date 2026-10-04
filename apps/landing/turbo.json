@@ -1,0 +1,10 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "docs:gen": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**"],
+      "outputs": ["src/generated/**", "public/sitemap.xml"]
+    }
+  }
+}

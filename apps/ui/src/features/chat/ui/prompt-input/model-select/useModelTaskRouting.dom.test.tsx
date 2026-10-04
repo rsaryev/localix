@@ -1,0 +1,257 @@
+import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
+import type { CatalogModel } from '@localixai/agent/catalog'
+import { registerDom } from '@localixai/kit/testing/dom'
+
+const updateSettings = mock((_patch: unknown) => {})
+const settingsState: {
+  settings: {
+    agentSettings: {
+      modelRouting: Record<string, { reasoningPreferences?: unknown; [key: string]: unknown }>
+    } | null
+  }
+} = { settings: { agentSettings: null } }
+const useUserSettings = Object.assign(() => ({ ...settingsState, update: updateSettings }), {
+  getState: () => settingsState,
+})
+
+await mock.module('@/features/settings/model/useUserSettings', () => ({ useUserSettings }))
+
+let teardown: () => Promise<void>
+beforeAll(() => {
+  teardown = registerDom()
+  ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+})
+afterAll(async () => teardown())
+
+const model: CatalogModel = {
+  id: 'openai/gpt-test',
+  name: 'GPT Test',
+  providerId: 'openai',
+  providerName: 'OpenAI',
+  supportsTools: true,
+  supportsReasoning: false,
+  supportsAttachment: false,
+  inputModalities: ['text'],
+  outputModalities: ['text'],
+}
+const connections = [{ id: 'conn-openai', providerId: 'openai' }]
+
+describe('useModelTaskRouting direct picks', () => {
+  test('following the session removes a workload override from the persisted route', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { useModelTaskRouting } = await import('./useModelTaskRouting')
+    settingsState.settings.agentSettings = {
+      modelRouting: {
+        titleGeneration: {
+          providerConnectionId: 'conn-openai',
+          modelId: model.id,
+          reasoningEffort: 'high',
+          enabled: true,
+        },
+      },
+    }
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    function Harness() {
+      const routing = useModelTaskRouting({
+        models: [model],
+        connections: connections as never,
+        orderedConnections: connections as never,
+        taskKey: 'titleGeneration',
+        sessionModelId: model.id,
+        sessionConnectionId: 'conn-openai',
+        reasoningEffort: 'low',
+        onPickSessionModel: () => {},
+      })
+      return (
+        <button
+          type="button"
+          onClick={() => routing.changeModelReasoning('openai', model.id, undefined, true)}
+        >
+          Follow
+        </button>
+      )
+    }
+    try {
+      await act(async () => root.render(<Harness />))
+      await act(async () => host.querySelector('button')!.click())
+      expect(updateSettings.mock.calls.at(-1)?.[0]).toEqual({
+        agentSettings: {
+          modelRouting: {
+            titleGeneration: {
+              providerConnectionId: 'conn-openai',
+              modelId: model.id,
+              enabled: true,
+            },
+          },
+        },
+      })
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+      settingsState.settings.agentSettings = null
+      updateSettings.mockClear()
+    }
+  })
+
+  test.each([
+    ['medium', 'high'],
+    ['max', 'high'],
+  ] as const)(
+    'reselecting the active model preserves and clamps session %s',
+    async (effort, expected) => {
+      const { act } = await import('react')
+      const { createRoot } = await import('react-dom/client')
+      const { useModelTaskRouting } = await import('./useModelTaskRouting')
+      const picked = mock(() => {})
+      const host = document.createElement('div')
+      document.body.append(host)
+      const root = createRoot(host)
+      const reasoningModel = {
+        ...model,
+        supportsReasoning: true,
+        reasoningEfforts: ['low', 'high'],
+      }
+      settingsState.settings.agentSettings = {
+        modelRouting: {
+          session: {
+            reasoningPreferences: [
+              { providerId: model.providerId, modelId: model.id, effort: 'low' },
+            ],
+          },
+        },
+      }
+      function Harness() {
+        const routing = useModelTaskRouting({
+          models: [reasoningModel],
+          connections: connections as never,
+          orderedConnections: connections as never,
+          taskKey: 'agent:builtin:reviewer',
+          sessionModelId: model.id,
+          sessionConnectionId: 'conn-openai',
+          participantRoute: () => ({
+            providerConnectionId: 'conn-openai',
+            modelId: model.id,
+            reasoningEffort: effort,
+          }),
+          reasoningEffort: 'low',
+          onPickSessionModel: picked,
+        })
+        return (
+          <button type="button" onClick={() => void routing.pickModel('conn-openai', model.id)}>
+            Pick
+          </button>
+        )
+      }
+      try {
+        await act(async () => root.render(<Harness />))
+        await act(async () => host.querySelector('button')!.click())
+        expect(picked).toHaveBeenCalledWith('conn-openai', model.id, expected, 'builtin:reviewer')
+      } finally {
+        await act(async () => root.unmount())
+        host.remove()
+        settingsState.settings.agentSettings = null
+      }
+    },
+  )
+
+  test.each([
+    ['session', undefined],
+    ['agent:builtin:reviewer', 'builtin:reviewer'],
+  ] as const)('routes a %s pick through the session callback', async (taskKey, agentId) => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const { useModelTaskRouting } = await import('./useModelTaskRouting')
+    const picked = mock(() => {})
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+
+    function Harness() {
+      const routing = useModelTaskRouting({
+        models: [model],
+        connections: connections as never,
+        orderedConnections: connections as never,
+        taskKey,
+        sessionModelId: model.id,
+        sessionConnectionId: 'conn-openai',
+        reasoningEffort: 'medium',
+        onPickSessionModel: picked,
+      })
+      return (
+        <button type="button" onClick={() => void routing.pickModel('conn-openai', model.id)}>
+          {routing.modelLabelFor(taskKey)}
+        </button>
+      )
+    }
+
+    try {
+      await act(async () => root.render(<Harness />))
+      expect(host.textContent).toContain('GPT Test')
+      await act(async () => host.querySelector('button')!.click())
+
+      expect(picked).toHaveBeenCalledTimes(1)
+      expect(picked).toHaveBeenCalledWith('conn-openai', model.id, 'off', agentId)
+      expect(updateSettings).not.toHaveBeenCalled()
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+      updateSettings.mockClear()
+    }
+  })
+
+  test('routes a workload pick to settings without invoking the conversation callback', async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const { useModelTaskRouting } = await import('./useModelTaskRouting')
+    const picked = mock(() => {})
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+
+    function Harness() {
+      const routing = useModelTaskRouting({
+        models: [model],
+        connections: connections as never,
+        orderedConnections: connections as never,
+        taskKey: 'titleGeneration',
+        sessionModelId: '',
+        sessionConnectionId: null,
+        reasoningEffort: 'medium',
+        onPickSessionModel: picked,
+      })
+      return (
+        <button type="button" onClick={() => void routing.pickModel('conn-openai', model.id)}>
+          Pick
+        </button>
+      )
+    }
+
+    try {
+      await act(async () => root.render(<Harness />))
+      await act(async () => host.querySelector('button')!.click())
+
+      expect(picked).not.toHaveBeenCalled()
+      expect(updateSettings).toHaveBeenCalled()
+      expect(updateSettings.mock.calls.at(-1)?.[0]).toMatchObject({
+        agentSettings: {
+          modelRouting: {
+            titleGeneration: {
+              providerConnectionId: 'conn-openai',
+              modelId: model.id,
+              reasoningEffort: 'off',
+            },
+          },
+        },
+      })
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+      updateSettings.mockClear()
+    }
+  })
+})

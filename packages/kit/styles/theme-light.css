@@ -1,0 +1,217 @@
+/* ═══════════════════════════════════════════════════════════════
+   Light theme
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme='light'] {
+  /* A REAL light theme. The graphite "dim" palette this replaces was neither: too dark to read as
+     light, and its neutrals sat so close together that the whole interface looked like the contrast
+     had been turned down. Light works here because the native side gives it its OWN material —
+     `UnderWindowBackground` samples the desktop and renders LIGHT (window_material.rs), so a light
+     interface is no longer sitting on a dark HUD.
+
+     The palette is a clean neutral grey system: chrome on an off-white shell, content and floating
+     panels at pure white, separation by hairlines rather than heavy fills. Contrast is the point
+     and every step is deliberate:
+       · text is a soft near-black (0.22, not #000, for comfort) and each tier is
+         SOLID, no opacity modifiers, so all three clear WCAG AA on every surface here;
+       · borders sit a real step below the shell (0.88 against 0.975) instead of the whisper the
+         old white theme used, which is what made panels read as floating in milk;
+       · hover and active are two clearly distinguishable steps, not one.
+     The chromatic tokens are darkened versions of the dark theme's: a colour tuned to glow on
+     near-black fails AA on near-white, so each carries the ratio it was verified at. */
+  --background: oklch(0.975 0 0); /* off-white shell */
+  /* Opaque ground inputs for the mac light-glass block further down — same role as the dark
+     `:root`'s own trio, just at light's values. Nothing reads these until glass thins them; without
+     this the light glass block would silently inherit DARK's near-black window-ground numbers,
+     since a custom property not re-declared in a theme scope falls through to `:root`. */
+  --window-ground: oklch(0.975 0 0);
+  --window-ground-sidebar: oklch(0.96 0 0);
+  --window-ground-raised: oklch(1 0 0);
+  --background-solid: oklch(0.975 0 0); /* opaque copy component fills always use */
+  --foreground: oklch(0.22 0 0); /* ~#1f1f1f body text — 14:1 on the shell */
+
+  --card: oklch(1 0 0); /* white content, a clear step above the shell */
+  --card-foreground: oklch(0.22 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0 0);
+  /* Menu-row hover, a foreground veil like dark's: it composites on whatever the panel shows. */
+  --popover-hover: color-mix(in oklch, var(--foreground) 7%, oklch(0 0 0 / 0));
+
+  --primary: oklch(0.24 0 0);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.93 0 0); /* quiet fill, a visible step down from the shell */
+  --secondary-foreground: oklch(0.22 0 0);
+
+  --muted: oklch(0.93 0 0);
+  --muted-foreground: oklch(0.44 0 0); /* ~#666 secondary text, 6.4:1 */
+
+  --destructive: oklch(0.53 0.21 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Status, connection tags and charts: the dark theme's hues held, lightness dropped until each
+     clears AA as TEXT on the light shell (the ratios that drove these values are noted inline). */
+  --status-success: oklch(0.5 0.15 155); /* ~5.1:1 */
+  --status-error: oklch(0.53 0.21 20);
+  --status-warning: oklch(0.52 0.12 75); /* amber is the hardest hue here; ~5.2:1 */
+  --status-info: oklch(0.53 0.17 255);
+
+  --conn-red: oklch(0.53 0.21 20);
+  --conn-amber: oklch(0.6 0.13 75);
+  --conn-green: oklch(0.53 0.15 155);
+  --conn-blue: oklch(0.53 0.17 255);
+  --conn-violet: oklch(0.5 0.18 292);
+  --conn-pink: oklch(0.54 0.18 350);
+  --conn-slate: oklch(0.48 0.03 250);
+
+  --chart-1: oklch(0.53 0.19 280);
+  --chart-2: oklch(0.58 0.13 200);
+  --chart-3: oklch(0.56 0.16 310);
+  --chart-4: oklch(0.56 0.13 160);
+  --chart-5: oklch(0.63 0.14 70);
+  --chart-6: oklch(0.58 0.18 350);
+  --chart-7: oklch(0.54 0.16 230);
+  --chart-8: oklch(0.56 0.17 20);
+
+  --accent: oklch(0.93 0 0);
+  --accent-foreground: oklch(0.22 0 0);
+
+  --border: oklch(0.88 0 0); /* hairline you can actually see */
+  --border-subtle: oklch(0.925 0 0);
+  --border-strong: oklch(0.78 0 0);
+  --input: oklch(0.8 0 0); /* field outline, a firm step */
+  --ring: oklch(0.4 0 0); /* monochrome focus (app identity) */
+
+  --sidebar: oklch(0.96 0 0); /* chrome sits a hair below the content shell */
+  --sidebar-foreground: oklch(0.26 0 0);
+  --sidebar-primary: oklch(0.24 0 0);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.9 0 0); /* active row */
+  --sidebar-accent-foreground: oklch(0.18 0 0);
+  --sidebar-border: oklch(0.885 0 0);
+  --sidebar-ring: oklch(0.4 0 0);
+
+  /* Surface tiers. Raised is the WHITE lift (a code inset or composer on the grey shell reads as
+     paper), sunken is the grey recess, and hover/active are two distinct darkening steps — light's
+     old theme collapsed raised into the shell, so a hover on it changed nothing at all. */
+  --surface-raised: oklch(1 0 0);
+  --surface-sunken: oklch(0.945 0 0);
+  --surface-hover: oklch(0.93 0 0);
+  --surface-active: oklch(0.895 0 0);
+  --text-strong: oklch(0.16 0 0); /* headings — near-black, 17:1 */
+  --text-soft: oklch(0.42 0 0); /* 7:1 */
+  --text-faint: oklch(0.5 0 0); /* faintest tier still AA at small sizes, 4.9:1 */
+  --control-border: oklch(0.8 0 0);
+  --control-border-hover: oklch(0.66 0 0);
+  --control-border-focus: oklch(0.4 0 0);
+  /* Light needs a SMALLER number for the same perceived recess: the veil mixes from light's DARK
+     `--foreground`, and a black veil on a near-white shell reads far stronger than the equivalent
+     white veil on near-black. 5% here ≈ dark's 9% by eye. */
+  --field-fill: color-mix(in oklch, var(--foreground) 5%, oklch(0 0 0 / 0));
+  /* Flat, crisp elevation — a light interface separates with borders, not big blurs. */
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-popover: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-drawer: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 16px 48px -12px rgba(0, 0, 0, 0.18);
+  --scroll-thumb: rgba(100, 100, 100, 0.28);
+  --scroll-thumb-hover: rgba(100, 100, 100, 0.45);
+
+  /* Liquid glass — light re-tunes the material, not the component. On a near-white shell a white
+     rim is invisible, so the ring inverts through the middle: white glint at the incident corner,
+     a dark hairline across the body, white glint at the exit. The backdrop brightens. */
+  --glass-fill: rgba(255, 255, 255, 0.28);
+  --glass-fill-hover: rgba(255, 255, 255, 0.46);
+  --glass-backdrop: blur(3px) saturate(150%) brightness(1.06);
+  --glass-sheen: radial-gradient(
+    120% 80% at 30% -20%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 40%,
+    transparent 70%
+  );
+  --glass-rim: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(20, 26, 38, 0.14) 42%,
+    rgba(20, 26, 38, 0.08) 68%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
+  --glass-depth:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -10px 16px -14px rgba(20, 26, 38, 0.25),
+    0 6px 18px -8px rgba(20, 26, 38, 0.22);
+  --glass-depth-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -10px 16px -14px rgba(20, 26, 38, 0.22),
+    0 12px 26px -10px rgba(20, 26, 38, 0.28);
+
+  /* Scrim — 60% pure black over a near-white shell is a hole punched in the page. The same cool
+     near-black the rim uses, at a third of the weight, once the blur has erased the content. */
+  --scrim-fill: rgba(20, 26, 38, 0.34);
+  --scrim-backdrop: blur(16px) saturate(140%);
+
+  /* Syntax palette — light. Same two families as dark, at light-readable lightness. */
+  --syntax-class: #1f66c2;
+  --syntax-sign: #6a7280;
+  --syntax-string: #237b3b;
+  --syntax-keyword: #b32d55;
+  --syntax-comment: #6e7781;
+  --syntax-literal: #6a52bd;
+  --syntax-property: #9b5a00;
+  --syntax-entity: #1b7c83;
+  --syntax-code-class: #116329;
+  --syntax-code-string: #0a3069;
+  --syntax-code-keyword: #cf222e;
+  --syntax-code-comment: #6e7781;
+  --syntax-code-literal: #953800;
+  --syntax-code-property: #0550ae;
+  --syntax-code-entity: #8250df;
+
+  /* Agent monograms — light. The roles invert: a pale tile carries saturated ink. The obvious
+     version (white text on the generated colour) lands near 3:1, under the floor for text. */
+  --avatar-tile-l: 0.93;
+  --avatar-tile-c: 0.05;
+  --avatar-ink-l: 0.46;
+  --avatar-ink-c: 0.15;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   OS increased-contrast preference
+   ═══════════════════════════════════════════════════════════════
+   `prefers-contrast: more` is distinct from forced colors: the user's chosen
+   palette remains intact, but quiet chrome needs a larger luminance step. Keep
+   the adjustment in semantic tokens so host and plugin surfaces strengthen
+   together instead of accumulating per-component high-contrast variants. */
+@media (prefers-contrast: more) {
+  :root {
+    /* Presets are inline variables, so these accessibility adjustments need
+       declaration priority to win. Deriving from the active palette preserves
+       a custom theme's hue and appearance instead of replacing it with fixed
+       dark/light greys. */
+    --muted-foreground: color-mix(in oklch, var(--foreground) 88%, var(--background)) !important;
+    --border: color-mix(in oklch, var(--foreground) 28%, var(--background)) !important;
+    --border-subtle: color-mix(in oklch, var(--foreground) 20%, var(--background)) !important;
+    --border-strong: color-mix(in oklch, var(--foreground) 46%, var(--background)) !important;
+    --input: color-mix(in oklch, var(--foreground) 38%, var(--background)) !important;
+    --sidebar-border: color-mix(in oklch, var(--sidebar-foreground) 28%, var(--sidebar)) !important;
+    --surface-hover: color-mix(in oklch, var(--foreground) 14%, var(--background)) !important;
+    --surface-active: color-mix(in oklch, var(--foreground) 22%, var(--background)) !important;
+    --text-soft: color-mix(in oklch, var(--foreground) 88%, var(--background)) !important;
+    --text-faint: color-mix(in oklch, var(--foreground) 78%, var(--background)) !important;
+    --control-border: color-mix(in oklch, var(--foreground) 38%, var(--background)) !important;
+    --control-border-hover: color-mix(
+      in oklch,
+      var(--foreground) 55%,
+      var(--background)
+    ) !important;
+    --control-border-focus: color-mix(
+      in oklch,
+      var(--foreground) 82%,
+      var(--background)
+    ) !important;
+    --tree-guide: rgb(128 128 128 / 0.52);
+    --scroll-thumb: rgb(168 168 168 / 0.62);
+    --scroll-thumb-hover: rgb(208 208 208 / 0.86);
+  }
+
+  [data-theme='light'] {
+    /* Light darkens where dark lightens: same step, opposite direction. */
+    --tree-guide: rgb(70 70 70 / 0.58);
+    --scroll-thumb: rgb(72 72 72 / 0.58);
+    --scroll-thumb-hover: rgb(40 40 40 / 0.82);
+  }
+}

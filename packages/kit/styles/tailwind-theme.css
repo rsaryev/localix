@@ -1,0 +1,129 @@
+/* ═══════════════════════════════════════════════════════════════
+   Tailwind theme extension
+   ═══════════════════════════════════════════════════════════════ */
+@custom-variant dark (&:is([data-theme="dark"] *));
+
+@theme inline {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
+  --font-heading: 'DM Sans Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'Fragment Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* The root is 14px, not Tailwind's assumed 16px. Calibrate the small tiers to
+     actual 10/11/12/13px so labels do not shrink to 9px inside full-size chrome.
+     Rem units preserve the user's 13–16px typography preference. */
+  /* `3xs` is for glyph-sized text that is not prose — a kbd key, a counter badge, a tag in a
+     dense row. It replaces a spread of one-off literals (9px, 0.55/0.6/0.65rem) that each
+     picked a size for the same job, and it is in rem so it follows the font-size setting where
+     a px literal did not. */
+  --text-3xs: calc(10rem / 14);
+  --text-3xs--line-height: 1rem;
+  --text-2xs: calc(11rem / 14);
+  --text-2xs--line-height: calc(16rem / 14);
+  --text-xs: calc(12rem / 14);
+  --text-xs--line-height: calc(18rem / 14);
+  --text-sm: calc(13rem / 14);
+  --text-sm--line-height: calc(20rem / 14);
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.65rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.95rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
+  --color-background: var(--background);
+  --color-background-solid: var(--background-solid);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover-hover: var(--popover-hover);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-status-success: var(--status-success);
+  --color-status-error: var(--status-error);
+  --color-status-warning: var(--status-warning);
+  --color-status-info: var(--status-info);
+  --color-conn-red: var(--conn-red);
+  --color-conn-amber: var(--conn-amber);
+  --color-conn-green: var(--conn-green);
+  --color-conn-blue: var(--conn-blue);
+  --color-conn-violet: var(--conn-violet);
+  --color-conn-pink: var(--conn-pink);
+  --color-conn-slate: var(--conn-slate);
+  --color-composer-accent: var(--composer-accent);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  /* The hairline's two lighter steps, as the hairline itself thinned — so they stay veils over the
+     glass ground exactly as `--border` is there. `faint` separates rows inside a list; `soft`
+     outlines a card or a group on its pane; full `border` is a control's own edge. They replace a
+     spread of twenty hand-picked alphas (`border-border/15` … `/90`) that each answered the same
+     three questions differently, and they compile to exactly what `/30` and `/60` did. */
+  --color-border-faint: color-mix(in oklab, var(--border) 30%, transparent);
+  --color-border-soft: color-mix(in oklab, var(--border) 60%, transparent);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Custom surface/text tokens as Tailwind colors */
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+  --color-text-strong: var(--text-strong);
+  --color-text-soft: var(--text-soft);
+  --color-text-faint: var(--text-faint);
+  --color-control-border: var(--control-border);
+  --color-control-border-hover: var(--control-border-hover);
+  --color-control-border-focus: var(--control-border-focus);
+  --color-field-fill: var(--field-fill);
+
+  /* `xs` is for glyph-sized shapes — an inline match highlight, a diff word mark, a spark. Seventeen
+     call sites (and the token-drift fix text) already wrote `rounded-xs`, but without this step it
+     fell through to Tailwind's stock 0.125rem and ignored every retune of `--radius`. The ladder
+     below climbs 0.2 at a time from `sm`; `xs` takes the next step down, 4px at the default. */
+  --radius-xs: calc(var(--radius) * 0.4);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  /* Transition defaults for the bare `transition-*` utilities. Tailwind emits its
+     own duration + timing-function inside `transition-colors` etc., so those ~670
+     call sites OUTRANK the soft-touch base-layer rule below and were quietly
+     swapping --ease-soft for the stock curve — the app eased two different ways
+     depending on whether a component happened to spell a transition utility.
+     Naming the defaults here makes the utilities emit the app's own curve.
+     The duration line is a no-op today (--dur-fast is already 150ms, Tailwind's
+     default); the timing-function line is the actual repair. Self-contained on
+     purpose: deleting these two lines reverts the whole change. */
+  --default-transition-duration: var(--dur-fast);
+  --default-transition-timing-function: var(--ease-soft);
+
+  /* Named animation usable as `animate-fade-up` (keyframes below). */
+  --animate-fade-up: fade-up var(--dur-base) var(--ease-soft) both;
+  /* Gentler take on Tailwind's `animate-pulse` (keyframes below). */
+  --animate-pulse-soft: pulse-soft 2s var(--ease-standard) infinite;
+}

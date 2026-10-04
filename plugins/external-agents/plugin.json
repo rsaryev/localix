@@ -1,0 +1,46 @@
+{
+  "name": "external-agents",
+  "category": "development",
+  "displayName": "External Agents",
+  "version": "2.0.0",
+  "license": "MIT",
+  "apiVersion": 1,
+  "defaultEnabled": true,
+  "description": "Launch supported coding-agent CLIs, inspect their local session history, and attach bounded session context through a read-only workspace.",
+  "surfaces": ["agent", "workbench"],
+  "author": "Localix",
+  "tools": "./backend/index.ts",
+  "skills": "./skills",
+  "commands": [
+    {
+      "name": "claude",
+      "description": "Delegate a task to the Claude Code CLI, driving it interactively.",
+      "argumentHint": "[task to delegate]",
+      "args": [
+        {
+          "name": "task",
+          "type": "text",
+          "description": "The work to hand off to Claude Code.",
+          "placeholder": "implement the CSV parser and add tests",
+          "required": true
+        }
+      ],
+      "prompt": "Delegate this task to the Claude Code CLI by DRIVING IT INTERACTIVELY in a terminal (bash actions: `open` / `screen` / `keys` / `type`). Read the screen at each step — never assume what is on it.\n\nUSER REQUEST (a terse note to YOU, not the literal prompt to send):\n\n${task}\n\n## 1. Refine the task\nTurn the note above into ONE clear, self-contained instruction for Claude. Fix typos and vague phrasing; add the obvious expectation the user implied. Send the REFINED instruction — never the raw text.\n- \"just say hello\" -> \"Say hello.\"\n- \"fix login\" -> \"Investigate and fix the login bug, then run the tests.\"\n\nCLI check: !`command -v claude >/dev/null 2>&1 && echo \"claude: available\" || echo \"claude: MISSING - tell the user to install Claude Code, then stop\"`\n\n## 2. Launch\nOpen a pane with a command in EXACTLY this shape — the leading declarations are how the workspace\nrecognizes the pane as a delegation and finds its transcript, so never strip them, reorder them, or\nprepend a `cd`:\n\n```\nLOCALIX_AGENT=claude-code LOCALIX_AGENT_CWD='<absolute project dir>' claude --dangerously-skip-permissions\n```\n\nAdd flags at the END only (` --model <alias>` if a specific tier is wanted: `opus`/`sonnet`/`haiku`/`fable`, which always resolve to the CURRENT latest of that tier; never a hardcoded model id).\n\n## 3. Drive it\n1. bash `action: open` with that command. `open` returns the initial screen (no separate `screen` needed unless it came back blank). The delegation now appears in the External Agents Workspace roster with live state; `external_agent_sessions { action: \"roster\" }` is where you read its key (`claude-code:<id>`).\n2. ONLY if that screen was blank/cold-starting: bash `action: screen` once. On first-ever use it may show a one-time bypass-permissions warning — read it and confirm.\n3. Send the REFINED task in ONE call: bash `action: type` with the task text AND `keys: [\"Enter\"]` together.\n\n## 4. Knowing when it is done — OBSERVATION, not a report\nNothing is injected into Claude's prompt and it is NOT asked to report back: this plugin reads the\ndelegation's state from what can be observed — the rendered screen classified against a detection\nmanifest, and Claude's own transcript on disk. So do not ask it to message you, and do not invent a\nprotocol for it.\n\nTo learn when it settles, use ONE of these — never a screen-polling loop, and never `bash action:\"wait\"`\n(that holds THIS turn open, which is strictly worse than ending it):\n- `external_agent_sessions { action: \"wait\", keys: [\"claude-code:<id>\"], until: [\"done\", \"blocked\"], timeoutMs: 1800000 }`\n  — bounded at 30 min, resolves immediately if the state already holds, and a timeout is a normal\n  reported outcome. Keys come from `{ action: \"roster\" }`. With SEVERAL delegations add `mode: \"any\"`\n  (\"wake me when the first one needs a decision\") or `mode: \"all\"` (\"when all of them have finished\").\n- Or END YOUR TURN and pick the work up on your next turn with `{ action: \"roster\" }`.\n\n## 5. On resume\nbash `action: screen` once. If a menu is up, answer with the matching number / arrow keys + Enter,\nthen settle again. Never guess — the screen shows the current choices.\n\n## 6. Finish\nWhen the state is `done`/`idle`, read the result with `action: screen`. Exit with `keys: [\"Ctrl+C\",\"Ctrl+C\"]` (twice — the reliable exit), then bash\n`action: close`. Then report to the USER what Claude changed and its result — you write that summary\nfrom what you read, because nothing else will.\n\n## Reference\nFor the full reference (every flag, headless `-p` mode, in-session slash commands, approval menus, models, gotchas) read the `driving-claude-code` skill with the skill tool.\n"
+    },
+    {
+      "name": "codex",
+      "description": "Delegate a task to the Codex CLI, driving it interactively.",
+      "argumentHint": "[task to delegate]",
+      "args": [
+        {
+          "name": "task",
+          "type": "text",
+          "description": "The work to hand off to Codex.",
+          "placeholder": "refactor the auth module and run the tests",
+          "required": true
+        }
+      ],
+      "prompt": "Delegate this task to the Codex CLI by DRIVING IT INTERACTIVELY in a terminal (bash actions: `open` / `screen` / `keys` / `type`). Read the screen at each step — never assume what is on it.\n\nUSER REQUEST (a terse note to YOU, not the literal prompt to send):\n\n${task}\n\n## 1. Refine the task\nTurn the note above into ONE clear, self-contained instruction for Codex. Fix typos and vague phrasing; add the obvious expectation the user implied. Send the REFINED instruction — never the raw text.\n- \"refactor auth\" -> \"Refactor the auth module and run the tests.\"\n\nCLI check: !`command -v codex >/dev/null 2>&1 && echo \"codex: available\" || echo \"codex: MISSING - tell the user to install Codex, then stop\"`\n\n## 2. Launch\nOpen a pane with a command in EXACTLY this shape — the leading declarations are how the workspace\nrecognizes the pane as a delegation and finds its transcript, so never strip them, reorder them, or\nprepend a `cd`:\n\n```\nLOCALIX_AGENT=codex LOCALIX_AGENT_CWD='<absolute project dir>' codex\n```\n\nTo target a model append ` -m <name>` (discover names with `/model` in-session or `codex --help` — do not assume).\n\n## 3. Drive it\n1. bash `action: open` with that command. `open` returns the initial screen. The delegation now appears in the External Agents Workspace roster with live state; `external_agent_sessions { action: \"roster\" }` is where you read its key (`codex:<id>`).\n2. ONLY if that screen was blank/cold-starting: bash `action: screen` once (~1s to render).\n3. Send the REFINED task in ONE call: bash `action: type` with the task text AND `keys: [\"Enter\"]` together.\n4. Codex asks for APPROVAL before running shell commands / edits, so expect a `blocked` state and a menu.\n\n## 4. Knowing when it is done — OBSERVATION, not a report\nNothing is injected into Codex's prompt and it is NOT asked to report back: this plugin reads the\ndelegation's state from what can be observed — the rendered screen classified against a detection\nmanifest, and Codex's own transcript on disk. So do not ask it to message you, and do not invent a\nprotocol for it.\n\nTo learn when it settles, use ONE of these — never a screen-polling loop, and never `bash action:\"wait\"`\n(that holds THIS turn open, which is strictly worse than ending it):\n- `external_agent_sessions { action: \"wait\", keys: [\"codex:<id>\"], until: [\"done\", \"blocked\"], timeoutMs: 1800000 }`\n  — bounded at 30 min, resolves immediately if the state already holds, and a timeout is a normal\n  reported outcome. Keys come from `{ action: \"roster\" }`. With SEVERAL delegations add `mode: \"any\"`\n  (\"wake me when the first one needs a decision\") or `mode: \"all\"` (\"when all of them have finished\").\n- Or END YOUR TURN and pick the work up on your next turn with `{ action: \"roster\" }`.\n\n## 5. On resume\nbash `action: screen` once. If a menu is up, answer with the matching number / arrow keys + Enter,\nthen settle again. Never guess — the screen shows the current choices.\n\n## 6. Finish\nWhen the state is `done`/`idle`, read the result with `action: screen`. Exit with `keys: [\"Ctrl+C\"]` (press twice if it shows a press-again-to-quit prompt), or a quit slash-command shown on screen, then bash\n`action: close`. Then report to the USER what Codex changed and its result — you write that summary\nfrom what you read, because nothing else will.\n\n## Reference\nFor the full reference (sandbox/approval modes, in-session commands, headless `codex exec`, models, gotchas) read the `driving-codex` skill with the skill tool.\n"
+    }
+  ]
+}

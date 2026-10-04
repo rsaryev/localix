@@ -1,0 +1,18 @@
+{
+  "name": "@localixai/plugin-kit-compiler",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The JavaScript TypeScript compiler the plugin kit stages and describes itself with, kept out of the workspace's `tsc`.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs"
+    }
+  },
+  "dependencies": {
+    "typescript": "5.9.3"
+  }
+}

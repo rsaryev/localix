@@ -1,0 +1,5 @@
+export { CodeBlock } from '@/shared/ui/code-block'
+export { CodePreview } from '@/shared/ui/code-block/CodePreview'
+export { hasHighlightGrammar, highlightCode } from '@/shared/ui/code-block/highlightCode'
+export { colorizeCode } from '@/shared/ui/code-block/colorizeCode'
+export { CODE_VIEWER_HIGHLIGHT, SUGAR_HIGH_THEME } from '@/shared/ui/code-block/sugarHighTheme'

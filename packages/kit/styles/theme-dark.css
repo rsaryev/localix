@@ -1,0 +1,290 @@
+/* ═══════════════════════════════════════════════════════════════
+   CSS Custom Properties — dark (default)
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
+  --font-heading: 'DM Sans Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'Fragment Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* Composer brand accent (the blue glow on the focused prompt). Single source
+     for the focus ring, shell glow, and the "improving" action button —
+     theme-independent. `deep` is the darker drop-shadow companion. */
+  --composer-accent: oklch(0.68 0.16 230);
+  --composer-accent-deep: oklch(0.42 0.14 230);
+
+  /* Theme-agnostic animated brand artwork. Defaults derive from semantic theme
+     colors; presets may override either token without replacing the component. */
+  --bird-foreground: var(--foreground);
+  --bird-wind: color-mix(in oklch, var(--status-info) 58%, var(--foreground));
+
+  /* Indent guides for the file tree — a subtle vertical rail at each
+     ancestor level, drawn per-row (see FileTreeSidebar `indentGuideStyle`) so the
+     lines align across rows into continuous rails.
+     ONE mid-grey for every theme, the same trick --scroll-thumb below uses for the
+     same kind of palette-agnostic chrome: at 21% a 128-grey composites to #202020 on
+     the dark shell and #dfdfdf on the light one, which is exactly what the two
+     literals it replaces produced. Those literals were the only place in this file
+     written in the INVERTED convention — light value in a second `:root`, dark in a
+     `[data-theme='dark']` override — which also forced a third
+     `prefers-color-scheme` copy so the rails would not flash light before
+     `data-theme` is written. A theme-agnostic value needs none of the three, and it
+     is correct under a plugin theme's palette too.
+     Deliberately NOT color-mix(--foreground): custom properties cannot carry a
+     fallback declaration, so lightningcss downlevels an unsupported color-mix by
+     substituting the bare var — turning a 10% wash into OPAQUE foreground rails.
+     (--bird-wind above ships that same downlevel; there it costs a slightly
+     different decorative blue, here it would repaint the whole tree.) */
+  --tree-guide: rgb(128 128 128 / 0.21);
+
+  /* Motion — single source of truth for easing + durations. `soft` is the
+     default settle curve; `emphasized` is for larger entrances/reveals; `standard` is the
+     symmetric in-out curve for a loop that must return to where it started (a breathing pulse);
+     `exit` accelerates something out of view.
+     Durations map to: instant = an overlay answering a click (popover, menu, dialog, tooltip),
+     fast = hover/press feedback, base = panels/drawers/disclosures, moderate = a reveal that
+     travels (an activity label, a theme sweep), slow = progress.
+     Before `instant` and `moderate` existed, the overlays each wrote a literal 100ms and the
+     travelling reveals wrote 190/260/300ms, so retiming one left the rest where they were. */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-emphasized: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.6, 1);
+  /* Accelerate away: an EXIT starts slow and leaves fast, the mirror of `soft`'s settle. */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --dur-instant: 100ms;
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-moderate: 260ms;
+  --dur-slow: 500ms;
+  /* Press feedback: how far a pressed control sinks. One value so a button, a chrome action and a
+     glass pill give under the finger by the same amount. */
+  --press-scale: 0.97;
+
+  /* Premium dark — quiet surfaces, separation via borders not grey fills.
+     Inputs/code sit on a near-black inset (surface-raised < background). */
+  /* Unified near-black base — background, sidebar and panels share it so nothing
+     reads as a lifted grey slab. Separation comes from borders, not fills. */
+  --background: oklch(0.13 0 0);
+  /* Opaque copies of the two ground colours, for the macOS window-material block to thin. A custom
+     property cannot reference itself, so `--background` cannot be defined in terms of itself; these
+     are the inputs that make that mix possible. Keep each in step with the token above it. */
+  --window-ground: oklch(0.13 0 0);
+  /* The always-opaque ground for component FILLS (switch knob, "solid" overlays). Everywhere except
+     macOS glass it equals --background; under glass --background thins and this one must not. */
+  --background-solid: oklch(0.13 0 0);
+  --foreground: oklch(0.96 0 0);
+
+  --card: oklch(0.155 0 0);
+  --card-foreground: oklch(0.96 0 0);
+  /* Floating chrome stays near-black; blur, a rim and shadow provide elevation,
+     not the opaque grey slab the old 0.24 fill produced in the browser. */
+  --popover: oklch(0.185 0 0);
+  --popover-foreground: oklch(0.96 0 0);
+  /* Hover/focus/highlighted state for anything built on --popover (MENU_ITEM) — a translucent
+     foreground veil over TRANSPARENT, the same recipe --surface-hover already uses under the mac
+     glass block below, not a color mixed INTO --popover. Painted as the item's own background it
+     composites on top of whatever the popover panel is already showing (opaque grey or frosted
+     glass), so it stays a laconic, monochrome wash in both modes instead of a flat solid grey/tint
+     baked ahead of time — and it never needs a separate value for the glass override, since it
+     never reads --popover at all. */
+  --popover-hover: color-mix(in oklch, var(--foreground) 8%, oklch(0 0 0 / 0));
+
+  --primary: oklch(0.97 0 0);
+  --primary-foreground: oklch(0.13 0 0);
+  --secondary: oklch(0.185 0 0);
+  --secondary-foreground: oklch(0.96 0 0);
+
+  --muted: oklch(0.185 0 0);
+  --muted-foreground: oklch(0.72 0 0);
+
+  --destructive: oklch(0.56 0.21 22); /* 0.62→0.56: white button text was 3.8:1, now ~4.9:1 (AA) */
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Semantic status colors — single source for success/error/warning accents
+     (tool results, badges, indicators). Use these instead of raw Tailwind
+     emerald/rose/amber so both themes stay tuned from one place. */
+  --status-success: oklch(0.74 0.16 155);
+  --status-error: oklch(0.68 0.19 18);
+  --status-warning: oklch(0.8 0.14 80);
+  --status-info: oklch(0.7 0.15 250);
+
+  /* Connection color tags — a small curated palette for the database workbench so
+     several databases are told apart at a glance (a prod-safety cue). Tuned to read
+     on the dark shell; the light theme re-tunes below. Metadata only — never a fill. */
+  --conn-red: oklch(0.68 0.19 18);
+  --conn-amber: oklch(0.8 0.14 80);
+  --conn-green: oklch(0.74 0.16 155);
+  --conn-blue: oklch(0.7 0.15 250);
+  --conn-violet: oklch(0.68 0.17 292);
+  --conn-pink: oklch(0.74 0.18 350);
+  --conn-slate: oklch(0.66 0.03 250);
+
+  /* Chart series — categorical palette for data viz (stats charts). Indexed,
+     not semantic: series N gets --chart-N. Tuned per theme for contrast. */
+  --chart-1: oklch(0.62 0.19 280);
+  --chart-2: oklch(0.72 0.15 200);
+  --chart-3: oklch(0.7 0.16 310);
+  --chart-4: oklch(0.72 0.15 160);
+  --chart-5: oklch(0.78 0.15 70);
+  --chart-6: oklch(0.72 0.18 350);
+  --chart-7: oklch(0.68 0.16 230);
+  --chart-8: oklch(0.7 0.17 20);
+
+  --accent: oklch(0.185 0 0);
+  --accent-foreground: oklch(0.96 0 0);
+
+  --border: oklch(0.235 0 0);
+  --border-subtle: oklch(0.19 0 0);
+  --border-strong: oklch(0.31 0 0);
+  --input: oklch(0.235 0 0);
+  --ring: oklch(0.7 0 0);
+  --radius: 0.625rem;
+
+  /* Sidebar — same base as background for a seamless shell */
+  --sidebar: oklch(0.13 0 0);
+  --window-ground-sidebar: oklch(0.13 0 0);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: oklch(0.97 0 0);
+  --sidebar-primary-foreground: oklch(0.14 0 0);
+  --sidebar-accent: oklch(0.175 0 0);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-border: oklch(0.215 0 0);
+  --sidebar-ring: oklch(0.7 0 0);
+
+  /* Surface & text tokens — solid oklch (no alpha) for true contrast.
+     surface-raised is a DARK inset (composer, code, popovers) — premium look. */
+  --surface-raised: oklch(0.105 0 0);
+  --window-ground-raised: oklch(0.105 0 0);
+  /* A hover that SINKS below the shell, for controls sitting directly on the
+     background rather than in a card. Deliberately a separate token from
+     --surface-raised even though dark shares its value today: raised is a RESTING
+     inset (composer, code, popovers — 153 call sites) while this is a transient
+     hover (12 sites). They were one token, and light could not serve both — light's
+     raised is EXACTLY its --background, so those 12 hovers were invisible there,
+     and darkening the shared token to fix them turned all 153 resting insets grey.
+     Dark keeps its exact current value; only light gets a real step. */
+  --surface-sunken: oklch(0.105 0 0);
+  --surface-hover: oklch(0.185 0 0);
+  --surface-active: oklch(0.21 0 0);
+  /* The resting fill of anything you TYPE INTO — Input, Textarea, InputGroup, SearchInput, the
+     select trigger, a checkbox. A token rather than a per-file alpha because it was written as
+     `bg-foreground/[0.04]` in thirteen places, and 4% of the ink over a dense strip is under two
+     percent of perceived difference: on the search header the field was defined by its border
+     alone and read as a black hole punched through the bar. 9% is the smallest step that still
+     reads as a recessed field on every ground the app has — the pane, an occluder, a dialog. */
+  --field-fill: color-mix(in oklch, var(--foreground) 9%, oklch(0 0 0 / 0));
+  --text-strong: oklch(0.96 0 0);
+  --text-soft: oklch(0.72 0 0);
+  /* 0.62 (was 0.56) → clears WCAG AA (4.5:1) for the small/2xs text this tier is used on;
+     was ~4.3:1. Still clearly the faintest tier (soft ≈8:1, strong ≈18:1). */
+  --text-faint: oklch(0.62 0 0);
+  --control-border: oklch(0.27 0 0);
+  --control-border-hover: oklch(0.37 0 0);
+  --control-border-focus: oklch(0.5 0 0);
+  /* Spread was -28px, which shrinks the shadow rect by 28px per side: on anything
+     under ~56px tall the rect collapsed to zero height and the token painted
+     NOTHING (a single-line create row, IsoFigure) while still reading on tall panels
+     (PromptInput, PreviewTab). -14px renders on both; the blur/offset came down
+     with it so the tall consumers keep the same weight. */
+  --shadow-soft: 0 8px 24px -14px rgba(0, 0, 0, 0.85);
+  --shadow-popover: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-drawer: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  /* A control or card lifted one step off its pane (a selected segment, a raised chip). It was
+     Tailwind's stock `shadow-sm` at ten call sites — a value no theme could re-tune — and it keeps
+     that exact value here, so adopting the token moves no pixel. */
+  --shadow-raised: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  /* The glow on a drag-and-drop insertion line — a foreground halo, so it reads in every theme. */
+  --drop-indicator-glow: 0 0 8px color-mix(in oklch, var(--foreground), transparent 45%);
+  /* The composer shell's corner. Deliberately OFF the `--radius` scale and in px: the composer is
+     the one pill-shaped slab the app has, its corner is set by its own height rather than by the
+     control ladder, and it must not grow with the font-size setting the way rem radii do. */
+  --radius-composer: 22px;
+  --scroll-thumb: rgba(128, 128, 128, 0.18);
+  --scroll-thumb-hover: rgba(128, 128, 128, 0.35);
+
+  /* Liquid glass — see the `.lx-glass` section for the recipe. Four tokens so a
+     theme re-tunes the material instead of the component. */
+  /* A LENS, not a lid. Blur radius is what decides whether you still recognise
+     what is behind: at 14px a 14px-tall line of text is smeared into a flat
+     tone, so the pill reads as opaque even at 3% fill. 2–4px is the tier where
+     the backdrop stays legible — a `blur(2px)` radius is what production overlays use whenever
+     the content underneath must still be readable. The frosted 12–25px tier
+     belongs to dialogs and scrims, whose
+     whole job is to HIDE the page. */
+  --glass-fill: rgba(255, 255, 255, 0.025);
+  --glass-fill-hover: rgba(255, 255, 255, 0.06);
+  --glass-backdrop: blur(3px) saturate(150%) brightness(0.85);
+  --glass-sheen: radial-gradient(
+    120% 80% at 30% -20%,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(255, 255, 255, 0.03) 42%,
+    transparent 68%
+  );
+  --glass-rim: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(255, 255, 255, 0.12) 28%,
+    rgba(255, 255, 255, 0.04) 58%,
+    rgba(255, 255, 255, 0.28) 100%
+  );
+  --glass-depth:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -10px 16px -12px rgba(0, 0, 0, 0.4), 0 8px 22px -10px rgba(0, 0, 0, 0.7);
+  --glass-depth-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -10px 16px -12px rgba(0, 0, 0, 0.36), 0 14px 30px -12px rgba(0, 0, 0, 0.75);
+
+  /* Scrim — the OTHER side of the tier the glass note above draws: a scrim's job
+     is to HIDE the page, so it sits in the frosted 12–25px band rather than the
+     3px lens band. Two tokens so the material is a theme decision, like glass.
+     Dark keeps the rgba(0, 0, 0, 0.6) every overlay already hand-rolled. */
+  --scrim-fill: rgba(0, 0, 0, 0.6);
+  --scrim-backdrop: blur(16px) saturate(140%);
+
+  /* ── Syntax palette ─────────────────────────────────────────────────────────
+     ONE source for code colours, so a theme can restyle the editor and not just
+     the chrome. Before this there were THREE hardcoded palettes and the same
+     keyword rendered differently in each: chat/diffs #ff8ea3, the file viewer
+     #ff7b72, the Monaco editor #c792ea — while sugarHighTheme.ts claimed
+     "reading a file and editing it render with identical colors", which was true
+     of the viewer and false of Monaco.
+     They were also set as Tailwind arbitrary properties ON THE CONTAINER, so a
+     plugin theme's `<html>`-level override was shadowed and could never reach
+     them. As tokens they inherit normally, which is what makes a theme able to
+     own the editor scheme.
+     Two families on purpose, both preserved at their CURRENT values so this
+     carries no visual change:
+       --syntax-*      chat code blocks + diffs (the softer set)
+       --syntax-code-* file viewer + editor (the high-contrast GitHub-ish set)
+     Monaco moves onto --syntax-code-*, which is the claim above finally made
+     true. */
+  --syntax-class: #6aa5ff;
+  --syntax-sign: #8a8f98;
+  --syntax-string: #8fd881;
+  --syntax-keyword: #ff8ea3;
+  --syntax-comment: #70757f;
+  --syntax-literal: #b9a7ff;
+  --syntax-property: #ffd166;
+  --syntax-entity: #66d9ef;
+  --syntax-code-class: #7ee787;
+  --syntax-code-string: #a5d6ff;
+  --syntax-code-keyword: #ff7b72;
+  --syntax-code-comment: #8b949e;
+  --syntax-code-literal: #ffa657;
+  --syntax-code-property: #79c0ff;
+  --syntax-code-entity: #d2a8ff;
+
+  /* Generated agent monograms. The theme owns lightness and chroma; the element passes its own
+     hue. Only the hue varies across the roster, so twenty tiles read as one set — OKLCH is what
+     makes that hold, its lightness being perceptual instead of going muddy in the blues and
+     glaring in the yellows.
+     These are SCALARS, not a finished colour, and deliberately so: a custom property's `var()`
+     references are substituted where the property is DECLARED, so an `oklch(… var(--avatar-hue))`
+     token written here would resolve the hue against `:root` — which has none — and hand every
+     agent the same fallback colour. The component composes the colour on the element instead.
+     Dark: a deep tile with light ink. Tinted rather than saturated, because a settings list holds
+     twenty of these and twenty saturated squares fight the text they label. */
+  --avatar-tile-l: 0.31;
+  --avatar-tile-c: 0.075;
+  --avatar-ink-l: 0.88;
+  --avatar-ink-c: 0.13;
+}

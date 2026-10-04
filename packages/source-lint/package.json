@@ -1,0 +1,21 @@
+{
+  "name": "@localixai/source-lint",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Test-only source scanning and positive-control helpers for repository architecture checks.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "bun test src",
+    "type-check": "tsc --noEmit",
+    "clean": "shx rm -rf .turbo"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
+}

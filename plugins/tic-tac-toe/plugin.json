@@ -1,0 +1,15 @@
+{
+  "name": "tic-tac-toe",
+  "category": "games",
+  "displayName": "Tic-Tac-Toe",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "license": "MIT",
+  "author": "Localix",
+  "description": "Tic-tac-toe against the agent, one board per chat: the agent in that chat answers each move with its own tool, and the board goes when the chat does.",
+  "defaultEnabled": true,
+  "surfaces": ["agent", "workbench"],
+  "keywords": ["game", "tic-tac-toe", "noughts and crosses", "play"],
+  "tools": "./backend/index.ts",
+  "skills": "./skills"
+}

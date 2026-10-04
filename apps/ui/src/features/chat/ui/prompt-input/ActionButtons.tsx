@@ -1,0 +1,178 @@
+import { X } from 'lucide-react'
+import { ArrowUpIcon, StopIcon, MicIcon, PaperclipIcon, SparklesIcon, CheckIcon } from './icons'
+import { IconButton } from '@localixai/kit/icon-button'
+import { PulsingDot } from '@localixai/kit/pulsing-dot'
+import { formatTime } from '@/shared/ui/attachments/voiceMessageFormat'
+import type { ReactNode } from 'react'
+
+interface ActionButtonsProps {
+  hasPrompt: boolean
+  canSend: boolean
+  canImprove: boolean
+  isGenerating: boolean
+  isImproving: boolean
+  didImproveRecently: boolean
+  hasApiKey: boolean
+  canAttach?: boolean
+  onAttachClick?: () => void
+  accessory?: ReactNode
+  onSend: () => void
+  onStop: () => void
+  onImprove: () => void
+  canRecord?: boolean
+  isRecording?: boolean
+  recordingSeconds?: number
+  onMicClick?: () => void
+  onCancelRecording?: () => void
+}
+
+// The composer's square-action radius: its icon actions deliberately sit on
+// `rounded-lg` (softer than IconButton's default) so they read as one family.
+const composerActionRadius = 'rounded-lg'
+const subtleAction = `${composerActionRadius} text-text-soft disabled:opacity-50`
+const solidAction = composerActionRadius
+const disabledSolidAction =
+  'disabled:bg-surface-active disabled:text-text-faint disabled:opacity-60'
+
+export function ActionButtons({
+  hasPrompt,
+  canSend,
+  canImprove,
+  isGenerating,
+  isImproving,
+  didImproveRecently,
+  hasApiKey,
+  canAttach = false,
+  onAttachClick,
+  accessory,
+  onSend,
+  onStop,
+  onImprove,
+  canRecord = false,
+  isRecording = false,
+  recordingSeconds = 0,
+  onMicClick,
+  onCancelRecording,
+}: ActionButtonsProps) {
+  return (
+    <div
+      role="group"
+      aria-label="Composer actions"
+      className="flex items-center justify-between px-2.5 pb-[0.55rem] pt-[0.2rem] max-sm:px-2 max-sm:pb-1.5"
+    >
+      {/* Left: attach */}
+      <div role="group" aria-label="Attachments" className="flex items-center gap-1">
+        <IconButton
+          size="lg"
+          tooltip="Attach file"
+          tooltipSide="top"
+          disabled={!canAttach}
+          onClick={onAttachClick}
+          aria-label="Attach file"
+          className={subtleAction}
+        >
+          <PaperclipIcon className="size-4" />
+        </IconButton>
+      </div>
+
+      {/* Right: improve + send/stop/mic */}
+      <div role="group" aria-label="Prompt and send actions" className="flex items-center gap-1">
+        {accessory}
+
+        <IconButton
+          size="lg"
+          tooltip={isImproving ? 'Improving…' : 'Improve prompt'}
+          tooltipSide="top"
+          disabled={!canImprove}
+          onClick={onImprove}
+          aria-label={isImproving ? 'Improving prompt' : 'Improve prompt'}
+          className={[
+            subtleAction,
+            isImproving
+              ? 'bg-composer-accent/10 text-composer-accent [&_svg]:animate-[composer-icon-pulse_900ms_ease-in-out_infinite]'
+              : didImproveRecently
+                ? 'text-status-success'
+                : '',
+          ].join(' ')}
+        >
+          {didImproveRecently ? (
+            <CheckIcon className="size-4" />
+          ) : (
+            <SparklesIcon className="size-4" />
+          )}
+        </IconButton>
+
+        {isRecording ? (
+          <div className="flex items-center gap-1">
+            <IconButton
+              size="lg"
+              tooltip="Cancel recording"
+              tooltipSide="top"
+              onClick={onCancelRecording}
+              aria-label="Cancel recording"
+              className={subtleAction}
+            >
+              <X className="size-4" />
+            </IconButton>
+            <span
+              role="timer"
+              aria-label={`Recording ${formatTime(recordingSeconds)}`}
+              className="flex items-center gap-1.5 px-1 text-xs tabular-nums text-text-strong"
+            >
+              <PulsingDot className="size-2 text-status-error" />
+              {formatTime(recordingSeconds)}
+            </span>
+            <IconButton
+              size="lg"
+              emphasis="solid"
+              tooltip="Stop recording"
+              tooltipSide="top"
+              onClick={onMicClick}
+              aria-label="Stop recording"
+              className={solidAction}
+            >
+              <StopIcon className="size-3.5" />
+            </IconButton>
+          </div>
+        ) : isGenerating && !hasPrompt ? (
+          <IconButton
+            size="lg"
+            emphasis="solid"
+            tooltip="Stop"
+            tooltipSide="top"
+            onClick={onStop}
+            aria-label="Stop generation"
+            className={solidAction}
+          >
+            <StopIcon className="size-3.5" />
+          </IconButton>
+        ) : !hasPrompt ? (
+          <IconButton
+            size="lg"
+            tooltip={canRecord ? 'Record voice message' : 'Voice input unavailable'}
+            tooltipSide="top"
+            disabled={!hasApiKey || !canRecord}
+            onClick={onMicClick}
+            aria-label="Voice input"
+            className={subtleAction}
+          >
+            <MicIcon className="size-4" />
+          </IconButton>
+        ) : (
+          <IconButton
+            size="lg"
+            emphasis="solid"
+            tooltip={isGenerating ? 'Queue message' : 'Send'}
+            tooltipSide="top"
+            disabled={!canSend}
+            onClick={onSend}
+            aria-label={isGenerating ? 'Queue message' : 'Send'}
+            className={`${solidAction} ${disabledSolidAction}`}
+          >
+            <ArrowUpIcon className="size-4" />
+          </IconButton>
+        )}
+      </div>
+    </div>
+  )
+}

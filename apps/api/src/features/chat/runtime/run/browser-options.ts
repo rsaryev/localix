@@ -1,0 +1,107 @@
+/**
+ * Host wiring for the `browser` tool: OPEN the preview and drive the one
+ * the user already has open, through the injected in-page probe. Every capability
+ * is bound to THIS user + session so a relayed command can only reach this
+ * session's probe, and `open` reuses the shared openPreviewCore (no second open
+ * path).
+ *
+ * The lazy auto-open rides the per-session target registry: a background bash job
+ * records the dev-server URL it advertised, and the first drive picks it up via
+ * getTarget. `close` both tells the UI to close the tab and FORGETS the target,
+ * so a later drive won't silently reopen what the user closed.
+ *
+ * A `plugin:<name>` target is a plugin's workbench view, not a page: nothing is served or
+ * proxied for it. Opening it only records the target; the workbench claims every command for it
+ * and opens the view itself (`contracts/plugin-view-target.ts`).
+ */
+import type { OptionalToolPorts } from '../../../agent-core/tool-registry'
+import { isToolDirect, type RunProfile } from '../../../agent-core/run-shape'
+import { TOOL } from '../../../agent-core/tool-names'
+import {
+  openPreviewCore,
+  type OpenPreviewCoreResult,
+} from '../../../agent-core/tools/preview/open-preview'
+import { parsePluginViewTarget, pluginViewTarget } from '../../../../contracts/plugin-view-target'
+import { sessionScratchDir } from '../../../agent-core/tools/workspace'
+import type { SessionRecord } from '../../repository'
+import type { RunnerDeps } from '../agent-runner-types'
+
+export function buildBrowserOptions(input: {
+  deps: RunnerDeps
+  userId: string
+  session: SessionRecord
+  defaultCwd: string
+  agentProfile: RunProfile
+}): OptionalToolPorts['browser'] {
+  const { deps, userId, session, defaultCwd, agentProfile } = input
+  const previewControl = deps.previewControl
+  if (!isToolDirect(agentProfile, TOOL.browser) || !previewControl) return undefined
+
+  return {
+    send: (command, opts) =>
+      previewControl.send({
+        userId,
+        sessionId: session.id,
+        command: {
+          ...command,
+          previewId:
+            command.action === 'history'
+              ? undefined
+              : (command.previewId ?? deps.previewTargets?.get(userId, session.id)?.previewId),
+        },
+        timeoutMs: opts?.timeoutMs,
+      }),
+    openPreview: async (openInput) => {
+      const plugin = parsePluginViewTarget(openInput.url)
+      const opened = plugin
+        ? openPluginView(plugin)
+        : await openPreviewCore(
+            {
+              userId,
+              sessionId: session.id,
+              streamRegistry: deps.streamRegistry,
+              defaultCwd,
+              // The second root a file may be served from. The prompt sends throwaway render
+              // targets here; without this the tool that renders from a file refused them.
+              scratchDir: sessionScratchDir(session.id),
+            },
+            openInput,
+          )
+      if (opened.ok)
+        deps.previewTargets?.record(userId, session.id, {
+          url: opened.url,
+          previewId: opened.previewId,
+          background: opened.background,
+        })
+      return opened
+    },
+    getTarget: () => deps.previewTargets?.get(userId, session.id),
+    recordTarget: (targetInput) => deps.previewTargets?.record(userId, session.id, targetInput),
+    markOpened: () => deps.previewTargets?.markOpened(userId, session.id),
+    closePreview: (previewIds) => {
+      deps.streamRegistry.publish(userId, session.id, {
+        type: 'preview.closed',
+        sessionId: session.id,
+        previewIds,
+      })
+      if (previewIds.includes(deps.previewTargets?.get(userId, session.id)?.previewId ?? ''))
+        deps.previewTargets?.clear(userId, session.id)
+    },
+  }
+}
+
+/** A plugin view "opens" by being addressed: the workbench opens the tab on the first command. */
+function openPluginView(plugin: string): OpenPreviewCoreResult {
+  const target = pluginViewTarget(plugin)
+  return {
+    ok: true,
+    url: target,
+    previewId: target,
+    title: plugin,
+    version: 0,
+    frameBlocked: false,
+    autoServed: false,
+    background: false,
+    content: `The "${plugin}" plugin's view, open in its own workbench tab — not a web page. Drive it with snapshot, take_screenshot and steps (click, type, press, scroll) and read its errors with console; evaluate and viewport are not available on it.`,
+  }
+}

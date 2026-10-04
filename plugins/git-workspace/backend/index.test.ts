@@ -1,0 +1,13 @@
+import { describe, expect, test } from 'bun:test'
+
+import type { PluginContext } from '@localixai/plugin-sdk/backend'
+
+import { register } from './index'
+
+describe('Git Workspace plugin registration', () => {
+  test('stays inert during generic inspection without host workspace services', async () => {
+    const registration = await register({ host: undefined } as PluginContext)
+
+    expect(registration).toEqual({ backend: [], tools: [] })
+  })
+})

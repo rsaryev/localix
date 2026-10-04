@@ -1,0 +1,8 @@
+# Generated third-party runtime: keep it reviewable, but exclude it from language
+# statistics and collapse its diffs on GitHub by default.
+vendor/monaco-editor-runtime/esm/** linguist-vendored linguist-generated
+vendor/monaco-editor-runtime/LICENSE linguist-vendored
+vendor/monaco-editor-runtime/ThirdPartyNotices.txt linguist-vendored
+
+# Pi is a committed upstream source snapshot with a documented Localix delta.
+vendor/pi/** linguist-vendored

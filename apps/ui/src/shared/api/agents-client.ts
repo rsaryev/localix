@@ -1,0 +1,77 @@
+import { assertOk, client, unwrap } from './internal'
+import type { AgentRecord, AgentSummary, AgentRecordInput } from './contracts'
+import type { PublishRegistrationPolicy } from '@localixai/api/client'
+
+/** '' / null → no query; otherwise the exact project scope the name lives in. */
+const scopeQuery = (projectId: string | null) => (projectId ? { projectId } : {})
+
+/**
+ * Managed-Agents registry: the per-record verbs. Listing them and switching one on
+ * or off both live on the capability endpoints. Spread into `backendClient`. Nothing
+ * is auto-enabled — a created agent is on, an imported or hand-dropped one stays off
+ * until toggled. Every per-name call carries the scope, because one name may exist
+ * globally AND inside a project.
+ */
+export const agentsApi = {
+  async publishAgentPolicy(agentId: string, projectId: string, input: PublishRegistrationPolicy) {
+    return unwrap<{ agentId: string; registrationRevision: number; policyRevision: number }>(
+      await client.rpc.agents[':name']['policy-review'].$put({
+        param: { name: agentId },
+        query: scopeQuery(projectId),
+        json: input,
+      }),
+    )
+  },
+  async createAgent(input: AgentRecordInput): Promise<AgentSummary> {
+    return unwrap<AgentSummary>(await client.rpc.agents.$post({ json: input as never }))
+  },
+
+  async getAgent(name: string, projectId: string | null): Promise<AgentSummary> {
+    return unwrap<AgentSummary>(
+      await client.rpc.agents[':name'].$get({ param: { name }, query: scopeQuery(projectId) }),
+    )
+  },
+
+  async updateAgent(
+    name: string,
+    input: AgentRecordInput,
+    projectId: string | null,
+  ): Promise<AgentSummary> {
+    return unwrap<AgentSummary>(
+      await client.rpc.agents[':name'].$put({
+        param: { name },
+        query: scopeQuery(projectId),
+        json: input as never,
+      }),
+    )
+  },
+
+  async deleteAgent(name: string, projectId: string | null): Promise<void> {
+    await assertOk(
+      await client.rpc.agents[':name'].$delete({ param: { name }, query: scopeQuery(projectId) }),
+    )
+  },
+
+  /** The definition this installation ships for a system agent — read-only, writes nothing. */
+  async agentDefaults(name: string): Promise<AgentRecord> {
+    return unwrap<AgentRecord>(await client.rpc.agents[':name'].defaults.$get({ param: { name } }))
+  },
+
+  /** Drop the user's override of a system agent; the shipped definition applies again. */
+  async resetAgent(name: string): Promise<AgentSummary> {
+    return unwrap<AgentSummary>(await client.rpc.agents[':name'].reset.$post({ param: { name } }))
+  },
+
+  async duplicateAgent(
+    name: string,
+    newName: string,
+    projectId: string | null,
+  ): Promise<AgentSummary> {
+    return unwrap<AgentSummary>(
+      await client.rpc.agents[':name'].duplicate.$post({
+        param: { name },
+        json: { name: newName, projectId },
+      }),
+    )
+  },
+}

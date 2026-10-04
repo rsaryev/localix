@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/plugins/**/ui/**",
+        "$TURBO_ROOT$/plugins/**/backend/**"
+      ]
+    },
+    "type-check": {
+      "dependsOn": ["^build", "docs:gen"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/plugins/**/ui/**",
+        "$TURBO_ROOT$/plugins/**/backend/**"
+      ],
+      "outputs": []
+    }
+  }
+}

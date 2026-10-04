@@ -1,0 +1,576 @@
+name: Release
+
+# One release pipeline for the desktop app — one distributable product whose
+# bundle contains UI + API + CLI. Platform installers and updater bundles are
+# published as GitHub Release assets.
+#
+#   • desktop apps → native installers per platform (.dmg / .exe / .AppImage /
+#                    .deb), uploaded with signed updater bundles.
+# There is no standalone npm release: the CLI, API, UI, and internal runtime
+# packages ship inside the desktop bundle.
+#
+# Trigger: dispatch this reviewed workflow from `main` with a semver tag input.
+# Tags do not auto-run release code because a tag can point at an unmerged commit.
+#
+# Release flow: a DRAFT release is created first → the per-platform matrix builds
+# upload their assets → the draft is published only at the end. A stable release
+# becomes latest; a prerelease remains non-latest.
+#
+# Required secrets:
+#   RELEASE_TOKEN  — GitHub PAT with `contents:write` on RELEASE_REPO. Needed
+#                    because this code repo differs from the public release repo.
+#                    Before running this workflow, mirror the exact source commit
+#                    and create the same tag pointing to that commit in RELEASE_REPO; the verifier
+#                    rejects a missing tag or a tag that resolves elsewhere.
+#                    If releases move into this repo, set RELEASE_REPO to
+#                    ${{ github.repository }} and supply a token with contents:write.
+# Required for public macOS releases — Developer ID signing + notarization.
+# `tauri:release` fails before building when any notarization value is absent:
+#   APPLE_CERTIFICATE           — base64 of the "Developer ID Application" .p12
+#   APPLE_CERTIFICATE_PASSWORD  — the .p12 export password
+#   APPLE_SIGNING_IDENTITY      — "Developer ID Application: NAME (TEAMID)"
+#   APPLE_API_KEY               — App Store Connect API key id
+#   APPLE_API_ISSUER            — the API key issuer uuid
+#   APPLE_API_KEY_B64           — base64-encoded App Store Connect .p8 file
+#   APPLE_API_KEY_PATH is derived from APPLE_API_KEY_B64 at runtime (base64 .p8)
+# Required — updater signing. Verification fails before publication if signatures are absent:
+#   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+# Configure the `release` GitHub Environment for main-only deployments with
+# required reviewers and keep every release/signing secret scoped only there.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.2.3)'
+        required: true
+
+env:
+  RELEASE_REPO: rsaryev/localix
+  RUST_TOOLCHAIN: 1.96.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  # ── prepare: validate the tag and pin it to one source commit ─────────────────
+  prepare:
+    name: Resolve release source
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+      is_prerelease: ${{ steps.tag.outputs.is_prerelease }}
+      commit: ${{ steps.tag.outputs.commit }}
+    steps:
+      - name: Require the protected main workflow
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
+            echo 'Dispatch the release workflow from the protected main branch' >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+
+      # Event inputs are untrusted strings. Pass them as data through the
+      # environment, validate strict semver, and resolve the tag to one commit.
+      - name: Resolve tagged source
+        id: tag
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.tag }}
+          RELEASE_TAG_REF: ${{ github.ref_name }}
+        run: bun scripts/resolve-release-ref.mjs >> "$GITHUB_OUTPUT"
+
+  # ── verify: rerun repository validation against the exact tagged source ─────
+  verify:
+    name: Verify tagged source
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Install runtime test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep zsh
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Before the gates: architecture, type-check and dead-code read built `dist` and generated
+      # output, and on a clean checkout they fail without it (see ci.yml).
+      - name: Build
+        run: bun run build
+
+      - name: Verify repository and dependencies
+        run: |
+          bun run check:vendor
+          bun run check:public
+          bun run check:release
+          bun run check:architecture
+          bun run check:docs
+          bun run check:audit
+          bun run format:check
+
+      - name: Verify code
+        run: |
+          bun run type-check
+          bun run check:tests
+          bun run lint
+          bun run check:deadcode
+          # Plugin validation resolves the SDK's built declarations on a clean checkout.
+          bun run check:plugins
+          bun run test
+          bun run check:globals
+          bun run test:dropins
+
+  verify-rust:
+    name: Verify tagged Rust source
+    needs: [prepare, verify]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libxdo-dev libssl-dev build-essential file
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal \
+            --component clippy --component rustfmt
+          rustup override set "$RUST_TOOLCHAIN"
+
+      # Same cache key as the build legs below, so the release pipeline warms the
+      # dependency graph once instead of compiling it from scratch in every job.
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: './apps/desktop-tauri/src-tauri -> target'
+
+      - name: Check Rust
+        run: bun run check:rust
+
+  # ── verify-signing-key: prove the private key matches the shipped client ─────
+  verify-signing-key:
+    name: Verify updater signing key
+    needs: [prepare, verify]
+    runs-on: ubuntu-22.04
+    environment: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libxdo-dev libssl-dev build-essential file
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: './apps/desktop-tauri/src-tauri -> target'
+
+      - name: Install signing dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Read committed updater public key
+        shell: bash
+        run: |
+          UPDATER_PUBLIC_KEY="$(
+            bun -e 'const c = await Bun.file("apps/desktop-tauri/src-tauri/tauri.conf.json").json(); process.stdout.write(c.plugins.updater.pubkey)'
+          )"
+          echo "TAURI_UPDATER_PUBLIC_KEY=$UPDATER_PUBLIC_KEY" >> "$GITHUB_ENV"
+
+      # The private key is exposed only to the official Tauri signer invocation.
+      - name: Sign updater probe
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          printf '%s\n' 'Localix updater signing probe' > "$RUNNER_TEMP/updater-signing-probe"
+          ./node_modules/.bin/tauri signer sign "$RUNNER_TEMP/updater-signing-probe"
+
+      - name: Verify probe with shipped public key
+        run: |
+          cargo run --quiet --locked \
+            --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml \
+            --example verify_updater_signature -- \
+            "$RUNNER_TEMP/updater-signing-probe" \
+            "$RUNNER_TEMP/updater-signing-probe.sig"
+
+  # ── draft-release: mutate GitHub only after the tagged source is green ────────
+  draft-release:
+    name: Create draft release
+    needs: [prepare, verify, verify-rust, verify-signing-key]
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify release tag and existing draft
+        id: target
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: bun scripts/verify-release-target.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Create draft release
+        if: steps.target.outputs.release_exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
+        run: |
+          PRERELEASE_ARGS=()
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            PRERELEASE_ARGS+=(--prerelease)
+          fi
+          gh release create "$TAG" --repo "$RELEASE_REPO" --draft --verify-tag \
+            --latest=false "${PRERELEASE_ARGS[@]}" \
+            --title "$TAG" --notes "Localix $TAG"$'\n\n'"Source commit: $SOURCE_COMMIT"
+
+  # ── build-desktop: one NATIVE build per platform → upload installers ─────────
+  # Native runners per arch (no cross-compile) so the bundled API sidecar (a real
+  # Bun binary staged by prepare-sidecar.mjs, named by the host triple) always
+  # matches the target arch.
+  build-desktop:
+    name: Desktop ${{ matrix.name }}
+    needs: [prepare, verify, draft-release]
+    runs-on: ${{ matrix.os }}
+    environment: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, name: macos-arm64 }
+          - { os: macos-15-intel, name: macos-x64 }
+          - { os: windows-latest, name: win-x64 }
+          - { os: ubuntu-22.04, name: linux-x64 }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libxdo-dev libssl-dev build-essential file
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          # Keep release artifacts on the reviewed packageManager toolchain.
+          bun-version: 1.3.14
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: './apps/desktop-tauri/src-tauri -> target'
+
+      # Keep third-party install hooks disabled even though secrets are scoped to
+      # the native build step below and are not visible here.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Stamp version into the desktop config
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          bun -e '
+            const fs = require("fs");
+            const v = process.env.RELEASE_VERSION;
+            const cf = "apps/desktop-tauri/src-tauri/tauri.conf.json";
+            const c = JSON.parse(fs.readFileSync(cf, "utf8"));
+            c.version = v;
+            fs.writeFileSync(cf, JSON.stringify(c, null, 2) + "\n");
+            const tf = "apps/desktop-tauri/src-tauri/Cargo.toml";
+            let t = fs.readFileSync(tf, "utf8");
+            t = t.replace(/^version = ".*"/m, `version = "${v}"`);
+            fs.writeFileSync(tf, t);
+          '
+
+      # Prebuild the workspace dependencies and API dist the UI build resolves.
+      # prepare-sidecar (tauri beforeBuildCommand) then builds the UI + API sidecar.
+      - name: Build workspace packages
+        run: bunx turbo build --filter=@localixai/api
+
+      - name: Decode Apple API key
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_API_KEY_B64: ${{ secrets.APPLE_API_KEY_B64 }}
+        run: |
+          if [ -z "$APPLE_API_KEY_B64" ]; then
+            echo "APPLE_API_KEY_B64 is required for a macOS release" >&2
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$APPLE_API_KEY_B64" | base64 --decode > "$RUNNER_TEMP/apple-api-key.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/apple-api-key.p8" >> "$GITHUB_ENV"
+
+      # prepare-sidecar signs nested native resources from Tauri's beforeBuildCommand.
+      # Tauri imports APPLE_CERTIFICATE later, during bundling, so the identity must
+      # already exist before the command starts on a clean runner.
+      - name: Import Apple signing certificate before sidecar staging
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$APPLE_CERTIFICATE" ] || [ -z "$APPLE_CERTIFICATE_PASSWORD" ] || [ -z "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD and APPLE_SIGNING_IDENTITY are required" >&2
+            exit 1
+          fi
+          umask 077
+          CERTIFICATE_PATH="$RUNNER_TEMP/localix-signing.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/localix-signing.keychain-db"
+          KEYCHAIN_LIST_PATH="$RUNNER_TEMP/localix-keychain-search-list.txt"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          security list-keychains -d user | tr -d '"' | sed 's/^[[:space:]]*//' > "$KEYCHAIN_LIST_PATH"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | \
+            grep -F -- "$APPLE_SIGNING_IDENTITY"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" \
+            $(security list-keychains -d user | tr -d '"')
+
+      - name: Build desktop release and signed updater artifacts
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: cd apps/desktop-tauri && bun run tauri:release
+
+      - name: Remove temporary Apple signing material
+        if: always() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/localix-signing.keychain-db"
+          KEYCHAIN_LIST_PATH="$RUNNER_TEMP/localix-keychain-search-list.txt"
+          if [ -s "$KEYCHAIN_LIST_PATH" ]; then
+            ORIGINAL_KEYCHAINS=()
+            while IFS= read -r keychain; do
+              ORIGINAL_KEYCHAINS+=("$keychain")
+            done < "$KEYCHAIN_LIST_PATH"
+            security list-keychains -d user -s "${ORIGINAL_KEYCHAINS[@]}" || true
+          fi
+          security delete-keychain "$KEYCHAIN_PATH" || true
+          rm -f \
+            "$RUNNER_TEMP/localix-signing.p12" \
+            "$RUNNER_TEMP/apple-api-key.p8" \
+            "$KEYCHAIN_LIST_PATH"
+
+      - name: Collect release assets
+        id: collect
+        shell: bash
+        run: |
+          BUNDLE="apps/desktop-tauri/src-tauri/target/release/bundle"
+          mkdir -p dist-assets
+          # Copy every configured installer and signed updater artifact.
+          find "$BUNDLE" -type f \
+            \( -name '*.dmg' -o -name '*.exe' \
+               -o -name '*.AppImage' -o -name '*.deb' \
+               -o -name '*.app.tar.gz' -o -name '*.sig' \) \
+            -exec cp {} dist-assets/ \; || true
+          # Tauri names the macOS updater tarball WITHOUT an arch tag
+          # ("Localix.app.tar.gz"), so the two mac legs would clobber each
+          # other's upload and latest.json would key the survivor to the wrong
+          # platform. Rename to embed the arch (matches the *aarch64*/*x86_64*
+          # cases in the latest.json step). DMGs already carry the arch.
+          if [[ "${{ matrix.name }}" == macos-* ]]; then
+            ARCH=$([[ "${{ matrix.name }}" == "macos-arm64" ]] && echo aarch64 || echo x86_64)
+            shopt -s nullglob
+            for f in dist-assets/*.app.tar.gz dist-assets/*.app.tar.gz.sig; do
+              base="${f##*/}"
+              mv "$f" "dist-assets/${base/.app.tar.gz/_${ARCH}.app.tar.gz}"
+            done
+          fi
+          require_match() {
+            compgen -G "$1" >/dev/null || {
+              echo "Missing required release artifact for ${{ matrix.name }}: $1" >&2
+              exit 1
+            }
+          }
+          case "${{ matrix.name }}" in
+            macos-*)
+              require_match 'dist-assets/*.dmg'
+              require_match 'dist-assets/*.app.tar.gz'
+              require_match 'dist-assets/*.app.tar.gz.sig'
+              ;;
+            win-x64)
+              require_match 'dist-assets/*.exe'
+              require_match 'dist-assets/*.exe.sig'
+              ;;
+            linux-x64)
+              require_match 'dist-assets/*.AppImage'
+              require_match 'dist-assets/*.AppImage.sig'
+              # A .deb install updates from its own signed package (`linux-x86_64-deb`
+              # in latest.json); without the signature it would be stranded on the
+              # AppImage fallback, which the deb installer rejects.
+              require_match 'dist-assets/*.deb'
+              require_match 'dist-assets/*.deb.sig'
+              ;;
+          esac
+          echo "Collected:"; ls -la dist-assets || true
+
+      - name: Upload release assets to draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          MATRIX_NAME: ${{ matrix.name }}
+        run: |
+          shopt -s nullglob
+          FILES=(dist-assets/*)
+          if [ ${#FILES[@]} -eq 0 ]; then
+            echo "No release assets produced for $MATRIX_NAME" >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" \
+            "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
+
+  # ── publish-desktop: flip the draft to the public "latest" release ───────────
+  publish-desktop:
+    name: Publish release
+    needs: [prepare, build-desktop]
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Reverify release tag and draft provenance
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: bun scripts/verify-release-target.mjs
+
+      # Assemble the updater manifest ONCE, after every platform leg has uploaded
+      # its signed artifacts, so parallel matrix uploads can't clobber it. Each
+      # `<artifact>.sig` on the release is a detached minisign signature (produced
+      # by `createUpdaterArtifacts`); we pair it with its download URL and emit the
+      # `latest.json` the `plugins.updater.endpoints` URL resolves to. Requires the
+      # signing key (TAURI_SIGNING_PRIVATE_KEY) to have been set on the build legs.
+      # Missing signatures are a failed release, never a silently broken updater.
+      - name: Generate updater latest.json
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_SIGNATURE_DIR: ${{ github.workspace }}/updater/signatures
+          RELEASE_ASSET_LIST: ${{ github.workspace }}/updater/assets.txt
+          RELEASE_OUTPUT: ${{ github.workspace }}/updater/latest.json
+        run: |
+          set -euo pipefail
+          mkdir -p "$RELEASE_SIGNATURE_DIR"
+          gh release download "$RELEASE_TAG" --repo "$RELEASE_REPO" \
+            --pattern '*.sig' --dir "$RELEASE_SIGNATURE_DIR"
+          gh release view "$RELEASE_TAG" --repo "$RELEASE_REPO" \
+            --json assets --jq '.assets[].name' > "$RELEASE_ASSET_LIST"
+          RELEASE_PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export RELEASE_PUBLISHED_AT
+          bun scripts/build-updater-manifest.mjs
+          gh release upload "$RELEASE_TAG" "$RELEASE_OUTPUT" \
+            --clobber --repo "$RELEASE_REPO"
+
+      - name: Publish stable or prerelease
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
+        run: |
+          bun scripts/verify-release-target.mjs
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            gh release edit "$TAG" --repo "$RELEASE_REPO" --verify-tag \
+              --draft=false --prerelease --latest=false
+          else
+            gh release edit "$TAG" --repo "$RELEASE_REPO" --verify-tag \
+              --draft=false --prerelease=false --latest
+          fi

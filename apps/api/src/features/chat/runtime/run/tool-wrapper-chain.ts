@@ -1,0 +1,67 @@
+import type { AgentTool } from '@localixai/agent/agents'
+
+import { wrapToolsWithFailureGuard } from '../../../agent-core/tools/failure-guard'
+import { wrapToolsWithMistakeBreaker } from '../../../agent-core/tools/mistake-breaker'
+import { wrapToolsWithRepeatCallReminder } from '../../../agent-core/tools/repeat-call-reminder'
+import { wrapToolsWithTimeoutPromoter } from '../../../agent-core/tools/timeout-promoter'
+import { wrapToolsWithCcHooks } from '../../../cc-hooks'
+import { wrapToolsWithHooks } from '../../../plugins/hooks'
+
+/**
+ * The wrapper chain, innermost-first, as a value rather than a sentence.
+ *
+ * Anything that DESCRIBES the assembly (the composition dump) reads this list instead of
+ * restating the order in prose. Each entry names the FUNCTION it stands for as well as its
+ * label, so the link is mechanical: a test asserts this set equals the set of
+ * `wrapToolsWith*` calls in `tool-assembly.ts`, which is what makes adding a wrapper without
+ * listing it here a failing test rather than a quietly wrong report.
+ *
+ * It lives apart from the assembly because it is a DESCRIPTION of it, and because folding it
+ * in pushed that file past the repo's size ratchet. `applyToolWrapperChain` below builds what
+ * the list describes, so the two cannot disagree.
+ */
+export const TOOL_WRAPPER_CHAIN = [
+  { wrapper: 'wrapToolsWithHooks', label: 'plugin-hooks' },
+  { wrapper: 'wrapToolsWithCcHooks', label: 'cc-hooks' },
+  { wrapper: 'wrapToolsWithTimeoutPromoter', label: 'timeout-promoter' },
+  { wrapper: 'wrapToolsWithFailureGuard', label: 'failure-guard' },
+  { wrapper: 'wrapToolsWithRepeatCallReminder', label: 'repeat-call-reminder' },
+  { wrapper: 'wrapToolsWithMistakeBreaker', label: 'mistake-breaker' },
+] as const
+
+/**
+ * Apply the chain, in the order this module declares it.
+ *
+ * Here rather than at the assembly site, so the order and its application cannot disagree:
+ * the list above is what the composition dump reports, and a chain that was described in one
+ * place and built in another is the drift the anti-drift test exists to catch.
+ *
+ * Why the order is what it is:
+ *  - plugin hooks innermost, then CC hooks, so a PreToolUse deny happens before anything
+ *    downstream gets to observe or time the call;
+ *  - the timeout promoter next, so the three guards see a promotion as the ordinary
+ *    non-error result it is rather than as the timeout it replaced;
+ *  - failure guard, then the repeat-call reminder, then the cross-reason breaker: each
+ *    watches a failure the one before it is blind to, and the outermost annotates last.
+ *    The failure guard is also the one that turns a THROWN tool error into a result (the
+ *    agent loop's own conversion happens outside this whole chain, so without it none of
+ *    the three counts a throw) — which is why it, and not one of the other two, is the
+ *    innermost of them.
+ */
+export function applyToolWrapperChain(
+  tools: readonly AgentTool[],
+  input: {
+    pluginHooks: Parameters<typeof wrapToolsWithHooks>[1]
+    pluginHookOptions: Parameters<typeof wrapToolsWithHooks>[2]
+    ccHooks: Parameters<typeof wrapToolsWithCcHooks>[1]
+    logger: Parameters<typeof wrapToolsWithCcHooks>[2]
+  },
+): AgentTool[] {
+  const hooked = wrapToolsWithHooks(tools, input.pluginHooks, input.pluginHookOptions)
+  const ccHooked = wrapToolsWithCcHooks(hooked, input.ccHooks, input.logger)
+  return wrapToolsWithMistakeBreaker(
+    wrapToolsWithRepeatCallReminder(
+      wrapToolsWithFailureGuard(wrapToolsWithTimeoutPromoter(ccHooked)),
+    ),
+  )
+}

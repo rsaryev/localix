@@ -1,0 +1,349 @@
+// ─── On-demand injecting reverse proxy (for dev servers we don't serve) ──────
+//
+// A Vite/Next/etc. dev server is a cross-origin page we can't inject into from
+// the host. To enable the element picker WITHOUT touching the project's files,
+// we forward the whole dev server through a tiny per-origin proxy on its own
+// ephemeral port and inject the probe into HTML responses on the way through —
+// the exact server-side analog of how we inject into static files we serve.
+// Everything (assets, XHR) forwards same-origin to the proxy, so no CORS. HMR
+// websockets ARE proxied too (see the `websocket` relay below), so the proxy is a
+// transparent superset of the direct view — hot-reload keeps working while engaged,
+// which lets the UI default external dev-server previews to the probe-enabled view.
+
+import { escapeAttr, injectProbeIntoHtml } from './probe-inject'
+import { createPreviewServerCache } from './preview-server-cache'
+
+/** One proxy server per upstream origin, reused across calls (like the static server). */
+const proxyServers = createPreviewServerCache('proxy')
+
+/**
+ * The proxy buffers non-GET request bodies once so a forwarded request remains replayable.
+ * Bound that allocation at the socket server, before `arrayBuffer()` can materialize it.
+ * 32 MiB still accommodates ordinary local dev uploads while rejecting accidental/runaway bodies.
+ */
+export const PREVIEW_PROXY_MAX_REQUEST_BODY_BYTES = 32 * 1024 * 1024
+
+const HOP_BY_HOP = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+  'content-encoding',
+  'content-length',
+])
+// Policy headers that would defeat the proxy's whole purpose (embed the page in our
+// iframe + inject the inline probe): a strict CSP blocks our inline <script>, and
+// X-Frame-Options/frame-ancestors block iframing entirely. Safe to drop for a local
+// dev preview we render ourselves.
+const FRAME_BLOCKERS = new Set([
+  'content-security-policy',
+  'content-security-policy-report-only',
+  'x-frame-options',
+])
+
+/**
+ * Build the downstream response headers: drop hop-by-hop + frame-blocking policy
+ * headers, but preserve EACH `Set-Cookie` separately. `Headers.forEach`/`get` comma-join
+ * multiple Set-Cookie into one string, which corrupts any cookie whose value contains a
+ * comma (e.g. an `Expires` date) — breaking auth on a proxied dev preview.
+ */
+export function forwardProxyHeaders(upstream: Headers): Headers {
+  const headers = new Headers()
+  upstream.forEach((v, k) => {
+    const lk = k.toLowerCase()
+    if (lk === 'set-cookie') return // re-added individually below
+    if (!HOP_BY_HOP.has(lk) && !FRAME_BLOCKERS.has(lk)) headers.set(k, v)
+  })
+  for (const cookie of upstream.getSetCookie?.() ?? []) headers.append('set-cookie', cookie)
+  return headers
+}
+
+/** Per-connection relay state carried on a proxied HMR WebSocket. */
+export interface WsRelay {
+  /** Upstream dev-server ws:// URL this browser socket is bridged to. */
+  target: string
+  /** Negotiated subprotocol echoed from the browser (e.g. Vite's `vite-hmr`). */
+  protocol?: string
+  /** Client socket to the upstream dev server (created on `open`). */
+  upstream?: WebSocket
+  /** Browser→upstream messages received before the upstream socket is open. */
+  queue: (string | ArrayBuffer | Uint8Array)[]
+  /** Exact UTF-8/binary bytes retained in {@link queue}. */
+  queueBytes: number
+}
+
+export const PREVIEW_WS_MAX_QUEUED_FRAMES = 128
+export const PREVIEW_WS_MAX_BUFFERED_BYTES = 1024 * 1024
+const PREVIEW_WS_BACKPRESSURE_CLOSE_CODE = 1013
+const PREVIEW_WS_BACKPRESSURE_REASON = 'Preview relay backpressure'
+
+type PreviewWsMessage = string | ArrayBuffer | Uint8Array
+
+export function previewWsMessageBytes(message: PreviewWsMessage): number {
+  return typeof message === 'string'
+    ? new TextEncoder().encode(message).byteLength
+    : message.byteLength
+}
+
+/**
+ * Send immediately when the upstream can accept the frame, otherwise retain a
+ * strictly bounded pre-connect queue. `false` asks the caller to close both ends.
+ */
+export function sendOrQueuePreviewWsMessage(relay: WsRelay, message: PreviewWsMessage): boolean {
+  const bytes = previewWsMessageBytes(message)
+  if (bytes > PREVIEW_WS_MAX_BUFFERED_BYTES) return false
+  const upstream = relay.upstream
+  if (upstream?.readyState === WebSocket.OPEN) {
+    if (upstream.bufferedAmount + bytes > PREVIEW_WS_MAX_BUFFERED_BYTES) return false
+    upstream.send(message as unknown as ArrayBuffer)
+    return true
+  }
+  if (
+    relay.queue.length >= PREVIEW_WS_MAX_QUEUED_FRAMES ||
+    relay.queueBytes + bytes > PREVIEW_WS_MAX_BUFFERED_BYTES
+  ) {
+    return false
+  }
+  relay.queue.push(message)
+  relay.queueBytes += bytes
+  return true
+}
+
+function closeBackpressuredRelay(ws: Bun.ServerWebSocket<WsRelay>): void {
+  try {
+    ws.data.upstream?.close(PREVIEW_WS_BACKPRESSURE_CLOSE_CODE, PREVIEW_WS_BACKPRESSURE_REASON)
+  } catch {
+    /* already closing */
+  }
+  try {
+    ws.close(PREVIEW_WS_BACKPRESSURE_CLOSE_CODE, PREVIEW_WS_BACKPRESSURE_REASON)
+  } catch {
+    /* already closing */
+  }
+}
+
+// A freshly-started dev server (just spawned in a background bash job) often isn't
+// bound yet when the iframe first navigates — its connection is REFUSED and the page
+// goes permanently blank (a real cause of the empty-preview churn). Briefly retry the
+// TOP-LEVEL document request so the proxy rides out the bind gap, then fall back to a
+// self-refreshing "starting…" page that recovers on its own once upstream comes up.
+const PROXY_READY_TIMEOUT_MS = 4000
+const PROXY_RETRY_DELAY_MS = 300
+
+/**
+ * Is this a top-level navigation (the document/iframe load) rather than a sub-resource
+ * (script/style/xhr/img)? Only navigations get the wait-ready treatment — retrying every
+ * asset would turn one cold start into a retry storm. Detected via `Sec-Fetch-Dest`
+ * (document|iframe) or, as a fallback, a GET that accepts text/html.
+ */
+function isNavigationRequest(req: Request): boolean {
+  if (req.method !== 'GET') return false
+  const dest = req.headers.get('sec-fetch-dest')
+  if (dest === 'document' || dest === 'iframe') return true
+  if (dest) return false // a known non-navigation dest (script/style/…) — never retry
+  return (req.headers.get('accept') ?? '').includes('text/html')
+}
+
+/**
+ * Call `doFetch`, retrying on a thrown connection error (upstream not bound yet) with a
+ * fixed backoff until a bounded deadline (~3-5s total), then rethrow. A resolved Response
+ * — including an HTTP error like 500 — is returned immediately (only a THROW means "not
+ * listening"). Pure + injectable (`now`/`sleep`) so the retry loop is unit-testable.
+ */
+export async function fetchWithReadyRetry(
+  doFetch: () => Promise<Response>,
+  opts: {
+    timeoutMs?: number
+    delayMs?: number
+    now?: () => number
+    sleep?: (ms: number) => Promise<void>
+  } = {},
+): Promise<Response> {
+  const timeoutMs = opts.timeoutMs ?? PROXY_READY_TIMEOUT_MS
+  const delayMs = opts.delayMs ?? PROXY_RETRY_DELAY_MS
+  const now = opts.now ?? Date.now
+  const sleep = opts.sleep ?? ((ms) => new Promise<void>((r) => setTimeout(r, ms)))
+  const deadline = now() + timeoutMs
+  let lastErr: unknown
+  for (;;) {
+    try {
+      return await doFetch()
+    } catch (err) {
+      lastErr = err
+      if (now() >= deadline) break
+      await sleep(delayMs)
+    }
+  }
+  throw lastErr
+}
+
+/**
+ * A tiny self-refreshing "starting…" document shown when the upstream dev server still
+ * isn't listening after the bounded wait. Meta-refreshes every second (no probe, no JS)
+ * so the iframe recovers on its own the moment the server binds — instead of a permanent
+ * blank or a bare 502.
+ */
+export function startingPreviewPage(upstreamOrigin: string): Response {
+  const origin = escapeAttr(upstreamOrigin)
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="1"><title>Starting…</title><style>html,body{height:100%;margin:0}body{display:flex;align-items:center;justify-content:center;font:14px/1.5 system-ui,sans-serif;color:#888;background:#0b0b0c}.box{text-align:center}.spinner{width:22px;height:22px;margin:0 auto 12px;border:2px solid #333;border-top-color:#888;border-radius:50%;animation:spin 0.8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="box"><div class="spinner"></div>Waiting for the dev server at ${origin}…</div></body></html>`
+  return new Response(html, {
+    status: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+  })
+}
+
+/** Bridge a browser HMR socket ⇄ the upstream dev server. The upstream client socket is
+ *  opened lazily on `open`; browser messages that arrive before it connects are queued
+ *  and flushed once it does. */
+const websocketRelay: Bun.WebSocketHandler<WsRelay> = {
+  open(ws) {
+    const relay = ws.data
+    const up = relay.protocol
+      ? new WebSocket(
+          relay.target,
+          relay.protocol.split(',').map((p) => p.trim()),
+        )
+      : new WebSocket(relay.target)
+    up.binaryType = 'arraybuffer'
+    relay.upstream = up
+    up.addEventListener('open', () => {
+      // `send` accepts string | BufferSource; Bun's Buffer is typed over the wider
+      // ArrayBufferLike, so cast at the boundary (the value is always wire-sendable).
+      for (const m of relay.queue) {
+        const bytes = previewWsMessageBytes(m)
+        if (up.bufferedAmount + bytes > PREVIEW_WS_MAX_BUFFERED_BYTES) {
+          closeBackpressuredRelay(ws)
+          return
+        }
+        up.send(m as unknown as ArrayBuffer)
+      }
+      relay.queue.length = 0
+      relay.queueBytes = 0
+    })
+    up.addEventListener('message', (e) => {
+      const message = e.data as PreviewWsMessage
+      if (ws.getBufferedAmount() + previewWsMessageBytes(message) > PREVIEW_WS_MAX_BUFFERED_BYTES) {
+        closeBackpressuredRelay(ws)
+        return
+      }
+      ws.send(message)
+    })
+    up.addEventListener('close', () => ws.close())
+    up.addEventListener('error', () => {
+      try {
+        ws.close()
+      } catch {
+        /* already closing */
+      }
+    })
+  },
+  message(ws, message) {
+    if (!sendOrQueuePreviewWsMessage(ws.data, message)) closeBackpressuredRelay(ws)
+  },
+  close(ws) {
+    try {
+      ws.data.upstream?.close()
+    } catch {
+      /* already closed */
+    }
+  },
+}
+
+function ensureProxyServer(upstreamOrigin: string): number {
+  // Upstream ws(s):// origin for HMR — same host, ws↔http / wss↔https.
+  const upstreamWsOrigin = upstreamOrigin.replace(/\/$/, '').replace(/^http/, 'ws')
+  return proxyServers.ensure(upstreamOrigin, () =>
+    Bun.serve<WsRelay>({
+      port: 0,
+      // Loopback only, for the reason spelled out in `preview-static.ts`: Bun binds `0.0.0.0` by
+      // default, and this proxy fronts the user's own dev server.
+      hostname: '127.0.0.1',
+      maxRequestBodySize: PREVIEW_PROXY_MAX_REQUEST_BODY_BYTES,
+      async fetch(req, srv) {
+        const reqUrl = new URL(req.url)
+        // HMR / any app WebSocket: upgrade here and bridge to the upstream dev server,
+        // so hot-reload survives while the page is loaded through the proxy.
+        if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+          const protocol = req.headers.get('sec-websocket-protocol') ?? undefined
+          const upgraded = srv.upgrade(req, {
+            data: {
+              target: upstreamWsOrigin + reqUrl.pathname + reqUrl.search,
+              protocol,
+              queue: [],
+              queueBytes: 0,
+            },
+            // Echo the requested subprotocol so the browser handshake completes (Vite HMR
+            // negotiates `vite-hmr`); the upstream socket is opened with the same value.
+            headers: protocol
+              ? { 'Sec-WebSocket-Protocol': protocol.split(',')[0]!.trim() }
+              : undefined,
+          })
+          if (upgraded) return undefined as unknown as Response // handled by the websocket relay
+          return new Response('WebSocket upgrade failed', { status: 400 })
+        }
+        const target = upstreamOrigin.replace(/\/$/, '') + reqUrl.pathname + reqUrl.search
+        const isNavigation = isNavigationRequest(req)
+        // GET/HEAD have no body; anything else is buffered ONCE here (a retry can't re-read
+        // a consumed stream), but only navigations (always GET) ever retry, so this is safe.
+        const body =
+          req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer()
+        const doFetch = () =>
+          fetch(target, {
+            method: req.method,
+            headers: req.headers,
+            body,
+            // Follow redirects INTERNALLY so the browser stays on the proxy origin (a
+            // forwarded Location would bounce the iframe back to the probe-less dev server,
+            // and `manual` returns an opaque, unreadable redirect anyway).
+            redirect: 'follow',
+          })
+        let upstream: Response
+        try {
+          // Only the top-level document waits out a cold dev server; sub-resources fail fast.
+          upstream = isNavigation ? await fetchWithReadyRetry(doFetch) : await doFetch()
+        } catch {
+          // Navigation that never came up → a self-refreshing "starting…" page (recovers
+          // once upstream binds); a sub-resource → the bare 502 it always returned.
+          return isNavigation
+            ? startingPreviewPage(upstreamOrigin)
+            : new Response(`Preview upstream unreachable: ${upstreamOrigin}`, { status: 502 })
+        }
+        const headers = forwardProxyHeaders(upstream.headers)
+        const ct = upstream.headers.get('content-type') ?? ''
+        if (ct.includes('text/html')) {
+          const injected = await injectProbeIntoHtml(await upstream.text())
+          headers.set('content-type', 'text/html; charset=utf-8')
+          return new Response(injected, { status: upstream.status, headers })
+        }
+        return new Response(upstream.body, { status: upstream.status, headers })
+      },
+      websocket: websocketRelay,
+    }),
+  )
+}
+
+/**
+ * For an external http(s) preview, returns a same-origin proxied URL that serves
+ * the dev server with the probe injected — or `undefined` if disabled. The path +
+ * query of the original URL are preserved so the right route loads.
+ */
+export function buildInjectedPreviewUrl(rawUrl: string): string | undefined {
+  let u: URL
+  try {
+    u = new URL(rawUrl)
+  } catch {
+    return undefined
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return undefined
+  const port = ensureProxyServer(u.origin)
+  return `http://localhost:${port}${u.pathname}${u.search}`
+}
+
+/** Stop every cached injecting-proxy server (idempotent). */
+export function disposeProxyServers(): void {
+  proxyServers.dispose()
+}

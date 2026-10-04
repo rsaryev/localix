@@ -1,0 +1,138 @@
+{
+  "./backend": {
+    "bytes": 41796,
+    "shake": {
+      "export": "ASSISTANT_BINDINGS_MAX",
+      "bytes": 31
+    }
+  },
+  "./manifest": {
+    "bytes": 2787
+  },
+  "./navigation": {
+    "bytes": 4073
+  },
+  "./prerequisite": {
+    "bytes": 1974
+  },
+  "./resource-refs": {
+    "bytes": 12111
+  },
+  "./session-resource": {
+    "bytes": 2250
+  },
+  "./typed-error": {
+    "bytes": 911
+  },
+  "./ui": {
+    "bytes": 64203,
+    "shake": {
+      "export": "CSV_CONTENT_TYPE",
+      "bytes": 40
+    }
+  },
+  "./ui-artifact": {
+    "bytes": 976
+  },
+  "./ui/chart-export": {
+    "bytes": 2632
+  },
+  "./ui/charts": {
+    "bytes": 8606
+  },
+  "./ui/classes": {
+    "bytes": 926
+  },
+  "./ui/commands": {
+    "bytes": 760
+  },
+  "./ui/comments": {
+    "bytes": 1085
+  },
+  "./ui/components": {
+    "bytes": 1045
+  },
+  "./ui/file-types": {
+    "bytes": 2166,
+    "shake": {
+      "export": "BINARY_SNIFF_LENGTH",
+      "bytes": 34
+    }
+  },
+  "./ui/focus": {
+    "bytes": 2312,
+    "shake": {
+      "export": "DEFAULT_KEY_POLICY",
+      "bytes": 277
+    }
+  },
+  "./ui/interactions": {
+    "bytes": 1754
+  },
+  "./ui/message-binding-drag": {
+    "bytes": 5997
+  },
+  "./ui/path-tree": {
+    "bytes": 1326
+  },
+  "./ui/prerequisite-recovery": {
+    "bytes": 2535
+  },
+  "./ui/problems": {
+    "bytes": 1529
+  },
+  "./ui/realtime-feed": {
+    "bytes": 3087
+  },
+  "./ui/resource-topics": {
+    "bytes": 630
+  },
+  "./ui/result-count-status": {
+    "bytes": 644
+  },
+  "./ui/runtime": {
+    "bytes": 4130
+  },
+  "./ui/runtime-hooks": {
+    "bytes": 3051
+  },
+  "./ui/segmented-control": {
+    "bytes": 3583
+  },
+  "./ui/session-activity": {
+    "bytes": 1389
+  },
+  "./ui/session-tree": {
+    "bytes": 435
+  },
+  "./ui/shared-resource": {
+    "bytes": 1128
+  },
+  "./ui/stats-charts": {
+    "bytes": 4321
+  },
+  "./ui/storage": {
+    "bytes": 900
+  },
+  "./ui/table": {
+    "bytes": 32
+  },
+  "./ui/testing": {
+    "bytes": 3265
+  },
+  "./ui/transport": {
+    "bytes": 3583
+  },
+  "./ui/use-problem-report": {
+    "bytes": 1725
+  },
+  "./ui/utilities": {
+    "bytes": 3639
+  },
+  "./ui/visibility": {
+    "bytes": 2112
+  },
+  "./ui/work-item-session": {
+    "bytes": 482
+  }
+}

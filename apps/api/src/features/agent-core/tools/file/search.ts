@@ -1,0 +1,390 @@
+import { errorMessage } from '../../../../lib/errors'
+import { basename, dirname } from 'node:path'
+import { stat } from 'node:fs/promises'
+import { z } from 'zod'
+import { defineAgentTool } from '@localixai/agent/agents'
+import { DEFAULT_MAX_LINES } from '@localixai/agent'
+import { TOOL } from '../../tool-names'
+import { MAX_AGENT_SOURCES } from '@localixai/agent/agents'
+import { discoveredFileSource } from '../source-refs'
+import { type ExecutionEnvironment, shellQuote, resolveToolCwd } from '../environment'
+import { localEnvironment } from '../environments/local'
+import { LOCALIX_EXCLUDE_GLOB } from '../environments/ripgrep'
+import {
+  escapeRegex,
+  hasUnescapedRegexMeta,
+  matchedFiles,
+  modelFacingMatches,
+  searchRetries,
+  truncateOutput,
+} from './search-output'
+import { plural } from '../tool-output'
+
+/**
+ * Wall-clock ceiling for one ripgrep invocation.
+ *
+ * `search` shipped with none, and `resolveToolCwd` honours an absolute `cwd`: `search {glob:'**',
+ * cwd:'/'}` walked the whole filesystem with the user's Stop button as the only brake, and the
+ * self-widening retry could run it three more times inside the same tool call. Cancellation was already
+ * wired — it was the ceiling that was missing. `spawnToResult` already returns exit 124 with an honest
+ * `[Timed out after Ns]`, which `interpretRipgrep` surfaces, so a timeout is legible to the model rather
+ * than silent. Generous on purpose: a slow monorepo search must not be cut short, only bounded.
+ */
+export const SEARCH_TIMEOUT_SECONDS = 120
+/** Keep one sentinel beyond the model-facing line cap so truncation is observable. */
+export const FILE_LIST_LIMIT = DEFAULT_MAX_LINES
+import {
+  createSearchDedupStore,
+  searchDedupStub,
+  type SearchDedupStore,
+} from '../../search/search-dedup'
+
+// Re-export the pure search helpers so existing importers (tests) keep their
+// stable `./search` surface.
+export { hasUnescapedRegexMeta } from './search-output'
+
+export const searchToolInputSchema = z.object({
+  query: z
+    .string()
+    .optional()
+    .describe('Ripgrep regex for file contents. Omit it (pass only `glob`) to list files by name.'),
+  cwd: z.string().optional().describe('Directory to search in (defaults to the session root).'),
+  glob: z.string().optional().describe('e.g. "src/**/*.ts": narrows a query, or lists files.'),
+  path: z.string().optional().describe('A file or directory to search in.'),
+  context: z
+    .number()
+    .int()
+    .min(1)
+    .max(10)
+    .optional()
+    .describe('Lines around each hit (2-5 often saves a `read`).'),
+})
+
+export interface SearchToolDetails {
+  query: string
+  cwd: string
+  glob?: string
+  bytes: number
+  truncated: boolean
+  output: string
+}
+
+export function createSearchTool(
+  env: ExecutionEnvironment = localEnvironment,
+  defaultCwd?: string,
+  /**
+   * Is that earlier search's result no longer intact on the model's wire (elided by
+   * context compression)? Same port `read` takes, for the same reason: a stub saying
+   * "scroll up to that search" is only TRUE while the search it points at survives.
+   * Absent ⇒ fall back to stubbing a given search at most once, the safe answer.
+   */
+  isResultElided?: (toolCallId: string) => boolean,
+  /** Repeat-search bookkeeping (see {@link SearchDedupStore}). Private per run by default. */
+  dedup: SearchDedupStore = createSearchDedupStore(),
+) {
+  // TInput/TDetails stated, not inferred — see write.ts: TS defaults TDetails to
+  // `unknown` when any return omits `details`, erasing the SearchToolDetails every
+  // other return site builds.
+  return defineAgentTool<z.infer<typeof searchToolInputSchema>, SearchToolDetails>({
+    name: TOOL.search,
+    label: 'Search Files',
+    activeVerb: 'Searching',
+    description: [
+      'Search file contents with ripgrep, or find files by name (only `glob`). One call returns file:line for every hit; then `read` just that span. Run a few scoped searches in parallel, never one repository-wide scan.',
+      'A repeated search points at the earlier result; a truncated one means narrow the next; an empty one was already widened, so "no matches" is final.',
+    ].join('\n'),
+    inputSchema: searchToolInputSchema,
+    mutates: false,
+    // Read-only ripgrep search — safe to run concurrently with other reads/searches.
+    executionMode: 'parallel',
+
+    async execute(toolCallId, input, signal, onUpdate) {
+      const query = input.query?.trim()
+      // `path` is the field models reach for on their own (a file or a directory to search):
+      // a directory is the cwd, a file is a one-file glob. Live-observed; refusing it cost a
+      // round-trip per search, so the schema now accepts what the model already sends.
+      if (input.path) {
+        const target = resolveToolCwd(input.path, defaultCwd)
+        const entry = await stat(target).catch(() => null)
+        if (entry?.isDirectory()) input = { ...input, cwd: target }
+        else if (entry) input = { ...input, cwd: dirname(target), glob: basename(target) }
+        else return { content: `search: path not found: ${input.path}`, isError: true }
+      }
+      const cwd = resolveToolCwd(input.cwd, defaultCwd)
+
+      // No query: with a glob, LIST file names matching it (`rg --files`) — the
+      // correct file-finding primitive (names, not content), elidable, and a
+      // replacement for `bash find`. (The old advice `query:"." glob:…` was wrong:
+      // `.` matches every line, so it dumped the full content of every file.)
+      if (!query) {
+        if (!input.glob) {
+          return {
+            content:
+              'search needs a query (ripgrep regex), OR a glob to list files by name (e.g. glob:"**/*.ts" or glob:"plugin.json"). To list one directory, use `read` on its path.',
+            isError: true,
+          }
+        }
+        let res: { stdout: string; stderr: string; exitCode: number }
+        try {
+          res = await env.exec(
+            `rg --files --glob ${shellQuote(input.glob)} --glob ${shellQuote(LOCALIX_EXCLUDE_GLOB)} | head -n ${FILE_LIST_LIMIT + 1}`,
+            {
+              cwd,
+              signal,
+              timeout: SEARCH_TIMEOUT_SECONDS,
+              uncapped: true,
+            },
+          )
+        } catch (err) {
+          return { content: `Failed to list files: ${errorMessage(err)}`, isError: true }
+        }
+        const listed = res.stdout.trim()
+        if (listed) {
+          const paths = listed.split('\n')
+          const sourceTruncated = paths.length > FILE_LIST_LIMIT
+          const files = (sourceTruncated ? paths.slice(0, FILE_LIST_LIMIT) : paths).join('\n')
+          const bounded = truncateOutput(files)
+          const details: SearchToolDetails = {
+            query: '',
+            cwd,
+            glob: input.glob,
+            ...bounded,
+            truncated: sourceTruncated || bounded.truncated,
+          }
+          onUpdate?.(details)
+          const count = sourceTruncated ? FILE_LIST_LIMIT : paths.length
+          const countLabel = sourceTruncated
+            ? `More than ${FILE_LIST_LIMIT} files (showing first ${FILE_LIST_LIMIT})`
+            : plural(count, 'file')
+          return {
+            content: `${countLabel} matching glob "${input.glob}":\n${modelFacingMatches(bounded.output, 'file')}`,
+            details,
+          }
+        }
+        if (res.exitCode === 127 || /not found|no such file|ENOENT/i.test(res.stderr)) {
+          return {
+            content: 'ripgrep (rg) is not available here — use `bash` with find for this.',
+            isError: true,
+          }
+        }
+        if (res.exitCode > 1 || res.stderr.trim()) {
+          const reason = res.stderr.trim() || `ripgrep failed (exit code ${res.exitCode})`
+          return { content: `glob error: ${reason.slice(0, 200)}`, isError: true }
+        }
+        return { content: `No files matching glob "${input.glob}" in ${cwd}.` }
+      }
+
+      let rawOutput: string
+      try {
+        rawOutput = await env.searchFiles(query, cwd, {
+          glob: input.glob,
+          context: input.context,
+          signal,
+          timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
+        })
+      } catch (err) {
+        const message = errorMessage(err)
+        // The model meant a literal string and ripgrep read it as a regex it can't even
+        // parse ("patch.matchAll(" → unclosed group). Escaping it is the only thing the
+        // model could do on the next turn, so do it now rather than spend that turn.
+        if (/regex parse error/i.test(message) && hasUnescapedRegexMeta(query)) {
+          const literal = escapeRegex(query)
+          try {
+            const out = await env.searchFiles(literal, cwd, {
+              glob: input.glob,
+              context: input.context,
+              signal,
+              timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
+            })
+            const bounded = truncateOutput(out.trim() ? out : '')
+            const details: SearchToolDetails = {
+              query: literal,
+              cwd,
+              ...(input.glob ? { glob: input.glob } : {}),
+              ...bounded,
+            }
+            onUpdate?.(details)
+            return {
+              content: out.trim()
+                ? `"${query}" is not a valid regex — searched for it as a literal string instead:\n${modelFacingMatches(bounded.output)}`
+                : `"${query}" is not a valid regex. Searched for it as a literal string too — no matches in ${cwd}.`,
+              details,
+            }
+          } catch {
+            // fall through to the generic error below
+          }
+        }
+        // The model pointed `cwd` at a FILE ("search within this file"). rg needs a
+        // directory as its working dir, so it fails with ENOTDIR. Re-run from the
+        // file's parent, scoped to just that file via a basename glob — the search
+        // the model actually intended. Without this the model never recovers (it
+        // keeps re-passing the same file cwd), so do it here rather than spend turns.
+        if (/ENOTDIR|not a directory/i.test(message)) {
+          const parent = dirname(cwd)
+          const fileGlob = input.glob ?? basename(cwd)
+          try {
+            const out = await env.searchFiles(query, parent, {
+              glob: fileGlob,
+              context: input.context,
+              signal,
+              timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
+            })
+            const bounded = truncateOutput(out.trim() ? out : '')
+            const details: SearchToolDetails = { query, cwd: parent, glob: fileGlob, ...bounded }
+            onUpdate?.(details)
+            return {
+              content: out.trim()
+                ? `(\`cwd\` was a file, not a directory — searched within ${basename(cwd)} instead)\n${modelFacingMatches(bounded.output)}`
+                : `No matches for "${query}" in ${basename(cwd)}. (\`cwd\` must be a directory; searched that one file.)`,
+              details,
+            }
+          } catch {
+            // fall through to the generic error below
+          }
+        }
+        const unavailable = message.includes('ENOENT') || message.includes('not found')
+        const details: SearchToolDetails = {
+          query: query,
+          cwd,
+          ...(input.glob ? { glob: input.glob } : {}),
+          bytes: 0,
+          truncated: false,
+          output: '',
+        }
+        onUpdate?.(details)
+        return {
+          content: unavailable
+            ? 'ripgrep (rg) is not available in this environment. Fall back to `bash` with grep/find for this search.'
+            : `Failed to run search: ${message}`,
+          details,
+          isError: true,
+        }
+      }
+
+      if (!rawOutput || rawOutput.trim() === '') {
+        const scope = input.glob ? ` (glob: ${input.glob})` : ''
+        // An empty result is usually a FALSE negative, and telling the model to retry
+        // costs it a whole turn. Try the obvious widenings here instead: drop the glob
+        // (86 of the 98 empty searches in the recorded corpus carried one), and treat a
+        // query with unescaped regex metacharacters as the literal string it looks like
+        // (72 of them did). Stop at the first retry that finds something, and always
+        // say WHICH search produced the output — never pretend the original matched.
+        for (const retry of searchRetries(query, input.glob)) {
+          if (signal?.aborted) break
+          let out: string
+          try {
+            out = await env.searchFiles(retry.query, cwd, {
+              glob: retry.glob,
+              context: input.context,
+              signal,
+              timeoutSeconds: SEARCH_TIMEOUT_SECONDS,
+            })
+          } catch {
+            break // rg just worked; a failure here is not worth reporting over the no-match
+          }
+          if (!out || out.trim() === '') continue
+          const bounded = truncateOutput(out)
+          const details: SearchToolDetails = {
+            query: retry.query,
+            cwd,
+            ...(retry.glob ? { glob: retry.glob } : {}),
+            ...bounded,
+          }
+          onUpdate?.(details)
+          return {
+            content:
+              `No matches for "${query}" in ${cwd}${scope}. Retried ${retry.label} — these matched:\n` +
+              `${modelFacingMatches(bounded.output)}\n` +
+              `[the results above come from "${retry.query}"${retry.glob ? ` under glob "${retry.glob}"` : ' across the whole tree'}, not from your original query]`,
+            details,
+          }
+        }
+
+        const details: SearchToolDetails = {
+          query: query,
+          cwd,
+          ...(input.glob ? { glob: input.glob } : {}),
+          bytes: 0,
+          truncated: false,
+          output: '',
+        }
+        onUpdate?.(details)
+        const regexHint = hasUnescapedRegexMeta(query)
+          ? ' A literal-string retry found nothing either, so the text is genuinely absent.'
+          : ''
+        const globHint = input.glob
+          ? ' Searching the whole tree without the glob found nothing either.'
+          : ''
+        return {
+          content: `No matches for "${query}" in ${cwd}${scope}.${regexHint}${globHint}`,
+          details,
+        }
+      }
+
+      const truncated = truncateOutput(rawOutput)
+      const details: SearchToolDetails = {
+        query: query,
+        cwd,
+        ...(input.glob ? { glob: input.glob } : {}),
+        bytes: truncated.bytes,
+        truncated: truncated.truncated,
+        output: truncated.output,
+      }
+      onUpdate?.(details)
+
+      // Repeat-search dedup (see `../../search/search-dedup.ts`). The search RAN — the
+      // tree is live and the model must never be told about stale hits — but when this
+      // exact search just returned these exact bytes, re-delivering them buys the model
+      // nothing it doesn't already have a few turns up. Hand it a pointer and the better
+      // move instead. The UI card keeps the real results either way: only the model's
+      // `content` is swapped, `details` is untouched.
+      //
+      // The stub is only truthful while the earlier search it points at is intact on the
+      // wire, so ask (`isResultElided`); a host that wires no answer falls back to
+      // stubbing each search once, which cannot outlive what it points at by more than
+      // one turn.
+      const key = {
+        query,
+        cwd,
+        ...(input.glob ? { glob: input.glob } : {}),
+        ...(input.context !== undefined ? { context: input.context } : {}),
+      }
+      const earlierCallId = dedup.lastCallId(key)
+      const stubOk = isResultElided
+        ? earlierCallId !== undefined && !isResultElided(earlierCallId)
+        : !dedup.stubServed(key)
+      if (dedup.isUnchanged(key, truncated.output) && stubOk) {
+        dedup.setStubServed(key, true)
+        return { content: searchDedupStub(key), details }
+      }
+      dedup.record(key, truncated.output, toolCallId)
+
+      // DISCOVERED, never consulted. A hit proves a string exists in a file; nothing read it.
+      // `docs/internals/subsystems/context-system.md` §9 rejects treating discovery snippets as
+      // consulted evidence, so the answer surface hides these while the session registry keeps
+      // them — "what did you look at" honestly includes what you searched.
+      //
+      // Built on the SAME conservative parser the grouper uses: one unparseable line and it
+      // returns nothing at all, so a change in ripgrep's output shape costs provenance rather
+      // than producing wrong provenance.
+      //
+      // Parsed from `rawOutput`, NOT from `truncated.output`. Truncation appends a `[…truncated…]`
+      // sentinel and can cut the final line mid-content, and the parser above treats either as
+      // "this is not match output" and returns nothing — so every search large enough to truncate
+      // published no provenance at all, silently. Measured before the fix: 20 000 matches gave
+      // 20 000 files from the raw output and 0 from the truncated one. The bigger the search, the
+      // less it could say about itself.
+      //
+      // Bounded here rather than left to `normalizeAgentSources`: that cap protects the wire, but
+      // building twenty thousand records to throw all but a few away is work nobody asked for.
+      const sources = matchedFiles(rawOutput)
+        .slice(0, MAX_AGENT_SOURCES)
+        .map(({ file, line }) => discoveredFileSource({ path: file, line }))
+      return {
+        content: modelFacingMatches(truncated.output) || 'No matches found.',
+        details,
+        ...(sources.length > 0 ? { sources } : {}),
+      }
+    },
+  })
+}

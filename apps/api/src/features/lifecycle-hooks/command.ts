@@ -1,0 +1,126 @@
+import { spawn } from 'node:child_process'
+import { EXIT_DRAIN_MS, awaitChildGone, releaseChildPipes } from '../../lib/child-exit'
+import { withTimeout } from '../../lib/timeout'
+import { createStreamTextDecoder } from '../../lib/stream-text'
+import { resolveShellConfig } from '../agent-core/tools/environments/shell'
+
+export interface HookCommandOptions {
+  command: string
+  input: string
+  cwd: string
+  env: NodeJS.ProcessEnv
+  timeoutMs: number
+  maxOutputBytes: number
+  signal?: AbortSignal
+}
+
+export interface HookCommandResult {
+  code: number | null
+  stdout: string
+  stderr: string
+  timedOut: boolean
+  aborted: boolean
+}
+
+/**
+ * Protocol-independent command transport. The caller supplies bytes and environment and owns
+ * the interpretation of exit codes. A descendant holding a pipe cannot extend the host's wait.
+ */
+export function runHookCommand(options: HookCommandOptions): Promise<HookCommandResult> {
+  if (
+    !Number.isFinite(options.timeoutMs) ||
+    options.timeoutMs <= 0 ||
+    !Number.isSafeInteger(options.maxOutputBytes) ||
+    options.maxOutputBytes < 0
+  ) {
+    throw new Error('Hook command limits must be finite and non-negative, with a positive timeout')
+  }
+  if (options.signal?.aborted)
+    return Promise.resolve({
+      code: null,
+      stdout: '',
+      stderr: '',
+      timedOut: false,
+      aborted: true,
+    })
+  // The resolved agent shell, not a literal `sh`: Windows has no `sh` on PATH, so every
+  // hook failed to spawn there while the agent's own commands ran through Git Bash. A host
+  // with no bash at all gets the resolver's install hint as the hook's stderr, the same
+  // non-throwing shape a failed spawn produces.
+  let shellConfig: ReturnType<typeof resolveShellConfig>
+  try {
+    shellConfig = resolveShellConfig()
+  } catch (error) {
+    return Promise.resolve({
+      code: null,
+      stdout: '',
+      stderr: error instanceof Error ? error.message : String(error),
+      timedOut: false,
+      aborted: false,
+    })
+  }
+  const { shell, args } = shellConfig
+  return new Promise((resolve) => {
+    const child = spawn(shell, [...args, options.command], {
+      cwd: options.cwd,
+      env: options.env,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    })
+    let stdout = ''
+    let stderr = ''
+    let stdoutBytes = 0
+    let stderrBytes = 0
+    let timedOut = false
+    let aborted = false
+    let settled = false
+    const abort = () => {
+      aborted = true
+      child.kill('SIGKILL')
+    }
+    const timer = setTimeout(() => {
+      timedOut = true
+      child.kill('SIGKILL')
+    }, options.timeoutMs)
+    timer.unref?.()
+    const finish = (code: number | null) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      options.signal?.removeEventListener('abort', abort)
+      releaseChildPipes(child)
+      resolve({ code, stdout, stderr, timedOut, aborted })
+    }
+    options.signal?.addEventListener('abort', abort, { once: true })
+    if (options.signal?.aborted) abort()
+
+    const decodeOut = createStreamTextDecoder()
+    const decodeErr = createStreamTextDecoder()
+    child.stdout.on('data', (data: Buffer) => {
+      const captured = data.subarray(0, Math.max(0, options.maxOutputBytes - stdoutBytes))
+      stdoutBytes += captured.length
+      stdout += decodeOut(captured)
+    })
+    child.stderr.on('data', (data: Buffer) => {
+      const captured = data.subarray(0, Math.max(0, options.maxOutputBytes - stderrBytes))
+      stderrBytes += captured.length
+      stderr += decodeErr(captured)
+    })
+    // Bound the wait independently of pipe lifetime; preserve the output-drain grace for
+    // normal exits and stop the timeout once the process has actually exited.
+    void withTimeout(
+      awaitChildGone(child, { onExit: () => clearTimeout(timer) }),
+      options.timeoutMs + 1_000 + EXIT_DRAIN_MS,
+      'hook',
+    ).then(
+      ({ code }) => finish(code),
+      () => {
+        timedOut = true
+        child.kill('SIGKILL')
+        finish(null)
+      },
+    )
+    child.stdin.on('error', () => {})
+    child.stdin.end(options.input)
+  })
+}

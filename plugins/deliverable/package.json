@@ -1,0 +1,10 @@
+{
+  "name": "@localix-plugin/deliverable",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  }
+}

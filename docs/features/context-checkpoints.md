@@ -1,0 +1,193 @@
+# Keep a long session inside the request budget
+
+Localix shows the model a bounded view of a session while the stored transcript stays whole. Use
+this page to understand what the agent still sees after a long conversation, and how to keep a
+message in its view.
+
+## Terminology
+
+| Term            | Meaning                                                                                         | Boundary                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Request ceiling | The policy window minus the response reserve; every request must fit it.                        | Per model from the catalog window, capped by delegation depth.   |
+| View            | The model-facing copy of the conversation one agent reads on a turn.                            | Stored messages are never rewritten to build it.                 |
+| Checkpoint      | A one-time, model-free re-plan of the view when it reaches the high-water mark.                 | Between checkpoints the view is only appended to.                |
+| Epoch card      | A short deterministic summary of evicted turns: files, commands, errors, requests, last answer. | Lists facts; it does not carry the reasons behind decisions.     |
+| Pin             | A person's mark that keeps one message whole in the agent's view.                               | Set from the message context menu; applies to the whole session. |
+
+## What you can do
+
+| Action                    | Result                                                                            | Boundary                                                           |
+| ------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Watch the usage ring      | See request size against the ceiling and the **Next checkpoint at** figure.       | Limits arrive with a run's first snapshot, at the session's depth. |
+| See where the view begins | An **Earlier turns checkpointed** divider marks the last evicted message.         | Only the newest checkpoint is drawn; `/clear` removes the line.    |
+| Keep a message whole      | Right-click a message → **Pin to agent context**; a pinned mark appears under it. | A pin is shown whole, clipped only above 4,000 characters.         |
+| Start a clean context     | Run `/clear` to add an empty context boundary.                                    | Earlier messages stay visible in the stored transcript.            |
+| Recover older output      | The agent follows `tool_output` handles or `history_search` pointers.             | The tool must be in the agent's roster for its pointer to appear.  |
+| Replay a stored session   | Run `replay-context-policy <sessionId>` against `localix.db`.                     | Read-only; prints every number a checkpoint decision turned on.    |
+
+There is no command that summarizes the conversation with a model. The runtime checkpoints on its
+own, and a typed `/compact` is reported as an unknown command.
+
+## How it works
+
+### One history strategy, two moments
+
+Every run — the interactive chat, a delegated task run, a delegated sub-agent, a loop round, a hook
+verifier — turns its stored transcript into a model request through the one `chat-hybrid` **history
+strategy**. A sub-session is an ordinary session with a narrower tool surface, not a different
+runtime.
+
+| Moment      | When                                      | What it does                                                            |
+| ----------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| Materialize | Once per turn, before the first request   | Runs the stages below over the stored rows and the frozen view.         |
+| Request     | Before every provider request in the turn | Prunes only near the ceiling; a prune asks the next turn to checkpoint. |
+
+Side effects (plugin prompt rewrites, Claude Code prompt hooks, job and diagnostics snapshots)
+happen once, in the **intake** step. Everything after intake is pure, so a retry re-derives the same
+wire from the same frame without re-firing a hook.
+
+Materialize runs these stages in order. The list is pinned by a repository test against the stage
+sources, so a stage cannot be added or renamed without this page changing:
+
+| Stage              | Kind         | Effect                                                                                                                                                             |
+| ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `clear-cut`        | Load-bearing | Drops everything before the newest `/clear` boundary — the only boundary that cuts by position.                                                                    |
+| `participant-view` | Load-bearing | Reads the transcript as the speaking agent: colleagues' replies become attributed incoming messages; their tool activity stays excluded.                           |
+| `turn-context`     | Load-bearing | Puts every past turn's stored runtime context back before the reply it preceded, and appends this turn's — only the sections that changed — last.                  |
+| `media`            | Seam         | Rows become model payloads: steer notes, invocation text, media rehydration, spill, image downscale.                                                               |
+| `checkpoint`       | Load-bearing | Applies the frozen checkpoint in force; when one is due, plans a new one without a model call (mask and fold first, then evict the oldest turns into epoch cards). |
+| `preflight`        | Load-bearing | Refuses an active turn, or first task + active turn, that no checkpoint could fit.                                                                                 |
+| `admission`        | Load-bearing | Final measured-or-estimated size against the ceiling; a view that does not fit and took no checkpoint takes one.                                                   |
+
+A load-bearing stage that fails ends the run with a typed local budget error. No stage rewrites a
+stored message.
+
+### Append-only between checkpoints
+
+The same stored rows produce the same request bytes on every turn until the next checkpoint. That
+keeps the provider's prefix cache warm and keeps preserved thinking valid, since a model's signed
+reasoning is bound to the exact prefix before it.
+
+| Kept stable                  | How                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| Runtime context              | Keyed sections; a turn stores and sends only what changed, as a `<runtime-context update>`. |
+| Mid-run facts                | A job finishing mid-turn rides the tool result it arrived with, not a separate message.     |
+| Invocation text and images   | Attached on every turn, not only on the newest one.                                         |
+| Superseded live-state output | Collapsed only at a checkpoint, never between.                                              |
+
+The runtime context and each checkpoint are stored per assistant turn in the
+`agent_message_model_context` table, written before the request is sent. A crash mid-run therefore
+never leaves a sent request the log cannot rebuild.
+
+### When a checkpoint is taken
+
+| Signal                                          | Result                                                                      |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| Last provider-measured request ≥ 85% of ceiling | The next turn takes a checkpoint.                                           |
+| Last measured request ≥ 72% of ceiling          | The agent is told once that a checkpoint is near, so it can save to memory. |
+| The in-run safety net had to prune              | The next turn takes a checkpoint.                                           |
+| The built view does not fit the ceiling         | This turn takes a checkpoint and rebuilds.                                  |
+| Provider overflow or a silently empty response  | A checkpoint is taken and the turn reruns once.                             |
+
+A checkpoint cuts the view to about 30% of the ceiling, or a quarter of the history budget on a
+small window. It first masks old tool observations and folds long assistant answers to their head
+and tail. Only if that is not enough does it evict the oldest whole turns, always cutting before a
+user turn. Eviction never undoes an earlier eviction.
+
+Evicted turns become epoch cards. Cards degrade from the oldest first when they exceed 12% of the
+target. Pinned messages that fall inside an evicted range stay verbatim after the cards. Kept rows
+lose their stored reasoning, which a rewritten prefix would invalidate anyway.
+
+### What the agent is told
+
+| Section                      | When it appears                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `# Context checkpoint ahead` | Once, past the 72% mark; it names the memory tool when the agent has it.                                            |
+| `# Pinned messages`          | A pin the checkpoint in force shows only in part or not at all.                                                     |
+| `# Earlier context`          | The newest user message names a path or code term only evicted turns contain; up to five `history_search` pointers. |
+
+Cards and folded answers point at `history_search(around_message_id="…")`, which scrolls around a
+message without needing its session id. The pointers appear only when `history_search` is in the
+agent's roster.
+
+### Hooks
+
+A checkpoint is this runtime's compaction for Claude Code hooks. `PreCompact` fires with trigger
+`auto` after the view is decided; a block is logged and never stops the turn. The next run fires
+`SessionStart` with source `compact`, so a hook can re-inject context the new view no longer
+carries.
+
+### Request budget
+
+| Control           | Current rule                                                            |
+| ----------------- | ----------------------------------------------------------------------- |
+| Policy window     | Catalog context window, or `128,000` when unknown; capped by depth.     |
+| Cap by depth      | `256,000` for a conversation, `128,000` for its child, `64,000` below   |
+| Response reserve  | `max(min(16,384, 20% of window), 10% of window)`                        |
+| Request ceiling   | Policy window minus response reserve                                    |
+| Checkpoint mark   | 85% of the ceiling                                                      |
+| Checkpoint target | 30% of the ceiling minus fixed overhead, at least 25% of history budget |
+| Protected tail    | Up to 8 recent messages within `clamp(15%, 16,384, 65,536)` tokens      |
+
+### How a request is sized
+
+| Source               | Rule                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------- |
+| Provider measurement | The newest assistant turn's `contextTokens`, valid within the same view epoch, prompt, tools and model. |
+| Trailing estimate    | Messages after that measurement are estimated at ~4 UTF-8 bytes per token of their wire JSON.           |
+| Images and media     | A flat `1,600`-token allowance per part until the model has taught its real cost.                       |
+| Learned calibration  | Measured requests teach a per-model text scale and per-image cost by moving average; process-lived.     |
+
+A checkpoint is scheduled only from a provider measurement. A heuristic figure near the mark waits
+for the next measured request; only a view that exceeds the ceiling checkpoints on an estimate.
+
+### Recovery handles
+
+Completed tool calls cross a durable artifact barrier before the next model request, so masking can
+cite the original `tool_call_id`. Run preparation requires `tool_output` with its `get` operation.
+
+| Recovery path    | What it restores                              | Boundary                                                         |
+| ---------------- | --------------------------------------------- | ---------------------------------------------------------------- |
+| `tool_output`    | Stored text or successful mutation input.     | Active branch only; one replay is clipped at 100,000 characters. |
+| `history_search` | Messages around an evicted or folded message. | This user's history only.                                        |
+| Read or rerun    | Current files or reproducible command output. | Required for stale reads or unstored detail.                     |
+
+## Configuration
+
+| Control                                                                     | Effect                                                             | Boundary                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------- |
+| **Pin to agent context** / **Unpin from agent context**                     | Keep a message whole in the agent's view.                          | Not offered for hidden internal messages. |
+| `/clear`                                                                    | Exclude everything before a new empty boundary.                    | Does not delete the transcript.           |
+| `bun apps/api/scripts/replay-context-policy.ts <sessionId>`                 | Print measured sizes, pressure bands and a checkpoint planned now. | Read-only against the database.           |
+| `bun apps/api/scripts/check-compression.ts <raw.json> [--context-window N]` | Report token sources and how far masking and folding get alone.    | Does not plan the eviction.               |
+
+## Limits
+
+- Epoch cards list facts, not reasoning. What must survive with its reasons belongs in memory or a
+  pin.
+- Masking cannot restore bytes a tool removed earlier by paging, truncation or an output cap.
+- `tool_output` restores text, not image-only media.
+- A checkpoint cannot shrink an oversized active user turn or reclaim the system prompt and tool
+  roster. Localix reports those as separate local budget failures.
+- The divider shows the newest checkpoint across participants; each agent keeps its own view.
+
+## Related guides
+
+- [Cost tracking](cost-tracking.md)
+- [Sessions and projects](sessions-and-projects.md)
+- [Hooks and commands](hooks-and-commands.md)
+
+## Source of truth
+
+- [Checkpoint marks and target](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-view/checkpoint-policy.ts)
+- [Model view loader](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-view/view.ts)
+- [Runtime-context deltas](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-view/turn-context.ts)
+- [Pins, hints and the checkpoint warning](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-view/sections.ts)
+- [Checkpoint planner, cards and projection](https://github.com/rsaryev/localix/blob/main/packages/agent/src/context/checkpoint/)
+- [Chat history strategy and stage list](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/history/chat-strategy.ts)
+- [Materialize stages](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/history/stages/)
+- [Per-request safety net](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/history/request-transform.ts)
+- [Overflow and empty-run recovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/recovery.ts)
+- [Request budget](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/context-budget.ts)
+- [Transcript divider](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/api/modelViewDivider.ts)
+- [Replay a stored session](https://github.com/rsaryev/localix/blob/main/apps/api/scripts/replay-context-policy.ts)

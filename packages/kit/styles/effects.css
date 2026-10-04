@@ -1,0 +1,325 @@
+/* Reusable Localix border beam. The normal component border remains the idle
+   hairline; this masked conic pass only fades in for focus/live work.
+
+   The beam TRAVELS by rotating a layer, never by repainting one. It used to animate the gradient's
+   start angle (a registered `@property`), which no engine can composite: every frame re-rasterised
+   the conic gradient behind its mask and blur — 60 style recalcs a second, and in WebKit a CPU
+   repaint of the whole composer for as long as it held focus. Rotating a conic gradient about its
+   centre IS shifting its start angle, so the gradient is painted once on a square layer as wide as
+   the beam's diagonal and spun with `transform`, which the compositor runs on the GPU. Each ring
+   (`.lx-beam-ring`, the sharp 1px edge; `.lx-beam-glow`, the blurred halo) is a static mask that
+   clips its own spinning layer. */
+@keyframes lx-border-beam-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0turn);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(1turn);
+  }
+}
+.lx-border-beam {
+  --lx-beam-gradient: conic-gradient(
+    transparent 0deg 238deg,
+    color-mix(in oklch, var(--composer-accent), transparent 72%) 260deg,
+    color-mix(in oklch, var(--foreground), transparent 14%) 282deg,
+    color-mix(in oklch, var(--composer-accent), transparent 34%) 302deg,
+    transparent 326deg 360deg
+  );
+  --lx-beam-opacity: 0.28;
+  --lx-beam-duration: 7.6s;
+  --lx-beam-glow-opacity: 0.24;
+  --lx-beam-glow-blur: 5px;
+  position: absolute;
+  z-index: 2;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-moderate) var(--ease-soft);
+}
+.lx-beam-ring,
+.lx-beam-glow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  padding: 1px;
+  /* Sizes the spinning layer from this ring's own box (`cqw`/`cqh` below). */
+  container-type: size;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.lx-beam-glow {
+  inset: -2px;
+  padding: 3px;
+  opacity: var(--lx-beam-glow-opacity);
+  filter: blur(var(--lx-beam-glow-blur));
+}
+.lx-beam-ring::before,
+.lx-beam-glow::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* The diagonal, so the square covers every corner at every angle. */
+  width: 300%;
+  width: hypot(100cqw, 100cqh);
+  aspect-ratio: 1;
+  content: '';
+  background: var(--lx-beam-gradient);
+  transform: translate(-50%, -50%);
+  animation: lx-border-beam-spin var(--lx-beam-duration) linear infinite;
+  animation-play-state: paused;
+}
+.lx-border-beam[data-active='true'] {
+  opacity: var(--lx-beam-opacity);
+}
+.lx-border-beam[data-active='true'][data-variant='working'] {
+  filter: brightness(1.2);
+}
+.lx-border-beam[data-intensity='1'] {
+  --lx-beam-opacity: 0.34;
+  --lx-beam-duration: 7.2s;
+}
+.lx-border-beam[data-intensity='2'] {
+  --lx-beam-opacity: 0.42;
+  --lx-beam-duration: 6.7s;
+}
+.lx-border-beam[data-intensity='3'] {
+  --lx-beam-opacity: 0.52;
+  --lx-beam-duration: 5.9s;
+  --lx-beam-glow-opacity: 0.3;
+}
+.lx-border-beam[data-intensity='4'] {
+  --lx-beam-opacity: 0.65;
+  --lx-beam-duration: 4.9s;
+  --lx-beam-glow-opacity: 0.4;
+  --lx-beam-glow-blur: 6px;
+}
+.lx-border-beam[data-intensity='5'] {
+  --lx-beam-opacity: 0.84;
+  --lx-beam-duration: 3.8s;
+  --lx-beam-glow-opacity: 0.56;
+  --lx-beam-glow-blur: 8px;
+}
+.lx-border-beam[data-intensity='5'] {
+  --lx-beam-gradient: conic-gradient(
+    transparent 0deg 132deg,
+    color-mix(in oklch, var(--composer-accent), transparent 54%) 154deg,
+    color-mix(in oklch, var(--foreground), transparent 8%) 176deg,
+    color-mix(in oklch, var(--status-info), transparent 38%) 198deg,
+    transparent 224deg 292deg,
+    color-mix(in oklch, var(--composer-accent), transparent 42%) 314deg,
+    color-mix(in oklch, var(--foreground), transparent 18%) 332deg,
+    transparent 354deg 360deg
+  );
+}
+/* Around a FILLED control (`surface="fill"`): the ground beam's bright stop is `--foreground` on a
+   rim touching the edge, which on a `mono` fill (itself `--foreground`) read as the button being
+   1px larger — no accent at all on the plan's recommended Approve. So it leads with the accent,
+   stands one pixel off the fill, and is drawn stronger: the accent is the only contrast it has. */
+.lx-border-beam[data-surface='fill'] {
+  inset: -2px;
+}
+.lx-border-beam[data-surface='fill'][data-active='true'] {
+  opacity: min(1, calc(var(--lx-beam-opacity) * 1.8));
+}
+.lx-border-beam[data-surface='fill'] {
+  --lx-beam-gradient: conic-gradient(
+    transparent 0deg 220deg,
+    color-mix(in oklch, var(--composer-accent), transparent 55%) 250deg,
+    var(--composer-accent) 282deg,
+    color-mix(in oklch, var(--composer-accent), transparent 30%) 306deg,
+    transparent 330deg 360deg
+  );
+}
+.lx-border-beam[data-active='true'] > *::before {
+  animation-play-state: running;
+}
+/* A standing state is drawn, not animated: see `still` on `LocalixBorderBeam`. */
+.lx-border-beam[data-active='true'][data-still='true'] > *::before {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-border-beam[data-active='true'] > *::before {
+    animation-play-state: paused;
+  }
+}
+
+/*
+ * Agent-link DnD has two deliberately distinct stages:
+ * 1. drag armed anywhere in the workspace → quiet compatible-destination cue;
+ * 2. pointer over this composer → the stronger shared drop border from PromptInput.
+ *
+ * The root attribute is owned by setMessageBindingDrag, so every canonical
+ * source (markets, files, tabs, tasks, calls, resources) gets this for free.
+ */
+:root[data-localix-agent-link-drag] [data-agent-link-drop-target]:not([data-drop-active='true']) {
+  border-color: color-mix(in oklch, var(--control-border-focus), transparent 14%);
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--control-border-focus), transparent 58%),
+    0 0 18px color-mix(in oklch, var(--control-border-focus), transparent 78%),
+    var(--shadow-soft);
+}
+:root[data-localix-agent-link-drag] [data-agent-link-drop-target][data-drop-active='true'] {
+  border-color: var(--control-border-focus);
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--control-border-focus), transparent 30%),
+    0 0 24px color-mix(in oklch, var(--control-border-focus), transparent 62%),
+    var(--shadow-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-activity-orb__orbit,
+  .lx-activity-orb__core,
+  .lx-activity-label-in,
+  .lx-activity-label-out,
+  .lx-border-beam::before,
+  .lx-border-beam::after {
+    animation: none !important;
+  }
+  .lx-activity-label-out {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .lx-border-beam {
+    display: none;
+  }
+  .lx-activity-orb {
+    color: CanvasText;
+  }
+}
+
+/* Maximized editor grid: non-maximized leaves stay MOUNTED under
+   visibility:hidden (GridView) so their state survives — but visibility does
+   not pause CSS animations. Pause them explicitly so hidden leaves (pulsing
+   skeletons, carets, plugin animations…) stop ticking style recalcs invisibly. */
+[data-grid-hidden] * {
+  animation-play-state: paused !important;
+}
+
+/* Onboarding success — payment-style "draw" of a checkmark inside a circle.
+   Both run on stroke-dashoffset so the line traces in. */
+@keyframes check-circle {
+  from {
+    stroke-dashoffset: 145;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Streaming indicator — a quiet typing ellipsis appended to the last text
+   block of a streaming reply, cycling . → .. → ... → .. → . . `content` is not
+   interpolable, so the frames flip discretely between keyframes — no easing
+   needed. Attached via ::after so it needs no extra DOM. */
+@keyframes stream-ellipsis {
+  0%,
+  100% {
+    content: '.';
+  }
+  25%,
+  75% {
+    content: '..';
+  }
+  50% {
+    content: '...';
+  }
+}
+.markdown-renderer[data-streaming] > :is(p, h1, h2, h3, blockquote):last-child::after,
+.markdown-renderer[data-streaming] > :is(ul, ol):last-child li:last-child::after {
+  content: '.';
+  margin-left: 0.15ch;
+  letter-spacing: 0.12ch;
+  opacity: 0.55;
+  animation: stream-ellipsis 1.2s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .markdown-renderer[data-streaming] > :is(p, h1, h2, h3, blockquote):last-child::after,
+  .markdown-renderer[data-streaming] > :is(ul, ol):last-child li:last-child::after {
+    content: '…';
+    animation: none;
+  }
+}
+
+/* One neutral find/reveal language for transcript search, Event Center targets,
+   and addressable settings. It derives from foreground rather than the blue info
+   status: navigation is attention, not severity. Box-shadow avoids layout shift. */
+.lx-search-match {
+  background: color-mix(in oklch, var(--foreground) 4%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 24%, transparent);
+}
+.lx-search-mark {
+  background: color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+@keyframes lx-target-reveal {
+  0% {
+    background: color-mix(in oklch, var(--foreground) 0%, transparent);
+    box-shadow:
+      inset 0 0 0 1px transparent,
+      0 0 0 0 transparent;
+  }
+  30% {
+    background: color-mix(in oklch, var(--foreground) 6%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklch, var(--foreground) 32%, transparent),
+      0 0 0 3px color-mix(in oklch, var(--foreground) 10%, transparent);
+  }
+  100% {
+    background: color-mix(in oklch, var(--foreground) 3%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 18%, transparent);
+  }
+}
+.lx-target-reveal {
+  animation: lx-target-reveal 1.4s var(--ease-soft) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-target-reveal {
+    animation: none;
+    background: color-mix(in oklch, var(--foreground) 4%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 28%, transparent);
+  }
+}
+
+/* Hover-only affordances must remain visible and operable on touch and pen-first
+   devices.
+   The message footer no longer HAS one. It used to stack two absolutely-positioned
+   layers in a fixed row — resting metadata, and an actions layer at opacity-0 that
+   appeared on group-hover — so this block had to force both visible and re-flow the
+   overlay into the flow (`__meta` / `__actions`, position: static, fixed heights).
+   Both layers are gone: metadata moved to Activity and MessageActions renders
+   unconditionally, which is a better answer than the override was. What survives is
+   the one thing still true of the row — a long action row on a narrow screen should
+   scroll rather than clip. The height overrides went with the fixed-height layers;
+   the row now keeps its own min-h-8. */
+@media (hover: none), (pointer: coarse) {
+  .lx-message-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+  .lx-media-actions,
+  .lx-hover-actions {
+    pointer-events: auto;
+    opacity: 1 !important;
+  }
+  .lx-tab-dirty-indicator {
+    opacity: 0 !important;
+  }
+  .lx-message-footer::-webkit-scrollbar {
+    display: none;
+  }
+}

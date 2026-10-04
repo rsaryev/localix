@@ -1,0 +1,46 @@
+{
+  "name": "@localixai/landing",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Localix product and documentation site — localix.ai.",
+  "type": "module",
+  "scripts": {
+    "predev": "bun run generate",
+    "dev": "vite --port 5173",
+    "prebuild": "bun run generate",
+    "build": "tsc -b && vite build",
+    "postbuild": "bun run scripts/build-static-docs.mjs",
+    "test": "bun test scripts src",
+    "pretype-check": "bun run generate",
+    "type-check": "tsc -b",
+    "docs:gen": "bun run scripts/build-docs.mjs",
+    "shots:gen": "bun run scripts/build-shots.mjs",
+    "generate": "bun run docs:gen && bun run shots:gen",
+    "preview": "vite preview",
+    "clean": "shx rm -rf dist .turbo src/generated"
+  },
+  "dependencies": {
+    "@localixai/kit": "workspace:*",
+    "@localixai/plugin-sdk": "workspace:*",
+    "@tailwindcss/vite": "^4.3.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-markdown": "^10.1.0",
+    "react-router": "^8.3.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "sugar-high": "^1.2.1",
+    "tailwindcss": "^4.3.2"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.10.6",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "gray-matter": "^4.0.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4"
+  }
+}

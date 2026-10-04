@@ -1,0 +1,34 @@
+{
+  "name": "@localix-plugin/documents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependencies of the bundled `documents` workbench plugin. Heavy office libs live HERE (not in apps/api) — the staging build pre-bundles them into backend/index.bundle.mjs, so shipped plugins stay self-contained. turndown is deliberately duplicated with apps/api (the web readability tool keeps its own copy).",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@localixai/dataview": "workspace:*",
+    "docx": "^9.7.1",
+    "hono": "^4.12.30",
+    "lucide-react": "^1.24.0",
+    "mammoth": "^1.12.0",
+    "officeparser": "^7.8.0",
+    "pdfkit": "^0.19.1",
+    "react": "^19.2.7",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
+    "word-extractor": "^1.0.4",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@localixai/plugin-sdk": "workspace:*",
+    "@types/pdfkit": "^0.17.6",
+    "@types/react": "^19.2.17",
+    "fflate": "^0.8.3",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.4"
+  }
+}

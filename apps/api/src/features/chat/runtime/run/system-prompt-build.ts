@@ -1,0 +1,273 @@
+import { agentRoute } from '../../session-route'
+/**
+ * Per-run system-prompt assembly: gathers the volatile prompt sections
+ * (plugins summary, active sub-agents, loop awareness,
+ * channel origin), then asks the agent-core builder for its structurally separated
+ * cache-stable prompt and volatile runtime tail.
+ */
+import { resolveWebhookUrl } from '../../../../lib/runtime-address'
+import { buildAgentSystemPromptParts } from '../../../agent-core/system-prompt'
+import type { RuntimeSection } from '../../../agent-core/system-prompt-tail'
+import { TOOL } from '../../../agent-core/tool-names'
+import { onTheWire } from '../../../agent-core/tool-registry'
+import { isGitCheckout } from '../../../agent-core/tools/workspace'
+import { getLoopEngine } from '../../../loops/runtime-binding'
+import { toLoopPromptContext } from '../../../loops/prompt-context'
+import type { RunProfile } from '../../../agent-core/run-shape'
+import type { LoadedPlugins } from '../../../plugins/loader'
+import type { FrozenSessionContext } from '../agent-runner-types'
+import type { RuntimeState } from '../agent-runner-state'
+import type { PreparedRunContext } from '../prompt-context'
+import type { buildRunToolRegistry } from './runtime-tools'
+import type { SessionRecord } from '../../repository'
+import { buildPluginsPromptContext } from './plugins-prompt-context'
+import { activeDescendantSubagents } from './descendant-roster'
+import { getAgentService } from '../agent-service-binding'
+import { buildReactionContext } from './reaction-context'
+import { sessionAgent } from '../message-envelope'
+import type { PersistedMessage } from '../../contracts'
+import { conversationPromptContext } from './system-prompt-conversation'
+import type { BackgroundJobSnapshot } from '../../../agent-core/system-prompt-sections'
+import type { OpenQuestionsState } from '../../../agent-core/tools/hitl/ask-queue'
+import type { ApprovedPlanPrompt } from '../../../agent-core/system-prompt-plan-sections'
+import type { McpInventoryEntry } from './mcp-tools'
+import type { RunSessionSnapshotRow } from './session-snapshot'
+
+/** Live descendant view for orchestration context; statuses come from durable sessions. */
+/** Extract the channel name from `channel:<plugin>:<channel>:<conversation>` provenance. */
+export function channelNameFromSourceKey(sourceToolCallId: string | null | undefined) {
+  if (!sourceToolCallId?.startsWith('channel:')) return undefined
+  const [, pluginName, channelName] = sourceToolCallId.split(':', 4)
+  return pluginName && channelName ? channelName : undefined
+}
+
+export interface BuildRunSystemPromptOptions {
+  userId: string
+  session: SessionRecord
+  speakerAgentId: string
+  providerId: string
+  agentProfile: RunProfile
+  runtimeTools: ReturnType<typeof buildRunToolRegistry>
+  /** The tools deferral left on the wire — what the roster and "# Plugins" describe. */
+  wireToolNames?: readonly string[]
+  loadedPlugins: LoadedPlugins
+  frozenContext: FrozenSessionContext
+  pinnedSkills: PreparedRunContext['pinnedSkills']
+  triggeredSkills: PreparedRunContext['triggeredSkills']
+  contextFiles: PreparedRunContext['contextFiles']
+  projectStructure?: PreparedRunContext['projectStructure']
+  defaultCwd: string
+  scratchDir: string
+  childRuntimeSessions: RuntimeState['childRuntimeSessions']
+  /** Durable sessions let an orchestrator see nested descendants, not just local live maps. */
+  descendantSessions?: readonly RunSessionSnapshotRow[]
+  /** Per-server MCP capability instructions (CC parity) to surface in the prompt. */
+  mcpInstructions?: Array<{ server: string; text: string }>
+  /** Direct MCP tools already loaded, plus optional servers still connecting. */
+  mcpInventory?: McpInventoryEntry[]
+  /** This turn's transcript, for the marks placed on it since this member last spoke. */
+  historyMessages?: readonly PersistedMessage[]
+  /** Fresh snapshot of this session's live background jobs (re-read each turn). */
+  backgroundJobs?: BackgroundJobSnapshot[]
+  /** The speaker's still-unanswered queued questions (re-read each turn). */
+  openQuestions?: OpenQuestionsState
+  /** The plan the person approved for this conversation (`chat/runtime/plan-view.ts`). */
+  approvedPlan?: ApprovedPlanPrompt
+  /** Set when the run was admitted in plan mode — gates `# Plan mode`, naming the draft file. */
+  planMode?: { draftPath?: string }
+  agentDirectory?: readonly {
+    agentId: string
+    name: string
+    description: string
+    leadershipPriority?: number
+    enabled: boolean
+    canJoinConversation: boolean
+  }[]
+  now?: () => string
+}
+
+export interface BuiltRunSystemPrompt {
+  /** The cacheable, session-invariant system prompt (volatile tail removed). */
+  systemPrompt: string
+  /** The volatile runtime sections, carried in the conversation as the turn's context. */
+  runtimeSections: RuntimeSection[]
+}
+
+// This instance's inbound-webhook URL, resolved ONCE from env at load (process.env
+// is stable at runtime). The resolution rule (loopback-normalize a wildcard bind,
+// apply the PORT, append the webhook route path) lives in ONE place — lib/runtime-address.
+const WEBHOOK_URL: string = resolveWebhookUrl()
+
+export async function buildRunSystemPrompt(
+  options: BuildRunSystemPromptOptions,
+): Promise<BuiltRunSystemPrompt> {
+  const {
+    userId,
+    session,
+    speakerAgentId,
+    providerId,
+    agentProfile,
+    loadedPlugins,
+    frozenContext,
+    pinnedSkills,
+    triggeredSkills,
+    contextFiles,
+    projectStructure,
+    defaultCwd,
+    scratchDir,
+    childRuntimeSessions,
+    mcpInstructions,
+    mcpInventory,
+    now,
+  } = options
+  const runtimeTools = onTheWire(options.runtimeTools, options.wireToolNames)
+  const speakerRoute = agentRoute(session, speakerAgentId)
+  if (!speakerRoute) throw new Error(`Agent is unavailable: ${speakerAgentId}`)
+  const speaker = sessionAgent(session, speakerRoute.agentId)
+
+  const onWire = new Set(runtimeTools.toolNames)
+  const pluginsContext = buildPluginsPromptContext(
+    loadedPlugins,
+    runtimeTools.toolNames,
+    new Set(options.runtimeTools.toolNames.filter((name) => !onWire.has(name))),
+  )
+  // Children of THIS session still running when this run starts (e.g. the
+  // parent was woken by one sub-agent while others are still working).
+  let activeSubAgents = options.descendantSessions
+    ? activeDescendantSubagents(
+        options.descendantSessions,
+        session.id,
+        session.agents?.length ? speaker : undefined,
+      )
+    : [...childRuntimeSessions.values()].flatMap((c) =>
+        c.parentSessionId === session.id &&
+        c.session.sessionKind === 'subagent' &&
+        c.session.runtimeStatus === 'running'
+          ? [{ title: c.session.title }]
+          : [],
+      )
+  if (activeSubAgents.length && runtimeTools.toolNames.includes(TOOL.agents)) {
+    const runs = await getAgentService()
+      // The roster prints progress, not spend: skip the per-child usage reads on every turn.
+      ?.listDelegatedRuns?.(userId, session.id, { usage: false })
+      .catch((error: unknown) => {
+        console.warn('[delegate] progress projection unavailable:', error)
+        return []
+      })
+    if (runs)
+      activeSubAgents = activeSubAgents.map((child) => {
+        const run = runs.find(
+          (entry) => entry.sessionId === ('task' in child ? child.task : undefined),
+        )
+        return run
+          ? {
+              ...child,
+              task: [run.sessionId, run.updatedAt, run.progress].filter(Boolean).join(' · '),
+            }
+          : child
+      })
+  }
+  // Marks placed since this agent last spoke. Not a multi-participant-only fact: a person marks a
+  // message in a one-to-one chat too, and there the mark is the whole of what they said. It rides
+  // the tail rather than rewriting the rows that were marked — see `reaction-context`.
+  const conversation = conversationPromptContext(
+    session,
+    speakerRoute.agentId,
+    new Map(
+      (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent.leadershipPriority ?? 0]),
+    ),
+  )
+  // A session with no participant has nobody to tell — and `sessionAgent` refuses to guess one.
+  const reactions = session.agents?.length
+    ? buildReactionContext(options.historyMessages ?? [], speaker)
+    : undefined
+
+  // True only when the tool survived BOTH the profile and disabledTools — the
+  // authoritative "can the model call this" signal for prompt-context gating.
+  const hasRuntimeTool = (name: string) => runtimeTools.toolNames.includes(name)
+  // Channel-origin sessions are keyed `channel:<plugin>:<channel>:<conversationId>`
+  // (see resolveExternalSession). Surface the channel to the model so it knows
+  // its reply is relayed back automatically — agnostic across channel plugins.
+  const channelOrigin = channelNameFromSourceKey(session.sourceToolCallId)
+
+  // Light loop awareness: tell the model which loops are active in this session
+  // (id + cadence + task) so a loop fire isn't mistaken for a one-off request and
+  // dynamic loops get rescheduled by id instead of duplicated. Engine-resolved via
+  // runtime-binding so this module stays decoupled from the loop feature internals.
+  const loopContext = toLoopPromptContext(getLoopEngine()?.listForSession(userId, session.id) ?? [])
+
+  const { stablePrompt, runtimeSections } = buildAgentSystemPromptParts({
+    sessionId: session.id,
+    modelId: speakerRoute.modelId,
+    providerId,
+    webhookUrl: WEBHOOK_URL,
+    deliveryContext: channelOrigin ? { channel: channelOrigin } : undefined,
+    loopContext,
+    backgroundJobs: options.backgroundJobs,
+    openQuestions: options.openQuestions,
+    approvedPlan: options.approvedPlan,
+    planMode: options.planMode,
+    now,
+    toolRegistry: runtimeTools,
+    agentProfile,
+    // Frozen per-session snapshot strings (NOT the fresh loads) keep the system prompt
+    // byte-identical across the session's runs (prefix cache). Each tool-bound section is
+    // gated on the FINAL runtime tool set (toolNames already reflects disabledTools), so a
+    // tool turned off also drops its prompt context. The profile is context about the
+    // PERSON, not a tool: it rides regardless of the roster.
+    userProfile: frozenContext.userProfile ?? undefined,
+    responseDefaults: frozenContext.responseDefaults,
+    memoryContext: hasRuntimeTool(TOOL.memory) ? frozenContext.memoryContext : undefined,
+    memoryUsage: hasRuntimeTool(TOOL.memory) ? frozenContext.memoryUsage : undefined,
+    skillsContext: hasRuntimeTool(TOOL.skill) ? frozenContext.skillsContext : undefined,
+    // Pinned skills are already full inline instructions, not an index that
+    // requires `skill.get`. Keep them for workers/subagents whose profile does
+    // not expose the skill-management tool.
+    pinnedSkills,
+    // Keyword-triggered, so also full inline instructions — and, unlike pinned skills, they
+    // apply to this turn only, which is why they render in the volatile tail.
+    triggeredSkills,
+    pluginsContext,
+    awaitingConsentPlugins: loadedPlugins.awaitingConsent,
+    workspaceRoot: defaultCwd,
+    workspaceIsGitRepo: isGitCheckout(defaultCwd),
+    contextFiles,
+    projectStructure,
+    projectInstructions: frozenContext.projectInstructions,
+    conversation,
+    agentDirectory: (() => {
+      const available = new Map(
+        (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent]),
+      )
+      const rows = [...(options.agentDirectory ?? [])].map((agent) => ({
+        id: agent.agentId,
+        handle: agent.name,
+        description: agent.description,
+        leadershipPriority: agent.leadershipPriority ?? 0,
+        inConversation: session.agents.some((member) => member.agentId === agent.agentId),
+        available: agent.enabled && agent.canJoinConversation,
+      }))
+      for (const member of session.agents) {
+        if (available.has(member.agentId)) continue
+        rows.push({
+          id: member.agentId,
+          handle: member.handle,
+          description: '',
+          // Not in the registry any more, so no definition ranks it — the same 0 dispatch uses.
+          leadershipPriority: 0,
+          inConversation: true,
+          available: true,
+        })
+      }
+      return rows
+    })(),
+    ...(reactions ? { reactionContext: reactions } : {}),
+    scratchDir,
+    activeSubAgents,
+    mcpInstructions,
+    mcpInventory,
+  })
+  // The core assembler owns the cache boundary, so user/runtime content containing
+  // a marker-like heading cannot move the partition.
+  return { systemPrompt: stablePrompt, runtimeSections }
+}

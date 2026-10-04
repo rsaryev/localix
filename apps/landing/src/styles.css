@@ -1,0 +1,495 @@
+/* Single source of truth: pull tokens, @theme, fonts, keyframes and base
+   resets straight from the product UI. The landing never re-defines a color. */
+@import '../../ui/src/app/index.css';
+
+/* Tailwind v4 scans the importing file's neighborhood; make the landing's own
+   sources explicit so utility classes here are generated. */
+@source "./";
+
+/* The product stylesheet above registers `@source "plugins"` so workbench
+   surfaces keep their arbitrary utilities. The landing renders no plugin UI, so
+   inheriting that glob generated 72KB of dead CSS — 44% of this file. Drop it
+   here; the product build keeps it. */
+@source not "../../../plugins";
+
+/* The product shell locks the page (overflow:hidden, height:100%) — a marketing
+   page must scroll. Make `html` the SOLE scroller (body/#root flow normally) so
+   in-page nav and `scroll-margin-top` resolve against one unambiguous scrollport. */
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+/* The kit's window material imitates desktop glass: a blue-violet gradient behind a translucent
+   ground. It belongs to the app window. On a web page it painted the whole site navy, and the
+   wind lines picked up the same hue. The landing is a flat page — deep black, or classic light —
+   so it opts out of the material by declaring the page's own opaque grounds. The selector repeats
+   `:root` to out-rank the material's `:not([data-desktop][data-os])` rules whatever their order. */
+:root:root:root[data-site='landing'][data-theme='dark'] {
+  --window-backdrop: none;
+  --work-density: 100%;
+  --sidebar-density: 100%;
+  --window-ground: #070707;
+  --window-ground-sidebar: #070707;
+  --window-ground-raised: #0d0d0d;
+  --popover-solid: #101010;
+  --popover: #101010;
+  --card: #0d0d0d;
+  --surface-sunken: #030303;
+  --bird-wind: var(--foreground);
+  background: #070707;
+}
+
+:root:root:root[data-site='landing'][data-theme='light'] {
+  --window-backdrop: none;
+  --work-density: 100%;
+  --sidebar-density: 100%;
+  --window-ground: #fafafa;
+  --window-ground-sidebar: #f4f4f4;
+  --window-ground-raised: #ffffff;
+  --popover-solid: #ffffff;
+  --popover: #ffffff;
+  --card: #ffffff;
+  --surface-sunken: #f1f1f1;
+  --bird-wind: var(--foreground);
+  background: #fafafa;
+}
+
+/* The hero bird loops while it is visible. `HeroBird` sets `data-paused` when the hero is scrolled
+   away or the tab is hidden; pausing keeps the position, so it resumes mid-flight, not from zero. */
+.hero-bird[data-paused='true'] * {
+  animation-play-state: paused !important;
+}
+
+html,
+body,
+pre,
+.docs-table-scroll,
+aside {
+  scrollbar-width: thin;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+pre::-webkit-scrollbar,
+.docs-table-scroll::-webkit-scrollbar,
+aside::-webkit-scrollbar {
+  display: initial;
+}
+body,
+#root {
+  overflow: visible;
+  height: auto;
+  min-height: 100%;
+}
+
+/* Section anchors keep a little breathing room when jumped to (in-page #id
+   links). The header is gone, so this no longer has to clear a 64px bar — just
+   a small gap. We do NOT use CSS scroll-snap: combined with tall sections +
+   smooth scroll it re-aligns after you stop and reads as jitter. The on-enter
+   reveal below carries the section-transition feel instead. */
+.snap-section {
+  scroll-margin-top: 1.5rem;
+}
+
+/* On-enter reveal — compositor-only (opacity + transform), fired once by an
+   IntersectionObserver. Progressive enhancement: the content is visible by
+   default (no JavaScript, crawlers, the pre-rendered HTML before scripts run),
+   and only hidden when the inline script in index.html has confirmed that the
+   observer exists and will un-hide it (`html.reveal-ready`). Hiding it
+   unconditionally left every section blank for anyone the observer never
+   reached. */
+.reveal-ready .reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.6s var(--ease-soft),
+    transform 0.6s var(--ease-soft);
+}
+.reveal-ready .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Staggered reveal — the container is observed once, then its direct children
+   cascade in on incremental delays. Used for the capability/showcase grids and
+   the feature rows so a section flows in rather than snapping as one block. */
+.reveal-ready .reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.55s var(--ease-soft),
+    transform 0.55s var(--ease-soft);
+}
+.reveal-ready .reveal-stagger.is-visible > * {
+  opacity: 1;
+  transform: none;
+}
+.reveal-stagger.is-visible > *:nth-child(1) {
+  transition-delay: 0.03s;
+}
+.reveal-stagger.is-visible > *:nth-child(2) {
+  transition-delay: 0.09s;
+}
+.reveal-stagger.is-visible > *:nth-child(3) {
+  transition-delay: 0.15s;
+}
+.reveal-stagger.is-visible > *:nth-child(4) {
+  transition-delay: 0.21s;
+}
+.reveal-stagger.is-visible > *:nth-child(5) {
+  transition-delay: 0.27s;
+}
+.reveal-stagger.is-visible > *:nth-child(6) {
+  transition-delay: 0.33s;
+}
+.reveal-stagger.is-visible > *:nth-child(n + 7) {
+  transition-delay: 0.39s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready .reveal,
+  .reveal-ready .reveal-stagger > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── Marketing typography ────────────────────────────────────
+   A landing page needs a richer type system than the product chrome. These
+   layer on top of the shared tokens (no new colors) to give the page an
+   editorial scale, rhythm, and measure. */
+
+/* Eyebrow / kicker — small uppercase label above a heading. */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Display heading — the hero. Tighter tracking + optical leading than the
+   product's UI headings; balances wrapping. */
+.display {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+/* Section title — one notch down from the hero, same tightening. */
+.section-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+/* Lede — the intro paragraph under a heading. Constrained measure (~54ch),
+   relaxed leading, softened color so the heading stays dominant. */
+.lede {
+  max-width: 54ch;
+  line-height: 1.6;
+  color: var(--text-soft);
+  text-wrap: pretty;
+}
+
+/* Body copy in feature/capability blocks. */
+.copy {
+  line-height: 1.62;
+  color: var(--text-soft);
+  text-wrap: pretty;
+}
+
+/* Universal reduced-motion reset — also neutralizes inline animation styles.
+   `!important` is required to override element inline styles. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Docs prose ──────────────────────────────────────────────
+   Markdown rendered on /docs, styled from the shared tokens so the docs
+   surface matches the product exactly. */
+.docs-prose {
+  color: var(--foreground);
+  line-height: 1.72;
+  font-size: 1.02rem;
+  max-width: 60rem;
+}
+.docs-prose :is(h1, h2, h3) {
+  scroll-margin-top: 5.5rem;
+}
+.docs-prose > :first-child {
+  margin-top: 0;
+}
+.docs-prose h1 {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+.docs-prose h2 {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 2.25rem 0 0.85rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.docs-prose h3 {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 1.75rem 0 0.6rem;
+}
+.docs-prose h4 {
+  font-weight: 600;
+  margin: 1.4rem 0 0.5rem;
+}
+.docs-prose p,
+.docs-prose ul,
+.docs-prose ol {
+  margin: 0 0 1rem;
+}
+/* Tailwind preflight resets `list-style: none`; restore the markers so bulleted
+   sections read as a list, not one run-on heap of dense paragraphs. */
+.docs-prose ul,
+.docs-prose ol {
+  padding-left: 1.5rem;
+}
+.docs-prose ul {
+  list-style: disc;
+}
+.docs-prose ol {
+  list-style: decimal;
+}
+.docs-prose li {
+  margin: 0.45rem 0;
+  padding-left: 0.25rem;
+}
+.docs-prose li::marker {
+  color: var(--text-faint);
+}
+/* Nested lists: tighten to a single rhythm step, not the full block gap. */
+.docs-prose li > ul,
+.docs-prose li > ol {
+  margin: 0.3rem 0 0;
+}
+/* Loose lists (GFM wraps item content in <p>): drop the paragraph block gap so
+   bullets aren't double-spaced. */
+.docs-prose li > p {
+  margin: 0;
+}
+
+/* Evidence and follow-up navigation share one quiet, compact component. The
+   Markdown stays portable; heading ids provide the only styling hook. */
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: -0.15rem;
+  padding-left: 0;
+  list-style: none;
+}
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul > li {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  padding: 0.42rem 0.6rem 0.42rem 1.35rem;
+  color: var(--text-faint);
+  line-height: 1.45;
+  transition: background-color 120ms ease;
+}
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul > li::before {
+  position: absolute;
+  top: 0.95rem;
+  left: 0.45rem;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--text-faint);
+  content: '';
+  transform: translateY(-50%);
+}
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul > li:hover {
+  background: var(--surface-hover);
+}
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul > li > a {
+  color: var(--text-soft);
+  text-decoration: none;
+}
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul > li > a:hover,
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul > li > a:focus-visible {
+  color: var(--foreground);
+  text-decoration: none;
+}
+.docs-prose h2:is(#source-of-truth, #related-guides) + ul code {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.docs-prose a {
+  color: var(--status-info);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+.docs-prose a:hover,
+.docs-prose a:focus-visible {
+  text-decoration-thickness: 0.12em;
+}
+.docs-prose strong {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.docs-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+}
+/* Public guides contain long source paths and identifiers. Allow inline code to
+   wrap on narrow screens instead of relying on the page-level overflow guard,
+   which would clip the end of the token. Fenced code keeps its own scroller. */
+.docs-prose :not(pre) > code {
+  overflow-wrap: anywhere;
+}
+.docs-prose pre {
+  background: var(--surface-raised);
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  margin: 0;
+  max-height: min(32rem, 70vh);
+}
+.docs-code-block {
+  overflow: hidden;
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.docs-code-toolbar {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 0.75rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+.docs-code-toolbar button {
+  border-radius: 0.35rem;
+  padding: 0.25rem 0.4rem;
+  color: var(--text-soft);
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+.docs-code-toolbar button:hover {
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+.docs-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* sugar-high token palette, tuned to our chart/status tokens (both themes). */
+.docs-prose pre code {
+  --sh-class: var(--chart-5);
+  --sh-identifier: var(--foreground);
+  --sh-sign: var(--text-faint);
+  --sh-property: var(--chart-2);
+  --sh-entity: var(--chart-3);
+  --sh-jsxliterals: var(--chart-1);
+  --sh-string: var(--status-success);
+  --sh-keyword: var(--status-error);
+  --sh-comment: var(--text-faint);
+}
+.docs-prose blockquote {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 1rem;
+  color: var(--text-soft);
+  margin: 0 0 1rem;
+}
+.docs-prose hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 2rem 0;
+}
+.docs-table-scroll {
+  margin: 0 0 1.25rem;
+  overflow-x: auto;
+}
+.docs-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin: 0;
+}
+.docs-prose th,
+.docs-prose td {
+  border: 1px solid var(--border-subtle);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.docs-prose th {
+  background: var(--surface-raised);
+  font-weight: 600;
+}
+.docs-prose img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  max-width: 100%;
+}
+
+/* ── Pre-rendered docs first paint ───────────────────────────
+   `scripts/build-static-docs.mjs` injects a static docs shell into each built
+   docs page so crawlers and no-JS visitors get a semantic page. React then
+   replaces it with the real one, so the geometry below mirrors its hydrated
+   counterpart (PAGE_SHELL, `.docs-prose`) — otherwise the page reflows the
+   moment it mounts. The homepage needs no such mirror: it is rendered from
+   the application's own tree (scripts/render-home.tsx) and hydrated. */
+.docs-static-shell {
+  /* PAGE_SHELL's inline padding around `.docs-prose`'s 60rem measure, and the
+     docs page's `py-12`, so the prose keeps its line breaks on hydration. */
+  width: 100%;
+  max-width: 63rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.docs-static-shell .docs-prose {
+  min-width: 0;
+}
+
+.docs-static-shell .docs-prose table {
+  display: block;
+  overflow-x: auto;
+}

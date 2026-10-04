@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "insertFinalNewline": true,
+  "jsxSingleQuote": false,
+  "printWidth": 100,
+  "proseWrap": "always",
+  "quoteProps": "as-needed",
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "useTabs": false,
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    ".turbo",
+    "apps/landing/src/generated",
+    "apps/ui/test-results",
+    "extend",
+    "vendor",
+    "bun.lock"
+  ]
+}

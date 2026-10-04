@@ -1,0 +1,109 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreWorkspaces": ["vendor/**"],
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": [
+        "plugins/*/tools/**/*.mjs",
+        "plugins/*/hooks/**/*.mjs",
+        "plugins/*/arg-sources/**/*.ts",
+        "scripts/*.mjs",
+        "scripts/*.ts"
+      ],
+      "project": ["plugins/**/*.{ts,mjs}", "scripts/*.{mjs,ts}"]
+    },
+    "apps/api": {
+      "entry": [
+        "src/index.ts",
+        "src/bootstrap.ts",
+        "migrations/*.ts",
+        "scripts/**/*.ts",
+        "src/**/*.test.ts"
+      ],
+      "ignoreDependencies": [
+        "@parcel/watcher-darwin-arm64",
+        "@parcel/watcher-darwin-x64",
+        "@parcel/watcher-linux-arm64-glibc",
+        "@parcel/watcher-linux-arm64-musl",
+        "@parcel/watcher-linux-x64-glibc",
+        "@parcel/watcher-linux-x64-musl",
+        "@parcel/watcher-win32-arm64",
+        "@parcel/watcher-win32-x64"
+      ]
+    },
+    "apps/ui": {
+      "entry": [
+        "src/app/main.tsx",
+        "vite.config.ts",
+        "src/**/*.surface.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}",
+        "build/**/*.test.ts"
+      ],
+      "ignoreDependencies": [
+        "@fontsource-variable/dm-sans",
+        "@fontsource-variable/fira-code",
+        "@fontsource-variable/geist",
+        "@fontsource-variable/jetbrains-mono",
+        "@fontsource/fragment-mono"
+      ]
+    },
+    "apps/landing": {
+      "entry": ["src/main.tsx", "vite.config.ts", "scripts/**/*.mjs"]
+    },
+    "apps/desktop-tauri": {
+      "entry": ["scripts/**/*.test.ts"]
+    },
+    "plugins/*": {
+      "entry": [
+        "ui/register.tsx",
+        "backend/index.ts",
+        "arg-sources/**/*.ts",
+        "tools/**/*.mjs",
+        "hooks/**/*.mjs",
+        "**/*.test.{ts,tsx}"
+      ],
+      "project": ["**/*.{ts,tsx}"]
+    },
+    "plugins/devops": {
+      "entry": [
+        "ui/register.tsx",
+        "backend/index.ts",
+        "arg-sources/**/*.ts",
+        "tools/**/*.mjs",
+        "hooks/**/*.mjs",
+        "**/*.test.{ts,tsx}"
+      ],
+      "project": ["**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@happy-dom/global-registrator", "radix-ui"]
+    },
+    "plugins/template": {
+      "entry": ["backend/index.ts", "ui/system/SystemMarks.tsx", "**/*.test.{ts,tsx}"],
+      "project": ["**/*.{ts,tsx}"],
+      "ignore": ["ui/register.example.tsx"]
+    },
+    "packages/*": {
+      "entry": ["src/index.ts", "src/**/*.test.{ts,tsx,mjs}"]
+    },
+    "packages/kit": {
+      "entry": ["src/entries/*.ts", "src/testing/*.ts", "**/*.test.{ts,tsx}", "test-preload.ts"]
+    },
+    "packages/cli": {
+      "entry": ["bin/localix.mjs", "src/main.ts", "src/**/*.test.ts", "scripts/**/*.mjs"]
+    },
+    "packages/plugin-sdk": {
+      "entry": ["src/backend/index.ts", "src/ui/index.ts", "src/manifest/index.ts"]
+    }
+  },
+  "ignore": ["apps/desktop-tauri/src-tauri/resources/**", "apps/desktop-tauri/src-tauri/target/**"],
+  "ignoreDependencies": [
+    "@vtsls/language-server",
+    "dockerfile-language-server-nodejs",
+    "vscode-langservers-extracted",
+    "yaml-language-server",
+    "@types/shell-quote",
+    "tailwindcss",
+    "@localixai/visual-feedback"
+  ],
+  "ignoreBinaries": ["lipo", "rustc", "strip"]
+}

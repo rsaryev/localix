@@ -1,0 +1,24 @@
+{
+  "name": "@localix-plugin/learning",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Dependencies for the file-authored Learning Studio workbench plugin.",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@localixai/path-containment": "workspace:*",
+    "hono": "^4.12.30",
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@localixai/plugin-sdk": "workspace:*",
+    "@types/react": "^19.2.17",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.4"
+  }
+}

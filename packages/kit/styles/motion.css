@@ -1,0 +1,306 @@
+/* ═══════════════════════════════════════════════════════════════
+   Global keyframes (referenced by Tailwind animate-* or inline styles)
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes bird-intro {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes wind-sweep {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  18% {
+    opacity: var(--wind-opacity, 0.2);
+  }
+  72% {
+    opacity: var(--wind-opacity, 0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-600px, 0, 0);
+  }
+}
+@keyframes bird-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(0, -6px, 0) scale(1.01);
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  75% {
+    transform: translate3d(0, 4px, 0) scale(0.99);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Softer opacity dip than the stock pulse — for subtle "waiting" hints. */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes reasoning-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+@keyframes composer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes composer-soft-pulse {
+  0%,
+  100% {
+    transform: translateX(-45%);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translateX(45%);
+    opacity: 0.42;
+  }
+}
+@keyframes composer-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+/* The scroll-to-latest pill materialising: it rises AND settles out of a slight
+   shrink, so the glass reads as arriving rather than being toggled on. */
+@keyframes scroll-btn-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+/* Live typing caret — a blinking block at the write position of a streaming
+   code view (live file-change tab). steps() gives a crisp on/off blink rather
+   than a fade, so it reads as a terminal/editor cursor. */
+@keyframes lx-caret-blink {
+  0%,
+  48% {
+    opacity: 1;
+  }
+  52%,
+  100% {
+    opacity: 0;
+  }
+}
+.lx-type-caret {
+  display: inline-block;
+  width: 0.5ch;
+  height: 1.02em;
+  vertical-align: text-bottom;
+  margin-bottom: -0.12em;
+  margin-left: 0.5px;
+  border-radius: 1px;
+  background: var(--foreground);
+  animation: lx-caret-blink 1.05s steps(1, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-type-caret {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
+/* Working/Thinking status label — a directional text shimmer (a gradient
+   sweeping left→right through the letters via background-position) that reads
+   as calm forward progress, instead of a whole-label opacity blink. */
+@keyframes lx-shimmer-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+.lx-shimmer {
+  background-image: linear-gradient(90deg, var(--text-faint), var(--foreground), var(--text-faint));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: lx-shimmer-sweep 2.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-shimmer {
+    animation: none;
+    background: none;
+    color: var(--text-soft);
+  }
+}
+@media (forced-colors: active) {
+  .lx-shimmer {
+    animation: none;
+    background: none;
+    color: CanvasText;
+    forced-color-adjust: auto;
+  }
+}
+
+/* Browser page load — a highlight sweeping along the toolbar's bottom edge while a document
+   loads. A native page covers the box below its toolbar, so the toolbar is the only app chrome
+   that can show the load at all. The highlight is half the track wide and travels from fully
+   off its left end to fully off its right one. */
+@keyframes lx-page-loading-sweep {
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+.lx-page-loading {
+  background-image: linear-gradient(90deg, transparent, var(--status-info), transparent);
+  background-repeat: no-repeat;
+  background-size: 50% 100%;
+  animation: lx-page-loading-sweep 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-page-loading {
+    animation: none;
+    background: color-mix(in oklch, var(--status-info) 45%, transparent);
+  }
+}
+
+/* Localix activity primitive — one persistent dotted object whose internal
+   density changes between thinking and working. Phase changes never replace the
+   SVG, so there is no spinner reset or horizontal snap. */
+@keyframes lx-orb-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes lx-orb-turn-reverse {
+  to {
+    transform: rotate(-1turn);
+  }
+}
+@keyframes lx-orb-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+.lx-activity-orb {
+  overflow: visible;
+}
+.lx-activity-orb__ghost {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.55;
+  stroke-dasharray: 0.8 2.1;
+  opacity: 0.28;
+}
+.lx-activity-orb__orbit {
+  fill: currentColor;
+  transform-box: view-box;
+  transform-origin: center;
+  transition:
+    opacity var(--dur-base) var(--ease-soft),
+    filter var(--dur-base) var(--ease-soft);
+}
+.lx-activity-orb__orbit--outer {
+  animation: lx-orb-turn 3.4s linear infinite;
+}
+.lx-activity-orb__orbit--inner {
+  animation: lx-orb-turn-reverse 2.45s linear infinite;
+  opacity: 0.78;
+}
+.lx-activity-orb__core {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lx-orb-breathe 1.65s var(--ease-standard) infinite;
+}
+.lx-activity-orb[data-state='thinking'] .lx-activity-orb__orbit--outer {
+  opacity: 0.58;
+}
+.lx-activity-orb[data-state='thinking'] .lx-activity-orb__orbit--inner {
+  opacity: 0.42;
+}
+.lx-activity-orb[data-state='working'] .lx-activity-orb__orbit--outer {
+  opacity: 0.95;
+}
+/* Both halves run `--dur-base`; `activity-orb.tsx` unmounts the outgoing label on the same beat. */
+.lx-activity-label-in {
+  animation: lx-activity-label-in var(--dur-base) var(--ease-soft) both;
+}
+.lx-activity-label-out {
+  animation: lx-activity-label-out var(--dur-base) var(--ease-exit) both;
+}
+@keyframes lx-activity-label-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.28rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes lx-activity-label-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-0.2rem);
+  }
+}

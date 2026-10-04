@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // MUST NOT exceed tsconfig.build.json. That file emits the production bundle and its own
+    // comment says "keep in sync with tsconfig.json" — it was not: this gate sat at ES2023 while
+    // the build sat at ES2022, so the fast check that everyone runs ACCEPTED what the slow one
+    // that actually ships REJECTS. Measured: `Array.prototype.findLast` (ES2023) passed
+    // `tsc --noEmit -p tsconfig.json` with exit 0 and failed `@localixai/api:build` with TS2550.
+    // A permissive gate in front of a strict one is worse than no gate — it converts a build
+    // failure into a surprise. Raise BOTH together, deliberately, or neither.
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "rootDir": "../..",
+    "outDir": "dist",
+    "typeRoots": ["../../node_modules/@types"],
+    "types": ["bun"]
+  },
+  "include": ["src/**/*", "migrations/**/*"],
+  "exclude": ["src/**/*.test.ts"]
+}

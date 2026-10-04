@@ -1,0 +1,35 @@
+{
+  "name": "webhook-notifier",
+  "category": "utilities",
+  "displayName": "Webhook Notifier",
+  "version": "1.0.0",
+  "license": "MIT",
+  "apiVersion": 1,
+  "defaultEnabled": true,
+  "description": "Send selected lifecycle events to a webhook with optional HMAC-SHA256 signing.",
+  "author": "Localix",
+  "tools": "./hooks/index.mjs",
+  "config": {
+    "WEBHOOK_URL": {
+      "type": "string",
+      "description": "Target URL; every selected event is POSTed as JSON { event, sessionId, ts, payload }.",
+      "required": true
+    },
+    "EVENTS": {
+      "type": "string",
+      "description": "Comma-separated filter: session_end, user_message, assistant_message, tool_call, hitl_request, hitl_resolved, subagent_stop. Empty = all.",
+      "default": ""
+    },
+    "SECRET": {
+      "type": "string",
+      "description": "Optional HMAC-SHA256 secret; the hex signature of the body is sent as X-Localix-Signature.",
+      "default": "",
+      "secret": true
+    },
+    "TIMEOUT_SECONDS": {
+      "type": "number",
+      "description": "Per-delivery timeout. Best-effort: failures are logged, never retried.",
+      "default": 5
+    }
+  }
+}

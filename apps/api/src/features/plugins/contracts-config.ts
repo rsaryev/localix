@@ -1,0 +1,31 @@
+import { z } from 'zod'
+import { PLUGIN_CONFIG_TYPES } from '@localixai/plugin-sdk/manifest'
+
+export { PLUGIN_CONFIG_TYPES, pluginConfigOptionSchema } from '@localixai/plugin-sdk/manifest'
+export type {
+  PluginConfigType,
+  PluginConfigOption,
+  PluginConfigOptionInput,
+} from '@localixai/plugin-sdk/manifest'
+
+/** A declared config field plus its current value, masked for secrets. */
+export const pluginConfigFieldSchema = z.object({
+  key: z.string(),
+  type: z.enum(PLUGIN_CONFIG_TYPES),
+  description: z.string(),
+  required: z.boolean(),
+  secret: z.boolean(),
+  /** Current value for non-secret fields (or its default); always null for secrets. */
+  value: z.union([z.string(), z.number(), z.boolean()]).nullable(),
+  /** Whether a value is currently stored (the only thing surfaced for secrets). */
+  isSet: z.boolean(),
+  /** CC-spec human-readable label for the field. Falls back to the key name when absent. */
+  title: z.string().optional(),
+  /** CC-spec hint that this field accepts multiple values. */
+  multiple: z.boolean().optional(),
+  /** CC-spec numeric lower bound hint. */
+  min: z.number().optional(),
+  /** CC-spec numeric upper bound hint. */
+  max: z.number().optional(),
+})
+export type PluginConfigField = z.infer<typeof pluginConfigFieldSchema>

@@ -1,0 +1,15 @@
+{
+  "name": "learning",
+  "category": "content",
+  "displayName": "Learning Studio",
+  "version": "0.2.0",
+  "license": "MIT",
+  "apiVersion": 1,
+  "defaultEnabled": true,
+  "description": "File-authored course bundles with Markdown lessons, independent multi-tab study, durable progress, and resource-based agent context.",
+  "surfaces": ["agent", "workbench"],
+  "author": "Localix",
+  "keywords": ["learning", "course", "education", "tutor", "practice", "adaptive"],
+  "tools": "./backend/index.ts",
+  "skills": "./skills"
+}

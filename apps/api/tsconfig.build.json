@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    // `lib` must be restated whenever `target` is overridden: tsconfig.base.json sets
+    // `lib` EXPLICITLY (to ES2020), and an explicit `lib` is inherited VERBATIM — it is
+    // NOT re-derived from a child's `target`. This is the config that EMITS the production
+    // build (`bun run build` → `tsc -p tsconfig.build.json`); without this line the build
+    // type-checks an ES2022 target against an ES2020 library, so ES2021/ES2022 built-ins
+    // that Bun implements at runtime (`Array.prototype.at`, `Object.hasOwn`,
+    // `String.replaceAll`, `Error.cause`) error as "does not exist". Keep in sync with
+    // tsconfig.json, which carries the same restatement for the type-check gate.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "rootDir": ".",
+    "outDir": "dist",
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": true,
+    "types": ["bun"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@localix-plugin/devops",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependencies for the bundled DevOps Workspace. Docker and Kubernetes providers ship behind one plugin entrypoint and one workspace surface.",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@iconify-icons/vscode-icons": "^1.2.29",
+    "@kubernetes/client-node": "^1.4.0",
+    "@tanstack/react-virtual": "^3.14.9",
+    "hono": "^4.12.30",
+    "isomorphic-ws": "^5.0.0",
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "ws": "^8.18.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.10.6",
+    "@localixai/plugin-sdk": "workspace:*",
+    "@types/react": "^19.2.17",
+    "radix-ui": "^1.6.2",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.4"
+  }
+}

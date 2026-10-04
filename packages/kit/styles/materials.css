@@ -1,0 +1,252 @@
+/* ═══════════════════════════════════════════════════════════════
+   Liquid glass — floating translucent controls
+   ═══════════════════════════════════════════════════════════════ */
+/* Glass reads from the EDGE, not the fill. A single translucent panel with a
+   flat 1px border reads as a boxed div over a blur; four stacked layers read as
+   a slab of glass:
+
+     fill    the material still exists where the backdrop behind it is flat
+     sheen   a top-left specular highlight — a light source above the surface
+     rim     a DIRECTIONAL 1px ring: bright at the incident corner, nearly gone
+             through the middle, glinting again at the exit corner
+     depth   inset top hairline + bottom vignette = the thickness of the slab
+
+   The rim is a gradient painted into a `mask-composite` ring rather than a
+   `border`, which is what lets brightness vary AROUND the shape and follow the
+   corners. `blur(16px) saturate(180%)` is the settled pair for this tier;
+   saturation is what keeps colour behind the glass from going grey.
+
+   Deliberately NOT here: SVG `feDisplacementMap` edge refraction.
+   `backdrop-filter: url(#…)` is Chromium-only, and the desktop shell is
+   WKWebView — where an unsupported url() invalidates the whole
+   backdrop-filter chain and takes the blur down with it. */
+.lx-glass {
+  position: relative;
+  background-color: var(--glass-fill);
+  background-image: var(--glass-sheen);
+  box-shadow: var(--glass-depth);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+  transition-property: background-color, box-shadow, transform;
+  transition-duration: var(--dur-base);
+  transition-timing-function: var(--ease-soft);
+}
+.lx-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--glass-rim);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.85;
+  transition: opacity var(--dur-base) var(--ease-soft);
+  pointer-events: none;
+}
+
+/* The pill is inset inside a larger hit target, so hover/press is driven by the
+   TRIGGER, not the pill: the padding ring around it is still the button, and a
+   `:hover` on the pill alone would drop out over those pixels. */
+.lx-glass-trigger:hover .lx-glass,
+.lx-glass-trigger:focus-visible .lx-glass,
+.lx-glass-self:hover,
+.lx-glass-self:focus-visible {
+  background-color: var(--glass-fill-hover);
+  box-shadow: var(--glass-depth-hover);
+  transform: translateY(-1px);
+}
+.lx-glass-trigger:hover .lx-glass::before,
+.lx-glass-trigger:focus-visible .lx-glass::before,
+.lx-glass-self:hover::before,
+.lx-glass-self:focus-visible::before {
+  opacity: 1;
+}
+.lx-glass-trigger:active .lx-glass,
+.lx-glass-self:active {
+  background-color: var(--glass-fill-hover);
+  box-shadow: var(--glass-depth);
+  transform: translateY(0) scale(var(--press-scale));
+  transition-duration: var(--dur-fast);
+}
+/* `lx-glass-self`: the element IS both trigger and material — a chip, not a pill inside a padded
+   button. Pair it WITH `lx-glass` (it only adds the interaction states). A chip that moves on
+   hover is noisy in a row of chips, so `lx-glass-still` opts out of the lift/press motion. */
+.lx-glass-self.lx-glass-still:hover,
+.lx-glass-self.lx-glass-still:focus-visible,
+.lx-glass-self.lx-glass-still:active {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-glass-trigger:hover .lx-glass,
+  .lx-glass-trigger:focus-visible .lx-glass,
+  .lx-glass-trigger:active .lx-glass,
+  .lx-glass-self:hover,
+  .lx-glass-self:focus-visible,
+  .lx-glass-self:active {
+    transform: none;
+  }
+}
+
+/* No compositing of the backdrop at all (old WebKit, forced-colors, some Linux
+   GPU blocklists): the fill alone is far too thin to separate the control from
+   the messages behind it, so fall back to an opaque surface. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lx-glass {
+    background-color: var(--popover);
+  }
+}
+
+/* The shared floating material covers menus, tooltips, hover cards and picker drawers.
+   Every platform uses the theme-owned coat in window-material.css.
+   Do not include foreign-page overlays: their deliberately opaque surface has no marker. */
+.lx-floating-surface {
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  backdrop-filter: blur(24px) saturate(1.1);
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  :root .lx-floating-surface {
+    background-color: var(--popover);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Scrim — glass's opposite number, and the ONE recipe for "dim the page behind a
+   dialog/drawer/sidebar". Same two-part material (fill + backdrop), tuned per
+   theme; every overlay previously hand-rolled its own `bg-black/50|60` plus a
+   different blur, so the same gesture dimmed by a different amount depending on
+   which surface opened it. Positioning, stacking (z-index/isolate) and the
+   enter/exit animation stay with the consumer — this owns the material only. */
+.lx-scrim {
+  background-color: var(--scrim-fill);
+  -webkit-backdrop-filter: var(--scrim-backdrop);
+  backdrop-filter: var(--scrim-backdrop);
+}
+
+/* Half-weight scrim for PICKER overlays (the popover-material drawer): a picker is a quick
+   in-and-out, so the page behind stays half-visible for context instead of going dark — the
+   full scrim's job of erasing the page belongs to modals that demand focus. Declared after
+   `.lx-scrim` so it wins on the same element. */
+.lx-scrim-light {
+  background-color: color-mix(in srgb, var(--scrim-fill) 50%, transparent);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+/* Modal material — the third member of the family, beside `.lx-glass` (floating chrome)
+   and `.lx-scrim` (the ground behind a modal).
+
+   A dialog used to be the one surface in the app that was flatly opaque everywhere except
+   macOS desktop, where a `:root[data-desktop][data-os='mac']` block below gave it a frosted
+   window-ground coat. So the same dialog was glass in the packaged Mac app and a plain grey
+   card in the browser, on Windows and on Linux — with nothing in `modal-surface.ts` saying
+   why. This is that material, unconditionally: `bg-surface-raised` stays the token, the coat
+   just stops being fully opaque and frosts what it covers.
+
+   Legibility is not at risk the way it would be for a floating panel: a modal always paints
+   over `.lx-scrim`, which has already dimmed and blurred the page beneath it, so the only
+   thing showing through is a flat wash. That is exactly what makes it read as glass rather
+   than as transparency.
+
+   Unlayered on purpose (same reason as the mac block below): Tailwind utilities live in a
+   layer, so `bg-surface-raised` on the element would otherwise win. The macOS rule is more
+   specific and still overrides this one with its window-ground anchoring. */
+.lx-modal-surface {
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  backdrop-filter: blur(20px) saturate(1.25);
+}
+
+@supports (background: color-mix(in oklch, black 50%, oklch(0 0 0 / 0))) {
+  .lx-modal-surface {
+    background-color: color-mix(in oklch, var(--surface-raised) 86%, oklch(0 0 0 / 0));
+  }
+}
+
+/* No backdrop compositing (old WebKit, forced-colors, GPU blocklists): the frost that made
+   the coat safe to thin is gone, so the fill goes back to carrying it alone. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lx-modal-surface {
+    background-color: var(--surface-raised);
+  }
+}
+
+/* Reduced transparency is an accessibility setting, not a taste — an opaque coat, and the
+   `@media` block far below drops the blur for the same reason. */
+@media (prefers-reduced-transparency: reduce) {
+  .lx-modal-surface {
+    background-color: var(--surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* No backdrop compositing at all (old WebKit, forced-colors, GPU blocklists): the
+   blur that does most of the hiding is gone, so the fill has to carry it alone. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lx-scrim {
+    background-color: rgba(0, 0, 0, 0.78);
+  }
+  /* Light re-tunes it: pure black at 78% over a near-white page is a hole punched in it. */
+  [data-theme='light'] .lx-scrim {
+    background-color: rgba(20, 26, 38, 0.5);
+  }
+}
+
+/* Respect the OS "Reduce transparency" preference as progressive enhancement.
+   The query is not available in every engine yet, so the ordinary material and
+   the no-backdrop-filter fallback above remain authoritative everywhere else.
+
+   Tailwind backdrop utilities retain `backdrop-blur` in the DOM class name,
+   including arbitrary values such as `backdrop-blur-[1px]`; the attribute
+   selector therefore covers current and future host/plugin chrome without a
+   second opt-in API. Low-opacity materials get an explicit readable fallback,
+   while already-near-opaque 85–95% sticky chrome only loses its blur. */
+@media (prefers-reduced-transparency: reduce) {
+  .lx-glass {
+    background-color: var(--popover);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .lx-glass::before {
+    padding: 0;
+    border: 1px solid var(--control-border);
+    background: none;
+    -webkit-mask: none;
+    mask: none;
+    opacity: 1;
+  }
+
+  .lx-scrim {
+    background-color: rgba(0, 0, 0, 0.78);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  [data-theme='light'] .lx-scrim {
+    background-color: rgba(20, 26, 38, 0.5);
+  }
+
+  :where([class*='backdrop-blur']) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  [data-slot='pane-state-overlay']:not([data-material='solid']) {
+    background-color: var(--background);
+  }
+
+  /* Image-overlay controls must retain the image as spatial context, but their
+     resting 45–55% fill is too transparent once blur is removed. Hover keeps
+     each component's own stronger/semantic treatment (including destructive). */
+  :where([class*='backdrop-blur'][class*='bg-black/']):not(:hover) {
+    background-color: rgb(20 20 20 / 0.9);
+  }
+}

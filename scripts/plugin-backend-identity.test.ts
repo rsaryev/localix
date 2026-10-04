@@ -1,0 +1,104 @@
+import { describe, expect, test } from 'bun:test'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { discoverBundledPlugins } from '../apps/api/src/features/plugins/discovery'
+import { pluginBackendIdentityProblems } from '../apps/api/src/features/plugins/backend-host'
+import { inspectPluginTools } from '../apps/api/src/features/plugins/native'
+import { resolvePluginConfig } from '../apps/api/src/features/plugins/config'
+import type { PluginHostServices } from '@localixai/plugin-sdk/backend'
+
+/**
+ * A host that says yes to everything, so a plugin gets as far as declaring its contributions.
+ *
+ * The point is what it is NOT: a fixed object listing the services that exist today. A plugin
+ * decides whether to contribute by probing the host — one of them checks twelve methods and
+ * disables an entire surface if a single one is missing — and a fixture that enumerates them goes
+ * stale the moment a seam is added, silently reverting this test to "nothing to check". A proxy
+ * answers every probe, so what is asserted below is the plugin's own naming and nothing about the
+ * host's shape.
+ *
+ * It is only ever asked for identities. Nothing here is called.
+ */
+function permissiveHost(): PluginHostServices {
+  const yes = (): unknown =>
+    new Proxy(() => undefined, {
+      apply: () => Promise.resolve(null),
+      get: (_target, key) => (key === 'then' ? undefined : yes()),
+    })
+  return new Proxy({} as PluginHostServices, {
+    get: (_target, key) => (key === 'then' ? undefined : yes()),
+    has: () => true,
+  })
+}
+
+/**
+ * Every identity a bundled plugin's backend registers must be namespaced by its manifest name.
+ *
+ * The rule already exists — {@link pluginBackendIdentityProblems} is what the backend host applies
+ * at wire time — but its only consequence there is a log line and a subsystem that contributes
+ * nothing. A plugin shipped with its bare manifest name as a subsystem id (no colon) and was
+ * rejected on every boot for as long as core happened to mount the same routes itself. The day
+ * core stopped, its panel answered "Route not found", and the reason was a warn nobody reads.
+ *
+ * So the rule is checked here, against the SAME function, before it can reach a user.
+ */
+describe('bundled plugin backend identities', () => {
+  test('every registered identity is namespaced by its owning plugin', async () => {
+    const bundled = (await discoverBundledPlugins()).filter(
+      (plugin) => plugin.provides.hasNativeTools,
+    )
+    // A scan that reaches nothing is a disabled lint: an empty problem list looks exactly like a
+    // clean tree. The bundled set is a dozen-plus plugins; a handful means the walk broke.
+    expect(bundled.length).toBeGreaterThan(5)
+
+    const host = permissiveHost()
+    const problems: string[] = []
+    const contributors: string[] = []
+    for (const plugin of bundled) {
+      const inspection = await inspectPluginTools(
+        plugin,
+        resolvePluginConfig(plugin.manifest, undefined),
+        // A fixture home: a real context creates the plugin's roots.
+        {
+          userId: 'identity-audit',
+          cwd: plugin.dir,
+          host,
+          homeDir: join(tmpdir(), 'localix-identity-audit-home'),
+        },
+      )
+      if (inspection.backendSubsystems.length > 0) contributors.push(plugin.manifest.name)
+      for (const id of inspection.backendSubsystems) {
+        problems.push(
+          ...pluginBackendIdentityProblems(plugin.manifest.name, { id } as never).map(
+            (problem) => `${plugin.manifest.name}: ${problem}`,
+          ),
+        )
+      }
+      for (const id of inspection.contextProviders) {
+        // The subsystem id here is a stand-in that already satisfies the rule: this pass is asking
+        // only about the CONTEXT PROVIDER's name, and the subsystem ids were checked above.
+        problems.push(
+          ...pluginBackendIdentityProblems(plugin.manifest.name, {
+            id: `${plugin.manifest.name}:audit`,
+            contextProviders: [{ provider: { id } }],
+          } as never).map((problem) => `${plugin.manifest.name}: ${problem}`),
+        )
+      }
+      for (const command of inspection.wsCommands) {
+        problems.push(
+          ...pluginBackendIdentityProblems(plugin.manifest.name, {
+            id: `${plugin.manifest.name}:audit`,
+            wsFrames: [{ subscribeCommand: command, unsubscribeCommand: command }],
+          } as never).map((problem) => `${plugin.manifest.name}: ${problem}`),
+        )
+      }
+    }
+
+    expect(problems).toEqual([])
+    // The host is what makes a service-dependent plugin declare anything at all. If this drops to
+    // the plugins that need no host, the proxy stopped satisfying a probe and the test above went
+    // quiet without failing.
+    expect(contributors.length).toBeGreaterThan(5)
+  })
+})

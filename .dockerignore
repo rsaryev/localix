@@ -1,0 +1,45 @@
+.git
+.agents
+.agent
+.claude
+.localix
+.playwright-mcp
+skills-lock.json
+
+node_modules
+**/node_modules
+.turbo
+**/.turbo
+dist
+**/dist
+coverage
+**/coverage
+test-results
+**/test-results
+tmp
+**/tmp
+target
+**/target
+vendor/monaco-editor
+
+.data
+**/.data
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.log
+*.tgz
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Native desktop payloads are unrelated to the static landing build.
+apps/desktop-tauri/src-tauri/binaries
+apps/desktop-tauri/src-tauri/gen
+apps/desktop-tauri/src-tauri/resources
+
+# Prebuilt distributable payloads are inputs to the standalone CLI package,
+# never to the landing build.
+packages/cli/public
+packages/cli/server

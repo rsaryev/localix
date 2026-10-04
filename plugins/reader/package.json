@@ -1,0 +1,32 @@
+{
+  "name": "@localix-plugin/reader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Explicit-only local reading workspace with agent context and native links.",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@localixai/path-containment": "workspace:*",
+    "@thednp/dommatrix": "^3.0.4",
+    "@xmldom/xmldom": "^0.8.15",
+    "fflate": "^0.8.3",
+    "foliate-js": "github:readest/foliate-js#68d54b1bd9599d37ad2e6ff6a62121745dd43bb6",
+    "highlight.js": "^11.11.1",
+    "hono": "^4.12.30",
+    "linkedom": "^0.18.13",
+    "lucide-react": "^1.24.0",
+    "node-html-parser": "^6.1.13",
+    "pdfjs-dist": "6.2.108",
+    "react": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@localixai/plugin-sdk": "workspace:*",
+    "@types/react": "^19.2.17",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.4"
+  }
+}

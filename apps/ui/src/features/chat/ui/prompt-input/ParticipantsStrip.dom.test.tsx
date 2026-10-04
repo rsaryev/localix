@@ -1,0 +1,430 @@
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { registerDom } from '@localixai/kit/testing/dom'
+
+let teardown: () => Promise<void>
+beforeAll(() => {
+  teardown = registerDom()
+  ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+})
+afterAll(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await teardown()
+})
+
+const PARTICIPANTS = [
+  { agentId: 'builtin:localix', handle: 'localix' },
+  { agentId: 'builtin:frontend', handle: 'frontend' },
+  { agentId: 'builtin:qa', handle: 'qa' },
+]
+
+async function render(
+  floor: { speaking: string | null; waiting: string[] } | null,
+  extra: Record<string, unknown> = {},
+) {
+  const React = await import('react')
+  const { act } = React
+  const { createRoot } = await import('react-dom/client')
+  const { ParticipantsStrip } = await import('./ParticipantsStrip')
+  const host = document.createElement('div')
+  document.body.appendChild(host)
+  const root = createRoot(host)
+  await act(async () => {
+    root.render(
+      React.createElement(ParticipantsStrip, { participants: PARTICIPANTS, floor, ...extra }),
+    )
+  })
+  return {
+    host,
+    rerender: async (
+      nextFloor: { speaking: string | null; waiting: string[] } | null,
+      nextExtra: Record<string, unknown> = {},
+    ) => {
+      await act(async () => {
+        root.render(
+          React.createElement(ParticipantsStrip, {
+            participants: PARTICIPANTS,
+            floor: nextFloor,
+            ...nextExtra,
+          }),
+        )
+      })
+    },
+    cleanup: async () => {
+      await act(async () => root.unmount())
+      host.remove()
+    },
+  }
+}
+
+describe('ParticipantsStrip — the live order drawn onto the participants', () => {
+  test('renders flat compact idle names and keeps long names bounded without losing their label', async () => {
+    const handle = 'a-participant-with-a-very-long-display-name'
+    const { host, cleanup } = await render(null, {
+      participants: [{ agentId: 'custom:long', handle }],
+      sessionId: 'compact-roster',
+    })
+    try {
+      expect(host.querySelector('[role="group"]')?.getAttribute('aria-label')).toBe(
+        'Conversation participants',
+      )
+      const chip = host.querySelector<HTMLElement>('[data-slot="participant-chip"]')!
+      expect(chip.className).toContain('h-[var(--chrome-control-sm)]')
+      expect(chip.className).toContain('bg-transparent')
+      expect(chip.className).not.toContain('bg-surface-raised')
+      expect(chip.className).not.toContain('shadow-')
+      const mention = chip.querySelector('button')!
+      expect(mention.getAttribute('title')).toBe(`Mention @${handle}`)
+      expect(mention.getAttribute('aria-label')).toContain('Mention in the message')
+      expect(mention.querySelector('.truncate')?.className).toContain('max-w-32')
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('removes a waiting or idle participant without staging a mention', async () => {
+    const removed: string[] = []
+    const { composerBus } = await import('@/shared/lib/composerBus')
+    const staged: string[] = []
+    const off = composerBus.subscribe((request) => {
+      staged.push(request.text ?? '')
+      return true
+    })
+    const { host, cleanup } = await render(
+      { speaking: 'builtin:frontend', waiting: ['builtin:qa'] },
+      {
+        sessionId: 'remove-roster',
+        onRemove: (id: string) => removed.push(id),
+      },
+    )
+    try {
+      const remove = host.querySelector<HTMLButtonElement>('button[aria-label="Remove Qa"]')!
+      expect(remove.className).toContain('size-[var(--chrome-control-xs)]')
+      expect(remove.className).not.toContain('opacity-0')
+      expect(remove.className).toContain('focus-ring')
+      const { act } = await import('react')
+      await act(async () => remove.click())
+      expect(removed).toEqual(['builtin:qa'])
+      expect(staged).toEqual([])
+      expect(host.querySelector('button[aria-label="Remove Frontend"]')).toBeNull()
+    } finally {
+      off()
+      await cleanup()
+    }
+  })
+
+  test('an empty roster retains its membership controls and a read-only roster has no removal', async () => {
+    const { createElement } = await import('react')
+    const { host, rerender, cleanup } = await render(null, {
+      participants: [],
+      addControl: createElement('button', { 'aria-label': 'Add participant' }),
+    })
+    try {
+      expect(host.querySelector('[data-slot="participant-chip"]')).toBeNull()
+      expect(host.querySelector('button[aria-label="Add participant"]')).not.toBeNull()
+      await rerender(null)
+      expect(host.querySelectorAll('[data-slot="participant-chip"]')).toHaveLength(3)
+      expect(host.querySelector('button[aria-label^="Remove"]')).toBeNull()
+      expect(host.querySelector('button[title^="Mention"]')?.hasAttribute('disabled')).toBe(true)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('shows elapsed time only during a stream and resets when the speaker or stream changes', async () => {
+    const originalNow = Date.now
+    let clock = 100_000
+    Date.now = () => clock
+    const localix = { speaking: 'builtin:localix', waiting: [] }
+    const frontend = { speaking: 'builtin:frontend', waiting: [] }
+    const { host, rerender, cleanup } = await render(localix, {
+      sessionId: 'timer-test',
+      isGenerating: true,
+    })
+    try {
+      expect(host.textContent).toContain('Localix0sec')
+      clock += 63_000
+      const { act } = await import('react')
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1010))
+      })
+      expect(host.textContent).toContain('Localix1m3sec')
+
+      await rerender(frontend, { sessionId: 'timer-test', isGenerating: true })
+      expect(host.textContent).toContain('Frontend0sec')
+      expect(host.textContent).not.toContain('Localix1m3sec')
+
+      await rerender(frontend, { sessionId: 'timer-test', isGenerating: false })
+      expect(host.textContent).not.toContain('sec')
+      clock += 5000
+      await rerender(frontend, { sessionId: 'timer-test', isGenerating: true })
+      expect(host.textContent).toContain('Frontend0sec')
+    } finally {
+      Date.now = originalNow
+      await cleanup()
+    }
+  })
+
+  test('returning to an active session keeps its elapsed time', async () => {
+    const { answerClock } = await import('../../model/answerClock')
+    const originalNow = Date.now
+    let clock = 200_000
+    Date.now = () => clock
+    const localix = { speaking: 'builtin:localix', waiting: [] }
+    const first = await render(localix, { sessionId: 'first', isGenerating: true })
+    try {
+      clock += 63_000
+      await first.rerender(null, { sessionId: 'second', isGenerating: false })
+      await first.rerender(localix, { sessionId: 'first', isGenerating: true })
+      expect(first.host.textContent).toContain('Localix1m3sec')
+
+      // A new run in the same session and by the same agent is a fresh clock.
+      answerClock.start('first', 'builtin:localix', clock)
+      await first.rerender(localix, { sessionId: 'second', isGenerating: true })
+      await first.rerender(localix, { sessionId: 'first', isGenerating: true })
+      expect(first.host.textContent).toContain('Localix0sec')
+    } finally {
+      answerClock.end('first')
+      answerClock.end('second')
+      Date.now = originalNow
+      await first.cleanup()
+    }
+  })
+
+  test('the participant speaking wears the composer’s beam, and only it does', async () => {
+    // A conversation answers one participant at a time and a turn costs a model call, so the
+    // strip has to say which of them the minutes are going to. One beam, so there is one thing
+    // to look at.
+    const { host, cleanup } = await render({
+      speaking: 'builtin:frontend',
+      waiting: ['builtin:qa'],
+    })
+    try {
+      // Both queued and speaking participants carry the beam; the SPEAKER is the bright one, and
+      // there is exactly one of those.
+      const bright = host.querySelectorAll(
+        '.lx-border-beam[data-active="true"][data-intensity="4"]',
+      )
+      expect(bright).toHaveLength(1)
+      const chip = bright[0]!.parentElement!
+      expect(chip.textContent).toContain('Frontend')
+      expect(chip.className).toContain('bg-transparent')
+      expect(chip.className).not.toContain('bg-surface-active')
+      expect(chip.querySelector('button')?.getAttribute('aria-label')).toContain('answering now')
+      // The one waiting is marked by the same primitive, turned down.
+      expect(
+        host.querySelectorAll('.lx-border-beam[data-active="true"][data-intensity="1"]'),
+      ).toHaveLength(1)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('a participant queued behind carries its place in line', async () => {
+    const { host, cleanup } = await render({
+      speaking: 'builtin:frontend',
+      waiting: ['builtin:qa', 'builtin:localix'],
+    })
+    try {
+      const labels = [...host.querySelectorAll('[aria-label]')].map(
+        (node) => node.getAttribute('aria-label') ?? '',
+      )
+      expect(labels.some((label) => label.startsWith('Qa, number 1 in line'))).toBe(true)
+      expect(labels.some((label) => label.startsWith('Localix, number 2 in line'))).toBe(true)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('between rounds nobody is marked and nothing animates', async () => {
+    const { host, cleanup } = await render(null)
+    try {
+      expect(host.querySelectorAll('.lx-border-beam[data-active="true"]')).toHaveLength(0)
+      expect(host.textContent).toContain('Localix')
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('clicking a participant stages its handle in this session’s composer', async () => {
+    // Naming someone is what gives them the floor, so the roster is also the control for
+    // addressing it: seeing an idle colleague is exactly when a person wants their handle.
+    const { composerBus } = await import('@/shared/lib/composerBus')
+    const staged: { text: string; inline?: boolean; sessionId: string }[] = []
+    const off = composerBus.subscribe((request) => {
+      staged.push({
+        text: request.text ?? '',
+        inline: request.inline,
+        sessionId: request.sessionId,
+      })
+      return true
+    })
+    const { host, cleanup } = await render(null, { sessionId: 'strip-session' })
+    try {
+      const button = [...host.querySelectorAll('button')].find((node) =>
+        node.getAttribute('title')?.includes('@qa'),
+      )!
+      const React = await import('react')
+      await React.act(async () => {
+        button.click()
+      })
+      // A trailing space and an INLINE seam, because the sentence continues where the person
+      // left off — handles stacked as paragraphs made a column instead of an address line.
+      // Addressed to THIS strip's session: an insert reaches only the composer of the chat it names.
+      expect(staged).toEqual([{ text: '@qa ', inline: true, sessionId: 'strip-session' }])
+    } finally {
+      off()
+      await cleanup()
+    }
+  })
+
+  test('the participant mid-turn cannot be removed out from under its own run', async () => {
+    const { host, cleanup } = await render({ speaking: 'builtin:frontend', waiting: [] })
+    try {
+      const removals = [...host.querySelectorAll('button[aria-label^="Remove"]')].map((node) =>
+        node.getAttribute('aria-label'),
+      )
+      expect(removals).not.toContain('Remove Frontend')
+      // The orchestrator is in every conversation by construction, so it has no remove control
+      // either.
+      expect(removals).not.toContain('Remove Localix')
+      // Its chip keeps the button's width anyway, so the row stays on one line. Every participant
+      // ends with an element of that size, removable or not.
+      for (const beam of host.querySelectorAll('.lx-border-beam')) {
+        const chip = beam.parentElement!
+        expect(chip.lastElementChild?.className).toContain('size-[var(--chrome-control-xs)]')
+      }
+    } finally {
+      await cleanup()
+    }
+  })
+})
+
+describe('ParticipantsStrip — a fixed roster', () => {
+  const React = () => import('react')
+
+  // The server refuses any change to a fixed roster; a control that can only fail is a lie.
+  test('offers neither adding nor removing, and the idle participants recede into grey', async () => {
+    const { createElement } = await React()
+    const { host, cleanup } = await render(
+      { speaking: 'builtin:frontend', waiting: [] },
+      {
+        locked: true,
+        onRemove: () => {},
+        addControl: createElement('button', { 'aria-label': 'Add participant' }),
+        lockControl: createElement('span', { 'data-testid': 'lock' }),
+      },
+    )
+    try {
+      expect(host.querySelector('button[aria-label^="Remove"]')).toBeNull()
+      expect(host.querySelector('button[aria-label="Add participant"]')).toBeNull()
+      expect(host.querySelector('[data-testid="lock"]')).not.toBeNull()
+      const chips = [...host.querySelectorAll('.lx-border-beam')].map((beam) => beam.parentElement!)
+      const speaker = chips.find((chip) => chip.textContent?.includes('Frontend'))!
+      // Live work must never look paused: the speaker keeps its colour.
+      expect(speaker.className).not.toContain('grayscale')
+      expect(chips.filter((chip) => chip.className.includes('grayscale'))).toHaveLength(2)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('an open roster keeps its controls and its colour', async () => {
+    const { createElement } = await React()
+    const { host, cleanup } = await render(null, {
+      onRemove: () => {},
+      addControl: createElement('button', { 'aria-label': 'Add participant' }),
+    })
+    try {
+      expect(host.querySelector('button[aria-label="Add participant"]')).not.toBeNull()
+      expect(host.querySelectorAll('button[aria-label^="Remove"]').length).toBeGreaterThan(0)
+      expect(host.querySelector('.grayscale')).toBeNull()
+    } finally {
+      await cleanup()
+    }
+  })
+})
+
+describe('ParticipantsStrip — the speaker leads the row', () => {
+  // A roster kept in roster order scrolls sideways, so the participant the minutes were going to
+  // could sit at the right edge or past it. The DOM order IS the drawn order (no CSS `order`).
+  const order = (host: HTMLElement) =>
+    [...host.querySelectorAll('[data-flip-key]')].map((node) => node.getAttribute('data-flip-key'))
+
+  test('while a round runs the speaker is first and the waiting follow by place', async () => {
+    const { host, cleanup } = await render(
+      { speaking: 'builtin:qa', waiting: ['builtin:frontend'] },
+      { sessionId: 'order-running' },
+    )
+    try {
+      expect(order(host)).toEqual(['builtin:qa', 'builtin:frontend', 'builtin:localix'])
+      // Each wrapper holds exactly its own chip, so a FLIP move carries the whole chip.
+      const first = host.querySelector('[data-flip-key]')!
+      expect(first.querySelector('[data-slot="participant-chip"]')?.textContent).toContain('Qa')
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('the order is kept when the round ends, and a new speaker moves to the front', async () => {
+    const { host, rerender, cleanup } = await render(null, { sessionId: 'order-kept' })
+    try {
+      expect(order(host)).toEqual(['builtin:localix', 'builtin:frontend', 'builtin:qa'])
+      await rerender({ speaking: 'builtin:qa', waiting: [] }, { sessionId: 'order-kept' })
+      expect(order(host)).toEqual(['builtin:qa', 'builtin:localix', 'builtin:frontend'])
+      // Snapping back to roster order would move every chip a second time for no new fact.
+      await rerender(null, { sessionId: 'order-kept' })
+      expect(order(host)).toEqual(['builtin:qa', 'builtin:localix', 'builtin:frontend'])
+      await rerender({ speaking: 'builtin:frontend', waiting: [] }, { sessionId: 'order-kept' })
+      expect(order(host)).toEqual(['builtin:frontend', 'builtin:qa', 'builtin:localix'])
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('another session starts from its own roster order', async () => {
+    const { host, rerender, cleanup } = await render(
+      { speaking: 'builtin:qa', waiting: [] },
+      { sessionId: 'order-a' },
+    )
+    try {
+      await rerender(null, { sessionId: 'order-b' })
+      expect(order(host)).toEqual(['builtin:localix', 'builtin:frontend', 'builtin:qa'])
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('a change of speaker scrolls a scrolled row back to its start', async () => {
+    const originalMatchMedia = window.matchMedia
+    let reduced = false
+    window.matchMedia = ((query: string) =>
+      ({
+        media: query,
+        matches: reduced,
+        addEventListener() {},
+        removeEventListener() {},
+      }) as unknown as MediaQueryList) as typeof window.matchMedia
+    const { host, rerender, cleanup } = await render(null, { sessionId: 'order-scroll' })
+    try {
+      const scroller = host.querySelector('[data-flip-key]')!.parentElement!
+      const scrolls: ScrollToOptions[] = []
+      Object.defineProperty(scroller, 'scrollLeft', { value: 80, configurable: true })
+      scroller.scrollTo = ((options: ScrollToOptions) =>
+        scrolls.push(options)) as typeof scroller.scrollTo
+      await rerender({ speaking: 'builtin:qa', waiting: [] }, { sessionId: 'order-scroll' })
+      expect(scrolls).toEqual([{ left: 0, behavior: 'smooth' }])
+      // The same speaker again is not a change; a new one under reduced motion jumps.
+      await rerender(
+        { speaking: 'builtin:qa', waiting: ['builtin:localix'] },
+        { sessionId: 'order-scroll' },
+      )
+      expect(scrolls).toHaveLength(1)
+      reduced = true
+      await rerender({ speaking: 'builtin:localix', waiting: [] }, { sessionId: 'order-scroll' })
+      expect(scrolls[1]).toEqual({ left: 0, behavior: 'auto' })
+    } finally {
+      window.matchMedia = originalMatchMedia
+      await cleanup()
+    }
+  })
+})

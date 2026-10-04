@@ -1,0 +1,10 @@
+{
+  "name": "@localix-plugin/webhook-notifier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  }
+}

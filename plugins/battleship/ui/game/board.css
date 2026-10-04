@@ -1,0 +1,193 @@
+/* ── The boards — the games' shared tile style ───────────────────────────────────────────────
+   Styled HERE, not with utility classes: utilities reach a plugin through the host's
+   de-duplicated sheet, where a rule judged a duplicate of the host's can be dropped. The look is
+   Tic-Tac-Toe's: faint-bordered tiles on a barely-there fill, marks as strokes, colours mixed from
+   the theme so both themes read. */
+.bs-board {
+  display: grid;
+  user-select: none;
+}
+
+.bs-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklab, var(--foreground) 40%, transparent);
+}
+
+.bs-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+  border-radius: 6px;
+  outline: none;
+  background: color-mix(in oklab, var(--foreground) 3.5%, transparent);
+  cursor: default;
+  transition:
+    background var(--dur-fast) var(--ease-soft),
+    border-color var(--dur-fast) var(--ease-soft);
+}
+
+/* The board where the action is: a quiet outline on its tiles, nothing more. */
+.bs-board-active .bs-tile {
+  border-color: color-mix(in oklab, var(--chart-2) 22%, transparent);
+}
+
+/* Water known without a shot — the border of a sunk ship — steps back. */
+.bs-tile[data-state='water'] {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--foreground) 5%, transparent);
+}
+
+.bs-tile[data-state='ship'],
+.bs-tile[data-state='hit'] {
+  background: color-mix(in oklab, var(--foreground) 16%, transparent);
+  border-color: color-mix(in oklab, var(--foreground) 20%, transparent);
+}
+
+.bs-tile[data-state='sunk'] {
+  background: color-mix(in oklab, var(--status-error) 14%, transparent);
+  border-color: color-mix(in oklab, var(--status-error) 30%, transparent);
+}
+
+.bs-tile[data-last='true'] {
+  border-color: color-mix(in oklab, var(--chart-2) 70%, transparent);
+}
+
+.bs-tile[data-action='true'] {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .bs-tile[data-action='true']:hover {
+    background: var(--surface-hover);
+    border-color: color-mix(in oklab, var(--foreground) 18%, transparent);
+  }
+}
+
+.bs-tile:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* ── Marks ─────────────────────────────────────────────────────────────────────────────────── */
+.bs-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 9;
+}
+
+.bs-mark[data-hit='true'] {
+  stroke: var(--status-error);
+}
+
+.bs-dot {
+  fill: color-mix(in oklab, var(--foreground) 45%, transparent);
+  stroke: none;
+}
+
+/* A new mark is DRAWN, not dropped in: every stroke carries `pathLength="100"`, so one keyframe
+   runs it from nothing to whole. `--bs-delay` staggers marks that arrived in one look. */
+.bs-stroke {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: bs-draw var(--dur-moderate) var(--ease-soft) forwards;
+  animation-delay: var(--bs-delay, 0ms);
+}
+
+.bs-stroke-second {
+  animation-delay: calc(var(--bs-delay, 0ms) + var(--dur-fast));
+}
+
+.bs-dot-in {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bs-pop var(--dur-moderate) var(--ease-soft) both;
+  animation-delay: var(--bs-delay, 0ms);
+}
+
+/* A soft ring spreads once from a mark that just landed, so a glance finds the shot. */
+.bs-ripple {
+  fill: currentColor;
+  stroke: none;
+  color: var(--chart-2);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bs-ripple var(--dur-slow) var(--ease-soft) forwards;
+  animation-delay: var(--bs-delay, 0ms);
+}
+
+.bs-mark[data-hit='true'] .bs-ripple {
+  color: var(--status-error);
+}
+
+/* ── The fleet tally ──────────────────────────────────────────────────────────────────────── */
+.bs-tally {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--foreground) 40%, transparent);
+  transition: background var(--dur-slow) var(--ease-soft);
+}
+
+.bs-tally-sunk {
+  background: color-mix(in oklab, var(--status-error) 45%, transparent);
+}
+
+/* The result card rises once the last shot is in: the end is seen, then read. */
+.battleship-over {
+  animation: bs-rise var(--dur-moderate) var(--ease-emphasized) both;
+  animation-delay: var(--dur-slow);
+}
+
+@keyframes bs-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes bs-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+@keyframes bs-ripple {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+@keyframes bs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bs-stroke,
+  .bs-stroke-second {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .bs-dot-in,
+  .battleship-over {
+    animation: none;
+  }
+  .bs-ripple {
+    display: none;
+  }
+}

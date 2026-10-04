@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged into the bundle's Info.plist by tauri-bundler on macOS builds. Only keys
+  Tauri does NOT already derive from tauri.conf.json belong here — the identifier,
+  version, copyright, category, URL schemes (plugins.deep-link) and document types
+  (bundle.fileAssociations) are all generated and must not be repeated.
+
+  Every key below is a TCC (privacy) usage string. These are not cosmetic: for the
+  microphone macOS TERMINATES a process that reaches for the device without one,
+  and for the protected folders the system shows the user a consent alert that
+  reads "Localix would like to access files in your Documents folder" with this
+  text underneath. Localix needs them for a reason no ordinary app does — the
+  agent runs the user's own commands, and those child processes are attributed by
+  TCC to this bundle, so an agent listing ~/Documents raises the prompt as Localix.
+
+  These do NOT grant access; they make the prompt honest. Only declare a key for
+  something the app can actually be asked to do (no camera, no contacts).
+
+  NOTE: `tauri dev` runs an unbundled binary, so none of this applies in dev — a
+  mic or folder prompt behaves differently there than in a packaged build.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Localix uses the microphone to record voice messages in the chat composer.</string>
+
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Localix opens projects and runs your commands on files you choose, including ones in your Documents folder.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>Localix opens projects and runs your commands on files you choose, including ones on your Desktop.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Localix opens projects and runs your commands on files you choose, including ones in your Downloads folder.</string>
+	<key>NSRemovableVolumeUsageDescription</key>
+	<string>Localix opens projects stored on removable volumes when you choose one.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>Localix opens projects stored on network volumes when you choose one.</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>Localix opens projects synced by iCloud Drive or another file provider when you choose one.</string>
+
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Localix sends Apple events when a command you or an agent runs asks another app to do something, such as the AppleScript file chooser.</string>
+</dict>
+</plist>

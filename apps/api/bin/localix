@@ -1,0 +1,40 @@
+#!/usr/bin/env bun
+import { existsSync } from 'node:fs'
+import { resolve, dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Resolve the pre-built UI dist folder to serve on root. Candidates are tried in
+// priority order; the first one that actually contains an index.html wins. This
+// keeps a single source of truth (no copy step) and works in both layouts:
+//   - packaged / installed via bunx → UI dist sits next to this bin (../public)
+//   - monorepo dev/prod            → UI is built into apps/ui/dist
+const candidates = [
+  process.env.LOCALIX_UI_DIR,
+  resolve(__dirname, '../public'), // packaged: dist copied next to the bin
+  resolve(__dirname, '../../ui/dist'), // monorepo: serve apps/ui/dist directly
+].filter((dir) => Boolean(dir))
+
+const uiDir = candidates.find((dir) => existsSync(join(dir, 'index.html')))
+
+if (uiDir) {
+  process.env.LOCALIX_UI_DIR = uiDir
+} else {
+  // Fail loud instead of serving a JSON 404 on `/` (which renders as a blank
+  // black screen in the browser). Tell the user exactly how to fix it.
+  console.error(
+    '[localix] No built UI found. Looked in:\n' +
+      candidates.map((dir) => `  - ${join(dir, 'index.html')}`).join('\n') +
+      '\n\nBuild the UI first (from the repo root):\n' +
+      '  bun run build:web   # or: cd apps/ui && bun run build\n',
+  )
+  process.exit(1)
+}
+
+// Default to port 5050 for the single-server production mode
+if (!process.env.PORT) {
+  process.env.PORT = '5050'
+}
+
+await import('../src/index.ts')

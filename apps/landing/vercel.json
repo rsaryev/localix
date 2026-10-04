@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun run build",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "/docs/getting-started--what-is-localix",
+      "permanent": false
+    }
+  ],
+  "rewrites": [{ "source": "/docs/:slug", "destination": "/docs/:slug.html" }],
+  "headers": [
+    {
+      "source": "/.well-known/api-catalog",
+      "headers": [{ "key": "Content-Type", "value": "application/linkset+json" }]
+    }
+  ]
+}

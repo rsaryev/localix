@@ -1,0 +1,281 @@
+/* ── Desktop (Tauri) native titlebar ─────────────────────────────────────── */
+/* On macOS the shell uses `TitleBarStyle::Overlay` + `hidden_title`, which hides
+   the system titlebar but floats the traffic lights over the content, positioned
+   (traffic_light_position) to sit centered in this 36px strip. The 48px rail is
+   narrower than the light cluster, so we reserve a slim full-width draggable
+   strip at the very top: the lights sit on its left (over the reserved padding)
+   and the whole body lives below it. */
+
+:root {
+  /* Workbench geometry stays physical while Settings scales typography through
+     the root font size. These are the shared density primitives for host + plugin
+     chrome: controls scale by semantic tier, never by a one-off component value. */
+  --chrome-control-xs: 20px;
+  --chrome-control-sm: 24px;
+  --chrome-control-md: 28px;
+  --chrome-control-lg: 32px;
+  --chrome-control-xl: 36px;
+  --chrome-control-touch: 40px;
+  /* Glyphs are deliberately NOT tokenized. There is one icon ladder and it is
+     Tailwind's spacing scale — `size-2.5 / 3 / 3.5 / 4 / 4.5` = 10/12/14/16/18px —
+     used at ~every icon in the app and in every plugin. A parallel
+     `--icon-xs…lg` token set (12/14/16/18px) once existed here and lost: four
+     files used it against hundreds using `size-*`, it was never redefined per
+     theme or density, so it bought no theming power and only made the same
+     physical size answer to two names. It was converted to its exact `size-*`
+     equivalents and deleted; do not reintroduce it. Chrome BOXES stay
+     tokenized above — that is what scales with density; the glyph inside a box
+     is a typography choice the box does not own. */
+  /* The chat measure: how wide the transcript column and the composer under it may grow.
+     ONE token because the two must stay identical — the composer sits directly beneath the
+     column, so a mismatch reads as a misaligned box — and because the same measure is spelled
+     again in the read-only transcript TAB, a surface edited independently of the chat one.
+     It was the same literal in six places, guarded by nothing (the geometry tests explicitly
+     refuse to pin styling), which is how two surfaces meant to look identical drift. */
+  --chat-measure: 58rem;
+  /* The reading measure: how wide a column of long-form PROSE may grow — a lesson, an article.
+     A panel body is as wide as its pane (the 'centred literal column' rule in
+     `ui-token-rules.ts`); prose is the one
+     exception, because a line past ~75 characters is not readable. Named so a plugin that reads
+     like a page asks for the same measure instead of picking its own literal. */
+  --reading-measure: 48rem;
+  --workbench-rail-width: 48px;
+  /* Panel titles, toolbars and document trails share a physical text edge.
+     Rem gutters used to move that edge whenever only typography was resized. */
+  --workbench-gutter: 12px;
+  --titlebar-height: 36px;
+  /* macOS window-button geometry. AppKit fixes the first two — a 12pt button, 20pt between
+     centres — and the third mirrors the `x` of `traffic_light_position(…)` in
+     `apps/desktop-tauri/src-tauri/src/lib.rs`, which is the only place the cluster is actually
+     positioned. Named here because the titlebar has to reserve room for a cluster it does not
+     draw, and that reservation was a bare `padding-left: 78px` that no longer agreed with
+     anything: change the inset on the Rust side and the strip kept the old gap, so the
+     breadcrumb sat crooked against the lights. `scripts/traffic-light-centering.test.ts` holds
+     the two files to each other. */
+  --macos-window-button-diameter: 12px;
+  --macos-window-button-pitch: 20px;
+  --macos-traffic-light-inset: 19px;
+  --macos-traffic-light-cluster: calc(
+    var(--macos-window-button-diameter) + 2 * var(--macos-window-button-pitch)
+  );
+  /* The strip's own breathing room, used on BOTH ends: the trailing edge spends it as `pr-2`,
+     so stating it once is what makes the two sides symmetric. */
+  --titlebar-gutter: 8px;
+  --mobile-header-height: 44px;
+  --editor-tab-height: 36px;
+  --panel-header-height: 36px;
+  /* Root and nested conversations share a single-line rhythm. */
+  --session-row-height: 32px;
+  /* Half the gap between an icon button's box and the glyph centred in it
+     (`--chrome-control-md` around a `size-3.5`). A ROW of icon buttons has to be pulled out
+     by this much for its glyphs to sit on the same left edge as the text above them —
+     otherwise every icon row in the app is optically indented by an amount nobody chose. */
+  --icon-button-optical-inset: calc((var(--chrome-control-md) - 0.875rem) / 2);
+  --statusbar-height: 24px;
+  /* Resize affordances keep a forgiving pointer target while painting only a
+     hairline. Consumers provide axis + pointer mechanics through `.lx-sash`. */
+  --sash-hit-area: 6px;
+  --sash-line-width: 1px;
+
+  /* z-index scale — single source of truth for stacking order; base = 0 (implicit) */
+  --z-raised: 5;
+  --z-controls: 20;
+  --z-sticky: 30;
+  --z-drag-overlay: 60;
+  /* Local overlays stay within a workbench surface. App-level drawers/dialogs
+     use the explicit navigation → modal tiers below. A modal and its scrim must
+     cover temporary navigation, including the mobile sidebar. */
+  --z-overlay: 100;
+  --z-navigation-backdrop: 190;
+  --z-sidebar: 200;
+  --z-modal-backdrop: 210;
+  --z-modal: 220;
+  /* Popovers/dropdowns sit ABOVE modals: they're invoked from whatever layer is
+     already on top (incl. a modal/overlay like the onboarding wizard), so their
+     portaled menu must float over it — never get buried behind it. */
+  --z-popover: 250;
+  --z-tooltip: 300;
+}
+
+/* Filter geometry belongs to the host component. Plugin stylesheets ship after the
+   host stylesheet, so generic responsive utility selectors can override one another. */
+.lx-workbench-filter-bar {
+  container-type: inline-size;
+}
+.lx-workbench-filter-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 0.5rem;
+}
+@container (min-width: 32rem) {
+  .lx-workbench-filter-grid--two {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+  .lx-workbench-filter-grid--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (min-width: 64rem) {
+  .lx-workbench-filter-grid--four {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) max-content;
+  }
+}
+
+/* One resize affordance for editor splits, shell sidebars and nested panels.
+   The element owns the 6px hit target; its pseudo-element paints a centered 1px
+   seam. Hover is intentionally delayed to avoid flashing while crossing a pane,
+   while press and an explicit drag state respond immediately. */
+.lx-sash {
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+}
+.lx-sash::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  background-color: transparent;
+  transition: background-color var(--dur-fast) var(--ease-soft);
+}
+.lx-sash:hover::after {
+  background-color: rgb(128 128 128 / 0.18);
+  background-color: color-mix(in oklch, var(--foreground) 15%, transparent);
+  transition-delay: var(--dur-base);
+}
+.lx-sash:active::after,
+.lx-sash[data-active='true']::after {
+  background-color: rgb(128 128 128 / 0.72);
+  background-color: color-mix(in oklch, var(--foreground) 60%, transparent);
+  transition-delay: 0ms;
+}
+.lx-sash:focus-visible {
+  outline: none;
+}
+.lx-sash:focus-visible::after {
+  background-color: var(--control-border-focus);
+  box-shadow: 0 0 0 1px var(--control-border-focus);
+  transition-delay: 0ms;
+}
+.lx-sash[aria-orientation='vertical'] {
+  width: var(--sash-hit-area);
+  cursor: col-resize;
+}
+.lx-sash[aria-orientation='vertical']::after {
+  inset-block: 0;
+  left: calc(50% - var(--sash-line-width) / 2);
+  width: var(--sash-line-width);
+}
+.lx-sash[aria-orientation='horizontal'] {
+  height: var(--sash-hit-area);
+  cursor: row-resize;
+}
+.lx-sash[aria-orientation='horizontal']::after {
+  inset-inline: 0;
+  top: calc(50% - var(--sash-line-width) / 2);
+  height: var(--sash-line-width);
+}
+
+/* Tauri detects drag regions by the `data-tauri-drag-region` attribute (NOT the
+   CSS -webkit-app-region property), so the titlebar carries that attribute
+   directly. Interactive children inside a drag region should stop mousedown
+   propagation (or carry their own handlers) so a click on them doesn't drag. */
+.app-titlebar {
+  /* Keep the left zone clear for the macOS traffic lights: where the cluster starts, plus how
+     wide it is, plus the same gutter the trailing edge uses. Derived rather than measured, so
+     the reservation cannot drift away from the position the Rust side sets. */
+  padding-left: calc(
+    var(--macos-traffic-light-inset) + var(--macos-traffic-light-cluster) + var(--titlebar-gutter)
+  );
+}
+
+/* Native fullscreen auto-hides the traffic lights, so drop the reserved gap.
+   `data-fullscreen` is stamped on <html> by windowChrome.ts (OS-level
+   fullscreen via the Tauri bridge — not the web Fullscreen API). */
+:root[data-fullscreen='true'] .app-titlebar {
+  padding-left: var(--titlebar-gutter);
+}
+
+/* Native macOS titlebars dim when the window loses focus.
+   `data-window-inactive` is stamped by windowChrome.ts. Opacity, not
+   color — titlebar children carry their own explicit text colors. */
+:root[data-window-inactive='true'] .app-titlebar {
+  opacity: 0.6;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Theme switch reveal (View Transitions API)
+   The old theme is held static underneath while the new theme is clipped in
+   with an expanding circle originating at the toggle click point. The actual
+   clip-path keyframes are driven from useTheme.ts so the origin/radius can be
+   computed from the pointer position. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* The reveal snapshot overlays the viewport for the full animation (`--dur-slow`).
+   Without this it swallows clicks during that window, so a tap right after a
+   theme toggle lands on the frozen image instead of the live element. Letting
+   pointer events pass straight through keeps the UI clickable mid-transition. */
+::view-transition,
+::view-transition-group(root),
+::view-transition-image-pair(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  pointer-events: none;
+}
+
+/* New theme paints on top of the old one during the reveal. */
+::view-transition-new(root) {
+  z-index: 1;
+}
+::view-transition-old(root) {
+  z-index: 0;
+}
+
+/* Read-only editor line numbers. CodeBlock guarantees one `.sh__line` per source line in
+   `lineNumbers` mode, so a CSS counter stays aligned without a mirrored gutter or pixel math.
+   `.file-line-numbers` remains as a compatibility alias for the inspector wrapper. */
+.code-line-numbers,
+.file-line-numbers {
+  counter-reset: sh-line;
+}
+.code-line-numbers .sh__line::before,
+.file-line-numbers .sh__line::before {
+  counter-increment: sh-line;
+  content: counter(sh-line);
+  display: inline-block;
+  width: 2.5rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: var(--text-faint);
+  opacity: 0.7;
+  user-select: none;
+}
+
+/* ── Runtime-configurable code font ──────────────────────────────────────────
+   The `font-mono` utility is `@theme inline`, so Tailwind bakes a LITERAL stack
+   into the class — setting `--font-mono` at runtime would otherwise do nothing
+   for code surfaces. This rule is UNLAYERED, so it outranks the (layered)
+   utility and forces every code surface to follow the user's chosen code font.
+   Default `--font-mono` is still Fragment Mono, so nothing changes until picked.
+   `.lx-keep-mono` opts an element out (e.g. a fixed-font preview sample). */
+code:not(.lx-keep-mono),
+pre:not(.lx-keep-mono),
+kbd:not(.lx-keep-mono),
+samp:not(.lx-keep-mono),
+[class*='font-mono']:not(.lx-keep-mono) {
+  font-family: var(--font-mono, ui-monospace, 'Cascadia Code', monospace);
+}
+
+/* Same @theme-inline baking problem for the heading font: Tailwind bakes a
+   LITERAL 'DM Sans Variable' stack into the `font-heading` utility, so the
+   desktop per-OS `--font-heading` override (SF Pro / Segoe UI) would never
+   reach utility consumers. UNLAYERED so it outranks the layered utility;
+   the fallback equals the :root default, so the web build is unchanged. */
+.font-heading {
+  font-family: var(--font-heading, 'DM Sans Variable', 'Inter Variable', system-ui, sans-serif);
+}

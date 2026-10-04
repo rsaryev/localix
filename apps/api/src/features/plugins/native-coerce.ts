@@ -1,0 +1,77 @@
+import type { AgentTool } from '@localixai/agent/agents'
+
+import { isPlainObject } from './mcp'
+import type { PluginChannel } from './channel-contracts'
+import type { PluginHooks, MemoryProvider } from './hook-contracts'
+import type { PluginContext } from './native'
+import type { BackendSubsystem } from '../ext/subsystem-contrib'
+import type { PluginRegistration } from '@localixai/plugin-sdk/backend'
+
+/**
+ * Structural shaping of whatever a native plugin's `register()` (or default/tools
+ * export) returns into the real runtime shapes. Native plugins are TRUSTED but
+ * untyped JS, so every exported value is structurally validated here before use.
+ */
+
+export interface NativeModuleExports {
+  register?: (ctx: PluginContext) => RegisterResult | Promise<RegisterResult>
+  tools?: unknown
+  hooks?: PluginHooks
+  default?: unknown
+}
+
+export type RegisterResult = PluginRegistration | undefined
+
+function looksLikeChannel(c: unknown): c is PluginChannel {
+  return (
+    isPlainObject(c) &&
+    typeof c.name === 'string' &&
+    typeof (c as { start?: unknown }).start === 'function'
+  )
+}
+
+/** Structural check that an exported value looks like a `BackendSubsystem`. */
+function looksLikeBackendSubsystem(s: unknown): s is BackendSubsystem {
+  return isPlainObject(s) && typeof s.id === 'string' && s.id.length > 0
+}
+
+/** Coerce a register() `backend` field (one or many) into a validated array. */
+export function asBackendSubsystemArray(value: unknown): BackendSubsystem[] {
+  if (Array.isArray(value)) return value.filter(looksLikeBackendSubsystem)
+  if (looksLikeBackendSubsystem(value)) return [value]
+  return []
+}
+
+export function asChannelArray(value: unknown): PluginChannel[] {
+  return Array.isArray(value) ? value.filter(looksLikeChannel) : []
+}
+
+/** Structural check that an exported value looks like an AgentTool. */
+export function looksLikeTool(t: unknown): t is AgentTool {
+  if (!isPlainObject(t)) return false
+  return (
+    typeof t.name === 'string' &&
+    typeof t.description === 'string' &&
+    Boolean(t.inputSchema) &&
+    typeof (t as { execute?: unknown }).execute === 'function'
+  )
+}
+
+/** Ensure required UI fields exist without overwriting what the author set. */
+function normalizeTool(t: AgentTool): AgentTool {
+  return { ...t, activeVerb: t.activeVerb ?? 'Running' }
+}
+
+export function asToolArray(value: unknown): AgentTool[] {
+  if (Array.isArray(value))
+    return value.flatMap((t) => (looksLikeTool(t) ? [normalizeTool(t)] : []))
+  if (looksLikeTool(value)) return [normalizeTool(value)]
+  return []
+}
+
+/** Structural check that an exported value looks like a MemoryProvider. */
+export function asMemoryProvider(value: unknown): MemoryProvider | undefined {
+  if (!isPlainObject(value)) return undefined
+  if (typeof value.loadContext !== 'function') return undefined
+  return value as unknown as MemoryProvider
+}
