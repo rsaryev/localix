@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-informational"></a>
-  <img alt="Status: pre-release" src="https://img.shields.io/badge/status-pre--release-orange">
+  <img alt="Status: beta" src="https://img.shields.io/badge/status-beta-lightgrey">
   <img alt="Platforms: macOS, Windows, Linux" src="https://img.shields.io/badge/platforms-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-lightgrey">
 </p>
 
@@ -272,9 +272,10 @@ localix file.ts  # open a file
 
 ## Project status
 
-Localix is **pre-release**. There are no version tags and no published installers yet; releases will
-be cut from `main` and announced in [CHANGELOG.md](CHANGELOG.md). Expect rough edges and breaking
-changes until then. Planned installers: macOS (arm64, x64), Windows (x64) and Linux (x64).
+Localix is in **beta**. Releases are cut from `main`, listed on the
+[Releases](https://github.com/rsaryev/localix/releases) page and described in
+[CHANGELOG.md](CHANGELOG.md). Installers come first for macOS (Apple silicon and Intel), with Windows
+and Linux to follow. Expect rough edges and breaking changes before 1.0.
 
 ## Security and privacy
 

@@ -17,13 +17,10 @@ name: Release
 # becomes latest; a prerelease remains non-latest.
 #
 # Required secrets:
-#   RELEASE_TOKEN  — GitHub PAT with `contents:write` on RELEASE_REPO. Needed
-#                    because this code repo differs from the public release repo.
-#                    Before running this workflow, mirror the exact source commit
-#                    and create the same tag pointing to that commit in RELEASE_REPO; the verifier
-#                    rejects a missing tag or a tag that resolves elsewhere.
-#                    If releases move into this repo, set RELEASE_REPO to
-#                    ${{ github.repository }} and supply a token with contents:write.
+#   Releases are published to this same repository with the workflow's own token
+#   (`contents: write` on the three jobs that mutate the release). Create the tag
+#   on the commit being released first; the verifier rejects a missing tag or a tag
+#   that resolves elsewhere.
 # Required for public macOS releases — Developer ID signing + notarization.
 # `tauri:release` fails before building when any notarization value is absent:
 #   APPLE_CERTIFICATE           — base64 of the "Developer ID Application" .p12
@@ -47,6 +44,10 @@ on:
 
 env:
   RELEASE_REPO: rsaryev/localix
+  # Shown quietly in the release title; empty for a stable release.
+  RELEASE_CHANNEL: beta
+  # Platforms this release ships; the updater manifest must hold a signed artifact for each.
+  RELEASE_PLATFORMS: darwin-aarch64,darwin-x86_64
   RUST_TOOLCHAIN: 1.96.1
 
 permissions:
@@ -251,6 +252,8 @@ jobs:
     needs: [prepare, verify, verify-rust, verify-signing-key]
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -264,7 +267,7 @@ jobs:
       - name: Verify release tag and existing draft
         id: target
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
         run: bun scripts/verify-release-target.mjs >> "$GITHUB_OUTPUT"
@@ -272,7 +275,7 @@ jobs:
       - name: Create draft release
         if: steps.target.outputs.release_exists != 'true'
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
           IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
@@ -283,7 +286,8 @@ jobs:
           fi
           gh release create "$TAG" --repo "$RELEASE_REPO" --draft --verify-tag \
             --latest=false "${PRERELEASE_ARGS[@]}" \
-            --title "$TAG" --notes "Localix $TAG"$'\n\n'"Source commit: $SOURCE_COMMIT"
+            --title "Localix $TAG${RELEASE_CHANNEL:+ ($RELEASE_CHANNEL)}" \
+            --notes "Localix $TAG"$'\n\n'"Source commit: $SOURCE_COMMIT"
 
   # ── build-desktop: one NATIVE build per platform → upload installers ─────────
   # Native runners per arch (no cross-compile) so the bundled API sidecar (a real
@@ -294,14 +298,18 @@ jobs:
     needs: [prepare, verify, draft-release]
     runs-on: ${{ matrix.os }}
     environment: release
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
+        # The first beta ships for macOS only. The Windows and Linux legs below stay wired
+        # (their case branches, installer checks and updater keys are tested) and rejoin by
+        # adding `{ os: windows-latest, name: win-x64 }` and `{ os: ubuntu-22.04, name: linux-x64 }`
+        # here together with their platforms in RELEASE_PLATFORMS.
         include:
           - { os: macos-15, name: macos-arm64 }
           - { os: macos-15-intel, name: macos-x64 }
-          - { os: windows-latest, name: win-x64 }
-          - { os: ubuntu-22.04, name: linux-x64 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -512,7 +520,7 @@ jobs:
       - name: Upload release assets to draft release
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           MATRIX_NAME: ${{ matrix.name }}
         run: |
@@ -531,6 +539,9 @@ jobs:
     needs: [prepare, build-desktop]
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: write
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -543,7 +554,7 @@ jobs:
 
       - name: Reverify release tag and draft provenance
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
         run: bun scripts/verify-release-target.mjs
@@ -557,7 +568,7 @@ jobs:
       # Missing signatures are a failed release, never a silently broken updater.
       - name: Generate updater latest.json
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
           RELEASE_SIGNATURE_DIR: ${{ github.workspace }}/updater/signatures
@@ -578,7 +589,7 @@ jobs:
 
       - name: Publish stable or prerelease
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
@@ -591,4 +602,16 @@ jobs:
           else
             gh release edit "$TAG" --repo "$RELEASE_REPO" --verify-tag \
               --draft=false --prerelease=false --latest
+          fi
+
+      # A release published with the workflow token does not trigger `release: published`
+      # workflows, so the landing would keep its "coming soon" buttons. Dispatch it
+      # explicitly; the landing workflow decides preview vs production on its own.
+      - name: Refresh the landing download buttons
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
+        run: |
+          if [[ "$IS_PRERELEASE" != "true" ]]; then
+            gh workflow run landing.yml --repo "$RELEASE_REPO" --ref main -f production=true
           fi

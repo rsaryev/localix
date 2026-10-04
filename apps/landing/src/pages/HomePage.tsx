@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { DownloadChooser } from '@/components/DownloadChooser'
+import { RELEASE_CHANNEL } from '@/components/releaseChannel'
 import { ProductVideo } from '@/components/ProductVideo'
 import { SectionNav } from '@/components/SectionNav'
 import { AfterFirstPaint } from '@/components/home/AfterFirstPaint'
@@ -37,7 +38,9 @@ export function HomePage() {
       >
         <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(24rem,0.92fr)] lg:gap-0">
           <div className="relative z-10 max-w-4xl">
-            <p className="eyebrow mb-5">Localix</p>
+            <p className="eyebrow mb-5">
+              Localix <span className="text-text-faint">· {RELEASE_CHANNEL}</span>
+            </p>
             <h1 className="display text-balance text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem] xl:text-[4.25rem]">
               One workspace for you and a team of agents
             </h1>

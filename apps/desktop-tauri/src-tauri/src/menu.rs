@@ -194,6 +194,10 @@ const REDO_ACCELERATOR: Option<&str> = Some("CmdOrCtrl+Shift+Z");
 #[cfg(not(target_os = "macos"))]
 const REDO_ACCELERATOR: Option<&str> = Some("Ctrl+Y");
 
+/// The stage shown beside the version in the About panel, quietly. It matches the label on the
+/// landing page and the channel named in `release.yml`; change them together when beta ends.
+const RELEASE_CHANNEL: &str = "beta";
+
 pub(crate) fn build_app_menu<R: tauri::Runtime>(
     handle: &tauri::AppHandle<R>,
     data: &MenuData,
@@ -204,7 +208,10 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
     let cfg = handle.config();
     let about = AboutMetadata {
         name: Some("Localix".into()),
-        version: Some(cfg.version.clone().unwrap_or_else(|| "0.0.0".into())),
+        version: Some(format!(
+            "{} {RELEASE_CHANNEL}",
+            cfg.version.clone().unwrap_or_else(|| "0.0.0".into())
+        )),
         copyright: cfg.bundle.copyright.clone(),
         authors: cfg.bundle.publisher.clone().map(|p| vec![p]),
         // website/comments/license render in the Tauri-drawn About dialog on

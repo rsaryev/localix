@@ -2,9 +2,9 @@
 
 ## Supported versions
 
-Before the first public release, security fixes are made on the current `main` branch. After
-releases begin, the latest published release and `main` are supported; older releases should be
-updated before reporting unless the issue prevents the update itself.
+While Localix is in beta (versions before 1.0), the latest published release and `main` are
+supported; older releases should be updated before reporting unless the issue prevents the update
+itself.
 
 ## Reporting a vulnerability
 

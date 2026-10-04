@@ -59,6 +59,7 @@ for the current project, so disabling a plugin removes its gated tools and views
 
 ## Limits
 
+- Localix is in beta. Expect rough edges, and breaking changes between releases until 1.0.
 - Sessions currently execute on the local machine. SSH and Docker execution adapters exist in
   source, but no product control selects them for a session.
 - Localix does not supply a hosted model or provider credential. A direct run stops when its

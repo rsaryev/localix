@@ -1,11 +1,20 @@
 # Changelog
 
-No release has been cut yet. This repository carries no version tags and no desktop build has been
-published, so there is no version history to record below.
+Localix is in beta: versions before 1.0 may change behavior between releases.
 
 ## Unreleased
 
-Changes land on `main`. Nothing in them is downloadable yet.
+Changes land on `main`.
+
+## v0.1.0 — 2026-10-05
+
+The first beta.
+
+### Added
+
+- Desktop application for macOS, Apple silicon and Intel, signed and notarized.
+- Multi-agent conversations, connected context, Project Space, the agent-driven preview with
+  Visual Feedback, plugins the agent can build, loops and monitors, and the bundled workbenches.
 
 ## How entries get added
 

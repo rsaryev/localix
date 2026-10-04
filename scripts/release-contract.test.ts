@@ -105,16 +105,33 @@ describe('release workflow contract', () => {
     )
   })
 
-  test('keeps cross-repository publication on the dedicated release token', () => {
+  test('publishes to this repository with the workflow token, scoped per job', () => {
     expect(release).not.toContain('secrets.GITHUB_TOKEN')
+    expect(release).not.toContain('secrets.RELEASE_TOKEN')
     const tokenBindings = release
       .split(/\r?\n/u)
       .filter((line) => line.includes('GH_TOKEN:'))
       .map((line) => line.trim())
     expect(tokenBindings).not.toBeEmpty()
     for (const binding of tokenBindings) {
-      expect(binding).toBe('GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}')
+      expect(binding).toBe('GH_TOKEN: ${{ github.token }}')
     }
+    // The workflow default stays read-only; only the jobs that mutate the release may write.
+    expect(release).toMatch(/\npermissions:\n {2}contents: read\n/u)
+    for (const job of ['draft-release', 'build-desktop', 'publish-desktop']) {
+      const start = release.indexOf(`\n  ${job}:`)
+      const header = release.slice(start, release.indexOf('    steps:', start))
+      expect(header).toContain('permissions:\n      contents: write')
+    }
+  })
+
+  test('ships only the platforms its matrix builds, and the manifest asks for exactly those', () => {
+    const platforms = workflowValues(release, 'RELEASE_PLATFORMS')[0]
+    expect(platforms).toBe('darwin-aarch64,darwin-x86_64')
+    expect(release).toContain('- { os: macos-15, name: macos-arm64 }')
+    expect(release).toContain('- { os: macos-15-intel, name: macos-x64 }')
+    expect(release).not.toContain('- { os: windows-latest, name: win-x64 }')
+    expect(release).not.toContain('- { os: ubuntu-22.04, name: linux-x64 }')
   })
 
   test('rechecks mirrored tag provenance immediately before manifest generation and publish', () => {
@@ -161,7 +178,6 @@ describe('release workflow contract', () => {
     ]) {
       expect(release).toContain(`require_match '${pattern}'`)
     }
-    expect(release).toContain('- { os: windows-latest, name: win-x64 }')
     expect(release).toMatch(/case "\$\{\{ matrix\.name \}\}" in[\s\S]*?\n\s+win-x64\)/u)
     expect(release).not.toMatch(/\.msi|\.rpm/u)
   })

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createUpdaterManifest } from './build-updater-manifest.mjs'
+import { createUpdaterManifest, parsePlatformList } from './build-updater-manifest.mjs'
 
 const signatures = [
   { name: 'Localix_aarch64.app.tar.gz.sig', signature: 'mac-arm-signature\n' },
@@ -12,6 +12,42 @@ const signatures = [
 const assets = signatures.flatMap(({ name }) => [name, name.slice(0, -'.sig'.length)])
 
 describe('updater manifest', () => {
+  test('a macOS-only release lists exactly its platforms and needs no other signatures', () => {
+    const macOnly = signatures.slice(0, 2)
+    const manifest = createUpdaterManifest({
+      repository: 'rsaryev/localix',
+      tag: 'v1.2.3',
+      version: '1.2.3',
+      publishedAt: '2026-07-24T01:02:03Z',
+      assets: macOnly.flatMap(({ name }) => [name, name.slice(0, -'.sig'.length)]),
+      signatures: macOnly,
+      platforms: parsePlatformList('darwin-aarch64,darwin-x86_64'),
+    })
+
+    expect(Object.keys(manifest.platforms)).toEqual(['darwin-aarch64', 'darwin-x86_64'])
+  })
+
+  test('a platform named for the release still fails when its signature is missing', () => {
+    expect(() =>
+      createUpdaterManifest({
+        repository: 'rsaryev/localix',
+        tag: 'v1.2.3',
+        version: '1.2.3',
+        publishedAt: '2026-07-24T01:02:03Z',
+        assets: [],
+        signatures: [],
+        platforms: ['darwin-aarch64'],
+      }),
+    ).toThrow('Missing signed updater artifact for darwin-aarch64')
+  })
+
+  test('rejects a platform the manifest does not know', () => {
+    expect(() => parsePlatformList('darwin-aarch64,darwin-arm64')).toThrow(
+      'Unknown updater platform: darwin-arm64',
+    )
+    expect(parsePlatformList('')).toHaveLength(5)
+  })
+
   test('maps every signed Tauri updater bundle to an encoded release URL', () => {
     const manifest = createUpdaterManifest({
       repository: 'rsaryev/localix',

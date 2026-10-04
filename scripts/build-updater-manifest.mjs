@@ -17,6 +17,19 @@ const EXPECTED_PLATFORMS = [
   'linux-x86_64-deb',
 ]
 
+// A release may ship fewer platforms than the full set (the first beta is macOS only). The list the
+// workflow passes is validated against EXPECTED_PLATFORMS so a typo cannot silently shrink the
+// manifest, and a platform on the list that has no signed artifact still fails the release.
+export function parsePlatformList(value) {
+  if (!value) return EXPECTED_PLATFORMS
+  const requested = value.split(',').map((item) => item.trim())
+  const unknown = requested.filter((item) => !EXPECTED_PLATFORMS.includes(item))
+  if (unknown.length > 0 || requested.length === 0) {
+    throw new Error(`Unknown updater platform: ${unknown.join(', ') || '(empty)'}`)
+  }
+  return requested
+}
+
 function updaterTarget(signatureName) {
   if (signatureName.endsWith('.app.tar.gz.sig')) {
     if (signatureName.includes('aarch64')) return { platform: 'darwin-aarch64', priority: 1 }
@@ -42,6 +55,7 @@ export function createUpdaterManifest({
   publishedAt,
   assets,
   signatures,
+  platforms: shippedPlatforms = EXPECTED_PLATFORMS,
 }) {
   const parsedTag = parseReleaseTag(tag)
   if (version !== parsedTag.version) {
@@ -71,7 +85,7 @@ export function createUpdaterManifest({
     selected.set(target.platform, { artifact, signature, priority: target.priority })
   }
 
-  for (const platform of EXPECTED_PLATFORMS) {
+  for (const platform of shippedPlatforms) {
     if (!selected.has(platform)) {
       throw new Error(`Missing signed updater artifact for ${platform}`)
     }
@@ -79,7 +93,7 @@ export function createUpdaterManifest({
 
   const baseUrl = `https://github.com/${repository}/releases/download/${encodeURIComponent(tag)}`
   const platforms = Object.fromEntries(
-    EXPECTED_PLATFORMS.map((platform) => {
+    shippedPlatforms.map((platform) => {
       const entry = selected.get(platform)
       return [
         platform,
@@ -122,6 +136,7 @@ if (import.meta.main) {
       publishedAt: process.env.RELEASE_PUBLISHED_AT,
       assets,
       signatures,
+      platforms: parsePlatformList(process.env.RELEASE_PLATFORMS),
     })
     writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`)
   } catch (error) {

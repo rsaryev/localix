@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Outlet, Link, useLocation } from 'react-router'
 import { PAGE_SHELL } from '../lib/shell'
 import { Button } from './Button'
+import { RELEASE_CHANNEL } from './releaseChannel'
 import { ThemeToggle } from './ThemeToggle'
 
 export function SiteLayout() {
@@ -47,7 +48,9 @@ export function SiteLayout() {
           <div className="flex items-center gap-2.5">
             <img src="/logo.svg" alt="" className="size-5 opacity-80" />
             {/* The year is read at build time on the server and in the browser later. */}
-            <span suppressHydrationWarning>© {new Date().getFullYear()} Localix · localix.ai</span>
+            <span suppressHydrationWarning>
+              © {new Date().getFullYear()} Localix · localix.ai · {RELEASE_CHANNEL}
+            </span>
           </div>
           <div className="flex items-center gap-5">
             <Link to="/docs" className="hover:text-foreground">

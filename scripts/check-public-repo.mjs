@@ -338,7 +338,11 @@ assert(
 )
 assert(
   !release.includes('secrets.GITHUB_TOKEN'),
-  'Cross-repository release publication must use only RELEASE_TOKEN',
+  'Release publication must use the scoped workflow token, not secrets.GITHUB_TOKEN',
+)
+assert(
+  !release.includes('secrets.RELEASE_TOKEN'),
+  'Release publication happens in this repository; RELEASE_TOKEN is no longer used',
 )
 const ciRustToolchain = ci.match(/RUST_TOOLCHAIN:\s*([^\s]+)/u)?.[1]
 const releaseRustToolchain = release.match(/RUST_TOOLCHAIN:\s*([^\s]+)/u)?.[1]
