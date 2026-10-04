@@ -59,9 +59,32 @@ export function resolveDownloads(
   ]
 }
 
+/**
+ * The names the release workflow uploads next to the installers Tauri names with a version.
+ * GitHub resolves `releases/latest/download/<name>` to the newest published release, so a link
+ * built from these never changes and never goes stale. `release.yml` uploads exactly these names,
+ * and a landing test fails if the two sides drift.
+ */
+export const STABLE_INSTALLER_NAMES = {
+  'mac-arm64': 'Localix-macos-arm64.dmg',
+  'mac-x64': 'Localix-macos-x64.dmg',
+  windows: 'Localix-windows-x64.exe',
+  linux: 'Localix-linux-x64.AppImage',
+} as const satisfies Record<DownloadId, string>
+
+export const stableInstallerUrl = (id: DownloadId) =>
+  `${githubUrl}/releases/latest/download/${STABLE_INSTALLER_NAMES[id]}`
+
+/**
+ * True only for a build made after a release was published (the deploy sets it from the release
+ * list). Before that the stable links would answer 404, so the installers stay "Coming soon".
+ */
+const releaseLive = import.meta.env.VITE_RELEASE_LIVE === 'true'
+const liveUrl = (id: DownloadId) => (releaseLive ? stableInstallerUrl(id) : undefined)
+
 export const DOWNLOADS = resolveDownloads({
-  'mac-arm64': import.meta.env.VITE_DOWNLOAD_MAC_ARM64_URL,
-  'mac-x64': import.meta.env.VITE_DOWNLOAD_MAC_X64_URL,
-  windows: import.meta.env.VITE_DOWNLOAD_WINDOWS_URL,
-  linux: import.meta.env.VITE_DOWNLOAD_LINUX_URL,
+  'mac-arm64': cleanUrl(import.meta.env.VITE_DOWNLOAD_MAC_ARM64_URL) ?? liveUrl('mac-arm64'),
+  'mac-x64': cleanUrl(import.meta.env.VITE_DOWNLOAD_MAC_X64_URL) ?? liveUrl('mac-x64'),
+  windows: cleanUrl(import.meta.env.VITE_DOWNLOAD_WINDOWS_URL) ?? liveUrl('windows'),
+  linux: cleanUrl(import.meta.env.VITE_DOWNLOAD_LINUX_URL) ?? liveUrl('linux'),
 })

@@ -489,6 +489,24 @@ jobs:
               require_match 'dist-assets/*.deb.sig'
               ;;
           esac
+          # Stable-name copies of the installer people download. Tauri puts the version in the
+          # installer's name, so a link to it changes with every release; the landing page links to
+          # `releases/latest/download/<stable name>` instead, which GitHub resolves to the newest
+          # published release. These names are mirrored by `STABLE_INSTALLER_NAMES` in
+          # apps/landing/src/components/downloadOptions.ts, and a landing test keeps them in step.
+          # The versioned installers stay: the updater manifest is built from those.
+          stable_copy() {
+            local source
+            source=$(compgen -G "$1" | head -n 1)
+            [ -n "$source" ] || { echo "No installer matching $1 to copy as $2" >&2; exit 1; }
+            cp "$source" "dist-assets/$2"
+          }
+          case "${{ matrix.name }}" in
+            macos-arm64) stable_copy 'dist-assets/*.dmg' Localix-macos-arm64.dmg ;;
+            macos-x64) stable_copy 'dist-assets/*.dmg' Localix-macos-x64.dmg ;;
+            win-x64) stable_copy 'dist-assets/*.exe' Localix-windows-x64.exe ;;
+            linux-x64) stable_copy 'dist-assets/*.AppImage' Localix-linux-x64.AppImage ;;
+          esac
           echo "Collected:"; ls -la dist-assets || true
 
       - name: Upload release assets to draft release

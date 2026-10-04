@@ -42,7 +42,7 @@ async function mountChooser() {
   return { host, root, act, trigger, panel }
 }
 
-test('before a release the chooser offers a build from source, never a disabled download', async () => {
+test('before a release the chooser keeps its layout, with every installer marked coming soon', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
@@ -59,11 +59,14 @@ test('before a release the chooser offers a build from source, never a disabled 
     )
   })
 
-  expect(host.textContent).toContain('Build from source')
-  expect(host.textContent).not.toContain('Download for')
-  expect(host.textContent).not.toContain('Coming soon')
-  expect(host.querySelector('button[disabled]')).toBeNull()
-  expect(host.querySelector('a[href="/docs/getting-started--installation"]')).not.toBeNull()
+  // The primary installer is a disabled row, and the other platforms stay one click away, so the
+  // hero does not change shape the day a release lands.
+  expect(host.textContent).toContain('Download for Mac')
+  expect(host.textContent).toContain('Coming soon')
+  expect(host.querySelector('button[disabled]')).not.toBeNull()
+  expect(host.querySelector('button[aria-controls="download-alternatives"]')).not.toBeNull()
+  // No release means no "your platform is missing" note: nothing is missing, nothing exists yet.
+  expect(host.textContent).not.toContain('not in the release yet')
 
   await act(async () => root.unmount())
   host.remove()

@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, Download, SquareTerminal } from 'lucide-react'
+import { BookOpen, ChevronDown, Download } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { ButtonLink } from './Button'
@@ -155,31 +155,10 @@ function AlternativeDownloads({ options }: { options: DownloadOption[] }) {
 }
 
 /**
- * Until a release exists there is no installer to offer, so the one honest primary action is to
- * build from source. A disabled "Download for Mac · Coming soon" button, which this used to show,
- * advertises a build that is not there.
+ * The installer chooser, in every state. Before the first release every installer is a disabled
+ * "Coming soon" row, so the layout is the one visitors will find after the release and nothing
+ * moves when it lands; once a release is live the same rows become links to the newest build.
  */
-function SourceInstall({ className }: { className?: string }) {
-  return (
-    <div id="downloads" className={cn('w-full', className)}>
-      <div className="flex flex-wrap gap-2">
-        <ButtonLink to="/docs/getting-started--installation" size="md">
-          <SquareTerminal className="size-4 shrink-0" />
-          <span>Build from source</span>
-        </ButtonLink>
-        <ButtonLink to={githubUrl} external variant="outline" size="md">
-          <GitHubMark className="size-4 shrink-0" />
-          <span>View on GitHub</span>
-        </ButtonLink>
-        <ButtonLink to="/docs" variant="outline" size="md">
-          <BookOpen className="size-4 shrink-0" />
-          <span>Docs</span>
-        </ButtonLink>
-      </div>
-    </div>
-  )
-}
-
 export function DownloadChooser({
   className,
   downloads = DOWNLOADS,
@@ -187,7 +166,6 @@ export function DownloadChooser({
   className?: string
   downloads?: DownloadOption[]
 }) {
-  if (!downloads.some(({ url }) => url)) return <SourceInstall className={className} />
   return <InstallerChooser className={className} downloads={downloads} />
 }
 
@@ -232,7 +210,7 @@ function InstallerChooser({
             </p>
           )}
           <AlternativeDownloads options={alternatives} />
-          {!primary.url && (
+          {!primary.url && downloads.some(({ url }) => url) && (
             <p className="mt-2 px-2 text-xs text-text-soft">
               This platform's installer is not in the release yet.{' '}
               <Link
