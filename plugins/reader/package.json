@@ -11,7 +11,7 @@
   "dependencies": {
     "@localixai/path-containment": "workspace:*",
     "@thednp/dommatrix": "^3.0.4",
-    "@xmldom/xmldom": "^0.8.15",
+    "@xmldom/xmldom": "^0.9.12",
     "fflate": "^0.8.3",
     "foliate-js": "github:readest/foliate-js#68d54b1bd9599d37ad2e6ff6a62121745dd43bb6",
     "highlight.js": "^11.11.1",
