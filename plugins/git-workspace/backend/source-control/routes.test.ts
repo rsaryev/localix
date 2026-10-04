@@ -49,7 +49,9 @@ beforeAll(async () => {
   // realpath: on macOS `/var` is a symlink, and git reports the resolved form.
   container = await realpath(await mkdtemp(join(tmpdir(), 'sc-routes-')))
   repo = join(container, 'proj')
-  await runGit(container, ['init', '-q', 'proj'])
+  // The branch is named, not left to `init.defaultBranch`: the assertions below say `main`, and a
+  // machine without that global setting would otherwise start on `master`.
+  await runGit(container, ['init', '-q', '-b', 'main', 'proj'])
   await writeFile(join(repo, 'a.txt'), 'a\n')
   await git(['add', '.'])
   await git(['commit', '-qm', 'base'])
