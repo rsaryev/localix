@@ -6,6 +6,6 @@ COPY . .
 RUN bun install --frozen-lockfile
 RUN cd apps/landing && bun run build
 
-FROM nginx:alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752
+FROM nginx:alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2
 COPY --from=build /repo/apps/landing/dist /usr/share/nginx/html
 COPY apps/landing/nginx.conf /etc/nginx/conf.d/default.conf
