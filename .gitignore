@@ -26,6 +26,8 @@ pnpm-debug.log*
 .env
 .env.*
 .turbo
+# Local Vercel link and pulled settings (apps/landing deploys from CI; nothing here is source).
+.vercel
 benchmarks/
 
 # Database
