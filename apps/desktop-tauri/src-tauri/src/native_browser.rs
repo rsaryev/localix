@@ -546,6 +546,8 @@ enum Capture {
     /// Re-rendering the panel's DOM instead (`modern-screenshot`) inlines the computed style of
     /// every element on the page's one thread: a board with a few thousand nodes froze the whole
     /// app for minutes. The compositor already holds these pixels. JPEG, as the DOM path sent.
+    // Read only where the native capture exists (macOS); elsewhere the fields are never read.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     Region {
         x: f64,
         y: f64,
@@ -556,6 +558,7 @@ enum Capture {
 
 /// The longest edge a region capture is delivered at, in points: enough to read a board, and a
 /// fraction of a full-resolution window over IPC and in the model's context.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 const REGION_MAX_EDGE: f64 = 1600.0;
 
 /// Capture a rectangle of the calling main view — a plugin panel the agent asked to see.

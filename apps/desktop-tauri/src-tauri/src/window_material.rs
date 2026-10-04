@@ -9,6 +9,10 @@
 //! The view follows the window's `effectiveAppearance` on its own, so this is only ever called when
 //! the APP's theme changes — at startup, and from the `set_theme` command.
 
+// Only the macOS build chooses a material, so on every other target this module is declared but
+// nothing calls it. Without this, `-D warnings` turns that into an error on the Linux CI leg.
+#![cfg_attr(not(target_os = "macos"), allow(dead_code))]
+
 #[cfg(target_os = "macos")]
 use tauri::WebviewWindow;
 

@@ -33,7 +33,9 @@ to the code they cover as `*.test.ts` or `*.test.tsx`, and browser-like componen
 - `bun run check:rust` is required after changes under `apps/desktop-tauri/src-tauri`.
 - CI also runs `check:audit`, `check:deadcode`, `check:public`, `check:release` and `check:vendor`.
   Run them before a change that could plausibly affect them: a new dependency, a deleted export, a
-  moved documentation link, or anything under `vendor/`.
+  moved documentation link, or anything under `vendor/`. `check:audit` ignores one advisory,
+  `GHSA-vfj7-8cjw-p6xm` (`braces`): no patched release exists, and it is reached only through the
+  development tools `shadcn` and `shx`, never through shipped code. Drop the flag when a fix ships.
 
 Run a focused test while you iterate, from the repository root:
 

@@ -45,7 +45,7 @@
     "check:docs": "bun scripts/check-doc-refs.mjs",
     "check:generated": "bun scripts/check-generated.mjs",
     "check:plugins": "bun run --cwd apps/api validate:plugins --strict",
-    "check:audit": "bun audit --audit-level=moderate",
+    "check:audit": "bun audit --audit-level=moderate --ignore=GHSA-vfj7-8cjw-p6xm",
     "check:deadcode": "VITE_API_BASE_URL=http://127.0.0.1:1 knip --include files,dependencies,unlisted,unresolved,binaries --no-config-hints",
     "deadcode": "VITE_API_BASE_URL=http://127.0.0.1:1 knip",
     "check:globals": "TEST_GLOBALS_STRICT=1 bun test apps/api/src/features apps/ui/src packages"
