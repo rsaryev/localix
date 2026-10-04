@@ -44,7 +44,7 @@ tauri-plugin-single-instance = { version = "2.4.2", features = ["deep-link"] }
 tauri-plugin-deep-link = "2.4.9"
 tauri-plugin-dialog = "2.7.1"
 base64 = "0.22.1"
-minisign-verify = "0.2.5"
+minisign-verify = "0.3.0"
 
 # macOS: NSUserDefaults access to disable the press-and-hold accent popup so
 # key repeat works in the terminal/editor, plus NSPasteboard to read the DRAG
