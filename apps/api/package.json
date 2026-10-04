@@ -82,7 +82,7 @@
     "diff": "^9.0.0",
     "dockerfile-language-server-nodejs": "^0.15.0",
     "hono": "^4.12.30",
-    "kysely": "^0.29.3",
+    "kysely": "^0.29.6",
     "linkedom": "^0.18.13",
     "picomatch": "^4.0.5",
     "pino": "^10.3.1",
