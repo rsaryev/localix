@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 
-const source = readFileSync(new URL('./Stat.tsx', import.meta.url), 'utf8')
+const source = readFileSync(new URL('./stat.tsx', import.meta.url), 'utf8')
 
 describe('dashboard statistics presentation', () => {
   test('uses quiet rules instead of raised cards', () => {

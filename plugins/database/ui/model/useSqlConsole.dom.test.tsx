@@ -115,7 +115,10 @@ describe('SQL console last failure', () => {
     const root = createRoot(host)
     let state: SqlConsoleState | null = null
     function Harness() {
-      state = useSqlConsole('c1', { dialect: 'sqlite', dbLabel: 'c1' })
+      // A connection id no other test uses: `transactionStore` is module-global, and another
+      // file in the same `bun test` process that leaves `c1` in manual mode makes this run open a
+      // real transaction (a network call) before the statement, so the failure never records.
+      state = useSqlConsole('last-failure-conn', { dialect: 'sqlite', dbLabel: 'last-failure' })
       return null
     }
     try {
