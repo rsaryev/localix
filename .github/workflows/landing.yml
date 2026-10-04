@@ -146,11 +146,16 @@ jobs:
       - name: Deploy the verified build
         id: deploy
         run: |
-          # Piped, the CLI prints a JSON result rather than a bare URL.
-          vercel deploy --prebuilt ${{ steps.target.outputs.flag }} --token "$VERCEL_TOKEN" > deploy.json
-          test "$(jq -r '.status' deploy.json)" = "ok" || { cat deploy.json >&2; exit 1; }
-          test "$(jq -r '.deployment.readyState' deploy.json)" = "READY" || { cat deploy.json >&2; exit 1; }
-          echo "url=$(jq -r '.deployment.url' deploy.json)" >> "$GITHUB_OUTPUT"
+          # The CLI prints plain text here and JSON when it detects an agent, so the address is
+          # read with a pattern that works for both, and readiness is asked of the API instead.
+          vercel deploy --prebuilt ${{ steps.target.outputs.flag }} --token "$VERCEL_TOKEN" > deploy.out
+          url=$(grep -Eo 'https://[A-Za-z0-9.-]+\.vercel\.app' deploy.out | tail -n 1)
+          test -n "$url" || { cat deploy.out >&2; echo "No deployment address in the CLI output" >&2; exit 1; }
+          host="${url#https://}"
+          state=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v13/deployments/$host?teamId=$VERCEL_ORG_ID" | jq -r '.readyState')
+          test "$state" = "READY" || { echo "Deployment $host is $state, not READY" >&2; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
