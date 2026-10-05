@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { nextRefSeq, retrySqliteBusy } from '../../db'
+import { deleteSessionChunks } from '../context-store/maintenance'
 import { claimSessionIdentity, type SessionIdentityClaim } from './repository-session-identity'
 import { sessionRef } from './contracts'
 import { createExternalSessionWriter } from './repository-external-session-write'
@@ -290,6 +291,8 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
           .where('user_id', '=', userId)
           .where('id', 'in', sessionIds)
           .execute()
+        // The search index is a virtual table: no foreign key reaches it.
+        await deleteSessionChunks(trx, userId, sessionIds)
       })
     },
   }

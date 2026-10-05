@@ -315,6 +315,9 @@ export interface ToolOutputArtifactsTable {
   tool_call_id: string
   tool_name: string
   content: string
+  /** 'plain': `content` is the text. 'zstd': `content` is '' and `content_z` holds it compressed. */
+  encoding: 'plain' | 'zstd'
+  content_z: Uint8Array | null
   input_json: string
   is_error: number
   byte_length: number

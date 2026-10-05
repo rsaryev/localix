@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
+import { decodeArtifactText, encodeArtifactText } from './artifact-codec'
 import { chunkToolOutput, MAX_CHUNKS } from './chunking'
 
 /**
@@ -35,7 +36,6 @@ export type ContextStore = ReturnType<typeof createContextStoreRepository>
  * session matched" from "this session's index is full and older sections are gone".
  */
 export const MAX_CHUNKS_PER_SESSION = 5000
-const utf8 = new TextEncoder()
 
 export function createContextStoreRepository(db: Kysely<AppDatabase>) {
   return {
@@ -55,7 +55,7 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
     }): Promise<void> {
       const now = new Date().toISOString()
       const inputJson = JSON.stringify(input.toolInput) ?? 'null'
-      const byteLength = utf8.encode(input.text).length
+      const stored = encodeArtifactText(input.text)
       await db
         .insertInto('tool_output_artifacts')
         .values({
@@ -63,20 +63,24 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
           session_id: input.sessionId,
           tool_call_id: input.toolCallId,
           tool_name: input.toolName,
-          content: input.text,
+          content: stored.content,
+          encoding: stored.encoding,
+          content_z: stored.content_z,
           input_json: inputJson,
           is_error: input.isError ? 1 : 0,
-          byte_length: byteLength,
+          byte_length: stored.byteLength,
           created_at: now,
           updated_at: now,
         })
         .onConflict((oc) =>
           oc.columns(['user_id', 'session_id', 'tool_call_id']).doUpdateSet({
             tool_name: input.toolName,
-            content: input.text,
+            content: stored.content,
+            encoding: stored.encoding,
+            content_z: stored.content_z,
             input_json: inputJson,
             is_error: input.isError ? 1 : 0,
-            byte_length: byteLength,
+            byte_length: stored.byteLength,
             updated_at: now,
           }),
         )
@@ -90,7 +94,15 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
     ): Promise<ToolOutputArtifact | null> {
       const row = await db
         .selectFrom('tool_output_artifacts')
-        .select(['tool_call_id', 'tool_name', 'content', 'input_json', 'is_error'])
+        .select([
+          'tool_call_id',
+          'tool_name',
+          'content',
+          'encoding',
+          'content_z',
+          'input_json',
+          'is_error',
+        ])
         .where('user_id', '=', userId)
         .where('session_id', '=', sessionId)
         .where('tool_call_id', '=', toolCallId)
@@ -105,7 +117,7 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
       return {
         toolCallId: row.tool_call_id,
         toolName: row.tool_name,
-        text: row.content,
+        text: decodeArtifactText(row),
         input: toolInput,
         isError: row.is_error === 1,
       }

@@ -3,7 +3,14 @@ import { chmodSync, mkdirSync, statSync } from 'node:fs'
 import { chmod, mkdir, readdir, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 
-import { CompiledQuery, Kysely, SqliteAdapter, SqliteDialect, type DialectAdapter } from 'kysely'
+import {
+  CompiledQuery,
+  Kysely,
+  SqliteAdapter,
+  SqliteDialect,
+  sql,
+  type DialectAdapter,
+} from 'kysely'
 
 import type { AppDatabase } from './types'
 
@@ -146,7 +153,13 @@ export function createDatabase(options: CreateDatabaseOptions = {}): Kysely<AppD
   if (filename !== ':memory:' && !options.readonly) restrictDatabaseFiles(filename)
   sqlite.exec('PRAGMA foreign_keys = ON;')
   if (options.readonly) sqlite.exec('PRAGMA query_only = ON;')
-  else sqlite.exec('PRAGMA journal_mode = WAL;')
+  else {
+    // Only a database created now takes this: the mode of an existing file changes at its next
+    // VACUUM (`ensureIncrementalVacuum`). Without it a delete leaves its pages in the file for
+    // good, so removing history never shrinks it.
+    sqlite.exec('PRAGMA auto_vacuum = INCREMENTAL;')
+    sqlite.exec('PRAGMA journal_mode = WAL;')
+  }
   // NORMAL is safe under WAL (a crash can lose the last txn but never corrupts);
   // busy_timeout lets writers wait out a brief lock instead of throwing SQLITE_BUSY.
   sqlite.exec('PRAGMA synchronous = NORMAL;')
@@ -191,7 +204,17 @@ export async function backupDatabaseBeforeMigration(
   return backupFile
 }
 
+/** The file behind `db`, or undefined for an in-memory database or a handle this module did not make. */
+export function databaseFile(db: Kysely<AppDatabase>): string | undefined {
+  const filename = sqliteFiles.get(db)
+  return filename && filename !== ':memory:' ? filename : undefined
+}
+
 export async function destroyDatabase(db: Kysely<AppDatabase>): Promise<void> {
+  // Fold the write-ahead log back into the file on the way out, so a stopped app leaves one
+  // database file and not a file plus a log that has only ever grown. Best effort: a database
+  // another process still holds cannot be truncated, and that is no reason to fail the stop.
+  if (databaseFile(db)) await sql`PRAGMA wal_checkpoint(TRUNCATE)`.execute(db).catch(() => {})
   await db.destroy()
   sqliteHandles.get(db)?.close(false)
 }

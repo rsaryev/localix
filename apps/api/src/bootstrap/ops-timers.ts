@@ -24,6 +24,7 @@ import { watchStagedPluginsRoot } from '../features/plugins/bundled-watch'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
 import { sweepOrphanSessionData } from '../features/plugins/session-storage'
 import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
+import { createStorageMaintenance } from './storage-maintenance'
 
 export interface OpsTimersPhaseInput
   extends
@@ -198,6 +199,9 @@ export function createOpsTimersPhase({
       }
     })
 
+    const maintainStorage = createStorageMaintenance({ db, logger, signal })
+    setInterval(() => void maintainStorage(), 24 * 60 * 60 * 1000).unref?.()
+
     // Opportunistic curator cadence: check once idle after startup, then once a day. The marker
     // file (~/.localix/curator-state.json) guarantees at most one real pass per
     // 7 days; the very first observation only seeds the marker (first-run defer).
@@ -246,6 +250,7 @@ export function createOpsTimersPhase({
             ),
       },
       { name: 'skills_curator', run: runCuratorCheck },
+      { name: 'storage_maintenance', run: (ctx) => maintainStorage(ctx) },
     ]
     void runIdleTasks(idleTasks, {
       signal,
