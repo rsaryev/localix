@@ -14,19 +14,21 @@ file associations.
 
 ## Entry points
 
-| Entry point                                                | Contract                                                                                                                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`src-tauri/src/main.rs`](./src-tauri/src/main.rs)         | Native executable entry; delegates application construction to the library.                                                                      |
-| [`src-tauri/src/lib.rs`](./src-tauri/src/lib.rs)           | Builds the single-instance app, main window, native plugins, menus, navigation policy, sidecar lifecycle, and UI command registry.               |
-| [`src-tauri/src/commands.rs`](./src-tauri/src/commands.rs) | Implements notifications, external URLs, theme, title, badge, save and pick dialogs, file-drop paths, restart, and frontend logs.                |
-| [`src-tauri/src/deeplink.rs`](./src-tauri/src/deeplink.rs) | Buffers and forwards `localix://` URLs, converts opened paths to deep links, and gates webview navigation.                                       |
-| [`src-tauri/src/menu.rs`](./src-tauri/src/menu.rs)         | Builds application and tray menus and accepts recent-session, project, and active-project state from the UI.                                     |
-| [`src-tauri/src/sidecar.rs`](./src-tauri/src/sidecar.rs)   | Selects a loopback port, starts or attaches the packaged API child, reports readiness, and performs bounded shutdown.                            |
-| [`src-tauri/src/updater.rs`](./src-tauri/src/updater.rs)   | Checks the configured endpoint, retains the pending update handle, verifies its download on install, streams progress, and restarts.             |
-| [`tauri:dev`](./scripts/dev-servers.mjs)                   | Stages build prerequisites and runs the shared API-and-Vite development supervisor under the desktop process.                                    |
-| [`tauri:build`](./scripts/run-tauri.mjs)                   | Builds a local native bundle after staging the UI, API, plugins, CLI, migrations, and Bun sidecar.                                               |
-| [`tauri:release`](./scripts/run-tauri.mjs)                 | Compiles the updater in, enables updater artifacts and, on macOS, requires signing credentials and notarizes the produced app and DMG.           |
-| [`tauri:check`](./scripts/check-rust.mjs)                  | Stages build-script prerequisites and runs rustfmt, locked Clippy, and the locked Rust tests; reports a skip when Rust or Clippy is unavailable. |
+| Entry point                                                    | Contract                                                                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`src-tauri/src/main.rs`](./src-tauri/src/main.rs)             | Native executable entry; delegates application construction to the library.                                                                      |
+| [`src-tauri/src/lib.rs`](./src-tauri/src/lib.rs)               | Builds the single-instance app, main window, native plugins, menus, navigation policy, sidecar lifecycle, and UI command registry.               |
+| [`src-tauri/src/commands.rs`](./src-tauri/src/commands.rs)     | Implements notifications, external URLs, theme, title, badge, save and pick dialogs, file-drop paths, restart, and frontend logs.                |
+| [`src-tauri/src/deeplink.rs`](./src-tauri/src/deeplink.rs)     | Buffers and forwards `localix://` URLs, converts opened paths to deep links, and gates webview navigation.                                       |
+| [`src-tauri/src/menu.rs`](./src-tauri/src/menu.rs)             | Builds application and tray menus and accepts recent-session, project, and active-project state from the UI.                                     |
+| [`src-tauri/src/sidecar.rs`](./src-tauri/src/sidecar.rs)       | Selects a loopback port, starts or attaches the packaged API child, reports readiness, and performs bounded shutdown.                            |
+| [`src-tauri/src/updater.rs`](./src-tauri/src/updater.rs)       | Checks the configured endpoint, retains the pending update handle, verifies its download on install, streams progress, and restarts.             |
+| [`src-tauri/src/supervisor.rs`](./src-tauri/src/supervisor.rs) | Decides when a crashed runtime is started again (a sliding window with a growing pause) and notices a hung one by asking `/health` on a beat.    |
+| [`tauri:resilience`](./scripts/check-resilience.mjs)           | Launches the packaged app and kills, freezes and quits its runtime, checking that each is recovered. A local check on a `tauri:build`.           |
+| [`tauri:dev`](./scripts/dev-servers.mjs)                       | Stages build prerequisites and runs the shared API-and-Vite development supervisor under the desktop process.                                    |
+| [`tauri:build`](./scripts/run-tauri.mjs)                       | Builds a local native bundle after staging the UI, API, plugins, CLI, migrations, and Bun sidecar.                                               |
+| [`tauri:release`](./scripts/run-tauri.mjs)                     | Compiles the updater in, enables updater artifacts and, on macOS, requires signing credentials and notarizes the produced app and DMG.           |
+| [`tauri:check`](./scripts/check-rust.mjs)                      | Stages build-script prerequisites and runs rustfmt, locked Clippy, and the locked Rust tests; reports a skip when Rust or Clippy is unavailable. |
 
 ## Limits
 

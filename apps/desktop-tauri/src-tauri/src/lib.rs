@@ -89,6 +89,7 @@ mod process_tree;
 mod quit;
 mod runtime_contract;
 mod sidecar;
+mod supervisor;
 mod tray;
 mod updater;
 #[cfg(target_os = "macos")]
@@ -365,6 +366,11 @@ pub fn run() {
             // Plugin registration + the native menu have already run by here.
             logln_at("setup entered");
             let (init_script, api_launch) = prepare_api(app);
+            // The runtime's cold start (about 250 ms to load its code) is the longest thing the
+            // launch waits on, and creating the window takes about 100 ms of the main thread. Started
+            // first, they overlap. A `ready` that arrives before the window exists is recorded and
+            // replayed by `resync_runtime_status`, which is what that handshake is for.
+            start_api(app.handle(), api_launch);
 
             // `WebviewUrl::App` resolves to the Vite dev server in dev and to the
             // bundled frontendDist in prod — one code path for both.
@@ -555,7 +561,6 @@ pub fn run() {
             // chunk parse + first React render — the span that owns most of the
             // launch, and the one to attack next.
             logln_at("webview created");
-            start_api(app.handle(), api_launch);
 
             // "Close to tray" (menu-bar app pattern): the native window-close
             // button ("X" / traffic-light red dot) must NOT quit the app —

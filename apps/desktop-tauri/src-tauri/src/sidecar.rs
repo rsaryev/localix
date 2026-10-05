@@ -5,7 +5,7 @@
 //! readiness/failure is mirrored into a small browser global for useful errors.
 
 use std::net::TcpListener;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -17,6 +17,9 @@ use crate::process_tree::ProcessTree;
 use crate::runtime_contract::{
     RuntimeReady, API_ATTACH_WAIT_MS, API_SHUTDOWN_DEADLINE_MS, DESKTOP_RUNTIME_ARG, ENV_CLI_ENTRY,
     ENV_LAUNCH_ID, ENV_PARENT_PID, READY_PREFIX, SHUTDOWN_COMMAND,
+};
+use crate::supervisor::{
+    clock_jitter, is_hung, next_strikes, plan_restart, probe, Restart, BEAT, STRIKES,
 };
 
 /// The last runtime status handed to the webview.
@@ -47,7 +50,27 @@ impl Default for RuntimeStatusSnapshot {
 /// the child and keep its tree, or the reverse: dropping the record is what ends the tree.
 struct ManagedChild {
     child: CommandChild,
+    /// Recorded at spawn. `CommandChild::pid` and `kill` both take the child's inner lock, and a
+    /// runtime that is stopped (a debugger, a suspended process) leaves the shell's wait thread
+    /// holding it, so asking a LIVE child for its pid or to die can block for good. Everything
+    /// after spawn works from this number and from [`end_process`].
+    pid: u32,
     _tree: ProcessTree,
+}
+
+/// End the runtime now, however it is behaving, and its tree with it. Never touches the child's
+/// inner lock (see [`ManagedChild::pid`]): on Unix a `SIGKILL`, which ends a stopped process too;
+/// on Windows dropping the record closes the Job Object that holds the tree. Idempotent.
+fn end_process(managed: ManagedChild) {
+    #[cfg(unix)]
+    {
+        let _ = std::process::Command::new("kill")
+            .args(["-9", &managed.pid.to_string()])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status();
+    }
+    drop(managed);
 }
 
 #[derive(Default)]
@@ -57,8 +80,8 @@ pub(crate) struct ApiSidecar {
     /// Set while an update is being installed: a runtime that dies then must stay dead, since the
     /// files a respawn would load are the ones being replaced.
     respawn_held: AtomicBool,
-    /// How many times a runtime that died after `ready` has been started again.
-    respawns: AtomicU32,
+    /// When the runtime was started again after dying post-`ready`, inside the supervisor's window.
+    restarts: Mutex<Vec<Instant>>,
     status: Mutex<RuntimeStatusSnapshot>,
     /// The most recent line the runtime wrote that was not the readiness frame.
     ///
@@ -337,6 +360,7 @@ fn spawn_runtime(
     logln(format!("managed API child spawned pid={child_pid}"));
     *app.state::<ApiSidecar>().child.lock().unwrap() = Some(ManagedChild {
         child,
+        pid: child_pid,
         _tree: ProcessTree::adopt(child_pid),
     });
 
@@ -382,6 +406,9 @@ fn spawn_runtime(
                                 // handoff script itself decides whether the page is
                                 // already addressing it and reloads only if not.
                                 publish_status(&handle, "ready", None, Some(actual_port));
+                                if owns_runtime_for_events.load(Ordering::Acquire) {
+                                    watch_health(handle.clone(), child_pid, actual_port);
+                                }
                             }
                             Err(error) => {
                                 report_error(&handle, format!("invalid readiness frame: {error}"))
@@ -401,7 +428,7 @@ fn spawn_runtime(
                     // to stop and the retry outlived the app holding the database lease.
                     let exited =
                         take_for_pid(&mut sidecar.child.lock().unwrap(), child_pid, |managed| {
-                            managed.child.pid()
+                            managed.pid
                         });
                     // Dropping the record closes the tree: whatever the runtime left running ends
                     // with it.
@@ -417,20 +444,28 @@ fn spawn_runtime(
                     ) {
                         break;
                     }
-                    if should_respawn(
+                    let restart = should_respawn(
                         ready,
                         owns_runtime,
                         stopping || sidecar.respawn_held.load(Ordering::Acquire),
-                        sidecar.respawns.load(Ordering::Acquire),
-                    ) {
-                        sidecar.respawns.fetch_add(1, Ordering::AcqRel);
-                        respawn_after_crash(&handle, respawn_res.clone(), payload.code);
+                    )
+                    .then(|| {
+                        let mut history = sidecar.restarts.lock().unwrap();
+                        plan_restart(&mut history, Instant::now(), clock_jitter())
+                    });
+                    if let Some(Restart::After(pause)) = restart {
+                        respawn_after_crash(&handle, respawn_res.clone(), payload.code, pause);
                     } else {
                         report_error(
                             &handle,
                             format!(
-                                "local API exited (code {:?}) — see ~/.localix/logs/api.log",
-                                payload.code
+                                "local API exited (code {:?}){} — see ~/.localix/logs/api.log",
+                                payload.code,
+                                if restart.is_some() {
+                                    " and keeps stopping, so it was not started again"
+                                } else {
+                                    ""
+                                }
                             ),
                         );
                     }
@@ -462,10 +497,10 @@ fn spawn_runtime(
         let stuck = take_for_pid(
             &mut timeout_handle.state::<ApiSidecar>().child.lock().unwrap(),
             child_pid,
-            |managed| managed.child.pid(),
+            |managed| managed.pid,
         );
         if let Some(managed) = stuck {
-            let _ = managed.child.kill();
+            end_process(managed);
         }
         if !will_retry {
             report_error(&timeout_handle, timeout_message(&timeout_handle));
@@ -548,7 +583,7 @@ fn kill_api_child(app: &tauri::AppHandle, why: &str) {
     let managed = app.state::<ApiSidecar>().child.lock().unwrap().take();
     if let Some(managed) = managed {
         logln(format!("killing managed API child: {why}"));
-        let _ = managed.child.kill();
+        end_process(managed);
     }
 }
 
@@ -572,36 +607,31 @@ fn take_for_pid<T>(slot: &mut Option<T>, pid: u32, pid_of: impl Fn(&T) -> u32) -
     }
 }
 
-/// How many times per shell lifetime a runtime that died after `ready` is started again.
-///
-/// A crash after `ready` used to be final: the error was shown and only a full app restart —
-/// the user's own, by hand — brought the workspace back. One respawn is that same action taken
-/// for them. More than one would turn a runtime that crashes on every boot into a loop that keeps
-/// reloading the page, so the second crash is reported exactly as before.
-const MAX_RESPAWNS: u32 = 1;
-
-/// The pause before a respawn: long enough for the dead runtime's lease and port to be released,
-/// short enough that the user sees a reconnect rather than an outage.
-const RESPAWN_BACKOFF: Duration = Duration::from_secs(1);
-
 /// Whether a reported termination is a crash to recover from. Only a runtime this shell OWNED
 /// and saw become ready: a start that never got there is the startup retry's job, and a runtime
-/// that exits while the app quits or updates must stay down.
-fn should_respawn(ready: bool, owns_runtime: bool, winding_down: bool, respawns: u32) -> bool {
-    ready && owns_runtime && !winding_down && respawns < MAX_RESPAWNS
+/// that exits while the app quits or updates must stay down. HOW OFTEN is the supervisor's call
+/// (`supervisor::plan_restart`): a sliding window, not a lifetime allowance of one.
+fn should_respawn(ready: bool, owns_runtime: bool, winding_down: bool) -> bool {
+    ready && owns_runtime && !winding_down
 }
 
-/// Start the runtime again after it died post-`ready`, on a fresh port. The page is told the
-/// runtime is `starting` again, and the new `ready` hands it the new port through the same
-/// idempotent handoff the first start used — which reloads the page onto it.
-fn respawn_after_crash(app: &tauri::AppHandle, res: std::path::PathBuf, code: Option<i32>) {
+/// Start the runtime again after it died post-`ready`, on a fresh port, after `pause`. The page is
+/// told the runtime is `starting` again, and the new `ready` hands it the new port through the same
+/// idempotent handoff the first start used, which reloads the page onto it: a clean slate, because
+/// whatever the dead runtime was running is gone and the page must not keep showing it.
+fn respawn_after_crash(
+    app: &tauri::AppHandle,
+    res: std::path::PathBuf,
+    code: Option<i32>,
+    pause: Duration,
+) {
     logln(format!(
-        "runtime exited after ready (code {code:?}); respawning in {RESPAWN_BACKOFF:?}"
+        "runtime exited after ready (code {code:?}); respawning in {pause:?}"
     ));
     publish_status(app, "starting", None, None);
     let handle = app.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(RESPAWN_BACKOFF);
+        std::thread::sleep(pause);
         let sidecar = handle.state::<ApiSidecar>();
         if sidecar.stopping.load(Ordering::Acquire) || sidecar.respawn_held.load(Ordering::Acquire)
         {
@@ -615,6 +645,64 @@ fn respawn_after_crash(app: &tauri::AppHandle, res: std::path::PathBuf, code: Op
                 &handle,
                 format!("local API exited and could not be restarted: {error}"),
             ),
+        }
+    });
+}
+
+/// Notice a runtime that is alive but no longer answering.
+///
+/// The shell only ever learned of a runtime's death from its exit, so a hung one (deadlocked,
+/// stopped, wedged in a loop) left the page failing every request while nothing was reported and
+/// nothing restarted. This asks `/health` on a slow beat for as long as this attempt is the
+/// current runtime; a long run of silence kills it, and the exit then takes the same path as any
+/// crash (the restart window, the `starting` status, the page reload).
+fn watch_health(app: tauri::AppHandle, pid: u32, port: u16) {
+    logln(format!(
+        "health watch started for runtime pid={pid} on port {port}"
+    ));
+    std::thread::spawn(move || {
+        let mut strikes = 0;
+        let mut last_beat = std::time::SystemTime::now();
+        loop {
+            std::thread::sleep(BEAT);
+            let sidecar = app.state::<ApiSidecar>();
+            let current = sidecar
+                .child
+                .lock()
+                .unwrap()
+                .as_ref()
+                .is_some_and(|managed| managed.pid == pid);
+            // Stopped, replaced by a retry or a respawn, or an update is replacing its files.
+            if !current
+                || sidecar.stopping.load(Ordering::Acquire)
+                || sidecar.respawn_held.load(Ordering::Acquire)
+            {
+                return;
+            }
+            let since = last_beat.elapsed().unwrap_or_default();
+            last_beat = std::time::SystemTime::now();
+            let answer = probe(port);
+            strikes = next_strikes(strikes, answer, since);
+            if strikes > 0 {
+                logln(format!(
+                    "runtime pid={pid} did not answer /health ({strikes} of {STRIKES})"
+                ));
+            }
+            if !is_hung(strikes) {
+                continue;
+            }
+            logln(format!(
+                "runtime pid={pid} on port {port} answered none of {STRIKES} health checks \
+                 (about {}s): treating it as hung and restarting",
+                BEAT.as_secs() * u64::from(STRIKES)
+            ));
+            let hung = take_for_pid(&mut sidecar.child.lock().unwrap(), pid, |managed| {
+                managed.pid
+            });
+            if let Some(managed) = hung {
+                end_process(managed);
+            }
+            return;
         }
     });
 }
@@ -651,7 +739,7 @@ fn init_error_script(message: &str) -> String {
 mod tests {
     use super::{
         format_timeout_message, init_error_script, init_script, plain_windows_path,
-        should_report_termination, should_respawn, status_script, take_for_pid, MAX_RESPAWNS,
+        should_report_termination, should_respawn, status_script, take_for_pid,
     };
 
     // The page polls for updates and shows a notice only when told an updater exists. A build with
@@ -706,16 +794,14 @@ mod tests {
     }
 
     #[test]
-    fn only_an_owned_ready_runtime_dying_unasked_is_respawned_and_only_once() {
-        assert!(should_respawn(true, true, false, 0));
-        // The budget is spent: the next crash is reported, not looped on.
-        assert!(!should_respawn(true, true, false, MAX_RESPAWNS));
+    fn only_an_owned_ready_runtime_dying_unasked_is_respawned() {
+        assert!(should_respawn(true, true, false));
         // Quitting or updating: it must stay down.
-        assert!(!should_respawn(true, true, true, 0));
+        assert!(!should_respawn(true, true, true));
         // Never became ready: the startup retry owns that.
-        assert!(!should_respawn(false, true, false, 0));
+        assert!(!should_respawn(false, true, false));
         // A runtime this shell only attached to is not ours to restart.
-        assert!(!should_respawn(true, false, false, 0));
+        assert!(!should_respawn(true, false, false));
     }
 
     #[test]

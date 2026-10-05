@@ -27,6 +27,7 @@ import type { createDigestLoaders } from '../boot/digests'
 import type { RegistriesPhase } from './registries'
 import type { PluginHostRefs } from './plugin-host-refs'
 import type { createPluginBackendHost } from '../features/plugins/backend-host'
+import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 
 export interface DomainServicesPhaseInput
   extends
@@ -76,6 +77,7 @@ export function createDomainServicesPhase({
   resourceRefsRegistry,
   notifications,
 }: DomainServicesPhaseInput): DomainServicesPhase {
+  const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
   // One generic resolver bridges every opaque resource scheme into Context Fabric.
   // Core never imports or branches on a concrete plugin/domain here.
   //
@@ -185,7 +187,7 @@ export function createDomainServicesPhase({
     resolveSessionCwd: async (...args) =>
       (await hostRefs.chatServiceForCwd?.resolveSessionCwd(...args).catch(() => null)) ?? null,
     invokeUiAction: (...args) => backendHost.invokeUiAction(...args),
-    logger: { warn: (msg, meta) => logger.warn({ event: 'plugin.warn', msg, meta }) },
+    logger: { warn: (msg, meta) => warnPluginOnce({ event: 'plugin.warn', msg, meta }) },
     // A plugin toggle re-converges EVERY live host: long-running channels, the
     // backend subsystems (routes/providers/WS frames), and monitors — no restart
     // needed.

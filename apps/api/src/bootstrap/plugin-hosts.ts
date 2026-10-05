@@ -11,6 +11,7 @@ import type { createSecretsStore } from '../features/secrets/store'
 import type { createSecretExposureShield } from '../features/secrets/exposure-shield'
 import type { createMediaStore } from '../features/media/store'
 import type { createLogger } from '../lib/logger'
+import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 import { localixWorkspaceDir, userHome, type loadEnv } from '../lib/env'
 import type { createDatabase } from '../db'
 import type { RegistriesPhase } from './registries'
@@ -75,6 +76,7 @@ export function createPluginHostsPhase({
   textInputSurfaceRegistry,
   notifications,
 }: PluginHostsPhaseInput): PluginHostsPhase {
+  const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
   const pluginConditions = createPluginConditions(notifications, env.LOCALIX_DEFAULT_USER_ID)
   // The per-run load and every plugin context are built inside the chat runtime, out of reach.
   observePluginConditions(pluginConditions)
@@ -133,7 +135,7 @@ export function createPluginHostsPhase({
           projectId,
           cwd,
           logger: {
-            warn: (msg, meta) => logger.warn({ event: 'plugin_backend.warn', msg, meta }),
+            warn: (msg, meta) => warnPluginOnce({ event: 'plugin_backend.warn', msg, meta }),
             // The boot load is the one worth timing: `plugins.loaded` lands in the runtime
             // log so `scripts/startup-budget.ts` can report what a launch spent here.
             info: (msg, meta) => logger.info({ ...(meta as object), msg }),
@@ -184,7 +186,7 @@ export function createPluginHostsPhase({
     onSettled: () => hostRefs.onBackendHostSettled?.(),
     logger: {
       info: (msg) => logger.info({ event: 'plugin_backend.info', msg }),
-      warn: (msg, meta) => logger.warn({ event: 'plugin_backend.warn', msg, meta }),
+      warn: (msg, meta) => warnPluginOnce({ event: 'plugin_backend.warn', msg, meta }),
     },
   })
   const firstReconcile = createFirstReconcileSignal()

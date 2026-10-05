@@ -56,7 +56,7 @@ Linux keeps its group shortcuts because Monaco uses Shift+Alt+Up/Down there. The
 | Staged input          | Packaged result                                      | Boundary                                                  |
 | --------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
 | API entry             | `resources/server.js` Bun bundle, minified.          | Whitespace and syntax only: stack traces keep names.      |
-| Database migrations   | Migration sources plus adjacent Kysely dependency.   | They are loaded by the bundled API at runtime.            |
+| Database migrations   | Compiled into `server.js`, with Kysely.              | No migrations folder ships beside the bundle.             |
 | Bundled plugins       | Staged plugin tree with TypeScript backends bundled. | Backends minified as the API is; UIs without source maps. |
 | Third-party notices   | `resources/THIRD_PARTY_NOTICES/`.                    | The one copy: the embedded UI carries none.               |
 | Visual Feedback probe | `resources/visual-feedback-probe.js`.                | The probe still requires a Localix preview connection.    |
@@ -69,6 +69,25 @@ not compile the plugin in. The release command (`run-tauri.mjs --release`) adds 
 by `scripts/build-release-config.mjs` that turns on signed updater bundles and supplies the key and
 endpoint, and sets `LOCALIX_UPDATER_ENABLED=1` so the plugin is compiled in. Afterwards it fails the
 build unless the public key is inside the built binary.
+
+### The Bun runtime
+
+The API is not compiled to a single executable: the app also runs Bun to build and run the person's
+own plugins, so a real Bun ships beside the shell either way. `prepare-sidecar.mjs` copies it to
+`src-tauri/binaries/bun-<target-triple>[.exe]`, the name Tauri's `externalBin: ["binaries/bun"]`
+requires, and `tauri-build` refuses to run cargo without it. The bundler then places it, without the
+triple, next to the main executable: `Contents/MacOS/bun` in the macOS app, `usr/bin/bun` in the
+Linux AppImage and `.deb`, and `bun.exe` beside the program on Windows. The shell starts it with
+`shell().sidecar("bun")`, which looks in its own directory.
+
+The copy is the Bun that ran the build, so its version is the pinned one (`packageManager`, and
+`bun-version` in the workflows). On x64 Linux and Windows that Bun is the AVX2 build, because
+`setup-bun` picks by the runner's processor, and it dies on a machine without AVX2, a common
+virtual-machine default. The release build therefore sets `LOCALIX_SIDECAR_BASELINE=1`:
+`scripts/sidecar-bun.mjs` downloads Bun's `-baseline` build for the same version, checks it against
+the release's `SHASUMS256.txt`, runs it once to confirm its version, and stages that instead. arm64
+has none and keeps the build's Bun. A native build per platform is required: a sidecar cannot be
+cross-built.
 
 ### Production startup
 
@@ -197,6 +216,33 @@ surface-local dynamic imports. The generated `index.html` is the startup-graph a
 counts that document, its entry module, static module preloads, and startup stylesheet against both
 a 269-file and 1,940,000-byte uncompressed budget. This guards first paint without merging small
 chunks in ways that can pull a lazy Monaco or workbench dependency back into startup.
+
+### Keeping the runtime alive
+
+The shell supervises its API child in `sidecar.rs`, with the policy in `supervisor.rs`. A runtime
+that dies after it was ready is started again, and what is shown while it is down is the `starting`
+status, so reads wait at the page's readiness barrier instead of failing. The page reloads onto the
+new port, which is deliberate: whatever the dead runtime was running is gone, and a reload is the
+one way to be sure the page shows nothing it left behind.
+
+How often is a sliding window: five restarts within three minutes, with pauses of about 0.5, 1, 2, 4
+and 8 seconds, spread by up to a quarter either way. A runtime that stays up for the window gets a
+fresh budget, so an occasional crash is always recovered, while one that crashes in a loop is given
+up on and reported with its last output. This replaced a single restart per shell lifetime, after
+which the second crash left a window with no backend until the person quit by hand.
+
+A runtime that is alive but silent was never noticed, because the shell only watched for an exit.
+Once the runtime is ready, the shell asks `/health` every five seconds with a three second limit. A
+`503 draining` counts as an answer, because the shutdown path owns that case. Four unanswered checks
+in a row, about twenty seconds, mark the runtime hung: it is ended and takes the same path as a
+crash. A gap between beats much longer than five seconds is a sleeping machine and forgives the
+count.
+
+Ending a process never goes through `CommandChild::pid` or `kill`. Both take an inner lock that the
+plugin's wait thread keeps while the child is stopped, so they can block for good on a suspended
+runtime. The shell records the pid at spawn and ends the process by signal on Unix, or by closing
+its Job Object on Windows. `bun run --cwd apps/desktop-tauri tauri:resilience` replays all of it
+against a built app: three crashes, a freeze, and a quit that must leave nothing running.
 
 ### Native browser pages
 

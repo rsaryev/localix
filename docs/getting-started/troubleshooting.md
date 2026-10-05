@@ -84,6 +84,12 @@ answering. From a source checkout, `bun run logs` prints the last launch as one 
 `--launches` lists the launches still in the logs, and `--launch <id>`, `--source`, `--level` and
 `--json` narrow it. Each file keeps one rotated generation (`.old`).
 
+`bun run logs --startup` answers "how long does Localix take to open?" across launches: for each
+one, the milliseconds from the shell's start to the window, the local service answering, the first
+paint, the workspace and the plugins, then the median, 90th percentile and worst case. A launch much
+slower than the median is usually the first start after an update, which scans the new files and
+migrates the database.
+
 A slow start names its own cost in the API log. `startup.env_ready` gives the wait for the
 login-shell environment and whether a cached snapshot answered it (`cache`). Maintenance that no
 first request needs runs one job at a time once the app is idle, and each job logs

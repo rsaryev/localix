@@ -13,6 +13,7 @@
 //   bun run logs --launch <id>    one launch
 //   bun run logs --all            everything, launch or not (development runs have none)
 //   bun run logs --source api,ui --level warn --json
+//   bun run logs --startup        how long each launch took to reach each milestone, with percentiles
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -112,6 +113,94 @@ export function formatEntry(entry, origin) {
   return `${clock}  ${offset}${entry.source.padEnd(5)}  ${entry.level.padEnd(5)}  ${entry.text}${extra}`
 }
 
+/**
+ * The milestones of a launch, in the order they normally happen. Each is the first line whose text
+ * matches, measured from `setup entered`, the shell's own start. `ready` is the runtime answering,
+ * `paint` the page's first paint, `workspace` the first screen with data, `plugins` the contributed
+ * surfaces: the four spans a person waits through, and the ones a slow start shows up in.
+ */
+const STARTUP_MILESTONES = [
+  ['webview', /^webview created/u],
+  ['ready', /^runtime ready on port/u],
+  ['paint', /shell\.paint/u],
+  ['workspace', /workspace\.ready/u],
+  ['plugins', /plugins\.ready/u],
+]
+
+/** One row per launch that reached `setup entered`: milliseconds to each milestone, or null. */
+export function startupTimings(entries) {
+  const rows = []
+  for (const launch of summarizeLaunches(entries)) {
+    const own = entries.filter((entry) => entry.launch === launch.launch)
+    const origin = own.find(
+      (entry) => entry.source === 'shell' && entry.text.startsWith('setup entered'),
+    )
+    if (!origin) continue
+    const row = { launch: launch.launch, start: origin.time }
+    for (const [name, pattern] of STARTUP_MILESTONES) {
+      const hit = own.find((entry) => entry.source !== 'api' && pattern.test(entry.text))
+      row[name] = hit ? hit.time - origin.time : null
+    }
+    rows.push(row)
+  }
+  return rows
+}
+
+/** Nearest-rank percentile of `values` (unsorted); undefined when there are none. */
+export function percentile(values, p) {
+  const sorted = values
+    .filter((value) => value !== null && value !== undefined)
+    .sort((a, b) => a - b)
+  if (sorted.length === 0) return undefined
+  return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1))]
+}
+
+/** `{ metric: { n, p50, p90, max } }` over the rows, for every milestone that has a value. */
+export function summarizeStartup(rows) {
+  const summary = {}
+  for (const [name] of STARTUP_MILESTONES) {
+    const values = rows.map((row) => row[name]).filter((value) => value !== null)
+    if (values.length === 0) continue
+    summary[name] = {
+      n: values.length,
+      p50: percentile(values, 50),
+      p90: percentile(values, 90),
+      max: Math.max(...values),
+    }
+  }
+  return summary
+}
+
+function printStartup(entries, limit) {
+  const rows = startupTimings(entries)
+  if (rows.length === 0) {
+    console.log('No launch with a `setup entered` line yet.')
+    return
+  }
+  const names = STARTUP_MILESTONES.map(([name]) => name)
+  const cell = (value) => (value === null ? '-' : String(value)).padStart(10)
+  console.log(
+    `${'launch'.padEnd(18)} ${'started'.padEnd(17)}${names.map((name) => name.padStart(10)).join('')}`,
+  )
+  for (const row of rows.slice(-limit)) {
+    const when = new Date(row.start).toISOString().replace('T', ' ').slice(0, 16)
+    console.log(
+      `${row.launch.padEnd(18)} ${when.padEnd(17)}${names.map((name) => cell(row[name])).join('')}`,
+    )
+  }
+  const summary = summarizeStartup(rows)
+  console.log(`\nmilliseconds over ${rows.length} launches:`)
+  for (const [label, key] of [
+    ['p50', 'p50'],
+    ['p90', 'p90'],
+    ['max', 'max'],
+  ]) {
+    console.log(
+      `${label.padEnd(36)}${names.map((name) => cell(summary[name]?.[key] ?? null)).join('')}`,
+    )
+  }
+}
+
 function parseArgs(argv) {
   const value = (flag) => {
     const at = argv.indexOf(flag)
@@ -122,6 +211,8 @@ function parseArgs(argv) {
     launch: value('--launch'),
     all: argv.includes('--all'),
     list: argv.includes('--launches'),
+    startup: argv.includes('--startup'),
+    last: Number(value('--last') ?? 15),
     json: argv.includes('--json'),
     sources: value('--source') ? new Set(value('--source').split(',')) : undefined,
     minLevel: value('--level'),
@@ -132,6 +223,10 @@ function main(argv) {
   const args = parseArgs(argv)
   const entries = readEntries(args.dir)
   const launches = summarizeLaunches(entries)
+  if (args.startup) {
+    printStartup(entries, args.last)
+    return
+  }
   if (args.list) {
     for (const item of launches) {
       const when = new Date(item.start).toISOString().replace('T', ' ').slice(0, 19)

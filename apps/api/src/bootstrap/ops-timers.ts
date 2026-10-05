@@ -23,6 +23,7 @@ import {
 import { watchStagedPluginsRoot } from '../features/plugins/bundled-watch'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
 import { sweepOrphanSessionData } from '../features/plugins/session-storage'
+import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 
 export interface OpsTimersPhaseInput
   extends
@@ -76,6 +77,7 @@ export function createOpsTimersPhase({
   notifications,
   pluginConditions,
 }: OpsTimersPhaseInput): OpsTimersPhase {
+  const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
   // Plugin channels: long-running platform bridges contributed by
   // enabled plugins. Inbound messages run a full agent turn in a persistent
   // chat session; the final reply is returned to the platform by the plugin.
@@ -100,7 +102,7 @@ export function createOpsTimersPhase({
     conditions: pluginConditions,
     logger: {
       info: (msg) => logger.info({ event: 'plugin_channel.info', msg }),
-      warn: (msg, meta) => logger.warn({ event: 'plugin_channel.warn', msg, meta }),
+      warn: (msg, meta) => warnPluginOnce({ event: 'plugin_channel.warn', msg, meta }),
     },
   })
   hostRefs.channelHost = channelHost

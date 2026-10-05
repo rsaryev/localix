@@ -18,7 +18,8 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "bun scripts/run-tauri.mjs build",
     "tauri:release": "bun scripts/run-tauri.mjs --release --notarize-dmg build",
-    "tauri:check": "bun scripts/check-rust.mjs"
+    "tauri:check": "bun scripts/check-rust.mjs",
+    "tauri:resilience": "bun scripts/check-resilience.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4"

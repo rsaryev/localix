@@ -11,6 +11,7 @@ import {
   type MigrationSources,
 } from './migration-ledger'
 import { backupDatabaseBeforeMigration } from './connection'
+import { startupDiag } from '../lib/startup-diagnostics'
 
 /**
  * Bring a database to the latest schema, or leave it exactly as it was.
@@ -39,8 +40,16 @@ export async function migrateToLatest(
   await verifyMigrationLedger(db, migrations, folder)
   const known = await new Migrator({ db, provider: migrations }).getMigrations()
   const hasHistory = known.some((migration) => migration.executedAt)
-  if (hasHistory && known.some((migration) => !migration.executedAt))
-    await backupDatabaseBeforeMigration(db)
+  const pending = known.filter((migration) => !migration.executedAt)
+  // A start that applies migrations is the slow one after an update, and nothing said so: the log
+  // read as silence until the runtime answered. The shell mirrors stderr into its own log.
+  const startedAt = performance.now()
+  if (pending.length > 0) {
+    startupDiag(
+      `applying ${pending.length} database migration(s): ${pending.map((m) => m.name).join(', ')}`,
+    )
+  }
+  if (hasHistory && pending.length > 0) await backupDatabaseBeforeMigration(db)
   const defaultUserId = options.defaultUserId?.trim() || DEFAULT_USER_ID
 
   // Data migrations sometimes need the already-resolved single-user identity,
@@ -71,6 +80,9 @@ export async function migrateToLatest(
   })
 
   interruptedRuns = await reclassifyInterruptedRuns(db)
+  if (pending.length > 0) {
+    startupDiag(`database migrated in ${Math.round(performance.now() - startedAt)} ms`)
+  }
 
   return results
 }
