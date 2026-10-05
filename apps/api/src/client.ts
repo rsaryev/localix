@@ -357,5 +357,7 @@ export type {
 } from './features/agent-core/tools/preview/preview-control'
 
 export type { ShellCommandStatusDto } from './features/shell-command/contracts'
+export type { PruneResult } from './features/storage/service'
+export type { StorageUsage } from './db/storage'
 
 export type { EditPrediction } from './features/edit-prediction/contracts'

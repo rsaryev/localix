@@ -197,6 +197,12 @@ const agentSettingsShape = {
    * research your own dev server or a LAN host. Search itself is always keyless.
    */
   research: z.object({ allowPrivate: z.boolean().optional() }).optional(),
+  /**
+   * Local storage. `retentionDays` removes whole conversations with no message for that many
+   * days (pinned and running ones excepted), once a day. Absent → history is kept until the
+   * person removes it.
+   */
+  storage: z.object({ retentionDays: z.number().int().min(7).max(3650).optional() }).optional(),
 }
 
 export const agentSettingsSchema = z.object(agentSettingsShape)

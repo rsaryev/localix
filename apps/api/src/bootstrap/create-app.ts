@@ -8,13 +8,12 @@ import type { RegistriesPhase } from './registries'
 import type { PluginHostsPhase } from './plugin-hosts'
 import type { DomainServicesPhase } from './domain-services'
 import type { AppServicesPhase } from './app-services'
-import { createStorageService } from '../features/storage/service'
+import type { StorageService } from '../features/storage/service'
 
 export interface CreateAppPhaseInput
   extends
     Pick<
       InfraPhase,
-      | 'db'
       | 'env'
       | 'logger'
       | 'catalogService'
@@ -42,6 +41,7 @@ export interface CreateAppPhaseInput
     AppServicesPhase {
   runtimeInfo?: BootstrapRuntimeInfo
   chatService: ReturnType<typeof createChatService>
+  storageService: StorageService
 }
 
 export interface CreateAppPhase {
@@ -49,7 +49,7 @@ export interface CreateAppPhase {
 }
 
 export function createAppPhase({
-  db,
+  storageService,
   runtimeInfo,
   env,
   logger,
@@ -157,11 +157,7 @@ export function createAppPhase({
     agentsService,
     skillsCuratorService,
     systemService,
-    storageService: createStorageService({
-      db,
-      deleteSession: (userId, id) => chatService.deleteSession(userId, id),
-      warn: (message) => logger.warn({ event: 'storage.prune_failed', message }),
-    }),
+    storageService,
     shellCommandService,
     // Assigned above (forward-held `let`); guaranteed present by this point.
     lspDocumentService: serviceRefs.lspDocumentService!,

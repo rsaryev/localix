@@ -3,6 +3,8 @@ import { websocket } from './features/realtime/ws'
 import { MAX_MESSAGE_BINDINGS_TOTAL_BYTES } from './features/chat/contracts'
 import { bindChatHostRefs } from './bootstrap/chat-host-refs'
 import { createChatServicePhase } from './bootstrap/chat-service-deps'
+import { createStorageService } from './features/storage/service'
+import { createStorageMaintenance } from './bootstrap/storage-maintenance'
 import { createInfraPhase, type BootstrapRuntimeInfo } from './bootstrap/infra'
 import { createRegistriesPhase } from './bootstrap/registries'
 import { createPluginHostsPhase } from './bootstrap/plugin-hosts'
@@ -141,6 +143,11 @@ export async function bootstrap(
     announceCapabilityChange,
     serviceRefs,
   })
+  const storageService = createStorageService({
+    db,
+    deleteSession: (userId, id) => chatService.deleteSession(userId, id),
+    warn: (message) => logger.warn({ event: 'storage.prune_failed', message }),
+  })
   // The plugin hosts' late-bound references to chat, and the ONE wake delivery `wakes`.
   const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications })
 
@@ -208,7 +215,7 @@ export async function bootstrap(
     chatService,
   })
   const { app } = createAppPhase({
-    db,
+    storageService,
     runtimeInfo,
     env,
     logger,
@@ -253,6 +260,13 @@ export async function bootstrap(
     skillsCuratorService,
     pluginService,
     chatService,
+    maintainStorage: createStorageMaintenance({
+      db,
+      logger,
+      userId: env.LOCALIX_DEFAULT_USER_ID,
+      userService,
+      storage: storageService,
+    }),
     hostRefs,
     notifications,
     pluginConditions,

@@ -24,7 +24,7 @@ import { watchStagedPluginsRoot } from '../features/plugins/bundled-watch'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
 import { sweepOrphanSessionData } from '../features/plugins/session-storage'
 import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
-import { createStorageMaintenance } from './storage-maintenance'
+import type { StorageMaintenance } from './storage-maintenance'
 
 export interface OpsTimersPhaseInput
   extends
@@ -34,6 +34,7 @@ export interface OpsTimersPhaseInput
     >,
     Pick<DomainServicesPhase, 'projectsService' | 'skillsCuratorService' | 'pluginService'> {
   chatService: ReturnType<typeof createChatService>
+  maintainStorage: StorageMaintenance
   hostRefs: PluginHostRefs
   pluginConditions: PluginHostsPhase['pluginConditions']
 }
@@ -74,6 +75,7 @@ export function createOpsTimersPhase({
   skillsCuratorService,
   pluginService,
   chatService,
+  maintainStorage,
   hostRefs,
   notifications,
   pluginConditions,
@@ -199,8 +201,7 @@ export function createOpsTimersPhase({
       }
     })
 
-    const maintainStorage = createStorageMaintenance({ db, logger, signal })
-    setInterval(() => void maintainStorage(), 24 * 60 * 60 * 1000).unref?.()
+    setInterval(() => void maintainStorage(signal), 24 * 60 * 60 * 1000).unref?.()
 
     // Opportunistic curator cadence: check once idle after startup, then once a day. The marker
     // file (~/.localix/curator-state.json) guarantees at most one real pass per
@@ -250,7 +251,7 @@ export function createOpsTimersPhase({
             ),
       },
       { name: 'skills_curator', run: runCuratorCheck },
-      { name: 'storage_maintenance', run: (ctx) => maintainStorage(ctx) },
+      { name: 'storage_maintenance', run: (ctx) => maintainStorage(signal, ctx) },
     ]
     void runIdleTasks(idleTasks, {
       signal,

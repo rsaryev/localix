@@ -30,6 +30,7 @@ import { isDesktop } from '@localixai/kit/environment'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { DesktopUpdateSection } from './DesktopUpdateSection'
+import { StorageSection } from './StorageSection'
 
 // Each profile picker leads with a "Not set" option; prebuild the full arrays
 // once so the Selects don't reconstruct them on every render.
@@ -194,6 +195,8 @@ export function GeneralSettings() {
       </SettingsSection>
 
       <DesktopUpdateSection />
+
+      <StorageSection />
 
       <SettingsSection
         anchor="general-notifications"

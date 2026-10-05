@@ -110,11 +110,17 @@ not enough. The write-ahead log is emptied after that pass and when the app stop
 that belonged to a deleted conversation are removed with it. Each pass logs `storage.maintained`
 with what it changed.
 
-History itself is removed only when you ask. `GET /rpc/storage/usage` reports the file, the
-write-ahead log, free pages and the bytes held by messages and tool outputs.
-`POST /rpc/storage/prune` takes `olderThanDays` (at least 7) and `dryRun`: it counts, or deletes,
-whole conversations with no message for that long, with their sub-agent sessions. Pinned and running
-conversations are never touched. Send `dryRun: true` first to see how much it would remove.
+History itself is removed only when you ask. **Settings → General → Storage** shows what the data
+takes on disk and what it is made of. Pick an age and choose Review to count the conversations with
+no message for that long and the history they hold, then Remove to delete them after a confirmation.
+Pinned and running conversations are never touched, and a conversation goes together with its
+sub-agent sessions. The same section can remove them automatically: choose a window under "Remove
+automatically" and the daily maintenance pass deletes what has gone quiet for that long. It is off
+until you choose one, and the shortest window is 30 days in the menu (the API accepts seven).
+
+The section is a front for two routes: `GET /rpc/storage/usage` reports the file, the write-ahead
+log, free pages and the bytes held by messages and tool outputs, and `POST /rpc/storage/prune` takes
+`olderThanDays` (at least 7) and `dryRun`.
 
 ### Report a reproducible failure
 
