@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import {
   observeDesktopInvoke,
   onDesktopInvokeEvent,
@@ -6,6 +6,12 @@ import {
   type DesktopInvokeEvent,
 } from './tauri'
 
+// The trace counter is module-global and `bun test` runs every file of the package in one process:
+// resetting only AFTER a test leaves the first one with whatever an earlier file counted, and
+// which file runs earlier depends on the filesystem's listing order (macOS and Linux differ).
+beforeEach(() => {
+  resetDesktopInvokeEventsForTests()
+})
 afterEach(() => {
   resetDesktopInvokeEventsForTests()
 })
