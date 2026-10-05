@@ -1,3 +1,8 @@
+# Check text out with LF on every platform. The repository is stored with LF, and a Windows
+# checkout converting to CRLF changes the bytes that hashes and generated-file checks read: the
+# vendored model data is verified against a SHA-256 manifest, which failed on the Windows release leg.
+* text=auto eol=lf
+
 # Generated third-party runtime: keep it reviewable, but exclude it from language
 # statistics and collapse its diffs on GitHub by default.
 vendor/monaco-editor-runtime/esm/** linguist-vendored linguist-generated

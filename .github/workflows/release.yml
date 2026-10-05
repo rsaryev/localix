@@ -448,7 +448,14 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: cd apps/desktop-tauri && bun run tauri:release
+          # linuxdeploy (the AppImage packager) runs as an AppImage itself and ships an old
+          # `strip`: extract-and-run avoids needing FUSE on the runner, and NO_STRIP skips a strip
+          # pass that rejects binaries built by a current Rust toolchain. Both are no-ops elsewhere.
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+          NO_STRIP: 'true'
+        # --verbose: Tauri otherwise hides the packager's own output, which is all that says why a
+        # Linux or Windows leg failed.
+        run: cd apps/desktop-tauri && bun run tauri:release --verbose
 
       - name: Remove temporary Apple signing material
         if: always() && runner.os == 'macOS'
