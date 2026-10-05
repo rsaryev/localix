@@ -26,7 +26,7 @@
       }
     },
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFCMDA4ODJGQ0Y0MUExMUIKUldRYm9VSFBMNGdBcTlxbTNpYjVUZ0JCdENQeUpYY2FsenNoS083cTQ5bXRvTnMybGI3bTRrTzQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxNDA4Q0JFMkY4OTgwMkYKUldRdmdJa3Z2b3hBd1NkRjFzakk3M2JpN0FXY2NLcFJLeGhIaVA1dXhOWkdPaWJTaTI4b0ZpTXEK",
       "endpoints": ["https://github.com/rsaryev/localix/releases/latest/download/latest.json"]
     }
   },
