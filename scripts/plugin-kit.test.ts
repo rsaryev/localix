@@ -1,7 +1,7 @@
 // The plugin kit end to end, against the REAL repository: staging writes a kit, and the app's own
 // authoring (scaffold → build → test → load) works from that kit alone — which is what an
 // installed app with no source tree has. Each case names the failure it pins.
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { execFileSync } from 'node:child_process'
 import {
   cpSync,
@@ -222,6 +222,11 @@ describe('template layout', () => {
     expect(frameDomainImports(copy)).toEqual([`ui/usePolledSnapshot.ts → ${domainModule}`])
   })
 })
+
+// Each case below type-checks, builds and loads a whole scaffolded plugin. With a warm kit cache
+// that takes well under bun's 5 s default, which is why a laptop never sees it; a cold CI runner
+// spends longer than that on the first check and fails every case after it on the same deadline.
+setDefaultTimeout(120_000)
 
 describe('a scaffolded user plugin', () => {
   // A built backend leaves hono, zod and the SDK external: the host serves them at runtime, and
