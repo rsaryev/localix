@@ -214,12 +214,11 @@ describe.skipIf(process.platform === 'win32')('login-shell env resolution', () =
     const { shell } = fakeShell(dir, 'ok')
     process.env.SHELL = shell
     __resetLoginShellEnvCache(join(dir, 'snapshot.json'))
-    let turned = false
-    setTimeout(() => (turned = true), 0)
     const ready = loadLoginShellEnv()
+    // Not blocking = the call returned with the probe still running. A timer that "must have
+    // fired by now" is no proof: a fast runner finishes the whole probe inside the timer's 1 ms.
     expect(process.env.LOCALIX_PROBE_PROOF).toBeUndefined()
     await ready
-    expect(turned).toBe(true)
     expect(process.env.LOCALIX_PROBE_PROOF).toBe('async')
     expect(loadLoginShellEnv()).toBe(ready)
   })

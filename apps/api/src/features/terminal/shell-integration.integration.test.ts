@@ -12,6 +12,15 @@ import { Terminal } from '@xterm/headless'
 import { bunPtyBackend } from './pty-bun'
 import { installShellIntegration, cleanupShellIntegration } from './shell-integration'
 
+/**
+ * A shell these end-to-end runs can drive. zsh on a Linux runner is installed but unusable here:
+ * Ubuntu's global zshrc runs compinit, which stops at an interactive security prompt before the
+ * first prompt is painted, so both runs wait out their deadline. zsh is the macOS default shell
+ * and is exercised there; bash covers the Linux path.
+ */
+const usableShell = (shell: string) =>
+  existsSync(shell) && !(shell.endsWith('/zsh') && process.platform === 'linux')
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /**
@@ -91,7 +100,7 @@ describe('a fresh prompt reads as EMPTY input through a VT emulator', () => {
   // the exact PTY byte stream into @xterm/headless (the same engine the UI
   // renders with) and asserts that invariant at every `B` on an untouched prompt.
   for (const shell of ['/bin/bash', '/bin/zsh']) {
-    it.skipIf(!existsSync(shell))(
+    it.skipIf(!usableShell(shell))(
       `${shell}: at B the cursor is at prompt end with nothing typed after it`,
       async () => {
         const inj = installShellIntegration(shell)!
@@ -150,7 +159,7 @@ describe('a fresh prompt reads as EMPTY input through a VT emulator', () => {
 
 describe('shell integration emits OSC 133 through the PTY', () => {
   for (const shell of ['/bin/bash', '/bin/zsh']) {
-    it.skipIf(!existsSync(shell))(
+    it.skipIf(!usableShell(shell))(
       `${shell}: marks command boundaries + exit codes`,
       async () => {
         const { marks, raw } = await runShell(shell)
