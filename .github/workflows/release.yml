@@ -468,25 +468,24 @@ jobs:
       # linuxdeploy (the AppImage packager) runs `ldd` on every ELF it finds in the AppDir and
       # aborts when `ldd` exits non-zero. The Bun sidecar is a statically linked executable, for
       # which `ldd` prints "not a dynamic executable" and exits 1, so the AppImage step died with
-      # "Failed to run ldd". This shim answers "no dynamic dependencies" for exactly that case
-      # and passes every other `ldd` result through untouched.
+      # "Failed to run ldd". It calls `/usr/bin/ldd` by absolute path (a shim on PATH was ignored),
+      # so the real one moves aside and a wrapper takes its place: it answers "no dynamic
+      # dependencies" for exactly that case and passes every other result through untouched.
       - name: Let the AppImage packager accept static executables
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          shim="$RUNNER_TEMP/ldd-shim"
-          mkdir -p "$shim"
-          cat > "$shim/ldd" <<'SH'
+          sudo mv /usr/bin/ldd /usr/bin/ldd.real
+          sudo tee /usr/bin/ldd >/dev/null <<'SH'
           #!/bin/sh
-          out=$(/usr/bin/ldd "$@" 2>&1); code=$?
+          out=$(/usr/bin/ldd.real "$@" 2>&1); code=$?
           if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q 'not a dynamic executable'; then
             exit 0
           fi
           printf '%s\n' "$out"
           exit "$code"
           SH
-          chmod +x "$shim/ldd"
-          echo "$shim" >> "$GITHUB_PATH"
+          sudo chmod +x /usr/bin/ldd
 
       - name: Build desktop release and signed updater artifacts
         env:
