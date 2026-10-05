@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { SettingsPageHeader } from './SettingsScaffold'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 import { RefreshCw } from 'lucide-react'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
@@ -24,9 +25,10 @@ import { SettingsActionActivity } from './SettingsActionActivity'
  *
  * This file owns the scope and the request; `DiagnosticsReport` renders what came back.
  */
-export function DiagnosticsSettings() {
+export function DiagnosticsSettings({ embedded = false }: { embedded?: boolean } = {}) {
   const workItemVisible = useWorkItemVisible()
   const projectLabelId = useId()
+  const sessionLabelId = useId()
   const [projects, setProjects] = useState<Project[]>([])
   const [projectId, setProjectId] = useState('')
   const [sessionId, setSessionId] = useState('')
@@ -88,14 +90,13 @@ export function DiagnosticsSettings() {
   }, [refresh, workItemVisible])
 
   return (
-    <div className="space-y-6 text-left">
-      <p className="max-w-2xl text-sm leading-6 text-text-soft">
-        The configuration the agent runtime actually applies for a scope, resolved through the same
-        reads the run pipeline uses (user → project → session; environment kill-switches only
-        tighten). Read-only — never shows a secret value, a connection credential, or the raw system
-        prompt.
-      </p>
-
+    <div className="space-y-8 text-left">
+      {!embedded && (
+        <SettingsPageHeader
+          title="Diagnostics"
+          description="Inspect the configuration applied to a project or session. This report is read-only and hides secret values."
+        />
+      )}
       {/* Scope controls */}
       <div
         role="group"
@@ -119,9 +120,10 @@ export function DiagnosticsSettings() {
             ]}
           />
         </div>
-        <label className="flex flex-col gap-1 text-xs text-text-soft">
+        <label htmlFor={sessionLabelId} className="flex flex-col gap-1 text-xs text-text-soft">
           Session id
           <Input
+            id={sessionLabelId}
             size="xl"
             className="min-w-36"
             placeholder="e.g. LOCALIX-12"

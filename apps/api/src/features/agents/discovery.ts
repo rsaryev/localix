@@ -5,6 +5,7 @@ import type { AgentRecord } from './contracts'
 import { decodeNativeAgent } from './native-format'
 import { BUILTIN_AGENTS, isBuiltinAgentName } from './builtin'
 import { belongsToNativeScope } from './registry-identity'
+import { builtinOverrideHash } from './builtin-override'
 
 export const globalAgentsDir = (home = homedir()): string => join(home, '.localix', 'agents')
 export const projectAgentsDir = (cwd: string): string => join(cwd, '.localix', 'agents')
@@ -59,6 +60,7 @@ export async function discoverAgents(opts: {
   cwd: string | null
   projectId: string
   globalDir?: string
+  approvedBuiltinOverrides?: ReadonlyMap<string, string>
 }): Promise<DiscoveredAgent[]> {
   // A missing project directory must not silently select the installation's definitions.
   if (opts.projectId && !opts.cwd) return []
@@ -71,8 +73,15 @@ export async function discoverAgents(opts: {
   for (const { record, path } of await listAgentFiles(dir)) {
     if (byHandle.has(record.handle) || ids.has(record.id)) continue
     const shipped = BUILTIN_AGENTS.find((agent) => agent.id === record.id)
-    // Only the shipped definition's own global override may reuse its ID.
-    if (shipped && (project || shipped.handle !== record.handle)) continue
+    // A scoped override retains the shipped identity and handle. Other identities remain
+    // isolated, and a mismatched handle cannot impersonate a shipped agent.
+    if (shipped && shipped.handle !== record.handle) continue
+    if (
+      shipped &&
+      project &&
+      opts.approvedBuiltinOverrides?.get(record.id) !== builtinOverrideHash(record)
+    )
+      continue
     if (!shipped && !belongsToNativeScope(record.id, projectId)) continue
     ids.add(record.id)
     byHandle.set(record.handle, {
@@ -81,7 +90,7 @@ export async function discoverAgents(opts: {
       record,
       scope,
       path,
-      builtin: !project && isBuiltinAgentName(record.handle) && Boolean(shipped),
+      builtin: isBuiltinAgentName(record.handle) && Boolean(shipped),
     })
   }
   for (const record of BUILTIN_AGENTS) {

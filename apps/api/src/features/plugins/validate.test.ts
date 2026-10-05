@@ -608,6 +608,39 @@ describe('validateCompatibility', () => {
     expect(warnings.some((w) => w.includes('"hompage"') && w.includes('"homepage"'))).toBe(true)
   })
 
+  it('accepts native agent declarations and rejects malformed payloads and duplicate identities', async () => {
+    const entry = {
+      kind: 'agent',
+      key: 'auditor',
+      value: {
+        definition: { handle: 'auditor', instructions: 'Inspect changes.' },
+        policyProposals: [],
+      },
+    }
+    const valid = await writePlugin('native-valid', 'native-valid', { contributions: [entry] })
+    expect(
+      validateCompatibility(valid).warnings.some((warning) => warning.includes('"contributions"')),
+    ).toBe(false)
+    expect(validatePlugin(valid).errors).toEqual([])
+    const invalid = await writePlugin('native-invalid', 'native-invalid', {
+      contributions: [{ ...entry, value: { definition: { handle: 'auditor', instructions: '' } } }],
+    })
+    expect(validatePlugin(invalid).errors.some((error) => error.includes('is invalid'))).toBe(true)
+    const duplicates = await writePlugin('native-duplicates', 'native-duplicates', {
+      contributions: [entry, entry],
+    })
+    expect(
+      validatePlugin(duplicates).errors.some((error) =>
+        error.includes('Duplicate agent contribution key'),
+      ),
+    ).toBe(true)
+    expect(
+      validatePlugin(duplicates).errors.some((error) =>
+        error.includes('Duplicate native agent handle'),
+      ),
+    ).toBe(true)
+  })
+
   it('warns on a completely unknown field without a suggestion', async () => {
     const plugin = await writePlugin('unknown-plugin', 'unknown-plugin', {
       completelymadeupfield: 'x',

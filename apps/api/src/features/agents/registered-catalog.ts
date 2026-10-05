@@ -12,6 +12,7 @@ export function registeredAgentSummary(
   rules: Rule[],
   invocations: InvocationRegistry,
   policyReviewed = false,
+  sourceAvailable = true,
 ): AgentSummary {
   const availability = availabilityOf(composeCapabilities(rules))
   // NOT `=== true`. That was right while a plugin's default was `deny` and an explicit allow
@@ -20,6 +21,7 @@ export function registeredAgentSummary(
   // wrote a rule about its source into THIS agent's own list, which is not where installing a
   // plugin writes. A denial still disables it; only the absence of one stops meaning "off".
   const sourceEnabled =
+    sourceAvailable &&
     Object.hasOwn(ACTION_PREFIX, entry.source.kind) &&
     availability.effectFor(entry.source.kind as CapabilityKind, entry.source.name) !== 'deny'
   // Enabling a source or an agent does not accept an unreviewed import policy.

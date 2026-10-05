@@ -48,9 +48,9 @@ describe('parseCoreUiUri', () => {
       anchor: 'editor-on-save',
       entryId: 'editor.save',
     })
-    expect(parseCoreUiUri('localix://ui/settings/general')).toEqual({
+    expect(parseCoreUiUri('localix://ui/settings/preferences')).toEqual({
       kind: 'settings',
-      tab: 'general',
+      tab: 'preferences',
       anchor: undefined,
     })
     expect(

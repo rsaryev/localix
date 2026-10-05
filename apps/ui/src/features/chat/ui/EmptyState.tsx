@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo } from 'react'
-import { timeGreeting, firstNameOf } from '@/shared/lib/greeting'
+import { timeGreeting } from '@/shared/lib/greeting'
 import { BirdStage } from '@/shared/ui/BirdStage'
 
 // Environment discovery is a first-run capability, not part of the connected
@@ -12,8 +12,6 @@ const EnvDetectedProviders = lazy(() =>
 )
 
 interface EmptyStateProps {
-  /** Display name (`name` profile) — personalizes the greeting, matching the splash. */
-  name?: string | null
   /**
    * Whether a provider connection exists. When false (e.g. onboarding skipped),
    * a one-click connect prompt is surfaced. Defaults to true so surfaces without
@@ -27,9 +25,8 @@ interface EmptyStateProps {
   sessionId: string | null
 }
 
-export function EmptyState({ name, hasConnection = true, sessionId }: EmptyStateProps) {
+export function EmptyState({ hasConnection = true, sessionId }: EmptyStateProps) {
   const greeting = useMemo(() => timeGreeting(), [])
-  const firstName = firstNameOf(name)
 
   return (
     <div className="flex flex-1 select-none flex-col items-center justify-center px-4 py-8">
@@ -37,7 +34,6 @@ export function EmptyState({ name, hasConnection = true, sessionId }: EmptyState
 
       <p className="mt-5 font-heading text-2xl font-semibold tracking-[-0.03em] text-text-strong">
         {greeting}
-        {firstName && `, ${firstName}`}
       </p>
       <p className="mt-1.5 text-sm text-text-faint">
         {hasConnection

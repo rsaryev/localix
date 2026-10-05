@@ -6,7 +6,7 @@ import {
   extractCallFacts,
   type ToolFacts,
 } from '../agent-core/permission-engine'
-import { permissionRulesForRun } from '../chat/runtime/run/permission-gate-build'
+import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from './resolve'
 import type { Rule } from './rule'
@@ -52,16 +52,12 @@ describe('capability policy at the runtime boundary', () => {
   })
 
   test('a skill allow-list can lift an ask for exactly what it declared', () => {
-    // A skill's `allowed-tools` are appended, so last-match makes them the decisive statement
-    // for the commands they name — and only those.
-    const rules = permissionRulesForRun(
-      project([{ action: 'tool:bash', resource: '*', effect: 'ask' }]),
-      ['Bash(git *)'],
-    )
-    expect(evaluate(rules, tool, call).action).toBe('allow')
-    expect(evaluate(rules, tool, extractCallFacts('bash', { command: 'npm publish' })).action).toBe(
-      'ask',
-    )
+    const rules = project([{ action: 'tool:bash', resource: '*', effect: 'ask' }])
+    const grants = skillPermissionRules(['Bash(git *)'])
+    expect(evaluate(rules, tool, call, grants).action).toBe('allow')
+    expect(
+      evaluate(rules, tool, extractCallFacts('bash', { command: 'npm publish' }), grants).action,
+    ).toBe('ask')
   })
 
   test('last match permits an explicit exception', () => {

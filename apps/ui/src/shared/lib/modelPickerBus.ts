@@ -2,6 +2,7 @@ export interface ModelPickerRequest {
   sessionId?: string
   query?: string
   providerId?: string
+  connectionId?: string
 }
 
 type Listener = (request: ModelPickerRequest) => void

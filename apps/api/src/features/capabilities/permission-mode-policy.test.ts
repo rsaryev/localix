@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { CallClass } from '@localixai/agent/agents'
 
 import { evaluate, extractCallFacts } from '../agent-core/permission-engine'
-import { permissionRulesForRun } from '../chat/runtime/run/permission-gate-build'
+import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { applyPermissionMode } from './permission-mode-policy'
 import { PERMISSION_MODES, type PermissionMode } from './permission-modes'
@@ -19,7 +19,8 @@ function runRules(mode: PermissionMode, rules: readonly Rule[], skillAllows?: st
   return {
     policy,
     denied: projection.denied.tool,
-    permissions: permissionRulesForRun(projection.permissions, skillAllows),
+    permissions: projection.permissions,
+    grants: skillPermissionRules(skillAllows),
   }
 }
 
@@ -28,7 +29,9 @@ const verdict = (
   name: string,
   callClass: CallClass,
   input: unknown = {},
-) => evaluate(permissions, { name, ...callClass }, extractCallFacts(name, input, ROOT)).action
+  grants: ReturnType<typeof skillPermissionRules> = [],
+) =>
+  evaluate(permissions, { name, ...callClass }, extractCallFacts(name, input, ROOT), grants).action
 
 const PRESET = builtinAgentPreset('localix')
 const ASKING: Rule[] = [...PRESET, { action: 'tool:bash', resource: 'git push*', effect: 'ask' }]
@@ -106,8 +109,10 @@ describe('plan', () => {
   })
 
   test('a skill allow-list cannot lift a plan denial', () => {
-    const folded = runRules('plan', PRESET, ['Bash(make *)']).permissions
-    expect(verdict(folded, 'bash', { effect: 'external' }, { command: 'make build' })).toBe('deny')
+    const { permissions, grants } = runRules('plan', PRESET, ['Bash(make *)'])
+    expect(
+      verdict(permissions, 'bash', { effect: 'external' }, { command: 'make build' }, grants),
+    ).toBe('deny')
   })
 })
 

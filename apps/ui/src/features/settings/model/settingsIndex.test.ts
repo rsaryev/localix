@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { SETTINGS_INDEX } from './settingsIndex'
+import { SETTINGS_INDEX, type SettingsIndexEntry } from './settingsIndex'
 import { CAPABILITY_TABS } from '@/shared/routing/routes'
 
 /**
@@ -24,9 +24,42 @@ function collectTsxFiles(dir: string): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) out.push(...collectTsxFiles(full))
-    else if (entry.name.endsWith('.tsx')) out.push(full)
+    else if (entry.name.endsWith('.tsx') && !entry.name.includes('.test.')) out.push(full)
   }
   return out
+}
+
+const CONTROL_FILES = [
+  'PreferencesSettings.tsx',
+  'EditorSettings.tsx',
+  'typography/TypographySection.tsx',
+  'ContextExclusionsSection.tsx',
+  'capabilities/ResearchSection.tsx',
+  'SetupSection.tsx',
+  'NotificationsSection.tsx',
+] as const
+const normalizeTitle = (title: string) =>
+  title
+    .replace(/[‘’]/g, "'")
+    .trim()
+    .toLowerCase()
+
+function missingControls(index: readonly SettingsIndexEntry[]): string[] {
+  const titles = new Set(index.map((entry) => normalizeTitle(entry.title)))
+  const missing: string[] = []
+  for (const file of CONTROL_FILES) {
+    const source = readFileSync(join(UI_DIR, file), 'utf8')
+    const controls = [
+      ...source.matchAll(
+        /<(?:SwitchRow|SettingsControlRow|Field)\b[^>]*?\b(?:title|label)="([^"]+)"/g,
+      ),
+      ...source.matchAll(/<p className="text-sm font-medium text-foreground">([^<{]+)<\/p>/g),
+    ]
+    for (const control of controls) {
+      if (!titles.has(normalizeTitle(control[1]!))) missing.push(`${file}: ${control[1]}`)
+    }
+  }
+  return missing
 }
 
 /** Every section anchor literal the settings UI renders. */
@@ -44,6 +77,15 @@ function renderedAnchors(): Set<string> {
 }
 
 describe('settings index anti-drift', () => {
+  it('indexes individual static controls by their visible labels, not only section headings', () => {
+    expect(missingControls(SETTINGS_INDEX)).toEqual([])
+  })
+
+  it('detects a missing control even when its section is still indexed', () => {
+    expect(missingControls(SETTINGS_INDEX.filter((entry) => entry.id !== 'prefs.theme'))).toContain(
+      'PreferencesSettings.tsx: Theme',
+    )
+  })
   it('finds at least a handful of rendered anchors (scan sanity check)', () => {
     // Guards against a broken scan silently passing every other assertion.
     expect(renderedAnchors().size).toBeGreaterThan(8)

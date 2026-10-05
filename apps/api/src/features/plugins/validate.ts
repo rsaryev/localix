@@ -8,6 +8,7 @@ import { collectHookUserConfigTokens } from '../cc-hooks/config'
 import { validateCompatibility } from './validate-compat'
 import { validatePluginSkills } from './validate-skill'
 import { validatePluginCommands, validatePluginAgents } from './validate-fields'
+import { validateAgentContributions } from './validate-agent-contributions'
 import { checkApiVersion, isRequiredConfigMissing } from '../ext/manifest-validate'
 
 /**
@@ -58,6 +59,7 @@ export function validatePlugin(
 
   // Manifest parse / read failure → hard error.
   if (plugin.error) errors.push(plugin.error)
+  errors.push(...validateAgentContributions(plugin))
   for (const diagnostic of plugin.entrypoints.diagnostics ?? []) {
     errors.push(`${diagnostic.message}: ${diagnostic.path}`)
   }

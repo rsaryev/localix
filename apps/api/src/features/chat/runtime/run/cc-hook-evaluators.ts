@@ -19,21 +19,13 @@ import { agentRoute, sessionRoute } from '../../session-route'
  * one person who could fix it — the user who wrote the hook — otherwise has no signal
  * at all that their policy stopped running. Every fail-open path here says why.
  */
-import type { AgentTool } from '@localixai/agent/agents'
 
-import {
-  parsePromptHookResult,
-  type PromptHookResult,
-  type CcMcpToolResult,
-} from '../../../cc-hooks'
-import type { LoadedPlugins } from '../../../plugins/loader'
+import { parsePromptHookResult, type PromptHookResult } from '../../../cc-hooks'
 import { TOOL } from '../../../agent-core/tool-names'
 import { resolveRunProfile, type RunProfile } from '../../../agent-core/run-shape'
 import type { SessionRecord } from '../../repository'
 import { resolveLanguageModel } from '../model-resolution'
 import { getAgentService } from '../agent-service-binding'
-import { resolveMcpTools } from './mcp-tools'
-import type { AvailabilityReader } from '../../../capabilities/availability'
 import { recordAuxCallUsage } from '../usage-normalize'
 import { publishSessionUsageSnapshot } from '../session-usage'
 import type { RunCatalog, RunEnv } from './types'
@@ -51,11 +43,6 @@ interface HookEvalOptions {
   model?: string
   timeoutMs: number
   maxTurns?: number
-}
-
-/** CC-hook name form (`mcp__server__tool`) → the engine's (`mcp_server_tool`). */
-function normalizeMcpName(name: string): string {
-  return name.replace(/^mcp__/, 'mcp_').replace(/__/g, '_')
 }
 
 /**
@@ -226,60 +213,4 @@ export function createAgentHookRunner(input: {
   }
 }
 
-/**
- * `mcp_tool` hooks. Call a CONNECTED MCP tool by full name (CC `mcp__server__tool`
- * or Localix `mcp_server_tool`) with the hook input as arguments. Built from the
- * same MCP resolution the run itself uses (process-lifetime client manager →
- * cached clients); the gather is MEMOIZED per run, so a per-tool-call hook does
- * not re-list servers on every fire.
- */
-export function createMcpHookCaller(input: {
-  env: RunEnv
-  userId: string
-  session: SessionRecord
-  agentId?: string
-  loadedPlugins: LoadedPlugins
-  defaultCwd: string
-  disabledTools: string[]
-  /** What the run's rules say about its MCP servers. */
-  availability: AvailabilityReader
-}): (name: string, toolInput: unknown, signal?: AbortSignal) => Promise<CcMcpToolResult> {
-  const { env, userId, session, loadedPlugins, defaultCwd, disabledTools, availability } = input
-  let toolsPromise: Promise<AgentTool[]> | null = null
-
-  return async (name, toolInput, signal) => {
-    if (!toolsPromise) {
-      toolsPromise = resolveMcpTools({
-        env,
-        userId,
-        session,
-        pluginMcpServers: loadedPlugins.mcpServers,
-        defaultCwd,
-        disabledTools,
-        availability,
-      })
-        .then((r) => r.gather?.tools ?? [])
-        .catch((err: unknown) => {
-          hookWarn.warn(`mcp_tool hook could not resolve MCP tools: ${String(err)}`)
-          return []
-        })
-    }
-    const tools = await toolsPromise
-    const target = normalizeMcpName(name)
-    const tool = tools.find(
-      (t) => t.name === name || t.name === target || normalizeMcpName(t.name) === target,
-    )
-    if (!tool) return { notConnected: true }
-    try {
-      const result = await tool.execute('cc-hook-mcp', toolInput, signal)
-      const text =
-        typeof result.content === 'string' ? result.content : String(result.content ?? '')
-      return { text, isError: result.isError === true }
-    } catch (err) {
-      // The tool IS connected — it ran and threw. Reporting that as `notConnected`
-      // sends the operator hunting a server outage; the caller contract is only that
-      // this never throws, so hand back the failure as what it is.
-      return { text: err instanceof Error ? err.message : String(err), isError: true }
-    }
-  }
-}
+export { createMcpHookCaller } from './mcp-hook-caller'

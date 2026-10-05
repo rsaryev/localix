@@ -29,7 +29,7 @@ export const inclusiveFrom = (from: string): string =>
 // Group spend by CALL KIND: the ledger records auxiliary LLM calls alongside
 // visible chat turns — session-title generation ('title'), inline autocomplete ('autocomplete'),
 // text-input completion ('inline-completion'), terminal command completion ('terminal'),
-// the improve-prompt wand ('improve'),
+// historical prompt-rewrite calls ('improve', retired),
 // the auto-mode permission classifier ('classify') and `prompt` CC-hook verdicts ('hook') —
 // so a "Kind" breakdown surfaces how much spend is background overhead vs actual
 // conversation. Everything else (the model's real stop reasons: end_turn /

@@ -39,7 +39,7 @@ const params = dispatchParams(
 )
 
 function harness(runParams = params) {
-  let session = base
+  let session = runParams.session
   const queued: string[] = []
   const scopes: Array<{ speakerAgentId: string; handoffDepth?: number }> = []
   const triggers: Array<readonly string[]> = []
@@ -107,6 +107,34 @@ function harness(runParams = params) {
 }
 
 describe('conversation control port', () => {
+  test('a delegated team hands off through the same queue without changing its roster', async () => {
+    const child = sessionFixture({ ...base, sessionKind: 'subagent', parentSessionId: 'parent' })
+    const { control, queued, scopes, published } = harness({ ...params, session: child })
+    expect(await control.finish('handoff', { next: ['beta'] })).toEqual({
+      invited: [],
+      removed: [],
+      next: ['@beta'],
+    })
+    expect(queued).toEqual(['agent-b'])
+    expect(scopes).toMatchObject([{ speakerAgentId: 'agent-b', handoffDepth: 1 }])
+    expect(published).toEqual([])
+  })
+
+  test('a delegated team cannot invite, remove, or schedule agents outside its roster', async () => {
+    const child = sessionFixture({ ...base, sessionKind: 'subagent', parentSessionId: 'parent' })
+    const { control, queued } = harness({ ...params, session: child })
+    await expect(control.finish('invite', { invite: ['qa'], next: [] })).rejects.toThrow('fixed')
+    await expect(control.finish('remove', { remove: ['beta'], next: [] })).rejects.toThrow('fixed')
+    await expect(control.finish('outsider', { next: ['qa'] })).rejects.toThrow('unavailable')
+    expect(queued).toEqual([])
+    expect(control.completed()).toBe(false)
+    expect(await control.finish('done', { next: [] })).toEqual({
+      invited: [],
+      removed: [],
+      next: [],
+    })
+  })
+
   test('invite with next:[] only changes membership; it must not implicitly start work', async () => {
     const { control, queued, session } = harness()
     const result = await control.finish('invite-only', {

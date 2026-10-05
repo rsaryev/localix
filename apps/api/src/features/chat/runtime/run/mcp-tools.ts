@@ -1,7 +1,6 @@
-import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
+import type { AgentTool } from '@localixai/agent/agents'
 import type { AvailabilityReader } from '../../../capabilities/availability'
 
-import { isAgentToolAvailable } from '@localixai/agent/agents'
 import {
   mcpClientManager,
   RequiredMcpServersError,
@@ -51,21 +50,10 @@ export async function resolveMcpTools(args: {
   session: SessionRecord
   pluginMcpServers: McpServerList
   defaultCwd: string
-  disabledTools: string[]
   /** What the run's rules say about its MCP servers. */
   availability: AvailabilityReader
-  toolSurface?: ToolSurface
 }): Promise<ResolvedMcpTools> {
-  const {
-    env,
-    userId,
-    session,
-    pluginMcpServers,
-    defaultCwd,
-    disabledTools,
-    availability,
-    toolSurface,
-  } = args
+  const { env, userId, session, pluginMcpServers, defaultCwd, availability } = args
   const empty: ResolvedMcpTools = {
     tools: [],
     instructions: [],
@@ -103,22 +91,16 @@ export async function resolveMcpTools(args: {
       scope: `${userId}:${session.projectId ?? ''}:${defaultCwd}`,
       logger: prefixedWarnLogger('mcp'),
     })
-    // Every gathered MCP tool is registered directly. The user's enabled/disabled
-    // state is the only product-level visibility control; there is no second
-    // activation class for the model and dispatcher to disagree about.
-    const disabledToolSet = new Set(disabledTools)
-    const candidateTools = gather.tools.filter(
-      (tool) =>
-        !disabledToolSet.has(tool.name) &&
-        (!toolSurface || isAgentToolAvailable(tool, toolSurface)),
-    )
+    // Keep descriptors intact. Assembly's shared ledger owns tool policy, authority and
+    // model filtering, including the explanation for a withheld dynamic tool.
+    const candidateTools = gather.tools
     // Resource tools (Codex parity): for servers advertising `resources`, expose
     // list resources/templates + read resource directly.
     const resourceTools = buildMcpResourceTools({
       resourceServers: gather.resourceServers,
       servers: enabledServers,
       cwd: defaultCwd,
-      disabledTools: disabledToolSet,
+      disabledTools: new Set(),
       manager: mcpClientManager,
     })
     const directByServer = new Map<string, string[]>()

@@ -4,7 +4,6 @@ import {
 } from '../capabilities/source-repository'
 
 import { ApiError } from '../../lib/errors'
-import { createNativeAgentId } from './registry-identity'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { createContributionReader } from '../ext/contribution-reader'
 import { agentContributionSchema } from './contribution'
@@ -14,7 +13,7 @@ import { createRegistrationPolicyService } from './registration-policy'
 import { createAvailabilityWriter } from '../capabilities/availability'
 import { createInvocationRegistry } from '../capabilities/invocation'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
-import { inheritedAgentPreset } from '../capabilities/builtin-agent-presets'
+import { createNativeAgent } from './create-native-agent'
 import { globalAgentsDir, projectAgentsDir } from './discovery'
 import { builtinAgentRecord } from './builtin'
 import { agentPolicy, FIELD_LABELS, lockedChanges } from './policy'
@@ -22,6 +21,7 @@ import { assertDisablable } from './disable-guard'
 import { removeAgentRecordFiles, writeAgentRecordFile } from './registry-files'
 import type { AgentRecord, AgentSummary } from './contracts'
 import type { AgentsService, AgentsServiceDeps } from './service-contract'
+import { BUILTIN_OVERRIDE_FIELD, builtinOverrideHash } from './builtin-override'
 
 export type { AgentsService, AgentsServiceDeps } from './service-contract'
 
@@ -53,6 +53,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   }
 
   const buildCatalog = async (userId: string, projectId: string) => {
+    await deps.syncBundledContributions?.(userId, projectId)
     return buildAgentCatalog({
       db: deps.db,
       invocations,
@@ -80,6 +81,14 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   /** …and the catalog read that precedes it, which every per-name verb starts with. */
   const findEntry = async (userId: string, name: string, scope: string) =>
     pickEntry(await buildCatalog(userId, scope), name, scope)
+
+  const creationPorts = {
+    find: findEntry,
+    dir: dirFor,
+    sources: repo,
+    rules: ruleRepository,
+    availability: availabilityWriter,
+  }
 
   return {
     ...createAgentInvocationService(buildCatalog, invocations),
@@ -129,40 +138,9 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     },
 
     async createAgent(userId, input) {
-      return serialize(JSON.stringify([userId, input.projectId ?? '']), async () => {
-        const projectId = input.projectId ?? ''
-        // Creating is not editing. Without this, "New agent" + an existing handle silently
-        // overwrote that definition and flipped its enable row on — and the editor makes the
-        // collision easy to reach, because create and edit are now the same panel. `update` is
-        // how an existing record changes; a name already taken is refused here, as in `duplicate`.
-        if (pickEntry(await buildCatalog(userId, projectId), input.handle, projectId)) {
-          throw new ApiError(
-            409,
-            'agent_exists',
-            `An agent named "${input.handle}" already exists.`,
-          )
-        }
-        // `enabled` is enable-STATE (a DB row), not part of the record file — strip it.
-        const { projectId: _omit, enabled, ...definition } = input
-        const record: AgentRecord = { ...definition, id: createNativeAgentId(projectId) }
-        // Lossless JSON write — engine tool names round-trip exactly (no CC mapping).
-        await writeAgentRecordFile(await dirFor(userId, projectId), record as AgentRecord)
-        // enabled ?? true: UI-authored agents turn on; an inert import passes false.
-        await repo.upsert(userId, projectId, record.id, { source: 'local' })
-        // The default agent's own rules, re-pointed at this one. It used to be a bare
-        // `invocation:<host> allow` per host: no confirmations at all, so a brand-new agent
-        // could touch a path outside the workspace or run `rm -rf` without asking while every
-        // shipped role asked. See `inheritedAgentPreset`.
-        await ruleRepository.replace(userId, record.id, inheritedAgentPreset(record.id))
-        // A UI-authored agent turns on; an inert import passes `enabled: false` and stays
-        // off. Either way the answer is STATED, because creating a record is the moment a
-        // user decided about it — leaving it to the trust gate would read as "nobody has".
-        await availabilityWriter.set(userId, record.id, 'agent', [
-          { name: record.id, enabled: enabled ?? true },
-        ])
-        const catalog = await buildCatalog(userId, projectId)
-        return pickEntry(catalog, record.handle, projectId)!
-      })
+      return serialize(JSON.stringify([userId, input.projectId ?? '']), () =>
+        createNativeAgent(creationPorts, userId, input),
+      )
     },
 
     async updateAgent(userId, name, input, projectId) {
@@ -175,13 +153,6 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
             400,
             'agent_extension_owned',
             'Update this agent through its extension',
-          )
-        }
-        if (input.handle !== existing.record.handle) {
-          throw new ApiError(
-            400,
-            'agent_name_immutable',
-            'An agent cannot be renamed; duplicate it.',
           )
         }
         const { projectId: _omit, enabled: _state, ...definition } = input
@@ -198,8 +169,24 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
               .join(', ')} cannot be changed. Duplicate it to get one you own.`,
           )
         }
-        await writeAgentRecordFile(await dirFor(userId, scope), record as AgentRecord)
-        return pickEntry(await buildCatalog(userId, scope), name, scope)!
+        const collision = await findEntry(userId, record.handle, scope)
+        if (collision && collision.record.id !== record.id) {
+          throw new ApiError(
+            409,
+            'agent_exists',
+            `An agent named "${record.handle}" already exists.`,
+          )
+        }
+        const dir = await dirFor(userId, scope)
+        await writeAgentRecordFile(dir, record)
+        if (record.handle !== existing.record.handle)
+          await removeAgentRecordFiles(dir, existing.record.handle)
+        if (existing.builtin && scope) {
+          await repo.patchConfig(userId, scope, record.id, {
+            [BUILTIN_OVERRIDE_FIELD]: builtinOverrideHash(record),
+          })
+        }
+        return pickEntry(await buildCatalog(userId, scope), record.id, scope)!
       })
     },
 
@@ -227,9 +214,10 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
       })
     },
 
-    async resetAgent(userId, name) {
-      return serialize(JSON.stringify([userId, '']), async () => {
-        const existing = pickEntry(await buildCatalog(userId, ''), name, '')
+    async resetAgent(userId, name, projectId) {
+      const scope = projectId ?? ''
+      return serialize(JSON.stringify([userId, scope]), async () => {
+        const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
         if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
         if (!existing.builtin) {
           throw new ApiError(
@@ -239,8 +227,12 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
           )
         }
         // Files only — the enable row is the user's on/off choice, not part of the definition.
-        await removeAgentRecordFiles(await dirFor(userId, ''), existing.record.handle)
-        return pickEntry(await buildCatalog(userId, ''), name, '')!
+        await removeAgentRecordFiles(await dirFor(userId, scope), existing.record.handle)
+        if (scope)
+          await repo.patchConfig(userId, scope, existing.record.id, {
+            [BUILTIN_OVERRIDE_FIELD]: null,
+          })
+        return pickEntry(await buildCatalog(userId, scope), name, scope)!
       })
     },
 
@@ -250,18 +242,30 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
 
     async duplicateAgent(userId, name, newName, projectId) {
       const scope = projectId ?? ''
-      const catalog = await buildCatalog(userId, scope)
-      const source = pickEntry(catalog, name, scope)
-      if (!source) throw new ApiError(404, 'agent_not_found', 'Agent not found')
-      if (!agentPolicy(source).duplicate) {
-        throw new ApiError(400, 'agent_not_duplicable', 'This agent cannot be copied.')
-      }
-      if (pickEntry(catalog, newName, scope)) {
-        throw new ApiError(409, 'agent_exists', `An agent named "${newName}" already exists.`)
-      }
-      // A copy is the user's own: the import provenance describes the SOURCE file, not this one.
-      const { id: _origin, ...copied } = source.record
-      return this.createAgent(userId, { ...copied, handle: newName, projectId: scope || null })
+      return serialize(JSON.stringify([userId, scope]), async () => {
+        const catalog = await buildCatalog(userId, scope)
+        const source = pickEntry(catalog, name, scope)
+        if (!source) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+        if (!agentPolicy(source).duplicate) {
+          throw new ApiError(400, 'agent_not_duplicable', 'This agent cannot be copied.')
+        }
+        if (pickEntry(catalog, newName, scope)) {
+          throw new ApiError(409, 'agent_exists', `An agent named "${newName}" already exists.`)
+        }
+        // A copy is the user's own: the import provenance describes the SOURCE file, not this one.
+        const { id: _origin, ...copied } = source.record
+        return createNativeAgent(
+          creationPorts,
+          userId,
+          {
+            ...copied,
+            handle: newName,
+            projectId: scope || null,
+            enabled: source.enabled,
+          },
+          { id: source.record.id, rules: await ruleRepository.read(userId, source.record.id) },
+        )
+      })
     },
 
     async resolveEnabledAgent(userId, agentId, projectId) {
@@ -277,7 +281,11 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
       const scope = projectId ?? ''
       const catalog = await buildCatalog(userId, scope)
       const matches = catalog.enabled.filter(
-        (agent) => agent.record.handle === handle && agent.projectId === scope,
+        (agent) =>
+          agent.projectId === scope &&
+          (agent.record.handle === handle ||
+            (agent.registration &&
+              `${agent.registration.sourceName}:${agent.record.handle}` === handle)),
       )
       if (matches.length > 1) throw new ApiError(409, 'agent_ambiguous', 'Select an agent by ID')
       return matches[0]?.record ?? null

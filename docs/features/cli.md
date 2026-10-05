@@ -41,7 +41,7 @@ It exits `1` when Bun cannot be located.
 
 ### Install the launcher
 
-Install, reinstall, or remove the launcher from **Settings → General → Command line**. The installer
+Install, reinstall, or remove the launcher from **Settings → System → Command line**. The installer
 writes a user-owned shim and reports when its directory is absent from `PATH`; it does not edit
 shell startup files.
 

@@ -7,7 +7,8 @@ import { selectSessionConnectionId } from './connectionScope'
 import { isDesktop, getDesktopOAuthPort } from '@localixai/kit/environment'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
-import { findChangedOAuthConnection } from './oauthConnectionPolling'
+import { startOAuthConnectionPoll } from './oauthConnectionPolling'
+import { returnToOAuthModels } from './oauthConnectionReturn'
 
 const OAUTH_STATE_KEY = 'localix_oauth_state'
 const OAUTH_SESSION_KEY = 'localix_oauth_session_id'
@@ -80,6 +81,7 @@ export function useConnections(sessionId: string | null) {
           })
           replaceSession(session)
         }
+        returnToOAuthModels(connection, savedSessionId)
       })
       .catch((e) => {
         toast.error('Could not complete the provider sign-in', {
@@ -134,7 +136,14 @@ export function useConnections(sessionId: string | null) {
   )
 
   const addOAuthConnection = useCallback(
-    async (providerId: string, providerName: string, label: string) => {
+    async (
+      providerId: string,
+      providerName: string,
+      label: string,
+      onConnected?: (connectionId: string) => void,
+    ) => {
+      // Snapshot before starting login: a fast callback may persist before initiate returns.
+      const baseline = useChatStore.getState().connections
       // In desktop mode the OAuth callback must go to a localhost URL that the
       // embedded *API* server handles (app.ts completes it server-side and shows a
       // "Connected" page) — the system browser cannot render an embedded webview
@@ -167,64 +176,36 @@ export function useConnections(sessionId: string | null) {
       // it to the active session. Used for desktop OAuth and for local-server flows
       // (e.g. Anthropic, whose loopback callback completes the flow server-side).
       const pollForNewConnection = () => {
-        const baseline = useChatStore.getState().connections
-        let attempts = 0
-        let stopped = false
-        let timer: number | null = null
-        const stopPoll = () => {
-          if (stopped) return
-          stopped = true
-          if (timer !== null) window.clearTimeout(timer)
-          timer = null
-          oauthPollStops.current.delete(stopPoll)
-        }
-        const tick = async () => {
-          // The user is completing the OAuth flow in another tab/window — don't
-          // poll while this tab is backgrounded; resume when they return. This
-          // also caps wall-clock to active foreground time.
-          if (document.hidden || stopped) return
-          attempts += 1
-          await refreshConnections()
-          if (stopped) return
-          const fresh = findChangedOAuthConnection(
-            baseline,
-            useChatStore.getState().connections,
-            providerId,
-          )
-          if (fresh) {
-            sessionStorage.removeItem(OAUTH_STATE_KEY)
-            const savedSessionId = sessionStorage.getItem(OAUTH_SESSION_KEY)
-            sessionStorage.removeItem(OAUTH_SESSION_KEY)
-            if (savedSessionId) {
-              const session = await backendClient.updateSession(savedSessionId, {
+        const stopPoll = startOAuthConnectionPoll({
+          baseline,
+          providerId,
+          refresh: refreshConnections,
+          read: () => useChatStore.getState().connections,
+          async onConnected(fresh, signal) {
+            if (activeSessionId) {
+              const session = await backendClient.updateSession(activeSessionId, {
                 route: { providerConnectionId: fresh.id },
               })
+              if (signal.aborted) return
               replaceSession(session)
             }
-            stopPoll()
-          } else if (attempts >= 40) {
-            // ~120s of active polling (40 × 3s) — give up so an abandoned OAuth
-            // flow can't refetch forever. Giving up used to be silent, which read
-            // exactly like a sign-in that had worked.
-            stopPoll()
+            // Each poll retains its originating session rather than reading another flow's
+            // sessionStorage entry after the user starts a second sign-in.
+            if (sessionStorage.getItem(OAUTH_STATE_KEY) === state) {
+              sessionStorage.removeItem(OAUTH_STATE_KEY)
+              sessionStorage.removeItem(OAUTH_SESSION_KEY)
+            }
+            onConnected?.(fresh.id)
+            returnToOAuthModels(fresh, activeSessionId)
+          },
+          onStop: () => oauthPollStops.current.delete(stopPoll),
+          onTimeout: () => {
             toast.error(`Could not sign in to ${providerName}`, {
               description: 'The sign-in did not finish within two minutes. Try connecting again.',
             })
-          }
-        }
-        const schedule = () => {
-          if (stopped) return
-          timer = window.setTimeout(() => {
-            timer = null
-            // A failed tick is not reported: the next one retries, and the give-up above is
-            // where an abandoned sign-in actually becomes news.
-            void tick()
-              .catch(() => {})
-              .finally(schedule)
-          }, 3000)
-        }
+          },
+        })
         oauthPollStops.current.add(stopPoll)
-        schedule()
       }
 
       // device-code adapters (GitHub Copilot): the server polls until the user enters the

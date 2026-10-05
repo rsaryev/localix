@@ -49,7 +49,7 @@ export function parseSettingsAnchorUri(uri: string): ParsedSettingsAnchor | null
     if (pathSegments[0] !== 'settings') return null
     const segments = pathSegments.slice(1)
     if (segments.length > 3) return null
-    const tab = segments[0] === 'root' ? 'general' : segments[0]
+    const tab = segments[0] === 'root' ? 'preferences' : segments[0]
     const anchor = segments[1]
     const entryId = segments[2]
     if (

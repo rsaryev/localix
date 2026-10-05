@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
 import { findCatalogModel } from '@localixai/agent/catalog'
 import { useChatStore } from '@/features/chat/model/store'
@@ -10,6 +10,8 @@ import { Button } from '@localixai/kit/button'
 import { Field } from '@localixai/kit/field'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Select } from '@localixai/kit/select'
+import { SettingsFieldGrid } from '../../SettingsFieldGrid'
+import { AGENT_FIELD_IDS } from './agentDraft'
 
 const EFFORT_OPTIONS = [
   { value: '', label: 'Inherit effort' },
@@ -21,6 +23,7 @@ interface AgentModelFieldProps {
   model: string
   effort: string
   disabled?: boolean
+  effortError?: string
   onChange: (next: { provider: string; model: string }) => void
   onEffortChange: (effort: string) => void
 }
@@ -38,6 +41,7 @@ export function AgentModelField({
   model,
   effort,
   disabled,
+  effortError,
   onChange,
   onEffortChange,
 }: AgentModelFieldProps) {
@@ -47,6 +51,8 @@ export function AgentModelField({
   const { connections } = connectionsState
   const refreshConnections = useChatStore((state) => state.refreshConnections)
   const [open, setOpen] = useState(false)
+  const modelFieldId = useId()
+  const modelHelpId = useId()
 
   // Settings may be opened before the workspace hydrated the connection store.
   useEffect(() => {
@@ -73,57 +79,63 @@ export function AgentModelField({
   const supportsReasoning = catalogModel?.supportsReasoning ?? Boolean(model)
 
   return (
-    // Labels and controls share rows across both columns; the explanatory line sits below the
-    // row, so a longer note under one field can never push its control out of line with the
-    // other. Effort disables itself while the configured default model does no reasoning.
-    <div className="grid grid-cols-[minmax(0,1fr)_10rem] items-start gap-x-3 gap-y-1.5 @max-md:grid-cols-1">
-      <Field label="Model" optional>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="lg"
-            // Same geometry as the `lg` Select beside it (the Button `lg` scale is one step
-            // shorter and a size smaller in type), so the two controls share one row exactly.
-            className="h-[var(--chrome-control-xl)] min-w-0 flex-1 justify-between px-3 text-sm font-normal"
-            aria-haspopup="dialog"
-            aria-expanded={open}
-            disabled={disabled}
-            onClick={() => setOpen(true)}
-          >
-            <span className="min-w-0 truncate text-left">{summary}</span>
-            <ChevronDown className="size-3.5 shrink-0 text-text-faint" />
-          </Button>
-          {model && (
-            <IconButton
-              size="md"
-              aria-label="Clear model — inherit the session model"
-              tooltip="Inherit the session model"
+    <div className="min-w-0 space-y-2">
+      <SettingsFieldGrid wideLeading>
+        <Field controlId={modelFieldId} label="Model" optional disabled={disabled}>
+          <div className="flex min-w-0 items-center gap-2">
+            <Button
+              id={modelFieldId}
+              variant="field"
+              size="xl"
+              className="min-w-0 flex-1 justify-between font-normal"
+              aria-label={`Model: ${summary}`}
+              aria-describedby={modelHelpId}
+              aria-haspopup="dialog"
+              aria-expanded={open}
               disabled={disabled}
-              onClick={() => onChange({ provider: '', model: '' })}
+              onClick={() => setOpen(true)}
             >
-              <X />
-            </IconButton>
-          )}
-        </div>
-      </Field>
+              <span className="min-w-0 truncate text-left">{summary}</span>
+              <ChevronDown className="size-3.5 shrink-0 text-text-faint" />
+            </Button>
+            {model && (
+              <IconButton
+                size="xl"
+                aria-label="Clear model — inherit the session model"
+                tooltip="Inherit the session model"
+                disabled={disabled}
+                onClick={() => onChange({ provider: '', model: '' })}
+              >
+                <X />
+              </IconButton>
+            )}
+          </div>
+        </Field>
 
-      <Field label="Effort" optional disabled={disabled || !supportsReasoning}>
-        <Select
-          size="xl"
-          className="w-full"
-          value={effort}
-          onValueChange={onEffortChange}
-          options={EFFORT_OPTIONS}
+        <Field
+          controlId={AGENT_FIELD_IDS.effort}
+          label="Effort"
+          optional
+          error={effortError}
           disabled={disabled || !supportsReasoning}
-          aria-label="Reasoning effort"
-        />
-      </Field>
-      <p className="text-xs/relaxed text-text-faint @max-md:col-span-1 col-span-2">
+        >
+          <Select
+            size="xl"
+            className="w-full"
+            value={effort}
+            onValueChange={onEffortChange}
+            options={EFFORT_OPTIONS}
+            disabled={disabled || !supportsReasoning}
+            aria-label="Reasoning effort"
+          />
+        </Field>
+      </SettingsFieldGrid>
+      <p id={modelHelpId} className="text-xs leading-5 text-text-soft">
         {model && !provider
-          ? 'An alias or bare id: resolved on the connection the run inherits.'
+          ? 'A model id resolved against your available provider connections. External model aliases must be replaced with a catalog model.'
           : model
-            ? 'Stored as provider + model, never a connection; several connections to one provider stay interchangeable.'
-            : 'Leave empty to run on whatever model the calling session uses.'}
+            ? 'Default for new chats after session choices and recent routes. Delegated work inherits the parent’s effective model and effort.'
+            : 'Uses the session’s model routing. Delegated work inherits the parent’s effective model and effort.'}
       </p>
 
       <ModelPickerShell

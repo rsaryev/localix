@@ -5,8 +5,11 @@ import {
   KEYMAP_PRESETS,
   detectActivePreset,
   presetOverrides,
+  resolvePresetOverrides,
   validateKeymapPresets,
 } from './presets'
+import { KEYMAP_PLATFORMS } from './presetDefinitions'
+import { matchesChord } from '@localixai/kit/keybindings'
 
 const configurableIds = new Set(SHORTCUT_CATALOG.filter((c) => isConfigurable(c)).map((c) => c.id))
 
@@ -27,7 +30,7 @@ describe('keymap presets', () => {
     const issues = validateKeymapPresets([
       { id: 'bogus', label: 'x', description: '', overrides: { 'nav.does-not-exist': 'mod+q' } },
     ])
-    expect(issues).toHaveLength(1)
+    expect(issues).toHaveLength(3)
     expect(issues[0]).toMatchObject({ presetId: 'bogus', kind: 'unknown-command' })
   })
 
@@ -48,9 +51,9 @@ describe('keymap presets', () => {
   })
 
   it('presetOverrides returns a defensive copy', () => {
-    const a = presetOverrides('jetbrains')
+    const a = presetOverrides('jetbrains', 'windows')
     a[CMD.goToFile] = 'mod+zzz'
-    expect(presetOverrides('jetbrains')[CMD.goToFile]).toBe('mod+shift+n')
+    expect(presetOverrides('jetbrains', 'windows')[CMD.goToFile]).toBe('mod+shift+n')
   })
 
   it('presetOverrides("unknown") is empty', () => {
@@ -64,7 +67,11 @@ describe('keymap presets', () => {
 
   it('applying a preset then detecting round-trips', () => {
     for (const preset of KEYMAP_PRESETS) {
-      expect(detectActivePreset(presetOverrides(preset.id))).toBe(preset.id)
+      for (const platform of KEYMAP_PLATFORMS) {
+        expect(detectActivePreset(presetOverrides(preset.id, platform), preset.id, platform)).toBe(
+          preset.id,
+        )
+      }
     }
   })
 
@@ -82,5 +89,73 @@ describe('keymap presets', () => {
 
   it('an arbitrary override map with no preset match is Custom', () => {
     expect(detectActivePreset({ [CMD.goToFile]: 'mod+9' })).toBe(CUSTOM_PRESET_ID)
+  })
+
+  it('detects conflicts with inherited defaults, not only between overrides', () => {
+    expect(
+      validateKeymapPresets([
+        { id: 'bad', label: 'Bad', description: '', overrides: { [CMD.goToFile]: 'mod+t' } },
+      ]).some((issue) => issue.kind === 'chord-collision'),
+    ).toBe(true)
+  })
+
+  it('rejects unsupported multi-stroke strings rather than silently disabling them', () => {
+    expect(
+      validateKeymapPresets([
+        { id: 'bad', label: 'Bad', description: '', overrides: { [CMD.goToFile]: 'mod+x mod+f' } },
+      ]).some((issue) => issue.kind === 'invalid-chord'),
+    ).toBe(true)
+  })
+
+  it('preserves editor identity for equivalent batches', () => {
+    for (const id of ['vscode', 'windsurf', 'notepad-plus-plus', 'vim', 'neovim', 'helix']) {
+      expect(detectActivePreset(presetOverrides(id, 'windows'), id, 'windows')).toBe(id)
+    }
+    expect(
+      detectActivePreset(presetOverrides('vscode', 'windows'), 'not-a-preset', 'windows'),
+    ).toBe('vscode')
+  })
+
+  it('adapts untouched presets to the current OS and preserves custom edits exactly', () => {
+    const windows = presetOverrides('jetbrains', 'windows')
+    expect(resolvePresetOverrides(windows, 'jetbrains', 'mac')).toEqual(
+      presetOverrides('jetbrains', 'mac'),
+    )
+    const custom = { ...windows, [CMD.goToFile]: 'mod+9' }
+    expect(resolvePresetOverrides(custom, 'jetbrains', 'mac')).toEqual(custom)
+    expect(detectActivePreset(custom, 'jetbrains', 'mac')).toBe(CUSTOM_PRESET_ID)
+  })
+
+  it('retains old shipped batches and their identity until the user reapplies the preset', () => {
+    const oldSublime = { [CMD.goToSymbol]: 'mod+r', [CMD.goToSymbolWorkspace]: 'mod+shift+r' }
+    expect(resolvePresetOverrides(oldSublime, 'sublime', 'mac')).toEqual(oldSublime)
+    expect(detectActivePreset(oldSublime, 'sublime', 'mac')).toBe('sublime')
+    const oldJetBrains = {
+      [CMD.commandPalette]: 'mod+shift+a',
+      [CMD.goToFile]: 'mod+shift+n',
+      [CMD.goToSymbol]: 'mod+f12',
+      [CMD.goToSymbolWorkspace]: 'mod+alt+o',
+      [CMD.switchSession]: 'mod+e',
+    }
+    expect(resolvePresetOverrides(oldJetBrains, 'jetbrains', 'linux')).toEqual(oldJetBrains)
+    expect(detectActivePreset(oldJetBrains, 'jetbrains', 'linux')).toBe('jetbrains')
+  })
+
+  it('uses physical Control for terminal-editor jump history on macOS', () => {
+    const chord = presetOverrides('neovim', 'mac')[CMD.navigateBack]!
+    expect(
+      matchesChord(
+        { key: 'o', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false },
+        chord,
+        'mac',
+      ),
+    ).toBe(true)
+    expect(
+      matchesChord(
+        { key: 'o', ctrlKey: false, metaKey: true, altKey: false, shiftKey: false },
+        chord,
+        'mac',
+      ),
+    ).toBe(false)
   })
 })

@@ -4,6 +4,7 @@ import { agentContributionSchema } from '../agents/contribution'
 import { parseYamlFrontmatterBlock, splitFrontmatter } from '../agent-core/frontmatter-yaml'
 import { splitTokenList } from '../agent-core/skill-frontmatter'
 import { agentToolProposals } from './agent-tool-proposals'
+import { isReasoningEffort } from '@localixai/agent'
 
 const BEHAVIOR_FIELDS = new Set([
   'name',
@@ -94,6 +95,23 @@ export const claudeCodeAgentFormat: FormatAdapter = {
     }
     const model = strings('model')
     const effort = strings('effort')
+    if (model && ['opus', 'sonnet', 'haiku'].includes(model.toLowerCase())) {
+      diagnostics.push({
+        field: 'model',
+        status: 'unsupported',
+        impact: 'execution',
+        message:
+          'This external model alias is not a native catalog model. Choose an explicit provider/model before importing.',
+      })
+    }
+    if (effort && !isReasoningEffort(effort)) {
+      diagnostics.push({
+        field: 'effort',
+        status: 'invalid',
+        impact: 'execution',
+        message: 'Unknown reasoning effort',
+      })
+    }
     const rawMaxTurns = fields.maxTurns !== undefined ? fields.maxTurns : fields.max_turns
     const maxTurns =
       typeof rawMaxTurns === 'string' && /^\d+$/.test(rawMaxTurns)

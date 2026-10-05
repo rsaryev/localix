@@ -14,7 +14,9 @@ test('audit validates a file without modifying its bytes, permissions, or data',
     const db = createDatabase({ filename: file })
     try {
       await migrateToLatest(db)
-      await sql`INSERT INTO user_profiles (user_id,name) VALUES ('u','Private content')`.execute(db)
+      await sql`INSERT INTO user_profiles (user_id,agent_settings) VALUES ('u','Private content')`.execute(
+        db,
+      )
     } finally {
       await db.destroy()
     }

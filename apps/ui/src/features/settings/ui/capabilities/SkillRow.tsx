@@ -135,13 +135,18 @@ export function SkillRow({
               <Pin className={cn(usage.pinned && 'fill-current')} />
             </IconButton>
           )}
-          <Button variant="ghost" size="xs" onClick={onArchive} disabled={actionsDisabled}>
+          <Button variant="ghost" size="default" onClick={onArchive} disabled={actionsDisabled}>
             Archive
           </Button>
-          <Button variant="ghost" size="xs" onClick={onEdit} disabled={actionsDisabled}>
+          <Button variant="ghost" size="default" onClick={onEdit} disabled={actionsDisabled}>
             Edit
           </Button>
-          <Button variant="destructive" size="xs" onClick={onDelete} disabled={actionsDisabled}>
+          <Button
+            variant="destructive"
+            size="default"
+            onClick={onDelete}
+            disabled={actionsDisabled}
+          >
             Delete
           </Button>
         </>

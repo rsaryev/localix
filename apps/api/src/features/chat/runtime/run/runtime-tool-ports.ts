@@ -96,10 +96,12 @@ export function buildOptionalToolPorts(
     // may take the message; a private chat needs it because a REACTION starts a turn there too,
     // and a 👍 that forced a paragraph would make marking the person's own message a cost. The
     // port writes the run's own participant's marks — it cannot react as anyone else.
-    conversation_control:
-      session.sessionKind === 'chat' && params.conversationControl
-        ? { finish: params.conversationControl }
-        : undefined,
+    conversation_control: params.conversationControl
+      ? {
+          finish: params.conversationControl,
+          membership: session.sessionKind === 'subagent' ? 'fixed' : undefined,
+        }
+      : undefined,
     ...buildDirectToolInstances({
       agentProfile,
       disabledTools,
@@ -112,6 +114,7 @@ export function buildOptionalToolPorts(
       userId,
       agentId: params.agentId,
       skillOverrides: params.skillOverrides,
+      memoryScope: params.memoryScope,
       announceCapabilityChange: deps.announceCapabilityChange,
     }),
     jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,

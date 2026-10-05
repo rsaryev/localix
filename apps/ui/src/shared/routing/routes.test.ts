@@ -26,7 +26,7 @@ describe('isCapabilityTab', () => {
   test('capability tabs true; other string tabs and project object false', () => {
     expect(isCapabilityTab('tools')).toBe(true)
     expect(isCapabilityTab('plugins')).toBe(true)
-    expect(isCapabilityTab('general')).toBe(false)
+    expect(isCapabilityTab('preferences')).toBe(false)
     expect(isCapabilityTab('preferences')).toBe(false)
     expect(isCapabilityTab({ kind: 'project', id: 'p' })).toBe(false)
   })
@@ -36,10 +36,10 @@ describe('parseSettingsTab', () => {
   test('projectId always wins as a project view', () => {
     expect(parseSettingsTab('tools', 'p1')).toEqual({ kind: 'project', id: 'p1' })
   })
-  test('valid string tab passes through, invalid/undefined → general', () => {
+  test('valid string tab passes through, invalid/undefined → preferences', () => {
     expect(parseSettingsTab('preferences', undefined)).toBe('preferences')
-    expect(parseSettingsTab('models', undefined)).toBe('general')
-    expect(parseSettingsTab('bogus', undefined)).toBe('general')
-    expect(parseSettingsTab(undefined, undefined)).toBe('general')
+    expect(parseSettingsTab('models', undefined)).toBe('preferences')
+    expect(parseSettingsTab('bogus', undefined)).toBe('preferences')
+    expect(parseSettingsTab(undefined, undefined)).toBe('preferences')
   })
 })

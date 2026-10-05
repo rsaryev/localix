@@ -95,8 +95,6 @@ test('each turn resolves current native behavior and policy while retaining froz
       historyMessages: [] as PersistedMessage[],
       // The conversation start, as `loadModelView` names it before any checkpoint or `/clear`.
       viewEpoch: '',
-      userProfile: null,
-      responseDefaults: undefined,
       globalAgentSettings: null,
     }
     const prepare = async () => {
@@ -258,8 +256,6 @@ test('a denied skill, plugin tool and plugin are absent from the turn', async ()
       speakerAgentId: agentId,
       historyMessages: [],
       viewEpoch: '',
-      userProfile: null,
-      responseDefaults: undefined,
       globalAgentSettings: null,
       agent,
     })

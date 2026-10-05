@@ -17,11 +17,8 @@ describe('# Answer formatting', () => {
     for (const kind of DIAGRAM_KINDS) expect(section).toContain(kind)
   })
 
-  test('defers to the user’s own style preferences, which render after it', () => {
-    const prompt = buildAgentSystemPrompt({ responseDefaults: 'Terse, action-first.' })
-    const format = prompt.indexOf(ANSWER_FORMAT_HEADER)
-    expect(format).toBeGreaterThan(-1)
-    expect(format).toBeLessThan(prompt.indexOf('# Response style preferences'))
+  test('respects style instructions supplied in the conversation', () => {
+    expect(buildAgentSystemPrompt({})).toContain(ANSWER_FORMAT_HEADER)
     expect(buildAnswerFormatSection()).toContain('style preferences override')
   })
 

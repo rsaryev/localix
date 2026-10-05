@@ -67,7 +67,7 @@ describe('usage repository — queryStats groupBy kind', () => {
       costUsd: 0.2,
       finishReason: 'inline-completion',
     })
-    // Improve-prompt wand — its own kind bucket, accumulating like the others.
+    // Historical prompt-rewrite spend keeps its own kind bucket after retirement.
     await repo.accumulateEvent({
       messageId: 'improve-s',
       sessionId: 's',

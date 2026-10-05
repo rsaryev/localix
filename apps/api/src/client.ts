@@ -224,10 +224,7 @@ export type {
 } from './features/user/contracts'
 export {
   AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
-  RESPONSE_DEFAULTS_MAX_CHARS,
   UI_SETTINGS_MAX_SERIALIZED_CHARS,
-  USER_PROFILE_FIELD_MAX_CHARS,
-  USER_PROFILE_PROMPT_MAX_CHARS,
 } from './features/user/profile-limits'
 export type {
   EffectiveConfigReport,
@@ -361,3 +358,5 @@ export type { PruneResult } from './features/storage/service'
 export type { StorageUsage } from './db/storage'
 
 export type { EditPrediction } from './features/edit-prediction/contracts'
+
+export { contextExclusionsSchema } from './features/context-fabric/exclusion-schema'

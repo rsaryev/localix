@@ -110,7 +110,7 @@ not enough. The write-ahead log is emptied after that pass and when the app stop
 that belonged to a deleted conversation are removed with it. Each pass logs `storage.maintained`
 with what it changed.
 
-History itself is removed only when you ask. **Settings → General → Storage** shows what the data
+History itself is removed only when you ask. **Settings → System → Storage** shows what the data
 takes on disk and what it is made of. Pick an age and choose Review to count the conversations with
 no message for that long and the history they hold, then Remove to delete them after a confirmation.
 Pinned and running conversations are never touched, and a conversation goes together with its

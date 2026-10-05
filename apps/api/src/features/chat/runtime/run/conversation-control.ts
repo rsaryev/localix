@@ -8,6 +8,8 @@ import type { RunEnv, RunParams } from './types'
 import { resolveConversationMember, updateConversationMembership } from './conversation-membership'
 import { MAX_HANDOFF_CHAIN } from '../../turn-budget'
 import { insertUiNote } from '../message-persistence'
+import type { SessionAgentRoute } from '../../repository-types'
+import type { ConversationMembershipChange } from './conversation-membership'
 
 export function createConversationControlPort(
   env: Pick<RunEnv, 'repo' | 'enqueueRun' | 'deps'> &
@@ -37,29 +39,41 @@ export function createConversationControlPort(
           }
         : {}),
     }
-    const membership = await updateConversationMembership(membershipEnv, {
-      userId: params.userId,
-      sessionId: params.session.id,
-      invite: request.invite,
-      remove: request.remove,
-      validate: (agents) => {
-        for (const reference of request.next) {
-          const member = resolveConversationMember(agents, reference)
-          if (!member) {
-            const available = agents
-              .map((entry) => `@${entry.handle} (${entry.agentId})`)
-              .join(', ')
-            throw new Error(
-              `Agent ${JSON.stringify(reference)} is unavailable. Available: ${available || 'none'}.`,
-            )
-          }
-          if (member.agentId === params.scope.speakerAgentId) {
-            throw new Error('The current speaker cannot schedule itself as next.')
-          }
-          if (!nextHandles.includes(member.handle)) nextHandles.push(member.handle)
+    const validateNext = (agents: readonly SessionAgentRoute[]) => {
+      for (const reference of request.next) {
+        const member = resolveConversationMember(agents, reference)
+        if (!member) {
+          const available = agents.map((entry) => `@${entry.handle} (${entry.agentId})`).join(', ')
+          throw new Error(
+            `Agent ${JSON.stringify(reference)} is unavailable. Available: ${available || 'none'}.`,
+          )
         }
-      },
-    })
+        if (member.agentId === params.scope.speakerAgentId) {
+          throw new Error('The current speaker cannot schedule itself as next.')
+        }
+        if (!nextHandles.includes(member.handle)) nextHandles.push(member.handle)
+      }
+    }
+    let membership: ConversationMembershipChange
+    if (params.session.sessionKind === 'subagent') {
+      if (request.invite?.length || request.remove?.length) {
+        throw new Error('A delegated team has fixed membership.')
+      }
+      const current = await env.repo.getSession(params.userId, params.session.id)
+      if (current?.sessionKind !== 'subagent') {
+        throw new Error('The delegated team is unavailable.')
+      }
+      validateNext(current.agents)
+      membership = { session: current, invited: [], removed: [] }
+    } else {
+      membership = await updateConversationMembership(membershipEnv, {
+        userId: params.userId,
+        sessionId: params.session.id,
+        invite: request.invite,
+        remove: request.remove,
+        validate: validateNext,
+      })
+    }
     const updated = membership.session
 
     // The chain is bounded: past the limit the floor goes back to the person instead of to

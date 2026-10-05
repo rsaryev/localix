@@ -15,7 +15,7 @@ const agent = (over: Partial<AgentSummary> = {}): AgentSummary =>
     ...over,
   }) as AgentSummary
 
-test('a profile explains only a form that will not take changes', () => {
+test('a profile explains extension ownership and the scope of shipped definition edits', () => {
   // An extension owns this definition, so the fields are read-only and the line says where to
   // change it instead.
   expect(
@@ -28,8 +28,9 @@ test('a profile explains only a form that will not take changes', () => {
 
   // A system agent you may override says nothing: the fields take the edit, and a sentence
   // about overrides above them is one the reader steps over on every visit.
-  expect(agentProvenance(agent())).toBeUndefined()
+  expect(agentProvenance(agent())).toContain('sessions without a project')
   expect(
     agentProvenance(agent({ source: 'user', path: '/home/u/.localix/agents/lead.json' })),
-  ).toBeUndefined()
+  ).toContain('permission rules follow this agent')
+  expect(agentProvenance(agent({ projectId: 'p', scope: 'project' }))).toContain('in this project')
 })

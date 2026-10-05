@@ -131,7 +131,7 @@ describe('warm-hidden core viewers', () => {
           <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
             <WorkItemVisibilityProvider visible={visible}>
               <Catalog />
-              <SettingsPanel />
+              <SettingsPanel activeTab="system" />
             </WorkItemVisibilityProvider>
           </SWRConfig>
         </MemoryRouter>

@@ -77,7 +77,7 @@ before creating a native bundle.
 An installed release checks for a newer signed version thirty seconds after launch and then once an
 hour. When one exists, a quiet row appears above the message box in the focused chat: **Update
 available**, the new version beside the one you have, and **Restart to update**. The same update is
-marked on the rail and offered in Settings → General → Updates, where you can also check on demand.
+marked on the rail and offered in Settings → System → Updates, where you can also check on demand.
 
 1. Press **Restart to update**. If a turn or a background job is running, Localix says what the
    restart will stop and waits for you to confirm; with nothing running it starts at once.

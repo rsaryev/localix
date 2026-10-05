@@ -12,6 +12,26 @@ const record = (over: Partial<AgentRecord> = {}): AgentRecord => ({
 })
 
 describe('native agent draft', () => {
+  test('context can be authored and cleared without silently restoring the original context', () => {
+    const original = record({ context: { preloadSkills: ['old'], memory: { scope: 'global' } } })
+    expect(
+      draftToInput({
+        ...draftFromRecord(original),
+        preloadSkills: 'review\nstyle,review',
+        memoryScope: 'session',
+      }),
+    ).toMatchObject({
+      ok: true,
+      input: { context: { preloadSkills: ['review', 'style'], memory: { scope: 'session' } } },
+    })
+    const cleared = draftToInput({
+      ...draftFromRecord(original),
+      preloadSkills: '',
+      memoryScope: 'inherit',
+    })
+    expect(cleared.ok && cleared.input.context).toBeUndefined()
+  })
+
   test('context survives editing but identity and source data are not submitted', () => {
     const original = record({
       context: { preloadSkills: ['review'], memory: { scope: 'project' } },

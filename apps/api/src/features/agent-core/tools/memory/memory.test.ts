@@ -7,6 +7,7 @@ import {
   type MemoryRepository,
 } from '../../../memory/repository'
 import { usageOf } from '../../../memory/file-store'
+import type { MemoryScope } from '../../../memory/scope-policy'
 
 // In-memory stub: records every set() and serves a fixed getByKey/list result so
 // we can assert the tool's scope routing + read-preference without a database.
@@ -84,6 +85,45 @@ describe('memory tool — set scope routing', () => {
 })
 
 describe('memory tool — reads + validation', () => {
+  test.each(['global', 'project', 'session'] as const)(
+    'an agent restricted to %s recalls, saves and deletes only that scope',
+    async (selection: MemoryScope) => {
+      const seen: unknown[] = []
+      const repo = {
+        getByKey: async (_u: string, _key: string, scopes: string[]) => {
+          seen.push(scopes)
+          return []
+        },
+        list: async (_u: string, scopes: string[]) => {
+          seen.push(scopes)
+          return []
+        },
+        deleteByKey: async (_u: string, _key: string, scopes: string[]) => {
+          seen.push(scopes)
+          return false
+        },
+        set: async (_u: string, scope: string) => {
+          seen.push([scope])
+        },
+      } as unknown as MemoryRepository
+      const tool = createMemoryTool(repo, 'u', 'p', 's', selection)
+      for (const action of ['get', 'list', 'set', 'delete'] as const) {
+        await tool.execute('call', { action, key: 'k', value: 'v' })
+      }
+      const target = { global: '', project: 'p', session: 'session:s' }[selection]
+      expect(seen).toEqual(Array.from({ length: 4 }, () => [target]))
+      expect(tool.classify?.({ action: 'set' })).toEqual({
+        effect: selection === 'session' ? 'session' : 'host',
+      })
+      const other = selection === 'global' ? 'project' : 'global'
+      expect(
+        (await tool.execute('other', { action: 'set', key: 'k', value: 'v', scope: other }))
+          .isError,
+      ).toBe(true)
+      expect(seen).toHaveLength(4)
+    },
+  )
+
   test('get prefers the narrowest scope on a key clash (session > project > global)', async () => {
     const rows: MemoryNote[] = [
       { key: 'k', value: 'from-global', projectId: '' },

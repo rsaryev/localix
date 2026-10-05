@@ -43,7 +43,7 @@ export interface AgentsRoutesService {
     projectId?: string | null,
   ): Promise<AgentSummary>
   deleteAgent(userId: string, name: string, projectId?: string | null): Promise<void>
-  resetAgent(userId: string, name: string): Promise<AgentSummary>
+  resetAgent(userId: string, name: string, projectId?: string | null): Promise<AgentSummary>
   agentDefaults(name: string): AgentRecord | null
   duplicateAgent(
     userId: string,
@@ -148,10 +148,19 @@ export function createAgentsRoutes(service: AgentsRoutesService) {
       if (!record) throw new ApiError(404, 'agent_not_builtin', 'This agent ships no default.')
       return c.json(agentRecordSchema.parse(record), 200)
     })
-    .post('/:name/reset', zValidator('param', nameParamSchema), async (c) => {
-      const summary = await service.resetAgent(c.get('userId'), c.req.valid('param').name)
-      return c.json(agentSummarySchema.parse(summary), 200)
-    })
+    .post(
+      '/:name/reset',
+      zValidator('param', nameParamSchema),
+      zValidator('query', agentScopeQuerySchema),
+      async (c) => {
+        const summary = await service.resetAgent(
+          c.get('userId'),
+          c.req.valid('param').name,
+          c.req.valid('query').projectId,
+        )
+        return c.json(agentSummarySchema.parse(summary), 200)
+      },
+    )
     .post(
       '/:name/duplicate',
       zValidator('param', nameParamSchema),

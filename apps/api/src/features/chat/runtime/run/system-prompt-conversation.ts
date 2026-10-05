@@ -35,6 +35,6 @@ export function conversationPromptContext(
     self: speaker.handle,
     participants: (session.agents ?? []).map((participant) => ({ handle: participant.handle })),
     isLeader: conversationLeader(session, priorities)?.agentId === speaker.agentId,
-    rosterLocked: session.rosterLocked,
+    rosterLocked: session.rosterLocked || session.sessionKind === 'subagent',
   }
 }

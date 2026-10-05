@@ -15,7 +15,6 @@ import { EmptyState } from '@/features/chat/ui/EmptyState'
 import { PromptInput } from '@/features/chat/ui/prompt-input'
 import { RuntimeSessionsPanel } from '@/features/chat/ui/RuntimeSessionsPanel'
 import { ComposerContextBar } from './ComposerContextBar'
-import { useSettingsStore } from '@/features/settings/model/settingsStore'
 import { useComposerAttachments } from '@/shared/lib/attachments/useComposerAttachments'
 import { ChatHeaderActions } from './ChatHeaderActions'
 import { useMessageActions } from '../model/useMessageActions'
@@ -100,8 +99,6 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
   )
   const activeSession = useSessionById(sessionId)
   const activeSessionId = sessionId
-  // Personalizes the empty-state greeting by first name (matches the splash).
-  const displayName = useSettingsStore((s) => s.settings.displayName)
   // Empty state swaps starters for a connect prompt when no provider is connected.
   const hasConnection = useChatStore((s) =>
     s.connections.some((connection) => connection.hasApiKey),
@@ -465,11 +462,7 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
                     : undefined
                 }
               >
-                <EmptyState
-                  name={displayName}
-                  hasConnection={hasConnection}
-                  sessionId={sessionId}
-                />
+                <EmptyState hasConnection={hasConnection} sessionId={sessionId} />
               </div>
             )}
           </div>

@@ -17,13 +17,11 @@ import type { TipContext } from '../../model/tipSelection'
 import { useTipSignals } from '../../model/tipSignals'
 import { useComposerTips } from '../../model/useComposerTips'
 import { useInlineCompletionTip } from '../../model/useInlineCompletionTip'
-import { usePromptImprover } from '../../model/usePromptImprover'
 import { ActionButtons } from './ActionButtons'
 import { AddParticipantMenu } from './AddParticipantMenu'
 import { RosterLockButton } from './RosterLockButton'
 import { nextCaretInText, type CaretInText } from './caretInText'
 import { ComposerHeaderStrips } from './ComposerHeaderStrips'
-import { ComposerShellDecorations } from './ComposerShellDecorations'
 import { ComposerTextField } from './ComposerTextField'
 import { ComposerContextManifest } from './ContextRefChips'
 import { EditingBanner } from './EditingBanner'
@@ -249,15 +247,6 @@ export function PromptInput(props: PromptInputProps) {
     openCommandActive,
     submitOpenResource: openResource.submit,
   })
-  const { improvePrompt, isImproving, didImproveRecently } = usePromptImprover({
-    sessionId: activeSessionId,
-    connectionId: activeConnectionId,
-    model,
-    reasoningEffort,
-    text: prompt,
-    setText: setPrompt,
-  })
-
   const hasPrompt = Boolean(prompt.trim())
   const attachmentItems = attachments ?? []
   // A message is sendable with text, attachments, OR pinned (drag-added) refs alone.
@@ -273,22 +262,11 @@ export function PromptInput(props: PromptInputProps) {
     hasConnection &&
     model &&
     hasContent &&
-    !isImproving &&
     !hasInteraction &&
     !readOnly &&
     !preparingSend &&
     ctxRefs.budget !== 'block' &&
     !openCommandActive,
-  )
-  const canImprove = Boolean(
-    hasConnection &&
-    model &&
-    hasPrompt &&
-    !isGenerating &&
-    !isImproving &&
-    !hasInteraction &&
-    !readOnly &&
-    !preparingSend,
   )
   // Every drop/link carrying the message-binding MIME resolves through one policy — and so
   // does the message Link button, which arrives on composerBus. See useMessageBindingDrop.
@@ -327,9 +305,7 @@ export function PromptInput(props: PromptInputProps) {
     ? DROP_TARGET_SURFACE_ACTIVE
     : focused
       ? DROP_TARGET_FOCUS_GLOW
-      : isImproving
-        ? 'border-composer-accent/40 shadow-[0_0_0_1px_color-mix(in_oklch,var(--composer-accent),transparent_84%),0_18px_48px_-30px_color-mix(in_oklch,var(--composer-accent-deep),transparent_20%)]'
-        : 'border-control-border/60 hover:border-control-border-hover'
+      : 'border-control-border/60 hover:border-control-border-hover'
 
   const contextManifest = (
     <ComposerContextManifest
@@ -366,8 +342,8 @@ export function PromptInput(props: PromptInputProps) {
         onDrop={dropzone.handleDrop}
       >
         <LocalixBorderBeam
-          active={focused || isGenerating || isImproving || beamIntensity > 0}
-          variant={isGenerating || isImproving ? 'working' : 'focus'}
+          active={focused || isGenerating || beamIntensity > 0}
+          variant={isGenerating ? 'working' : 'focus'}
           intensity={beamIntensity}
         />
         {/* Hidden file input driven by the paperclip button */}
@@ -383,7 +359,6 @@ export function PromptInput(props: PromptInputProps) {
             e.target.value = ''
           }}
         />
-        <ComposerShellDecorations isImproving={isImproving} />
         <ComposerHeaderStrips
           tip={streamTip}
           onDismissTip={dismissTip}
@@ -464,10 +439,7 @@ export function PromptInput(props: PromptInputProps) {
             <ActionButtons
               hasPrompt={hasContent}
               canSend={canSend}
-              canImprove={canImprove}
               isGenerating={isGenerating}
-              isImproving={isImproving}
-              didImproveRecently={didImproveRecently}
               hasApiKey={hasConnection && !readOnly}
               canAttach={attachEnabled}
               onAttachClick={() => void handleAttachClick()}
@@ -483,7 +455,6 @@ export function PromptInput(props: PromptInputProps) {
               }
               onSend={handleSend}
               onStop={props.onStop}
-              onImprove={() => void improvePrompt()}
               canRecord={voice.canRecord}
               isRecording={voice.recorder.isRecording}
               recordingSeconds={voice.recorder.seconds}

@@ -175,7 +175,6 @@ export interface ChatRoutesService {
     content: string,
     toolSurface?: ToolSurface,
   ): Promise<MessageMutationResponse>
-  improvePrompt(userId: string, id: string, prompt: string): Promise<{ prompt: string }>
   rollback(userId: string, sessionId: string, messageId: string): Promise<RollbackResponse>
   /** Toggle the person's own mark on a message. */
   reactToMessage(

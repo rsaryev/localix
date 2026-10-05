@@ -39,11 +39,39 @@ afterAll(async () => {
   await plugins?.dispose()
 })
 
-/** `localix` has no closed list; every other shipped role's list is the built-in catalog. */
+/** Expected role differences are stated independently of the production preset builder. */
+const ROLE_WITHHOLDS: Record<string, string[]> = {
+  lead: ['loops', 'plugin_build'],
+  pm: ['loops', 'plugin_build', 'jobs', 'vault'],
+  architect: ['loops', 'plugin_build', 'jobs', 'vault'],
+  backend: ['loops', 'plugin_build', 'browser', 'view_image'],
+  frontend: ['loops', 'plugin_build', 'vault'],
+  qa: ['loops', 'plugin_build', 'vault'],
+  design: ['loops', 'plugin_build', 'jobs', 'vault'],
+  devops: ['loops', 'plugin_build', 'browser', 'view_image'],
+}
 const PRESETS: PresetUnderTest[] = BUILTIN_AGENTS.map((agent) => ({
   handle: agent.handle,
   rules: builtinAgentPreset(agent.handle),
-  onRoster: (tool: string) => agent.handle === 'localix' || BUILTIN_TOOL_NAMES.includes(tool),
+  onRoster: (tool: string) =>
+    agent.handle === 'localix' ||
+    (BUILTIN_TOOL_NAMES.includes(tool) && !ROLE_WITHHOLDS[agent.handle]?.includes(tool)),
+  expected: (mode, call) => {
+    if (
+      agent.handle === 'pm' &&
+      ((call.tool === 'bash' && call.cls.effect === 'external') ||
+        (call.tool === 'browser' && ['external', 'host'].includes(call.cls.effect)))
+    )
+      return 'deny'
+    if (
+      ['pm', 'architect', 'qa', 'design'].includes(agent.handle) &&
+      ['write', 'edit', 'apply_patch'].includes(call.tool) &&
+      call.cls.effect === 'files'
+    ) {
+      return mode === 'default' && call.facts?.outside ? 'ask' : 'deny'
+    }
+    return undefined
+  },
 }))
 
 describe('the roster under test', () => {
@@ -124,7 +152,8 @@ describe('what each mode tells the run', () => {
   test('no mode removes a tool: the roster is the preset’s, the mode only refuses calls', () => {
     for (const preset of PRESETS) {
       const baseline = modeSurface(preset.rules, 'default', pluginNames).denied
-      const expected = preset.handle === 'localix' ? [] : pluginNames
+      const expected =
+        preset.handle === 'localix' ? [] : [...pluginNames, ...ROLE_WITHHOLDS[preset.handle]!]
       expect({ [preset.handle]: [...baseline].sort() }).toEqual({
         [preset.handle]: [...expected].sort(),
       })

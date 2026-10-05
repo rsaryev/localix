@@ -1,10 +1,14 @@
-import { createRuntimeToolRegistry } from '../../../agent-core/tool-registry'
+import {
+  createRuntimeToolRegistry,
+  type RuntimeToolRegistry,
+} from '../../../agent-core/tool-registry'
 import type { FileMtimeStore } from '../../../agent-core/tools/file/file-utils'
 import type { ReadDedupStore } from '../../../agent-core/tools/file/read-dedup'
 import type { ContextBudgetReading } from '../../../agent-core/tools/context-budget'
 import { isToolLive, type RunProfile } from '../../../agent-core/run-shape'
 import type { PolicyDenial } from '../../../agent-core/tool-ledger'
-import type { loadUserProfileContext } from '../../../agent-core/tools/memory/user-profile'
+import type { ToolLedger } from '../../../agent-core/tool-ledger'
+import type { loadUserSettingsContext } from '../../../user/runtime-settings'
 import type { SpawnTerminalJob } from '../../../agent-core/tools/terminal/terminal-job'
 import { announcePtyOpen } from './pty-announce'
 import { buildTerminalToolOptions } from './terminal-tool-options'
@@ -25,6 +29,7 @@ import type { ToolSurface } from '@localixai/agent/agents'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { ToolDenial } from '../../../capabilities/resolve'
 import type { ConversationControlPort } from '../../../agent-core/tools/conversation-control'
+import type { MemoryScope } from '../../../memory/scope-policy'
 
 export interface RuntimeToolWiringContext {
   deps: RunnerDeps
@@ -61,7 +66,7 @@ export function buildRunToolRegistry(
     loadedPlugins: LoadedPlugins
     toolSurface?: ToolSurface
     /** Resolved user settings for this run — supplies keyless research safety policy. */
-    agentSettings?: Awaited<ReturnType<typeof loadUserProfileContext>>['agentSettings']
+    agentSettings?: Awaited<ReturnType<typeof loadUserSettingsContext>>['agentSettings']
     /**
      * Skill visibility for this run, already resolved.
      *
@@ -70,6 +75,7 @@ export function buildRunToolRegistry(
      * settings object made it look like something a user profile stores.
      */
     skillOverrides?: SkillOverrides
+    memoryScope?: MemoryScope
     /** Already-fetched model catalog, reused by delegated-child route resolution. */
     catalog: Awaited<ReturnType<RunnerDeps['catalogService']['getCatalog']>>
     /** What this run's model reads — the ledger's `model` layer (see ResolvedTurn.modelInput). */
@@ -89,7 +95,7 @@ export function buildRunToolRegistry(
     /** The host's live budget frame + last measurement for `context_budget`; read at call time. */
     readContextBudget?: () => ContextBudgetReading | undefined
   },
-) {
+): RuntimeToolRegistry & { setLedger?: (ledger: ToolLedger) => void } {
   const { deps, work, terminalWaits } = ctx
   const { userId, session, env, defaultCwd, disabledTools, agentProfile, loadedPlugins } = params
 
@@ -225,5 +231,10 @@ export function buildRunToolRegistry(
     optional,
   })
   ledgerRef.current = registry.ledger
-  return registry
+  return {
+    ...registry,
+    setLedger: (ledger: ToolLedger) => {
+      ledgerRef.current = ledger
+    },
+  }
 }

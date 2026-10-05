@@ -88,7 +88,7 @@ export function ProjectSettingsForm({ project, onSaved, onDeleted }: ProjectSett
         </p>
       </div>
 
-      <SettingsSection title="Display name">
+      <SettingsSection title="Display name" anchor="project-name" scope="project">
         <SettingsSurface>
           <Input
             size="xl"
@@ -104,7 +104,9 @@ export function ProjectSettingsForm({ project, onSaved, onDeleted }: ProjectSett
       </SettingsSection>
 
       <SettingsSection
-        title="Custom system prompt"
+        title="Project instructions"
+        anchor="project-instructions"
+        scope="project"
         description="Applied to every agent run in this project. Use it to set project-specific context, coding conventions, or rules."
       >
         <SettingsSurface>
@@ -148,7 +150,7 @@ export function ProjectSettingsForm({ project, onSaved, onDeleted }: ProjectSett
       ) : (
         <section className="space-y-2 pt-2">
           <h3 className="text-xs font-medium text-status-error/85">Danger zone</h3>
-          <div className="flex items-center justify-between gap-6 border-y border-status-error/15 py-3">
+          <div className="flex flex-col items-stretch justify-between gap-3 border-y border-status-error/15 py-3 @xl:flex-row @xl:items-center">
             <div className="space-y-0.5">
               <p className="text-sm font-medium text-foreground">Delete project</p>
               {/* What actually happens — a SOFT delete (`projects/service.ts`). The old copy

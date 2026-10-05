@@ -22,6 +22,7 @@ export function ToolRow({
 }) {
   const structural = tool.denial?.source === 'capability'
   const meta = [
+    ...(tool.required ? [{ label: 'Required' }] : []),
     ...(tool.provider ? [{ label: tool.provider.label }] : []),
     ...(tool.denial ? [{ label: tool.denial.reason, tone: 'warning' as const }] : []),
   ]
@@ -46,13 +47,19 @@ export function ToolRow({
       toggle={
         <Switch
           checked={tool.enabled}
-          disabled={busy || structural}
+          disabled={busy || structural || tool.required}
           onChange={(event) => onToggle(event.target.checked)}
-          aria-label={`${tool.enabled ? 'Disable' : 'Enable'} ${tool.label}`}
+          aria-label={
+            tool.required
+              ? `${tool.label} (required)`
+              : `${tool.enabled ? 'Disable' : 'Enable'} ${tool.label}`
+          }
           title={
-            structural
-              ? 'This tool is not available to the scope at all, so a rule cannot bring it back.'
-              : undefined
+            tool.required
+              ? 'Required to finish a conversation turn and hand work to its participants.'
+              : structural
+                ? 'This tool is not available to the scope at all, so a rule cannot bring it back.'
+                : undefined
           }
         />
       }

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { defineAgentTool, type CallClass } from '@localixai/agent/agents'
 import { TOOL } from '../../tool-names'
 import { MemoryBudgetError, type MemoryRepository } from '../../../memory/repository'
+import { memoryScopePolicy, type MemoryScope } from '../../../memory/scope-policy'
 
 const memoryToolInputSchema = z.object({
   action: z.enum(['get', 'set', 'list', 'delete']),
@@ -17,31 +18,24 @@ function scopeLabel(projectId: string): 'session' | 'project' | 'global' {
 }
 
 /**
- * Where a `set` lands. Global ('') is reached ONLY by an explicit scope:"global" — so a
- * project/task fact saved in a no-project session can't silently pollute every future session
- * (the bug: a 2048 build-log landed in global and surfaced on an unrelated "hi"). Default + every
- * other scope resolves to the NARROWEST available: project if in one, else this session; global
- * is the degenerate fallback only when there is neither (e.g. tests/headless). One owner, because
- * the classifier must name the same scope the write then uses.
- */
-function setTargetScope(scope: unknown, projectScope: string, sessionScope: string): string {
-  if (scope === 'global') return ''
-  if (scope === 'session') return sessionScope || projectScope
-  return projectScope || sessionScope
-}
-
-/**
  * What one memory call reaches. A note kept in THIS conversation's scope is deleted with it
  * (`session`); a project or global note outlives it (`host`), which a read-only session must not
  * write. A delete removes the key from every visible scope — global included — and cannot be
  * redone. An unknown action is answered with the widest effect.
  */
-function classifyMemoryCall(input: unknown, projectScope: string, sessionScope: string): CallClass {
+function classifyMemoryCall(
+  input: unknown,
+  policy: ReturnType<typeof memoryScopePolicy>,
+): CallClass {
   const call = input && typeof input === 'object' ? (input as Record<string, unknown>) : {}
   if (call.action === 'get' || call.action === 'list') return { effect: 'read' }
   if (call.action === 'set') {
-    const target = setTargetScope(call.scope, projectScope, sessionScope)
-    return { effect: target.startsWith('session:') ? 'session' : 'host' }
+    try {
+      const target = policy.target(call.scope as MemoryScope | undefined)
+      return { effect: target.startsWith('session:') ? 'session' : 'host' }
+    } catch {
+      return { effect: 'host' }
+    }
   }
   if (call.action === 'delete') return { effect: 'host', irreversible: true }
   return { effect: 'external' }
@@ -59,25 +53,30 @@ export function createMemoryTool(
   userId: string,
   projectId?: string | null,
   sessionId?: string,
+  selection?: MemoryScope,
 ) {
-  const projectScope = projectId ?? ''
-  const sessionScope = sessionId ? `session:${sessionId}` : ''
+  const policy = memoryScopePolicy(projectId, sessionId, selection)
   return defineAgentTool({
     name: TOOL.memory,
     label: 'Memory',
     activeVerb: 'Querying memory',
     description: [
-      'Persist and recall short notes across sessions. set writes to the narrowest scope (the project, or this session outside one); scope="global" only for durable facts about the user under `user.*` keys. get/list read every visible scope, narrowest wins.',
+      selection
+        ? `Recall and persist short notes only in the agent's ${selection} scope. Other scopes are unavailable.`
+        : 'Persist and recall short notes across sessions. set writes to the narrowest scope (the project, or this session outside one); scope="global" only for durable facts about the user under `user.*` keys. get/list read every visible scope, narrowest wins.',
       'Save declarative FACTS, not instructions, and nothing that goes stale within a week (task progress, PR numbers, SHAs) — past work is recalled via history_search.',
     ].join(' '),
     inputSchema: memoryToolInputSchema,
     executionMode: 'sequential',
     mutates: true,
-    classify: (input) => classifyMemoryCall(input, projectScope, sessionScope),
+    classify: (input) => classifyMemoryCall(input, policy),
     async execute(_toolCallId, input) {
-      // Reads see session + project + global; narrower scopes win on key clash.
-      const scopes = [...new Set([sessionScope, projectScope, ''])]
-      const preferenceOrder = [sessionScope, projectScope, ''].filter((s, i) => s !== '' || i === 2)
+      // Read and write scope selection share the same policy; narrower visible notes win.
+      const scopes = policy.scopes
+      const preferenceOrder = scopes
+      if (input.scope && selection && input.scope !== selection) {
+        return { content: `This agent's memory scope is ${selection}.`, isError: true }
+      }
       switch (input.action) {
         case 'get': {
           if (!input.key) return { content: 'key is required for action="get".', isError: true }
@@ -93,14 +92,17 @@ export function createMemoryTool(
           if (!input.key) return { content: 'key is required for action="set".', isError: true }
           if (input.value === undefined)
             return { content: 'value is required for action="set".', isError: true }
-          const targetScope = setTargetScope(input.scope, projectScope, sessionScope)
           try {
+            const targetScope = policy.target(input.scope)
             await repo.set(userId, targetScope, input.key, input.value, new Date().toISOString())
+            return { content: `Memory saved: "${input.key}" (${scopeLabel(targetScope)})` }
           } catch (error) {
             if (error instanceof MemoryBudgetError) return { content: error.message, isError: true }
+            if (error instanceof Error && error.message.startsWith('Memory scope ')) {
+              return { content: error.message, isError: true }
+            }
             throw error
           }
-          return { content: `Memory saved: "${input.key}" (${scopeLabel(targetScope)})` }
         }
 
         case 'list': {

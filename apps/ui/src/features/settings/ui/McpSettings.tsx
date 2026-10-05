@@ -6,7 +6,8 @@ import { useMcpServers } from '../model/useMcpServers'
 import { useMcpServerForm } from '../model/useMcpServerForm'
 import { Button } from '@localixai/kit/button'
 import { SettingProblems } from './settingRegistry'
-import { CapabilityIntro } from './capabilities/CapabilityIntro'
+import { SettingsSection } from './SettingsScaffold'
+import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { McpServerForm } from './capabilities/McpServerForm'
 import { McpServerRow } from './capabilities/McpServerRow'
@@ -44,55 +45,59 @@ export function McpSettings({ scope, agentScope = '', projects }: McpSettingsPro
   const [confirmDelete, setConfirmDelete] = useState<McpServerRecord | null>(null)
 
   return (
-    <div className="w-full">
-      <CapabilityIntro
-        attention={{ errorCount: failedCount, warningCount: 0 }}
-        action={
-          <Button variant="mono" onClick={form.startAdd}>
-            Add server
-          </Button>
-        }
-      />
-
-      <McpServerForm form={form} scope={scope} projects={projects} />
-
-      {/* List-level errors (load / toggle / approval failures) are surfaced here so
-          they're visible with the add/edit form closed too — not only inside it. */}
-      <SettingProblems
-        className="mb-3"
-        subject="MCP servers"
-        errors={error && !form.adding ? [error] : []}
-        onRetry={refresh}
-      />
-
-      <CapabilityRegistryBody
-        count={servers.length}
-        loading={loading}
-        error={error}
-        empty={
+    <div className="w-full space-y-8">
+      <SettingsSection
+        title="MCP servers"
+        description="Availability applies to the selected agent. Server connections are shared within their installation scope."
+        actions={
           <>
-            No MCP servers here yet. Add one with Add server: fill in the form, paste a{' '}
-            <code>mcpServers</code> JSON blob, or drop in a one-line <code>npx</code> command.
+            <AttentionRollup errorCount={failedCount} warningCount={0} />
+            <Button size="xl" variant="mono" onClick={form.startAdd}>
+              Add server
+            </Button>
           </>
         }
       >
-        {servers.map((s) => (
-          <McpServerRow
-            key={s.id}
-            server={s}
-            projects={projects}
-            status={status[s.id]}
-            mutationLabel={mutations[s.id]}
-            onToggleEnabled={() => void toggleEnabled(s)}
-            onToolEnabled={(toolName, enabled) => void setToolEnabled(s, toolName, enabled)}
-            onProbe={() => void probeServer(s)}
-            onEdit={() => form.startEdit(s)}
-            onDelete={() => setConfirmDelete(s)}
-            onSignIn={() => void signIn(s)}
-            onSignOut={() => void signOut(s)}
-          />
-        ))}
-      </CapabilityRegistryBody>
+        <McpServerForm form={form} scope={scope} projects={projects} />
+
+        {/* List-level errors (load / toggle / approval failures) are surfaced here so
+          they're visible with the add/edit form closed too — not only inside it. */}
+        <SettingProblems
+          className="mb-3"
+          subject="MCP servers"
+          errors={error && !form.adding ? [error] : []}
+          onRetry={refresh}
+        />
+
+        <CapabilityRegistryBody
+          count={servers.length}
+          loading={loading}
+          error={error}
+          empty={
+            <>
+              No MCP servers here yet. Add one with Add server: fill in the form, paste a{' '}
+              <code>mcpServers</code> JSON blob, or drop in a one-line <code>npx</code> command.
+            </>
+          }
+        >
+          {servers.map((s) => (
+            <McpServerRow
+              key={s.id}
+              server={s}
+              projects={projects}
+              status={status[s.id]}
+              mutationLabel={mutations[s.id]}
+              onToggleEnabled={() => void toggleEnabled(s)}
+              onToolEnabled={(toolName, enabled) => void setToolEnabled(s, toolName, enabled)}
+              onProbe={() => void probeServer(s)}
+              onEdit={() => form.startEdit(s)}
+              onDelete={() => setConfirmDelete(s)}
+              onSignIn={() => void signIn(s)}
+              onSignOut={() => void signOut(s)}
+            />
+          ))}
+        </CapabilityRegistryBody>
+      </SettingsSection>
 
       <ConfirmDialog
         open={confirmDelete !== null}

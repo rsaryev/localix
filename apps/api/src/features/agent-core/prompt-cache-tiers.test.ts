@@ -57,8 +57,6 @@ function renderWith(registry: (typeof registries)['full']): string {
     sessionId: 'sess',
     now: () => '2026-08-20T00:00:00.000Z',
     workspaceRoot: '/repo',
-    userProfile: 'prefers TypeScript',
-    responseDefaults: 'be terse',
     memoryContext: 'remembered fact',
     scratchDir: '/tmp/scratch',
     projectInstructions: 'follow the rules',

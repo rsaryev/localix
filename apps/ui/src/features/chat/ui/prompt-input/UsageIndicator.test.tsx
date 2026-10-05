@@ -41,6 +41,7 @@ describe('UsageIndicator context semantics', () => {
       <UsageIndicator usage={lastSuccess} latestAttempt={latestAttempt} contextWindow={272_000} />,
     )
     expect(markup).toContain('aria-label="Context usage unavailable. Open Usage &amp; Spend"')
+    expect(markup).toContain('>—</button>')
     expect(markup).not.toContain('Latest attempt')
     expect(markup).not.toContain('\n')
   })
@@ -98,9 +99,9 @@ describe('UsageIndicator context semantics', () => {
     expect(view.lastSuccessIsLatest).toBe(true)
   })
 
-  test('a delegated child’s ring is drawn against ITS ceiling, not the model’s window', () => {
+  test('a delegated child’s usage is measured against ITS ceiling, not the model’s window', () => {
     // Depth 1 budgets against 128k: the same 55 808 tokens are half of the child's ceiling and
-    // a sliver of a 1M physical window — the ring a person reads in the child's chat.
+    // a sliver of a 1M physical window — the percentage a person reads in the child's chat.
     const view = buildUsageIndicatorView({
       usage: { totalTokens: 55_808, inputTokens: 55_000, outputTokens: 808, contextTokens: 55_808 },
       contextWindow: 1_000_000,
@@ -124,6 +125,37 @@ describe('UsageIndicator context semantics', () => {
     expect(view.physicalWindowTokens).toBeUndefined()
     expect(view.fractionBasis).toBe('unknown')
     expect(view.percentLabel).toBe('—')
+  })
+
+  test('renders the occupied context percentage instead of a ring', () => {
+    const markup = renderToStaticMarkup(
+      <UsageIndicator
+        usage={{ totalTokens: 1_000, inputTokens: 1_000, outputTokens: 0, contextTokens: 1_000 }}
+        contextWindow={6_000}
+      />,
+    )
+
+    expect(markup).toContain('>17%</button>')
+    expect(markup).toContain('Context usage 1k tokens, 17%.')
+    expect(markup).not.toContain('<svg')
+  })
+
+  test('keeps overflow visible in the percentage label', () => {
+    const markup = renderToStaticMarkup(
+      <UsageIndicator
+        usage={lastSuccess}
+        contextWindow={272_000}
+        contextDiagnostics={{
+          sessionId: 's1',
+          fullWindowTokens: 272_000,
+          ceilingTokens: 140_000,
+          checkpointAtTokens: 119_000,
+          reservedTokens: 25_600,
+        }}
+      />,
+    )
+
+    expect(markup).toContain('>103%</button>')
   })
 
   test('uses a vertical rich hover surface instead of label-tooltip or local geometry', () => {

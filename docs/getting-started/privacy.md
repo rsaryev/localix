@@ -38,7 +38,7 @@ package manifests. That narrow claim does not mean Localix has no outbound traff
 | Agent and user network tools         | A run fetches a URL, searches the web, contacts a package registry, uses a Git remote, or executes a network command. | The query, request, command, credential, or selected content required by that action.              | Localix has no central outbound-domain allowlist.                                                                 |
 | Desktop updater                      | A packaged desktop build exposes the updater bridge.                                                                  | A request for the configured update manifest. A bundle downloads only after an install action.     | The first check runs after 30 seconds and repeats hourly; ordinary local builds do not publish updater artifacts. |
 
-**Settings → General → Updates** sends the same manifest request on demand and shows the running
+**Settings → System → Updates** sends the same manifest request on demand and shows the running
 version. A check that cannot reach the manifest reports no newer version rather than an error.
 
 The desktop UI also calls the Localix API over loopback. Those requests cross a process boundary but

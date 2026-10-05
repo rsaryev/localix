@@ -108,9 +108,17 @@ describe('shipped definitions and independent presets', () => {
       BUILTIN_TEAM.filter((agent) => agent.leadershipPriority === 2).map((agent) => agent.handle),
     ).toEqual(['lead'])
   })
-  test('every colleague can use every core tool in an interactive chat', () => {
+  test('all colleagues keep collaboration and verification; host-changing tools follow their role', () => {
     for (const { handle } of BUILTIN_TEAM) {
-      for (const tool of Object.keys(BUILTIN_TOOL_CATALOG)) {
+      for (const tool of [
+        'read',
+        'search',
+        'bash',
+        'tool_output',
+        'agents',
+        'conversation_control',
+        'plan',
+      ]) {
         expect(
           evaluate(
             builtinAgentPreset(handle),
@@ -122,6 +130,11 @@ describe('shipped definitions and independent presets', () => {
         ).toBe('allow')
       }
     }
+    expect(evaluate(builtinAgentPreset('pm'), 'tool:vault', '*', 'allow').effect).toBe('deny')
+    expect(evaluate(builtinAgentPreset('design'), 'tool:plugin_build', '*', 'allow').effect).toBe(
+      'deny',
+    )
+    expect(evaluate(builtinAgentPreset('devops'), 'tool:vault', '*', 'deny').effect).toBe('allow')
   })
   test('every shipped role offers its own rules back to the editor', () => {
     for (const agent of BUILTIN_AGENTS) {

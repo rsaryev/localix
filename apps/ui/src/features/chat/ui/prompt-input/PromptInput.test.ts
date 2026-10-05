@@ -39,7 +39,7 @@ test('keeps warm-hidden composer side effects dormant', () => {
 
 test('reuses the Localix border beam as a typed reasoning-level effect', () => {
   expect(source).toContain('const beamIntensity = reasoningBeamIntensity(reasoningEffort)')
-  expect(source).toContain('active={focused || isGenerating || isImproving || beamIntensity > 0}')
+  expect(source).toContain('active={focused || isGenerating || beamIntensity > 0}')
   expect(source).toContain('intensity={beamIntensity}')
 })
 

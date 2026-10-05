@@ -11,7 +11,6 @@ import {
   createSessionRequestSchema,
   importSessionRequestSchema,
   toolInteractSchema,
-  improvePromptRequestSchema,
   messageParamsSchema,
   sendMessageRequestSchema,
   sessionParamsSchema,
@@ -451,21 +450,6 @@ export function createChatRoutes(service: ChatRoutesService) {
             c.req.valid('json').expectedMessageId,
           ),
           202,
-        )
-      },
-    )
-    .post(
-      '/sessions/:id/improve-prompt',
-      zValidator('param', sessionParamsSchema),
-      zValidator('json', improvePromptRequestSchema),
-      async (c) => {
-        return c.json(
-          await service.improvePrompt(
-            c.get('userId'),
-            c.req.valid('param').id,
-            c.req.valid('json').prompt,
-          ),
-          200,
         )
       },
     )

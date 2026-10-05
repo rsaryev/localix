@@ -24,6 +24,7 @@ import type { CallClass } from '@localixai/agent/agents'
 import { splitCompoundCommand } from './tools/bash/bash-command-shape'
 import type { PermissionRule as StoredPermissionRule } from '../projects/contracts'
 import { matches } from '../capabilities/rule'
+import { resourceClassOf } from '../capabilities/resource-classes'
 import { matchesCapabilityCall } from './capability-call-match'
 import type { CallFacts } from './permission-facts'
 
@@ -65,6 +66,7 @@ export function evaluate(
   rules: readonly PermissionRule[],
   tool: ToolFacts,
   call: CallFacts,
+  preapprovedRules: readonly PermissionRule[] = [],
 ): { action: PermissionAction; message?: string; rule?: PermissionRule } {
   let result: { action: PermissionAction; message?: string; rule?: PermissionRule } = {
     action: 'allow',
@@ -76,6 +78,16 @@ export function evaluate(
     ) {
       result = { action: rule.action, message: rule.message, rule }
     }
+  }
+  // A skill can preapprove a named question, never change the authored list's order,
+  // open a denied capability, or answer a question about the manner of a call.
+  if (
+    result.action === 'ask' &&
+    result.rule &&
+    (result.rule.pattern === '*' || !resourceClassOf(result.rule.pattern))
+  ) {
+    const grant = evaluate(preapprovedRules, tool, call)
+    if (grant.rule?.action === 'allow') return grant
   }
   return result
 }

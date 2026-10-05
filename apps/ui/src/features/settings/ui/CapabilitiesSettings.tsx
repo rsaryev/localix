@@ -14,6 +14,7 @@ import { PluginsSettings } from './PluginsSettings'
 import { PermissionRulesView } from './capabilities/PermissionRulesView'
 import { settingsUiUri } from '@localixai/plugin-sdk/navigation'
 import { useUiTarget } from '@/shared/hooks/useUiTarget'
+import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { agentScopeValue } from '@/shared/api/capabilityScope'
 import { useAgents } from '../model/useAgents'
 import { useActiveSessionAgentId } from '@/features/chat/model/store'
@@ -98,7 +99,7 @@ export function CapabilitiesSettings({
     ? (sessionAgentId ?? '')
     : ''
   const agentId = picked ?? fromSession
-  const agentScope = agentId ? agentScopeValue(agentId) : ''
+  const agentScope = agentScopeValue(agentId || DEFAULT_AGENT_ID)
 
   return (
     <div ref={targetRef} tabIndex={-1} className="flex flex-col gap-6">
@@ -130,9 +131,7 @@ export function CapabilitiesSettings({
       />
 
       <div className="min-w-0">
-        {activeTab === 'tools' && (
-          <ToolsSettings scope={agentScope || project} projects={projects} />
-        )}
+        {activeTab === 'tools' && <ToolsSettings scope={agentScope} projects={projects} />}
         {activeTab === 'skills' && (
           <SkillsSettings scope={project} agentScope={agentScope} projects={projects} />
         )}

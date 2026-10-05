@@ -23,7 +23,7 @@ const DAY_OPTIONS = RETENTION_DAY_CHOICES.map((days) => ({
 const RETENTION_OPTIONS = [{ value: 'off', label: 'Keep everything' }, ...DAY_OPTIONS]
 
 /**
- * Settings → General → Storage: how much disk the app's data takes, removing conversations that
+ * Settings → System → Storage: how much disk the app's data takes, removing conversations that
  * have gone quiet, and an optional daily clean-up. Nothing is removed unless the person asks: the
  * count comes first, the removal needs a confirmation, and the automatic clean-up is off until
  * a window is chosen. Pinned and running conversations are never removed.
@@ -31,8 +31,9 @@ const RETENTION_OPTIONS = [{ value: 'off', label: 'Keep everything' }, ...DAY_OP
 export function StorageSection() {
   return (
     <SettingsSection
-      anchor="general-storage"
+      anchor="system-storage"
       title="Storage"
+      scope="device"
       description="Conversations are kept in full on this computer so they can be reopened and searched. Remove the ones you no longer need."
     >
       <SettingsRows>
@@ -69,24 +70,27 @@ function UsageRow() {
   const saved = usage ? usage.toolOutputRawBytes - usage.toolOutputBytes : 0
   return (
     <SettingsRow layout="responsive">
-      <div className="space-y-1">
-        <p className="text-sm font-normal text-foreground">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium text-foreground">
           {usage ? `${formatBytes(usage.fileBytes + usage.walBytes)} on disk` : 'Disk use'}
         </p>
         {usage && (
-          <p className="text-sm text-text-faint" aria-live="polite">
+          <p
+            className="max-w-prose text-xs leading-5 text-text-soft text-pretty"
+            aria-live="polite"
+          >
             {lines.map((line) => `${line.label} ${formatBytes(line.bytes)}`).join(' · ')}
             {saved > 0 && ` · compression saves ${formatBytes(saved)}`}
           </p>
         )}
         {usage && usage.freeBytes > 0 && (
-          <p className="text-sm text-text-faint">
+          <p className="max-w-prose text-xs leading-5 text-text-soft text-pretty">
             {formatBytes(usage.freeBytes)} is free inside the file and is returned to the disk by
             the next clean-up.
           </p>
         )}
         {error && (
-          <p role="alert" className="text-sm text-status-error">
+          <p role="alert" className="text-xs leading-5 text-status-error">
             {error}
           </p>
         )}
@@ -133,21 +137,22 @@ function RemoveOldRow() {
 
   return (
     <SettingsRow layout="responsive">
-      <div className="space-y-1">
-        <p className="text-sm font-normal text-foreground">Remove old conversations</p>
-        <p className="text-sm text-text-faint" aria-live="polite">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium text-foreground">Remove old conversations</p>
+        <p className="max-w-prose text-xs leading-5 text-text-soft text-pretty" aria-live="polite">
           {counted
             ? pruneSummary(counted)
             : (done ?? 'Conversations with no new message for this long. Pinned ones stay.')}
         </p>
         {error && (
-          <p role="alert" className="text-sm text-status-error">
+          <p role="alert" className="text-xs leading-5 text-status-error">
             {error}
           </p>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 @xl:shrink-0">
         <Select
+          size="xl"
           aria-label="Remove conversations older than"
           className="w-32"
           value={days}
@@ -212,17 +217,18 @@ function AutoRemoveRow() {
 
   return (
     <SettingsRow layout="responsive">
-      <div className="space-y-1">
-        <p className="text-sm font-normal text-foreground">Remove automatically</p>
-        <p className="text-sm text-text-faint">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium text-foreground">Remove automatically</p>
+        <p className="max-w-prose text-xs leading-5 text-text-soft text-pretty">
           {retentionDays
             ? `Once a day, conversations with no message for ${retentionDays} days are removed.`
             : 'Off. History is kept until you remove it.'}
         </p>
       </div>
       <Select
+        size="xl"
         aria-label="Remove conversations automatically after"
-        className="w-40 shrink-0 @max-md:w-full"
+        className="w-40 shrink-0 @max-xl:w-full"
         value={retentionValue(retentionDays)}
         options={RETENTION_OPTIONS}
         onValueChange={choose}

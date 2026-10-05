@@ -23,6 +23,7 @@ import type { LoadedPlugins } from '../../../plugins/loader'
 import type { createMemoryRepository } from '../../../memory/repository'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
+import type { MemoryScope } from '../../../memory/scope-policy'
 
 export interface DirectToolInstanceDeps {
   agentProfile: RunProfile
@@ -38,6 +39,7 @@ export interface DirectToolInstanceDeps {
   agentId: string
   /** Skill visibility for this run, from the capability resolver. */
   skillOverrides?: SkillOverrides
+  memoryScope?: MemoryScope
   /** The host's capability announcement, for the skill tool's save/delete (see `createSkillTool`). */
   announceCapabilityChange?: () => void
 }
@@ -59,7 +61,13 @@ export function buildDirectToolInstances(
   } = deps
   return {
     memory: isToolDirect(agentProfile, TOOL.memory)
-      ? createMemoryTool(memoryRepo, userId, session.projectId, session.rootSessionId ?? session.id)
+      ? createMemoryTool(
+          memoryRepo,
+          userId,
+          session.projectId,
+          session.rootSessionId ?? session.id,
+          deps.memoryScope,
+        )
       : undefined,
     // Plugin-bundled skills are passed in read-only so skill.get/list resolve
     // every name the "# Available skills" prompt section advertises.

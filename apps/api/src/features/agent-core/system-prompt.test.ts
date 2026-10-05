@@ -14,7 +14,6 @@ const SHAPE = {
   job: { ...resolveRunProfile({ sessionKind: 'job' }), toolExposure: {} },
 }
 import { renderCapabilityMatrix, richRegistry } from './testing/prompt-harness'
-import { RESPONSE_DEFAULTS_MAX_CHARS, USER_PROFILE_PROMPT_MAX_CHARS } from '../user/profile-limits'
 
 /** The runtime sections as the model reads them — in order, one block after another. */
 function partsOf(params: Parameters<typeof buildAgentSystemPromptParts>[0]) {
@@ -133,17 +132,11 @@ describe('buildAgentSystemPrompt', () => {
     expect(disabledPrompt).not.toContain('action `stop`')
   })
 
-  test('defensively caps persistent user context inside the stable prompt prefix', () => {
-    const { stablePrompt, runtimeTail } = partsOf({
-      userProfile: 'p'.repeat(USER_PROFILE_PROMPT_MAX_CHARS + 500),
-      responseDefaults: 'r'.repeat(RESPONSE_DEFAULTS_MAX_CHARS + 500),
-    })
-
-    expect(stablePrompt).toContain('# User profile')
-    expect(stablePrompt).toContain('user profile truncated')
-    expect(stablePrompt).toContain('# Response style preferences')
-    expect(stablePrompt).toContain('response defaults truncated')
-    expect(runtimeTail).not.toContain('truncated')
+  test('personal profile sections are absent from the system prompt', () => {
+    const { stablePrompt, runtimeTail } = partsOf({})
+    expect(stablePrompt).not.toContain('# User profile')
+    expect(stablePrompt).not.toContain('# Response style preferences')
+    expect(runtimeTail).not.toContain('# User profile')
   })
 
   test('keeps every profile × tool-surface prompt below its fixed text budget', () => {
@@ -568,7 +561,6 @@ describe('buildAgentSystemPrompt', () => {
     const common = {
       now: () => '2026-06-17T00:00:00.000Z',
       workspaceRoot: '/repo',
-      userProfile: 'prefers TypeScript',
       memoryContext: 'remembered fact',
       contextFiles: [{ path: '/repo/AGENTS.md', content: 'rules' }],
     } as const
@@ -598,7 +590,6 @@ describe('buildAgentSystemPrompt', () => {
       sessionId: 'S',
       now: () => '2026-06-17T00:00:00.000Z',
       workspaceRoot: '/repo',
-      userProfile: 'prefers TypeScript',
       memoryContext: 'remembered fact',
     } as const
     const stableOf = (extra: Parameters<typeof buildAgentSystemPrompt>[0]) => {
@@ -635,16 +626,15 @@ describe('buildAgentSystemPrompt', () => {
     expect(A).toBe(B)
   })
 
-  test('run-path split: stableBase keeps profile/memory; tail carries volatile sections', () => {
+  test('run-path split: stableBase keeps memory; tail carries volatile sections', () => {
     // Mirrors execute-run: partition at "# Runtime context" → stableBase is the
     // session-invariant cached prefix, dynamicSuffix is moved to an ephemeral
     // end-of-context message. Locks that the cached prefix excludes volatile data
-    // (date/loops) but INCLUDES session-stable user context (profile/memory).
+    // (date/loops) but INCLUDES session-stable user context (memory).
     const params = {
       sessionId: 'session-split',
       now: () => '2026-06-17T00:00:00.000Z',
       workspaceRoot: '/repo',
-      userProfile: 'prefers TypeScript',
       memoryContext: 'remembered fact',
       loopContext: {
         loops: [{ id: 'loop-1', kind: 'fixed', cadence: '*/10 * * * *', prompt: 'tick' }],
@@ -652,7 +642,7 @@ describe('buildAgentSystemPrompt', () => {
     } as const
     const { stablePrompt: stableBase, runtimeTail: tail } = partsOf(params)
     // Stable, cacheable prefix:
-    expect(stableBase).toContain('# User profile')
+    expect(stableBase).not.toContain('# User profile')
     expect(stableBase).toContain('# Memory')
     // The volatile date VALUE (rendered as "Conversation date: <ts>") must stay out of
     // the cached prefix. The Core-principles prose references the term `Conversation date`

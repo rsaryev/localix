@@ -49,9 +49,11 @@ task.
 
 A task for several agents is **one** session with all of them in it — a team. Who leads it is the
 same rule that decides who answers first in any conversation: the highest leadership priority. The
-team talks inside its session with `@` mentions, and the lead delegates a piece further down when it
-needs a fresh context. A team reports once, when its session has gone quiet: no teammate turn queued
-and no child of its own still working.
+team publishes handoffs and schedules teammates with `conversation_control`; mentions alone start no
+turn. Membership is fixed, so members cannot invite or remove agents. The lead can delegate a piece
+further down when it needs a fresh context. Each member uses its own skill preloads and memory
+scope. A team reports once, when its session has gone quiet: no teammate turn queued and no child of
+its own still working.
 
 **Seeing is not managing.** `runs` shows a session its whole subtree — every level below it,
 indented under its owner, with what each spent and the total — and nothing above it. `message`,

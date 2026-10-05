@@ -200,6 +200,8 @@ export interface ApiKeyAuth {
 
 /** App-supplied context for `Models.login`. */
 export interface LoginOptions {
+	/** App display name used during dynamic OpenAI ChatGPT client registration. Defaults to Pi. */
+	agentName?: string;
 	/**
 	 * Returns the stable ID of this app installation, e.g. sent to OpenAI as its
 	 * agent host ID. Called only by login flows that need it, so apps can create

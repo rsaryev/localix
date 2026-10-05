@@ -122,12 +122,12 @@ export function PluginRow({
       actions={
         <>
           {configurable && (
-            <Button variant="ghost" size="xs" onClick={onToggleConfig} disabled={busy}>
+            <Button variant="ghost" size="default" onClick={onToggleConfig} disabled={busy}>
               Configure
             </Button>
           )}
           {!plugin.bundled && (
-            <Button variant="destructive" size="xs" onClick={onRemove} disabled={busy}>
+            <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
               Remove
             </Button>
           )}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { SETTINGS_INDEX } from './settingsIndex'
 import { parseSettingsQuery, searchSettings } from './settingsSearch'
+import { KEYMAP_PRESETS } from '@/shared/lib/keybindings/presets'
 
 describe('parseSettingsQuery', () => {
   it('splits free-text terms', () => {
@@ -18,6 +19,13 @@ describe('parseSettingsQuery', () => {
 })
 
 describe('searchSettings', () => {
+  it('finds the keymap selector by every supported editor name', () => {
+    for (const preset of KEYMAP_PRESETS) {
+      expect(searchSettings(SETTINGS_INDEX, preset.label).map((hit) => hit.entry.id)).toContain(
+        'shortcuts.preset',
+      )
+    }
+  })
   it('returns nothing for an empty query', () => {
     expect(searchSettings(SETTINGS_INDEX, '')).toEqual([])
     expect(searchSettings(SETTINGS_INDEX, '   ')).toEqual([])
@@ -26,7 +34,9 @@ describe('searchSettings', () => {
   it('finds a setting by title keyword', () => {
     const hits = searchSettings(SETTINGS_INDEX, 'font')
     expect(hits.length).toBeGreaterThan(0)
-    expect(hits[0].entry.id).toBe('prefs.typography')
+    expect(hits[0].entry.title.toLowerCase()).toContain('font')
+    expect(hits.map((hit) => hit.entry.id)).toContain('prefs.code-font')
+    expect(hits.map((hit) => hit.entry.id)).toContain('prefs.interface-font')
   })
 
   it('finds a setting by synonym keyword not present in the title', () => {
@@ -36,9 +46,9 @@ describe('searchSettings', () => {
 
   it('ranks a title match above a description-only match', () => {
     const hits = searchSettings(SETTINGS_INDEX, 'model')
-    // "Resolved model per consumer" carries the term in its TITLE; the setup entry
-    // only mentions it in the description, so the diagnostics row must rank first.
-    expect(hits[0].entry.id).toBe('diag.models')
+    // Resolved diagnostics has a title match; setup mentions models in its description.
+    const ids = hits.map((hit) => hit.entry.id)
+    expect(ids.indexOf('diag.models')).toBeLessThan(ids.indexOf('system.setup'))
   })
 
   it('applies AND semantics across terms', () => {
@@ -67,10 +77,10 @@ describe('searchSettings', () => {
   })
 
   it('combines a @tab: filter with a term', () => {
-    const hits = searchSettings(SETTINGS_INDEX, '@tab:general notification')
+    const hits = searchSettings(SETTINGS_INDEX, '@tab:preferences notification')
     expect(hits.length).toBeGreaterThan(0)
-    expect(hits.every((hit) => hit.entry.tab === 'general')).toBe(true)
-    expect(hits.some((hit) => hit.entry.id === 'general.notifications')).toBe(true)
+    expect(hits.every((hit) => hit.entry.tab === 'preferences')).toBe(true)
+    expect(hits.some((hit) => hit.entry.id === 'prefs.notifications')).toBe(true)
   })
 
   it('never matches across unrelated tabs for a specific term', () => {

@@ -105,7 +105,7 @@ export function McpServerRow({
           {server.transport === 'http' && server.oauthStatus === 'authenticated' && (
             <Button
               variant="ghost"
-              size="xs"
+              size="default"
               title="Forget stored OAuth tokens"
               onClick={onSignOut}
               disabled={locked}
@@ -115,17 +115,17 @@ export function McpServerRow({
           )}
           <Button
             variant="ghost"
-            size="xs"
+            size="default"
             title="Test connection"
             onClick={onProbe}
             disabled={locked || checking}
           >
             Test
           </Button>
-          <Button variant="ghost" size="xs" onClick={onEdit} disabled={locked}>
+          <Button variant="ghost" size="default" onClick={onEdit} disabled={locked}>
             Edit
           </Button>
-          <Button variant="destructive" size="xs" onClick={onDelete} disabled={locked}>
+          <Button variant="destructive" size="default" onClick={onDelete} disabled={locked}>
             Delete
           </Button>
         </>

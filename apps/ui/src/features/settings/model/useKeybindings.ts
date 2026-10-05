@@ -4,6 +4,7 @@ import {
   type ResolvedBindings,
   detectActivePreset,
   presetOverrides,
+  resolvePresetOverrides,
   resolveBindings,
   useKeybindingsStore,
 } from '@/shared/lib/keybindings'
@@ -18,10 +19,11 @@ import { useSettingsStore } from './settingsStore'
  */
 export function useSyncKeybindings(): void {
   const overrides = useSettingsStore((s) => s.settings.uiSettings?.keybindings)
+  const presetId = useSettingsStore((s) => s.settings.uiSettings?.keymapPreset)
   const setOverrides = useKeybindingsStore((s) => s.setOverrides)
   useEffect(() => {
-    setOverrides(overrides)
-  }, [overrides, setOverrides])
+    setOverrides(resolvePresetOverrides(overrides, presetId))
+  }, [overrides, presetId, setOverrides])
 }
 
 export interface KeybindingsEditor {
@@ -49,17 +51,23 @@ export interface KeybindingsEditor {
  * them into the shared read-store on the next render via `useSyncKeybindings`).
  */
 export function useKeybindingsEditor(): KeybindingsEditor {
-  const overrides = useSettingsStore((s) => s.settings.uiSettings?.keybindings)
+  const storedOverrides = useSettingsStore((s) => s.settings.uiSettings?.keybindings)
   const uiSettings = useSettingsStore((s) => s.settings.uiSettings)
   const update = useSettingsStore((s) => s.update)
+  const overrides = useMemo(
+    () => resolvePresetOverrides(storedOverrides, uiSettings?.keymapPreset),
+    [storedOverrides, uiSettings?.keymapPreset],
+  )
 
   const resolved = useMemo(() => resolveBindings(overrides), [overrides])
 
   const writeOverrides = useCallback(
     (next: Record<string, Chord>) => {
-      update({ uiSettings: { ...uiSettings, keybindings: next } })
+      update({
+        uiSettings: { ...useSettingsStore.getState().settings.uiSettings, keybindings: next },
+      })
     },
-    [update, uiSettings],
+    [update],
   )
 
   const setBinding = useCallback(
@@ -79,20 +87,33 @@ export function useKeybindingsEditor(): KeybindingsEditor {
     [overrides, writeOverrides],
   )
 
-  const resetAll = useCallback(() => writeOverrides({}), [writeOverrides])
+  const resetAll = useCallback(
+    () =>
+      update({
+        uiSettings: {
+          ...useSettingsStore.getState().settings.uiSettings,
+          keybindings: {},
+          keymapPreset: 'default',
+        },
+      }),
+    [update],
+  )
 
-  const activePreset = useMemo(() => detectActivePreset(overrides), [overrides])
+  const activePreset = useMemo(
+    () => detectActivePreset(overrides, uiSettings?.keymapPreset),
+    [overrides, uiSettings?.keymapPreset],
+  )
   const applyPreset = useCallback(
     (presetId: string) => {
       update({
         uiSettings: {
-          ...uiSettings,
+          ...useSettingsStore.getState().settings.uiSettings,
           keybindings: presetOverrides(presetId),
           keymapPreset: presetId,
         },
       })
     },
-    [update, uiSettings],
+    [update],
   )
 
   const chordOf = useCallback((commandId: string): Chord => resolved[commandId] ?? null, [resolved])

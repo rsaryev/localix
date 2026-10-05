@@ -1,8 +1,9 @@
-import { Fragment, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useCapabilityTools, type CapabilityToolRow } from '../../model/useCapabilityTools'
 import { SettingProblems, SettingRegistryList } from '../settingRegistry'
 import { CapabilityRegistryBody } from './CapabilityRegistryBody'
 import { ToolRow } from './ToolRow'
+import { SettingsSection } from '../SettingsScaffold'
 
 /** Category id → its rows, in the order the backend listed the categories. */
 function byCategory(tools: CapabilityToolRow[], labels: Record<string, string>) {
@@ -36,7 +37,7 @@ export function ToolsRegistry({ scope }: { scope: string }) {
   const groups = useMemo(() => byCategory(tools, categoryLabels), [tools, categoryLabels])
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-8">
       <SettingProblems
         subject="Tools"
         errors={[error, mutationError].filter((message): message is string => Boolean(message))}
@@ -51,10 +52,7 @@ export function ToolsRegistry({ scope }: { scope: string }) {
         empty="No tools are available in this scope yet."
       >
         {groups.map((group) => (
-          <Fragment key={group.id}>
-            <h3 className="pt-4 pb-1 text-2xs font-medium tracking-wide text-text-faint uppercase">
-              {group.label}
-            </h3>
+          <SettingsSection key={group.id} title={group.label}>
             <SettingRegistryList>
               {group.rows.map((tool) => (
                 <ToolRow
@@ -65,7 +63,7 @@ export function ToolsRegistry({ scope }: { scope: string }) {
                 />
               ))}
             </SettingRegistryList>
-          </Fragment>
+          </SettingsSection>
         ))}
       </CapabilityRegistryBody>
     </div>

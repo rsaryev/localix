@@ -14,6 +14,7 @@ import {
   SettingRegistryRow,
 } from './settingRegistry'
 import { SettingsActionActivity } from './SettingsActionActivity'
+import { SettingsSection } from './SettingsScaffold'
 
 interface Marketplace {
   name: string
@@ -101,13 +102,10 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
   const adding = mutation?.kind === 'add'
 
   return (
-    <div className="mb-6">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-text-soft uppercase tracking-wide">
-          Marketplaces
-        </span>
-      </div>
-
+    <SettingsSection
+      title="Marketplaces"
+      description="Shared catalogs used to discover and install plugins."
+    >
       {markets === null && !loadError && <LoadingHint />}
       <SettingProblems
         className="mb-3"
@@ -145,7 +143,7 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
                   !m.builtin ? (
                     <Button
                       variant="ghost"
-                      size="xs"
+                      size="default"
                       onClick={() => void remove(m.name)}
                       disabled={mutation !== null}
                       className="text-text-soft hover:text-status-error"
@@ -161,7 +159,7 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
       )}
 
       {markets !== null && (
-        <div className="flex items-end gap-2">
+        <div className="flex flex-col items-stretch gap-3 @xl:flex-row @xl:items-end">
           <Field
             label="Marketplace source"
             description="GitHub owner/repo or a repository URL."
@@ -184,7 +182,7 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
             onClick={() => void add()}
             disabled={mutation !== null || !source.trim()}
             aria-busy={adding || undefined}
-            className="shrink-0"
+            className="shrink-0 self-end"
           >
             {adding ? <SettingsActionActivity label="Adding" /> : 'Add'}
           </Button>
@@ -196,6 +194,6 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
           {mutationError}
         </p>
       )}
-    </div>
+    </SettingsSection>
   )
 }

@@ -65,6 +65,7 @@ const KNOWN_FIELDS = new Set([
   'panels',
   'views',
   'agents',
+  'contributions',
   'channels',
   'fileAssociations',
   // CC fields we explicitly handle or silently accept:

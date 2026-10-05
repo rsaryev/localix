@@ -21,15 +21,11 @@ const WORKSPACE_TOOLS = [TOOL.read, TOOL.search, TOOL.bash, TOOL.write, TOOL.app
 function capabilityLine(shape: RunProfile['shape'], toolNames: readonly string[]): string | null {
   const held = WORKSPACE_TOOLS.filter((name) => toolNames.includes(name)).length
   if (shape === 'chat')
-    return held === WORKSPACE_TOOLS.length
-      ? 'Do focused work directly with your tools — read/search/bash to investigate, edit/apply_patch/write to change files, run + preview to verify.'
-      : 'Do focused work directly with the capabilities listed for this run; do not claim unavailable inspection, mutation, or verification actions.'
+    return 'Do focused work directly with the capabilities listed for this run; do not claim unavailable inspection, mutation, or verification actions.'
   if (shape === 'automation')
-    return held === WORKSPACE_TOOLS.length
-      ? 'Complete exactly the task you were given. Use bash/read/search/file tools directly for the work.'
-      : held > 0
-        ? 'Complete exactly the task you were given using only the capabilities listed for this run.'
-        : 'Complete exactly the task you were given from the supplied context; do not claim unavailable workspace actions.'
+    return held > 0
+      ? 'Complete exactly the task you were given using only the capabilities listed for this run.'
+      : 'Complete exactly the task you were given from the supplied context; do not claim unavailable workspace actions.'
   return null
 }
 

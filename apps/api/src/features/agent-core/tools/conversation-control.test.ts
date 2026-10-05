@@ -4,6 +4,16 @@ import { completedConversationControl } from '../conversation-control-request'
 import { createConversationControlTool } from './conversation-control'
 
 describe('conversation_control', () => {
+  test('a delegated-team descriptor exposes scheduling with fixed membership', () => {
+    const tool = createConversationControlTool({
+      membership: 'fixed',
+      finish: async () => ({ invited: [], removed: [], next: [] }),
+    })
+    expect(tool.inputSchema.safeParse({ next: ['qa'] }).success).toBe(true)
+    expect(tool.inputSchema.safeParse({ invite: ['qa'], next: [] }).success).toBe(false)
+    expect(tool.inputSchema.safeParse({ remove: ['qa'], next: [] }).success).toBe(false)
+  })
+
   test('classify: every call changes only this conversation, so it is session', () => {
     const tool = createConversationControlTool({
       finish: async () => ({ invited: [], removed: [], next: [] }),

@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { ArrowUpIcon, StopIcon, MicIcon, PaperclipIcon, SparklesIcon, CheckIcon } from './icons'
+import { ArrowUpIcon, StopIcon, MicIcon, PaperclipIcon } from './icons'
 import { IconButton } from '@localixai/kit/icon-button'
 import { PulsingDot } from '@localixai/kit/pulsing-dot'
 import { formatTime } from '@/shared/ui/attachments/voiceMessageFormat'
@@ -8,17 +8,13 @@ import type { ReactNode } from 'react'
 interface ActionButtonsProps {
   hasPrompt: boolean
   canSend: boolean
-  canImprove: boolean
   isGenerating: boolean
-  isImproving: boolean
-  didImproveRecently: boolean
   hasApiKey: boolean
   canAttach?: boolean
   onAttachClick?: () => void
   accessory?: ReactNode
   onSend: () => void
   onStop: () => void
-  onImprove: () => void
   canRecord?: boolean
   isRecording?: boolean
   recordingSeconds?: number
@@ -37,17 +33,13 @@ const disabledSolidAction =
 export function ActionButtons({
   hasPrompt,
   canSend,
-  canImprove,
   isGenerating,
-  isImproving,
-  didImproveRecently,
   hasApiKey,
   canAttach = false,
   onAttachClick,
   accessory,
   onSend,
   onStop,
-  onImprove,
   canRecord = false,
   isRecording = false,
   recordingSeconds = 0,
@@ -75,32 +67,9 @@ export function ActionButtons({
         </IconButton>
       </div>
 
-      {/* Right: improve + send/stop/mic */}
+      {/* Right: send/stop/mic */}
       <div role="group" aria-label="Prompt and send actions" className="flex items-center gap-1">
         {accessory}
-
-        <IconButton
-          size="lg"
-          tooltip={isImproving ? 'Improving…' : 'Improve prompt'}
-          tooltipSide="top"
-          disabled={!canImprove}
-          onClick={onImprove}
-          aria-label={isImproving ? 'Improving prompt' : 'Improve prompt'}
-          className={[
-            subtleAction,
-            isImproving
-              ? 'bg-composer-accent/10 text-composer-accent [&_svg]:animate-[composer-icon-pulse_900ms_ease-in-out_infinite]'
-              : didImproveRecently
-                ? 'text-status-success'
-                : '',
-          ].join(' ')}
-        >
-          {didImproveRecently ? (
-            <CheckIcon className="size-4" />
-          ) : (
-            <SparklesIcon className="size-4" />
-          )}
-        </IconButton>
 
         {isRecording ? (
           <div className="flex items-center gap-1">

@@ -11,6 +11,8 @@ export interface BuiltinToolDefinition {
   /** Which run shapes may carry the tool — the ledger's first gate and the source of each
    *  shape's default surface (`run-shape.ts`). There is no other list of "what a child gets". */
   exposure: ToolExposure
+  /** Conversation protocol primitives remain available wherever their host offers them. */
+  protocol?: boolean
 }
 
 // The exposure vocabulary, spelled once. `never` is the structural bound: a child is never
@@ -198,7 +200,8 @@ export const BUILTIN_TOOL_CATALOG = {
     description:
       'Finish a group turn, invite or remove participants, and schedule the next speakers.',
     category: 'ui',
-    exposure: CHAT_ONLY,
+    exposure: { chat: 'default', subagent: 'opt-in', automation: 'never' },
+    protocol: true,
   },
   configure: {
     name: 'configure',
@@ -245,6 +248,9 @@ export const TOOL = Object.fromEntries(
 export type ToolName = BuiltinToolCatalog[keyof BuiltinToolCatalog]['name']
 
 export const BUILTIN_TOOL_NAMES: readonly string[] = Object.values(TOOL)
+
+export const isProtocolTool = (name: string): boolean =>
+  (BUILTIN_TOOL_CATALOG as Record<string, BuiltinToolDefinition>)[name]?.protocol === true
 
 /** The catalog's exposure for a built-in name — `undefined` for a plugin/MCP name. */
 export function builtinToolExposure(name: string): ToolExposure | undefined {

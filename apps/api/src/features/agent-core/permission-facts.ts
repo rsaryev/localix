@@ -12,6 +12,7 @@ import { isCatastrophic, isDangerous, isReadOnlyCommand } from './tools/bash/bas
 import { isSecretPath } from './secret-paths'
 import { patchTargetPaths } from './tools/patch/patch'
 import { terminalActionCommandCandidates } from './tools/terminal/terminal'
+import { fileArtifactClasses } from './file-artifact-class'
 
 /**
  * Per-tool call-fact extraction — the only tool-specific layer of the permission
@@ -22,6 +23,7 @@ import { terminalActionCommandCandidates } from './tools/terminal/terminal'
 
 /** What a rule's `pattern` is matched against — derived from the actual tool input. */
 export interface CallFacts {
+  fileArtifacts?: readonly string[]
   /** Tool-declared native resources, independent of filesystem and shell syntax. */
   resources?: readonly string[]
   /** Resolved target paths (files / cwd) the call touches. */
@@ -227,6 +229,7 @@ export function extractCallFacts(
   const outsidePaths = [...new Set(paths.filter((p) => isOutsideWorkspace(toolName, root, p)))]
   return {
     ...resourceFacts,
+    fileArtifacts: fileArtifactClasses(writeTargets(toolName, input, root), root),
     paths,
     outsidePaths,
     ...classifyCall(paths, outsidePaths, command ? [command] : []),

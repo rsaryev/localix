@@ -15,6 +15,7 @@ export interface CapabilityToolRow {
   /** The plugin that contributes it, when one does. */
   provider?: { id: string; label: string }
   enabled: boolean
+  required?: boolean
   /**
    * Why it is off, when it is.
    *
@@ -48,6 +49,7 @@ const selectTools = (snapshot: CapabilitySnapshot): CapabilityToolRow[] => {
       category: meta.category,
       ...(meta.provider ? { provider: { id: meta.provider.id, label: meta.provider.label } } : {}),
       enabled: !denial,
+      required: meta.required,
       ...(denial ? { denial } : {}),
     }
   })

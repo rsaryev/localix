@@ -82,12 +82,6 @@ export function applySyncBarrier(
   }
 
   const merged: UserSettings = {
-    displayName: take('displayName', profile.name),
-    responsePreferences: take('responsePreferences', profile.responseDefaults),
-    primaryRole: take('primaryRole', profile.role),
-    experienceLevel: take('experienceLevel', profile.experienceLevel),
-    mainUseCase: take('mainUseCase', profile.mainUseCase),
-    workingContext: take('workingContext', profile.workingContext),
     uiSettings: take('uiSettings', profile.uiSettings) ?? {},
     agentSettings: take('agentSettings', profile.agentSettings) ?? {},
   }

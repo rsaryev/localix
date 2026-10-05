@@ -27,7 +27,7 @@ export function EditorFontPreview({ fontCss, fontSize }: { fontCss: string; font
         <FileCode2 className="size-3 text-text-faint" aria-hidden="true" />
         <span className="font-mono text-2xs text-text-faint">preview.ts</span>
       </div>
-      <div className="flex" style={{ fontSize }}>
+      <div className="flex min-w-0" style={{ fontSize }}>
         {/* Gutter — `lx-keep-mono` not needed: a div doesn't match the global code rule. */}
         <div
           className="select-none border-r border-border-soft px-3 py-3 text-right leading-relaxed text-text-faint"
@@ -38,9 +38,10 @@ export function EditorFontPreview({ fontCss, fontSize }: { fontCss: string; font
           ))}
         </div>
         <pre
-          className={['flex-1 overflow-x-auto px-3.5 py-3 leading-relaxed', SUGAR_HIGH_THEME].join(
-            ' ',
-          )}
+          className={[
+            'min-w-0 flex-1 overflow-x-auto px-3.5 py-3 leading-relaxed',
+            SUGAR_HIGH_THEME,
+          ].join(' ')}
         >
           {/* Inline font wins over the global --font-mono rule, so the preview shows
               the BEING-PICKED font even before it's committed to --font-mono. */}

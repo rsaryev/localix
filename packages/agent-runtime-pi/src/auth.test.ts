@@ -202,7 +202,7 @@ describe('pi credential conversion', () => {
 })
 
 describe('pi auth runtime', () => {
-  test('passes the host installation UUID through the engine to subscription login', async () => {
+  test('passes Localix branding and the host installation UUID to subscription login', async () => {
     const store = new MemoryCredentialStore()
     const deviceId = 'b5bd2b99-1c3b-40e7-95e9-a417dfde2b18'
     const controller = new AbortController()
@@ -225,6 +225,7 @@ describe('pi auth runtime', () => {
       expect(authUrl).toBeDefined()
       const url = new URL(authUrl!)
       expect(url.origin).toBe('https://auth.openai.com')
+      expect(url.searchParams.get('agent_name_hint')).toBe('Localix')
       expect(url.searchParams.get('ext_agent_host_id')).toBe(`urn:uuid:${deviceId}`)
       expect(await store.read('openai')).toBeUndefined()
     } finally {

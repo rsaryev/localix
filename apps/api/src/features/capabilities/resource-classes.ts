@@ -30,6 +30,7 @@ import type { CapabilityKind } from './resolve'
  * answers are computed once in `permission-facts.ts` and handed in.
  */
 export interface ClassifiedCall {
+  fileArtifacts?: readonly string[]
   /** A resolved path fell outside the workspace root. */
   outsideWorkspace: boolean
   /** The call names paths and every one is inside it. Not the negation of the above. */
@@ -163,6 +164,16 @@ export const RESOURCE_CLASSES = [
     test: (call) => call.needsHuman,
   },
   ...EFFECT_CLASSES,
+  ...(['documentation-files', 'test-files', 'prototype-files'] as const).map((value) => ({
+    value,
+    hint: {
+      'documentation-files': 'Every file mutation targets documentation inside the workspace',
+      'test-files': 'Every file mutation targets tests or fixtures inside the workspace',
+      'prototype-files': 'Every file mutation targets a mockup or prototype inside the workspace',
+    }[value]!,
+    appliesTo: TOOL_KINDS,
+    test: (call: ClassifiedCall) => call.fileArtifacts?.includes(value) === true,
+  })),
   {
     value: 'bundled',
     hint: 'Ships with Localix and runs unless a rule says otherwise',

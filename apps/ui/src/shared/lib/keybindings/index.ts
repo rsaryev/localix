@@ -37,6 +37,7 @@ export {
   KEYMAP_PRESETS,
   CUSTOM_PRESET_ID,
   presetOverrides,
+  resolvePresetOverrides,
   detectActivePreset,
   validateKeymapPresets,
 } from './presets'

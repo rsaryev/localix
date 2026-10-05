@@ -97,8 +97,8 @@ mod webcrypto_key;
 mod window_material;
 
 use crate::commands::{
-    dragged_paths, frontend_log, notify, open_external, pick_directory, pick_files, restart_app,
-    save_file, set_badge, set_theme, set_title,
+    dragged_paths, focus_app, frontend_log, notify, open_external, pick_directory, pick_files,
+    restart_app, save_file, set_badge, set_theme, set_title,
 };
 #[cfg(target_os = "macos")]
 use crate::deeplink::open_path_deep_link;
@@ -272,6 +272,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             notify,
             frontend_log,
+            focus_app,
             deep_link_ready,
             set_title,
             set_badge,

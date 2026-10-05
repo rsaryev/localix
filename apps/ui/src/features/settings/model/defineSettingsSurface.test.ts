@@ -4,7 +4,6 @@ import { settingsUiUri } from '@localixai/plugin-sdk/navigation'
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 import { createUiLocationRegistry } from '@/shared/contrib/uiLocations'
 import root from '../ui/SettingsPanel.surface'
-import general from '../ui/GeneralSettings.surface'
 import preferences from '../ui/PreferencesSettings.surface'
 import editor from '../ui/EditorSettings.surface'
 import shortcuts from '../ui/KeyboardShortcutsSettings.surface'
@@ -14,10 +13,12 @@ import mcp from '../ui/McpSettings.surface'
 import plugins from '../ui/PluginsSettings.surface'
 import rules from '../ui/PermissionRulesSettings.surface'
 import agents from '../ui/AgentsSettings.surface'
+import project from '../ui/ProjectsSettings.surface'
+import context from '../ui/ContextSettings.surface'
+import system from '../ui/SystemSettings.surface'
 import diagnostics from '../ui/DiagnosticsSettings.surface'
 
 const surfaces: UiLocationContribution[] = [
-  general,
   preferences,
   editor,
   shortcuts,
@@ -27,6 +28,9 @@ const surfaces: UiLocationContribution[] = [
   mcp,
   plugins,
   rules,
+  project,
+  system,
+  context,
   diagnostics,
 ]
 
@@ -38,7 +42,7 @@ describe('Settings UI surfaces', () => {
     expect(registry.register(root)).toBe(true)
     expect(registry.resolve(settingsUiUri(undefined, { scope: 'PRJ-1' }))).toMatchObject({
       descriptor: { id: 'settings.open', effect: 'read', surface: 'settings' },
-      target: { kind: 'settings', tab: 'general', scope: 'PRJ-1' },
+      target: { kind: 'settings', tab: 'preferences', scope: 'PRJ-1' },
     })
   })
 

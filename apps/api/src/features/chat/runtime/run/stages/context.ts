@@ -89,8 +89,6 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
       historyMessages: params.historyMessages,
       // The prompt snapshot is frozen per view epoch (see stages/view.ts).
       viewEpoch: view.epochId,
-      userProfile: turn.userProfile,
-      responseDefaults: turn.responseDefaults,
       globalAgentSettings: turn.globalAgentSettings,
     },
   )
@@ -116,6 +114,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     session,
     speakerAgentId,
     availability: context.availability,
+    capabilities: context.capabilities,
     params,
     catalog: turn.catalog,
     effectiveModelId: turn.model.effectiveModelId,

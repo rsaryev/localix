@@ -55,7 +55,7 @@ function addAuxiliaryUsage(accumulator: UsageAccumulator, ledgerByKind: UsageSta
 /**
  * Canonical whole-session usage. Persisted assistant payloads remain the crash-safe
  * authority for visible turns (the ledger write intentionally follows the message
- * commit); the ledger contributes every auxiliary call such as title/improve-prompt/
+ * commit); the ledger contributes every auxiliary call such as title/
  * autocomplete. This avoids both under-counting auxiliary spend and double-counting
  * normal turns while the boot reconciler repairs a missing turn ledger row.
  */

@@ -7,7 +7,7 @@ import { tauriInvoke, tauriListen } from '@/shared/lib/tauri'
 
 /**
  * Auto-updater state for the desktop shell, sourced from the Tauri `updater_check` command.
- * The composer's `UpdateStrip`, the rail's `DesktopUpdateButton` and Settings → General → Updates
+ * The composer's `UpdateStrip`, the rail's `DesktopUpdateButton` and Settings → System → Updates
  * all render it.
  */
 export interface DesktopUpdateState {

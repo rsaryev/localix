@@ -65,6 +65,7 @@ export interface PluginContributions {
 }
 
 export interface PluginService {
+  syncBundledContributions(userId: string, projectId: string): Promise<void>
   listPlugins(userId: string, opts?: { projectId?: string | null }): Promise<ListPluginsResponse>
   listPluginContributions(
     userId: string,

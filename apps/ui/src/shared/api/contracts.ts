@@ -104,10 +104,7 @@ import type {
 export {
   AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
   PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS,
-  RESPONSE_DEFAULTS_MAX_CHARS,
   UI_SETTINGS_MAX_SERIALIZED_CHARS,
-  USER_PROFILE_FIELD_MAX_CHARS,
-  USER_PROFILE_PROMPT_MAX_CHARS,
 } from '@localixai/api/client'
 
 import type {
@@ -747,3 +744,5 @@ export type {
   ResourceNode,
   ResourceNodeAction,
 } from '@localixai/api/client'
+
+export { contextExclusionsSchema } from '@localixai/api/client'

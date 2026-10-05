@@ -48,7 +48,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   // `next` has nobody to name and its `invite` would be refused. Offering it anyway taught the
   // model an invitation it could only fail at.
   const conversationControl =
-    session.sessionKind === 'chat' && !(session.rosterLocked && !isMultiParticipant(session))
+    (session.sessionKind === 'chat' && !(session.rosterLocked && !isMultiParticipant(session))) ||
+    (session.sessionKind === 'subagent' && isMultiParticipant(session))
       ? createConversationControlPort(env, params)
       : undefined
   const runtimeTools = buildRunToolRegistry(
@@ -73,6 +74,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       modelInput: turn.modelInput,
       agentSettings: turn.globalAgentSettings,
       skillOverrides: inputs.skillOverrides,
+      memoryScope: inputs.agent.context?.memory?.scope,
       disabledTools,
       toolDenials: inputs.toolDenials,
       agentProfile,
@@ -114,8 +116,6 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
           : undefined,
     },
   )
-  // Record the final model-visible tool roster without delaying the turn.
-  recordToolRoster(runtimeTools.toolNames, { userId, projectId: session.projectId })
 
   // Populated from descriptors before any background-capable tool executes.
   const backgroundToolNames = new Set<string>()
@@ -137,6 +137,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     ccHooks,
     defaultCwd,
     availability: inputs.availability,
+    capabilities: inputs.capabilities,
+    modelInput: turn.modelInput,
     disabledTools,
     toolSurface,
     surfaceTools: surfaceTools(surfacePlugins(params.historyMessages), loadedPlugins.loaded),
@@ -157,10 +159,14 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   mkdirSync(scratchDir, { recursive: true })
 
   const [
-    { tools, dispatchTools, preflightTools, mcpInstructions, mcpInventory },
+    { tools, dispatchTools, preflightTools, mcpInstructions, mcpInventory, ledger },
     descendantSessions,
     agentDirectory,
   ] = await Promise.all([assembledPromise, frame.loadSessionSnapshot(), agentDirectoryPromise])
+  recordToolRoster(
+    preflightTools.map((tool) => tool.name),
+    { userId, projectId: session.projectId },
+  )
   // `hitl.reachable`: an `ask` on a required operation only stops a run nobody could answer.
   assertRunToolRequirements(
     preflightTools,
@@ -171,7 +177,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
 
   return {
     agentProfile,
-    runtimeTools,
+    runtimeTools: { ...runtimeTools, ledger, toolNames: preflightTools.map((tool) => tool.name) },
     conversationControl,
     backgroundToolNames,
     mutatingToolNames,

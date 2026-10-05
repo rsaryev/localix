@@ -29,14 +29,6 @@ export interface UserServiceDeps {
 function rowToProfile(row: UserProfileRow): UserProfile {
   return {
     userId: row.user_id,
-    name: row.name,
-    role: row.role,
-    expertise: row.expertise,
-    preferences: row.preferences,
-    workingContext: row.working_context,
-    experienceLevel: row.experience_level,
-    mainUseCase: row.main_use_case,
-    responseDefaults: row.response_defaults,
     uiSettings: normalizeUiSettings(safeJsonParse<unknown>(row.ui_settings)),
     agentSettings: normalizeAgentSettings(safeJsonParse<unknown>(row.agent_settings)),
     updatedAt: row.updated_at,
@@ -44,14 +36,6 @@ function rowToProfile(row: UserProfileRow): UserProfile {
 }
 
 const EMPTY_PROFILE: Omit<UserProfile, 'userId' | 'updatedAt'> = {
-  name: null,
-  role: null,
-  expertise: null,
-  preferences: null,
-  workingContext: null,
-  experienceLevel: null,
-  mainUseCase: null,
-  responseDefaults: null,
   uiSettings: null,
   agentSettings: null,
 }
@@ -128,13 +112,6 @@ export function createUserService(deps: UserServiceDeps) {
               ? applyAgentSettingsPatch(current?.agentSettings ?? null, patch.agentSettingsPatch)
               : undefined
         const updates: Updateable<UserProfilesTable> = { updated_at: now() }
-        if (patch.name !== undefined) updates.name = patch.name
-        if (patch.role !== undefined) updates.role = patch.role
-        if (patch.expertise !== undefined) updates.expertise = patch.expertise
-        if (patch.workingContext !== undefined) updates.working_context = patch.workingContext
-        if (patch.experienceLevel !== undefined) updates.experience_level = patch.experienceLevel
-        if (patch.mainUseCase !== undefined) updates.main_use_case = patch.mainUseCase
-        if (patch.responseDefaults !== undefined) updates.response_defaults = patch.responseDefaults
         if (uiSettings !== undefined) updates.ui_settings = JSON.stringify(uiSettings)
         if (agentSettings !== undefined) updates.agent_settings = JSON.stringify(agentSettings)
 

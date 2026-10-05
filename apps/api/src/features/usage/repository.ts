@@ -420,7 +420,7 @@ export function createUsageRepository(db: Kysely<AppDatabase>) {
         .values({
           message_id: event.messageId,
           session_id: event.sessionId,
-          // An auxiliary caller (title, autocomplete, improve, hook) knows only the session id.
+          // An auxiliary caller (title, autocomplete, hook) knows only the session id.
           // It used to stamp that id as the ROOT too, which filed a child session's spend under a
           // tree of its own; the session row holds the real root, so read it from there.
           root_session_id:

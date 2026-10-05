@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { Rule } from './rule'
+import { legacyAgentPreset10 } from './builtin-agent-presets'
+import { ApiError } from '../../lib/errors'
 import {
   AGENT_PRESET_SEED_VERSION,
   seedAgentPresets,
   type AgentPresetSeedPorts,
+  upgradeAgentPreset,
 } from './seed-agent-presets'
 
 type SeedableAgent = Awaited<ReturnType<AgentPresetSeedPorts['listAgents']>>[number]
@@ -67,7 +70,7 @@ describe('seedAgentPresets', () => {
     ])
   })
 
-  test('a new preset version reaches an install that is already running an old one', async () => {
+  test('a legacy version without a saved baseline preserves user decisions', async () => {
     // The upgrade path, and the reason the marker carries a version rather than a flag: the
     // roles ship with the product, so a fix to one has to arrive with the next release instead
     // of only on installs that had never launched the app before.
@@ -75,14 +78,69 @@ describe('seedAgentPresets', () => {
     configs.set('builtin:backend', { presetSeed: '0' })
     rules.set('builtin:backend', [{ action: 'tool:write', resource: '*', effect: 'allow' }])
 
-    expect(await seedAgentPresets(seedPorts, 'u1')).toEqual(['builtin:backend'])
-    expect(writes).toEqual(['builtin:backend'])
-    expect(rules.get('builtin:backend')?.[0]).toEqual({
-      action: 'tool:*',
-      resource: '*',
-      effect: 'deny',
-    })
+    expect(await seedAgentPresets(seedPorts, 'u1')).toEqual([])
+    expect(writes).toEqual([])
+    expect(rules.get('builtin:backend')).toEqual([
+      { action: 'tool:write', resource: '*', effect: 'allow' },
+    ])
     expect(configs.get('builtin:backend')?.presetSeed).toBe(AGENT_PRESET_SEED_VERSION)
+  })
+
+  test('upgrades untouched defaults while retaining a disabled agent switch', async () => {
+    const { seedPorts, rules, configs } = ports([SEAT])
+    const old: Rule[] = [{ action: 'tool:read', resource: '*', effect: 'allow' }]
+    const disabled: Rule = { action: 'agent:builtin:backend', resource: '*', effect: 'deny' }
+    configs.set(SEAT.id, { presetSeed: 'old', presetSeedDefaults: old })
+    rules.set(SEAT.id, [...old, disabled])
+    expect(await seedAgentPresets(seedPorts, 'u')).toEqual([SEAT.id])
+    expect(rules.get(SEAT.id)?.at(-1)).toEqual(disabled)
+    expect(rules.get(SEAT.id)?.[0].action).toBe('tool:*')
+  })
+
+  test('custom policy is never widened or reordered during an upgrade', () => {
+    const baseline: Rule[] = [{ action: 'tool:*', resource: '*', effect: 'deny' }]
+    const current: Rule[] = [
+      ...baseline,
+      { action: 'tool:read', resource: '/docs/*', effect: 'allow' },
+    ]
+    const next: Rule[] = [{ action: 'tool:*', resource: '*', effect: 'allow' }]
+    expect(upgradeAgentPreset(current, baseline, next, SEAT.id)).toBeUndefined()
+    expect(upgradeAgentPreset([], baseline, next, SEAT.id)).toBeUndefined()
+  })
+
+  test('known version 10 defaults upgrade while customized version 10 rules survive', async () => {
+    const { seedPorts, rules, configs } = ports([SEAT])
+    configs.set(SEAT.id, { presetSeed: '10' })
+    rules.set(SEAT.id, legacyAgentPreset10(SEAT.handle))
+    expect(await seedAgentPresets(seedPorts, 'u')).toEqual([SEAT.id])
+    expect(rules.get(SEAT.id)).not.toEqual(legacyAgentPreset10(SEAT.handle))
+    const custom: Rule[] = [
+      ...legacyAgentPreset10(SEAT.handle),
+      { action: 'tool:bash', resource: 'git push*', effect: 'deny' },
+    ]
+    configs.set(SEAT.id, { presetSeed: '10' })
+    rules.set(SEAT.id, custom)
+    expect(await seedAgentPresets(seedPorts, 'u')).toEqual([])
+    expect(rules.get(SEAT.id)).toEqual(custom)
+  })
+
+  test('a conflicting save leaves the old marker and retries without replacing the user edit', async () => {
+    const { seedPorts, rules, configs } = ports([SEAT])
+    const old = legacyAgentPreset10(SEAT.handle)
+    configs.set(SEAT.id, { presetSeed: '10' })
+    rules.set(SEAT.id, old)
+    const publish = seedPorts.rules.publish
+    const custom: Rule[] = [...old, { action: 'tool:bash', resource: 'git push*', effect: 'deny' }]
+    seedPorts.rules.publish = async () => {
+      rules.set(SEAT.id, custom)
+      throw new ApiError(409, 'policy_conflict', 'Concurrent save')
+    }
+    expect(await seedAgentPresets(seedPorts, 'u')).toEqual([])
+    expect(configs.get(SEAT.id)?.presetSeed).toBe('10')
+    seedPorts.rules.publish = publish
+    expect(await seedAgentPresets(seedPorts, 'u')).toEqual([])
+    expect(rules.get(SEAT.id)).toEqual(custom)
+    expect(configs.get(SEAT.id)?.presetSeed).toBe(AGENT_PRESET_SEED_VERSION)
   })
 
   test('an install that configured this agent BEFORE presets existed is not overwritten', async () => {

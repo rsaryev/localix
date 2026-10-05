@@ -172,7 +172,6 @@ async function launchOne(
         chain: self ? [...chain, self] : [...chain],
       },
       ...(opts.projectId ? { projectId: opts.projectId } : {}),
-      ...pinnedSkillsOf(team),
     })
     for (const member of team) opts.onSubagentStart?.(member.agentId, child.id)
     const handles = team.map((member) => `@${member.handle}`).join(' + ')
@@ -204,12 +203,6 @@ async function launchOne(
   } catch (error) {
     return refuse(`- Could not start "${title}": ${errorMessage(error)}`)
   }
-}
-
-/** The skills every member pins, once each: a team session carries all of them. */
-function pinnedSkillsOf(team: readonly DelegateAgent[]): { pinnedSkills?: string[] } {
-  const skills = [...new Set(team.flatMap((member) => member.pinnedSkills ?? []))]
-  return skills.length ? { pinnedSkills: skills } : {}
 }
 
 /** What became of one started task, in the words the delegator acts on. */

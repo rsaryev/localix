@@ -28,6 +28,7 @@
           "title": "Core",
           "pages": [
             "features/capabilities.md",
+            "features/agents.md",
             "features/permission-modes.md",
             "features/permissions.md",
             "features/configure.md",
@@ -46,6 +47,8 @@
           "title": "Workspace",
           "pages": [
             "features/workspace.md",
+            "features/settings.md",
+            "features/keyboard-shortcuts.md",
             "features/source-control.md",
             "features/visual-feedback.md",
             "features/lsp.md",

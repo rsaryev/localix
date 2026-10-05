@@ -1,5 +1,6 @@
 import { routedParticipants } from '../../../../testing/session-fixture'
 import { UNDECIDED } from '../../../capabilities/availability'
+import { composeCapabilities } from '../../../capabilities/resolve'
 /// <reference types="bun" />
 
 import { describe, expect, test } from 'bun:test'
@@ -113,6 +114,7 @@ async function assembleTurn(env: RunEnv, record: SessionRecord, surfaceTools?: s
     ...(surfaceTools ? { surfaceTools } : {}),
     env,
     availability: UNDECIDED,
+    capabilities: composeCapabilities([]),
     userId: 'user-a',
     session: record,
     agentProfile: { openToolset: true } as RunProfile,
@@ -309,6 +311,7 @@ test('a withheld plugin_build stub cannot satisfy a macro requirement', async ()
   const assembled = await assembleRunTools({
     env: store().env,
     availability: UNDECIDED,
+    capabilities: composeCapabilities([]),
     userId: 'user-a',
     session: session([]),
     agentProfile: { openToolset: false } as RunProfile,

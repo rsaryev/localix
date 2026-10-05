@@ -54,6 +54,14 @@ render the mark in `packages/ai/src/utils/localix-logo.ts` (upstream moved the p
 them, not restore pi's pages.
 `packages/ai/test/oauth-page.test.ts` is their guard and runs in the regular test graph.
 
+`packages/ai/src/auth/types.ts` adds the optional `LoginOptions.agentName` host display name.
+The ChatGPT OAuth flow sends it as `agent_name_hint` during dynamic client registration,
+falling back to Pi for callers that do not supply a name. Localix's auth adapter supplies
+`Localix`, so ChatGPT's connection screen names the application the user is connecting.
+Preserve this option and its use in `auth/oauth/openai-chatgpt.ts` when re-vendoring;
+`packages/ai/test/openai-chatgpt-oauth.test.ts` and
+`packages/agent-runtime-pi/src/auth.test.ts` guard the flow and adapter respectively.
+
 `packages/ai/src/api/anthropic-messages.ts` carries the Localix cache-anchor extension: a
 `cacheAnchor`-marked message gets an explicit prompt-cache breakpoint after the last
 byte-stable message, so a rebuilt history is read from cache up to there while only the

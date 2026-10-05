@@ -33,6 +33,24 @@ const denyEffect = (effect: string): PermissionRule[] => [
   { permission: '*', pattern: `effect:${effect}`, action: 'deny' },
 ]
 
+test('the mandatory handoff protocol remains executable under stale tool and mode rules', async () => {
+  const control = fixture('conversation_control', { classify: () => ({ effect: 'session' }) })
+  expect(
+    blocked(
+      await verdict(
+        control,
+        [{ permission: '*', pattern: '*', action: 'deny' }, ...denyEffect('session')],
+        { next: [] },
+      ),
+    ),
+  ).toBe(false)
+  expect(
+    blocked(
+      await verdict(fixture('other_tool'), [{ permission: '*', pattern: '*', action: 'deny' }]),
+    ),
+  ).toBe(true)
+})
+
 describe('a tool that declares no class', () => {
   test('with no mutates at all is external — fail-closed', async () => {
     const silent = fixture('silent_tool')

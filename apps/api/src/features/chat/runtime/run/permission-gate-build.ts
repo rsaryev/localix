@@ -1,12 +1,13 @@
 /**
  * Per-run permission-gate assembly: builds the confirm requester, folds skill
- * `allowed-tools` allow rules after the scope's own ask rules, and constructs the
+ * `allowed-tools` into task-local preapprovals, and constructs the
  * declarative permission gate evaluated at beforeToolCall.
  */
 import type { AgentTool, GateRefusalTracker } from '@localixai/agent/agents'
 
 import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
 import { normalizeCcToolName } from '../../../plugins/discovery'
+import { nativeCommandPatterns } from '../../../cc-settings/native-command-patterns'
 import { createConfirmRequester } from './confirm-requester'
 import { ownPlanDirForRun } from '../plan-view'
 import type { RunHookContext } from './run-hook-context'
@@ -33,35 +34,22 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
 }
 
 /**
- * Compose the rules for one run: the agent's list, with a skill's `allowed-tools` folded in.
- *
- * A skill may lift a QUESTION, never a REFUSAL. Both are the agent's rules, so the ordering
- * says it: everything that is not a denial, then the skill's allows, then the denials.
- *
- * The middle position is what the skill is for — `tool:bash * ask` followed by `Bash(git *)`
- * means the declared commands stop prompting. The last position is what protects the user: a
- * skill is a file in a repository, and `tool:bash git push* deny` has to survive one arriving
- * that declares `Bash(git *)`. With a single last-match list and no special cases in the
- * evaluator, where a rule sits IS its strength, so the strongest statement goes last.
+ * Translate skill declarations without rewriting the agent's ordered policy. The permission
+ * evaluator applies these only to eligible questions after deciding the authored verdict.
  */
-export function permissionRulesForRun(
-  permissionRules: readonly PermissionRule[],
+export function skillPermissionRules(
   extraAllowedTools: readonly string[] | undefined,
 ): PermissionRule[] {
-  const skillAllowRules: PermissionRule[] = (extraAllowedTools ?? []).map((spec) => {
+  return (extraAllowedTools ?? []).flatMap((spec): PermissionRule[] => {
     const patternMatch = spec.match(/^([^(]+)\((.+)\)$/)
     if (patternMatch) {
       const bare = normalizeCcToolName(patternMatch[1].trim())
-      return { action: 'allow' as const, permission: bare, pattern: patternMatch[2].trim() }
+      const specifier = patternMatch[2].trim()
+      const patterns = bare === 'bash' ? nativeCommandPatterns(specifier) : [specifier]
+      return patterns.map((pattern) => ({ action: 'allow', permission: bare, pattern }))
     }
-    return { action: 'allow' as const, permission: normalizeCcToolName(spec.trim()), pattern: '*' }
+    return [{ action: 'allow', permission: normalizeCcToolName(spec.trim()), pattern: '*' }]
   })
-  if (skillAllowRules.length === 0) return [...permissionRules]
-  return [
-    ...permissionRules.filter((rule) => rule.action !== 'deny'),
-    ...skillAllowRules,
-    ...permissionRules.filter((rule) => rule.action === 'deny'),
-  ]
 }
 
 export function buildRunPermissionGate(
@@ -100,16 +88,11 @@ export function buildRunPermissionGate(
     ...(options.hitlWaitedMs ? { hitlWaitedMs: options.hitlWaitedMs } : {}),
   })
 
-  // Skill `allowed-tools` inject allow rules after broader ask rules so last-match-wins
-  // auto-approves the declared calls (while deny remains terminal).
-  // Support CC pattern syntax: Bash(git *) → { permission: 'bash', pattern: 'git *' }
-  // Also map common CC alias names to engine names (Grep→search, Glob→search, etc.)
-  // so skill `allowed-tools: Grep` resolves to the correct engine tool.
-  const effectiveRules = permissionRulesForRun(permissionRules, extraAllowedTools)
   const toolsByName = new Map(tools.map((t) => [t.name, t]))
 
   return createPermissionGate({
-    rules: effectiveRules,
+    rules: permissionRules,
+    preapprovedRules: skillPermissionRules(extraAllowedTools),
     toolsByName,
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.

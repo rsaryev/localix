@@ -58,11 +58,11 @@ describe('auxiliary usage is filed under the session’s real root', () => {
     const usage = { inputTokens: 10, outputTokens: 5 }
     const base = { usageRepo: repo, userId, sessionId: 'child', modelId: 'test/model', usage }
     recordTitleGenUsage(base)
-    recordAuxCallUsage({ ...base, kind: 'improve' })
+    recordAuxCallUsage({ ...base, kind: 'autocomplete' })
     await new Promise((resolve) => setTimeout(resolve, 10))
 
     expect(await rootOf('aux-title:')).toEqual(['root'])
-    expect(await rootOf('aux-improve:')).toEqual(['root'])
+    expect(await rootOf('aux-autocomplete:')).toEqual(['root'])
     const tree = await repo.queryStats({ userId, sessionTree: 'root', groupBy: 'kind' })
     expect(tree.find((row) => row.key === 'title')?.inputTokens).toBe(10)
   })

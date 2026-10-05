@@ -25,6 +25,8 @@ import { pluginKitDir } from './authoring/kit-root'
 import { createPluginAuthoring } from './authoring/service'
 import { cloneRepo, withPluginSource } from './install-helpers'
 import { publishPluginInstallation } from './publish-installation'
+import { syncBundledContributions } from './sync-bundled-contributions'
+import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { buildPluginCatalog, type PluginCatalog } from './catalog'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
 import { listCommandsFromCatalog } from './commands'
@@ -91,6 +93,7 @@ function jsonValueWithinCap(value: unknown, label: string): unknown {
 }
 
 export function createPluginService(deps: PluginServiceDeps): PluginService {
+  const serializeContributions = createKeyedSerializer()
   // ONE home for every discovery and install root of this service (see `PluginServiceDeps.homeDir`).
   const home = deps.homeDir
   const discover = (scope: Omit<Parameters<typeof discoverPlugins>[0], 'homeDir'>) =>
@@ -243,6 +246,20 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     )
 
   const service: PluginService = {
+    async syncBundledContributions(userId, projectId) {
+      return serializeContributions(JSON.stringify([userId, projectId]), async () => {
+        const cwd = await cwdFor(userId, projectId)
+        if (projectId && !cwd) return
+        await syncBundledContributions({
+          db: deps.db,
+          kinds: contributionKinds,
+          userId,
+          projectId,
+          plugins: await discover({ cwd, projectId }),
+          now: deps.now ?? (() => new Date().toISOString()),
+        })
+      })
+    },
     async listPlugins(userId, opts) {
       const projectId = opts?.projectId ?? ''
       const runtimeCwd =

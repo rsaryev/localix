@@ -189,9 +189,7 @@ describe('buildRunSystemPrompt pinned skills', () => {
       agentProfile: SHAPE.subagent,
       runtimeTools,
       loadedPlugins,
-      frozenContext: {
-        userProfile: null,
-      },
+      frozenContext: {},
       pinnedSkills: [{ name: 'review', content: 'Always inspect the final diff.' }],
       // Empty, not absent: this case is about a PINNED skill, and a run with nothing triggered
       // is the ordinary state rather than a missing input.

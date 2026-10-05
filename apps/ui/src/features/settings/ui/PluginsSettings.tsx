@@ -7,7 +7,8 @@ import { usePlugins } from '../model/usePlugins'
 import type { Project, PluginRecord } from '@/shared/api/contracts'
 import { Button } from '@localixai/kit/button'
 import { SettingProblems } from './settingRegistry'
-import { CapabilityIntro } from './capabilities/CapabilityIntro'
+import { SettingsSection } from './SettingsScaffold'
+import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { PluginRow } from './capabilities/PluginRow'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
@@ -58,66 +59,70 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
   const registryAuthoritative = plugins.length > 0 || (!loading && !error)
 
   return (
-    <div className="w-full">
-      <CapabilityIntro
-        attention={{ errorCount, warningCount }}
-        action={
-          <Button variant="mono" onClick={form.open}>
-            Install plugin
-          </Button>
+    <div className="w-full space-y-8">
+      <SettingsSection
+        title="Plugins"
+        description="Availability applies to the selected agent. Installation and configuration are shared within their installation scope."
+        actions={
+          <>
+            <AttentionRollup errorCount={errorCount} warningCount={warningCount} />
+            <Button size="xl" variant="mono" onClick={form.open}>
+              Install plugin
+            </Button>
+          </>
         }
-      />
+      >
+        <InstallForm
+          form={form}
+          placeholder="/path/to/plugin  ·  https://github.com/owner/repo  ·  owner/repo"
+          enableLabel="Enable after install"
+          subject="plugin"
+          destination={
+            scope
+              ? `${projects.find((project) => project.id === scope)?.name ?? 'this project'} — it ships with the repository`
+              : 'your personal plugins — available in every project'
+          }
+        />
 
-      <InstallForm
-        form={form}
-        placeholder="/path/to/plugin  ·  https://github.com/owner/repo  ·  owner/repo"
-        enableLabel="Enable after install"
-        subject="plugin"
-        destination={
-          scope
-            ? `${projects.find((project) => project.id === scope)?.name ?? 'this project'} — it ships with the repository`
-            : 'your personal plugins — available in every project'
-        }
-      />
+        <SettingProblems
+          className="mb-3"
+          subject="Plugins"
+          errors={error && !form.installing ? [error] : []}
+          onRetry={refresh}
+        />
 
-      <SettingProblems
-        className="mb-3"
-        subject="Plugins"
-        errors={error && !form.installing ? [error] : []}
-        onRetry={refresh}
-      />
+        <CapabilityRegistryBody
+          count={plugins.length}
+          loading={loading}
+          error={error}
+          empty={
+            <>
+              No plugins here yet. Install one with Install plugin, or drop a folder with a{' '}
+              <code>plugin.json</code> into <code>~/.localix/plugins</code>.
+            </>
+          }
+        >
+          {plugins.map((p) => (
+            <PluginRow
+              key={`${p.projectId}:${p.name}`}
+              plugin={p}
+              projects={projects}
+              busy={busy === p.name}
+              busyLabel={busy === p.name ? busyLabel : null}
+              configOpen={configFor === p.name}
+              onToggle={() => void toggle(p)}
+              onRemove={() => void remove(p)}
+              onToggleConfig={() => setConfigFor((cur) => (cur === p.name ? null : p.name))}
+              onSaveConfig={(values) => void handleSaveConfig(p, values)}
+            />
+          ))}
+        </CapabilityRegistryBody>
+      </SettingsSection>
 
       {/* Marketplaces use the same sidecar. Mount them only after the primary
           registry is authoritative so one outage produces one retry line. Keep
           them mounted through later refreshes once real plugin data exists. */}
       {!scope && registryAuthoritative && <MarketplacesPanel onChanged={refresh} />}
-
-      <CapabilityRegistryBody
-        count={plugins.length}
-        loading={loading}
-        error={error}
-        empty={
-          <>
-            No plugins here yet. Install one with Install plugin, or drop a folder with a{' '}
-            <code>plugin.json</code> into <code>~/.localix/plugins</code>.
-          </>
-        }
-      >
-        {plugins.map((p) => (
-          <PluginRow
-            key={`${p.projectId}:${p.name}`}
-            plugin={p}
-            projects={projects}
-            busy={busy === p.name}
-            busyLabel={busy === p.name ? busyLabel : null}
-            configOpen={configFor === p.name}
-            onToggle={() => void toggle(p)}
-            onRemove={() => void remove(p)}
-            onToggleConfig={() => setConfigFor((cur) => (cur === p.name ? null : p.name))}
-            onSaveConfig={(values) => void handleSaveConfig(p, values)}
-          />
-        ))}
-      </CapabilityRegistryBody>
     </div>
   )
 }

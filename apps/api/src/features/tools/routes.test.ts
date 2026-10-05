@@ -17,15 +17,23 @@ describe('tool manifest', () => {
     // manifest built by spreading it put that on the settings wire the moment it was added.
     expect(builtinToolManifest().map((tool) => tool.name)).toEqual([...BUILTIN_TOOL_NAMES])
     expect(builtinToolManifest()).toEqual(
-      Object.values(BUILTIN_TOOL_CATALOG).map(({ name, label, description, category }) => ({
-        name,
-        label,
-        description,
-        category,
-      })),
+      Object.values(BUILTIN_TOOL_CATALOG).map((entry) => {
+        const { name, label, description, category } = entry
+        return {
+          name,
+          label,
+          description,
+          category,
+          ...('protocol' in entry && entry.protocol ? { required: true } : {}),
+        }
+      }),
     )
     for (const tool of builtinToolManifest()) {
-      expect(Object.keys(tool).sort()).toEqual(['category', 'description', 'label', 'name'])
+      expect(Object.keys(tool).sort()).toEqual(
+        tool.required
+          ? ['category', 'description', 'label', 'name', 'required']
+          : ['category', 'description', 'label', 'name'],
+      )
     }
   })
 
@@ -33,6 +41,11 @@ describe('tool manifest', () => {
     for (const tool of builtinToolManifest()) {
       expect('userToggleable' in tool).toBe(false)
     }
+  })
+
+  test('the handoff protocol is explicitly required and ordinary tools remain optional', () => {
+    expect(meta('conversation_control')?.required).toBe(true)
+    expect(meta('read')?.required).toBeUndefined()
   })
 
   test('publishes a built-in with its catalog metadata', () => {

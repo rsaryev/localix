@@ -5,7 +5,7 @@ import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
 import { useUiTarget } from '@/shared/hooks/useUiTarget'
-import { DIVIDED_LIST } from '@localixai/kit/divided-list'
+import { SettingsRows } from './SettingsScaffold'
 
 export type SettingRegistryState = 'enabled' | 'disabled' | 'neutral' | 'warning' | 'error'
 /** The app's one tone union (`StatusTone`), so a fact keeps its tone between surfaces. */
@@ -31,11 +31,7 @@ const STATUS_CLASS: Record<SettingRegistryState, string> = {
  * record into its own card or surface.
  */
 export function SettingRegistryList({ children }: { children: ReactNode }) {
-  return (
-    <div role="list" className={DIVIDED_LIST}>
-      {children}
-    </div>
-  )
+  return <SettingsRows role="list">{children}</SettingsRows>
 }
 
 /**

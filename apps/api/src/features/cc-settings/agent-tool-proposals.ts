@@ -3,6 +3,7 @@ import type { FormatDiagnostic } from '../ext/format-adapter'
 import { CC_SEMANTIC_GAPS, CC_TOOL_NAME_MAP, normalizeMcpToolAlias } from '../ext/cc-tool-names'
 import { splitTokenList } from '../agent-core/skill-frontmatter'
 import { parseRuleString } from './permission-rules'
+import { nativeCommandPatterns } from './native-command-patterns'
 
 /** Translate declarations into inert native proposals; never discard an unknown restriction. */
 export function agentToolProposals(
@@ -49,9 +50,7 @@ export function agentToolProposals(
           report('unsupported', 'Argument restriction requires contextual translation')
           continue
         }
-        resources = specifier.endsWith(':*')
-          ? [specifier.slice(0, -2), `${specifier.slice(0, -2)} *`]
-          : [specifier]
+        resources = nativeCommandPatterns(specifier)
       }
       rules.push(...resources.map((resource) => ({ action: `tool:${tool}`, resource, effect })))
     }

@@ -34,9 +34,9 @@ export function ShortcutRow({
 }: ShortcutRowProps) {
   const editable = isConfigurable(command)
   return (
-    <SettingsRow className="flex items-center justify-between gap-4">
+    <SettingsRow layout="responsive">
       <div className="min-w-0 space-y-0.5">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-foreground">{command.label}</span>
           {conflictLabels.length > 0 && (
             <span
@@ -48,7 +48,7 @@ export function ShortcutRow({
             </span>
           )}
         </div>
-        <p className="truncate text-xs text-text-soft">{command.description}</p>
+        <p className="text-xs leading-5 text-text-soft">{command.description}</p>
       </div>
       <div className="shrink-0">
         {editable ? (
@@ -62,7 +62,7 @@ export function ShortcutRow({
           />
         ) : (
           <div
-            className="flex h-[var(--chrome-control-md)] min-w-28 items-center justify-center px-2.5"
+            className="flex h-[var(--chrome-control-lg)] min-w-28 items-center justify-center px-2.5"
             title="Built-in — not rebindable"
           >
             <KeyChip chord={chord} muted />

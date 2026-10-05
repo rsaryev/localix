@@ -2,11 +2,10 @@ import { memo } from 'react'
 import type { ChatCacheDiagnosticsPayload, ChatUsagePayload } from '@localixai/agent'
 import type { ReactNode } from 'react'
 import { formatCompactTokens, formatCost } from '../../model/usageFormat'
-import { cacheHitRate, uncachedInputTokens } from '../../model/usageMath'
+import { uncachedInputTokens } from '../../model/usageMath'
 import { ProgressBar } from '@localixai/kit/progress-bar'
-import { ContextRing } from '@localixai/kit/context-ring'
 import { SectionLabel } from '@localixai/kit/section-label'
-import { IconButton } from '@localixai/kit/icon-button'
+import { Button } from '@localixai/kit/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@localixai/kit/hover-card'
 import { inspector } from '@/shared/lib/inspectorBus'
 import type {
@@ -62,7 +61,7 @@ export interface UsageIndicatorView {
   } | null
   physicalWindowTokens?: number
   policyWindowTokens?: number
-  /** The whole-request ceiling — the ring's denominator when known. */
+  /** The whole-request ceiling — the usage denominator when known. */
   ceilingTokens?: number
   /** Where the next context checkpoint rewrites the model's view. */
   checkpointAtTokens?: number
@@ -160,7 +159,7 @@ export function buildUsageIndicatorView({
     checkpointAtTokens,
     reservedTokens,
     fraction,
-    // Clamp only the ring/progress fill. The label must preserve overflow
+    // Clamp only the progress fill. The label must preserve overflow
     // evidence (for example 101%) instead of visually rewriting it to 100%.
     percentLabel: rawFraction === null ? '—' : `${Math.round(rawFraction * 100)}%`,
     fractionBasis,
@@ -211,7 +210,6 @@ export const UsageIndicator = memo(function UsageIndicator({
   })
   if (!usage && !view.attempt && !contextDiagnostics) return null
 
-  const cacheRate = cacheHitRate(usage?.cachedInputTokens, usage?.inputTokens)
   const cacheChanged = (cacheDiagnostics?.previous?.changed ?? []).length > 0
   const contextTokens = view.attempt?.contextTokens
   const accessibleLabel =
@@ -222,19 +220,20 @@ export const UsageIndicator = memo(function UsageIndicator({
   return (
     <HoverCard openDelay={200} closeDelay={100}>
       <HoverCardTrigger asChild>
-        <IconButton
+        <Button
+          variant="ghost"
           size="lg"
           onClick={() => inspector.openStats()}
           className={[
-            'rounded-lg',
+            'rounded-lg font-mono text-2xs tabular-nums',
             cacheChanged
               ? 'text-status-warning/80 hover:bg-status-warning/10 hover:text-status-warning/80'
               : 'text-text-faint hover:bg-surface-hover hover:text-text-soft',
           ].join(' ')}
           aria-label={accessibleLabel}
         >
-          <ContextRing fraction={view.fraction ?? 0} dot={cacheRate !== null && cacheRate > 0} />
-        </IconButton>
+          {view.percentLabel}
+        </Button>
       </HoverCardTrigger>
 
       <HoverCardContent

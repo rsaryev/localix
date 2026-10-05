@@ -1,7 +1,6 @@
 import type { Project } from '@/shared/api/contracts'
 import { scopeAgentId } from '@/shared/api/capabilityScope'
 import { CapabilityIntro } from './capabilities/CapabilityIntro'
-import { ResearchSection } from './capabilities/ResearchSection'
 import { ToolsRegistry } from './capabilities/ToolsRegistry'
 
 interface ToolsSettingsProps {
@@ -47,10 +46,6 @@ export function ToolsSettings({ scope, projects }: ToolsSettingsProps) {
           MCP and Plugins use. The ordered rule list that used to live here governs five kinds,
           not one, and is its own tab now. */}
       <ToolsRegistry key={scope} scope={scope} />
-
-      {/* Research is a USER-level switch, not a scope's, so it appears once — in the scope
-          that has no narrower owner to confuse it with. */}
-      {!agentId && !project && <ResearchSection />}
     </div>
   )
 }

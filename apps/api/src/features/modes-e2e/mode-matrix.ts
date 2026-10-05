@@ -17,6 +17,7 @@ import { classifyToolCall, type AgentTool } from '@localixai/agent/agents'
 import { extractCallFacts } from '../agent-core/permission-engine'
 import { PERMISSION_MODES } from '../capabilities/permission-modes'
 import type { Rule } from '../capabilities/rule'
+import type { PermissionMode } from '../capabilities/permission-modes'
 import { WORKSPACE, type CallCase } from './core-call-cases'
 import { expectedDecision, modeSurface, type ModeSurface } from './run-surface'
 
@@ -25,6 +26,10 @@ export interface PresetUnderTest {
   rules: readonly Rule[]
   /** The preset's closed list, stated from its definition — not read back from the rules. */
   onRoster(tool: string): boolean
+  expected?: (
+    mode: PermissionMode,
+    call: CallCase,
+  ) => ReturnType<typeof expectedDecision> | undefined
 }
 
 export async function matrixMismatches(
@@ -76,7 +81,9 @@ async function cellFinding(
   tool: AgentTool,
 ): Promise<string | null> {
   const where = `${preset.handle}/${surface.mode} ${call.tool} (${call.label})`
-  const expected = expectedDecision(surface.mode, preset.onRoster(call.tool), call)
+  const expected = !preset.onRoster(call.tool)
+    ? 'removed'
+    : (preset.expected?.(surface.mode, call) ?? expectedDecision(surface.mode, true, call))
   const removed = surface.denied.includes(call.tool)
   if (expected === 'removed')
     return removed ? null : `${where}: kept on the roster, expected removed`

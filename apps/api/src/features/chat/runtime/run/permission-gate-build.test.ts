@@ -7,7 +7,7 @@ import {
   extractCallFacts,
   type PermissionRule,
 } from '../../../agent-core/permission-engine'
-import { buildRunPermissionGate, permissionRulesForRun } from './permission-gate-build'
+import { buildRunPermissionGate, skillPermissionRules } from './permission-gate-build'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
 import type { CcHooksRuntime } from '../../../cc-hooks'
@@ -118,18 +118,32 @@ describe('the run’s own plan directory', () => {
   })
 })
 
-describe('permissionRulesForRun', () => {
+describe('skill preapprovals', () => {
+  test('CC colon prefixes preserve command word boundaries and compound safety', () => {
+    const rules: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
+    const grants = skillPermissionRules(['Bash(git status:*)'])
+    for (const command of ['git status', 'git status --short']) {
+      expect(
+        evaluate(rules, tool, extractCallFacts('bash', { command }, root), grants).action,
+      ).toBe('allow')
+    }
+    for (const command of ['git status-malicious', 'git status && npm publish']) {
+      expect(
+        evaluate(rules, tool, extractCallFacts('bash', { command }, root), grants).action,
+      ).toBe('ask')
+    }
+  })
   test('skill allowed-tools overrides ask for its command family, not unrelated commands', () => {
-    const rules = permissionRulesForRun(
-      [{ permission: '*', pattern: '*', action: 'ask' }],
-      ['Bash(git *)'],
-    )
+    const rules: PermissionRule[] = [{ permission: '*', pattern: '*', action: 'ask' }]
+    const grants = skillPermissionRules(['Bash(git *)'])
 
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'git status' }, root)).action,
+      evaluate(rules, tool, extractCallFacts('bash', { command: 'git status' }, root), grants)
+        .action,
     ).toBe('allow')
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'npm publish' }, root)).action,
+      evaluate(rules, tool, extractCallFacts('bash', { command: 'npm publish' }, root), grants)
+        .action,
     ).toBe('ask')
   })
 
@@ -142,11 +156,15 @@ describe('permissionRulesForRun', () => {
         message: 'Do not push from this project.',
       },
     ]
-    const rules = permissionRulesForRun(projectRules, ['Bash(git *)'])
+    const grants = skillPermissionRules(['Bash(git *)'])
 
     expect(
-      evaluate(rules, tool, extractCallFacts('bash', { command: 'git push origin main' }, root))
-        .action,
+      evaluate(
+        projectRules,
+        tool,
+        extractCallFacts('bash', { command: 'git push origin main' }, root),
+        grants,
+      ).action,
     ).toBe('deny')
   })
 })

@@ -1,6 +1,23 @@
-import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { createContext, useContext, useId, type ReactNode } from 'react'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
+import { cn } from '@localixai/plugin-sdk/ui/classes'
+
+/**
+ * The one container a settings group lives in: a hairline outline and a quiet foreground veil, so the
+ * rows of a group read as one object and two groups read as two. It replaces the open rules the
+ * groups used to be drawn with, which left a page as one undifferentiated column.
+ */
+const SCOPE_LABELS = {
+  device: 'This device',
+  workspace: 'All projects',
+  project: 'This project',
+  agent: 'Selected agent',
+}
+
+const SettingsSectionContext = createContext(false)
+
+export const SETTINGS_CARD =
+  'overflow-hidden rounded-md border border-border-faint bg-foreground/[0.02]'
 
 /**
  * The title + description block every settings page opens with.
@@ -32,16 +49,25 @@ export function SettingsPageHeader({
   className?: string
 }) {
   return (
-    <header className={cn('flex items-start justify-between gap-4', className)}>
-      <div className="min-w-0 space-y-1.5">
-        <h2 className="text-2xl font-medium tracking-tight text-foreground text-balance sm:text-3xl">
+    <header
+      className={cn(
+        'flex flex-col items-stretch justify-between gap-3 @xl:flex-row @xl:items-start @xl:gap-4',
+        className,
+      )}
+    >
+      <div className="min-w-0 space-y-1">
+        <h2 className="text-xl font-semibold tracking-tight text-foreground text-balance">
           {title}
         </h2>
         {description && (
-          <p className="max-w-2xl text-sm leading-6 text-text-soft text-pretty">{description}</p>
+          <p className="max-w-2xl text-sm leading-5 text-text-soft text-pretty">{description}</p>
         )}
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap justify-end gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex min-w-0 flex-wrap items-center gap-2 @xl:shrink-0 @xl:justify-end">
+          {actions}
+        </div>
+      )}
     </header>
   )
 }
@@ -58,12 +84,11 @@ export function SettingsPage({
   children: ReactNode
 }) {
   return (
-    <div className="space-y-6 text-left">
+    <div className="space-y-8 text-left">
       <SettingsPageHeader
         title={title}
         {...(description === undefined ? {} : { description })}
         {...(actions === undefined ? {} : { actions })}
-        className="border-b border-border-faint pb-4"
       />
       {children}
     </div>
@@ -77,6 +102,7 @@ export function SettingsSection({
   children,
   className,
   anchor,
+  scope,
 }: {
   title: string
   description?: ReactNode
@@ -88,23 +114,64 @@ export function SettingsSection({
    * it exists.
    */
   actions?: ReactNode
-  children: ReactNode
+  /** Omit for a single control in the heading: uses compact padding and setting-label type. */
+  children?: ReactNode
   className?: string
   /** Stable id used by settings-search to scroll to + flash this section. */
   anchor?: string
+  scope?: keyof typeof SCOPE_LABELS
 }) {
+  const titleId = useId()
+  const standaloneControl = children == null
   return (
-    <section className={cn('space-y-3', className)} data-settings-anchor={anchor}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 space-y-1">
-          <h3 className="text-base font-medium text-foreground">{title}</h3>
+    <section
+      aria-labelledby={titleId}
+      className={cn(
+        SETTINGS_CARD,
+        standaloneControl ? 'p-3' : 'space-y-4 p-4',
+        '[&_[data-slot=field-label]]:text-sm [&_[data-slot=field-label]]:text-foreground',
+        '[&_[data-slot=field-description]]:leading-5 [&_[data-slot=field-description]]:text-text-soft',
+        className,
+      )}
+      data-settings-anchor={anchor}
+    >
+      <div
+        className={cn(
+          'flex flex-col items-stretch justify-between gap-3',
+          standaloneControl
+            ? '@xl:flex-row @xl:items-center @xl:gap-4'
+            : '@lg:flex-row @lg:items-end @lg:gap-4',
+        )}
+      >
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h3
+              id={titleId}
+              className={cn(
+                'leading-6 text-foreground',
+                standaloneControl ? 'text-sm font-medium' : 'text-base font-semibold',
+              )}
+            >
+              {title}
+            </h3>
+            {scope && <span className="text-2xs text-text-faint">{SCOPE_LABELS[scope]}</span>}
+          </div>
           {description && (
-            <p className="max-w-2xl text-sm leading-6 text-text-soft">{description}</p>
+            <p className="max-w-2xl text-xs leading-5 text-text-soft text-pretty">{description}</p>
           )}
         </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        {actions && (
+          <div
+            className={cn(
+              'flex min-w-0 flex-wrap items-center gap-2',
+              standaloneControl ? '@xl:shrink-0' : '@lg:shrink-0',
+            )}
+          >
+            {actions}
+          </div>
+        )}
       </div>
-      {children}
+      <SettingsSectionContext.Provider value={true}>{children}</SettingsSectionContext.Provider>
     </section>
   )
 }
@@ -116,11 +183,13 @@ export function SettingsSurface({
   children: ReactNode
   className?: string
 }) {
-  return <div className={cn('border-y border-border-faint py-4', className)}>{children}</div>
+  const inSection = useContext(SettingsSectionContext)
+  return <div className={cn(!inSection && [SETTINGS_CARD, 'p-4'], className)}>{children}</div>
 }
 
 /**
- * A transparent group of native settings rows, bounded by two quiet rules.
+ * A divided settings list. Inside a section it inherits that section's single outline and fill;
+ * standalone lists keep the shared top and bottom rules.
  *
  * The faint border step (`DIVIDED_LIST`) is the ONE weight for an in-page content divider — the
  * rule under a page heading, between setting rows, around a surface. It is deliberately lighter
@@ -129,15 +198,31 @@ export function SettingsSurface({
  * header used to draw `/20` and the row groups `/25` — the same role at two weights 5% apart,
  * which reads as a mistake rather than a distinction. Do not add a third step.
  */
-export function SettingsRows({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn(DIVIDED_LIST, className)}>{children}</div>
+export function SettingsRows({
+  children,
+  className,
+  role,
+}: {
+  children: ReactNode
+  className?: string
+  role?: 'list'
+}) {
+  const inSection = useContext(SettingsSectionContext)
+  return (
+    <div
+      role={role}
+      className={cn(inSection ? 'divide-y divide-border-faint' : DIVIDED_LIST, className)}
+    >
+      {children}
+    </div>
+  )
 }
 
 /**
  * Shared row rhythm for labels, descriptions and their right-aligned control.
  *
  * `responsive` is the label-beside-control row that stacks on a narrow pane: label above the
- * control until the container is `@md`, then side by side with the control pushed right. Three
+ * control until the container is `@xl`, then side by side with the control pushed right. Three
  * rows wrote that recipe out by hand; a row that needs it now names the layout.
  */
 export function SettingsRow({
@@ -154,11 +239,40 @@ export function SettingsRow({
       className={cn(
         'py-3',
         layout === 'responsive' &&
-          'flex flex-col items-stretch gap-4 @md:flex-row @md:items-center @md:justify-between',
+          'flex flex-col items-stretch gap-3 @xl:flex-row @xl:items-center @xl:justify-between',
         className,
       )}
     >
       {children}
     </div>
+  )
+}
+
+/**
+ * A row that names one setting and puts its control on the right: the label and its one-line
+ * explanation on the left, the control after it, stacking under the label on a narrow pane. The
+ * rows of every settings group wrote this out by hand with their own text sizes, so two rows on one
+ * page could explain themselves in different type; this fixes the label, the explanation and the
+ * gap in one place.
+ */
+export function SettingsControlRow({
+  title,
+  description,
+  children,
+}: {
+  title: ReactNode
+  description?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <SettingsRow layout="responsive">
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {description && (
+          <p className="max-w-prose text-xs leading-5 text-text-soft text-pretty">{description}</p>
+        )}
+      </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-2 @xl:shrink-0">{children}</div>
+    </SettingsRow>
   )
 }

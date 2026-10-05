@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { agentPolicy, canEditField, type AgentField } from '@localixai/api/agent-policy'
 import type { AgentRecord, AgentRecordInput, AgentSummary } from '@/shared/api/contracts'
 import { Button } from '@localixai/kit/button'
@@ -6,10 +5,15 @@ import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Textarea } from '@localixai/kit/textarea'
 import { SettingsRecordPage } from '../../SettingsRecordPage'
+import { SettingsSection } from '../../SettingsScaffold'
+import { SettingsFieldGrid } from '../../SettingsFieldGrid'
 import { AgentModelField } from './AgentModelField'
 import { AgentIdentityFields } from './AgentIdentityFields'
+import { AgentContextFields } from './AgentContextFields'
 import { useAgentEditorForm } from './useAgentEditorForm'
 import { AGENT_FIELD_IDS } from './agentDraft'
+import { clampMaxTurns } from '@localixai/api/turn-budget'
+import { useSettingsStore } from '../../../model/settingsStore'
 
 interface AgentEditorProps {
   /** Present when editing; absent when creating. */
@@ -60,6 +64,13 @@ export function AgentEditor({
   const policy = agent ? agentPolicy(agent) : null
   const canEdit = (field: AgentField) => !policy || canEditField(policy, field)
   const saving = busy !== null && busy === (agent?.record.id ?? draft.name.trim())
+  const userLimit = useSettingsStore((state) => state.settings.agentSettings.maxTurns)
+  const inheritedLimit = clampMaxTurns(userLimit)
+  const authoredLimit = Number(draft.maxTurns)
+  const effectiveLimit =
+    Number.isInteger(authoredLimit) && authoredLimit > 0
+      ? Math.min(inheritedLimit, authoredLimit)
+      : inheritedLimit
 
   return (
     <SettingsRecordPage
@@ -80,7 +91,7 @@ export function AgentEditor({
       // app ships. Nothing to restore, nothing on screen.
       extraAction={
         form.canRestore ? (
-          <Button variant="ghost" onClick={form.restore} disabled={saving}>
+          <Button size="xl" variant="ghost" onClick={form.restore} disabled={saving}>
             Restore
           </Button>
         ) : undefined
@@ -88,7 +99,7 @@ export function AgentEditor({
       onSubmit={() => void form.save()}
       onCancel={onCancel}
     >
-      <Section title="Identity">
+      <SettingsSection title="Identity">
         <AgentIdentityFields
           draft={draft}
           editing={editing}
@@ -96,23 +107,24 @@ export function AgentEditor({
           patch={patch}
           error={form.errors.name}
         />
-      </Section>
+      </SettingsSection>
 
-      <Section title="Model">
+      <SettingsSection title="Model">
         <AgentModelField
           provider={draft.provider}
           model={draft.model}
           effort={draft.effort}
           disabled={!canEdit('model')}
+          effortError={form.errors.effort}
           onChange={(next) => patch(next)}
           onEffortChange={(effort) => patch({ effort })}
         />
-      </Section>
+      </SettingsSection>
 
-      <Section title="Instructions">
+      <SettingsSection title="Instructions">
         <Field
           controlId={AGENT_FIELD_IDS.prompt}
-          label="Instructions"
+          label="Standing instructions"
           description="The agent’s identity and standing instructions. Markdown."
           required
           error={form.errors.prompt}
@@ -127,10 +139,14 @@ export function AgentEditor({
             onChange={(e) => patch({ prompt: e.target.value })}
           />
         </Field>
-      </Section>
+      </SettingsSection>
 
-      <Section title="Limits">
-        <div className="grid grid-cols-2 items-end gap-3 @max-md:grid-cols-1">
+      <SettingsSection title="Context">
+        <AgentContextFields draft={draft} patch={patch} readOnly={!canEdit('context')} />
+      </SettingsSection>
+
+      <SettingsSection title="Limits">
+        <SettingsFieldGrid>
           <Field
             controlId={AGENT_FIELD_IDS.leadershipPriority}
             label="Hierarchy priority"
@@ -153,7 +169,7 @@ export function AgentEditor({
           <Field
             controlId={AGENT_FIELD_IDS.maxTurns}
             label="Max turns"
-            description="Tool batches before a run stops."
+            description={`Tool batches before a run stops. Blank inherits ${inheritedLimit}. Effective maximum: ${effectiveLimit}; a delegated task may impose a lower cap.`}
             optional
             error={form.errors.maxTurns}
             readOnly={!canEdit('maxTurns')}
@@ -163,23 +179,14 @@ export function AgentEditor({
               type="number"
               inputMode="numeric"
               min={1}
-              placeholder="Unlimited"
+              placeholder="Inherit run limit"
               value={draft.maxTurns}
               readOnly={!canEdit('maxTurns')}
               onChange={(e) => patch({ maxTurns: e.target.value })}
             />
           </Field>
-        </div>
-      </Section>
+        </SettingsFieldGrid>
+      </SettingsSection>
     </SettingsRecordPage>
-  )
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <h3 className="text-2xs font-medium uppercase tracking-wide text-text-faint">{title}</h3>
-      {children}
-    </section>
   )
 }

@@ -58,8 +58,13 @@ export const agentsApi = {
   },
 
   /** Drop the user's override of a system agent; the shipped definition applies again. */
-  async resetAgent(name: string): Promise<AgentSummary> {
-    return unwrap(await client.rpc.agents[':name'].reset.$post({ param: { name } }))
+  async resetAgent(name: string, projectId?: string | null): Promise<AgentSummary> {
+    return unwrap(
+      await client.rpc.agents[':name'].reset.$post({
+        param: { name },
+        query: scopeQuery(projectId ?? null),
+      }),
+    )
   },
 
   async duplicateAgent(

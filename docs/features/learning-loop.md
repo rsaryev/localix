@@ -1,6 +1,6 @@
 # Carry context into later work
 
-Localix stores explicit memory notes, profile fields, reusable skills, and searchable session
+Localix stores explicit memory notes, agent definitions, reusable skills, and searchable session
 transcripts for later work. Use them to preserve durable facts, repeat procedures, or retrieve
 evidence from an earlier session.
 
@@ -9,14 +9,13 @@ automatically.
 
 ## What you can do
 
-| Surface             | Mechanism                                                                              | Boundary                                                                                                |
-| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Memory              | Store keyed Markdown notes at session, project, or global scope                        | Writes require `/memory` or the model-facing `memory` tool                                              |
-| User profile        | Keep seven prompt fields for role, experience, preferences, and current work           | Edited in Settings and onboarding; what the model learns about the user goes to `memory` scope `global` |
-| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `skill` tool; see [Skills](skills.md)           |
-| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `history_search`; transcripts are not injected on every turn                            |
-| Learning Studio     | Build, import, export, and study file-authored courses                                 | The bundled `learning` plugin is enabled by default but can be disabled; courses belong to one session  |
-| Memory-provider API | Let one enabled native plugin replace or append built-in prompt memory                 | Provider calls are bounded and best-effort; a disabled plugin contributes nothing                       |
+| Surface             | Mechanism                                                                              | Boundary                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Memory              | Store keyed Markdown notes at session, project, or global scope                        | Writes require `/memory` or the model-facing `memory` tool                                             |
+| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `skill` tool; see [Skills](skills.md)          |
+| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `history_search`; transcripts are not injected on every turn                           |
+| Learning Studio     | Build, import, export, and study file-authored courses                                 | The bundled `learning` plugin is enabled by default but can be disabled; courses belong to one session |
+| Memory-provider API | Let one enabled native plugin replace or append built-in prompt memory                 | Provider calls are bounded and best-effort; a disabled plugin contributes nothing                      |
 
 ## How it works
 
@@ -36,9 +35,9 @@ would exceed one file's budget is rejected without changing that file.
 
 ### Prompt snapshots
 
-A root chat snapshots profile text, visible memory, the skill roster, and project instructions on
-its first run. `/clear`, a context checkpoint, or a new session creates a fresh boundary; child
-sessions load fresh context instead of sharing the root snapshot.
+A root chat snapshots visible memory, the skill roster, and project instructions on its first run.
+`/clear`, a context checkpoint, or a new session creates a fresh boundary; child sessions load fresh
+context instead of sharing the root snapshot.
 
 Writes reach storage immediately. They normally reach the current root chat after its next context
 boundary. Set `LOCALIX_FREEZE_CONTEXT=0` to rebuild the snapshot on each run.
@@ -74,7 +73,6 @@ prompt representation; it does not remove the built-in memory store or tool.
 | Global memory            | `~/.localix/memories/MEMORY.md`; 2,200-character budget                       |
 | Project memory           | `~/.localix/memories/projects/<projectId>.md`; 2,200-character budget         |
 | Session memory           | `~/.localix/memories/sessions/<rootSessionId>.md`; 1,500-character budget     |
-| User profile             | 12,000 characters across seven prompt text fields                             |
 | Project skills           | `<workspace>/.localix/skills/<name>/SKILL.md`                                 |
 | Global skills            | `~/.localix/skills/<name>/SKILL.md`                                           |
 | Prompt snapshots         | `LOCALIX_FREEZE_CONTEXT=0` disables the default freeze                        |
@@ -82,16 +80,14 @@ prompt representation; it does not remove the built-in memory store or tool.
 
 ## Limits
 
-- A model may decide not to call `memory` or `skill`. Use `/memory`, the profile editor, or an
+- A model may decide not to call `memory` or `skill`. Use `/memory`, agent instructions, or an
   explicit skill save when persistence is required.
 - Memory Markdown is plaintext on disk. It is readable by processes with access to the same OS
   account and home directory.
-- The profile fields are edited through the profile UI or API; the model has no profile tool and
-  records durable facts about the user as `memory` entries under `user.*` keys at global scope.
 - `history_search` must survive the active role and tool policy. Discovery also requires SQLite
   FTS5; an unavailable FTS table returns an error instead of falling back to transcript injection.
 - A scope that denies `memory`, `history_search`, or `skill` removes them from the tool roster.
-  Built-in memory and profile remain separate prompt inputs either way.
+  Built-in memory remains a separate prompt input.
 - A memory provider's `onRunEnd` hook is fire-and-forget. Failure or timeout does not roll back the
   completed chat turn.
 - Learning Studio progress, files, and resources stay within the owning session. They are not
@@ -113,7 +109,6 @@ prompt representation; it does not remove the built-in memory store or tool.
 - [Prompt loading](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-context.ts)
   and
   [snapshot cache](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/session-snapshot.ts)
-- [Profile tool and limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/memory/user-profile.ts)
 - [History recall](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/history/history-search.ts)
 - [`/memory` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-listings.ts)
 - [Skill tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/skill.ts)

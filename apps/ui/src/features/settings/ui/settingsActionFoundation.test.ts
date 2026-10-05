@@ -4,15 +4,14 @@ import { readFileSync } from 'node:fs'
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
 describe('settings action foundation', () => {
-  test.each([
-    './PermissionEditor.tsx',
-    './PreferencesSettings.tsx',
-    './keyboard/ChordRecorder.tsx',
-  ])('%s delegates ordinary actions to Button or IconButton', (path) => {
-    const source = read(path)
-    expect(source).toMatch(/<(Button|IconButton)/)
-    expect(source).not.toContain('<button')
-  })
+  test.each(['./PermissionEditor.tsx', './SetupSection.tsx', './keyboard/ChordRecorder.tsx'])(
+    '%s delegates ordinary actions to Button or IconButton',
+    (path) => {
+      const source = read(path)
+      expect(source).toMatch(/<(Button|IconButton)/)
+      expect(source).not.toContain('<button')
+    },
+  )
 
   test('delegates settings-search result actions to the shared autocomplete option', () => {
     const source = read('./SettingsSearch.tsx')

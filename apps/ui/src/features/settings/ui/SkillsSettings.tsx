@@ -6,7 +6,8 @@ import { useSkills } from '../model/useSkills'
 import { Button } from '@localixai/kit/button'
 import { SettingProblems } from './settingRegistry'
 import { SettingsActionActivity } from './SettingsActionActivity'
-import { CapabilityIntro } from './capabilities/CapabilityIntro'
+import { SettingsSection } from './SettingsScaffold'
+import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { SkillForm, emptySkillDraft } from './capabilities/SkillForm'
 import { SkillRow } from './capabilities/SkillRow'
@@ -50,12 +51,15 @@ export function SkillsSettings({ scope, agentScope = '', projects }: SkillsSetti
   const actionsDisabled = Boolean(mutation) || curating
 
   return (
-    <div className="w-full">
-      <CapabilityIntro
-        attention={{ errorCount, warningCount }}
-        action={
+    <div className="w-full space-y-8">
+      <SettingsSection
+        title="Skills"
+        description="Availability applies to the selected agent. Skill files are shared within their installation scope."
+        actions={
           <>
+            <AttentionRollup errorCount={errorCount} warningCount={warningCount} />
             <Button
+              size="xl"
               variant="outline"
               onClick={() => void runCurator()}
               disabled={curating}
@@ -64,76 +68,80 @@ export function SkillsSettings({ scope, agentScope = '', projects }: SkillsSetti
             >
               {curating ? <SettingsActionActivity label="Curating" /> : 'Run curator'}
             </Button>
-            <Button variant="mono" onClick={() => setEditing(emptySkillDraft(scope || null))}>
+            <Button
+              size="xl"
+              variant="mono"
+              onClick={() => setEditing(emptySkillDraft(scope || null))}
+            >
               New skill
             </Button>
           </>
         }
-      />
-
-      {editing && (
-        <SkillForm
-          initial={editing}
-          projects={projects}
-          onSaved={() => {
-            setEditing(null)
-            refresh()
-          }}
-          onCancel={() => setEditing(null)}
-        />
-      )}
-
-      <SettingProblems
-        className="mb-3"
-        subject="Skills"
-        errors={error && !editing ? [error] : []}
-        onRetry={refresh}
-      />
-
-      <CapabilityRegistryBody
-        count={skills.length}
-        loading={loading}
-        error={error}
-        empty={
-          <>
-            No skills here yet. Create one with New skill, drop a <code>SKILL.md</code> in{' '}
-            <code>.localix/skills/</code>, or ask the agent to save a procedure as a skill.
-          </>
-        }
       >
-        {skills.map((s) => (
-          <SkillRow
-            key={s.id}
-            skill={s}
+        {editing && (
+          <SkillForm
+            initial={editing}
             projects={projects}
-            usage={curatorByName.get(s.name)}
-            busyLabel={mutation?.name === s.name ? mutation.label : undefined}
-            actionsDisabled={actionsDisabled}
-            onToggle={() => void toggle(s)}
-            onTogglePin={(usage) => void togglePin(usage)}
-            onArchive={() => void archiveSkill(s.name)}
-            // The body is read when the editor opens this skill, not carried in the
-            // list: a catalog that ships every body grows with the user's writing.
-            onEdit={() => {
-              void loadSkill(s)
-                .then((full: SkillRecord) =>
-                  setEditing({
-                    name: full.name,
-                    description: full.description,
-                    content: full.content,
-                    projectId: full.projectId || null,
-                  }),
-                )
-                .catch((error: unknown) => {
-                  toast.error(`Could not open /${s.name}`, {
-                    description: errorMessage(error, '') || undefined,
-                  })
-                })
+            onSaved={() => {
+              setEditing(null)
+              refresh()
             }}
-            onDelete={() => void removeSkill(s)}
+            onCancel={() => setEditing(null)}
           />
-        ))}
-      </CapabilityRegistryBody>
+        )}
+
+        <SettingProblems
+          className="mb-3"
+          subject="Skills"
+          errors={error && !editing ? [error] : []}
+          onRetry={refresh}
+        />
+
+        <CapabilityRegistryBody
+          count={skills.length}
+          loading={loading}
+          error={error}
+          empty={
+            <>
+              No skills here yet. Create one with New skill, drop a <code>SKILL.md</code> in{' '}
+              <code>.localix/skills/</code>, or ask the agent to save a procedure as a skill.
+            </>
+          }
+        >
+          {skills.map((s) => (
+            <SkillRow
+              key={s.id}
+              skill={s}
+              projects={projects}
+              usage={curatorByName.get(s.name)}
+              busyLabel={mutation?.name === s.name ? mutation.label : undefined}
+              actionsDisabled={actionsDisabled}
+              onToggle={() => void toggle(s)}
+              onTogglePin={(usage) => void togglePin(usage)}
+              onArchive={() => void archiveSkill(s.name)}
+              // The body is read when the editor opens this skill, not carried in the
+              // list: a catalog that ships every body grows with the user's writing.
+              onEdit={() => {
+                void loadSkill(s)
+                  .then((full: SkillRecord) =>
+                    setEditing({
+                      name: full.name,
+                      description: full.description,
+                      content: full.content,
+                      projectId: full.projectId || null,
+                    }),
+                  )
+                  .catch((error: unknown) => {
+                    toast.error(`Could not open /${s.name}`, {
+                      description: errorMessage(error, '') || undefined,
+                    })
+                  })
+              }}
+              onDelete={() => void removeSkill(s)}
+            />
+          ))}
+        </CapabilityRegistryBody>
+      </SettingsSection>
 
       <ArchivedSkills
         archived={archived}

@@ -35,6 +35,13 @@ export function useSettingsAnchorMaterializer(contentRef: RefObject<HTMLElement 
               container.querySelectorAll<HTMLElement>('[data-settings-anchor]'),
             ).find((candidate) => candidate.dataset.settingsAnchor === anchor)
             if (!element) return false
+            if (element.hasAttribute('data-settings-reveal')) {
+              element
+                .querySelector<HTMLButtonElement>(
+                  '[data-slot="collapsible-section-trigger"][aria-expanded="false"]',
+                )
+                ?.click()
+            }
             registrations.get(uri)?.()
             registrations.set(uri, registerUiTarget(uri, element))
             resolve()
@@ -60,5 +67,5 @@ export function useSettingsAnchorMaterializer(contentRef: RefObject<HTMLElement 
       observers.forEach((observer) => observer.disconnect())
       registrations.forEach((unregister) => unregister())
     }
-  }, [])
+  }, [contentRef])
 }

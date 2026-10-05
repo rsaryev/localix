@@ -71,14 +71,14 @@ export function PermissionRulesView({ scope }: { scope: string }) {
           // action and then refuses it, on a screen whose whole job is to be unambiguous
           // about what is in force. Nothing to apply, nothing to press.
           rules.dirty || rules.resettable ? (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {rules.resettable && (
-                <Button variant="ghost" disabled={rules.saving} onClick={reset}>
+                <Button size="xl" variant="ghost" disabled={rules.saving} onClick={reset}>
                   Reset to defaults
                 </Button>
               )}
               {rules.dirty && (
-                <Button disabled={!canApply} onClick={() => void rules.apply()}>
+                <Button size="xl" disabled={!canApply} onClick={() => void rules.apply()}>
                   {applyLabel}
                 </Button>
               )}
@@ -134,7 +134,7 @@ export function PermissionRulesView({ scope }: { scope: string }) {
           <p role="alert" className="text-xs text-status-error">
             {rules.saveError ?? rules.loadError}
           </p>
-          <Button variant="ghost" disabled={rules.saving} onClick={rules.discard}>
+          <Button size="xl" variant="ghost" disabled={rules.saving} onClick={rules.discard}>
             Reload saved rules
           </Button>
         </div>

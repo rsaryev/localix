@@ -80,10 +80,11 @@ flat subscription.
 | Auxiliary ledger row    | Title, completion, and prompt calls.               | High-frequency calls accumulate by route and kind.         |
 | Session usage snapshot  | Visible turns plus non-turn auxiliary ledger rows. | Turn ledger rows are excluded to avoid double-counting.    |
 
-Current auxiliary writers cover session titles, editor next-edit prediction, inline text completion,
-and prompt improvement. Context checkpoints make no model call, so they add no ledger row; spend
-recorded under the retired `compaction` kind folds into turns. Durable ledger writes publish a
-replacement `session_usage.updated` snapshot to connected clients.
+Current auxiliary writers cover session titles, editor next-edit prediction, and inline text
+completion. Historical prompt-improvement spend remains in its retired kind bucket. Context
+checkpoints make no model call, so they add no ledger row; spend recorded under the retired
+`compaction` kind folds into turns. Durable ledger writes publish a replacement
+`session_usage.updated` snapshot to connected clients.
 
 Usage is not attributed to [Kanban](task-board.md) cards. A delegated child's rows carry the child's
 own `session_id`, so the workbench lists it as its own session; a query that bounds a session's work

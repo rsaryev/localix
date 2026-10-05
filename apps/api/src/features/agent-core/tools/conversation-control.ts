@@ -7,6 +7,8 @@ import {
 import { TOOL } from '../tool-names'
 
 export interface ConversationControlPort {
+  /** A delegated team's membership belongs to its parent; only next-speaker scheduling is offered. */
+  membership?: 'fixed'
   finish(
     toolCallId: string,
     request: ConversationControlRequest,
@@ -23,7 +25,7 @@ const CONVERSATION_CONTROL_CLASS: CallClass = { effect: 'session' }
 
 /** Atomic membership update and terminal scheduling for a multi-agent conversation turn. */
 export function createConversationControlTool(port: ConversationControlPort) {
-  return defineAgentTool({
+  return defineAgentTool<ConversationControlRequest>({
     name: TOOL.conversation_control,
     label: 'Conversation control',
     activeVerb: 'Updating conversation',
@@ -32,9 +34,14 @@ export function createConversationControlTool(port: ConversationControlPort) {
     // says what one call does. Both used to carry the whole contract.
     description: [
       'End this turn and choose who answers next. It is terminal: write your public reply or handoff first.',
-      'Agents are named by handle (with or without @) or ID. invite/remove change membership only, and apply before next is checked — to start an invited colleague, name them in next too.',
+      port.membership === 'fixed'
+        ? 'Name current teammates by handle or ID. The parent assigned this team: membership cannot change.'
+        : 'Agents are named by handle (with or without @) or ID. invite/remove change membership only, and apply before next is checked — to start an invited colleague, name them in next too.',
     ].join(' '),
-    inputSchema: conversationControlRequestSchema,
+    inputSchema:
+      port.membership === 'fixed'
+        ? conversationControlRequestSchema.omit({ invite: true, remove: true }).strict()
+        : conversationControlRequestSchema,
     // Membership and the next speaker are this conversation's own state — a plan session must
     // still be able to hand the turn on, which the static `mutates` alone would read as external.
     mutates: true,

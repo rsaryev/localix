@@ -122,8 +122,11 @@ export function useAgents(scope: string): AgentsData {
       backendClient.duplicateAgent(a.record.id, newName, a.projectId || null),
     )
 
-  const reset = (a: AgentSummary) =>
-    rowAction(a, 'Resetting', () => backendClient.resetAgent(a.record.id))
+  const reset = async (a: AgentSummary) => {
+    await write(a.record.id, `Restoring ${a.record.label || a.record.handle}`, () =>
+      backendClient.resetAgent(a.record.id, a.projectId || null),
+    )
+  }
 
   return {
     agents: registry.rows,

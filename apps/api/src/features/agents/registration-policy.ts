@@ -79,6 +79,20 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>) {
           )
         const policies = createCapabilityRuleRepository(connection)
         const current = await policies.readSnapshot(userId, id)
+        const switches = current.rules.filter(
+          (rule) =>
+            rule.resource === '*' &&
+            (rule.action.startsWith('agent:') || rule.action.startsWith('plugin:')),
+        )
+        const effectiveRules = [
+          ...reviewed.rules.filter(
+            (rule) =>
+              !switches.some(
+                (choice) => choice.action === rule.action && choice.resource === rule.resource,
+              ),
+          ),
+          ...switches,
+        ]
         const binding = await connection
           .selectFrom('capability_policy_binding')
           .selectAll()
@@ -91,7 +105,7 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>) {
           binding?.contribution_revision === registration.revision &&
           binding.policy_revision === current.revision &&
           current.revision === reviewed.expectedPolicyRevision + 1 &&
-          stableStringify(current.rules) === stableStringify(reviewed.rules)
+          stableStringify(current.rules) === stableStringify(effectiveRules)
         ) {
           return {
             agentId: id,
@@ -104,15 +118,10 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>) {
         // and it lives in the same list now that an agent's rules are its whole policy. A
         // publication that replaced the list wholesale silently switched the agent back off
         // the moment its policy was approved.
-        const switches = current.rules.filter(
-          (rule) =>
-            rule.resource === '*' &&
-            (rule.action.startsWith('agent:') || rule.action.startsWith('plugin:')),
-        )
         const policyRevision = await policies.publish(
           userId,
           id,
-          [...reviewed.rules, ...switches],
+          effectiveRules,
           reviewed.expectedPolicyRevision,
         )
         await connection

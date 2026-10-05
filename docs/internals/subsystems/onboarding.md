@@ -14,7 +14,7 @@ provider selection, OAuth return behavior, or completion storage.
 | Wide step         | A step opting into a near-full-width column via `wide`         | Its rail labels collapse to hover so content is not overprinted     |
 | Remembered pair   | Browser-local connection id and model id for new chat sessions | It is not an authentication or inference check                      |
 | Completion marker | `uiSettings.onboardingCompletedAt`                             | Its presence suppresses the first-run redirect after settings sync  |
-| Replay            | Normal navigation from Preferences to `/setup`                 | Replay does not clear the existing completion marker before opening |
+| Replay            | Normal navigation from System to `/setup`                      | Replay does not clear the existing completion marker before opening |
 
 ## What you can do
 
@@ -26,7 +26,7 @@ provider selection, OAuth return behavior, or completion storage.
 | Resume an OAuth return       | Current and furthest step ids persist in tab-scoped `sessionStorage`     | Storage failure returns the wizard to Welcome after a full reload |
 | Seed the first chat route    | Continue stores the selected connection and model through shared helpers | The selected connection must currently report key material        |
 | Finish without a model       | Welcome skip, Provider skip, and the Ready fallback reach `finish`       | Completion does not guarantee a runnable provider                 |
-| Replay setup                 | Preferences navigates to the existing `/setup` route                     | The same provider, model, and settings APIs remain authoritative  |
+| Replay setup                 | System navigates to the existing `/setup` route                          | The same provider, model, and settings APIs remain authoritative  |
 
 The user workflow and its visible controls belong to
 [Set up a provider and model](../../features/onboarding.md).
@@ -116,7 +116,7 @@ provider-connection, model-catalogue, and browser-storage seams.
 | `localix_last_model`               | Chat persistence helpers in browser `localStorage` | Seeds the model for new desktop/web sessions                |
 | `localix_onboarding_step`          | Onboarding progress in tab `sessionStorage`        | Step id restoring the current step after a full-page return |
 | `localix_onboarding_furthest`      | Onboarding progress in tab `sessionStorage`        | Step id restoring the visited-step navigation gate          |
-| **Replay setup**                   | Preferences navigation                             | Opens `/setup` without changing completion state            |
+| **Replay setup**                   | System navigation                                  | Opens `/setup` without changing completion state            |
 
 ## Limits
 
@@ -158,5 +158,5 @@ provider-connection, model-catalogue, and browser-storage seams.
 - [Readiness check](../../../apps/ui/src/features/onboarding/ui/steps/ReadyStep.tsx)
 - [Remembered chat defaults](../../../apps/ui/src/features/chat/model/persistence.ts)
 - [First-run redirect](../../../apps/ui/src/app/RootLayout.tsx)
-- [Replay action](../../../apps/ui/src/features/settings/ui/PreferencesSettings.tsx)
+- [Replay action](../../../apps/ui/src/features/settings/ui/SetupSection.tsx)
 - [Environment-detected credentials](../../../apps/api/src/features/provider-connections/env-detect.ts)

@@ -206,7 +206,12 @@ export function createDomainServicesPhase({
   // invocation registry is the agents service's own dependency and nothing else's, so it is
   // built here and never leaves the phase.
   const invocations = createInvocationRegistry()
-  const agentsService = createAgentsService({ db, resolveProjectCwd, invocations })
+  const agentsService = createAgentsService({
+    db,
+    resolveProjectCwd,
+    invocations,
+    syncBundledContributions: (...args) => pluginService.syncBundledContributions(...args),
+  })
   hostRefs.listAgents = (...args) => agentsService.listAgents(...args)
   // A crashed language server is a low-severity Event Center row until it is ready again.
   const lspManager = createLspManager({

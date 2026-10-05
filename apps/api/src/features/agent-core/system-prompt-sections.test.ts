@@ -56,7 +56,7 @@ describe('buildRoleSection', () => {
   // capability line is derived from the roster, beside a static framing that names no tool.
   it('derives the orchestrator capability line from the tools the run holds', () => {
     const full = buildRoleSection(SHAPE.orchestrator) ?? ''
-    expect(full).toContain('Do focused work directly with your tools')
+    expect(full).toContain('Do focused work directly with the capabilities listed for this run')
     expect(full).toContain('own the final answer and the integration decisions')
 
     const readOnly = buildRoleSection(SHAPE.orchestrator, ['read', 'search']) ?? ''
@@ -317,7 +317,7 @@ describe('buildRoleSection — automation', () => {
     const full = buildRoleSection(automation) ?? ''
     const partial = buildRoleSection(automation, ['read']) ?? ''
     const none = buildRoleSection(automation, []) ?? ''
-    expect(full).toContain('Use bash/read/search/file tools directly')
+    expect(full).toContain('using only the capabilities listed for this run')
     expect(partial).toContain('using only the capabilities listed for this run')
     expect(none).toContain('do not claim unavailable workspace actions')
     for (const out of [full, partial, none]) expect(out).toContain('never ask questions')

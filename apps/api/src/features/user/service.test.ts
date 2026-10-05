@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createUserService } from './service'
-import { RESPONSE_DEFAULTS_MAX_CHARS } from './profile-limits'
 
 async function createTestService() {
   const db = createDatabase() // in-memory
@@ -15,19 +14,16 @@ describe('createUserService', () => {
     const { service } = await createTestService()
     const profile = await service.getProfile('user_1')
     expect(profile.userId).toBe('user_1')
-    expect(profile.name).toBeNull()
     expect(profile.uiSettings).toBeNull()
     expect(profile.agentSettings).toBeNull()
   })
 
-  test('keeps oversized legacy profile text readable and normalizes stored settings', async () => {
+  test('normalizes stored settings', async () => {
     const { db, service } = await createTestService()
-    const legacyDefaults = 'r'.repeat(RESPONSE_DEFAULTS_MAX_CHARS + 500)
     await db
       .insertInto('user_profiles')
       .values({
         user_id: 'legacy',
-        response_defaults: legacyDefaults,
         ui_settings: JSON.stringify({ fontSize: 'lg', retiredTheme: true }),
         agent_settings: JSON.stringify({ contextExclusions: ['**/.env'], retiredFlag: true }),
         updated_at: '2025-01-01T00:00:00.000Z',
@@ -35,7 +31,6 @@ describe('createUserService', () => {
       .execute()
 
     const profile = await service.getProfile('legacy')
-    expect(profile.responseDefaults).toBe(legacyDefaults)
     expect(profile.uiSettings).toEqual({ fontSize: 'lg' })
     expect(profile.agentSettings).toEqual({ contextExclusions: ['**/.env'] })
 
@@ -62,26 +57,20 @@ describe('createUserService', () => {
   test('updateProfile inserts a new row then reads it back', async () => {
     const { service } = await createTestService()
     const profile = await service.updateProfile('user_1', {
-      name: 'Alice',
-      role: 'Backend dev',
       uiSettings: { fontFamily: 'inter', fontSize: 'lg' },
       agentSettings: { contextExclusions: ['**/.env'] },
     })
 
-    expect(profile.name).toBe('Alice')
-    expect(profile.role).toBe('Backend dev')
     expect(profile.uiSettings).toEqual({ fontFamily: 'inter', fontSize: 'lg' })
     expect(profile.agentSettings).toEqual({ contextExclusions: ['**/.env'] })
   })
 
-  test('updateProfile merges across calls without clobbering untouched fields', async () => {
+  test('settings patches preserve the other envelope', async () => {
     const { service } = await createTestService()
-    await service.updateProfile('user_1', { name: 'Alice' })
-    const after = await service.updateProfile('user_1', { role: 'QA' })
-
-    // role added, name preserved by the upsert (only provided columns are written)
-    expect(after.name).toBe('Alice')
-    expect(after.role).toBe('QA')
+    await service.updateProfile('user_1', { uiSettings: { fontSize: 'lg' } })
+    const after = await service.updateProfile('user_1', { agentSettings: { maxTurns: 25 } })
+    expect(after.uiSettings).toEqual({ fontSize: 'lg' })
+    expect(after.agentSettings).toEqual({ maxTurns: 25 })
   })
 
   test('concurrent agent-settings patches preserve unrelated fields and support deletion', async () => {
@@ -149,25 +138,6 @@ describe('createUserService', () => {
       fontSize: 'lg',
       codeFont: 'fragment-mono',
     })
-  })
-
-  test('persists experience level + main use case and reads them back', async () => {
-    const { service } = await createTestService()
-    const empty = await service.getProfile('user_1')
-    expect(empty.experienceLevel).toBeNull()
-    expect(empty.mainUseCase).toBeNull()
-
-    const saved = await service.updateProfile('user_1', {
-      experienceLevel: 'senior',
-      mainUseCase: 'write-code',
-    })
-    expect(saved.experienceLevel).toBe('senior')
-    expect(saved.mainUseCase).toBe('write-code')
-
-    // Merge semantics: a later unrelated patch leaves them intact.
-    const after = await service.updateProfile('user_1', { role: 'Backend dev' })
-    expect(after.experienceLevel).toBe('senior')
-    expect(after.mainUseCase).toBe('write-code')
   })
 
   test('round-trips one canonical optional model route', async () => {
@@ -240,10 +210,10 @@ describe('createUserService', () => {
 
   test('profiles are isolated per user', async () => {
     const { service } = await createTestService()
-    await service.updateProfile('user_1', { name: 'Alice' })
-    await service.updateProfile('user_2', { name: 'Bob' })
+    await service.updateProfile('user_1', { uiSettings: { fontSize: 'lg' } })
+    await service.updateProfile('user_2', { uiSettings: { fontSize: 'sm' } })
 
-    expect((await service.getProfile('user_1')).name).toBe('Alice')
-    expect((await service.getProfile('user_2')).name).toBe('Bob')
+    expect((await service.getProfile('user_1')).uiSettings?.fontSize).toBe('lg')
+    expect((await service.getProfile('user_2')).uiSettings?.fontSize).toBe('sm')
   })
 })

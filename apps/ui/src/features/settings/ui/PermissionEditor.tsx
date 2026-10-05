@@ -268,7 +268,7 @@ export function PermissionEditor({
                 options={effects}
               />
               <IconButton
-                size="sm"
+                size="md"
                 tone="danger"
                 onClick={() => removeRule(i)}
                 aria-label={`Remove permission rule ${i + 1}`}

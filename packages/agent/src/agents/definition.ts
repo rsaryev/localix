@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isReasoningEffort } from '../types'
 
 /** Handles address a definition within a catalog; only IDs identify it across runs. */
 export const AGENT_HANDLE_PATTERN = /^[a-z0-9][a-z0-9_-]*(:[a-z0-9][a-z0-9_-]*)*$/i
@@ -46,7 +47,7 @@ export type AgentId = z.infer<typeof agentIdSchema>
 export const agentModelPreferenceSchema = z.strictObject({
   provider: z.string().min(1).optional(),
   model: z.string().min(1).optional(),
-  effort: z.string().min(1).optional(),
+  effort: z.string().refine(isReasoningEffort, 'Unknown reasoning effort').optional(),
 })
 
 export const agentContextSchema = z.strictObject({

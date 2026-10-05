@@ -98,11 +98,14 @@ sorting. It never creates a model that is absent from the runtime's built-in cat
 
 ## Configuration
 
-The `OpenAI` provider supports **Sign in with ChatGPT** for subscription authentication. Its browser
-login uses a stable installation UUID, created on first use and retained in
-`~/.localix/oauth-device-id` across restarts and projects. `OpenAI Codex (legacy)` remains a
-separate provider using the older ChatGPT backend transport; existing connections keep their
-provider identity.
+The `OpenAI` provider supports **Sign in with ChatGPT** for subscription authentication. New browser
+authorizations identify the application as **Localix** on ChatGPT's connection screen. The browser
+sign-in finishes in the background. Once the connection is saved, the desktop app comes to the
+foreground and shows the model list for that connection, including after signing in again. Close the
+success page manually. The browser login uses a stable installation UUID, created on first use and
+retained in `~/.localix/oauth-device-id` across restarts and projects. `OpenAI Codex (legacy)`
+remains a separate provider using the older ChatGPT backend transport; existing connections keep
+their provider identity.
 
 | Control or value       | Contract                                                                       |
 | ---------------------- | ------------------------------------------------------------------------------ |

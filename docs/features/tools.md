@@ -71,11 +71,10 @@ Only a policy reason carries a remedy, and only those reach the agent: they are 
 
 ### Where familiar operations went
 
-| Former tool    | Now                                                                                       | Why                                                                               |
-| -------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `monitor`      | `bash` with `until` (the same monitors engine polls and wakes)                            | One field instead of a second tool with its own schema.                           |
-| `localix_ui`   | Write the exact `localix://` URI in the reply; the transcript renders it as a button.     | The catalogue search duplicated what a link already does.                         |
-| `user_profile` | `memory` with `scope: "global"`; the profile itself is edited in Settings and onboarding. | The profile is context about the person and is injected regardless of the roster. |
+| Former tool  | Now                                                                                   | Why                                                       |
+| ------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `monitor`    | `bash` with `until` (the same monitors engine polls and wakes)                        | One field instead of a second tool with its own schema.   |
+| `localix_ui` | Write the exact `localix://` URI in the reply; the transcript renders it as a button. | The catalogue search duplicated what a link already does. |
 
 ### Measuring the floor
 

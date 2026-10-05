@@ -14,13 +14,13 @@ import {
 } from '@/shared/lib/keybindings'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
 import { useKeybindingsEditor } from '../model/useKeybindings'
-import { SettingsPage, SettingsRow, SettingsRows } from './SettingsScaffold'
+import { SettingsPage, SettingsRows, SettingsSection } from './SettingsScaffold'
 import { SearchInput } from '@localixai/kit/search-input'
-import { Button } from '@localixai/kit/button'
+import { IconButton } from '@localixai/kit/icon-button'
+import { RotateCcw } from 'lucide-react'
 import { Select, type SelectOption } from '@localixai/kit/select'
 import { ShortcutRow } from './keyboard/ShortcutRow'
 import { EmptyHint } from '@localixai/kit/empty-hint'
-import { SectionLabel } from '@localixai/kit/section-label'
 
 /** Does a command match the free-text query (label, description, or rendered keys)? */
 function commandMatches(command: ShortcutCommand, chordText: string, query: string): boolean {
@@ -88,34 +88,35 @@ export function KeyboardShortcutsSettings() {
       title="Keyboard shortcuts"
       description={`Rebind the app's commands. Bindings adapt to your OS — shown as ${formatModifierText('mod')} / ${formatModifierText('alt')} here. Click a shortcut to record a new combination; built-in interaction keys are listed for reference.`}
     >
-      <SettingsRows>
-        <SettingsRow layout="responsive">
-          <div id="base-keymap-label" className="min-w-0 text-sm font-medium text-foreground">
-            Base keymap
-          </div>
+      <SettingsSection
+        title="Base keymap"
+        actions={
           <Select
-            aria-labelledby="base-keymap-label"
+            size="xl"
+            aria-label="Base keymap"
             value={activePreset}
             onValueChange={(id) => {
               if (id !== CUSTOM_PRESET_ID) applyPreset(id)
             }}
             options={presetOptions}
-            className="w-52 shrink-0 @max-md:w-full"
+            className="w-52 shrink-0 @max-xl:w-full"
             contentClassName="w-80"
           />
-        </SettingsRow>
-      </SettingsRows>
+        }
+      />
 
       <div className="flex items-center gap-3">
         <SearchInput
+          size="xl"
           value={query}
           onValueChange={setQuery}
           placeholder="Search shortcuts…"
           className="flex-1"
         />
-        <Button
-          variant="outline"
-          size="sm"
+        <IconButton
+          aria-label="Reset all shortcuts"
+          tooltip="Reset all shortcuts"
+          size="xl"
           // Asked first: one click drops every rebind the person has ever made, all at once, and
           // the per-row Reset beside each shortcut is the un-asked version of the same act because
           // it undoes exactly one.
@@ -133,20 +134,15 @@ export function KeyboardShortcutsSettings() {
           disabled={!hasOverrides}
           className="shrink-0"
         >
-          Reset all
-        </Button>
+          <RotateCcw aria-hidden="true" />
+        </IconButton>
       </div>
 
       {grouped.length === 0 ? (
         <EmptyHint className="py-8">No shortcuts match “{query}”.</EmptyHint>
       ) : (
         grouped.map(({ category, commands }) => (
-          <section key={category} className="space-y-2">
-            <h3>
-              <SectionLabel as="span" weight="semibold">
-                {CATEGORY_META[category].label}
-              </SectionLabel>
-            </h3>
+          <SettingsSection key={category} title={CATEGORY_META[category].label}>
             <SettingsRows>
               {commands.map((command) => (
                 <ShortcutRow
@@ -162,7 +158,7 @@ export function KeyboardShortcutsSettings() {
                 />
               ))}
             </SettingsRows>
-          </section>
+          </SettingsSection>
         ))
       )}
     </SettingsPage>

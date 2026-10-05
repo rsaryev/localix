@@ -35,10 +35,9 @@ describe('one page frame', () => {
   test('the page heading comes from the shared scaffold, not a local copy', () => {
     expect(source).toContain('<SettingsPageHeader')
     // The type scale lives with the component that owns every settings heading.
-    expect(scaffold).toContain('text-2xl')
-    expect(scaffold).toContain('sm:text-3xl')
+    expect(scaffold).toContain('text-xl font-semibold')
     expect(scaffold).toContain('text-balance')
-    for (const marker of ['text-2xl', 'sm:text-3xl', '<h2']) {
+    for (const marker of ['text-xl font-semibold', '<h2']) {
       expect(source, `CapabilitiesSettings.tsx restates ${marker}`).not.toContain(marker)
     }
   })
@@ -48,8 +47,7 @@ describe('one page frame', () => {
     // renders a BODY — never a second page heading.
     for (const file of SUB_TABS) {
       const tab = read(file)
-      expect(tab, `${file} restates the page heading scale`).not.toContain('text-2xl')
-      expect(tab, `${file} restates the page heading scale`).not.toContain('sm:text-3xl')
+      expect(tab, `${file} restates the page heading scale`).not.toContain('text-xl font-semibold')
       expect(tab, `${file} renders its own page frame`).not.toContain('SettingsPage')
     }
   })
@@ -112,10 +110,10 @@ describe('one seam, no hand-nudged alignment', () => {
 })
 
 describe('registry tabs share one body shape', () => {
-  test('every registry tab composes the shared intro and registry body', () => {
+  test('every registry tab composes the shared section and registry body', () => {
     for (const file of REGISTRY_TABS) {
       const tab = read(file)
-      expect(tab, `${file} skips CapabilityIntro`).toContain('<CapabilityIntro')
+      expect(tab, `${file} skips SettingsSection`).toContain('<SettingsSection')
       expect(tab, `${file} skips CapabilityRegistryBody`).toContain('<CapabilityRegistryBody')
     }
   })

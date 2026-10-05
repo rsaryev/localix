@@ -1,7 +1,7 @@
 /**
  * Restart into a downloaded update, after saying what the restart will stop.
  *
- * The rail's update button and Settings → General → Updates both install through here, so the
+ * The rail's update button and Settings → System → Updates both install through here, so the
  * warning cannot exist on one of them and be missing on the other. This is only the startup-side
  * stub: the rail renders it, the startup bundle is budgeted by `check:ui-startup`, and nothing
  * but the click needs the flow (`restartToUpdateFlow.ts`), so the flow is loaded then.

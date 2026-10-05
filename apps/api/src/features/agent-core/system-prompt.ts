@@ -33,7 +33,6 @@ import {
   buildAnswerFormatSection,
   rendersAnswerMarkdown,
 } from './system-prompt-answer-format-section'
-import { clipResponseDefaultsPrompt, clipUserProfilePrompt } from '../user/profile-limits'
 import {
   buildApprovedPlanSection,
   buildPlanModeSection,
@@ -55,8 +54,6 @@ export interface BuildAgentSystemPromptParams {
   now?: () => string
   toolRegistry?: RuntimeToolRegistry
   agentProfile?: RunProfile
-  userProfile?: string
-  responseDefaults?: string
   memoryContext?: string
   /** Aggregate char-budget usage across the loaded memory scopes (header line). */
   memoryUsage?: MemoryUsage
@@ -334,19 +331,6 @@ export function buildAgentSystemPromptParts(
     sections.push(buildAnswerFormatSection())
   }
 
-  // Session-stable, user-level context — same across the user's sessions, so it
-  // belongs ABOVE the boundary in the cached prefix (NOT in the volatile tail
-  // that gets moved out of the system prompt for cross-session prefix caching).
-  // The final assembly boundary clips both fields too: API limits protect new
-  // writes, but legacy DB rows predate them and must not inflate every cached run.
-  if (params.userProfile) {
-    const clean = clipUserProfilePrompt(params.userProfile)
-    if (clean) sections.push(`# User profile\n${clean}`)
-  }
-  if (params.responseDefaults) {
-    const clean = clipResponseDefaultsPrompt(params.responseDefaults)
-    if (clean) sections.push(`# Response style preferences\n${clean}`)
-  }
   if (params.memoryContext) {
     const memorySection = buildMemoryContextSection(params.memoryContext, params.memoryUsage)
     if (memorySection) sections.push(memorySection)

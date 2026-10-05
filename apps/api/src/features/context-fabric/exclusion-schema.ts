@@ -10,3 +10,9 @@ export const contextExclusionPathSchema = z
     (value) => !value.startsWith('/') && !value.includes('\\') && !value.split('/').includes('..'),
     'must be a safe relative path',
   )
+
+export const CONTEXT_EXCLUSIONS_MAX_PATHS = 64
+
+export const contextExclusionsSchema = z
+  .array(contextExclusionPathSchema)
+  .max(CONTEXT_EXCLUSIONS_MAX_PATHS)

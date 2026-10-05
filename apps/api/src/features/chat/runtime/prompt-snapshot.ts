@@ -20,14 +20,28 @@ export async function resolvePromptSnapshot(input: {
     : undefined
   let snapshot = fresh
   if (cached) {
+    const skillsChanged = cached.skillOverridesRevision !== fresh.skillOverridesRevision
+    const memoryChanged = cached.memoryScopesRevision !== fresh.memoryScopesRevision
+    if (memoryChanged) await input.initialize()
     snapshot =
-      cached.skillOverridesRevision === fresh.skillOverridesRevision
-        ? cached
-        : {
+      skillsChanged || memoryChanged
+        ? {
             ...cached,
-            skillsContext: fresh.skillsContext,
-            skillOverridesRevision: fresh.skillOverridesRevision,
+            ...(skillsChanged
+              ? {
+                  skillsContext: fresh.skillsContext,
+                  skillOverridesRevision: fresh.skillOverridesRevision,
+                }
+              : {}),
+            ...(memoryChanged
+              ? {
+                  memoryContext: fresh.memoryContext,
+                  memoryUsage: fresh.memoryUsage,
+                  memoryScopesRevision: fresh.memoryScopesRevision,
+                }
+              : {}),
           }
+        : cached
   } else {
     await input.initialize()
   }

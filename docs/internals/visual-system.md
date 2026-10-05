@@ -98,6 +98,31 @@ the [light workbench](../assets/screenshots/workspace/workbench-light--2026-09-3
 shortcut sheet uses a shared key column across sections, allows alternative chords to wrap, and
 keeps descriptions aligned even when they span multiple lines.
 
+### Settings hierarchy
+
+Settings groups follow the same workbench tokens: one faint outline and a 2% foreground veil per
+section, `p-4` inner padding (1rem), and `space-y-8` between page blocks (2rem). Section titles use
+the 14px base tier with semibold weight; setting labels use the 13px tier with medium weight, and
+explanations use 12px soft text. The page title stays at the compact 1.25rem tier. A nested row list
+or form inherits its section's surface rather than painting a second card.
+
+Navigation groups personal preferences, workspace configuration and application maintenance. At
+56rem of settings-pane width it becomes a 12rem navigation column; below that it uses the kit's
+section selector. Headers and label/control rows stack on their content container's width, never the
+viewport. Search remains present in both layouts. The full inventory and saving rules are in
+[Settings](../features/settings.md).
+
+Application settings and agent profiles use `SettingsWorkspace` for the pane layout and
+`SettingsNavigation` for the grouped rail and narrow section picker. Agent profiles group Definition
+separately from Capabilities. Both use `SettingsSection`; registry lists inside it inherit the
+section surface. `SettingsFieldGrid` aligns paired kit Fields on shared label, help, control, and
+error tracks using CSS subgrid, with a single column below 36rem of field-container width. Form
+actions use the same 36px `xl` control tier as their inputs. The sticky action row wraps rather than
+overflowing a narrow pane. Switching profile sections retains the unsaved definition. A section
+containing one control omits the second heading/body tier: `SettingsSection` without children puts
+its value in the heading row, uses `p-3` padding and a medium 13px label, and stacks below 36rem.
+Keymap, recent views and spend alerts share this compact form.
+
 ### Every fill answers one question: what is under me?
 
 The macOS window is backed by an `NSVisualEffectView`, so the ground tokens carry alpha. That single

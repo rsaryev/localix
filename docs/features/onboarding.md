@@ -48,17 +48,17 @@ one step.
 
 ## Configuration
 
-| State or control                          | Storage or effect                                            |
-| ----------------------------------------- | ------------------------------------------------------------ |
-| `uiSettings.onboardingCompletedAt`        | Suppresses the first-run redirect after settings synchronize |
-| `localix_last_connection`                 | Browser-local connection id used to seed new sessions        |
-| `localix_last_model`                      | Browser-local model id used to seed new sessions             |
-| `localix_onboarding_step`                 | Current step id in tab-scoped `sessionStorage`               |
-| `localix_onboarding_furthest`             | Furthest visited step id in tab-scoped `sessionStorage`      |
-| **Settings → Preferences → Replay setup** | Opens `/setup` without clearing the completion timestamp     |
-| **Skip setup for now**                    | Records completion and exits from Welcome                    |
-| **Skip this step**                        | Advances from Provider without choosing a model              |
-| **Finish without a model**                | Records completion from Ready without a runnable pair        |
+| State or control                                   | Storage or effect                                            |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| `uiSettings.onboardingCompletedAt`                 | Suppresses the first-run redirect after settings synchronize |
+| `localix_last_connection`                          | Browser-local connection id used to seed new sessions        |
+| `localix_last_model`                               | Browser-local model id used to seed new sessions             |
+| `localix_onboarding_step`                          | Current step id in tab-scoped `sessionStorage`               |
+| `localix_onboarding_furthest`                      | Furthest visited step id in tab-scoped `sessionStorage`      |
+| **Settings → System → Application → Replay setup** | Opens `/setup` without clearing the completion timestamp     |
+| **Skip setup for now**                             | Records completion and exits from Welcome                    |
+| **Skip this step**                                 | Advances from Provider without choosing a model              |
+| **Finish without a model**                         | Records completion from Ready without a runnable pair        |
 
 ## Limits
 

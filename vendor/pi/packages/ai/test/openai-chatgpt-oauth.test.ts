@@ -108,6 +108,23 @@ describe("OpenAI ChatGPT OAuth", () => {
 		});
 	});
 
+	it.each(["Localix", " Localix ", "", "   "])("uses the host app name hint %j with a Pi fallback", async (agentName) => {
+		let authorizeUrl: URL | undefined;
+		stubTokenEndpoint(tokenResponse());
+
+		await openaiChatGPTOAuth.login(
+			loginInteraction({
+				callbackClientId: "oaiapp_issued",
+				onAuthorize: (url) => {
+					authorizeUrl = url;
+				},
+			}),
+			{ getDeviceId: () => DEVICE_ID, agentName },
+		);
+
+		expect(authorizeUrl?.searchParams.get("agent_name_hint")).toBe(agentName.trim() || "Pi");
+	});
+
 	it("rejects registration without an issued client ID", async () => {
 		const fetchMock = stubTokenEndpoint(tokenResponse());
 

@@ -15,6 +15,9 @@ import { consoleWarnLogger } from '../plugin-hook-logger'
 import { resolveMcpTools, type McpInventoryEntry } from './mcp-tools'
 import { createActivateToolsTool } from '../../../agent-core/tools/activate-tools/activate-tools'
 import type { AvailabilityReader } from '../../../capabilities/availability'
+import type { ResolvedCapabilities } from '../../../capabilities/resolve'
+import { externalToolSurface } from './external-tool-surface'
+import { claimSecondaryTools } from './tool-namespace'
 import { rememberActivatedTools, splitDeferredTools } from './tool-deferral'
 import { markDeferred, type ToolLedger } from '../../../agent-core/tool-ledger'
 import { withheldToolStubs } from '../../../agent-core/tools/withheld-stub'
@@ -34,6 +37,8 @@ export interface AssembleRunToolsOptions {
   disabledTools: string[]
   /** What the run's rules say about its MCP servers. */
   availability: AvailabilityReader
+  capabilities: ResolvedCapabilities
+  modelInput?: readonly string[]
   toolSurface?: ToolSurface
   /** Tools the turn's open plugin views and plugin wakes bring (`surface-tools.ts`). */
   surfaceTools?: readonly string[]
@@ -77,66 +82,8 @@ export interface AssembledRunTools {
   mcpInventory: McpInventoryEntry[]
 }
 
-export interface ClaimedToolSet {
-  /** Secondary descriptors whose names were not already owned by primary. */
-  tools: AgentTool[]
-  /** Names rejected because primary (or an earlier secondary row) already owns them. */
-  conflicts: string[]
-}
-
-/**
- * Descriptor-owned UI metadata for every tool the runtime may dispatch.
- *
- * This must be indexed from `dispatchTools`, not only the initially model-visible
- * `tools` projection: plugin/MCP tools can be revealed later by `activate_tools`,
- * but their presentation contract (`activeVerb`, `standalone`) is already part of
- * the canonical descriptor. Keeping the lookup generic lets any deferred tool own
- * an interactive surface without the chat runtime knowing its name.
- */
-export function indexToolPresentation(
-  tools: readonly AgentTool[],
-): Map<string, Pick<AgentTool, 'activeVerb' | 'standalone' | 'presentation'>> {
-  return new Map(
-    tools.map((tool) => [
-      tool.name,
-      {
-        activeVerb: tool.activeVerb,
-        standalone: tool.standalone,
-        presentation: tool.presentation,
-      },
-    ]),
-  )
-}
-
-/**
- * Merge a later tool provider into the canonical runtime namespace.
- *
- * The provider/runtime boundary requires one descriptor per name. MCP tools are
- * discovered after the built-in/plugin registry, so they are the secondary
- * owner: a colliding MCP name must not reach either model or dispatch.
- */
-export function claimSecondaryTools(
-  primary: readonly AgentTool[],
-  secondary: readonly AgentTool[],
-): ClaimedToolSet {
-  const claimed = new Set(primary.map((tool) => tool.name))
-  const tools: AgentTool[] = []
-  const conflicts = new Set<string>()
-
-  for (const tool of secondary) {
-    if (claimed.has(tool.name)) {
-      conflicts.add(tool.name)
-      continue
-    }
-    claimed.add(tool.name)
-    tools.push(tool)
-  }
-
-  return {
-    tools,
-    conflicts: [...conflicts].sort(),
-  }
-}
+export { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
+export type { ClaimedToolSet } from './tool-namespace'
 
 export async function assembleRunTools(
   options: AssembleRunToolsOptions,
@@ -183,9 +130,7 @@ export async function assembleRunTools(
         session,
         pluginMcpServers: loadedPlugins.mcpServers,
         defaultCwd,
-        disabledTools,
         availability,
-        toolSurface,
       })
     : {
         gather: undefined,
@@ -193,15 +138,26 @@ export async function assembleRunTools(
         instructions: [],
         inventory: [],
       }
-  const claimedMcp = claimSecondaryTools(allTools, mcp.tools)
+  const external = externalToolSurface({
+    tools: mcp.tools,
+    profile: agentProfile,
+    capabilities: options.capabilities,
+    disabledTools,
+    authority: toolSurface,
+    modelInput: options.modelInput,
+  })
+  const claimedMcp = claimSecondaryTools(allTools, external.tools)
   allTools.push(...claimedMcp.tools)
   if (claimedMcp.conflicts.length > 0) {
     console.warn(
       `[agent-runner] Ignoring MCP tools whose names are already owned by the runtime registry: ${claimedMcp.conflicts.join(', ')}`,
     )
   }
-  mcpInstructions = mcp.instructions
   const acceptedMcpModelNames = new Set(claimedMcp.tools.map((tool) => tool.name))
+  const acceptedServers = new Set(
+    [...acceptedMcpModelNames].map((name) => mcp.gather?.serverByTool[name]),
+  )
+  mcpInstructions = mcp.instructions.filter((entry) => acceptedServers.has(entry.server))
   mcpInventory = mcp.inventory.flatMap((entry) => {
     if (entry.pending || entry.failed) return [entry]
     const tools = entry.tools.filter((name) => acceptedMcpModelNames.has(name))
@@ -237,7 +193,7 @@ export async function assembleRunTools(
   // hooks and its failure guard — deferral is a wire decision and nothing else.
   const sourceByTool = new Map<string, string>()
   for (const [name, server] of Object.entries(mcp.gather?.serverByTool ?? {}))
-    sourceByTool.set(name, server)
+    if (acceptedMcpModelNames.has(name)) sourceByTool.set(name, server)
   for (const tool of loadedPlugins.tools)
     if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'plugins')
   const activatedForSession = session.activatedTools ?? []
@@ -261,7 +217,17 @@ export async function assembleRunTools(
   // Withheld built-ins get a DISPATCH-ONLY stub (never a model schema): a model that names
   // one anyway is told why it is missing and what would bring it back, instead of the loop's
   // bare "Tool X not found". `validateToolRegistry` admits `modelTools ⊂ dispatchTools`.
-  const ledger = markDeferred(runtimeTools.ledger, sourceByTool)
+  const combinedLedger = new Map(runtimeTools.ledger)
+  const primaryNames = new Set(runtimeTools.tools.map((tool) => tool.name))
+  for (const [name, verdict] of external.ledger)
+    // A dynamic provider may supply an empty optional core port (MCP resources), but may
+    // never replace a descriptor already built by the primary registry.
+    if (!primaryNames.has(name)) combinedLedger.set(name, verdict)
+  const deferredSources = new Map(
+    split.deferredEntries.map((entry) => [entry.tool.name, sourceByTool.get(entry.tool.name)!]),
+  )
+  const ledger = markDeferred(combinedLedger, deferredSources)
+  runtimeTools.setLedger?.(ledger)
   const stubs = withheldToolStubs(ledger, new Set(wrapped.map((tool) => tool.name)))
   const preflightTools = [...wrapped, ...(activator ? [activator] : [])]
   const dispatchTools = [...wrapped, ...stubs, ...(activator ? [activator] : [])]

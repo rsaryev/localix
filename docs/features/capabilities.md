@@ -55,12 +55,12 @@ explicitly calls `agents` `delegate`, whose child receives its own tool set.
 
 ### Going back to what we ship
 
-The roles Localix ships with — `lead`, `product`, `backend`, `frontend`, `qa` and the default agent
-— start from rules we wrote, and after that the rules are yours. When an agent's list no longer
-matches ours, the **Permission rules** tab grows a **Reset to defaults** button; when it already
-matches, there is nothing to reset and no button. An agent you created has no default to return to,
-so it never shows one. Reset STAGES our answer rather than writing it — you read it on screen, then
-press **Apply**, and nothing is stored until you do.
+The roles Localix ships with — `localix`, `lead`, `pm`, `architect`, `backend`, `frontend`, `qa`,
+`design` and `devops` — start from rules we wrote, and after that the rules are yours. When an
+agent's list no longer matches ours, the **Permission rules** tab grows a **Reset to defaults**
+button; when it already matches, there is nothing to reset and no button. An agent you created has
+no default to return to, so it never shows one. Reset STAGES our answer rather than writing it — you
+read it on screen, then press **Apply**, and nothing is stored until you do.
 
 ### Spending fewer tokens
 
@@ -70,9 +70,9 @@ tax before the first word of conversation. An MCP server can add forty tools on 
 There is no session switch for this. A run that should be lean is an AGENT that is lean: switch off
 the tools it does not need in **Settings → Capabilities**, and its plugins and MCP servers with them
 — a server the agent's rules deny is never even connected. A tool you switch off is REMOVED from the
-run, not refused when it is called: the schema never ships, so the saving is real. `product` is what
-that looks like among the shipped roles — no shell and no file writes, so eight of the catalog's
-tools never reach a request it makes.
+run, not refused when it is called: the schema never ships, so the saving is real. The
+[specialist presets](agents.md) use different candidate lists and action restrictions; their
+permission choices remain editable.
 
 Switching a tool OFF for a role is the whole of that dial. Switching one on is not: a run also has
 to be able to carry it, which is the run shape's answer rather than the rule's — a tool a child

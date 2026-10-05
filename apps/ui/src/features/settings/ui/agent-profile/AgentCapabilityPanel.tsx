@@ -1,7 +1,5 @@
-import type { LucideIcon } from 'lucide-react'
-import { Wrench, BookOpen, Plug, Puzzle, ShieldCheck, IdCard } from 'lucide-react'
 import type { Project } from '@/shared/api/contracts'
-import type { TabItem } from '@localixai/kit/tabs'
+import type { SettingsNavigationItem } from '../SettingsNavigation'
 import { CAPABILITY_TABS, type CapabilityTabId } from '@/shared/routing/routes'
 import { agentScopeValue } from '@/shared/api/capabilityScope'
 import { ToolsSettings } from '../ToolsSettings'
@@ -13,18 +11,26 @@ import { PermissionRulesView } from '../capabilities/PermissionRulesView'
 /** The profile's first tab is the record itself; the rest are what it may use. */
 export type AgentProfileTabId = 'definition' | CapabilityTabId
 
-const TAB_META: Record<AgentProfileTabId, { label: string; icon: LucideIcon }> = {
-  definition: { label: 'Definition', icon: IdCard },
-  tools: { label: 'Tools', icon: Wrench },
-  skills: { label: 'Skills', icon: BookOpen },
-  mcp: { label: 'MCP', icon: Plug },
-  plugins: { label: 'Plugins', icon: Puzzle },
-  rules: { label: 'Permission rules', icon: ShieldCheck },
+const TAB_LABELS: Record<AgentProfileTabId, string> = {
+  definition: 'Definition',
+  tools: 'Tools',
+  skills: 'Skills',
+  mcp: 'MCP',
+  plugins: 'Plugins',
+  rules: 'Permission rules',
 }
 
-export const AGENT_PROFILE_TABS: TabItem<AgentProfileTabId>[] = (
+export const AGENT_PROFILE_TABS: (SettingsNavigationItem & { id: AgentProfileTabId })[] = (
   ['definition', ...CAPABILITY_TABS] as const
-).map((id) => ({ id, label: TAB_META[id].label, icon: TAB_META[id].icon }))
+).map((id) => ({
+  id,
+  label: TAB_LABELS[id],
+  group: id === 'definition' ? 'Agent' : 'Capabilities',
+  description:
+    id === 'definition'
+      ? 'Identity, model, instructions and limits'
+      : `Manage ${TAB_LABELS[id].toLowerCase()} for this agent`,
+}))
 
 /**
  * What this agent may use — the Capabilities registries, on the agent's own page.

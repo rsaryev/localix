@@ -7,7 +7,7 @@
   --font-mono: 'Fragment Mono', ui-monospace, 'Cascadia Code', monospace;
 
   /* Composer brand accent (the blue glow on the focused prompt). Single source
-     for the focus ring, shell glow, and the "improving" action button —
+     for the focus ring and shell glow —
      theme-independent. `deep` is the darker drop-shadow companion. */
   --composer-accent: oklch(0.68 0.16 230);
   --composer-accent-deep: oklch(0.42 0.14 230);

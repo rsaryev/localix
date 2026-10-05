@@ -145,7 +145,7 @@ export async function bootstrap(
   })
   const storageService = createStorageService({
     db,
-    deleteSession: (userId, id) => chatService.deleteSession(userId, id),
+    deleteSession: (...args) => chatService.deleteSession(...args),
     warn: (message) => logger.warn({ event: 'storage.prune_failed', message }),
   })
   // The plugin hosts' late-bound references to chat, and the ONE wake delivery `wakes`.

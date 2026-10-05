@@ -14,6 +14,12 @@ use crate::deeplink::is_external_url;
 use crate::log::logln;
 use crate::prefs::save_theme;
 
+/// Return to the application after a user-initiated provider sign-in completes.
+#[tauri::command]
+pub(crate) fn focus_app(app: AppHandle) {
+    crate::deeplink::show_main_window(&app);
+}
+
 /// Full-process recovery for a failed managed API boot. Relaunching is safer than
 /// trying to replace a child while its SQLite lease and shutdown hooks are still
 /// draining, and works uniformly on every desktop OS.

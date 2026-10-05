@@ -23,8 +23,8 @@ import type { Rule } from './rule'
  * one row a strategy may DROP is a class question in a mode that stops asking — `stopAsking`
  * says why dropping, not allowing, is what keeps a denial a denial). Order
  * is strength in a last-match list, so an appended `deny` is the strongest statement in it — and
- * it survives the skill fold, which moves every denial after a skill's allows
- * (`permission-gate-build.ts`). A mode never appends an `allow`: placed last, an allow would
+ * it survives skill preapprovals, which cannot lift a denial (`permission-gate-build.ts`).
+ * A mode never appends an `allow`: placed last, an allow would
  * silence the baseline's `outside-workspace` question for whatever it matched.
  *
  * The rewritten list is never stored. The agent's rules are the user's; a mode is the session's

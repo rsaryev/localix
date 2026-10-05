@@ -77,13 +77,11 @@ export function SettingsRecordPage({
           Their `@md:` / `@max-md:` rules were written against the settings pane; the pane is
           still the ancestor here, and naming the container again costs nothing and makes the
           form's reflow independent of how deep it happens to sit. */}
-      <div className="@container min-w-0 space-y-6">{children}</div>
+      <div className="@container min-w-0 space-y-8">{children}</div>
 
-      {/* Full-bleed against the settings pane's gutter (`px-5` on its content wrapper), so
-          the row reads as the page's floor rather than a bar floating inside the column. */}
-      <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 border-t border-border-soft bg-background px-5 py-3">
+      <div className="sticky bottom-0 flex min-w-0 flex-col gap-2 border-t border-border-faint bg-background py-3">
         <RecordEditorStatus error={error} notice={notice} />
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
           <RecordEditorDecisions
             busy={busy}
             busyLabel={busyLabel}

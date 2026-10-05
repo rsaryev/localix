@@ -23,6 +23,7 @@ import { extractCallFacts, writeTargets } from './permission-facts'
 import { hostRootDenial } from './host-root-guard'
 import { scopeToOwnPlan } from './tools/file/file-call-class'
 import { RESERVED_NON_TOOL_NAMES } from './tool-names-reserved'
+import { isProtocolTool } from './tool-names'
 import { withRefusalBreaker } from './permission-gate-breaker'
 import { describeRule, evaluate, type PermissionRule, type ToolFacts } from './permission-engine'
 import { confirmSubject } from './permission-confirm-subject'
@@ -66,6 +67,8 @@ const withReply = (sentence: string, reply: string | undefined): string =>
 
 export interface PermissionGateOptions {
   rules: readonly PermissionRule[]
+  /** Task-local skill grants may preapprove named questions, never class guards or denials. */
+  preapprovedRules?: readonly PermissionRule[]
   toolsByName: Map<string, AgentTool>
   root?: string
   /** Surfaces an 'ask' to the user; resolves approved/denied (see {@link ConfirmOutcome}). Omitted → 'ask' denies. */
@@ -138,7 +141,8 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
     //
     // A set, not a name, and owned by the module that owns tool-name policy: the gate holds no
     // list of specific tools.
-    if (RESERVED_NON_TOOL_NAMES.includes(ctx.toolName)) return undefined
+    if (RESERVED_NON_TOOL_NAMES.includes(ctx.toolName) || isProtocolTool(ctx.toolName))
+      return undefined
 
     // The host application is not a permission question: no rule, preset or mode reaches
     // past this line into Localix's own source or install tree (`host-root-guard.ts`).
@@ -154,7 +158,7 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
     // ONE evaluation, because there is one list. A session mode that stops asking does it by
     // rewriting that list before the run (`capabilities/permission-mode.ts`), never by a flag
     // here: a gate that knows about modes is a second answer to the question the rules answer.
-    const decision = evaluate(opts.rules, facts, call)
+    const decision = evaluate(opts.rules, facts, call, opts.preapprovedRules)
     const allowed = decision.action === 'allow'
 
     // The agent's own system directories (workspace, scratch, etc.) are always

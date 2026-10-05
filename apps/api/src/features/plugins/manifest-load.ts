@@ -14,6 +14,7 @@ import { mapCcTools, parseAgentFile, parseCommandFile } from './discovery-cc-fil
 import { findManifestPath, type DiscoveredPlugin } from './discovery'
 import { resolveEntrypoints } from './discovery-entrypoints'
 import { parseManifestFile } from './discovery-manifest-recovery'
+import { agentContributionSchema } from '../agents/contribution'
 
 /** Parse the inline command objects from a manifest `commands` field. */
 function parseInlineCommands(field: PluginManifest['commands']): PluginCommand[] {
@@ -109,13 +110,23 @@ export async function loadManifest(
       seenAgentNames.add(agent.name)
     }
   }
+  const agentNames = [
+    ...new Set([
+      ...agents.map((agent) => `${manifest.name}:${agent.name}`),
+      ...(manifest.contributions ?? []).flatMap((entry) => {
+        if (entry.kind !== 'agent') return []
+        const parsed = agentContributionSchema.safeParse(entry.value)
+        return parsed.success ? [`${manifest.name}:${parsed.data.definition.handle}`] : []
+      }),
+    ]),
+  ]
   const provides: PluginProvides = {
     hasNativeTools: entrypoints.toolEntries.length > 0,
     tools: [], // filled by live inspection for enabled plugins
     skills: skillNames,
     mcpServers: Object.keys(entrypoints.mcpServers),
     commands: commands.map((c) => c.name),
-    ...(agents.length ? { agents: agents.map((a) => `${manifest.name}:${a.name}`) } : {}),
+    ...(agentNames.length ? { agents: agentNames } : {}),
     ...(Object.keys(entrypoints.lspServers).length
       ? { lspServers: Object.keys(entrypoints.lspServers) }
       : {}),

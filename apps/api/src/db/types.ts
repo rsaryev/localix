@@ -407,20 +407,9 @@ export interface AgentMemoryTable {
 
 export interface UserProfilesTable {
   user_id: string
-  name: string | null
-  role: string | null
-  expertise: string | null // JSON string array
-  preferences: string | null // JSON string (legacy agent-readable key-value pairs)
-  working_context: string | null
-  /** Experience-level slug (e.g. "senior") — onboarding/General settings; injected into the agent prompt */
-  experience_level: string | null
-  /** Primary use-case slug (e.g. "write-code") — onboarding/General settings; injected into the agent prompt */
-  main_use_case: string | null
-  /** Plain text — injected into the agent system prompt as response style guidance */
-  response_defaults: string | null
   /** JSON string — UI-only settings (font, etc.), not injected into agent context */
   ui_settings: string | null
-  /** JSON string — global agent settings, e.g. { disabledTools: string[] } */
+  /** JSON string — global runtime settings */
   agent_settings: string | null
   updated_at: ColumnType<string, string | undefined, string | undefined>
 }

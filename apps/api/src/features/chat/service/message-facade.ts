@@ -5,12 +5,8 @@ import type { MessageBinding, MessageMutationResponse, WakeSource } from '../con
 import { setMessageReaction } from '../runtime/run/message-reactions'
 import { setMessagePinned } from './message-pins'
 import { setMessageTask } from './message-tasks'
-import { publishSessionUsageSnapshot } from '../runtime/session-usage'
-import { recordAuxCallUsage } from '../runtime/usage-normalize'
 import * as branchingOps from './branching-ops'
 import { forkSession as forkSessionOp } from './session-fork'
-import type { ChatServiceDeps } from './context'
-import { improvePrompt as improvePromptOp } from './improve-prompt'
 import type { OperationContexts } from './operation-contexts'
 import { reactionRecipient, reactionWakePrompt } from './reaction-wake'
 import type { ChatServiceGraph } from './service-graph'
@@ -19,17 +15,16 @@ import * as turnEntry from './turn-entry'
 
 /**
  * What a person does TO the conversation: send, regenerate, edit, roll back, react, move between
- * branches, fork, have a prompt improved.
+ * branches and fork.
  *
- * Each one writes the message tree (or, for improve, bills a model call against the session),
+ * Each one writes the message tree,
  * and each goes through the one owner of its rule — `turn-entry.ts` for a send, `branching-ops.ts`
  * for the tree — so this module only binds those owners to the contexts they run in.
  */
 export interface ChatMessageFacadeDeps extends Pick<
   ChatServiceGraph,
-  'repo' | 'usageRepo' | 'streamRegistry' | 'now'
+  'repo' | 'streamRegistry' | 'now'
 > {
-  deps: ChatServiceDeps
   requireSession: SessionCore['requireSession']
   turnEntryCtx: OperationContexts['turnEntryCtx']
   branchingCtx: OperationContexts['branchingCtx']
@@ -43,9 +38,7 @@ export interface ChatMessageFacadeDeps extends Pick<
 }
 
 export function createChatMessageFacade({
-  deps,
   repo,
-  usageRepo,
   streamRegistry,
   now,
   requireSession,
@@ -237,32 +230,6 @@ export function createChatMessageFacade({
         userId,
         sessionId,
         branchingOps.checkoutBranch(branchingCtx, userId, sessionId, messageId),
-      )
-    },
-
-    improvePrompt(userId: string, sessionId: string, prompt: string): Promise<{ prompt: string }> {
-      return improvePromptOp(
-        {
-          deps,
-          requireSession,
-          recordUsage: (e) =>
-            recordAuxCallUsage({
-              usageRepo,
-              kind: 'improve',
-              ...e,
-              onRecorded: () =>
-                publishSessionUsageSnapshot({
-                  repo,
-                  usageRepo,
-                  streamRegistry,
-                  userId: e.userId,
-                  sessionId: e.sessionId,
-                }),
-            }),
-        },
-        userId,
-        sessionId,
-        prompt,
       )
     },
   }

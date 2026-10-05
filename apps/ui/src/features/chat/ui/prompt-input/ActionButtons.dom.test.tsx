@@ -22,14 +22,10 @@ describe('ActionButtons', () => {
     document.body.append(host)
     const root = createRoot(host)
     const base = {
-      canImprove: true,
-      isImproving: false,
-      didImproveRecently: false,
       hasApiKey: true,
       onAttachClick: () => calls.push('attach'),
       onSend: () => calls.push('send'),
       onStop: () => calls.push('stop'),
-      onImprove: () => calls.push('improve'),
       onMicClick: () => calls.push('mic'),
       onCancelRecording: () => calls.push('cancel-recording'),
     }
@@ -47,6 +43,8 @@ describe('ActionButtons', () => {
       expect(send.className).toContain('size-[var(--chrome-control-lg)]')
       await act(async () => send.click())
       expect(calls).toEqual(['send'])
+      expect(host.querySelector('button[aria-label="Improve prompt"]')).toBeNull()
+      expect(host.querySelectorAll('button')).toHaveLength(2)
 
       await act(async () =>
         root.render(

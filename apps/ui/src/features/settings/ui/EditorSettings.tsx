@@ -76,21 +76,18 @@ export function EditorSettings() {
   const bracketColorsEnabled = settings.agentSettings?.bracketPairColorization?.enabled ?? true
 
   return (
-    <SettingsPage
-      title="Editor"
-      description="How the code editor saves and what it paints on top of your file. Model-backed assists live in the model drawer."
-    >
+    <SettingsPage title="Editor" description="Set how files open, save, and appear in the editor.">
       <SettingsSection
         anchor="editor-editing"
         title="Editing"
-        description="Day-to-day editor behaviour while you and the agent work in the same files."
+        description="Control how the workspace responds as you and the agent edit files."
       >
         <SettingsRows>
           <SwitchRow
             title="Auto save after delay"
             description={
               autoSave
-                ? `On — saves ~1s after you stop typing. Saves go through the same concurrency check as ${formatChordText('mod+s')}, so a file changed on disk still prompts to reconcile.`
+                ? `Saves about one second after typing stops. Changes on disk still require reconciliation.`
                 : `Off — save with ${formatChordText('mod+s')} or the toolbar button.`
             }
             checked={autoSave}
@@ -101,8 +98,8 @@ export function EditorSettings() {
             title="Preview tabs"
             description={
               previewTabs
-                ? 'On — a single click opens the file in one reusable preview tab; a double-click, or editing it, pins the tab. Browsing a tree does not bury the workspace in tabs.'
-                : 'Off — every file opens in its own tab and nothing is ever replaced.'
+                ? 'Single-click reuses a preview tab. Double-click or edit to keep the file open.'
+                : 'Every file opens in its own tab.'
             }
             checked={previewTabs}
             onChange={() => setPreviewTabs(!previewTabs)}
@@ -112,8 +109,8 @@ export function EditorSettings() {
             title="Follow the agent’s edits"
             description={
               followAgentEdits
-                ? 'On — the editor gently reveals the code file the agent is editing so you can watch it work. Only the session you’re viewing, never over the chat.'
-                : 'Off — the workspace stays where you left it while the agent works.'
+                ? 'Reveal files edited by the agent in the current session.'
+                : 'Keep the workspace where you left it while the agent works.'
             }
             checked={followAgentEdits}
             onChange={toggleFollowAgentEdits}
@@ -125,12 +122,13 @@ export function EditorSettings() {
       <SettingsSection
         anchor="editor-on-save"
         title="On save"
-        description="Transforms applied to a file's content when it is saved — explicit save, auto save, and conflict overwrite all funnel through the same path. They compose as format → trim → final newline."
+        scope="workspace"
+        description="Apply in order: format, trim whitespace, then insert a final newline."
       >
         <SettingsRows>
           <SwitchRow
             title="Format on save"
-            description="Run the language server's formatter before the file is written. On by default. A language with no formatter — or a slow/failing one — falls through to a plain save; a save is never blocked or lost."
+            description="Format with the language server before saving. Save normally if formatting is unavailable or fails."
             checked={formatOnSave}
             onChange={() => setEditorSave({ formatOnSave: !formatOnSave })}
             label="Format document on save"
@@ -154,23 +152,13 @@ export function EditorSettings() {
 
       <SettingsSection
         anchor="editor-appearance"
-        title="Appearance"
-        description="Native editor presentation and passive overlays. These settings never change file contents."
+        title="Code display"
+        description="Visual aids that leave file contents unchanged."
       >
         <SettingsRows>
           <SwitchRow
-            title="Inline git blame"
-            description="Show who last changed the current line — author, relative date, and commit summary — as a dimmed annotation at the end of the caret's line. On by default; it's plain `git blame`."
-            checked={gitBlameEnabled}
-            onChange={() => {
-              const base = liveAgent()
-              update({ agentSettings: { ...base, gitBlame: { enabled: !gitBlameEnabled } } })
-            }}
-            label="Enable inline git blame"
-          />
-          <SwitchRow
             title="Git change scrollbar markers"
-            description="Show added, modified, and deleted Git hunks in Monaco's overview ruler. Diagnostic and search markers remain controlled by their native features. On by default."
+            description="Mark Git changes on the scrollbar. Diagnostic and search markers stay independent."
             checked={scrollbarMarkersEnabled}
             onChange={() => {
               const base = liveAgent()
@@ -185,7 +173,7 @@ export function EditorSettings() {
           />
           <SwitchRow
             title="Bracket pair colorization"
-            description="Colour matching brackets ( ) [ ] { } by nesting depth so nested code is easier to scan — the classic “rainbow brackets”. On by default."
+            description="Color matching brackets by nesting depth."
             checked={bracketColorsEnabled}
             onChange={() => {
               const base = liveAgent()
@@ -211,6 +199,24 @@ export function EditorSettings() {
             checked={renderWhitespace}
             onChange={() => setRenderWhitespace(!renderWhitespace)}
             label="Render editor whitespace"
+          />
+        </SettingsRows>
+      </SettingsSection>
+      <SettingsSection
+        anchor="editor-annotations"
+        title="Annotations"
+        description="Information displayed beside the code while you work."
+      >
+        <SettingsRows>
+          <SwitchRow
+            title="Inline git blame"
+            description="Show the author, date, and commit beside the current line."
+            checked={gitBlameEnabled}
+            onChange={() => {
+              const base = liveAgent()
+              update({ agentSettings: { ...base, gitBlame: { enabled: !gitBlameEnabled } } })
+            }}
+            label="Enable inline git blame"
           />
           <SwitchRow
             title="Inlay hints"

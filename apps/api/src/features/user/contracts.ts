@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { contextExclusionPathSchema } from '../context-fabric/exclusion-schema'
+import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
 import { REASONING_EFFORTS } from '../../db/types'
 import {
   isModelRoutingTaskKey,
@@ -8,9 +8,7 @@ import {
 } from '../chat/model-task-catalog'
 import {
   AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
-  RESPONSE_DEFAULTS_MAX_CHARS,
   UI_SETTINGS_MAX_SERIALIZED_CHARS,
-  USER_PROFILE_FIELD_MAX_CHARS,
   isAgentSettingsWithinIngressBudget,
   isUiSettingsWithinIngressBudget,
 } from './profile-limits'
@@ -121,7 +119,7 @@ const agentSettingsShape = {
   /** Settings-envelope revision for the current canonical schema. */
   schemaVersion: z.literal(1).optional(),
   /** User-wide Context Fabric exclusions, relative to each session workspace. */
-  contextExclusions: z.array(contextExclusionPathSchema).max(64).optional(),
+  contextExclusions: contextExclusionsSchema.optional(),
   /** Tool names disabled for sessions that are not attached to a project. */
   /**
    * Max agent turns (tool batches) per run before the loop hard-stops. Absent → a
@@ -209,20 +207,11 @@ export const agentSettingsSchema = z.object(agentSettingsShape)
 
 export const userProfileSchema = z.object({
   userId: z.string(),
-  name: z.string().nullable(),
-  role: z.string().nullable(),
-  expertise: z.string().nullable(),
-  preferences: z.string().nullable(),
-  workingContext: z.string().nullable(),
-  experienceLevel: z.string().nullable(),
-  mainUseCase: z.string().nullable(),
-  responseDefaults: z.string().nullable(),
   uiSettings: uiSettingsSchema.nullable(),
   agentSettings: agentSettingsSchema.nullable(),
   updatedAt: z.string(),
 })
 
-const profileFieldIngressSchema = z.string().max(USER_PROFILE_FIELD_MAX_CHARS)
 const uiSettingsIngressSchema = uiSettingsSchema.refine(isUiSettingsWithinIngressBudget, {
   message: `UI settings must serialize to at most ${UI_SETTINGS_MAX_SERIALIZED_CHARS} characters`,
 })
@@ -243,14 +232,7 @@ export const agentSettingsPatchSchema = z
   })
 
 export const updateUserProfileRequestSchema = z
-  .object({
-    name: profileFieldIngressSchema.optional(),
-    role: profileFieldIngressSchema.optional(),
-    expertise: profileFieldIngressSchema.optional(),
-    workingContext: profileFieldIngressSchema.optional(),
-    experienceLevel: profileFieldIngressSchema.optional(),
-    mainUseCase: profileFieldIngressSchema.optional(),
-    responseDefaults: z.string().max(RESPONSE_DEFAULTS_MAX_CHARS).optional(),
+  .strictObject({
     uiSettings: uiSettingsIngressSchema.optional(),
     uiSettingsPatch: uiSettingsPatchSchema.optional(),
     agentSettings: agentSettingsIngressSchema.optional(),

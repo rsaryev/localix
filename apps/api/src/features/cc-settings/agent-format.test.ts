@@ -10,7 +10,7 @@ describe('Claude Code agent format boundary', () => {
   test('separates native behavior, policy proposals and provenance', () => {
     const result = decodeClaudeCodeAgent(
       markdown(
-        'tools: [Read, Bash]\ndisallowedTools: [Write]\nmodel: opus\neffort: high\nmaxTurns: 12\nskills: [review]\nmemory: project\n',
+        'tools: [Read, Bash]\ndisallowedTools: [Write]\nmodel: provider/model\neffort: high\nmaxTurns: 12\nskills: [review]\nmemory: project\n',
       ),
       source,
     )
@@ -21,7 +21,7 @@ describe('Claude Code agent format boundary', () => {
       description: 'Review changes',
       instructions: 'Review the patch.',
       leadershipPriority: 0,
-      modelPreference: { model: 'opus', effort: 'high' },
+      modelPreference: { model: 'provider/model', effort: 'high' },
       limits: { maxTurns: 12 },
       context: { preloadSkills: ['review'], memory: { scope: 'project' } },
     })
@@ -76,6 +76,9 @@ describe('Claude Code agent format boundary', () => {
     'mcpServers: [private]\n',
     'isolation: worktree\n',
     'memory: local\n',
+    'model: opus\n',
+    'model: sonnet\n',
+    'model: haiku\n',
     'futureSecurityField: true\n',
   ])('unsupported constraints reject the complete artifact: %s', (fields) => {
     const result = decodeClaudeCodeAgent(markdown(fields), source)
@@ -91,6 +94,7 @@ describe('Claude Code agent format boundary', () => {
     'skills: [true]\n',
     'model: []\n',
     'model: ""\n',
+    'effort: mystery\n',
   ])('invalid values are diagnosed: %s', (fields) => {
     expect(decodeClaudeCodeAgent(markdown(fields), source).status).toBe('rejected')
   })

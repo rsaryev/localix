@@ -52,10 +52,7 @@ export const PROMPT_SECTION_CACHE_TIERS: Readonly<Record<string, PromptCacheTier
   // leader changes — not when a colleague is invited or leaves (that is the roster, below).
   '# Conversation turn control': 'stable',
 
-  // User-level context: the same across all of a user's sessions, so keeping it in the
-  // prefix is what lets the cache span them.
-  '# User profile': 'stable',
-  '# Response style preferences': 'stable',
+  // Persistent memory belongs in the stable prefix.
   '# Memory context': 'stable',
   // How to read the `<runtime-context>` rows the history carries — fixed text, never per turn.
   '# Context protocol': 'stable',

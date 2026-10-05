@@ -1,12 +1,4 @@
-import {
-  useState,
-  useMemo,
-  useRef,
-  useEffect,
-  useCallback,
-  useDeferredValue,
-  type ReactNode,
-} from 'react'
+import { useState, useMemo, useEffect, useCallback, useDeferredValue, type ReactNode } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { Command } from '@localixai/kit/command'
@@ -88,6 +80,7 @@ interface ModelBrowserProps {
   initialQuery?: string
   /** Prefer a connected or connectable provider when the picker opens. */
   initialProviderId?: string
+  initialConnectionId?: string
   /**
    * Show the "For which task" column. Off when the browser picks a model for something that
    * is NOT a workload route — an agent definition, say — where a click on another task row
@@ -120,6 +113,7 @@ export function ModelBrowser({
   heightClassName = 'h-[82dvh] sm:h-[min(680px,82dvh)]',
   initialQuery = '',
   initialProviderId,
+  initialConnectionId,
   taskColumn = true,
   participants = NO_PARTICIPANTS,
 }: ModelBrowserProps) {
@@ -208,9 +202,11 @@ export function ModelBrowser({
   // provider add-form (losing the device code) back to the active connection.
   const [selectionInitialized, setSelectionInitialized] = useState(false)
   if (!selectionInitialized) {
-    const preferredConnection = initialProviderId
-      ? connections.find((connection) => connection.providerId === initialProviderId)
-      : undefined
+    const preferredConnection = initialConnectionId
+      ? connections.find((connection) => connection.id === initialConnectionId)
+      : initialProviderId
+        ? connections.find((connection) => connection.providerId === initialProviderId)
+        : undefined
     const preferredProvider = initialProviderId
       ? unconnectedProviders.find((provider) => provider.id === initialProviderId)
       : undefined
@@ -234,27 +230,6 @@ export function ModelBrowser({
       setSelectionInitialized(true)
     }
   }
-
-  // When an OAuth flow finishes and a NEW connection for the provider we're adding
-  // appears, jump from the add-form to it (shows its models instead of "waiting…").
-  const addingRef = useRef<{ providerId: string; ids: Set<string> } | null>(null)
-  useEffect(() => {
-    if (selectedItem?.type !== 'provider') {
-      addingRef.current = null
-      return
-    }
-    const providerId = selectedItem.id
-    const current = connections.filter((c) => c.providerId === providerId)
-    if (!addingRef.current || addingRef.current.providerId !== providerId) {
-      addingRef.current = { providerId, ids: new Set(current.map((c) => c.id)) }
-      return
-    }
-    const fresh = current.find((c) => !addingRef.current!.ids.has(c.id))
-    if (fresh) {
-      addingRef.current = null
-      setSelectedItem({ type: 'connection', id: fresh.id })
-    }
-  }, [connections, selectedItem])
 
   const {
     detailsPinned,
@@ -342,14 +317,24 @@ export function ModelBrowser({
 
   const sentinelRef = useInfiniteScroll(loadMore, visibleCount < filteredModels.length)
 
-  const handleAddApiKey = (
+  const showConnectionModels = (connectionId: string) => {
+    setSelectedItem({ type: 'connection', id: connectionId })
+    setEditMode(false)
+    setSearch('')
+    setFilters([])
+    setDetailsView(false)
+  }
+  const handleAddApiKey = async (
     provider: ProviderEntry,
     label: string,
     apiKey: string,
     opts?: { extraKeys?: string[] },
-  ) => addApiKeyConnection(provider.id, provider.name, label, apiKey, opts)
+  ) => {
+    const connection = await addApiKeyConnection(provider.id, provider.name, label, apiKey, opts)
+    showConnectionModels(connection.id)
+  }
   const handleAddOAuth = async (provider: ProviderEntry, label: string) =>
-    addOAuthConnection(provider.id, provider.name, label)
+    addOAuthConnection(provider.id, provider.name, label, showConnectionModels)
 
   // Pick a task → preview the connection that already holds its model (if any).
   const selectTask = useCallback(

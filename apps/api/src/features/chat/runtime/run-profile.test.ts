@@ -37,3 +37,18 @@ test('ordinary native runs derive instructions without an override', () => {
     'Registry instructions',
   )
 })
+
+test('only delegated teams acquire the handoff protocol, including a closed host roster', () => {
+  for (const hostTools of [undefined, [], ['read']]) {
+    const team = resolveExecutionProfile({ sessionKind: 'subagent', agents: [{}, {}] }, undefined, {
+      hostTools,
+    })
+    expect(isToolDirect(team, 'conversation_control')).toBe(true)
+    expect(isToolDirect(team, 'ask')).toBe(false)
+    expect(isToolDirect(team, 'jobs')).toBe(false)
+    const solo = resolveExecutionProfile({ sessionKind: 'subagent', agents: [{}] }, undefined, {
+      hostTools,
+    })
+    expect(isToolDirect(solo, 'conversation_control')).toBe(false)
+  }
+})

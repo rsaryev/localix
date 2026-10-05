@@ -93,8 +93,6 @@ export function richRegistry(
 const SAMPLE_CONTEXT: Partial<BuildAgentSystemPromptParams> = {
   workspaceRoot: '/repo',
   contextFiles: [{ path: '/repo/AGENTS.md', content: 'project rules' }],
-  userProfile: 'Prefers TypeScript; senior engineer.',
-  responseDefaults: 'Terse, action-first.',
   memoryContext: 'user_role: staff engineer',
   memoryUsage: { chars: 582, limit: 2200, pct: 26 },
   skillsContext: 'demo-skill — does the demo thing',

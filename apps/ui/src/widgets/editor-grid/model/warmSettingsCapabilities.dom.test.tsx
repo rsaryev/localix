@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
 /** An empty but STRUCTURALLY COMPLETE snapshot: these tests assert when it is fetched, never what it holds. */
 const EMPTY_CAPABILITY_SNAPSHOT = {
@@ -128,13 +129,13 @@ describe('warm-hidden Settings data sources', () => {
     const { CapabilitiesSettings } = await import('@/features/settings/ui/CapabilitiesSettings')
     const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
 
-    // The Tools and Plugins leaves now read ONE snapshot, so "plugins were not fetched"
-    // is no longer a property this test can hold: sharing that document is the point.
-    // What IS still worth pinning is that the shared read happens ONCE for the active
-    // leaf rather than once per capability leaf — the fan-out this replaced.
+    // The agent picker reads the installation catalog; the active Tools leaf reads the
+    // selected agent's policy. Each scope is read once, and inactive leaves do no work.
     const snapshot = spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue(
       EMPTY_CAPABILITY_SNAPSHOT,
     )
+    const curator = spyOn(backendClient, 'listCuratorSkills').mockResolvedValue([])
+    const probe = spyOn(backendClient, 'testMcpServer').mockResolvedValue({ ok: true, tools: [] })
 
     function Surface({ visible }: { visible: boolean }) {
       return (
@@ -155,12 +156,20 @@ describe('warm-hidden Settings data sources', () => {
       root.render(<Surface visible />)
       await settle()
     })
-    // The inactive leaves stay quiet.
-    // Exactly one shared read for the active leaf — not one per capability tab.
-    expect(snapshot).toHaveBeenCalledTimes(1)
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    expect(snapshot.mock.calls.map((call) => call[0])).toEqual(
+      expect.arrayContaining([
+        { projectId: null, agentId: null },
+        { projectId: null, agentId: DEFAULT_AGENT_ID },
+      ]),
+    )
+    expect(curator).not.toHaveBeenCalled()
+    expect(probe).not.toHaveBeenCalled()
 
     await act(async () => root.unmount())
     snapshot.mockRestore()
+    curator.mockRestore()
+    probe.mockRestore()
   })
 
   test('secondary Settings viewers defer their automatic reads while warm-hidden', async () => {

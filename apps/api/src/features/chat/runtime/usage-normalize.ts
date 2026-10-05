@@ -243,19 +243,12 @@ export function recordTitleGenUsage(args: {
 /** The auxiliary LLM calls whose spend accumulates onto one stable-keyed ledger
  *  row per (session, kind). The id doubles as the ledger's finish_reason bucket,
  *  so each surfaces in the dashboard's Kind breakdown. Most are high-frequency
- *  (autocomplete per keystroke-idle); `improve` fires once per composer wand
- *  click but rides the same accumulating row so a re-improve never bloats the log. */
-export type AuxCallKind =
-  | 'autocomplete'
-  | 'inline-completion'
-  | 'terminal'
-  | 'improve'
-  | 'classify'
-  | 'hook'
+ *  (autocomplete per keystroke-idle), so repeated calls share an accumulating row. */
+export type AuxCallKind = 'autocomplete' | 'inline-completion' | 'terminal' | 'classify' | 'hook'
 
 /**
- * Record an auxiliary LLM call (editor prediction, text-input completion,
- * improve-prompt wand) in the usage ledger. Unlike
+ * Record an auxiliary LLM call (editor prediction, text-input completion)
+ * in the usage ledger. Unlike
  * a title — which fires ~once and so overwrites a stable-keyed row — these
  * fire often (autocomplete is per keystroke-idle) and would each warrant a row, so
  * they ACCUMULATE onto one row per (session, kind, routing identity). Including

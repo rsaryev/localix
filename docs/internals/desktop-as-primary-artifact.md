@@ -22,7 +22,7 @@ command installed by the desktop runtime.
 | Develop the native app      | Run `bun run dev` from the repository root. | Requires Rust and platform-native Tauri dependencies.              |
 | Build a local native bundle | Run `bun run build:desktop`.                | Builds only for the host platform and architecture.                |
 | Exercise release packaging  | Run `bun run release:desktop`.              | Signing and macOS notarization inputs are required where relevant. |
-| Install the shell launcher  | Use **Settings → General → Command line**.  | The installer writes no shell startup file or user `PATH` value.   |
+| Install the shell launcher  | Use **Settings → System → Command line**.   | The installer writes no shell startup file or user `PATH` value.   |
 | Open a project from a shell | Run `localix .` or `localix <directory>`.   | A registered desktop URL handler is required.                      |
 | Open a file from a shell    | Run `localix <file>`.                       | The API opens its parent directory as the project.                 |
 

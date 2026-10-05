@@ -19,12 +19,28 @@ const sourceFiles = () => {
 }
 
 describe('settings geometry', () => {
+  test('agent configuration shares section, navigation and paired-field primitives', () => {
+    const profile = read('agent-profile/AgentProfileTab.tsx')
+    expect(profile).toContain('<SettingsNavigation')
+    expect(profile).not.toContain('<CapabilityTabRow')
+    expect(read('capabilities/agent-editor/AgentEditor.tsx')).toContain('<SettingsSection')
+    for (const file of ['AgentEditor.tsx', 'AgentIdentityFields.tsx', 'AgentModelField.tsx']) {
+      const source = read(`capabilities/agent-editor/${file}`)
+      expect(source, file).toContain('<SettingsFieldGrid')
+      expect(source, file).not.toContain('grid-cols-2')
+    }
+    expect(read('capabilities/agent-editor/AgentModelField.tsx')).not.toContain(
+      'h-[var(--chrome-control-xl)]',
+    )
+  })
   test('reflows on the settings PANE width, not the viewport', () => {
     // SettingsPanel renders every section inside one `@container`, and the pane can be
     // narrow on a wide screen (it is an inspector pane). A viewport breakpoint
     // (`sm:` / `max-sm:` / `md:`) therefore reflows at the wrong moment; container
     // variants (`@md:` / `@max-md:`) are the contract.
-    expect(read('SettingsPanel.tsx')).toContain('@container w-full')
+    expect(read('SettingsPanel.tsx')).toContain('<SettingsWorkspace')
+    expect(read('agent-profile/AgentProfileTab.tsx')).toContain('<SettingsWorkspace')
+    expect(read('SettingsWorkspace.tsx')).toContain('@container w-full')
 
     const offenders: string[] = []
     for (const file of sourceFiles()) {
@@ -45,13 +61,13 @@ describe('settings geometry', () => {
 
   test('keeps settings chrome on the shared geometry scale', () => {
     // Form inputs share one settings measure; rows share SettingsRow's rhythm.
-    expect(read('GeneralSettings.tsx')).not.toContain('h-9')
+    expect(read('PreferencesSettings.tsx')).not.toContain('h-9')
     expect(read('SettingsPanel.tsx')).not.toContain('h-8')
     // The record editor's own chrome — header, footer, the decision pair — states no height
     // at all: it is the shared drawer's, and a measure written here would be a second one.
     expect(read('SettingsRecordEditor.tsx')).not.toMatch(/\bh-\d/)
     expect(read('McpToolToggles.tsx')).toContain('min-h-[var(--chrome-control-lg)]')
-    expect(read('keyboard/ShortcutRow.tsx')).toContain('h-[var(--chrome-control-md)]')
+    expect(read('keyboard/ShortcutRow.tsx')).toContain('h-[var(--chrome-control-lg)]')
     expect(read('keyboard/ShortcutRow.tsx')).not.toContain('py-2.5')
   })
 

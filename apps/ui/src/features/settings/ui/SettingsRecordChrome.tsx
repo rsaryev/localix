@@ -83,10 +83,11 @@ export function RecordEditorDecisions({
   return (
     <>
       {extraAction}
-      <Button variant="ghost" onClick={onCancel} disabled={busy}>
+      <Button size="xl" variant="ghost" onClick={onCancel} disabled={busy}>
         {cancelLabel}
       </Button>
       <Button
+        size="xl"
         variant="mono"
         className="min-w-32"
         onClick={onSubmit}

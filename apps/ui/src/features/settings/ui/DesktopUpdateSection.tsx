@@ -10,7 +10,7 @@ import { SettingsRow, SettingsRows, SettingsSection } from './SettingsScaffold'
 import { SettingsActionActivity } from './SettingsActionActivity'
 
 /**
- * Settings → General → Updates: the running version, an explicit check, and the install.
+ * Settings → System → Updates: the running version, an explicit check, and the install.
  *
  * Before this the only update surface was a rail button that appears once an hourly background
  * poll finds something, so there was no way to ask "is there an update?" and no place that said
@@ -22,7 +22,7 @@ export function DesktopUpdateSection() {
   if (!hasDesktopUpdater()) return null
   return (
     <SettingsSection
-      anchor="general-updates"
+      anchor="system-updates"
       title="Updates"
       description="Localix checks for a signed update in the background. Check now, or restart into one that is ready."
     >
@@ -54,13 +54,13 @@ function DesktopUpdateRow() {
 
   return (
     <SettingsRow layout="responsive">
-      <div className="space-y-1">
-        <p className="text-sm font-normal text-foreground">{version}</p>
-        <p className="text-sm text-text-faint" aria-live="polite">
+      <div className="space-y-0.5">
+        <p className="text-sm text-foreground">{version}</p>
+        <p className="max-w-prose text-xs leading-5 text-text-soft text-pretty" aria-live="polite">
           {summary}
         </p>
         {error && (
-          <p role="alert" className="text-sm text-status-error">
+          <p role="alert" className="text-xs leading-5 text-status-error">
             {error}
           </p>
         )}

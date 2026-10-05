@@ -15,6 +15,8 @@ import { OS_FAMILY, type OsFamily } from '../lib/platform'
  */
 export interface KeyChordEvent {
   key: string
+  /** Physical letter key, used when macOS Option turns its key value into a symbol. */
+  code?: string
   metaKey: boolean
   ctrlKey: boolean
   altKey: boolean
@@ -56,6 +58,13 @@ function normalizeKey(rawKey: string): string {
   return rawKey.toLowerCase()
 }
 
+function optionLetter(e: KeyChordEvent, os: OsFamily): string | null {
+  if (os !== 'mac' || !e.altKey || !e.code || !/^Key[A-Z]$/.test(e.code)) return null
+  // Preserve ordinary layout letters; only recover keys transformed by Option (e.g. x → ≈).
+  if (/^[a-z]$/i.test(e.key) || e.key.length !== 1) return null
+  return e.code.slice(3).toLowerCase()
+}
+
 /**
  * Build a canonical chord from a keydown event, or `null` if the event is just
  * a bare modifier press (so a recorder can keep waiting for the real key).
@@ -68,7 +77,7 @@ export function chordFromEvent(e: KeyChordEvent, os: OsFamily = OS_FAMILY): Chor
   if (mac ? e.ctrlKey : e.metaKey) parts.push('secondary')
   if (e.altKey) parts.push('alt')
   if (e.shiftKey) parts.push('shift')
-  parts.push(normalizeKey(e.key))
+  parts.push(optionLetter(e, os) ?? normalizeKey(e.key))
   return parts.join('+')
 }
 
@@ -133,7 +142,7 @@ export function matchesChord(e: KeyChordEvent, chord: Chord, os: OsFamily = OS_F
   if (wantCtrl !== e.ctrlKey || wantMeta !== e.metaKey) return false
   if (p.alt !== e.altKey) return false
   if (p.shift !== e.shiftKey) return false
-  return normalizeKey(e.key) === p.key
+  return normalizeKey(e.key) === p.key || optionLetter(e, os) === p.key
 }
 
 function displayModifier(token: string, os: OsFamily): string {

@@ -89,7 +89,7 @@ export function AgentRow({
       }
       actions={
         <IconButton
-          size="sm"
+          size="md"
           onClick={onOpen}
           disabled={actionsDisabled}
           aria-label={`Open ${r.label || r.handle}`}

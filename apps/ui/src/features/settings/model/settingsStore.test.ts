@@ -257,13 +257,15 @@ describe('the other direction — a legitimate un-synced local edit is NOT throw
 
   test('supersession is PER KEY — an untouched-by-server field still flushes', async () => {
     const store = await freshStore(null)
-    // Server knows agentSettings but has no displayName.
+    // Server knows agentSettings but has no uiSettings.
     getUserProfile.mockImplementation(async () => ({
       agentSettings: { contextExclusions: ['**/.env'] },
-      name: null,
+      uiSettings: null,
     }))
 
-    store.getState().update({ agentSettings: { gitBlame: { enabled: true } }, displayName: 'Ada' })
+    store
+      .getState()
+      .update({ agentSettings: { gitBlame: { enabled: true } }, uiSettings: { fontSize: 'lg' } })
     await store.getState().loadFromBackend()
     await tick(DEBOUNCE_MS + 100)
 
@@ -271,12 +273,14 @@ describe('the other direction — a legitimate un-synced local edit is NOT throw
     expect(store.getState().settings.agentSettings).toStrictEqual({
       contextExclusions: ['**/.env'],
     })
-    // displayName: server had none → the local edit survives and IS sent.
-    expect(store.getState().settings.displayName).toBe('Ada')
+    // uiSettings: server had none → the local edit survives and IS sent.
+    expect(store.getState().settings.uiSettings).toEqual({ fontSize: 'lg' })
 
     const sent = updateUserProfile.mock.calls.map(([p]) => p)
     expect(sent.some((p) => isAgentSettingsMutation(p))).toBe(false)
-    expect(sent.some((p) => p.name === 'Ada')).toBe(true)
+    expect(
+      sent.some((p) => (p.uiSettingsPatch as { fontSize?: string } | undefined)?.fontSize === 'lg'),
+    ).toBe(true)
   })
 })
 

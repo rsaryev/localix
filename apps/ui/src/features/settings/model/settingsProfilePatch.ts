@@ -40,18 +40,11 @@ export function subsettingDelta(
  * nothing to send, which is the caller's signal to skip the request entirely.
  */
 export function toProfileWirePatch(
-  pending: Partial<UserSettings>,
+  _pending: Partial<UserSettings>,
   uiSettingsPatch: UiSettingsPatch,
   agentSettingsPatch: AgentSettingsPatch,
 ): ProfileWirePatch {
   const apiPatch: ProfileWirePatch = {}
-  if (pending.displayName !== undefined) apiPatch.name = pending.displayName
-  if (pending.responsePreferences !== undefined)
-    apiPatch.responseDefaults = pending.responsePreferences
-  if (pending.primaryRole !== undefined) apiPatch.role = pending.primaryRole
-  if (pending.experienceLevel !== undefined) apiPatch.experienceLevel = pending.experienceLevel
-  if (pending.mainUseCase !== undefined) apiPatch.mainUseCase = pending.mainUseCase
-  if (pending.workingContext !== undefined) apiPatch.workingContext = pending.workingContext
   if (Object.keys(uiSettingsPatch).length > 0) apiPatch.uiSettingsPatch = uiSettingsPatch
   if (Object.keys(agentSettingsPatch).length > 0) {
     let currentPatch = agentSettingsPatch

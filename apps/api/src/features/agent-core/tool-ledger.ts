@@ -1,6 +1,6 @@
 import type { AgentTool, RunShape } from '@localixai/agent/agents'
 import { declaresTool, exposureLevel, type RunProfile } from './run-shape'
-import { TOOL } from './tool-names'
+import { isProtocolTool } from './tool-names'
 
 /**
  * The LEDGER: for every tool a run could have, one verdict with one reason.
@@ -148,7 +148,7 @@ function policyVerdict(facts: RunFacts, candidate: ToolCandidate): ToolVerdict |
   // A chat turn must always be able to finish and route its successor. Treating this protocol
   // primitive like an optional capability caused an agent to enable it for "the next turn",
   // after the current turn had already become impossible to finish correctly.
-  if (facts.profile.shape === 'chat' && candidate.name === TOOL.conversation_control) return null
+  if (isProtocolTool(candidate.name)) return null
   if (!facts.disabledTools.has(candidate.name)) return null
   const denial = facts.toolDenials?.get(candidate.name) ?? null
   return {

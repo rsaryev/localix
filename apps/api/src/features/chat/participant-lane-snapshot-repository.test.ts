@@ -19,20 +19,19 @@ test('snapshots survive a database reopen with isolated agents, boundaries, and 
     const a = { sessionId: 'room', agentId: 'a' }
     const b = { sessionId: 'room', agentId: 'b' }
     let snapshots = createParticipantLaneSnapshotRepository(db)
-    const initial = { userProfile: 'profile', memoryContext: 'secret A', skillsContext: 'skill A' }
+    const initial = { memoryContext: 'secret A', skillsContext: 'skill A' }
     await snapshots.set('owner', a, '', initial)
-    await snapshots.set('owner', b, '', { userProfile: null, memoryContext: 'secret B' })
-    await snapshots.set('owner', a, 'compact-a', { userProfile: 'new prefix' })
+    await snapshots.set('owner', b, '', { memoryContext: 'secret B' })
+    await snapshots.set('owner', a, 'compact-a', { memoryContext: 'new prefix' })
     await destroyDatabase(db)
     db = createDatabase({ filename })
     await migrateToLatest(db)
     snapshots = createParticipantLaneSnapshotRepository(db)
     expect(JSON.stringify(await snapshots.get('owner', a, ''))).toBe(JSON.stringify(initial))
     expect(await snapshots.get('owner', b, '')).toEqual({
-      userProfile: null,
       memoryContext: 'secret B',
     })
-    expect(await snapshots.get('owner', a, 'compact-a')).toEqual({ userProfile: 'new prefix' })
+    expect(await snapshots.get('owner', a, 'compact-a')).toEqual({ memoryContext: 'new prefix' })
     expect(await snapshots.get('owner', b, 'compact-a')).toBeUndefined()
     expect(await snapshots.get('outsider', a, '')).toBeUndefined()
     await expect(snapshots.set('outsider', a, '', initial)).rejects.toThrow('unavailable')

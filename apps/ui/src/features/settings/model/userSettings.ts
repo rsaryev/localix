@@ -14,25 +14,11 @@ import type { UiSettings, AgentSettings } from '@/shared/api/contracts'
  * exactly one file to read.
  */
 export interface UserSettings {
-  displayName: string
-  responsePreferences: string
-  primaryRole: string
-  experienceLevel: string
-  mainUseCase: string
-  /** Free-text "what you're working on" — flushed to the profile's working_context
-   *  so it reaches the agent's "# User profile" prompt section. */
-  workingContext: string
   uiSettings: UiSettings
   agentSettings: AgentSettings
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
-  displayName: '',
-  responsePreferences: '',
-  primaryRole: '',
-  experienceLevel: '',
-  mainUseCase: '',
-  workingContext: '',
   uiSettings: {},
   agentSettings: {},
 }
@@ -53,13 +39,14 @@ export function currentAgentSettings(settings: AgentSettings): AgentSettings {
 
 export function loadLocalSettings(): UserSettings {
   const stored = loadJSON<Partial<UserSettings>>(LS_KEY)
-  return stored
-    ? {
-        ...DEFAULT_SETTINGS,
-        ...stored,
-        agentSettings: currentAgentSettings(stored.agentSettings ?? {}),
-      }
-    : { ...DEFAULT_SETTINGS }
+  if (!stored) return { ...DEFAULT_SETTINGS }
+  const settings = {
+    uiSettings: stored.uiSettings ?? {},
+    agentSettings: currentAgentSettings(stored.agentSettings ?? {}),
+  }
+  // Remove retired personal fields from the cache as well as the in-memory settings.
+  saveLocalSettings(settings)
+  return settings
 }
 
 export function saveLocalSettings(s: UserSettings): void {

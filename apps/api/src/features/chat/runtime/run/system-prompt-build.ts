@@ -215,8 +215,6 @@ export async function buildRunSystemPrompt(
     // gated on the FINAL runtime tool set (toolNames already reflects disabledTools), so a
     // tool turned off also drops its prompt context. The profile is context about the
     // PERSON, not a tool: it rides regardless of the roster.
-    userProfile: frozenContext.userProfile ?? undefined,
-    responseDefaults: frozenContext.responseDefaults,
     memoryContext: hasRuntimeTool(TOOL.memory) ? frozenContext.memoryContext : undefined,
     memoryUsage: hasRuntimeTool(TOOL.memory) ? frozenContext.memoryUsage : undefined,
     skillsContext: hasRuntimeTool(TOOL.skill) ? frozenContext.skillsContext : undefined,

@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { GeneralSettings } from './GeneralSettings'
 import { SettingsSearch } from './SettingsSearch'
 import { PreferencesSettings } from './PreferencesSettings'
 import { EditorSettings } from './EditorSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { CapabilitiesSettings } from './CapabilitiesSettings'
 import { AgentsSettings } from './AgentsSettings'
-import { DiagnosticsSettings } from './DiagnosticsSettings'
+import { SystemSettings } from './SystemSettings'
 import { ProjectSettingsForm } from './ProjectsSettings'
 import type { Project } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
@@ -15,13 +14,15 @@ import { toast } from '@/shared/lib/notify'
 import { reportProjectListFailure, reportProjectListLoaded } from '../model/projectListProblem'
 import { prefersReducedMotion } from '@localixai/kit/environment'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
-import { TabBar } from '@localixai/kit/tabs'
+import { SettingsNavigation } from './SettingsNavigation'
+import { SettingsWorkspace } from './SettingsWorkspace'
 import { ProjectScopeSelect } from './ScopeSwitcher'
 import { isCapabilityTab, parseSettingsTab, type SettingsTabId } from '@/shared/routing/routes'
 import { subscribeSettingsNav, consumeSettingsNav } from '@/shared/lib/settingsNavBus'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { useSettingsAnchorMaterializer } from '../model/useSettingsAnchorMaterializer'
 import { navigateUi } from '@/shared/lib/uiNavigation'
+import { primarySettingsSection } from '../model/settingsNavigation'
 import { SectionLabel } from '@localixai/kit/section-label'
 
 export type { SettingsTabId }
@@ -37,13 +38,7 @@ interface SettingsPanelProps {
   defaultScope?: string
 }
 
-/**
- * Settings lives in the inspector panel (not a wide dialog), so it uses a single
- * top-tab layout instead of the old left nav sidebar, which felt cramped in a
- * narrow split. Projects are a tab too: the Project tab carries a dropdown that picks which project (or creates one),
- * and the chosen project's settings render below. Content fills the full width
- * and centers at a readable max-width when the panel is widened/maximized.
- */
+/** Settings adapts to its pane: grouped navigation when wide, a section picker when narrow. */
 export function SettingsPanel({
   activeTab: activeTabProp,
   onTabChange: onTabChangeProp,
@@ -61,7 +56,7 @@ export function SettingsPanel({
   const [projects, setProjects] = useState<Project[]>([])
   // When rendered without controlling props (the grid mounts it bare), the panel
   // owns its own tab state so the tab bar still switches.
-  const [internalTab, setInternalTab] = useState<SettingsTabId>('general')
+  const [internalTab, setInternalTab] = useState<SettingsTabId>('preferences')
   const activeTab = activeTabProp ?? internalTab
   const onTabChange = onTabChangeProp ?? setInternalTab
 
@@ -93,7 +88,7 @@ export function SettingsPanel({
   useEffect(
     () =>
       subscribeSettingsNav(({ tab, scope }) => {
-        onTabChange(parseSettingsTab(tab, undefined))
+        onTabChange(parseSettingsTab(tab, tab === 'project' && scope ? scope : undefined))
         setRequestedCapabilityScope(scope ?? null)
         consumeSettingsNav()
       }),
@@ -105,13 +100,9 @@ export function SettingsPanel({
   useSettingsAnchorMaterializer(contentRef)
 
   const onProjectTab = isProjectTab(activeTab)
-  const activeProjId = onProjectTab ? activeTab.id : null
+  const activeProjId = onProjectTab ? activeTab.id : defaultScope || projects[0]?.id || null
   // The primary tab bar tracks string tabs; a project view maps to the 'project' tab.
-  const primaryActive: string = onProjectTab
-    ? 'project'
-    : isCapabilityTab(activeTab)
-      ? 'tools'
-      : activeTab
+  const primaryActive = primarySettingsSection(activeTab)
 
   const addProject = async () => {
     // The sibling entry point for this same action (`useAddProjectFolder`) already
@@ -133,22 +124,15 @@ export function SettingsPanel({
     }
   }
 
-  // Clicking the Project tab resolves to a concrete project: keep the current one,
-  // else the first project, else jump straight into creating one (the only action
-  // available with no projects).
-  const onPrimaryTabChange = (id: string) => {
-    if (id !== 'project') return onTabChange?.(id as SettingsTabId)
-    if (onProjectTab) return
-    if (projects.length > 0) onTabChange?.({ kind: 'project', id: projects[0].id })
-    else void addProject()
-  }
+  const onPrimaryTabChange = (id: string) => onTabChange(id as SettingsTabId)
 
   function renderContent() {
-    if (activeTab === 'general') return <GeneralSettings />
     if (activeTab === 'preferences') return <PreferencesSettings />
     if (activeTab === 'editor') return <EditorSettings />
     if (activeTab === 'shortcuts') return <KeyboardShortcutsSettings />
-    if (activeTab === 'diagnostics') return <DiagnosticsSettings />
+    if (activeTab === 'system' || activeTab === 'context' || activeTab === 'diagnostics') {
+      return <SystemSettings activeTab={activeTab} onTabChange={onTabChange} />
+    }
     if (activeTab === 'agents') {
       return (
         <AgentsSettings scope={agentsScope} projects={projects} onScopeChange={setAgentsScope} />
@@ -164,8 +148,8 @@ export function SettingsPanel({
         />
       )
     }
-    if (onProjectTab) {
-      const proj = projects.find((p) => p.id === activeTab.id)
+    if (onProjectTab || activeTab === 'project') {
+      const proj = projects.find((p) => p.id === activeProjId)
       return (
         <div className="space-y-5">
           {/* Scope selector — which project these settings apply to. */}
@@ -184,13 +168,14 @@ export function SettingsPanel({
           </div>
           {proj ? (
             <ProjectSettingsForm
+              key={proj.id}
               project={proj}
               onSaved={(updated) =>
                 setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
               }
               onDeleted={(id) => {
                 setProjects((prev) => prev.filter((p) => p.id !== id))
-                onTabChange?.('general')
+                onTabChange?.('preferences')
               }}
             />
           ) : (
@@ -206,36 +191,22 @@ export function SettingsPanel({
   // ground tokens carry alpha — a second pane-sized coat compounds into an opaque slab. On the
   // opaque themes the pane's coat is the identical color, so inheriting it changes nothing.
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
-      {/* Header: primary tabs. No PanelHeader — the inspector tab strip already
-          shows the "Settings" title + controls. */}
-      <div className="shrink-0 border-b border-border-soft">
-        <TabBar
-          aria-label="Settings sections"
-          // Gutters only: the row's height and seam belong to TabBar. The old `pt-2`
-          // was a nudge against its former asymmetric padding pair.
-          className="min-w-0 px-4"
-          items={[
-            { id: 'general', label: 'General' },
-            { id: 'preferences', label: 'Preferences' },
-            { id: 'editor', label: 'Editor' },
-            { id: 'shortcuts', label: 'Shortcuts' },
-            { id: 'agents', label: 'Agents' },
-            { id: 'tools', label: 'Capabilities' },
-            { id: 'diagnostics', label: 'Diagnostics' },
-            { id: 'project', label: 'Project' },
-          ]}
+    <SettingsWorkspace
+      contentRef={contentRef}
+      navigation={
+        <SettingsNavigation
           active={primaryActive}
           onChange={onPrimaryTabChange}
+          search={
+            <SettingsSearch
+              className="w-full"
+              onNavigate={(uri) => navigateUi(uri, uiNavigation)}
+            />
+          }
         />
-        <div className="w-full px-5 pb-4 pt-3">
-          <SettingsSearch className="w-full" onNavigate={(uri) => navigateUi(uri, uiNavigation)} />
-        </div>
-      </div>
-
-      <div ref={contentRef} data-ui-scroll-container className="min-w-0 flex-1 overflow-y-auto">
-        <div className="@container w-full px-5 py-6">{renderContent()}</div>
-      </div>
-    </div>
+      }
+    >
+      {renderContent()}
+    </SettingsWorkspace>
   )
 }

@@ -37,7 +37,7 @@ describe('SettingsSearch combobox', () => {
       const input = host.querySelector<HTMLInputElement>('input[aria-label="Search settings"]')!
       await act(async () => input.focus())
       await act(async () => {
-        setInputValue(input, 'profile')
+        setInputValue(input, 'save')
         await settle()
       })
 
@@ -73,9 +73,9 @@ describe('SettingsSearch combobox', () => {
       })
       expect(onNavigate).toHaveBeenCalledWith(
         settingsTargetUri({
-          tab: 'general',
-          anchor: 'general-profile',
-          entryId: 'general.name',
+          tab: 'editor',
+          anchor: 'editor-on-save',
+          entryId: 'editor.format-on-save',
         }),
       )
       expect(input.value).toBe('')
@@ -164,7 +164,7 @@ describe('SettingsSearch combobox', () => {
       const input = host.querySelector<HTMLInputElement>('input[aria-label="Search settings"]')!
       await act(async () => input.focus())
       await act(async () => {
-        setInputValue(input, 'profile')
+        setInputValue(input, 'save')
         await settle()
       })
       expect(document.body.querySelector('[aria-label="Settings search results"]')).not.toBeNull()
@@ -174,7 +174,7 @@ describe('SettingsSearch combobox', () => {
         outside.focus()
         await settle()
       })
-      expect(input.value).toBe('profile')
+      expect(input.value).toBe('save')
       expect(input.getAttribute('aria-expanded')).toBe('false')
       expect(document.body.querySelector('[aria-label="Settings search results"]')).toBeNull()
       expect(document.activeElement).toBe(outside)

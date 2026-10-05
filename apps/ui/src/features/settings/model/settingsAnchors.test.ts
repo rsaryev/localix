@@ -13,7 +13,7 @@ describe('settings UI anchors', () => {
   })
 
   test('resolves roots, tabs, and indexed settings to navigation targets', () => {
-    expect(parseSettingsAnchorUri('localix://ui/settings/root')).toEqual({ tab: 'general' })
+    expect(parseSettingsAnchorUri('localix://ui/settings/root')).toEqual({ tab: 'preferences' })
     expect(parseSettingsAnchorUri('localix://ui/settings/tools')).toEqual({
       tab: 'tools',
       anchor: undefined,

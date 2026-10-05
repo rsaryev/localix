@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { agentPolicy } from '@localixai/api/agent-policy'
 import type { Project } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
@@ -16,7 +16,8 @@ import {
 } from '../../model/agentProfileTab'
 import { SettingProblems } from '../settingRegistry'
 import { SettingsPageHeader } from '../SettingsScaffold'
-import { CapabilityTabRow } from '../capabilities/CapabilityTabRow'
+import { SettingsNavigation } from '../SettingsNavigation'
+import { SettingsWorkspace } from '../SettingsWorkspace'
 import { AgentEditor } from '../capabilities/agent-editor/AgentEditor'
 import {
   AGENT_PROFILE_TABS,
@@ -47,6 +48,10 @@ export function AgentProfileTab({ agentId, projectId }: AgentProfilePayload) {
     useAgents(projectId)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<AgentProfileTabId>('definition')
+  const contentRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+  }, [tab])
   const projects = useProjects()
   const draft = agentId === ''
   // Matched by id OR handle, because a link does not always carry an id. A mention in a message
@@ -70,7 +75,7 @@ export function AgentProfileTab({ agentId, projectId }: AgentProfilePayload) {
   // instead of rendering an empty form that would create a second record when saved.
   if (!draft && !agent) {
     return (
-      <div className="h-full overflow-y-auto px-5 py-6" data-ui-scroll-container>
+      <div className="h-full min-w-0 overflow-y-auto px-4 py-5" data-ui-scroll-container>
         <SettingProblems subject="Agent" errors={error ? [error] : []} onRetry={refresh} />
         {loading ? (
           <LoadingHint>Loading the agent…</LoadingHint>
@@ -88,15 +93,28 @@ export function AgentProfileTab({ agentId, projectId }: AgentProfilePayload) {
   const name = agent ? agent.record.label || agent.record.handle : 'New agent'
 
   return (
-    <div className="@container h-full overflow-y-auto px-5 py-6" data-ui-scroll-container>
-      <div className="flex flex-col gap-5">
+    <SettingsWorkspace
+      contentRef={contentRef}
+      navigation={
+        agent && (
+          <SettingsNavigation
+            aria-label="Agent profile sections"
+            pickerLabel="Agent section"
+            sections={AGENT_PROFILE_TABS}
+            active={tab}
+            onChange={(id) => setTab(id as AgentProfileTabId)}
+          />
+        )
+      }
+    >
+      <div className="flex min-w-0 flex-col gap-6">
         <SettingsPageHeader
           title={name}
           {...(agent ? { description: agentProvenance(agent) } : {})}
-          className="border-b border-border-faint pb-4"
           actions={
             agent && policy?.delete ? (
               <Button
+                size="xl"
                 variant="destructive"
                 onClick={() => setConfirmDelete(true)}
                 disabled={!!busy}
@@ -107,25 +125,16 @@ export function AgentProfileTab({ agentId, projectId }: AgentProfilePayload) {
           }
         />
 
-        {/* A draft has no capabilities to show: rules are keyed by the record, and it has not
-            settled on one yet. The strip appears with the agent it is about. */}
-        {agent && (
-          <CapabilityTabRow
-            aria-label="Agent profile sections"
-            items={AGENT_PROFILE_TABS}
-            active={tab}
-            onChange={setTab}
-          />
-        )}
-
-        {agent && tab !== 'definition' ? (
+        {agent && tab !== 'definition' && (
           <AgentCapabilityPanel
             tab={tab}
             agentId={agent.record.id}
             projectId={agent.projectId}
             projects={projects}
           />
-        ) : (
+        )}
+        {/* Keep the definition mounted so a visit to capabilities does not discard a draft. */}
+        <div hidden={Boolean(agent && tab !== 'definition')}>
           <AgentEditor
             key={agent ? `${agent.projectId}:${agent.record.id}` : `new:${projectId}`}
             {...(agent ? { agent } : {})}
@@ -162,7 +171,7 @@ export function AgentProfileTab({ agentId, projectId }: AgentProfilePayload) {
                 }
               : {})}
           />
-        )}
+        </div>
       </div>
 
       <ConfirmDialog
@@ -180,7 +189,7 @@ export function AgentProfileTab({ agentId, projectId }: AgentProfilePayload) {
         }}
         onClose={() => setConfirmDelete(false)}
       />
-    </div>
+    </SettingsWorkspace>
   )
 }
 

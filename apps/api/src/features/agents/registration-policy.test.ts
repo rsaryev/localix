@@ -110,6 +110,18 @@ test('an identical retry is idempotent, including empty rule messages', async ()
   expect((await rules.readSnapshot('u', id)).revision).toBe(1)
 })
 
+test('a retry retains existing enabled choices without duplicating switches', async () => {
+  const { id, policy, rules, input, enable } = await fixture()
+  await enable()
+  const reviewed = { ...input, expectedPolicyRevision: 2 }
+  const first = await policy.publish('u', '', id, reviewed)
+  expect(await policy.publish('u', '', id, reviewed)).toEqual(first)
+  const snapshot = await rules.readSnapshot('u', id)
+  expect(snapshot.revision).toBe(3)
+  expect(snapshot.rules.filter((rule) => rule.action === `agent:${id}`)).toHaveLength(1)
+  expect(snapshot.rules.filter((rule) => rule.action === 'plugin:review-pack')).toHaveLength(1)
+})
+
 test('sibling publication preserves review; changing and restoring the agent requires a new review', async () => {
   const { source, store, policy, input, id, agents, enable } = await fixture()
   // Enable first: a policy write after publication invalidates the binding by design, and

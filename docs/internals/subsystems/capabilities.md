@@ -91,8 +91,9 @@ even when the definition belongs to a project; invocation still requires the cor
 `apps/api/src/features/agents/registration-policy.ts` owns the registration review operation;
 `apps/ui/src/features/settings/ui/capabilities/PermissionRulesView.tsx` uses the shared editor and
 `apps/ui/src/features/settings/ui/capabilities/RegistrationPolicyReview.tsx` displays proposals.
-This applies to contributions already published in the native registry. The legacy plugin installer
-does not yet publish those contributions automatically.
+This applies to contributions published in the native registry. Verified bundled manifests are
+reconciled by `apps/api/src/features/plugins/sync-bundled-contributions.ts`; installed third-party
+declarations do not receive automatic publication or authority.
 
 ### One list, and the last match wins
 
@@ -201,22 +202,20 @@ later request that fails before it publishes cannot orphan it.
 
 ### A role's defaults are a SEED, not an overlay
 
-An agent record states what its role is made of (`tools`, `pinnedSkills`, `mcp_servers`) and the
-settings editor shows those lists — but a chat with that agent resolves availability from
-`capability_rule` by handle and loads no record. `seedAgentPresets` bridges the two ONCE, per agent,
-translating the record's lists into rows in its own list.
+Native definitions carry authored behavior, model preferences, limits and context selection. Policy
+is separate and keyed by immutable agent ID. Every turn admits the definition and policy from the
+same catalog snapshot. `builtinAgentPreset` supplies shipped policy candidates and
+`seedAgentPresets` seeds them independently of portable definitions.
 
 Once per PRESET VERSION, and not continuously, because a definition that kept re-asserting itself
 would make the Capabilities screen a liar: you would switch something on and the next boot would
 switch it back. Between versions the rows belong to the user.
 
-The version is the upgrade path, and it is the whole of it. `AGENT_PRESET_SEED_VERSION` is recorded
-on the agent's source config when its preset is written; a boot that finds a different version
-writes the current preset over that agent's list and records the new one. So a fix we ship to a
-system role — a tool it was missing, a grant it should never have had — reaches installs that are
-already running, instead of only ones that have never launched the app. The cost is stated rather
-than worked around: a user edit to a builtin role's list survives until we ship a new answer for
-that role, and then ours wins. These roles are ours; a role the user owns is one they created.
+The source config records `AGENT_PRESET_SEED_VERSION` and the shipped baseline. A version change
+advances an untouched policy while retaining explicit enable choices. A customized ordered list is
+preserved, because merging individual rows could change which exception wins. Known v10 defaults can
+migrate; an unknown legacy baseline is preserved. Publication uses the expected policy revision, and
+a conflict is retried rather than marked as an applied upgrade.
 
 A positive list CLOSES its kind — `deny tool:*` first, then an `allow` per name — because a list of
 allows on its own narrows nothing: absence of a rule already means allowed (or, for an artifact,
@@ -241,7 +240,13 @@ Two cases the seeder refuses. An agent whose record states nothing is left alone
 and no marker, so a record that later grows a preset is seeded then. And an agent whose list already
 has rules with NO marker at all is an install that configured it by hand before presets existed: it
 is recorded as current and nothing is written, because those rows were never ours to replace. A
-version bump only rewrites a list this seeder wrote itself.
+version bump only replaces a policy that still matches a known shipped baseline.
+
+Managed bundled plugins publish native agent contributions into each exact registry scope before
+agent catalog reads. Their verified policy proposals can seed defaults and bind policy review to the
+registration revision. User-installed lookalikes receive no such grant. An instruction-only update
+can retain a valid policy review; policy changes with custom rules require review. Removed
+declarations are archived, and source denials withdraw the registered agent immediately.
 
 ### A rule can say who wrote it
 

@@ -24,6 +24,7 @@ export interface AgentsServiceDeps {
   /** Override the global NATIVE registry dir (tests). */
   globalDir?: string
   now?: () => string
+  syncBundledContributions?: (userId: string, projectId: string) => Promise<void>
 }
 
 export interface AgentsService {
@@ -85,7 +86,7 @@ export interface AgentsService {
   createAgent(userId: string, input: AgentRecordInput): Promise<AgentSummary>
   /**
    * Replace behavior while retaining the registry-issued ID and capability choices.
-   * The current editor uses duplicate to choose a new handle.
+   * Local handles may change without changing identity; shipped handles stay fixed.
    */
   updateAgent(
     userId: string,
@@ -100,13 +101,13 @@ export interface AgentsService {
    */
   deleteAgent(userId: string, name: string, projectId?: string | null): Promise<void>
   /** Drop the user's override of a builtin so the shipped definition applies again. */
-  resetAgent(userId: string, name: string): Promise<AgentSummary>
+  resetAgent(userId: string, name: string, projectId?: string | null): Promise<AgentSummary>
   /**
    * The definition this installation SHIPS for a name, whatever is on disk — what the editor
    * fills its fields with when the user asks for the defaults back, BEFORE anything is written.
    */
   agentDefaults(name: string): AgentRecord | null
-  /** Copy an agent under a new name in the same scope, enabled and provenance reset to local. */
+  /** Copy definition, policy and enable choice into a fresh local identity in the same scope. */
   duplicateAgent(
     userId: string,
     name: string,

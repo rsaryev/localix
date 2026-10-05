@@ -1,5 +1,10 @@
 import { builtinAgentId, DEFAULT_AGENT_HANDLE } from '@localixai/agent/agents'
-import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
+import {
+  ROLE_TOOL_PRESETS,
+  LEGACY_ROLE_TOOL_PRESETS,
+  roleArtifactRules,
+  roleCallRules,
+} from './role-tool-presets'
 import type { Rule } from './rule'
 
 /**
@@ -23,16 +28,6 @@ import type { Rule } from './rule'
  * to carry the tool (`run-shape.ts`), which is why an allow whose every host surface excludes
  * it is a defect rather than a harmless extra — `builtin-team.test.ts` fails on one.
  */
-const TOOLS: Record<string, readonly string[]> = {
-  lead: BUILTIN_TOOL_NAMES,
-  pm: BUILTIN_TOOL_NAMES,
-  architect: BUILTIN_TOOL_NAMES,
-  backend: BUILTIN_TOOL_NAMES,
-  frontend: BUILTIN_TOOL_NAMES,
-  qa: BUILTIN_TOOL_NAMES,
-  design: BUILTIN_TOOL_NAMES,
-  devops: BUILTIN_TOOL_NAMES,
-}
 
 /**
  * Every host a shipped role may be invoked in.
@@ -78,7 +73,18 @@ const BASELINE: Rule[] = [
 ]
 
 export function builtinAgentPreset(handle: string): Rule[] {
-  const tools = TOOLS[handle]
+  return agentPreset(handle, ROLE_TOOL_PRESETS[handle], true)
+}
+
+export function legacyAgentPreset10(handle: string): Rule[] {
+  return agentPreset(handle, LEGACY_ROLE_TOOL_PRESETS[handle], false)
+}
+
+function agentPreset(
+  handle: string,
+  tools: readonly string[] | undefined,
+  scoped: boolean,
+): Rule[] {
   // Before the ID is built, not after: `builtinAgentId` PARSES the handle, so a name we do
   // not ship — which is what an agent id off the wire can be — threw instead of answering
   // "no preset". The early return is the answer for every handle that is not ours.
@@ -101,7 +107,9 @@ export function builtinAgentPreset(handle: string): Rule[] {
     // After the roster, because last match wins and these are about ARGUMENTS, not tools.
     // Put them first and the `tool:read * allow` below would answer for a read outside the
     // workspace too, silently dropping the confirmation.
+    ...(scoped ? roleArtifactRules(handle) : []),
     ...BASELINE,
+    ...(scoped ? roleCallRules(handle) : []),
     { action: 'invocation:*', resource: id, effect: 'deny' },
     ...HOSTS.map((host) => ({
       action: `invocation:${host}`,

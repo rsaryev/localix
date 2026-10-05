@@ -126,7 +126,7 @@ export function StatsPanel({ onOpenSession }: { onOpenSession?: (sessionId: stri
       ? kindLabel
       : groupBy === 'agent'
         ? // Rows with no speaker — the background calls a room makes for itself (titles,
-          // prompt improvement) — group under the repository's 'unknown' key. Naming the bucket keeps the
+          // completions) — group under the repository's 'unknown' key. Naming the bucket keeps the
           // breakdown adding up to the summary card instead of appearing to lose spend.
           (key: string) => agentHandles.get(key) ?? (key === 'unknown' ? 'No agent' : shortKey(key))
         : shortKey

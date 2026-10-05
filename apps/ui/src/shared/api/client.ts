@@ -290,24 +290,6 @@ export const backendClient = {
     )
   },
 
-  async improvePrompt(input: {
-    sessionId: string | null
-    connectionId: string | null
-    model: string
-    reasoningEffort: ReasoningEffort
-    prompt: string
-  }): Promise<{ prompt: string }> {
-    if (!input.sessionId) {
-      throw new ApiError('Start a chat before improving a prompt.', 409)
-    }
-    return unwrap(
-      await client.rpc.sessions[':id']['improve-prompt'].$post({
-        param: { id: input.sessionId },
-        json: { prompt: input.prompt },
-      }),
-    )
-  },
-
   async rollback(sessionId: string, messageId: string): Promise<{ restoredPrompt: string }> {
     return unwrap(
       await client.rpc.sessions[':id'].messages[':messageId'].rollback.$post({

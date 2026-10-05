@@ -7,45 +7,26 @@ import {
   normalizeUiSettings,
   uiSettingsPatchSchema,
   updateUserProfileRequestSchema,
-  userProfileSchema,
 } from './contracts'
 import {
   AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
-  RESPONSE_DEFAULTS_MAX_CHARS,
   UI_SETTINGS_MAX_SERIALIZED_CHARS,
-  USER_PROFILE_FIELD_MAX_CHARS,
-  USER_PROFILE_PROMPT_MAX_CHARS,
-  clipResponseDefaultsPrompt,
   isAgentSettingsWithinIngressBudget,
-  clipUserProfilePrompt,
 } from './profile-limits'
 
 describe('profile ingress budgets', () => {
-  test('accepts values at the boundary and rejects larger new writes', () => {
-    expect(
-      updateUserProfileRequestSchema.safeParse({
-        workingContext: 'w'.repeat(USER_PROFILE_FIELD_MAX_CHARS),
-        responseDefaults: 'r'.repeat(RESPONSE_DEFAULTS_MAX_CHARS),
-      }).success,
-    ).toBe(true)
-    expect(
-      updateUserProfileRequestSchema.safeParse({
-        workingContext: 'w'.repeat(USER_PROFILE_FIELD_MAX_CHARS + 1),
-      }).success,
-    ).toBe(false)
-    expect(
-      updateUserProfileRequestSchema.safeParse({
-        responseDefaults: 'r'.repeat(RESPONSE_DEFAULTS_MAX_CHARS + 1),
-      }).success,
-    ).toBe(false)
-  })
-
-  test('keeps legacy response fields readable even when prompt ingress now rejects that size', () => {
-    const legacy = 'r'.repeat(RESPONSE_DEFAULTS_MAX_CHARS + 1)
-    expect(userProfileSchema.shape.responseDefaults.safeParse(legacy).success).toBe(true)
-    expect(updateUserProfileRequestSchema.safeParse({ responseDefaults: legacy }).success).toBe(
-      false,
-    )
+  test('rejects retired personal profile fields', () => {
+    for (const field of [
+      'name',
+      'role',
+      'expertise',
+      'workingContext',
+      'experienceLevel',
+      'mainUseCase',
+      'responseDefaults',
+    ]) {
+      expect(updateUserProfileRequestSchema.safeParse({ [field]: 'retired' }).success).toBe(false)
+    }
   })
 
   test('the ingress budget rejects a pathological blob, and ordinary settings pass', () => {
@@ -96,28 +77,6 @@ describe('profile ingress budgets', () => {
     expect(updateUserProfileRequestSchema.safeParse({ uiSettingsPatch: oversized }).success).toBe(
       false,
     )
-  })
-})
-
-describe('stable prompt clipping', () => {
-  test('bounds profile and response bodies with visible markers', () => {
-    const profile = clipUserProfilePrompt('p'.repeat(USER_PROFILE_PROMPT_MAX_CHARS + 500))
-    const defaults = clipResponseDefaultsPrompt('d'.repeat(RESPONSE_DEFAULTS_MAX_CHARS + 500))
-    expect(profile.length).toBe(USER_PROFILE_PROMPT_MAX_CHARS)
-    expect(defaults.length).toBe(RESPONSE_DEFAULTS_MAX_CHARS)
-    expect(profile).toEndWith('characters]')
-    expect(defaults).toContain('response defaults truncated')
-  })
-
-  test('trims ordinary values and never splits a surrogate pair at the boundary', () => {
-    expect(clipUserProfilePrompt('  concise  ')).toBe('concise')
-    const suffix = `\n[... response defaults truncated at ${RESPONSE_DEFAULTS_MAX_CHARS.toLocaleString('en-US')} characters]`
-    const bodyBudget = RESPONSE_DEFAULTS_MAX_CHARS - suffix.length
-    const clipped = clipResponseDefaultsPrompt(
-      'x'.repeat(bodyBudget - 1) + '😀' + 'tail'.repeat(50),
-    )
-    expect(clipped).toEndWith(suffix)
-    expect(clipped.slice(0, -suffix.length)).toBe('x'.repeat(bodyBudget - 1))
   })
 })
 

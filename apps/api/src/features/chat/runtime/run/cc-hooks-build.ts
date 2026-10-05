@@ -16,6 +16,7 @@
  * features/chat/service*.
  */
 import type { AvailabilityReader } from '../../../capabilities/availability'
+import type { ResolvedCapabilities } from '../../../capabilities/resolve'
 import {
   buildCcHookRegistry,
   createCcHooksRuntime,
@@ -49,6 +50,7 @@ export interface BuildRunCcHooksInput {
   disabledTools: string[]
   /** What the run's rules say about its MCP servers. */
   availability: AvailabilityReader
+  capabilities: ResolvedCapabilities
   loadedPlugins: LoadedPlugins
   /** A continuation segment never re-fires SessionStart. */
   isContinuation: boolean
@@ -123,6 +125,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
       defaultCwd,
       disabledTools,
       availability,
+      capabilities: input.capabilities,
     }),
     // asyncRewake: a background hook that exits 2 wakes this session with the rewake message —
     // an exit notice armed as the hook starts, like a `notify` job's, so the wake is exactly one

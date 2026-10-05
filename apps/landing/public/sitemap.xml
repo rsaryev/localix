@@ -10,6 +10,7 @@
   <url><loc>https://localix.ai/docs/recipes--fix-a-ui-bug-by-pointing-at-it</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/recipes--turn-a-vague-goal-into-a-pipeline</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--capabilities</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--agents</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--permission-modes</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--permissions</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--configure</loc><priority>0.7</priority></url>
@@ -23,6 +24,8 @@
   <url><loc>https://localix.ai/docs/features--loops</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--onboarding</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--workspace</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--settings</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--keyboard-shortcuts</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--source-control</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--visual-feedback</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--lsp</loc><priority>0.7</priority></url>

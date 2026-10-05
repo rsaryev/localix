@@ -2,6 +2,7 @@ import type { CuratorSkillRecord } from '@/shared/api/contracts'
 import { Button } from '@localixai/kit/button'
 import { SettingRegistryList, SettingRegistryRow } from '../settingRegistry'
 import { relativeTime } from './skillCuratorTime'
+import { SettingsSection } from '../SettingsScaffold'
 
 /**
  * The archive that sits under the active skill list.
@@ -29,14 +30,10 @@ export function ArchivedSkills({
   if (archived.length === 0) return null
 
   return (
-    <div className="mt-8">
-      <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-text-soft">
-        Archived ({archived.length})
-      </h3>
-      <p className="mb-3 text-xs text-text-faint">
-        Moved to the skills folder's <code>.archive/</code> by you or the curator — nothing is ever
-        deleted.
-      </p>
+    <SettingsSection
+      title={`Archived skills (${archived.length})`}
+      description="Moved to the skills folder’s .archive/ by you or the curator. Restore brings the file back."
+    >
       <SettingRegistryList>
         {archived.map((c) => (
           <SettingRegistryRow
@@ -45,7 +42,7 @@ export function ArchivedSkills({
             busyLabel={mutationName === c.name ? mutationLabel : undefined}
             header={
               <>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <code className="text-sm text-text-soft">/{c.name}</code>
                   <span className="text-2xs text-text-faint">
                     archived {relativeTime(c.archivedAt)} · used {c.getCount}×
@@ -61,7 +58,7 @@ export function ArchivedSkills({
             actions={
               <Button
                 variant="ghost"
-                size="xs"
+                size="default"
                 onClick={() => onRestore(c.name)}
                 disabled={actionsDisabled}
               >
@@ -71,6 +68,6 @@ export function ArchivedSkills({
           />
         ))}
       </SettingRegistryList>
-    </div>
+    </SettingsSection>
   )
 }

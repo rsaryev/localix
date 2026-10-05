@@ -338,7 +338,7 @@ describe('apps/api db layer', () => {
     const filename = join(tempDir, `${randomUUID()}.sqlite`)
     const db = createDatabase({ filename })
     await migrateToLatest(db)
-    await sql`INSERT INTO user_profiles (user_id, name) VALUES ('snapshot-user', 'Snapshot')`.execute(
+    await sql`INSERT INTO user_profiles (user_id, agent_settings) VALUES ('snapshot-user', 'Snapshot')`.execute(
       db,
     )
 
@@ -348,10 +348,10 @@ describe('apps/api db layer', () => {
     try {
       expect(
         snapshot
-          .query<{ name: string }, []>(
-            "SELECT name FROM user_profiles WHERE user_id = 'snapshot-user'",
+          .query<{ agent_settings: string }, []>(
+            "SELECT agent_settings FROM user_profiles WHERE user_id = 'snapshot-user'",
           )
-          .get()?.name,
+          .get()?.agent_settings,
       ).toBe('Snapshot')
     } finally {
       snapshot.close()

@@ -98,6 +98,7 @@ export function ModelPickerDrawer({
       onReasoningEffortChange={onReasoningEffortChange}
       initialQuery={seed?.query}
       initialProviderId={seed?.providerId}
+      initialConnectionId={seed?.connectionId}
     />
   )
 }

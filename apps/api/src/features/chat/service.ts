@@ -88,7 +88,6 @@ export function createChatService(deps: ChatServiceDeps) {
 
     ...createChatMessageFacade({
       ...graph,
-      deps,
       requireSession,
       turnEntryCtx: contexts.turnEntryCtx,
       branchingCtx: contexts.branchingCtx,

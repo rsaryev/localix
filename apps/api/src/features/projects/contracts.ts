@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { SNIPPET_CONTENT_MAX } from '../chat/context-ref-kinds'
-import { contextExclusionPathSchema } from '../context-fabric/exclusion-schema'
+import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
 import { modelIdSchema, providerConnectionIdSchema } from '../catalog/model-identity'
 
 export const PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS = 12_000
@@ -41,7 +41,7 @@ export const projectSettingsSchema = z.object({
   toolBudgetWarn: z.number().int().positive().optional(),
   /** Project-local Context Fabric exclusions; merged with user exclusions and can
    * only tighten the mandatory ContextPolicy denylist. */
-  contextExclusions: z.array(contextExclusionPathSchema).max(64).optional(),
+  contextExclusions: contextExclusionsSchema.optional(),
 })
 
 /**
@@ -59,7 +59,7 @@ export const projectSettingsPatchSchema = z
       .optional(),
     modelId: modelIdSchema.nullable().optional(),
     providerConnectionId: providerConnectionIdSchema.nullable().optional(),
-    contextExclusions: z.array(contextExclusionPathSchema).max(64).nullable().optional(),
+    contextExclusions: contextExclusionsSchema.nullable().optional(),
   })
   .strict()
   .refine(isProjectSettingsWithinIngressBudget, {

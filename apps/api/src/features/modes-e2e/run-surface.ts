@@ -3,7 +3,7 @@
  *
  * The path is production's, link by link, so a matrix over it tests the product rather than a
  * model of it: `capabilitiesInMode` (stages/context.ts) → `projectCapabilities` over the built-in
- * and plugin roster (prompt-context.ts) → `permissionRulesForRun` → `createPermissionGate`
+ * and plugin roster (prompt-context.ts) → `createPermissionGate`
  * (permission-gate-build.ts) over the tools the registry built. Only two seams differ, both
  * stated: the confirm requester records the question instead of showing a card (so an `ask` is
  * observable in every mode, including the one whose production gate has no requester), and the
@@ -21,7 +21,6 @@ import {
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { createRuntimeToolRegistry } from '../agent-core/tool-registry'
 import type { PlanToolOptions } from '../agent-core/tools/plan/plan'
-import { permissionRulesForRun } from '../chat/runtime/run/permission-gate-build'
 import { capabilitiesInMode } from '../capabilities/permission-mode-policy'
 import type { PermissionMode } from '../capabilities/permission-modes'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../capabilities/resolve'
@@ -112,7 +111,7 @@ export function modeSurface(
     ...NO_ROSTERS,
     tool: [...BUILTIN_TOOL_NAMES, ...rosterExtra],
   })
-  const permissions = permissionRulesForRun(projection.permissions, undefined)
+  const permissions = projection.permissions
   return {
     mode,
     humanReachable,

@@ -797,9 +797,7 @@ const pluginCommandNames = discoveredPlugins.flatMap((plugin) =>
       : `${plugin.manifest.name}:${command.name}`,
   ),
 )
-const pluginAgentNames = discoveredPlugins.flatMap((plugin) =>
-  plugin.agents.map((agent) => `${plugin.manifest.name}:${agent.name}`),
-)
+const pluginAgentNames = discoveredPlugins.flatMap((plugin) => plugin.provides.agents ?? [])
 // Authoring-only/lazy tools may be declared but not returned by the active register()
 // path. Their plugin-owned declarations still define identities core must not learn.
 for (const manifest of bundledPluginManifests) {

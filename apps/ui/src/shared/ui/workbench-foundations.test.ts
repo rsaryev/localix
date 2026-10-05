@@ -123,10 +123,7 @@ describe('workbench foundation contracts', () => {
     // the tabs passes `trailing` instead of suppressing the line and redrawing it.
     expect(tabs).toContain('trailing?: ReactNode')
     expect(tabs).toContain('data-slot="tab-bar-trailing"')
-    for (const path of [
-      'features/settings/ui/capabilities/CapabilityTabRow.tsx',
-      'features/settings/ui/SettingsPanel.tsx',
-    ]) {
+    for (const path of ['features/settings/ui/capabilities/CapabilityTabRow.tsx']) {
       const consumer = read(path)
       expect(consumer, `${path} suppresses the shared tab-row seam`).not.toContain('border-b-0')
       expect(consumer, `${path} no longer mounts the shared tab row`).toContain('<TabBar')
@@ -318,7 +315,7 @@ describe('workbench foundation contracts', () => {
     expect(browserTabs).not.toContain('role="tab"')
 
     for (const path of [
-      'features/settings/ui/SettingsPanel.tsx',
+      'features/settings/ui/SettingsNavigation.tsx',
       'features/settings/ui/CapabilitiesSettings.tsx',
     ]) {
       expect(read(path)).toContain('aria-label=')

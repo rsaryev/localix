@@ -36,12 +36,14 @@ export const CAPABILITY_TABS = ['tools', 'skills', 'mcp', 'plugins', 'rules'] as
 export type CapabilityTabId = (typeof CAPABILITY_TABS)[number]
 
 export const SETTINGS_STRING_TABS = [
-  'general',
   'preferences',
   'editor',
   'shortcuts',
   'agents',
   ...CAPABILITY_TABS,
+  'project',
+  'system',
+  'context',
   'diagnostics',
 ] as const
 
@@ -122,5 +124,5 @@ export function parseSettingsTab(
 ): SettingsTabId {
   if (projectId) return { kind: 'project', id: projectId }
   if (tab && (SETTINGS_STRING_TABS as readonly string[]).includes(tab)) return tab as SettingsTabId
-  return 'general'
+  return 'preferences'
 }

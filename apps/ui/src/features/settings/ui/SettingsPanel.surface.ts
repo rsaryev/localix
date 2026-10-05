@@ -27,7 +27,7 @@ export default defineUiLocation({
   exposure: { search: true },
   resolve: ({ scope }) => ({
     kind: 'settings',
-    tab: 'general',
+    tab: 'preferences',
     scope,
   }),
 })

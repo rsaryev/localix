@@ -66,24 +66,28 @@ Rules are evaluated in one pass, in order, and the last match wins. That is the 
 stated before a narrower `allow` is an allowlist with an exception — the shape every shipped preset
 uses (`tool:* * deny`, then an `allow` per tool).
 
-A skill's `allowed-tools` are folded in per run: after everything that is not a denial, before the
-denials (`permission-gate-build.ts`). So a skill may lift a QUESTION and never a REFUSAL — a skill
-is a file in a repository, and `tool:bash git push* deny` has to survive one that declares
-`Bash(git *)`.
+A skill's `allowed-tools` are evaluated as separate preapprovals after the original ordered policy
+has decided. They can answer an ordinary matching tool or argument question; they cannot reorder the
+policy, reopen a denied tool or lift a call-class confirmation such as `outside-workspace` or
+`dangerous`. A deny followed by an authored allow remains an allowlist with an exception, even when
+a skill declares `Bash(git *)`.
 
 ### Pattern matching
 
-| Pattern             | Match                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `*`                 | Every call selected by `permission`.                                                 |
-| `outside-workspace` | A resolved path outside the workspace root.                                          |
-| `dangerous`         | A shell command classified as dangerous.                                             |
-| `mutates`           | A call whose effect is anything but `read` or `view`.                                |
-| `effect:<effect>`   | A call the tool classes as `read`, `view`, `session`, `files`, `host` or `external`. |
-| `irreversible`      | A call the tool says cannot be undone.                                               |
-| `needs-human`       | A call that waits on a person.                                                       |
-| `git *`             | The `git` command, with or without arguments.                                        |
-| `npm i*`            | An anchored glob — `*` stands for any run of characters.                             |
+| Pattern               | Match                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| `*`                   | Every call selected by `permission`.                                                 |
+| `outside-workspace`   | A resolved path outside the workspace root.                                          |
+| `dangerous`           | A shell command classified as dangerous.                                             |
+| `mutates`             | A call whose effect is anything but `read` or `view`.                                |
+| `effect:<effect>`     | A call the tool classes as `read`, `view`, `session`, `files`, `host` or `external`. |
+| `irreversible`        | A call the tool says cannot be undone.                                               |
+| `needs-human`         | A call that waits on a person.                                                       |
+| `documentation-files` | Every mutation target is a documentation file within the workspace.                  |
+| `test-files`          | Every mutation target is a test/spec file or belongs to a test/fixture directory.    |
+| `prototype-files`     | Every mutation target belongs to a mockup, design or prototype artifact.             |
+| `git *`               | The `git` command, with or without arguments.                                        |
+| `npm i*`              | An anchored glob — `*` stands for any run of characters.                             |
 
 "Inside" is the session workspace plus the parts of `~/.localix` agents author — `workspace/`,
 `tmp/`, `plugins/` (the user's own plugins) and `skills/` — for reads and writes alike, in every
@@ -154,9 +158,10 @@ run schedule its file tools sequentially, so the confirmations arrive one at a t
 A conversation's [permission mode](../features/permission-modes.md) never reaches the gate as a
 flag. `capabilities/permission-mode-policy.ts` rewrites the agent's rules once per run: Bypass turns
 each tool `ask` into `allow` in place, Plan and Autonomous only append denials, and every mode keeps
-the agent's rows in order. Appended denials stay strongest through the skill fold, which moves every
-denial after a skill's allows. A tool that declares no `classify` is classed `external`, so an
-undeclared tool is refused by Plan rather than passing as a read.
+the agent's rows in order. Skill preapprovals never reorder this policy or override a denial. MCP
+hooks use the same tool policy and call gate; an unattended hook cannot execute a call that requires
+confirmation. A tool that declares no `classify` is classed `external`, so an undeclared tool is
+refused by Plan rather than passing as a read.
 
 ## Configuration
 

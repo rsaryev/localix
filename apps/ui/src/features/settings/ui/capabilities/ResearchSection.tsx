@@ -11,8 +11,10 @@ export function ResearchSection() {
 
   return (
     <SettingsSection
-      title="Research"
-      description="Tokenless metasearch and safe source reading across web, academic, code, community, and encyclopedia sources. Partial provider failures degrade gracefully."
+      title="Research access"
+      anchor="system-research"
+      scope="workspace"
+      description="Choose whether research may read local development servers and private network sources. Applies to every agent."
     >
       <SettingsRows>
         <SwitchRow
@@ -29,9 +31,12 @@ export function ResearchSection() {
           onChange={() =>
             update({
               agentSettings: {
-                ...settings.agentSettings,
+                ...useUserSettings.getState().settings.agentSettings,
                 research: {
-                  allowPrivate: !(settings.agentSettings?.research?.allowPrivate ?? false),
+                  allowPrivate: !(
+                    useUserSettings.getState().settings.agentSettings?.research?.allowPrivate ??
+                    false
+                  ),
                 },
               },
             })

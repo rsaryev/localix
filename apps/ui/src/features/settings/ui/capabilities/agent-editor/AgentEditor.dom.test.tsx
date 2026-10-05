@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 
 import { registerDom } from '@localixai/kit/testing/dom'
-import type { AgentRecord, AgentSummary } from '@/shared/api/contracts'
+import type { AgentRecord, AgentRecordInput, AgentSummary } from '@/shared/api/contracts'
 
 // The model picker talks to the backend; that is not what these tests are about — the form's
 // own decisions are. What the agent MAY USE is not here at all any more: it is the profile's
@@ -79,6 +79,79 @@ async function mount(props: Record<string, unknown> & object) {
 }
 
 describe('AgentEditor', () => {
+  test('context controls participate in save and the inherited limit is described accurately', async () => {
+    const onSave = mock(async (_input: AgentRecordInput) => {})
+    const { act, unmount } = await mount({ agent: customized(), onSave })
+    try {
+      const skills = document.querySelector<HTMLTextAreaElement>('#agent-preload-skills')!
+      expect(skills).not.toBeNull()
+      await act(async () => typeInto(skills, 'review-rules\nproject-style'))
+      await act(async () => submit().click())
+      expect(onSave.mock.calls[0]?.[0].context?.preloadSkills).toEqual([
+        'review-rules',
+        'project-style',
+      ])
+      expect(document.querySelector<HTMLInputElement>('#agent-max-turns')?.placeholder).toBe(
+        'Inherit run limit',
+      )
+      expect(document.querySelector('#agent-memory-scope')).not.toBeNull()
+    } finally {
+      await unmount()
+    }
+  })
+
+  test('definition groups have accessible section names and shared settings hierarchy', async () => {
+    const { unmount } = await mount({ agent: customized() })
+    try {
+      const sections = [...document.querySelectorAll('section[aria-labelledby]')]
+      expect(sections).toHaveLength(5)
+      expect(
+        sections.map(
+          (section) =>
+            document.getElementById(section.getAttribute('aria-labelledby')!)?.textContent,
+        ),
+      ).toEqual(['Identity', 'Model', 'Instructions', 'Context', 'Limits'])
+      for (const section of sections) {
+        expect(section.className).toContain('border-border-faint')
+        expect(section.querySelector('h3')?.className).toContain('text-base')
+      }
+      expect(
+        document
+          .querySelector('label[for="agent-name"]')
+          ?.closest('[data-slot="field"]')
+          ?.querySelector('#agent-name'),
+      ).not.toBeNull()
+      expect(submit().dataset.size).toBe('xl')
+    } finally {
+      await unmount()
+    }
+  })
+
+  test('invalid limits announce the field error and prevent saving; a correction saves the definition', async () => {
+    const onSave = mock(async (_input: AgentRecordInput) => {})
+    const { act, unmount } = await mount({ agent: customized(), onSave })
+    try {
+      const turns = document.querySelector<HTMLInputElement>('#agent-max-turns')!
+      await act(async () => typeInto(turns, '0'))
+      await act(async () => submit().click())
+      expect(onSave).not.toHaveBeenCalled()
+      expect(turns.getAttribute('aria-invalid')).toBe('true')
+      const errorId = turns.getAttribute('aria-describedby')!.split(' ')[0]!
+      expect(document.getElementById(errorId)?.getAttribute('role')).toBe('alert')
+      await act(async () => typeInto(turns, '12'))
+      await act(async () => submit().click())
+      expect(onSave).toHaveBeenCalledTimes(1)
+      expect(onSave.mock.calls[0]?.[0]).toMatchObject({
+        handle: 'lead',
+        limits: { maxTurns: 12 },
+        leadershipPriority: 2,
+        instructions: 'You are MY tech lead.',
+      })
+    } finally {
+      await unmount()
+    }
+  })
+
   test('an extension-owned definition is read-only and names its actual owner', async () => {
     const { unmount } = await mount({
       agent: customized({
@@ -100,6 +173,33 @@ describe('AgentEditor', () => {
     expect(document.body.textContent).not.toContain('Provided by review-pack')
     expect(submit().disabled).toBe(true)
     await unmount()
+  })
+
+  test('a local handle can be renamed while shipped handles remain locked', async () => {
+    const onSave = mock(async (_input: AgentRecordInput) => {})
+    const mine = await mount({
+      agent: customized({
+        record: { ...shipped, id: 'custom-id', handle: 'mine' },
+        builtin: false,
+        source: 'local',
+      }),
+      onSave,
+    })
+    try {
+      const name = document.querySelector<HTMLInputElement>('#agent-name')!
+      expect(name.readOnly).toBe(false)
+      await mine.act(async () => typeInto(name, 'renamed'))
+      await mine.act(async () => submit().click())
+      expect(onSave.mock.calls[0]?.[0].handle).toBe('renamed')
+    } finally {
+      await mine.unmount()
+    }
+    const builtin = await mount({ agent: customized() })
+    try {
+      expect(document.querySelector<HTMLInputElement>('#agent-name')!.readOnly).toBe(true)
+    } finally {
+      await builtin.unmount()
+    }
   })
 
   test('there is nothing to save until a field actually changes', async () => {

@@ -75,7 +75,7 @@ export const USAGE_KIND_LABELS: Readonly<Record<UsageKindKey, string>> = {
   autocomplete: 'Autocomplete',
   'inline-completion': 'Inline completion',
   terminal: 'Terminal',
-  improve: 'Improve prompt',
+  improve: 'Prompt improvement (retired)',
   classify: 'Auto-mode classifier',
   hook: 'Hook policy checks',
 }

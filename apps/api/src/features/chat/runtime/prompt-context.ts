@@ -19,19 +19,17 @@ import { createEnvironment } from '../../agent-core/tools/environments'
 import type { ExecutionEnvironmentConfig } from '../../agent-core/tools/environment'
 import { discoverFilesystemSkills } from '../../agent-core/skill-discovery'
 import { discoverContextFiles } from '../../agent-core/context-files'
-import { resolveTriggeredSkills, type TriggeredSkill } from './prompt-skill-triggers'
+import type { TriggeredSkill } from './prompt-skill-triggers'
+import { resolveAgentPromptContext } from './prompt-agent-context'
 import { loadEnabledPlugins, type LoadedPlugins } from '../../plugins/loader'
 import { emptyLoadedPlugins } from '../../plugins/loader-contract'
 import { availabilityOf, type AvailabilityReader } from '../../capabilities/availability'
-import { loadMemoryProviderContext } from '../../plugins/hooks'
-import type { loadUserProfileContext } from '../../agent-core/tools/memory/user-profile'
-import { consoleWarnLogger, prefixedWarnLogger } from './plugin-hook-logger'
+import type { loadUserSettingsContext } from '../../user/runtime-settings'
+import { prefixedWarnLogger } from './plugin-hook-logger'
 import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../session-route'
-import { resolvePromptSnapshot } from './prompt-snapshot'
 import { recordPluginCatalogLoad } from '../../notifications/conditions/plugins'
 import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
-import { resolvePinnedSkills } from './prompt-pinned-skills'
 import type { FrozenSessionContext } from './agent-runner-types'
 import type { RuntimeState } from './agent-runner-state'
 import type { SessionRecord } from '../repository'
@@ -41,14 +39,11 @@ import type { PersistedMessage } from '../contracts'
 import type { createMemoryRepository } from '../../memory/repository'
 import type { createProjectsRepository } from '../../projects/repository'
 import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
-import {
-  filterDisabledSkills,
-  skillOverridesRevision,
-  type SkillOverrides,
-} from '../../agent-core/skill-overrides'
+import type { SkillOverrides } from '../../agent-core/skill-overrides'
 import { loadProjectStructureSnapshot } from '../../agent-core/project-structure'
+import { memoryScopePolicy } from '../../memory/scope-policy'
 
-type UserProfileContext = Awaited<ReturnType<typeof loadUserProfileContext>>
+type UserSettingsContext = Awaited<ReturnType<typeof loadUserSettingsContext>>
 
 export interface PromptContextDeps {
   memoryRepo: ReturnType<typeof createMemoryRepository>
@@ -86,6 +81,7 @@ export interface PromptContextDeps {
 
 export interface PreparedRunContext {
   agent: AgentDefinition
+  capabilities: ResolvedRunAgent['capabilities']
   env: ReturnType<typeof createEnvironment>
   defaultCwd: string
   disabledTools: string[]
@@ -125,28 +121,21 @@ export async function prepareRunContext(
     historyMessages: PersistedMessage[]
     /** The model view's epoch; the prompt snapshot is frozen per epoch. */
     viewEpoch: string
-    userProfile: UserProfileContext['profileText']
-    responseDefaults: UserProfileContext['responseDefaults']
-    globalAgentSettings: UserProfileContext['agentSettings']
+    globalAgentSettings: UserSettingsContext['agentSettings']
   },
 ): Promise<PreparedRunContext> {
   const { memoryRepo, projectsRepo, pluginRepo, contextSnapshots, now } = ctx
-  const {
-    userId,
-    session,
-    speakerAgentId,
-    historyMessages,
-    viewEpoch,
-    userProfile,
-    responseDefaults,
-    globalAgentSettings,
-  } = params
+  const { userId, session, speakerAgentId, historyMessages, viewEpoch, globalAgentSettings } =
+    params
   const speakerRoute = agentRoute(session, speakerAgentId)
   if (!speakerRoute) throw new Error(`Agent is unavailable: ${speakerAgentId}`)
 
-  // Memory scopes: this session, the current project, and global ('').
-  const memorySessionScope = `session:${session.rootSessionId ?? session.id}`
-  const memoryScopes = [memorySessionScope, ...(session.projectId ? [session.projectId] : []), '']
+  const memorySelection = params.agent.definition.context?.memory?.scope
+  const memoryPolicy = memoryScopePolicy(
+    session.projectId,
+    session.rootSessionId ?? session.id,
+    memorySelection,
+  )
 
   // Independent loads — fetch concurrently to cut time-to-first-token.
   // Memory ordering is stable ('key') on purpose: 'recent' reorders the
@@ -172,7 +161,7 @@ export async function prepareRunContext(
   )
   const [memory, project, defaultCwd] = await Promise.all([
     // Notes + usage in a single scope-file load (was two separate reads/parses).
-    memoryRepo.listWithUsage(userId, memoryScopes, 'key'),
+    memoryRepo.listWithUsage(userId, memoryPolicy.scopes, 'key'),
     projectPromise,
     defaultCwdPromise,
   ])
@@ -327,70 +316,28 @@ export async function prepareRunContext(
   const permissionRules: PermissionRule[] = policy.permissions
   const skillOverrides = skillOverridesOf(policy.denied.skill)
   const skillsContext = buildSkillsContext(allSkills, skillOverrides, defaultCwd)
-  const currentSkillOverridesRevision = skillOverridesRevision(skillOverrides)
-
-  // Freeze prompt text per agent lane until its view epoch changes: a checkpoint or `/clear`
-  // rewrites the cached prefix anyway, so that is when memory and skills refresh.
-  const snapshotAddress = { sessionId: session.id, agentId: speakerRoute.agentId }
-  // The user's own latest message, and only that: injected skill content is read as
-  // instruction, so triggering on tool output or file contents would let any repository
-  // containing the keyword push instructions into the prompt. External memory recalls by it too.
-  const latestUserContent = [...historyMessages]
-    .reverse()
-    .find((message) => message.payload.role === 'user' && !message.payload.isInternal)
-    ?.payload.content
-  const latestUserText = typeof latestUserContent === 'string' ? latestUserContent : undefined
-  const freshContext: FrozenSessionContext = {
-    userProfile,
-    responseDefaults,
+  const { frozenContext, pinnedSkills, triggeredSkills } = await resolveAgentPromptContext({
+    userId,
+    session,
+    speakerAgentId,
+    context: resolvedAgent.definition.context,
+    historyMessages,
+    viewEpoch,
+    memoryPolicy,
     memoryContext,
     memoryUsage,
     skillsContext,
     projectInstructions: boundedProjectInstructions,
-    skillOverridesRevision: currentSkillOverridesRevision,
-    // Output-style files now live under `.localix/output-styles`, but no native
-    // selection setting exists yet. Keep the prompt neutral until one does rather
-    // than importing the selected name from another application's settings.
-  }
-  let frozenContext = freshContext
-  if (session.sessionKind === 'chat') {
-    frozenContext = await resolvePromptSnapshot({
-      cache: contextSnapshots,
-      store: ctx.laneSnapshots,
-      userId,
-      address: snapshotAddress,
-      boundary: viewEpoch,
-      fresh: freshContext,
-      initialize: async () => {
-        // Resolve external memory once per snapshot boundary.
-        if (loadedPlugins.memory) {
-          freshContext.memoryContext =
-            (await loadMemoryProviderContext(
-              loadedPlugins.memory,
-              {
-                sessionId: session.id,
-                projectId: session.projectId,
-                prompt: latestUserText ?? '',
-                builtinContext: memoryContext ?? '',
-              },
-              { logger: consoleWarnLogger },
-            )) || undefined
-        }
-      },
-    })
-  }
-
-  // Pinned skills are "applied" to the session — their full content is
-  // warmed into the system prompt so the agent follows them this whole session.
-  const pinnedSkills = resolvePinnedSkills(allSkills, session.pinnedSkills ?? [], skillOverrides)
-  const triggeredSkills = resolveTriggeredSkills(
-    filterDisabledSkills(allSkills, skillOverrides),
-    latestUserText,
-    session.pinnedSkills ?? [],
-  )
+    allSkills,
+    skillOverrides,
+    loadedPlugins,
+    contextSnapshots,
+    laneSnapshots: ctx.laneSnapshots,
+  })
 
   return {
     agent: resolvedAgent.definition,
+    capabilities: resolvedAgent.capabilities,
     env,
     defaultCwd,
     disabledTools,

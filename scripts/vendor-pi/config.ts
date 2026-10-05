@@ -40,6 +40,10 @@ export const TRIPWIRES: ReadonlyArray<{ path: string; delta: string }> = [
   },
   { path: `${VENDOR_DIR}/packages/ai/test/oauth-page.test.ts`, delta: 'Localix OAuth pages' },
   {
+    path: `${VENDOR_DIR}/packages/ai/test/openai-chatgpt-oauth.test.ts`,
+    delta: 'host application name for ChatGPT registration',
+  },
+  {
     path: `${VENDOR_DIR}/packages/ai/test/openai-codex-oauth.test.ts`,
     delta: 'Codex OAuth login recovery',
   },

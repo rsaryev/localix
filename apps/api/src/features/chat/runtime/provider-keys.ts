@@ -1,6 +1,6 @@
 /**
  * Shared key-selection idiom for provider connections. The run path, the aux/
- * title/improve-prompt slots, and the media paths all pick the SAME way:
+ * title generation, and the media paths all pick the SAME way:
  * the highest-priority ENABLED key (lower `priority` wins). Centralized here so
  * the selection order is defined once; each caller keeps its own miss policy
  * (throw vs. return null), since those differ by call site.

@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { SettingsPage, SettingsSection, SettingsSurface } from './SettingsScaffold'
-import { Button } from '@localixai/kit/button'
-import { useNavigate } from 'react-router'
-import { setupPath } from '@/shared/routing/routes'
+import { SettingsControlRow, SettingsPage, SettingsSection } from './SettingsScaffold'
+import { NotificationsSection } from './NotificationsSection'
 import { TypographySection } from './typography/TypographySection'
 import { Input } from '@localixai/kit/input'
 import { getSpendThreshold, setSpendThreshold } from '@/shared/lib/spendAlert'
+import { useTheme, type ThemeMode } from '@/shared/theme/useTheme'
 import { Select, type SelectOption } from '@localixai/kit/select'
 import {
   setRailRecentsMode,
@@ -36,16 +35,23 @@ const RECENTS_MODE_OPTIONS: SelectOption[] = [
 function RailRecentsField() {
   const mode = useRailRecentsMode()
   return (
-    <SettingsSurface className="flex items-center gap-3">
-      <Select
-        className="w-64"
-        contentClassName="w-80"
-        value={mode}
-        onValueChange={(next) => setRailRecentsMode(next as RailRecentsMode)}
-        options={RECENTS_MODE_OPTIONS}
-        aria-label="Recent views in the rail"
-      />
-    </SettingsSurface>
+    <SettingsSection
+      anchor="prefs-rail-recents"
+      scope="device"
+      title="Recent views"
+      description="Choose how the last ten plugin views appear in the rail."
+      actions={
+        <Select
+          size="xl"
+          className="w-full @xl:w-64"
+          contentClassName="w-80"
+          value={mode}
+          onValueChange={(next) => setRailRecentsMode(next as RailRecentsMode)}
+          options={RECENTS_MODE_OPTIONS}
+          aria-label="Recent views in the rail"
+        />
+      }
+    />
   )
 }
 
@@ -60,73 +66,75 @@ function SpendAlertField() {
     setSpendThreshold(Number.parseFloat(raw))
   }
   return (
-    <SettingsSurface className="flex items-center gap-2">
-      <span className="text-sm text-text-soft">$</span>
-      <Input
-        type="number"
-        min={0}
-        step="0.5"
-        inputMode="decimal"
-        value={value}
-        onChange={(e) => commit(e.target.value)}
-        placeholder="Off"
-        aria-label="Spend alert threshold in US dollars"
-        className="w-28"
+    <SettingsSection
+      anchor="prefs-spend-alert"
+      scope="device"
+      title="Spend alert"
+      description="Warn when metered session spend crosses this amount. Subscription costs are excluded. Leave blank to turn alerts off."
+      actions={
+        <>
+          <span className="text-sm text-text-soft">$</span>
+          <Input
+            size="xl"
+            type="number"
+            min={0}
+            step="0.5"
+            inputMode="decimal"
+            value={value}
+            onChange={(e) => commit(e.target.value)}
+            placeholder="Off"
+            aria-label="Spend alert threshold in US dollars"
+            className="w-28"
+          />
+          <span className="text-xs text-text-soft">per session</span>
+        </>
+      }
+    />
+  )
+}
+
+function ThemeField() {
+  const { themeMode, setThemeMode } = useTheme()
+  return (
+    <SettingsControlRow
+      title="Theme"
+      description="Appearance on this device. System follows your operating system."
+    >
+      <Select
+        aria-label="Theme"
+        size="xl"
+        className="w-full @xl:w-44"
+        value={themeMode}
+        onValueChange={(value) => setThemeMode(value as ThemeMode)}
+        options={[
+          { value: 'system', label: 'System' },
+          { value: 'light', label: 'Light' },
+          { value: 'dark', label: 'Dark' },
+        ]}
       />
-      <span className="text-sm text-text-faint">per session</span>
-    </SettingsSurface>
+    </SettingsControlRow>
   )
 }
 
 export function PreferencesSettings() {
-  const navigate = useNavigate()
   return (
     <SettingsPage
       title="Preferences"
-      description="Typography, rail, and budget defaults for the interface."
+      description="Make the workspace comfortable for the way you work."
     >
-      {/* Appearance is not a setting on this page any more: the app ships dark, light and system,
-          and the rail's own button cycles them in place. A settings row that opened a picker for
-          three values was a page for something one visible click answers. */}
       <SettingsSection
         anchor="prefs-typography"
-        title="Typography"
-        description="Interface and editor fonts plus text size — the preview shows your code font exactly as the editor renders it."
+        title="Appearance"
+        description="Choose your theme, interface font, and code appearance."
       >
-        <TypographySection />
+        <TypographySection leading={<ThemeField />} />
       </SettingsSection>
 
-      <SettingsSection
-        anchor="prefs-setup"
-        title="Setup"
-        description="Re-run the short provider and default-model setup."
-      >
-        <Button
-          variant="outline"
-          size="xl"
-          onClick={() => {
-            void navigate(setupPath())
-          }}
-        >
-          Replay setup
-        </Button>
-      </SettingsSection>
+      <RailRecentsField />
 
-      <SettingsSection
-        anchor="prefs-rail-recents"
-        title="Recent views"
-        description="Plugin views you open are remembered by the navigation rail. Keep the last ten behind one button so the rail stays quiet, show them all, or turn the slots off."
-      >
-        <RailRecentsField />
-      </SettingsSection>
+      <NotificationsSection />
 
-      <SettingsSection
-        anchor="prefs-spend-alert"
-        title="Spend alert"
-        description="Warn above the composer once a session's metered spend crosses this budget. The strip re-appears at each further multiple and can be dismissed; leave blank to turn it off. Subscription (plan-estimate) cost is never alerted."
-      >
-        <SpendAlertField />
-      </SettingsSection>
+      <SpendAlertField />
     </SettingsPage>
   )
 }

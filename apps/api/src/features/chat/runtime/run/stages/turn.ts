@@ -12,7 +12,7 @@ import { findCatalogModel } from '@localixai/agent/catalog'
 
 import { toSessionSummary } from '../../../repository'
 import { agentRoute } from '../../../session-route'
-import { loadUserProfileContext } from '../../../../agent-core/tools/memory/user-profile'
+import { loadUserSettingsContext } from '../../../../user/runtime-settings'
 import { getAgentService } from '../../agent-service-binding'
 import { invocationHost } from '../../execution-context'
 import { sessionAgent } from '../../message-envelope'
@@ -72,12 +72,9 @@ export async function resolveRunTurn(frame: RunFrame) {
 
   // The global agent settings (disabled tools, permissions, response defaults) feed both
   // prompt-context assembly and provider resolution, so they load before either.
-  const [
-    catalog,
-    { profileText: userProfile, responseDefaults, agentSettings: globalAgentSettings },
-  ] = await Promise.all([
+  const [catalog, { agentSettings: globalAgentSettings }] = await Promise.all([
     deps.catalogService.getCatalog(),
-    loadUserProfileContext(env.userProfileRepo, userId),
+    loadUserSettingsContext(env.userProfileRepo, userId),
   ])
 
   const model = await resolveRunModel({
@@ -125,8 +122,6 @@ export async function resolveRunTurn(frame: RunFrame) {
     state,
     turnIdleMs,
     catalog,
-    userProfile,
-    responseDefaults,
     globalAgentSettings,
     model,
     catalogModel,

@@ -226,6 +226,7 @@ class PiAgentRuntimeAuth implements AgentRuntimeAuth {
     let credential: Credential
     try {
       credential = await this.models.login(providerId, piAuthType(type), bridge.interaction, {
+        agentName: 'Localix',
         getDeviceId: this.getDeviceId,
       })
     } catch (error) {

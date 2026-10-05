@@ -49,10 +49,6 @@ export const sendMessageRequestSchema = z
     message: 'Message must include text or a binding',
   })
 
-export const improvePromptRequestSchema = z.object({
-  prompt: z.string().trim().min(1),
-})
-
 /**
  * Unified tool interaction endpoint.
  *

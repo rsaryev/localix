@@ -75,7 +75,7 @@ export function ChordRecorder({
   if (pending) {
     const owners = pending.owners.join(', ')
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-end gap-1.5">
         <span
           className="inline-flex items-center gap-1 text-2xs text-status-warning"
           title={`Already bound to ${owners} in this section`}
@@ -95,7 +95,7 @@ export function ChordRecorder({
           Assign anyway
         </Button>
         <IconButton
-          size="sm"
+          size="lg"
           onClick={() => setPending(null)}
           tooltip="Keep current shortcut"
           aria-label="Cancel rebind"
@@ -107,7 +107,7 @@ export function ChordRecorder({
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
       <Button
         variant="outline"
         size="lg"
@@ -134,7 +134,7 @@ export function ChordRecorder({
       </Button>
       {!recording && chord && (
         <IconButton
-          size="sm"
+          size="lg"
           onClick={onUnassign}
           tooltip="Unassign"
           aria-label="Unassign shortcut"
@@ -144,7 +144,7 @@ export function ChordRecorder({
       )}
       {!recording && overridden && (
         <IconButton
-          size="sm"
+          size="lg"
           onClick={onReset}
           tooltip="Reset to default"
           aria-label="Reset shortcut to default"
