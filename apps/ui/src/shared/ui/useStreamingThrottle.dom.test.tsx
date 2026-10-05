@@ -43,11 +43,13 @@ describe('throttled markdown preview', () => {
       root.render(<Preview text="" />)
     })
     // A burst of keystrokes, faster than the reparse cadence.
-    for (const text of ['# a', '# ab', '# abc', '# abcd', '# abcde']) {
-      await act(async () => {
+    // One act for the whole burst: a separate awaited act per keystroke takes longer than the
+    // reparse cadence on a slow runner, so the throttle would already have let a render through.
+    await act(async () => {
+      for (const text of ['# a', '# ab', '# abc', '# abcd', '# abcde']) {
         root.render(<Preview text={text} />)
-      })
-    }
+      }
+    })
     // Mid-burst the preview lags on purpose: that is the whole point.
     expect(rendered.at(-1)).not.toBe('# abcde')
 
