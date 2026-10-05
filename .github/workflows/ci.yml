@@ -10,18 +10,54 @@ on:
 permissions:
   contents: read
 
-# A newer run of the same ref supersedes the older one: these jobs only report on the current
-# tree, so an in-flight run for a stale commit is wasted runner time.
+# A newer push to a pull request supersedes the older run: these jobs only report on the current
+# tree. A push to main is never cancelled, so every commit on main gets its full verdict and the
+# Rust gate (which a pull request may skip) always runs against what actually landed.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # The gates run as parallel jobs, so a run takes as long as its slowest job rather than the sum.
 # `Repository validation` at the end is the one required check: it fails unless every job passed.
 jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          # A pull request is checked out as a merge commit; its first parent is the base tip,
+          # so two commits are enough to list exactly what the pull request changes.
+          fetch-depth: 2
+
+      # Only a pull request may skip the Rust gate, and only when nothing it reads changed: the
+      # shell under apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun,
+      # and this workflow. Pushes to main and manual runs always run it.
+      - name: Decide whether the Rust gate must run
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          rust=true
+          if [ "$EVENT" = pull_request ] && git rev-parse --verify --quiet 'HEAD^2' >/dev/null; then
+            changed=$(git diff --name-only 'HEAD^1' HEAD)
+            if ! printf '%s\n' "$changed" |
+              grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.github/workflows/ci\.yml$)'; then
+              rust=false
+            fi
+          fi
+          echo "rust=$rust" >> "$GITHUB_OUTPUT"
+          echo "Rust gate: $rust"
+
   static:
     name: Static checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -107,6 +143,7 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       TURBO_CONCURRENCY: 100%
 
@@ -164,6 +201,7 @@ jobs:
   unit-ui:
     name: Unit tests (ui)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -221,6 +259,7 @@ jobs:
   unit-api:
     name: Unit tests (api)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -278,6 +317,7 @@ jobs:
   unit-rest:
     name: Unit tests (packages and the rest)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -335,6 +375,7 @@ jobs:
   contract:
     name: Repository contract tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -392,6 +433,7 @@ jobs:
   globals:
     name: Global isolation
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -449,6 +491,7 @@ jobs:
   dropins:
     name: Drop-in plugin tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -505,7 +548,10 @@ jobs:
 
   rust:
     name: Rust checks
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 45
     env:
       RUST_TOOLCHAIN: 1.96.1
     steps:
@@ -547,14 +593,21 @@ jobs:
   ci:
     name: Repository validation
     if: always()
-    needs: [static, typecheck, unit-ui, unit-api, unit-rest, contract, globals, dropins, rust]
+    needs:
+      [changes, static, typecheck, unit-ui, unit-api, unit-rest, contract, globals, dropins, rust]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
+      # `skipped` is accepted for the Rust job alone, and only because `changes` succeeded and
+      # said nothing it reads changed; any other skipped or cancelled job fails the check.
       - name: Require every job to have passed
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          RESULTS: ${{ toJSON(needs) }}
         run: |
-          echo "job results: $RESULTS"
-          for result in $RESULTS; do
-            [ "$result" = success ] || exit 1
-          done
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$RESULTS" | jq -e '
+            to_entries | all(
+              .value.result == "success"
+              or (.key == "rust" and .value.result == "skipped")
+            )
+          ' >/dev/null
