@@ -208,6 +208,7 @@ export async function bootstrap(
     chatService,
   })
   const { app } = createAppPhase({
+    db,
     runtimeInfo,
     env,
     logger,

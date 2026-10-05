@@ -95,6 +95,27 @@ login-shell environment and whether a cached snapshot answered it (`cache`). Mai
 first request needs runs one job at a time once the app is idle, and each job logs
 `startup.idle_tasks` with its `task` name and `ms`.
 
+### The data folder takes a lot of disk
+
+Almost all of `~/.localix/localix.db` is conversation history: every message, and the full output of
+every tool call, is kept so a session can be reopened and searched exactly as it ran. A busy workday
+adds on the order of ten megabytes.
+
+Localix keeps that growth in check without deleting anything. Tool outputs over 4 KiB are stored
+compressed (zstd), and a pass shortly after start converts the ones written by older versions in
+small batches. The database uses incremental auto-vacuum, so space freed by a deletion goes back to
+the disk instead of staying inside the file; an existing database is switched once, with a full
+rewrite that needs about its own size in free space and is skipped, with a log line, when there is
+not enough. The write-ahead log is emptied after that pass and when the app stops. Search sections
+that belonged to a deleted conversation are removed with it. Each pass logs `storage.maintained`
+with what it changed.
+
+History itself is removed only when you ask. `GET /rpc/storage/usage` reports the file, the
+write-ahead log, free pages and the bytes held by messages and tool outputs.
+`POST /rpc/storage/prune` takes `olderThanDays` (at least 7) and `dryRun`: it counts, or deletes,
+whole conversations with no message for that long, with their sub-agent sessions. Pinned and running
+conversations are never touched. Send `dryRun: true` first to see how much it would remove.
+
 ### Report a reproducible failure
 
 Record the Localix version or commit, operating system and architecture, smallest reproduction,
@@ -142,6 +163,8 @@ Report suspected vulnerabilities through the private process in
 ## Source of truth
 
 - [Development startup and port checks](https://github.com/rsaryev/localix/blob/main/scripts/dev-servers.mjs)
+- [Storage maintenance](https://github.com/rsaryev/localix/blob/main/apps/api/src/bootstrap/storage-maintenance.ts)
+- [Storage service](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/storage/service.ts)
 - [Desktop API child](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/sidecar.rs)
 - [Effective-configuration report](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/DiagnosticsSettings.tsx)
 - [Direct-run model requirements](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/stages/turn.ts)

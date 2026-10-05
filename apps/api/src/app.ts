@@ -45,6 +45,8 @@ import { createMediaRoutes } from './features/media/routes'
 import { MEDIA_SERVE_PREFIX } from './features/media/serve-path'
 import type { MediaStore } from './features/media/store'
 import { createSystemRoutes } from './features/system/routes'
+import { createStorageRoutes } from './features/storage/routes'
+import type { StorageService } from './features/storage/service'
 import { createShellCommandRoutes } from './features/shell-command/routes'
 import type { ShellCommandService } from './features/shell-command/service'
 import type { SystemService } from './features/system/service'
@@ -114,6 +116,8 @@ export interface AppDeps extends ConversationRouteDeps {
   /** Filesystem media store — serves uploaded media bytes by content id. */
   mediaStore: MediaStore
   systemService: SystemService
+  /** Disk usage and removal of old conversations (`/rpc/storage`). */
+  storageService: StorageService
   /** `localix` shell-command install ("install in PATH"). */
   shellCommandService: ShellCommandService
   /** LIVE plugin-route dispatcher — the backend host's stable middleware serving
@@ -278,6 +282,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route('/rpc/notifications', createNotificationRoutes(deps.notifications))
     .route(MEDIA_SERVE_PREFIX, createMediaRoutes(deps.mediaStore))
     .route('/rpc/system', createSystemRoutes(deps.systemService))
+    .route('/rpc/storage', createStorageRoutes(deps.storageService))
     .route('/rpc/shell-command', createShellCommandRoutes(deps.shellCommandService))
     // Extension-owned routes are mounted through the generic subsystem registry below.
     .route('/rpc/secrets', createSecretsRoutes(deps.secretsService))
