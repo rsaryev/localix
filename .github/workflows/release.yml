@@ -47,7 +47,7 @@ env:
   # Shown quietly in the release title; empty for a stable release.
   RELEASE_CHANNEL: beta
   # Platforms this release ships; the updater manifest must hold a signed artifact for each.
-  RELEASE_PLATFORMS: darwin-aarch64,darwin-x86_64
+  RELEASE_PLATFORMS: darwin-aarch64,darwin-x86_64,windows-x86_64,linux-x86_64,linux-x86_64-deb
   RUST_TOOLCHAIN: 1.96.1
 
 permissions:
@@ -280,6 +280,16 @@ jobs:
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
           IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
         run: |
+          release_notes() {
+            printf 'Localix %s\n\nSource commit: %s\n' "$TAG" "$SOURCE_COMMIT"
+            if [[ "$IS_PRERELEASE" == "true" ]]; then
+              printf '\n> **Beta.** Tested only on macOS (Apple silicon and Intel). The Windows and Linux\n'
+              printf '> installers come from the same pipeline but are experimental and untested; the\n'
+              printf '> Windows installer is not code-signed, so SmartScreen warns about an unknown publisher.\n'
+              printf '\nPrefer to build it yourself? See [Run Localix from source](%s).\n' \
+                "https://github.com/$RELEASE_REPO/blob/$TAG/docs/getting-started/installation.md"
+            fi
+          }
           PRERELEASE_ARGS=()
           if [[ "$IS_PRERELEASE" == "true" ]]; then
             PRERELEASE_ARGS+=(--prerelease)
@@ -287,7 +297,7 @@ jobs:
           gh release create "$TAG" --repo "$RELEASE_REPO" --draft --verify-tag \
             --latest=false "${PRERELEASE_ARGS[@]}" \
             --title "Localix $TAG${RELEASE_CHANNEL:+ ($RELEASE_CHANNEL)}" \
-            --notes "Localix $TAG"$'\n\n'"Source commit: $SOURCE_COMMIT"
+            --notes "$(release_notes)"
 
   # ── build-desktop: one NATIVE build per platform → upload installers ─────────
   # Native runners per arch (no cross-compile) so the bundled API sidecar (a real
@@ -303,13 +313,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The first beta ships for macOS only. The Windows and Linux legs below stay wired
-        # (their case branches, installer checks and updater keys are tested) and rejoin by
-        # adding `{ os: windows-latest, name: win-x64 }` and `{ os: ubuntu-22.04, name: linux-x64 }`
-        # here together with their platforms in RELEASE_PLATFORMS.
+        # The first beta ships all four legs, but only macOS has been exercised by hand; the
+        # release notes say so. A Windows or Linux leg that fails keeps the whole release in draft
+        # (`publish-desktop` needs every leg), so remove its line here together with its platform
+        # in RELEASE_PLATFORMS to ship without it.
         include:
           - { os: macos-15, name: macos-arm64 }
           - { os: macos-15-intel, name: macos-x64 }
+          - { os: windows-latest, name: win-x64 }
+          - { os: ubuntu-22.04, name: linux-x64 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

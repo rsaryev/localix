@@ -1,8 +1,10 @@
 # Run Localix from source
 
-Localix currently runs from a source checkout; no verified public download is available. Use the
-native desktop development command for day-to-day work or build an unofficial bundle for your
-current machine.
+Localix runs from a source checkout, and the first beta is published on the
+[Releases](https://github.com/rsaryev/localix/releases) page. That beta was tested only on macOS;
+its Windows and Linux installers are experimental. Build from source to run on any other setup: use
+the native desktop development command for day-to-day work, or build a bundle for your current
+machine.
 
 ## Terminology
 
@@ -47,7 +49,8 @@ The release workflow has four native build legs:
 | Windows      | x64          | NSIS `.exe`            | The repository does not configure a Windows arm64 release leg.                        |
 | Ubuntu 22.04 | x64          | `.AppImage` and `.deb` | The repository does not configure an arm64 Linux release leg.                         |
 
-This matrix records repository configuration, not public artifact availability.
+This matrix records repository configuration. Check the Releases page for the installers a given
+release actually published.
 
 ## Configuration
 
@@ -73,7 +76,8 @@ before creating a native bundle.
 
 ## Limits
 
-- There is no verified public installer or package-manager channel in this documentation state.
+- Only macOS installers have been tested. The Windows and Linux installers on the Releases page are
+  experimental, and no package-manager channel exists.
 - Every source-built bundle is local and unofficial. Do not present it as a Localix release.
 - Ordinary desktop builds disable updater artifacts. The release workflow adds them only with the
   release configuration, signing key, and platform credentials.

@@ -127,11 +127,18 @@ describe('release workflow contract', () => {
 
   test('ships only the platforms its matrix builds, and the manifest asks for exactly those', () => {
     const platforms = workflowValues(release, 'RELEASE_PLATFORMS')[0]
-    expect(platforms).toBe('darwin-aarch64,darwin-x86_64')
+    expect(platforms).toBe(
+      'darwin-aarch64,darwin-x86_64,windows-x86_64,linux-x86_64,linux-x86_64-deb',
+    )
     expect(release).toContain('- { os: macos-15, name: macos-arm64 }')
     expect(release).toContain('- { os: macos-15-intel, name: macos-x64 }')
-    expect(release).not.toContain('- { os: windows-latest, name: win-x64 }')
-    expect(release).not.toContain('- { os: ubuntu-22.04, name: linux-x64 }')
+    expect(release).toContain('- { os: windows-latest, name: win-x64 }')
+    expect(release).toContain('- { os: ubuntu-22.04, name: linux-x64 }')
+  })
+
+  test('says in a prerelease body what was tested and where to build from source', () => {
+    expect(release).toContain('Tested only on macOS')
+    expect(release).toContain('docs/getting-started/installation.md')
   })
 
   test('rechecks mirrored tag provenance immediately before manifest generation and publish', () => {
