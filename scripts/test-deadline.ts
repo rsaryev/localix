@@ -22,13 +22,17 @@ export const DEFAULT_TEST_DEADLINE_S = 15 * 60
 // `test-globals-guard` rightly fails a run that leaves keys on the global object.
 let armed = false
 
+// The watchdog is itself a child of the process it watches, so `pkill -P "$pid"` would kill the
+// watchdog before it reached `kill -9 "$pid"` and the stuck process would live on. The children
+// are listed first, minus this shell, and everything dies in one `kill`.
 const WATCHDOG = `
 pid="$1"; limit="$2"; waited=0
 while kill -0 "$pid" 2>/dev/null; do
   sleep 5; waited=$((waited + 5))
   if [ "$waited" -ge "$limit" ]; then
     echo "test-deadline: bun test (pid $pid) ran past \${limit}s; killing it." >&2
-    pkill -9 -P "$pid" 2>/dev/null; kill -9 "$pid" 2>/dev/null; exit 0
+    kids=$(pgrep -P "$pid" 2>/dev/null | grep -vx "$$")
+    kill -9 $kids "$pid" 2>/dev/null; exit 0
   fi
 done`
 
