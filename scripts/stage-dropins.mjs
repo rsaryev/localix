@@ -88,17 +88,6 @@ const OPTIONAL_NATIVE_EXTERNALS = ['cpu-features']
 // the only diagnostic a user's report carries. Dev and release stage with the same flags, so a
 // defect minification introduces shows up in development first.
 const BACKEND_MINIFY_FLAGS = ['--minify-syntax', '--minify-whitespace']
-const DUCKDB_NATIVE_PACKAGES = [
-  '@duckdb/node-bindings-darwin-x64',
-  '@duckdb/node-bindings-darwin-arm64',
-  '@duckdb/node-bindings-linux-arm64',
-  '@duckdb/node-bindings-linux-arm64-musl',
-  '@duckdb/node-bindings-linux-x64',
-  '@duckdb/node-bindings-linux-x64-musl',
-  '@duckdb/node-bindings-win32-arm64',
-  '@duckdb/node-bindings-win32-x64',
-]
-const DUCKDB_RUNTIME_LIBRARY_RE = /^(?:lib)?duckdb\.(?:dylib|so(?:\.\d+)*|dll)$/i
 /** Dev-only entries stripped from every staged drop-in. */
 const SKIP_BASENAMES = new Set([
   '.claude-plugin',
@@ -113,118 +102,6 @@ const TEST_FILE_RE = /\.test\.[a-z]+$/
 const UI_AUTHORING_SOURCE_RE = /\.(?:[cm]?ts|tsx)$/i
 const BUNDLEABLE_TOOLS_ENTRY_RE = /\.(?:js|mjs|ts)$/i
 const MANAGED_PLUGIN_MARKER = '.localix-managed.json'
-
-function isLinuxMusl() {
-  if (process.platform !== 'linux') return false
-  try {
-    return !process.report?.getReport?.().header?.glibcVersionRuntime
-  } catch {
-    return false
-  }
-}
-
-function currentDuckDbNativePackage(target) {
-  const libcSuffix = target.platform === 'linux' && isLinuxMusl() ? '-musl' : ''
-  return `@duckdb/node-bindings-${target.platform}-${target.arch}${libcSuffix}`
-}
-
-function pluginUsesDuckDb(repoPlugin) {
-  const packagePath = join(repoPlugin, 'package.json')
-  if (!existsSync(packagePath)) return false
-  const pluginPackage = JSON.parse(readFileSync(packagePath, 'utf8'))
-  return Boolean(
-    pluginPackage.dependencies?.['@duckdb/node-api'] ??
-    pluginPackage.optionalDependencies?.['@duckdb/node-api'],
-  )
-}
-
-function duckDbBundleConfig(repoRoot, repoPlugin, target) {
-  if (!pluginUsesDuckDb(repoPlugin)) return { externals: [], runtimeLibraries: [] }
-
-  if (target.platform === 'darwin' && target.tauriArch?.includes('universal')) {
-    throw new Error(
-      'Universal macOS packaging is unsupported for DuckDB: its native Node addons are single-architecture; build separate arm64 and x64 artifacts',
-    )
-  }
-
-  const nativePackage = currentDuckDbNativePackage(target)
-  if (!DUCKDB_NATIVE_PACKAGES.includes(nativePackage)) {
-    throw new Error(
-      `DuckDB does not publish a native Node binding for ${target.platform}-${target.arch}`,
-    )
-  }
-
-  const nativeDir = join(repoRoot, 'node_modules', ...nativePackage.split('/'))
-  if (!existsSync(nativeDir)) {
-    throw new Error(
-      `DuckDB native package ${nativePackage} is missing; install dependencies on the target platform before packaging`,
-    )
-  }
-
-  return {
-    externals: DUCKDB_NATIVE_PACKAGES.filter((dependency) => dependency !== nativePackage).map(
-      (dependency) => `${dependency}/duckdb.node`,
-    ),
-    runtimeLibraries: readdirSync(nativeDir)
-      .filter((file) => DUCKDB_RUNTIME_LIBRARY_RE.test(file))
-      .map((file) => join(nativeDir, file)),
-  }
-}
-
-function stageDuckDbRuntimeLibrary(runtimeLibrary, outDir, log, target, runNativeTool) {
-  const destination = join(outDir, basename(runtimeLibrary))
-  cpSync(runtimeLibrary, destination)
-  if (target.platform !== 'darwin') return
-
-  const targetArchitecture =
-    target.arch === 'arm64' ? 'arm64' : target.arch === 'x64' ? 'x86_64' : undefined
-  if (!targetArchitecture) {
-    log(
-      `warning: retaining ${basename(runtimeLibrary)} because macOS architecture ${target.arch} cannot be proven`,
-    )
-    return
-  }
-
-  const temporaryDir = mkdtempSync(join(outDir, '.localix-duckdb-'))
-  const candidate = join(temporaryDir, basename(runtimeLibrary))
-  try {
-    const architectures = runNativeTool('lipo', ['-archs', runtimeLibrary], {
-      encoding: 'utf8',
-      env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-    if (!architectures.includes(targetArchitecture)) {
-      throw new Error(
-        `${basename(runtimeLibrary)} does not contain the required ${targetArchitecture} slice`,
-      )
-    }
-
-    if (architectures.length > 1) {
-      runNativeTool('lipo', [runtimeLibrary, '-thin', targetArchitecture, '-output', candidate], {
-        env: process.env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      })
-    } else {
-      cpSync(runtimeLibrary, candidate)
-    }
-    runNativeTool('strip', ['-x', '-S', candidate], {
-      env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    cpSync(candidate, destination)
-    log(`thinned and stripped ${basename(runtimeLibrary)} for ${targetArchitecture}`)
-  } catch (error) {
-    const detail = error instanceof Error ? error.message.split('\n')[0] : String(error)
-    log(
-      `warning: retaining ${basename(runtimeLibrary)} verbatim because macOS thinning/stripping failed: ${detail}`,
-    )
-  } finally {
-    rmSync(temporaryDir, { recursive: true, force: true })
-  }
-}
 
 const BUILD_OUTPUT_DIR = 'dist'
 const UNDER_BUILD_OUTPUT_RE = /^(?:\.\/)?dist(?:\/|$)/u
@@ -390,15 +267,11 @@ function fingerprintPluginTree(root) {
   return hash.digest('hex')
 }
 
-/** @typedef {{ platform: NodeJS.Platform, arch: NodeJS.Architecture, tauriArch?: string }} StagingTarget */
-/** @typedef {(file: string, args: string[], options?: import('node:child_process').ExecFileSyncOptions) => any} NativeToolRunner */
 /**
  * @typedef StageDropinsOptions
  * @property {string} repoRoot
  * @property {string} outPlugins
  * @property {(message: string) => void} [log]
- * @property {StagingTarget} [target]
- * @property {NativeToolRunner} [runNativeTool]
  * @property {typeof execFileSync} [runUiBuild] Runs the UI artifact builder (a child `bun`).
  * @property {'fatal' | 'skip'} [onPluginError] How a plugin that fails to bundle is handled.
  *   `fatal` (the default, and what a RELEASE build must use) aborts staging: shipping an app with
@@ -422,13 +295,6 @@ export function stageDropins({
   outPlugins,
   log = () => {},
   onPluginError = 'fatal',
-  // Internal deterministic host seam for Darwin unit tests. Production callers omit it.
-  target = {
-    platform: process.platform,
-    arch: process.arch,
-    tauriArch: process.env.TAURI_ENV_ARCH,
-  },
-  runNativeTool = execFileSync,
   runUiBuild = execFileSync,
   uiSourceMaps = true,
 }) {
@@ -450,7 +316,7 @@ export function stageDropins({
   //
   // --outdir (not --outfile) lets native .node addons referenced by a backend
   // (e.g. ssh2's DB SSH tunnel) be emitted beside the bundle.
-  const staging = { repoRoot, outPlugins, log, onPluginError, target, runNativeTool }
+  const staging = { repoRoot, outPlugins, log, onPluginError }
   for (const name of readdirSync(repoPlugins)) {
     if (privatePlugins.has(name)) continue
     const failure = bundleStagedPluginBackend(name, staging)
@@ -477,10 +343,7 @@ export function stageDropins({
  * asked for `skip`; throws under `fatal`. A plugin without a bundleable `tools` entry is
  * left as copied.
  */
-function bundleStagedPluginBackend(
-  name,
-  { repoRoot, outPlugins, log, onPluginError, target, runNativeTool },
-) {
+function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginError }) {
   const repoPlugins = join(repoRoot, 'plugins')
   const manifestPath = join(outPlugins, name, 'plugin.json')
   if (!existsSync(manifestPath)) return null
@@ -491,7 +354,6 @@ function bundleStagedPluginBackend(
   const repoPlugin = join(repoPlugins, name)
   const stagedPlugin = join(outPlugins, name)
   const outDir = join(outPlugins, name, 'backend')
-  const duckDb = duckDbBundleConfig(repoRoot, repoPlugin, target)
   const protectedSourceDirs = manifestRuntimeSourceDirs(manifest, repoPlugin)
   mkdirSync(outDir, { recursive: true })
   const metadataDir = mkdtempSync(join(outDir, '.localix-bundle-'))
@@ -511,7 +373,6 @@ function bundleStagedPluginBackend(
       `--metafile=${metadataPath}`,
       ...BACKEND_MINIFY_FLAGS,
       ...OPTIONAL_NATIVE_EXTERNALS.flatMap((dependency) => ['--external', dependency]),
-      ...duckDb.externals.flatMap((dependency) => ['--external', dependency]),
       // The host serves these at runtime (`backend-host-modules.ts`); bundling them put a copy
       // of zod, hono and the SDK into every backend.
       ...PLUGIN_BACKEND_HOST_MODULES.flatMap((specifier) => ['--external', specifier]),
@@ -540,9 +401,6 @@ function bundleStagedPluginBackend(
   } finally {
     rmSync(metadataDir, { recursive: true, force: true })
   }
-  for (const runtimeLibrary of duckDb.runtimeLibraries) {
-    stageDuckDbRuntimeLibrary(runtimeLibrary, outDir, log, target, runNativeTool)
-  }
   manifest.tools = './backend/index.bundle.mjs'
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
   return null
@@ -561,12 +419,6 @@ export function restagePlugin({
   name,
   log = () => {},
   onPluginError = 'skip',
-  target = {
-    platform: process.platform,
-    arch: process.arch,
-    tauriArch: process.env.TAURI_ENV_ARCH,
-  },
-  runNativeTool = execFileSync,
   runUiBuild = execFileSync,
 }) {
   const repoPlugins = join(repoRoot, 'plugins')
@@ -587,8 +439,6 @@ export function restagePlugin({
       outPlugins,
       log,
       onPluginError,
-      target,
-      runNativeTool,
     })
     if (!failure) {
       stagePluginUi(name, {

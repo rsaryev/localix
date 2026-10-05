@@ -33,7 +33,6 @@ const describe = (c: DbConnectionInfo) =>
 /** The engine a url or file names, or null when it is ambiguous (http(s)://, an unknown file). */
 export function inferEngine(input: Pick<DatabaseToolInput, 'url' | 'file'>): DbDialect | null {
   if (input.file) {
-    if (/\.(duckdb|ddb)$/i.test(input.file)) return 'duckdb'
     return /\.(db|sqlite3?|db3|s3db|sl3)$/i.test(input.file) || input.file === ':memory:'
       ? 'sqlite'
       : null

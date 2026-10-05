@@ -88,13 +88,9 @@ describe('connection config assembly', () => {
     readonly: false,
   }
 
-  test('uses one manifest-driven path for SQLite and DuckDB memory targets', () => {
+  test('uses the manifest-driven path for SQLite memory targets', () => {
     expect(buildConnectionConfig({ ...base, targetMode: 'memory' })).toEqual({
       dialect: 'sqlite',
-      file: ':memory:',
-    })
-    expect(buildConnectionConfig({ ...base, dialect: 'duckdb', targetMode: 'memory' })).toEqual({
-      dialect: 'duckdb',
       file: ':memory:',
     })
   })

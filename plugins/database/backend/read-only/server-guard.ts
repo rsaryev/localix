@@ -39,7 +39,6 @@ export const SERVER_READ_ONLY_STATEMENT: Partial<Record<DbDialect, string>> = {
  *     which is a different guarantee and needs a replica to exist)
  *   - `clickhouse`'s `readonly` setting is a user/profile property, not a session one a
  *     client may set on itself
- *   - `duckdb` decides at file-open time, before this layer runs
  *   - `redis`, `mongodb`, `elasticsearch` have no transaction concept to make read-only
  * For these the text classifier remains the only guard, and `applyServerReadOnly` reports
  * that honestly instead of returning a success the engine never gave.
@@ -47,7 +46,6 @@ export const SERVER_READ_ONLY_STATEMENT: Partial<Record<DbDialect, string>> = {
 export const NO_SERVER_READ_ONLY: readonly DbDialect[] = [
   'mssql',
   'clickhouse',
-  'duckdb',
   'redis',
   'mongodb',
   'elasticsearch',

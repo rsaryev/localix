@@ -2,7 +2,7 @@
  * "Is this path a database, and which one?" — the server side of opening a `.db` file.
  *
  * The UI cannot answer this: it has no filesystem, and the extension alone is not an
- * answer (see the header of `shared/database-file.ts` — `.db` names SQLite, DuckDB and
+ * answer (see the header of `shared/database-file.ts` — `.db` names SQLite and
  * a dozen unrelated formats). So the tab asks here before it creates a connection,
  * which is what keeps a mistyped path or a Berkeley DB from being SAVED as a broken
  * SQLite connection the user then has to find and delete.

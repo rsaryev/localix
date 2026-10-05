@@ -27,10 +27,10 @@ export interface SqlCatalogTable {
 
 /**
  * System relations every engine resolves without listing them in the user's tree:
- * `pg_tables` through the search path, `sqlite_master`, MySQL's `dual`, DuckDB's catalog views.
+ * `pg_tables` through the search path, `sqlite_master`, MySQL's `dual`.
  * Flagging them would be a false error on a query that runs.
  */
-const SYSTEM_RELATION = /^(?:pg_|sqlite_|duckdb_|information_schema$|dual$|sys$|system$)/i
+const SYSTEM_RELATION = /^(?:pg_|sqlite_|information_schema$|dual$|sys$|system$)/i
 
 export function createSqlCatalog(
   schemas: DbSchemas | null,

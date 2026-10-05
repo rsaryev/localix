@@ -99,7 +99,7 @@ export function createDatabaseRoutes(service: DatabaseService) {
         return c.json(dbErrorBody(err), 400)
       }
     })
-    // Identify an on-disk database file (opening a `.db`/`.sqlite`/`.duckdb` from the
+    // Identify an on-disk database file (opening a `.db`/`.sqlite` from the
     // file tree, a drop, or an OS "Open with"). Reads a 16-byte header — strictly less
     // than `/connect`, which already accepts any absolute path as a SQLite `file`.
     // A file that is not a database answers 200 with `openable:false`: the tab renders

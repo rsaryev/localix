@@ -196,13 +196,6 @@
         "role": "Editor"
       },
       {
-        "ext": ["duckdb", "ddb"],
-        "name": "DuckDB Database",
-        "description": "DuckDB database file",
-        "mimeType": "application/vnd.duckdb",
-        "role": "Editor"
-      },
-      {
         "ext": ["sql"],
         "name": "SQL Script",
         "description": "SQL script",

@@ -88,7 +88,7 @@ export const databaseToolSchema = z.object({
     .enum(ENGINES)
     .optional()
     .describe(
-      'connect/test: the engine. Inferred from the url scheme (postgres://, mysql://, mongodb://…) or a .duckdb file; required for http(s):// (clickhouse or elasticsearch) and ambiguous files.',
+      'connect/test: the engine. Inferred from the url scheme (postgres://, mysql://, mongodb://…) or a .db/.sqlite file; required for http(s):// (clickhouse or elasticsearch) and ambiguous files.',
     ),
   url: z
     .string()
@@ -96,7 +96,7 @@ export const databaseToolSchema = z.object({
     .describe(
       'connect/test: connection URL, e.g. "postgres://app@db.internal:5432/shop". Or use host fields.',
     ),
-  file: z.string().optional().describe('connect/test: SQLite or DuckDB file path, or ":memory:".'),
+  file: z.string().optional().describe('connect/test: SQLite file path, or ":memory:".'),
   host: z.string().optional().describe('connect/test: host, instead of a url.'),
   port: z.number().int().min(1).max(65535).optional().describe('connect/test: port (with host).'),
   user: z.string().optional().describe('connect/test: user name (with host).'),
@@ -236,7 +236,7 @@ export function databaseCallProblem(input: DatabaseToolInput): string | null {
     case 'test':
       return input.url || input.file || input.host
         ? null
-        : `action="${input.action}" needs a url, a file (SQLite/DuckDB), or a host.`
+        : `action="${input.action}" needs a url, a file (SQLite), or a host.`
     case 'connections':
     case 'schema':
       return null

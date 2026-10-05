@@ -137,7 +137,7 @@ describe('the ONE database tool', () => {
 
   test('declares the local database file connect/test can create, and nothing else', () => {
     expect(databaseCallPaths({ action: 'connect', file: '/data/app.db' })).toEqual(['/data/app.db'])
-    expect(databaseCallPaths({ action: 'test', file: 'local.duckdb' })).toEqual(['local.duckdb'])
+    expect(databaseCallPaths({ action: 'test', file: 'local.sqlite' })).toEqual(['local.sqlite'])
     expect(databaseCallPaths({ action: 'connect', url: 'file:///data/app.db' })).toEqual([
       '/data/app.db',
     ])
@@ -222,7 +222,9 @@ describe('engine inference for connect/test', () => {
   test('a unique url scheme or a known file extension names the engine', () => {
     expect(inferEngine({ url: 'postgresql://h/db' })).toBe('postgres')
     expect(inferEngine({ url: 'mongodb+srv://c.example.net' })).toBe('mongodb')
-    expect(inferEngine({ file: '/data/analytics.duckdb' })).toBe('duckdb')
+    expect(inferEngine({ file: '/data/analytics.sqlite' })).toBe('sqlite')
+    // A DuckDB file names no engine here, so it is not guessed to be SQLite.
+    expect(inferEngine({ file: '/data/analytics.duckdb' })).toBeNull()
     expect(inferEngine({ file: ':memory:' })).toBe('sqlite')
   })
 

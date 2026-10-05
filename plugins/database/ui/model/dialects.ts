@@ -58,10 +58,6 @@ export const DIALECT_META: Record<DbDialect, Omit<DialectMeta, 'id' | 'label'>> 
     badge: DATABASE_DRIVER_CATALOG.sqlite.shortLabel,
     ...DIALECT_TINT[DATABASE_DRIVER_CATALOG.sqlite.accent],
   },
-  duckdb: {
-    badge: DATABASE_DRIVER_CATALOG.duckdb.shortLabel,
-    ...DIALECT_TINT[DATABASE_DRIVER_CATALOG.duckdb.accent],
-  },
   postgres: {
     badge: DATABASE_DRIVER_CATALOG.postgres.shortLabel,
     ...DIALECT_TINT[DATABASE_DRIVER_CATALOG.postgres.accent],

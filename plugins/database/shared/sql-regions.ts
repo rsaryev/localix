@@ -23,7 +23,7 @@ import type { DbDialect } from './driver-catalog'
  *    skipping it there would drop a legitimate `?` inside `SELECT [?, ?]`.
  *  - `backtickIdentifiers`: MySQL and ClickHouse quote identifiers with backticks (doubled
  *    to escape). T-SQL has no backtick at all.
- *  - `dollarQuotes`: `$tag$…$tag$` is a string in Postgres and DuckDB and nothing at all
+ *  - `dollarQuotes`: `$tag$…$tag$` is a string in Postgres and nothing at all
  *    elsewhere.
  *  - `executableComments`: MySQL EXECUTES `/*! … *​/` (and `/*!50000 … *​/`). Treating it as
  *    an inert comment hides real statements from anything that scans the code.
@@ -31,8 +31,8 @@ import type { DbDialect } from './driver-catalog'
  *    character follows; `1--2` is minus-minus-two. Treating a bare `--` as a comment there
  *    swallows the rest of the line, including a `;`.
  *  - `hashLineComments`: MySQL and ClickHouse accept `# …` to end of line.
- *  - `nestedBlockComments`: PostgreSQL, DuckDB and T-SQL match nested `/* … *​/` pairs.
- *  - `prefixedBackslashStrings`: PostgreSQL/DuckDB only enable C-style backslash escaping
+ *  - `nestedBlockComments`: PostgreSQL and T-SQL match nested `/* … *​/` pairs.
+ *  - `prefixedBackslashStrings`: PostgreSQL only enables C-style backslash escaping
  *    for an `E'…'` string, rather than for every ordinary string.
  */
 export interface SqlLiteralGrammar {
@@ -60,7 +60,7 @@ export const SQLITE_SQL_GRAMMAR: SqlLiteralGrammar = {
   prefixedBackslashStrings: false,
 }
 
-/** PostgreSQL and DuckDB: dollar/E strings, nested block comments, standard identifiers. */
+/** PostgreSQL: dollar/E strings, nested block comments, standard identifiers. */
 export const POSTGRES_SQL_GRAMMAR: SqlLiteralGrammar = {
   backslashEscapes: false,
   bracketIdentifiers: false,
@@ -142,7 +142,6 @@ export function sqlGrammarForDialect(dialect: DbDialect): SqlLiteralGrammar {
   switch (dialect) {
     case 'sqlite':
       return SQLITE_SQL_GRAMMAR
-    case 'duckdb':
     case 'postgres':
       return POSTGRES_SQL_GRAMMAR
     case 'mysql':

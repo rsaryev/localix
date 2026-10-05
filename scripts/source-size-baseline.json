@@ -183,7 +183,6 @@
   "plugins/database/backend/db-schema.ts": 394,
   "plugins/database/backend/ddl-create-parts.ts": 390,
   "plugins/database/backend/drivers/clickhouse.ts": 508,
-  "plugins/database/backend/drivers/duckdb.ts": 402,
   "plugins/database/backend/drivers/mssql-introspect.ts": 694,
   "plugins/database/backend/drivers/mysql-introspect.ts": 315,
   "plugins/database/backend/drivers/port.ts": 551,

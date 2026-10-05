@@ -7,15 +7,15 @@ describe('default connection name', () => {
       'app.sqlite',
     )
     expect(
-      defaultName({ config: { dialect: 'duckdb', file: String.raw`C:\data\warehouse.duckdb` } }),
-    ).toBe('warehouse.duckdb')
+      defaultName({ config: { dialect: 'sqlite', file: String.raw`C:\data\warehouse.sqlite` } }),
+    ).toBe('warehouse.sqlite')
   })
 
   test('keeps explicit and in-memory names', () => {
     expect(
       defaultName({
         name: 'Analytics',
-        config: { dialect: 'duckdb', file: String.raw`C:\data\warehouse.duckdb` },
+        config: { dialect: 'sqlite', file: String.raw`C:\data\warehouse.sqlite` },
       }),
     ).toBe('Analytics')
     expect(defaultName({ config: { dialect: 'sqlite', file: ':memory:' } })).toBe(

@@ -17,7 +17,7 @@ const stagedPlugins = join(devStageRoot, 'plugins')
  * The `finally` at the bottom removes this run's tree, but it never runs on a SIGKILL, a crash,
  * or an OS kill — so the per-PID trees accumulate. Measured on one developer machine before this
  * was added: 12 orphaned trees and 3.1GB under `.turbo`, of which ~1.2GB was 11 copies of
- * libduckdb.dylib alone.
+ * one native database library alone.
  *
  * Conservative on purpose: PIDs are reused, so a directory whose number belongs to ANY live
  * process is kept. The failure mode is then leaving a dead tree for the next run to collect,

@@ -21,7 +21,8 @@ describe('database file identification', () => {
   test('extension is a hint that decides whether to LOOK', () => {
     expect(isDatabaseFilePath('/home/me/localix.db')).toBe(true)
     expect(isDatabaseFilePath('/home/me/app.SQLite3')).toBe(true)
-    expect(isDatabaseFilePath('C:\\data\\warehouse.duckdb')).toBe(true)
+    // DuckDB is not an engine here: its extensions are not claimed as database files.
+    expect(isDatabaseFilePath('C:\\data\\warehouse.duckdb')).toBe(false)
     expect(isDatabaseFilePath('/home/me/notes.md')).toBe(false)
     // A dot-less name and a dotfile are both "no extension", never a database.
     expect(isDatabaseFilePath('/home/me/Makefile')).toBe(false)
@@ -30,7 +31,7 @@ describe('database file identification', () => {
 
   test('fileExtension lower-cases and handles both separators', () => {
     expect(fileExtension('/a/B.SQLITE')).toBe('sqlite')
-    expect(fileExtension('C:\\a\\b.DuckDB')).toBe('duckdb')
+    expect(fileExtension('C:\\a\\b.SQLite3')).toBe('sqlite3')
     expect(fileExtension('/a/b')).toBe('')
   })
 
@@ -40,18 +41,11 @@ describe('database file identification', () => {
     expect(sniffDatabaseDialect(ascii('SQLite format 3\0extra trailing page'))).toBe('sqlite')
   })
 
-  test('a DuckDB header is recognized behind its 8-byte checksum', () => {
+  test('a DuckDB header is not a database Localix can open', () => {
     const header = new Uint8Array(DATABASE_HEADER_BYTES)
     header.set([0x06, 0xd7, 0x6f, 0x27, 0xc2, 0xda, 0xb3, 0xb9], 0) // checksum, any bytes
     header.set(ascii('DUCK'), 8)
-    expect(sniffDatabaseDialect(header)).toBe('duckdb')
-  })
-
-  test('the header of a REAL DuckDB file matches', () => {
-    // Recorded from a database written by @duckdb/node-api — the sniffer's offset is a
-    // claim about a binary format, so it is checked against the format, not a mock.
-    const real = Buffer.from('06d76f27c2dab3b94455434b4000000000000000', 'hex')
-    expect(sniffDatabaseDialect(new Uint8Array(real))).toBe('duckdb')
+    expect(sniffDatabaseDialect(header)).toBeNull()
   })
 
   test('anything else is unrecognized — including an empty or truncated file', () => {

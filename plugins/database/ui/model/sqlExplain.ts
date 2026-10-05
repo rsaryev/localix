@@ -14,7 +14,6 @@ export function explainQuery(sql: string, dialect: DbDialect): string | null {
   switch (dialect) {
     case 'sqlite':
       return `EXPLAIN QUERY PLAN ${stmt};`
-    case 'duckdb':
     case 'postgres':
     case 'mysql':
     case 'clickhouse':

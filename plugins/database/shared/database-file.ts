@@ -11,8 +11,7 @@
  * consume it, exactly like `driver-catalog.ts` beside it.
  *
  * EXTENSION IS A HINT, HEADER IS THE TRUTH. `.db` is the most common SQLite suffix and
- * also a perfectly ordinary name for a DuckDB file, a Berkeley DB, a LevelDB fragment or
- * someone's pickle jar. Guessing `sqlite` from the four letters would hand the driver a
+ * also a perfectly ordinary name for a Berkeley DB, a LevelDB fragment or someone's pickle jar. Guessing `sqlite` from the four letters would hand the driver a
  * file it cannot open and report the engine's parse error as if the user's database were
  * corrupt. So the extension decides whether to LOOK, and the magic bytes decide WHAT it is.
  */
@@ -22,8 +21,7 @@ import type { DbDialect } from './driver-catalog'
 /**
  * Suffixes worth probing. Kept deliberately wide (a claim to look, not to open):
  * `.db`/`.sqlite`/`.sqlite3`/`.db3` are the ubiquitous SQLite spellings, `.s3db`/`.sl3`
- * are the older Delphi/PHP-era ones still found in the wild, and `.duckdb`/`.ddb` are
- * DuckDB's.
+ * are the older Delphi/PHP-era ones still found in the wild.
  */
 export const DATABASE_FILE_EXTENSIONS: readonly string[] = [
   'db',
@@ -32,8 +30,6 @@ export const DATABASE_FILE_EXTENSIONS: readonly string[] = [
   'db3',
   's3db',
   'sl3',
-  'duckdb',
-  'ddb',
 ]
 
 const EXTENSION_SET = new Set(DATABASE_FILE_EXTENSIONS)
@@ -53,18 +49,11 @@ export function isDatabaseFilePath(path: string): boolean {
   return EXTENSION_SET.has(fileExtension(path))
 }
 
-/**
- * Bytes the probe must read to decide. DuckDB's magic sits at offset 8 (behind an
- * 8-byte checksum), so 16 covers both signatures with room to spare.
- */
+/** Bytes the probe must read to decide: the length of SQLite's signature. */
 export const DATABASE_HEADER_BYTES = 16
 
 /** `SQLite format 3\0` — the first 16 bytes of every SQLite database (file format spec §1.3). */
 const SQLITE_MAGIC = 'SQLite format 3\0'
-
-/** DuckDB writes an 8-byte checksum, then `DUCK`, at the head of its main storage block. */
-const DUCKDB_MAGIC = 'DUCK'
-const DUCKDB_MAGIC_OFFSET = 8
 
 function asciiAt(header: Uint8Array, offset: number, length: number): string {
   let out = ''
@@ -76,7 +65,7 @@ function asciiAt(header: Uint8Array, offset: number, length: number): string {
  * Which engine wrote this file, read from its header — or `null` for anything else
  * (including a zero-length file, which is a legitimate "not yet a database").
  *
- * Only the two FILE-transport dialects can ever be returned; a network engine has no
+ * Only the FILE-transport dialect (SQLite) can ever be returned; a network engine has no
  * file to sniff.
  */
 export function sniffDatabaseDialect(header: Uint8Array): DbDialect | null {
@@ -85,12 +74,6 @@ export function sniffDatabaseDialect(header: Uint8Array): DbDialect | null {
     asciiAt(header, 0, SQLITE_MAGIC.length) === SQLITE_MAGIC
   ) {
     return 'sqlite'
-  }
-  if (
-    header.length >= DUCKDB_MAGIC_OFFSET + DUCKDB_MAGIC.length &&
-    asciiAt(header, DUCKDB_MAGIC_OFFSET, DUCKDB_MAGIC.length) === DUCKDB_MAGIC
-  ) {
-    return 'duckdb'
   }
   return null
 }
@@ -114,6 +97,6 @@ export function describeDatabaseFileRejection(reason: DatabaseFileRejection): st
     case 'unreadable':
       return 'This file could not be read.'
     case 'unrecognized-format':
-      return 'This file is not a SQLite or DuckDB database — its header matches neither format.'
+      return 'This file is not a SQLite database — its header does not match.'
   }
 }

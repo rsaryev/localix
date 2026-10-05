@@ -5,7 +5,7 @@
  * compiles the first statement and ignores the rest (a `CREATE TABLE …; INSERT …` created
  * the table and never inserted, reporting success), and ClickHouse reads the tail of an
  * `INSERT … VALUES` as data. Other engines ran everything but showed only one result
- * (PostgreSQL the first, DuckDB the last) or refused the text outright (MySQL, parameterized
+ * (PostgreSQL the first, SQLite the last) or refused the text outright (MySQL, parameterized
  * PostgreSQL). So the service splits with the shared splitter and runs each statement
  * itself — one path, one answer for every engine:
  *

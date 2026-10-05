@@ -12,7 +12,6 @@ describe('explainQuery', () => {
   it('uses plain EXPLAIN (no ANALYZE) for postgres/mysql, stripping a trailing ;', () => {
     expect(explainQuery('SELECT 1 ;', 'postgres')).toBe('EXPLAIN SELECT 1;')
     expect(explainQuery('SELECT 1', 'mysql')).toBe('EXPLAIN SELECT 1;')
-    expect(explainQuery('SELECT 1', 'duckdb')).toBe('EXPLAIN SELECT 1;')
     expect(explainQuery('SELECT 1', 'clickhouse')).toBe('EXPLAIN SELECT 1;')
   })
 

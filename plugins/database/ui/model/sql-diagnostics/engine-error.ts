@@ -19,7 +19,7 @@ export interface EngineErrorName {
 }
 
 const PATTERNS: Array<[EngineErrorKind, RegExp]> = [
-  // Postgres, DuckDB
+  // Postgres
   ['table', /relation "([^"]+)" does not exist/i],
   ['column', /column "([^"]+)"(?: of relation "[^"]+")? does not exist/i],
   ['column', /column ([\w$.]+) does not exist/i],

@@ -25,7 +25,7 @@ export const DATABASE_TOOL_DESCRIPTION =
   'To learn structure: action="schema" (connection tables), then with table for one table’s columns and keys. ' +
   'To look at data: action="browse" samples a bounded page safely; action="query" runs the engine’s own language (capped at 50 rows) — ' +
   'select the columns you need and add a LIMIT; writes and DDL run against the user’s real database. ' +
-  'To add a database the user asked for: action="connect" with a url (or file for SQLite/DuckDB, or host fields); ' +
+  'To add a database the user asked for: action="connect" with a url (or file for SQLite, or host fields); ' +
   'check first with action="test" when unsure; prefer ${secret:KEY} over a literal password; set readonly for production data. ' +
   'reconnect / disconnect / remove manage a saved connection by connection_id. Never returns stored credentials.'
 
@@ -89,7 +89,7 @@ export function createDatabaseTool(options: { userId: string; ports: DatabaseToo
     // decide the outcome by arrival order, so the stricter of the bodies' modes wins.
     executionMode: 'sequential',
     mutates: true,
-    // A remote database and the saved-connection list are no filesystem path; a SQLite/DuckDB
+    // A remote database and the saved-connection list are no filesystem path; a SQLite
     // file opened by `connect`/`test` is one (it is created when missing) — see the helper.
     permissionPaths: databaseCallPaths,
     classify: classifyDatabaseCallClass,

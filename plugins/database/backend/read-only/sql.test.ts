@@ -123,7 +123,7 @@ describe('isReadOnlyStatement', () => {
   })
 
   it('does not let another supported dialect grammar hide a following write', () => {
-    // PostgreSQL / DuckDB: the quote is data inside one dollar-quoted string. A scanner
+    // PostgreSQL: the quote is data inside one dollar-quoted string. A scanner
     // unaware of dollar quoting opens a phantom single-quoted string and swallows DROP.
     expect(isReadOnlyStatement(`SELECT $$'$$ AS q; DROP TABLE t`)).toBe(false)
     expect(isReadOnlyStatement(`SELECT $tag$'$tag$ AS q; DELETE FROM t`)).toBe(false)

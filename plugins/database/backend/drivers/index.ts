@@ -15,12 +15,12 @@ export interface DatabaseDriverDefinition<Dialect extends DbDialect = DbDialect>
   /**
    * ASYNC because the client library is imported here, not at module load.
    *
-   * Importing all nine eagerly cost a measured **120 ms of every API boot** — a
+   * Importing all eight eagerly cost a measured **120 ms of every API boot** — a
    * third of it — for connections most sessions never open. The plugin ships
    * `defaultEnabled: true`, and a bundled plugin defaults on per project scope,
    * so that price was paid by users who had switched the plugin off globally.
-   * Per-module cost: mssql 76 ms, elasticsearch 69, mongo 41, mysql 21, duckdb 20
-   * (plus its 112 MB dylib), clickhouse 15, postgres 7, redis and sqlite 1 each.
+   * Per-module cost: mssql 76 ms, elasticsearch 69, mongo 41, mysql 21,
+   * clickhouse 15, postgres 7, redis and sqlite 1 each.
    *
    * The manifest half stays eager on purpose: it is pure data from the shared
    * catalog, it is what the UI lists, and it must not drag a client library in.
@@ -38,14 +38,6 @@ export const DATABASE_DRIVER_REGISTRY = {
     manifest: DATABASE_DRIVER_CATALOG.sqlite,
     create: async (config) =>
       (await import('./sqlite')).createSqliteDriver({
-        file: config.file,
-        readonly: config.readonly,
-      }),
-  },
-  duckdb: {
-    manifest: DATABASE_DRIVER_CATALOG.duckdb,
-    create: async (config) =>
-      (await import('./duckdb')).createDuckDbDriver({
         file: config.file,
         readonly: config.readonly,
       }),

@@ -8,7 +8,7 @@ import type { DbDialect } from './dbClient'
 
 /**
  * A database FILE opened as a database — `localix.db`, a project's `app.sqlite`, a
- * `.duckdb` scratch file — whether it was clicked in the file tree, dropped on the
+ * `.sqlite` scratch file — whether it was clicked in the file tree, dropped on the
  * window, or double-clicked in Finder ("Open With → Localix", which arrives as the same
  * `localix://open?path=…` intent every other file open uses).
  *
@@ -47,7 +47,7 @@ async function openDatabaseFile(path: string): Promise<OpenResult> {
   if (!probe.openable) return { ok: false, message: describeDatabaseFileRejection(probe.reason) }
   const connection = await databaseApi.connect({
     name: fileName(path),
-    config: { dialect: probe.dialect as Extract<DbDialect, 'sqlite' | 'duckdb'>, file: path },
+    config: { dialect: probe.dialect as Extract<DbDialect, 'sqlite'>, file: path },
   })
   return { ok: true, connectionId: connection.id }
 }

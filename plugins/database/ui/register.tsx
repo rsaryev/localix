@@ -200,7 +200,7 @@ export function registerUi(host: PluginUiHost): void {
     Component: SqlFileEditorBody,
   })
 
-  // A database FILE (`localix.db`, `app.sqlite`, `scratch.duckdb`) opens as a
+  // A database FILE (`localix.db`, `app.sqlite`, `scratch.db3`) opens as a
   // connection — its schema browser, not the code editor's view of its page bytes.
   // The same extensions this plugin declares to the OS in `plugin.json`
   // (`fileAssociations`), so a double-click in Finder and a click in the file tree

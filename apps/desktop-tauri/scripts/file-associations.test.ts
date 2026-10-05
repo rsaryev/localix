@@ -84,7 +84,6 @@ describe('OS file associations', () => {
         entry.mimeType === 'text/plain' ||
         entry.mimeType === 'image/jpeg' || // jpg + jpeg
         entry.mimeType === 'application/vnd.sqlite3' || // every SQLite spelling
-        entry.mimeType === 'application/vnd.duckdb' || // duckdb + ddb
         entry.mimeType === 'application/x-mobipocket-ebook' // mobi + azw3 are both Mobipocket
       expect({ name: entry.name, groupsOneType: shared }).toEqual({
         name: entry.name,

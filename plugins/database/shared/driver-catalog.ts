@@ -10,7 +10,6 @@
 
 export const DATABASE_DIALECTS = [
   'sqlite',
-  'duckdb',
   'postgres',
   'mysql',
   'mssql',
@@ -224,71 +223,6 @@ export const DATABASE_DRIVER_CATALOG = {
     // planner covers the remaining column changes with SQLite's documented transactional
     // table-rebuild procedure. Keep the editor capability truthful to the complete
     // adapter, not merely to individual ALTER COLUMN statements.
-    schemaMutations: FULL_COLUMN_MUTATIONS,
-  },
-  duckdb: {
-    id: 'duckdb',
-    label: 'DuckDB',
-    shortLabel: 'DK',
-    description: 'Local analytical database file or an in-memory workspace',
-    kind: 'sql',
-    transport: 'file',
-    category: 'analytics',
-    accent: 'yellow',
-    defaultSchema: 'main',
-    urlSchemes: ['file'],
-    connectionPlaceholder: '/path/to/analytics.duckdb',
-    databaseFieldLabel: 'Database file',
-    databaseFieldPlaceholder: '/path/to/analytics.duckdb',
-    queryLanguage: 'DuckDB SQL',
-    queryExample: 'SELECT * FROM table_name LIMIT 50',
-    queryParameters: {
-      syntaxes: ['question', 'named-colon', 'numbered-dollar'],
-      bindStyle: 'question',
-    },
-    schemaDataTypes: [
-      'BIGINT',
-      'INTEGER',
-      'DECIMAL(18,2)',
-      'BOOLEAN',
-      'VARCHAR',
-      'DATE',
-      'TIMESTAMP',
-      'UUID',
-      'JSON',
-      'BLOB',
-      'VARCHAR[]',
-    ],
-    schemaDefaultExpressions: [
-      ...COMMON_DEFAULT_EXPRESSIONS,
-      ...SQL_BOOLEAN_EXPRESSIONS,
-      {
-        value: 'CURRENT_TIMESTAMP',
-        detail: 'DuckDB current timestamp',
-        kind: 'keyword',
-        appliesTo: ['temporal'],
-      },
-      {
-        value: 'CURRENT_DATE',
-        detail: 'DuckDB current date',
-        kind: 'keyword',
-        appliesTo: ['temporal'],
-      },
-      {
-        value: 'uuid()',
-        detail: 'DuckDB UUID',
-        kind: 'function',
-        appliesTo: ['uuid'],
-      },
-    ],
-    capabilities: {
-      ...SQL_CAPABILITIES,
-      multipleSchemas: true,
-      returning: true,
-      queryCancel: true,
-      sshTunnel: false,
-      tls: false,
-    },
     schemaMutations: FULL_COLUMN_MUTATIONS,
   },
   postgres: {
@@ -716,12 +650,12 @@ export function isDatabaseDialect(value: string): value is DbDialect {
   return (DATABASE_DIALECTS as readonly string[]).includes(value)
 }
 
-export function isFileDatabaseDialect(dialect: DbDialect): dialect is 'sqlite' | 'duckdb' {
+export function isFileDatabaseDialect(dialect: DbDialect): dialect is 'sqlite' {
   return DATABASE_DRIVER_CATALOG[dialect].transport === 'file'
 }
 
 export function isNetworkDatabaseDialect(
   dialect: DbDialect,
-): dialect is Exclude<DbDialect, 'sqlite' | 'duckdb'> {
+): dialect is Exclude<DbDialect, 'sqlite'> {
   return DATABASE_DRIVER_CATALOG[dialect].transport === 'network'
 }

@@ -89,7 +89,7 @@ const WRITE_KEYWORD_RE = new RegExp(`\\b(?:${WRITE_KEYWORDS.join('|')})\\b`)
  * classifier does not know which dialect a query is for, and the readings genuinely
  * disagree about where a literal ends — so it evaluates every one of them.
  *
- * There is one entry per distinct flag combination. PostgreSQL and DuckDB share a shape;
+ * There is one entry per distinct flag combination. PostgreSQL has its own shape;
  * the other supported engines each differ in at least one relevant rule.
  */
 export const SQL_GRAMMAR_VARIANTS: readonly SqlLiteralGrammar[] = [
@@ -213,7 +213,7 @@ function everyStatementReads(sql: string, grammar: SqlLiteralGrammar): boolean {
  *                                          Without that rule the inner `''` looked like an
  *                                          escape, no close was found, and the `;` plus the
  *                                          whole second statement were swallowed.
- *   SELECT $$'$$ AS q; DROP TABLE t        Postgres/DuckDB dollar-quoting was not handled at
+ *   SELECT $$'$$ AS q; DROP TABLE t        Postgres dollar-quoting was not handled at
  *                                          all, so the `'` inside opened a phantom literal.
  *   SELECT * FROM [my'table]; DROP TABLE t T-SQL `[ident]` was not handled, same mechanism.
  *   SELECT 1; /*!40000 DROP TABLE t *​/     MySQL EXECUTES `/*! … *​/`; treating it as inert

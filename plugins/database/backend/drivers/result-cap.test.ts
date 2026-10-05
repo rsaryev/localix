@@ -1,12 +1,11 @@
 /**
- * The row cap against REAL in-process engines. SQLite and DuckDB run in this process, so the
+ * The row cap against a REAL in-process engine. SQLite runs in this process, so the
  * claim "a driver never holds more than cap+1 rows" can be checked end to end here; the network
  * drivers are checked at their streaming seam in their own tests.
  */
 import { afterEach, describe, expect, test } from 'bun:test'
 import { capRows, createRowCollector, RESULT_ROW_CAP } from '../../shared/result-cap'
 import type { DbDriver } from './port'
-import { createDuckDbDriver } from './duckdb'
 import { createSqliteDriver } from './sqlite'
 
 const OVER = RESULT_ROW_CAP + 1
@@ -72,24 +71,5 @@ describe('sqlite', () => {
     expect(result.truncated).toBe(true)
     const count = await driver.query('SELECT count(*) FROM t')
     expect(count.rows).toEqual([[OVER]])
-  })
-})
-
-describe('duckdb', () => {
-  test('a read streams only up to the cap and is flagged', async () => {
-    driver = createDuckDbDriver({ file: ':memory:' })
-    const result = await driver.query(`SELECT * FROM range(${OVER * 20})`)
-    expect(result.rows).toHaveLength(RESULT_ROW_CAP)
-    expect(result.truncated).toBe(true)
-  })
-
-  test('a result at the cap is whole, and a write is still counted', async () => {
-    driver = createDuckDbDriver({ file: ':memory:' })
-    const whole = await driver.query(`SELECT * FROM range(${RESULT_ROW_CAP})`)
-    expect(whole.rows).toHaveLength(RESULT_ROW_CAP)
-    expect(whole.truncated).toBeUndefined()
-    await driver.query('CREATE TABLE t (n BIGINT)')
-    await driver.query(`INSERT INTO t SELECT * FROM range(${OVER})`)
-    expect((await driver.query('SELECT count(*) FROM t')).rows).toEqual([[OVER]])
   })
 })

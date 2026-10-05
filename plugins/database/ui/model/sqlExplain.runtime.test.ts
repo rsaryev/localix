@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { createDuckDbDriver } from '../../backend/drivers/duckdb'
 import { createSqliteDriver } from '../../backend/drivers/sqlite'
 import { explainQuery } from './sqlExplain'
 
@@ -19,21 +18,6 @@ describe('EXPLAIN against bundled local drivers', () => {
         'detail',
       ])
       expect(String(result.rows[0]?.[3])).toContain('users_email_idx')
-    } finally {
-      await driver.close()
-    }
-  })
-
-  test('DuckDB returns a plan through the same normalized driver port', async () => {
-    const driver = createDuckDbDriver({ file: ':memory:' })
-    try {
-      await driver.query('CREATE TABLE events (id BIGINT, kind VARCHAR)')
-      const sql = explainQuery(`SELECT kind, count(*) FROM events GROUP BY kind`, 'duckdb')
-      expect(sql).not.toBeNull()
-      const result = await driver.query(sql!)
-      expect(result.columns.length).toBeGreaterThan(0)
-      expect(result.rows.length).toBeGreaterThan(0)
-      expect(result.rows.flat().join(' ')).toContain('HASH_GROUP_BY')
     } finally {
       await driver.close()
     }

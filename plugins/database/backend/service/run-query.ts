@@ -174,7 +174,7 @@ export async function runBatch(
     // Same Begin race as runQuery: an immediately-following grid commit belongs to the
     // transaction being opened, never to a separate driver transaction/auto-commit path.
     // A manual transaction already owns the connection. Starting the driver's separate
-    // batch transaction here would either nest BEGIN (SQLite/DuckDB) or wait forever for
+    // batch transaction here would either nest BEGIN (SQLite) or wait forever for
     // the only pooled connection (PostgreSQL max:1). Keep every statement inside the
     // existing transaction; the user's later Commit/Rollback remains authoritative.
     return await runWithTransaction(
@@ -206,7 +206,7 @@ export async function runBatch(
 /**
  * Structured table browsing follows the same pinned connection as console SQL. Besides
  * making uncommitted rows visible, this avoids waiting forever on PostgreSQL's max:1 pool
- * and on the exclusive SQLite/DuckDB connection lease while a manual transaction is open.
+ * and on the exclusive SQLite connection lease while a manual transaction is open.
  * A browse is a read, so it is safe to cancel and takes the query's timeout/Stop path.
  */
 export async function runBrowse(

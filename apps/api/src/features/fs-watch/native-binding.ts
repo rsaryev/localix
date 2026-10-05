@@ -10,7 +10,7 @@ import type { AsyncSubscription, Event, Options, SubscribeCallback } from '@parc
  * computed require there resolves to nothing (in dev it only appears to work because Bun
  * auto-installs from its cache). Static specifiers, one per platform, are what `bun build` copies
  * beside `server.js`; `prepare-sidecar.mjs` marks every OTHER platform's addon external so a build
- * only needs the addon of the platform it targets — the same shape DuckDB's binding uses.
+ * only needs the addon of the platform it targets — the same shape other native bindings use.
  */
 export const PARCEL_WATCHER_ADDONS = [
   '@parcel/watcher-darwin-arm64/watcher.node',

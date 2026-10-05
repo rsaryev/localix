@@ -74,7 +74,7 @@ export function buildPostgresSequenceStateStatements(
 
 /**
  * The table's EXPLICIT (non-PK) index statements that are not already embedded in a native
- * CREATE. SQLite/DuckDB/PostgreSQL/SQL Server store them as separate statements; MySQL's
+ * CREATE. SQLite/PostgreSQL/SQL Server store them as separate statements; MySQL's
  * SHOW CREATE TABLE includes them and sets `createScriptIncludesIndexes`.
  */
 export function buildIndexStatements(table: DbTableSchema, dialect: DbDialect): string[] {

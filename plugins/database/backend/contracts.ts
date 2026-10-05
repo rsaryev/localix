@@ -15,7 +15,6 @@ export type { ConnectionColor } from './colors'
 export {
   dbConnectionConfigSchema,
   clickhouseConnectionSchema,
-  duckdbConnectionSchema,
   esConnectionSchema,
   mongoConnectionSchema,
   mssqlConnectionSchema,

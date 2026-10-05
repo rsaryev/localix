@@ -35,8 +35,7 @@ describe('toDriverInput', () => {
     })
   })
 
-  it('returns an empty input for every file-based config', () => {
+  it('returns an empty input for a file-based config', () => {
     expect(toDriverInput({ dialect: 'sqlite', file: '/tmp/x.db' })).toEqual({})
-    expect(toDriverInput({ dialect: 'duckdb', file: '/tmp/x.duckdb' })).toEqual({})
   })
 })

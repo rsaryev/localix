@@ -146,13 +146,6 @@ export const sqliteConnectionSchema = z.object({
   ...baseConnectionFields,
 })
 
-export const duckdbConnectionSchema = z.object({
-  dialect: z.literal('duckdb'),
-  /** Absolute path to the .duckdb file, or ':memory:'. */
-  file: z.string().min(1),
-  ...baseConnectionFields,
-})
-
 export const postgresConnectionSchema = z.object({
   dialect: z.literal('postgres'),
   ...networkConnectionFields,
@@ -263,7 +256,6 @@ function refineNetworkTarget(
 export const dbConnectionConfigSchema = z
   .discriminatedUnion('dialect', [
     sqliteConnectionSchema,
-    duckdbConnectionSchema,
     postgresConnectionSchema,
     mysqlConnectionSchema,
     mssqlConnectionSchema,
@@ -275,7 +267,7 @@ export const dbConnectionConfigSchema = z
   .superRefine(refineNetworkTarget)
 export type DbConnectionConfig = z.infer<typeof dbConnectionConfigSchema>
 
-export type FileDbConnectionConfig = Extract<DbConnectionConfig, { dialect: 'sqlite' | 'duckdb' }>
+export type FileDbConnectionConfig = Extract<DbConnectionConfig, { dialect: 'sqlite' }>
 export type NetworkDbConnectionConfig = Exclude<DbConnectionConfig, FileDbConnectionConfig>
 
 export function isFileConnectionConfig(

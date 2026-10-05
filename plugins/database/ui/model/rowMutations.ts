@@ -179,7 +179,7 @@ export function buildBoundInsert(
   if (cols.length === 0) {
     // MySQL does not implement the standard DEFAULT VALUES form. Its empty column/value
     // lists are the documented equivalent; the other editable SQL engines accept the
-    // standard form (including DuckDB's PostgreSQL-derived grammar).
+    // standard form.
     const sql =
       t.dialect === 'mysql'
         ? `INSERT INTO ${qualifiedTable(t)} () VALUES ();`

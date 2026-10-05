@@ -8,7 +8,6 @@ import {
   clickHouseExplainText,
   clickHouseValidationFromError,
 } from './clickhouse-validate'
-import { duckDbValidationFromError } from './duckdb-validate'
 import { createExclusiveQueue } from './exclusive-queue'
 import { isStandaloneMssqlDdl, mssqlDescribeText, mssqlValidationFromRows } from './mssql-validate'
 import { enforceReadOnlySessions } from './mysql'
@@ -198,27 +197,6 @@ describe('clickhouse', () => {
 
   it('rewrites portable ? placeholders so they are not a syntax error', () => {
     expect(clickHouseExplainText("SELECT ? , '?'")).toBe("EXPLAIN AST SELECT {p0:String} , '?'")
-  })
-})
-
-describe('duckdb', () => {
-  it('trusts the caret only when the echoed line is the real, ASCII-prefixed line', () => {
-    const sql = 'SELECT 1,\n  nope FROM u'
-    const message =
-      'Binder Error: Referenced column "nope" not found\n\nLINE 2:   nope FROM u\n          ^'
-    expect(duckDbValidationFromError(sql, new Error(message))).toMatchObject({
-      offset: sql.indexOf('nope'),
-      code: 'Binder Error',
-      semantic: true,
-      message: 'Binder Error: Referenced column "nope" not found',
-    })
-    const elided = 'Binder Error: x\n\nLINE 1: ... nope FROM u\n            ^'
-    expect(duckDbValidationFromError(sql, new Error(elided))).not.toHaveProperty('offset')
-    // DuckDB places the caret by BYTE: after `é` (2 bytes) its column is not a character one.
-    const nonAscii = `Parser Error: x\n\nLINE 1: SELECT é SELEC\n${' '.repeat(8 + 10)}^`
-    expect(duckDbValidationFromError('SELECT é SELEC', new Error(nonAscii))).not.toHaveProperty(
-      'offset',
-    )
   })
 })
 

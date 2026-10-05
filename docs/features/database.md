@@ -19,7 +19,7 @@ connection, and each driver decides which actions are available.
 | Chat context       | The draft, the result on screen, recent output and errors reach the chat on their own | Bounded: 200 result rows, the last 12 output entries, one page of a table |
 | Data browser       | Open bounded pages and edit rows from primary-key metadata                            | Row editing requires driver support and a connection not marked read-only |
 | Structure views    | Create tables, alter supported columns, or render relationship diagrams               | Schema editing and relationships are driver capabilities                  |
-| File associations  | Open SQLite or DuckDB files and use the database-aware editor for `.sql` files        | A `.sql` file needs a live compatible connection before it can run        |
+| File associations  | Open SQLite files and use the database-aware editor for `.sql` files                  | A `.sql` file needs a live compatible connection before it can run        |
 | Session references | Attach a `localix://resource/db` connection, schema, table, or object to the session  | A reference adds bounded metadata; it never includes stored credentials   |
 
 ## How it works
@@ -40,8 +40,7 @@ uses those flags to expose transactions, explain, cancellation, row editing, rel
 schema editing only where the adapter implements them.
 
 Network engines use the client libraries packaged with the plugin. SQLite uses Bun's in-process
-driver, DuckDB uses its bundled Node API, and SSH tunnels use the bundled `ssh2` client. No database
-CLI is required.
+driver, and SSH tunnels use the bundled `ssh2` client. No database CLI is required.
 
 Database credentials can be stored as `${secret:KEY}` references. The backend resolves those
 references only while opening a driver or SSH tunnel; [Secrets](secrets.md) owns storage and trust
@@ -124,15 +123,14 @@ an error.
 | Engine     | Mechanism                               | Finds                                                                |
 | ---------- | --------------------------------------- | -------------------------------------------------------------------- |
 | SQLite     | Prepare, then finalize                  | Syntax errors and unknown tables, columns and functions              |
-| DuckDB     | Prepare, then destroy                   | Syntax errors and unknown names                                      |
 | PostgreSQL | Protocol Parse on a separate connection | Syntax errors in any statement; unknown names in DML                 |
 | MySQL      | Server-side prepare, then drop          | Syntax errors and unknown names in preparable statements             |
 | SQL Server | `sys.dm_exec_describe_first_result_set` | Syntax errors in the batch; unknown names up to its first result set |
 | ClickHouse | `EXPLAIN AST`                           | Syntax errors only                                                   |
 
-A check never waits behind a running query. SQLite and DuckDB skip it while their single connection
-is busy or a manual transaction is open. Every check has a short timeout, and a check that cannot
-run in time returns no verdict. Redis, MongoDB and Elasticsearch have no check.
+A check never waits behind a running query. SQLite skips it while its single connection is busy or a
+manual transaction is open. Every check has a short timeout, and a check that cannot run in time
+returns no verdict. Redis, MongoDB and Elasticsearch have no check.
 
 ### Agent access
 
@@ -158,8 +156,7 @@ The permission check runs before the connection is resolved, so it does not know
 another's: a SQL read that calls only known side-effect-free built-ins (`count`, `lower`,
 `date_trunc`, …), or a Redis, MongoDB or Elasticsearch read. A SELECT that calls any other function
 — `nextval`, `pg_terminate_backend`, a function of your own — counts as a write, because a function
-can write. `connect` and `test` with a SQLite or DuckDB file declare that path, so path rules apply
-to it.
+can write. `connect` and `test` with a SQLite file declare that path, so path rules apply to it.
 
 A write waits for confirmation when the agent's matching permission rule says `ask`. `connect` goes
 through the same validation as the connection form: the target is probed before it is saved,
@@ -188,7 +185,6 @@ sidebar or a connection tab is visible.
 | Engine               | Target form                 | Accepted URL schemes                                     | Transport options                             |
 | -------------------- | --------------------------- | -------------------------------------------------------- | --------------------------------------------- |
 | SQLite               | File path or `:memory:`     | File picker in the workbench                             | Local file                                    |
-| DuckDB               | File path or `:memory:`     | File picker in the workbench                             | Local file                                    |
 | PostgreSQL           | Host fields or imported URL | `postgres://`, `postgresql://`                           | TLS and SSH                                   |
 | MySQL                | Host fields or imported URL | `mysql://`                                               | TLS and SSH                                   |
 | Microsoft SQL Server | Host fields or imported URL | `mssql://`, `sqlserver://`                               | TLS and SSH                                   |
@@ -204,8 +200,8 @@ operations come from the driver catalog rather than engine-name checks in the UI
 
 | Option        | Primary behavior                                                    | Boundary                                                                                  |
 | ------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Read-only     | Blocks input the engine-family classifier cannot prove is read-only | The form exposes it for SQLite, DuckDB, PostgreSQL, MySQL, and SQL Server only            |
-| Engine guard  | Adds a file- or session-level read-only layer where the adapter can | SQLite, DuckDB, PostgreSQL, and MySQL add this layer; SQL Server uses the classifier only |
+| Read-only     | Blocks input the engine-family classifier cannot prove is read-only | The form exposes it for SQLite, PostgreSQL, MySQL, and SQL Server only                    |
+| Engine guard  | Adds a file- or session-level read-only layer where the adapter can | SQLite, PostgreSQL, and MySQL add this layer; SQL Server uses the classifier only         |
 | TLS           | Uses library defaults or supplied CA, client certificate, and key   | Certificate verification follows the saved TLS policy                                     |
 | SSH tunnel    | Forwards a local ephemeral port with password or private-key auth   | Direct network targets only; no local `ssh` binary is used                                |
 | SSH host key  | Pins the bastion's key on first connect; later connects must match  | A changed key is refused until you choose "Forget host key"; moving the bastion unpins it |
@@ -255,7 +251,6 @@ Connections saved before pinning existed are pinned on their next successful con
   | MySQL      | The pinned connection is closed after 10,001 rows                | Rows stream and are dropped; transactions are never cut off            |
   | SQL Server | The request is cancelled after 10,001 rows                       | Rows stream and are dropped; transactions are never cut off            |
   | SQLite     | Iteration stops after 10,001 rows                                | A write, or a result with repeated column names, is read in full first |
-  | DuckDB     | Streaming stops at the chunk holding row 10,001                  | A write is read in full, then capped                                   |
   | ClickHouse | `max_result_rows` with `break`; the server stops at a block edge | Commands return no rows                                                |
 
   A write is never stopped part-way, because that would change what it did. Where an engine can only

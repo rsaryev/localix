@@ -123,10 +123,6 @@ describe('row mutations', () => {
       sql: 'INSERT INTO "users" DEFAULT VALUES;',
       params: [],
     })
-    expect(buildBoundInsert({ ...sqlite, dialect: 'duckdb' }, {})).toEqual({
-      sql: 'INSERT INTO "users" DEFAULT VALUES;',
-      params: [],
-    })
     expect(buildBoundInsert({ ...sqlite, dialect: 'mysql' }, {})).toEqual({
       sql: 'INSERT INTO `users` () VALUES ();',
       params: [],
