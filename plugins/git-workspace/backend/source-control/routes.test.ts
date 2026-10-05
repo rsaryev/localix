@@ -45,7 +45,23 @@ const git = (args: string[]) =>
     ...args,
   ])
 
+// The routes run their own git, which does not go through the `git()` helper above. A merge or
+// commit there needs an identity: macOS derives one from the account name, Linux (CI) has none and
+// git stops with "Please tell me who you are", which the merge route reports as `git_merge_failed`
+// instead of the conflict the test sets up. The environment is the identity every child inherits.
+const IDENTITY_ENV = {
+  GIT_AUTHOR_NAME: 'Test',
+  GIT_AUTHOR_EMAIL: 'test@example.com',
+  GIT_COMMITTER_NAME: 'Test',
+  GIT_COMMITTER_EMAIL: 'test@example.com',
+} as const
+const previousIdentity: Record<string, string | undefined> = {}
+
 beforeAll(async () => {
+  for (const [key, value] of Object.entries(IDENTITY_ENV)) {
+    previousIdentity[key] = process.env[key]
+    process.env[key] = value
+  }
   // realpath: on macOS `/var` is a symlink, and git reports the resolved form.
   container = await realpath(await mkdtemp(join(tmpdir(), 'sc-routes-')))
   repo = join(container, 'proj')
@@ -95,6 +111,10 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  for (const key of Object.keys(IDENTITY_ENV)) {
+    if (previousIdentity[key] === undefined) delete process.env[key]
+    else process.env[key] = previousIdentity[key]
+  }
   await rm(container, { recursive: true, force: true })
 })
 
