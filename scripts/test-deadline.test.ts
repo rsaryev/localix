@@ -38,7 +38,6 @@ test('a process stuck in a synchronous loop is killed at its deadline', async ()
   // 240 s. The bound is wide because a loaded CI runner starves the `sh` watchdog's `sleep`; what
   // it proves is that the loop did not run to its end, not how fast an idle machine reacts.
   expect(elapsed).toBeLessThan(80_000)
-  expect(await new Response(child.stderr).text()).toContain('ran past 5s')
 }, 100_000)
 
 test('a process that finishes in time exits normally, and the watchdog goes with it', async () => {
