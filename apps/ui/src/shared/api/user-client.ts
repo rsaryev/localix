@@ -20,7 +20,7 @@ export const userApi = {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), PROFILE_BOOTSTRAP_TIMEOUT_MS)
     try {
-      return unwrap<UserProfile>(
+      return unwrap(
         await client.rpc.user.profile.$get(undefined, { init: { signal: controller.signal } }),
       )
     } finally {
@@ -29,6 +29,6 @@ export const userApi = {
   },
 
   async updateUserProfile(patch: UpdateUserProfileRequest): Promise<UserProfile> {
-    return unwrap<UserProfile>(await client.rpc.user.profile.$patch({ json: patch }))
+    return unwrap(await client.rpc.user.profile.$patch({ json: patch }))
   },
 }

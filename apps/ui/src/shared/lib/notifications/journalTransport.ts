@@ -18,13 +18,11 @@ const NEVER_ACCEPTED = new Set([400, 413, 422])
 
 export const httpJournalTransport: JournalTransport = {
   async sync(since: number): Promise<InboxSyncResponse> {
-    return unwrap<InboxSyncResponse>(
-      await client.rpc.notifications.$get({ query: { since: String(since) } }),
-    )
+    return unwrap(await client.rpc.notifications.$get({ query: { since: String(since) } }))
   },
   async post(ops: readonly ClientJournalOp[]): Promise<InboxChange[] | 'rejected'> {
     try {
-      const { changes } = await unwrap<{ changes: InboxChange[] }>(
+      const { changes } = await unwrap(
         await client.rpc.notifications.ops.$post({ json: { ops: [...ops] } }),
       )
       return changes

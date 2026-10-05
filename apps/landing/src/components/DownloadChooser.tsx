@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, Download } from 'lucide-react'
+import { BookOpen, ChevronDown, Download, Hammer } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { ButtonLink } from './Button'
@@ -10,6 +10,7 @@ import {
   readMacChipSignals,
   readPlatformSignals,
   type DownloadGuess,
+  type PlatformId,
 } from './downloadPlatform'
 
 export { resolveDownloads }
@@ -40,6 +41,33 @@ function useDownloadGuess(): DownloadGuess {
     }
   }, [])
   return guess
+}
+
+const SOURCE_DOCS = '/docs/getting-started--installation'
+
+/** What the page calls a platform it recognizes but publishes no installer for. */
+const UNSUPPORTED_LABEL: Partial<Record<PlatformId, string>> = {
+  windows: 'Windows',
+  'mac-x64': 'Intel Macs',
+}
+
+/**
+ * The lead action for a visitor whose platform has no installer (Windows, an Intel Mac): the source
+ * build, named as what it is. It takes the primary button's place so the layout does not change.
+ */
+function SourceAction({ label }: { label: string }) {
+  return (
+    <Link
+      to={SOURCE_DOCS}
+      className="focus-ring flex min-h-11 w-full items-center gap-4 rounded-md bg-foreground px-3 py-2 text-left text-background transition-colors"
+    >
+      <Hammer className="size-5 shrink-0" />
+      <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="block font-heading text-sm font-medium">Build from source</span>
+        <span className="block text-xs text-background/60">No installer for {label} yet</span>
+      </span>
+    </Link>
+  )
 }
 
 function DownloadAction({
@@ -177,13 +205,12 @@ function InstallerChooser({
   downloads: DownloadOption[]
 }) {
   const guess = useDownloadGuess()
-  const primary = downloads.find(({ id }) => id === guess.id) ?? downloads[0]
-  const alternatives = downloads.filter(({ id }) => id !== primary.id)
-  // An undecided chip must not leave the other Mac build one menu away from the person who
-  // needs it: name it right under the button.
-  const otherMac = guess.certain
-    ? undefined
-    : downloads.find(({ id }) => id === (primary.id === 'mac-arm64' ? 'mac-x64' : 'mac-arm64'))
+  const primary = downloads.find(({ id }) => id === guess.id)
+  const unsupported = primary ? undefined : UNSUPPORTED_LABEL[guess.id]
+  const alternatives = downloads.filter(({ id }) => id !== primary?.id)
+  // An undecided chip must not leave an Intel Mac owner downloading a file that will not open: the
+  // installer is for Apple silicon, and the page says so right under the button.
+  const chipUndecided = primary?.id === 'mac-arm64' && !guess.certain
 
   return (
     <div id="downloads" className={cn('w-full', className)}>
@@ -197,24 +224,30 @@ function InstallerChooser({
           <span>Docs</span>
         </ButtonLink>
         <div className="col-span-2 min-w-0">
-          <DownloadAction option={primary} primary />
-          {otherMac?.url && (
+          {primary ? (
+            <DownloadAction option={primary} primary />
+          ) : (
+            <SourceAction label={unsupported ?? 'this platform'} />
+          )}
+          {chipUndecided && (
             <p className="mt-2 px-2 text-xs text-text-soft">
-              Not sure which Mac you have? Apple menu → About This Mac names the chip.{' '}
-              <a
-                href={otherMac.url}
+              This installer is for Apple silicon. Not sure which Mac you have? Apple menu → About
+              This Mac names the chip; on an Intel Mac,{' '}
+              <Link
+                to={SOURCE_DOCS}
                 className="rounded-sm font-medium text-foreground underline decoration-border-strong underline-offset-4 outline-none hover:decoration-current focus-ring"
               >
-                {otherMac.action}
-              </a>
+                build from source
+              </Link>
+              .
             </p>
           )}
           <AlternativeDownloads options={alternatives} />
-          {!primary.url && downloads.some(({ url }) => url) && (
+          {primary && !primary.url && downloads.some(({ url }) => url) && (
             <p className="mt-2 px-2 text-xs text-text-soft">
               This platform's installer is not in the release yet.{' '}
               <Link
-                to="/docs/getting-started--installation"
+                to={SOURCE_DOCS}
                 className="rounded-sm font-medium text-foreground underline decoration-border-strong underline-offset-4 outline-none hover:decoration-current focus-ring"
               >
                 Build from source

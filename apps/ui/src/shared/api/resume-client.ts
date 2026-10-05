@@ -19,7 +19,7 @@ export type ResumeAnswer =
 export const resumeApi = {
   /** The root conversation's unfinished work, for a surface whose copy is still unknown. */
   async listResumePoints(rootSessionId: string): Promise<ResumePoint[]> {
-    const json = await unwrap<{ points: ResumePoint[] }>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].resume.$get({ param: { id: rootSessionId } }),
     )
     return json.points
@@ -43,6 +43,6 @@ export const resumeApi = {
           },
         }
     }
-    return unwrap<{ points: ResumePoint[]; wake: ResumeWakeStatus }>(response)
+    return unwrap(response)
   },
 }

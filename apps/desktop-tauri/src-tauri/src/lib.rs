@@ -37,8 +37,9 @@
 //   ✓ Auto-updater               → tauri-plugin-updater + updater_check/
 //                                   updater_install cmds; UI useDesktopUpdate polls
 //                                   via invoke when window.__LOCALIX_UPDATER is set.
-//                                   NEEDS a signing keypair (see release.yml +
-//                                   plugins.updater.pubkey) to actually verify.
+//                                   Release builds only (`UPDATER_ENABLED`): the key and
+//                                   endpoint come from the overlay that
+//                                   scripts/build-release-config.mjs generates.
 //   ✓ Zoom persistence            → save_zoom/load_zoom (app_config_dir/zoom).
 //   ✓ Settings… (Cmd+,)           → menu item → window.__localixOpenSettings.
 //   ✓ File ▸ New Chat (Cmd+N)     → menu item → dispatch_deep_link(localix://new).
@@ -86,6 +87,7 @@ mod native_browser;
 mod prefs;
 mod process_tree;
 mod quit;
+mod runtime_contract;
 mod sidecar;
 mod tray;
 mod updater;
@@ -122,6 +124,21 @@ use crate::tray::tray_available;
 use crate::updater::{updater_check, updater_install, PendingUpdate};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Auto-updater: checks the `latest.json` endpoint and verifies the download's minisign signature
+/// before installing. Registered only in a release build (`build.rs`, `localix_updater`), because
+/// its endpoint and public key come from the release overlay (`scripts/build-release-config.mjs`);
+/// the base `tauri.conf.json` has none, and the plugin refuses to start without them. The UI drives
+/// it through `updater_check` / `updater_install` and only when `updater::UPDATER_ENABLED`.
+#[cfg(localix_updater)]
+fn with_updater(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
+    builder.plugin(tauri_plugin_updater::Builder::new().build())
+}
+
+#[cfg(not(localix_updater))]
+fn with_updater(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
+    builder
+}
+
 pub fn run() {
     // Anchor the startup clock to the process, not to whichever milestone logs
     // first. Every `logln_at` below is relative to this.
@@ -146,7 +163,7 @@ pub fn run() {
             open_path_args(app, &argv[1..], std::path::Path::new(&cwd));
         }
     }));
-    builder
+    let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         // Remember the window's size + position across launches (native app feel).
@@ -161,11 +178,9 @@ pub fn run() {
         )
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())
-        .plugin(tauri_plugin_dialog::init())
-        // Auto-updater: checks the GitHub `latest.json` endpoint + verifies the
-        // download's minisign signature before installing (see tauri.conf.json
-        // plugins.updater). The UI drives it via updater_check/updater_install.
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init());
+    let builder = with_updater(builder);
+    builder
         .menu(|h| build_app_menu(h, &MenuData::default()))
         // App-menu events. Predefined items (Copy/Paste/Hide/…) act natively and
         // never reach here; every custom item's id is routed below.

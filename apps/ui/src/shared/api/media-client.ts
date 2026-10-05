@@ -1,5 +1,6 @@
 import { MAX_REQUEST_BODY_BYTES, formatByteLimit } from '@localixai/api/client'
-import { API_BASE_URL, ApiError, apiFailure, apiFetch } from './internal'
+import type { InferResponseType } from 'hono/client'
+import { API_BASE_URL, ApiError, apiFailure, apiFetch, type client } from './internal'
 
 /** Result of materializing a dropped/uploaded file into the content-addressed store. */
 export interface UploadedMedia {
@@ -60,5 +61,8 @@ export async function uploadMedia(file: File): Promise<UploadedMedia> {
       typeof body === 'string' ? body : undefined,
     )
   }
-  return (await res.json()) as UploadedMedia
+  // The request body is raw bytes, which the typed client cannot send, so `res` is a plain
+  // Response. Its body is read as the ROUTE's declared answer, and returning that as
+  // `UploadedMedia` is the check: a route that changes what it sends stops this compiling.
+  return (await res.json()) as InferResponseType<typeof client.rpc.media.$post, 200 | 201>
 }

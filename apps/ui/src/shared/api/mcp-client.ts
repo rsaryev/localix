@@ -11,14 +11,12 @@ export const mcpApi = {
     // The UI's McpServerConfig is intentionally loose (the form builds it up
     // incrementally), while the route infers the strict stdio|http discriminated
     // union. The payload is validated by zod server-side, so cast at this boundary.
-    return unwrap<McpServerRecord>(await client.rpc.mcp.servers.$post({ json: input as never }))
+    return unwrap(await client.rpc.mcp.servers.$post({ json: input as never }))
   },
 
   /** Edit an existing DB server BY ID (rename-safe — never duplicates the row). */
   async updateMcpServer(id: string, input: McpServerInput): Promise<McpServerRecord> {
-    return unwrap<McpServerRecord>(
-      await client.rpc.mcp.servers[':id'].$put({ param: { id }, json: input as never }),
-    )
+    return unwrap(await client.rpc.mcp.servers[':id'].$put({ param: { id }, json: input as never }))
   },
 
   async deleteMcpServer(id: string): Promise<void> {
@@ -27,7 +25,7 @@ export const mcpApi = {
   },
 
   async testMcpServer(id: string): Promise<McpProbeResult> {
-    return unwrap<McpProbeResult>(
+    return unwrap(
       await client.rpc.mcp.servers[':id'].test.$post({
         param: { id },
       }),
@@ -38,7 +36,7 @@ export const mcpApi = {
     mcpServers: Record<string, Record<string, unknown>>,
     opts?: { projectId?: string | null; defaultEnabled?: boolean },
   ): Promise<McpImportResult> {
-    return unwrap<McpImportResult>(
+    return unwrap(
       await client.rpc.mcp.servers.import.$post({
         json: {
           mcpServers,
@@ -56,9 +54,7 @@ export const mcpApi = {
   async startMcpServerOAuth(
     id: string,
   ): Promise<{ authorizationUrl?: string; authenticated?: boolean; state?: string }> {
-    return unwrap<{ authorizationUrl?: string; authenticated?: boolean; state?: string }>(
-      await client.rpc.mcp.servers[':id'].oauth.start.$post({ param: { id } }),
-    )
+    return unwrap(await client.rpc.mcp.servers[':id'].oauth.start.$post({ param: { id } }))
   },
 
   /** Forget a remote server's stored OAuth tokens (sign out). */

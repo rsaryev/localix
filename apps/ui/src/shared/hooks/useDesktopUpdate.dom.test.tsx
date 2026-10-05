@@ -119,6 +119,7 @@ describe('desktop update check', () => {
         message: 'Update 1.3.0 available',
         latestVersion: '1.3.0',
         currentVersion: '1.2.3',
+        installing: false,
       },
     })
   })

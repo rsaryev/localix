@@ -1,5 +1,7 @@
 import { fstatSync, type Stats } from 'node:fs'
 
+import { RUNTIME_SHUTDOWN_COMMAND } from './runtime-protocol'
+
 /**
  * Noticing that the desktop shell which owns this runtime is gone.
  *
@@ -61,4 +63,28 @@ export function watchParentStdin(
   stream.once('error', fire)
   // EOF is only observed by a stream that is flowing.
   stream.resume()
+}
+
+/**
+ * Call `onShutdown` when the shell writes the shutdown word on its own line. The word is the shell's
+ * half of the contract (`RUNTIME_SHUTDOWN_COMMAND`); a chunk may carry other lines or several, and
+ * either line ending counts.
+ */
+export function watchShutdownCommand(
+  stream: {
+    setEncoding(encoding: 'utf8'): unknown
+    on(event: 'data', listener: (chunk: unknown) => void): unknown
+  },
+  onShutdown: () => void,
+): void {
+  stream.setEncoding('utf8')
+  stream.on('data', (chunk) => {
+    if (
+      String(chunk)
+        .split(/\r?\n/)
+        .some((line) => line.trim() === RUNTIME_SHUTDOWN_COMMAND)
+    ) {
+      onShutdown()
+    }
+  })
 }

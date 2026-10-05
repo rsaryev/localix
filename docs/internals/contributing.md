@@ -88,7 +88,22 @@ owns the ordered gate list. The public-repository check compares that list with 
 removing a required gate must update the policy and workflow together.
 
 Use a focused test while editing, then run the complete root list before opening a pull request.
-Rust changes under the Tauri source also need `bun run check:rust`.
+Rust changes under the Tauri source also need `bun run check:rust`. A change to anything the desktop
+bundle stages (the API entry, migrations, plugins, the CLI) also needs `bun run check:bundle`: it
+stages the bundle and starts its API from a copy outside the checkout, in about ten seconds.
+
+Hosted CI runs the JavaScript gates sequentially in one job, sharing one dependency install and
+workspace build. Rust runs in a separate job; `Repository validation` requires both. A newer push
+cancels an unfinished CI run for the same ref, while manual runs remain independent. Sequential
+JavaScript checks reduce runner minutes at the cost of later feedback from gates near the end.
+
+The last step, `check:bundle`, is the only one that runs the packaged API; the release workflow
+repeats that check against the real macOS app and the Linux AppImage and `.deb` before it uploads
+anything.
+
+Release verification uses the same Turbo cache namespace as CI, but still invokes every gate; Turbo
+reuses a result only when its task inputs match. Native release builds remain manual, and the `legs`
+input can select only the platforms that need rebuilding.
 
 ## Configuration
 

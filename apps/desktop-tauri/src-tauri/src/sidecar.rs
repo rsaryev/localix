@@ -14,15 +14,10 @@ use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 
 use crate::log::logln;
 use crate::process_tree::ProcessTree;
-
-const READY_PREFIX: &str = "LOCALIX_RUNTIME_READY ";
-
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RuntimeReady {
-    base_url: String,
-    pid: u32,
-}
+use crate::runtime_contract::{
+    RuntimeReady, API_ATTACH_WAIT_MS, API_SHUTDOWN_DEADLINE_MS, DESKTOP_RUNTIME_ARG, ENV_CLI_ENTRY,
+    ENV_LAUNCH_ID, ENV_PARENT_PID, READY_PREFIX, SHUTDOWN_COMMAND,
+};
 
 /// The last runtime status handed to the webview.
 ///
@@ -238,6 +233,13 @@ fn report_error(app: &tauri::AppHandle, message: impl Into<String>) {
 /// never complete, so it was killed mid-wait and the reason never existed.
 const READY_TIMEOUT_SECS: u64 = 12;
 
+// The two deadlines this one must outlast live in the runtime (`apps/api/src/lib/runtime-protocol.ts`).
+// A shell that gives up first kills a runtime before it can report why it failed.
+const _: () = assert!(
+    (READY_TIMEOUT_SECS as u128) * 1000 > API_ATTACH_WAIT_MS,
+    "the shell's start budget must outlast the runtime's own attach wait"
+);
+
 /// A stuck first start is retried ONCE before it becomes an error.
 ///
 /// Observed live: a runtime hung with no log output at all and was killed at the
@@ -310,15 +312,15 @@ fn spawn_runtime(
     };
     let spawned = command
         .arg(clean_path(&server))
-        .arg("--desktop-runtime")
+        .arg(DESKTOP_RUNTIME_ARG)
         .env("PORT", port.to_string())
         .env("HOST", "127.0.0.1")
         .env("NODE_ENV", "production")
-        .env("LOCALIX_DESKTOP_PARENT_PID", std::process::id().to_string())
+        .env(ENV_PARENT_PID, std::process::id().to_string())
         // The API stamps every line with it, so one launch reads as one timeline (log.rs).
-        .env("LOCALIX_LAUNCH_ID", crate::log::launch_id())
+        .env(ENV_LAUNCH_ID, crate::log::launch_id())
         .env(
-            "LOCALIX_CLI_ENTRY",
+            ENV_CLI_ENTRY,
             clean_path(&res.join("cli").join("bin").join("localix.mjs")),
         )
         .spawn();
@@ -497,6 +499,13 @@ fn spawn_runtime(
 /// page, and then waits this long in [`stop_api_blocking`] before a kill.
 pub(crate) const SHUTDOWN_WAIT: Duration = Duration::from_secs(6);
 
+// A shell that stops waiting before the runtime's own teardown deadline kills a runtime that was
+// about to finish cleanly.
+const _: () = assert!(
+    SHUTDOWN_WAIT.as_millis() > API_SHUTDOWN_DEADLINE_MS,
+    "the shell's wait for `shutdown` must outlast the runtime's own shutdown deadline"
+);
+
 /// How long the `Exit` event may hold the process for a runtime that was never asked to stop.
 ///
 /// `Exit` is the one event every way out raises, including the ones that never raise
@@ -517,7 +526,7 @@ pub(crate) fn stop_api_blocking(app: &tauri::AppHandle, grace: Duration) {
     sidecar.stopping.store(true, Ordering::Release);
     match sidecar.child.lock().unwrap().as_mut() {
         Some(managed) => {
-            let _ = managed.child.write(b"shutdown\n");
+            let _ = managed.child.write(SHUTDOWN_COMMAND);
         }
         None => return,
     }
@@ -625,23 +634,42 @@ fn init_script(port: Option<u16>) -> String {
         |port| format!("Number(sessionStorage.getItem('__localix_api_port'))||{port}"),
     );
     format!(
-        "window.__LOCALIX_DESKTOP=true;window.__LOCALIX_API_PORT={selected};window.__LOCALIX_OAUTH_PORT=window.__LOCALIX_API_PORT;window.__LOCALIX_UPDATER=true;window.__LOCALIX_RUNTIME_STATUS='starting';window.__LOCALIX_RUNTIME_ERROR=null;"
+        "window.__LOCALIX_DESKTOP=true;window.__LOCALIX_API_PORT={selected};window.__LOCALIX_OAUTH_PORT=window.__LOCALIX_API_PORT;window.__LOCALIX_UPDATER={updater};window.__LOCALIX_RUNTIME_STATUS='starting';window.__LOCALIX_RUNTIME_ERROR=null;",
+        updater = crate::updater::UPDATER_ENABLED
     )
 }
 
 fn init_error_script(message: &str) -> String {
     let message = serde_json::to_string(message).unwrap_or_else(|_| "\"startup failed\"".into());
     format!(
-        "window.__LOCALIX_DESKTOP=true;window.__LOCALIX_UPDATER=true;window.__LOCALIX_RUNTIME_STATUS='error';window.__LOCALIX_RUNTIME_ERROR={message};"
+        "window.__LOCALIX_DESKTOP=true;window.__LOCALIX_UPDATER={updater};window.__LOCALIX_RUNTIME_STATUS='error';window.__LOCALIX_RUNTIME_ERROR={message};",
+        updater = crate::updater::UPDATER_ENABLED
     )
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        format_timeout_message, plain_windows_path, should_report_termination, should_respawn,
-        status_script, take_for_pid, MAX_RESPAWNS,
+        format_timeout_message, init_error_script, init_script, plain_windows_path,
+        should_report_termination, should_respawn, status_script, take_for_pid, MAX_RESPAWNS,
     };
+
+    // The page polls for updates and shows a notice only when told an updater exists. A build with
+    // none must say so on both start paths, or every local build would offer an update it cannot
+    // install. `check:rust` runs this under both configurations.
+    #[test]
+    fn the_page_is_told_whether_this_build_can_update() {
+        let expected = if cfg!(localix_updater) {
+            "true"
+        } else {
+            "false"
+        };
+        let flag = format!("window.__LOCALIX_UPDATER={expected};");
+        assert!(init_script(Some(4100)).contains(&flag));
+        assert!(init_script(None).contains(&flag));
+        assert!(init_error_script("boom").contains(&flag));
+        assert_eq!(crate::updater::UPDATER_ENABLED, cfg!(localix_updater));
+    }
 
     #[test]
     fn a_verbatim_path_gets_its_plain_spelling() {

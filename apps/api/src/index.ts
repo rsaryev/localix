@@ -24,7 +24,14 @@ import {
   type RuntimeEndpoint,
   waitForRuntimeEndpoint,
 } from './lib/runtime-endpoint'
-import { LOCALIX_API_PROTOCOL_VERSION, LOCALIX_RUNTIME_READY_PREFIX } from './lib/runtime-protocol'
+import {
+  DESKTOP_RUNTIME_ARG,
+  LOCALIX_API_PROTOCOL_VERSION,
+  LOCALIX_RUNTIME_READY_PREFIX,
+  RUNTIME_ATTACH_WAIT_MS,
+  RUNTIME_ENV,
+  RUNTIME_SHUTDOWN_DEADLINE_MS,
+} from './lib/runtime-protocol'
 import { MAX_REQUEST_BODY_BYTES } from './lib/request-limits'
 import { runtimeBaseUrlMatchesHost } from './lib/runtime-address'
 import { defaultDbFile, envFlag, envString, resolveDbFile } from './lib/env'
@@ -36,7 +43,12 @@ import { installOrphanGuard } from './lib/orphan-guard'
 import { startupDiag } from './lib/startup-diagnostics'
 import { withTimeout } from './lib/timeout'
 import { isSameBuild, runtimeBuildId } from './lib/runtime-build'
-import { currentStdinFacts, stdinIsParentPipe, watchParentStdin } from './lib/desktop-parent'
+import {
+  currentStdinFacts,
+  stdinIsParentPipe,
+  watchParentStdin,
+  watchShutdownCommand,
+} from './lib/desktop-parent'
 
 /** A running API owned by the daemon process. */
 export interface EmbeddedServer {
@@ -85,7 +97,7 @@ async function closeLogDestination(
  * Sized under the desktop shell's own force-kill (`sidecar.rs`), which waits a second
  * longer, so the runtime always gets to finish on its own terms first.
  */
-const SHUTDOWN_DEADLINE_MS = 4_000
+const SHUTDOWN_DEADLINE_MS = RUNTIME_SHUTDOWN_DEADLINE_MS
 
 /** Per-step budget, so one wedged subsystem cannot spend the whole deadline alone. */
 const SHUTDOWN_STEP_MS = 1_500
@@ -426,7 +438,6 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
 
 const ENSURE_DAEMON_ARG = '--ensure-daemon'
 const DAEMON_CHILD_ARG = '--runtime-daemon-child'
-const DESKTOP_RUNTIME_ARG = '--desktop-runtime'
 const WATCH_DAEMON_ARG = '--watch-daemon'
 
 async function spawnDetachedDaemon(watch: boolean, host: string, port: number): Promise<void> {
@@ -582,7 +593,7 @@ function isOwnDescriptor(endpoint: RuntimeEndpoint | null): boolean {
  * only legitimate case — a sibling that took the lease microseconds earlier and is still
  * booting.
  */
-const ATTACH_WAIT_MS = 6_000
+const ATTACH_WAIT_MS = RUNTIME_ATTACH_WAIT_MS
 
 /**
  * Reuse a compatible runtime when one is already live, otherwise own the API in
@@ -668,17 +679,8 @@ async function runDesktopRuntime(): Promise<void> {
     await server.stop().catch((error) => console.error('API shutdown failed', error))
     process.exit(0)
   }
-  process.stdin.setEncoding('utf8')
-  process.stdin.on('data', (chunk) => {
-    if (
-      String(chunk)
-        .split(/\r?\n/)
-        .some((line) => line.trim() === 'shutdown')
-    ) {
-      void stop()
-    }
-  })
-  const parentPid = Number(envString('LOCALIX_DESKTOP_PARENT_PID'))
+  watchShutdownCommand(process.stdin, () => void stop())
+  const parentPid = Number(envString(RUNTIME_ENV.parentPid))
   const validParent = Number.isInteger(parentPid) && parentPid > 0 ? parentPid : undefined
   // The shell's pipe closing IS the shell dying — immune to the pid reuse that can blind
   // the watchdog below (lib/desktop-parent.ts). Only when stdin is that pipe.

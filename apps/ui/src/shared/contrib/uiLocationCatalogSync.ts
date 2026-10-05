@@ -1,4 +1,4 @@
-import { API_BASE_URL, apiFetch, unwrap } from '@/shared/api/internal'
+import { client, unwrap } from '@/shared/api/internal'
 import { eventSocket } from '@/shared/api/eventSocket'
 import type { UiAgentLocationCatalogSnapshot } from '@localixai/plugin-sdk/ui'
 import { createBoundedCache } from '@localixai/kit/lib'
@@ -128,16 +128,9 @@ async function publishCatalogSnapshot(
   projectId: string | null,
   catalog: UiAgentLocationCatalogSnapshot,
 ) {
-  const response = await apiFetch(`${API_BASE_URL}/rpc/ui-locations/catalog`, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      publisherId,
-      projectId,
-      catalog,
-    }),
-  })
-  return unwrap<{ catalogId: string; accepted: boolean }>(response)
+  return unwrap(
+    await client.rpc['ui-locations'].catalog.$put({ json: { publisherId, projectId, catalog } }),
+  )
 }
 
 export interface UiLocationCatalogSyncPorts {

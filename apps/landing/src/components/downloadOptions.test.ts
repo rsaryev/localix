@@ -40,8 +40,8 @@ describe('installer links', () => {
     }
   })
 
-  // The first releases are betas, and GitHub's `latest` skips prereleases: a link through it would
-  // answer 404. The deploy hands over the newest published tag instead.
+  // The deploy hands over the newest published tag, so a link names the release it was built for
+  // and never depends on what `latest` resolves to at the moment of the click.
   test('a beta tag links into that release, not through latest', () => {
     const url = installerUrl('mac-arm64', { live: true, tag: 'v0.1.0-beta.1' })
     expect(url).toBe(releaseInstallerUrl('mac-arm64', 'v0.1.0-beta.1'))
@@ -54,14 +54,13 @@ describe('installer links', () => {
     const release = {
       live: true,
       tag: 'v0.1.0-beta.1',
-      assets: [STABLE_INSTALLER_NAMES['mac-arm64'], STABLE_INSTALLER_NAMES['mac-x64']],
+      assets: [STABLE_INSTALLER_NAMES['mac-arm64']],
     }
     expect(installerUrl('mac-arm64', release)).toBeDefined()
-    expect(installerUrl('windows', release)).toBeUndefined()
     expect(installerUrl('linux', release)).toBeUndefined()
   })
 
   test('without a tag it falls back to the stable latest link', () => {
-    expect(installerUrl('windows', { live: true })).toBe(stableInstallerUrl('windows'))
+    expect(installerUrl('linux', { live: true })).toBe(stableInstallerUrl('linux'))
   })
 })

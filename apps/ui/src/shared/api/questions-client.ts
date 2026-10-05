@@ -17,7 +17,7 @@ export const questionsApi = {
     questionId: string,
     answers: AskToolAnswer[],
   ): Promise<void> {
-    await unwrap<{ ok: true }>(
+    await unwrap(
       await client.rpc.sessions[':id'].questions.answer.$post({
         param: { id: sessionId },
         json: { questionId, answers },
@@ -27,7 +27,7 @@ export const questionsApi = {
 
   /** Decline to answer a queued question; the agent is told in its next prompt. */
   async skipQuestion(sessionId: string, questionId: string): Promise<void> {
-    await unwrap<{ ok: true }>(
+    await unwrap(
       await client.rpc.sessions[':id'].questions.skip.$post({
         param: { id: sessionId },
         json: { questionId },
@@ -42,7 +42,7 @@ export const questionsApi = {
     key: string,
     checked: boolean,
   ): Promise<{ ok: true; checked: boolean }> {
-    return unwrap<{ ok: true; checked: boolean }>(
+    return unwrap(
       await client.rpc.sessions[':id'].messages[':messageId'].tasks.$post({
         param: { id: sessionId, messageId },
         json: { key, checked },

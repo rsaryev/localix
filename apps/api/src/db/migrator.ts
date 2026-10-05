@@ -4,8 +4,12 @@ import { Migrator, type MigrationProvider, type MigrationResult } from 'kysely/m
 import type { AppDatabase } from './types'
 import { DEFAULT_USER_ID } from '../lib/env'
 import { validateSchema } from './schema-integrity'
-import { shippedMigrationFolder, shippedMigrations } from './migration-provider'
-import { recordMigrationDigests, verifyMigrationLedger } from './migration-ledger'
+import { shippedMigrationSources, shippedMigrations } from './migration-provider'
+import {
+  recordMigrationDigests,
+  verifyMigrationLedger,
+  type MigrationSources,
+} from './migration-ledger'
 import { backupDatabaseBeforeMigration } from './connection'
 
 /**
@@ -28,7 +32,9 @@ export async function migrateToLatest(
   const migrations = options.migrations ?? shippedMigrations()
   // Digests are read from files, so only the shipped folder has them; a test's in-memory
   // provider still gets the missing-file check.
-  const folder = options.migrations ? options.migrationFolder : shippedMigrationFolder()
+  const folder: MigrationSources | undefined = options.migrations
+    ? options.migrationFolder
+    : await shippedMigrationSources()
   // Before anything touches the database: a migration it ran must still exist, unchanged.
   await verifyMigrationLedger(db, migrations, folder)
   const known = await new Migrator({ db, provider: migrations }).getMigrations()
@@ -38,8 +44,8 @@ export async function migrateToLatest(
   const defaultUserId = options.defaultUserId?.trim() || DEFAULT_USER_ID
 
   // Data migrations sometimes need the already-resolved single-user identity,
-  // but shipped migration files must remain self-contained (they are copied
-  // beside the bundled server and cannot import src/lib/env.ts). A TEMP table
+  // but shipped migration files must remain self-contained (the bundle compiles them
+  // in on their own and they cannot import src/lib/env.ts). A TEMP table
   // keeps that runtime value on this SQLite connection without adding durable
   // schema or reading process.env from a migration.
   await sql`

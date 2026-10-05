@@ -72,6 +72,11 @@ fn updater(app: &AppHandle) -> Result<tauri_plugin_updater::Updater, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Whether this build can update itself: true only for a release build (`build.rs`). A build from a
+/// checkout has no updater plugin and no feed to read, so it is never offered an update; without
+/// this, every local build (version 0.0.1) read the official feed and offered to replace itself.
+pub(crate) const UPDATER_ENABLED: bool = cfg!(localix_updater);
+
 /// Result of an update check, mirrored by the UI's `useDesktopUpdate` hook.
 #[derive(serde::Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -81,13 +86,19 @@ pub(crate) struct UpdateStatus {
     latest_version: Option<String>,
 }
 
-/// Check the configured updater endpoint (see tauri.conf.json `plugins.updater`)
+/// Check the configured updater endpoint (the release overlay's `plugins.updater`)
 /// for a newer signed release. Returns the current + latest version and whether
 /// an update is available. Never errors the caller for a routine "no network" —
 /// only a genuinely malformed setup surfaces as an Err string the UI can show.
 #[tauri::command]
 pub(crate) async fn updater_check(app: AppHandle) -> Result<UpdateStatus, String> {
     let current = app.package_info().version.to_string();
+    if !UPDATER_ENABLED {
+        return Ok(UpdateStatus {
+            current_version: current,
+            ..Default::default()
+        });
+    }
     let updater = updater(&app)?;
     match updater.check().await {
         Ok(Some(update)) => {
@@ -131,6 +142,9 @@ pub(crate) async fn updater_check(app: AppHandle) -> Result<UpdateStatus, String
 #[tauri::command]
 pub(crate) async fn updater_install(app: AppHandle) -> Result<(), String> {
     use tauri::Emitter;
+    if !UPDATER_ENABLED {
+        return Err("this build has no updater".into());
+    }
     // Prefer the handle cached by the UI's preceding updater_check (no redundant
     // network call, no check→install race). Fall back to a fresh check only if
     // install is somehow reached without a prior check.

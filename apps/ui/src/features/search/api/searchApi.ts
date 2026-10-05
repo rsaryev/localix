@@ -1,7 +1,9 @@
 // REST client for the global-search backend (`POST /rpc/search`). The endpoint is
 // best-effort (per-provider failures degrade to empty), so this rarely throws — but
 // we still surface a typed error the surfaces can show inline.
-import { API_BASE_URL, apiFetch } from '@/shared/api/internal'
+import type { ClientResponse } from 'hono/client'
+import type { ResponseFormat } from 'hono/types'
+import { client, type OkBody } from '@/shared/api/internal'
 import type { SearchRequest, SearchResponse, SearchErrorResponse } from '@localixai/api/client'
 
 export class SearchApiError extends Error {
@@ -28,10 +30,12 @@ function searchFailureMessage(code: string | undefined): string {
   return 'The search could not run'
 }
 
-async function readOr<T>(res: Response): Promise<T> {
-  const json = (await res.json().catch(() => null)) as
-    | (T & Partial<SearchErrorResponse> & { error?: unknown })
-    | null
+async function readOr<R extends ClientResponse<unknown, number, ResponseFormat>>(
+  res: R,
+): Promise<OkBody<R>> {
+  const body = await res.json().catch(() => null)
+  // What the error shapes below look at; the success body is returned as the route declares it.
+  const json = body as (Partial<SearchErrorResponse> & { error?: unknown }) | null
   // Two shapes reach here: this endpoint's own flat `{error, code, detail}` and the app-wide
   // `{error:{code,message}}` envelope every route's error handler answers.
   const flat = json && typeof json.error === 'string' ? json.error : null
@@ -39,24 +43,16 @@ async function readOr<T>(res: Response): Promise<T> {
     json && typeof json.error === 'object' && json.error !== null
       ? (json.error as { code?: string; message?: string })
       : null
-  if (res.ok && !flat && !envelope) return json as T
+  if (res.ok && !flat && !envelope) return body as OkBody<R>
   const code = json?.code ?? envelope?.code
   // The server's own words become the detail; the surface line gets a sentence.
   const detail = json?.detail ?? flat ?? envelope?.message ?? `HTTP ${res.status}`
   throw new SearchApiError(searchFailureMessage(code), code, detail)
 }
 
-const base = `${API_BASE_URL}/rpc/search`
-
 export const searchApi = {
   /** Fan a query across the domain providers → ranked, grouped, paginated results. */
   async search(req: SearchRequest, signal?: AbortSignal): Promise<SearchResponse> {
-    const res = await apiFetch(base, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(req),
-      signal,
-    })
-    return readOr<SearchResponse>(res)
+    return readOr(await client.rpc.search.$post({ json: req }, { init: { signal } }))
   },
 }

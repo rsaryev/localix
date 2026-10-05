@@ -64,8 +64,11 @@ Linux keeps its group shortcuts because Monaco uses Shift+Alt+Up/Down there. The
 | Bun runtime           | Host-triple sidecar under `binaries/`.               | Native builds cannot reuse a sidecar from another target. |
 | UI                    | `apps/ui/dist` used as Tauri `frontendDist`.         | Development loads the Vite URL instead of this directory. |
 
-The default Tauri build does not create updater artifacts. The release command adds
-`tauri.release.conf.json`, which enables signed updater bundles.
+The default Tauri build has no updater: its config carries no key or endpoint, and `build.rs` does
+not compile the plugin in. The release command (`run-tauri.mjs --release`) adds an overlay generated
+by `scripts/build-release-config.mjs` that turns on signed updater bundles and supplies the key and
+endpoint, and sets `LOCALIX_UPDATER_ENABLED=1` so the plugin is compiled in. Afterwards it fails the
+build unless the public key is inside the built binary.
 
 ### Production startup
 
@@ -153,6 +156,37 @@ and does nothing on Linux. It is bound to Cmd+Q on macOS and Ctrl+Q on Linux. Wi
 has no accelerator: Alt+F4 quits there, and Ctrl+Q stays with the terminal. On Windows the runtime
 runs in its own Job Object that kills its remaining processes when the job closes, including when
 the shell itself dies.
+
+### Updating
+
+One flow connects a published release to an installed app. Each step names the code that owns it.
+
+1. **Publish.** `release.yml` stamps the tag's version (`scripts/stamp-version.mjs`), builds with
+   `tauri:release` (the overlay, the updater compiled in, updater artifacts signed with
+   `TAURI_SIGNING_PRIVATE_KEY`), smokes the packaged app, then builds `latest.json` from the signed
+   bundles. The release is published as the **latest** one, a `-beta.N` version included, because
+   the app reads `releases/latest/download/latest.json` and GitHub's `latest` skips a prerelease.
+   `scripts/assert-newest-release.mjs` refuses a version older than the current latest.
+2. **Check.** The rail's `DesktopUpdateButton` is the one poller: thirty seconds after launch, then
+   hourly, it calls `updater_check` (`updater.rs`), which reads the manifest, compares versions and
+   keeps the `Update` handle. A failed check is quiet and reports "no update".
+3. **Notice.** `useDesktopUpdate` holds one shared state, so three surfaces agree: `UpdateStrip`
+   above the focused composer (`ComposerHeaderStrips`), the rail button, and Settings → Updates.
+   Hiding the strip is remembered per version.
+4. **Press.** All three go through `restartToUpdate`. If any session has a running turn or
+   background job, it asks first and names what stops; otherwise it installs at once.
+5. **Install.** `updater_install` marks the state `installing`, holds runtime respawns, downloads
+   (progress events, about twice a second, become the strip's percentage), and verifies the minisign
+   signature against the public key inside the app. Then `leave_cleanly` flushes the page, saves the
+   window and stops the runtime (`shutdown`, bounded, then the kill), and `app.restart()`
+   relaunches.
+6. **Relaunch.** The new shell starts the new runtime, which applies its embedded migrations after
+   copying an existing database to `~/.localix/backups/migrations`.
+7. **Failure.** Any error before the restart releases the respawn hold, clears `installing`, shows
+   "Could not install the update" with the reason, and leaves the old version running.
+
+A build without `LOCALIX_UPDATER_ENABLED` skips all of it: `UPDATER_ENABLED` is false, the init
+script sets `__LOCALIX_UPDATER=false`, and the page never polls or shows a notice.
 
 Development takes a different path. Tauri's `beforeDevCommand` stages build-script prerequisites,
 then the shared supervisor starts the API watcher and Vite process while the native shell loads the
@@ -248,14 +282,13 @@ finds or creates one project by normalized working directory.
 
 ### Release assembly
 
-The release workflow verifies one semver tag commit before creating a draft. Four native runners
-build macOS arm64, macOS x64, Windows x64, and Linux x64 artifacts; publication waits for all matrix
-legs and the signed updater manifest.
+The release workflow verifies one semver tag commit before creating a draft. Two native runners
+build macOS arm64 and Linux x64 artifacts; publication waits for every matrix leg and the signed
+updater manifest. Windows and Intel Mac have no installer: they build from source.
 
 | Platform | Requested bundle targets | Additional package policy                                |
 | -------- | ------------------------ | -------------------------------------------------------- |
 | macOS    | Application and DMG      | Minimum macOS 13; release path signs and notarizes.      |
-| Windows  | NSIS executable          | Current-user install and WebView download bootstrapper.  |
 | Linux    | AppImage and DEB         | WebKit, GTK and tray indicator; media framework bundled. |
 
 The Linux config also contains RPM dependency metadata, but RPM is absent from the default bundle
@@ -267,6 +300,37 @@ updater looks up the installer-specific key first, and its Debian installer reje
 payload, so without that key a `.deb` install could never update. A release missing any of the five
 signed bundles fails before publication.
 
+The shell and the API runtime share one contract, and its source of truth is
+`apps/api/src/lib/runtime-protocol.ts`: the ready-frame prefix and fields, the `shutdown` word, the
+environment the shell sets, and the two deadlines the shell's own timeouts must outlast.
+`scripts/runtime-contract.mjs` renders the Rust half into `src-tauri/src/runtime_contract.rs`, which
+is committed because cargo must see it with no step before it. `bun run check:generated` compares
+the committed file with a fresh render, `RuntimeEndpoint` extends the frame the shell parses, and
+`sidecar.rs` asserts at compile time that its start budget and shutdown wait exceed the runtime's.
+After changing a value, run `bun scripts/runtime-contract.mjs --write`.
+
+`scripts/stamp-version.mjs` writes the tag's version into the three files that carry it
+(`tauri.conf.json`, `Cargo.toml` and the crate's `Cargo.lock` entry) and refuses anything that is
+not a semantic version. `--check` fails when the three disagree, and a test runs it against the
+committed files.
+
+The API's migrations are compiled into `server.js` rather than staged as loose files. A bundler
+plugin (`scripts/embed-migrations-plugin.mjs`) answers one virtual module that statically imports
+every file in `apps/api/migrations` and carries its text, so `kysely` is bundled with them and the
+bundle has no `migrations/` folder or vendored `node_modules` beside it. The migration ledger
+digests the embedded text exactly as it digests a file, so one database opens in the dev server and
+in the packaged app. Spacedrive, GitButler and Buzz compile their migrations into the binary the
+same way.
+
+`apps/desktop-tauri/scripts/smoke-bundle.mjs` starts the API the way the shell does: the sidecar Bun
+runs `server.js --desktop-runtime` against a throwaway home, the script waits for the
+`LOCALIX_RUNTIME_READY` frame, reads `/health`, sends `shutdown` and requires a clean exit. It
+copies the bundle outside the checkout first, because inside it a missing vendored module still
+resolves from the repository's own `node_modules`. `bun run check:bundle` runs it on the freshly
+staged bundle in CI. The release workflow runs it with `--root` on each built app (the macOS `.app`,
+the extracted AppImage and the unpacked `.deb`) before collecting assets, so a bundle that cannot
+start never reaches the draft.
+
 A release bundle's `__UI_BUILD__` stamp is the source commit. `scripts/build-stamp.mjs` ignores the
 version files the workflow stamps, prefers an explicit `LOCALIX_BUILD_STAMP` (hashed by Turbo), and
 under Turbo without one uses the task hash, so a cached build never reports another commit.
@@ -277,10 +341,12 @@ under Turbo without one uses the task hash, so a cached build never reports anot
 | --------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- |
 | `bun run build:desktop`     | Builds API dependencies, stages resources, then runs Tauri. | Uses ordinary local-build signing behavior.                      |
 | `bun run release:desktop`   | Adds updater artifacts and macOS notarization handling.     | It does not upload or publish a release.                         |
-| `tauri.conf.json`           | Owns UI path, scheme, sidecar, targets, updater endpoint.   | Version is `0.0.1` until release CI stamps the tag version.      |
+| `tauri.conf.json`           | Owns UI path, scheme, sidecar and targets.                  | Version is `0.0.1` until release CI runs `stamp-version.mjs`.    |
 | Platform Tauri config files | Add macOS, Windows, or Linux packaging settings.            | Tauri merges only the current target platform's file.            |
 | `LOCALIX_CLI_ENTRY`         | Selects the shell launcher's CLI target.                    | Only the desktop sidecar triggers automatic installation.        |
-| `TAURI_SIGNING_PRIVATE_KEY` | Signs updater artifacts in the release path.                | The matching public key must already be in the app config.       |
+| `TAURI_SIGNING_PRIVATE_KEY` | Signs updater artifacts in the release path.                | Its public key is `updater.release.json`, embedded at build.     |
+| `LOCALIX_UPDATER_PUBKEY`    | Replaces the committed updater public key for one build.    | For a channel or a fork; the build still fails if it is invalid. |
+| `LOCALIX_UPDATER_ENDPOINTS` | Replaces the update manifest URL(s), comma-separated.       | HTTPS only.                                                      |
 | Apple signing environment   | Signs and notarizes release app and DMG artifacts.          | The release script fails early when required values are missing. |
 
 ## Release operations
@@ -307,8 +373,8 @@ production-safe until an equivalent approval boundary is available.
 
 - The release workflow and bundle targets are packaging configuration, not proof that downloadable,
   signed artifacts exist. Check the repository's GitHub Releases page for a published build.
-- Ordinary local builds have updater artifact generation disabled. A working updater additionally
-  requires matching signing keys, uploaded signed bundles, and a published `latest.json`.
+- A build from a checkout has no updater at all. A working one additionally requires the matching
+  signing key, uploaded signed bundles, and a published `latest.json` on the latest release.
 - The deep-link parser records `new=1`, but the UI path handler currently ignores that field. A path
   handoff therefore reuses or creates the project by working directory rather than forcing a fresh
   project.
@@ -348,7 +414,7 @@ production-safe until an equivalent approval boundary is available.
 - [Root desktop scripts](../../package.json)
 - [Desktop package scripts](../../apps/desktop-tauri/package.json)
 - [Tauri bundle configuration](../../apps/desktop-tauri/src-tauri/tauri.conf.json)
-- [Release override](../../apps/desktop-tauri/src-tauri/tauri.release.conf.json)
+- [Release overlay generator](../../apps/desktop-tauri/scripts/build-release-config.mjs)
 - [Sidecar staging](../../apps/desktop-tauri/scripts/prepare-sidecar.mjs)
 - [Production sidecar lifecycle](../../apps/desktop-tauri/src-tauri/src/sidecar.rs)
 - [Local API browser boundary](../../apps/api/src/lib/local-origin-guard.ts)

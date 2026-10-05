@@ -25,17 +25,17 @@ export const usageApi = {
       bucket: 'hour' | 'day'
     },
   ): Promise<UsageOverview> {
-    return unwrap<UsageOverview>(await client.rpc.usage.overview.$get({ query: cleanQuery(opts) }))
+    return unwrap(await client.rpc.usage.overview.$get({ query: cleanQuery(opts) }))
   },
 
   async getUsageLogs(
     opts: UsageFilter & { cursor?: string | null; limit?: number },
   ): Promise<UsageLogsPage> {
-    return unwrap<UsageLogsPage>(await client.rpc.usage.logs.$get({ query: cleanQuery(opts) }))
+    return unwrap(await client.rpc.usage.logs.$get({ query: cleanQuery(opts) }))
   },
 
   /** The distinct models/providers/sessions present in the log — drives the filter menus. */
   async getUsageKeys(): Promise<UsageKeys> {
-    return unwrap<UsageKeys>(await client.rpc.usage.keys.$get())
+    return unwrap(await client.rpc.usage.keys.$get())
   },
 }

@@ -13,7 +13,7 @@ import { client, unwrap } from './internal'
 export const attentionApi = {
   /** Every open item for the person, across all of their conversations. */
   async listAttention(): Promise<AttentionItem[]> {
-    const json = await unwrap<{ items: AttentionItem[] }>(await client.rpc.attention.$get())
+    const json = await unwrap(await client.rpc.attention.$get())
     return json.items
   },
 }

@@ -14,7 +14,9 @@ import type {
   ImplementationMode,
   SessionPlan,
 } from '@localixai/api/client'
-import { client, unwrap } from './internal'
+import type { ClientResponse } from 'hono/client'
+import type { ResponseFormat } from 'hono/types'
+import { client, unwrap, type OkBody } from './internal'
 
 /** Where in a plan's rendered text a comment points — the sentence, and what surrounds it. */
 export interface PlanCommentAnchor {
@@ -45,8 +47,16 @@ export type PlanAnswer<T> =
   | (T & { plans: SessionPlan[]; conflict?: undefined })
   | { plans: SessionPlan[]; conflict: PlanConflict }
 
+/** A route that answers a decision must carry the conversation's `plans`; one that stops is a type error here. */
+type RouteAnswersWithPlans<R> =
+  OkBody<R> extends { plans: SessionPlan[] }
+    ? unknown
+    : { 'the route must answer with `plans`': never }
+
 /** Read a decision's response: a 409 that carries `plans` is an answer, not a failure. */
-async function planAnswer<T>(response: Response): Promise<PlanAnswer<T>> {
+async function planAnswer<R extends ClientResponse<unknown, number, ResponseFormat>>(
+  response: R & RouteAnswersWithPlans<R>,
+): Promise<PlanAnswer<OkBody<R>>> {
   if (response.status === 409) {
     const body = (await response
       .clone()
@@ -64,7 +74,7 @@ async function planAnswer<T>(response: Response): Promise<PlanAnswer<T>> {
         },
       }
   }
-  return unwrap<T & { plans: SessionPlan[] }>(response)
+  return (await unwrap(response)) as PlanAnswer<OkBody<R>>
 }
 
 export const planCommentScope = (planId: string) => `plan:${planId}`
@@ -87,7 +97,7 @@ export const plansApi = {
   async listPlans(
     rootSessionId: string,
   ): Promise<{ plans: SessionPlan[]; draft: PlanDraftInfo | null }> {
-    const json = await unwrap<{ plans: SessionPlan[]; draft?: PlanDraftInfo | null }>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].plans.$get({ param: { id: rootSessionId } }),
     )
     return { plans: json.plans, draft: json.draft ?? null }
@@ -101,7 +111,7 @@ export const plansApi = {
     rootSessionId: string,
     planId: string,
   ): Promise<PlanAnswer<{ plan: SessionPlan }>> {
-    return planAnswer<{ plan: SessionPlan }>(
+    return planAnswer(
       await client.rpc.sessions[':id'].plans[':planId'].reopen.$post({
         param: { id: rootSessionId, planId },
       }),
@@ -119,7 +129,7 @@ export const plansApi = {
     mode: ImplementationMode,
     to?: string,
   ): Promise<PlanAnswer<{ plan: SessionPlan; wake: PlanWakeStatus }>> {
-    return planAnswer<{ plan: SessionPlan; wake: PlanWakeStatus }>(
+    return planAnswer(
       await client.rpc.sessions[':id'].plans[':planId'].approve.$post({
         param: { id: rootSessionId, planId },
         json: to ? { mode, to } : { mode },
@@ -136,7 +146,7 @@ export const plansApi = {
     planId: string,
     note?: string,
   ): Promise<PlanAnswer<{ plan: SessionPlan; wake: PlanWakeStatus; comments: number }>> {
-    return planAnswer<{ plan: SessionPlan; wake: PlanWakeStatus; comments: number }>(
+    return planAnswer(
       await client.rpc.sessions[':id'].plans[':planId']['request-changes'].$post({
         param: { id: rootSessionId, planId },
         json: note ? { note } : {},
@@ -149,7 +159,7 @@ export const plansApi = {
     rootSessionId: string,
     planId: string,
   ): Promise<PlanAnswer<{ plan: SessionPlan }>> {
-    return planAnswer<{ plan: SessionPlan }>(
+    return planAnswer(
       await client.rpc.sessions[':id'].plans[':planId'].dismiss.$post({
         param: { id: rootSessionId, planId },
       }),
@@ -157,9 +167,7 @@ export const plansApi = {
   },
 
   async listComments(scope: string): Promise<CommentView[]> {
-    const json = await unwrap<{ comments: CommentView[] }>(
-      await client.rpc.comments.$get({ query: { scope } }),
-    )
+    const json = await unwrap(await client.rpc.comments.$get({ query: { scope } }))
     return json.comments
   },
 
@@ -168,7 +176,7 @@ export const plansApi = {
     anchor: PlanCommentAnchor,
     body: string,
   ): Promise<CommentView> {
-    const json = await unwrap<{ comment: CommentView }>(
+    const json = await unwrap(
       await client.rpc.comments.$post({ json: { scope, anchor: { ...anchor }, body } }),
     )
     return json.comment
@@ -178,13 +186,13 @@ export const plansApi = {
     id: string,
     patch: { body?: string; status?: CommentStatus },
   ): Promise<CommentView> {
-    const json = await unwrap<{ comment: CommentView }>(
+    const json = await unwrap(
       await client.rpc.comments[':id'].$patch({ param: { id }, json: patch }),
     )
     return json.comment
   },
 
   async deleteComment(id: string): Promise<void> {
-    await unwrap<{ ok: true }>(await client.rpc.comments[':id'].$delete({ param: { id } }))
+    await unwrap(await client.rpc.comments[':id'].$delete({ param: { id } }))
   },
 }

@@ -2,7 +2,8 @@
 /**
  * A generated file that is COMMITTED must match what its generator produces right now.
  *
- * There is exactly one in this repository: `apps/landing/public/sitemap.xml`, written by
+ * There are two in this repository. The Rust half of the shell <-> runtime contract is the second
+ * (`scripts/runtime-contract.mjs`). The first is `apps/landing/public/sitemap.xml`, written by
  * `apps/landing/scripts/build-docs.mjs` from `docs/public-nav.json`. The rest of that generator's
  * output lives under `apps/landing/src/generated/`, which is gitignored — a build artifact, rebuilt
  * by the `predev` / `prebuild` / `pretype-check` hooks, and correctly not our problem.
@@ -19,6 +20,7 @@
 import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkRuntimeContract } from './runtime-contract.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -37,12 +39,20 @@ if (generated.status !== 0) {
   process.exit(generated.status ?? 1)
 }
 
+// The Rust half of the shell <-> runtime contract is generated from TypeScript and committed. It is
+// compared with a fresh render rather than through git, so an uncommitted edit on either side shows.
+const contractProblem = checkRuntimeContract()
+if (contractProblem) {
+  console.error(`[generated] ${contractProblem}`)
+  process.exit(1)
+}
+
 const status = run('git', ['status', '--porcelain', '--', ...GENERATED_PATHS])
 const dirty = status.stdout.trim()
 
 if (dirty === '') {
   console.log(
-    `[generated] ${GENERATED_PATHS.length} committed generated file(s) match their generators.`,
+    `[generated] ${GENERATED_PATHS.length + 1} committed generated file(s) match their generators.`,
   )
   process.exit(0)
 }

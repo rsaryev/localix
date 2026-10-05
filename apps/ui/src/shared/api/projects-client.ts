@@ -17,14 +17,12 @@ import type {
 
 export const projectsApi = {
   async listProjects(signal?: AbortSignal): Promise<Project[]> {
-    const json = await unwrap<{ projects: Project[] }>(
-      await client.rpc.projects.$get(undefined, { init: { signal } }),
-    )
+    const json = await unwrap(await client.rpc.projects.$get(undefined, { init: { signal } }))
     return json.projects
   },
 
   async createProject(name: string, workingDir: string): Promise<Project> {
-    return unwrap<Project>(await client.rpc.projects.$post({ json: { name, workingDir } }))
+    return unwrap(await client.rpc.projects.$post({ json: { name, workingDir } }))
   },
 
   /**
@@ -33,13 +31,11 @@ export const projectsApi = {
    * dir and returns `filePath` so the caller opens an editor tab.
    */
   async resolveProjectByPath(path: string): Promise<ResolveProjectByPathResponse> {
-    return unwrap<ResolveProjectByPathResponse>(
-      await client.rpc.projects['resolve-path'].$post({ json: { path } }),
-    )
+    return unwrap(await client.rpc.projects['resolve-path'].$post({ json: { path } }))
   },
 
   async updateProject(id: string, patch: UpdateProjectRequest): Promise<Project> {
-    return unwrap<Project>(
+    return unwrap(
       await client.rpc.projects[':id'].$patch({
         param: { id },
         json: patch,
@@ -48,7 +44,7 @@ export const projectsApi = {
   },
 
   async patchProjectSettings(id: string, settingsPatch: ProjectSettingsPatch): Promise<Project> {
-    return unwrap<Project>(
+    return unwrap(
       await client.rpc.projects[':id'].$patch({
         param: { id },
         json: { settingsPatch },
@@ -63,9 +59,7 @@ export const projectsApi = {
   /** Expand composer @-refs (every ref-kind registry kind) server-side; workdir-free kinds
    *  (session/terminal/call/task) resolve via their loaders. */
   async expandContextRefs(input: ExpandRefsRequest): Promise<ExpandRefsResponse> {
-    return unwrap<ExpandRefsResponse>(
-      await client.rpc.projects['expand-refs'].$post({ json: input }),
-    )
+    return unwrap(await client.rpc.projects['expand-refs'].$post({ json: input }))
   },
 
   /**
@@ -78,9 +72,7 @@ export const projectsApi = {
   async pickDirectory(): Promise<string | null> {
     const picked = await desktopPickFolder()
     if (picked) return picked.path
-    const json = await unwrap<{ path: string | null }>(
-      await client.rpc.projects['pick-dir'].$post(),
-    )
+    const json = await unwrap(await client.rpc.projects['pick-dir'].$post())
     return json.path
   },
 
@@ -89,7 +81,7 @@ export const projectsApi = {
   async pickFiles(options?: { extensions?: readonly string[] }): Promise<string[]> {
     const picked = await desktopPickFiles(options)
     if (picked) return picked.paths
-    const json = await unwrap<{ paths: string[] }>(await client.rpc.projects['pick-files'].$post())
+    const json = await unwrap(await client.rpc.projects['pick-files'].$post())
     return json.paths
   },
 

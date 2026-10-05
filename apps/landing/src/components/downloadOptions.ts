@@ -1,4 +1,4 @@
-import { Apple, Monitor, SquareTerminal, type LucideIcon } from 'lucide-react'
+import { Apple, SquareTerminal, type LucideIcon } from 'lucide-react'
 import type { DownloadId } from './downloadPlatform'
 
 export interface DownloadOption {
@@ -30,24 +30,6 @@ export function resolveDownloads(
       url: cleanUrl(urls['mac-arm64']),
     },
     {
-      id: 'mac-x64',
-      title: 'macOS Intel',
-      shortTitle: 'Intel',
-      artifact: 'Intel Macs (.dmg)',
-      action: 'Download for Intel Mac',
-      icon: Apple,
-      url: cleanUrl(urls['mac-x64']),
-    },
-    {
-      id: 'windows',
-      title: 'Windows',
-      shortTitle: 'Windows',
-      artifact: '64-bit installer (.exe)',
-      action: 'Download for Windows',
-      icon: Monitor,
-      url: cleanUrl(urls.windows),
-    },
-    {
       id: 'linux',
       title: 'Linux',
       shortTitle: 'Linux',
@@ -67,23 +49,21 @@ export function resolveDownloads(
  */
 export const STABLE_INSTALLER_NAMES = {
   'mac-arm64': 'Localix-macos-arm64.dmg',
-  'mac-x64': 'Localix-macos-x64.dmg',
-  windows: 'Localix-windows-x64.exe',
   linux: 'Localix-linux-x64.AppImage',
 } as const satisfies Record<DownloadId, string>
 
-/** GitHub's `latest` skips drafts and prereleases, so this only resolves once a stable release exists. */
+/** Resolves through GitHub's `latest`, which every published release becomes; it 404s before the first one. */
 export const stableInstallerUrl = (id: DownloadId) =>
   `${githubUrl}/releases/latest/download/${STABLE_INSTALLER_NAMES[id]}`
 
-/** The installer inside one specific release, whether stable or a prerelease. */
+/** The installer inside one specific release. */
 export const releaseInstallerUrl = (id: DownloadId, tag: string) =>
   `${githubUrl}/releases/download/${encodeURIComponent(tag)}/${STABLE_INSTALLER_NAMES[id]}`
 
 export interface ReleaseState {
   /** A release was published before this build was made. */
   live: boolean
-  /** Tag of the newest published release, a prerelease included. */
+  /** Tag of the newest published release. */
   tag?: string
   /** Names of that release's assets; empty when the deploy could not list them. */
   assets?: readonly string[]
@@ -121,7 +101,5 @@ const liveUrl = (id: DownloadId) => installerUrl(id, release)
 
 export const DOWNLOADS = resolveDownloads({
   'mac-arm64': cleanUrl(import.meta.env.VITE_DOWNLOAD_MAC_ARM64_URL) ?? liveUrl('mac-arm64'),
-  'mac-x64': cleanUrl(import.meta.env.VITE_DOWNLOAD_MAC_X64_URL) ?? liveUrl('mac-x64'),
-  windows: cleanUrl(import.meta.env.VITE_DOWNLOAD_WINDOWS_URL) ?? liveUrl('windows'),
   linux: cleanUrl(import.meta.env.VITE_DOWNLOAD_LINUX_URL) ?? liveUrl('linux'),
 })

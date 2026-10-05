@@ -8,7 +8,7 @@ import type { EnvDetectedProvider, ProviderConnection } from './contracts'
  */
 export const providerConnectionsApi = {
   async listConnections(signal?: AbortSignal): Promise<ProviderConnection[]> {
-    const json = await unwrap<{ connections: ProviderConnection[] }>(
+    const json = await unwrap(
       await client.rpc['provider-connections'].$get(undefined, {
         init: { signal },
       }),
@@ -24,7 +24,7 @@ export const providerConnectionsApi = {
     apiKeys?: string[]
     authType?: 'api-key' | 'oauth-pkce'
   }): Promise<ProviderConnection> {
-    return unwrap<ProviderConnection>(
+    return unwrap(
       await client.rpc['provider-connections'].$post({
         json: {
           providerId: input.providerId,
@@ -40,15 +40,13 @@ export const providerConnectionsApi = {
 
   /** Providers whose API key the SERVER found in its environment (presence only — no key value). */
   async listEnvDetectedProviders(): Promise<EnvDetectedProvider[]> {
-    const json = await unwrap<{ providers: EnvDetectedProvider[] }>(
-      await client.rpc['provider-connections']['env-detected'].$get(),
-    )
+    const json = await unwrap(await client.rpc['provider-connections']['env-detected'].$get())
     return json.providers
   },
 
   /** Connect a provider using its env-var API key — the server reads it; it never crosses the wire. */
   async connectFromEnv(providerId: string): Promise<ProviderConnection> {
-    return unwrap<ProviderConnection>(
+    return unwrap(
       await client.rpc['provider-connections']['env-detected']['connect'].$post({
         json: { providerId },
       }),
@@ -59,7 +57,7 @@ export const providerConnectionsApi = {
     id: string,
     patch: { label?: string; apiKey?: string },
   ): Promise<ProviderConnection> {
-    return unwrap<ProviderConnection>(
+    return unwrap(
       await client.rpc['provider-connections'][':id'].$patch({
         param: { id },
         json: patch,
@@ -87,7 +85,7 @@ export const providerConnectionsApi = {
   },
 
   async completeOAuth(input: { code: string; state: string }): Promise<ProviderConnection> {
-    return unwrap<ProviderConnection>(
+    return unwrap(
       await client.rpc['provider-connections']['oauth']['callback'].$post({ json: input }),
     )
   },
@@ -101,7 +99,7 @@ export const providerConnectionsApi = {
     id: string,
     input: { apiKey: string; label?: string },
   ): Promise<ProviderConnection> {
-    return unwrap<ProviderConnection>(
+    return unwrap(
       await client.rpc['provider-connections'][':id']['keys'].$post({ param: { id }, json: input }),
     )
   },
@@ -111,7 +109,7 @@ export const providerConnectionsApi = {
     keyId: string,
     patch: { label?: string; priority?: number; enabled?: boolean },
   ): Promise<ProviderConnection> {
-    return unwrap<ProviderConnection>(
+    return unwrap(
       await client.rpc['provider-connections'][':id']['keys'][':keyId'].$patch({
         param: { id, keyId },
         json: patch,
@@ -120,7 +118,7 @@ export const providerConnectionsApi = {
   },
 
   async removeProviderKey(id: string, keyId: string): Promise<ProviderConnection> {
-    return unwrap<ProviderConnection>(
+    return unwrap(
       await client.rpc['provider-connections'][':id']['keys'][':keyId'].$delete({
         param: { id, keyId },
       }),

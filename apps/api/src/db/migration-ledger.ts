@@ -23,7 +23,7 @@ import type { MigrationProvider } from 'kysely/migration'
  * NEW migration (apps/api/migrations/README.md).
  *
  * The digest is of the file's code with comments and whitespace removed, so reformatting or
- * rewording a comment is not an edit. The shipped bundle copies the same files verbatim, so a
+ * rewording a comment is not an edit. The shipped bundle embeds the same files verbatim, so a
  * database moved between the dev server and the packaged app reads the same digests.
  */
 
@@ -47,10 +47,14 @@ export function migrationDigest(text: string): string {
   return new Bun.CryptoHasher('sha256').update(normalizeMigrationSource(text)).digest('hex')
 }
 
-const readSource = (folder: string, name: string): string | undefined => {
+/** Where a migration's text comes from: a folder of files, or a lookup (the bundle's embedded copy). */
+export type MigrationSources = string | ((name: string) => string | undefined)
+
+const readSource = (sources: MigrationSources, name: string): string | undefined => {
+  if (typeof sources === 'function') return sources(name)
   for (const extension of ['.ts', '.js']) {
     try {
-      return readFileSync(join(folder, `${name}${extension}`), 'utf8')
+      return readFileSync(join(sources, `${name}${extension}`), 'utf8')
     } catch {
       // try the next extension
     }
@@ -82,13 +86,13 @@ async function ensureDigestTable<DB>(db: Kysely<DB>): Promise<void> {
 
 /**
  * Refuse a database whose recorded migrations no longer match the files. Runs before any
- * migration; `folder` is where the shipped files live (absent for an in-memory provider, which
+ * migration; `sources` is where the shipped text lives (absent for an in-memory provider, which
  * then gets only the missing-file check).
  */
 export async function verifyMigrationLedger<DB>(
   db: Kysely<DB>,
   provider: MigrationProvider,
-  folder?: string,
+  sources?: MigrationSources,
 ): Promise<void> {
   const executed = await executedNames(db)
   if (executed.length === 0) return
@@ -109,12 +113,12 @@ export async function verifyMigrationLedger<DB>(
       ].join('\n'),
     )
   }
-  if (!folder || !(await tableExists(db, MIGRATION_DIGEST_TABLE))) return
+  if (!sources || !(await tableExists(db, MIGRATION_DIGEST_TABLE))) return
   const recorded = await sql<{ name: string; digest: string }>`
     SELECT name, digest FROM ${sql.table(MIGRATION_DIGEST_TABLE)}
   `.execute(db)
   const changed = recorded.rows.filter((row) => {
-    const source = readSource(folder, row.name)
+    const source = readSource(sources, row.name)
     return source !== undefined && migrationDigest(source) !== row.digest
   })
   if (changed.length > 0) {
@@ -130,11 +134,14 @@ export async function verifyMigrationLedger<DB>(
 }
 
 /** Record the digest of every executed migration that has none yet (first sight is trusted). */
-export async function recordMigrationDigests<DB>(db: Kysely<DB>, folder?: string): Promise<void> {
-  if (!folder) return
+export async function recordMigrationDigests<DB>(
+  db: Kysely<DB>,
+  sources?: MigrationSources,
+): Promise<void> {
+  if (!sources) return
   await ensureDigestTable(db)
   for (const name of await executedNames(db)) {
-    const source = readSource(folder, name)
+    const source = readSource(sources, name)
     if (source === undefined) continue
     await sql`
       INSERT OR IGNORE INTO ${sql.table(MIGRATION_DIGEST_TABLE)} (name, digest)

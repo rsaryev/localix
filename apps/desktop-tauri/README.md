@@ -25,7 +25,7 @@ file associations.
 | [`src-tauri/src/updater.rs`](./src-tauri/src/updater.rs)   | Checks the configured endpoint, retains the pending update handle, verifies its download on install, streams progress, and restarts.             |
 | [`tauri:dev`](./scripts/dev-servers.mjs)                   | Stages build prerequisites and runs the shared API-and-Vite development supervisor under the desktop process.                                    |
 | [`tauri:build`](./scripts/run-tauri.mjs)                   | Builds a local native bundle after staging the UI, API, plugins, CLI, migrations, and Bun sidecar.                                               |
-| [`tauri:release`](./scripts/run-tauri.mjs)                 | Enables updater artifacts and, on macOS, requires signing credentials and notarizes the produced app and DMG.                                    |
+| [`tauri:release`](./scripts/run-tauri.mjs)                 | Compiles the updater in, enables updater artifacts and, on macOS, requires signing credentials and notarizes the produced app and DMG.           |
 | [`tauri:check`](./scripts/check-rust.mjs)                  | Stages build-script prerequisites and runs rustfmt, locked Clippy, and the locked Rust tests; reports a skip when Rust or Clippy is unavailable. |
 
 ## Limits
@@ -41,9 +41,9 @@ file associations.
   Apple event, particularly when an unbundled development instance was already running.
 - Development does not run the packaged sidecar. The Tauri development command supervises the API
   watcher and Vite server, while production starts the staged Bun runtime as a managed child.
-- Ordinary builds set `createUpdaterArtifacts` to false. The committed updater key is a placeholder;
-  only the release override requests updater artifacts, and a usable release still requires the
-  matching signing configuration and published endpoint payload.
+- Ordinary builds have no updater: no key, no endpoint, and the plugin is not compiled in. Only
+  `tauri:release` adds them, through an overlay generated from `updater.release.json`, and a usable
+  release still requires the matching signing key and a published `latest.json`.
 - Configured bundle targets and file associations describe packaging inputs, not evidence that a
   signed public artifact exists for every target.
 - The command capability applies to the `main` window. Browser-hosted UI sessions do not receive

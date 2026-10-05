@@ -19,8 +19,6 @@ import type {
   ResourceBrowseResult,
   ProviderConnection,
   SessionBranchTree,
-  SessionDetail,
-  SessionSummary,
   HistorySearchHit,
   UiSession,
   MessageBinding,
@@ -129,15 +127,13 @@ async function readyAgentRunToolSurface(projectId?: string | null) {
 
 export const backendClient = {
   async getCatalog(): Promise<CatalogResponse> {
-    return unwrap<CatalogResponse>(await client.rpc.models.catalog.$get())
+    return unwrap(await client.rpc.models.catalog.$get())
   },
 
   ...providerConnectionsApi,
 
   async listSessions(signal?: AbortSignal): Promise<UiSession[]> {
-    const json = await unwrap<{ sessions: SessionSummary[] }>(
-      await client.rpc.sessions.$get(undefined, { init: { signal } }),
-    )
+    const json = await unwrap(await client.rpc.sessions.$get(undefined, { init: { signal } }))
     return json.sessions.map(toUiSessionSummary)
   },
 
@@ -145,9 +141,7 @@ export const backendClient = {
    *  highlighted snippets; empty/unindexed degrades to []. */
   async searchHistory(q: string, limit?: number): Promise<HistorySearchHit[]> {
     const query = limit ? { q, limit: String(limit) } : { q }
-    const json = await unwrap<{ hits: HistorySearchHit[] }>(
-      await client.rpc['history-search'].$get({ query }),
-    )
+    const json = await unwrap(await client.rpc['history-search'].$get({ query }))
     return json.hits
   },
 
@@ -163,7 +157,7 @@ export const backendClient = {
   ...usageApi,
 
   async getSession(id: string, signal?: AbortSignal): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       // The web UI loads the full message list, but collapsed tool cards resolve
       // their heavy details only when opened. The query is OPT-IN: a client that
       // needs every detail up front simply omits it.
@@ -189,7 +183,7 @@ export const backendClient = {
      */
     agentIds?: string[]
   }): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(await client.rpc.sessions.$post({ json: input ?? {} }))
+    const json = await unwrap(await client.rpc.sessions.$post({ json: input ?? {} }))
     return toUiSession(json)
   },
 
@@ -201,7 +195,7 @@ export const backendClient = {
    * reuse this unchanged.
    */
   async importSession(input: ImportSessionClientInput): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       await client.rpc.sessions.import.$post({ json: toImportSessionRequest(input) as never }),
     )
     return toUiSession(json)
@@ -236,7 +230,7 @@ export const backendClient = {
       runtimeStatus?: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
     },
   ): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].$patch({
         param: { id },
         json: patch,
@@ -288,7 +282,7 @@ export const backendClient = {
     expectedMessageId?: string,
   ): Promise<SendMessageResult> {
     const toolSurface = await readyAgentRunToolSurface(projectId)
-    return unwrap<SendMessageResult>(
+    return unwrap(
       await client.rpc.sessions[':id'].regenerate.$post({
         param: { id: sessionId },
         json: { toolSurface, ...(expectedMessageId ? { expectedMessageId } : {}) },
@@ -306,7 +300,7 @@ export const backendClient = {
     if (!input.sessionId) {
       throw new ApiError('Start a chat before improving a prompt.', 409)
     }
-    return unwrap<{ prompt: string }>(
+    return unwrap(
       await client.rpc.sessions[':id']['improve-prompt'].$post({
         param: { id: input.sessionId },
         json: { prompt: input.prompt },
@@ -315,7 +309,7 @@ export const backendClient = {
   },
 
   async rollback(sessionId: string, messageId: string): Promise<{ restoredPrompt: string }> {
-    return unwrap<{ restoredPrompt: string }>(
+    return unwrap(
       await client.rpc.sessions[':id'].messages[':messageId'].rollback.$post({
         param: { id: sessionId, messageId },
       }),
@@ -332,7 +326,7 @@ export const backendClient = {
     messageId: string,
     emoji: string,
   ): Promise<{ ok: true; reacted: boolean }> {
-    return unwrap<{ ok: true; reacted: boolean }>(
+    return unwrap(
       await client.rpc.sessions[':id'].messages[':messageId'].reactions.$post({
         param: { id: sessionId, messageId },
         json: { emoji },
@@ -349,7 +343,7 @@ export const backendClient = {
     messageId: string,
     pinned: boolean,
   ): Promise<{ ok: true; pinned: boolean }> {
-    return unwrap<{ ok: true; pinned: boolean }>(
+    return unwrap(
       await client.rpc.sessions[':id'].messages[':messageId'].pin.$post({
         param: { id: sessionId, messageId },
         json: { pinned },
@@ -362,7 +356,7 @@ export const backendClient = {
     messageId: string,
     branchIndex: number,
   ): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].messages[':messageId']['switch-branch'].$post({
         param: { id: sessionId, messageId },
         json: { branchIndex },
@@ -373,7 +367,7 @@ export const backendClient = {
 
   /** Full message tree (all branches) + active path for the branch-tree panel. */
   async getBranchTree(sessionId: string): Promise<SessionBranchTree> {
-    return unwrap<SessionBranchTree>(
+    return unwrap(
       await client.rpc.sessions[':id'].branches.$get({
         param: { id: sessionId },
       }),
@@ -382,7 +376,7 @@ export const backendClient = {
 
   /** Jump the active branch to any message in the tree (leaf moves to its deepest descendant). */
   async checkoutBranch(sessionId: string, messageId: string): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].branches.checkout.$post({
         param: { id: sessionId },
         json: { messageId },
@@ -393,7 +387,7 @@ export const backendClient = {
 
   /** Fork the conversation into a NEW session (history up to messageId, or the current leaf). */
   async forkSession(sessionId: string, messageId?: string): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].fork.$post({
         param: { id: sessionId },
         json: messageId ? { messageId } : {},
@@ -404,7 +398,7 @@ export const backendClient = {
 
   /** Open (or reopen) the side-conversation thread anchored to an assistant message. */
   async openMessageThread(sessionId: string, messageId: string): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].messages[':messageId'].thread.$post({
         param: { id: sessionId, messageId },
       }),
@@ -420,7 +414,7 @@ export const backendClient = {
     projectId?: string | null,
   ): Promise<{ sessionId: string; messageId: string }> {
     const toolSurface = await readyAgentRunToolSurface(projectId)
-    return unwrap<{ sessionId: string; messageId: string }>(
+    return unwrap(
       await client.rpc.sessions[':id'].messages[':messageId'].edit.$post({
         param: { id: sessionId, messageId },
         json: { content, toolSurface },
@@ -484,7 +478,7 @@ export const backendClient = {
     sessionId: string
     command: string
   }): Promise<{ terminalId: string }> {
-    return unwrap<{ terminalId: string }>(await client.rpc.terminal.spawn.$post({ json: input }))
+    return unwrap(await client.rpc.terminal.spawn.$post({ json: input }))
   },
 
   // Where a preview's page is served from NOW. Both in-process preview servers (the static
@@ -496,7 +490,7 @@ export const backendClient = {
     rootDir?: string
     servedFile?: string
   }): Promise<ResolvedPreviewEndpoint> {
-    return unwrap<ResolvedPreviewEndpoint>(await client.rpc.preview.resolve.$post({ json: input }))
+    return unwrap(await client.rpc.preview.resolve.$post({ json: input }))
   },
 
   // Kill a PTY by id (e.g. stopping a dev server the Preview panel launched).
@@ -522,16 +516,7 @@ export const backendClient = {
       altScreen: boolean
     }>
   > {
-    const rows = await unwrap<
-      Array<{
-        id: string
-        command?: string
-        cwd: string
-        chatSessionId?: string | null
-        previewUrl?: string
-        altScreen?: boolean
-      }>
-    >(await client.rpc.terminal.$get())
+    const rows = await unwrap(await client.rpc.terminal.$get())
     return rows.flatMap((r) =>
       r.chatSessionId === sessionId
         ? [
@@ -550,7 +535,7 @@ export const backendClient = {
   // Backend-authoritative `@resource:` browse. The server owns URI navigation,
   // provider grouping, search, sorting, notices and the shared cap.
   async browseResources(partial: string, sessionId?: string): Promise<ResourceBrowseResult> {
-    return unwrap<ResourceBrowseResult>(
+    return unwrap(
       await client.rpc['resource-refs'].$get({
         query: { partial, ...(sessionId ? { sessionId } : {}) },
       }),
@@ -564,7 +549,7 @@ export const backendClient = {
     // Unwrapped, not fired-and-forgotten: the server refuses a preview for real reasons (no such
     // file, a path outside the workspace, a dead URL), and a caller that never read the response
     // showed "Previewing…" over nothing.
-    return unwrap<OpenedPreview>(
+    return unwrap(
       await client.rpc.preview.open.$post({ json: { sessionId, url, ...(root ? { root } : {}) } }),
     )
   },
@@ -575,7 +560,7 @@ export const backendClient = {
   ...editorAssistApi,
 
   async stop(sessionId: string): Promise<boolean> {
-    const json = await unwrap<{ stopped: boolean }>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].stop.$post({
         param: { id: sessionId },
       }),
@@ -585,7 +570,7 @@ export const backendClient = {
 
   /** Stop one of a session's monitors. False when it is already ended or not the user's. */
   async stopSessionMonitor(sessionId: string, monitorId: string): Promise<boolean> {
-    const json = await unwrap<{ stopped: boolean }>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].monitors.stop.$post({
         param: { id: sessionId },
         json: { monitorId },
@@ -596,9 +581,7 @@ export const backendClient = {
 
   /** Cancel a session loop by id. Returns true if the loop existed and was removed. */
   async cancelSessionLoop(loopId: string): Promise<boolean> {
-    const json = await unwrap<{ removed: boolean }>(
-      await client.rpc.loops.cancel.$post({ json: { id: loopId } }),
-    )
+    const json = await unwrap(await client.rpc.loops.cancel.$post({ json: { id: loopId } }))
     return json.removed
   },
 
@@ -606,15 +589,13 @@ export const backendClient = {
   async runSessionLoop(loopId: string): Promise<boolean> {
     const policy = agentRunPreflight(undefined)
     if (policy) await policy
-    const json = await unwrap<{ fired: boolean }>(
-      await client.rpc.loops.run.$post({ json: { id: loopId } }),
-    )
+    const json = await unwrap(await client.rpc.loops.run.$post({ json: { id: loopId } }))
     return json.fired
   },
 
   /** Atomically cancel one queued message; content is returned only when cancellation wins. */
   async removeQueuedMessage(sessionId: string, itemId: string): Promise<QueueRemovalResult> {
-    return unwrap<QueueRemovalResult>(
+    return unwrap(
       await client.rpc.sessions[':id'].queue.remove.$post({
         param: { id: sessionId },
         json: { itemId },
@@ -627,7 +608,7 @@ export const backendClient = {
     sessionId: string,
     itemId: string,
   ): Promise<QueuePromoteResult> {
-    return unwrap<QueuePromoteResult>(
+    return unwrap(
       await client.rpc.sessions[':id'].queue['send-now'].$post({
         param: { id: sessionId },
         json: { itemId },
@@ -637,9 +618,7 @@ export const backendClient = {
 
   /** Clear every cancellable queue entry and report rows already leased for delivery. */
   async clearQueuedMessages(sessionId: string): Promise<QueueClearResult> {
-    return unwrap<QueueClearResult>(
-      await client.rpc.sessions[':id'].queue.clear.$post({ param: { id: sessionId } }),
-    )
+    return unwrap(await client.rpc.sessions[':id'].queue.clear.$post({ param: { id: sessionId } }))
   },
 
   // Live session events arrive over the shared realtime WebSocket — see

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { PassThrough } from 'node:stream'
 
-import { stdinIsParentPipe, watchParentStdin } from './desktop-parent'
+import { stdinIsParentPipe, watchParentStdin, watchShutdownCommand } from './desktop-parent'
+import { RUNTIME_SHUTDOWN_COMMAND } from './runtime-protocol'
 
 const stat = (kind: 'pipe' | 'char' | 'file') => ({
   isCharacterDevice: () => kind === 'char',
@@ -45,5 +46,33 @@ describe('watchParentStdin', () => {
     pipe.write('shutdown-not-yet\n')
     await new Promise((resolve) => setImmediate(resolve))
     expect(gone).toBe(0)
+  })
+})
+
+describe('watchShutdownCommand', () => {
+  /** Write `chunks` to a stream the watcher listens on and count how many times it fires. */
+  async function fires(...chunks: string[]): Promise<number> {
+    const stream = new PassThrough()
+    let count = 0
+    watchShutdownCommand(stream, () => (count += 1))
+    for (const chunk of chunks) stream.write(chunk)
+    await new Promise((resolve) => setImmediate(resolve))
+    return count
+  }
+
+  test("fires on the shell's shutdown word on its own line", async () => {
+    expect(await fires(`${RUNTIME_SHUTDOWN_COMMAND}\n`)).toBe(1)
+  })
+
+  test('accepts either line ending, and the word among other lines', async () => {
+    expect(await fires(`${RUNTIME_SHUTDOWN_COMMAND}\r\n`)).toBe(1)
+    expect(await fires(`noise\n${RUNTIME_SHUTDOWN_COMMAND}\nmore\n`)).toBe(1)
+  })
+
+  test('ignores anything that is not exactly the word', async () => {
+    expect(await fires('hello\n')).toBe(0)
+    expect(await fires(`${RUNTIME_SHUTDOWN_COMMAND}now\n`)).toBe(0)
+    expect(await fires(`not-${RUNTIME_SHUTDOWN_COMMAND}\n`)).toBe(0)
+    expect(await fires('')).toBe(0)
   })
 })

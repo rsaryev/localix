@@ -1,11 +1,10 @@
-import { client, unwrap, cleanQuery, apiFetch, API_BASE_URL, assertOk } from './internal'
+import { client, unwrap, cleanQuery, assertOk } from './internal'
 import { toUiSession } from './converters'
 import type {
   SkillRecord,
   SkillInput,
   CuratorSkillRecord,
   CuratorReport,
-  SessionDetail,
   UiSession,
 } from './contracts'
 
@@ -26,7 +25,7 @@ export const skillsApi = {
    * user's writing. Bodies are read one at a time, when one is actually needed.
    */
   async getSkill(name: string, opts?: { projectId?: string | null }): Promise<SkillRecord> {
-    return unwrap<SkillRecord>(
+    return unwrap(
       await client.rpc.skills[':name'].$get({
         param: { name },
         query: cleanQuery({ projectId: opts?.projectId }),
@@ -35,15 +34,12 @@ export const skillsApi = {
   },
 
   async createSkill(input: SkillInput): Promise<SkillRecord> {
-    return unwrap<SkillRecord>(await client.rpc.skills.$post({ json: input }))
+    return unwrap(await client.rpc.skills.$post({ json: input }))
   },
 
   async listCuratorSkills(opts?: { projectId?: string | null }): Promise<CuratorSkillRecord[]> {
-    const query = opts?.projectId ? `?projectId=${encodeURIComponent(opts.projectId)}` : ''
-    const json = await unwrap<{ skills: CuratorSkillRecord[] }>(
-      await apiFetch(`${API_BASE_URL}/rpc/skills/curator${query}`),
-    )
-    return json.skills
+    const query = opts?.projectId ? { projectId: opts.projectId } : {}
+    return (await unwrap(await client.rpc.skills.curator.$get({ query }))).skills
   },
 
   async setSkillPinned(
@@ -52,11 +48,9 @@ export const skillsApi = {
     pinned: boolean,
     opts?: { projectId?: string | null },
   ): Promise<CuratorSkillRecord> {
-    return unwrap<CuratorSkillRecord>(
-      await apiFetch(`${API_BASE_URL}/rpc/skills/curator/pin`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, scope, pinned, projectId: opts?.projectId ?? null }),
+    return unwrap(
+      await client.rpc.skills.curator.pin.$post({
+        json: { name, scope, pinned, projectId: opts?.projectId ?? null },
       }),
     )
   },
@@ -65,11 +59,9 @@ export const skillsApi = {
     name: string,
     opts?: { projectId?: string | null },
   ): Promise<CuratorSkillRecord> {
-    return unwrap<CuratorSkillRecord>(
-      await apiFetch(`${API_BASE_URL}/rpc/skills/curator/archive`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, projectId: opts?.projectId ?? null }),
+    return unwrap(
+      await client.rpc.skills.curator.archive.$post({
+        json: { name, projectId: opts?.projectId ?? null },
       }),
     )
   },
@@ -78,27 +70,21 @@ export const skillsApi = {
     name: string,
     opts?: { projectId?: string | null },
   ): Promise<CuratorSkillRecord> {
-    return unwrap<CuratorSkillRecord>(
-      await apiFetch(`${API_BASE_URL}/rpc/skills/curator/restore`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, projectId: opts?.projectId ?? null }),
+    return unwrap(
+      await client.rpc.skills.curator.restore.$post({
+        json: { name, projectId: opts?.projectId ?? null },
       }),
     )
   },
 
   async runSkillsCurator(opts?: { projectId?: string | null }): Promise<CuratorReport> {
-    return unwrap<CuratorReport>(
-      await apiFetch(`${API_BASE_URL}/rpc/skills/curator/run`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ projectId: opts?.projectId ?? null }),
-      }),
+    return unwrap(
+      await client.rpc.skills.curator.run.$post({ json: { projectId: opts?.projectId ?? null } }),
     )
   },
 
   async setSessionSkills(sessionId: string, names: string[]): Promise<UiSession> {
-    const json = await unwrap<SessionDetail>(
+    const json = await unwrap(
       await client.rpc.sessions[':id'].skills.$post({
         param: { id: sessionId },
         json: { skills: names },

@@ -8,13 +8,13 @@ import type { ShellCommandStatusDto } from '@localixai/api/client'
  */
 export const shellCommandApi = {
   async status(): Promise<ShellCommandStatusDto> {
-    return unwrap<ShellCommandStatusDto>(await client.rpc['shell-command'].$get())
+    return unwrap(await client.rpc['shell-command'].$get())
   },
   async install(): Promise<ShellCommandStatusDto> {
-    return unwrap<ShellCommandStatusDto>(await client.rpc['shell-command'].install.$post())
+    return unwrap(await client.rpc['shell-command'].install.$post())
   },
   async uninstall(): Promise<ShellCommandStatusDto> {
-    return unwrap<ShellCommandStatusDto>(await client.rpc['shell-command'].uninstall.$post())
+    return unwrap(await client.rpc['shell-command'].uninstall.$post())
   },
 }
 

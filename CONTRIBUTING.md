@@ -65,6 +65,9 @@ bun run check:globals
 bun run test:dropins
 ```
 
+CI also runs `bun run check:bundle`, which stages the desktop bundle and starts its API outside the
+checkout. Run it when you change what the desktop app ships.
+
 Hosted CI always runs the pinned Rust formatting, Clippy, and test job. If you changed Rust under
 `apps/desktop-tauri/src-tauri`, also run `bun run check:rust` locally. Run repository-wide lint and
 formatting checks without a path filter. `bun run check:tests` is also required because it

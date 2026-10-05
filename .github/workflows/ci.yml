@@ -10,15 +10,14 @@ on:
 permissions:
   contents: read
 
-# A newer push to a pull request supersedes the older run: these jobs only report on the current
-# tree. A push to main is never cancelled, so every commit on main gets its full verdict and the
-# Rust gate (which a pull request may skip) always runs against what actually landed.
+# Check the newest tree for each ref; superseded pushes and pull requests stop consuming minutes.
+# A manual run remains independent and is never cancelled by a push.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
-# The gates run as parallel jobs, so a run takes as long as its slowest job rather than the sum.
-# `Repository validation` at the end is the one required check: it fails unless every job passed.
+# JavaScript gates share one install, build and Turbo cache. Rust runs separately.
+# `Repository validation` remains the required check and fails unless every gate passed.
 jobs:
   changes:
     name: Detect changed areas
@@ -55,14 +54,22 @@ jobs:
           echo "Rust gate: $rust"
 
   static:
-    name: Static checks
+    name: JavaScript checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+
+      - name: Install runtime test dependencies
+        run: |
+          for attempt in 1 2 3; do
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
+            [ "$attempt" = 3 ] && exit 1
+            sleep 10
+          done
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -96,10 +103,10 @@ jobs:
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
-          key: turbo-static-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
           restore-keys: |
-            turbo-static-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-static-${{ runner.os }}-
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-js-${{ runner.os }}-
 
       # Before the gates, not after them: architecture runs the API's plugin inspection, type-check
       # reads workspace packages through their `dist`, and dead-code resolves generated modules. On
@@ -140,485 +147,33 @@ jobs:
       - name: Validate bundled plugin manifests and files
         run: bun run check:plugins
 
-      - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-static-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-
-  typecheck:
-    name: Typecheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      TURBO_CONCURRENCY: 100%
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          # Keep CI identical to package.json#packageManager; "latest" made a
-          # toolchain release able to break main without any repository change.
-          bun-version: 1.3.14
-
-      - name: Restore Bun package cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        # Retried: a registry or mirror hiccup is the usual reason for a red install, and a real
-        # lockfile mismatch fails all three attempts within seconds.
-        run: |
-          for attempt in 1 2 3; do
-            bun install --frozen-lockfile && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-typecheck-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-typecheck-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-typecheck-${{ runner.os }}-
-
-      - name: Build
-        run: bun run build
-
       - name: Typecheck
         run: bun run type-check
 
       - name: Typecheck tests
         run: bun run check:tests
 
-      - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-typecheck-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-
-  unit-ui:
-    name: Unit tests (ui)
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Install runtime test dependencies
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          # Keep CI identical to package.json#packageManager; "latest" made a
-          # toolchain release able to break main without any repository change.
-          bun-version: 1.3.14
-
-      - name: Restore Bun package cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        # Retried: a registry or mirror hiccup is the usual reason for a red install, and a real
-        # lockfile mismatch fails all three attempts within seconds.
-        run: |
-          for attempt in 1 2 3; do
-            bun install --frozen-lockfile && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-unit-ui-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-unit-ui-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-unit-ui-${{ runner.os }}-
-
-      - name: Build
-        run: bun run build
-
-      - name: Run unit tests
-        run: bunx turbo test --concurrency=50% --filter=@localixai/ui
-
-      - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-unit-ui-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-
-  unit-api:
-    name: Unit tests (api)
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Install runtime test dependencies
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          # Keep CI identical to package.json#packageManager; "latest" made a
-          # toolchain release able to break main without any repository change.
-          bun-version: 1.3.14
-
-      - name: Restore Bun package cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        # Retried: a registry or mirror hiccup is the usual reason for a red install, and a real
-        # lockfile mismatch fails all three attempts within seconds.
-        run: |
-          for attempt in 1 2 3; do
-            bun install --frozen-lockfile && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-unit-api-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-unit-api-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-unit-api-${{ runner.os }}-
-
-      - name: Build
-        run: bun run build
-
-      - name: Run unit tests
-        run: bunx turbo test --concurrency=50% --filter=@localixai/api
-
-      - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-unit-api-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-
-  unit-rest:
-    name: Unit tests (packages and the rest)
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Install runtime test dependencies
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          # Keep CI identical to package.json#packageManager; "latest" made a
-          # toolchain release able to break main without any repository change.
-          bun-version: 1.3.14
-
-      - name: Restore Bun package cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        # Retried: a registry or mirror hiccup is the usual reason for a red install, and a real
-        # lockfile mismatch fails all three attempts within seconds.
-        run: |
-          for attempt in 1 2 3; do
-            bun install --frozen-lockfile && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-unit-rest-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-unit-rest-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-unit-rest-${{ runner.os }}-
-
-      - name: Build
-        run: bun run build
-
-      - name: Run unit tests
-        run: bunx turbo test --concurrency=50% --filter='!@localixai/ui' --filter='!@localixai/api'
-
-      - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-unit-rest-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-
-  contract:
-    name: Repository contract tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Install runtime test dependencies
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          # Keep CI identical to package.json#packageManager; "latest" made a
-          # toolchain release able to break main without any repository change.
-          bun-version: 1.3.14
-
-      - name: Restore Bun package cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        # Retried: a registry or mirror hiccup is the usual reason for a red install, and a real
-        # lockfile mismatch fails all three attempts within seconds.
-        run: |
-          for attempt in 1 2 3; do
-            bun install --frozen-lockfile && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-contract-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-contract-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-contract-${{ runner.os }}-
-
-      - name: Build
-        run: bun run build
-
-      - name: Run repository contract tests
-        run: bun run test:repo
-
-      - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-contract-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-
-  globals:
-    name: Global isolation
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Install runtime test dependencies
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          # Keep CI identical to package.json#packageManager; "latest" made a
-          # toolchain release able to break main without any repository change.
-          bun-version: 1.3.14
-
-      - name: Restore Bun package cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        # Retried: a registry or mirror hiccup is the usual reason for a red install, and a real
-        # lockfile mismatch fails all three attempts within seconds.
-        run: |
-          for attempt in 1 2 3; do
-            bun install --frozen-lockfile && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-globals-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-globals-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-globals-${{ runner.os }}-
-
-      - name: Build
-        run: bun run build
+      - name: Run workspace and repository contract tests
+        run: bun run test
 
       - name: Check full-suite global isolation
         run: bun run check:globals
 
-      - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-globals-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-
-  dropins:
-    name: Drop-in plugin tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-
-      - name: Install runtime test dependencies
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          # Keep CI identical to package.json#packageManager; "latest" made a
-          # toolchain release able to break main without any repository change.
-          bun-version: 1.3.14
-
-      - name: Restore Bun package cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        # Retried: a registry or mirror hiccup is the usual reason for a red install, and a real
-        # lockfile mismatch fails all three attempts within seconds.
-        run: |
-          for attempt in 1 2 3; do
-            bun install --frozen-lockfile && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key: turbo-dropins-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-dropins-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-dropins-${{ runner.os }}-
-
-      - name: Build
-        run: bun run build
-
       - name: Run drop-in plugin tests
         run: bun run test:dropins
 
+      # Stages the desktop bundle and starts its API from a copy outside the checkout, the way the
+      # packaged app does. A missing resource or an unresolved vendored module shows up here on the
+      # pull request instead of in a release leg that has already been signed and notarized.
+      - name: Smoke the staged desktop bundle
+        run: bun run check:bundle
+
       - name: Save Turbo cache
         if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
-          key: turbo-dropins-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
 
   rust:
     name: Rust checks
@@ -674,8 +229,7 @@ jobs:
   ci:
     name: Repository validation
     if: always()
-    needs:
-      [changes, static, typecheck, unit-ui, unit-api, unit-rest, contract, globals, dropins, rust]
+    needs: [changes, static, rust]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -12,11 +12,18 @@
  *    Safari masks it to `Apple GPU` on both, so that string decides nothing.
  *
  * When neither answers, the guess stays Apple silicon (every Mac sold since 2023) but is marked
- * UNCERTAIN, and the chooser then shows the Intel build as a visible choice instead of burying
- * it in the menu.
+ * UNCERTAIN, and the chooser then says plainly that the installer is for Apple silicon.
+ *
+ * Only macOS on Apple silicon and Linux have an installer. A Windows or Intel Mac visitor is still
+ * recognized, so the page can say so and point at the source build instead of offering a file
+ * built for another machine.
  */
 
-export type DownloadId = 'mac-arm64' | 'mac-x64' | 'windows' | 'linux'
+/** The platforms an installer is published for. */
+export type DownloadId = 'mac-arm64' | 'linux'
+
+/** Every platform the page can recognize; only the ones in `DownloadId` have an installer. */
+export type PlatformId = DownloadId | 'mac-x64' | 'windows'
 
 export interface PlatformSignals {
   platform?: string
@@ -28,12 +35,12 @@ export interface PlatformSignals {
 }
 
 export interface DownloadGuess {
-  id: DownloadId
+  id: PlatformId
   /** False only for a Mac whose chip no signal revealed. */
   certain: boolean
 }
 
-function macFromSignals({ architecture, renderer }: PlatformSignals): DownloadId | null {
+function macFromSignals({ architecture, renderer }: PlatformSignals): PlatformId | null {
   if (architecture === 'arm') return 'mac-arm64'
   if (architecture === 'x86') return 'mac-x64'
   if (!renderer) return null

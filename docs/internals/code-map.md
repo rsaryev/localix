@@ -141,10 +141,13 @@ such as active loops and the queue, is overlaid onto the read model in
 
 The UI is feature-sliced: `app`, `pages`, `widgets`, `features` and `shared`. Server calls go
 through the typed client in `shared/api/client.ts`, and live state lands in
-`shared/api/applyStreamEvent.ts`. Live session state is surfaced above the composer through the
-strips in `features/chat/ui/prompt-input/ComposerHeaderStrips.tsx`; follow that pattern rather than
-adding a second place. The shared plugin runtime is `@localixai/plugin-sdk/ui`, and `apps/ui` never
-names a specific plugin. The rules for menus and for marking a recommended step are in
+`shared/api/applyStreamEvent.ts`. A response is read with `unwrap`, whose type comes from the route
+itself, so renaming a field in an API route is a type error where the UI reads it. Write no type
+argument for it and fetch no `/rpc/` URL by hand; `scripts/api-contract-guard.test.ts` fails on
+both. Live session state is surfaced above the composer through the strips in
+`features/chat/ui/prompt-input/ComposerHeaderStrips.tsx`; follow that pattern rather than adding a
+second place. The shared plugin runtime is `@localixai/plugin-sdk/ui`, and `apps/ui` never names a
+specific plugin. The rules for menus and for marking a recommended step are in
 [Visual system](visual-system.md).
 
 ## Shared leaves

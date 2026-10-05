@@ -37,7 +37,6 @@ function DesktopUpdateRow() {
   // The rail owns the poll and the progress listener; this reader shares their state.
   const { state, applyUpdate } = useDesktopUpdate({ poll: false })
   const [checking, setChecking] = useState(false)
-  const [applying, setApplying] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const check = async () => {
@@ -48,6 +47,8 @@ function DesktopUpdateRow() {
     setChecking(false)
   }
 
+  // Shared with the composer strip and the rail, which can start the same install.
+  const applying = state?.installing ?? false
   const version = state?.currentVersion ? `Localix ${state.currentVersion}` : 'Localix'
   const summary = state ? state.message : 'Not checked yet in this window.'
 
@@ -81,7 +82,7 @@ function DesktopUpdateRow() {
             aria-busy={applying || undefined}
             disabled={applying}
             // Warns first when the restart would stop a running turn or background job.
-            onClick={() => void restartToUpdate(applyUpdate, setApplying)}
+            onClick={() => void restartToUpdate(applyUpdate, () => {})}
           >
             {applying ? <SettingsActionActivity label="Installing" /> : 'Restart to update'}
           </Button>

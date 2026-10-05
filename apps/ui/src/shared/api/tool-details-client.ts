@@ -7,7 +7,7 @@ export async function getMessageToolDetails(
   messageId: string,
   signal?: AbortSignal,
 ): Promise<MessageToolDetails> {
-  return unwrap<MessageToolDetails>(
+  return unwrap(
     await client.rpc.sessions[':id'].messages[':messageId']['tool-details'].$get(
       { param: { id: sessionId, messageId } },
       { init: { signal } },

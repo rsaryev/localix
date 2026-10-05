@@ -60,6 +60,20 @@ if (clippy.status !== 0) {
   process.exit(clippy.status ?? 1)
 }
 
+// A release build compiles the updater in (`build.rs`, `LOCALIX_UPDATER_ENABLED=1`), and that code is
+// absent from the pass above. Without this pass it would first be compiled by a release leg that has
+// already been signed and notarized.
+log('running clippy with the updater compiled in (release configuration)…')
+const releaseClippy = spawnSync(
+  'cargo',
+  ['clippy', '--locked', '--quiet', '--', '-D', 'warnings'],
+  { cwd: srcTauri, stdio: 'inherit', env: { ...process.env, LOCALIX_UPDATER_ENABLED: '1' } },
+)
+if (releaseClippy.status !== 0) {
+  log(`clippy (release configuration) failed (exit ${releaseClippy.status ?? 'signal'})`)
+  process.exit(releaseClippy.status ?? 1)
+}
+
 log('running Rust tests…')
 const tests = spawnSync('cargo', ['test', '--locked', '--quiet'], {
   cwd: srcTauri,
@@ -68,5 +82,16 @@ const tests = spawnSync('cargo', ['test', '--locked', '--quiet'], {
 if (tests.status !== 0) {
   log(`Rust tests failed (exit ${tests.status ?? 'signal'})`)
   process.exit(tests.status ?? 1)
+}
+// The same tests with the updater compiled in: some assert what the page is told in each build.
+log('running Rust tests with the updater compiled in…')
+const releaseTests = spawnSync('cargo', ['test', '--locked', '--quiet'], {
+  cwd: srcTauri,
+  stdio: 'inherit',
+  env: { ...process.env, LOCALIX_UPDATER_ENABLED: '1' },
+})
+if (releaseTests.status !== 0) {
+  log(`Rust tests (release configuration) failed (exit ${releaseTests.status ?? 'signal'})`)
+  process.exit(releaseTests.status ?? 1)
 }
 log('clean.')

@@ -70,7 +70,7 @@ the configured database file.
 
 | Channel           | Mechanism                                                                      | Boundary                                                                    |
 | ----------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| HTTP/RPC          | Request-response operations use generated or shared API contracts.             | Route availability depends on the running API and enabled hosts.            |
+| HTTP/RPC          | Request-response operations use shared API types, checked at build time.       | Route availability depends on the running API and enabled hosts.            |
 | Core event socket | One retained `/rpc/ws` connection multiplexes subscriptions and WebSocket RPC. | It is the shared application channel, not the transport for terminal bytes. |
 | Terminal stream   | Each terminal pane opens a dedicated WebSocket for its PTY session.            | The pane closes that socket when its stream lifecycle ends.                 |
 

@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import type { ChatUsagePayload } from '@localixai/agent'
 import { StatusTipStrip } from './StatusTipStrip'
 import { SpendAlertStrip } from './SpendAlertStrip'
+import { UpdateStrip } from './UpdateStrip'
 import { SessionSurface } from '@/shared/contrib/sessionSurfaces'
 import { WorkStrip } from './WorkStrip'
 import { QuestionsStrip } from './QuestionsStrip'
@@ -77,6 +78,8 @@ export function ComposerHeaderStrips({
 }: ComposerHeaderStripsProps) {
   return (
     <div className="overflow-hidden rounded-t-(--radius-composer)">
+      {/* A new app version is ready. About the app, not this session, so it leads the stack. */}
+      <UpdateStrip isFocused={isFocused} />
       {/* One thin contextual tip strip; stream status lives under the active message. */}
       <StatusTipStrip tip={tip} onDismissTip={onDismissTip} />
       {/* Who is in the conversation. First in the stack because it is the least volatile thing

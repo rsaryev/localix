@@ -1,12 +1,14 @@
 import { useEffect, useSyncExternalStore } from 'react'
 
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 import { isDesktop } from '@localixai/kit/environment'
 import { tauriInvoke, tauriListen } from '@/shared/lib/tauri'
 
 /**
  * Auto-updater state for the desktop shell, sourced from the Tauri `updater_check` command.
- * The rail's `DesktopUpdateButton` and Settings → General → Updates both render it.
+ * The composer's `UpdateStrip`, the rail's `DesktopUpdateButton` and Settings → General → Updates
+ * all render it.
  */
 export interface DesktopUpdateState {
   /** A newer version exists, and can be applied now: Tauri downloads and installs in one step
@@ -17,6 +19,12 @@ export interface DesktopUpdateState {
   latestVersion: string | null
   /** The version running now, as the shell reports it. */
   currentVersion: string
+  /**
+   * An install is in flight (download, signature check, relaunch). Kept HERE and not in the
+   * component that started it: that component can unmount mid-download (a different session's
+   * composer, a closed Settings page), and the update must keep reading as in progress.
+   */
+  installing: boolean
 }
 
 declare global {
@@ -41,14 +49,17 @@ interface TauriUpdateStatus {
   latestVersion: string | null
 }
 
+const availableMessage = (version: string | null) => `Update ${version} available`
+
 function fromTauri(s: TauriUpdateStatus): DesktopUpdateState {
   return {
     available: s.available,
     // Not "Up to date": the shell answers a failed check (offline, endpoint down) with the same
     // `available: false`, so that is all this can honestly claim.
-    message: s.available ? `Update ${s.latestVersion} available` : 'No newer version found',
+    message: s.available ? availableMessage(s.latestVersion) : 'No newer version found',
     latestVersion: s.latestVersion,
     currentVersion: s.currentVersion,
+    installing: false,
   }
 }
 
@@ -67,6 +78,29 @@ function subscribe(listener: () => void) {
   }
 }
 
+// The version whose notice the person hid. Remembered across launches, so a dismissed update does
+// not come back on every start; a NEWER version is a different notice and shows again. The rail
+// button and Settings still show an available update: this only quiets the composer strip.
+const DISMISSED_KEY = 'localix.update.dismissed'
+let dismissedVersion: string | null = null
+let dismissedRead = false
+function dismissed(): string | null {
+  if (!dismissedRead && typeof window !== 'undefined') {
+    dismissedVersion = loadString(DISMISSED_KEY)
+    dismissedRead = true
+  }
+  return dismissedVersion
+}
+
+/** Hide the composer notice for `version`, and keep it hidden until a newer one is available. */
+export function dismissUpdateNotice(version: string | null): void {
+  dismissedVersion = version
+  dismissedRead = true
+  // A blocked store keeps it hidden for this launch, which is all that was asked.
+  saveString(DISMISSED_KEY, version)
+  for (const listener of listeners) listener()
+}
+
 /** Whether this window has an updater to ask. False in a browser and in a bridge-less shell. */
 export const hasDesktopUpdater = (): boolean => isDesktop && window.__LOCALIX_UPDATER === true
 
@@ -83,7 +117,12 @@ export async function checkDesktopUpdate(): Promise<DesktopUpdateCheckResult> {
   const invoke = tauriInvoke()
   if (!invoke) return NO_BRIDGE
   try {
-    const state = fromTauri((await invoke('updater_check')) as TauriUpdateStatus)
+    const checked = fromTauri((await invoke('updater_check')) as TauriUpdateStatus)
+    // A background check must not rewrite an install that is under way: it would flip the strip
+    // back to "available" mid-download and invite a second click.
+    const state = shared?.installing
+      ? { ...checked, installing: true, message: shared.message }
+      : checked
     publish(state)
     return { ok: true, state }
   } catch (cause) {
@@ -103,17 +142,26 @@ export interface DesktopUpdate {
   state: DesktopUpdateState | null
   /** Apply the downloaded update and relaunch into the new version. */
   applyUpdate: () => Promise<DesktopUpdateApplyResult>
+  /** The person hid the composer notice for the version now available. */
+  noticeDismissed: boolean
+  /** Hide the composer notice until a newer version is available. */
+  dismissNotice: () => void
 }
 
 async function applyUpdate(): Promise<DesktopUpdateApplyResult> {
   const invoke = tauriInvoke()
   if (!invoke) return NO_BRIDGE
+  if (shared) publish({ ...shared, installing: true, message: 'Starting update…' })
   try {
     // Downloads, installs, and relaunches into the new version (never returns on
     // success). Signature-verified against the configured pubkey natively.
     await invoke('updater_install')
     return { ok: true }
   } catch (cause) {
+    // Back to a clickable "available": nothing was installed, and the person has the reason.
+    if (shared) {
+      publish({ ...shared, installing: false, message: availableMessage(shared.latestVersion) })
+    }
     // `updater_install` is `Result<(), String>` on the Rust side: the reason a
     // download or a signature check failed is right here, and the next status
     // poll is up to an HOUR away and would only report "available" again.
@@ -135,6 +183,7 @@ export function useDesktopUpdate({ poll = true }: { poll?: boolean } = {}): Desk
     () => shared,
     () => null,
   )
+  const hiddenVersion = useSyncExternalStore(subscribe, dismissed, () => null)
 
   // Download progress during updater_install arrives as throttled `updater:progress`
   // events ({downloaded, total}) — surface a percent through `message` so a large
@@ -179,5 +228,10 @@ export function useDesktopUpdate({ poll = true }: { poll?: boolean } = {}): Desk
     }
   }, [poll])
 
-  return { state, applyUpdate }
+  return {
+    state,
+    applyUpdate,
+    noticeDismissed: state?.latestVersion != null && state.latestVersion === hiddenVersion,
+    dismissNotice: () => dismissUpdateNotice(state?.latestVersion ?? null),
+  }
 }

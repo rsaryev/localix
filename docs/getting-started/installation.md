@@ -2,9 +2,9 @@
 
 Localix runs from a source checkout, and the first beta is published on the
 [Releases](https://github.com/rsaryev/localix/releases) page. That beta was tested only on macOS;
-its Windows and Linux installers are experimental. Build from source to run on any other setup: use
-the native desktop development command for day-to-day work, or build a bundle for your current
-machine.
+its Linux installer is experimental and there is no Windows installer. Build from source to run on
+any other setup: use the native desktop development command for day-to-day work, or build a bundle
+for your current machine.
 
 ## Terminology
 
@@ -40,13 +40,11 @@ the webview loads Vite on port 5050 and the API listens on port 5051 by default.
 `bun run build:desktop` first stages the built UI, API, bundled plugins, CLI, and Bun sidecar. Tauri
 then packages those resources with the native shell for the current host.
 
-The release workflow has four native build legs:
+The release workflow has two native build legs:
 
 | Host         | Architecture | Configured bundle      | Boundary                                                                              |
 | ------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------- |
 | macOS        | arm64        | `.app` and `.dmg`      | The release leg requires signing and notarization credentials and fails without them. |
-| macOS        | x64          | `.app` and `.dmg`      | A normal local build uses ad-hoc signing instead of release notarization.             |
-| Windows      | x64          | NSIS `.exe`            | The repository does not configure a Windows arm64 release leg.                        |
 | Ubuntu 22.04 | x64          | `.AppImage` and `.deb` | The repository does not configure an arm64 Linux release leg.                         |
 
 This matrix records repository configuration. Check the Releases page for the installers a given
@@ -74,18 +72,38 @@ The repository does not pin macOS SDK, Windows SDK, compiler, or WebView2 versio
 [desktop build notes](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/README.md)
 before creating a native bundle.
 
+## Updates
+
+An installed release checks for a newer signed version thirty seconds after launch and then once an
+hour. When one exists, a quiet row appears above the message box in the focused chat: **Update
+available**, the new version beside the one you have, and **Restart to update**. The same update is
+marked on the rail and offered in Settings → General → Updates, where you can also check on demand.
+
+1. Press **Restart to update**. If a turn or a background job is running, Localix says what the
+   restart will stop and waits for you to confirm; with nothing running it starts at once.
+2. The row turns into **Updating** with the download's progress. Nothing else on the row can be
+   pressed, and it stays that way if you switch to another chat meanwhile.
+3. The download is checked against Localix's public key before anything is installed. Then Localix
+   saves your windows and drafts, stops its local runtime, installs, and reopens on the new version.
+4. Your data is kept. If the new version changes the database, the old one is copied to
+   `~/.localix/backups/migrations` first.
+
+If the install fails, you get a message with the reason, the row goes back to **Restart to update**,
+and nothing has changed. The × on the row hides it for that version only; the rail mark and Settings
+still show it, and a newer version brings the row back. A Localix built from source never updates
+itself.
+
 ## Limits
 
-- Only macOS installers have been tested. The Windows and Linux installers on the Releases page are
-  experimental, and no package-manager channel exists.
+- Only macOS installers have been tested. The Linux installer on the Releases page is experimental,
+  and no package-manager channel exists. There are no Windows or Intel Mac installers: build from
+  source.
 - Every source-built bundle is local and unofficial. Do not present it as a Localix release.
-- Ordinary desktop builds disable updater artifacts. The release workflow adds them only with the
-  release configuration, signing key, and platform credentials.
-- Configured extensions such as `.dmg`, `.exe`, `.AppImage`, and `.deb` do not prove that a current
+- A desktop build made from a checkout has no updater: it never reads the release feed, and never
+  offers an update. Only the release workflow compiles the updater in, with its public key and
+  endpoint.
+- Configured extensions such as `.dmg`, `.AppImage`, and `.deb` do not prove that a current
   downloadable artifact exists.
-- The Windows release leg configures no Authenticode signing, so its NSIS installer is unsigned.
-  Windows SmartScreen warns about an unrecognized app from an unknown publisher; choose **More info
-  → Run anyway** only for an installer whose source you trust.
 - Opening the Vite address in a browser does not provide native paths or other desktop bridges. Use
   `bun run dev:workspace` only when those native capabilities are not required.
 
@@ -102,5 +120,5 @@ before creating a native bundle.
 - [Development supervisor](https://github.com/rsaryev/localix/blob/main/scripts/dev-servers.mjs)
 - [Desktop sidecar staging](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/scripts/prepare-sidecar.mjs)
 - [Tauri bundle configuration](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/tauri.conf.json)
-- [Updater release override](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/tauri.release.conf.json)
+- [Updater release overlay](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/scripts/build-release-config.mjs)
 - [Native release matrix](https://github.com/rsaryev/localix/blob/main/.github/workflows/release.yml)

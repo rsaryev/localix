@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { Hono } from 'hono'
+import { Hono, type TypedResponse } from 'hono'
 
 import type { AppContext } from '../../app'
 import { defaultErrorHandler } from '../../lib/http'
@@ -54,7 +54,12 @@ export function createCatalogRoutes(service: CatalogRoutesService) {
     c.header('ETag', etag)
     c.header('Cache-Control', 'no-cache')
     if (matchesEtag(c.req.header('If-None-Match'), etag)) return c.body(null, 304)
-    return c.body(body, 200, { 'Content-Type': 'application/json; charset=UTF-8' })
+    // The body is `catalogResponseSchema.parse(...)` serialized once per catalog build (`wireFor`),
+    // written as text so that cost is paid once. The cast tells the client what the schema already
+    // guarantees, so the UI reads this route typed like any other.
+    return c.body(body, 200, {
+      'Content-Type': 'application/json; charset=UTF-8',
+    }) as unknown as TypedResponse<CatalogResponse, 200, 'json'>
   })
 
   routes.onError(defaultErrorHandler)

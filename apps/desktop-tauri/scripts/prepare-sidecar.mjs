@@ -1,12 +1,11 @@
 // Stage everything the packaged Tauri app needs to resolve/start the shared API
 // daemon through a one-shot sidecar launcher (a real `bun.exe` running a
-// bundled `server.js`, NOT `bun build --compile` — the compiled single-file
-// binary can't resolve the migrations' external `import 'kysely'`).
+// bundled `server.js`, NOT `bun build --compile`: the app also runs Bun itself, to build and
+// run the user's own plugins, so the runtime ships as a real binary either way).
 //
 // Produces (under src-tauri/):
 //   binaries/bun-<triple>.exe   the native Bun runtime (Tauri sidecar)
-//   resources/server.js         the API bundled to one JS file
-//   resources/migrations/       migration .ts files + vendored node_modules/kysely
+//   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
 //   resources/plugins/          bundled plugins (self-contained .mjs; a .ts backend
 //                               entry is PRE-BUNDLED from the repo tree — see step 3)
 //   resources/plugin-kit/       what the app needs to create, build and test USER plugins
@@ -15,7 +14,6 @@
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
 // Run by tauri's beforeDev/BuildCommand; also runnable by hand.
 import {
-  cpSync,
   mkdirSync,
   rmSync,
   copyFileSync,
@@ -45,6 +43,10 @@ import {
   STAGED_THIRD_PARTY_NOTICE_FILES,
   stageThirdPartyNotices,
 } from '../../../scripts/stage-third-party-notices.mjs'
+import {
+  EMBEDDED_MIGRATIONS_FLAG,
+  embeddedMigrationsPlugin,
+} from '../../../scripts/embed-migrations-plugin.mjs'
 import { buildStagedCliPackageMetadata } from './cli-package-metadata.mjs'
 import {
   PARCEL_WATCHER_ADDONS,
@@ -107,6 +109,7 @@ const runtimeKey = fingerprint([
   join(desktop, 'scripts'),
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
   join(repo, 'scripts', 'stage-dropins.mjs'),
+  join(repo, 'scripts', 'embed-migrations-plugin.mjs'),
   join(repo, 'scripts', 'stage-plugin-ui.mjs'),
   join(repo, 'scripts', 'build-plugin-ui.mjs'),
   // Everything the plugin kit is made from — the same list the dev watcher re-stages on.
@@ -125,7 +128,6 @@ const runtimeReady =
   existsSync(join(resources, 'server.js')) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
-  existsSync(join(resources, 'migrations', '20260601T000000_init_schema.ts')) &&
   existsSync(join(resources, 'plugins', STAGED_DROPINS_MARKER)) &&
   existsSync(join(resources, 'plugin-kit', 'kit.json')) &&
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
@@ -147,8 +149,7 @@ if (!runtimeReady) {
     destination: join(resources, 'THIRD_PARTY_NOTICES'),
   })
 
-  // ── 1. bundle the API to resources/server.js (external migrations/plugins stay
-  //       on disk). Use --outdir (not --outfile) so bun can also emit the native
+  // ── 1. bundle the API to resources/server.js (plugins stay on disk). Use --outdir (not --outfile) so bun can also emit the native
   //       required `.node` addons it references beside server.js — --outfile refuses
   //       multiple outputs. Optional plugin-native accelerators are handled by the
   //       shared stageDropins bundler below.
@@ -162,26 +163,24 @@ if (!runtimeReady) {
   // host's optional package is installed (see fs-watch/native-binding.ts).
   const hostAddon = hostWatcherAddon()
   if (!hostAddon) log(`warning: no native file watcher for ${process.platform}-${process.arch}`)
-  const watcherExternals = PARCEL_WATCHER_ADDONS.filter((addon) => addon !== hostAddon).flatMap(
-    (addon) => ['--external', addon],
-  )
+  const watcherExternals = PARCEL_WATCHER_ADDONS.filter((addon) => addon !== hostAddon)
   log('bundling API →', serverOut)
-  execFileSync(
-    'bun',
-    [
-      'build',
-      apiEntry,
-      '--target=bun',
-      '--outdir',
-      resources,
-      '--entry-naming',
-      'server.js',
-      '--minify-syntax',
-      '--minify-whitespace',
-      ...watcherExternals,
-    ],
-    { stdio: 'inherit' },
-  )
+  // The migrations are compiled into server.js by the plugin: nothing is staged beside it, and
+  // `kysely` is bundled with the migrations instead of copied next to loose files.
+  const bundled = await Bun.build({
+    entrypoints: [apiEntry],
+    target: 'bun',
+    outdir: resources,
+    naming: { entry: 'server.js' },
+    minify: { syntax: true, whitespace: true, identifiers: false },
+    external: watcherExternals,
+    define: { [EMBEDDED_MIGRATIONS_FLAG]: 'true' },
+    plugins: [embeddedMigrationsPlugin(join(repo, 'apps', 'api', 'migrations'))],
+  })
+  if (!bundled.success) {
+    for (const message of bundled.logs) console.error(message)
+    throw new Error('bundling the API failed')
+  }
   buildVisualFeedbackProbe({
     repoRoot: repo,
     outFile: join(resources, 'visual-feedback-probe.js'),
@@ -192,16 +191,6 @@ if (!runtimeReady) {
     outFile: join(resources, 'visual-feedback-native-probe.js'),
     log,
   })
-
-  // ── 2. migrations + vendored kysely (migration .ts files `import 'kysely'` at
-  //       runtime and resolve it from an ADJACENT node_modules) ──────────────────
-  const migOut = join(resources, 'migrations')
-  mkdirSync(join(migOut, 'node_modules'), { recursive: true })
-  cpSync(join(repo, 'apps', 'api', 'migrations'), migOut, { recursive: true })
-  cpSync(join(repo, 'node_modules', 'kysely'), join(migOut, 'node_modules', 'kysely'), {
-    recursive: true,
-  })
-  log('staged migrations + vendored kysely')
 
   // ── 3. bundled plugins ─────────────────────────────────────────────────────────
   // The shared stage-dropins script copies the plugin tree (stripping dev-only files

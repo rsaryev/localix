@@ -1,17 +1,14 @@
-import { apiFetch, API_BASE_URL, WS_BASE_URL } from '@/shared/api/client'
+import { WS_BASE_URL } from '@/shared/api/client'
+import { client, unwrap } from '@/shared/api/internal'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import type { CreateTerminalRequest, TerminalInfo } from '@localixai/api/client'
 
 /** Create a PTY-backed terminal session for a chat workspace; returns its id + cwd. */
 export async function createTerminal(input: CreateTerminalRequest): Promise<TerminalInfo> {
-  const res = await apiFetch(`${API_BASE_URL}/rpc/terminal`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(input),
-  })
+  const res = await client.rpc.terminal.$post({ json: input })
   if (!res.ok) throw new Error(`Could not start the terminal (${res.status}).`)
-  return (await res.json()) as TerminalInfo
+  return unwrap(res)
 }
 
 /**
@@ -23,9 +20,7 @@ export async function createTerminal(input: CreateTerminalRequest): Promise<Term
  */
 export async function closeTerminal(id: string): Promise<void> {
   try {
-    const res = await apiFetch(`${API_BASE_URL}/rpc/terminal/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    })
+    const res = await client.rpc.terminal[':id'].$delete({ param: { id } })
     if (!res.ok && res.status !== 404) throw new Error(`The server answered ${res.status}.`)
   } catch (error) {
     toast.error('Could not close the terminal', {
@@ -43,9 +38,9 @@ export type TerminalLiveness = 'alive' | 'dead' | 'unknown'
  *  confirmed process exit made Web discard a perfectly healthy terminal tab. */
 export async function getTerminalLiveness(id: string): Promise<TerminalLiveness> {
   try {
-    const res = await apiFetch(`${API_BASE_URL}/rpc/terminal`)
+    const res = await client.rpc.terminal.$get()
     if (!res.ok) return 'unknown'
-    const rows = (await res.json()) as Array<{ id: string }>
+    const rows = await unwrap(res)
     return rows.some((r) => r.id === id) ? 'alive' : 'dead'
   } catch {
     return 'unknown'

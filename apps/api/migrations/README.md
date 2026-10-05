@@ -15,7 +15,9 @@ database whose recorded migrations no longer match their files and names what to
 `src/db/migration-freeze.test.ts` refuses the same change to committed migrations in CI.
 
 1. Add a file named `<yyyymmdd>T<hhmmss>_<snake_case>.ts`, later than every existing one. It exports
-   `up(db)` and imports only `kysely` (the file ships beside the bundled server).
+   `up(db)` and imports only `kysely`. The packaged app compiles every file in this folder into
+   `server.js` (`scripts/embed-migrations-plugin.mjs`), so a file whose name does not match that
+   pattern fails the build instead of being left out.
 2. Change the types in `src/db/types.ts` to match.
 3. Run `bun test apps/api/src/db`.
 

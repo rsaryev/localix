@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Download } from 'lucide-react'
 import { Spinner } from '@localixai/kit/spinner'
 import { StatusDot } from '@localixai/kit/status-dot'
@@ -9,10 +8,12 @@ import { RailButton } from './RailButton'
 
 export function DesktopUpdateButton() {
   const { state, applyUpdate } = useDesktopUpdate()
-  const [applying, setApplying] = useState(false)
 
   // Nothing to show until an update is available.
   if (!state?.available) return null
+  // Read from the shared state, not a local one: the composer's strip can start the install too,
+  // and either surface may unmount mid-download.
+  const applying = state.installing
 
   // While applying (Tauri: updater_install), progress events rewrite
   // state.message with a live "Downloading update… N%" — surface it through the
@@ -37,7 +38,7 @@ export function DesktopUpdateButton() {
       label={label}
       active={false}
       // Warns first when the restart would stop a running turn or background job.
-      onClick={() => void restartToUpdate(applyUpdate, setApplying)}
+      onClick={() => void restartToUpdate(applyUpdate, () => {})}
       disabled={applying}
       className="disabled:cursor-default"
     />

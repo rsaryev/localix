@@ -112,9 +112,9 @@ jobs:
           fi
 
       # The installer links answer 404 until a release exists, so the download buttons only go live
-      # in a build made after one is published. This asks for the newest published release,
-      # prereleases included (`/releases/latest` skips them, and the first releases are betas), and
-      # hands the page its tag and asset names so it links exactly the installers that exist.
+      # in a build made after one is published. This asks for the newest published release (the one
+      # `latest` points to) and hands the page its tag and asset names, so it links exactly the
+      # installers that exist.
       - name: Find the newest published release
         id: release
         env:

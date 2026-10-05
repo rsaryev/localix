@@ -113,6 +113,49 @@ describe('a migration a database ran is immutable', () => {
   })
 })
 
+describe('the ledger reads embedded sources the same way it reads files', () => {
+  /** What the packaged bundle supplies: a lookup over text compiled into `server.js`. */
+  const embeddedSources = (texts: Record<string, string>) => (name: string) => texts[name]
+
+  test('a database recorded from files is verified against the embedded copy', async () => {
+    const text = migration('first_table')
+    await write('20260101T000000_first', text)
+    const db = database()
+    await migrate(db)
+    const provider = new FileMigrationProvider({ fs, path, migrationFolder: folder })
+    await expect(
+      verifyMigrationLedger(db, provider, embeddedSources({ '20260101T000000_first': text })),
+    ).resolves.toBeUndefined()
+  })
+
+  test('an embedded migration whose text differs from what the database ran is refused', async () => {
+    await write('20260101T000000_first', migration('first_table'))
+    const db = database()
+    await migrate(db)
+    const provider = new FileMigrationProvider({ fs, path, migrationFolder: folder })
+    const edited = embeddedSources({ '20260101T000000_first': migration('other_table') })
+    const error = await verifyMigrationLedger(db, provider, edited).catch(
+      (caught: unknown) => caught,
+    )
+    expect(error).toBeInstanceOf(MigrationLedgerError)
+    expect(String(error)).toContain('changed after this database ran them')
+  })
+
+  test('digests are recorded from embedded text, so the packaged app can be the first to run', async () => {
+    const text = migration('first_table')
+    await write('20260101T000000_first', text)
+    const db = database()
+    const provider = new FileMigrationProvider({ fs, path, migrationFolder: folder })
+    const { error } = await new Migrator({ db, provider }).migrateToLatest()
+    expect(error).toBeUndefined()
+    await recordMigrationDigests(db, embeddedSources({ '20260101T000000_first': text }))
+    const rows = await sql<{ digest: string }>`
+      SELECT digest FROM ${sql.table(MIGRATION_DIGEST_TABLE)}
+    `.execute(db)
+    expect(rows.rows.map((row) => row.digest)).toEqual([migrationDigest(text)])
+  })
+})
+
 describe('the real migrator keeps the ledger', () => {
   test('a fresh database records a digest for every shipped migration it ran', async () => {
     const db = createDatabase()

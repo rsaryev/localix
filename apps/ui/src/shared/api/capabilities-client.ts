@@ -27,7 +27,7 @@ export const capabilitiesApi = {
    * no-project scope.
    */
   async fetchCapabilitySnapshot(opts?: CapabilityScope): Promise<CapabilitySnapshot> {
-    return unwrap<CapabilitySnapshot>(
+    return unwrap(
       await client.rpc.capabilities.snapshot.$get({
         query: cleanQuery({
           projectId: opts?.projectId,
@@ -52,7 +52,7 @@ export const capabilitiesApi = {
   async applyCapabilityRules(
     input: CapabilityScope & { changes: CapabilityRuleChange[] },
   ): Promise<CapabilitySnapshot> {
-    return unwrap<CapabilitySnapshot>(
+    return unwrap(
       await client.rpc.capabilities.rules.apply.$post({
         json: {
           changes: input.changes,
@@ -70,7 +70,7 @@ export const capabilitiesApi = {
    * the chain, and an editor over it could not say which scope a change belonged to.
    */
   async fetchCapabilityRules(scope?: CapabilityScope): Promise<CapabilityRuleSnapshot> {
-    const result = await unwrap<CapabilityRuleSnapshot>(
+    const result = await unwrap(
       await client.rpc.capabilities.rules.$get({
         query: cleanQuery({ projectId: scope?.projectId, agentId: scope?.agentId }),
       }),
@@ -90,7 +90,7 @@ export const capabilitiesApi = {
     expectedRevision: number,
     scope?: CapabilityScope,
   ): Promise<{ revision: number; rules: CapabilityRule[] }> {
-    const result = await unwrap<{ scope: string; revision: number; rules: CapabilityRule[] }>(
+    const result = await unwrap(
       await client.rpc.capabilities.rules.$put({
         json: {
           rules,

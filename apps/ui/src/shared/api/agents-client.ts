@@ -14,7 +14,7 @@ const scopeQuery = (projectId: string | null) => (projectId ? { projectId } : {}
  */
 export const agentsApi = {
   async publishAgentPolicy(agentId: string, projectId: string, input: PublishRegistrationPolicy) {
-    return unwrap<{ agentId: string; registrationRevision: number; policyRevision: number }>(
+    return unwrap(
       await client.rpc.agents[':name']['policy-review'].$put({
         param: { name: agentId },
         query: scopeQuery(projectId),
@@ -23,11 +23,11 @@ export const agentsApi = {
     )
   },
   async createAgent(input: AgentRecordInput): Promise<AgentSummary> {
-    return unwrap<AgentSummary>(await client.rpc.agents.$post({ json: input as never }))
+    return unwrap(await client.rpc.agents.$post({ json: input as never }))
   },
 
   async getAgent(name: string, projectId: string | null): Promise<AgentSummary> {
-    return unwrap<AgentSummary>(
+    return unwrap(
       await client.rpc.agents[':name'].$get({ param: { name }, query: scopeQuery(projectId) }),
     )
   },
@@ -37,7 +37,7 @@ export const agentsApi = {
     input: AgentRecordInput,
     projectId: string | null,
   ): Promise<AgentSummary> {
-    return unwrap<AgentSummary>(
+    return unwrap(
       await client.rpc.agents[':name'].$put({
         param: { name },
         query: scopeQuery(projectId),
@@ -54,12 +54,12 @@ export const agentsApi = {
 
   /** The definition this installation ships for a system agent — read-only, writes nothing. */
   async agentDefaults(name: string): Promise<AgentRecord> {
-    return unwrap<AgentRecord>(await client.rpc.agents[':name'].defaults.$get({ param: { name } }))
+    return unwrap(await client.rpc.agents[':name'].defaults.$get({ param: { name } }))
   },
 
   /** Drop the user's override of a system agent; the shipped definition applies again. */
   async resetAgent(name: string): Promise<AgentSummary> {
-    return unwrap<AgentSummary>(await client.rpc.agents[':name'].reset.$post({ param: { name } }))
+    return unwrap(await client.rpc.agents[':name'].reset.$post({ param: { name } }))
   },
 
   async duplicateAgent(
@@ -67,7 +67,7 @@ export const agentsApi = {
     newName: string,
     projectId: string | null,
   ): Promise<AgentSummary> {
-    return unwrap<AgentSummary>(
+    return unwrap(
       await client.rpc.agents[':name'].duplicate.$post({
         param: { name },
         json: { name: newName, projectId },

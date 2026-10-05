@@ -14,14 +14,12 @@ export interface SystemToggleState {
  */
 export const systemApi = {
   async listSystemToggles(): Promise<SystemToggleState[]> {
-    const json = await unwrap<{ toggles: SystemToggleState[] }>(
-      await client.rpc.system.toggles.$get(),
-    )
+    const json = await unwrap(await client.rpc.system.toggles.$get())
     return json.toggles
   },
 
   async setSystemToggle(id: string, enabled: boolean): Promise<SystemToggleState> {
-    return unwrap<SystemToggleState>(
+    return unwrap(
       await client.rpc.system.toggles[':id'].$post({ param: { id }, json: { enabled } }),
     )
   },

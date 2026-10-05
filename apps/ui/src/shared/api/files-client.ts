@@ -28,7 +28,7 @@ export const filesApi = {
   ): Promise<FileContentResponse> {
     return recoverRead(
       async () =>
-        unwrap<FileContentResponse>(
+        unwrap(
           await client.rpc.sessions[':id'].file.$get(
             {
               param: { id: sessionId },
@@ -54,7 +54,7 @@ export const filesApi = {
     content: string,
     baseHash: string,
   ): Promise<FileWriteResponse> {
-    return unwrap<FileWriteResponse>(
+    return unwrap(
       await client.rpc.sessions[':id'].file.$put({
         param: { id: sessionId },
         json: { path, content, baseHash },
@@ -64,7 +64,7 @@ export const filesApi = {
 
   async listDirectory(sessionId: string, path?: string): Promise<DirListing> {
     return recoverRead(async () =>
-      unwrap<DirListing>(
+      unwrap(
         await client.rpc.sessions[':id'].tree.$get({
           param: { id: sessionId },
           query: path ? { path } : {},
@@ -80,7 +80,7 @@ export const filesApi = {
     name: string,
     kind: 'file' | 'dir',
   ): Promise<FileEntryResponse> {
-    return unwrap<FileEntryResponse>(
+    return unwrap(
       await client.rpc.sessions[':id']['file-create'].$post({
         param: { id: sessionId },
         json: { parentPath, name, kind },
@@ -94,7 +94,7 @@ export const filesApi = {
     path: string,
     newName: string,
   ): Promise<FileEntryResponse> {
-    return unwrap<FileEntryResponse>(
+    return unwrap(
       await client.rpc.sessions[':id']['file-rename'].$post({
         param: { id: sessionId },
         json: { path, newName },
@@ -109,7 +109,7 @@ export const filesApi = {
     destDir: string,
     mode: 'move' | 'copy',
   ): Promise<FileEntryResponse> {
-    return unwrap<FileEntryResponse>(
+    return unwrap(
       await client.rpc.sessions[':id']['file-paste'].$post({
         param: { id: sessionId },
         json: { source, destDir, mode },
@@ -124,7 +124,7 @@ export const filesApi = {
     path: string,
     opts?: { permanent?: boolean },
   ): Promise<FileDeleteResponse> {
-    return unwrap<FileDeleteResponse>(
+    return unwrap(
       await client.rpc.sessions[':id']['file-delete'].$post({
         param: { id: sessionId },
         json: { path, permanent: opts?.permanent },
@@ -134,7 +134,7 @@ export const filesApi = {
 
   /** Duplicate a tree entry in place (copy into its own folder, name auto-incremented). */
   async duplicateFileEntry(sessionId: string, path: string): Promise<FileEntryResponse> {
-    return unwrap<FileEntryResponse>(
+    return unwrap(
       await client.rpc.sessions[':id']['file-duplicate'].$post({
         param: { id: sessionId },
         json: { path },
@@ -144,14 +144,12 @@ export const filesApi = {
 
   /** Reverse the most recent reversible file-tree op (restore-from-trash / move-back / rename-back). */
   async undoFileOp(sessionId: string): Promise<FileUndoResponse> {
-    return unwrap<FileUndoResponse>(
-      await client.rpc.sessions[':id']['file-undo'].$post({ param: { id: sessionId } }),
-    )
+    return unwrap(await client.rpc.sessions[':id']['file-undo'].$post({ param: { id: sessionId } }))
   },
 
   /** Reveal a tree entry in the host OS file manager (local sessions only). */
   async revealFileEntry(sessionId: string, path: string): Promise<{ opened: true }> {
-    return unwrap<{ opened: true }>(
+    return unwrap(
       await client.rpc.sessions[':id']['file-reveal'].$post({
         param: { id: sessionId },
         json: { path },
@@ -178,7 +176,7 @@ export const filesApi = {
       includeIgnored?: boolean
     },
   ): Promise<FileSearchResult> {
-    return unwrap<FileSearchResult>(
+    return unwrap(
       await client.rpc.sessions[':id'].files.$get({
         param: { id: sessionId },
         query: {
@@ -216,7 +214,7 @@ export const filesApi = {
       includeIgnored?: boolean
     },
   ): Promise<FileContentSearchResult> {
-    return unwrap<FileContentSearchResult>(
+    return unwrap(
       await client.rpc.sessions[':id']['search-content'].$get({
         param: { id: sessionId },
         query: {
@@ -252,7 +250,7 @@ export const filesApi = {
       includeIgnored?: boolean
     },
   ): Promise<{ filesChanged: number; replacements: number }> {
-    return unwrap<{ filesChanged: number; replacements: number }>(
+    return unwrap(
       await client.rpc.sessions[':id']['replace-content'].$post({
         param: { id: sessionId },
         json: {

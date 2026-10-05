@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { readUpdaterSettings } from '../apps/desktop-tauri/scripts/build-release-config.mjs'
 
 const root = resolve(import.meta.dir, '..')
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8')
@@ -8,7 +9,6 @@ const readJson = (path: string) => JSON.parse(read(path))
 
 const rootPackage = readJson('package.json')
 const desktopConfig = readJson('apps/desktop-tauri/src-tauri/tauri.conf.json')
-const releaseConfig = readJson('apps/desktop-tauri/src-tauri/tauri.release.conf.json')
 const ci = read('.github/workflows/ci.yml')
 const release = read('.github/workflows/release.yml')
 const releaseRefResolver = read('scripts/resolve-release-ref.mjs')
@@ -127,13 +127,9 @@ describe('release workflow contract', () => {
 
   test('ships only the platforms its matrix builds, and the manifest asks for exactly those', () => {
     const platforms = workflowValues(release, 'RELEASE_PLATFORMS')[0]
-    expect(platforms).toBe(
-      'darwin-aarch64,darwin-x86_64,windows-x86_64,linux-x86_64,linux-x86_64-deb',
-    )
+    expect(platforms).toBe('darwin-aarch64,linux-x86_64,linux-x86_64-deb')
     for (const leg of [
       '{"os":"macos-15","name":"macos-arm64"}',
-      '{"os":"macos-15-intel","name":"macos-x64"}',
-      '{"os":"windows-latest","name":"win-x64"}',
       '{"os":"ubuntu-22.04","name":"linux-x64"}',
     ]) {
       expect(release).toContain(leg)
@@ -141,7 +137,30 @@ describe('release workflow contract', () => {
     expect(release).toContain('include: ${{ fromJSON(needs.prepare.outputs.matrix) }}')
   })
 
-  test('says in a prerelease body what was tested and where to build from source', () => {
+  test('stamps the desktop version with the shared script, never with inline code', () => {
+    expect(release).toContain('bun scripts/stamp-version.mjs "$RELEASE_VERSION"')
+    expect(release).not.toContain('c.version = v')
+  })
+
+  test("starts the packaged app's API before any asset is collected for upload", () => {
+    const smoke = release.indexOf('- name: Smoke the packaged bundle')
+    expect(smoke).toBeGreaterThan(release.indexOf('bun run tauri:release'))
+    expect(smoke).toBeLessThan(release.indexOf('- name: Collect release assets'))
+    expect(release).toContain('apps/desktop-tauri/scripts/smoke-bundle.mjs')
+    expect(release).toContain('"${SMOKE[@]}" --root "$BUNDLE/macos/Localix.app"')
+  })
+
+  test('bounds every job, so a hung runner cannot burn the six-hour default', () => {
+    const jobs = [...release.matchAll(/\n {2}([a-z-]+):\n(?: {4}.*\n)*? {4}runs-on:/gu)]
+    expect(jobs.length).toBeGreaterThanOrEqual(7)
+    for (const [, job] of jobs) {
+      const start = release.indexOf(`\n  ${job}:`)
+      const header = release.slice(start, release.indexOf('    steps:', start))
+      expect(header, `${job} needs timeout-minutes`).toMatch(/\n {4}timeout-minutes: \d+\n/u)
+    }
+  })
+
+  test('says in a beta release body what was tested and where to build from source', () => {
     expect(release).toContain('Tested only on macOS')
     expect(release).toContain('docs/getting-started/installation.md')
   })
@@ -151,7 +170,7 @@ describe('release workflow contract', () => {
     const publishJob = release.slice(publishStart)
     const reverify = publishJob.indexOf('- name: Reverify release tag and draft provenance')
     const manifest = publishJob.indexOf('- name: Generate updater latest.json')
-    const publish = publishJob.indexOf('- name: Publish stable or prerelease')
+    const publish = publishJob.indexOf('- name: Publish release as latest')
     const finalVerification = publishJob.indexOf('bun scripts/verify-release-target.mjs', publish)
     const releaseEdit = publishJob.indexOf('gh release edit', publish)
 
@@ -163,17 +182,41 @@ describe('release workflow contract', () => {
     expect(releaseEdit).toBeGreaterThan(finalVerification)
   })
 
-  test('enables updater artifacts only for releases and keeps endpoint ownership aligned', () => {
+  test('publishes every release as latest, a beta included, and never moves latest backwards', () => {
+    const publishJob = release.slice(release.indexOf('  publish-desktop:'))
+    const publish = publishJob.slice(publishJob.indexOf('- name: Publish release as latest'))
+    // The updater reads `releases/latest/download/latest.json`, which GitHub resolves only for a
+    // release that is neither a draft nor a prerelease.
+    expect(publish).toContain('--draft=false --prerelease=false --latest')
+    expect(release).not.toMatch(/--latest=false/u)
+    expect(release).not.toMatch(/--prerelease(?!=false)/u)
+    // The newer-than-latest check runs before the edit that moves latest.
+    expect(publish.indexOf('bun scripts/assert-newest-release.mjs')).toBeGreaterThan(-1)
+    expect(publish.indexOf('bun scripts/assert-newest-release.mjs')).toBeLessThan(
+      publish.indexOf('gh release edit'),
+    )
+    expect(publish).toContain('releases/latest')
+  })
+
+  test('gives only release builds an updater, and keeps its endpoint on the release repository', () => {
+    // The base config has no updater and no key: a build from a checkout can neither read the
+    // official feed nor offer the person an update to it.
     expect(desktopConfig.bundle.createUpdaterArtifacts).toBe(false)
-    expect(releaseConfig.bundle.createUpdaterArtifacts).toBe(true)
+    expect(desktopConfig.plugins.updater).toBeUndefined()
     expect(desktopConfig.bundle.targets).toEqual(['app', 'dmg', 'nsis', 'deb', 'appimage'])
 
     const releaseRepository = workflowValues(release, 'RELEASE_REPO')[0]
     expect(releaseRepository).toBe('rsaryev/localix')
-    expect(desktopConfig.plugins.updater.endpoints).toEqual([
+    expect(readUpdaterSettings({ env: {} }).endpoints).toEqual([
       `https://github.com/${releaseRepository}/releases/latest/download/latest.json`,
     ])
+    // The release build is the one that passes `--release`, which writes the overlay and compiles
+    // the updater in; the signing-key check reads the key the same way the build does.
+    expect(read('apps/desktop-tauri/package.json')).toContain('run-tauri.mjs --release')
+    expect(release).toContain('bun run tauri:release')
+    expect(release).toContain('build-release-config.mjs --pubkey')
     expect(release).toContain('--example verify_updater_signature')
+    expect(releaseRunner).toContain("commandEnv.LOCALIX_UPDATER_ENABLED = '1'")
   })
 
   test('requires every installer and signed updater bundle before publication', () => {
@@ -181,8 +224,6 @@ describe('release workflow contract', () => {
       'dist-assets/*.dmg',
       'dist-assets/*.app.tar.gz',
       'dist-assets/*.app.tar.gz.sig',
-      'dist-assets/*.exe',
-      'dist-assets/*.exe.sig',
       'dist-assets/*.AppImage',
       'dist-assets/*.AppImage.sig',
       'dist-assets/*.deb',
@@ -190,8 +231,7 @@ describe('release workflow contract', () => {
     ]) {
       expect(release).toContain(`require_match '${pattern}'`)
     }
-    expect(release).toMatch(/case "\$\{\{ matrix\.name \}\}" in[\s\S]*?\n\s+win-x64\)/u)
-    expect(release).not.toMatch(/\.msi|\.rpm/u)
+    expect(release).not.toMatch(/\.msi|\.exe|\.rpm|win-x64/u)
   })
 
   test('preflights every documented Apple signing and notarization value', () => {

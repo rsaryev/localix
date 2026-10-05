@@ -5,14 +5,17 @@ import { link, mkdir, open, readFile, realpath, rename, unlink, writeFile } from
 import { basename, dirname, join, resolve } from 'node:path'
 
 import { defaultDbFile, localixHome, resolveDbFile } from './env'
-import { LOCALIX_API_PRODUCT_ID, type LocalixRuntimeInfo } from './runtime-protocol'
+import {
+  LOCALIX_API_PRODUCT_ID,
+  type LocalixRuntimeInfo,
+  type RuntimeReadyFrame,
+} from './runtime-protocol'
 import { startupDiag } from './startup-diagnostics'
 
 export { dialableRuntimeBaseUrl } from './runtime-address'
 
-export interface RuntimeEndpoint {
-  pid: number
-  baseUrl: string
+/** Extends the frame the desktop shell parses, so a field it reads cannot be renamed away here. */
+export interface RuntimeEndpoint extends RuntimeReadyFrame {
   startedAt: string
   protocolVersion: number
   instanceId?: string

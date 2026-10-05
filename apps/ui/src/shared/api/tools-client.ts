@@ -12,7 +12,7 @@ export const toolsApi = {
     projectId?: string | null
     sessionId?: string | null
   }): Promise<ToolGcReport> {
-    return unwrap<ToolGcReport>(
+    return unwrap(
       await client.rpc.tools.gc.$get({
         query: cleanQuery({ projectId: opts?.projectId, sessionId: opts?.sessionId }),
       }),

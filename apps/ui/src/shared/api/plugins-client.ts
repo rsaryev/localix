@@ -20,9 +20,7 @@ export const pluginsApi = {
     sessionId?: string
     projectId?: string | null
   }): Promise<{ value: string; label: string; description?: string }[]> {
-    const json = await unwrap<{
-      options: { value: string; label: string; description?: string }[]
-    }>(
+    const json = await unwrap(
       await client.rpc.plugins['command-args'].options.$post({
         json: {
           plugin: input.plugin,
@@ -47,7 +45,7 @@ export const pluginsApi = {
     viewId: string,
     opts?: { projectId?: string | null },
   ): Promise<string> {
-    const json = await unwrap<{ html: string }>(
+    const json = await unwrap(
       await client.rpc.plugins.views[':plugin'][':id'].$get({
         param: { plugin: pluginName, id: viewId },
         query: cleanQuery({ projectId: opts?.projectId }),
@@ -65,7 +63,7 @@ export const pluginsApi = {
     action: string
     payload?: unknown
   }): Promise<unknown> {
-    const json = await unwrap<{ result: unknown }>(
+    const json = await unwrap(
       await client.rpc.plugins['ui-actions'].invoke.$post({
         json: {
           pluginName: input.pluginName,
@@ -85,7 +83,7 @@ export const pluginsApi = {
     values: Record<string, string | number | boolean>,
     opts?: { projectId?: string | null },
   ): Promise<PluginRecord> {
-    return unwrap<PluginRecord>(
+    return unwrap(
       await client.rpc.plugins.config.$post({
         json: { name, values, projectId: opts?.projectId ?? null },
       }),
@@ -96,7 +94,7 @@ export const pluginsApi = {
     source: string,
     opts?: { projectId?: string | null; enable?: boolean },
   ): Promise<PluginRecord> {
-    return unwrap<PluginRecord>(
+    return unwrap(
       await client.rpc.plugins.install.$post({
         json: { source, projectId: opts?.projectId ?? null, enable: opts?.enable ?? true },
       }),
@@ -118,16 +116,12 @@ export const pluginsApi = {
    * server has always sent them, the client type just stopped at the count.
    */
   async listMarketplaces(): Promise<MarketplaceListing[]> {
-    const json = await unwrap<{ marketplaces: MarketplaceListing[] }>(
-      await client.rpc.plugins.marketplaces.$get(),
-    )
+    const json = await unwrap(await client.rpc.plugins.marketplaces.$get())
     return json.marketplaces
   },
 
   async addMarketplace(source: string): Promise<{ name: string; count: number }> {
-    return unwrap<{ name: string; count: number }>(
-      await client.rpc.plugins.marketplaces.add.$post({ json: { source } }),
-    )
+    return unwrap(await client.rpc.plugins.marketplaces.add.$post({ json: { source } }))
   },
 
   async removeMarketplace(name: string): Promise<void> {

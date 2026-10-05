@@ -1,4 +1,6 @@
-import { hc } from 'hono/client'
+import { hc, type ClientResponse } from 'hono/client'
+import type { ResponseFormat } from 'hono/types'
+import type { SuccessStatusCode } from 'hono/utils/http-status'
 
 import { LOCALIX_CLIENT_HEADER, LOCALIX_CLIENT_HEADER_VALUE } from '@localixai/api/client'
 import { markResponseTrace } from '@localixai/plugin-sdk/ui/transport'
@@ -214,13 +216,34 @@ export const client = hc<App>(API_BASE_URL, { fetch: apiFetch })
 export { ApiError, apiFailure, errorDetail, failureSentence } from './failure'
 import { responseError, transportFailure } from './failure'
 
-export async function unwrap<T>(
-  response: Response,
-  map: (json: T) => T | Promise<T> = (json) => json,
-): Promise<T> {
-  if (!response.ok) throw await responseError(response)
+/**
+ * The JSON body of the SUCCESS branches of a typed Hono response.
+ *
+ * `hc<App>` types every call as a union with one member per status the route can answer. A member
+ * counts as a success when its status can be 2xx (`c.json(x)` with no explicit status carries the
+ * whole status range, so it counts); one fixed to an error status (`jsonError(c, 404, ...)`) does
+ * not. The body is therefore what the route's handler returns, not what a caller believes it does.
+ */
+export type OkBody<R> = R extends { status: infer S; json(): Promise<infer B> }
+  ? [Extract<S, SuccessStatusCode>] extends [never]
+    ? never
+    : B
+  : never
 
-  return map((await response.json()) as T)
+/**
+ * Read a typed response's body, or throw the ApiError it describes.
+ *
+ * The result type COMES FROM THE API. It used to be a type argument at every call
+ * (`unwrap<{ toggles: Toggle[] }>(...)`), cast onto whatever JSON arrived, so a route that renamed
+ * a field kept compiling in the UI and failed at runtime. Now renaming `toggles` in the route is a
+ * type error where the UI reads it. A plain `Response` is refused: its body is `any`, so the caller
+ * would silently get no checking. Reading a route through `client.rpc` is the only way in.
+ */
+export async function unwrap<R extends ClientResponse<unknown, number, ResponseFormat>>(
+  response: R,
+): Promise<OkBody<R>> {
+  if (!response.ok) throw await responseError(response as unknown as Response)
+  return (await response.json()) as OkBody<R>
 }
 
 /** Throw an ApiError if a Response isn't ok — for endpoints with no body to unwrap (DELETE, fire-and-forget POST). */

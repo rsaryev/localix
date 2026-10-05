@@ -1,4 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test'
+import { Hono } from 'hono'
+import { hc, type ClientResponse } from 'hono/client'
 
 import { LOCALIX_CLIENT_HEADER } from '@localixai/api/client'
 
@@ -11,6 +13,10 @@ import {
   unwrap,
   withClientHeader,
 } from './internal'
+
+/** A plain Response seen as a typed one: these tests are about the error mapping, not the types. */
+const typed = <T = unknown>(response: Response) =>
+  response as unknown as ClientResponse<T, 200, 'json'>
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -27,19 +33,14 @@ describe('cleanQuery', () => {
   })
 })
 
-describe('unwrap', () => {
+describe('unwrap errors', () => {
   test('returns the parsed JSON on ok', () => {
-    expect(unwrap<{ v: number }>(json({ v: 7 }))).resolves.toEqual({ v: 7 })
-  })
-
-  test('applies the optional map', async () => {
-    const out = await unwrap<{ v: number }>(json({ v: 7 }), (j) => ({ v: j.v * 2 }))
-    expect(out).toEqual({ v: 14 })
+    expect(unwrap(typed<{ v: number }>(json({ v: 7 })))).resolves.toEqual({ v: 7 })
   })
 
   test('throws ApiError with the server message + code on non-ok', () => {
     const res = json({ error: { code: 'NOPE', message: 'denied' } }, 403)
-    expect(unwrap(res)).rejects.toMatchObject({
+    expect(unwrap(typed(res))).rejects.toMatchObject({
       name: 'Error',
       status: 403,
       code: 'NOPE',
@@ -49,7 +50,7 @@ describe('unwrap', () => {
 
   test('classifies the status when the error body is unparseable, keeping the body as detail', async () => {
     const res = new Response('<html>502 Bad Gateway</html>', { status: 500 })
-    const err = (await unwrap(res).catch((e: unknown) => e)) as ApiError
+    const err = (await unwrap(typed(res)).catch((e: unknown) => e)) as ApiError
     expect(err).toBeInstanceOf(ApiError)
     expect(err.status).toBe(500)
     // Was `Request failed with status 500`, which is what the user read.
@@ -69,7 +70,7 @@ describe('unwrap', () => {
       },
       400,
     )
-    const fromNested = (await unwrap(nested).catch((e: unknown) => e)) as ApiError
+    const fromNested = (await unwrap(typed(nested)).catch((e: unknown) => e)) as ApiError
     expect(fromNested.message).toBe('This sheet has no table in it.')
     expect(fromNested.detail).toBe('xlsx: no dimension node')
     expect(fromNested.code).toBe('not_tabular')
@@ -82,7 +83,7 @@ describe('unwrap', () => {
       },
       400,
     )
-    const fromFlat = (await unwrap(flat).catch((e: unknown) => e)) as ApiError
+    const fromFlat = (await unwrap(typed(flat)).catch((e: unknown) => e)) as ApiError
     expect(fromFlat.message).toBe('This sheet has no table in it.')
     expect(fromFlat.detail).toBe('xlsx: no dimension node')
     expect(fromFlat.code).toBe('not_tabular')
@@ -115,7 +116,7 @@ describe('unwrap', () => {
 
   test('a machine code in the message slot is classified too, and demoted to detail', async () => {
     const res = json({ error: { code: 'NOPE', message: 'not_tabular' } }, 409)
-    const err = (await unwrap(res).catch((e: unknown) => e)) as ApiError
+    const err = (await unwrap(typed(res)).catch((e: unknown) => e)) as ApiError
     expect(err.message).toBe('Something else changed this first.')
     expect(err.detail).toContain('not_tabular')
     expect(err.code).toBe('NOPE')
@@ -201,5 +202,46 @@ describe('apiFetch request observations', () => {
       off()
       fetchSpy.mockRestore()
     }
+  })
+})
+
+/**
+ * The guard on the API <-> UI contract. `unwrap` reads its type from the route's own response, so a
+ * route that changes what it returns is a compile error where the UI reads it. `check:tests`
+ * type-checks this file: if `unwrap` ever went back to a hand-written `T` or an `any` body, the
+ * `@ts-expect-error` lines below would become unused and fail the build.
+ */
+describe('unwrap takes the body type from the route', () => {
+  const app = new Hono()
+    .get('/items', (c) => c.json({ items: [{ id: 'a', count: 1 }] }))
+    .get('/gone', (c) => c.json({ error: 'gone' }, 404))
+  const client = hc<typeof app>('http://api.test', {
+    fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+      app.request(
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+        init,
+      ),
+  })
+
+  test('returns what the route returns, typed as the route declares it', async () => {
+    const body = await unwrap(await client.items.$get())
+    const first: { id: string; count: number } | undefined = body.items[0]
+    expect(first).toEqual({ id: 'a', count: 1 })
+    // @ts-expect-error a field the route does not return is a type error, not a runtime undefined
+    void body.itemz
+    // @ts-expect-error the route declares `count` a number, so reading it as a string is rejected
+    const wrong: string = body.items[0]?.count
+    void wrong
+  })
+
+  test('does not treat an error branch as the body, and still throws it', async () => {
+    const response = await client.gone.$get()
+    await expect(unwrap(response)).rejects.toMatchObject({ status: 404 })
+  })
+
+  test('refuses a plain Response, whose body nothing describes', () => {
+    // @ts-expect-error a raw Response has no route behind it, so there is nothing to type its body against
+    const refused = () => unwrap(new Response('{}'))
+    void refused
   })
 })

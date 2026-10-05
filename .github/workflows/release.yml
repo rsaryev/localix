@@ -4,7 +4,7 @@ name: Release
 # bundle contains UI + API + CLI. Platform installers and updater bundles are
 # published as GitHub Release assets.
 #
-#   • desktop apps → native installers per platform (.dmg / .exe / .AppImage /
+#   • desktop apps → native installers per platform (.dmg / .AppImage /
 #                    .deb), uploaded with signed updater bundles.
 # There is no standalone npm release: the CLI, API, UI, and internal runtime
 # packages ship inside the desktop bundle.
@@ -13,8 +13,9 @@ name: Release
 # Tags do not auto-run release code because a tag can point at an unmerged commit.
 #
 # Release flow: a DRAFT release is created first → the per-platform matrix builds
-# upload their assets → the draft is published only at the end. A stable release
-# becomes latest; a prerelease remains non-latest.
+# upload their assets → the draft is published only at the end, and the published release is ALWAYS
+# the latest one, a `-beta.N` version included: the updater reads `releases/latest/download/latest.json`,
+# and GitHub's `latest` skips anything marked a prerelease. The version's label only changes the notes.
 #
 # Required secrets:
 #   Releases are published to this same repository with the workflow's own token
@@ -43,7 +44,7 @@ on:
         required: true
       legs:
         description:
-          'Only build these legs, comma-separated (e.g. linux-x64,macos-x64); empty builds all'
+          'Only build these legs, comma-separated (e.g. linux-x64,macos-arm64); empty builds all'
         required: false
         default: ''
 
@@ -52,7 +53,7 @@ env:
   # Shown quietly in the release title; empty for a stable release.
   RELEASE_CHANNEL: beta
   # Platforms this release ships; the updater manifest must hold a signed artifact for each.
-  RELEASE_PLATFORMS: darwin-aarch64,darwin-x86_64,windows-x86_64,linux-x86_64,linux-x86_64-deb
+  RELEASE_PLATFORMS: darwin-aarch64,linux-x86_64,linux-x86_64-deb
   RUST_TOOLCHAIN: 1.96.1
 
 permissions:
@@ -67,6 +68,7 @@ jobs:
   prepare:
     name: Resolve release source
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       version: ${{ steps.tag.outputs.version }}
@@ -100,7 +102,7 @@ jobs:
           RELEASE_TAG_REF: ${{ github.ref_name }}
         run: bun scripts/resolve-release-ref.mjs >> "$GITHUB_OUTPUT"
 
-      # Which native legs to build. Empty builds all four. Naming legs rebuilds only those: the
+      # Which native legs to build. Empty builds both. Naming legs rebuilds only those: the
       # assets the other legs already uploaded to the draft stay, and the updater manifest is still
       # assembled from the whole release, so a leg that flaked can be redone without redoing the
       # rest. Every requested name must exist, so a typo fails here instead of building nothing.
@@ -109,7 +111,7 @@ jobs:
         env:
           LEGS: ${{ inputs.legs }}
         run: |
-          all='[{"os":"macos-15","name":"macos-arm64"},{"os":"macos-15-intel","name":"macos-x64"},{"os":"windows-latest","name":"win-x64"},{"os":"ubuntu-22.04","name":"linux-x64"}]'
+          all='[{"os":"macos-15","name":"macos-arm64"},{"os":"ubuntu-22.04","name":"linux-x64"}]'
           if [ -z "${LEGS//[[:space:]]/}" ]; then
             matrix="$all"
           else
@@ -129,24 +131,56 @@ jobs:
     name: Verify tagged source
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.prepare.outputs.commit }}
           persist-credentials: false
 
+      # Retried like CI's: a mirror hiccup is the usual reason for a red apt or install step, and a
+      # release should not have to be dispatched again for it.
       - name: Install runtime test dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ripgrep zsh
+          for attempt in 1 2 3; do
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
+            [ "$attempt" = 3 ] && exit 1
+            sleep 10
+          done
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: 1.3.14
 
+      # Reuse CI's content-addressed task results for the tagged source. Turbo re-runs any task
+      # whose inputs changed; the release still executes every verification gate below.
+      - name: Restore Bun package cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Restore Turbo cache
+        id: turbo-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
+          restore-keys: |
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-js-${{ runner.os }}-
+
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: |
+          for attempt in 1 2 3; do
+            bun install --frozen-lockfile && break
+            [ "$attempt" = 3 ] && exit 1
+            sleep 10
+          done
 
       # Before the gates: architecture, type-check and dead-code read built `dist` and generated
       # output, and on a clean checkout they fail without it (see ci.yml).
@@ -160,6 +194,7 @@ jobs:
           bun run check:release
           bun run check:architecture
           bun run check:docs
+          bun run check:generated
           bun run check:audit
           bun run format:check
 
@@ -175,10 +210,20 @@ jobs:
           bun run check:globals
           bun run test:dropins
 
+      - name: Save Turbo cache
+        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
+
   verify-rust:
     name: Verify tagged Rust source
     needs: [prepare, verify]
     runs-on: ubuntu-22.04
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -220,6 +265,7 @@ jobs:
     name: Verify updater signing key
     needs: [prepare, verify]
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     environment: release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -250,12 +296,12 @@ jobs:
       - name: Install signing dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
+      # The same value the release build embeds: `updater.release.json`, through the script that
+      # writes the build's overlay, so the key checked here cannot differ from the key shipped.
       - name: Read committed updater public key
         shell: bash
         run: |
-          UPDATER_PUBLIC_KEY="$(
-            bun -e 'const c = await Bun.file("apps/desktop-tauri/src-tauri/tauri.conf.json").json(); process.stdout.write(c.plugins.updater.pubkey)'
-          )"
+          UPDATER_PUBLIC_KEY="$(bun apps/desktop-tauri/scripts/build-release-config.mjs --pubkey)"
           echo "TAURI_UPDATER_PUBLIC_KEY=$UPDATER_PUBLIC_KEY" >> "$GITHUB_ENV"
 
       # The private key is exposed only to the official Tauri signer invocation.
@@ -292,6 +338,7 @@ jobs:
     name: Create draft release
     needs: [prepare, verify, verify-rust, verify-signing-key]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: release
     permissions:
       contents: write
@@ -319,24 +366,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
-          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
+          # The version carries a pre-release label (`-beta.1`). It labels the notes below and never
+          # the GitHub release, which is published as latest either way.
+          IS_BETA: ${{ needs.prepare.outputs.is_prerelease }}
         run: |
           release_notes() {
             printf 'Localix %s\n\nSource commit: %s\n' "$TAG" "$SOURCE_COMMIT"
-            if [[ "$IS_PRERELEASE" == "true" ]]; then
-              printf '\n> **Beta.** Tested only on macOS (Apple silicon and Intel). The Windows and Linux\n'
-              printf '> installers come from the same pipeline but are experimental and untested; the\n'
-              printf '> Windows installer is not code-signed, so SmartScreen warns about an unknown publisher.\n'
+            if [[ "$IS_BETA" == "true" ]]; then
+              printf '\n> **Beta.** Tested only on macOS (Apple silicon). The Linux installer comes from\n'
+              printf '> the same pipeline but is experimental and untested. There is no Windows installer:\n'
+              printf '> build it from source.\n'
               printf '\nPrefer to build it yourself? See [Run Localix from source](%s).\n' \
                 "https://github.com/$RELEASE_REPO/blob/$TAG/docs/getting-started/installation.md"
             fi
           }
-          PRERELEASE_ARGS=()
-          if [[ "$IS_PRERELEASE" == "true" ]]; then
-            PRERELEASE_ARGS+=(--prerelease)
-          fi
           gh release create "$TAG" --repo "$RELEASE_REPO" --draft --verify-tag \
-            --latest=false "${PRERELEASE_ARGS[@]}" \
             --title "Localix $TAG${RELEASE_CHANNEL:+ ($RELEASE_CHANNEL)}" \
             --notes "$(release_notes)"
 
@@ -348,14 +392,15 @@ jobs:
     name: Desktop ${{ matrix.name }}
     needs: [prepare, verify, draft-release]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
     environment: release
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
-        # The legs come from `prepare` (see "Select the build legs"): all four unless the dispatch
-        # named some. The first beta ships all four, but only macOS has been exercised by hand; the
+        # The legs come from `prepare` (see "Select the build legs"): both unless the dispatch
+        # named some. The first beta ships both, but only macOS has been exercised by hand; the
         # release notes say so. A leg that fails keeps the whole release in draft
         # (`publish-desktop` needs every selected leg), so redo just that leg with the `legs` input.
         include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
@@ -393,23 +438,13 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
-      - name: Stamp version into the desktop config
+      # `scripts/stamp-version.mjs` owns which files carry the version (tauri.conf.json, Cargo.toml
+      # and the crate's Cargo.lock entry) and refuses anything that is not a semantic version.
+      - name: Stamp version into the desktop app
         shell: bash
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          bun -e '
-            const fs = require("fs");
-            const v = process.env.RELEASE_VERSION;
-            const cf = "apps/desktop-tauri/src-tauri/tauri.conf.json";
-            const c = JSON.parse(fs.readFileSync(cf, "utf8"));
-            c.version = v;
-            fs.writeFileSync(cf, JSON.stringify(c, null, 2) + "\n");
-            const tf = "apps/desktop-tauri/src-tauri/Cargo.toml";
-            let t = fs.readFileSync(tf, "utf8");
-            t = t.replace(/^version = ".*"/m, `version = "${v}"`);
-            fs.writeFileSync(tf, t);
-          '
+        run: bun scripts/stamp-version.mjs "$RELEASE_VERSION"
 
       # Prebuild the workspace dependencies and API dist the UI build resolves.
       # prepare-sidecar (tauri beforeBuildCommand) then builds the UI + API sidecar.
@@ -508,7 +543,7 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: '1'
           NO_STRIP: 'true'
         # --verbose: Tauri otherwise hides the packager's own output, which is all that says why a
-        # Linux or Windows leg failed. macOS gets a second attempt: the Intel runner twice failed
+        # Linux leg failed. macOS gets a second attempt: the disk image twice failed
         # to detach the disk image ("DiskArbitration expired") right after a successful
         # notarization, and the rerun reuses the compiled app, so a retry costs minutes, not a leg.
         shell: bash
@@ -543,6 +578,33 @@ jobs:
             "$RUNNER_TEMP/apple-api-key.p8" \
             "$KEYCHAIN_LIST_PATH"
 
+      # Runs the API out of the app that was just packaged, before anything is uploaded: the same
+      # `server.js`, migrations and sidecar Bun a user gets, started the way the shell starts them,
+      # then asked for /health and shut down. A bundle that cannot start fails this leg instead of
+      # reaching the draft signed and notarized. The Linux leg checks both the AppImage and the .deb.
+      - name: Smoke the packaged bundle
+        shell: bash
+        run: |
+          BUNDLE="$PWD/apps/desktop-tauri/src-tauri/target/release/bundle"
+          SMOKE=(bun apps/desktop-tauri/scripts/smoke-bundle.mjs)
+          case "$RUNNER_OS" in
+            macOS)
+              "${SMOKE[@]}" --root "$BUNDLE/macos/Localix.app"
+              ;;
+            Linux)
+              work="$RUNNER_TEMP/bundle-smoke"
+              rm -rf "$work"
+              mkdir -p "$work/appimage" "$work/deb"
+              appimage=$(compgen -G "$BUNDLE/appimage/*.AppImage" | head -n 1)
+              deb=$(compgen -G "$BUNDLE/deb/*.deb" | head -n 1)
+              [ -n "$appimage" ] && [ -n "$deb" ] || { echo "AppImage or .deb missing under $BUNDLE" >&2; exit 1; }
+              (cd "$work/appimage" && "$appimage" --appimage-extract >/dev/null)
+              dpkg-deb -x "$deb" "$work/deb"
+              "${SMOKE[@]}" --root "$work/appimage/squashfs-root"
+              "${SMOKE[@]}" --root "$work/deb"
+              ;;
+          esac
+
       - name: Collect release assets
         id: collect
         shell: bash
@@ -551,7 +613,7 @@ jobs:
           mkdir -p dist-assets
           # Copy every configured installer and signed updater artifact.
           find "$BUNDLE" -type f \
-            \( -name '*.dmg' -o -name '*.exe' \
+            \( -name '*.dmg' \
                -o -name '*.AppImage' -o -name '*.deb' \
                -o -name '*.app.tar.gz' -o -name '*.sig' \) \
             -exec cp {} dist-assets/ \; || true
@@ -580,10 +642,6 @@ jobs:
               require_match 'dist-assets/*.app.tar.gz'
               require_match 'dist-assets/*.app.tar.gz.sig'
               ;;
-            win-x64)
-              require_match 'dist-assets/*.exe'
-              require_match 'dist-assets/*.exe.sig'
-              ;;
             linux-x64)
               require_match 'dist-assets/*.AppImage'
               require_match 'dist-assets/*.AppImage.sig'
@@ -608,8 +666,6 @@ jobs:
           }
           case "${{ matrix.name }}" in
             macos-arm64) stable_copy 'dist-assets/*.dmg' Localix-macos-arm64.dmg ;;
-            macos-x64) stable_copy 'dist-assets/*.dmg' Localix-macos-x64.dmg ;;
-            win-x64) stable_copy 'dist-assets/*.exe' Localix-windows-x64.exe ;;
             linux-x64) stable_copy 'dist-assets/*.AppImage' Localix-linux-x64.AppImage ;;
           esac
           echo "Collected:"; ls -la dist-assets || true
@@ -635,6 +691,7 @@ jobs:
     name: Publish release
     needs: [prepare, build-desktop]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: release
     permissions:
       contents: write
@@ -684,27 +741,26 @@ jobs:
           gh release upload "$RELEASE_TAG" "$RELEASE_OUTPUT" \
             --clobber --repo "$RELEASE_REPO"
 
-      - name: Publish stable or prerelease
+      # One line of releases, and the one just published is the latest: `latest.json` resolves through
+      # `releases/latest`, so a release that is not latest is a release no installed app can update to.
+      # Publishing a version that is not newer than the current latest would move users backwards (or
+      # strand them: the updater never installs an older version), so that is refused first.
+      - name: Publish release as latest
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
-          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
         run: |
           bun scripts/verify-release-target.mjs
-          if [[ "$IS_PRERELEASE" == "true" ]]; then
-            gh release edit "$TAG" --repo "$RELEASE_REPO" --verify-tag \
-              --draft=false --prerelease --latest=false
-          else
-            gh release edit "$TAG" --repo "$RELEASE_REPO" --verify-tag \
-              --draft=false --prerelease=false --latest
-          fi
+          CURRENT_LATEST_TAG="$(gh api "repos/$RELEASE_REPO/releases/latest" --jq .tag_name 2>/dev/null || true)" \
+            bun scripts/assert-newest-release.mjs
+          gh release edit "$TAG" --repo "$RELEASE_REPO" --verify-tag \
+            --draft=false --prerelease=false --latest
 
       # A release published with the workflow token does not trigger `release: published`
       # workflows, so the landing would keep its "coming soon" buttons. Dispatch it explicitly,
-      # for a prerelease as well: the first releases are betas, and the landing resolves the newest
-      # published release (a beta counts) on its own.
+      # The landing resolves the newest published release on its own.
       - name: Refresh the landing download buttons
         env:
           GH_TOKEN: ${{ github.token }}
