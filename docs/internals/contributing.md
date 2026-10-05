@@ -93,11 +93,13 @@ Rust changes under the Tauri source also need `bun run check:rust`.
 CI runs the same gates as parallel jobs, so a run lasts as long as its slowest job. Static checks,
 typecheck, three unit-test shards, the repository contract tests, global isolation, the drop-in
 plugin tests and the Rust gate each have their own job, and `Repository validation` is the single
-check that passes only when every one of them did. A pull request that touches nothing under
-`apps/desktop-tauri`, the lockfile, the root manifest or the workflow skips the Rust job, and
-`Repository validation` accepts that one skip. A push to `main` always runs every job and is never
-cancelled by a newer push. Each job restores the Turbo cache and saves it even when the job fails,
-so the next push replays unchanged tasks instead of rebuilding them.
+check that passes only when every one of them did.
+
+A pull request that touches nothing under `apps/desktop-tauri`, the lockfile, the root manifest or
+the workflow skips the Rust job, and `Repository validation` accepts that one skip. A push to `main`
+always runs every job and is never cancelled by a newer push. Each job restores the Turbo cache and
+saves it even when the job fails, so the next push replays unchanged tasks instead of rebuilding
+them.
 
 ## Configuration
 
