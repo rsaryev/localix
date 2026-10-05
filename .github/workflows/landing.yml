@@ -111,17 +111,26 @@ jobs:
             [ "$want_production" = "true" ] && echo "::notice::Production deploys are off (set the repository variable LANDING_PRODUCTION=true); deploying a preview instead."
           fi
 
-      # The stable installer links on the page answer 404 until a release exists, so the download
-      # buttons only go live in a build made after one is published. /releases/latest skips drafts
-      # and prereleases, which is the release the stable links resolve to.
-      - name: Is a release published?
+      # The installer links answer 404 until a release exists, so the download buttons only go live
+      # in a build made after one is published. This asks for the newest published release,
+      # prereleases included (`/releases/latest` skips them, and the first releases are betas), and
+      # hands the page its tag and asset names so it links exactly the installers that exist.
+      - name: Find the newest published release
         id: release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh api "repos/${{ github.repository }}/releases/latest" --jq .tag_name > latest-tag.txt 2>/dev/null; then
-            echo "live=true" >> "$GITHUB_OUTPUT"
-            echo "Latest release: $(cat latest-tag.txt)"
+          gh api "repos/${{ github.repository }}/releases?per_page=20" \
+            --jq '[.[] | select(.draft | not)] | .[0] // empty' > release.json
+          if [ -s release.json ]; then
+            tag=$(jq -r .tag_name release.json)
+            assets=$(jq -r '[.assets[].name] | join(",")' release.json)
+            {
+              echo "live=true"
+              echo "tag=$tag"
+              echo "assets=$assets"
+            } >> "$GITHUB_OUTPUT"
+            echo "Newest published release: $tag ($assets)"
           else
             echo "live=false" >> "$GITHUB_OUTPUT"
             echo "No published release yet; installers stay marked coming soon."
@@ -142,6 +151,8 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VITE_RELEASE_LIVE: ${{ steps.release.outputs.live }}
+          VITE_RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          VITE_RELEASE_ASSETS: ${{ steps.release.outputs.assets }}
 
       - name: Deploy the verified build
         id: deploy
@@ -165,6 +176,6 @@ jobs:
             echo "### Landing deployed"
             echo ""
             echo "- Target: \`${{ steps.target.outputs.environment }}\`"
-            echo "- Release published: \`${{ steps.release.outputs.live }}\`"
+            echo "- Release linked: \`${{ steps.release.outputs.tag || 'none' }}\`"
             echo "- Deployment: ${{ steps.deploy.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"

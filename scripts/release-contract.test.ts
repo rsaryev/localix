@@ -130,10 +130,15 @@ describe('release workflow contract', () => {
     expect(platforms).toBe(
       'darwin-aarch64,darwin-x86_64,windows-x86_64,linux-x86_64,linux-x86_64-deb',
     )
-    expect(release).toContain('- { os: macos-15, name: macos-arm64 }')
-    expect(release).toContain('- { os: macos-15-intel, name: macos-x64 }')
-    expect(release).toContain('- { os: windows-latest, name: win-x64 }')
-    expect(release).toContain('- { os: ubuntu-22.04, name: linux-x64 }')
+    for (const leg of [
+      '{"os":"macos-15","name":"macos-arm64"}',
+      '{"os":"macos-15-intel","name":"macos-x64"}',
+      '{"os":"windows-latest","name":"win-x64"}',
+      '{"os":"ubuntu-22.04","name":"linux-x64"}',
+    ]) {
+      expect(release).toContain(leg)
+    }
+    expect(release).toContain('include: ${{ fromJSON(needs.prepare.outputs.matrix) }}')
   })
 
   test('says in a prerelease body what was tested and where to build from source', () => {

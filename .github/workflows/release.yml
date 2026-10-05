@@ -41,6 +41,11 @@ on:
       tag:
         description: 'Release tag (e.g. v1.2.3)'
         required: true
+      legs:
+        description:
+          'Only build these legs, comma-separated (e.g. linux-x64,macos-x64); empty builds all'
+        required: false
+        default: ''
 
 env:
   RELEASE_REPO: rsaryev/localix
@@ -67,6 +72,7 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
       is_prerelease: ${{ steps.tag.outputs.is_prerelease }}
       commit: ${{ steps.tag.outputs.commit }}
+      matrix: ${{ steps.legs.outputs.matrix }}
     steps:
       - name: Require the protected main workflow
         shell: bash
@@ -93,6 +99,30 @@ jobs:
           RELEASE_TAG_INPUT: ${{ inputs.tag }}
           RELEASE_TAG_REF: ${{ github.ref_name }}
         run: bun scripts/resolve-release-ref.mjs >> "$GITHUB_OUTPUT"
+
+      # Which native legs to build. Empty builds all four. Naming legs rebuilds only those: the
+      # assets the other legs already uploaded to the draft stay, and the updater manifest is still
+      # assembled from the whole release, so a leg that flaked can be redone without redoing the
+      # rest. Every requested name must exist, so a typo fails here instead of building nothing.
+      - name: Select the build legs
+        id: legs
+        env:
+          LEGS: ${{ inputs.legs }}
+        run: |
+          all='[{"os":"macos-15","name":"macos-arm64"},{"os":"macos-15-intel","name":"macos-x64"},{"os":"windows-latest","name":"win-x64"},{"os":"ubuntu-22.04","name":"linux-x64"}]'
+          if [ -z "${LEGS//[[:space:]]/}" ]; then
+            matrix="$all"
+          else
+            matrix=$(jq -c --arg legs "$LEGS" '
+              ($legs | split(",") | map(gsub("\\s"; "")) | map(select(length > 0))) as $want
+              | ($want - map(.name)) as $unknown
+              | if ($unknown | length) > 0 then error("Unknown build leg: " + ($unknown | join(", ")))
+                elif ($want | length) == 0 then error("No build legs requested")
+                else map(select(.name as $n | $want | index($n))) end
+            ' <<<"$all")
+          fi
+          echo "Building: $(jq -r 'map(.name) | join(", ")' <<<"$matrix")"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   # ── verify: rerun repository validation against the exact tagged source ─────
   verify:
@@ -324,15 +354,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The first beta ships all four legs, but only macOS has been exercised by hand; the
-        # release notes say so. A Windows or Linux leg that fails keeps the whole release in draft
-        # (`publish-desktop` needs every leg), so remove its line here together with its platform
-        # in RELEASE_PLATFORMS to ship without it.
-        include:
-          - { os: macos-15, name: macos-arm64 }
-          - { os: macos-15-intel, name: macos-x64 }
-          - { os: windows-latest, name: win-x64 }
-          - { os: ubuntu-22.04, name: linux-x64 }
+        # The legs come from `prepare` (see "Select the build legs"): all four unless the dispatch
+        # named some. The first beta ships all four, but only macOS has been exercised by hand; the
+        # release notes say so. A leg that fails keeps the whole release in draft
+        # (`publish-desktop` needs every selected leg), so redo just that leg with the `legs` input.
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -438,6 +464,29 @@ jobs:
             grep -F -- "$APPLE_SIGNING_IDENTITY"
           security list-keychains -d user -s "$KEYCHAIN_PATH" \
             $(security list-keychains -d user | tr -d '"')
+
+      # linuxdeploy (the AppImage packager) runs `ldd` on every ELF it finds in the AppDir and
+      # aborts when `ldd` exits non-zero. The Bun sidecar is a statically linked executable, for
+      # which `ldd` prints "not a dynamic executable" and exits 1, so the AppImage step died with
+      # "Failed to run ldd". This shim answers "no dynamic dependencies" for exactly that case
+      # and passes every other `ldd` result through untouched.
+      - name: Let the AppImage packager accept static executables
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          shim="$RUNNER_TEMP/ldd-shim"
+          mkdir -p "$shim"
+          cat > "$shim/ldd" <<'SH'
+          #!/bin/sh
+          out=$(/usr/bin/ldd "$@" 2>&1); code=$?
+          if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q 'not a dynamic executable'; then
+            exit 0
+          fi
+          printf '%s\n' "$out"
+          exit "$code"
+          SH
+          chmod +x "$shim/ldd"
+          echo "$shim" >> "$GITHUB_PATH"
 
       - name: Build desktop release and signed updater artifacts
         env:
@@ -635,13 +684,10 @@ jobs:
           fi
 
       # A release published with the workflow token does not trigger `release: published`
-      # workflows, so the landing would keep its "coming soon" buttons. Dispatch it
-      # explicitly; the landing workflow decides preview vs production on its own.
+      # workflows, so the landing would keep its "coming soon" buttons. Dispatch it explicitly,
+      # for a prerelease as well: the first releases are betas, and the landing resolves the newest
+      # published release (a beta counts) on its own.
       - name: Refresh the landing download buttons
         env:
           GH_TOKEN: ${{ github.token }}
-          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
-        run: |
-          if [[ "$IS_PRERELEASE" != "true" ]]; then
-            gh workflow run landing.yml --repo "$RELEASE_REPO" --ref main -f production=true
-          fi
+        run: gh workflow run landing.yml --repo "$RELEASE_REPO" --ref main -f production=true
