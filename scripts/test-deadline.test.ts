@@ -27,6 +27,12 @@ test('a process stuck in a synchronous loop is killed at its deadline', async ()
   )
   const code = await child.exited
   const elapsed = Date.now() - started
+  const stderr = await new Response(child.stderr).text()
+  // Asserted first with the child's own stderr attached: a watchdog that never fires on some
+  // platform is otherwise indistinguishable from one that fired late.
+  expect({ elapsed: Math.round(elapsed / 1000), stderr }).toMatchObject({
+    stderr: expect.stringContaining('ran past 5s'),
+  })
   expect(code).not.toBe(0)
   // Polled every 5 s: killed on the first poll at or past the limit, long before the loop's
   // 240 s. The bound is wide because a loaded CI runner starves the `sh` watchdog's `sleep`; what
