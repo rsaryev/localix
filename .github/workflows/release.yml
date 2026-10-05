@@ -487,6 +487,12 @@ jobs:
           SH
           sudo chmod +x /usr/bin/ldd
 
+      # `hdiutil detach` of the DMG's scratch volume times out when Spotlight is still indexing
+      # it. Indexing is of no use on a throwaway runner.
+      - name: Stop Spotlight indexing so the disk image can detach
+        if: runner.os == 'macOS'
+        run: sudo mdutil -a -i off || true
+
       - name: Build desktop release and signed updater artifacts
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -502,8 +508,21 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: '1'
           NO_STRIP: 'true'
         # --verbose: Tauri otherwise hides the packager's own output, which is all that says why a
-        # Linux or Windows leg failed.
-        run: cd apps/desktop-tauri && bun run tauri:release --verbose
+        # Linux or Windows leg failed. macOS gets a second attempt: the Intel runner twice failed
+        # to detach the disk image ("DiskArbitration expired") right after a successful
+        # notarization, and the rerun reuses the compiled app, so a retry costs minutes, not a leg.
+        shell: bash
+        run: |
+          cd apps/desktop-tauri
+          attempts=1
+          [ "$RUNNER_OS" = macOS ] && attempts=2
+          for attempt in $(seq 1 "$attempts"); do
+            bun run tauri:release --verbose && exit 0
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "::warning::tauri:release failed on attempt $attempt of $attempts; retrying"
+            fi
+          done
+          exit 1
 
       - name: Remove temporary Apple signing material
         if: always() && runner.os == 'macOS'
