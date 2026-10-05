@@ -238,6 +238,17 @@ jobs:
           printf '%s\n' 'Localix updater signing probe' > "$RUNNER_TEMP/updater-signing-probe"
           ./node_modules/.bin/tauri signer sign "$RUNNER_TEMP/updater-signing-probe"
 
+      # The verifier is an example of the Tauri crate, so cargo runs the crate's build script first,
+      # and that script requires the staged sidecar and resources marker (`check:rust` stages the
+      # same two things for the same reason). Without them this job failed before verifying.
+      - name: Stage the Tauri build preconditions
+        run: |
+          bun -e '
+            import { stageSidecarBun, stageGateResourcesMarker } from "./apps/desktop-tauri/scripts/tauri-staging.mjs"
+            stageSidecarBun()
+            stageGateResourcesMarker()
+          '
+
       - name: Verify probe with shipped public key
         run: |
           cargo run --quiet --locked \
