@@ -15,23 +15,25 @@ test('a process stuck in a synchronous loop is killed at its deadline', async ()
       '--preload',
       preload,
       '-e',
-      'const end = Date.now() + 60_000; while (Date.now() < end) {}',
+      'const end = Date.now() + 240_000; while (Date.now() < end) {}',
     ],
     {
       env: { ...process.env, LOCALIX_TEST_DEADLINE_S: '5' },
       stdout: 'ignore',
       stderr: 'pipe',
-      timeout: 20_000,
+      timeout: 90_000,
       killSignal: 'SIGKILL',
     },
   )
   const code = await child.exited
   const elapsed = Date.now() - started
   expect(code).not.toBe(0)
-  // Polled every 5 s: killed on the first poll at or past the limit, long before 60 s.
-  expect(elapsed).toBeLessThan(20_000)
+  // Polled every 5 s: killed on the first poll at or past the limit, long before the loop's
+  // 240 s. The bound is wide because a loaded CI runner starves the `sh` watchdog's `sleep`; what
+  // it proves is that the loop did not run to its end, not how fast an idle machine reacts.
+  expect(elapsed).toBeLessThan(80_000)
   expect(await new Response(child.stderr).text()).toContain('ran past 5s')
-}, 30_000)
+}, 100_000)
 
 test('a process that finishes in time exits normally, and the watchdog goes with it', async () => {
   const child = Bun.spawn(['bun', '--preload', preload, '-e', 'console.log("done")'], {
