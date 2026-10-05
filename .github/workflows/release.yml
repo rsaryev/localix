@@ -250,8 +250,8 @@ jobs:
             --component clippy --component rustfmt
           rustup override set "$RUST_TOOLCHAIN"
 
-      # Same cache key as the build legs below, so the release pipeline warms the
-      # dependency graph once instead of compiling it from scratch in every job.
+      # Keyed by this job as well as the toolchain and lockfile, so it is its own cache: this job
+      # compiles the clippy and test profile, the build legs below compile the release profile.
       - name: Rust cache
         uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
@@ -433,10 +433,33 @@ jobs:
         with:
           workspaces: './apps/desktop-tauri/src-tauri -> target'
 
+      # The registry's packages, as in CI: a fresh runner otherwise downloads every one again.
+      - name: Restore Bun package cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
       # Keep third-party install hooks disabled even though secrets are scoped to
       # the native build step below and are not visible here.
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
+
+      # The workspace packages the UI build resolves are Turbo tasks CI already ran. An entry is keyed
+      # on the task's inputs inside Turbo, so a stale one is never replayed; this key only picks which
+      # archive to start from. A Linux leg starts from CI's, a macOS leg from the last release's.
+      - name: Restore Turbo cache
+        id: turbo-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
+          restore-keys: |
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-js-${{ runner.os }}-
 
       # `scripts/stamp-version.mjs` owns which files carry the version (tauri.conf.json, Cargo.toml
       # and the crate's Cargo.lock entry) and refuses anything that is not a semantic version.
@@ -450,6 +473,16 @@ jobs:
       # prepare-sidecar (tauri beforeBuildCommand) then builds the UI + API sidecar.
       - name: Build workspace packages
         run: bunx turbo build --filter=@localixai/api
+
+      # Saved here, not after the signing steps: a later failure should not cost the next attempt.
+      - name: Save Turbo cache
+        if: steps.turbo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
 
       - name: Decode Apple API key
         if: runner.os == 'macOS'
@@ -537,6 +570,9 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # The sidecar Bun is the baseline build (no AVX2 needed) on x64, not whichever Bun setup-bun
+          # chose for this runner's CPU; arm64 has none and keeps the build's Bun. See sidecar-bun.mjs.
+          LOCALIX_SIDECAR_BASELINE: '1'
           # linuxdeploy (the AppImage packager) runs as an AppImage itself and ships an old
           # `strip`: extract-and-run avoids needing FUSE on the runner, and NO_STRIP skips a strip
           # pass that rejects binaries built by a current Rust toolchain. Both are no-ops elsewhere.

@@ -48,6 +48,7 @@ import {
   embeddedMigrationsPlugin,
 } from '../../../scripts/embed-migrations-plugin.mjs'
 import { buildStagedCliPackageMetadata } from './cli-package-metadata.mjs'
+import { assertRunsAs, fetchBaselineBun } from './sidecar-bun.mjs'
 import {
   PARCEL_WATCHER_ADDONS,
   hostWatcherAddon,
@@ -110,6 +111,7 @@ const runtimeKey = fingerprint([
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
   join(repo, 'scripts', 'stage-dropins.mjs'),
   join(repo, 'scripts', 'embed-migrations-plugin.mjs'),
+  join(desktop, 'scripts', 'sidecar-bun.mjs'),
   join(repo, 'scripts', 'stage-plugin-ui.mjs'),
   join(repo, 'scripts', 'build-plugin-ui.mjs'),
   // Everything the plugin kit is made from — the same list the dev watcher re-stages on.
@@ -123,8 +125,11 @@ const runtimeKey = fingerprint([
   tauriConfigFile,
   fileURLToPath(import.meta.url),
 ])
+// Which Bun the sidecar is (see sidecar-bun.mjs): switching it must restage, and it is not a file.
+const runtimeVariant = process.env.LOCALIX_SIDECAR_BASELINE === '1' ? 'baseline' : 'build'
 const runtimeReady =
   cache.runtime === runtimeKey &&
+  cache.runtimeVariant === runtimeVariant &&
   existsSync(join(resources, 'server.js')) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
@@ -242,9 +247,25 @@ if (!runtimeReady) {
 
   // ── 4. the native Bun runtime as the Tauri sidecar (see tauri-staging.mjs) ───────
   // `force` because a packaging run must always restage, even if a gate run left one here.
-  const { path: bunDst } = stageSidecarBun({ force: true })
+  // The release workflow asks for the baseline build (see sidecar-bun.mjs): the Bun that ran this
+  // build is chosen by the CI runner's CPU, and the sidecar must run on the user's.
+  let sidecarSource
+  if (process.env.LOCALIX_SIDECAR_BASELINE === '1') {
+    sidecarSource = await fetchBaselineBun({
+      version: Bun.version,
+      dest: join(desktop, 'src-tauri', 'target', 'sidecar-bun'),
+    })
+    if (sidecarSource) {
+      assertRunsAs(sidecarSource, Bun.version)
+      log('sidecar is the baseline Bun', Bun.version)
+    } else {
+      log('no baseline Bun for this platform; the sidecar is the build Bun')
+    }
+  }
+  const { path: bunDst } = stageSidecarBun({ force: true, source: sidecarSource })
   log('staged sidecar', basename(bunDst))
   cache.runtime = runtimeKey
+  cache.runtimeVariant = runtimeVariant
 } else {
   log('runtime inputs unchanged — reusing staged API, plugins, CLI and Bun')
 }

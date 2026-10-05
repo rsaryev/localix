@@ -42,15 +42,16 @@ export function sidecarPath(triple = hostTriple()) {
 
 /**
  * Precondition 1 — stage the native Bun runtime as the Tauri sidecar. This is the REAL
- * runtime the packaged app ships (the very Bun executing this script), never a stub.
+ * runtime the packaged app ships (the Bun executing this script unless `source` names another),
+ * never a stub.
  * Idempotent unless `force`, so repeat gate runs cost nothing.
  * @returns {{ path: string, staged: boolean }} `staged` = copied just now.
  */
-export function stageSidecarBun({ force = false } = {}) {
+export function stageSidecarBun({ force = false, source = process.execPath } = {}) {
   const dst = sidecarPath()
   if (!force && existsSync(dst)) return { path: dst, staged: false }
   mkdirSync(binariesDir, { recursive: true })
-  copyFileSync(process.execPath, dst)
+  copyFileSync(source, dst)
   return { path: dst, staged: true }
 }
 

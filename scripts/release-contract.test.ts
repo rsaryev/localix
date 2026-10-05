@@ -137,6 +137,29 @@ describe('release workflow contract', () => {
     expect(release).toContain('include: ${{ fromJSON(needs.prepare.outputs.matrix) }}')
   })
 
+  test('restores and saves the package and task caches in the native build legs', () => {
+    const legs = release.slice(
+      release.indexOf('  build-desktop:'),
+      release.indexOf('  publish-desktop:'),
+    )
+    const restoreBun = legs.indexOf('- name: Restore Bun package cache')
+    const install = legs.indexOf('bun install --frozen-lockfile')
+    const turboRestore = legs.indexOf('- name: Restore Turbo cache')
+    const turboBuild = legs.indexOf('bunx turbo build --filter=@localixai/api')
+    const turboSave = legs.indexOf('- name: Save Turbo cache')
+    expect(restoreBun).toBeGreaterThan(-1)
+    expect(install).toBeGreaterThan(restoreBun)
+    expect(turboRestore).toBeGreaterThan(install)
+    expect(turboBuild).toBeGreaterThan(turboRestore)
+    expect(turboSave).toBeGreaterThan(turboBuild)
+  })
+
+  test("ships a sidecar Bun that does not depend on the build runner's CPU", () => {
+    expect(release).toContain("LOCALIX_SIDECAR_BASELINE: '1'")
+    expect(prepareSidecar).toContain('fetchBaselineBun')
+    expect(prepareSidecar).toContain('assertRunsAs')
+  })
+
   test('stamps the desktop version with the shared script, never with inline code', () => {
     expect(release).toContain('bun scripts/stamp-version.mjs "$RELEASE_VERSION"')
     expect(release).not.toContain('c.version = v')
@@ -309,7 +332,8 @@ describe('release workflow contract', () => {
     expect(read('apps/ui/vite.config.ts')).not.toContain('stageThirdPartyNotices(')
 
     const runtimeKeyStart = prepareSidecar.indexOf('const runtimeKey = fingerprint([')
-    const runtimeKeyEnd = prepareSidecar.indexOf('\n])', runtimeKeyStart)
+    // The list of inputs ends at its closing bracket; a second argument (the sidecar variant) may follow.
+    const runtimeKeyEnd = prepareSidecar.indexOf('\n]', runtimeKeyStart)
     const runtimeKey = prepareSidecar.slice(runtimeKeyStart, runtimeKeyEnd)
     expect(runtimeKeyStart).toBeGreaterThan(-1)
     expect(runtimeKeyEnd).toBeGreaterThan(runtimeKeyStart)
