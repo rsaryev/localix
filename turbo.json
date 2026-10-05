@@ -12,7 +12,8 @@
         "server/**",
         "build/**",
         "src/views/main/**",
-        "src/resources/**"
+        "src/resources/**",
+        "src/generated/**"
       ]
     },
     "docs:gen": {
