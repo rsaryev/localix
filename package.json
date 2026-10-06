@@ -63,7 +63,7 @@
     "shx": "^0.4.0",
     "turbo": "^2.10.8",
     "typescript": "^7.0.2",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "overrides": {
     "@hono/node-server": "2.0.11",

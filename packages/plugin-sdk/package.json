@@ -203,7 +203,7 @@
     "clsx": "^2.1.1",
     "hono": "^4.12.30",
     "tailwind-merge": "^3.6.0",
-    "zod": "^4.4.3",
+    "zod": "^4.6.5",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

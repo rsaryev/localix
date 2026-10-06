@@ -15,7 +15,7 @@
     "lucide-react": "^1.24.0",
     "protobufjs": "^7.5.3",
     "react": "^19.2.7",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@localixai/plugin-sdk": "workspace:*",

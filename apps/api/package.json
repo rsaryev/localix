@@ -99,7 +99,7 @@
     "vscode-langservers-extracted": "^4.10.0",
     "yaml": "^2.9.0",
     "yaml-language-server": "^1.24.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@localixai/source-lint": "workspace:*",

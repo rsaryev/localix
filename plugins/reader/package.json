@@ -21,7 +21,7 @@
     "node-html-parser": "^6.1.13",
     "pdfjs-dist": "6.2.108",
     "react": "^19.2.7",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@localixai/plugin-sdk": "workspace:*",

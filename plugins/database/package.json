@@ -24,7 +24,7 @@
     "postgres": "^3.4.9",
     "react": "^19.2.7",
     "ssh2": "^1.17.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@localixai/plugin-sdk": "workspace:*",
