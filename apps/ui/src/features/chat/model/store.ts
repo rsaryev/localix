@@ -7,7 +7,7 @@ import type { applyStreamEventToSession } from '@/shared/api/client'
 import { backendClient, createWorkspaceSnapshot, type WorkspaceSnapshot } from '@/shared/api/client'
 import type { ProviderConnection, UiSession, Project, MessageBinding } from '@/shared/api/contracts'
 import { sessionRoute } from '@/shared/api/contracts'
-import { toUiSessionSummary } from '@/shared/api/converters'
+import { sessionRosterEventPatch } from './sessionRosterEvents'
 import { uiSessionSummary } from '@/shared/api/session-summary'
 import { noticePosition } from '@/shared/api/applyStreamEvent/notices'
 
@@ -15,6 +15,7 @@ import type { Message } from './types'
 import type { ReasoningEffort } from './reasoning'
 import { mergeSessionBody } from './mergeSessionBody'
 import { findSessionInState } from './findSession'
+import { reconcileSessionListAfterReconnect } from './reconnect-session-list'
 import { loadLastWorkspace, rememberActiveSession } from './persistence'
 import { rememberShellSessions } from '@/shared/lib/shellSnapshot'
 import { registerWorkspaceRoots } from './workspaceRoots'
@@ -25,7 +26,6 @@ import {
   getLiveSessionBody,
   mergeSessionState,
   patchSessionById,
-  pruneFinishedSubSessions,
   sessionBelongsToScope,
   sortSessions,
 } from './sessionListHelpers'
@@ -55,6 +55,7 @@ export interface OptimisticSendIds {
 }
 
 export interface ChatStore {
+  _forgetSessions: (ids: readonly string[]) => void
   connections: ProviderConnection[]
   projects: Project[]
   /**
@@ -295,11 +296,13 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
     },
 
     loadWorkspace: async (signal) => {
+      const before = get().allSessions
       // Session summaries are the only core readiness boundary. Connections and
       // projects hydrate independently in useWorkspace, and the active session
       // body is fetched lazily after this roster is painted. A slow optional
       // endpoint therefore cannot hold the entire workspace hostage.
-      const sessions = await backendClient.listSessions(signal)
+      const fetched = await backendClient.listSessions(signal)
+      const sessions = reconcileSessionListAfterReconnect(before, get().allSessions, fetched)
 
       // Same atomic launch-restore pair the pre-render shell frame paints from, so the
       // network answer lands in the scope the user is already looking at rather than
@@ -310,15 +313,20 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
       // unresolved scope, and nothing belongs to one: the roster filtered to empty and the
       // active chat was dropped on every reload.
       const lastWorkspace = loadLastWorkspace()
-      const activeProjectId = lastWorkspace?.projectId ?? get().activeProjectId
+      const activeProjectId = get()._hasHydrated
+        ? get().activeProjectId
+        : (lastWorkspace?.projectId ?? get().activeProjectId)
 
       const projectSessions = sessions.filter((session) =>
         sessionBelongsToScope(session, activeProjectId),
       )
       const firstRootSession = projectSessions.find((s) => !s.parentSessionId)
       const remembered = lastWorkspace?.sessionId ?? null
-      const activeSessionId =
-        remembered && projectSessions.some((session) => session.id === remembered)
+      const activeSessionId = get()._hasHydrated
+        ? projectSessions.some((session) => session.id === get().activeSessionId)
+          ? get().activeSessionId
+          : null
+        : remembered && projectSessions.some((session) => session.id === remembered)
           ? remembered
           : (firstRootSession?.id ?? projectSessions[0]?.id ?? null)
 
@@ -457,22 +465,16 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
     },
 
     _applyStreamEvent: (sessionId, event) => {
-      if (event.type === 'child_session.updated') {
+      if (event.type === 'session.deleted') get()._forgetSessions(event.sessionIds)
+      if (
+        event.type === 'child_session.updated' ||
+        event.type === 'session.updated' ||
+        event.type === 'session.deleted'
+      ) {
         // Pure session-list upsert. Resolving the parent's delegate tool item is
         // the BACKEND's job (markRuntimeSessionStatus → message.updated), so the
         // spinner clears through the normal item pipeline — no client-side join.
-        const child = toUiSessionSummary(event.session)
-        customSet((state) => {
-          const next = state.allSessions.some((s) => s.id === child.id)
-            ? state.allSessions.map((s) =>
-                s.id === child.id ? { ...s, ...child, messages: s.messages } : s,
-              )
-            : [child, ...state.allSessions]
-          // A worker/thread that just flipped to finished must not linger forever —
-          // cap retained finished sub-sessions so the store (and the sidebar tree it
-          // feeds) can't grow unbounded across a long delegation-heavy session.
-          return { allSessions: pruneFinishedSubSessions(next) }
-        })
+        customSet((state) => sessionRosterEventPatch(state, event) ?? {})
         // This is the ONE place rows enter and leave the sub-session roster, so it is where the
         // external tick store is reconciled against it. (A finished child keeps its last counts —
         // the delegate card's "N turns · M tools" summary — until its row is evicted; that used to

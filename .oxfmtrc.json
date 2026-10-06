@@ -19,6 +19,7 @@
     ".turbo",
     "apps/landing/src/generated",
     "apps/ui/test-results",
+    "apps/api/migrations/*.ts",
     "extend",
     "vendor",
     ".agents/skills",

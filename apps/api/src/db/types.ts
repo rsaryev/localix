@@ -145,6 +145,8 @@ export interface VaultAuditTable {
 }
 
 export interface AgentSessionsTable {
+  /** Transactional projection maintained by message insert/delete/move triggers. */
+  message_count: ColumnType<number, undefined, never>
   id: string
   user_id: string
   /** Global sequence → the canonical `LOCALIX-<seq>` id. DB-assigned. */

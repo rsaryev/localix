@@ -2,13 +2,10 @@
  * THE capability revision — one monotonic counter for the single fact "the set of
  * capabilities visible to this process changed".
  *
- * "Is this plugin enabled" used to be projected independently in ~6 server-side and
- * ~8 client-side places, synchronized only by a payload-less `plugins.changed` poke.
- * A poke carries no way to tell "you are up to date" from "you missed one": a client
- * that dropped the frame stayed stale forever, and a client that received three
- * refetched three times. This counter is the handle that makes both answerable —
- * `GET /rpc/capabilities/snapshot` stamps it into every snapshot and the stream event
- * carries it, so a consumer compares numbers instead of guessing.
+ * Every capability snapshot carries this revision so a late read cannot replace a newer
+ * document. Committed changes announce the `capabilities` resource over the shared event
+ * channel; the client's scheduler coalesces those announcements and reconciles on every
+ * connection. The snapshot's revision, rather than event arrival order, settles competing reads.
  *
  * Process-wide on purpose, and deliberately NOT per-user or per-project: a capability
  * mutation invalidates discovery, the plugin backend host's wiring, and any runtime
@@ -54,7 +51,7 @@ export function capabilityRevision(): number {
  *
  * Callers do NOT coalesce: a bump is a single integer increment, and swallowing one
  * would break the "a consumer at revision N knows it is behind" property that makes
- * a dropped `plugins.changed` frame detectable at all.
+ * stale capability documents detectable after a reconnect.
  */
 export function bumpCapabilityRevision(): number {
   revision += 1

@@ -35,7 +35,7 @@ export interface McpServiceDeps {
    * Fired after any mutation that changes what a scope's sessions can reach: a
    * server's existence, its config, its enable state, its per-tool filters, or its
    * OAuth credentials. Bootstrap binds it to the capability revision + the
-   * `plugins.changed` poke, the same way the plugin service does —
+   * `resources.changed` poke, the same way the plugin service does —
    * an MCP change is a capability change, and a client holding a capability snapshot
    * has no other way to learn about it.
    */

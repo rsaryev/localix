@@ -25,6 +25,7 @@ function mk(o: Partial<UiSession>): UiSession {
     parentSessionId: null,
     isRunning: false,
     messages: [],
+    messageCount: 0,
     isPinned: false,
     updatedAt: 0,
     projectId: null,

@@ -25,7 +25,7 @@ const isChat = (s: UiSession) => s.sessionKind !== 'subagent' && s.sessionKind !
 
 /**
  * Pure scope projection: the ROOT chats (no chat parent) belonging to the active
- * scope (`(projectId ?? null) === activeProjectId`), excluding threads and —
+ * scope (a resolved project id), excluding threads and —
  * unless `showArchived` — archived chats. Shared by the hook and its tests.
  */
 export function scopeRootSessions(
@@ -47,7 +47,7 @@ export function scopeRootSessions(
 
 export interface SidebarSessionsParams {
   allSessions: UiSession[]
-  /** The active workspace scope: a project id, or `null` for Global (project-less). */
+  /** The active workspace scope: a project id, or `null` while it is unresolved. */
   activeProjectId: string | null
   search: string
   sortMode: SortMode
@@ -73,7 +73,7 @@ export interface SidebarSessions {
 
 /**
  * Derives the sidebar's sorted/searched session list for the ACTIVE SCOPE
- * (one project, or Global/project-less). A pure projection of its inputs (no
+ * (one resolved project). A pure projection of its inputs (no
  * view state) — search deferral is owned here. There is no cross-project
  * aggregation: only the chats whose `projectId` matches the active scope are
  * returned; cross-scope discovery is the job of the global message search.

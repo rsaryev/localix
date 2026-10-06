@@ -87,7 +87,7 @@ export function createPluginHostsPhase({
   // `reconcile()`, and a plugin toggle re-converges the same way via `refresh()`,
   // so enable/disable needs no restart. Failure-isolated per plugin inside
   // loadPluginBackends.
-  // Late-bound settle hook: chatService (the stream registry the plugins.changed
+  // Late-bound settle hook: chatService (the stream registry the resources.changed
   // event rides) is created far below; the host reads this at settle time.
   const hostRefs: PluginHostRefs = {}
   // Safe to read `hostRefs.wakes` per wake: a plugin wakes long after chat bound it.
@@ -195,7 +195,7 @@ export function createPluginHostsPhase({
     // unhealthy third-party register() must not stop /health, hydration or the UI. Consumers
     // resolve through registry getters and the dispatcher is live, so converging after core
     // composition is safe (it is also the hot-enable path); onSettled publishes
-    // plugins.changed. A plugin request that arrives first waits (`plugin-route-boot-hold.ts`).
+    // resources.changed. A plugin request that arrives first waits (`plugin-route-boot-hold.ts`).
     void backendHost
       .reconcile()
       .catch((error) => {

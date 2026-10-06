@@ -28,6 +28,7 @@ export const sessionStateReducers: StreamReducers<
       externalAgentProvider: event.session.externalAgentProvider,
       externalAgentSessionKey: event.session.externalAgentSessionKey,
       isPinned: event.session.isPinned,
+      isArchived: event.session.isArchived,
       agents: event.session.agents,
       rosterLocked: event.session.rosterLocked,
       // An approved plan switches the mode on the server; without this the composer kept
@@ -41,6 +42,8 @@ export const sessionStateReducers: StreamReducers<
       sessionKind: event.session.sessionKind,
       runtimeStatus: event.session.runtimeStatus,
       sourceToolCallId: event.session.sourceToolCallId,
+      messageCount: event.session.messageCount ?? session.messageCount,
+      closedAt: event.session.closedAt ?? null,
       // session.updated carries general metadata and can arrive BEFORE run.started
       // (e.g. title generation on the first message), when runtimeStatus isn't yet
       // 'running' — so it must never clear the optimistic run flag. The falling edge

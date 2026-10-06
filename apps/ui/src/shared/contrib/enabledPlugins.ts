@@ -31,7 +31,7 @@ import { rememberShellCapabilities, type ShellCapabilitiesFrame } from '@/shared
  * plugin views and the tool surface — as a tiny subscribe/version
  * external store (the `runtimeViews.ts` idiom). ChatPage used to fetch this once per
  * mount, so a plugin toggle only showed up after a page reload; now the server
- * publishes `plugins.changed` once the backend host settles a re-wire, the runtime
+ * publishes `resources.changed` once the backend host settles a re-wire, the runtime
  * calls {@link refetchPluginContrib}, and every gated surface (rail sections, palette
  * commands, workbench mounts, the Settings tool list) re-renders from here.
  *
@@ -144,7 +144,7 @@ function reannounceNames(): void {
  * DEPENDENT endpoints refetch (plugin commands, skills, themes) — advances only when
  * the capability set actually moved.
  *
- * That gate is what makes a redundant poke cheap: a replayed `plugins.changed` on
+ * That gate is what makes a redundant poke cheap: a replayed `resources.changed` on
  * socket reconnect, or two pokes coalesced from a double toggle, both resolve to a
  * snapshot at a revision we already hold, and re-fetching four dependent catalogs for
  * it would be pure churn. The enabled-name comparison is the second half on purpose:
@@ -391,7 +391,7 @@ export function adoptCapabilitySnapshot(loaded: CapabilitySnapshot): Promise<boo
  * that "inactive projects need no frontend refresh". That theory had a hole: in Settings
  * the scope picker and the workbench's route project are routinely different values, so
  * toggling a plugin from Settings performed no immediate refetch at all and the UI only
- * caught up when the server's debounced `plugins.changed` poke arrived ~300ms later — if
+ * caught up when the server's debounced `resources.changed` poke arrived ~300ms later — if
  * it arrived. Converging the ACTIVE scope is both correct and cheap: the singleton always
  * describes the workbench's project, so re-reading it after any capability mutation
  * refreshes the surfaces the user is looking at (a global plugin toggled from a project
@@ -403,7 +403,7 @@ export function refetchActivePluginContrib(): Promise<boolean> {
 
 /**
  * Start (or restart) the singleton contribution convergence loop. Both initial app
- * bootstrap and `plugins.changed` use this path, so a transient failure after a toggle
+ * bootstrap and `resources.changed` use this path, so a transient failure after a toggle
  * is retried too. Generation-aware cleanup prevents an old React effect cleanup from
  * cancelling a newer event-triggered loop.
  */

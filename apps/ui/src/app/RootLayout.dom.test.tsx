@@ -30,6 +30,7 @@ describe('UI-first startup', () => {
     // it. There is no server here, and a real socket dialling nowhere errors after teardown.
     const { eventSocket } = await import('@/shared/api/eventSocket')
     const onFrame = spyOn(eventSocket, 'onFrame').mockReturnValue(() => {})
+    const onSessionEvent = spyOn(eventSocket, 'onSessionEvent').mockReturnValue(() => {})
     const warn = spyOn(console, 'warn').mockImplementation(() => {})
     useSettingsStore.setState({ synced: false, syncError: null })
 
@@ -67,6 +68,7 @@ describe('UI-first startup', () => {
     host.remove()
     getProfile.mockRestore()
     onFrame.mockRestore()
+    onSessionEvent.mockRestore()
     warn.mockRestore()
   })
 })

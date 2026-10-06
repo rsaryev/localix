@@ -4,6 +4,8 @@ import type { BaseCwdSession } from '../session-cwd'
 
 /** Runtime resources and storage required to tear down a session tree. */
 export interface SessionDeletionContext {
+  /** Announce committed row removal before fallible filesystem cleanup. */
+  onSessionsDeleted?: (userId: string, sessionIds: string[]) => void
   requireSession: (userId: string, id: string) => Promise<BaseCwdSession>
   repo: {
     deleteSession: (
@@ -70,6 +72,7 @@ export async function deleteSession(
     // session can never undo, so the journal is dead.
     clearFileOpJournal(id)
     await ctx.repo.deleteSession(userId, id, orderedIds)
+    ctx.onSessionsDeleted?.(userId, orderedIds)
     // AFTER the rows are gone, and only then: a delete that failed above must leave the
     // session's files exactly where the session still expects them.
     await ctx.discardSessionSandbox?.(userId, session)

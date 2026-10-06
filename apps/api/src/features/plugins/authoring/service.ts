@@ -42,7 +42,7 @@ export interface PluginAuthoringDeps {
   enable(userId: string, name: string): Promise<unknown>
   /** Reverse an activation that may have committed before a later notification failed. */
   disable?(userId: string, name: string): Promise<unknown>
-  /** Tell every host a plugin changed (backend reconcile, `plugins.changed` to the UI). */
+  /** Tell every host a plugin changed (backend reconcile, `resources.changed` to the UI). */
   changed(): void
   runTests?: PluginTestRunner
 }

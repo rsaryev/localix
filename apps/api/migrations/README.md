@@ -6,6 +6,10 @@ schema change is its own forward migration beside it.
 
 ## Changing the schema
 
+The repository formatter excludes migration sources: a formatting pass can add punctuation and
+change a recorded digest even when the SQL is unchanged. Prepare a migration's formatting before
+placing it in this directory, and never reformat it after a development server has applied it.
+
 **An existing migration file is never renamed, edited or deleted — committed or not.** A migration
 is final the moment any database runs it, and the dev server runs migrations as soon as a file is
 saved, so an uncommitted migration has usually already run on your own database. A rename makes that

@@ -104,6 +104,9 @@ export function runScheduledReconnectForTests(): boolean {
 }
 
 export const eventSocket = {
+  isConnected(): boolean {
+    return conn.socket?.readyState === WebSocket.OPEN
+  },
   /** Subscribe to every session's stream events (demuxed by routing session id). */
   onSessionEvent(handler: SessionEventHandler): () => void {
     return retained(sessionHandlers, handler)

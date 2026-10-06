@@ -62,6 +62,8 @@ const views = new Map<string, CapabilityCacheEntry>()
 // re-renders forever if its getSnapshot returns a fresh object each call, so every
 // path through the reader below must hand back the SAME entry until something moves.
 let activeView: CapabilityCacheEntry = IDLE
+let cacheRevision = 0
+const generations = new Map<string, number>()
 
 function notify(): void {
   for (const listener of listeners) listener()
@@ -124,14 +126,18 @@ export function ensureCapabilities(scope: string): void {
   if (state?.loadedVersion === version && (state.snapshot || state.error || state.loading)) return
 
   state?.stop?.()
+  const generation = (generations.get(scope) ?? 0) + 1
+  generations.set(scope, generation)
   // Keep any previous document visible while the reload runs: a stale answer still
   // describes this scope, and blanking it would flash an empty list on every toggle.
   const stop = startStartupRetry(async (failureIndex) => {
     try {
       const next = await backendClient.fetchCapabilitySnapshot(parseCapabilityScope(scope))
+      if (generations.get(scope) !== generation) return true
       setScope(scope, { snapshot: next, loading: false, error: null, loadedVersion: version })
       return true
     } catch (error) {
+      if (generations.get(scope) !== generation) return true
       if (shouldSurfaceStartupFailure(failureIndex)) {
         setScope(scope, {
           loading: false,
@@ -219,6 +225,17 @@ export function invalidateCapabilities(scope: string): void {
   notify()
 }
 
+/** Mark every scope stale; only mounted readers re-fetch their scope. */
+export function invalidateAllCapabilities(): void {
+  for (const [scope, state] of scopes) {
+    state.stop?.()
+    generations.set(scope, (generations.get(scope) ?? 0) + 1)
+    scopes.set(scope, { ...state, loadedVersion: -1, stop: null })
+  }
+  cacheRevision++
+  notify()
+}
+
 function subscribe(listener: () => void): () => void {
   listeners.add(listener)
   // The active scope is served from the workbench singleton, so its publishes are
@@ -238,6 +255,11 @@ function subscribe(listener: () => void): () => void {
  */
 export function useCapabilities(scope: string, enabled = true): CapabilityCacheEntry {
   const version = usePluginContribVersion()
+  const invalidation = useSyncExternalStore(
+    subscribe,
+    () => cacheRevision,
+    () => 0,
+  )
   const entry = useSyncExternalStore(
     subscribe,
     () => peekCapabilities(scope, enabled),
@@ -247,7 +269,7 @@ export function useCapabilities(scope: string, enabled = true): CapabilityCacheE
     if (enabled) ensureCapabilities(scope)
     // `version` is a dependency, not a value read here: a capability mutation bumps it,
     // and this scope's document has to be re-read at the new version.
-  }, [scope, enabled, version])
+  }, [scope, enabled, version, invalidation])
   return entry
 }
 
@@ -255,6 +277,7 @@ export function useCapabilities(scope: string, enabled = true): CapabilityCacheE
 export function __resetCapabilityCache(): void {
   for (const state of scopes.values()) state.stop?.()
   scopes.clear()
+  generations.clear()
   views.clear()
   activeView = IDLE
   notify()

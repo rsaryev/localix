@@ -40,11 +40,11 @@ export function createChatSessionFacade({
     },
 
     /** Import an outside conversation as a real session — see import-session.ts. */
-    importSession(userId: string, input: z.infer<typeof importSessionRequestSchema>) {
+    async importSession(userId: string, input: z.infer<typeof importSessionRequestSchema>) {
       // The wire schema checks that each item is STORABLE (an id and a type) rather than mirroring
       // the whole `AgentItem` union, which would be a second definition drifting from the first.
       // The narrowing therefore happens once, here, at the boundary that did the validating.
-      return importSession(
+      const session = await importSession(
         {
           createSession: (owner, created) =>
             sessionLifecycle.createSession(sessionLifecycleCtx, owner, created),
@@ -54,6 +54,10 @@ export function createChatSessionFacade({
         userId,
         input as ImportSessionInput,
       )
+      sessionLifecycleCtx.publishSession(
+        await sessionLifecycleCtx.requireSession(userId, session.id),
+      )
+      return getSessionDetail(userId, session.id)
     },
 
     async getSession(

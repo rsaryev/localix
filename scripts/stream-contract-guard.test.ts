@@ -34,6 +34,7 @@ const repoRoot = resolve(import.meta.dir, '..')
 const HOST_CONTRACT = [
   'apps/api/src/features/chat/contracts/stream.ts',
   'apps/api/src/features/chat/contracts/stream-workspace.ts',
+  'apps/api/src/features/realtime/resources.ts',
 ]
 /**
  * Every reducer that must handle the whole union, by the surface it serves, as the files it is

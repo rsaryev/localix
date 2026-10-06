@@ -1,3 +1,4 @@
+import type { ResourceChangedEvent } from '../../realtime/resources'
 /**
  * THE STREAM EVENTS THAT ARE NOT ABOUT THE CONVERSATION.
  *
@@ -17,6 +18,8 @@ import type { PreviewCommand } from '../../agent-core/tools/preview/preview-cont
 import type { LspDiagnostic, LspServerState } from '../../lsp'
 
 export type WorkspaceStreamEvent =
+  | ResourceChangedEvent
+  | { type: 'session.deleted'; sessionIds: string[] }
   // Language-server lifecycle for the session's workspace — which servers are up.
   | { type: 'lsp.status'; sessionId: string; servers: LspServerState[] }
   // Per-file LSP diagnostics (ranges + severity) for a file the inspector editor
@@ -183,24 +186,4 @@ export type WorkspaceStreamEvent =
        * a client that also reported this exit showed one job as two Event Center rows.
        */
       wakesAgent?: true
-    }
-  | {
-      /**
-       * The set of capabilities changed (plugin enable/disable/config/install/remove,
-       * an MCP mutation). For a plugin mutation the backend host has
-       * also SETTLED the re-wire — routes/providers already match the new state, so a
-       * client refetching on this event never observes a half-wired plugin. Fired with
-       * an empty sessionId (fanGlobal delivers it to every firehose socket).
-       */
-      type: 'plugins.changed'
-      sessionId: string
-      /**
-       * The capability revision this poke announces (see `capabilities/revision.ts`).
-       * The poke used to be payload-less, which made a MISSED poke indistinguishable
-       * from a quiet system: a client had no way to notice it was stale, and no way to
-       * skip a refetch it did not need. A consumer holding a lower revision knows it
-       * must refetch `GET /rpc/capabilities/snapshot`; one already holding this number
-       * knows the snapshot it has is current.
-       */
-      revision: number
     }

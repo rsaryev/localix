@@ -8,12 +8,7 @@ import type { UiSession } from '@/shared/api/contracts'
 import type { Message } from './types'
 import type { ReasoningEffort } from './reasoning'
 import { systemNotices } from './systemNotices'
-import {
-  isEmptyDraftSession,
-  patchSessionById,
-  sessionBelongsToScope,
-  sortSessions,
-} from './sessionListHelpers'
+import { patchSessionById, sessionBelongsToScope, sortSessions } from './sessionListHelpers'
 import { findSessionInState } from './findSession'
 import { mergeSessionBody } from './mergeSessionBody'
 import { WarmSessionBodyCache } from './sessionBodyCache'
@@ -21,6 +16,7 @@ import { loadLastReasoning, rememberActiveSession, rememberLastReasoning } from 
 import type { ChatStore, CustomSet } from './store'
 import { agentRoute, sessionRoute, withRoute } from '@/shared/api/contracts'
 import { isAgentUnavailable } from './newChatAgent'
+import { createNewChatDrafts } from './newChatDrafts'
 import {
   activeConversationDraft,
   conversationCreationLatchKeys,
@@ -93,13 +89,15 @@ export interface SessionActionsDeps {
 
 /** The session lifecycle + per-session settings actions of the chat store. */
 export interface SessionActions {
+  /** Release window-owned state for sessions removed by any caller/window. */
+  _forgetSessions: (ids: readonly string[]) => void
   selectSession: (id: string, options?: { signal?: AbortSignal }) => Promise<void>
   createSession: (title?: string, strategy?: ConversationStartStrategy) => Promise<UiSession | null>
   deleteSession: (id: string) => Promise<void>
   renameSession: (id: string, title: string) => Promise<void>
   togglePinSession: (id: string) => Promise<void>
   toggleArchiveSession: (id: string) => Promise<void>
-  /** Reassign a chat to a project (or `null` for the project-less home scope). */
+  /** Reassign a chat to a project (`null` resolves to the default project on the server). */
   moveSessionToProject: (id: string, projectId: string | null) => Promise<void>
   toggleUnreadSession: (id: string) => void
   /** See `ChatStore.setModelSelection` — `handle` names the participant the choice is for. */
@@ -131,8 +129,25 @@ export function createSessionActions({
   // Uncached session details can resolve out of order. Only the newest selection
   // request may activate its body; stale results still warm the bounded cache.
   let selectionRequestVersion = 0
+  const pendingSelections = new Set<{ id: string; removed: boolean }>()
+  const drafts = createNewChatDrafts()
 
   const actions: SessionActions = {
+    _forgetSessions: (ids) => {
+      for (const pending of pendingSelections) if (ids.includes(pending.id)) pending.removed = true
+      for (const id of ids) {
+        drafts.forget(id)
+        sessionBodyCache.delete(id)
+        composerDrafts.forget(id)
+        const previews = usePreviewStore.getState()
+        closeNativePages(
+          (previews.previewTabsBySession[id] ?? []).map((entry) => entry.previewId),
+          'Could not close the pages of the deleted chat',
+        )
+        previews.discardSessionPreview(id)
+        inspector.closeSession(id)
+      }
+    },
     selectSession: async (id, options) => {
       if (options?.signal?.aborted) return
       const requestVersion = ++selectionRequestVersion
@@ -148,7 +163,13 @@ export function createSessionActions({
         logCurrentChatMessages(id, cached.messages)
       }
 
-      const detail = await backendClient.getSession(id, options?.signal)
+      const pending = { id, removed: false }
+      pendingSelections.add(pending)
+      const detail = await backendClient
+        .getSession(id, options?.signal)
+        .finally(() => pendingSelections.delete(pending))
+      if (pending.removed) return
+      if (beforeFetch && !findSessionInState(get(), id)) return
       // The URL moved while a response was crossing the transport boundary.
       // Abort normally rejects the fetch, but a response that already completed
       // can still reach this line. Keep it warm without letting the retired route
@@ -211,18 +232,11 @@ export function createSessionActions({
       // with someone else, and the only way back was the agent menu. Continuing with the
       // same counterpart is the common case; changing it is the deliberate one.
       const agentId = plan.agentId
-      // Reuse an existing empty draft in the target scope instead of creating a duplicate
+      // Reuse only this window's fresh untouched draft instead of creating a duplicate
       // "New Chat". `null` can occur only before the default-project roster resolves; it is
       // kept separate from real project ids until the server returns the canonical project.
       // Prefer the active session when it is already a matching draft.
-      const scope = state.allSessions.filter((s) => (s.projectId ?? null) === targetProjectId)
-      // A draft is only reusable for the agent it is WITH. Without this, asking for a chat
-      // with one agent would hand back an empty chat with another — the caller's whole
-      // intent, silently dropped, and only visible once the wrong one answers.
-      const isReusable = (session: (typeof scope)[number]) =>
-        isEmptyDraftSession(session) && sessionRoute(session).agentId === agentId
-      const active = scope.find((session) => session.id === state.activeSessionId)
-      const reusable = active && isReusable(active) ? active : scope.find(isReusable)
+      const reusable = drafts.find(state.allSessions, state.activeSessionId, plan)
 
       if (reusable) {
         // Only the title can need writing: the draft's route is already whatever the chain
@@ -263,8 +277,12 @@ export function createSessionActions({
               })
           : await backendClient.createSession(request)
         rememberActiveSession(session.id, session.projectId ?? targetProjectId)
+        drafts.remember(session, targetProjectId)
         customSet((current) => ({
-          sessions: sortSessions([session, ...current.sessions]),
+          sessions: sortSessions([
+            session,
+            ...current.sessions.filter((row) => row.id !== session.id),
+          ]),
           activeSessionId: session.id,
         }))
         return session
@@ -289,16 +307,7 @@ export function createSessionActions({
         }
       }
 
-      sessionBodyCache.delete(id)
-      composerDrafts.forget(id)
-
-      // The strip is dropped below, and its pages would outlive it: unmounting only hides them.
-      const previews = usePreviewStore.getState()
-      closeNativePages(
-        (previews.previewTabsBySession[id] ?? []).map((entry) => entry.previewId),
-        'Could not close the pages of the deleted chat',
-      )
-      previews.discardSessionPreview(id)
+      actions._forgetSessions([id])
 
       customSet((state) => {
         const allSessions = state.allSessions.filter((session) => session.id !== id)
@@ -321,7 +330,6 @@ export function createSessionActions({
       // Close the deleted session's whole grid scope — its chat tab, its Browser and every other
       // tab of it (terminals are normal scoped tabs, so their PTYs are reaped when their owned
       // panes unmount). The Browser is one per chat now, so no shared one is left to settle.
-      inspector.closeSession(id)
     },
 
     renameSession: async (id, title) => {

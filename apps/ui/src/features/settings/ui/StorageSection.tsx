@@ -4,6 +4,7 @@ import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { Select } from '@localixai/kit/select'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { storageApi, type PruneResult, type StorageUsage } from '@/shared/api/storageApi'
+import { useResourceRevision } from '@/shared/api/useResourceRevision'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 import { useUserSettings } from '../model/useUserSettings'
 import {
@@ -47,6 +48,7 @@ export function StorageSection() {
 
 function UsageRow() {
   const visible = useWorkItemVisible()
+  const revision = useResourceRevision('storage', visible)
   const [usage, setUsage] = useState<StorageUsage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -64,7 +66,7 @@ function UsageRow() {
   }, [])
   useEffect(() => {
     if (visible) void load()
-  }, [visible, load])
+  }, [visible, load, revision])
 
   const lines = usage ? usageLines(usage) : []
   const saved = usage ? usage.toolOutputRawBytes - usage.toolOutputBytes : 0

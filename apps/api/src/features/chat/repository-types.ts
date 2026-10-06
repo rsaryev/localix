@@ -90,6 +90,8 @@ import type { SessionAgentRoute } from './contracts/read-model'
 export type { SessionAgentRoute }
 
 export interface SessionRecord {
+  /** Read-only database projection; pre-insert records do not carry it. */
+  messageCount?: number
   id: string
   userId: string
   /** Global sequence → canonical `LOCALIX-<seq>` id. DB-assigned; absent on a

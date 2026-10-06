@@ -8,6 +8,7 @@ import type {
 } from '@localixai/api/client'
 import type { Problem } from '@localixai/plugin-sdk/ui/problems'
 import { secretsApi } from '@/shared/api/secretsApi'
+import { useResourceRevision } from '@/shared/api/useResourceRevision'
 import type { VaultSection } from './vaultSections'
 import { vaultFailure } from './vaultProblem'
 
@@ -31,6 +32,10 @@ export function useVaultCollections(
   selectedKey: string | null,
   onFailure: (problem: Problem) => void,
 ) {
+  const revision = useResourceRevision('vault')
+  useEffect(() => {
+    setVersionsByKey({})
+  }, [revision])
   const [bindingsByKey, setBindingsByKey] = useState<Record<string, SecretBinding[]>>({})
   const [loadingUsage, setLoadingUsage] = useState(false)
   const [versionsByKey, setVersionsByKey] = useState<Record<string, VaultVersionMeta[]>>({})
@@ -83,7 +88,7 @@ export function useVaultCollections(
     return () => {
       active = false
     }
-  }, [selectedKey, versionsByKey, onFailure])
+  }, [selectedKey, versionsByKey, onFailure, revision])
 
   const loadActivity = useCallback(async () => {
     setLoadingActivity(true)
@@ -98,7 +103,7 @@ export function useVaultCollections(
 
   useEffect(() => {
     if (section === 'activity') void loadActivity()
-  }, [loadActivity, section])
+  }, [loadActivity, section, revision])
 
   /** A saved item's history is stale the moment it is written — drop it so the next
    *  selection re-fetches rather than showing the version list from before the save. */

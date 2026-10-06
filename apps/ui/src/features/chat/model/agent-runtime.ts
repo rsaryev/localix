@@ -39,7 +39,7 @@ import {
 } from './sessionEventRouters'
 import { routeTerminalState } from '@/features/terminal/model/terminalTabs'
 import { sessionEventHandlersFor } from '@/shared/contrib/sessionEvents'
-import { startPluginContribSync } from '@/shared/contrib/enabledPlugins'
+import { resourceSync } from '@/shared/api/resourceSync'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 
 export interface AgentOptions {
@@ -71,26 +71,6 @@ export function useChatEventStream(enabled = true): void {
   const lastActivityRef = useRef<number>(0)
   const reconcileInFlight = useRef<Set<string>>(new Set())
   const reconcileGeneration = useRef(new Map<string, number>())
-  const sessionListRefreshInFlight = useRef(false)
-
-  const refreshSessionList = useCallback(() => {
-    if (sessionListRefreshInFlight.current) return
-    sessionListRefreshInFlight.current = true
-    const before = useChatStore.getState().allSessions
-    void backendClient
-      .listSessions()
-      .then((sessions) => {
-        useChatStore.setState((state) => ({
-          allSessions: reconcileSessionListAfterReconnect(before, state.allSessions, sessions),
-        }))
-      })
-      .catch(() => {
-        // The stream remains canonical; this is only a fallback for missed child-session events.
-      })
-      .finally(() => {
-        sessionListRefreshInFlight.current = false
-      })
-  }, [])
 
   const reconcileSession = useCallback((sessionId: string) => {
     const generation = (reconcileGeneration.current.get(sessionId) ?? 0) + 1
@@ -209,12 +189,6 @@ export function useChatEventStream(enabled = true): void {
       applyAttentionRoster(parsed.items)
       return
     }
-    if (parsed.type === 'plugins.changed') {
-      // The backend host settled a plugin toggle's re-wire — refetch the enabled
-      // contribution set so rail/palette/workbench surfaces update live.
-      startPluginContribSync()
-      return
-    }
 
     // Plugin-contributed session-event handlers (host.sessionEvents.register) —
     // AFTER the built-in routes so core keeps priority over its own types; a
@@ -282,6 +256,18 @@ export function useChatEventStream(enabled = true): void {
   // reconnect, reconcile the active session as a safety net for evicted frames.
   useEffect(() => {
     if (!enabled) return
+    const offRoster = resourceSync.register('sessions', {
+      read: async (signal) => {
+        const before = useChatStore.getState().allSessions
+        const sessions = await backendClient.listSessions(signal)
+        return { before, sessions }
+      },
+      apply: ({ before, sessions }) =>
+        useChatStore.setState((state) => ({
+          allSessions: reconcileSessionListAfterReconnect(before, state.allSessions, sessions),
+        })),
+      onError: (error) => console.warn('[realtime] session roster sync failed', error),
+    })
     lastActivityRef.current = Date.now()
     const offEvent = eventSocket.onSessionEvent((sid, parsed) => {
       if (sid === useChatStore.getState().activeSessionId) lastActivityRef.current = Date.now()
@@ -290,19 +276,20 @@ export function useChatEventStream(enabled = true): void {
     // The attention roster is read once now and again after every reconnect: its frame only
     // carries what changes while this window listens (`attention/store.ts`).
     void loadAttention()
+    const offConnected = eventSocket.onConnected(() => void loadAttention())
     const offReconnect = eventSocket.onReconnect(() => {
       const activeId = useChatStore.getState().activeSessionId
       if (activeId) reconcileSession(activeId)
       // Background surfaces (grid tabs) lose live-only frames too — see `reconnect-watched.ts`.
       void reconcileWatched()
-      refreshSessionList()
-      void loadAttention()
     })
     return () => {
+      offRoster()
+      offConnected()
       offEvent()
       offReconnect()
     }
-  }, [enabled, handleSessionEvent, reconcileSession, reconcileWatched, refreshSessionList])
+  }, [enabled, handleSessionEvent, reconcileSession, reconcileWatched])
 
   // Watchdog: if the focused session is generating but the firehose has gone quiet
   // for 15s, reconcile it from the DB (a missed terminal event would otherwise

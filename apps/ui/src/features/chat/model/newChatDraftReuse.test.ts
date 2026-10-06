@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
+import type { UiSession } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
+import { composerDrafts } from '@/shared/lib/composerDrafts'
 import { createSessionActions } from './sessionActionsSlice'
 import { mergeSessionState } from './sessionListHelpers'
 import { scopedNewConversation } from './conversationStartStrategy'
@@ -27,7 +29,10 @@ const row = (id: string, messageCount: number) => ({
   updatedAt: 0,
 })
 
-function harness(allSessions: ReturnType<typeof row>[], activeSessionId: string) {
+function harness(
+  allSessions: readonly (UiSession | ReturnType<typeof row>)[],
+  activeSessionId: string,
+) {
   let state = {
     projects: [{ id: 'P', isDefault: false }],
     allSessions,
@@ -47,6 +52,7 @@ function harness(allSessions: ReturnType<typeof row>[], activeSessionId: string)
   return {
     newChat: () => actions.createSession(undefined, scopedNewConversation('P')),
     active: () => state.activeSessionId,
+    roster: () => state.allSessions,
   }
 }
 
@@ -60,6 +66,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   ;(backendClient.createSession as unknown as { mockRestore: () => void }).mockRestore()
+  composerDrafts.forget('new-1')
 })
 
 describe('New chat reuses only a genuinely untouched draft', () => {
@@ -73,9 +80,36 @@ describe('New chat reuses only a genuinely untouched draft', () => {
     expect(h.active()).toBe('new-1')
   })
 
-  test('an untouched draft already in the scope is reused instead of minting another', async () => {
+  test('a saved empty chat from an older workspace is never reused', async () => {
     const h = harness([row('used-1', 6), row('draft', 0)], 'used-1')
-    expect((await h.newChat())?.id).toBe('draft')
-    expect(created).toBe(0)
+    expect((await h.newChat())?.id).toBe('new-1')
+    expect(created).toBe(1)
+  })
+
+  test('simultaneous clicks join one creation and commit one roster row', async () => {
+    const h = harness([row('used', 2)], 'used')
+    const results = await Promise.all([h.newChat(), h.newChat(), h.newChat()])
+    expect(created).toBe(1)
+    expect(results.map((session) => session?.id)).toEqual(['new-1', 'new-1', 'new-1'])
+    expect(h.roster().filter((session) => session.id === 'new-1')).toHaveLength(1)
+  })
+
+  test('unsent input stays in its chat and New chat opens a clean draft', async () => {
+    const h = harness([row('used', 2)], 'used')
+    await h.newChat()
+    composerDrafts.set('new-1', 'unfinished question')
+    expect((await h.newChat())?.id).toBe('new-2')
+    expect(composerDrafts.get('new-1')).toBe('unfinished question')
+    expect(composerDrafts.get('new-2')).toBe('')
+    expect(created).toBe(2)
+  })
+
+  test('another window sees a new draft but never reuses it as its own', async () => {
+    const firstWindow = harness([row('used', 2)], 'used')
+    await firstWindow.newChat()
+    const secondWindow = harness(firstWindow.roster(), 'used')
+    expect((await secondWindow.newChat())?.id).toBe('new-2')
+    expect((await firstWindow.newChat())?.id).toBe('new-1')
+    expect(created).toBe(2)
   })
 })

@@ -4,7 +4,7 @@ import { forkSessionTitle } from '../session-title'
 import { chosenRoute } from '../session-route'
 import { walkPathToRoot, indexMessageTree } from './branching'
 import { messageNotFound, type BranchingOpsContext } from './branching-ops'
-import type { SessionRecord } from '../repository'
+import { toSessionSummary, type SessionRecord } from '../repository'
 import type { SessionDetail } from '../contracts'
 
 /**
@@ -93,5 +93,9 @@ export async function forkSession(
     })
   }
 
+  ctx.streamRegistry.publish(userId, forked.id, {
+    type: 'session.updated',
+    session: toSessionSummary(await ctx.requireSession(userId, forked.id)),
+  })
   return ctx.getSessionDetail(userId, forked.id)
 }

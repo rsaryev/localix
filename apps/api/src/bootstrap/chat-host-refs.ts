@@ -13,7 +13,6 @@ import type { WakeRequest } from '../features/chat/contracts'
 import type { createChatService } from '../features/chat/service'
 import { createWakeDelivery } from '../features/triggers/delivery'
 import { createWakeNotices } from '../features/notifications/conditions/triggers'
-import { capabilityRevision } from '../features/capabilities/revision'
 import { announceCapabilitiesSettled } from '../features/capabilities/settle'
 import type { InfraPhase } from './infra'
 import type { PluginHostRefs } from './plugin-host-refs'
@@ -39,16 +38,12 @@ export function bindChatHostRefs({
     onUndelivered: createWakeNotices(notifications),
   })
   hostRefs.wakes = wakes
-  // ONE poke for every capability owner. It carries the CURRENT revision rather than
-  // one captured at mutation time: several toggles can coalesce behind the backend
-  // host's debounced reconcile, and announcing the older number would tell clients to
-  // stop one revision short of what the snapshot they are about to fetch reports.
-  // Empty sessionId → fanGlobal delivers it to all of the user's sockets.
+  // Capability owners notify the same resource channel as every other shared read model.
+  // The authoritative snapshot carries its revision; plugin hosts announce only after settling.
   hostRefs.publishCapabilityChange = () =>
     chatService.streamRegistry.publish(env.LOCALIX_DEFAULT_USER_ID, '', {
-      type: 'plugins.changed',
-      sessionId: '',
-      revision: capabilityRevision(),
+      type: 'resources.changed',
+      resources: ['capabilities'],
     })
   // Fulfill the backend host's settle hook: after a plugin toggle's re-wire CONVERGES,
   // release any toggle request waiting to answer with a settled snapshot, then tell

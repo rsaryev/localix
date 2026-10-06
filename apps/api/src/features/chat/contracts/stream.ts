@@ -238,7 +238,7 @@ export type AgentStreamEvent =
       /**
        * Everything waiting on the person, across ALL their sessions (`features/attention`): the
        * user's whole open set, last-wins, so a client that missed one frame is corrected by the
-       * next. User-wide — published with an empty `sessionId`, like `plugins.changed`.
+       * next. User-wide — published with an empty `sessionId`, like `resources.changed`.
        */
       type: 'attention.updated'
       sessionId: string

@@ -117,7 +117,7 @@ export function connect(): void {
     // EVERY open, including the first. A first connect declares no cursor, so the
     // server replays nothing to it — anything published between the runtime
     // starting and this socket arriving is simply gone. On a cold desktop start
-    // that window is real and holds the boot `plugins.changed` poke the backend
+    // that window is real and holds the boot `resources.changed` poke the backend
     // host emits when its wiring settles. Reading after subscribing is what makes
     // the pair total: a change before this point is in the read, one after it is
     // on the wire.

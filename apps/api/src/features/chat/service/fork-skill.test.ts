@@ -52,7 +52,6 @@ function makeDeps(parent: SessionRecord) {
   const sessionLifecycleCtx = {
     repo: {
       listSessions: async () => [],
-      countMessagesByUser: async () => new Map(),
       allocateSessionRef: async () => ({ seq: 2, id: 'child' }),
       insertSession: async (s: SessionRecord) => {
         inserted = s

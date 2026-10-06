@@ -239,17 +239,6 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
      *  way the UI can show a thread's size. */
     lastMessagesByUser: (userId: string) => lastMessagesByUser(db, userId),
 
-    async countMessagesByUser(userId: string): Promise<Map<string, number>> {
-      const rows = await db
-        .selectFrom('agent_messages')
-        .select('session_id')
-        .select((eb) => eb.fn.countAll<number>().as('count'))
-        .where('user_id', '=', userId)
-        .groupBy('session_id')
-        .execute()
-      return new Map(rows.map((row) => [row.session_id, Number(row.count)]))
-    },
-
     async getSession(userId: string, id: string): Promise<SessionRecord | null> {
       const row = await db
         .selectFrom('agent_sessions')

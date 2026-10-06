@@ -1,13 +1,12 @@
-import { announceNativeSettingsSaved } from './nativeWorkspaceSync'
 import { create } from 'zustand'
 import { backoffMs } from '@localixai/api/backoff'
 import { backendClient } from '@/shared/api/client'
-import type { UiSettingsPatch, AgentSettingsPatch } from '@/shared/api/contracts'
+import type { UiSettingsPatch, AgentSettingsPatch, UserProfile } from '@/shared/api/contracts'
 import { setSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
 import { registerQuitFlush } from '@/shared/lib/quitFlush'
 import { createSettingsProblemReport, rawErrorText } from './settingsProblemReport'
 import { subsettingDelta, toProfileWirePatch } from './settingsProfilePatch'
-import { resolveSettingsSync } from './settingsSyncResult'
+import { applyProfileRead } from './settingsProfileRead'
 import { currentAgentSettings, loadLocalSettings, saveLocalSettings } from './userSettings'
 import type { UserSettings } from './userSettings'
 
@@ -53,6 +52,7 @@ interface SettingsActions {
   flushIfPending: () => Promise<void> | null
   /** Resolve one synchronization attempt. `false` tells the bootstrapper to retry. */
   loadFromBackend: () => Promise<boolean>
+  applyBackendProfile: (profile: UserProfile) => void
 }
 
 // React StrictMode deliberately mounts effects twice in development. More importantly,
@@ -102,7 +102,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set, ge
     const request = backendClient
       .updateUserProfile(apiPatch)
       .then(() => {
-        announceNativeSettingsSaved()
         report.saveRecovered()
         consecutiveSaveFailures = 0
       })
@@ -159,33 +158,15 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set, ge
     _pendingUiSettingsPatch: {},
     _pendingAgentSettingsPatch: {},
 
+    applyBackendProfile: (profile) => set((state) => applyProfileRead(state, profile)),
+
     loadFromBackend: () => {
       if (syncInFlight) return syncInFlight
 
       const request = (async (): Promise<boolean> => {
         try {
           const profile = await backendClient.getUserProfile()
-          set((state) => {
-            const { settings, pending } = resolveSettingsSync(
-              state.settings,
-              {
-                profile: state._pending,
-                ui: state._pendingUiSettingsPatch,
-                agent: state._pendingAgentSettingsPatch,
-              },
-              profile,
-              state.synced,
-            )
-            saveLocalSettings(settings)
-            return {
-              settings,
-              _pending: pending.profile,
-              _pendingUiSettingsPatch: pending.ui,
-              _pendingAgentSettingsPatch: pending.agent,
-              synced: true,
-              syncError: null,
-            }
-          })
+          get().applyBackendProfile(profile)
         } catch (error) {
           // A FAILED GET IS NOT A SYNC (second corollary of the precedence rule): we learned
           // nothing about the server, so we cannot prove the pending patch's base isn't stale.

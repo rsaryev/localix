@@ -31,7 +31,7 @@ export function usePluginContributions({
 }) {
   const routeProjectId = useSettledContribScope(routeScope, onHomeRoute)
   // The LIVE enabled-plugin contribution set (names + views) — an external store
-  // refetched on the server's `plugins.changed` event, so a toggle applies with no
+  // refetched on the server's `resources.changed` event, so a toggle applies with no
   // page reload. `enabledNames === null` = not loaded yet (gates fail closed).
   const {
     document,
@@ -85,7 +85,7 @@ export function usePluginContributionsSync({
   thirdPartyViewsV: number
 }) {
   // Initial load of the plugin contribution set (panels + enabled names +
-  // third-party views). Later refetches ride the `plugins.changed` stream event
+  // third-party views). Later refetches ride the `resources.changed` stream event
   // (agent-runtime restarts the same convergent sync), so enable/disable
   // applies live — no page reload.
   useEffect(() => {
@@ -110,7 +110,7 @@ export function usePluginContributionsSync({
   // Close the startup half of that stream contract. The backend host wires plugin
   // backends OFF the readiness path on purpose — an unhealthy plugin must not be
   // able to stop the app from starting — and announces the result with a single
-  // `plugins.changed`. A cold desktop start has no socket yet when that lands, and
+  // `resources.changed`. A cold desktop start has no socket yet when that lands, and
   // a first connect declares no cursor, so the server replays nothing: the set the
   // UI fetched a moment earlier would stay authoritative forever. Re-reading once
   // the socket is live makes the pair total. `publish()` only advances its version

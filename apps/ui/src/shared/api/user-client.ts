@@ -12,7 +12,7 @@ const PROFILE_BOOTSTRAP_TIMEOUT_MS = 5_000
 export const userApi = {
   /** The agent's tool catalog + category labels (Settings → Tools). */
 
-  async getUserProfile(): Promise<UserProfile> {
+  async getUserProfile(signal?: AbortSignal): Promise<UserProfile> {
     // A loopback connection normally fails fast while the desktop sidecar is still
     // booting. Still bound the request: if a process accepts TCP but stalls before
     // answering, the settings bootstrap must be able to release its in-flight guard
@@ -21,7 +21,11 @@ export const userApi = {
     const timeout = setTimeout(() => controller.abort(), PROFILE_BOOTSTRAP_TIMEOUT_MS)
     try {
       return unwrap(
-        await client.rpc.user.profile.$get(undefined, { init: { signal: controller.signal } }),
+        await client.rpc.user.profile.$get(undefined, {
+          init: {
+            signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal,
+          },
+        }),
       )
     } finally {
       clearTimeout(timeout)

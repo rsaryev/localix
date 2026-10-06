@@ -103,6 +103,8 @@ const REPLAY_TIER: Record<AgentStreamEvent['type'], EventTier> = {
   // The roster row itself: title, running flag, project. The sidebar shows every session, so
   // these two are the reason a `roster` scope exists at all.
   'session.updated': ['replayable', 'roster'],
+  'session.deleted': ['replayable', 'roster'],
+  'resources.changed': ['replayable', 'roster'],
   'child_session.updated': ['replayable', 'roster'],
   // A transient "doing now" label, superseded by the next activity/status frame. The single
   // hottest frame in the incident above: published per tool start, per tool end, and per streamed
@@ -166,20 +168,6 @@ const REPLAY_TIER: Record<AgentStreamEvent['type'], EventTier> = {
   'terminal.waiting': ['live-only', 'watched'],
   'terminal.input': ['live-only', 'watched'],
   'terminal.finished': ['replayable', 'roster'],
-  // A payload-less poke telling clients to refetch the plugin contribution set after a
-  // backend-host re-wire settles. Replayable, despite carrying no state itself: it is the
-  // ONLY thing that refreshes that set, and the set is NOT session state, so the "a
-  // reconnecting client reconciles from the DB anyway" argument above does not reach it.
-  // The tier was previously `live-only` on the premise that "a reconnecting client refetches
-  // on mount" — but a socket reconnect is not a MOUNT: the page stays up, the store keeps its
-  // snapshot, and nothing refetches. Dropping this frame therefore stranded the rail/palette
-  // on a stale plugin set until the next toggle or a page reload — precisely the bug the
-  // store was built to end (see shared/contrib/enabledPlugins.ts). Neither live-only
-  // criterion fits either: a plugin toggle is rare, and no later frame supersedes it.
-  // `roster` for a structural reason, not a policy one: it is published with an EMPTY publish
-  // key (bootstrap.ts) because it is not session state, so no watched set could ever match it.
-  'plugins.changed': ['replayable', 'roster'],
-
   // --- session-scoped panels: each is a last-wins snapshot a reconnecting client needs ---
   'session_triggers.updated': ['replayable', 'watched'],
   'session_work.updated': ['replayable', 'watched'],
@@ -197,7 +185,7 @@ const REPLAY_TIER: Record<AgentStreamEvent['type'], EventTier> = {
   // the person may be watching a delegated child's composer when it is presented.
   'plan.presented': ['live-only', 'roster'],
   // The user's whole "waiting on you" set — not session state, so published with an empty key
-  // and delivered to every socket (`roster`), like `plugins.changed`.
+  // and delivered to every socket (`roster`), like `resources.changed`.
   'attention.updated': ['replayable', 'roster'],
   'hook.notice': ['replayable', 'watched'],
   'session_queue.updated': ['replayable', 'watched'],

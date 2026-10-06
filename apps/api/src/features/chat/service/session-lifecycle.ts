@@ -34,7 +34,6 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
   repo: SessionDeletionContext['repo'] & {
     listSessions: (userId: string) => Promise<SessionRecord[]>
     listSessionAncestry: (userId: string, id: string) => Promise<SessionRecord[]>
-    countMessagesByUser: (userId: string) => Promise<Map<string, number>>
     lastMessagesByUser: (userId: string) => Promise<Map<string, LastMessagePreview>>
     allocateSessionRef: (userId: string) => Promise<{ seq: number; id: string }>
     insertSession: (session: SessionRecord) => Promise<void>
@@ -181,15 +180,14 @@ export async function listSessions(
   ctx: SessionLifecycleCtx,
   userId: string,
 ): Promise<{ sessions: SessionSummary[] }> {
-  const [sessions, counts, previews] = await Promise.all([
+  const [sessions, previews] = await Promise.all([
     ctx.repo.listSessions(userId),
-    ctx.repo.countMessagesByUser(userId),
     ctx.repo.lastMessagesByUser(userId),
   ])
   return {
     sessions: sessions.map((session) => ({
       ...toSessionSummary(session),
-      messageCount: counts.get(session.id) ?? 0,
+      messageCount: session.messageCount ?? 0,
       ...(previews.get(session.id) ? { lastMessage: previews.get(session.id) } : {}),
     })),
   }

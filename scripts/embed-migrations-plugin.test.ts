@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import {
@@ -11,6 +11,26 @@ import {
 const migrations = resolve(import.meta.dir, '..', 'apps', 'api', 'migrations')
 const scratch = mkdtempSync(join(tmpdir(), 'embed-migrations-'))
 afterAll(() => rmSync(scratch, { recursive: true, force: true }))
+
+test('repository formatting preserves immutable migrations but still checks ordinary sources', () => {
+  const root = resolve(import.meta.dir, '..')
+  writeFileSync(join(scratch, '.oxfmtrc.json'), readFileSync(join(root, '.oxfmtrc.json')))
+  const dir = join(scratch, 'apps/api/migrations')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, '20260101T000000_immutable.ts'), 'export const x={a:1};')
+  writeFileSync(join(scratch, 'ordinary.ts'), 'export const x={a:1};')
+  const check = (path: string) =>
+    Bun.spawnSync(
+      [join(root, 'node_modules/.bin/oxfmt'), '--check', '--no-error-on-unmatched-pattern', path],
+      {
+        cwd: scratch,
+        timeout: 10_000,
+        killSignal: 'SIGKILL',
+      },
+    )
+  expect(check('apps/api/migrations').exitCode).toBe(0)
+  expect(check('ordinary.ts').exitCode).not.toBe(0)
+})
 
 describe('listMigrations', () => {
   test('lists every migration file in the API, oldest first, with its text', () => {

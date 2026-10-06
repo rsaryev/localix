@@ -61,8 +61,8 @@ const DEFAULT_SESSION_TITLE = 'New Chat'
 
 /**
  * An "empty draft": a root chat with no messages and the default/blank title —
- * i.e. a New Chat the user never used. We reuse these instead of spawning
- * duplicates so a project never accumulates a pile of empty "New Chat" rows.
+ * i.e. a New Chat the user never used. This is eligibility, not ownership: the
+ * creation lane separately limits reuse to its own recent drafts.
  *
  * "No messages" is read from the PERSISTED count, not from `messages`. A list row
  * never carries a body, and switching away evicts the body of the chat you left
@@ -76,11 +76,13 @@ const DEFAULT_SESSION_TITLE = 'New Chat'
 export function isEmptyDraftSession(s: UiSession): boolean {
   return (
     !s.externalAgentProvider &&
+    !s.isArchived &&
+    !s.isPinned &&
     s.sessionKind !== 'subagent' &&
     s.sessionKind !== 'job' &&
     !s.parentSessionId &&
     !s.isRunning &&
-    (s.messageCount ?? 0) === 0 &&
+    s.messageCount === 0 &&
     !(s.messages ?? []).some((message) => message.role !== 'system') &&
     (!s.title?.trim() || s.title.trim() === DEFAULT_SESSION_TITLE)
   )
@@ -208,7 +210,10 @@ export function mergeSessionState(state: ChatStore, next: Partial<ChatStore>): P
       let sameOrder = true
       const changed: UiSession[] = []
       for (let i = 0; i < next.sessions.length; i++) {
-        if (next.sessions[i].id !== prev[i].id) {
+        if (
+          next.sessions[i].id !== prev[i].id ||
+          !sessionBelongsToScope(next.sessions[i], activeProjectId)
+        ) {
           sameOrder = false
           break
         }

@@ -40,6 +40,7 @@ export function createWatchedSessionsReconciler<T extends { id: string; bodyLoad
         generation === mine &&
         active !== null &&
         active !== sessionId &&
+        deps.getSession(sessionId) !== undefined &&
         deps.watchedIds().includes(sessionId)
       )
     }

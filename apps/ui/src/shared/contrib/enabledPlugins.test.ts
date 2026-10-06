@@ -290,7 +290,7 @@ describe('plugin contribution synchronization', () => {
 
   test('a snapshot at the revision already held does not restart dependent catalogs', async () => {
     // The client-side reload key for dependent endpoints (plugin commands, skills)
-    // must not advance for a redundant poke — a replayed `plugins.changed` on
+    // must not advance for a redundant poke — a replayed `resources.changed` on
     // socket reconnect, or two pokes coalesced from one double toggle.
     const settled = source({ revision: 7, plugins: [plugin('sample')] })
     await refetchPluginContrib(settled)

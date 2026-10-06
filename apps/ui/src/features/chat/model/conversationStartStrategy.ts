@@ -20,10 +20,9 @@ export type ConversationParticipantStrategy =
  * independent is what lets a rail button, an agent-group plus and an implicit first send
  * share one creation pipeline without smuggling location-specific booleans into it.
  *
- * There is deliberately no "always fresh" axis. An untouched draft with the same agent in the
- * same scope IS a clean slate, so every entry point reuses it. A fresh mode on the sidebar "+"
- * made that one button mint a new empty chat per click while the rail "+" beside it did not —
- * the same gesture answering two ways, and a pile of empty "New Chat" rows.
+ * Every entry point shares one creation lane. Only a fresh untouched draft created by this
+ * workspace is eligible for reuse, with the same project and exactly one matching participant.
+ * Saved history and drafts created by another workspace never substitute for a new chat.
  */
 export interface ConversationStartStrategy {
   scope: ConversationScopeStrategy

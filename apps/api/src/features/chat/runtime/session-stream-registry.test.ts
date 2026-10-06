@@ -528,7 +528,7 @@ describe('createSessionStreamRegistry', () => {
   })
 })
 
-describe('plugins.changed replay (the plugin-toggle poke)', () => {
+describe('resources.changed replay (the plugin-toggle poke)', () => {
   // It carries no state, so `live-only` looked right. But it is the ONLY signal that
   // refreshes the client's plugin contribution set, and that set is NOT session state —
   // so "a reconnecting client reconciles from the DB anyway" never covered it. Its old
@@ -537,14 +537,14 @@ describe('plugins.changed replay (the plugin-toggle poke)', () => {
   // rail/palette sat on a stale plugin set until the next toggle or a reload.
   test('a toggle published while the firehose was away is replayed on reconnect', () => {
     const registry = createSessionStreamRegistry()
-    registry.publish('u1', '', { type: 'plugins.changed', sessionId: '', revision: 1 })
+    registry.publish('u1', '', { type: 'resources.changed', resources: ['capabilities'] })
 
     const replayed: string[] = []
     const unsubscribe = registry.subscribeAll('u1', (p) => replayed.push(p.event.type), {
       since: '0',
     })
 
-    expect(replayed).toEqual(['plugins.changed'])
+    expect(replayed).toEqual(['resources.changed'])
     unsubscribe()
   })
 
@@ -552,15 +552,15 @@ describe('plugins.changed replay (the plugin-toggle poke)', () => {
     const registry = createSessionStreamRegistry()
     const seen: string[] = []
     const unsubscribe = registry.subscribeAll('u1', (p) => seen.push(p.event.type))
-    registry.publish('u1', '', { type: 'plugins.changed', sessionId: '', revision: 1 })
+    registry.publish('u1', '', { type: 'resources.changed', resources: ['capabilities'] })
 
-    expect(seen).toEqual(['plugins.changed'])
+    expect(seen).toEqual(['resources.changed'])
     unsubscribe()
   })
 
   test("another user's firehose never sees it — the poke is per-user", () => {
     const registry = createSessionStreamRegistry()
-    registry.publish('u1', '', { type: 'plugins.changed', sessionId: '', revision: 1 })
+    registry.publish('u1', '', { type: 'resources.changed', resources: ['capabilities'] })
 
     const seen: string[] = []
     const unsubscribe = registry.subscribeAll('u2', (p) => seen.push(p.event.type), { since: '0' })
@@ -680,14 +680,14 @@ describe('subscribeScoped', () => {
       sessionId: 'background',
     } as unknown as AgentStreamEvent)
     // …and the plugin-set poke, which has an EMPTY publish key no watched set could ever match.
-    registry.publish(userId, '', { type: 'plugins.changed', sessionId: '', revision: 1 })
+    registry.publish(userId, '', { type: 'resources.changed', resources: ['capabilities'] })
 
     expect(seen).toEqual([
       'hitl.requested',
       'plugin.command',
       'terminal.finished',
       'child_session.updated',
-      'plugins.changed',
+      'resources.changed',
     ])
     unsubscribe()
   })
@@ -785,6 +785,8 @@ describe('subscribeScoped', () => {
 describe('ROSTER_EVENT_TYPES', () => {
   const EXPECTED_ROSTER: AgentStreamEvent['type'][] = [
     'session.updated', // the sidebar row itself
+    'session.deleted', // committed removal of the entire conversation tree
+    'resources.changed', // shared read models outside the conversation body
     'child_session.updated', // the sub-session roster + a notification producer
     'run.started', // the running spinner
     'run.completed', // notification: an unattended run finished
@@ -803,7 +805,6 @@ describe('ROSTER_EVENT_TYPES', () => {
     'preview.command', // same, for the `browser` tool
     'preview.updated', // background hosts mount without selecting the conversation
     'preview.closed', // background hosts release without selecting the conversation
-    'plugins.changed', // published with an EMPTY key; no watched set can match it
   ]
 
   test('exactly these frames bypass the watch gate — no more, no fewer', () => {

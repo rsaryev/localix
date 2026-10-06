@@ -129,6 +129,12 @@ seam rather than opening a new turn.
 
 ## Streaming and the read model
 
+[Client/server interaction and workspace synchronization](client-server-sync.md) maps every
+transport, shared read model, window-owned state and recovery rule. Shared resource mutations are
+declared in `bootstrap/resource-sync.ts`; client adapters use `shared/api/resourceSync.ts` over the
+existing socket. Conversation roster events apply directly, while low-frequency resource changes
+coalesce into authoritative reads.
+
 `features/chat/runtime/session-stream-registry.ts` tags each opcode (`replayable`, `watched`).
 `scripts/stream-contract-guard.test.ts` pins the opcode set in both directions. A new server event
 without a handler in `apps/ui/src/shared/api/applyStreamEvent/` (one file per event family, merged

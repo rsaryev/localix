@@ -15,8 +15,8 @@
  *                       roster (`attention.updated`) and journals the notification. The durable
  *                       fact is already on the message row this frame points at (`to: 'user'`),
  *                       which arrived with its own `message.updated`.
- *   plugins.changed   → `agent-runtime.ts` refetches the enabled plugin contributions
- *                       (`startPluginContribSync`) and returns before reaching the store.
+ *   resources.changed → app-level resource sync invalidates the affected read models.
+ *   session.deleted   → the chat store removes rows and releases window-owned state.
  *   attention.updated → `agent-runtime.ts` replaces the user-wide attention roster
  *                       (`features/chat/model/attention/store.ts`) and returns before the store.
  *   plan.presented    → `agent-runtime.ts` opens the plan tab (`features/chat/model/plans.ts`
@@ -29,6 +29,8 @@ import type { StreamReducers } from './types'
 const untouched = (session: UiSession): UiSession => session
 
 export const routedElsewhereReducers: StreamReducers<
+  | 'session.deleted'
+  | 'resources.changed'
   | 'child_session.updated'
   | 'child_session.activity'
   | 'plugin.command'
@@ -39,10 +41,11 @@ export const routedElsewhereReducers: StreamReducers<
   | 'terminal.opened'
   | 'terminal.state'
   | 'user.mentioned'
-  | 'plugins.changed'
   | 'attention.updated'
   | 'plan.presented'
 > = {
+  'session.deleted': untouched,
+  'resources.changed': untouched,
   'child_session.updated': untouched,
   'child_session.activity': untouched,
   'plugin.command': untouched,
@@ -53,7 +56,6 @@ export const routedElsewhereReducers: StreamReducers<
   'terminal.opened': untouched,
   'terminal.state': untouched,
   'user.mentioned': untouched,
-  'plugins.changed': untouched,
   'attention.updated': untouched,
   'plan.presented': untouched,
 }

@@ -122,7 +122,7 @@ export function wireSessionServices({
   })
 
   // The user's whole "waiting on you" set, on every change — user-wide, so published with an
-  // empty session key (delivered to every socket of the user, like `plugins.changed`).
+  // empty session key (delivered to every socket of the user, like `resources.changed`).
   agentNotifications.attention.onChange((userId, items) =>
     chatService.streamRegistry.publish(userId, '', {
       type: 'attention.updated',

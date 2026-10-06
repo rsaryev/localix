@@ -116,17 +116,25 @@ export async function createSession(
   }
 
   await ctx.repo.insertSession(session)
+  const detail = await ctx.getSessionDetail(userId, session.id)
+  const resolved = {
+    ...session,
+    agents: detail.agents ?? session.agents,
+    messageCount: detail.messageCount ?? 0,
+  }
+  // Publish the resolved record to EVERY workspace, including ordinary root chats.
+  if (!session.parentSessionId) ctx.publishSession(resolved)
   if (session.parentSessionId) {
     ctx.streamRegistry.publish(userId, session.parentSessionId, {
       type: 'child_session.updated',
       parentSessionId: session.parentSessionId,
       session: toSessionSummary({
-        ...session,
+        ...resolved,
         rootSessionId: session.rootSessionId ?? session.id,
       }),
     })
   }
-  return ctx.getSessionDetail(userId, session.id)
+  return detail
 }
 
 /** A subagent is exclusively a one-shot delegation, born of the tool call that asked for it. */

@@ -38,7 +38,6 @@ function makeCtx(session: SessionRecord, messages: PersistedMessage[] = []) {
     repo: {
       listSessions: async () => [],
       listSessionAncestry: async () => [],
-      countMessagesByUser: async () => new Map(),
       lastMessagesByUser: async () => new Map(),
       allocateSessionRef: async () => ({ seq: 1, id: 'x' }),
       insertSession: async () => {},

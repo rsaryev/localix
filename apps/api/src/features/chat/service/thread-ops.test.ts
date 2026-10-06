@@ -79,7 +79,6 @@ describe('openMessageThread', () => {
     const lifecycleRepo = {
       listSessions: async () => [],
       listSessionAncestry: async () => [],
-      countMessagesByUser: async () => new Map(),
       allocateSessionRef: async () => ({ seq: 2, id: 'thread' }),
       insertSession: async () => {},
       updateSession: async () => {},
@@ -161,7 +160,6 @@ describe('openMessageThread', () => {
       repo: {
         listSessions: async () => [],
         listSessionAncestry: async () => [],
-        countMessagesByUser: async () => new Map(),
         allocateSessionRef: async () => ({ seq: 2, id: 'thread' }),
         insertSession: async (record: SessionRecord) => {
           born.push(record)

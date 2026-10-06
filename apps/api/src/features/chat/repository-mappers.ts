@@ -14,6 +14,7 @@ import { parseParticipants } from './repository-conversation-participants'
 // the type back).
 
 export const mapSession = (row: {
+  message_count?: number
   id: string
   user_id: string
   seq?: number
@@ -45,6 +46,7 @@ export const mapSession = (row: {
   archived_at?: string | null
   task_name?: string | null
 }): SessionRecord => ({
+  messageCount: row.message_count ?? 0,
   id: row.id,
   userId: row.user_id,
   seq: row.seq ?? 0,
@@ -109,6 +111,7 @@ export const mapMessage = (row: {
  * filled by the live stream — they are not persisted on the record.
  */
 export const toSessionSummary = (record: SessionRecord): SessionSummary => ({
+  messageCount: record.messageCount ?? 0,
   id: record.id,
   seq: record.seq ?? 0,
   title: record.title,

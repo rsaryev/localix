@@ -48,7 +48,6 @@ function makeCtx(
         ancestryReads += 1
         return sessions
       },
-      countMessagesByUser: async () => new Map(),
       allocateSessionRef: async () => ({ seq: 2, id: 'child' }),
       insertSession: async (s: SessionRecord) => {
         inserted = s

@@ -50,6 +50,11 @@ test('defers routine events at the anchored block without remounting text or del
   }
   try {
     await render(message, true)
+    // Streaming Markdown commits on its own cadence; wait for the initial body before
+    // testing whether an arriving notice preserves it. Warnings below still have no wait.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
     const body = host.querySelector('[data-author="agent"]')!
     expect(body).not.toBeNull()
     const growing = {

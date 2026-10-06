@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SecretMeta } from '@localixai/api/client'
 import type { Problem } from '@localixai/plugin-sdk/ui/problems'
 import { secretsApi } from '@/shared/api/secretsApi'
+import { useResourceRevision } from '@/shared/api/useResourceRevision'
 import { createMessageBindingDraft } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { registerUiTarget } from '@/shared/lib/uiTargetRegistry'
@@ -29,6 +30,7 @@ import type { SourceFilter, TypeFilter, VaultSection } from './vaultSections'
  * over a list that loaded is `stale` (what is on screen is just older than the server).
  */
 export function useVaultWorkspace(requestedKey?: string) {
+  const revision = useResourceRevision('vault')
   const [items, setItems] = useState<SecretMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -41,6 +43,7 @@ export function useVaultWorkspace(requestedKey?: string) {
   const [editor, setEditor] = useState<'create' | 'edit' | 'rotate' | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const targetCleanups = useRef(new Map<string, () => void>())
+  const readGeneration = useRef(0)
   const bindTarget = useCallback((key: string, element: HTMLButtonElement | null) => {
     targetCleanups.current.get(key)?.()
     targetCleanups.current.delete(key)
@@ -58,18 +61,23 @@ export function useVaultWorkspace(requestedKey?: string) {
 
   const refresh = useCallback(
     async (quiet = false) => {
+      const generation = ++readGeneration.current
       if (quiet) setRefreshing(true)
       else setLoading(true)
       setError(null)
       try {
         const next = await secretsApi.list()
+        if (generation !== readGeneration.current) return
         setItems(next)
         setSelectedKey((current) => selectionAfterVaultRefresh(next, current, requestedKey))
       } catch (caught) {
+        if (generation !== readGeneration.current) return
         setError(vaultFailure(caught, 'The Vault could not be loaded.'))
       } finally {
-        setLoading(false)
-        setRefreshing(false)
+        if (generation === readGeneration.current) {
+          setLoading(false)
+          setRefreshing(false)
+        }
       }
     },
     [requestedKey],
@@ -77,7 +85,10 @@ export function useVaultWorkspace(requestedKey?: string) {
 
   useEffect(() => {
     void refresh()
-  }, [refresh])
+    return () => {
+      readGeneration.current++
+    }
+  }, [refresh, revision])
 
   useEffect(() => {
     if (requestedKey) setSelectedKey(requestedKey)

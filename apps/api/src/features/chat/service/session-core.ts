@@ -120,6 +120,8 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
   }
 
   const sessionLifecycleCtx: SessionLifecycleCtx = {
+    onSessionsDeleted: (userId, sessionIds) =>
+      streamRegistry.publish(userId, '', { type: 'session.deleted', sessionIds }),
     activeAgentId: runner.activeAgentId,
     cancelAgentTurn: runner.cancelAgentTurn,
     resolveSessionAgent: deps.resolveSessionAgent,

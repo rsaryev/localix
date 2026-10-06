@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import type { SystemToggleState } from '@/shared/api/system-client'
 import { enqueueMicrotask } from '@/shared/lib/enqueueMicrotask'
+import { useResourceRevision } from '@/shared/api/useResourceRevision'
 
 /**
  * Read + flip one host-level system control by id (e.g. 'keep-awake'). Generic —
@@ -9,6 +10,7 @@ import { enqueueMicrotask } from '@/shared/lib/enqueueMicrotask'
  * `available` flag lets callers hide controls the host doesn't support.
  */
 export function useSystemToggle(id: string, enabled = true) {
+  const revision = useResourceRevision('system', enabled)
   const [state, setState] = useState<SystemToggleState | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -27,7 +29,7 @@ export function useSystemToggle(id: string, enabled = true) {
     return () => {
       alive = false
     }
-  }, [id, enabled])
+  }, [id, enabled, revision])
 
   const toggle = useCallback(async () => {
     if (busy || !state) return

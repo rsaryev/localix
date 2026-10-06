@@ -62,7 +62,7 @@ export interface PluginBackendHostDeps {
   /** Plugin text fields with ghost-text completion, side by side (absent in a leaner host). */
   textInputSurfaceRegistry?: TextInputSurfaceRegistry
   /** Called after a reconcile settles (state actually changed on toggle paths) —
-   *  bootstrap publishes the `plugins.changed` stream event through it, so the UI
+   *  bootstrap publishes the `resources.changed` stream event through it, so the UI
    *  never refetches a state whose routes are still half-wired. */
   onSettled?: () => void
   /**

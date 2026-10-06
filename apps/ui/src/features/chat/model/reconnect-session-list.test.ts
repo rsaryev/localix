@@ -40,6 +40,10 @@ const session = (id: string, patch: Partial<UiSession> = {}): UiSession =>
   }) as UiSession
 
 describe('reconnect session-list reconciliation', () => {
+  test('a snapshot started before deletion cannot resurrect the removed row', () => {
+    const row = session('deleted')
+    expect(reconcileSessionListAfterReconnect([row], [], [row])).toEqual([])
+  })
   test('updates summary fields without wiping detail and live-only state', () => {
     const interaction = { request: { id: 'ask-2' } } as never
     const current = session('s1', {

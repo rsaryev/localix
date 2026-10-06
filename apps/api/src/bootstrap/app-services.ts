@@ -1,3 +1,4 @@
+import { installResourceSync } from './resource-sync'
 import { createAuxAssistServices } from '../boot/aux-assist'
 import { buildSearchService } from '../boot/search'
 import { createBootShellCommandService } from '../boot/shell-command'
@@ -269,6 +270,17 @@ export function createAppServicesPhase({
     mcpService,
     agentsService,
     catalogService,
+  })
+
+  installResourceSync({
+    chatService,
+    projectsService,
+    userService,
+    providerConnectionsService,
+    agentsService,
+    secretsService,
+    systemService,
+    defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
   })
 
   return {
