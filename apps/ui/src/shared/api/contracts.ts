@@ -337,8 +337,9 @@ export interface Message {
    * instead of drifting to the bottom. `null` = before the first message.
    */
   afterMessageId?: string | null
-  /** Position captured while an assistant reply was still growing. Client-only notices
-   * render at this boundary inside the reply, rather than after its eventual final item. */
+  /** Arrival position captured while an assistant reply was growing. Items are
+   * rendered whole; routine notices wait for their narrative item to close.
+   * Character offsets are provenance, never Markdown split points. */
   withinMessage?: { itemId?: string; textOffset?: number; contentOffset?: number }
   /** Projection-only notices rendered between this reply's items. Never sent to the API. */
   inlineNotices?: Message[]

@@ -4,94 +4,64 @@ import type { Message } from '../model/types'
 export type InlineSegment =
   | { kind: 'body'; items?: AgentItem[]; content?: string }
   | { kind: 'notice'; message: Message }
+  | { kind: 'pending'; messages: Message[] }
 
-type Boundary = { index: number; offset: number; notice: Message; order: number }
-type Position = Pick<Boundary, 'index' | 'offset'>
-
-function hasText(item: AgentItem): item is Extract<AgentItem, { type: 'text' | 'reasoning' }> {
-  return item.type === 'text' || item.type === 'reasoning'
+function needsAttention(message: Message): boolean {
+  const notice = message.systemNotice
+  return Boolean(notice?.tone === 'warning' || notice?.tone === 'error' || notice?.recovery?.length)
 }
 
-function between(items: AgentItem[], start: Position, end: Position): AgentItem[] {
-  const result: AgentItem[] = []
-  for (let index = start.index; index <= end.index && index < items.length; index += 1) {
-    const item = items[index]!
-    if (hasText(item)) {
-      const from = index === start.index ? start.offset : 0
-      const to = index === end.index ? end.offset : item.text.length
-      if (to <= from) continue
-      result.push(
-        from === 0 && to === item.text.length
-          ? item
-          : { ...item, id: `${item.id}:inline:${from}`, text: item.text.slice(from, to) },
-      )
-    } else if (index < end.index) {
-      result.push(item)
-    }
-  }
-  return result
-}
-
-/** Divide the visible body at the boundaries captured when notices arrived.
- * This does not mutate the stored assistant message or its model-facing items. */
-export function inlineNoticeSegments(message: Message): InlineSegment[] {
+/** Arrival anchors select explicit agent-item boundaries, never character offsets.
+ * Ordinary notices wait for a growing narrative item to close; important notices
+ * remain visible immediately. All state is derived from the current bounded
+ * transcript: no timers, subscriptions, retained queues or Markdown heuristics. */
+export function inlineNoticeSegments(message: Message, isStreaming = false): InlineSegment[] {
   const notices = message.inlineNotices ?? []
-  if (!notices.length) return [{ kind: 'body', items: message.items, content: message.content }]
   const items = message.items ?? []
-  if (!items.length) {
-    const content = message.content ?? ''
-    const boundaries = notices
-      .map((notice, order) => ({
-        notice,
-        order,
-        offset: Math.min(content.length, Math.max(0, notice.withinMessage?.contentOffset ?? 0)),
-      }))
-      .sort((a, b) => a.offset - b.offset || a.order - b.order)
-    const segments: InlineSegment[] = []
-    let offset = 0
-    for (const boundary of boundaries) {
-      if (boundary.offset > offset) {
-        segments.push({ kind: 'body', content: content.slice(offset, boundary.offset) })
-      }
-      segments.push({ kind: 'notice', message: boundary.notice })
-      offset = boundary.offset
-    }
-    if (offset < content.length) segments.push({ kind: 'body', content: content.slice(offset) })
-    return segments
-  }
+  if (!notices.length) return [{ kind: 'body', items: message.items, content: message.content }]
 
-  const boundaries: Boundary[] = notices
+  const end = items.length || 1
+  const indices = new Map(items.map((item, index) => [item.id, index]))
+  const boundaries = notices
     .map((notice, order) => {
-      const itemIndex = items.findIndex((item) => item.id === notice.withinMessage?.itemId)
-      if (itemIndex < 0) {
-        return {
-          index: notice.withinMessage?.itemId ? items.length : 0,
-          offset: 0,
-          notice,
-          order,
-        }
-      }
-      const item = items[itemIndex]!
-      if (!hasText(item)) return { index: itemIndex + 1, offset: 0, notice, order }
-      const offset = Math.min(
-        item.text.length,
-        Math.max(0, notice.withinMessage?.textOffset ?? item.text.length),
-      )
-      return offset === item.text.length
-        ? { index: itemIndex + 1, offset: 0, notice, order }
-        : { index: itemIndex, offset, notice, order }
+      const itemId = notice.withinMessage?.itemId
+      const itemIndex = itemId ? indices.get(itemId) : undefined
+      const beforeBody = !itemId && notice.withinMessage?.contentOffset === 0
+      const index = itemIndex === undefined ? (beforeBody ? 0 : end) : itemIndex + 1
+      const item = itemIndex === undefined ? undefined : items[itemIndex]
+      const growing =
+        isStreaming &&
+        !beforeBody &&
+        (items.length === 0 ||
+          (itemIndex === items.length - 1 &&
+            (item?.type === 'text' || item?.type === 'reasoning') &&
+            item.status === 'running'))
+      return { index, notice, order, pending: growing && !needsAttention(notice) }
     })
-    .sort((a, b) => a.index - b.index || a.offset - b.offset || a.order - b.order)
+    .sort((a, b) => a.index - b.index || a.order - b.order)
 
   const segments: InlineSegment[] = []
-  let start: Position = { index: 0, offset: 0 }
+  const pending: Message[] = []
+  let start = 0
   for (const boundary of boundaries) {
-    const portion = between(items, start, boundary)
-    if (portion.length) segments.push({ kind: 'body', items: portion })
-    segments.push({ kind: 'notice', message: boundary.notice })
-    start = boundary
+    if (boundary.index > start) {
+      segments.push(
+        items.length
+          ? { kind: 'body', items: items.slice(start, boundary.index) }
+          : { kind: 'body', content: message.content },
+      )
+    }
+    if (boundary.pending) pending.push(boundary.notice)
+    else segments.push({ kind: 'notice', message: boundary.notice })
+    start = boundary.index
   }
-  const remainder = between(items, start, { index: items.length, offset: 0 })
-  if (remainder.length) segments.push({ kind: 'body', items: remainder })
+  if (start < end) {
+    segments.push(
+      items.length
+        ? { kind: 'body', items: items.slice(start) }
+        : { kind: 'body', content: message.content },
+    )
+  }
+  if (pending.length) segments.push({ kind: 'pending', messages: pending })
   return segments
 }

@@ -83,6 +83,7 @@ function terminalLifecycleNotice(
   terminalLifecycleCounter += 1
   const notice = {
     id: `sys-terminal-${kind}-${Date.now()}-${terminalLifecycleCounter}`,
+    createdAt: new Date().toISOString(),
     role: 'system' as const,
     clientOnly: true as const,
     afterMessageId: anchor?.id ?? null,
@@ -175,6 +176,7 @@ export const noticeReducers: StreamReducers<
     const anchorMsg = [...session.messages].reverse().find((m) => m.role !== 'system')
     const notice = {
       id: `sys-hook_notice-${Date.now()}-${hookNoticeCounter}`,
+      createdAt: new Date().toISOString(),
       role: 'system' as const,
       clientOnly: true as const,
       afterMessageId: anchorMsg?.id ?? null,

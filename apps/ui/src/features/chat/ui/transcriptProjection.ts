@@ -62,7 +62,7 @@ function buildTranscriptProjection(messages: readonly Message[]): ProjectionResu
     }
     const after = byAnchor.get(message.id)
     // A live assistant can keep appending items after this notice was emitted.
-    // Render those notices at their captured item/text offset inside the card;
+    // Keep those notices inside the card at explicit item boundaries;
     // ordinary notices still occupy their own transcript row after the message.
     const inline =
       message.role === 'assistant'

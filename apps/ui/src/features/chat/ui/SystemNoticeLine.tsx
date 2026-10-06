@@ -22,6 +22,7 @@ import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUiAction } from '@/shared/lib/uiNavigation'
 import type { SystemNoticeRecovery } from '@/shared/api/contracts'
 import type { SystemNotice, SystemNoticeKind, SystemNoticeTone } from '../model/types'
+import { messageClock } from '../model/messageTime'
 import { cleanSystemMessageText } from '../model/systemMessageText'
 import { PERMISSION_MODE_PRESENTATION } from './prompt-input/permissionModeIcons'
 
@@ -116,12 +117,16 @@ function RecoveryLink({ recovery }: { recovery: SystemNoticeRecovery }) {
  */
 export const SystemNoticeLine = memo(function SystemNoticeLine({
   notice,
+  createdAt,
   onRetry,
 }: {
   notice: SystemNotice
+  /** Local reception time; independent of deferred display. */
+  createdAt?: string
   /** Re-run the turn this notice is about. Absent = the surface cannot run anything. */
   onRetry?: () => void
 }) {
+  const clock = messageClock(createdAt)
   const text = cleanSystemMessageText(notice.text)
   const detail = notice.detail ? cleanSystemMessageText(notice.detail) : undefined
   const recoveries = notice.recovery ?? []
@@ -142,6 +147,11 @@ export const SystemNoticeLine = memo(function SystemNoticeLine({
       // other: it carries the person's own note, and a clamp would cut their words mid-sentence.
       wrap={Boolean(retry) || links.length > 0 || notice.kind === 'plan_approved'}
     >
+      {clock && (
+        <time dateTime={createdAt} className="shrink-0 tabular-nums text-text-faint">
+          {clock}
+        </time>
+      )}
       {retry && (
         <button type="button" onClick={retry} className={ACTION_CLASS}>
           <RotateCw className="size-3" aria-hidden="true" />

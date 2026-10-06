@@ -7,6 +7,20 @@ agent chooses one form over another.
 **Scope:** The system prompt describes these constructs only to chat runs whose reply is read in the
 Localix transcript. Channel sessions, sub-agents and automations are not told about them.
 
+## System events in replies
+
+System events received during a reply keep their arrival anchors and appear between the agent's
+explicit output blocks. Text, code and reasoning are never cut at a character offset. Ordinary
+events received in a growing text or reasoning block wait until that block closes or the next output
+block starts; a quiet line shows how many events were received. Warnings, errors and events with
+recovery actions are visible immediately after the current block.
+
+Each new hook or terminal event records its local reception time, shown beside its system line.
+Events at the same boundary retain their arrival order. Completion does not reposition events that
+were already shown. Flat replies without item boundaries keep their text whole; events received
+before the text stay before it, and other events follow it. Events after a completed reply remain
+separate timeline rows.
+
 ## Terminology
 
 | Term    | Meaning                                                               | Boundary                                                 |

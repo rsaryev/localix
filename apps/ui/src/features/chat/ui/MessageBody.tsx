@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from 'react'
 import { Fragment } from 'react'
+import { Info } from 'lucide-react'
 import { TaskScope } from '@/shared/ui/MarkdownTaskList'
 import type { AgentItem } from '@localixai/agent/agents'
 import { isTextItem } from '@localixai/agent/agents/items'
@@ -10,7 +11,7 @@ import { TextBubble } from './MessageBubbles'
 import { ToolChain } from './tool-parts/ToolChain'
 import { projectMessageItems } from './messageItemProjection'
 import { inlineNoticeSegments } from './inlineNoticeSegments'
-import { SystemNoticeLine } from './SystemNoticeLine'
+import { SystemLine, SystemNoticeLine } from './SystemNoticeLine'
 import { messageDisplayText } from '../model/messageDisplayText'
 
 /**
@@ -36,6 +37,44 @@ export function MessageBody({
   /** The conversation's members, for clickable `@handle` mentions. Absent in a one-to-one. */
   mentionHandles?: readonly string[]
 }): ReactNode {
+  const segments = inlineNoticeSegments(message, isStreaming)
+  const lastBodyIndex = segments.findLastIndex((segment) => segment.kind === 'body')
+  // Stable block keys keep existing text and open tools mounted when an event arrives.
+  return segments.map((segment, index) =>
+    segment.kind === 'notice' ? (
+      <SystemNoticeLine
+        key={segment.message.id}
+        notice={segment.message.systemNotice!}
+        createdAt={segment.message.createdAt}
+      />
+    ) : segment.kind === 'pending' ? (
+      <SystemLine
+        key="pending-notices"
+        icon={Info}
+        text={`${segment.messages.length} system ${segment.messages.length === 1 ? 'event' : 'events'} received`}
+        title="Shown when the current text block finishes"
+      />
+    ) : (
+      <Fragment key={segment.items?.[0]?.id ?? 'content'}>
+        {renderMessageBody({
+          message: { ...message, items: segment.items, content: segment.content },
+          isUser,
+          isStreaming: isStreaming && index === lastBodyIndex,
+          isLast: isLast && index === lastBodyIndex,
+          mentionHandles,
+        })}
+      </Fragment>
+    ),
+  )
+}
+
+function renderMessageBody({
+  message,
+  isUser,
+  isStreaming,
+  isLast,
+  mentionHandles,
+}: Parameters<typeof MessageBody>[0]): ReactNode {
   const messageId = message.id
   // An agent's checklist is tickable (`MarkdownTaskList.tsx`); a person's own message is not,
   // and neither is a reply still streaming — its boxes may yet move.
@@ -52,30 +91,6 @@ export function MessageBody({
         {bubble}
       </TaskScope>
     )
-  if (message.inlineNotices?.length) {
-    const segments = inlineNoticeSegments(message)
-    const lastBodyIndex = segments.findLastIndex((segment) => segment.kind === 'body')
-    return segments.map((segment, index) =>
-      segment.kind === 'notice' ? (
-        <SystemNoticeLine key={segment.message.id} notice={segment.message.systemNotice!} />
-      ) : (
-        <Fragment key={`body-${index}`}>
-          {MessageBody({
-            message: {
-              ...message,
-              inlineNotices: undefined,
-              items: segment.items,
-              content: segment.content,
-            },
-            isUser,
-            isStreaming: isStreaming && index === lastBodyIndex,
-            isLast: isLast && index === lastBodyIndex,
-            mentionHandles,
-          })}
-        </Fragment>
-      ),
-    )
-  }
   // Render items in order: consecutive tool-backed items batch into ONE
   // ToolChain; consecutive reasoning parts batch into ONE disclosure. Text and
   // tools remain hard boundaries, yielding chain → reasoning → text → new chain.

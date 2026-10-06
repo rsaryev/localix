@@ -44,3 +44,50 @@ describe('a hook notice on the transcript', () => {
     ).toBe('Hook: PostToolUse\n3 errors')
   })
 })
+
+describe('bounded notice reception metadata', () => {
+  test('records hook reception time and still evicts notices at the existing cap', () => {
+    let current = session
+    for (let index = 0; index < 8; index += 1) {
+      current = noticeReducers['hook.notice'](current, {
+        type: 'hook.notice',
+        sessionId: 'S1',
+        hookEvent: 'PostToolUse',
+        message: `Event ${index}`,
+      })
+    }
+    expect(current.messages).toHaveLength(5)
+    expect(current.messages[0]?.systemNotice?.text).toBe('Event 3')
+    for (const message of current.messages) {
+      expect(Number.isNaN(Date.parse(message.createdAt!))).toBe(false)
+    }
+  })
+
+  test('terminal replay retains reception time and never creates another event', () => {
+    const event = {
+      type: 'terminal.finished' as const,
+      sessionId: 'S1',
+      terminalId: 'pty',
+      exitCode: 0,
+    }
+    const once = noticeReducers['terminal.finished'](session, event)
+    expect(Number.isNaN(Date.parse(once.messages[0]!.createdAt!))).toBe(false)
+    const replayed = noticeReducers['terminal.finished'](once, event)
+    expect(replayed.messages).toEqual(once.messages)
+    expect(replayed.messages[0]!.createdAt).toBe(once.messages[0]!.createdAt)
+  })
+
+  test('terminal events retain the existing bounded history', () => {
+    let current = session
+    for (let index = 0; index < 24; index += 1) {
+      current = noticeReducers['terminal.finished'](current, {
+        type: 'terminal.finished',
+        sessionId: 'S1',
+        terminalId: `pty-${index}`,
+        exitCode: 0,
+      })
+    }
+    expect(current.messages).toHaveLength(20)
+    expect(current.messages[0]?.terminalLifecycle?.terminalId).toBe('pty-4')
+  })
+})

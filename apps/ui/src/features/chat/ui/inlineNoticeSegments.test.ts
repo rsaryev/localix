@@ -13,18 +13,25 @@ const assistant = (items: unknown[]): Message =>
   ({ id: 'assistant-1', role: 'assistant', items }) as Message
 const session = (message: Message): UiSession =>
   ({ id: 'sess-1', isRunning: true, messages: [message] }) as UiSession
-const text = (id: string, value: string) => ({ id, type: 'text', status: 'completed', text: value })
+const text = (id: string, value: string) => ({
+  id,
+  type: 'text' as const,
+  status: 'completed' as const,
+  text: value,
+})
 const tool = (id: string) => ({ id, type: 'tool_call', status: 'running', name: 'bash' })
 const body = (message: Message) =>
   inlineNoticeSegments(message).map((segment) =>
     segment.kind === 'notice'
       ? segment.message.systemNotice?.text
-      : (segment.items?.map((item) => ('text' in item ? item.text : item.id)).join('') ??
-        segment.content),
+      : segment.kind === 'pending'
+        ? `pending:${segment.messages.length}`
+        : (segment.items?.map((item) => ('text' in item ? item.text : item.id)).join('') ??
+          segment.content),
   )
 
 describe('notices inside a growing assistant reply', () => {
-  test('keeps a hook system message beside the item that triggered it', () => {
+  test('keeps a hook notice at its captured output-block boundary', () => {
     let current = session(assistant([text('first', 'Working')]))
     current = applyStreamEventToSession(
       current,
@@ -49,7 +56,7 @@ describe('notices inside a growing assistant reply', () => {
     ])
   })
 
-  test('the terminal exit stays between tools even as the same reply grows', () => {
+  test('keeps terminal events beside their tool boundary as later text arrives', () => {
     let current = session(assistant([text('intro', 'Before'), tool('first-tool')]))
     current = applyStreamEventToSession(
       current,
@@ -78,7 +85,7 @@ describe('notices inside a growing assistant reply', () => {
     ])
   })
 
-  test('preserves the in-reply boundary through a whole-body refetch', () => {
+  test('keeps notices below the reply through a whole-body refetch', () => {
     let current = session(assistant([text('part', 'Before')]))
     current = applyStreamEventToSession(
       current,
@@ -87,10 +94,10 @@ describe('notices inside a growing assistant reply', () => {
     const fresh = session(assistant([text('part', 'Before and after')]))
     const merged = mergeSessionBody(current, fresh)
     const projected = createTranscriptProjectionSelector()(merged.messages)
-    expect(body(projected[0]!)).toEqual(['Before', 'Background terminal finished', ' and after'])
+    expect(body(projected[0]!)).toEqual(['Before and after', 'Background terminal finished'])
   })
 
-  test('cuts a growing text item at the exact arrival offset, including repeated notices', () => {
+  test('keeps text whole and repeated notices visible in arrival order', () => {
     let current = session(assistant([text('part', 'Hello')]))
     current = applyStreamEventToSession(
       current,
@@ -111,18 +118,20 @@ describe('notices inside a growing assistant reply', () => {
     }
     const projected = createTranscriptProjectionSelector()(current.messages)
     expect(body(projected[0]!)).toEqual([
-      'Hello',
+      'Hello world!',
       'Interacted with background terminal',
-      ' world',
       'Interacted with background terminal',
-      '!',
     ])
     const html = renderToStaticMarkup(MessageBody({ message: projected[0]!, isUser: false }))
-    expect(html.indexOf('Hello')).toBeLessThan(html.indexOf('Interacted with background terminal'))
-    expect(html.indexOf('Interacted with background terminal')).toBeLessThan(html.indexOf('world'))
+    expect(html).toContain('Hello world!')
+    expect(html).not.toContain('System events')
+    expect(html.match(/Interacted with background terminal<\/span>/g)).toHaveLength(2)
+    expect(html.indexOf('Hello world!')).toBeLessThan(
+      html.indexOf('Interacted with background terminal'),
+    )
   })
 
-  test('places a notice before content that arrives after an empty assistant skeleton', () => {
+  test('keeps flat content whole when it arrives after an empty assistant skeleton', () => {
     let current = session({ id: 'assistant-1', role: 'assistant', content: '' })
     current = applyStreamEventToSession(
       current,
@@ -135,6 +144,97 @@ describe('notices inside a growing assistant reply', () => {
     expect(body(createTranscriptProjectionSelector()(current.messages)[0]!)).toEqual([
       'Background terminal finished',
       'Later',
+    ])
+  })
+
+  test('does not split Markdown fences or change text item identity', () => {
+    const item = text('code', '```ts\nconst value = 42\n```')
+    const message = assistant([item])
+    message.inlineNotices = [
+      {
+        id: 'notice',
+        role: 'system',
+        withinMessage: { itemId: 'code', textOffset: 12 },
+        systemNotice: { kind: 'terminal_activity', tone: 'neutral', text: 'Finished' },
+      },
+    ]
+    const segments = inlineNoticeSegments(message)
+    expect(segments).toHaveLength(2)
+    expect(segments[0]).toEqual({ kind: 'body', items: [item] })
+    if (segments[0]?.kind === 'body') expect(segments[0].items?.[0]).toBe(item)
+    const html = renderToStaticMarkup(MessageBody({ message, isUser: false }))
+    expect(html.match(/<pre\b/g)).toHaveLength(1)
+    expect(html.replace(/<[^>]*>/g, '')).toContain('const value = 42')
+  })
+
+  test('defers routine events until an explicit narrative block closes, with no text slicing', () => {
+    const item = { ...text('part', 'An unfinished **sentence'), status: 'running' as const }
+    const message = assistant([item])
+    message.inlineNotices = [
+      {
+        id: 'event',
+        role: 'system',
+        withinMessage: { itemId: 'part', textOffset: 4 },
+        systemNotice: { kind: 'terminal_activity', tone: 'neutral', text: 'Done' },
+      },
+    ]
+    expect(inlineNoticeSegments(message, true).map((segment) => segment.kind)).toEqual([
+      'body',
+      'pending',
+    ])
+    const grown = { ...message, items: [{ ...item, text: 'An unfinished **sentence**.' }] }
+    expect(inlineNoticeSegments(grown, true)[0]).toEqual({ kind: 'body', items: grown.items })
+    expect(inlineNoticeSegments(grown, true)[1]?.kind).toBe('pending')
+    const closed = { ...grown, items: [{ ...grown.items[0]!, status: 'completed' as const }] }
+    expect(inlineNoticeSegments(closed, true)[1]?.kind).toBe('notice')
+    const continued = { ...grown, items: [...grown.items, text('next', 'Next block')] }
+    expect(inlineNoticeSegments(continued, true).map((segment) => segment.kind)).toEqual([
+      'body',
+      'notice',
+      'body',
+    ])
+    expect(inlineNoticeSegments(continued, false)).toEqual(inlineNoticeSegments(continued, true))
+  })
+
+  test('warning and recovery events are never deferred, even while their text block grows', () => {
+    const message = assistant([{ ...text('part', 'Working'), status: 'running' }])
+    message.inlineNotices = [
+      {
+        id: 'warn',
+        role: 'system',
+        withinMessage: { itemId: 'part' },
+        systemNotice: { kind: 'hook_notice', tone: 'warning', text: 'Warning' },
+      },
+      {
+        id: 'action',
+        role: 'system',
+        withinMessage: { itemId: 'part' },
+        systemNotice: { kind: 'run_failed', tone: 'neutral', text: 'Retry', recovery: ['retry'] },
+      },
+    ]
+    expect(inlineNoticeSegments(message, true).map((segment) => segment.kind)).toEqual([
+      'body',
+      'notice',
+      'notice',
+    ])
+  })
+
+  test('missing anchors keep events visible, and evicted notices leave no retained queue', () => {
+    const message = assistant([text('part', 'Text')])
+    message.inlineNotices = [
+      {
+        id: 'missing',
+        role: 'system',
+        withinMessage: { itemId: 'removed' },
+        systemNotice: { kind: 'terminal_activity', tone: 'neutral', text: 'Done' },
+      },
+    ]
+    expect(inlineNoticeSegments(message, true).map((segment) => segment.kind)).toEqual([
+      'body',
+      'notice',
+    ])
+    expect(inlineNoticeSegments({ ...message, inlineNotices: [] }, true)).toEqual([
+      { kind: 'body', items: message.items, content: message.content },
     ])
   })
 

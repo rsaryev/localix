@@ -418,7 +418,11 @@ function MessageListImpl({
               ) : m.role === 'system' && m.systemNotice ? (
                 // The same re-run the message actions offer — a notice that asks for a
                 // decision gets the control to make it, not a second mechanism.
-                <SystemNoticeLine notice={m.systemNotice} onRetry={onRegenerate} />
+                <SystemNoticeLine
+                  notice={m.systemNotice}
+                  createdAt={m.createdAt}
+                  onRetry={onRegenerate}
+                />
               ) : m.uiOnly ? (
                 <LabelDivider role="presentation" className="py-1">
                   {m.content}
