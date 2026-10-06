@@ -36,7 +36,9 @@ export function ChatSidebarHeader({
       : 'Search external sessions'
   return (
     <PanelHeader
-      title={<ScopeSwitcher scopeName={scopeName} onOpen={onOpenScopeSwitcher} />}
+      title={
+        local ? <ScopeSwitcher scopeName={scopeName} onOpen={onOpenScopeSwitcher} /> : 'History'
+      }
       actions={
         <>
           {local && <ChatSidebarViewMenu {...viewMenu} />}

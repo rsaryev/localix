@@ -88,7 +88,7 @@ function delegationLines(stats: ExternalAgentStats): string[] {
   if (stats.byParent.length === 0) return []
   return [
     '',
-    'Most delegating sessions (pass a key as "parentKey" to list its sub-agents):',
+    'Most delegating sessions (pass a key as "parent_key" to list its sub-agents):',
     ...stats.byParent.map((b) => `- ${b.key}: ${b.sessions} sub-agent(s) · ${b.label ?? ''}`),
   ]
 }

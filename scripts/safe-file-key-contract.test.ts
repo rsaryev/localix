@@ -274,7 +274,14 @@ describe('safe-file-key contract', () => {
    * the lossiness going unnoticed. (Same source-reading idiom as the claims above.)
    */
   test('TRIPWIRE — userId is still self-asserted, which is the ONLY reason safeFileKey may be lossy', async () => {
-    const [appTs] = await scanSources({ root: REPO_ROOT, include: ['apps/api/src/app.ts'] })
+    const sources = await scanSources({
+      root: REPO_ROOT,
+      include: ['apps/api/src/app.ts', 'apps/api/src/lib/request-boundary.ts'],
+    })
+    const appTs = sources.find((source) => source.file === 'apps/api/src/app.ts')
+    const boundary = sources.find(
+      (source) => source.file === 'apps/api/src/lib/request-boundary.ts',
+    )
 
     /**
      * The exact shape of "unauthenticated": take the header, fall back to the default user.
@@ -289,10 +296,15 @@ describe('safe-file-key contract', () => {
      * tracks the new call shape.
      */
     const SELF_ASSERTED =
-      /c\.set\(\s*'userId'\s*,\s*resolveRequestUserId\(\s*c\.req\.header\('x-user-id'\)\s*,\s*deps\.defaultUserId\s*\)\s*\)/
+      /c\.set\(\s*'userId'\s*,\s*resolveRequestUserId\(\s*c\.req\.header\('x-user-id'\)\s*,\s*defaultUserId\s*\)\s*\)/
+    const MOUNTED =
+      /app\.use\('\*',\s*createRequestBoundary\(deps\.defaultUserId,\s*deps\.logger\)\)/
+    // A changed identity or an unmounted helper must trip the guard rather than pass on dead code.
+    expect(SELF_ASSERTED.test("c.set('userId', authenticatedUser())")).toBe(false)
+    expect(MOUNTED.test("app.use('*', authenticatedBoundary())")).toBe(false)
 
     expect(
-      SELF_ASSERTED.test(appTs?.code ?? ''),
+      MOUNTED.test(appTs?.code ?? '') && SELF_ASSERTED.test(boundary?.code ?? ''),
       [
         '',
         'The way a request gets its `userId` (apps/api/src/app.ts) has CHANGED.',

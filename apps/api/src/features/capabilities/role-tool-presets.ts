@@ -9,6 +9,7 @@ const SHARED = [
   TOOL.tool_output,
   TOOL.memory,
   TOOL.history_search,
+  TOOL.external_agent_sessions,
   TOOL.skill,
   TOOL.agents,
   TOOL.conversation_control,
@@ -34,7 +35,10 @@ export const ROLE_TOOL_PRESETS: Readonly<Record<string, readonly string[]>> = {
 
 /** The pre-audit v10 roster is known, so untouched installations can migrate safely. */
 export const LEGACY_ROLE_TOOL_PRESETS = Object.fromEntries(
-  Object.keys(ROLE_TOOL_PRESETS).map((handle) => [handle, BUILTIN_TOOL_NAMES]),
+  Object.keys(ROLE_TOOL_PRESETS).map((handle) => [
+    handle,
+    BUILTIN_TOOL_NAMES.filter((name) => name !== TOOL.external_agent_sessions),
+  ]),
 )
 
 export function roleArtifactRules(handle: string): Rule[] {

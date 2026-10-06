@@ -192,7 +192,10 @@ test('homepage claims stay assigned to their owning guides', () => {
     'Learning Studio': 'features--learning-loop',
     Documents: 'features--documents',
     'API Client': 'features--api',
-    'External Agents': 'recipes--bring-your-own-agent-cli',
+    'Your CLI history beside Localix chats': 'features--external-agents',
+    'Read, import, or continue the native session': 'features--external-agents',
+    'Link a conversation instead of pasting it': 'features--external-agents',
+    'See external activity in the same statistics view': 'features--external-agents',
     Games: 'features--game-2048',
   })
 })

@@ -63,12 +63,6 @@ export const PLUGINS: PluginShowcase[] = [
     anchor: 'what-you-can-do',
   },
   {
-    title: 'External Agents',
-    body: 'Launch Claude Code or Codex, follow live delegations, and inspect bounded local history from supported coding-agent CLIs.',
-    slug: 'recipes--bring-your-own-agent-cli',
-    anchor: 'what-you-can-do',
-  },
-  {
     title: 'Games',
     body: 'Chess, Checkers, Battleship, Tic-tac-toe, and 2048, played against the agent on a board that lives in the chat.',
     slug: 'features--game-2048',

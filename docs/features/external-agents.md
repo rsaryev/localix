@@ -44,6 +44,14 @@ session key and a pointer to `external_agent_sessions`. It can read additional t
 inspect recorded tool calls and results, and collect context from several sessions. The digest
 states what it omitted; it does not pretend to contain the full history.
 
+The tool's model-facing fields use snake case. For example, one transcript window is:
+
+```json
+{ "action": "transcript", "key": "codex:session-id", "from": 0, "max_events": 100 }
+```
+
+Advance `from` using the returned event positions, or use `tail: true` to read the latest events.
+
 For agents with shell access, the runtime prompt includes a short list of installed external agents
 and their basic launch commands. Starting or driving a CLI still goes through ordinary terminal
 tools and permission rules. Linking history does not execute commands.

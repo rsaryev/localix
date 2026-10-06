@@ -79,9 +79,16 @@ export function StatsFilterBar({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Segmented aria-label="Time range" options={RANGES} value={range} onChange={onRange} />
+        <Segmented
+          aria-label="Time range"
+          className="w-max shrink-0"
+          options={RANGES}
+          value={range}
+          onChange={onRange}
+        />
         <Segmented
           aria-label="Group usage by"
+          className="w-max shrink-0"
           options={GROUPS}
           value={groupBy}
           onChange={onGroupBy}

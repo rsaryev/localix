@@ -28,7 +28,13 @@ function inertTool(name: string): AgentTool {
  * implementations; the rest use their named dependency/option ports.
  */
 const maximalRegistryOptions = {
-  policy: { extraTools: [inertTool('mcp_resources'), inertTool('vault')] },
+  policy: {
+    extraTools: [
+      inertTool('mcp_resources'),
+      inertTool('vault'),
+      inertTool('external_agent_sessions'),
+    ],
+  },
   optional: {
     memory: inertTool('memory'),
     history_search: inertTool('history_search'),

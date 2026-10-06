@@ -275,6 +275,8 @@ export function Segmented<T extends string>({
   options: readonly { id: T; label: string }[]
   value: T
   onChange: (value: T) => void
+  /** Layout classes for the track, such as intrinsic sizing inside a wrapping toolbar. */
+  className?: string
 }) {
   return (
     <SegmentedRadioGroup

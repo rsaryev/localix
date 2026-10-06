@@ -185,9 +185,7 @@ export function buildExecutionDiscipline(
       `- Never call ${metaTools.join('/')} as a capability demonstration or self-test. These utilities have persistent side effects; use them only when the task requires them.`,
     )
   }
-  lines.push(
-    '- Before finalizing, check correctness, evidence, requested format, and remaining side effects.',
-  )
+  lines.push('- Before replying, verify the outcome, format, evidence and side effects.')
 
   return lines.join('\n')
 }

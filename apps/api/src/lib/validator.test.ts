@@ -151,7 +151,8 @@ describe('every plugin router reaches the validator through the SDK', () => {
   test('positive control: plugin routers really do validate through it', () => {
     // The first check passes trivially if the walk found nothing, or if routers stopped validating.
     const users = pluginSources().filter((file) => codeOf(file).includes('routeValidator('))
-    expect(users.length).toBeGreaterThanOrEqual(10)
+    // External history is now a core router using the core validator; nine plugins remain.
+    expect(users.length).toBeGreaterThanOrEqual(9)
     // …and the detector fires on the import it exists to forbid.
     expect(RAW.test("import { zValidator } from '@hono/zod-validator'")).toBe(true)
     expect(RAW.test("import { validator } from 'hono/validator'")).toBe(true)

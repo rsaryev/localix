@@ -763,7 +763,7 @@ describe('the tool prints the fan-out its own schema points at', () => {
     expect(result.content).toContain('claude-code:p1')
     expect(result.content).toContain('208 sub-agent(s)')
     // The key is only useful if the caller is told what to do with it.
-    expect(result.content).toContain('parentKey')
+    expect(result.content).toContain('parent_key')
   })
 
   test('nothing delegated means no heading, rather than an empty one', async () => {

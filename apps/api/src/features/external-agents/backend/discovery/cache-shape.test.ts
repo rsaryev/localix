@@ -89,7 +89,9 @@ const PINNED = [
 const PINNED_AT_VERSION = 8
 
 describe('a stored summary cannot change shape without discarding the cache', () => {
-  const source = readFileSync(CONTRACTS, 'utf8')
+  const source = [CONTRACTS, join(import.meta.dir, '..', '..', 'shared', 'quotas.ts')]
+    .map((path) => readFileSync(path, 'utf8'))
+    .join('\n')
 
   test('positive control: the reader actually finds fields', () => {
     // Without this, a regex that matched nothing would make the guard below pass forever — the

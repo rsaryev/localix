@@ -69,7 +69,7 @@ describe('session action chrome', () => {
   })
 
   test('uses the same action primitive in both chat headers', () => {
-    const sidebar = readSource('ChatSidebar.tsx')
+    const sidebar = readSource('ChatSidebarHeader.tsx')
     const conversationHeader = readFileSync(
       new URL('../../../widgets/chat-workspace/ui/ChatHeaderActions.tsx', import.meta.url),
       'utf8',

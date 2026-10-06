@@ -221,6 +221,12 @@ export const CORE_CALL_CASES: readonly CallCase[] = [
   ),
 
   row('vault', 'list', { action: 'list' }, READ),
+  row(
+    'external_agent_sessions',
+    'transcript',
+    { action: 'transcript', key: 'codex:s1', from: 25 },
+    READ,
+  ),
   row('vault', 'update', { action: 'update', key: 'API_KEY', description: 'x' }, HOST),
   row(
     'vault',

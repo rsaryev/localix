@@ -152,7 +152,7 @@ export const BUILTIN_TOOL_CATALOG = {
     name: 'external_agent_sessions',
     label: 'External agent sessions',
     description:
-      'Browse live and historical coding-agent sessions, read bounded transcripts, inspect states, wait for completion, and summarize usage. Session keys are <provider>:<nativeSessionId>, returned by roster. Reference a session through @resource → External Agents to attach its context. Read-only; start agents with their CLI commands in the project terminal.',
+      'Read installed CLI history and linked sessions: roster, transcript windows, context, live state, wait, usage. Start CLIs separately in a terminal.',
     category: 'knowledge',
     exposure: CHAT_AND_CHILD,
   },

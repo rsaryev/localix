@@ -30,7 +30,12 @@ export function useExternalHistory(
         offset: index * PAGE_SIZE,
         limit: PAGE_SIZE,
       }),
-    { revalidateOnFocus: enabled, revalidateOnReconnect: enabled, shouldRetryOnError: false },
+    {
+      isPaused: () => !enabled,
+      revalidateOnFocus: enabled,
+      revalidateOnReconnect: enabled,
+      shouldRetryOnError: false,
+    },
   )
   const live = useHistoryStream(enabled && Boolean(providers), () => {
     void query.mutate()

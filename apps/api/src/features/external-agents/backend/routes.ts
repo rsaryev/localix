@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
-import { routeValidator } from '@localixai/plugin-sdk/backend'
+import { zValidator } from '../../../lib/validator'
+import { jsonError } from '../../../lib/http'
 import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
 import type { AgentSessionsService } from './service'
 import { toTranscriptTurns } from './transcript/to-agent-items'
@@ -10,12 +11,7 @@ import { parseLinkKey } from '../shared/identity'
 import type { RosterRow } from '../shared/contracts'
 import { computeStats } from './discovery/stats'
 
-const validated = routeValidator({ envelope: 'text' })
-
-function failure(what: string, error: unknown) {
-  const detail = error instanceof Error ? error.message : String(error)
-  return { error: what, ...(detail ? { detail } : {}) }
-}
+const detail = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 /** Core RPC: installed CLIs, a bounded history page, and the native transcript projection. */
 export function createAgentSessionsRoutes(
@@ -27,11 +23,18 @@ export function createAgentSessionsRoutes(
       try {
         return c.json({ providers: await installed() })
       } catch (error) {
-        return c.json(failure('Could not check installed agents.', error), 500)
+        return jsonError(
+          c,
+          500,
+          'agent_detection_failed',
+          'Could not check installed agents.',
+          detail(error),
+        )
       }
     })
-    .post('/roster', validated('json', rosterBodySchema), async (c) => {
-      if (!service) return c.json({ error: 'External agent history is unavailable.' }, 503)
+    .post('/roster', zValidator('json', rosterBodySchema), async (c) => {
+      if (!service)
+        return jsonError(c, 503, 'history_unavailable', 'External agent history is unavailable.')
       try {
         const input = c.req.valid('json')
         const available = await installed()
@@ -46,20 +49,28 @@ export function createAgentSessionsRoutes(
         const rows = await service.roster({ ...input.query, providers }, input.localixSessionId)
         return c.json({ ...rows, items: rows.items.map(({ usage: _usage, ...row }) => row) })
       } catch (error) {
-        return c.json(failure('Could not read external agent history.', error), 500)
+        return jsonError(
+          c,
+          500,
+          'history_read_failed',
+          'Could not read external agent history.',
+          detail(error),
+        )
       }
     })
-    .post('/items', validated('json', itemsBodySchema), async (c) => {
-      if (!service) return c.json({ error: 'External agent history is unavailable.' }, 503)
+    .post('/items', zValidator('json', itemsBodySchema), async (c) => {
+      if (!service)
+        return jsonError(c, 503, 'history_unavailable', 'External agent history is unavailable.')
       const { key, maxEvents, tail } = c.req.valid('json')
       try {
         const identity = parseLinkKey(key)
         const available = await installed()
         if (!identity || !available.some((agent) => agent.id === identity.provider)) {
-          return c.json({ error: 'This agent is not installed.' }, 404)
+          return jsonError(c, 404, 'agent_not_installed', 'This agent is not installed.')
         }
         const slice = await service.transcript(key, maxEvents, undefined, tail)
-        if (!slice) return c.json({ error: 'This session is no longer on disk.' }, 404)
+        if (!slice)
+          return jsonError(c, 404, 'transcript_not_found', 'This session is no longer on disk.')
         return c.json({
           key: slice.key,
           turns: toTranscriptTurns(slice.events, slice.key),
@@ -69,11 +80,18 @@ export function createAgentSessionsRoutes(
           ...(slice.sourceTruncated ? { sourceTruncated: true } : {}),
         })
       } catch (error) {
-        return c.json(failure('Could not read this agent session.', error), 500)
+        return jsonError(
+          c,
+          500,
+          'transcript_read_failed',
+          'Could not read this agent session.',
+          detail(error),
+        )
       }
     })
-    .post('/stats', validated('json', statsBodySchema), async (c) => {
-      if (!service) return c.json({ error: 'External agent history is unavailable.' }, 503)
+    .post('/stats', zValidator('json', statsBodySchema), async (c) => {
+      if (!service)
+        return jsonError(c, 503, 'history_unavailable', 'External agent history is unavailable.')
       try {
         const input = c.req.valid('json')
         const available = await installed()
@@ -86,7 +104,13 @@ export function createAgentSessionsRoutes(
             : computeStats([], input, Date.now()),
         )
       } catch (error) {
-        return c.json(failure('Could not summarize external agent history.', error), 500)
+        return jsonError(
+          c,
+          500,
+          'history_summary_failed',
+          'Could not summarize external agent history.',
+          detail(error),
+        )
       }
     })
 }

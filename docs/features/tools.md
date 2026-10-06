@@ -87,11 +87,12 @@ the system prompt with per-section sizes and every tool's schema size.
 
 `tool-schema-budget.test.ts` renders the roster a fully composed chat host builds, from the real
 tool factories (`vault`, `configure` and bash's terminal fields included), and fails when the sum
-passes 7,000 tokens or one tool passes 800. A second case fails when the harness measures a stub or
-misses a host-injected tool. `browser` advertises interactions once, as the step shape inside
-`steps`, and `vault` is one flat object rather than a union per action. Every field name is
-snake_case (`tool-schema-case.test.ts`). A flat `browser` interaction written the old way is refused
-with the one-step batch that replaces it.
+passes 7,500 tokens or one tool passes 800. The core external-history reader uses a compact schema
+within the added 500-token allowance. A second case fails when the harness measures a stub or misses
+a host-injected tool. `browser` advertises interactions once, as the step shape inside `steps`, and
+`vault` is one flat object rather than a union per action. Every field name is snake_case
+(`tool-schema-case.test.ts`). A flat `browser` interaction written the old way is refused with the
+one-step batch that replaces it.
 
 ## Configuration
 

@@ -46,6 +46,7 @@ Handle straightforward work directly; coordinate substantial work with suitable 
 - tool_output
 - browser
 - vault
+- external_agent_sessions
 
 # Workspace
 Working directory (workspace root): /repo

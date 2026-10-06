@@ -115,6 +115,7 @@ describe('shipped definitions and independent presets', () => {
         'search',
         'bash',
         'tool_output',
+        'external_agent_sessions',
         'agents',
         'conversation_control',
         'plan',

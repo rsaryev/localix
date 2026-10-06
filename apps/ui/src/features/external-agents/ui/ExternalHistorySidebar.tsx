@@ -38,7 +38,7 @@ export default function ExternalHistorySidebar({
     try {
       await openExternalSession(source, owningSessionId)
     } catch (cause) {
-      toast.error('Could not open this agent session', {
+      toast.error('Could not open this agent conversation', {
         description: errorMessage(cause, '') || undefined,
       })
     } finally {

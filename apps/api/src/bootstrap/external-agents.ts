@@ -81,8 +81,7 @@ export function createExternalAgentsPhase({
     port: {
       installed: installedExternalAgents,
       toolFor: (sessionId: string) => createExternalAgentSessionsTool(service, ready, sessionId),
-      observe: (event: Parameters<AgentSessionsService['handleToolCall']>[0]) =>
-        service.handleToolCall(event),
+      observe: service.handleToolCall.bind(service),
     },
   }
 }

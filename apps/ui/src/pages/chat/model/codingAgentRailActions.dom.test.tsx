@@ -86,6 +86,14 @@ test('default status order puts reset and sleep before the coding agents when th
   }
 })
 
+test('the launch bar exposes only installed commands', async () => {
+  const { codingAgentRailActions } = await import('./codingAgentRailActions')
+  expect(codingAgentRailActions('own-chat', [])).toEqual([])
+  expect(codingAgentRailActions('own-chat', ['codex']).map((action) => action.id)).toEqual([
+    'coding-agent:codex',
+  ])
+})
+
 test('core Claude and Codex controls launch, move, reorder and unpin independently of plugins', async () => {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')

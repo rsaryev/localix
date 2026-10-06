@@ -76,13 +76,6 @@
       "author": "Localix"
     },
     {
-      "name": "external-agents",
-      "source": "./external-agents",
-      "description": "Launch supported coding-agent CLIs, inspect their local session history, and attach bounded session context through a read-only workspace.",
-      "version": "2.0.0",
-      "author": "Localix"
-    },
-    {
       "name": "game-2048",
       "source": "./game-2048",
       "description": "Play 2048 in a chat, or choose the agent to play the same board with its own tool.",

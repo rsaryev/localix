@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { Rule } from './rule'
-import { legacyAgentPreset10 } from './builtin-agent-presets'
+import { builtinAgentPreset, legacyAgentPreset10 } from './builtin-agent-presets'
 import { ApiError } from '../../lib/errors'
 import {
   AGENT_PRESET_SEED_VERSION,
@@ -68,6 +68,31 @@ describe('seedAgentPresets', () => {
     expect(rules.get('builtin:backend')).toEqual([
       { action: 'tool:write', resource: '*', effect: 'allow' },
     ])
+  })
+
+  test('untouched v11 roles gain external-history investigation, while explicit restrictions survive', async () => {
+    for (const customized of [false, true]) {
+      const { seedPorts, rules, configs } = ports([SEAT])
+      const old = builtinAgentPreset(SEAT.handle).filter(
+        (rule) => rule.action !== 'tool:external_agent_sessions',
+      )
+      configs.set(SEAT.id, { presetSeed: '11', presetSeedDefaults: old })
+      rules.set(
+        SEAT.id,
+        customized
+          ? [...old, { action: 'tool:external_agent_sessions', resource: '*', effect: 'deny' }]
+          : old,
+      )
+      const before = rules.get(SEAT.id)
+      await seedAgentPresets(seedPorts, 'u1')
+      if (customized) expect(rules.get(SEAT.id)).toEqual(before)
+      else
+        expect(rules.get(SEAT.id)).toContainEqual({
+          action: 'tool:external_agent_sessions',
+          resource: '*',
+          effect: 'allow',
+        })
+    }
   })
 
   test('a legacy version without a saved baseline preserves user decisions', async () => {

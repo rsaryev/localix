@@ -13,7 +13,8 @@ import type { Rule } from './rule'
  */
 // 10: the role rosters gained `plan` (plan mode's tool); without it a role's closed list denied
 // the tool in the one mode that has it.
-export const AGENT_PRESET_SEED_VERSION = '11'
+// 12: all shipped roles can investigate linked external sessions through the core read-only tool.
+export const AGENT_PRESET_SEED_VERSION = '12'
 const SEED_FIELD = 'presetSeed'
 const BASE_FIELD = 'presetSeedDefaults'
 

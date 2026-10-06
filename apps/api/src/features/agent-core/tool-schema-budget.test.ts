@@ -16,7 +16,8 @@ import { richRegistry } from './testing/prompt-harness'
  * chat paid 10.4k. It now counts the registry a chat host builds, from the real factories
  * (`testing/production-ports.ts`), and the second test below is what keeps it that way.
  */
-const WIRE_BUDGET_TOKENS = 7_000
+// Core now includes external history. Keep its compact schema inside a 500-token allowance.
+const WIRE_BUDGET_TOKENS = 7_500
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
 
@@ -50,6 +51,7 @@ describe('default wire schema budget', () => {
       TOOL.jobs,
       TOOL.agents,
       TOOL.history_search,
+      TOOL.external_agent_sessions,
       TOOL.tool_output,
     ])
       expect(names.has(name)).toBe(true)

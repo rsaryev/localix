@@ -16,6 +16,8 @@
 import type { AgentTool } from '@localixai/agent/agents'
 import { createRemedyRegistry } from '../../config-proposals/registry'
 import { createVaultTool } from '../../secrets/agent-tool'
+import { createExternalAgentSessionsTool } from '../../external-agents/backend/agent-tool'
+import type { AgentSessionsService } from '../../external-agents/backend/service'
 import type { CoreToolDeps, OptionalToolPorts } from '../tool-registry'
 import { createSkillTool } from '../tools/skill'
 import { createMemoryTool } from '../tools/memory/memory'
@@ -74,7 +76,10 @@ export function productionCoreDeps(): CoreToolDeps {
   }
 }
 
-/** Host-owned tools injected as `extraTools`: the core-named `vault`. */
+/** Host-owned tools injected through the same extraTools seam as their production instances. */
 export function productionExtraTools(): AgentTool[] {
-  return [createVaultTool(inert()) as unknown as AgentTool]
+  return [
+    createVaultTool(inert()) as unknown as AgentTool,
+    createExternalAgentSessionsTool({} as AgentSessionsService, Promise.resolve(), 'test-session'),
+  ]
 }

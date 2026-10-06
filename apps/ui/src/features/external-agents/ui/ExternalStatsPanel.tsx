@@ -65,13 +65,14 @@ export default function ExternalStatsPanel() {
       const source = await loadExternalSession(key)
       await openExternalSession(source, null)
     } catch (error) {
-      toast.error('Could not open this agent session', {
+      toast.error('Could not open this agent conversation', {
         description: errorMessage(error, '') || undefined,
       })
     }
   }
   if (problem) return <ProblemState {...problem} />
-  if (query.loading && !stats) return <LoadingHint>Reading agent usage…</LoadingHint>
+  if (query.loading && !query.agents.length)
+    return <LoadingHint>Checking installed agents…</LoadingHint>
   if (!query.agents.length) return <EmptyHint>No supported agent CLI is installed.</EmptyHint>
 
   return (
@@ -79,9 +80,16 @@ export default function ExternalStatsPanel() {
       <div className="@container flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Segmented aria-label="Time range" options={RANGES} value={range} onChange={setRange} />
+            <Segmented
+              aria-label="Time range"
+              className="w-max shrink-0"
+              options={RANGES}
+              value={range}
+              onChange={setRange}
+            />
             <Segmented
               aria-label="Group usage by"
+              className="w-max shrink-0"
               options={GROUPS}
               value={group}
               onChange={setGroup}
@@ -162,7 +170,9 @@ export default function ExternalStatsPanel() {
             value={stats?.usage ? formatTokens(stats.usage.requests) : '—'}
           />
         </div>
-        {stats?.sessions ? (
+        {query.loading && !stats ? (
+          <LoadingHint>Reading agent usage…</LoadingHint>
+        ) : stats?.sessions ? (
           <>
             <ExternalStatsCharts
               stats={stats}

@@ -26,8 +26,8 @@ export interface OpenTranscriptInput {
   readonly id: string
   /**
    * The chat whose workspace the transcript tab opens in. Reading it is not joining it — the
-   * transcript stays a view — but every tab belongs to one chat, and an open that named none was
-   * stamped with whichever chat was on screen.
+   * transcript stays a view. Required by openTranscript for its session-scoped tab; app-level
+   * archive viewers use rememberTranscript without inventing a conversation.
    */
   readonly sessionId?: string
   readonly title: string
