@@ -114,6 +114,7 @@ export function createDigestLoaders({ db, terminalService }: DigestLoaderDeps) {
       altScreen: info.altScreen,
       lastOutputAt: info.lastOutputAt,
       scrollback: live.replay,
+      screen: (await live.screen()).text,
     })
   }
 

@@ -102,6 +102,7 @@ export function createEmulator(cols: number, rows: number): HeadlessEmulator {
           cursor: { row: buf.cursorY, col: buf.cursorX },
           cols: term.cols,
           rows: term.rows,
+          applicationCursorKeys: term.modes.applicationCursorKeysMode,
         }
       } finally {
         activeScreens -= 1

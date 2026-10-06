@@ -33,12 +33,6 @@ export const bashToolInputSchema = z.object({
     .describe(
       'Seconds (default 60, max 600). Background ignores values below 60; omit for no limit.',
     ),
-  // Required: the label is what the user reads in the transcript while the command runs, and
-  // an optional field plus a prose "always set it" was a rule the schema did not enforce.
-  description: z
-    .string()
-    .min(1)
-    .describe('Short active-voice label shown to the user, e.g. "Install dependencies".'),
   background: z
     .boolean()
     .optional()
@@ -53,16 +47,15 @@ export const bashToolInputSchema = z.object({
     .min(MONITOR_MIN_INTERVAL_SECONDS)
     .optional()
     .describe(
-      'WAIT instead of writing sleep/retry loops: re-run `command` every N seconds (5 local, 30 remote/CI) until it exits 0, then wake the agent — end your turn meanwhile. Make the check fail on error states too, or a crash reads as "still waiting". `timeout` (default 300) is the deadline.',
+      'Shell condition wait (omit action); PTY screen changes use action="wait" instead. Re-run command every N seconds (5 local, 30 remote/CI) until exit 0, then wake the agent — end your turn meanwhile. Check error states too. timeout (default 300) is the deadline; never write sleep/retry loops.',
     ),
 })
 
 /**
- * What `execute` receives. `description` is required of the MODEL (the schema) and optional
- * here: nothing in execution reads it, and an in-process caller (a test, a command template
- * run through this bash instance) has no user watching a label.
+ * The model no longer generates a description label. Keep the optional legacy field only
+ * for in-process callers and older transcripts; it is absent from the model-facing schema.
  */
-export type BashToolInput = Omit<z.infer<typeof bashToolInputSchema>, 'description'> & {
+export type BashToolInput = z.infer<typeof bashToolInputSchema> & {
   description?: string
 }
 

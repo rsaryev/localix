@@ -67,7 +67,7 @@ export function createBashTool(
   // in the `jobs` description and in the prompt — four copies billed on every request.
   const backgroundDescription = allowBackground
     ? [
-        'Long-running processes (dev servers, watchers, long builds) need background:true — foreground kills them at `timeout`. The launch result carries their early output (the served URL, or the crash): read it instead of probing with curl/lsof/ps.',
+        'Servers/watchers/long builds: background:true. Read launch output (URL or crash) before probing; a timed-out local foreground command may continue as a job.',
       ]
     : [
         'Foreground only in this session: do not start dev servers, watchers or other long-running processes.',
@@ -84,7 +84,7 @@ export function createBashTool(
     // Which tool to use INSTEAD of the shell for file work is the prompt's routing rule
     // ("# Execution discipline"), stated once there; this says what the shell is for.
     description: [
-      'Run a shell command and stream its output (stdout+stderr merged; non-zero exit is an error). Use it to RUN things: scripts, installs, builds, git, tests.',
+      'Run scripts, installs, builds, git and tests; returns merged stdout/stderr and exit status.',
       ...backgroundDescription,
       ...(terminalControl
         ? ['Interactive programs (vim, REPLs, y/n prompts) use the PTY `action`s.']

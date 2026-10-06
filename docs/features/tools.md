@@ -4,10 +4,9 @@ The tool roster is the set of model-facing tools a run places on each model requ
 the wire is paid before the first token of conversation, so the roster is deliberately small: the
 edit-and-verify loop rides by default, everything rarely reached is one `activate_tools` call away.
 
-**Effect and coverage:** The schemas a fully composed chat carries measure about 6,600 tokens per
-request (22 tools, counted from the real factories); the whole fixed floor was 16,600 before the
-reshape. `context_budget` reports the breakdown to the model, and a ratchet test pins the schema
-budget.
+**Effect and coverage:** A fully composed chat's 23 tool schemas stay within an estimated
+7,500-token budget, counted from the real factories. `context_budget` reports the breakdown to the
+model, and a ratchet test pins the schema budget.
 
 ## What you can do
 
@@ -20,6 +19,9 @@ budget.
 | Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.     | Read-only. A switched-off tool also names the change that restores it.            |
 | Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.    | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).   |
 | Plan before building          | The Kanban plugin's `kanban` tool: put the work on the chat's board before starting.       | A deferred plugin tool on a passive board; see the [Kanban guide](task-board.md). |
+
+For live PTY input and rendered-screen waits, see
+[Interact with a terminal](interactive-terminals.md).
 
 ## How it works
 

@@ -60,6 +60,16 @@ describe('bash classify: interactive PTY actions', () => {
     ['open a dangerous command', { action: 'open', command: 'sudo vim /etc/hosts' }, IRREVERSIBLE],
     ['type read-only text', { action: 'type', terminal_id: 't1', text: 'ls' }, EXTERNAL],
     ['type dangerous text', { action: 'type', terminal_id: 't1', text: 'rm -rf .' }, IRREVERSIBLE],
+    [
+      'dangerous trailing literal keys',
+      { action: 'type', terminal_id: 't1', text: 'ls', keys: ['Enter', 'rm -rf .', 'Enter'] },
+      IRREVERSIBLE,
+    ],
+    [
+      'dangerous input split across text and keys',
+      { action: 'type', terminal_id: 't1', text: 'r', keys: ['m -rf .', 'Enter'] },
+      IRREVERSIBLE,
+    ],
     ['keys', { action: 'keys', terminal_id: 't1', keys: ['Enter'] }, EXTERNAL],
     ['an action with a command ignored', { action: 'screen', command: 'touch x' }, READ],
   ])('%s', (_label, input, expected) => {

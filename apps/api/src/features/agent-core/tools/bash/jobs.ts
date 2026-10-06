@@ -64,16 +64,19 @@ export function classifyJobsCall(input: unknown): CallClass {
  * them and tends to spawn duplicates or poll with sleep loops. Stop/send_input
  * reuse the exact same action registry the UI Stop button drives.
  */
-export function createJobsTool(deps: JobsToolDeps) {
+export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: boolean } = {}) {
   return defineAgentTool({
     name: TOOL.jobs,
     label: 'Jobs',
     activeVerb: 'Managing jobs',
     // The wait rule (`bash until`, never a poll loop) lives on bash's `until` field only.
     description: [
-      "Your background work: bash background:true jobs, streaming jobs and monitors (mon-N). read a job's recent output (or a monitor's events) without stopping it; stop ends it; send_input writes to a bash job's stdin.",
-      'Check here before starting a duplicate server or stream.',
-      'Running sub-agents (sub-N) are listed too; message or stop them through agents.',
+      'Manage background work: list before launching duplicates; read returns logs/events; stop requests termination; send_input writes raw stdin. Manage listed sub-agents through agents.',
+      ...(options.terminalInput
+        ? [
+            'Interactive PTYs: bash type/keys with terminal_id sends named keys AND returns the current screen. read is accumulated logs.',
+          ]
+        : []),
     ].join(' '),
     inputSchema,
     // `stop` signals a live process and `send_input` writes to its stdin — processes are
@@ -122,6 +125,11 @@ export function createJobsTool(deps: JobsToolDeps) {
           isError: true,
         }
       }
+      const terminalId = jobs.find((job) => job.toolCallId === toolCallId)?.terminalId
+      const screenAdvice =
+        options.terminalInput && terminalId
+          ? ` For the current TUI screen, use bash action="screen", terminal_id="${terminalId}"; type with keys:["Enter"] submits text and returns the screen.`
+          : ''
 
       // read works while the job is live (its terminal scrollback); a just-exited
       // job returns null → the final output was already delivered when it finished.
@@ -147,7 +155,8 @@ export function createJobsTool(deps: JobsToolDeps) {
             })}\n${clipped.content}`
           : snap.output
         return {
-          content: `[job ${input.job_id} — ${snap.running ? 'running' : 'exited'}]\n${tail.trim() || '(no output yet)'}`,
+          content: `[job ${input.job_id} — ${snap.running ? 'running' : 'exited'}]${screenAdvice}\n${tail.trim() || '(no output yet)'}`,
+          supersedeKey: `job:${toolCallId}`,
         }
       }
 
@@ -175,7 +184,7 @@ export function createJobsTool(deps: JobsToolDeps) {
       const ok = deps.runAction(toolCallId, 'send_input', { text: input.input })
       return {
         content: ok
-          ? `Input sent to job ${input.job_id}. Delivery is not confirmed — a job that already exited discards it; check its output with action="read".`
+          ? `Input sent to job ${input.job_id}. Delivery is not confirmed — a job that already exited discards it; ${screenAdvice ? screenAdvice.trim() : 'check its output with action="read".'}`
           : `Could not send input to job ${input.job_id} — it accepts no input (it may have already finished).`,
         isError: !ok,
       }

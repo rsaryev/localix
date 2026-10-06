@@ -44,9 +44,14 @@ describe('bash tool guidance', () => {
     )
   })
 
-  test('requires the user-facing `description` label', () => {
-    expect(bashToolInputSchema.safeParse({ command: 'ls' }).success).toBe(false)
-    expect(bashToolInputSchema.safeParse({ command: 'ls', description: 'List' }).success).toBe(true)
+  test('commands and PTY actions need no description label on the wire', () => {
+    expect(bashToolInputSchema.safeParse({ command: 'ls' }).success).toBe(true)
+    expect(bashToolInputSchema.safeParse({ action: 'screen', terminal_id: 't1' }).success).toBe(
+      true,
+    )
+    expect(bashToolInputSchema.toJSONSchema().properties).not.toHaveProperty('description')
+    const legacy = bashToolInputSchema.parse({ command: 'ls', description: 'List' })
+    expect(legacy).toEqual({ command: 'ls' })
   })
 })
 
@@ -141,11 +146,8 @@ describe('classifyBgExit', () => {
 })
 
 describe('bashToolInputSchema', () => {
-  // `description` is the one required field: the label the user reads while it runs.
-  const label = { description: 'Run it' }
-
   test('accepts a minimal command with every other field optional', () => {
-    const r = bashToolInputSchema.safeParse({ command: 'ls -la', ...label })
+    const r = bashToolInputSchema.safeParse({ command: 'ls -la' })
     expect(r.success).toBe(true)
     if (r.success) {
       expect(r.data.command).toBe('ls -la')
@@ -155,16 +157,16 @@ describe('bashToolInputSchema', () => {
   })
 
   test('rejects an empty command string', () => {
-    expect(bashToolInputSchema.safeParse({ command: '', ...label }).success).toBe(false)
+    expect(bashToolInputSchema.safeParse({ command: '' }).success).toBe(false)
   })
 
-  test('accepts a label-only object at the schema level (command xor commands enforced in execute)', () => {
+  test('accepts an empty object at the schema level (command xor commands enforced in execute)', () => {
     // command is optional so a `commands`-only call validates; execute rejects it.
-    expect(bashToolInputSchema.safeParse(label).success).toBe(true)
+    expect(bashToolInputSchema.safeParse({}).success).toBe(true)
   })
 
   test('accepts a non-empty commands batch with keep_going', () => {
-    const batch = (extra: object) => bashToolInputSchema.safeParse({ ...label, ...extra }).success
+    const batch = (extra: object) => bashToolInputSchema.safeParse(extra).success
     expect(batch({ commands: ['echo a', 'echo b'] })).toBe(true)
     expect(batch({ commands: ['x'], keep_going: true })).toBe(true)
     // empty array and empty entries are rejected
@@ -174,7 +176,7 @@ describe('bashToolInputSchema', () => {
 
   test('enforces the timeout bounds (integer, 1..600)', () => {
     const withTimeout = (timeout: number) =>
-      bashToolInputSchema.safeParse({ command: 'x', timeout, ...label }).success
+      bashToolInputSchema.safeParse({ command: 'x', timeout }).success
     expect(withTimeout(1)).toBe(true)
     expect(withTimeout(600)).toBe(true)
     expect(withTimeout(0)).toBe(false)

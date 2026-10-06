@@ -17,6 +17,8 @@ export function buildJobsTool(input: {
   work: RuntimeState['work']
   userId: string
   sessionId: string
+  /** Whether bash's interactive actions survive this run's tool policy. */
+  terminalInput?: boolean
   runAction: (toolCallId: string, action: string, payload?: unknown) => boolean
 }): AgentTool {
   const { deps, work, userId, sessionId, runAction } = input
@@ -37,50 +39,53 @@ export function buildJobsTool(input: {
     const text = (payload as { text?: string } | undefined)?.text
     return text ? control.write({ userId, sessionId, terminalId, data: text }) : false
   }
-  return createJobsTool({
-    listJobs: () =>
-      work.list(owner).map((record) => ({
-        toolCallId: record.toolCallId,
-        jobId: record.displayId,
-        command: record.label,
-        startedAt: Date.parse(record.startedAt),
-        ...(record.terminalId ? { terminalId: record.terminalId } : {}),
-      })),
-    resolveJobId: (jobId) => work.resolve(owner, jobId)?.toolCallId ?? null,
-    runAction: (toolCallId, action, payload) => {
-      // A monitor stops through its service, not an action its tool registered: a wait resumed
-      // after a restart is running work whose starting call no longer lives in this process.
-      const record = work.resolve(owner, toolCallId)
-      if (record?.kind === 'monitor' && action === 'kill' && deps.monitors)
-        return deps.monitors.stop(userId, sessionId, record.displayId)
-      const ok = runAction(toolCallId, action, payload) || runOnPane(record, action, payload)
-      const terminalId = record?.terminalId
-      if (ok && action === 'send_input' && terminalId) {
-        deps.streamRegistry.publish(userId, sessionId, {
-          type: 'terminal.input',
-          sessionId,
-          terminalId,
-          source: 'agent',
-          // Literal stdin can contain credentials. Publish activity, never bytes.
-          label: 'text',
-        })
-      }
-      return ok
+  return createJobsTool(
+    {
+      listJobs: () =>
+        work.list(owner).map((record) => ({
+          toolCallId: record.toolCallId,
+          jobId: record.displayId,
+          command: record.label,
+          startedAt: Date.parse(record.startedAt),
+          ...(record.terminalId ? { terminalId: record.terminalId } : {}),
+        })),
+      resolveJobId: (jobId) => work.resolve(owner, jobId)?.toolCallId ?? null,
+      runAction: (toolCallId, action, payload) => {
+        // A monitor stops through its service, not an action its tool registered: a wait resumed
+        // after a restart is running work whose starting call no longer lives in this process.
+        const record = work.resolve(owner, toolCallId)
+        if (record?.kind === 'monitor' && action === 'kill' && deps.monitors)
+          return deps.monitors.stop(userId, sessionId, record.displayId)
+        const ok = runAction(toolCallId, action, payload) || runOnPane(record, action, payload)
+        const terminalId = record?.terminalId
+        if (ok && action === 'send_input' && terminalId) {
+          deps.streamRegistry.publish(userId, sessionId, {
+            type: 'terminal.input',
+            sessionId,
+            terminalId,
+            source: 'agent',
+            // Literal stdin can contain credentials. Publish activity, never bytes.
+            label: 'text',
+          })
+        }
+        return ok
+      },
+      // Read a job's current output: a monitor's event log, or a PTY job's scrollback.
+      readJob: (toolCallId) => {
+        const record = work.resolve(owner, toolCallId)
+        if (!record) return null
+        // A MONITOR has no PTY and never will: its "output" is the events it decided were worth a
+        // wake, which the monitor service keeps in a bounded log — and the wake text tells the
+        // agent to read it.
+        if (record.kind === 'monitor' && deps.monitors) {
+          const events = deps.monitors.read(userId, sessionId, record.displayId)
+          if (events) return { output: events.text, running: true }
+        }
+        if (!record.terminalId || !deps.readTerminalJob) return null
+        return deps.readTerminalJob({ userId, terminalId: record.terminalId })
+      },
+      now: () => Date.now(),
     },
-    // Read a job's current output: a monitor's event log, or a PTY job's scrollback.
-    readJob: (toolCallId) => {
-      const record = work.resolve(owner, toolCallId)
-      if (!record) return null
-      // A MONITOR has no PTY and never will: its "output" is the events it decided were worth a
-      // wake, which the monitor service keeps in a bounded log — and the wake text tells the
-      // agent to read it.
-      if (record.kind === 'monitor' && deps.monitors) {
-        const events = deps.monitors.read(userId, sessionId, record.displayId)
-        if (events) return { output: events.text, running: true }
-      }
-      if (!record.terminalId || !deps.readTerminalJob) return null
-      return deps.readTerminalJob({ userId, terminalId: record.terminalId })
-    },
-    now: () => Date.now(),
-  })
+    { terminalInput: input.terminalInput ?? deps.terminalControl != null },
+  )
 }

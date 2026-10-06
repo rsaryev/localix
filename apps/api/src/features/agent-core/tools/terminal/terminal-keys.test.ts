@@ -6,6 +6,15 @@ describe('encodeKeys', () => {
     expect(encodeKeys(['Up', 'Down', 'Right', 'Left'])).toBe('\x1b[A\x1b[B\x1b[C\x1b[D')
   })
 
+  it('uses application cursor sequences only for cursor keys in DECCKM mode', () => {
+    expect(encodeKeys(['Up', 'Down', 'Right', 'Left', 'Home', 'End'], true)).toBe(
+      '\x1bOA\x1bOB\x1bOC\x1bOD\x1bOH\x1bOF',
+    )
+    expect(encodeKeys(['Enter', 'Escape', 'Shift+Tab', 'PageUp', 'text'], true)).toBe(
+      '\r\x1b\x1b[Z\x1b[5~text',
+    )
+  })
+
   it('encodes Enter / Tab / Escape', () => {
     expect(encodeKeys(['Enter'])).toBe('\r')
     expect(encodeKeys(['Tab'])).toBe('\t')

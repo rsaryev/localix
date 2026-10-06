@@ -1,7 +1,12 @@
-import { z } from 'zod'
-import { encodeKeys } from './terminal-keys'
+import { sendTerminalInput } from './terminal-input'
+import { INTERACTIVE_ACTIONS } from './terminal-schema'
+import type { WaitOutcome } from './terminal-wait'
 import type { ScreenSnapshot } from './terminal-job'
-import { watchTerminalActivity, type TerminalWatch } from './terminal-activity'
+import type { TerminalWatch } from './terminal-activity'
+import { settleScreen, renderScreen } from './terminal-screen'
+import { waitForScreen } from './terminal-wait'
+export { waitForScreen, type WaitOutcome } from './terminal-wait'
+export { terminalActionFields, INTERACTIVE_ACTIONS } from './terminal-schema'
 
 /**
  * Interactive-terminal actions, folded INTO the `bash` tool (not a separate tool):
@@ -35,15 +40,6 @@ export interface TerminalToolDeps {
   onInput?(event: { terminalId: string; label?: string }): void
 }
 
-export const INTERACTIVE_ACTIONS = [
-  'open',
-  'screen',
-  'keys',
-  'type',
-  'wait',
-  'list',
-  'close',
-] as const
 export type TerminalAction = (typeof INTERACTIVE_ACTIONS)[number]
 
 /** Permission-path identity for bash's interactive dispatch. Kept beside the action catalog so
@@ -67,7 +63,14 @@ export function terminalActionCommandCandidates(input: {
 }): string[] | null {
   if (!isTerminalAction(input.action)) return null
   if (input.action === 'open') return typeof input.command === 'string' ? [input.command] : []
-  if (input.action === 'type') return typeof input.text === 'string' ? [input.text] : []
+  if (input.action === 'type') {
+    const text = typeof input.text === 'string' ? input.text : ''
+    const keys =
+      Array.isArray(input.keys) && input.keys.every((key) => typeof key === 'string')
+        ? input.keys.join(' ')
+        : ''
+    return [text, keys, text + keys].filter(Boolean)
+  }
   if (input.action === 'keys') {
     return Array.isArray(input.keys) && input.keys.every((key) => typeof key === 'string')
       ? [input.keys.join(' ')]
@@ -82,6 +85,9 @@ export interface TerminalDetails {
   terminalId?: string
   command?: string
   screen?: ScreenSnapshot | null
+  state?: 'running' | 'exited' | 'unavailable'
+  waitOutcome?: WaitOutcome
+  screenChanged?: boolean
 }
 
 export interface TerminalActionResult {
@@ -92,48 +98,6 @@ export interface TerminalActionResult {
   supersedeKey?: string
 }
 
-/**
- * Bounds for action="wait". The default is generous enough for the cases that
- * drove this (a dev server compiling, an installer, a REPL warming up) without a
- * typo'd `wait_for` parking the agent for minutes; the max is the hard ceiling on
- * how long ONE tool call may block a turn.
- */
-const DEFAULT_WAIT_MS = 15_000
-const MAX_WAIT_MS = 120_000
-
-/** Zod fields the `bash` schema merges in to expose the interactive actions. */
-export const terminalActionFields = {
-  action: z
-    .enum(INTERACTIVE_ACTIONS)
-    .optional()
-    .describe(
-      'Omit to run a command. PTY: "open" (with command) returns a terminal_id; "screen" reads the display (read, act, read again — never re-screen in a loop); "keys"/"type" send input; "wait" blocks until `wait_for` shows; "list"/"close".',
-    ),
-  terminal_id: z.string().optional().describe('From open/list; required except for open/list.'),
-  keys: z
-    .array(z.string())
-    .optional()
-    .describe(
-      'Named keys (Enter, Escape, Up, Ctrl+C…) or literal text, in order; with type, pressed after the text.',
-    ),
-  text: z.string().optional().describe('type: literal text.'),
-  wait_for: z
-    .string()
-    .optional()
-    .describe('wait: screen text to wait for (omit to wait for quiet output).'),
-  wait_absent: z.boolean().optional().describe('wait: until `wait_for` disappears instead.'),
-  wait_timeout_ms: z
-    .number()
-    .int()
-    .min(100)
-    .max(MAX_WAIT_MS)
-    .optional()
-    .describe(`wait: cap in ms (default ${DEFAULT_WAIT_MS}, max ${MAX_WAIT_MS}).`),
-}
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
-/** No output for this long = the screen went quiet (the old poll's two-equal-frames gap). */
-const QUIET_MS = 80
 const EVENT_LABEL_LIMIT = 120
 
 function boundedLabel(label: string): string {
@@ -158,166 +122,6 @@ function inputLabel(input: { action: 'keys' | 'type'; keys?: string[] }): string
   )
 }
 
-function renderScreen(s: ScreenSnapshot | null): string {
-  if (!s)
-    return '(screen unavailable — the terminal has exited or the id is unknown; call action="list")'
-  if (s.text.trim() === '') {
-    return `screen ${s.cols}×${s.rows} is blank — the program is still starting or waiting silently. Call action="screen" again in a moment.`
-  }
-  return `screen ${s.cols}×${s.rows}, cursor at row ${s.cursor.row} col ${s.cursor.col}:\n${s.text}`
-}
-
-/** Why a `wait` returned — the model must never have to guess. */
-export type WaitOutcome = 'matched' | 'vanished' | 'quiet' | 'timeout' | 'exited' | 'interrupted'
-
-/**
- * action="wait" — block until the screen says what the agent is waiting for.
- *
- * Without this, waiting is polling: the agent calls action="screen" over and over
- * (each a full model round-trip carrying a whole screen into context) until the
- * text it wants shows up. `screen` already settles, but only for output QUIET and
- * only up to 800ms — a dev server compiling for 20s or an installer looks exactly
- * like a quiet screen, so settling answers the wrong question. This waits on the
- * CONTENT instead, in one call.
- *
- * The three conditions mirror what a human does at a terminal: wait for something
- * to appear (`wait_for`), wait for something to go away (`wait_for` +
- * `wait_absent` — a spinner, "Installing…"), or just wait for it to settle down
- * (neither — the pre-existing quiet check, now with a real timeout behind it).
- *
- * A timeout is NOT an error: "it never showed up within 15s" is a legitimate,
- * often expected answer (the build IS still running). It returns the screen with
- * an explicit verdict, because the failure that matters here is the agent reading
- * a timed-out screen as though the condition held.
- */
-export async function waitForScreen(
-  deps: TerminalToolDeps,
-  input: {
-    terminalId: string
-    wait_for?: string
-    wait_absent?: boolean
-    wait_timeout_ms?: number
-  },
-  signal?: AbortSignal,
-): Promise<TerminalActionResult> {
-  const timeoutMs = Math.min(input.wait_timeout_ms ?? DEFAULT_WAIT_MS, MAX_WAIT_MS)
-  const needle = input.wait_for
-  const absent = Boolean(input.wait_absent)
-  if (absent && !needle) {
-    return {
-      content: 'wait_absent requires wait_for — say WHAT should disappear.',
-      isError: true,
-    }
-  }
-
-  const start = Date.now()
-  const hardDeadline = start + timeoutMs
-  // Subscribed BEFORE the first render, so output landing between that render and the
-  // subscription still wakes the wait.
-  const activity = watchTerminalActivity(deps.watch, input.terminalId, signal)
-  let last: ScreenSnapshot | null
-  let outcome: WaitOutcome = 'timeout'
-  let hasFinalScreen = false
-  try {
-    last = await deps.screen(input.terminalId)
-    if (!last) {
-      return {
-        content: `No open terminal ${input.terminalId} (it may have exited).`,
-        isError: true,
-      }
-    }
-
-    const satisfied = (text: string): boolean => {
-      if (!needle) return false // handled by the quiet path below
-      return absent ? !text.includes(needle) : text.includes(needle)
-    }
-
-    // Check BEFORE waiting: the condition may already hold, and a wait that sleeps
-    // anyway would charge the agent latency for an answer it already had.
-    if (needle && satisfied(last.text)) {
-      outcome = absent ? 'vanished' : 'matched'
-    } else {
-      let prev = last.text
-      for (;;) {
-        // With no needle, "quiet" is QUIET_MS without output, so the window restarts per wake.
-        const quietAt = needle ? hardDeadline : Math.min(hardDeadline, Date.now() + QUIET_MS)
-        const wake = await activity.next(quietAt)
-        if (wake === 'aborted') {
-          outcome = 'interrupted'
-          break // Esc/Stop pressed — bail with what we have
-        }
-        if (wake === 'deadline') {
-          outcome = quietAt < hardDeadline ? 'quiet' : 'timeout'
-          break
-        }
-        const snap = await deps.screen(input.terminalId)
-        if (!snap || wake === 'exit') {
-          // A short command can print its answer and exit before this render reads it.
-          // The live registry is intentionally cleared on exit, so consult its bounded
-          // final-screen archive before deciding the text never appeared.
-          const final = snap ?? (await deps.finalScreen?.(input.terminalId)) ?? null
-          if (final) {
-            last = final
-            hasFinalScreen = true
-          }
-          // The program ended. That is an ANSWER (the command finished), not a failure —
-          // the agent asked to wait for something and the wait resolved.
-          outcome =
-            final && needle && satisfied(final.text) ? (absent ? 'vanished' : 'matched') : 'exited'
-          break
-        }
-        last = snap
-        if (needle) {
-          if (satisfied(snap.text)) {
-            outcome = absent ? 'vanished' : 'matched'
-            break
-          }
-        } else if (snap.text === prev) {
-          outcome = 'quiet' // output that redrew nothing
-          break
-        }
-        prev = snap.text
-      }
-    }
-  } finally {
-    activity.close()
-  }
-
-  const waited = `${Math.round((Date.now() - start) / 100) / 10}s`
-  const verdict = ((): string => {
-    switch (outcome) {
-      case 'matched':
-        return `"${needle}" appeared after ${waited}.`
-      case 'vanished':
-        return `"${needle}" is gone after ${waited}.`
-      case 'quiet':
-        return `Output went quiet after ${waited}.`
-      case 'exited':
-        return `The program exited after ${waited} — the terminal is closed.`
-      case 'interrupted':
-        return `INTERRUPTED after ${waited}: the terminal wait was cancelled. The terminal is still open.`
-      case 'timeout':
-        return needle
-          ? `TIMED OUT after ${waited}: "${needle}" ${absent ? 'is STILL on screen' : 'never appeared'}. ` +
-              'This is not necessarily a failure — the program may still be working. Wait again with a ' +
-              'longer wait_timeout_ms, or read the screen below to see where it actually is.'
-          : `TIMED OUT after ${waited}: the output never went quiet — it is still producing.`
-    }
-  })()
-
-  if (outcome === 'exited' && !hasFinalScreen) {
-    return {
-      content: verdict,
-      details: { action: 'wait', terminalId: input.terminalId },
-    }
-  }
-  return {
-    content: `${verdict}\n${renderScreen(last)}`,
-    details: { action: 'wait', terminalId: input.terminalId, screen: last },
-    supersedeKey: `terminal:${input.terminalId}`,
-  }
-}
-
 /**
  * Handle one interactive-terminal action. Called by `bash.execute` when `action`
  * is set. Adaptive settle: re-render on each output burst until output goes QUIET
@@ -340,32 +144,33 @@ export async function runTerminalAction(
   signal?: AbortSignal,
 ): Promise<TerminalActionResult> {
   const { action } = input
+  if (signal?.aborted) return { content: 'INTERRUPTED: no terminal action sent.', isError: true }
+  if (input.wait_absent && !input.wait_for) {
+    return { content: 'wait_absent requires wait_for — say WHAT should disappear.', isError: true }
+  }
 
-  const settleScreen = async (
-    terminalId: string,
-    opts: { maxMs: number; needNonEmpty?: boolean },
-  ): Promise<ScreenSnapshot | null> => {
-    const capAt = Date.now() + opts.maxMs
-    const activity = watchTerminalActivity(deps.watch, terminalId, signal)
-    const blank = (s: ScreenSnapshot | null) => Boolean(opts.needNonEmpty) && !s?.text.trim()
-    try {
-      let last = await deps.screen(terminalId)
-      let prev = last?.text ?? null
-      for (;;) {
-        // A blank screen that must fill keeps waiting for output up to the cap; otherwise
-        // QUIET_MS without output is settled.
-        const quietAt = blank(last) ? capAt : Math.min(capAt, Date.now() + QUIET_MS)
-        const wake = await activity.next(quietAt)
-        if (wake === 'aborted' || wake === 'deadline') return last // Stop pressed / quiet / cap
-        const snap = await deps.screen(terminalId)
-        if (!snap) return null // terminal exited / unknown id
-        last = snap
-        if (wake === 'exit') return snap
-        if (snap.text === prev && !blank(snap)) return snap // output that redrew nothing
-        prev = snap.text
+  const observe = async (terminalId: string, maxMs: number): Promise<TerminalActionResult> => {
+    if (action === 'wait' || input.wait_for || input.wait_timeout_ms !== undefined) {
+      const label = waitLabel(input)
+      deps.onWait?.({ terminalId, active: true, label })
+      try {
+        const result = await waitForScreen(deps, { terminalId, ...input }, signal)
+        return { ...result, details: { ...result.details, action, terminalId } }
+      } finally {
+        deps.onWait?.({ terminalId, active: false, label })
       }
-    } finally {
-      activity.close()
+    }
+    const snapshot = await settleScreen(
+      deps,
+      terminalId,
+      { maxMs, needNonEmpty: action === 'open' },
+      signal,
+    )
+    return {
+      content: `Terminal ${terminalId}: ${snapshot.state}.\n${renderScreen(snapshot.screen)}`,
+      details: { action, terminalId, ...snapshot },
+      isError: snapshot.state === 'unavailable',
+      supersedeKey: `terminal:${terminalId}`,
     }
   }
 
@@ -389,14 +194,11 @@ export async function runTerminalAction(
       cwd: input.cwd,
       command: input.command,
     })
-    const screen = await settleScreen(terminalId, {
-      maxMs: 3000,
-      needNonEmpty: true,
-    })
+    const result = await observe(terminalId, 3000)
     return {
-      content: `Opened terminal ${terminalId} running \`${input.command}\`.\n${renderScreen(screen)}`,
-      details: { action, terminalId, command: input.command, screen },
-      supersedeKey: `terminal:${terminalId}`,
+      ...result,
+      content: `Opened terminal ${terminalId} running \`${input.command}\`.\n${result.content}`,
+      details: { ...result.details, action, terminalId, command: input.command },
     }
   }
 
@@ -417,72 +219,49 @@ export async function runTerminalAction(
     }
   }
 
-  if (action === 'screen') {
-    const screen = await settleScreen(terminalId, { maxMs: 800 })
-    if (!screen)
-      return {
-        content: `No open terminal ${terminalId} (it may have exited).`,
-        isError: true,
-      }
-    return {
-      content: renderScreen(screen),
-      details: { action, terminalId, screen },
-      supersedeKey: `terminal:${terminalId}`,
-    }
-  }
+  if (action === 'screen' || action === 'wait') return observe(terminalId, 800)
 
-  if (action === 'wait') {
-    const label = waitLabel(input)
-    deps.onWait?.({ terminalId, active: true, label })
-    try {
-      return await waitForScreen(deps, { terminalId, ...input }, signal)
-    } finally {
-      deps.onWait?.({ terminalId, active: false, label })
-    }
+  if (action === 'keys' && !input.keys?.length) {
+    return { content: 'keys is required for action="keys".', isError: true }
   }
-
-  // keys / type: write bytes, settle, return the fresh screen. action="type"
-  // may also carry `keys`, pressed AFTER the text (e.g. type "ls" then Enter in
-  // ONE call); action="keys" is keys-only.
-  let data: string
-  let trailingKeys: string | undefined
-  let sentLabel: string
-  if (action === 'keys') {
-    if (!input.keys?.length)
-      return { content: 'keys is required for action="keys".', isError: true }
-    data = encodeKeys(input.keys)
-    // The result is persisted in the tool transcript. Keep it privacy-safe for
-    // the same reason as `terminal.input`: `keys` can contain credentials or
-    // answers to an interactive prompt, so never echo literal key payloads.
-    sentLabel = inputLabel({ action, keys: input.keys })
-  } else {
-    if (input.text == null) return { content: 'text is required for action="type".', isError: true }
-    data = input.text
-    trailingKeys = input.keys?.length ? encodeKeys(input.keys) : undefined
-    sentLabel = input.keys?.length ? `text + ${input.keys.join(' ')}` : 'text'
+  if (action === 'type' && input.text == null) {
+    return { content: 'text is required for action="type".', isError: true }
   }
-  const ok = deps.write(terminalId, data)
-  if (!ok)
+  const sentLabel = inputLabel({ action, keys: input.keys })
+  const before = await deps.screen(terminalId)
+  const sent = await sendTerminalInput(
+    deps,
+    terminalId,
+    { text: action === 'type' ? input.text : undefined, keys: input.keys },
+    signal,
+  )
+  if (sent !== 'sent') {
     return {
-      content: `No open terminal ${terminalId} (it may have exited).`,
+      content:
+        sent === 'interrupted'
+          ? 'INTERRUPTED: remaining terminal input was not sent.'
+          : `Terminal ${terminalId} exited or rejected input; remaining input was not sent.`,
       isError: true,
     }
-  if (trailingKeys) {
-    // Written as a SEPARATE write after a short settle, not concatenated onto the
-    // text: some TUI composers (e.g. Codex) detect paste-vs-typing by input burst
-    // speed, and a trailing Enter glued onto the same fast write can be swallowed
-    // as a newline inside the pasted text instead of registering as submit.
-    await sleep(50)
-    deps.write(terminalId, trailingKeys)
   }
-  deps.onInput?.({
-    terminalId,
-    label: inputLabel({ action, keys: input.keys }),
-  })
-  const screen = await settleScreen(terminalId, { maxMs: 1500 })
+  deps.onInput?.({ terminalId, label: sentLabel })
+  const result = await observe(terminalId, 1500)
+  const after = result.details?.screen
+  const screenChanged =
+    before && after
+      ? before.text !== after.text ||
+        before.cols !== after.cols ||
+        before.rows !== after.rows ||
+        before.cursor.row !== after.cursor.row ||
+        before.cursor.col !== after.cursor.col
+      : undefined
+  const unchanged =
+    screenChanged === false && result.details?.state === 'running'
+      ? '\nDisplay unchanged; input effect is unconfirmed. Follow the on-screen key hints.'
+      : ''
   return {
-    content: `Sent ${sentLabel} to terminal ${terminalId}.\n${renderScreen(screen)}`,
-    details: { action, terminalId, screen },
-    supersedeKey: `terminal:${terminalId}`,
+    ...result,
+    content: `Sent ${sentLabel} to terminal ${terminalId}.${unchanged}\n${result.content}`,
+    details: { ...result.details, action, terminalId, screenChanged },
   }
 }

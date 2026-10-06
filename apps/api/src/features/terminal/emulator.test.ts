@@ -65,6 +65,19 @@ describe('createEmulator', () => {
     em.dispose()
   })
 
+  test('reports application cursor mode as the program enables and disables it', async () => {
+    const em = createEmulator(80, 24)
+    try {
+      expect((await em.screen()).applicationCursorKeys).toBe(false)
+      em.write('\x1b[?1h')
+      expect((await em.screen()).applicationCursorKeys).toBe(true)
+      em.write('\x1b[?1l')
+      expect((await em.screen()).applicationCursorKeys).toBe(false)
+    } finally {
+      em.dispose()
+    }
+  })
+
   test('clamps transiently tiny viewer dimensions to xterm-safe bounds', async () => {
     const em = createEmulator(0, 1)
     expect(await em.screen()).toMatchObject({ cols: 2, rows: 2 })

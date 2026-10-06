@@ -57,12 +57,13 @@ export function watchTerminalActivity(
   const settled = (now: number, deadline: number): ActivityWake | null => {
     if (signal?.aborted) return 'aborted'
     if (exited) return 'exit'
+    if (now >= deadline) return 'deadline'
     if (dirty && now - lastWakeAt >= MIN_WAKE_GAP_MS) {
       dirty = false
       lastWakeAt = now
       return 'output'
     }
-    return now >= deadline ? 'deadline' : null
+    return null
   }
 
   return {

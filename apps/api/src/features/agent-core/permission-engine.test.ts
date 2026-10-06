@@ -411,6 +411,8 @@ describe('extractCallFacts', () => {
   test.each([
     { action: 'type', text: 'rm -rf /' },
     { action: 'keys', keys: ['rm -rf /', 'Enter'] },
+    { action: 'type', text: 'hello', keys: ['Enter', 'rm -rf /', 'Enter'] },
+    { action: 'type', text: 'r', keys: ['m -rf /', 'Enter'] },
   ])('interactive terminal $action input cannot bypass dangerous-command facts', (input) => {
     const f = extractCallFacts('bash', { ...input, terminal_id: 'term-1' }, ROOT)
     expect(f.dangerous).toBe(true)

@@ -117,6 +117,7 @@ export function buildRunToolRegistry(
     work,
     userId,
     sessionId: session.id,
+    terminalInput: deps.terminalControl != null && isToolLive(agentProfile, 'bash', disabledTools),
     runAction: (toolCallId, action, payload) => ctx.executeToolAction(toolCallId, action, payload),
   })
 

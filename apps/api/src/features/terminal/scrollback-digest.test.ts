@@ -65,13 +65,16 @@ describe('buildTerminalDigest', () => {
     now: 1_000_000,
   }
 
-  test('renders header, commands, tail, and the terminal-tool pointer', () => {
+  test('renders header, commands, tail, and the actual bash input contract', () => {
     const digest = buildTerminalDigest({ ...base, scrollback: round('bun test', 0, '12 pass') })
     expect(digest).toContain('Terminal 01234567 — interactive shell in /work/app')
     expect(digest).toContain('last output 5s ago')
     expect(digest).toContain('[exit 0] bun test')
     expect(digest).toContain('12 pass')
-    expect(digest).toContain(`terminalId "${base.id}"`)
+    expect(digest).toContain(`terminal_id "${base.id}"`)
+    expect(digest).toContain('`bash`')
+    expect(digest).toContain('keys:["Enter"]')
+    expect(digest).not.toContain('`terminal` tool')
   })
 
   test('command panes show their command; alt-screen is flagged', () => {
@@ -92,5 +95,37 @@ describe('buildTerminalDigest', () => {
     expect(digest).toContain(`Recent commands (last ${DIGEST_MAX_COMMANDS}):`)
     expect(digest).not.toContain('[exit 0] cmd3')
     expect(digest).toContain('[exit 0] cmd8')
+  })
+
+  test('full-screen context uses the current viewport without accumulated redraws', () => {
+    const digest = buildTerminalDigest({
+      ...base,
+      altScreen: true,
+      scrollback: 'OLD MENU\n'.repeat(1000),
+      screen: 'Select a model\n> Auto\nEnter to select',
+    })
+    expect(digest).toContain('Current rendered screen')
+    expect(digest).toContain('> Auto')
+    expect(digest).not.toContain('OLD MENU')
+    expect(digest.length).toBeLessThan(1000)
+  })
+
+  test('does not present old redraws as a viewport when rendering is unavailable', () => {
+    const digest = buildTerminalDigest({ ...base, altScreen: true, scrollback: 'stale menu' })
+    expect(digest).not.toContain('stale menu')
+    expect(digest).toContain('Rendered screen unavailable')
+  })
+
+  test('normal-buffer TUIs use the viewport too and retain the selection footer when clipped', () => {
+    const digest = buildTerminalDigest({
+      ...base,
+      scrollback: 'old state',
+      screen: 'Model picker\n' + 'padding\n'.repeat(1000) + 'Selected: Luna',
+    })
+    expect(digest).toContain('Model picker')
+    expect(digest).toContain('Selected: Luna')
+    expect(digest).toContain('viewport clipped')
+    expect(digest).not.toContain('old state')
+    expect(digest.length).toBeLessThan(4000)
   })
 })

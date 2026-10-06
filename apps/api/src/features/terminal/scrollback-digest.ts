@@ -5,7 +5,7 @@
  * with exit codes (reconstructed from the OSC 133 shell-integration marks the
  * server injects into interactive panes), and a bounded ANSI-stripped tail of
  * recent output. Deliberately small: the header points the agent at the
- * `terminal` tool to read the full screen or interact.
+ * `bash` interactive actions to read the full screen or interact.
  *
  * Kept free of PTY / service imports so the mark parsing + trimming rules stay
  * unit-testable; the caller (bootstrap) feeds it a session's info + scrollback.
@@ -32,6 +32,8 @@ export interface TerminalDigestInput {
   lastOutputAt: number
   /** Raw retained scrollback (ANSI + OSC marks included). */
   scrollback: string
+  /** Rendered viewport, including TUIs that redraw the normal buffer instead of the alternate. */
+  screen?: string
   /** Injectable clock for tests. */
   now?: number
 }
@@ -135,7 +137,7 @@ const agoLabel = (ms: number): string => {
 /**
  * Renders the digest markdown block: a header line, the recent commands with
  * exit codes (interactive shells with OSC 133 integration only), and the output
- * tail, closed by a pointer to the `terminal` tool for deeper reads.
+ * tail, closed by a pointer to `bash` interactive actions for deeper reads.
  */
 export function buildTerminalDigest(input: TerminalDigestInput): string {
   const now = input.now ?? Date.now()
@@ -145,7 +147,9 @@ export function buildTerminalDigest(input: TerminalDigestInput): string {
   const state = input.altScreen ? 'full-screen app on screen' : 'live'
   lines.push(`Status: ${state} · last output ${agoLabel(Math.max(0, now - input.lastOutputAt))}`)
 
-  const commands = parseScrollbackCommands(input.scrollback).slice(-DIGEST_MAX_COMMANDS)
+  const commands = input.altScreen
+    ? []
+    : parseScrollbackCommands(input.scrollback).slice(-DIGEST_MAX_COMMANDS)
   if (commands.length > 0) {
     lines.push('')
     lines.push(`Recent commands (last ${commands.length}):`)
@@ -155,19 +159,32 @@ export function buildTerminalDigest(input: TerminalDigestInput): string {
     }
   }
 
-  const tail = scrollbackTail(input.scrollback)
+  const rendered = input.screen !== undefined
+  const clipped = (input.screen?.length ?? 0) > DIGEST_TAIL_CHARS
+  const viewport = clipped
+    ? `${input.screen!.slice(0, DIGEST_TAIL_CHARS / 2)}\n[… viewport clipped …]\n${input.screen!.slice(-DIGEST_TAIL_CHARS / 2)}`
+    : (input.screen ?? '')
+  const tail = rendered ? viewport : input.altScreen ? '' : scrollbackTail(input.scrollback)
   if (tail) {
     lines.push('')
-    lines.push(`Output tail (bounded, last ${DIGEST_TAIL_LINES} lines max):`)
+    lines.push(
+      rendered
+        ? `Current rendered screen${clipped ? ' (clipped; use action="screen" for the full viewport)' : ''}:`
+        : `Output tail (bounded, last ${DIGEST_TAIL_LINES} lines max):`,
+    )
     lines.push(tail)
   } else {
     lines.push('')
-    lines.push('(No output yet.)')
+    lines.push(
+      rendered || input.altScreen
+        ? '(Rendered screen unavailable or blank; use action="screen".)'
+        : '(No output yet.)',
+    )
   }
 
   lines.push('')
   lines.push(
-    `(Compact digest of a LIVE terminal. To read the rendered screen or interact with it, use the \`terminal\` tool with terminalId "${input.id}"; to run new commands, use bash.)`,
+    `Use \`bash\` with terminal_id "${input.id}" and action="screen" to inspect, action="type" with text and keys:["Enter"] to submit, or action="keys" for navigation. Input actions return a fresh screen; add wait_for to await expected text in the same call.`,
   )
   return lines.join('\n')
 }

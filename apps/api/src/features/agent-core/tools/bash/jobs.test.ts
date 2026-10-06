@@ -207,3 +207,59 @@ describe('jobs classify', () => {
     expect(tool.classify?.(undefined)).toEqual({ effect: 'external' })
   })
 })
+
+describe('PTY routing and current observations', () => {
+  const deps = () => ({
+    ...makeDeps([{ ...job('tc-1', 0, 'bg-1'), terminalId: 'pty-1' }]).deps,
+    readJob: () => ({ output: 'logs', running: true }),
+  })
+
+  test('PTY input points at named keys and a fresh screen with the exact id', async () => {
+    const tool = createJobsTool(deps(), { terminalInput: true })
+    const result = await tool.execute(
+      'call',
+      {
+        action: 'send_input',
+        job_id: 'bg-1',
+        input: 'hello',
+      },
+      undefined,
+      undefined,
+      undefined,
+    )
+    expect(result.content).toContain('terminal_id="pty-1"')
+    expect(result.content).toContain('keys:["Enter"]')
+    expect(result.content).not.toContain('hello')
+  })
+
+  test('logs supersede previous reads and distinguish logs from the screen', async () => {
+    const result = await createJobsTool(deps(), { terminalInput: true }).execute(
+      'call',
+      {
+        action: 'read',
+        job_id: 'bg-1',
+      },
+      undefined,
+      undefined,
+      undefined,
+    )
+    expect(result.supersedeKey).toBe('job:tc-1')
+    expect(result.content).toContain('current TUI screen')
+    expect(result.content).toContain('logs')
+  })
+
+  test('runs without terminal actions are not directed to an unavailable capability', async () => {
+    const result = await createJobsTool(deps()).execute(
+      'call',
+      {
+        action: 'read',
+        job_id: 'bg-1',
+      },
+      undefined,
+      undefined,
+      undefined,
+    )
+    expect(result.content).not.toContain('bash action=')
+    expect(result.content).not.toContain('terminal_id')
+  })
+})

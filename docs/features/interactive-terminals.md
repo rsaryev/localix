@@ -1,0 +1,73 @@
+# Let an agent interact with a terminal
+
+Localix agents can drive a live terminal through the `bash` tool: type text, press named keys, read
+the rendered screen, and wait for screen content. The terminal pane remains available for you to
+watch or take over. These actions are exposed when the run has a terminal host and `bash` access.
+
+## Send input and observe the result
+
+Use `action: "type"` for text and `keys: ["Enter"]` to submit it. Text and Enter are sent as
+separate input bursts so a TUI does not treat Enter as part of a paste. Navigation sequences such as
+`keys: ["Down", "Down", "Enter"]` run in order and return a fresh screen in the same call. Arrow
+keys follow the application's cursor-key mode.
+
+Calls contain only execution parameters; `bash` does not require a generated description label. For
+example:
+
+```json
+{
+  "action": "type",
+  "terminal_id": "<id from the attached terminal or bash list>",
+  "text": "/model",
+  "keys": ["Enter"],
+  "wait_for": "Select a model",
+  "wait_timeout_ms": 15000
+}
+```
+
+The text to wait for depends on the application. `wait_for` can accompany `open`, `type`, or `keys`,
+or be used with `action: "wait"` on an existing terminal. `wait_absent: true` waits for that text to
+disappear. A wait returns its outcome and the current screen; a timeout means the condition was not
+observed within the deadline. Without a text condition, it waits for quiet output. Quiet output
+alone does not prove that a task finished.
+
+Match response or status text rather than text echoed from your own input. Matching is literal and
+case-sensitive. Input results flag an unchanged display when the effect could not be confirmed.
+Batch keystrokes whose order is already known and follow the application's on-screen shortcuts. When
+the next choice depends on the application, inspect the returned screen first. For a model switch,
+confirm the selected model in the screen before sending the next prompt. A typed command, an echoed
+greeting, or an open picker does not prove that the selection or task succeeded.
+
+## Keep observations small and current
+
+An attached terminal contributes a bounded rendered viewport rather than a history of TUI redraws. A
+large viewport keeps both its beginning and end, with an explicit clipping notice;
+`action: "screen"` returns the full viewport. Terminal snapshots supersede older observations of the
+same terminal in the model's context, and job log reads supersede older reads of that job.
+
+Input actions already return a screen. Use `action: "wait"` for delayed output instead of repeatedly
+calling `screen`. Waits wake on terminal output or exit, with a deadline, rather than rendering a
+silent terminal on a timer. A retained final screen can be returned after exit and is labelled as
+exited, so a fast response is not mistaken for missing output or a live process.
+
+`jobs` manages background work and reads accumulated logs. Its PTY entries include the terminal id
+for the `bash` interactive actions. The `until` parameter is a different mechanism: it polls a shell
+condition and wakes the agent on success. Omit `action` for that mechanism; `action: "until"` is not
+supported. See [Wait for something](monitors.md).
+
+## Related implementations
+
+These projects provide useful examples of interactive terminal contracts:
+
+- [terminal-use](https://github.com/flipbit03/terminal-use): a headless terminal with named keys and
+  screen-content or stability waits.
+- [Terminal-MCP](https://github.com/adsamcik/Terminal-MCP): compound input-and-wait operations,
+  rendered observations, and application cursor-key handling.
+- [libtmux-mcp](https://github.com/tmux-python/libtmux-mcp): ordered input batches and incremental
+  capture with lifecycle and truncation checks.
+- [interactive-shell-mcp](https://github.com/lightos/interactive-shell-mcp): separate stream and
+  rendered-screen modes, idle waits, and screen regions.
+
+Localix retains complete current screens when replacing older terminal observations. Incremental
+screen diffs would require keeping their baseline across context trimming; that is not the current
+contract.

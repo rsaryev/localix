@@ -50,6 +50,8 @@ export interface ScreenSnapshot {
   cursor: { row: number; col: number }
   cols: number
   rows: number
+  /** DECCKM: arrows must use SS3 sequences while the foreground app enables this mode. */
+  applicationCursorKeys?: boolean
 }
 
 /** A terminal's current state for inspection. `null` when no live terminal has that id. */

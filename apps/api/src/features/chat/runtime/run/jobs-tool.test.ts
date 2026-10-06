@@ -52,7 +52,7 @@ describe('background jobs terminal lifecycle', () => {
 describe('a pane recorded by its PTY is managed through the terminal', () => {
   // `recordTerminalWork` keys such a pane by `terminal:<id>` and registers no action, so the
   // action registry finds nothing: `jobs stop` refused work the prompt had just listed.
-  function setup() {
+  function setup(terminalInput?: boolean) {
     const work = testWork()
     const owner = { userId: 'u1', sessionId: 's1' }
     work.start({
@@ -76,6 +76,7 @@ describe('a pane recorded by its PTY is managed through the terminal', () => {
       work,
       userId: 'u1',
       sessionId: 's1',
+      terminalInput,
       runAction: () => false,
     })
     const run = (input: Record<string, string>) =>
@@ -105,5 +106,13 @@ describe('a pane recorded by its PTY is managed through the terminal', () => {
     expect(calls).toEqual([
       ['write', { userId: 'u1', sessionId: 's1', terminalId: 'pty-1', data: 'print(1)\n' }],
     ])
+  })
+
+  test('does not suggest bash actions when the run policy hides them', async () => {
+    const { run } = setup(false)
+    const result = await run({ action: 'send_input', job_id: 'bg-1', input: 'hello' })
+    expect(result.isError).toBeFalsy()
+    expect(result.content).not.toContain('bash action=')
+    expect(result.content).toContain('action="read"')
   })
 })

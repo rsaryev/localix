@@ -70,6 +70,16 @@ function encodeKey(token: string): string {
 }
 
 /** Encode an ordered list of key tokens into one byte string for the PTY. */
-export function encodeKeys(keys: string[]): string {
-  return keys.map(encodeKey).join('')
+export function encodeKeys(keys: string[], applicationCursorKeys = false): string {
+  return keys
+    .map((key) => {
+      const encoded = encodeKey(key)
+      return applicationCursorKeys &&
+        encoded.length === 3 &&
+        encoded.startsWith('\x1b[') &&
+        'ABCDHF'.includes(encoded[2])
+        ? '\x1bO' + encoded.slice(2)
+        : encoded
+    })
+    .join('')
 }

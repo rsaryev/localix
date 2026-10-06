@@ -47,7 +47,7 @@ export function productionOptionalPorts(
     history_search: createHistorySearchTool(inert(), 'user-1'),
     tool_output: createToolOutputTool(inert(), inert(), 'user-1', 'session-1'),
     skill: createSkillTool(),
-    jobs: createJobsTool(inert()),
+    jobs: createJobsTool(inert(), { terminalInput: true }),
     agents: inert(),
     loops: { userId: 'user-1', sessionId: 'session-1', agentId: 'agent-1' },
     plugin_build: { run: async () => ({ text: '', ok: true }) },

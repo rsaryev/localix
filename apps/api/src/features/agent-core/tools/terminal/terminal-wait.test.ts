@@ -32,7 +32,9 @@ function fakeTerminal(frames: (string | null)[]): TerminalToolDeps {
       return frame === null ? null : snap(frame)
     },
     watch: (_id, onEvent) => {
-      const timer = setInterval(() => onEvent('output'), 15)
+      const timer = setInterval(() => {
+        if (i < frames.length) onEvent('output')
+      }, 15)
       return () => clearInterval(timer)
     },
     write: () => true,
@@ -116,7 +118,7 @@ describe('action="wait" is driven by terminal events, not a render timer', () =>
   test('the settle after keys re-renders on output, not on a timer', async () => {
     const { deps, state } = scriptedTerminal('$ ls')
     await runTerminalAction(deps, { action: 'keys', terminal_id: 't1', keys: ['Enter'] })
-    expect(state.renders).toBe(1)
+    expect(state.renders).toBe(2) // before input, then the one settled result
   })
 })
 

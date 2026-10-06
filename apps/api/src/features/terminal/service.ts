@@ -9,6 +9,7 @@ import { scanListeningPorts, isSameOrDescendant } from './port-scan'
 import { createPortScanCache } from './port-scan-cache'
 import { installShellIntegration, cleanupShellIntegration } from './shell-integration'
 import type { CreateTerminalInput, TerminalServiceDeps } from './service-deps'
+import { hasUserInput } from './input-activity'
 
 /** How long a single OS port scan is reused before re-running — bounds `lsof`//proc/
  *  cost to ~once per this window no matter how often the UI polls the job list. */
@@ -219,11 +220,12 @@ export function createTerminalService(deps: TerminalServiceDeps) {
       return entry.session.screen()
     },
 
-    /** User-originated input from the terminal stream, with ownership + lifecycle publish. */
+    /** Client input includes VT protocol replies; publish activity only for actual user input. */
     writeUserInput(userId: string, id: string, data: string): boolean {
       const session = ownedBy(userId, id)
       if (!session) return false
       session.write(data)
+      if (!hasUserInput(data)) return true
       const now = performance.now()
       const lastActivity = lastUserInputActivity.get(id)
       if (
