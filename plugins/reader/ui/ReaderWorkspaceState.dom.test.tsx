@@ -1,3 +1,5 @@
+import { offerKeyToFocusedSurface } from '@localixai/plugin-sdk/ui/focus'
+import { isPrimaryModifier } from '@localixai/kit/keybindings'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { bindPluginUiComponents } from '@localixai/plugin-sdk/ui'
 import { problemReportTitle } from '@localixai/plugin-sdk/ui/problems'
@@ -44,13 +46,19 @@ function bindHostComponents(): () => void {
   })
 }
 
+const routeKey = (event: KeyboardEvent) => {
+  offerKeyToFocusedSurface(event)
+}
+
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   unbindComponents = bindHostComponents()
+  window.addEventListener('keydown', routeKey)
 })
 
 afterAll(async () => {
+  window.removeEventListener('keydown', routeKey)
   unbindComponents?.()
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
@@ -156,6 +164,27 @@ describe('ReaderWorkspace tab state', () => {
       expect(host.querySelectorAll('[aria-label="Reader path"]')).toHaveLength(1)
       expect(path.querySelector('[aria-label="Switch book"]')).not.toBeNull()
       expect(path.querySelector('[aria-label="Switch chapter"]')).not.toBeNull()
+      const primary = isPrimaryModifier({ metaKey: true, ctrlKey: false })
+        ? { metaKey: true }
+        : { ctrlKey: true }
+      const pressFind = (target: Element) => {
+        const event = new KeyboardEvent('keydown', {
+          key: 'f',
+          ...primary,
+          bubbles: true,
+          cancelable: true,
+        })
+        target.dispatchEvent(event)
+        return event
+      }
+      expect(pressFind(document.body).defaultPrevented).toBe(false)
+      expect(Boolean(host.querySelector('input[aria-label="Search inside book"]'))).toBe(false)
+      const readingSurface = host.querySelector('article')!
+      await act(async () => {
+        expect(pressFind(readingSurface).defaultPrevented).toBe(true)
+      })
+      expect(Boolean(host.querySelector('input[aria-label="Search inside book"]'))).toBe(true)
+
       const back = host.querySelector<HTMLButtonElement>('[aria-label="Back to library"]')
       await act(async () => {
         back!.click()

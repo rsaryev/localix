@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Command, Globe2, MoreHorizontal, SquareTerminal } from 'lucide-react'
+import { Globe2, MoreHorizontal, SquareTerminal } from 'lucide-react'
 
 import { StatusItems, useLiveStatusItemCount } from '@/shared/contrib/statusItems'
 import { useChatStore } from '@/features/chat/model/store'
@@ -28,10 +28,10 @@ import { fitStatusStrip } from '@localixai/kit/workbench-statusbar'
  * The workspace quick-access cluster in the titlebar, next to the unified navigation breadcrumb
  * (see {@link TitlebarContent}). Two zones, and the order is a contract:
  *
- *     … breadcrumb … │ [ contributed plugin items ] │ [ ⌘ palette · Terminal · Event Center ]
+ *     … breadcrumb … │ [ contributed plugin items ] │ [ Terminal · Browser · Event Center ]
  *
  * ── THE CORE CLUSTER IS THE ANCHOR, AND IT IS PINNED RIGHT ──────────────────────
- * The palette, the terminal and the bell are always here, always LAST, and no plugin can move,
+ * The terminal, browser and bell are always here, always LAST, and no plugin can move,
  * replace or crowd them out. They used to sit on either side of the plugin glyphs — palette and
  * terminal before, bell after — which made the row's right edge a different control depending on
  * how many plugins happened to be speaking. Three fixed buttons behind one rule are a corner a
@@ -73,10 +73,8 @@ import { fitStatusStrip } from '@localixai/kit/workbench-statusbar'
 const MAX_VISIBLE_TITLEBAR_ITEMS = 12
 
 export function BreadcrumbTrailingActions({
-  onOpenCommandPalette,
   titlebarWidth = null,
 }: {
-  onOpenCommandPalette: () => void
   /**
    * Width of the titlebar row in px, measured by its owner, or `null` before the first
    * measurement. Measured THERE rather than here: this cluster's own box is intrinsic (the grid's
@@ -171,21 +169,7 @@ export function BreadcrumbTrailingActions({
       <Rule />
 
       {/* The fixed core, pinned to the row's right edge and never folded. */}
-      <div
-        role="group"
-        aria-label="Workspace actions"
-        className="flex shrink-0 items-center gap-0.5"
-      >
-        {/* Command palette belongs with workspace utilities, not beside the macOS
-            traffic lights. Keep it compact; the tooltip carries the live shortcut. */}
-        <ActionButton
-          label="Command palette"
-          chordId={CMD.commandPalette}
-          onClick={onOpenCommandPalette}
-        >
-          <Command className="size-3.5 shrink-0" strokeWidth={1.75} />
-        </ActionButton>
-
+      <div role="group" aria-label="Workspace actions" className="flex shrink-0 items-center gap-1">
         {/* Terminal — opens (or focuses) a shell as an editor-grid tab, center-stage
             beside the preview. Toggles closed when a terminal tab is already focused. */}
         <ActionButton
@@ -229,7 +213,7 @@ export function BreadcrumbTrailingActions({
 
 /** The hairline that fences one zone of the titlebar off from the next. */
 function Rule() {
-  return <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border-soft" aria-hidden="true" />
+  return <span className="mx-1 h-3 w-px shrink-0 bg-border-soft" aria-hidden="true" />
 }
 
 /** One header quick-action: compact icon (+ optional inline status), toggle-aware. */

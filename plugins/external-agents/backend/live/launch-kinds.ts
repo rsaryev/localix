@@ -11,10 +11,8 @@
  *
  * A launch therefore DECLARES what it starts instead of leaving us to recover it:
  * `LOCALIX_AGENT=<provider>` and `LOCALIX_AGENT_CWD=<path>` lead the line (see `shared/launch.ts`,
- * which both the UI launcher and the delegate commands derive from). Each reader below takes one
- * of those declarations; none of them may assume a declaration is present, because the tab-strip
- * launcher (apps/ui features/terminal/model/agentLaunchers.ts) and a hand-typed `claude` emit only
- * some of them, or none.
+ * which describes delegated CLI commands). Core terminal shortcuts and hand-typed commands may
+ * omit these declarations; the reader also recognises supported bare executable names.
  */
 
 export interface LaunchKind {

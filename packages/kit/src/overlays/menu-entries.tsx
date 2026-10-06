@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
 import type { MenuActionEntry, MenuEntry, MenuSubmenuEntry } from '@localixai/plugin-sdk/ui'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { MENU_FAMILIES as FAMILIES, type MenuFamilyName } from './menu-families'
@@ -44,8 +44,8 @@ export type { MenuFamilyName }
  * Render a described menu into `family`'s components. Nests through submenus, so a plugin's
  * `items` group reads the same at any depth.
  *
- * A Fragment, not a wrapper element: Radix keeps `role="menuitem"` nodes as direct children of the
- * `role="menu"` container.
+ * Each row is a Radix menu control. An optional trailing action is a sibling control in a
+ * presentation-only wrapper, so keyboard navigation reaches both actions independently.
  */
 export function MenuEntries({
   entries,
@@ -88,16 +88,24 @@ function MenuLevel({ entries, family }: { entries: readonly MenuEntry[]; family:
         // Drawn exactly like a `selected` row — icon in front, check at the end (the item adds
         // it) — so the two choice kinds differ only in role, never in where their marks sit.
         if (entry.checked !== undefined) {
-          return (
+          const primary = (
             <CheckboxItem
               key={entry.id}
               checked={entry.checked}
               disabled={entry.disabled}
               inset={gutter}
+              className={entry.trailingAction ? 'min-w-0 flex-1' : undefined}
               onSelect={onSelect}
             >
               <MenuRow entry={entry} gutter={gutter} />
             </CheckboxItem>
+          )
+          return entry.trailingAction ? (
+            <MenuActionPair key={entry.id} action={entry.trailingAction} family={family}>
+              {primary}
+            </MenuActionPair>
+          ) : (
+            primary
           )
         }
 
@@ -106,7 +114,7 @@ function MenuLevel({ entries, family }: { entries: readonly MenuEntry[]; family:
         // `MENU_ITEM` is already `relative`, so the beam rides the row's own radius.
         const recommended = entry.recommended === true && !entry.disabled
 
-        return (
+        const primary = (
           <Item
             key={entry.id}
             disabled={entry.disabled}
@@ -114,6 +122,7 @@ function MenuLevel({ entries, family }: { entries: readonly MenuEntry[]; family:
             // Always, icon or not: the icon moves INTO the indicator slot when a level has a
             // gutter, so the row still needs the indent that slot sits in.
             inset={gutter}
+            className={entry.trailingAction ? 'min-w-0 flex-1' : undefined}
             tone={entry.danger ? 'danger' : 'default'}
             onSelect={onSelect}
             {...(entry.selected !== undefined
@@ -127,8 +136,47 @@ function MenuLevel({ entries, family }: { entries: readonly MenuEntry[]; family:
             ) : null}
           </Item>
         )
+        return entry.trailingAction ? (
+          <MenuActionPair key={entry.id} action={entry.trailingAction} family={family}>
+            {primary}
+          </MenuActionPair>
+        ) : (
+          primary
+        )
       })}
     </>
+  )
+}
+
+/** Two sibling menu controls: choosing the icon never invokes or closes the primary action. */
+interface MenuActionPairProps {
+  action: NonNullable<MenuActionEntry['trailingAction']>
+  family: MenuFamilyName
+  children: ReactNode
+}
+function MenuActionPair({ action, family, children }: MenuActionPairProps) {
+  const { Item } = FAMILIES[family]
+  const Icon = action.icon
+  return (
+    <div role="presentation" className="flex items-center gap-0.5">
+      {children}
+      <Item
+        aria-label={action.label}
+        role={action.checked === undefined ? 'menuitem' : 'menuitemcheckbox'}
+        aria-checked={action.checked}
+        disabled={action.disabled}
+        className={cn(
+          'size-(--chrome-control-md) shrink-0 justify-center p-0',
+          action.checked && 'text-foreground [&_svg]:fill-current',
+        )}
+        onSelect={(event) => {
+          event.preventDefault()
+          action.onSelect()
+        }}
+      >
+        <Icon aria-hidden="true" />
+      </Item>
+    </div>
   )
 }
 

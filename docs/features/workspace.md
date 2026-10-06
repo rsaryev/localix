@@ -9,6 +9,23 @@ this layout.
 
 ## What you can do
 
+All available plugin tools, **Usage & Spend**, and **Vault** are pinned to the left navigation rail
+by default. The middle rail combines them into three groups: **Workspace** (development, data and
+content), **Tools** (utilities, Usage & Spend, Vault, and uncategorized plugins), and **Games**. One
+or two pinned tools in a group keep their individual buttons; three or more share a category menu.
+Only pinned tools count toward this grouping. A category highlights when one of its views is active.
+
+Open **All tools** (**…**) to browse the complete catalog and toggle the pin beside each tool. Pin
+changes keep the menu open and persist on this device. Right-click an individual button to unpin or
+move it. Pinned tools do not also appear in the recent-tools list; recently opened, unpinned tools
+remain behind the recent-views disclosure button. **Manage plugins…** opens the plugins section in
+Settings.
+
+Category menus and All tools open on hover or press; moving into a hover-open menu keeps it open.
+Only one rail menu opens at a time. Pressing a category keeps menus open as you move between
+categories; pressing it again, selecting a tool, clicking outside, or Escape closes the menu. Long
+lists scroll within a bounded panel, with Manage plugins fixed below the catalog.
+
 | Outcome                        | Mechanism                                                                                                | Boundary                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | Arrange work side by side      | Drag a tab to another group or an edge to move or split it                                               | Mobile shows only the focused group at one time             |
@@ -23,6 +40,14 @@ this layout.
 | Open workbench views           | Enabled plugins register file editors and workspace item types                                           | Disabled or unavailable contributions do not render         |
 
 ## How it works
+
+The bottom status bar uses a 28 px height and offers separate **Claude Code** and **Codex** buttons.
+The default order is Reset layout, Keep awake, Claude Code, then Codex. Each agent button starts its
+CLI in the current chat's terminal. These are core shortcuts and remain available when the External
+Agents plugin is disabled. Drag either button to reorder it or move it between the status bar and
+rail; its context menu offers placement and unpinning. Open a chat before launching; the login shell
+reports a missing CLI in its terminal. The top bar keeps Terminal, Browser and Event Center; the
+command palette remains available through its shortcut.
 
 ### Groups and placement
 

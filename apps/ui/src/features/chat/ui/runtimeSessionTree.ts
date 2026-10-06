@@ -10,6 +10,7 @@ export interface FlatNode {
   prefixCols: boolean[]
   /** True when this node is the last child of its parent (renders a `└` elbow instead of `├`). */
   isLast: boolean
+  childCount: number
 }
 
 interface TreeNode {
@@ -50,10 +51,11 @@ function buildForest(sessions: UiSession[]): TreeNode[] {
 }
 
 /** Preorder-flatten the forest, carrying the guide-line state each row needs to draw. */
-function flattenForest(forest: TreeNode[]): FlatNode[] {
+function flattenForest(forest: TreeNode[], collapsedIds: ReadonlySet<string>): FlatNode[] {
   const out: FlatNode[] = []
   const walk = (node: TreeNode, depth: number, prefixCols: boolean[], isLast: boolean) => {
-    out.push({ session: node.session, depth, prefixCols, isLast })
+    out.push({ session: node.session, depth, prefixCols, isLast, childCount: node.children.length })
+    if (collapsedIds.has(node.session.id)) return
     // Children inherit this node's ancestor columns plus one for this node's own
     // branch: a vertical line continues past this node only if it has siblings below.
     const childPrefix = depth === 0 ? [] : [...prefixCols, !isLast]
@@ -66,6 +68,9 @@ function flattenForest(forest: TreeNode[]): FlatNode[] {
 }
 
 /** Build the render-ready preorder tree (forest → flat rows) from a flat session list. */
-export function buildRuntimeSessionTree(sessions: UiSession[]): FlatNode[] {
-  return flattenForest(buildForest(sessions))
+export function buildRuntimeSessionTree(
+  sessions: UiSession[],
+  collapsedIds: ReadonlySet<string> = new Set(),
+): FlatNode[] {
+  return flattenForest(buildForest(sessions), collapsedIds)
 }

@@ -1,6 +1,12 @@
 import { expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 
+test('appearance stays out of the navigation rail', () => {
+  const hook = readFileSync(new URL('./useRailActions.ts', import.meta.url), 'utf8')
+  expect(hook).not.toContain('appearanceRailAction')
+  expect(hook).not.toContain("id: 'appearance'")
+})
+
 test('plugin viewlets refresh with the capability activation set', () => {
   const hook = readFileSync(new URL('./useRailActions.ts', import.meta.url), 'utf8')
   const page = readFileSync(new URL('../ui/ChatPage.tsx', import.meta.url), 'utf8')

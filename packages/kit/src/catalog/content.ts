@@ -5,6 +5,15 @@ const k = (id: string) => `@localixai/kit/${id}`
 /** Rendered text, identity and data views, the board, and keyboard hints. */
 export const CONTENT: readonly KitCatalogEntry[] = [
   {
+    specifier: k('coding-agent-marks'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['ClaudeMark', 'CodexMark'],
+    summary: 'Monochrome Claude and Codex brand marks shared by core and plugin surfaces.',
+    use: 'Identify Claude Code and Codex using their brand silhouettes.',
+    not: 'A generic action glyph or a running-session indicator.',
+  },
+  {
     specifier: k('matched-text'),
     category: 'content',
     provider: 'kit',

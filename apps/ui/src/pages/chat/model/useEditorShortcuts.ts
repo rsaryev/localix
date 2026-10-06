@@ -4,7 +4,6 @@ import { registerActionHandler } from '@/shared/lib/actions'
 import { cycleThemeMode } from '@/shared/theme/useTheme'
 import { navigateBack, navigateForward } from '@/shared/lib/navHistory'
 import { jumpToPrompt } from '@/shared/lib/transcriptNavBus'
-import { currentKeyPolicy } from '@localixai/plugin-sdk/ui/focus'
 
 export interface EditorShortcutsState {
   commandPalette: boolean
@@ -210,24 +209,6 @@ export function useEditorShortcuts(opts: {
     reopenClosedTab,
     newChat,
   ])
-
-  // The tracked setter is stable for the lifetime of this hook.
-  useEffect(() => {
-    // F1 remains a fixed, non-configurable alternate for the command palette: the catalog carries
-    // one chord per command, so a second binding cannot be expressed there. It still has to respect
-    // who owns the keyboard — it used to fire from behind an open modal — so it asks the focus stack
-    // the same question the dispatcher asks before resolving any plain key.
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'F1' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-        if (!currentKeyPolicy().plainKeys) return
-        e.preventDefault()
-        setCommandPalette((v) => !v)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return {
     commandPalette,

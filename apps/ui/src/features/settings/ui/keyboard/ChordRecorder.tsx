@@ -52,6 +52,8 @@ export function ChordRecorder({
   useEffect(() => {
     if (!recording) return
     const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229 || e.key === 'Dead' || e.key === 'Process') return
+      if (e.getModifierState('AltGraph')) return
       e.preventDefault()
       e.stopPropagation()
       if (e.key === 'Escape') {

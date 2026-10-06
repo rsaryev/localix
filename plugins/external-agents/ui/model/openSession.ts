@@ -4,6 +4,7 @@
  * handing the agent a ref to another.
  */
 import { externalAgentsApi } from '../api/externalAgentsApi'
+import { Import as ImportIcon, Terminal } from 'lucide-react'
 import { toMessages, type ExternalTranscriptMessage } from './toMessages'
 import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import {
@@ -11,6 +12,7 @@ import {
   parseLocalixResourceUri,
   pluginProjects,
   pluginSessions,
+  pluginTerminal,
   resourceMessageBindingDraft,
   type MessageContextBindingDraft,
 } from '@localixai/plugin-sdk/ui'
@@ -46,6 +48,7 @@ export interface ExternalAgentSessionSource {
   readonly uri: string
   readonly title: string
   readonly cwd?: string
+  readonly terminalId?: string
 }
 
 /** What an `external-agent` URI addresses. The four levels the resource provider mints. */
@@ -143,7 +146,10 @@ export function sessionSourceOfRow(row: RosterRow): ExternalAgentSessionSource |
   const provider = segment(row.provider)
   const nativeSessionId = segment(row.nativeSessionId)
   if (!provider || !nativeSessionId) return null
-  return sourceOf(provider, nativeSessionId, row.title, row.cwd)
+  return {
+    ...sourceOf(provider, nativeSessionId, row.title, row.cwd),
+    ...(row.terminalId ? { terminalId: row.terminalId } : {}),
+  }
 }
 
 /**
@@ -177,20 +183,6 @@ export function setSessionMessageBindingDrag(
   })
 }
 
-export interface ImportedExternalAgentSession {
-  readonly id: string
-  /** Where the session actually landed, as core reports it — never project-less. */
-  readonly projectId: string
-}
-
-/** Open (or focus) one session's read-only transcript tab. */
-/**
- * Import a foreign session into Localix as a REAL session, then go to it.
- *
- * Same adapter as viewing, different destination: `toMessages` shapes the provider's turns into our
- * model and core's import route keeps them. The plugin never learns how a session is persisted, and
- * core never learns what produced this one.
- */
 /**
  * A read that is not the whole session must SAY which part it is.
  *
@@ -263,6 +255,17 @@ function withTruncationNote(
   return [note, ...messages]
 }
 
+/**
+ * Read a foreign session into a transcript tab of the chat `sessionId` — the roster tab's own.
+ * The tab belongs to a chat like every other; opened without one, the host would have to guess
+ * which chat's workspace shows it.
+ */
+export interface ImportedExternalAgentSession {
+  readonly id: string
+  readonly projectId: string
+}
+
+/** Import the bounded tail as a durable Localix session, reporting any missing turns. */
 export async function importExternalAgentSession(
   source: ExternalAgentSessionSource,
   deps: {
@@ -275,24 +278,7 @@ export async function importExternalAgentSession(
     importSession: (input) => pluginSessions.importConversation(input),
   },
 ): Promise<ImportedExternalAgentSession> {
-  /**
-   * Ask for the WHOLE session, not the preview-sized default.
-   *
-   * An import mints a durable Localix session named after the external one, so what it leaves out it
-   * leaves out forever. It used to take the read's default of 400 events: measured on a real local history,
-   * that carried 11.6%–13.3% of a long session — 400 of 3462 events became 4 messages — with nothing
-   * anywhere saying so. `MAX_TRANSCRIPT_EVENTS` is the wire's ceiling; core's own import bound
-   * (5,000 messages / 8M chars) is what actually protects the write, and it REPORTS when it trips.
-   *
-   * From the END, because the ceiling still bites and it used to bite the wrong way: 10 of this
-   * machine's 230 sessions exceed it, and those ten hold 29,339 events the import could not reach —
-   * 30.6% of every recorded event, all of it the recent end. An import exists to be continued, and
-   * the state to continue from is the last thing that happened, not the first.
-   */
   const slice = await deps.items(source.key, MAX_TRANSCRIPT_EVENTS, true)
-  // Localix sessions resolve cwd through their project. Reuse an existing project for the exact
-  // path or mint one through the same idempotent endpoint used by `localix <path>`; storing a loose
-  // cwd string on the imported session would not affect agents, terminals, files, or source control.
   const project = source.cwd ? await deps.resolveProjectByPath(source.cwd) : undefined
   const session = await deps.importSession({
     title: source.title,
@@ -304,27 +290,18 @@ export async function importExternalAgentSession(
     ),
     ...(project ? { projectId: project.id } : {}),
   })
-  // Core's answer, not the project this resolved: a source with no cwd names no project and
-  // core files the session under the default one, which is where it must be revealed.
   return { id: session.id, projectId: session.projectId }
 }
 
-/** Import and refresh the project registry before routed navigation enters the durable session. */
+/** Refresh project routing before the host navigates to an imported conversation. */
 export async function importAndPrepareExternalAgentSession(
   source: ExternalAgentSessionSource,
 ): Promise<ImportedExternalAgentSession> {
   const imported = await importExternalAgentSession(source)
-  // The route sync selects this project after navigation. Load it before changing the URL so the
-  // full workspace (breadcrumb, tabs, files, git and chat) switches as one scope.
   if (source.cwd) await pluginProjects.refresh().catch(() => {})
   return imported
 }
 
-/**
- * Read a foreign session into a transcript tab of the chat `sessionId` — the roster tab's own.
- * The tab belongs to a chat like every other; opened without one, the host would have to guess
- * which chat's workspace shows it.
- */
 export async function openExternalAgentSession(
   sessionId: string,
   source: ExternalAgentSessionSource,
@@ -334,6 +311,8 @@ export async function openExternalAgentSession(
     importAndPrepareExternalAgentSession(sessionSource),
   openTranscript: typeof pluginSessions.openTranscript = (input) =>
     pluginSessions.openTranscript(input),
+  spawnCommand: typeof pluginTerminal.spawnCommand = (request) =>
+    pluginTerminal.spawnCommand(request),
 ): Promise<void> {
   // The plugin's entire job: fetch, adapt to our message model, hand it over. Core owns the tab and
   // every pixel in it.
@@ -342,6 +321,16 @@ export async function openExternalAgentSession(
   // From the END for the same reason the import does — a reader opening a foreign session is asking
   // what that agent did, and past the ceiling the opening answers a different question.
   const slice = await loadItems(source.key, MAX_TRANSCRIPT_EVENTS, true)
+  const importAction = {
+    label: 'Import to Localix',
+    pendingLabel: 'Importing…',
+    icon: ImportIcon,
+    errorLabel: 'Could not import this conversation',
+    run: async () => {
+      const imported = await prepareImport(source)
+      return { sessionId: imported.id, projectId: imported.projectId }
+    },
+  }
   openTranscript({
     sessionId,
     id: `external-agents:session:${source.key}`,
@@ -353,17 +342,27 @@ export async function openExternalAgentSession(
       'Localix is showing part of',
     ),
     foreignTools: true,
-    action: {
-      label: 'Import session',
-      pendingLabel: 'Importing…',
-      description: source.cwd
-        ? `Keep this conversation in Localix with cwd ${source.cwd}`
-        : 'Keep this conversation as a Localix session',
-      run: async () => {
-        // The host navigates to the imported session, which is the confirmation.
-        const imported = await prepareImport(source)
-        return { sessionId: imported.id, projectId: imported.projectId }
-      },
-    },
+    action: importAction,
+    ...(source.terminalId || slice.resume
+      ? {
+          actions: [
+            importAction,
+            {
+              label: slice.resume ? `Open in ${slice.resume.providerName}` : 'Open agent terminal',
+              pendingLabel: 'Opening…',
+              icon: Terminal,
+              errorLabel: 'Could not open this agent session in a terminal',
+              run: async () => {
+                const title = slice.resume?.providerName ?? source.title
+                if (source.terminalId) {
+                  pluginTerminal.openJob({ sessionId, terminalId: source.terminalId, title })
+                } else if (slice.resume) {
+                  await spawnCommand({ sessionId, command: slice.resume.command, title })
+                }
+              },
+            },
+          ],
+        }
+      : {}),
   })
 }

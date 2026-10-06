@@ -1,4 +1,5 @@
 import { sessionRef, type UiSession } from '@/shared/api/contracts'
+import { compactSessionTitle } from '@localixai/api/session-title'
 
 /**
  * What a conversation is CALLED on screen.
@@ -14,5 +15,8 @@ import { sessionRef, type UiSession } from '@/shared/api/contracts'
  * `seq` to fall back to and is named for its KIND instead.
  */
 export function sessionTitle(session: Pick<UiSession, 'title' | 'seq'>): string {
-  return session.title?.trim() || (session.seq ? sessionRef(session.seq) : 'Untitled Chat')
+  return (
+    compactSessionTitle(session.title ?? '', session.seq) ||
+    (session.seq ? sessionRef(session.seq) : 'Untitled Chat')
+  )
 }

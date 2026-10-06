@@ -83,8 +83,8 @@ export async function openNewTerminal(sessionId: string): Promise<void> {
  * Run a program in a fresh pane and open it as an OWNED terminal tab — a terminal PROFILE.
  *
  * Deliberately knows nothing about what it runs. The command arrives from whoever registered the
- * UI location that resolved here (today: a plugin contributing external coding-agent CLIs), which
- * is what keeps a vocabulary of third-party tools out of the terminal.
+ * UI location or core shortcut that resolved here. The terminal owns process placement,
+ * while callers choose the program and its label.
  *
  * Owned, unlike an adopted dev-server pane: the user picked this profile from the tab strip and the
  * tab IS the program, so closing the tab must end it rather than leave a full-screen TUI running

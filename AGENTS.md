@@ -61,6 +61,11 @@ Build interface from the shared kit in `packages/kit`; do not hand-roll a contro
 has. [docs/internals/visual-system.md](docs/internals/visual-system.md) is the design contract and
 the checks that enforce it.
 
+Project design skills live in `.agents/skills`; `.agents/README.md` lists their roles and sources.
+Before using them for Localix UI, read `.claude/skills/localix-ui-kit/SKILL.md` and the
+visual-system contract above. Repository rules, existing kit components and tokens take priority
+over generic skill examples, palettes, component installation commands and animation recipes.
+
 ## Testing
 
 Bun Test is the default framework. Add a regression test for changed behavior, and cover reducers,

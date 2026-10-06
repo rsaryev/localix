@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, type CSSProperties, type PointerEvent } from 'react'
+import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { useId, useMemo, useRef, type CSSProperties, type PointerEvent } from 'react'
 
 import { CELLS, legalDirections, SIZE, type Direction, type Game } from '../../shared/game'
 import { cellOrigin, digitSize, TILE } from './geometry'
@@ -58,10 +59,15 @@ function useArrowKeys(
   enabled: boolean,
   legal: readonly Direction[],
   onMove: (d: Direction) => void,
+  scope: () => Element | null,
 ) {
-  useEffect(() => {
-    if (!enabled) return
-    const onKeyDown = (event: KeyboardEvent) => {
+  const id = useId()
+  useFocusEntry({
+    id: `2048:${id}`,
+    kind: 'surface',
+    active: enabled,
+    scope,
+    onKeyDown: (event) => {
       const direction = KEYS[event.key]
       if (!direction || event.defaultPrevented) return
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
@@ -76,10 +82,9 @@ function useArrowKeys(
         return
       event.preventDefault()
       if (legal.includes(direction)) onMove(direction)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [enabled, legal, onMove])
+      return true
+    },
+  })
 }
 
 export function Board({
@@ -94,10 +99,12 @@ export function Board({
 }) {
   const tiles = useTiles(game)
   const legal = useMemo(() => legalDirections(game.board), [game.board])
-  useArrowKeys(playable, legal, onMove)
+  const boardRef = useRef<HTMLDivElement>(null)
+  useArrowKeys(playable, legal, onMove, () => boardRef.current)
 
   const swipe = useRef<{ x: number; y: number } | null>(null)
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (playable) boardRef.current?.focus({ preventScroll: true })
     swipe.current = playable ? { x: event.clientX, y: event.clientY } : null
   }
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -114,10 +121,12 @@ export function Board({
 
   return (
     <div
-      role="img"
+      ref={boardRef}
+      tabIndex={0}
+      role="application"
       aria-label={boardLabel(game.board)}
       data-won={game.status === 'won' ? 'true' : undefined}
-      className="game-2048-board"
+      className="game-2048-board focus-ring"
       style={BOARD}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}

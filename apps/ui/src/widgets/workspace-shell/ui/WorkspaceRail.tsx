@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Menu, Plus } from 'lucide-react'
+import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
 import { CMD } from '@/shared/lib/keybindings'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { DesktopUpdateButton } from './DesktopUpdateButton'
@@ -20,6 +21,11 @@ interface WorkspaceRailProps {
   topEntries: RailEntry[]
   /** Customizable entries currently pinned to the bar (already ordered). */
   barEntries: RailEntry[]
+  toolEntries: RailEntry[]
+  pluginCategories?: ReadonlyMap<string, PluginCategory | undefined>
+  pinnedToolIds: ReadonlySet<string>
+  onPinTool: (id: string, pinned: boolean) => void
+  onUnpinTool: (id: string) => void
   /** Customizable entries currently placed in the lower group. */
   bottomEntries: RailEntry[]
   /** Transient recent slots — plugin views, most recently opened first. */
@@ -31,7 +37,7 @@ interface WorkspaceRailProps {
   /** Dismiss one recent slot. */
   onRemoveRecent?: (id: string) => void
   onResetRail: () => void
-  capabilitiesActive: boolean
+  pluginsPending: boolean
   onCapabilitiesClick: () => void
   dnd: UseRailDnd
   /** Fixed destinations that stay with chat navigation at the top. */
@@ -40,7 +46,7 @@ interface WorkspaceRailProps {
   mainRailActions: RailAction[]
   /** FIXED actions pinned to the bottom (e.g. Settings). */
   bottomRailActions: RailAction[]
-  /** Host utilities shown between Settings/destinations and the theme switch. */
+  /** Host utilities shown alongside Settings and other system destinations. */
   systemRailActions: RailAction[]
 }
 
@@ -61,13 +67,18 @@ export function WorkspaceRail({
   onHistoryClick,
   topEntries,
   barEntries,
+  toolEntries,
+  pluginCategories,
+  pinnedToolIds,
+  onPinTool,
+  onUnpinTool,
   bottomEntries,
   recentEntries = NO_RECENT_ENTRIES,
   onMoveToArea,
   onMoveWithinBar,
   onRemoveRecent,
   onResetRail,
-  capabilitiesActive,
+  pluginsPending,
   onCapabilitiesClick,
   dnd,
   topRailActions,
@@ -170,6 +181,7 @@ export function WorkspaceRail({
               onMoveWithin={onMoveWithinBar}
               onMoveArea={onMoveToArea}
               onReset={onResetRail}
+              onUnpin={onUnpinTool}
             />
           ))}
         </div>
@@ -182,9 +194,14 @@ export function WorkspaceRail({
       <RailWorkspaceGroup
         mainRailActions={mainRailActions}
         barEntries={barEntries}
+        toolEntries={toolEntries}
+        pluginCategories={pluginCategories}
+        pinnedToolIds={pinnedToolIds}
+        onPinTool={onPinTool}
+        onUnpinTool={onUnpinTool}
         recentEntries={recentEntries}
         seenIds={seenIds}
-        capabilitiesActive={capabilitiesActive}
+        pluginsPending={pluginsPending}
         onCapabilitiesClick={onCapabilitiesClick}
         onMoveToArea={onMoveToArea}
         onMoveWithinBar={onMoveWithinBar}
@@ -247,6 +264,7 @@ export function WorkspaceRail({
             onMoveWithin={onMoveWithinBar}
             onMoveArea={onMoveToArea}
             onReset={onResetRail}
+            onUnpin={onUnpinTool}
           />
         ))}
         <DesktopUpdateButton />

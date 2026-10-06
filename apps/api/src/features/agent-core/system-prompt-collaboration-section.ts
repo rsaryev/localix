@@ -36,7 +36,7 @@ export function buildCollaborationSection(
     '# Collaboration',
     withColleagues
       ? `Colleagues share this conversation: each part belongs to the participant whose role owns it. Do your own part${invite ? '; hand a colleague their ready part with `conversation_control`, so they work here, where the user can redirect them' : ''}.`
-      : 'Do the work yourself; bring in another agent only for what it buys you.',
+      : 'Handle straightforward work directly; coordinate substantial work with suitable agents.',
     ...(delegate
       ? [
           withColleagues

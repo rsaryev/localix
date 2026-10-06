@@ -10,14 +10,14 @@ are. Rules here are the per-node half.
 
 ## Rules
 
-| Rule                         | Enforces                                                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `no-adhoc-focus-ring`        | Focus indicators use the shared recipe instead of hand-written focus ring utilities.                                |
-| `no-global-key-listener`     | Global keyboard listeners in the workspace UI and kit use the action registry, apart from explicit contract owners. |
-| `no-ground-token-on-control` | Small shared controls use control fills instead of full-strength pane backgrounds.                                  |
-| `no-hardcoded-colors`        | Colours that paint surfaces use theme tokens instead of literal values.                                             |
-| `no-off-scale-radius`        | Interface classes use the theme's radius scale instead of bare `rounded`.                                           |
-| `props-type-naming`          | A component's props type is named after the component.                                                              |
+| Rule                         | Enforces                                                                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-adhoc-focus-ring`        | Focus indicators use the shared recipe instead of hand-written focus ring utilities.                                                           |
+| `no-global-key-listener`     | Global keyboard listeners in the workspace UI, kit and plugin UI use the action or scoped focus registry, apart from explicit contract owners. |
+| `no-ground-token-on-control` | Small shared controls use control fills instead of full-strength pane backgrounds.                                                             |
+| `no-hardcoded-colors`        | Colours that paint surfaces use theme tokens instead of literal values.                                                                        |
+| `no-off-scale-radius`        | Interface classes use the theme's radius scale instead of bare `rounded`.                                                                      |
+| `props-type-naming`          | A component's props type is named after the component.                                                                                         |
 
 All six rules are enabled as errors in [`.oxlintrc.json`](../../.oxlintrc.json). Their source
 modules own their exact scope and exceptions; finding counts belong to current lint output.

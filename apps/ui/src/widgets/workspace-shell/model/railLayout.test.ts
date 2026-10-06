@@ -26,10 +26,37 @@ const DEFS: RailItemDef[] = [
   { id: 'utility:reset', defaultArea: 'status' },
 ]
 
+it('restores old forced plugin overflow once and retains new explicit unpins', () => {
+  const defs: RailItemDef[] = [
+    { id: 'reader', defaultArea: 'bar', plugin: true },
+    { id: 'game-one', defaultArea: 'bar', plugin: true },
+    { id: 'files', defaultArea: 'top' },
+    { id: 'usage', defaultArea: 'bar', tool: true },
+    { id: 'vault', defaultArea: 'bar', tool: true },
+  ]
+  const legacy = parseRailLayout(
+    JSON.stringify({
+      v: 5,
+      entries: [
+        { id: 'reader', area: 'overflow' },
+        { id: 'files', area: 'bottom' },
+        { id: 'usage', area: 'bottom' },
+        { id: 'vault', area: 'overflow' },
+      ],
+    }),
+    true,
+  )
+  expect(resolveRailAreas(defs, legacy).bar).toEqual(['reader', 'usage', 'game-one'])
+  expect(resolveRailAreas(defs, legacy).bottom).toEqual(['files'])
+  const unpinned = moveRailItem(defs, legacy, 'reader', 'overflow', 0)
+  const restored = parseRailLayout(serializeRailLayout(unpinned), true)
+  expect(resolveRailAreas(defs, restored).bar).toEqual(['usage', 'game-one'])
+  expect(resolveRailAreas(defs, restored).overflow).toEqual(['reader', 'vault'])
+  expect(resolveRailAreas(defs, restored).bottom).toEqual(['files'])
+})
+
 describe('resolveRailAreas · non-placeable entries', () => {
-  // Plugin views lost their rail placement. A layout saved back when they were
-  // still pinnable must not keep one on the rail: there is no unpin control left,
-  // so the icon would be stuck there forever.
+  // Entries explicitly marked non-placeable must ignore saved visible placements.
   const DEFS_WITH_PLUGIN: RailItemDef[] = [
     { id: 'section:files', defaultArea: 'bar' },
     { id: 'viewlet:reader', defaultArea: 'overflow', placeable: false },

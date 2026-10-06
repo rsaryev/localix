@@ -32,7 +32,7 @@ interface HitlInteractionFrameProps {
    * not submit. Enter is preventDefault'd only when this fires.
    */
   onSubmit?: () => void
-  /** Global Enter/Escape shortcuts belong only to the focused warm chat surface. */
+  /** Enter/Escape shortcuts belong only to this active frame's DOM subtree. */
   keyboardActive?: boolean
   /** Shared with views that own extra global shortcuts (ask/quiz number keys). */
   rootRef?: RefObject<HTMLDivElement | null>
@@ -154,11 +154,11 @@ export function HitlInteractionFrame({
   // longer resolve a request the user cannot see. That used to be a `querySelector` for an open
   // dialog, which only worked for the one overlay somebody remembered to look for.
   useFocusEntry({
-    // Per instance: two frames can be on screen at once, and the one that mounted last is the one
-    // the user is looking at.
+    // Per instance: two frames can be on screen at once; DOM focus selects the recipient.
     id: `hitl-frame:${instanceId}`,
     kind: 'surface',
     active: keyboardActive,
+    scope: () => resolvedRootRef.current,
     onKeyDown: (event) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       if (event.key !== 'Enter' && event.key !== 'Escape') return

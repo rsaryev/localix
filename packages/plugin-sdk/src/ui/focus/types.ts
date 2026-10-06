@@ -38,6 +38,8 @@ export interface FocusEntry {
   id: string
   kind: FocusKind
   keyboard: GlobalKeyPolicy
+  /** Pane-local claims apply only to events inside this root. Omit for modal ownership. */
+  scope?: () => Element | null
   /**
    * Keys this surface handles while it owns the keyboard.
    *

@@ -5,7 +5,7 @@
  * middleware is not present here. Every handler that needs a Localix session takes it from the
  * validated body rather than from context.
  *
- * The surface is exactly what the plugin's own UI calls: providers, launchers, roster, items, stats. It is not
+ * The surface is exactly what the plugin's own UI calls: providers, roster, items, stats. It is not
  * a public API of the service — the agent tool calls the service DIRECTLY, so anything here with no
  * UI consumer is a door with nothing behind it. `/wait` in particular used to park an HTTP request
  * for up to thirty minutes on behalf of nobody.
@@ -25,6 +25,7 @@ import type { PluginRouteContext } from '@localixai/plugin-sdk/backend'
 import type { AgentSessionsService } from './service'
 import { toTranscriptTurns } from './transcript/to-agent-items'
 import { itemsBodySchema, rosterBodySchema, statsBodySchema } from './route-schemas'
+import { resumeSession } from './resume-session'
 
 /**
  * A failure, said once and said the same way.
@@ -53,23 +54,6 @@ export function createAgentSessionsRoutes(service: AgentSessionsService) {
       return c.json({ providers: await service.providers() })
     } catch (error) {
       return c.json(failure('Could not list the agent providers on this machine.', error), 500)
-    }
-  })
-
-  /**
-   * Which agent CLIs are installed here — the quick-action menu's whole input.
-   *
-   * A GET with a query flag rather than a POST: it mutates nothing, and the body-contract rule that
-   * forces `validated('json')` exists to make a WRITE non-simple. `refresh` is the person pressing
-   * "Check again"; anything other than `1` is the ordinary cached read, so a junk value degrades to
-   * the safe answer instead of a 400.
-   */
-  app.get('/launchers', async (c) => {
-    try {
-      const refresh = c.req.query('refresh') === '1'
-      return c.json({ launchers: await service.launchers({ refresh }) })
-    } catch (error) {
-      return c.json(failure('Could not check which agent CLIs are installed here.', error), 500)
     }
   })
 
@@ -114,6 +98,7 @@ export function createAgentSessionsRoutes(service: AgentSessionsService) {
         turns: toTranscriptTurns(slice.events, slice.key),
         withheld: slice.withheld,
         total: slice.total,
+        resume: resumeSession(slice.summary),
         ...(slice.sourceTruncated ? { sourceTruncated: true } : {}),
       })
     } catch (error) {

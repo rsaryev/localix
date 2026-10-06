@@ -10,6 +10,27 @@ import {
 } from './workbench-list-row'
 
 describe('WorkbenchListRow', () => {
+  test('shares one grid cell between passive metadata and hover actions', () => {
+    const html = renderToStaticMarkup(
+      <WorkbenchListRowActions aria-label="Row actions" visibility="hover" fallback="Sep 29">
+        <button type="button">Actions</button>
+      </WorkbenchListRowActions>,
+    )
+    expect(html).toContain('workbench-list-row-action-fallback')
+    expect(html).toContain('Sep 29')
+    expect(html.match(/col-start-1 row-start-1/g)).toHaveLength(2)
+    expect(html).toContain('lx-hover-actions-fallback')
+    expect(html).toContain('group-has-[[data-state=open]]/workbench-actions:opacity-0')
+    expect(html).toContain('group-has-[[data-state=open]]/workbench-actions:opacity-100')
+    // Always-visible controls have no passive fallback to overlap them.
+    const always = renderToStaticMarkup(
+      <WorkbenchListRowActions aria-label="Row actions" fallback="Sep 29">
+        <button type="button">Actions</button>
+      </WorkbenchListRowActions>,
+    )
+    expect(always).not.toContain('Sep 29')
+    expect(always).not.toContain('workbench-list-row-action-fallback')
+  })
   test('keeps the dense row and its navigation target on the same 28px tier', () => {
     const html = renderToStaticMarkup(
       <WorkbenchListRow density="dense">

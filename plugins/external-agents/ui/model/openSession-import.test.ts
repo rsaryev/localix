@@ -246,9 +246,9 @@ describe('external session import scope', () => {
         },
       )
 
-      expect(transcript?.action?.label).toBe('Import session')
+      expect(transcript?.action?.label).toBe('Import to Localix')
       expect(transcript?.action?.pendingLabel).toBe('Importing…')
-      expect(transcript?.action?.description).toContain('/work/acme')
+      expect(transcript?.action?.description).toBeUndefined()
       const destination = await transcript?.action?.run()
       expect(destination).toEqual({
         sessionId: 'LOCALIX-44',

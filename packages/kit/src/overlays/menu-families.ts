@@ -39,13 +39,15 @@ export interface MenuFamily {
     tone?: MenuItemTone
     onSelect?: (event: Event) => void
     /** `menuitemradio` for a `selected` row: Radix spreads it over its own `menuitem`. */
-    role?: 'menuitemradio'
+    role?: 'menuitem' | 'menuitemradio' | 'menuitemcheckbox'
+    'aria-label'?: string
     'aria-checked'?: boolean
     /** Set on a `recommended` row, beside the travelling accent it carries. */
     'data-recommended'?: boolean
   }>
   CheckboxItem: ComponentType<{
     children?: ReactNode
+    className?: string
     checked?: boolean
     inset?: boolean
     disabled?: boolean

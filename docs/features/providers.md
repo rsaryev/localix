@@ -41,6 +41,10 @@ Creating a connection writes its label, provider id, authentication type, key or
 state to SQLite. API keys and OAuth token fields are stored separately in the encrypted credential
 vault. Connection responses contain only a masked key suffix and metadata.
 
+If you close the browser before finishing sign-in, return to the provider form and start sign-in
+again. A new attempt cancels your pending login for that provider and waits for its local callback
+listener to close before opening a fresh sign-in page.
+
 A conversation stores a connection id and a namespaced model id **per participant**, and only when
 someone actually chose one there. At run time, Localix verifies that the provider owns the model,
 tries the stored connection first, and can resolve another usable connection for the same provider

@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useId, useRef } from 'react'
+import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { matchesChord } from '@localixai/kit/keybindings'
 import { ArrowLeft, ArrowRight, ListFilter, PanelRight } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
@@ -43,8 +45,7 @@ export function Toolbar({
   onPick: (node: NodeSummaryView) => void
 }) {
   const filtered = graph.kinds.size < EDGE_KINDS.length || graph.external
-  const search = useSearchShortcut()
-  useNavigationShortcut(graph)
+  const search = useGraphShortcuts(graph)
   const indexing = snapshot.status.state === 'indexing'
   return (
     <WorkbenchToolbar wrap aria-label="Code graph" className="gap-2">
@@ -145,43 +146,33 @@ export function Toolbar({
   )
 }
 
-/** Browser-style history keys only while focus belongs to this workbench. */
-function useNavigationShortcut(graph: GraphState) {
-  const { back, forward, canBack, canForward } = graph
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      if (!target?.closest('[data-code-graph-root]')) return
-      const backward =
-        (event.altKey && event.key === 'ArrowLeft') || (event.metaKey && event.key === '[')
-      const onward =
-        (event.altKey && event.key === 'ArrowRight') || (event.metaKey && event.key === ']')
-      if (!backward && !onward) return
-      event.preventDefault()
-      event.stopPropagation()
-      if (backward && canBack) back()
-      else if (onward && canForward) forward()
-    }
-    window.addEventListener('keydown', onKey, { capture: true })
-    return () => window.removeEventListener('keydown', onKey, { capture: true })
-  }, [back, forward, canBack, canForward])
-}
-
-/** `/` focuses the search from anywhere in the tab, unless the person is already typing. */
-function useSearchShortcut() {
+/** Local navigation wins over workspace history; editing fields keep their own keys. */
+function useGraphShortcuts(graph: GraphState) {
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== '/' || event.metaKey || event.ctrlKey) return
-      const target = event.target as HTMLElement | null
-      if (target?.closest('input, textarea, [contenteditable="true"]')) return
-      const scope = ref.current?.closest('[data-code-graph-root]')
-      if (!scope || !target || !scope.contains(target)) return
+  const id = useId()
+  useFocusEntry({
+    id: `code-graph:${id}`,
+    kind: 'surface',
+    scope: () => ref.current?.closest('[data-code-graph-root]') ?? null,
+    onKeyDown: (event) => {
+      const target = event.target instanceof HTMLElement ? event.target : null
+      if (
+        target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
+      )
+        return
+      const backward = matchesChord(event, 'alt+arrowleft') || matchesChord(event, 'mod+[')
+      const onward = matchesChord(event, 'alt+arrowright') || matchesChord(event, 'mod+]')
+      if (backward || onward) {
+        event.preventDefault()
+        if (backward && graph.canBack) graph.back()
+        else if (onward && graph.canForward) graph.forward()
+        return true
+      }
+      if (!matchesChord(event, '/')) return
       event.preventDefault()
       ref.current?.querySelector('input')?.focus()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+      return true
+    },
+  })
   return ref
 }

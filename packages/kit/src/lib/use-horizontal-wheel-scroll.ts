@@ -88,11 +88,11 @@ export function decideWheelScroll(
  * listener so `preventDefault` actually works (React's `onWheel` is passive), but
  * only prevents the wheels `decideWheelScroll` says we can consume.
  */
-export function useHorizontalWheelScroll<T extends HTMLElement>() {
+export function useHorizontalWheelScroll<T extends HTMLElement>(enabled = true) {
   const ref = useRef<T>(null)
   useEffect(() => {
     const el = ref.current
-    if (!el) return
+    if (!enabled || !el) return
     const onWheel = (e: WheelEvent) => {
       const outcome = decideWheelScroll(
         { deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode },
@@ -110,6 +110,6 @@ export function useHorizontalWheelScroll<T extends HTMLElement>() {
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [])
+  }, [enabled])
   return ref
 }

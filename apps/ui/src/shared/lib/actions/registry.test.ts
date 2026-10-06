@@ -20,6 +20,7 @@ describe('action context conditions', () => {
     expect(evaluateActionWhen('editorFocus && !inputFocus', context)).toBe(true)
     expect(evaluateActionWhen('chatFocus || editorFocus', context)).toBe(true)
     expect(evaluateActionWhen('unknownKey', context)).toBe(false)
+    expect(evaluateActionWhen('!unknownKey', context)).toBe(false)
   })
 })
 

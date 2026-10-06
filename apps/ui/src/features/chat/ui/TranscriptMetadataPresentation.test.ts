@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 const read = (relative: string) => readFileSync(new URL(relative, import.meta.url), 'utf8')
 
 test('runtime facts stay flat instead of becoming status pills', () => {
-  const runtime = read('./RuntimeSessionsPanel.tsx')
+  const runtime = read('./runtimeSessionRowParts.tsx')
   const jobs = read('./prompt-input/WorkStrip.tsx')
   const loops = read('./prompt-input/SchedulesPanel.tsx')
   const queue = read('./prompt-input/QueuePanel.tsx')

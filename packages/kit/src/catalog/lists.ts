@@ -16,7 +16,8 @@ export const LISTS: readonly KitCatalogEntry[] = [
       'WorkbenchListRowMeta',
       'WorkbenchListRowActions',
     ],
-    summary: 'The frame for sidebar and tree rows: trigger, metadata and actions as siblings.',
+    summary:
+      'Sidebar and tree rows with sibling triggers, metadata and actions; hover actions can share their slot with passive metadata.',
     use: 'Every navigable row. `density` is `dense` 28px, `compact` 32px or `default` (40px min, with a description).',
     not: 'Not a row of hand-placed flex children with its own height; never a control nested inside the trigger.',
   },

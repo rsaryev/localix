@@ -14,6 +14,7 @@
 import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { shellQuote } from '@localixai/plugin-sdk/backend'
 import type {
   AdapterEnv,
   ProviderAdapter,
@@ -351,7 +352,7 @@ export const codexAdapter: ProviderAdapter = {
   sourceFormat: 'codex_session_jsonl_tree',
   verified: true,
   detectionManifestId: 'codex',
-  resumeCommand: (id) => `codex resume ${id}`,
+  resumeCommand: (id) => `codex resume ${shellQuote(id)}`,
   async probeRoots(env: AdapterEnv): Promise<readonly RootProbe[]> {
     const root = homeFor(env)
     return Promise.all(

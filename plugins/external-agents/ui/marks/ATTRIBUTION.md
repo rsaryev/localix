@@ -1,8 +1,8 @@
 # External agent marks — attribution
 
-Five of the six glyphs in `index.tsx` are the real brand marks of the coding-agent CLIs the terminal
-can launch. They are not redraws: the path data is copied verbatim from a published, MIT-licensed
-set.
+Five of the six glyphs exported by `index.tsx` come from a published, MIT-licensed set. Claude and
+Codex now live in the shared kit's `coding-agent-marks` module and are re-exported here; the other
+marks remain local to this plugin. Their path data is preserved verbatim.
 
 ## Provenance chain
 

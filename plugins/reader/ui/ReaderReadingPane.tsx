@@ -1,8 +1,11 @@
+import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { matchesChord } from '@localixai/kit/keybindings'
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
+  useId,
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -242,6 +245,7 @@ export function ReaderPane({
   const { bookmarks, toggle: toggleBookmark, remove: removeBookmark } = useBookmarks(sourceKey)
   const articleRef = useRef<HTMLElement>(null)
   const workspaceRef = useRef<HTMLDivElement>(null)
+  const keyboardId = useId()
   const scrollRef = useRef<HTMLDivElement>(null)
   const readerSurfaceRef = useRef<HTMLElement>(null)
   const highlightCleanupRef = useRef<(() => void) | null>(null)
@@ -985,21 +989,25 @@ export function ReaderPane({
     exactNavigationRef.current = null
   }, [sourceKey])
 
-  useEffect(() => {
-    if (!visible || !keyboardActive) return
-    const onKeyDown = (event: KeyboardEvent) => {
+  useFocusEntry({
+    id: `reader:${keyboardId}`,
+    kind: 'surface',
+    active: visible && keyboardActive,
+    scope: () => workspaceRef.current,
+    onKeyDown: (event) => {
       if (event.defaultPrevented) return
-      const target = event.target as HTMLElement | null
-      if (target?.closest('input,textarea,[contenteditable=true]')) return
+      const target = event.target instanceof HTMLElement ? event.target : null
+      if (target?.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])'))
+        return
       if (target?.closest('[role=menu],[role=dialog],[role=listbox],[role=tree]')) return
       if (speedReadingOpen) return
-      if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === 'f') {
+      if (matchesChord(event, 'mod+f')) {
         event.preventDefault()
         setPanelOpen(true)
         setSidePanel('search')
         return
       }
-      if (event.shiftKey && event.key.toLocaleLowerCase() === 'a') {
+      if (matchesChord(event, 'shift+a')) {
         if (preferences.viewMode !== 'scroll') return
         event.preventDefault()
         if (autoScrollActive) stopAutoScroll()
@@ -1009,62 +1017,43 @@ export function ReaderPane({
         }
         return
       }
-      if (autoScrollActive && event.key === ' ') {
+      if (autoScrollActive && matchesChord(event, 'space')) {
         event.preventDefault()
         setAutoScrollPaused((value) => !value)
         return
       }
-      if (autoScrollActive && event.key === 'Escape') {
+      if (autoScrollActive && matchesChord(event, 'escape')) {
         event.preventDefault()
         stopAutoScroll()
         return
       }
-      if (event.key === 'Escape' && panelOpen && narrowPane) {
+      if (matchesChord(event, 'escape') && panelOpen && narrowPane) {
         event.preventDefault()
         setPanelOpen(false)
         panelToggleRef.current?.focus({ preventScroll: true })
         return
       }
-      if (event.key === 'Escape' && selection) {
+      if (matchesChord(event, 'escape') && selection) {
         event.preventDefault()
         clearSelection()
         return
       }
       const historyDirection =
-        event.altKey && event.key === 'ArrowLeft'
+        matchesChord(event, 'alt+arrowleft') || matchesChord(event, 'mod+[')
           ? 'back'
-          : event.altKey && event.key === 'ArrowRight'
+          : matchesChord(event, 'alt+arrowright') || matchesChord(event, 'mod+]')
             ? 'forward'
-            : (event.metaKey || event.ctrlKey) && event.key === '['
-              ? 'back'
-              : (event.metaKey || event.ctrlKey) && event.key === ']'
-                ? 'forward'
-                : null
+            : null
       if (historyDirection) {
         event.preventDefault()
         moveNavigationHistory(historyDirection)
         return
       }
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      if (!matchesChord(event, 'arrowleft') && !matchesChord(event, 'arrowright')) return
       event.preventDefault()
       turnReadingPosition(event.key === 'ArrowLeft' ? -1 : 1)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [
-    autoScrollActive,
-    clearSelection,
-    keyboardActive,
-    moveNavigationHistory,
-    narrowPane,
-    panelOpen,
-    preferences.viewMode,
-    selection,
-    speedReadingOpen,
-    stopAutoScroll,
-    turnReadingPosition,
-    visible,
-  ])
+    },
+  })
 
   const attachAnnotationContext = (item: ReaderSavedQuote) => {
     if (!document) return

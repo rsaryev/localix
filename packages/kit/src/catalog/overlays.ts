@@ -82,7 +82,7 @@ export const OVERLAYS: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['MenuEntries', 'MenuGroupHeader', 'normalizeMenuEntries'],
     summary:
-      'One described menu (actions, toggles, choices, separators, submenus, chords) rendered into either menu family.',
+      'One described menu (actions, toggles, choices, inline actions, submenus, chords) rendered into either menu family.',
     use: 'Any menu reachable both by right-click and by a kebab: describe it once, render it twice.',
     not: 'Not hand-written DropdownMenuItem and ContextMenuItem lists that drift apart.',
   },

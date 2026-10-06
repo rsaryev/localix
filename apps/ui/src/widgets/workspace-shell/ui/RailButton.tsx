@@ -57,7 +57,7 @@ export function RailButton({
 /**
  * Hairline group separator. The rail reads as three semantic groups — navigation
  * (new chat / history), the customizable tools zone, and system actions (settings /
- * theme / update). A short centered 1px rule between them makes the grouping legible
+ * update). A short centered 1px rule between them makes the grouping legible
  * without boxing the icons in.
  */
 export function RailDivider() {

@@ -94,10 +94,10 @@ describe('shipped definitions and independent presets', () => {
     expect(
       Object.fromEntries(BUILTIN_TEAM.map((agent) => [agent.handle, agent.leadershipPriority])),
     ).toEqual({
-      localix: 1,
+      localix: 2,
       pm: 1,
       architect: 1,
-      lead: 2,
+      lead: 1,
       backend: 0,
       frontend: 0,
       design: 0,
@@ -106,7 +106,7 @@ describe('shipped definitions and independent presets', () => {
     })
     expect(
       BUILTIN_TEAM.filter((agent) => agent.leadershipPriority === 2).map((agent) => agent.handle),
-    ).toEqual(['lead'])
+    ).toEqual(['localix'])
   })
   test('all colleagues keep collaboration and verification; host-changing tools follow their role', () => {
     for (const { handle } of BUILTIN_TEAM) {

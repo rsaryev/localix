@@ -60,81 +60,7 @@ describe('WorkspaceShell responsive ownership', () => {
     }
   })
 
-  // The reported symptom was "plugins show no view; it only appears after Manage".
-  // The presentational half (a pending section says "Loading views" instead of
-  // vanishing) is pinned in PluginsSidebar's own tests. This pins the DERIVATION
-  // it depends on, which had no coverage: a plugin-owned rail section has to travel
-  // railSections → buildRailEntries → the `plugin` filter → the Views group. Break
-  // any link and the section is silently absent rather than wrong.
-  test('a plugin-owned rail section reaches the Views group', async () => {
-    const React = await import('react')
-    const { act } = React
-    const { createRoot } = await import('react-dom/client')
-    const { WorkspaceShell } = await import('./WorkspaceShell')
-    const host = document.createElement('div')
-    document.body.append(host)
-    const root = createRoot(host)
-    const noOp = () => {}
-    localStorage.removeItem('localix_sidebar_width_v4')
-
-    try {
-      await act(async () =>
-        root.render(
-          <WorkspaceShell
-            isMobile={false}
-            statusSessionId={null}
-            sidebarOpen
-            activeSectionId="plugins"
-            railSections={[
-              {
-                id: 'sample-plugin-section',
-                icon: <span />,
-                label: 'Sample Plugin',
-                content: <div />,
-                defaultArea: 'overflow',
-                plugin: true,
-                pluginName: 'sample-plugin',
-              },
-              // A CORE section must not be swept into the plugin group with it.
-              { id: 'files', icon: <span />, label: 'Files', content: <div />, defaultArea: 'top' },
-            ]}
-            railActions={[]}
-            onOpenSidebar={noOp}
-            onCloseSidebar={noOp}
-            onCreateChat={noOp}
-          >
-            <div />
-          </WorkspaceShell>,
-        ),
-      )
-
-      expect(host.textContent).toContain('Plugins')
-      // The plugin's launcher row carries its view's identity directly.
-      const entry = host.querySelector<HTMLElement>(
-        '[data-plugin-entry-id="section:sample-plugin-section"]',
-      )
-      expect(entry).not.toBeNull()
-      expect(entry?.textContent).toContain('Sample Plugin')
-      // Plugin views have no rail placement, so the launcher offers no pin control — and
-      // no availability control either: the launcher reaches a view, Settings decides
-      // whether the plugin behind it is on at all.
-      expect(host.querySelector('[aria-label^="Pin "]')).toBeNull()
-      expect(host.querySelector('[aria-label^="Disable "]')).toBeNull()
-      expect(host.querySelector('[data-plugin-entry-id="section:files"]')).toBeNull()
-      const sash = host.querySelector<HTMLElement>(
-        '[data-slot="workbench-sash"][aria-label="Resize sidebar"]',
-      )!
-      expect(sash.getAttribute('aria-label')).toBe('Resize sidebar')
-      expect(sash.getAttribute('aria-valuenow')).toBe('300')
-      expect(sash.getAttribute('aria-description')).toContain('Use arrow keys to adjust')
-      expect(sash.hasAttribute('title')).toBe(false)
-    } finally {
-      await act(async () => root.unmount())
-      host.remove()
-    }
-  })
-
-  test('groups the rail and opens the plugin launcher', async () => {
+  test('groups the rail, opens the catalog and preserves sidebar resizing', async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
@@ -165,9 +91,7 @@ describe('WorkspaceShell responsive ownership', () => {
               defaultArea: 'top',
             },
             {
-              // NOT plugin-owned: a plugin entry never defaults to the bar (see
-              // buildRailEntries.test.ts), so this section exists purely to pin
-              // down cross-zone button ORDER, unrelated to that policy.
+              // This core section exercises placement order independently of tool groups.
               id: 'vault',
               icon: <span />,
               label: 'Vault keys',
@@ -175,9 +99,7 @@ describe('WorkspaceShell responsive ownership', () => {
               defaultArea: 'bar',
             },
             {
-              // A CORE customizable section: only these still have a rail
-              // placement, so this is what the zone-to-zone drag coverage below
-              // has to exercise. Plugin views are no longer placeable at all.
+              // A core section exercises drag across all customizable zones.
               id: 'docker',
               icon: <span />,
               label: 'Docker',
@@ -247,7 +169,7 @@ describe('WorkspaceShell responsive ownership', () => {
     try {
       await act(async () => root.render(<Harness />))
 
-      const openPlugins = host.querySelector<HTMLButtonElement>('[aria-label="Plugins"]')
+      const openPlugins = host.querySelector<HTMLButtonElement>('[aria-label="All tools"]')
       const files = host.querySelector<HTMLButtonElement>('[aria-label="Files"]')
       const search = host.querySelector<HTMLButtonElement>('[aria-label="Search"]')
       const vaultKeys = host.querySelector<HTMLButtonElement>('[aria-label="Vault keys"]')
@@ -258,7 +180,7 @@ describe('WorkspaceShell responsive ownership', () => {
       const resetLayout = host.querySelector<HTMLButtonElement>('[aria-label="Reset layout"]')
       const buttons = [...host.querySelectorAll('button')]
       expect(openPlugins).not.toBeNull()
-      expect(openPlugins?.querySelector('.lucide-puzzle')).not.toBeNull()
+      expect(openPlugins?.querySelector('.lucide-ellipsis')).not.toBeNull()
       expect(openPlugins?.getAttribute('data-slot')).toBe('button')
       expect(openPlugins?.getAttribute('data-size')).toBe('icon-touch')
       expect(openPlugins?.getAttribute('title')).toBeNull()
@@ -312,10 +234,23 @@ describe('WorkspaceShell responsive ownership', () => {
       )
       expect(document.body.querySelector('[role="menu"]')).toBeNull()
 
-      await act(async () => openPlugins!.click())
-      expect(openPlugins?.getAttribute('aria-current')).toBe('true')
-      expect(host.textContent).toContain('Plugins')
-      expect(host.textContent).not.toContain('Tools & plugins')
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+
+      await act(async () => {
+        openPlugins!.focus()
+        openPlugins!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+        await new Promise((resolve) => setTimeout(resolve, 30))
+      })
+      expect(document.body.querySelector('[role="menu"]')?.textContent).toContain(
+        'No tools available',
+      )
+      expect(host.querySelector('[aria-label="Plugins"]')).toBeNull()
+      await act(async () =>
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })),
+      )
+      await act(async () => files!.click())
       // The sidebar's width is PAINTED from a custom property on the panel, which the
       // resize hook writes straight to the DOM during a drag (so a mousemove repaints
       // without re-rendering the shell). The inner content column reads the same var,
@@ -434,13 +369,10 @@ describe('WorkspaceShell responsive ownership', () => {
         'workspace',
       )
 
+      expect(paintedSidebarWidth()).toBe('364px')
+      await act(async () => files!.click())
       await act(async () => files!.click())
       expect(paintedSidebarWidth()).toBe('364px')
-
-      await act(async () => openPlugins!.click())
-      expect(paintedSidebarWidth()).toBe('364px')
-      await act(async () => openPlugins!.click())
-      expect(openPlugins?.getAttribute('aria-current')).toBeNull()
     } finally {
       await act(async () => root.unmount())
       localStorage.removeItem('localix_rail_layout')
@@ -526,22 +458,31 @@ describe('WorkspaceShell status contribution', () => {
     const root = createRoot(host)
     const noOp = () => {}
 
+    localStorage.setItem(
+      RAIL_LAYOUT_STORAGE_KEY,
+      JSON.stringify({
+        v: 6,
+        entries: [
+          { id: 'reader', area: 'overflow' },
+          { id: 'office', area: 'overflow' },
+        ],
+      }),
+    )
     const renderShell = (sections: string[]) => (
       <WorkspaceShell
         isMobile={false}
         statusSessionId={null}
-        sidebarOpen
-        activeSectionId="plugins"
-        railSections={sections.map((id) => ({
+        sidebarOpen={false}
+        railActions={sections.map((id) => ({
           id,
           icon: <span />,
           label: id === 'reader' ? 'Reader' : 'Office',
-          content: <div />,
+          onClick: noOp,
+          customizable: true,
           defaultArea: 'overflow' as const,
           plugin: true,
           pluginName: id,
         }))}
-        railActions={[]}
         onOpenSidebar={noOp}
         onCloseSidebar={noOp}
         onCreateChat={noOp}
@@ -557,17 +498,36 @@ describe('WorkspaceShell status contribution', () => {
 
     try {
       await act(async () => root.render(renderShell(['reader', 'office'])))
-      // Nothing opened yet: the rail carries only its fixed plugin launcher.
-      expect(railSlots()).toEqual(['Plugins'])
+      // Unpinned tools are available only in the catalog until opened.
+      expect(railSlots()).toEqual(['All tools'])
 
       // Launch Reader from its launcher row — the row records the open.
-      const readerRow = host.querySelector<HTMLButtonElement>(
-        '[data-plugin-entry-id="section:reader"] [data-slot="workbench-list-row-trigger"]',
-      )!
-      await act(async () => readerRow.click())
+      const openReader = async () => {
+        // Let the previous popover's deferred focus return finish before opening another menu.
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        const catalog = host.querySelector<HTMLButtonElement>('[aria-label="All tools"]')!
+        await act(async () => {
+          catalog.focus()
+          catalog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+        })
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        const reader = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(
+          (item) => item.textContent === 'Reader',
+        )!
+        expect(reader).toBeDefined()
+        await act(async () => reader.click())
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+      }
+      await openReader()
       // Default mode collapses an inactive recent behind the dock's trigger, so the
       // rail itself gains exactly one quiet button instead of a plugin icon.
-      expect(railSlots()).toEqual(['Plugins'])
+      expect(railSlots()).toEqual(['All tools'])
       const dockTrigger = host.querySelector<HTMLButtonElement>(
         '[data-rail-group="workspace"] [data-rail-recents-trigger]',
       )!
@@ -579,14 +539,14 @@ describe('WorkspaceShell status contribution', () => {
             '[data-slot="popover-content"][data-state="open"] [data-slot="button"]',
           ),
         ).map((slot) => slot.getAttribute('aria-label'))
-      // Exactly one slot: a recent never doubles up, and nothing pins it.
+      // Exactly one recent slot: repeated opens do not duplicate it.
       expect(flyoutSlots().filter((label) => label === 'Reader')).toHaveLength(1)
       await act(async () => dockTrigger.click())
 
       // Re-opening it does NOT reshuffle the slots — the whole point of excluding
       // an already-visible recent from the touch wrapper.
-      await act(async () => readerRow.click())
-      expect(railSlots()).toEqual(['Plugins'])
+      await openReader()
+      expect(railSlots()).toEqual(['All tools'])
 
       // Reader's plugin goes away: its slot goes with it, without erasing the entry
       // from the recents store (re-enabling brings it back).

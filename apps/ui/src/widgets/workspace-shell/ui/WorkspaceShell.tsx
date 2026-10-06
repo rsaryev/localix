@@ -12,14 +12,12 @@ import { TransientStatusLine } from '@/shared/ui/notification-center/TransientSt
 import { useBrowserHistoryAgent } from '@/features/inspector/ui/useBrowserHistoryAgent'
 import { SIDEBAR_WIDTH_VAR, useSidebarResize } from '../model/useSidebarResize'
 import { useRailLayout } from '../model/useRailLayout'
-import { useRailRecents } from '../model/useRailRecents'
+import { useRailTools } from '../model/useRailTools'
 import { useRailDnd } from '../model/useRailDnd'
 import { buildRailEntries } from '../model/buildRailEntries'
-import { trackRecentOpens } from '../model/trackRecentOpens'
 import type { RailEntry } from './shellTypes'
 import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
 import { CustomizableRailButton } from './CustomizableRailButton'
-import { PluginsSidebar } from './PluginsSidebar'
 import { WorkspaceRail } from './WorkspaceRail'
 import type { RailAction, RailSection } from './shellTypes'
 
@@ -46,14 +44,10 @@ interface WorkspaceShellProps {
   onSectionChange?: (id: string | null) => void
   /** Action buttons rendered in the rail's top group, after the sections. */
   railActions?: RailAction[]
-  /** True while the enabled-plugin set is still loading (the launcher says so). */
+  /** True while the catalog's enabled-plugin set is still loading. */
   pluginsPending?: boolean
   pluginCategories?: ReadonlyMap<string, PluginCategory | undefined>
   capabilitiesManageUri?: string
-  /** Deep link to one plugin's row in Settings, in the page's capability scope. */
-  pluginSettingsUri?: (pluginName: string) => string
-  onUninstallPlugin?: (pluginName: string) => void
-  canUninstallPlugin?: (pluginName: string) => boolean
   onNavigateUi?: (uri: string) => void
   onOpenSidebar: () => void
   onCloseSidebar: () => void
@@ -78,8 +72,6 @@ interface WorkspaceShellProps {
 
 const NO_RAIL_SECTIONS: RailSection[] = []
 const NO_RAIL_ACTIONS: RailAction[] = []
-/** Plugin views are never pinned, so the recents hook needs no pinned-id filter. */
-const NO_PINNED_IDS: ReadonlySet<string> = new Set()
 
 function resolveRailEntries(ids: readonly string[], entries: ReadonlyMap<string, RailEntry>) {
   const resolved: RailEntry[] = []
@@ -101,9 +93,6 @@ export function WorkspaceShell({
   pluginsPending = false,
   pluginCategories,
   capabilitiesManageUri,
-  pluginSettingsUri,
-  onUninstallPlugin,
-  canUninstallPlugin,
   onNavigateUi,
   onOpenSidebar,
   onCloseSidebar,
@@ -210,32 +199,20 @@ export function WorkspaceShell({
 
   const railLayout = useRailLayout(railDefs)
 
-  // Recents are a SECOND, usage-derived store layered over the arrangement (see
-  // railRecents). PLUGIN entries never take a placement zone — `buildRailEntries`
-  // pins them to `overflow` — so the overflow bucket is exactly "every plugin view
-  // available right now", and it doubles as the known-id set: a disabled plugin
-  // drops out of it on its own. Nothing is ever pinned, so the pinned set is empty.
-  const availablePluginIds = new Set(railLayout.overflow)
-  const recents = useRailRecents(availablePluginIds, NO_PINNED_IDS)
-  // Opening a view NOT already showing as a recent slot records the open, floating
-  // it in. An entry that's already a recent slot is excluded from the wrapping —
-  // re-clicking it (from the launcher OR the rail button itself) just reactivates
-  // it in place. Without this exclusion, every click on an already-visible recent
-  // re-touched it to the front, so the other slots visibly reshuffled on a plain
-  // re-open — the "jumps" a Dock never does for something you're already looking at.
-  const currentRecentIds = new Set(recents.ids)
-  const trackableIds = new Set([...availablePluginIds].filter((id) => !currentRecentIds.has(id)))
-  const launchableEntryMap = trackRecentOpens(railEntryMap, trackableIds, recents.touch)
+  const {
+    recents,
+    pinnedIds: pinnedToolIds,
+    launchableEntryMap,
+    toolEntries,
+    pinTool,
+    unpinTool,
+  } = useRailTools(railEntryMap, railLayout)
 
   const barEntries = resolveRailEntries(railLayout.bar, railEntryMap)
   const bottomEntries = resolveRailEntries(railLayout.bottom, railEntryMap)
   const topEntries = resolveRailEntries(railLayout.top, railEntryMap)
   const statusEntries = resolveRailEntries(railLayout.status, railEntryMap)
   const recentEntries = resolveRailEntries(recents.ids, launchableEntryMap)
-  const pluginEntries: RailEntry[] = []
-  for (const entry of launchableEntryMap.values()) {
-    if (entry.plugin) pluginEntries.push(entry)
-  }
 
   // "Reset layout" reads as EVERYTHING, so it clears the recent slots too.
   const resetRail = () => {
@@ -253,9 +230,7 @@ export function WorkspaceShell({
     const ids = entriesByArea[area]
     railLayout.move(id, area, ids.filter((entry) => entry.id !== id).length)
   }
-  // Only CORE entries take part in rail drag-and-drop: they are the only entries
-  // with a placement to rearrange. Plugin views have none, so they are neither a
-  // drag source nor a drop target anywhere on the rail.
+  // Pinned tools share the same placement and drag model as core entries.
   const railDnd = useRailDnd({
     areaIds: {
       top: topEntries.map((entry) => entry.id),
@@ -265,24 +240,7 @@ export function WorkspaceShell({
     },
     onMoveEntry: railLayout.move,
   })
-  const capabilitiesActive = sidebarOpen && activeSection === 'plugins'
-  const activeSectionContent =
-    activeSection === 'plugins' ? (
-      <PluginsSidebar
-        pending={pluginsPending}
-        entries={pluginEntries}
-        categories={pluginCategories}
-        manageUri={capabilitiesManageUri}
-        pluginSettingsUri={pluginSettingsUri}
-        recentIds={currentRecentIds}
-        onRemoveRecent={recents.remove}
-        onUninstallPlugin={onUninstallPlugin}
-        canUninstallPlugin={canUninstallPlugin}
-        onNavigateUi={onNavigateUi}
-      />
-    ) : (
-      registeredSectionContent
-    )
+  const activeSectionContent = registeredSectionContent
 
   const rail = (
     <WorkspaceRail
@@ -291,6 +249,11 @@ export function WorkspaceShell({
       historyActive={historyActive}
       onHistoryClick={handleHistoryClick}
       barEntries={barEntries}
+      toolEntries={toolEntries}
+      pluginCategories={pluginCategories}
+      pinnedToolIds={pinnedToolIds}
+      onPinTool={pinTool}
+      onUnpinTool={unpinTool}
       topEntries={topEntries}
       bottomEntries={bottomEntries}
       recentEntries={recentEntries}
@@ -298,8 +261,10 @@ export function WorkspaceShell({
       onMoveWithinBar={railLayout.moveWithin}
       onRemoveRecent={recents.remove}
       onResetRail={resetRail}
-      capabilitiesActive={capabilitiesActive}
-      onCapabilitiesClick={() => handleSectionClick('plugins')}
+      pluginsPending={pluginsPending}
+      onCapabilitiesClick={() => {
+        if (capabilitiesManageUri) onNavigateUi?.(capabilitiesManageUri)
+      }}
       dnd={railDnd}
       topRailActions={[...fixedSectionActions, ...topRailActions]}
       mainRailActions={mainRailActions}
@@ -460,6 +425,7 @@ export function WorkspaceShell({
               <div className="z-(--z-raised) flex shrink-0 items-stretch divide-x divide-border-soft border-t border-r border-border-soft">
                 {statusEntries.map((entry, index) => (
                   <CustomizableRailButton
+                    onUnpin={unpinTool}
                     key={entry.id}
                     entry={entry}
                     area="status"

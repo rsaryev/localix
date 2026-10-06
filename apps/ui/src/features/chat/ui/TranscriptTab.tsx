@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Import as ImportIcon } from 'lucide-react'
+import type { PluginTranscriptAction } from '@localixai/plugin-sdk/ui/runtime'
 import { useAutoScroll } from '@/shared/hooks/useAutoScroll'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { toast } from '@/shared/lib/notify'
@@ -26,7 +27,8 @@ export function TranscriptTab({
   const transcript = readTranscript(transcriptId)
   const scroll = useAutoScroll<HTMLDivElement>(transcriptId, focused)
   const navigation = useRoutedNavigation()
-  const [runningAction, setRunningAction] = useState(false)
+  const [runningAction, setRunningAction] = useState<number | null>(null)
+  const inFlight = useRef(false)
 
   if (!transcript) {
     // Content is held in memory only (see openTranscript), so a tab restored after a reload has
@@ -34,20 +36,24 @@ export function TranscriptTab({
     return <EmptyHint>Reopen this transcript from where you opened it.</EmptyHint>
   }
 
-  const runAction = async () => {
-    if (!transcript.action || runningAction) return
-    setRunningAction(true)
+  const actions = transcript.actions ?? (transcript.action ? [transcript.action] : [])
+  const description = actions.find((action) => action.description)?.description
+  const runAction = async (action: PluginTranscriptAction, index: number) => {
+    if (inFlight.current) return
+    inFlight.current = true
+    setRunningAction(index)
     try {
-      const destination = await transcript.action.run()
+      const destination = await action.run()
       if (destination) {
         navigation.goToSession(destination.sessionId, { project: destination.projectId })
       }
     } catch (cause) {
-      toast.error('Could not import this conversation', {
+      toast.error(action.errorLabel ?? 'Could not complete this action', {
         description: errorMessage(cause, '') || undefined,
       })
     } finally {
-      setRunningAction(false)
+      inFlight.current = false
+      setRunningAction(null)
     }
   }
 
@@ -63,30 +69,42 @@ export function TranscriptTab({
         foreignTools={transcript.foreignTools === true}
         empty={<EmptyHint>No readable turns in this transcript.</EmptyHint>}
       />
-      {transcript.action && (
+      {actions.length > 0 && (
         <div
           data-slot="transcript-action-footer"
           // No fill: this footer is a flex sibling of the transcript, so nothing ever
           // scrolls under it — a `bg-background/95` coat only double-coated the pane's
           // ground under glass and read as a darker band.
-          className="shrink-0 border-t border-border-soft px-4 py-3"
+          className="shrink-0 border-t border-border-soft px-4 py-2"
         >
-          <div className="mx-auto flex w-full max-w-(--chat-measure) items-center gap-4">
-            {transcript.action.description && (
-              <p className="min-w-0 flex-1 truncate text-xs text-text-faint">
-                {transcript.action.description}
+          <div className="mx-auto flex w-full max-w-(--chat-measure) flex-wrap items-center gap-2">
+            {description && (
+              <p className="min-w-0 flex-1 truncate text-xs text-text-faint" title={description}>
+                {description}
               </p>
             )}
-            <Button
-              type="button"
-              onClick={() => void runAction()}
-              disabled={runningAction}
-              aria-label={transcript.action.label}
-              className="h-10 shrink-0 gap-2 rounded-xl px-5 shadow-(--shadow-raised)"
-            >
-              {runningAction ? <Spinner className="size-4" /> : <ImportIcon className="size-4" />}
-              {runningAction ? transcript.action.pendingLabel : transcript.action.label}
-            </Button>
+            <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+              {actions.map((action, index) => {
+                const ActionIcon = action.icon ?? ImportIcon
+                const pending = runningAction === index
+                return (
+                  <Button
+                    key={action.label}
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    onClick={() => void runAction(action, index)}
+                    disabled={runningAction !== null}
+                    aria-busy={pending}
+                    aria-label={action.label}
+                    className="shrink-0 gap-2"
+                  >
+                    {pending ? <Spinner size="sm" /> : <ActionIcon />}
+                    {pending ? action.pendingLabel : action.label}
+                  </Button>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}

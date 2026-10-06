@@ -39,6 +39,7 @@
     "./roster-lock": "./src/features/chat/roster-lock.ts",
     "./secrets-limits": "./src/features/secrets/limits.ts",
     "./session-ref": "./src/features/chat/session-ref.ts",
+    "./session-title": "./src/features/chat/session-title.ts",
     "./session-route": "./src/features/chat/session-route.ts",
     "./slash-catalog": "./src/features/chat/slash-catalog.ts",
     "./slash-match": "./src/features/chat/slash-match.ts",

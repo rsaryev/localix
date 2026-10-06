@@ -9,12 +9,11 @@ import {
   EXTERNAL_AGENT_NAMESPACE,
   parseExternalAgentUri,
 } from './model/openSession'
-import { AGENT_MARKS } from './model/agentLaunchers'
-import { useExternalAgentsStatusItem } from './statusItem'
+import { AGENT_MARKS } from './model/agentMarks'
 
 /**
  * UI registration for the bundled External Agents workbench. Contributes the roster work item, the
- * titlebar quick actions, the rail viewlet that opens the roster, and the
+ * rail viewlet that opens the roster and the
  * `external-agent` URI anchor — into the OPEN contrib registries, so core hardcodes this workbench
  * nowhere. Discovered and invoked generically by `shared/contrib/discover.ts` through the
  * `registerUi` export, mirroring the bundled database / trading plugins.
@@ -62,17 +61,6 @@ export function registerUi(host: PluginUiHost): void {
         'Resume or manage the session the user selected.',
       ],
     },
-  })
-
-  // The agent launchers, declared rather than drawn — ONE surface, in the chrome that is always
-  // there. They used to be contributed twice: here, and as `UiLocation`s behind the terminal tab
-  // strip's chevron. That second surface only existed while a terminal tab was active and resolved
-  // through an adapter that dropped the command, so it opened six plain shells; it is gone rather
-  // than repaired, because a quick action that hides behind the tab you happen to be on is not one.
-  host.statusItems.register({
-    id: 'external-agents:agents',
-    placement: 'titlebar',
-    useItem: useExternalAgentsStatusItem,
   })
 
   host.railViewlets.register({

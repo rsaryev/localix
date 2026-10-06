@@ -256,8 +256,8 @@ describe('AgentEditor', () => {
       'You are the tech lead.',
     )
     expect(document.body.textContent).toContain('Defaults filled in')
-    // Nothing left to restore, so the verb goes away; the save is now the one decision left.
-    expect(restore()).toBeUndefined()
+    // Keep the same footer geometry; only availability changes after restoring.
+    expect(restore()!.disabled).toBe(true)
     expect(submit().disabled).toBe(false)
     expect(submit().textContent).toBe('Save defaults')
 
@@ -287,14 +287,36 @@ describe('AgentEditor', () => {
     await mine.unmount()
   })
 
-  test('an untouched system agent is offered no Restore at all', async () => {
+  test('an untouched system agent retains a disabled Restore in the footer', async () => {
     const { unmount } = await mount({
       agent: customized({ record: shipped, source: 'builtin' }),
       onLoadDefaults: async () => shipped,
     })
     expect(
       [...document.querySelectorAll('button')].find((b) => b.textContent === 'Restore'),
-    ).toBeUndefined()
+    ).toHaveProperty('disabled', true)
     await unmount()
+  })
+
+  test('loading shipped defaults changes Restore availability without adding footer controls', async () => {
+    let finish!: (record: AgentRecord) => void
+    const pending = new Promise<AgentRecord>((resolve) => {
+      finish = resolve
+    })
+    const { act, unmount } = await mount({ agent: customized(), onLoadDefaults: () => pending })
+    try {
+      const buttons = () => [...document.querySelectorAll('button')]
+      const before = buttons().map((button) => button.textContent)
+      const restore = buttons().find((button) => button.textContent === 'Restore')!
+      expect(restore.disabled).toBe(true)
+      await act(async () => {
+        finish(shipped)
+      })
+      expect(buttons().map((button) => button.textContent)).toEqual(before)
+      expect(buttons().find((button) => button.textContent === 'Restore')).toBe(restore)
+      expect(restore.disabled).toBe(false)
+    } finally {
+      await unmount()
+    }
   })
 })

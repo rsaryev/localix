@@ -83,10 +83,6 @@ const OUTERMOST_PAINTERS = new Map<string, string>([
     'The shell owns the chrome ground for the rail and the sidebar column.',
   ],
   [
-    'apps/ui/src/widgets/workspace-shell/ui/PluginsSidebar.tsx',
-    'The sidebar panel is the outermost painter inside the chrome column.',
-  ],
-  [
     'apps/ui/src/app/routing/RouteErrorBoundary.tsx',
     'A crash screen renders when the shell may not exist; it cannot inherit a pane.',
   ],

@@ -3,10 +3,9 @@ import { readFileSync } from 'node:fs'
 
 const source = readFileSync(new URL('./BreadcrumbTrailingActions.tsx', import.meta.url), 'utf8')
 
-test('the command palette has command identity rather than search identity', () => {
-  expect(source).toContain('label="Command palette"')
-  expect(source).toContain('<Command className="size-3.5 shrink-0"')
-  expect(source).not.toContain('<Search className=')
+test('the command palette stays out of the titlebar', () => {
+  expect(source).not.toContain('label="Command palette"')
+  expect(source).not.toContain('onOpenCommandPalette')
 })
 
 test('the contributed strip spends the width it was measured, not a flat number', () => {
@@ -49,15 +48,11 @@ test('the three core buttons are one group, pinned to the right of every plugin 
   const core = source.indexOf('aria-label="Workspace actions"')
   expect(plugins).toBeGreaterThan(0)
   expect(core).toBeGreaterThan(plugins)
-  for (const control of [
-    'label="Command palette"',
-    'label="Terminal"',
-    '<NotificationCenterLauncher />',
-  ]) {
+  for (const control of ['label="Browser"', 'label="Terminal"', '<NotificationCenterLauncher />']) {
     expect(source.indexOf(control), control).toBeGreaterThan(core)
   }
   // Never folded, whatever the strip is doing beside it.
-  expect(source).toContain('className="flex shrink-0 items-center gap-0.5"')
+  expect(source).toContain('className="flex shrink-0 items-center gap-1"')
 })
 
 test('the plugin zone is fenced on both sides, and the leading rule is conditional', () => {

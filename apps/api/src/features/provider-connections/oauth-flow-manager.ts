@@ -51,6 +51,7 @@ interface PendingPrompt {
 interface OAuthFlow {
   state: string
   userId: string
+  providerId: string
   expiresAt: number
   prompt?: PendingPrompt
   initial: Promise<InitiateOAuthResponse>
@@ -127,6 +128,21 @@ export function createOAuthFlowManager(deps: OAuthFlowManagerDeps) {
     }): Promise<InitiateOAuthResponse> {
       if (closed) throw new Error('OAuth flow manager is shut down')
       sweep()
+      // Closing the browser does not end the adapter's loopback listener. A retry
+      // must wait for the previous login's cleanup before it can bind that port.
+      let previous: OAuthFlow | undefined
+      while (
+        (previous = [...flows.values()].find(
+          (flow) => flow.userId === input.userId && flow.providerId === input.providerId,
+        ))
+      ) {
+        const error = new Error('OAuth flow superseded by a new sign-in attempt')
+        previous.controller.abort(error)
+        previous.prompt?.reject(error)
+        previous.rejectInitial(error)
+        await previous.completion.catch(() => {})
+        if (closed) throw new Error('OAuth flow manager is shut down')
+      }
       const state = randomBytes(20).toString('hex')
       let initialSettled = false
       let resolveInitial!: (value: InitiateOAuthResponse) => void
@@ -152,6 +168,7 @@ export function createOAuthFlowManager(deps: OAuthFlowManagerDeps) {
       const flow: OAuthFlow = {
         state,
         userId: input.userId,
+        providerId: input.providerId,
         expiresAt: Date.now() + FLOW_TTL_MS,
         initial,
         resolveInitial,
@@ -199,6 +216,7 @@ export function createOAuthFlowManager(deps: OAuthFlowManagerDeps) {
           },
         })
         .then(async (credential) => {
+          controller.signal.throwIfAborted()
           const connectionId = await deps.persist({ ...input, credential })
           resolveInitial({ state, mode: 'local-server' })
           return connectionId

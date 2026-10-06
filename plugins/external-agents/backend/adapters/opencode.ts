@@ -20,6 +20,7 @@
 import { Database } from 'bun:sqlite'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { shellQuote } from '@localixai/plugin-sdk/backend'
 import type {
   AdapterEnv,
   ProviderAdapter,
@@ -389,7 +390,7 @@ export const opencodeAdapter: ProviderAdapter = {
   sourceFormat: 'opencode_sqlite',
   verified: true,
   detectionManifestId: 'opencode',
-  resumeCommand: (id) => `opencode --session ${id}`,
+  resumeCommand: (id) => `opencode --session ${shellQuote(id)}`,
   async probeRoots(env: AdapterEnv): Promise<readonly RootProbe[]> {
     const path = dbPath(env)
     return [{ path, exists: isDiskPath(path) && (await pathExists(path)) }]

@@ -53,6 +53,7 @@ export function registerUi(host: PluginUiHost): void {
     kind: 'secrets-manager',
     title: 'Vault',
     label: 'Vault — secrets & credentials',
+    toolCategory: 'utilities',
     defaultArea: 'bar',
     keywords: ['vault', 'secrets', 'credentials', 'passwords', 'api keys', 'oauth'],
     Icon: KeyRound,

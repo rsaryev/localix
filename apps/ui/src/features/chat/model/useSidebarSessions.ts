@@ -2,6 +2,12 @@ import { useCallback, useDeferredValue, useMemo } from 'react'
 
 import type { UiSession } from '@/shared/api/contracts'
 import { sessionBelongsToScope } from './sessionListHelpers'
+import {
+  isThreadSession,
+  matchesSidebarSession,
+  sidebarSessionChildren,
+} from './sidebarSessionTree'
+export { isThreadSession, isWorkerSession } from './sidebarSessionTree'
 
 export type SortMode = 'recent' | 'title'
 
@@ -16,14 +22,6 @@ export function sortSessionsList(sessions: UiSession[], sortMode: SortMode): UiS
 }
 
 const isChat = (s: UiSession) => s.sessionKind !== 'subagent' && s.sessionKind !== 'job'
-/** A thread = a `system` session (a plugin's activity log) or a message-anchored side-chat.
- *  These aggregate under a single "Threads" node instead of cluttering the tree. */
-export const isThreadSession = (s: UiSession) =>
-  s.sessionKind === 'system' || (s.sourceToolCallId?.startsWith('message-thread:') ?? false)
-/** A worker = a delegated task and automation runs. Aggregated
- *  under a single "Workers" node under the chat that owns them. */
-export const isWorkerSession = (s: UiSession) =>
-  s.sessionKind === 'job' || s.sessionKind === 'subagent'
 
 /**
  * Pure scope projection: the ROOT chats (no chat parent) belonging to the active
@@ -43,7 +41,7 @@ export function scopeRootSessions(
     if (!sessionBelongsToScope(session, activeProjectId)) return false
     if (!session.parentSessionId) return true
     const parent = byId.get(session.parentSessionId)
-    return !parent || !isChat(parent)
+    return !parent
   })
 }
 
@@ -61,11 +59,11 @@ export interface SidebarSessions {
   sessionsById: Map<string, UiSession>
   /** parentId → its direct fork children (chat sessions parented to another chat). */
   forksByParent: Map<string, UiSession[]>
-  /** parentId → its thread children (task/message threads), aggregated under one node. */
+  /** parentId → its direct thread children. */
   threadsByParent: Map<string, UiSession[]>
-  /** rootChatId → its worker children (delegated task and automation runs), aggregated. */
+  /** parentId → its direct worker children, preserving nested delegations. */
   workersByParent: Map<string, UiSession[]>
-  /** True if the session — or any descendant fork — matches the current search. */
+  /** True if the session or any descendant matches the current search. */
   matchesDeep: (session: UiSession) => boolean
   normalizedSearch: string
   /** Root chats in the ACTIVE scope only, sorted + search-filtered. */
@@ -92,37 +90,8 @@ export function useSidebarSessions({
 
   const sessionsById = useMemo(() => new Map(allSessions.map((s) => [s.id, s])), [allSessions])
 
-  const { forksByParent, threadsByParent, workersByParent } = useMemo(() => {
-    const forks = new Map<string, UiSession[]>()
-    const threads = new Map<string, UiSession[]>()
-    const workers = new Map<string, UiSession[]>()
-    const push = (map: Map<string, UiSession[]>, key: string, s: UiSession) => {
-      const list = map.get(key) ?? []
-      list.push(s)
-      map.set(key, list)
-    }
-    for (const s of allSessions) {
-      if (isWorkerSession(s)) {
-        // Attach a worker to the nearest owning CHAT (its parent if that's a chat,
-        // else the root chat) so all of a chat's runs collect under one node.
-        const parent = s.parentSessionId ? sessionsById.get(s.parentSessionId) : undefined
-        const host =
-          parent && isChat(parent)
-            ? parent
-            : s.rootSessionId
-              ? sessionsById.get(s.rootSessionId)
-              : undefined
-        if (host && isChat(host)) push(workers, host.id, s)
-        continue
-      }
-      if (!s.parentSessionId) continue
-      const parent = sessionsById.get(s.parentSessionId)
-      if (!parent || !isChat(parent)) continue
-      // Threads aggregate under one disclosure; only real forks tree out inline.
-      push(isThreadSession(s) ? threads : forks, s.parentSessionId, s)
-    }
-    return { forksByParent: forks, threadsByParent: threads, workersByParent: workers }
-  }, [allSessions, sessionsById])
+  const children = useMemo(() => sidebarSessionChildren(allSessions), [allSessions])
+  const { forksByParent, threadsByParent, workersByParent } = children
 
   // Top-level rows = chats with no chat parent, restricted to the ACTIVE SCOPE.
   // A fork (chat parented to another chat) nests under its parent instead; an
@@ -133,23 +102,9 @@ export function useSidebarSessions({
     [allSessions, activeProjectId, showArchived],
   )
 
-  // A session matches search if its title — or any descendant fork's title —
-  // matches, so a parent stays visible (and is force-expanded) to reveal the hit.
-  // Iterative (stack) traversal so the callback never references itself.
   const matchesDeep = useCallback(
-    (session: UiSession): boolean => {
-      const stack: UiSession[] = [session]
-      const seen = new Set<string>()
-      while (stack.length > 0) {
-        const current = stack.pop() as UiSession
-        if (seen.has(current.id)) continue
-        seen.add(current.id)
-        if ((current.title || '').toLowerCase().includes(normalizedSearch)) return true
-        stack.push(...(forksByParent.get(current.id) ?? []))
-      }
-      return false
-    },
-    [normalizedSearch, forksByParent],
+    (session: UiSession) => matchesSidebarSession(session, normalizedSearch, children),
+    [normalizedSearch, children],
   )
 
   const scopeSessions = useMemo(() => {

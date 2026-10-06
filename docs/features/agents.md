@@ -6,17 +6,23 @@ Each turn resolves the current definition and policy together.
 
 ## Shipped roles
 
-| Handle      | Responsibility                                         | Default scope of file changes                 |
-| ----------- | ------------------------------------------------------ | --------------------------------------------- |
-| `localix`   | General coding, research and visual explanations       | Authorized workspace work                     |
-| `lead`      | Coordination, review, integration and delivery         | Integration and uncovered implementation work |
-| `pm`        | Scope, dependencies, ownership and acceptance criteria | Documentation                                 |
-| `architect` | Boundaries, contracts, trade-offs and migrations       | Documentation and disposable prototypes       |
-| `backend`   | Storage, schemas, APIs and runtime behavior            | Backend implementation and its tests          |
-| `frontend`  | Components, state, layout and interaction              | Frontend implementation and its tests         |
-| `qa`        | Reproductions, missing cases and verification          | Tests, fixtures and documentation             |
-| `design`    | Flows, interface states and rendered mockups           | Mockups, prototypes and documentation         |
-| `devops`    | Builds, environments, deployment and recovery          | Operational implementation and its tests      |
+| Handle      | Responsibility                                          | Default scope of file changes                 |
+| ----------- | ------------------------------------------------------- | --------------------------------------------- |
+| `localix`   | Main orchestration, team coordination and final outcome | Authorized workspace work                     |
+| `lead`      | Engineering quality, review and integration             | Integration and uncovered implementation work |
+| `pm`        | Scope, dependencies, ownership and acceptance criteria  | Documentation                                 |
+| `architect` | Boundaries, contracts, trade-offs and migrations        | Documentation and disposable prototypes       |
+| `backend`   | Storage, schemas, APIs and runtime behavior             | Backend implementation and its tests          |
+| `frontend`  | Components, state, layout and interaction               | Frontend implementation and its tests         |
+| `qa`        | Reproductions, missing cases and verification           | Tests, fixtures and documentation             |
+| `design`    | Flows, interface states and rendered mockups            | Mockups, prototypes and documentation         |
+| `devops`    | Builds, environments, deployment and recovery           | Operational implementation and its tests      |
+
+Localix coordinates complex work with available specialists and handles small tasks directly. Its
+shipped hierarchy priority is **2**; Team Lead, PM and Architect use **1**, and the other
+specialists use **0**. Explicit routing takes precedence over leader election. Each specialist
+returns delegated results and evidence to its parent; Localix owns user decisions and the final
+outcome. Customized definitions retain their authored instructions until restored.
 
 The bundled **Code Review** plugin contributes `reviewer` to the same native agent directory. It
 inspects a scoped diff and returns findings and a structured verdict. Its default policy allows
@@ -68,6 +74,10 @@ shipped handles stay fixed. Extension-owned definitions are updated through thei
 removes the override in the selected registry and preserves permission choices. The permission rules
 tab has a separate reset for the shipped policy.
 
+Definition fields stack in narrow panes and share aligned control tracks when the section is wide
+enough for two columns. Restore remains in place while defaults load and after restoring, with its
+availability reflected by its disabled state.
+
 On upgrade, untouched shipped policies can advance to new defaults. Explicit enabled choices
 survive. Customized ordered policies are retained rather than merged in a way that changes their
 exceptions. Legacy policies with no known baseline are preserved. Bundled contribution updates use
@@ -84,6 +94,10 @@ does not silently reroute work already delegated. External aliases such as `opus
 **Max turns** can lower a run's limit. Blank inherits the run limit, whose built-in default is 1,000
 tool-loop turns; user settings and delegated task caps can lower it. The editor shows the inherited
 and effective maximum before task-specific caps.
+
+In the composer, click the turn-limit control to cycle through **1 → 5 → 20 → 100 → ∞ → 1**. The
+tooltip shows the next value. **∞** uses the built-in 1,000-turn ceiling; the agent normally stops
+when its work is finished.
 
 **Preloaded skills** are applied to this agent in ordinary and delegated turns. Session-pinned
 skills are added, duplicates are removed, and denied skills remain unavailable. A team's members do

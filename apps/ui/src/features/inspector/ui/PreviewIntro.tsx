@@ -1,4 +1,5 @@
 import { MousePointerClick } from 'lucide-react'
+import { useId, useRef } from 'react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
 import { Button } from '@localixai/kit/button'
@@ -22,12 +23,15 @@ export function PreviewIntro({
   onBrowse: () => void
   onComment: () => void
 }) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const id = useId()
   // Escape dismisses the intro, but only while it is the surface that owns the keyboard: open a
   // dialog over the preview and Escape belongs to the dialog, with nothing here to check for it.
   useFocusEntry({
-    id: 'preview-intro',
+    id: `preview-intro:${id}`,
     kind: 'surface',
     active,
+    scope: () => rootRef.current,
     onKeyDown: (event) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
@@ -42,7 +46,7 @@ export function PreviewIntro({
           `bg-surface-raised`: raised mixes from a darker ground than the pane this card floats
           over, so the intro read as a black card on the dimmed preview. It used to transcribe
           the material and missed the rim ring and the frost marker the contrast rules key on. */}
-      <div className={cn(POPOVER_SURFACE, 'w-[min(340px,100%)] p-4')}>
+      <div ref={rootRef} className={cn(POPOVER_SURFACE, 'w-[min(340px,100%)] p-4')}>
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <MousePointerClick className="size-4 text-status-success" aria-hidden />
           Live preview

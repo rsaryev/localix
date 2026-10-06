@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { DEFAULT_TITLE } from './context'
+import { forkSessionTitle } from '../session-title'
 import { chosenRoute } from '../session-route'
 import { walkPathToRoot, indexMessageTree } from './branching'
 import { messageNotFound, type BranchingOpsContext } from './branching-ops'
@@ -45,7 +45,7 @@ export async function forkSession(
     id: forkedId,
     seq,
     userId,
-    title: `${source.title || DEFAULT_TITLE} (fork)`,
+    title: forkSessionTitle(source.title, seq),
     isPinned: false,
     projectId: source.projectId,
     parentSessionId: source.id,

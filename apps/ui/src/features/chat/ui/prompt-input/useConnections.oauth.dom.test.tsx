@@ -11,7 +11,7 @@ afterAll(async () => {
   await teardown()
 })
 
-test('background browser sign-in returns to the exact connection even if persistence is immediate', async () => {
+test('retrying an abandoned browser sign-in returns once to the exact connection', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useConnections } = await import('./useConnections')
@@ -67,10 +67,16 @@ test('background browser sign-in returns to the exact connection even if persist
       refreshConnections: async () => {},
       _replaceSession: () => {},
     })
+    let attempt = 0
     backendClient.initiateOAuth = async () => {
+      attempt += 1
       // The server can finish login before the initiating request returns to the UI.
-      useChatStore.setState({ connections: [connection] })
-      return { state: 'flow-1', mode: 'local-server', redirectUrl: 'https://auth.example.test/' }
+      if (attempt === 2) useChatStore.setState({ connections: [connection] })
+      return {
+        state: `flow-${attempt}`,
+        mode: 'local-server',
+        redirectUrl: 'https://auth.example.test/',
+      }
     }
     backendClient.updateSession = async (sessionId, patch) => {
       events.push({ sessionId, patch })
@@ -90,11 +96,17 @@ test('background browser sign-in returns to the exact connection even if persist
     }
     await act(async () => root.render(<Harness />))
     await act(async () => {
+      await state.addOAuthConnection('openai', 'OpenAI', 'Abandoned', (id) =>
+        events.push(`abandoned:${id}`),
+      )
+    })
+    await act(async () => {
       await state.addOAuthConnection('openai', 'OpenAI', 'Work', (id) => events.push(id))
       await new Promise((resolve) => setTimeout(resolve, 3200))
     })
     expect(document.hidden).toBe(true)
     expect(events).toEqual([
+      'https://auth.example.test/',
       'https://auth.example.test/',
       { sessionId: 'session-1', patch: { route: { providerConnectionId: 'openai-work' } } },
       'openai-work',

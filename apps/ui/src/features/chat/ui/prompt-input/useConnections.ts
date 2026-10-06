@@ -43,11 +43,11 @@ export function useConnections(sessionId: string | null) {
   // OAuth-completion poll loops started by this hook instance. Each stop handle
   // also covers an in-flight tick, so its `finally` cannot schedule another read
   // after navigation.
-  const oauthPollStops = useRef<Set<() => void>>(new Set())
+  const oauthPollStops = useRef<Map<string, () => void>>(new Map())
   useEffect(() => {
     const stops = oauthPollStops.current
     return () => {
-      for (const stop of stops) stop()
+      for (const stop of stops.values()) stop()
       stops.clear()
     }
   }, [])
@@ -142,6 +142,9 @@ export function useConnections(sessionId: string | null) {
       label: string,
       onConnected?: (connectionId: string) => void,
     ) => {
+      // The server replaces an abandoned login on retry. Its old poll must not
+      // mistake the replacement's connection for its own or report a timeout.
+      oauthPollStops.current.get(providerId)?.()
       // Snapshot before starting login: a fast callback may persist before initiate returns.
       const baseline = useChatStore.getState().connections
       // In desktop mode the OAuth callback must go to a localhost URL that the
@@ -198,14 +201,18 @@ export function useConnections(sessionId: string | null) {
             onConnected?.(fresh.id)
             returnToOAuthModels(fresh, activeSessionId)
           },
-          onStop: () => oauthPollStops.current.delete(stopPoll),
+          onStop: () => {
+            if (oauthPollStops.current.get(providerId) === stopPoll) {
+              oauthPollStops.current.delete(providerId)
+            }
+          },
           onTimeout: () => {
             toast.error(`Could not sign in to ${providerName}`, {
               description: 'The sign-in did not finish within two minutes. Try connecting again.',
             })
           },
         })
-        oauthPollStops.current.add(stopPoll)
+        oauthPollStops.current.set(providerId, stopPoll)
       }
 
       // device-code adapters (GitHub Copilot): the server polls until the user enters the

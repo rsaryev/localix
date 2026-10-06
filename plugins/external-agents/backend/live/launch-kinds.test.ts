@@ -3,11 +3,7 @@ import { detectLaunchCwd, detectLaunchKind } from './launch-kinds'
 import { agentLaunchCommand } from '../../shared/launch'
 
 /**
- * The launchers the titlebar quick actions offer, as `shared/launch.ts` declares them.
- *
- * Repeated here rather than imported because that module is a `.tsx` carrying brand marks and SDK
- * UI types; what has to be shared is the COMMAND FORMAT, and that now lives in `shared/launch.ts`,
- * which both halves derive from.
+ * Representative delegated CLIs exercise the shared declaration emitter and live parser.
  */
 const PROFILES = [
   { provider: 'claude-code', executable: 'claude' },
@@ -22,7 +18,7 @@ describe('the real emitter through the real parser', () => {
    * emitter and the reader was being checked against a restatement of itself. A drift there does not
    * fail loudly — terminals open, agents run, and nothing is ever adopted as a delegation.
    */
-  test('every profile the tab strip offers is read back as its own agent kind', () => {
+  test('every declared profile is read back as its own agent kind', () => {
     for (const profile of PROFILES) {
       const command = agentLaunchCommand(profile)
       expect(detectLaunchKind(command)).toBe(profile.provider)

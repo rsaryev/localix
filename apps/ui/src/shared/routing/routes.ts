@@ -112,7 +112,7 @@ export function isSectionId(value: string | undefined): value is SectionId {
   if (value === undefined) return false
   // Core rail sections, plus any id contributed through the open rail-section
   // registry (bundled subsystems register themselves there).
-  if (value === 'files' || value === 'jobs' || value === 'plugins') return true
+  if (value === 'files' || value === 'jobs') return true
   // Installed third-party plugin views are NOT rail sections — they open as
   // work-item tabs, addressed by their own location uri, not a section id.
   return railSectionRegistry.list().some((s) => s.id === value)

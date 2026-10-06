@@ -87,11 +87,15 @@ export function AgentEditor({
       error={form.formError}
       notice={form.notice}
       // Restore stands with Cancel and Save because it is about THIS form — it fills the
-      // fields back in — and it is offered only while the form still differs from what the
-      // app ships. Nothing to restore, nothing on screen.
+      // fields back in. Keep its place while defaults load and after restoring them.
       extraAction={
-        form.canRestore ? (
-          <Button size="xl" variant="ghost" onClick={form.restore} disabled={saving}>
+        onLoadDefaults ? (
+          <Button
+            size="xl"
+            variant="ghost"
+            onClick={form.restore}
+            disabled={saving || !form.canRestore}
+          >
             Restore
           </Button>
         ) : undefined
@@ -146,7 +150,7 @@ export function AgentEditor({
       </SettingsSection>
 
       <SettingsSection title="Limits">
-        <SettingsFieldGrid>
+        <SettingsFieldGrid columnsAt="2xl">
           <Field
             controlId={AGENT_FIELD_IDS.leadershipPriority}
             label="Hierarchy priority"

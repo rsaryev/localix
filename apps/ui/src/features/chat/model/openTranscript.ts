@@ -1,4 +1,5 @@
 import type { Message } from '@/shared/api/contracts'
+import type { PluginTranscriptAction } from '@localixai/plugin-sdk/ui/runtime'
 import { inspector } from '@/shared/lib/inspectorBus'
 
 export interface TranscriptActionDestination {
@@ -38,19 +39,13 @@ export interface OpenTranscriptInput {
    */
   readonly foreignTools?: boolean
   /**
-   * Optional durable next step for a read-only transcript.
+   * Optional next step for a read-only transcript.
    *
    * Kept beside the in-memory content because callbacks cannot be serialized into a work-item
-   * payload. A transcript without an action stays a plain reader; importers can use the familiar
-   * composer footer position for one explicit conversion action.
+   * payload. A transcript without an action stays a plain reader.
    */
-  readonly action?: {
-    readonly label: string
-    readonly pendingLabel: string
-    readonly description?: string
-    /** Returning a destination lets the routed workspace perform the durable transition. */
-    readonly run: () => Promise<TranscriptActionDestination | void>
-  }
+  readonly action?: PluginTranscriptAction
+  readonly actions?: readonly PluginTranscriptAction[]
 }
 
 /** Content lives here, not in the work item's payload: payloads are serialized into the persisted

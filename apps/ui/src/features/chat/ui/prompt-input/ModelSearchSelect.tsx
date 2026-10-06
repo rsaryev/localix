@@ -126,7 +126,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
   const showsReasoning = selectedModel?.supportsReasoning ?? false
 
   return (
-    <div className="flex h-[var(--chrome-control-lg)] w-full min-w-0 items-center rounded-lg transition-colors hover:bg-surface-hover">
+    <div className="flex h-[var(--chrome-control-lg)] w-full min-w-0 items-center gap-0.5 rounded-lg">
       <Button
         ref={triggerRef}
         variant="ghost"
@@ -144,7 +144,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
         title={
           activeConnection ? `Model: ${modelLabel} · ${activeConnection.label}` : 'Choose a model'
         }
-        className="flex h-[var(--chrome-control-lg)] min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent px-2.5 text-xs font-normal transition-colors hover:bg-transparent"
+        className="flex h-[var(--chrome-control-lg)] min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent px-2.5 text-xs font-normal transition-colors"
         onPointerEnter={() => void loadModelPickerDrawer()}
         onFocus={() => void loadModelPickerDrawer()}
         onClick={() => {
@@ -186,7 +186,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
 
       {showsReasoning && (
         <>
-          <span className="h-4 w-px shrink-0 bg-control-border/70" aria-hidden />
+          <span className="h-3 w-px shrink-0 bg-control-border/40" aria-hidden />
           <ModelReasoningControl
             modelLabel={modelLabel}
             supportsReasoning
@@ -194,7 +194,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
             value={reasoningEffort}
             selected
             disabled={disabled}
-            className="mr-1"
+            className="font-normal text-text-soft"
             onChange={(effort) => {
               if (!effort || !selectedModel) return
               // The compact control and the details panel must seed subsequent model picks
@@ -217,7 +217,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
           message may cost. Same strip, because both are the price of pressing send. */}
       {onMaxTurnsChange && (
         <>
-          <span className="h-4 w-px shrink-0 bg-control-border/70" aria-hidden />
+          <span className="h-3 w-px shrink-0 bg-control-border/40" aria-hidden />
           <MaxTurnsControl value={maxTurns} onChange={onMaxTurnsChange} disabled={disabled} />
         </>
       )}
@@ -225,7 +225,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
       {/* And whether it stops to ask: the conversation's permission mode. */}
       {sessionId && (
         <>
-          <span className="h-4 w-px shrink-0 bg-control-border/70" aria-hidden />
+          <span className="h-3 w-px shrink-0 bg-control-border/40" aria-hidden />
           <PermissionModeControl
             value={permissionMode.mode}
             editable={permissionMode.editable}

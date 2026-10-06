@@ -48,9 +48,10 @@ describe('the compact session row', () => {
 })
 
 describe('the row geometry', () => {
-  test('uses one leading icon slot for root and nested running sessions', () => {
+  test('keeps leading icons only for sub-sessions and active work', () => {
     const source = readFileSync(resolve(import.meta.dir, 'SessionItem.tsx'), 'utf8')
     expect(source).toContain('data-slot="session-row-icon"')
+    expect(source).toContain('(depth > 0 || session.isRunning)')
     expect(source).toContain('session.isRunning ? (')
     expect(source).toContain('aria-label="Working"')
     expect(source).not.toContain('showActivity=')
@@ -68,7 +69,7 @@ describe('the row geometry', () => {
     const source = readFileSync(resolve(import.meta.dir, 'SessionItem.tsx'), 'utf8')
     const actions = readFileSync(resolve(import.meta.dir, 'SessionItemActions.tsx'), 'utf8')
     expect(source).toContain('SESSION_ROW_HEIGHT_CLASS,')
-    expect(actions).toContain('shrink-0')
+    expect(actions).toContain('<WorkbenchListRowActions')
     expect(actions).not.toContain('absolute')
   })
 })

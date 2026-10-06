@@ -11,7 +11,7 @@ beforeAll(() => {
 afterAll(() => teardown())
 
 describe('HITL keyboard ownership', () => {
-  test('only the focused warm frame handles global Enter and Escape', async () => {
+  test('only the focused warm frame handles Enter and Escape inside its own frame', async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
@@ -60,8 +60,29 @@ describe('HITL keyboard ownership', () => {
       })
 
       await act(async () => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+        document.body.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+        )
+        document.body.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        )
+      })
+      expect({ focusedSubmits, focusedDismisses }).toEqual({
+        focusedSubmits: 0,
+        focusedDismisses: 0,
+      })
+
+      await act(async () => {
+        Array.from(host.querySelectorAll('[data-slot=hitl-frame]'))
+          .at(-1)
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+          )
+        Array.from(host.querySelectorAll('[data-slot=hitl-frame]'))
+          .at(-1)
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+          )
       })
 
       expect({ hiddenSubmits, hiddenDismisses }).toEqual({
@@ -123,7 +144,11 @@ describe('HITL keyboard ownership', () => {
       })
 
       await act(async () => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+        Array.from(host.querySelectorAll('[data-slot=hitl-frame]'))
+          .at(-1)
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+          )
       })
       expect({ behind, inbox }).toEqual({ behind: 0, inbox: 1 })
     } finally {
@@ -165,7 +190,11 @@ describe('HITL keyboard ownership', () => {
     try {
       await act(async () => root.render(frame(firstRef)))
       await act(async () => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+        Array.from(host.querySelectorAll('[data-slot=hitl-frame]'))
+          .at(-1)
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+          )
       })
       expect(submits).toBe(1)
 
@@ -174,7 +203,11 @@ describe('HITL keyboard ownership', () => {
       expect(secondRef.current?.getAttribute('aria-label')).toBe('Inbox')
 
       await act(async () => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+        Array.from(host.querySelectorAll('[data-slot=hitl-frame]'))
+          .at(-1)
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+          )
       })
       expect(submits).toBe(2)
     } finally {

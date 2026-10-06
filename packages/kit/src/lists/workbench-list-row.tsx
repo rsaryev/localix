@@ -114,23 +114,51 @@ WorkbenchListRowMeta.displayName = 'WorkbenchListRowMeta'
 type WorkbenchListRowActionsProps = Omit<ComponentPropsWithoutRef<'div'>, 'aria-label'> & {
   'aria-label': string
   visibility?: 'always' | 'hover'
+  /** Passive metadata that shares this slot with hover actions, without shifting the row. */
+  fallback?: ReactNode
 }
 
 const WorkbenchListRowActions = forwardRef<HTMLDivElement, WorkbenchListRowActionsProps>(
-  ({ visibility = 'always', className, ...props }, ref) => (
+  ({ visibility = 'always', fallback, children, className, ...props }, ref) => (
     <div
       ref={ref}
       data-slot="workbench-list-row-actions"
       data-visibility={visibility}
       role="group"
       className={cn(
-        'ml-auto flex shrink-0 items-center gap-0.5',
+        fallback != null && visibility === 'hover'
+          ? 'group/workbench-actions ml-auto grid shrink-0 items-center'
+          : 'ml-auto flex shrink-0 items-center gap-0.5',
         visibility === 'hover' &&
+          fallback == null &&
           'lx-hover-actions opacity-0 transition-opacity duration-(--dur-fast) group-hover/workbench-row:opacity-100 group-focus-within/workbench-row:opacity-100 motion-reduce:transition-none',
         className,
       )}
       {...props}
-    />
+    >
+      {fallback == null || visibility === 'always' ? (
+        children
+      ) : (
+        <>
+          <span
+            data-slot="workbench-list-row-action-fallback"
+            className="lx-hover-actions-fallback pointer-events-none col-start-1 row-start-1 justify-self-end transition-opacity duration-(--dur-fast) group-hover/workbench-row:opacity-0 group-focus-within/workbench-row:opacity-0 group-has-[[data-state=open]]/workbench-actions:opacity-0 motion-reduce:transition-none"
+          >
+            {fallback}
+          </span>
+          <div
+            data-slot="workbench-list-row-action-controls"
+            className={cn(
+              'col-start-1 row-start-1 flex items-center justify-self-end gap-0.5',
+              visibility === 'hover' &&
+                'lx-hover-actions pointer-events-none opacity-0 transition-opacity duration-(--dur-fast) group-hover/workbench-row:opacity-100 group-hover/workbench-row:pointer-events-auto group-focus-within/workbench-row:opacity-100 group-focus-within/workbench-row:pointer-events-auto group-has-[[data-state=open]]/workbench-actions:opacity-100 group-has-[[data-state=open]]/workbench-actions:pointer-events-auto motion-reduce:transition-none',
+            )}
+          >
+            {children}
+          </div>
+        </>
+      )}
+    </div>
   ),
 )
 WorkbenchListRowActions.displayName = 'WorkbenchListRowActions'

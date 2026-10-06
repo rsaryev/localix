@@ -8,7 +8,8 @@ const all = [TOOL.agents, TOOL.conversation_control]
 describe('# Collaboration follows the room', () => {
   test('alone, the agent does the work itself and delegates substantial work', () => {
     const solo = buildCollaborationSection(all, { withColleagues: false })!
-    expect(solo).toContain('Do the work yourself')
+    expect(solo).toContain('Handle straightforward work directly')
+    expect(solo).toContain('coordinate substantial work with suitable agents')
     expect(solo).toContain('keep its investigation out of this conversation')
   })
 
@@ -16,7 +17,7 @@ describe('# Collaboration follows the room', () => {
   // work" with @frontend and @qa already in the room, and sent both cards to one-shot children.
   test('with colleagues, a colleague’s part goes to them and delegation is the exception', () => {
     const room = buildCollaborationSection(all, { withColleagues: true })!
-    expect(room).not.toContain('Do the work yourself')
+    expect(room).not.toContain('Handle straightforward work directly')
     expect(room).toContain('participant whose role owns it')
     expect(room).toContain('conversation_control')
     expect(room).toContain('only when no participant')

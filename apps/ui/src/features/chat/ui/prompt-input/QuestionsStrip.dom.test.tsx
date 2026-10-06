@@ -157,7 +157,11 @@ describe('the questions strip', () => {
       await act(async () => buttonNamed(host, 'Answer')?.click())
       await act(async () => {
         host.querySelector<HTMLInputElement>('input')?.focus()
-        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+        host
+          .querySelector('input')
+          ?.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+          )
       })
       expect(host.querySelector('[data-slot="hitl-frame"]')).toBeNull()
       expect(skip).not.toHaveBeenCalled()

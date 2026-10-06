@@ -35,7 +35,7 @@ export interface RailLayoutApi {
 }
 
 function load(): RailLayoutState | null {
-  return parseRailLayout(loadString(RAIL_LAYOUT_STORAGE_KEY))
+  return parseRailLayout(loadString(RAIL_LAYOUT_STORAGE_KEY), true)
 }
 
 function persist(state: RailLayoutState): void {

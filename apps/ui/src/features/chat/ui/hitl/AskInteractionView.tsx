@@ -36,6 +36,7 @@ export function AskInteractionView({
     questions,
     submitting,
     keyboardActive,
+    rootRef: frameRef,
     onSubmit: (answers) => onSubmit(interaction.request.id, answers),
   })
 

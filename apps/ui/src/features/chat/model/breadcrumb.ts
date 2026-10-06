@@ -39,28 +39,6 @@ export interface SubSessionSegment {
 
 export type BreadcrumbSegment = ScopeSegment | SessionSegment | SubSessionSegment
 
-/** The deepest sub-session lineage the trail ever expands; older ancestors collapse into "…". */
-export const MAX_SUBSESSION_SEGMENTS = 3
-
-/**
- * How many sub-session crumbs stay expanded at a given path width.
- *
- * The cap used to be a flat three at every width — the depth a roomy titlebar shows comfortably
- * and about twice what a narrow one can. Past that the trail did technically fit: the crumbs shrank
- * until every label was two letters and an ellipsis, and a path of unreadable stubs is a worse
- * answer than a "…" menu that still says where you are.
- *
- * The CURRENT segment is never one of the collapsed ones — whatever the width, the trail keeps the
- * level you are at and folds the older ancestors. `null` (unmeasured) keeps the full depth, so the
- * first frame renders the trail the app has always rendered.
- */
-export function visibleSubsessionCount(pathWidth: number | null): number {
-  if (pathWidth === null) return MAX_SUBSESSION_SEGMENTS
-  if (pathWidth < 360) return 1
-  if (pathWidth < 560) return 2
-  return MAX_SUBSESSION_SEGMENTS
-}
-
 interface ChatLike {
   sessionKind?: UiSession['sessionKind']
 }

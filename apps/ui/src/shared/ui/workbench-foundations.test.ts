@@ -45,7 +45,7 @@ describe('workbench foundation contracts', () => {
       '--mobile-header-height: 44px',
       '--editor-tab-height: 36px',
       '--panel-header-height: 36px',
-      '--statusbar-height: 24px',
+      '--statusbar-height: 28px',
       '--sash-hit-area: 6px',
       '--sash-line-width: 1px',
     ]) {
@@ -208,7 +208,8 @@ describe('workbench foundation contracts', () => {
 
     // Core's three are always there, and the bell is LAST. It is the one place a user looks when
     // something needs attention; an anchor that a plugin can push around is not an anchor.
-    expect(cluster).toContain('label="Command palette"')
+    expect(cluster).not.toContain('label="Command palette"')
+    expect(cluster).toContain('label="Browser"')
     expect(cluster).toContain('label="Terminal"')
     expect(cluster).toContain('<NotificationCenterLauncher />')
     expect(cluster.indexOf('<StatusItems')).toBeLessThan(
@@ -239,7 +240,7 @@ describe('workbench foundation contracts', () => {
     const titlebar = read('pages/chat/ui/TitlebarContent.tsx')
     const breadcrumb = read('features/chat/ui/UnifiedBreadcrumb.tsx')
     expect(titlebar).toContain('grid-cols-[minmax(0,1fr)_auto]')
-    expect(breadcrumb).toContain('<WorkbenchBreadcrumb aria-label="Session path"')
+    expect(breadcrumb).toContain('aria-label="Session path"')
     expect(breadcrumb).toContain('className="flex-1"')
     expect(read('features/inspector/ui/SymbolBreadcrumbBar.tsx')).toContain(
       '<WorkbenchBreadcrumb aria-label="Document symbols" density="compact" bordered={bordered}>',

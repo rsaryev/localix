@@ -24,9 +24,15 @@ describe('settings geometry', () => {
     expect(profile).toContain('<SettingsNavigation')
     expect(profile).not.toContain('<CapabilityTabRow')
     expect(read('capabilities/agent-editor/AgentEditor.tsx')).toContain('<SettingsSection')
-    for (const file of ['AgentEditor.tsx', 'AgentIdentityFields.tsx', 'AgentModelField.tsx']) {
+    for (const file of [
+      'AgentEditor.tsx',
+      'AgentIdentityFields.tsx',
+      'AgentModelField.tsx',
+      'AgentContextFields.tsx',
+    ]) {
       const source = read(`capabilities/agent-editor/${file}`)
       expect(source, file).toContain('<SettingsFieldGrid')
+      expect(source, file).toContain('columnsAt="2xl"')
       expect(source, file).not.toContain('grid-cols-2')
     }
     expect(read('capabilities/agent-editor/AgentModelField.tsx')).not.toContain(

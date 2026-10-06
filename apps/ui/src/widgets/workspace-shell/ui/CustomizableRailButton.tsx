@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import type { MenuEntry } from '@localixai/plugin-sdk/ui'
 import { useChordHint } from '@/shared/lib/keybindings'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
@@ -8,6 +8,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { railBtn, railBtnActive, statusBtnActive } from '@localixai/kit/rail-button'
 import { IconButton } from '@localixai/kit/icon-button'
+import { WorkbenchStatusButton } from '@localixai/kit/workbench-statusbar'
 import {
   DROP_TARGET_INDICATOR_AFTER_HORIZONTAL,
   DROP_TARGET_INDICATOR_AFTER_VERTICAL,
@@ -17,6 +18,21 @@ import {
 import type { RailDrag } from '../model/railDrag'
 import type { PinnedRailArea } from '../model/railLayout'
 import type { RailEntry } from './shellTypes'
+
+function RailEntryControl({
+  surface,
+  ...props
+}: ComponentProps<'button'> & {
+  surface: 'rail' | 'status'
+  'aria-label': string
+  children: React.ReactNode
+}) {
+  return surface === 'status' ? (
+    <WorkbenchStatusButton {...props} />
+  ) : (
+    <IconButton size="touch" {...props} />
+  )
+}
 
 /**
  * A customizable rail button: drag-reorderable, right-click to hide/reset. The
@@ -47,6 +63,7 @@ export function CustomizableRailButton({
   onRemoveRecent,
   onMenuOpenChange,
   onReset,
+  onUnpin,
 }: {
   entry: RailEntry
   area: PinnedRailArea
@@ -74,6 +91,7 @@ export function CustomizableRailButton({
    *  while the menu it spawned is still on screen. */
   onMenuOpenChange?: (open: boolean) => void
   onReset: () => void
+  onUnpin?: (id: string) => void
 }) {
   const hint = useChordHint()
   const [tooltipOpen, setTooltipOpen] = useState(false)
@@ -97,6 +115,9 @@ export function CustomizableRailButton({
   // Described, not hand-rolled: the walker owns the seams, so the leading/doubled rules a recent
   // slot's shorter list would otherwise leave behind never reach the screen.
   const menu: MenuEntry[] = [
+    ...((entry.plugin || entry.toolCategory !== undefined) && !isRecent && onUnpin
+      ? [{ id: 'unpin', label: 'Unpin from rail', onSelect: () => onUnpin(entry.id) }]
+      : []),
     ...(isRecent
       ? ([
           {
@@ -154,14 +175,15 @@ export function CustomizableRailButton({
         onOpenChange={(open) => setTooltipOpen(isDragging ? false : open)}
       >
         <ContextMenuTrigger asChild>
-          <IconButton
+          <RailEntryControl
+            surface={surface}
             aria-label={entry.label}
-            size={surface === 'status' ? 'lg' : 'touch'}
             className={cn(
               surface === 'status'
                 ? 'relative h-full w-8 cursor-grab rounded-none bg-transparent text-text-faint hover:bg-surface-hover hover:text-text-soft active:cursor-grabbing [&_svg]:size-3.5'
                 : railBtn,
               entry.active && (surface === 'status' ? statusBtnActive : railBtnActive),
+              surface === 'status' && entry.statusLabel && 'w-auto gap-1.5 px-2',
               isDragging && 'opacity-40',
               justPinned && 'animate-in fade-in zoom-in-90 duration-(--dur-base)',
               // A recent slot is transient, so it rests dimmer than a placed one —
@@ -186,7 +208,8 @@ export function CustomizableRailButton({
             onDragEnd={onDragEnd}
           >
             {entry.icon}
-          </IconButton>
+            {surface === 'status' && entry.statusLabel && <span>{entry.statusLabel}</span>}
+          </RailEntryControl>
         </ContextMenuTrigger>
       </ActionTooltip>
       <ContextMenuContent>

@@ -11,6 +11,73 @@ beforeAll(() => {
 afterAll(() => teardown())
 
 describe('RuntimeSessionsPanel lifecycle rows', () => {
+  test('folds a branch independently and keeps completed names and status dots readable', async () => {
+    const React = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { RuntimeSessionsPanel } = await import('./RuntimeSessionsPanel')
+    const originalSessions = useChatStore.getState().allSessions
+    const session = (id: string, title: string, parentSessionId: string, createdAt: number) =>
+      ({
+        id,
+        title,
+        parentSessionId,
+        createdAt,
+        rootSessionId: 'root',
+        sessionKind: 'subagent',
+        runtimeStatus: 'completed',
+      }) as UiSession
+    useChatStore.setState({
+      allSessions: [
+        session('parent', 'Implement', 'root', 2),
+        session('child', 'Review', 'parent', 3),
+        session('grandchild', 'Check accessibility', 'child', 4),
+        session('other', 'Research', 'root', 1),
+      ],
+    })
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const onSelect = mock((_id: string) => {})
+    const button = (label: string) =>
+      host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)
+    const click = async (label: string) => {
+      expect(button(label)).not.toBeNull()
+      await React.act(async () => button(label)!.click())
+    }
+    try {
+      await React.act(async () => {
+        root.render(
+          <RuntimeSessionsPanel scopeRootId="root" activeSessionId="child" onSelect={onSelect} />,
+        )
+      })
+      await click('Show agent sessions')
+      expect(host.querySelectorAll('[data-slot="workbench-list-row"]')).toHaveLength(4)
+      const childTrigger = button('Open Review')!
+      expect(childTrigger.getAttribute('aria-current')).toBe('page')
+      expect(childTrigger.textContent).toBe('Review')
+      expect(childTrigger.closest('[data-slot="workbench-list-row"]')?.classList).not.toContain(
+        'opacity-70',
+      )
+      await click('Collapse Review sub-sessions')
+      expect(button('Open Check accessibility')).toBeNull()
+      await click('Collapse Implement sub-sessions')
+      expect(button('Open Review')).toBeNull()
+      expect(button('Open Research')).not.toBeNull()
+      expect(button('Expand Implement sub-sessions')?.getAttribute('aria-expanded')).toBe('false')
+      expect(onSelect).not.toHaveBeenCalled()
+      await click('Expand Implement sub-sessions')
+      expect(button('Open Review')).not.toBeNull()
+      expect(button('Open Check accessibility')).toBeNull()
+      await click('Expand Review sub-sessions')
+      await click('Open Check accessibility')
+      expect(onSelect).toHaveBeenCalledWith('grandchild')
+    } finally {
+      await React.act(async () => root.unmount())
+      host.remove()
+      useChatStore.setState({ allSessions: originalSessions })
+    }
+  })
+
   test('keeps navigation and the icon-only stop action as semantic siblings', async () => {
     const React = await import('react')
     const { act } = React

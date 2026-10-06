@@ -30,7 +30,7 @@ export function AgentIdentityFields({
   const nameLocked = editing && !canEdit('name')
   return (
     <>
-      <SettingsFieldGrid>
+      <SettingsFieldGrid columnsAt="2xl">
         <Field
           controlId={AGENT_FIELD_IDS.name}
           label="Name"

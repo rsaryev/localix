@@ -36,7 +36,7 @@ export function QueuedQuestionView({
 }: QueuedQuestionViewProps) {
   const questions = question.questions
   const frameRef = useRef<HTMLDivElement>(null)
-  const form = useAskForm({ questions, submitting, keyboardActive, onSubmit })
+  const form = useAskForm({ questions, submitting, keyboardActive, onSubmit, rootRef: frameRef })
 
   if (!form.activeQuestion) return null
 

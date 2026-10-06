@@ -17,7 +17,7 @@ describe('warm-hidden preview interactions', () => {
     const { createRoot } = await import('react-dom/client')
     const { act } = React
     const { PreviewIntro } = await import('@/features/inspector/ui/PreviewIntro')
-    // The intro's Escape now arrives through the one capture-phase dispatcher, so the test mounts
+    // The intro's Escape now arrives through the shared dispatcher, so the test mounts
     // the same provider the app does instead of relying on a listener of the component's own.
     const { ActionRegistryProvider } = await import('@/shared/lib/actions/ActionRegistryProvider')
 
@@ -37,21 +37,36 @@ describe('warm-hidden preview interactions', () => {
       )
     }
 
-    const root = createRoot(document.createElement('div'))
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
     try {
       await act(async () => root.render(<Surface active={false} />))
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      host
+        .querySelector('button')
+        ?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        )
       expect(browseCalls).toBe(0)
 
       await act(async () => root.render(<Surface active />))
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      host
+        .querySelector('button')
+        ?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        )
       expect(browseCalls).toBe(1)
 
       await act(async () => root.render(<Surface active={false} />))
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      host
+        .querySelector('button')
+        ?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        )
       expect(browseCalls).toBe(1)
     } finally {
       await act(async () => root.unmount())
+      host.remove()
     }
   })
 

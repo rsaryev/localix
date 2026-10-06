@@ -1,7 +1,7 @@
 /**
  * A global key listener must go through the action registry.
  *
- * `ActionRegistryProvider` already owns one capture-phase `keydown` listener, resolves the chord
+ * `ActionRegistryProvider` owns one bubble-phase `keydown` listener, resolves the chord
  * against the shortcut catalog, and evaluates the surface's `when` clause before running anything.
  * A component that installs its OWN `window` listener bypasses all three: its key fires regardless
  * of which surface has focus, it cannot be rebound from settings, it never appears in the shortcut
@@ -12,9 +12,9 @@
  *
  * SCOPE is the workspace UI, because that is where the registry exists. The landing site has no
  * registry, and the visual-feedback probe runs inside the page being previewed rather than inside
- * our app — for those a global listener is the only listener there is. Plugin surfaces are out of
- * scope for the same reason and only for now: the SDK exposes agent→UI commands but no keyboard
- * registration, so a plugin has nothing to migrate TO. They come into scope with that SDK surface.
+ * our app — for those a global listener is the only listener there is. Plugin surfaces are in
+ * scope through the SDK focus registry: `useFocusEntry` with a DOM scope offers local commands
+ * before workspace bindings, and element listeners remain available for native keyboard models.
  *
  * The kit package is in scope: its primitives render inside the workspace UI, and they were in
  * scope as `apps/ui/src/shared/ui` until they moved — a primitive's global listener fires on every
@@ -41,9 +41,9 @@ const EXEMPTIONS: readonly Exemption[] = [
       'records a chord for rebinding, so it must observe the raw key the registry would otherwise claim and swallow',
   },
   {
-    suffix: '/pages/chat/model/useEditorShortcuts.ts',
+    suffix: '/plugins/project-space/ui/board/useLiveBoard.ts',
     reason:
-      'F1 is a deliberately fixed alternate for the command palette, and the catalog carries one chord per command, so it cannot be expressed as a binding — it consults the focus policy directly instead',
+      'observes modifier state during pointer drags for snapping; it never claims a key or runs a keyboard command',
   },
 ]
 
@@ -68,7 +68,9 @@ function eventName(node: Node): string | null {
 export const noGlobalKeyListener: Rule = {
   create(context: RuleContext) {
     const inScope =
-      isUnder(context.filename, '/apps/ui/src/') || isUnder(context.filename, '/packages/kit/src/')
+      isUnder(context.filename, '/apps/ui/src/') ||
+      isUnder(context.filename, '/packages/kit/src/') ||
+      (isUnder(context.filename, '/plugins/') && isUnder(context.filename, '/ui/'))
     if (!inScope) return {}
     if (isTestFile(context.filename)) return {}
     if (exemptionFor(context.filename, EXEMPTIONS) !== null) return {}
@@ -82,7 +84,7 @@ export const noGlobalKeyListener: Rule = {
 
         context.report({
           node,
-          message: `Do not install a global '${event}' listener on \`${target}\`. Register the behaviour with \`registerActionHandler\` so the shortcut is rebindable, appears in the catalog, and only fires for the surface that owns it. A listener bounded to one element is fine — attach it to that element instead.`,
+          message: `Do not install a global '${event}' listener on \`${target}\`. Use \`registerActionHandler\` for workspace commands, or \`useFocusEntry\` with a DOM scope for pane-local commands. A listener bounded to one element is fine — attach it to that element instead.`,
         })
       },
     }

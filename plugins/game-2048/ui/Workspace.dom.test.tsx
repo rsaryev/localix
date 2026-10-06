@@ -1,3 +1,4 @@
+import { offerKeyToFocusedSurface } from '@localixai/plugin-sdk/ui/focus'
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import type { PublishedMessageContext } from '@localixai/plugin-sdk/ui'
 import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/plugin-sdk/ui/runtime'
@@ -75,6 +76,8 @@ async function mount(sessionId: string | null) {
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
+  const dispatch = (event: KeyboardEvent) => offerKeyToFocusedSurface(event)
+  window.addEventListener('keydown', dispatch)
   // The host wraps every plugin tab in the session it BELONGS to.
   const render = (active = true) =>
     act(async () =>
@@ -105,7 +108,9 @@ async function mount(sessionId: string | null) {
     settle: (ms: number) => act(async () => new Promise((resolve) => setTimeout(resolve, ms))),
     press: (key: string) =>
       act(async () => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+        host
+          .querySelector('.game-2048-board')
+          ?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
       }),
     /** Look again now — the next poll, without waiting for its interval. */
     poll: async () => {
@@ -115,6 +120,7 @@ async function mount(sessionId: string | null) {
     unmount: async () => {
       await act(async () => root.unmount())
       host.remove()
+      window.removeEventListener('keydown', dispatch)
       backend.unbind()
     },
   }
@@ -127,6 +133,14 @@ test('an arrow key moves the board of the chat it belongs to, and the tile trave
     expect(view.host.textContent).toContain('Your move')
     expect(view.tiles()).toEqual([{ cell: 0, value: 2 }])
     const before = view.host.querySelector<HTMLElement>('.game-2048-tile')!
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    view.host
+      .querySelector('.game-2048-board')
+      ?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', ctrlKey: true, bubbles: true }),
+      )
+    expect(view.backend.requests.filter(({ path }) => path.includes('/game/move'))).toEqual([])
 
     await view.press('ArrowRight')
 

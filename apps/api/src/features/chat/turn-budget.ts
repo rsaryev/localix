@@ -38,12 +38,5 @@ export function clampMaxTurns(value: number | undefined): number {
   return Math.min(MAX_MAX_TURNS, Math.max(MIN_MAX_TURNS, Math.round(value!)))
 }
 
-/**
- * The steps the composer's menu offers.
- *
- * Not every integer, and that is the point of listing them: the useful settings are "answer
- * once", "a short exchange", "a real task", and "do not stop it", and a list of 1 to 1000 would
- * bury the setting the person wanted. The scale is coarse where the difference stops mattering,
- * which is everywhere above a few dozen.
- */
-export const MAX_TURNS_STEPS = [1, 2, 3, 5, 8, 12, 20, 30, 50, 100, 250, 500, 1000] as const
+/** A short scale for the composer's click-to-advance turn-budget control. */
+export const MAX_TURNS_STEPS = [1, 5, 20, 100, MAX_MAX_TURNS] as const

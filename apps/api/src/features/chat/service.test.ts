@@ -1026,7 +1026,7 @@ describe('chat service', () => {
     const fork = await chatService.forkSession(userId, session.id, 'u2')
     expect(fork.parentSessionId).toBe(session.id)
     expect(fork.sessionKind).toBe('chat')
-    expect(fork.title).toBe('Original (fork)')
+    expect(fork.title).toBe(`Original (fork ${fork.seq})`)
 
     const forkMsgs = await repo.listMessages(userId, fork.id)
     expect(forkMsgs.map((m) => m.payload.content)).toEqual(['one', 'two', 'three'])
@@ -1042,6 +1042,11 @@ describe('chat service', () => {
     const full = await chatService.forkSession(userId, session.id)
     const fullMsgs = await repo.listMessages(userId, full.id)
     expect(fullMsgs.map((m) => m.payload.content)).toEqual(['one', 'two', 'three', 'four'])
+
+    const nested = await chatService.forkSession(userId, fork.id)
+    expect(nested.title).toBe(`Original (fork ${nested.seq})`)
+    expect(nested.parentSessionId).toBe(fork.id)
+    expect(nested.title?.match(/\(fork/g)).toHaveLength(1)
 
     await destroyDatabase(db)
   })

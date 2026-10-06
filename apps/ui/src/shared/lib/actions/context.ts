@@ -3,7 +3,7 @@
  *
  * Two different questions, answered from two different places on purpose. What the EVENT TARGET is
  * — an input, a selection, which region of the shell — is read from committed DOM, so a
- * capture-phase shortcut sees the same focus reality the browser is about to route the key through.
+ * workspace shortcut sees the same focus reality the browser routes the key through.
  * Whether an OVERLAY owns the keyboard is read from the focus stack instead.
  *
  * That second one used to be a `querySelector` for `[data-radix-popper-content-wrapper]`, and the
@@ -13,7 +13,7 @@
  * every global shortcut with nothing failing. The stack is claimed by the overlay primitives
  * themselves, which is the thing that is actually true.
  */
-import { overlayOwnsKeyboard } from '@localixai/plugin-sdk/ui/focus'
+import { overlayOnScreen, useFocusStack } from '@localixai/plugin-sdk/ui/focus'
 
 export interface ActionContext {
   inputFocus: boolean
@@ -42,7 +42,15 @@ function asElement(target: EventTarget | null): HTMLElement | null {
 function editable(target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement {
   const element = asElement(target)
   if (!element) return false
-  return element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.isContentEditable
+  const contentEditable = element.closest('[contenteditable]')?.getAttribute('contenteditable')
+  return (
+    element.tagName === 'INPUT' ||
+    element.tagName === 'TEXTAREA' ||
+    element.tagName === 'SELECT' ||
+    element.isContentEditable ||
+    (contentEditable !== undefined && contentEditable !== 'false') ||
+    element.closest('[role="textbox"]') !== null
+  )
 }
 
 function selected(target: EventTarget | null): boolean {
@@ -63,7 +71,7 @@ export function actionContextFromTarget(target: EventTarget | null): ActionConte
   return {
     inputFocus: editable(target),
     hasSelection: selected(target),
-    menuOpen: overlayOwnsKeyboard(),
+    menuOpen: overlayOnScreen(useFocusStack.getState().entries),
     chatFocus: part === 'chat',
     editorFocus: part === 'editor',
     sidebarFocus: part === 'sidebar',
@@ -83,6 +91,7 @@ export function evaluateActionWhen(when: string | undefined, context: ActionCont
       if (!term) return false
       const negated = term.startsWith('!')
       const key = (negated ? term.slice(1) : term) as keyof ActionContext
+      if (!Object.hasOwn(context, key)) return false
       const value = context[key]
       return negated ? !value : value
     }),

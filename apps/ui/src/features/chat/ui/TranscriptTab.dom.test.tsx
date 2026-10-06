@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { TranscriptActionDestination } from '../model/openTranscript'
+import { Terminal } from 'lucide-react'
 
 import { forgetTranscripts, openTranscript } from '../model/openTranscript'
 
@@ -21,6 +22,91 @@ afterAll(async () => {
 })
 
 describe('read-only transcript action footer', () => {
+  test('keeps import separate from native continuation and locks both during an action', async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const { MemoryRouter, useLocation } = await import('react-router')
+    const { TranscriptTab } = await import('./TranscriptTab')
+    let finish: (() => void) | undefined
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    let imports = 0
+    let launches = 0
+    const importAction = {
+      label: 'Import to Localix',
+      pendingLabel: 'Importing…',
+      run: async () => {
+        imports += 1
+        return { sessionId: 'imported', projectId: 'project' }
+      },
+    }
+    openTranscript({
+      id: 'native-preview',
+      sessionId: 'chat-a',
+      title: 'Foreign session',
+      messages: [],
+      action: importAction,
+      actions: [
+        importAction,
+        {
+          label: 'Open in Codex',
+          pendingLabel: 'Opening…',
+          icon: Terminal,
+          run: () => {
+            launches += 1
+            return pending
+          },
+        },
+      ],
+    })
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const LocationProbe = () => React.createElement('output', {}, useLocation().pathname)
+    await act(async () => {
+      root.render(
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: ['/project/old/chat-a'] },
+          React.createElement(TranscriptTab, { transcriptId: 'native-preview', focused: true }),
+          React.createElement(LocationProbe),
+        ),
+      )
+    })
+    const footer = host.querySelector('[data-slot="transcript-action-footer"]')!
+    const buttons = footer.querySelectorAll<HTMLButtonElement>('button')
+    expect(buttons.length).toBe(2)
+    expect(buttons[1]?.querySelector('svg.lucide-terminal')).not.toBeNull()
+    expect(buttons[0]?.getAttribute('data-size')).toBe('sm')
+    await act(async () => {
+      buttons[1]?.click()
+    })
+    expect(buttons[0]?.disabled).toBe(true)
+    expect(buttons[1]?.disabled).toBe(true)
+    expect(buttons[1]?.getAttribute('aria-busy')).toBe('true')
+    await act(async () => {
+      buttons[0]?.click()
+      buttons[1]?.click()
+    })
+    expect(imports).toBe(0)
+    expect(launches).toBe(1)
+    await act(async () => {
+      finish?.()
+      await pending
+    })
+    expect(host.querySelector('output')?.textContent).toBe('/project/old/chat-a')
+    await act(async () => {
+      buttons[0]?.click()
+    })
+    expect(imports).toBe(1)
+    expect(host.querySelector('output')?.textContent).toBe('/project/project/imported')
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
   test('replaces the composer position with one explicit import action and pending state', async () => {
     let finish: ((destination: TranscriptActionDestination) => void) | undefined
     const pending = new Promise<TranscriptActionDestination>((resolve) => {

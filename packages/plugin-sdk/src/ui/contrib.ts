@@ -1,6 +1,7 @@
 export * from './message-bindings'
 import type { MessageContextBindingDraft } from './message-bindings'
 import type { ComponentType, LazyExoticComponent } from 'react'
+import type { PluginCategory } from '../manifest'
 
 /**
  * Workbench UI contribution contracts. The host (`apps/ui`) implements the open
@@ -152,6 +153,8 @@ export interface RailSectionContribution extends PluginOwnedContribution {
  * (e.g. a client-side data publisher feeding its tab).
  */
 export interface RailViewletContribution extends PluginOwnedContribution {
+  /** Category for a built-in tool in the rail catalog; plugin owners use their manifest category. */
+  toolCategory?: PluginCategory
   /** The GLOBAL singleton `WorkItemKind` this button opens (also its stable tab id). */
   kind: string
   Icon: IconComponent

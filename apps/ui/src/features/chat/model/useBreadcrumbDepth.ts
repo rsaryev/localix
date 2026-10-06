@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 
 import { useChatStore } from '@/features/chat/model/store'
 import { useActiveSessionSummary, useSessionRoster } from '@/features/chat/model/useSessionRoster'
-import { buildBreadcrumb, MAX_SUBSESSION_SEGMENTS } from '@/features/chat/model/breadcrumb'
+import { buildBreadcrumb } from '@/features/chat/model/breadcrumb'
 
 /**
  * How many crumbs the navigation trail is drawing — the one fact the titlebar's OTHER half needs.
@@ -14,10 +14,8 @@ import { buildBreadcrumb, MAX_SUBSESSION_SEGMENTS } from '@/features/chat/model/
  * reading back its own answer one frame late. Depth is upstream of both — it comes from the
  * session tree, not from the layout — which is what makes it a legitimate input.
  *
- * Capped at what the trail actually EXPANDS to: past `MAX_SUBSESSION_SEGMENTS` the older ancestors
- * collapse into one `…` crumb, so a session nested nine deep asks for no more room than one nested
- * three deep plus the fold. Counting the raw chain instead would have a deep session quietly
- * starving the strip for crumbs that are not on screen.
+ * Every ancestor remains in the scrollable path. Its full depth lets the strip reserve a
+ * readable navigation area before allocating space to contributed status items.
  */
 export function useBreadcrumbDepth(): number {
   const { activeProjectId, projects } = useChatStore(
@@ -31,8 +29,6 @@ export function useBreadcrumbDepth(): number {
 
   return useMemo(() => {
     const segments = buildBreadcrumb({ activeSession, allSessions, projects, activeProjectId })
-    const subsessions = segments.filter((segment) => segment.kind === 'subsession').length
-    const folded = subsessions > MAX_SUBSESSION_SEGMENTS ? 1 : 0
-    return segments.length - subsessions + Math.min(subsessions, MAX_SUBSESSION_SEGMENTS) + folded
+    return segments.length
   }, [activeSession, allSessions, projects, activeProjectId])
 }

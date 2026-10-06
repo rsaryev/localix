@@ -10,7 +10,6 @@
  * whatever foreign directory would not be read, which belongs in the Event Center and nowhere else.
  */
 import { pluginApiFetch, postPluginJson as postJson } from '@localixai/plugin-sdk/ui/transport'
-import type { AgentCliStatus } from '../../shared/launch'
 import type {
   ExternalAgentStats,
   AgentItemsSlice,
@@ -48,20 +47,6 @@ export const externalAgentsApi = {
   async providers(): Promise<ProviderStatus[]> {
     const res = await pluginApiFetch(`${BASE}/providers`, { method: 'GET' })
     return (await readOr<{ providers: ProviderStatus[] }>(res)).providers
-  },
-
-  /**
-   * Which agent CLIs are installed on this machine — the quick-action menu's input.
-   *
-   * `refresh` skips the backend's TTL. It exists for one gesture: someone installed a CLI while
-   * the app was open and pressed "Check again", which is the only moment a cached reading is
-   * knowably wrong.
-   */
-  async launchers(refresh = false): Promise<AgentCliStatus[]> {
-    const res = await pluginApiFetch(`${BASE}/launchers${refresh ? '?refresh=1' : ''}`, {
-      method: 'GET',
-    })
-    return (await readOr<{ launchers: AgentCliStatus[] }>(res)).launchers
   },
 
   /** One bounded page of the roster. Filtering happens server-side — see `useRoster`. */

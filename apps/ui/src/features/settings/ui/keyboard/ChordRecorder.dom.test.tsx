@@ -41,6 +41,20 @@ describe('shortcut recorder interaction', () => {
     expect(recorder?.querySelector('[role="status"]')?.textContent).toContain('Press keys')
 
     await act(async () => {
+      for (const event of [
+        new KeyboardEvent('keydown', { key: 'k', isComposing: true, bubbles: true }),
+        new KeyboardEvent('keydown', { key: 'Dead', bubbles: true }),
+        new KeyboardEvent('keydown', { key: 'Process', bubbles: true }),
+      ])
+        window.dispatchEvent(event)
+      const altGraph = new KeyboardEvent('keydown', { key: '@', bubbles: true })
+      Object.defineProperty(altGraph, 'getModifierState', { value: () => true })
+      window.dispatchEvent(altGraph)
+    })
+    expect(recorder?.getAttribute('aria-pressed')).toBe('true')
+    expect(recorded).toEqual([])
+
+    await act(async () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     })
     expect(recorder?.getAttribute('aria-pressed')).toBe('false')

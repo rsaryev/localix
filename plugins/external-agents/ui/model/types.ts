@@ -9,8 +9,6 @@
 import type { AgentItem } from '@localixai/agent/agents'
 
 export { AGENT_STATES } from '../../shared/state'
-export { AGENT_LAUNCHERS, agentLaunchCommand } from '../../shared/launch'
-export type { AgentCliStatus, AgentLauncher } from '../../shared/launch'
 export {
   bindingQuota,
   formatQuota,
@@ -54,6 +52,8 @@ export interface AgentItemsSlice {
   readonly turns: readonly TranscriptTurn[]
   readonly withheld: number
   readonly total: number
+  /** Present only when the provider adapter declares native session continuation. */
+  readonly resume?: { readonly providerName: string; readonly command: string }
   /** The adapter's byte cap cut the source, so `total` is a floor — see `shared/contracts.ts`. */
   readonly sourceTruncated?: boolean
 }

@@ -16,7 +16,7 @@ describe('isSectionId', () => {
   test('recognizes every core sidebar section', () => {
     expect(isSectionId('files')).toBe(true)
     expect(isSectionId('jobs')).toBe(true)
-    expect(isSectionId('plugins')).toBe(true)
+    expect(isSectionId('plugins')).toBe(false)
     expect(isSectionId('plan')).toBe(false)
     expect(isSectionId(undefined)).toBe(false)
   })

@@ -71,6 +71,25 @@ describe(RULE, () => {
     expect(findings).toHaveLength(1)
   })
 
+  test.each(['reader', 'code-graph', 'game-2048', 'custom'])(
+    'reports a global listener in the %s plugin UI',
+    async (plugin) => {
+      expect(
+        await runRule(RULE, `window.addEventListener('keydown', onKey)`, {
+          filename: `plugins/${plugin}/ui/Workspace.tsx`,
+        }),
+      ).toHaveLength(1)
+    },
+  )
+
+  test('F1 no longer needs a separate global listener', async () => {
+    expect(
+      await runRule(RULE, `window.addEventListener('keydown', onKey)`, {
+        filename: 'apps/ui/src/pages/chat/model/useEditorShortcuts.ts',
+      }),
+    ).toHaveLength(1)
+  })
+
   test('is silent outside the workspace UI, where there is no registry to use', async () => {
     // The landing site and the visual-feedback probe have no action registry; for them a global
     // listener is the only listener there is.

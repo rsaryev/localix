@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react'
+import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
 import type { RailArea } from '../model/railLayout'
 
 /** A section that slides open in the sidebar panel (history, files, etc.) */
 export interface RailSection {
+  /** Opts a built-in destination into the shared tool catalog without plugin ownership. */
+  toolCategory?: PluginCategory
   id: string
   icon: ReactNode
   label: string
@@ -12,11 +15,9 @@ export interface RailSection {
   /** Where this section defaults in the CUSTOMIZABLE rail before the user moves
    *  it — 'bar' (always visible) or 'overflow' (in the "…" menu). Default 'bar'. */
   defaultArea?: RailArea
-  /** Contributed by a PLUGIN (not a built-in) — grouped under "Capabilities" in the
-   *  overflow menu, apart from the built-in Views. */
+  /** Plugin ownership, independent of grouping and pin placement. */
   plugin?: boolean
-  /** The plugin's package name, set alongside `plugin: true` — lets the launcher
-   *  nest this view under its owning plugin's row instead of listing it flat. */
+  /** The plugin's package name, used to look up its manifest category. */
   pluginName?: string
   /** Optional agent-context resource carried when this view is dragged to chat. */
   resourceUri?: string
@@ -28,6 +29,9 @@ export interface RailSection {
  * per the persisted layout; each is drag-reorderable, hideable, and pinnable.
  */
 export interface RailEntry {
+  /** Optional readable name when placed in the horizontal status bar. */
+  statusLabel?: string
+  toolCategory?: PluginCategory
   id: string
   icon: ReactNode
   label: string
@@ -35,8 +39,7 @@ export interface RailEntry {
   /** Same shape as `RailAction.onClick` — a flattened action keeps its press origin. */
   onClick: (event?: { clientX: number; clientY: number }) => void
   chordId?: string
-  /** Contributed by a PLUGIN — rendered under the overflow menu's "Capabilities" group,
-   *  separate from the built-in Views. Still pinnable/hideable/reorderable. */
+  /** Plugin ownership, independent of grouping and pin placement. */
   plugin?: boolean
   /** The plugin's package name, set alongside `plugin: true`. */
   pluginName?: string
@@ -45,13 +48,14 @@ export interface RailEntry {
 
 /** A plain action button in the rail — fires a callback instead of toggling a panel/view. */
 export interface RailAction {
+  statusLabel?: string
+  /** Opts a built-in destination into the shared tool catalog without plugin ownership. */
+  toolCategory?: PluginCategory
   id: string
   icon: ReactNode
   label: string
   /**
-   * The click handler. The event is passed through because a few actions animate out of the point
-   * that was pressed — the appearance cycle reveals the new theme from there — and a handler that
-   * only knows "it was clicked" has no origin to animate from. Most actions ignore it.
+   * The click handler. The optional press origin is preserved for actions that use it.
    */
   onClick: (event?: { clientX: number; clientY: number }) => void
   /** Highlights the button like an active section (e.g. its panel is open elsewhere). */
@@ -60,8 +64,7 @@ export interface RailAction {
   railPosition?: 'top' | 'bottom'
   /** Hide from the always-visible rail and surface inside the overflow menu instead. */
   overflowGroup?: 'workspace' | 'utilities'
-  /** Contributed by a PLUGIN — when customizable, grouped under the overflow menu's
-   *  "Capabilities" section instead of the built-in "Views". */
+  /** Plugin ownership, independent of grouping and pin placement. */
   plugin?: boolean
   /** The plugin's package name, set alongside `plugin: true`. */
   pluginName?: string

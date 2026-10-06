@@ -18,7 +18,7 @@ import { useElementWidth } from '@localixai/kit/lib'
  * measured itself to decide how many glyphs to show would be reading back its own answer. Measured
  * once, here, and handed down.
  */
-export function TitlebarContent({ onOpenCommandPalette }: { onOpenCommandPalette: () => void }) {
+export function TitlebarContent() {
   const rowRef = useRef<HTMLDivElement>(null)
   const titlebarWidth = useElementWidth(rowRef)
 
@@ -26,16 +26,13 @@ export function TitlebarContent({ onOpenCommandPalette }: { onOpenCommandPalette
     <div
       ref={rowRef}
       data-tauri-drag-region
-      className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-1"
+      className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-2"
     >
       <UnifiedBreadcrumb />
       {/* Workspace quick-access occupies the grid's intrinsic trailing column.
           The breadcrumb's minmax(0,1fr) column absorbs pressure and truncates before
           a deep session › subsession path can crowd these fixed-size actions. */}
-      <BreadcrumbTrailingActions
-        onOpenCommandPalette={onOpenCommandPalette}
-        titlebarWidth={titlebarWidth}
-      />
+      <BreadcrumbTrailingActions titlebarWidth={titlebarWidth} />
     </div>
   )
 }

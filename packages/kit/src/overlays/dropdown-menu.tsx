@@ -76,7 +76,10 @@ DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayNam
 
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
+    /** Prevent autofocus when a menu is previewed by hovering its trigger. */
+    onOpenAutoFocus?: (event: Event) => void
+  }
 >(({ className, sideOffset = 4, collisionPadding = 8, ...props }, ref) => {
   const claimRef = useOverlayFocus('menu', ref)
   return (

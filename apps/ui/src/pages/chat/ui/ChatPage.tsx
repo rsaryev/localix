@@ -54,8 +54,7 @@ import { TitlebarContent } from './TitlebarContent'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { tauriFrontendLog } from '@/shared/lib/tauri'
 import { restartDesktopApp } from '@/shared/lib/desktopRestart'
-import { pluginSettingsUri, settingsTargetUri } from '@/shared/lib/settingsAnchors'
-import { canUninstallPlugin, uninstallPlugin } from '../model/uninstallPlugin'
+import { settingsTargetUri } from '@/shared/lib/settingsAnchors'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 import {
   runtimeStatus,
@@ -190,10 +189,6 @@ export function ChatPage() {
     usePluginContributions({ routeProjectId, onHomeRoute: isHomeRoute })
   const pluginCategories = useMemo(
     () => new Map(plugins.map((plugin) => [plugin.name, plugin.category])),
-    [plugins],
-  )
-  const pluginsByName = useMemo(
-    () => new Map(plugins.map((plugin) => [plugin.name, plugin])),
     [plugins],
   )
   // Wire the "Open as .sql" action on SQL code blocks in the transcript.
@@ -484,15 +479,6 @@ export function ChatPage() {
       pluginsPending={pluginsPending}
       pluginCategories={pluginCategories}
       capabilitiesManageUri={settingsTargetUri({ tab: 'plugins', scope: capabilityScope })}
-      pluginSettingsUri={(pluginName) => pluginSettingsUri(pluginName, capabilityScope)}
-      canUninstallPlugin={(pluginName) => {
-        const plugin = pluginsByName.get(pluginName)
-        return plugin ? canUninstallPlugin(plugin) : false
-      }}
-      onUninstallPlugin={(pluginName) => {
-        const plugin = pluginsByName.get(pluginName)
-        if (plugin && canUninstallPlugin(plugin)) uninstallPlugin(plugin)
-      }}
       onNavigateUi={(uri) => {
         navigateUi(uri, uiNavigation)
       }}
@@ -524,7 +510,7 @@ export function ChatPage() {
       // Rail, shortcut, palette, breadcrumb and sidebar all enter the same page-owned action.
       // Their scope/participant/draft differences are data (`ConversationStartStrategy`).
       onCreateChat={hasHydrated ? startNewChat : () => undefined}
-      titlebarContent={<TitlebarContent onOpenCommandPalette={() => setCommandPalette(true)} />}
+      titlebarContent={<TitlebarContent />}
       headerStatus={
         <WorkspaceConnectionStatus
           hasHydrated={hasHydrated}

@@ -6,6 +6,10 @@ live delegations and local session history in one workspace.
 Use it when a task must run in an external CLI while the parent Localix session keeps a bounded,
 inspectable link to the work.
 
+Open the session roster from **External Agents** in the workspace tools. The bottom status bar's
+Claude Code and Codex shortcuts belong to Localix's terminal feature and work independently of this
+plugin.
+
 ## Capabilities
 
 - Launch a supported CLI in an interactive Localix terminal.
@@ -49,6 +53,11 @@ The command implementation and the bundled driving skills own the exact terminal
 copy their launch strings into this README because CLI flags and approval screens can change.
 
 ## Agent tool
+
+The transcript reader offers **Import to Localix** to keep a conversation as a Localix session. For
+Claude Code, Codex and opencode, it also offers **Open in …** to resume the exact native session in
+a terminal, using its recorded working directory when available. An existing live terminal is
+revealed instead of launching a duplicate. Other providers keep viewing and import only.
 
 The plugin registers the read-only `external_agent_sessions` tool. Its main actions are:
 

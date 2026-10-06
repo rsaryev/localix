@@ -12,6 +12,7 @@
 import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
+import { shellQuote } from '@localixai/plugin-sdk/backend'
 import type {
   AdapterEnv,
   ProviderAdapter,
@@ -345,7 +346,7 @@ export const claudeCodeAdapter: ProviderAdapter = {
   sourceFormat: 'claude_projects_jsonl_tree',
   verified: true,
   detectionManifestId: 'claude-code',
-  resumeCommand: (id) => `claude --resume ${id}`,
+  resumeCommand: (id) => `claude --resume ${shellQuote(id)}`,
   async probeRoots(env: AdapterEnv): Promise<readonly RootProbe[]> {
     const path = rootFor(env)
     return [{ path, exists: await pathExists(path) }]

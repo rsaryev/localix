@@ -1,8 +1,10 @@
+import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
+  useId,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
@@ -118,6 +120,8 @@ export function LibraryPane({
   const [selectedBookKeys, setSelectedBookKeys] = useState<Set<string>>(() => new Set())
   const [focusedBookKey, setFocusedBookKey] = useState<string | null>(null)
   const libraryGridRef = useRef<HTMLDivElement>(null)
+  const keyboardRoot = useRef<HTMLDivElement>(null)
+  const keyboardId = useId()
   const [metadataBook, setMetadataBook] = useState<ReaderBookSummary | null>(null)
   const [collectionBooks, setCollectionBooks] = useState<ReaderBookSummary[] | null>(null)
   const [pendingRemove, setPendingRemove] = useState<ReaderBookSummary[]>([])
@@ -160,16 +164,19 @@ export function LibraryPane({
     setSelectedBookKeys(new Set())
   }, [view])
 
-  useEffect(() => {
-    if (!selectionMode) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+  useFocusEntry({
+    id: `reader-library:${keyboardId}`,
+    kind: 'surface',
+    active: selectionMode,
+    scope: () => keyboardRoot.current,
+    onKeyDown: (event) => {
+      if (event.key !== 'Escape' || event.metaKey || event.ctrlKey || event.altKey) return
+      event.preventDefault()
       setSelectionMode(false)
       setSelectedBookKeys(new Set())
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectionMode])
+      return true
+    },
+  })
 
   useEffect(() => {
     const value = query.trim()
@@ -437,7 +444,7 @@ export function LibraryPane({
   // variants below it followed the window instead, and hid the search field and the action
   // labels on a narrow pane only once the whole window was narrow.
   return (
-    <div className="reader-workspace @container flex h-full min-h-0 flex-col">
+    <div ref={keyboardRoot} className="reader-workspace @container flex h-full min-h-0 flex-col">
       <WorkbenchToolbar aria-label="Reader library controls" as="header">
         <WorkbenchToolbarSection className="min-w-0 flex-1">
           <Library className="size-4 text-text-faint" strokeWidth={1.5} aria-hidden="true" />

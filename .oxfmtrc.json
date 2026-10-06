@@ -21,6 +21,7 @@
     "apps/ui/test-results",
     "extend",
     "vendor",
+    ".agents/skills",
     "bun.lock"
   ]
 }

@@ -71,7 +71,7 @@
      by this much for its glyphs to sit on the same left edge as the text above them —
      otherwise every icon row in the app is optically indented by an amount nobody chose. */
   --icon-button-optical-inset: calc((var(--chrome-control-md) - 0.875rem) / 2);
-  --statusbar-height: 24px;
+  --statusbar-height: 28px;
   /* Resize affordances keep a forgiving pointer target while painting only a
      hairline. Consumers provide axis + pointer mechanics through `.lx-sash`. */
   --sash-hit-area: 6px;

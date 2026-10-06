@@ -316,6 +316,9 @@
     pointer-events: auto;
     opacity: 1 !important;
   }
+  .lx-hover-actions-fallback {
+    opacity: 0 !important;
+  }
   .lx-tab-dirty-indicator {
     opacity: 0 !important;
   }

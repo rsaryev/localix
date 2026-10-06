@@ -60,7 +60,7 @@
     }
   },
   "./ui/focus": {
-    "bytes": 2312,
+    "bytes": 3094,
     "shake": {
       "export": "DEFAULT_KEY_POLICY",
       "bytes": 277

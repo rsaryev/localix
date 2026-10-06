@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState, type RefObject } from 'react'
 import { Check, CheckCircle2 } from 'lucide-react'
 import type { AskToolAnswer, AskToolQuestion } from '@localixai/api/client'
 import { Input } from '@localixai/kit/input'
@@ -23,11 +23,13 @@ export function useAskForm({
   questions,
   submitting,
   keyboardActive,
+  rootRef,
   onSubmit,
 }: {
   questions: AskToolQuestion[]
   submitting: boolean
   keyboardActive: boolean
+  rootRef: RefObject<HTMLDivElement | null>
   onSubmit: (answers: AskToolAnswer[]) => void
 }) {
   const instanceId = useId()
@@ -83,6 +85,7 @@ export function useAskForm({
     id: `hitl-ask-options:${instanceId}`,
     kind: 'surface',
     active: keyboardActive,
+    scope: () => rootRef.current,
     onKeyDown: (event) => {
       if (
         !hitlFrameOwnsGlobalKeyboard(keyboardActive) ||

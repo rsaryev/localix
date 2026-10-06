@@ -10,6 +10,7 @@ import { ChatSidebarViewMenu } from './ChatSidebarViewMenu'
 import { SessionRoster } from './SessionRoster'
 import { useAgents } from '@/features/settings/model/useAgents'
 import { useSidebarSessions, type SortMode } from '../model/useSidebarSessions'
+import { useSidebarDisclosure } from '../model/useSidebarDisclosure'
 import { useSessionSelection, stepId } from '../model/useSessionSelection'
 import { useSessionBatchActions } from '../model/useSessionBatchActions'
 import { SessionBatchBar } from './SessionBatchBar'
@@ -82,13 +83,8 @@ export function ChatSidebar({
     DEFAULT_SESSION_GROUPING_MODE,
   )
   const [showArchived, setShowArchived] = useState(false)
-  // Per-parent disclosure for sub-sessions (forks + threads + workers). Absent →
-  // collapsed, so the sidebar defaults to a FLAT roster of root chats; the left
-  // chevron on a row that has sub-sessions opens/closes its subtree.
-  // Stored as COLLAPSED so absent means open: every branch of this list now defaults to
-  // showing its children, five at a time. See `branchDisclosure`.
-  const [collapsedParents, setCollapsedParents] = useState<Record<string, boolean>>({})
-  const [expandedBranches, setExpandedBranches] = useState<Record<string, boolean>>({})
+  const { collapsedParents, expandedBranches, toggleParent, toggleBranchAll, revealPath } =
+    useSidebarDisclosure()
 
   const {
     forksByParent,
@@ -168,13 +164,6 @@ export function ChatSidebar({
   // title filter can't, in a separate "Found in messages" section.
   const { hits: historyHits, loading: historyLoading } = useHistorySearch(search)
   const sessionsById = useMemo(() => new Map(allSessions.map((s) => [s.id, s])), [allSessions])
-
-  const toggleParent = useCallback((id: string) => {
-    setCollapsedParents((current) => ({ ...current, [id]: !current[id] }))
-  }, [])
-  const toggleBranchAll = useCallback((id: string) => {
-    setExpandedBranches((current) => ({ ...current, [id]: !current[id] }))
-  }, [])
 
   // Stable identity so the memoized SessionItem isn't invalidated every render.
   //
@@ -276,6 +265,7 @@ export function ChatSidebar({
     onDelete: setPendingDelete,
     onTogglePin: handleTogglePin,
     toggleParent,
+    revealPath,
     toggleBranchAll,
     isSelected: selection.isSelected,
     onArrowNav: handleArrowNav,

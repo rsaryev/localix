@@ -1,50 +1,63 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, mock, test } from 'bun:test'
 import type { UiSession } from '@/shared/api/contracts'
-import { sessionsInBranch } from './useBreadcrumbNav'
-
-const route = (handle: string) => ({
-  handle,
-  providerConnectionId: null,
-  modelId: '',
-  reasoningEffort: 'low' as const,
-})
+import { sessionCrumbItems } from './useBreadcrumbNav'
 
 const chat = (id: string, handle: string, projectId = 'PRJ-0'): UiSession =>
   ({
     id,
-    agents: [route(handle)],
+    agents: [{ handle }],
     projectId,
+    title: id,
     updatedAt: 1,
     sessionKind: 'chat',
     parentSessionId: null,
   }) as UiSession
 
-const ALL = [
+const allSessions = [
   chat('a', 'localix'),
   chat('b', 'backend'),
   chat('c', 'backend'),
   chat('d', 'localix', 'PRJ-1'),
 ]
 
-describe('sessionsInBranch', () => {
-  test('a level only offers what lives inside the level above it', () => {
-    // The bug this pins: standing in `Project / Backend / a chat`, the session dropdown listed
-    // every root chat in the scope — including other agents' — so the last segment of a path
-    // could take you out of that path.
-    expect(sessionsInBranch(ALL, 'PRJ-0', 'backend').map((s) => s.id)).toEqual(['b', 'c'])
+describe('session crumb navigation', () => {
+  const deps = {
+    allSessions,
+    activeProjectId: 'PRJ-0',
+    activeSessionId: 'a',
+    goToSession: () => {},
+  }
+
+  test('offers the selected project’s chats across all agents', () => {
+    const items = sessionCrumbItems(deps)
+    expect(items.map((item) => item.id)).toEqual(['a', 'b', 'c'])
+    expect(items.filter((item) => item.active).map((item) => item.id)).toEqual(['a'])
   })
 
-  test('the scope still bounds it', () => {
-    // Two containments, not one: the agent narrows within the scope, it does not replace it.
-    expect(sessionsInBranch(ALL, 'PRJ-1', 'localix').map((s) => s.id)).toEqual(['d'])
+  test('keeps other projects, archived chats and descendants out of the root menu', () => {
+    const items = sessionCrumbItems({
+      ...deps,
+      allSessions: [
+        ...allSessions,
+        { ...chat('archived', 'localix'), isArchived: true },
+        { ...chat('fork', 'localix'), parentSessionId: 'a' },
+        { ...chat('worker', 'localix'), sessionKind: 'subagent', parentSessionId: 'a' },
+      ],
+    })
+    expect(items.map((item) => item.id)).toEqual(['a', 'b', 'c'])
+    expect(sessionCrumbItems({ ...deps, activeProjectId: 'PRJ-1' }).map((item) => item.id)).toEqual(
+      ['d'],
+    )
   })
 
-  test('with no agent in the path, the whole scope is the branch', () => {
-    // Nothing open yet — there is no branch to be inside of.
-    expect(sessionsInBranch(ALL, 'PRJ-0', undefined).map((s) => s.id)).toEqual(['a', 'b', 'c'])
+  test('selecting another agent’s chat navigates to that chat', () => {
+    const goToSession = mock((_id: string) => {})
+    const items = sessionCrumbItems({ ...deps, goToSession })
+    items.find((item) => item.id === 'b')!.onSelect()
+    expect(goToSession).toHaveBeenCalledWith('b')
   })
 
-  test('an agent with nothing in this scope offers nothing', () => {
-    expect(sessionsInBranch(ALL, 'PRJ-0', 'qa')).toEqual([])
+  test('an unresolved project does not fall back to other workspaces', () => {
+    expect(sessionCrumbItems({ ...deps, activeProjectId: null })).toEqual([])
   })
 })

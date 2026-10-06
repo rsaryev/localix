@@ -165,6 +165,11 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 
 ## Limits
 
+Development watches additions and removals in the kit doors and host-lent module directories with
+[`refresh-plugin-shared-modules.ts`](../../../apps/ui/build/refresh-plugin-shared-modules.ts). It
+invalidates the shared-module glob and reloads the host page together, so a rebuilt plugin cannot
+keep using a registry that predates its imports. Ordinary component edits keep Vite's normal HMR.
+
 - Native workbench UI runs in the host page, so it follows the native-backend trust rule: a bundled
   plugin ships trusted, and any other plugin's artifact is served only after the user enabled it.
   The app builds a user plugin's artifact itself from the plugin kit

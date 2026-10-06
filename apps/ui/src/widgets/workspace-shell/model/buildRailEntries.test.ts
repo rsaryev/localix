@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { buildRailEntries, type BuildRailEntriesInput } from './buildRailEntries'
+import { moveRailItem, resolveRailAreas } from './railLayout'
 import type { RailAction, RailSection } from '../ui/shellTypes'
 
 const section = (id: string, extra: Partial<RailSection> = {}): RailSection => ({
@@ -27,6 +28,21 @@ const baseInput: BuildRailEntriesInput = {
 }
 
 describe('buildRailEntries', () => {
+  it('retains the status label and placement of core controls', () => {
+    const { entryMap, defs } = buildRailEntries({
+      ...baseInput,
+      customizableActions: [
+        action('core-cli', {
+          statusLabel: 'CLI',
+          toolCategory: 'utilities',
+          defaultArea: 'status',
+        }),
+      ],
+    })
+    expect(entryMap.get('core-cli')?.statusLabel).toBe('CLI')
+    expect(entryMap.get('core-cli')?.plugin).toBeUndefined()
+    expect(resolveRailAreas(defs, null).status).toEqual(['core-cli'])
+  })
   it('namespaces ids and preserves def order (sections → actions)', () => {
     const { defs } = buildRailEntries({
       ...baseInput,
@@ -54,10 +70,7 @@ describe('buildRailEntries', () => {
     expect(defs.find((d) => d.id === 'b')?.defaultArea).toBe('overflow')
   })
 
-  it('marks a PLUGIN entry non-placeable, ignoring its declared defaultArea "bar"', () => {
-    // Two contributed entries both request `defaultArea: 'bar'`. Plugin views have
-    // no rail placement any more, so the request is not honored and the entry is
-    // flagged so a stale saved layout cannot resurrect a placement either.
+  it('pins every plugin view by default and lets each be unpinned independently', () => {
     const { defs } = buildRailEntries({
       ...baseInput,
       railSections: [section('alpha', { plugin: true, defaultArea: 'bar' })],
@@ -65,9 +78,14 @@ describe('buildRailEntries', () => {
     })
     for (const id of ['section:alpha', 'beta:workspace']) {
       const def = defs.find((d) => d.id === id)
-      expect(def?.defaultArea).toBe('overflow')
-      expect(def?.placeable).toBe(false)
+      expect(def?.defaultArea).toBe('bar')
+      expect(def?.placeable).toBeUndefined()
     }
+    expect(resolveRailAreas(defs, null).bar).toEqual(['section:alpha', 'beta:workspace'])
+    const unpinned = moveRailItem(defs, null, 'section:alpha', 'overflow', 0)
+    expect(resolveRailAreas(defs, unpinned).bar).toEqual(['beta:workspace'])
+    const pinned = moveRailItem(defs, unpinned, 'section:alpha', 'bar', 0)
+    expect(resolveRailAreas(defs, pinned).bar).toEqual(['section:alpha', 'beta:workspace'])
   })
 
   it('still lets a non-plugin (core) entry default to the bar and stay placeable', () => {
@@ -78,6 +96,19 @@ describe('buildRailEntries', () => {
     const def = defs.find((d) => d.id === 'section:files')
     expect(def?.defaultArea).toBe('bar')
     expect(def?.placeable).toBeUndefined()
+  })
+
+  it('puts categorized core tools in the catalog without assigning plugin ownership', () => {
+    const { defs, entryMap } = buildRailEntries({
+      ...baseInput,
+      customizableActions: [action('usage', { toolCategory: 'utilities', defaultArea: 'bottom' })],
+    })
+    expect(defs[0]?.defaultArea).toBe('bar')
+    expect(defs[0]?.plugin).toBeUndefined()
+    expect(entryMap.get('usage')?.toolCategory).toBe('utilities')
+    const unpinned = moveRailItem(defs, null, 'usage', 'overflow', 0)
+    expect(resolveRailAreas(defs, unpinned).bar).toEqual([])
+    expect(resolveRailAreas(defs, unpinned).overflow).toEqual(['usage'])
   })
 
   it('marks a section active only when the sidebar is open AND it is the active one', () => {

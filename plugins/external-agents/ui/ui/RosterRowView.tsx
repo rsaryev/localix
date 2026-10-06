@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { ExternalLink, Import as ImportIcon } from 'lucide-react'
-import { pluginNavigation, runPluginAction, toast, type MenuEntry } from '@localixai/plugin-sdk/ui'
+import { pluginNavigation, runPluginAction, type MenuEntry } from '@localixai/plugin-sdk/ui'
 import { Chip } from '@localixai/kit/chip'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
@@ -8,7 +8,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Spinner } from '@localixai/kit/spinner'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
-import { errorMessage, formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
+import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
 import { quietMinutes } from '../model/types'
 import { isRowSelectClick, type PointerPoint } from '@localixai/plugin-sdk/ui/utilities'
 import { middleEllipsis } from '../model/pathLabel'
@@ -21,7 +21,7 @@ import {
 import { isLive } from '../model/stateTone'
 import { AgentStateGlyph } from './AgentStateGlyph'
 import type { ProviderId, RosterRow } from '../model/types'
-import { AGENT_MARKS } from '../model/agentLaunchers'
+import { AGENT_MARKS } from '../model/agentMarks'
 
 /** Row height in px. Fixed, and shared with the virtualizer's `estimateSize` so measurement is
  *  exact and scroll position never drifts as rows recycle. */
@@ -51,22 +51,12 @@ export function RosterRowView({ row, providerName }: { row: RosterRow; providerN
   // fact about an agent.
   const quiet = row.terminalId ? quietMinutes(row.lastChangeAt, Date.now()) : undefined
   const [importing, setImporting] = useState(false)
-
-  // Importing KEEPS the conversation: it becomes an ordinary Localix session, searchable and
-  // referenceable like any other. Opening only reads it. Two different intents, so two controls —
-  // and this one is the rarer, which is why it waits for a hover instead of sitting on every row.
   const runImport = async () => {
     if (!source || importing) return
     setImporting(true)
     try {
       const imported = await importAndPrepareExternalAgentSession(source)
-      // Revealing the imported session is the confirmation; a success row would only repeat it.
       pluginNavigation.revealSession(imported.id, imported.projectId)
-    } catch (cause) {
-      // The sentence names what failed; the thrown text is the description, not the headline.
-      toast.error(`Could not import “${source.title}”`, {
-        description: errorMessage(cause, '') || undefined,
-      })
     } finally {
       setImporting(false)
     }
@@ -82,8 +72,7 @@ export function RosterRowView({ row, providerName }: { row: RosterRow; providerN
     )
   }
 
-  // The row's two actions, also on right-click. Import is a hover-only button today, which is no
-  // affordance at all on a keyboard or touch pass.
+  // The row opens the reader; import also remains available on hover or right-click.
   const rowMenu: MenuEntry[] = [
     {
       id: 'open',
@@ -92,17 +81,13 @@ export function RosterRowView({ row, providerName }: { row: RosterRow; providerN
       disabled: source == null || sessionId == null,
       onSelect: open,
     },
-    ...(source != null
-      ? ([
-          {
-            id: 'import',
-            label: 'Import as a Localix session',
-            icon: ImportIcon,
-            disabled: importing,
-            onSelect: () => void runImport(),
-          },
-        ] satisfies MenuEntry[])
-      : []),
+    {
+      id: 'import',
+      label: 'Import to Localix',
+      icon: ImportIcon,
+      disabled: source == null || importing,
+      onSelect: () => runPluginAction(runImport, 'Could not import this conversation'),
+    },
   ]
 
   const rowEl = (
@@ -190,7 +175,7 @@ export function RosterRowView({ row, providerName }: { row: RosterRow; providerN
           disabled={importing}
           onClick={(event) => {
             event.stopPropagation()
-            void runImport()
+            runPluginAction(runImport, 'Could not import this conversation')
           }}
           className="shrink-0 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
         >

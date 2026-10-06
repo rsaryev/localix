@@ -11,7 +11,6 @@ import { SessionIndex } from './discovery/index-cache'
 import { buildRoster } from './discovery/roster'
 import { computeStats, type ExternalAgentStats, type StatsQuery } from './discovery/stats'
 import { ManifestRegistry } from './detection/registry'
-import { createAgentCliProbe, type AgentCliProbe } from './launch/availability'
 import { LiveStore, type LiveEntry } from './live/store'
 import { CORRELATE_ATTEMPT_DELAYS_MS, correlateOnce } from './live/correlate'
 import { observeToolCall } from './live/observe'
@@ -20,7 +19,6 @@ import { HistoryWatch, hostWatchSlot, watchFiles, type WatchPath } from './live/
 import { compose, DEFAULT_BUDGET_CHARS, type ComposeResult } from './context/compose'
 import { linkKeyOf, parseLinkKey } from './../shared/identity'
 import { MAX_TRANSCRIPT_EVENTS } from '../shared/contracts'
-import type { AgentCliStatus } from '../shared/launch'
 import type {
   Bounded,
   ProviderStatus,
@@ -45,8 +43,6 @@ export class AgentSessionsService {
   private readonly turnSources = new Map<string, { adapter: ProviderAdapter; ref: SourceRef }>()
   private readonly env: AdapterEnv
   private readonly timers = new Set<ReturnType<typeof setTimeout>>()
-  /** Which agent CLIs this machine can actually run — cached, PATH-keyed. */
-  private readonly cliProbe: AgentCliProbe = createAgentCliProbe()
 
   constructor(
     stateDir: string,
@@ -163,20 +159,6 @@ export class AgentSessionsService {
       return true
     }
     return false
-  }
-
-  /**
-   * The launcher menu's material: every agent CLI we know how to start, each marked with whether
-   * it is installed here.
-   *
-   * Deliberately NOT folded into `providers()`. That one answers "whose history can I read", which
-   * is about directories under `$HOME` and is true of an agent the person UNINSTALLED; this one
-   * answers "what can I start", which is about PATH. They disagree in both directions, and a
-   * surface that conflated them would offer a launcher for a CLI that is gone and hide one that was
-   * just installed.
-   */
-  async launchers(options?: { refresh?: boolean }): Promise<readonly AgentCliStatus[]> {
-    return await this.cliProbe.list(options)
   }
 
   async providers(): Promise<readonly ProviderStatus[]> {

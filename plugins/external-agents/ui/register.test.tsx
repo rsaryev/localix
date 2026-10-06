@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
-import type { StatusItemContribution, WorkItemKindContribution } from '@localixai/plugin-sdk/ui'
+import type { WorkItemKindContribution } from '@localixai/plugin-sdk/ui'
 
 import { registerUi } from './register'
 
@@ -13,13 +13,12 @@ import { registerUi } from './register'
  * so a seam added to it can never break a plugin that does not use that seam. Four plugins whose
  * tests DID build the literal broke at once when status items landed.
  */
-test('contributes the roster tab and ONE titlebar surface for the launchers', () => {
+test('contributes the roster without a launcher or status-bar surface', () => {
   const { host, registrations } = recordingPluginUiHost()
 
   registerUi(host)
 
   const workItems = registrations.workItems as WorkItemKindContribution[]
-  const items = registrations.statusItems as StatusItemContribution[]
 
   expect(workItems.map((item) => item.kind)).toEqual(['external-agents:workspace'])
   // The roster opens transcripts into ITS chat, so it is a session kind; registered 'global' it
@@ -39,8 +38,5 @@ test('contributes the roster tab and ONE titlebar surface for the launchers', ()
   // re-registration here would resurrect a menu that only appears while a terminal tab is active.
   expect(registrations.locations ?? []).toEqual([])
 
-  expect(items.map(({ id, placement }) => ({ id, placement }))).toEqual([
-    { id: 'external-agents:agents', placement: 'titlebar' },
-  ])
-  expect(typeof items[0]?.useItem).toBe('function')
+  expect(registrations.statusItems ?? []).toEqual([])
 })

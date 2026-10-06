@@ -75,8 +75,9 @@ function report(offences: readonly Offence[]): string {
 
 describe('a status item never fails silently', () => {
   test('the scan is not void — it finds the status items', async () => {
-    // A glob that matched nothing would make every assertion below vacuously true.
-    expect((await statusItemFiles()).length).toBeGreaterThan(8)
+    // A glob that matched nothing would make every assertion below vacuously true. The number
+    // of contributed items can shrink when a launcher becomes a core control.
+    expect((await statusItemFiles()).length).toBeGreaterThan(0)
   })
 
   test('no status item swallows a rejection', async () => {

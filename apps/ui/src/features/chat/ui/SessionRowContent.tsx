@@ -1,4 +1,5 @@
 import { Pin } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { UiSession } from '@/shared/api/contracts'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
@@ -62,15 +63,21 @@ export function SessionRowContent({
 }
 
 /** The same time and status column for root conversations and nested sessions. */
-export function SessionRowMeta({ session }: { session: UiSession }) {
+export function SessionRowTimestamp({ session }: { session: UiSession }) {
+  return (
+    <span
+      className="text-2xs tabular-nums text-sidebar-foreground/45"
+      title={`Updated ${new Date(session.updatedAt).toLocaleString()}`}
+    >
+      {formatRelativeTime(session.updatedAt)}
+    </span>
+  )
+}
+
+export function SessionRowMeta({ session, actions }: { session: UiSession; actions?: ReactNode }) {
   return (
     <div className="ml-2 flex shrink-0 items-center justify-end gap-2 select-none">
-      <span
-        className="text-2xs tabular-nums text-sidebar-foreground/45"
-        title={`Updated ${new Date(session.updatedAt).toLocaleString()}`}
-      >
-        {formatRelativeTime(session.updatedAt)}
-      </span>
+      {actions ?? <SessionRowTimestamp session={session} />}
       <span className="flex w-3 shrink-0 items-center justify-center">
         <RowBadge session={session} />
       </span>

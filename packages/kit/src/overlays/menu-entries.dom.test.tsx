@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { GitBranch } from 'lucide-react'
+import { GitBranch, Pin } from 'lucide-react'
 
 import { registerDom } from '../testing/dom'
 import { DropdownMenu, DropdownMenuContent } from './dropdown-menu'
@@ -57,6 +57,51 @@ const rowKind = (element: Element): string =>
   element.getAttribute('role') ?? element.tagName.toLowerCase()
 
 describe('the described-menu walker', () => {
+  for (const checked of [undefined, false]) {
+    test(`a trailing action is independently keyboard accessible (checked=${checked})`, async () => {
+      const picks: string[] = []
+      const changes: boolean[] = []
+      const view = await openMenu(
+        [
+          {
+            id: 'reader',
+            label: 'Reader',
+            checked,
+            onSelect: () => picks.push('open'),
+            trailingAction: {
+              label: 'Unpin Reader',
+              icon: Pin,
+              checked: true,
+              onSelect: () => picks.push('unpin'),
+            },
+          },
+        ],
+        (open) => changes.push(open),
+      )
+      try {
+        const primary = view.menu!.querySelector<HTMLElement>('[data-radix-collection-item]')!
+        const pin = view.menu!.querySelector<HTMLElement>('[aria-label="Unpin Reader"]')!
+        expect(pin.getAttribute('role')).toBe('menuitemcheckbox')
+        expect(pin.getAttribute('aria-checked')).toBe('true')
+        await view.act(async () => {
+          primary.focus()
+          primary.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+          await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(document.activeElement).toBe(pin)
+        await view.act(async () =>
+          pin.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })),
+        )
+        expect(picks).toEqual(['unpin'])
+        expect(changes).toEqual([])
+        await view.act(async () => primary.click())
+        expect(picks).toEqual(['unpin', 'open'])
+        expect(changes).toEqual([false])
+      } finally {
+        await view.close()
+      }
+    })
+  }
   test('a submenu renders into a PORTAL, not inside the panel that would clip it', async () => {
     // The defect this pins: `SubContent` rendered inline lands inside the parent panel, which is
     // `overflow-y-auto overscroll-contain` — so the submenu was clipped to the parent's box and

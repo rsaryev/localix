@@ -25,12 +25,12 @@ export type PinnedRailArea = Exclude<RailArea, 'overflow'>
 export interface RailItemDef {
   id: string
   defaultArea: RailArea
+  plugin?: boolean
+  tool?: boolean
   /**
-   * `false` for an entry that has NO rail placement and can never gain one — a
-   * plugin view. Such an entry always resolves to `overflow`, even if an older
-   * saved layout placed it somewhere visible, so a layout written back when plugin
-   * views were still pinnable cannot strand an icon in a zone with no affordance
-   * left to remove it. Defaults to placeable.
+   * `false` for an entry that has no rail placement. It always resolves to
+   * `overflow`, even if a saved layout placed it somewhere visible. Defaults to
+   * placeable; plugin tools can be pinned and moved like core entries.
    */
   placeable?: boolean
 }
@@ -43,10 +43,12 @@ export interface RailPlacement {
 
 export interface RailLayoutState {
   entries: RailPlacement[]
+  /** Restore former plugin overflow defaults and move built-in tools from the lower rail. */
+  legacyPluginPins?: boolean
 }
 
 /** Bumped when the persisted shape or generic placement rules change. */
-export const RAIL_LAYOUT_VERSION = 5
+export const RAIL_LAYOUT_VERSION = 6
 
 /** localStorage key holding the serialized {@link RailLayoutState}. */
 export const RAIL_LAYOUT_STORAGE_KEY = 'localix_rail_layout'
@@ -91,7 +93,12 @@ export function resolveRailAreas(
     const saved = known.get(entry.id)
     if (placed.has(entry.id) || !saved) continue
     placed.add(entry.id)
-    target[saved.placeable === false ? 'overflow' : entry.area].push(entry.id)
+    const restore =
+      state?.legacyPluginPins &&
+      ((saved.plugin && entry.area === 'overflow') ||
+        (saved.tool && !saved.plugin && entry.area === 'bottom'))
+    const area = restore ? 'bar' : entry.area
+    target[saved.placeable === false ? 'overflow' : area].push(entry.id)
   }
   for (const def of defs) {
     if (placed.has(def.id)) continue
@@ -207,7 +214,10 @@ export { computeDropIndex } from '@localixai/kit/list-reorder'
  *  - legacy `{ bar?: string[], overflow?: string[] }` → mapped directly
  * Unknown/duplicate ids are dropped; anything else → `null`.
  */
-export function parseRailLayout(raw: string | null): RailLayoutState | null {
+export function parseRailLayout(
+  raw: string | null,
+  restorePluginPins = false,
+): RailLayoutState | null {
   if (!raw) return null
   let data: unknown
   try {
@@ -215,7 +225,12 @@ export function parseRailLayout(raw: string | null): RailLayoutState | null {
   } catch {
     return null
   }
-  return coerceRailLayout(data)
+  const state = coerceRailLayout(data)
+  const version =
+    data && typeof data === 'object' && 'v' in data && typeof data.v === 'number' ? data.v : 0
+  return state && restorePluginPins && version < RAIL_LAYOUT_VERSION
+    ? { ...state, legacyPluginPins: true }
+    : state
 }
 
 function coerceRailLayout(data: unknown): RailLayoutState | null {

@@ -5,6 +5,7 @@ import type { UiSession } from '@/shared/api/contracts'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
 import { SectionLabel } from '@localixai/kit/section-label'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { sessionTitle } from './sessionTitle'
 
 interface SessionPathSegmentProps {
   session: UiSession
@@ -43,7 +44,7 @@ export function SessionPathSegment({
   disabled,
 }: SessionPathSegmentProps) {
   const [open, setOpen] = useState(false)
-  const title = session.title || 'Untitled Chat'
+  const title = sessionTitle(session)
 
   const children = useMemo(
     () =>
@@ -122,10 +123,10 @@ export function SessionPathSegment({
                     'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs outline-none transition-colors hover:bg-popover-hover cursor-pointer focus-ring',
                     onPath ? 'text-foreground' : 'text-text-soft',
                   )}
-                  title={child.title || 'Untitled Chat'}
+                  title={sessionTitle(child)}
                 >
                   <GitFork className="size-3 shrink-0 -scale-x-100 opacity-50" />
-                  <span className="min-w-0 flex-1 truncate">{child.title || 'Untitled Chat'}</span>
+                  <span className="min-w-0 flex-1 truncate">{sessionTitle(child)}</span>
                   {onPath ? (
                     <span className="flex shrink-0 items-center gap-1 text-2xs text-status-success">
                       <Check className="size-3" aria-hidden="true" />

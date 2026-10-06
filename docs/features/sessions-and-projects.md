@@ -51,6 +51,10 @@ chat: its cards create no child session, and deleting the chat deletes the board
 The breadcrumb renders the active scope, root session, and descendant path. The session switcher
 opens with `Cmd/Ctrl+K`; the project switcher opens with `Cmd/Ctrl+Alt+P`.
 
+Long paths scroll horizontally, keeping every ancestor reachable. Navigating to another session
+reveals the end of its path automatically. Trackpad gestures and a mouse wheel both scroll the
+trail.
+
 ### Who said it, and when
 
 Every reply is headed by its author: a generated monogram tile, the agent's name in that agent's own
@@ -92,18 +96,37 @@ character, so a session with several agents says who is thinking.
 
 ### Reading the session list
 
-A sidebar row has two lines: the title and when it was last active, then what was last said in it.
-Rows carry no avatar — who a chat is with is said in words on the second line, where it matters.
+The top navigation follows **workspace → chat → sub-session**. Its chat menu lists root
+conversations in the selected workspace across all agents. The current location stays prominent;
+ancestor labels are quieter and truncate first when space is limited.
 
-The second line shows one thing, in order of what matters most: a running agent's activity, else the
-last message. The speaker is named — in that agent's own colour — when knowing it changes anything:
-your own last message reads `You: …` (nobody has answered yet), and in a session with more than one
-agent every line names who said it. A private chat does not repeat its single agent's name on every
-row.
+A sidebar row shows the conversation title and when it was last active on one line. Main chats omit
+decorative leading icons; sub-sessions keep their worker, thread or fork icon. A spinner marks an
+agent that is working. Beside the timestamp, one status mark shows the most pressing item waiting
+for your attention, otherwise an unread dot or a pin.
 
-The corner of the second line holds one mark: an unread dot, or a pin when there is nothing unread.
+The actions button appears when you hover over a row or focus it with the keyboard, and stays
+visible while its menu is open. On touch devices it is always visible. You can also right-click the
+row to open the same actions. The button replaces the timestamp in the same slot, giving the title
+more room without shifting it when actions appear. The status mark stays visible.
+
+Sub-sessions appear beneath their actual parents, including nested delegations. The active chat's
+branch opens by default; other root chats start folded. Each parent has its own disclosure arrow,
+and a folded row shows its direct child count. Branches initially show five children, with **Show
+all** for the rest. Opening a nested session reveals its full path, even beyond that preview. Title
+search includes workers, threads and forks and temporarily expands matching paths; clearing the
+search restores your folds.
+
+**Show less** appears only for a branch with more than five children that is showing its full list.
+Single-child chains use their disclosure arrows without additional footer rows.
 
 ### Conversation branches and forks
+
+The composer's **Agent sessions** panel groups delegated sessions beneath their parents. Click a
+session name to open it, or use the chevron beside a parent to fold that branch independently.
+Folding keeps the parent visible and preserves any folds further down the tree. The header count
+includes sessions in folded branches. Status dots remain visible for completed and failed runs;
+running sessions also show their current activity and a Stop button.
 
 Regenerating an assistant reply retains the earlier reply as a sibling branch and activates the new
 one. Editing a user message creates another sibling branch with the prior active context, then
@@ -111,6 +134,10 @@ continues from the edit.
 
 `/fork` creates a child session and copies the selected active message path in chronological order.
 The child inherits the project, model, and pinned skills.
+
+Generated fork titles use one suffix with the new conversation number, such as **Greeting
+(fork 42)**. Forking that conversation replaces the suffix with the next fork's number. Legacy
+repeated suffixes are condensed in the sidebar and breadcrumb without rewriting stored titles.
 
 ### Drafts and queued messages
 

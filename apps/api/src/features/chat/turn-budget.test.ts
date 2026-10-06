@@ -17,9 +17,10 @@ describe('clampMaxTurns — one range, so no reader repeats the check', () => {
   })
 })
 
-describe('the scale the composer menu offers', () => {
-  test('it runs from one turn to no cap, rising, so the menu reads in order', () => {
+describe('the scale the composer cycles through', () => {
+  test('it has five increasing presets from one turn to no cap', () => {
     const steps: number[] = [...MAX_TURNS_STEPS]
+    expect(steps).toEqual([1, 5, 20, 100, DEFAULT_MAX_TURNS])
     expect(steps[0]).toBe(MIN_MAX_TURNS)
     expect(steps.at(-1)).toBe(DEFAULT_MAX_TURNS)
     expect(steps).toEqual([...steps].sort((a, b) => a - b))

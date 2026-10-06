@@ -35,6 +35,18 @@ describe('built-in instructions', () => {
     // beside the registry.
     const persona = byName(DEFAULT_AGENT_HANDLE)?.instructions
     expect(persona).toContain('You are Localix Agent')
+    expect(persona).toContain('main orchestrator')
+    expect(persona).toContain('Handle small, straightforward tasks directly')
+    expect(persona).not.toContain('visualization assistant')
+  })
+
+  test('Localix leads the shipped team while specialist handoffs return to their parent', () => {
+    const main = byName(DEFAULT_AGENT_HANDLE)!
+    expect(main.leadershipPriority).toBe(2)
+    for (const record of BUILTIN_AGENTS.filter((item) => item.handle !== DEFAULT_AGENT_HANDLE)) {
+      expect(record.leadershipPriority).toBeLessThan(main.leadershipPriority)
+      expect(record.instructions).toContain('parent')
+    }
   })
 
   test('no shipped persona names a tool', () => {

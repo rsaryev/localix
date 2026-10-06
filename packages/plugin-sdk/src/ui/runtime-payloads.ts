@@ -12,7 +12,7 @@
  */
 export * from './runtime-completion-payloads'
 import type { AgentItem } from '@localixai/agent/agents'
-import type { MessageBindingDraft, WorkItemLike } from './contrib'
+import type { IconComponent, MessageBindingDraft, WorkItemLike } from './contrib'
 
 /** Open a file in the host's code editor, optionally at an exact position (like `code -g file:line:col`). */
 /**
@@ -216,12 +216,17 @@ export interface PluginTranscriptInput {
   title: string
   messages: readonly PluginTranscriptMessage[]
   foreignTools?: boolean
-  action?: {
-    label: string
-    pendingLabel: string
-    description?: string
-    run(): Promise<PluginTranscriptActionDestination | void>
-  }
+  action?: PluginTranscriptAction
+  actions?: readonly PluginTranscriptAction[]
+}
+
+export interface PluginTranscriptAction {
+  label: string
+  pendingLabel: string
+  description?: string
+  icon?: IconComponent
+  errorLabel?: string
+  run(): Promise<PluginTranscriptActionDestination | void>
 }
 
 export interface PluginConversationImport {

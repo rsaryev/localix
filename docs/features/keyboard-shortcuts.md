@@ -36,6 +36,23 @@ On macOS, terminal-editor history uses physical Control, while ordinary applicat
 Command. Option-letter equivalents are handled when macOS emits a symbol, so Emacs M-x works with an
 Option-X event rather than requiring the generated ≈ character.
 
+## Focus and shortcut ownership
+
+Keyboard commands follow the focused component. Terminals, code editors, file trees, canvases and
+form controls receive a key first. If that component handles the key, the workspace does not run
+another command for it, including when a workspace binding has been customized.
+
+In a terminal, Command/Ctrl+K clears the terminal instead of opening the session switcher.
+Command/Ctrl+F opens terminal find, and Command/Ctrl+Shift+O opens its link picker. On macOS,
+physical Control+K still belongs to the shell. Unclaimed workspace shortcuts remain available.
+
+Reader, Code Graph and 2048 keyboard commands apply only inside their focused pane. Question-card
+Enter, Escape and number shortcuts apply inside that card. Dialogs and menus block workspace
+commands behind them, including while a field inside the overlay has focus. Ordinary typing, field
+navigation, IME composition and AltGr character entry do not trigger workspace shortcuts. F1 opens
+the command palette only when the focused component has not handled it and no overlay blocks
+workspace keys.
+
 ## Editing and persistence
 
 Applying a preset replaces the shortcut override batch. Editing an individual shortcut changes the

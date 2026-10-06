@@ -1,11 +1,10 @@
 /**
- * The focus stack: one array, last entry wins.
+ * The focus stack: one array, nested owners are offered keys from the top outward.
  *
  * Push is idempotent by id — re-focusing a surface already on the stack moves it to the top rather
- * than adding a second copy, so a component that pushes on every render cannot grow the stack. Every
- * question the dispatcher asks is about the LAST entry, which is why nesting works for free: open a
- * dialog over a pane, then a menu inside the dialog, and unwinding restores each owner in turn
- * without anyone tracking what was underneath.
+ * than adding a second copy. Pane claims are filtered by the event's DOM path; modal barriers stop
+ * fallback and constrain global policy even when a field registers above them. Unwinding restores
+ * each owner without anyone tracking what was underneath.
  */
 import { create } from 'zustand'
 
@@ -36,7 +35,9 @@ export const useFocusStack = create<FocusStackState>((set) => ({
       if (
         top?.id === entry.id &&
         top.kind === entry.kind &&
-        samePolicy(top.keyboard, entry.keyboard)
+        samePolicy(top.keyboard, entry.keyboard) &&
+        top.onKeyDown === entry.onKeyDown &&
+        top.scope === entry.scope
       )
         return state
       return { entries: [...without, entry] }
@@ -59,8 +60,25 @@ export function currentFocusEntry(): FocusEntry | null {
 }
 
 /** What the focused surface tolerates, or the unfocused default. */
-export function currentKeyPolicy(): GlobalKeyPolicy {
-  return currentFocusEntry()?.keyboard ?? UNFOCUSED_KEY_POLICY
+export function currentKeyPolicy(event?: KeyboardEvent): GlobalKeyPolicy {
+  const entries = useFocusStack.getState().entries
+  // A field or pane re-registering above a modal cannot reopen global shortcuts behind it.
+  let policy = UNFOCUSED_KEY_POLICY
+  for (const entry of entries) {
+    if (event && !ownsEvent(entry, event) && !isBarrier(entry)) continue
+    policy = {
+      plainKeys: policy.plainKeys && entry.keyboard.plainKeys,
+      modifierKeys: policy.modifierKeys && entry.keyboard.modifierKeys,
+    }
+  }
+  return policy
+}
+
+function ownsEvent(entry: FocusEntry, event: KeyboardEvent): boolean {
+  if (!entry.scope) return true
+  const root = entry.scope()
+  if (!root) return false
+  return event.composedPath().some((target) => target === root)
 }
 
 /**
@@ -76,13 +94,34 @@ export function currentKeyPolicy(): GlobalKeyPolicy {
  * open dialog to find that out.
  */
 export function offerKeyToFocusedSurface(event: KeyboardEvent): boolean {
+  if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return true
+  if (event.getModifierState('AltGraph')) return true
   const { entries } = useFocusStack.getState()
+  let barrierIndex = -1
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index]
-    if (!entry) continue
+    if (entry && isBarrier(entry)) {
+      barrierIndex = index
+      break
+    }
+  }
+  const path = event.composedPath()
+  const candidates = entries
+    .slice(barrierIndex + 1)
+    .map((entry, index) => {
+      const root = entry.scope?.()
+      return { entry, index, depth: root ? path.indexOf(root) : Infinity }
+    })
+    .filter(({ entry }) => ownsEvent(entry, event))
+    // React mounts child effects before parents. DOM depth determines nested ownership;
+    // equal scopes still prefer the latest registration.
+    .sort((a, b) => a.depth - b.depth || b.index - a.index)
+  const barrier = entries[barrierIndex]
+  if (barrier && ownsEvent(barrier, event))
+    candidates.push({ entry: barrier, index: -1, depth: Infinity })
+  for (const { entry } of candidates) {
     const claimed = entry.onKeyDown?.(event)
     if (claimed === true || event.defaultPrevented) return true
-    if (isBarrier(entry)) return false
   }
   return false
 }

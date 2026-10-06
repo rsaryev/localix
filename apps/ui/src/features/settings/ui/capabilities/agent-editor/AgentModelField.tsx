@@ -80,7 +80,7 @@ export function AgentModelField({
 
   return (
     <div className="min-w-0 space-y-2">
-      <SettingsFieldGrid wideLeading>
+      <SettingsFieldGrid wideLeading columnsAt="2xl">
         <Field controlId={modelFieldId} label="Model" optional disabled={disabled}>
           <div className="flex min-w-0 items-center gap-2">
             <Button

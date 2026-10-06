@@ -382,3 +382,6 @@ streaming and mention options rather than adding a second Markdown parser.
   and
   [session surfaces](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/contrib.ts)
 - [UI kit](https://github.com/rsaryev/localix/tree/main/apps/ui/src/app/kit)
+
+Pane keyboard commands must follow DOM focus and yield to controls and overlays.
+[Keyboard ownership](keyboard-ownership.md) explains scoped registration and command precedence.

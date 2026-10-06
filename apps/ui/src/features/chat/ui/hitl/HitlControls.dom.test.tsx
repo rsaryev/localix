@@ -76,7 +76,11 @@ describe('HITL control contracts', () => {
       )
       await React.act(async () => {
         host.querySelector<HTMLInputElement>('input')?.focus()
-        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+        host
+          .querySelector('input')
+          ?.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+          )
       })
       expect(deferred).toEqual(['ask-later', 'ask-later', 'ask-later'])
       expect(denied).toEqual([])

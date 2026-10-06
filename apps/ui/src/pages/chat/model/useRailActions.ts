@@ -10,6 +10,7 @@ import { inspector } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
 import { openPageWorkItem } from './openPageWorkItem'
 import { pluginViewRailAction } from './pluginViewRailAction'
+import { codingAgentRailActions } from './codingAgentRailActions'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
 import {
@@ -17,15 +18,15 @@ import {
   subscribePluginActivation,
 } from '@/shared/contrib/pluginActivation'
 import { CMD } from '@/shared/lib/keybindings'
-import { useTheme } from '@/shared/theme/useTheme'
-import { appearanceRailAction } from './appearanceRailAction'
 import type { PluginViewSpec } from '@/shared/api/contracts'
 import type { RailAction, RailArea } from '@/widgets/workspace-shell'
 import type { useSystemToggle } from '@/shared/hooks/useSystemToggle'
 import { isPluginRailViewlet } from './railViewletProvenance'
 import { capabilityResourceUri } from '@localixai/plugin-sdk/navigation'
+import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
 
 interface ViewletDef {
+  toolCategory?: PluginCategory
   kind: WorkItemKind
   icon: ComponentType<{ className?: string }>
   label: string
@@ -33,8 +34,7 @@ interface ViewletDef {
   defaultArea: RailArea
   /** Keybinding id whose live chord annotates the rail tooltip (opt-in). */
   chordId?: string
-  /** Contributed by a bundled plugin's `ui/register.tsx`; grouped under "Plugins"
-   *  in the overflow menu. */
+  /** Contributed by a bundled plugin's `ui/register.tsx`; grouped by manifest category. */
   plugin?: boolean
   pluginName?: string
   resourceUri?: string
@@ -72,8 +72,9 @@ const coreViewlets = (openSessionId: string | null): ViewletDef[] => [
     kind: 'stats',
     icon: BarChart3,
     label: 'Usage & Spend',
+    toolCategory: 'utilities',
     open: () => inspector.openStats(),
-    defaultArea: 'bottom',
+    defaultArea: 'bar',
   },
 ]
 
@@ -113,9 +114,6 @@ export function useRailActions({
   'use no memo'
   // React Compiler otherwise retains the assembled action array from before async plugin
   // registration, even after the activation revision and contributed viewlets change.
-  // Subscribed, not read once: the button's icon IS the current mode, so it has to re-render when
-  // the mode changes — including when the OS flips while the app is following the system.
-  const { themeMode } = useTheme()
   const resetLayout = useGridStore((s) => s.resetLayout)
   // The id + kind of the FOCUSED group's VISIBLE active tab (scope-correct — not the
   // raw activeTab, which can be a hidden background-session tab) — drives the dots.
@@ -132,7 +130,7 @@ export function useRailActions({
   // the generic `openWorkItem` grid path, so core needs no per-viewlet bus method.
   // The registry is a mutable singleton, not React state. Without this explicit
   // activation dependency, React Compiler can retain the empty cold-start list
-  // until an unrelated interaction (such as closing and reopening Plugins).
+  // until an unrelated interaction.
   const activationVersion = useSyncExternalStore(subscribePluginActivation, pluginActivationVersion)
   const contributedViewlets = useMemo(
     () =>
@@ -146,6 +144,7 @@ export function useRailActions({
         // Ownership is stamped only by pluginUiHostFor(), so provenance—not the
         // fact that an entry was contributed—decides which overflow group owns it.
         plugin: isPluginRailViewlet(v),
+        toolCategory: v.toolCategory,
         pluginName: v.pluginName,
         resourceUri: v.pluginName
           ? capabilityResourceUri({
@@ -174,7 +173,18 @@ export function useRailActions({
 
   return [
     ...viewlets.map(
-      ({ kind, icon, label, open, defaultArea, chordId, plugin, pluginName, resourceUri }) => {
+      ({
+        kind,
+        icon,
+        label,
+        open,
+        defaultArea,
+        chordId,
+        plugin,
+        toolCategory,
+        pluginName,
+        resourceUri,
+      }) => {
         // Active when a tab of this kind is the focused tab; clicking it then closes
         // that focused tab, else opens/reveals one. Matching by kind (not a fixed
         // id) works the same for singletons and for multi-instance terminals.
@@ -188,6 +198,7 @@ export function useRailActions({
           customizable: true,
           defaultArea,
           plugin,
+          toolCategory,
           pluginName,
           resourceUri,
           onClick: () =>
@@ -250,7 +261,7 @@ export function useRailActions({
           },
         ]
       : []),
-    appearanceRailAction(themeMode),
+    ...codingAgentRailActions(openSessionId),
     {
       id: 'settings',
       icon: createElement(Settings, { className: 'size-4.5' }),

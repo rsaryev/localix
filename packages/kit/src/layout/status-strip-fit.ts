@@ -14,7 +14,7 @@
  *     showing each one smaller, and what it drops moves into the tooltip, where nothing is lost.
  *     Icon-only is also the macOS status-bar reading — glyphs at a stable pitch, detail on demand;
  *   - the row's OTHER tenants are known. The titlebar holds three things: the navigation trail on
- *     the left, this strip, and a fixed core cluster (palette, terminal, bell) pinned right. The
+ *     the left, this strip, and a fixed core cluster (terminal, browser, bell) pinned right. The
  *     first is the only one whose appetite varies, and it varies with something this file can be
  *     told — how deep the session path currently is. A share of the row was a stand-in for that
  *     fact; asking for the fact directly is what lets a shallow path hand the strip the room it

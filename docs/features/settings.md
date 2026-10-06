@@ -62,7 +62,7 @@ retaining UI and runtime settings.
 
 Provider connections, model defaults and workload routing are owned by the
 [model selection and details panel](providers.md). Credentials live in the Vault. Theme selection is
-available in Preferences and from the navigation rail.
+available in Preferences → Appearance.
 
 ## Access and context
 

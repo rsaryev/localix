@@ -1,10 +1,6 @@
-import { describe, expect, mock, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
+import { MemoryRouter } from 'react-router'
 import type { UiSession } from '@/shared/api/contracts'
-
-await mock.module('./AgentGroupHeader', () => ({
-  AgentGroupHeader: ({ handle }: { handle: string }) => <div>{`Agent ${handle}`}</div>,
-}))
-await mock.module('./BranchMoreRow', () => ({ BranchMoreRow: () => null }))
 
 const chat = (id: string, handle: string, updatedAt: number) =>
   ({
@@ -23,19 +19,21 @@ describe('SessionRoster', () => {
     yesterday.setDate(yesterday.getDate() - 1)
 
     const html = renderToStaticMarkup(
-      <SessionRoster
-        sessions={[
-          chat('today-chat', 'lead', today.getTime()),
-          chat('yesterday-chat', 'lead', yesterday.getTime()),
-        ]}
-        roster={['lead']}
-        groupingMode="agent"
-        renderSession={(session) => [<span key={session.id}>{session.id}</span>]}
-        onNewChatWith={() => {}}
-      />,
+      <MemoryRouter>
+        <SessionRoster
+          sessions={[
+            chat('today-chat', 'lead', today.getTime()),
+            chat('yesterday-chat', 'lead', yesterday.getTime()),
+          ]}
+          roster={['lead']}
+          groupingMode="agent"
+          renderSession={(session) => [<span key={session.id}>{session.id}</span>]}
+          onNewChatWith={() => {}}
+        />
+      </MemoryRouter>,
     )
 
-    expect(html).toContain('Agent lead')
+    expect(html).toContain('aria-expanded="true"')
     expect(html).toContain('Today')
     expect(html).toContain('Yesterday')
     expect(html.indexOf('Today')).toBeLessThan(html.indexOf('today-chat'))

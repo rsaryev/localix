@@ -47,6 +47,10 @@ async function items(body: Record<string, unknown>) {
 }
 
 describe('/items reads the end of a session when asked', () => {
+  it('does not expose the obsolete CLI launcher probe', async () => {
+    const res = await appWith(() => {}).request('/launchers')
+    expect(res.status).toBe(404)
+  })
   it('threads tail through to the adapter read', async () => {
     const { status, args } = await items({ key: 'codex:s1', maxEvents: 50, tail: true })
 
@@ -56,6 +60,18 @@ describe('/items reads the end of a session when asked', () => {
     expect(args?.[0]).toBe('codex:s1')
     expect(args?.[1]).toBe(50)
     expect(args?.[3]).toBe(true)
+  })
+
+  it('includes the adapter-supported native continuation in the transcript response', async () => {
+    const response = await appWith(() => {}).request('/items', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key: 'codex:s1' }),
+    })
+    expect((await response.json()).resume).toEqual({
+      providerName: 'Codex',
+      command: "codex resume 's1'",
+    })
   })
 
   it('leaves the opening as the default when nothing asks for the end', async () => {

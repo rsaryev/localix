@@ -158,6 +158,7 @@
     "apps/landing/src/generated",
     "apps/ui/test-results",
     "extend",
-    "vendor"
+    "vendor",
+    ".agents/skills"
   ]
 }

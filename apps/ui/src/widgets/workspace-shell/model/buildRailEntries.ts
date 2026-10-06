@@ -1,5 +1,6 @@
 import type { RailArea, RailItemDef } from './railLayout'
 import type { RailAction, RailEntry, RailSection } from '../ui/shellTypes'
+import { isRailTool } from './railToolGroups'
 
 export interface BuildRailEntriesInput {
   /** Sidebar sections (Files, Database, …). */
@@ -25,12 +26,7 @@ export interface BuiltRailEntries {
  * freshly enabled plugin panel) lands. Pure — no React/DOM — so the id/area/active
  * mapping can be unit-tested.
  *
- * A PLUGIN-owned entry has no rail placement at all: it is marked NOT placeable, so
- * it resolves to `overflow` whatever its own `defaultArea` claims (Reader asks for
- * `'bar'`) and whatever an older saved layout put it in.
- * Plugin views reach the rail only through its recent slots, which the shell fills
- * from actual usage. Core/system entries are unaffected — their own `defaultArea`
- * still governs where they land and the user can still arrange them.
+ * Plugin views are pinned by default and grouped in the rail. Explicit unpins use overflow.
  */
 export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries {
   const entryMap = new Map<string, RailEntry>()
@@ -38,8 +34,13 @@ export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries
   const addEntry = (entry: RailEntry, defaultArea: RailArea) => {
     entryMap.set(entry.id, entry)
     defs.push(
-      entry.plugin
-        ? { id: entry.id, defaultArea: 'overflow', placeable: false }
+      isRailTool(entry)
+        ? {
+            id: entry.id,
+            defaultArea: !entry.plugin && defaultArea === 'status' ? 'status' : 'bar',
+            plugin: entry.plugin,
+            tool: true,
+          }
         : { id: entry.id, defaultArea },
     )
   }
@@ -53,6 +54,7 @@ export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries
         active: input.sidebarOpen && input.activeSection === s.id,
         onClick: () => input.onSectionClick(s.id),
         plugin: s.plugin,
+        toolCategory: s.toolCategory,
         pluginName: s.pluginName,
         resourceUri: s.resourceUri,
       },
@@ -63,12 +65,14 @@ export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries
     addEntry(
       {
         id: a.id,
+        statusLabel: a.statusLabel,
         icon: a.icon,
         label: a.label,
         active: !!a.active,
         onClick: a.onClick,
         chordId: a.chordId,
         plugin: a.plugin,
+        toolCategory: a.toolCategory,
         pluginName: a.pluginName,
         resourceUri: a.resourceUri,
       },

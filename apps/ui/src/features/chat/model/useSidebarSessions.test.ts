@@ -86,4 +86,13 @@ describe('scopeRootSessions (single-scope projection)', () => {
     const list = [s({ id: 'orphan', projectId: 'p1', parentSessionId: 'gone' })]
     expect(scopeRootSessions(list, 'p1', false).map((x) => x.id)).toEqual(['orphan'])
   })
+
+  test('a chat below a worker stays nested and is not repeated as a root', () => {
+    const list = [
+      s({ id: 'root', projectId: 'p1' }),
+      s({ id: 'worker', projectId: 'p1', sessionKind: 'subagent', parentSessionId: 'root' }),
+      s({ id: 'fork', projectId: 'p1', parentSessionId: 'worker' }),
+    ]
+    expect(scopeRootSessions(list, 'p1', false).map((row) => row.id)).toEqual(['root'])
+  })
 })

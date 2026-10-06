@@ -106,7 +106,7 @@ export interface ProviderAdapter {
    * manifest, so a live terminal running it resolves to `unknown` rather than a guess.
    */
   readonly detectionManifestId?: string
-  /** How this agent kind is resumed, for display. */
+  /** Shell command continuing this exact native session, with the id quoted as one argument. */
   readonly resumeCommand?: (nativeSessionId: string) => string
 
   /** Roots this adapter will probe on this machine, in precedence order, with existence. */

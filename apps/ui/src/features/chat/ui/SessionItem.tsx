@@ -14,19 +14,26 @@ import {
 import { refToken } from '@localixai/api/context-refs'
 import { isRowSelectClick, type PointerPoint } from '@localixai/plugin-sdk/ui/utilities'
 import { SessionItemActions } from './SessionItemActions'
-import { SessionRowMeta, SESSION_ROW_HEIGHT_CLASS, SessionRowContent } from './SessionRowContent'
+import {
+  SessionRowMeta,
+  SESSION_ROW_HEIGHT_CLASS,
+  SessionRowContent,
+  SessionRowTimestamp,
+} from './SessionRowContent'
 import { Spinner } from '@localixai/kit/spinner'
 import { sessionMenuEntries } from './sessionMenuEntries'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { CONTROL_FOCUS_VISIBLE } from '@localixai/plugin-sdk/ui/classes'
+import { TreeGuide } from './SessionTreeGuide'
 
 // Tree indentation (px). Base matches the row's normal left padding; the step
 // is small and the depth is capped so deep fork chains stay readable. See the
 // guide-rail rendering in SessionItem.
 const INDENT_BASE = 8
-const INDENT_STEP = 12
+const INDENT_STEP = 20
 const INDENT_MAX_DEPTH = 4
+const EMPTY_TREE_PREFIX: readonly boolean[] = []
 
 interface SessionItemProps {
   session: UiSession
@@ -44,6 +51,8 @@ interface SessionItemProps {
   selected?: boolean
   /** Tree depth — 0 for a top-level chat, >0 for a fork nested under its parent. */
   depth?: number
+  treePrefixCols?: readonly boolean[]
+  isLastChild?: boolean
   /** Total sub-sessions under this row (forks + threads + workers). Renders the
    *  left disclosure chevron when > 0; one click reveals/hides the whole subtree. */
   childCount?: number
@@ -60,6 +69,8 @@ export const SessionItem = memo(function SessionItem({
   onArrowNav,
   selected = false,
   depth = 0,
+  treePrefixCols = EMPTY_TREE_PREFIX,
+  isLastChild = true,
   childCount = 0,
   isExpanded = false,
   onToggleExpand,
@@ -216,14 +227,14 @@ export const SessionItem = memo(function SessionItem({
       onClick={handleRowClick}
       title={isRenaming ? undefined : 'Drag into the composer to link this chat'}
       className={[
-        'group relative flex select-none items-center justify-between gap-1 overflow-hidden rounded-md pr-1 transition-colors',
+        'group group/workbench-row relative flex select-none items-center justify-between gap-1 overflow-hidden rounded-md pr-1 transition-colors',
         isRenaming ? '' : 'cursor-pointer',
         SESSION_ROW_HEIGHT_CLASS,
         selected
           ? 'bg-status-info/12 ring-1 ring-inset ring-status-info/40'
           : isActive
-            ? 'bg-sidebar-accent/70'
-            : 'hover:bg-sidebar-accent/50',
+            ? 'bg-sidebar-accent/55'
+            : 'hover:bg-sidebar-accent/35',
       ].join(' ')}
     >
       {selected && (
@@ -232,14 +243,15 @@ export const SessionItem = memo(function SessionItem({
           className="pointer-events-none absolute inset-y-1 left-0 w-0.5 rounded-full bg-status-info"
         />
       )}
-      {Array.from({ length: effectiveDepth }, (_, i) => (
-        <span
-          key={i}
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0.5 w-px bg-sidebar-border/45"
-          style={{ left: INDENT_BASE + i * INDENT_STEP + 5 }}
-        />
-      ))}
+      {effectiveDepth > 0 && (
+        <span className="pointer-events-none absolute inset-y-0 left-1.5 flex">
+          <TreeGuide
+            depth={effectiveDepth}
+            prefixCols={treePrefixCols.slice(0, effectiveDepth - 1)}
+            isLast={isLastChild}
+          />
+        </span>
+      )}
       {/* The disclosure column is RESERVED on every row, not only on the rows that have one.
           Rendering it conditionally pushed a parent's title half a chevron right of its
           childless siblings, so a row with sub-sessions read as nested under the row above
@@ -248,6 +260,7 @@ export const SessionItem = memo(function SessionItem({
         <button
           type="button"
           aria-label={isExpanded ? 'Collapse sub-sessions' : 'Expand sub-sessions'}
+          aria-expanded={isExpanded}
           title={`${childCount} sub-session${childCount === 1 ? '' : 's'}`}
           onClick={(e) => {
             e.stopPropagation()
@@ -286,23 +299,22 @@ export const SessionItem = memo(function SessionItem({
           }
         }}
       >
-        <span
-          data-slot="session-row-icon"
-          className="flex size-4 shrink-0 items-center justify-center text-sidebar-foreground/50"
-        >
-          {session.isRunning ? (
-            <Spinner className="size-3.5 text-status-info" aria-label="Working" />
-          ) : isWorker ? (
-            <Bot className="size-3.5" aria-label="Worker" />
-          ) : depth > 0 && !isThread ? (
-            <GitFork className="size-3.5 -scale-x-100" aria-label="Fork" />
-          ) : (
-            <MessagesSquare
-              className="size-3.5"
-              aria-label={isThread ? 'Thread' : 'Conversation'}
-            />
-          )}
-        </span>
+        {(depth > 0 || session.isRunning) && (
+          <span
+            data-slot="session-row-icon"
+            className="flex size-4 shrink-0 items-center justify-center text-sidebar-foreground/50"
+          >
+            {session.isRunning ? (
+              <Spinner className="size-3.5 text-status-info" aria-label="Working" />
+            ) : isWorker ? (
+              <Bot className="size-3.5 opacity-70" aria-label="Worker" />
+            ) : !isThread ? (
+              <GitFork className="size-3.5 -scale-x-100" aria-label="Fork" />
+            ) : (
+              <MessagesSquare className="size-3.5" aria-label="Thread" />
+            )}
+          </span>
+        )}
         {isRenaming ? (
           <input
             type="text"
@@ -335,13 +347,24 @@ export const SessionItem = memo(function SessionItem({
         )}
       </div>
 
-      <SessionRowMeta session={session} />
-
-      {/* Keeping actions in the flex flow prevents overlap when text or controls scale. */}
-      <SessionItemActions
-        menuOpen={menuOpen}
-        onMenuOpenChange={setMenuOpen}
-        entries={menuEntries}
+      {childCount > 0 && !isExpanded && (
+        <span
+          className="shrink-0 text-2xs tabular-nums text-text-faint"
+          aria-label={`${childCount} ${childCount === 1 ? 'sub-session' : 'sub-sessions'}`}
+        >
+          {childCount}
+        </span>
+      )}
+      <SessionRowMeta
+        session={session}
+        actions={
+          <SessionItemActions
+            menuOpen={menuOpen}
+            onMenuOpenChange={setMenuOpen}
+            entries={menuEntries}
+            fallback={<SessionRowTimestamp session={session} />}
+          />
+        }
       />
     </div>
   )

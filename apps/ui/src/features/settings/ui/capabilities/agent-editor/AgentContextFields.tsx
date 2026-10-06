@@ -21,13 +21,13 @@ export function AgentContextFields({
   patch: (next: Partial<AgentDraft>) => void
 }) {
   return (
-    <SettingsFieldGrid>
+    <SettingsFieldGrid columnsAt="2xl">
       <Field
         controlId="agent-preload-skills"
         label="Preloaded skills"
         optional
         readOnly={readOnly}
-        description="Skill names, one per line. Applied to this agent in chats and delegated work; permission rules still apply."
+        description="One skill name per line. Loaded for chats and delegated work, subject to permission rules."
       >
         <Textarea
           size="xl"
@@ -42,7 +42,7 @@ export function AgentContextFields({
         controlId="agent-memory-scope"
         label="Memory scope"
         disabled={readOnly}
-        description="Restricts both recall and saved notes. All available scopes reads conversation, project and global notes; a selected scope reads only that scope."
+        description="Controls where notes are read and saved. All scopes includes conversation, project and global notes."
       >
         <Select
           size="xl"

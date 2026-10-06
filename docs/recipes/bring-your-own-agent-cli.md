@@ -72,6 +72,17 @@ You should finish with observed files and check output, not only the external CL
 
 ## Configuration
 
+### Continue an existing conversation
+
+Open an indexed session in the External Agents roster to read its transcript. The compact footer
+offers **Import to Localix**, which creates a Localix conversation in the source working directory's
+project when the provider recorded that directory. The import reports any omitted transcript turns.
+
+For Claude Code, Codex and opencode, **Open in …** instead resumes that exact native session in a
+Localix terminal. It uses the recorded working directory when available and requires the matching
+CLI on `PATH`. If the session already has a live terminal, the button reveals that terminal.
+Providers without a declared resume command offer reading and import.
+
 | Command or API                   | Effect                                            | Boundary                                                    |
 | -------------------------------- | ------------------------------------------------- | ----------------------------------------------------------- |
 | `/external-agents:claude <task>` | Starts the bundled Claude Code terminal workflow. | Requires the enabled bundled plugin and `claude` on `PATH`. |

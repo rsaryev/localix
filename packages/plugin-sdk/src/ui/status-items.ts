@@ -61,6 +61,14 @@ export interface MenuActionEntry {
    */
   description?: string
   disabled?: boolean
+  /** An independent icon action beside this row, such as pinning a tool without opening it. */
+  trailingAction?: {
+    label: string
+    icon: IconComponent
+    checked?: boolean
+    disabled?: boolean
+    onSelect: () => void
+  }
   /**
    * A TOGGLE (on/off per row, a real multi-select): `menuitemcheckbox`. Drawn like `selected` —
    * icon in front, check at the END — so only the role differs; never use it for one choice.
