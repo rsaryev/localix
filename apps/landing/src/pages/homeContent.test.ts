@@ -166,6 +166,7 @@ test('homepage claims stay assigned to their owning guides', () => {
     'The product’s own workbenches are plugins': 'extending--plugins',
     'Play against the agent': 'features--game-2048',
     'The app and its plugins draw from one design system': 'extending--ui-kit',
+    'Keep projects in native workspace tabs': 'features--native-workspace-tabs',
     'Tests keep the interface from drifting': 'extending--ui-kit',
     'Dark, light, and what your system asks for': 'features--workspace',
     'Reach anything without the mouse': 'features--workspace',

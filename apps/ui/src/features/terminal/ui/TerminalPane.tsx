@@ -15,6 +15,7 @@ import { PaneStateOverlay } from '@localixai/kit/pane-state-overlay'
 import { Button } from '@localixai/kit/button'
 import { closeTerminal, getTerminalLiveness, terminalStreamUrl } from '../api'
 import { openNewTerminal } from '../model/terminalTabs'
+import { closeDeadTerminalTabs } from '../model/deadTerminalTabs'
 import { createTerminalLinkProvider, readBufferLines } from './terminalLinkProvider'
 import { collectTerminalLinks, type TerminalLinkItem } from '../model/terminalLinks'
 import { TerminalPaneOverlays } from './TerminalPaneOverlays'
@@ -74,9 +75,7 @@ import type { NotificationOrigin } from '@/shared/lib/notifications/types'
  *
  * Recovery: when a connected PTY's socket drops we ask the backend whether the PTY
  * is still listed. A transient WS blip (PTY alive) triggers bounded silent reconnects
- * ("Reconnecting…"); a truly dead PTY surfaces a notice with a one-click "New
- * terminal" button that spawns a fresh shell in the same session (the exact rail
- * spawn path) and replaces this dead tab in place. The same registry check protects
+ * ("Reconnecting…"); a confirmed dead PTY closes its tab automatically. The same registry check protects
  * a first attach after reload, so a temporarily unreachable daemon cannot discard
  * a live restored tab. An automatic "Restarting… connection lost" state is kept
  * distinct from a relaunch action for an exited process.
@@ -442,7 +441,7 @@ export function TerminalPane({
           // Not a transport incident — the process is gone.
           terminalIncidentRef.current?.abandon()
           setReconnecting(false)
-          setDead('The shell process ended.')
+          closeDeadTerminalTabs(terminalId)
           return
         }
         const attempt = reconnectAttemptsRef.current++

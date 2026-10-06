@@ -36,6 +36,10 @@ adapter resumes the exact native session in its recorded working directory when 
 needed. All six supported agents declare native continuation commands. A missing native session
 reports an error rather than starting a different conversation.
 
+Opening a native history row preserves its recorded timestamps in the linked chat. Viewing or
+reopening it, including saving the CLI's native identity, does not move it to the top of history or
+mark it as new activity.
+
 Each different external session you open starts its own CLI process. Switching chats keeps those
 processes running; reopening the same session reuses its live terminal. There is no global cap or
 idle eviction for these processes, so opening many sessions increases resource use. Close an agent's

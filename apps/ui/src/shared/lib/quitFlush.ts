@@ -1,3 +1,4 @@
+import { clearWorkspaceStorage } from './workspaceWindow'
 /**
  * The one list of writes that must land before the page goes away.
  *
@@ -130,10 +131,15 @@ export function installQuitFlush(): () => void {
   document.addEventListener('visibilitychange', onHidden)
   let unlisten: (() => void) | undefined
   let disposed = false
-  void tauriListen()?.(BEFORE_QUIT_EVENT, () => {
+  void tauriListen()?.(BEFORE_QUIT_EVENT, (event) => {
+    const payload = event?.payload as { requestId?: number; discardWorkspace?: boolean } | undefined
+    const requestId = payload?.requestId
     void flushAllBeforeQuit().then((unfinished) => {
+      if (payload?.discardWorkspace) clearWorkspaceStorage()
       if (unfinished.length > 0) console.warn('[quit-flush] unfinished', unfinished)
-      void tauriInvoke()?.('quit_ready').catch(() => undefined)
+      void tauriInvoke()?.('quit_ready', requestId === undefined ? undefined : { requestId }).catch(
+        () => undefined,
+      )
     })
   }).then((stop) => {
     if (disposed) stop()

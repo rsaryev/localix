@@ -8,7 +8,7 @@
 //! the webview out to an OS API, with no state between them. Kept together so
 //! lib.rs stays a composition root; each is small enough to read in place.
 
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 use crate::deeplink::is_external_url;
 use crate::log::logln;
@@ -109,15 +109,21 @@ pub(crate) fn notify(
     title: String,
     body: Option<String>,
     condition: Option<String>,
+    event_key: Option<String>,
 ) {
-    use tauri::Manager;
     use tauri_plugin_notification::NotificationExt;
 
-    let focused = app
-        .get_webview_window("main")
-        .and_then(|w| w.is_focused().ok())
-        .unwrap_or(false);
+    let focused = crate::workspace_windows::views(&app)
+        .iter()
+        .any(|view| view.window().is_focused().unwrap_or(false));
     if focused && condition.as_deref() != Some("always") {
+        return;
+    }
+
+    if event_key
+        .as_deref()
+        .is_some_and(|key| !crate::native_notifications::claim(&app, key))
+    {
         return;
     }
 
@@ -270,15 +276,31 @@ async fn open_url_macos(url: String) -> Result<(), String> {
 /// traffic lights, native context menus and scrollbars (and the Windows menu bar)
 /// match the UI's dark/light. "system" (or anything unrecognized) follows the OS.
 #[tauri::command]
-pub(crate) fn set_theme(app: AppHandle, theme: String, material_theme: Option<String>) {
+pub(crate) fn set_theme(
+    app: AppHandle,
+    caller: tauri::Webview,
+    theme: String,
+    material_theme: Option<String>,
+    header_tint: Option<[f64; 4]>,
+) {
+    if crate::workspace_windows::require_workspace(&caller).is_err() {
+        return;
+    }
     use tauri::Theme;
     let resolved = match theme.as_str() {
         "dark" => Some(Theme::Dark),
         "light" => Some(Theme::Light),
         _ => None,
     };
-    if let Some(w) = app.get_webview_window("main") {
+    {
+        let w = caller.window();
         let _ = w.set_theme(resolved);
+        #[cfg(target_os = "macos")]
+        if let Some(tint) = header_tint {
+            if let Err(error) = crate::native_header::apply(&w, tint) {
+                logln(format!("native header: {error}"));
+            }
+        }
         // The native window MATERIAL (vibrancy) is a separate thing from the theme above — it
         // needs its own concrete NSVisualEffectMaterial per appearance (see window_material.rs),
         // and only macOS has one to re-attach. System chrome remains automatic while the UI
@@ -293,7 +315,7 @@ pub(crate) fn set_theme(app: AppHandle, theme: String, material_theme: Option<St
         }
     }
     #[cfg(not(target_os = "macos"))]
-    let _ = material_theme;
+    let _ = (material_theme, header_tint);
     crate::native_browser::apply_browser_theme(&app, &theme);
     // Remember it so the next launch can paint the startup background to match.
     save_theme(
@@ -312,7 +334,7 @@ pub(crate) fn set_theme(app: AppHandle, theme: String, material_theme: Option<St
 /// icon stands in (the OS convention for "needs attention").
 #[tauri::command]
 pub(crate) fn set_badge(app: AppHandle, count: i64) {
-    if let Some(w) = app.get_webview_window("main") {
+    if let Some(w) = crate::workspace_windows::active_window(&app) {
         let _ = w.set_badge_count(if count > 0 { Some(count) } else { None });
         #[cfg(windows)]
         {
@@ -510,9 +532,9 @@ mod tests {
 /// `hidden_title`), but harmless there; on Windows/Linux it updates the visible
 /// title bar and taskbar entry.
 #[tauri::command]
-pub(crate) fn set_title(app: AppHandle, title: String) {
-    if let Some(w) = app.get_webview_window("main") {
-        let _ = w.set_title(&title);
+pub(crate) fn set_title(caller: tauri::Webview, title: String) {
+    if crate::workspace_windows::require_workspace(&caller).is_ok() {
+        let _ = caller.window().set_title(&title);
     }
 }
 

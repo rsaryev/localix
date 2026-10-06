@@ -21,10 +21,9 @@
 //! hook, which leaves by `std::process::exit` without any event at all.
 
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::{Condvar, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use tauri::{AppHandle, Emitter, ExitRequestApi, Manager, RESTART_EXIT_CODE};
+use tauri::{AppHandle, ExitRequestApi, Manager, RESTART_EXIT_CODE};
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 use crate::log::logln;
@@ -40,7 +39,11 @@ pub(crate) const FLUSH_BUDGET: Duration = Duration::from_millis(1500);
 /// The window-state flags, one definition for the plugin and for the explicit saves here.
 /// VISIBLE is excluded: the window is built hidden and revealed at first paint.
 pub(crate) fn window_state_flags() -> StateFlags {
-    StateFlags::all().difference(StateFlags::VISIBLE)
+    let flags = StateFlags::all().difference(StateFlags::VISIBLE);
+    // A tab group's fullscreen is restored after joining its windows, not per window.
+    #[cfg(target_os = "macos")]
+    let flags = flags.difference(StateFlags::FULLSCREEN);
+    flags
 }
 
 const IDLE: u8 = 0;
@@ -51,7 +54,6 @@ const RELEASED: u8 = 2;
 #[derive(Default)]
 pub(crate) struct QuitState {
     phase: AtomicU8,
-    ack: FlushAck,
 }
 
 /// What `ExitRequested` does, given the phase it arrives in.
@@ -117,19 +119,13 @@ pub(crate) fn leave_cleanly(app: &AppHandle) {
 /// Ask the page to save everything, wait for its answer (bounded), then save the window
 /// geometry.
 fn flush_frontend(app: &AppHandle) {
-    let ack = &app.state::<QuitState>().ack;
-    ack.arm();
-    let started = Instant::now();
-    let answered = app.emit_to("main", BEFORE_QUIT_EVENT, ()).is_ok() && ack.wait(FLUSH_BUDGET);
-    logln(format!(
-        "before-quit: page {} after {} ms",
-        if answered {
-            "flushed"
-        } else {
-            "did not answer"
-        },
-        started.elapsed().as_millis()
-    ));
+    let labels: Vec<_> = crate::workspace_windows::views(app)
+        .iter()
+        .map(|view| view.label().to_string())
+        .collect();
+    crate::frontend_flush::flush(app, &labels, false);
+    #[cfg(target_os = "macos")]
+    crate::workspace_session::save(app);
     // Here as well as on `Exit`: the Windows installer path leaves by `std::process::exit` and
     // never raises `Exit`, which is where the plugin itself saves.
     if let Err(error) = app.save_window_state(window_state_flags()) {
@@ -137,46 +133,9 @@ fn flush_frontend(app: &AppHandle) {
     }
 }
 
-/// The page's answer to [`BEFORE_QUIT_EVENT`]: everything it had pending is written.
-#[tauri::command]
-pub(crate) fn quit_ready(app: AppHandle) {
-    app.state::<QuitState>().ack.answer();
-}
-
-/// A one-shot latch the page answers. Armed before the event is sent, so an answer can never
-/// arrive before the wait that is looking for it.
-#[derive(Default)]
-struct FlushAck {
-    answered: Mutex<bool>,
-    changed: Condvar,
-}
-
-impl FlushAck {
-    fn arm(&self) {
-        *self.answered.lock().unwrap() = false;
-    }
-
-    fn answer(&self) {
-        *self.answered.lock().unwrap() = true;
-        self.changed.notify_all();
-    }
-
-    /// `true` when answered within `budget`.
-    fn wait(&self, budget: Duration) -> bool {
-        let guard = self.answered.lock().unwrap();
-        let (guard, _) = self
-            .changed
-            .wait_timeout_while(guard, budget, |answered| !*answered)
-            .unwrap();
-        *guard
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{admit, Admission, FlushAck, IDLE, QUITTING, RELEASED};
-    use std::sync::Arc;
-    use std::time::{Duration, Instant};
+    use super::{admit, Admission, IDLE, QUITTING, RELEASED};
 
     #[test]
     fn only_the_first_request_starts_the_handshake_and_a_repeat_cannot_cut_it_short() {
@@ -185,37 +144,6 @@ mod tests {
         assert_eq!(admit(RELEASED, false), Admission::Proceed);
         // tauri ignores prevent_exit for a restart; its initiator left cleanly already.
         assert_eq!(admit(IDLE, true), Admission::Proceed);
-    }
-
-    #[test]
-    fn an_answer_ends_the_wait_early() {
-        let ack = Arc::new(FlushAck::default());
-        ack.arm();
-        let page = Arc::clone(&ack);
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(20));
-            page.answer();
-        });
-        let started = Instant::now();
-        assert!(ack.wait(Duration::from_secs(5)));
-        assert!(started.elapsed() < Duration::from_secs(2));
-    }
-
-    #[test]
-    fn a_silent_page_is_waited_for_only_the_budget() {
-        let ack = FlushAck::default();
-        ack.arm();
-        let started = Instant::now();
-        assert!(!ack.wait(Duration::from_millis(50)));
-        assert!(started.elapsed() >= Duration::from_millis(50));
-    }
-
-    #[test]
-    fn an_answer_from_an_earlier_round_does_not_satisfy_the_next() {
-        let ack = FlushAck::default();
-        ack.answer();
-        ack.arm();
-        assert!(!ack.wait(Duration::from_millis(10)));
     }
 
     /// Every restart initiator leaves cleanly before it asks for the restart, because tauri

@@ -106,10 +106,13 @@ pub(crate) fn is_loopback(url: &tauri::Url) -> bool {
 
 /// Reveal + focus the main window (from tray click, menu, or a second launch).
 pub(crate) fn show_main_window<R: tauri::Runtime>(app: &AppHandle<R>) {
-    if let Some(w) = app.get_webview_window("main") {
-        let _ = w.unminimize();
-        let _ = w.show();
-        let _ = w.set_focus();
+    #[cfg(target_os = "macos")]
+    crate::workspace_visibility::reopen(app);
+    #[cfg(not(target_os = "macos"))]
+    if let Some(w) = crate::workspace_windows::active_view(app) {
+        let _ = w.window().unminimize();
+        let _ = w.window().show();
+        let _ = w.window().set_focus();
     }
 }
 
@@ -181,7 +184,7 @@ fn open_arg_path(arg: &std::ffi::OsStr, cwd: &std::path::Path) -> Option<std::pa
 /// Evaluate the UI handler for a single URL. The URL is JSON-encoded so it can
 /// never break out of the string literal (injection-safe).
 fn eval_deep_link<R: tauri::Runtime>(app: &AppHandle<R>, url: &str) {
-    if let Some(w) = app.get_webview_window("main") {
+    if let Some(w) = crate::workspace_windows::active_view(app) {
         let arg = serde_json::to_string(url).unwrap_or_else(|_| "\"\"".into());
         let _ = w.eval(format!(
             "window.__localixDeepLink && window.__localixDeepLink({arg})"
@@ -196,7 +199,7 @@ fn eval_deep_link<R: tauri::Runtime>(app: &AppHandle<R>, url: &str) {
 /// so it can never break out of the string literal (injection-safe). No-op if the
 /// UI hasn't installed the handler yet.
 pub(crate) fn forward_menu_command<R: tauri::Runtime>(app: &AppHandle<R>, id: &str) {
-    if let Some(w) = app.get_webview_window("main") {
+    if let Some(w) = crate::workspace_windows::active_view(app) {
         show_main_window(app);
         let arg = serde_json::to_string(id).unwrap_or_else(|_| "\"\"".into());
         let _ = w.eval(format!(
@@ -233,10 +236,18 @@ pub(crate) fn forward_edit_command<R: tauri::Runtime>(app: &AppHandle<R>, id: &s
 /// fires from a UI useLayoutEffect right after first commit, so showing here lands at
 /// first paint with the correct theme already applied.
 #[tauri::command]
-pub(crate) fn deep_link_ready(app: AppHandle) {
-    show_main_window(&app);
+pub(crate) fn deep_link_ready(app: AppHandle, caller: tauri::Webview) {
+    if crate::workspace_windows::require_workspace(&caller).is_err() {
+        return;
+    }
+    crate::workspace_windows::reveal(&app, caller.label());
     let state = app.state::<DeepLinks>();
-    state.flush(|url| eval_deep_link(&app, url));
+    state.flush(|url| {
+        let arg = serde_json::to_string(url).expect("deep link serializes");
+        let _ = caller.eval(format!(
+            "window.__localixDeepLink && window.__localixDeepLink({arg})"
+        ));
+    });
     flush_startup_log();
     setup_tray_after_ready(&app);
 }

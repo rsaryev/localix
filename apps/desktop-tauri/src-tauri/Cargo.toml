@@ -84,6 +84,11 @@ objc2-app-kit = { version = "0.3", features = [
   "NSBitmapImageRep",
   "NSGraphics",
 ] }
+objc2-quartz-core = { version = "0.3", default-features = false, features = [
+  "std",
+  "CALayer",
+  "objc2-core-graphics",
+] }
 # NSVisualEffectView, attached after the window exists. Used directly rather than through tauri's
 # own `.effects(...)` because that path DISCARDS `apply_vibrancy`'s Result, and the shell has to know
 # whether the material actually took before it tells the page anything.

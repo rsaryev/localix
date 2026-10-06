@@ -77,8 +77,8 @@ The API uses two TypeScript projects:
 | `apps/api/tsconfig.json`      | API and bundled-backend production sources.       | `bun run type-check` through Turbo.  |
 | `apps/api/tsconfig.test.json` | The same source set with test exclusions removed. | `bun run check:tests` through Turbo. |
 
-`bun test` executes TypeScript but does not provide the separate static test-file gate. Run both the
-runtime suite and `check:tests` before review.
+`bun test` executes TypeScript but does not provide the separate static test-file gate. CI runs both
+the runtime suite and `check:tests` before review.
 
 ### Pull-request gates
 
@@ -87,10 +87,14 @@ The root
 owns the ordered gate list. The public-repository check compares that list with CI, so adding or
 removing a required gate must update the policy and workflow together.
 
-Use a focused test while editing, then run the complete root list before opening a pull request.
-Rust changes under the Tauri source also need `bun run check:rust`. A change to anything the desktop
-bundle stages (the API entry, migrations, plugins, the CLI) also needs `bun run check:bundle`: it
-stages the bundle and starts its API from a copy outside the checkout, in about ten seconds.
+Use a focused test while editing. Ordinary commits automatically run formatting and lint on staged
+files through `.githooks/pre-commit`, plus Rust formatting when applicable and Cargo is available.
+The hook does not rewrite or stage files; restage checked files that also have unstaged changes
+before committing. Do not run the complete root gate list just to create a commit. CI owns the full
+validation; run individual gates locally to diagnose failures. `bun run check:rust` reproduces
+native validation. For desktop packaging changes, `bun run check:bundle` provides a focused smoke
+check: it stages the bundle and starts its API from a copy outside the checkout, in about ten
+seconds.
 
 Hosted CI runs the JavaScript gates sequentially in one job, sharing one dependency install and
 workspace build. Rust runs in a separate job; `Repository validation` requires both. A newer push

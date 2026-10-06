@@ -63,3 +63,13 @@ export function toProfileWirePatch(
   }
   return apiPatch
 }
+
+/** Adopt committed peer keys while keeping this window's edits and explicit removals. */
+export function mergeSettingDelta<T extends object>(committed: T, visible: T, pending: object): T {
+  const merged = { ...committed }
+  for (const key of Object.keys(pending) as Array<keyof T>) {
+    if (Object.hasOwn(visible, key)) merged[key] = visible[key]
+    else delete merged[key]
+  }
+  return merged
+}

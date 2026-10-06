@@ -6,9 +6,9 @@
 //                                   external binary). The API's osascript /
 //                                   PowerShell / zenity picker is the BROWSER-only
 //                                   fallback now.
-//   ✓ macOS Overlay titlebar     → TitleBarStyle::Overlay + hidden_title +
-//                                   traffic_light_position (see window builder).
-//   ✓ Window geometry persistence → tauri-plugin-window-state.
+//   ✓ macOS native workspace tabs → Native titlebar + NSWindow tab groups;
+//                                   Cmd+T and the native + action create workspaces.
+//   ✓ Window geometry persistence → tauri-plugin-window-state + native group frames.
 //   ✓ Native application menu    → build_app_menu (branded "Localix").
 //   ✓ Native notifications       → tauri-plugin-notification + `notify` command
 //                                   (UI invokes it; unfocused-only).
@@ -74,16 +74,27 @@
 // See apps/desktop-tauri/README.md and the [[desktop-tauri-migration]] note.
 // ─────────────────────────────────────────────────────────────────────────────
 
-use std::sync::atomic::Ordering;
-use std::time::Duration;
-
-use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, RunEvent};
 
 mod commands;
 mod deeplink;
+mod frontend_flush;
 mod log;
+#[cfg(target_os = "macos")]
+mod macos_tabs;
+#[cfg(target_os = "macos")]
+mod main_queue;
 mod menu;
 mod native_browser;
+#[cfg(target_os = "macos")]
+mod native_chrome;
+#[cfg(target_os = "macos")]
+mod native_header;
+mod native_notifications;
+#[cfg(target_os = "macos")]
+mod native_tab_controls;
+#[cfg(target_os = "macos")]
+mod native_titlebar_backdrop;
 mod prefs;
 mod process_tree;
 mod quit;
@@ -95,6 +106,19 @@ mod updater;
 #[cfg(target_os = "macos")]
 mod webcrypto_key;
 mod window_material;
+mod workspace_builder;
+mod workspace_lifecycle;
+#[cfg(target_os = "macos")]
+mod workspace_menu;
+#[cfg(all(debug_assertions, target_os = "macos"))]
+mod workspace_probe;
+#[cfg(all(debug_assertions, target_os = "macos"))]
+mod workspace_probe_lifecycle;
+mod workspace_session;
+mod workspace_session_model;
+#[cfg(target_os = "macos")]
+mod workspace_visibility;
+mod workspace_windows;
 
 use crate::commands::{
     dragged_paths, focus_app, frontend_log, notify, open_external, pick_directory, pick_files,
@@ -104,9 +128,9 @@ use crate::commands::{
 use crate::deeplink::open_path_deep_link;
 use crate::deeplink::{
     deep_link_ready, dispatch_deep_link, forward_edit_command, forward_menu_command,
-    is_embedded_navigation_url, is_external_url, is_internal_url, is_loopback, open_path_args,
-    show_main_window, DeepLinks,
+    open_path_args, show_main_window, DeepLinks,
 };
+use crate::frontend_flush::quit_ready;
 use crate::log::{logln, logln_at};
 use crate::menu::{
     build_app_menu, set_projects, set_recent_sessions, MenuData, MenuState, QUIT_MENU_ID,
@@ -116,12 +140,12 @@ use crate::native_browser::{
     browser_navigation_state, browser_open, browser_placeholder, browser_reload, browser_snapshot,
     browser_tab_menu, handle_browser_menu_event, workbench_snapshot,
 };
-use crate::prefs::{apply_zoom_menu, is_zoom_menu_id, load_theme_is_dark, restore_zoom, ZoomState};
-use crate::quit::{on_exit_requested, quit_ready, window_state_flags, QuitState};
+use crate::prefs::{apply_zoom_menu, is_zoom_menu_id, restore_zoom, ZoomState};
+use crate::quit::{on_exit_requested, window_state_flags, QuitState};
 use crate::sidecar::{
     prepare_api, resync_runtime_status, start_api, stop_api_blocking, ApiSidecar, EXIT_GRACE,
 };
-use crate::tray::tray_available;
+
 use crate::updater::{updater_check, updater_install, PendingUpdate};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -186,6 +210,10 @@ pub fn run() {
         // App-menu events. Predefined items (Copy/Paste/Hide/…) act natively and
         // never reach here; every custom item's id is routed below.
         .on_menu_event(|app, event| {
+            #[cfg(target_os = "macos")]
+            if crate::macos_tabs::handle_menu(app, event.id().as_ref()) {
+                return;
+            }
             if handle_browser_menu_event(app, event.id().as_ref()) {
                 return;
             }
@@ -198,7 +226,7 @@ pub fn run() {
             }
             // Settings… → drive the UI's inspector settings panel (no URL route).
             if event.id().as_ref() == "open_settings" {
-                if let Some(w) = app.get_webview_window("main") {
+                if let Some(w) = crate::workspace_windows::active_view(app) {
                     let _ =
                         w.eval("window.__localixOpenSettings && window.__localixOpenSettings()");
                 }
@@ -207,7 +235,10 @@ pub fn run() {
             // Window ▸ Close Window uses Cmd+Shift+W. Cmd+W is intentionally a
             // custom Close Tab item routed to the webview (see menu.rs).
             if event.id().as_ref() == "close_window" {
-                if let Some(w) = app.get_webview_window("main") {
+                if let Some(w) = crate::workspace_windows::active_window(app) {
+                    #[cfg(target_os = "macos")]
+                    crate::workspace_visibility::hide(app, w.label());
+                    #[cfg(not(target_os = "macos"))]
                     let _ = w.close();
                 }
                 return;
@@ -248,7 +279,7 @@ pub fn run() {
             }
             // View ▸ Toggle Full Screen (win/linux F11; macOS uses native fullscreen).
             if event.id().as_ref() == "toggle_fullscreen" {
-                if let Some(w) = app.get_webview_window("main") {
+                if let Some(w) = crate::workspace_windows::active_window(app) {
                     let fs = w.is_fullscreen().unwrap_or(false);
                     let _ = w.set_fullscreen(!fs);
                 }
@@ -301,7 +332,11 @@ pub fn run() {
             browser_eval,
             browser_inject,
             browser_tab_menu,
-            quit_ready
+            quit_ready,
+            crate::workspace_windows::workspace_open,
+            crate::workspace_windows::workspace_location,
+            #[cfg(all(debug_assertions, target_os = "macos"))]
+            crate::workspace_probe::workspace_probe
         ])
         .manage(PendingUpdate::default())
         .manage(DeepLinks::default())
@@ -309,6 +344,9 @@ pub fn run() {
         .manage(MenuState::default())
         .manage(ApiSidecar::default())
         .manage(QuitState::default())
+        .manage(crate::frontend_flush::FrontendFlush::default())
+        .manage(crate::native_notifications::NativeNotifications::default())
+        .manage(crate::workspace_windows::WorkspaceWindows::default())
         .setup(|app| {
             // Before any webview exists, so no page can reach WebKit's keychain fallback first.
             #[cfg(target_os = "macos")]
@@ -373,255 +411,46 @@ pub fn run() {
             // replayed by `resync_runtime_status`, which is what that handshake is for.
             start_api(app.handle(), api_launch);
 
-            // `WebviewUrl::App` resolves to the Vite dev server in dev and to the
-            // bundled frontendDist in prod — one code path for both.
-            // Startup background: paint the backing to the app's theme so there's no
-            // wrong-colour flash before the webview's CSS loads. Prefer the theme the
-            // user last resolved (persisted by set_theme) so forcing dark-on-a-light-OS
-            // still starts dark; fall back to the dark-first default and refine to the
-            // OS theme after build().
-            //
-            // What background_color actually does per platform, from the sources rather than from
-            // memory — the old note here said "macOS ignores background_color for the webview
-            // layer", which is misleading enough to send the next reader down the wrong path:
-            //   - tauri 2.11.5 `webview/webview_window.rs`: WebviewWindowBuilder::background_color
-            //     sets BOTH the window and the webview builder, and documents the webview layer as
-            //     "not implemented" on macOS/iOS.
-            //   - wry 0.55.1 `src/wkwebview/mod.rs`: on macOS the WKWebView has drawsBackground
-            //     DISABLED, so the WINDOW colour shows through wherever the page has not painted —
-            //     i.e. this value is what covers the gap on macOS too. wry additionally applies it
-            //     as `setUnderPageBackgroundColor` (macOS 12+), the colour of overscroll areas past
-            //     the page bounds.
-            // So: this matters on every platform. What it cannot fix is a sub-surface that paints
-            // its OWN background — a Monaco editor created without a theme used Monaco's light
-            // default and flashed a white rectangle regardless of anything set here.
-            let persisted_dark = load_theme_is_dark(app.handle());
-            // macOS has no use for it: the window is transparent there and the NSVisualEffectView is
-            // the backing, so this colour only exists for the platforms that keep an opaque frame.
-            #[cfg(not(target_os = "macos"))]
-            let initial_bg = if persisted_dark == Some(false) {
-                tauri::window::Color(249, 249, 249, 255)
-            } else {
-                tauri::window::Color(7, 7, 7, 255)
-            };
-            // Mirror the same decision on the NATIVE theme so OS chrome (Windows
-            // titlebar, native scrollbars/context menus, prefers-color-scheme)
-            // starts matching instead of flipping once React mounts. The web app
-            // defaults to dark when nothing is stored, so dark is the right
-            // first-launch fallback; the UI re-asserts the resolved theme
-            // post-mount via set_theme either way.
-            let initial_theme = if persisted_dark == Some(false) {
-                tauri::Theme::Light
-            } else {
-                tauri::Theme::Dark
-            };
-            let mut builder =
-                WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                    .title("Localix")
-                    .inner_size(1280.0, 832.0)
-                    .min_inner_size(900.0, 600.0)
-                    .resizable(true)
-                    // First-launch placement: center on the active monitor instead
-                    // of the OS default (top-left cascade on Windows/Linux). On the
-                    // 2nd+ launch the window-state plugin restores the saved
-                    // position after build(), overriding this — so .center() only
-                    // ever affects the very first run.
-                    .center()
-                    .theme(Some(initial_theme))
-                    // Built hidden; revealed by deep_link_ready at the UI's first
-                    // paint (background_color can't cover the macOS webview layer,
-                    // so a visible-from-birth window flashes white on dark theme).
-                    // A watchdog below shows it anyway if the UI never signals.
-                    // Disable Tauri's native drag-drop handler so the webview fires the
-                    // normal HTML5 drag events: the composer attaches a dropped file via
-                    // `dataTransfer.files` (useComposerDropzone) and the window guard
-                    // routes a stray drop (fileDropGuard/fileDropRouter, real paths via
-                    // the `dragged_paths` command below).
-                    //
-                    // Do NOT re-enable the native handler. Ground truth from wry
-                    // 0.55 (src/wkwebview/drag_drop.rs): when enabled, its
-                    // performDragOperation returns YES WITHOUT calling super, so
-                    // WebKit never sees ANY drop on the window — not just OS-file
-                    // drops but every IN-PAGE HTML5 drag too (sessions/snippets/
-                    // db rows dragged into the composer, editor-grid tab docking).
-                    // Also its `position` is typed PhysicalPosition but on macOS
-                    // carries LOGICAL points (NSView draggingLocation), so any
-                    // dpr conversion misroutes hit-testing. The all-native route
-                    // was tried and reverted (see git bdc65085 / a49caf9b).
-                    .disable_drag_drop_handler()
-                    .visible(false);
-
-            // macOS native feel: hide the system titlebar and let the UI's own
-            // slim drag-strip flow to the very top, with the traffic lights
-            // floating as an Overlay over it. `hidden_title` drops the centered
-            // window title (the UI owns that chrome); `traffic_light_position`
-            // nudges the lights down so they sit vertically centered in the UI's
-            // 36px titlebar strip instead of hugging the frame corner.
+            app.state::<crate::workspace_windows::WorkspaceWindows>()
+                .set_init_script(init_script.clone());
             #[cfg(target_os = "macos")]
-            {
-                use tauri::{LogicalPosition, TitleBarStyle};
-                builder = builder
-                    .title_bar_style(TitleBarStyle::Overlay)
-                    .hidden_title(true)
-                    .traffic_light_position(LogicalPosition::new(19.0, 11.0))
-                    // Transparent so the NSVisualEffectView attached after build() is what backs the
-                    // window. `background_color` is deliberately NOT set here: tao lets that colour
-                    // win over transparency, which would paint the NSWindow solid and hide the
-                    // material. The anti-flash role it played is taken over by the material itself,
-                    // and the window is built hidden anyway.
-                    .transparent(true);
-            }
-
-            // Every other platform keeps the opaque backing exactly as before: no vibrancy, no
-            // transparency, and the anti-flash colour that covers the gap before the webview paints.
-            #[cfg(not(target_os = "macos"))]
-            {
-                builder = builder.background_color(initial_bg);
-            }
-
-            // External links open in the system browser instead of navigating the
-            // app webview away from itself (a hard break with no back button).
-            // Internal app URLs + hash routes load normally.
-            {
-                use tauri::webview::NewWindowResponse;
-                use tauri_plugin_opener::OpenerExt;
-                let nav_handle = app.handle().clone();
-                builder = builder.on_navigation(move |url| {
-                    if is_internal_url(url) {
-                        return true;
-                    }
-                    // Loopback URLs (Preview iframe: dev server / strip-proxy) must
-                    // load in-webview in release too — this handler fires for every
-                    // frame, not just the top document.
-                    if is_loopback(url) {
-                        return true;
-                    }
-                    if is_external_url(url) {
-                        let _ = nav_handle.opener().open_url(url.as_str(), None::<&str>);
-                        return false;
-                    }
-                    // Generated documents/workers remain in WebKit. Unknown
-                    // schemes (file:, javascript:, custom handlers) are denied.
-                    is_embedded_navigation_url(url)
-                });
-
-                // window.open / target="_blank" (e.g. an OAuth "Connect" popup) →
-                // open external http(s) in the system browser instead of a bare
-                // embedded webview window. The OAuth flow finalizes via the local
-                // callback HTTP server, so the browser is the correct, native path.
-                let open_handle = app.handle().clone();
-                builder = builder.on_new_window(move |url, _features| {
-                    if is_internal_url(&url) || is_loopback(&url) {
-                        return NewWindowResponse::Allow;
-                    }
-                    if is_external_url(&url) {
-                        let _ = open_handle.opener().open_url(url.as_str(), None::<&str>);
-                        return NewWindowResponse::Deny;
-                    }
-                    if is_embedded_navigation_url(&url) {
-                        NewWindowResponse::Allow
-                    } else {
-                        NewWindowResponse::Deny
-                    }
-                });
-            }
-
-            if !init_script.is_empty() {
-                builder = builder.initialization_script(&init_script);
-            }
-            let main_window = builder.build()?;
-
-            // The material can only be attached once the NSWindow exists, so it happens here rather
-            // than on the builder. `UnderWindowBackground` samples the DESKTOP behind the app — that
-            // is what makes the wallpaper show through rather than a self-contained grey blur — and
-            // the follows-active state dims it when the window loses focus, like native chrome.
-            //
-            // A failure is reported, not swallowed: tauri's own `.effects(...)` path discards this
-            // Result, and a window left transparent with no material behind it is the one outcome
-            // that looks broken rather than merely unstyled.
+            let saved_session = crate::workspace_session::load(app.handle());
             #[cfg(target_os = "macos")]
-            {
-                // Same boolean that already picked `initial_theme`/`initial_bg` above, so the
-                // material the user last resolved is what the window opens with — `window_material`
-                // owns which concrete NSVisualEffectMaterial serves each appearance (dark needs
-                // `HudWindow`, light needs `UnderWindowBackground`; a light interface over the dark
-                // material reads as mud) and re-attaches identically from `set_theme` on a live flip.
-                let initial_appearance = if persisted_dark == Some(false) {
-                    window_material::Appearance::Light
-                } else {
-                    window_material::Appearance::Dark
-                };
-                match window_material::apply(&main_window, initial_appearance) {
-                    Ok(()) => logln_at("window material: vibrancy attached"),
-                    Err(error) => logln_at(format!("window material: vibrancy failed ({error})")),
-                }
-            }
-
+            let startup_label = saved_session
+                .groups
+                .iter()
+                .flat_map(|group| &group.tabs)
+                .find(|tab| tab.label == "main")
+                .or_else(|| {
+                    saved_session
+                        .groups
+                        .first()
+                        .and_then(|group| group.tabs.first())
+                })
+                .map_or("main", |tab| tab.label.as_str());
+            #[cfg(target_os = "macos")]
+            let initial_route = saved_session.route(startup_label);
+            #[cfg(not(target_os = "macos"))]
+            let initial_route = None;
+            #[cfg(not(target_os = "macos"))]
+            let startup_label = "main";
+            let main_window = crate::workspace_builder::build(
+                app.handle(),
+                startup_label,
+                initial_route,
+                &init_script,
+            )?;
+            crate::workspace_windows::register(&main_window);
             // The webview now exists and has begun loading `index.html`. The gap
             // from here to the UI's own `shell.paint` is document load + entry
             // chunk parse + first React render — the span that owns most of the
             // launch, and the one to attack next.
             logln_at("webview created");
 
-            // "Close to tray" (menu-bar app pattern): the native window-close
-            // button ("X" / traffic-light red dot) must NOT quit the app —
-            // otherwise the tray/menu-bar icon disappears with it. Intercept the
-            // close, hide the window instead, and let the tray's "Show
-            // Localix" / dock icon bring it back. Real quit stays reachable
-            // via the tray's "Quit Localix" (`app.exit(0)`, unaffected by
-            // this — it doesn't go through a window close at all).
-            //
-            // SAFETY GATE (tray_available): hiding-on-close only leaves a way
-            // back when there's somewhere to click "Show". On macOS the menu
-            // bar + Dock always provide that (Dock click → RunEvent::Reopen),
-            // so hide is always safe. On Windows/Linux the ONLY re-entry is the
-            // tray icon — and setup_tray is best-effort (a tray failure must
-            // never block startup; on Linux the StatusNotifier host is often
-            // absent). If the tray never appeared, hiding would strand the user
-            // with no window, no Reopen, and no Quit — a zombie process. So on
-            // non-macOS we hide only when the tray actually came up; otherwise
-            // the close becomes a quit (the same `app.exit(0)` as the Quit item,
-            // so the page flushes and the sidecar stops). The flag is set after deep_link_ready schedules
-            // setup_tray; close normally happens far later.
-            main_window.on_window_event({
-                let app_handle = app.handle().clone();
-                move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        let can_reopen = cfg!(target_os = "macos") || tray_available();
-                        if !can_reopen {
-                            // No tray, no Reopen: quit rather than orphan a headless
-                            // process. As a QUIT, not a window close: letting the close
-                            // through destroyed the webview before `ExitRequested`, so
-                            // the before-quit handshake had no page left to flush.
-                            api.prevent_close();
-                            app_handle.exit(0);
-                            return;
-                        }
-                        api.prevent_close();
-                        if let Some(w) = app_handle.get_webview_window("main") {
-                            let _ = w.hide();
-                        }
-                    }
-                }
-            });
-
-            // Reveal watchdog: deep_link_ready normally shows the window at the
-            // UI's first paint, but a UI failure (script error before the effect
-            // runs) must never leave the app invisible. Only fires when the UI
-            // never signalled readiness — an unconditional show would steal focus
-            // ~3s after every normal launch (deep_link_ready reveals in <1s).
-            {
-                let watchdog = app.handle().clone();
-                std::thread::spawn(move || {
-                    std::thread::sleep(Duration::from_secs(4));
-                    if !watchdog.state::<DeepLinks>().ready.load(Ordering::Acquire) {
-                        show_main_window(&watchdog);
-                    }
-                });
-            }
-
             // Restore the persisted webview zoom from the last session.
             restore_zoom(app.handle());
+            #[cfg(target_os = "macos")]
+            crate::workspace_session::restore(app.handle());
             Ok(())
         })
         .build(tauri::generate_context!())

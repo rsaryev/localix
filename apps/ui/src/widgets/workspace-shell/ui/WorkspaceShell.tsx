@@ -288,9 +288,8 @@ export function WorkspaceShell({
           in EVERY shell (browser, Windows/Linux, macOS) so the project → session
           path is always up top, never buried inside the chat. Hidden on mobile
           widths (the mobile header below takes over). Two variants:
-          - macOS desktop: a slim DRAGGABLE titlebar. The system titlebar is hidden
-            (TitleBarStyle::Overlay) and the traffic lights float over this strip —
-            the left padding (`.app-titlebar`) keeps them clear of the rail/content.
+          - macOS desktop: a DRAGGABLE breadcrumb toolbar beside the system
+            traffic lights. AppKit measures their gap and the native tab band.
             `data-tauri-drag-region` makes the strip drag the window (Tauri reads the
             attribute, not the CSS -webkit-app-region property); double-click zooms.
           - everywhere else (browser + Windows/Linux, which keep their native OS
@@ -311,6 +310,8 @@ export function WorkspaceShell({
               {headerStatus}
             </div>
           ))}
+
+        <div className="app-native-tabbar-space" aria-hidden="true" />
 
         {/* Mobile header */}
         {isMobile && (

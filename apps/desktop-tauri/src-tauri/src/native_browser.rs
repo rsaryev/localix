@@ -84,6 +84,12 @@ pub(crate) fn handle_browser_menu_event(app: &AppHandle, id: &str) -> bool {
     let Some(rest) = id.strip_prefix("browser-tab:") else {
         return false;
     };
+    let Some((owner, rest)) = rest.split_once(':') else {
+        return false;
+    };
+    if !crate::workspace_windows::is_workspace(app, owner) {
+        return false;
+    }
     let Some((tab_id, action)) = rest.split_once(':') else {
         return false;
     };
@@ -91,7 +97,7 @@ pub(crate) fn handle_browser_menu_event(app: &AppHandle, id: &str) -> bool {
         return false;
     }
     let _ = app.emit_to(
-        "main",
+        owner,
         "browser:tab-menu",
         BrowserMenuEvent {
             tab_id: tab_id.to_string(),
@@ -110,9 +116,7 @@ pub(crate) async fn browser_tab_menu(
 ) -> Result<(), String> {
     require_main(&caller)?;
     label(&tab_id)?;
-    let window = app
-        .get_window("main")
-        .ok_or_else(|| "Main window is unavailable".to_string())?;
+    let window = caller.window();
     let menu = Menu::new(&app).map_err(|error| error.to_string())?;
     for (action, title, enabled, separator) in [
         ("reload", "Reload", true, false),
@@ -148,7 +152,7 @@ pub(crate) async fn browser_tab_menu(
         }
         let item = MenuItem::with_id(
             &app,
-            format!("browser-tab:{tab_id}:{action}"),
+            format!("browser-tab:{}:{tab_id}:{action}", caller.label()),
             title,
             enabled,
             None::<&str>,
@@ -174,11 +178,7 @@ pub(crate) struct BrowserBounds {
 }
 
 fn require_main(caller: &Webview) -> Result<(), String> {
-    if caller.label() == "main" {
-        Ok(())
-    } else {
-        Err("Only the main Localix view can manage browser tabs".into())
-    }
+    crate::workspace_windows::require_workspace(caller)
 }
 
 fn label(tab_id: &str) -> Result<String, String> {
@@ -231,9 +231,19 @@ fn page_url(value: &str) -> Result<Url, String> {
     Ok(parsed)
 }
 
-fn page(app: &AppHandle, tab_id: &str) -> Result<Webview, String> {
-    app.get_webview(&label(tab_id)?)
-        .ok_or_else(|| "Browser tab is not open".into())
+fn page_label(owner: &str, tab_id: &str) -> Result<String, String> {
+    label(tab_id)?;
+    Ok(format!("browser-{owner}--{tab_id}"))
+}
+
+fn page(app: &AppHandle, caller: &Webview, tab_id: &str) -> Result<Webview, String> {
+    let view = app
+        .get_webview(&page_label(caller.label(), tab_id)?)
+        .ok_or_else(|| "Browser tab is not open".to_string())?;
+    if view.window().label() != caller.window().label() {
+        return Err("Browser tab belongs to another workspace".into());
+    }
+    Ok(view)
 }
 
 /// Tauri's child webview builder runs on the UI thread. Keep this command async:
@@ -246,14 +256,15 @@ pub(crate) async fn browser_open(
     url: String,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    let view_label = label(&tab_id)?;
+    let view_label = page_label(caller.label(), &tab_id)?;
     let target = page_url(&url)?;
     if app.get_webview(&view_label).is_some() {
         return Ok(());
     }
-    let window = app
-        .get_window("main")
-        .ok_or_else(|| "Main window is unavailable".to_string())?;
+    let window = caller.window();
+    let nav_owner = caller.label().to_string();
+    let title_owner = nav_owner.clone();
+    let popup_owner = nav_owner.clone();
     let nav_app = app.clone();
     let nav_id = tab_id.clone();
     let title_app = app.clone();
@@ -271,7 +282,7 @@ pub(crate) async fn browser_open(
         .on_navigation(|next| matches!(next.scheme(), "http" | "https" | "about"))
         .on_page_load(move |_view, payload| {
             let _ = nav_app.emit_to(
-                "main",
+                &nav_owner,
                 "browser:navigated",
                 BrowserPageEvent {
                     tab_id: nav_id.clone(),
@@ -283,7 +294,7 @@ pub(crate) async fn browser_open(
         })
         .on_document_title_changed(move |view, title| {
             let _ = title_app.emit_to(
-                "main",
+                &title_owner,
                 "browser:title",
                 BrowserPageEvent {
                     tab_id: title_id.clone(),
@@ -296,7 +307,7 @@ pub(crate) async fn browser_open(
         .on_new_window(move |next, _features| {
             if matches!(next.scheme(), "http" | "https") {
                 let _ = popup_app.emit_to(
-                    "main",
+                    &popup_owner,
                     "browser:popup",
                     BrowserPageEvent {
                         tab_id: popup_id.clone(),
@@ -341,7 +352,7 @@ pub(crate) fn browser_bounds(
     bounds: BrowserBounds,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    let view = page(&app, &tab_id)?;
+    let view = page(&app, &caller, &tab_id)?;
     if !bounds.visible || bounds.width < 1.0 || bounds.height < 1.0 {
         return view.hide().map_err(|error| error.to_string());
     }
@@ -398,7 +409,7 @@ pub(crate) fn browser_navigate(
     url: String,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    page(&app, &tab_id)?
+    page(&app, &caller, &tab_id)?
         .navigate(page_url(&url)?)
         .map_err(|error| error.to_string())
 }
@@ -410,7 +421,7 @@ pub(crate) fn browser_reload(
     tab_id: String,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    page(&app, &tab_id)?
+    page(&app, &caller, &tab_id)?
         .reload()
         .map_err(|error| error.to_string())
 }
@@ -433,7 +444,7 @@ pub(crate) async fn browser_navigation_state(
     tab_id: String,
 ) -> Result<BrowserNavigationState, String> {
     require_main(&caller)?;
-    let view = page(&app, &tab_id)?;
+    let view = page(&app, &caller, &tab_id)?;
     #[cfg(target_os = "macos")]
     {
         use objc2_web_kit::WKWebView;
@@ -476,7 +487,7 @@ pub(crate) fn browser_go(
     if !matches!(direction.as_str(), "back" | "forward") {
         return Err("Invalid browser history direction".into());
     }
-    let view = page(&app, &tab_id)?;
+    let view = page(&app, &caller, &tab_id)?;
     #[cfg(target_os = "macos")]
     {
         use objc2_web_kit::WKWebView;
@@ -513,7 +524,7 @@ pub(crate) fn browser_close_many(
     }
     let labels = tab_ids
         .iter()
-        .map(|tab_id| label(tab_id))
+        .map(|tab_id| page_label(caller.label(), tab_id))
         .collect::<Result<Vec<_>, _>>()?;
     for view_label in labels {
         if let Some(view) = app.get_webview(&view_label) {
@@ -600,7 +611,7 @@ pub(crate) async fn browser_snapshot(
 ) -> Result<BrowserImage, String> {
     require_main(&caller)?;
     capture(
-        page(&app, &tab_id)?,
+        page(&app, &caller, &tab_id)?,
         Capture::Exact,
         Duration::from_secs(12),
     )
@@ -616,7 +627,7 @@ pub(crate) async fn browser_placeholder(
 ) -> Result<BrowserImage, String> {
     require_main(&caller)?;
     capture(
-        page(&app, &tab_id)?,
+        page(&app, &caller, &tab_id)?,
         Capture::Placeholder,
         Duration::from_secs(2),
     )
@@ -740,7 +751,7 @@ pub(crate) async fn browser_eval(
     if script.len() > 128_000 {
         return Err("Browser script is too large".into());
     }
-    let view = page(&app, &tab_id)?;
+    let view = page(&app, &caller, &tab_id)?;
 
     #[cfg(target_os = "macos")]
     {
@@ -832,7 +843,7 @@ pub(crate) fn browser_inject(
     if script.len() > 128_000 {
         return Err("Browser script is too large".into());
     }
-    page(&app, &tab_id)?
+    page(&app, &caller, &tab_id)?
         .eval(script)
         .map_err(|error| error.to_string())
 }

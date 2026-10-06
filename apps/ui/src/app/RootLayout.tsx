@@ -1,3 +1,4 @@
+import { installNativeSettingsSync } from '@/features/settings/model/nativeWorkspaceSync'
 import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
 import { usePreviewHosts } from '@/features/inspector/model/previewHosts'
 import { shouldMountBrowserHost } from '@/features/inspector/model/browserHostPolicy'
@@ -56,6 +57,17 @@ export function RootLayout() {
   useEffect(() => {
     return startSettingsBootstrap(loadFromBackend)
   }, [loadFromBackend])
+
+  useEffect(
+    () =>
+      installNativeSettingsSync(async () => {
+        const state = useSettingsStore.getState()
+        if (!state.synced) return
+        await state.flushIfPending()
+        await state.loadFromBackend()
+      }),
+    [],
+  )
 
   // ── Startup instrumentation, staged in two phases ───────────────────────────
   //

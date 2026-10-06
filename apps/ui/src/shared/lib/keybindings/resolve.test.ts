@@ -104,3 +104,19 @@ describe('conflictingCommands', () => {
     expect(checked).toBeGreaterThan(10)
   })
 })
+
+describe('native macOS tabs reserve Command T', () => {
+  it('moves workspace symbols while preserving the web default', () => {
+    expect(resolveBindings(undefined, true)[CMD.goToSymbolWorkspace]).toBe('mod+alt+shift+o')
+    expect(resolveBindings(undefined, false)[CMD.goToSymbolWorkspace]).toBe('mod+t')
+  })
+  it('keeps file search accessible when a preset uses Command T', () => {
+    expect(resolveBindings({ [CMD.goToFile]: 'mod+t' }, true)[CMD.goToFile]).toBe('mod+p')
+    expect(resolveBindings({ [CMD.goToFile]: 'mod+t' }, false)[CMD.goToFile]).toBe('mod+t')
+  })
+  it('does not let a saved override shadow native tabs', () => {
+    expect(resolveBindings({ [CMD.newChat]: 'mod+t' }, true)[CMD.newChat]).toBeNull()
+    expect(resolveBindings({ [CMD.newChat]: 'meta+t' }, true)[CMD.newChat]).toBeNull()
+    expect(resolveBindings({ [CMD.newChat]: 'mod+alt+n' }, true)[CMD.newChat]).toBe('mod+alt+n')
+  })
+})

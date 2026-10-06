@@ -7,6 +7,34 @@ the same task.
 **Availability:** The grid is a desktop/web surface. Headless clients use the same backend without
 this layout.
 
+## Native workspace tabs on macOS
+
+In the macOS desktop app, **Command+T** opens a new native workspace tab in the current window. The
+**Window** menu also provides **New Workspace Window**, next/previous workspace tab, **Move
+Workspace Tab to New Window**, **Merge All Workspace Windows**, and a tab-bar toggle. The native tab
+bar's **+** button opens another workspace tab.
+
+Each native tab has its own selected project, conversation, editor grid and editor view state. Use
+the project switcher inside a tab to choose its project. All tabs share one API runtime and
+server-owned projects, conversations, settings and terminals. Opening the same conversation in
+several workspaces does not duplicate its agent runtime.
+
+**Command+W** closes an editor tab inside the workspace. The red window button and
+**Command+Shift+W** (**Window → Close Window**) flush and hide the entire native workspace group.
+Reopening Localix from the Dock or **Show Localix** in the menu bar brings back the same tabs,
+order, selected workspace and routes. **New Workspace Window** creates a separate fresh workspace.
+
+Use a native workspace tab's close button or **Window → Close Workspace Tab** to remove that
+workspace after its pending writes flush. The last workspace remains hidden and reopenable.
+**Command+Q** flushes every workspace and saves native groups for the next launch, including groups
+whose windows are hidden. Forced process termination does not guarantee the latest grouping.
+
+AppKit owns the titlebar and tab-bar geometry, including detached tabs and fullscreen. Native
+workspace tabs are available only in the macOS desktop shell; browser, Windows and Linux clients
+keep their editor grid. In macOS desktop, workspace-symbol search uses **Command+Option+Shift+O**
+when its binding would otherwise use Command+T. File-search presets that use Command+T fall back to
+Command+P; other overrides using Command+T are unassigned because AppKit reserves that key.
+
 ## What you can do
 
 All available plugin tools, **Usage & Spend**, and **Vault** are pinned to the left navigation rail
@@ -92,6 +120,11 @@ The grid writes restorable items and layout state to browser storage. Chat, file
 terminals, source control, settings, and several global views opt into restoration. A terminal tab
 reattaches to its backend PTY by id; a dead terminal id closes rather than creating a replacement
 silently.
+
+Terminal tabs close automatically when their processes finish, including shells, coding agents and
+background jobs. A workspace-wide check also removes dead tabs in hidden conversations and restored
+layouts after a restart or reconnect. Connection failures keep the tabs intact until the backend
+confirms that their processes are gone. Finished terminals are also removed from the reopen history.
 
 Recently used session scopes and tabs can remain mounted but hidden for faster switching. The
 keep-alive lists are bounded; an older surface can remount when you return to it.

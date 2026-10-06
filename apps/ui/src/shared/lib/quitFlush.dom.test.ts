@@ -103,3 +103,66 @@ describe('the before-quit handshake', () => {
     }
   })
 })
+
+test('the flush acknowledgement preserves the native request identity', async () => {
+  let deliver: ((event: { payload: { requestId: number } }) => void) | undefined
+  const answers: unknown[] = []
+  ;(window as unknown as { __TAURI__?: unknown }).__TAURI__ = {
+    event: {
+      listen: async (_name: string, handler: typeof deliver) => {
+        deliver = handler
+        return () => {}
+      },
+    },
+    core: {
+      invoke: async (command: string, args: unknown) => {
+        answers.push({ command, args })
+      },
+    },
+  }
+  const uninstall = installQuitFlush()
+  try {
+    await Promise.resolve()
+    deliver!({ payload: { requestId: 42 } })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(answers).toEqual([{ command: 'quit_ready', args: { requestId: 42 } }])
+  } finally {
+    uninstall()
+    delete (window as unknown as { __TAURI__?: unknown }).__TAURI__
+  }
+})
+
+test('closing a workspace releases its private storage after flushing and keeps other windows', async () => {
+  let deliver:
+    | ((event: { payload: { requestId: number; discardWorkspace: boolean } }) => void)
+    | undefined
+  window.__LOCALIX_WORKSPACE = { id: 'workspace-0123456789abcdef', route: null }
+  localStorage.setItem('workspace_grid_v2:window:workspace-0123456789abcdef', 'closed layout')
+  localStorage.setItem('workspace_grid_v2:window:workspace-fedcba9876543210', 'other layout')
+  localStorage.setItem('localix_user_settings_v2', 'shared preferences')
+  ;(window as unknown as { __TAURI__?: unknown }).__TAURI__ = {
+    event: {
+      listen: async (_name: string, handler: typeof deliver) => {
+        deliver = handler
+        return () => {}
+      },
+    },
+    core: { invoke: async () => {} },
+  }
+  const uninstall = installQuitFlush()
+  try {
+    await Promise.resolve()
+    deliver!({ payload: { requestId: 8, discardWorkspace: true } })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(localStorage.getItem('workspace_grid_v2:window:workspace-0123456789abcdef')).toBeNull()
+    expect(localStorage.getItem('workspace_grid_v2:window:workspace-fedcba9876543210')).toBe(
+      'other layout',
+    )
+    expect(localStorage.getItem('localix_user_settings_v2')).toBe('shared preferences')
+  } finally {
+    uninstall()
+    delete window.__LOCALIX_WORKSPACE
+    delete (window as unknown as { __TAURI__?: unknown }).__TAURI__
+    localStorage.clear()
+  }
+})

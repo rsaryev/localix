@@ -1,10 +1,6 @@
 /* ── Desktop (Tauri) native titlebar ─────────────────────────────────────── */
-/* On macOS the shell uses `TitleBarStyle::Overlay` + `hidden_title`, which hides
-   the system titlebar but floats the traffic lights over the content, positioned
-   (traffic_light_position) to sit centered in this 36px strip. The 48px rail is
-   narrower than the light cluster, so we reserve a slim full-width draggable
-   strip at the very top: the lights sit on its left (over the reserved padding)
-   and the whole body lives below it. */
+/* AppKit measures real window buttons and native workspace tabs. The HTML toolbar
+   shares the button row; the band below it is reserved for native tabs. */
 
 :root {
   /* Workbench geometry stays physical while Settings scales typography through
@@ -44,6 +40,10 @@
      Rem gutters used to move that edge whenever only typography was resized. */
   --workbench-gutter: 12px;
   --titlebar-height: 36px;
+  --native-tabbar-height: 0px;
+  --native-window-button-gap: calc(
+    var(--macos-traffic-light-inset) + var(--macos-traffic-light-cluster) + var(--titlebar-gutter)
+  );
   /* macOS window-button geometry. AppKit fixes the first two — a 12pt button, 20pt between
      centres — and the third mirrors the `x` of `traffic_light_position(…)` in
      `apps/desktop-tauri/src-tauri/src/lib.rs`, which is the only place the cluster is actually
@@ -182,12 +182,8 @@
    directly. Interactive children inside a drag region should stop mousedown
    propagation (or carry their own handlers) so a click on them doesn't drag. */
 .app-titlebar {
-  /* Keep the left zone clear for the macOS traffic lights: where the cluster starts, plus how
-     wide it is, plus the same gutter the trailing edge uses. Derived rather than measured, so
-     the reservation cannot drift away from the position the Rust side sets. */
-  padding-left: calc(
-    var(--macos-traffic-light-inset) + var(--macos-traffic-light-cluster) + var(--titlebar-gutter)
-  );
+  /* The shell measures the real traffic-light cluster; retain a fallback for overlay hosts. */
+  padding-left: var(--native-window-button-gap);
 }
 
 /* Native fullscreen auto-hides the traffic lights, so drop the reserved gap.
@@ -197,11 +193,27 @@
   padding-left: var(--titlebar-gutter);
 }
 
-/* Native macOS titlebars dim when the window loses focus.
-   `data-window-inactive` is stamped by windowChrome.ts. Opacity, not
-   color — titlebar children carry their own explicit text colors. */
-:root[data-window-inactive='true'] .app-titlebar {
+.app-native-tabbar-space {
+  display: none;
+}
+
+:root[data-native-titlebar='true'] .app-native-tabbar-space {
+  display: block;
+  height: var(--native-tabbar-height);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* Dim titlebar contents when focus leaves, keeping the sidebar coat unchanged.
+   Opacity on the bar itself would thin its glass background and break the colour
+   match with the native header. Children carry their own explicit text colours. */
+:root[data-window-inactive='true'] .app-titlebar > * {
   opacity: 0.6;
+}
+
+/* Fullscreen hides the button row; any visible native tabs occupy the top edge. */
+:root[data-fullscreen='true'] .app-native-tabbar-space {
+  order: -1;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

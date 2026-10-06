@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 /**
  * Per-file EDITOR VIEW STATE memory — the cursor position + scroll offset for
  * each open file, so returning to a file (after a scope switch, a tab reopen, or
@@ -16,7 +17,7 @@
 
 import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
 
-const STORAGE_KEY = 'localix_editor_view_state'
+const STORAGE_KEY = workspaceStorageKey('localix_editor_view_state')
 /** Cap on remembered files — LRU beyond this so storage never grows unbounded. */
 export const MAX_VIEW_STATES = 300
 

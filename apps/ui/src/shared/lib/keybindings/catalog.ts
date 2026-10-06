@@ -10,6 +10,7 @@
  * (or `resolved[id]`) at the handler site.
  */
 
+import { isDesktop, IS_MAC } from '@localixai/kit/environment'
 import type { ShortcutCategory, ShortcutCommand } from '@localixai/kit/keybindings'
 
 /** Stable command ids — referenced by the handler sites that route through the registry. */
@@ -17,6 +18,8 @@ export const CMD = {
   commandPalette: 'nav.command-palette',
   globalSearch: 'nav.global-search',
   newChat: 'nav.new-chat',
+  newWorkspaceTab: 'native.new-workspace-tab',
+  newWorkspaceWindow: 'native.new-workspace-window',
   goToFile: 'nav.go-to-file',
   switchSession: 'nav.switch-session',
   switchProject: 'nav.switch-project',
@@ -74,6 +77,26 @@ export const CATEGORY_ORDER: ShortcutCategory[] = [
 ]
 
 export const SHORTCUT_CATALOG: ShortcutCommand[] = [
+  ...(isDesktop && IS_MAC
+    ? [
+        {
+          id: CMD.newWorkspaceTab,
+          label: 'New workspace tab',
+          description: 'Open a native macOS workspace tab.',
+          category: 'navigation' as const,
+          defaultChord: 'mod+t',
+          configurable: false,
+        },
+        {
+          id: CMD.newWorkspaceWindow,
+          label: 'New workspace window',
+          description: 'Open a separate macOS workspace window.',
+          category: 'navigation' as const,
+          defaultChord: 'mod+alt+shift+n',
+          configurable: false,
+        },
+      ]
+    : []),
   // Navigation
   {
     id: CMD.commandPalette,

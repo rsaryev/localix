@@ -1,3 +1,4 @@
+import { announceNativeSettingsSaved } from './nativeWorkspaceSync'
 import { create } from 'zustand'
 import { backoffMs } from '@localixai/api/backoff'
 import { backendClient } from '@/shared/api/client'
@@ -6,7 +7,7 @@ import { setSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
 import { registerQuitFlush } from '@/shared/lib/quitFlush'
 import { createSettingsProblemReport, rawErrorText } from './settingsProblemReport'
 import { subsettingDelta, toProfileWirePatch } from './settingsProfilePatch'
-import { applySyncBarrier } from './settingsSyncBarrier'
+import { resolveSettingsSync } from './settingsSyncResult'
 import { currentAgentSettings, loadLocalSettings, saveLocalSettings } from './userSettings'
 import type { UserSettings } from './userSettings'
 
@@ -101,6 +102,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set, ge
     const request = backendClient
       .updateUserProfile(apiPatch)
       .then(() => {
+        announceNativeSettingsSaved()
         report.saveRecovered()
         consecutiveSaveFailures = 0
       })
@@ -164,8 +166,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set, ge
         try {
           const profile = await backendClient.getUserProfile()
           set((state) => {
-            // THE SYNC BARRIER — the precedence rule, applied. See `settingsSyncBarrier.ts`.
-            const { settings, pending } = applySyncBarrier(
+            const { settings, pending } = resolveSettingsSync(
               state.settings,
               {
                 profile: state._pending,
@@ -173,6 +174,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set, ge
                 agent: state._pendingAgentSettingsPatch,
               },
               profile,
+              state.synced,
             )
             saveLocalSettings(settings)
             return {

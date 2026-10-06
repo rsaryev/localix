@@ -15,7 +15,7 @@ import { resetNotificationsForTests, useNotificationsStore } from './store'
 let stop: (() => void) | null = null
 let banners: [kind: string, title: string][] = []
 
-async function live(syncRows: ReturnType<typeof inboxRow>[] = []) {
+async function live(syncRows: ReturnType<typeof inboxRow>[] = [], focused = false) {
   const socket = fakeSocket()
   const server = fakeServer({
     sync: () => ({
@@ -30,7 +30,7 @@ async function live(syncRows: ReturnType<typeof inboxRow>[] = []) {
     transport: server.transport,
     interruption: {
       desktop: true,
-      focused: () => false,
+      focused: () => focused,
       notify: (kind, title) => void banners.push([kind, title]),
     },
   })
@@ -162,7 +162,7 @@ describe('interrupting for a row that opens live', () => {
 
   test('a row from the chat on screen is marked read — the person is already looking at it', async () => {
     setActiveEventRoute('/project/p1/s1')
-    const socket = await live()
+    const socket = await live([], true)
     socket.frame(
       change(
         10,
@@ -179,4 +179,24 @@ describe('interrupting for a row that opens live', () => {
       expect.objectContaining({ op: 'read', keys: ['run.completed:s1:m1'] }),
     )
   })
+})
+
+test('an inactive native tab cannot mark its chat read', async () => {
+  setActiveEventRoute('/project/p1/s1')
+  const socket = await live()
+  socket.frame(
+    change(
+      10,
+      inboxRow('hitl:background', {
+        category: 'human-input',
+        severity: 'warning',
+        title: 'Review plan',
+        origin: { kind: 'session', sessionId: 's1', projectId: 'p1' },
+        lastSeenAt: now(),
+      }),
+    ),
+  )
+  expect(useNotificationsStore.getState().entries[0]!.read).toBe(false)
+  expect(pendingOps().some((op) => op.op === 'read')).toBe(false)
+  expect(banners).toEqual([['hitl', 'Review plan']])
 })

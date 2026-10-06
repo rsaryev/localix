@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from 'react'
 // Relative (not `@/`) imports: this hook is also consumed by apps/landing via the
 // `@ui/*` alias, where `@/` resolves to landing/src and would not find these.
-import { isDesktop } from '@localixai/kit/environment'
+import { applyPlatformDataset, isDesktop } from '@localixai/kit/environment'
 import { hasNativeWindowMaterial } from '@localixai/kit/environment'
 import { tauriInvoke } from '../lib/tauri'
+import { readNativeHeaderTint } from './nativeHeaderTint'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 import {
   applyThemeChangeInstantly,
@@ -130,7 +131,11 @@ function syncNativeTheme(mode: ThemeMode, resolved: ResolvedTheme) {
   if (preference === currentNativePreference && resolved === currentNativeAppearance) return
   currentNativePreference = preference
   currentNativeAppearance = resolved
-  invoke('set_theme', { theme: preference, materialTheme: resolved })
+  invoke('set_theme', {
+    theme: preference,
+    materialTheme: resolved,
+    headerTint: readNativeHeaderTint(),
+  })
     .then(() => {
       // Releasing a previous explicit native override updates
       // `prefers-color-scheme`. Re-sample after the shell has applied `system`;
@@ -190,6 +195,10 @@ function updateSystemListener() {
 // Boot: mirror the index.html anti-FOUC script through the full DOM writer
 // (metas + inline background included) and sync the native chrome once.
 if (typeof window !== 'undefined') {
+  // This module boots while main.tsx's imports are still evaluating. Resolve native
+  // material selectors before sampling --sidebar, or AppKit receives the browser
+  // coat (45% in dark mode) while the mounted UI later switches to the macOS coat (70%).
+  applyPlatformDataset()
   currentResolved = applyThemeModeToDom(currentMode)
   snapshot = { themeMode: currentMode, resolvedTheme: currentResolved }
   updateSystemListener()

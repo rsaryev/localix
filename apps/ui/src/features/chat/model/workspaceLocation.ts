@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 /**
  * Per-scope WORKSPACE LOCATION memory — the "restore the workspace where
  * I left it" state for each project.
@@ -25,7 +26,7 @@ import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
 import type { StorageReader, StorageWriter } from '@localixai/plugin-sdk/ui/storage'
 import { isSectionId, type SectionId } from '@/shared/routing/routes'
 
-const STORAGE_KEY = 'localix_workspace_location'
+const STORAGE_KEY = workspaceStorageKey('localix_workspace_location')
 
 /** The remembered location for a single scope. A field is `null` when never set
  *  (so the caller can fall back to a global default rather than force a value). */

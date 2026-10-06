@@ -506,3 +506,20 @@ describe('after sync, normal editing still works', () => {
     expect(updateUserProfile.mock.calls[1]?.[0]?.agentSettingsPatch).toStrictEqual(route)
   })
 })
+
+test('a peer workspace sync keeps local pending edits while adopting other committed keys', async () => {
+  const store = await freshStore(null)
+  getUserProfile.mockImplementation(async () => ({ agentSettings: { contextExclusions: [] } }))
+  await store.getState().loadFromBackend()
+  store.getState().update({ agentSettings: { contextExclusions: ['**/local/**'] } })
+  getUserProfile.mockImplementation(async () => ({
+    agentSettings: { contextExclusions: ['**/peer/**'], editorSave: { formatOnSave: false } },
+  }))
+  await store.getState().loadFromBackend()
+  expect(store.getState().settings.agentSettings.contextExclusions).toEqual(['**/local/**'])
+  expect(store.getState().settings.agentSettings.editorSave).toEqual({ formatOnSave: false })
+  await store.getState().flush()
+  expect(updateUserProfile.mock.calls.at(-1)?.[0]?.agentSettingsPatch).toEqual({
+    contextExclusions: ['**/local/**'],
+  })
+})

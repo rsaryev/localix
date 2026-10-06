@@ -143,11 +143,16 @@ catalog, and stores a reasoning level per provider and model.
 
 Editor, source control, diffs, split workbench tabs and persistent terminals share one window.
 
+On macOS, **Command+T** opens a native workspace tab with its own project, conversation and editor
+layout. Detach a tab into a window or merge workspace windows. A clean quit restores their groups,
+order and selected tabs. The native window buttons and workspace breadcrumb share one compact row.
+
 <p align="center">
   <img src="docs/assets/screenshots/workspace/editor-grid--placeholder.png" alt="Split workbench with files, a diff and a terminal">
 </p>
 
-[Workspace](docs/features/workspace.md)
+[Workspace](docs/features/workspace.md) ·
+[Native workspace tabs](docs/features/native-workspace-tabs.md)
 
 ### A browser the agent drives, and Visual Feedback
 

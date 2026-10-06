@@ -13,6 +13,7 @@ import { useShallow } from 'zustand/react/shallow'
 
 import { useChatStore, useHasHydrated } from '@/features/chat/model/store'
 import { useExternalSessionTerminal } from '@/features/external-agents/model/useExternalSessionTerminal'
+import { useDeadTerminalCleanup } from '@/features/terminal/model/useDeadTerminalCleanup'
 import { useJobTerminal } from '@/features/chat/model/useJobTerminal'
 import { useCodeSnippetOpener } from '@/features/chat/model/useCodeSnippetOpener'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
@@ -140,6 +141,7 @@ function useRuntimeStatus(): RuntimeStatus | undefined {
 const SIDEBAR_OPEN_KEY = 'localix_sidebar_open'
 
 export function ChatPage() {
+  useDeadTerminalCleanup()
   const runtimeState = useRuntimeStatus()
   const {
     activeSessionId,

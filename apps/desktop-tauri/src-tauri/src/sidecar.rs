@@ -168,7 +168,7 @@ fn publish_status(app: &tauri::AppHandle, status: &str, detail: Option<&str>, po
             snapshot.port = port;
         }
     }
-    if let Some(window) = app.get_webview_window("main") {
+    for window in crate::workspace_windows::views(app) {
         let _ = window.eval(status_script(status, detail, port));
     }
 }
@@ -180,7 +180,10 @@ fn publish_status(app: &tauri::AppHandle, status: &str, detail: Option<&str>, po
 /// is lost with no way for the page to notice. Cross-platform by construction —
 /// nothing here is OS-specific; the race is a webview-lifecycle one.
 #[tauri::command]
-pub(crate) fn resync_runtime_status(app: tauri::AppHandle) {
+pub(crate) fn resync_runtime_status(app: tauri::AppHandle, caller: tauri::Webview) {
+    if crate::workspace_windows::require_workspace(&caller).is_err() {
+        return;
+    }
     let (status, detail, port) = {
         let state = app.state::<ApiSidecar>();
         let Ok(snapshot) = state.status.lock() else {
@@ -192,9 +195,7 @@ pub(crate) fn resync_runtime_status(app: tauri::AppHandle) {
             snapshot.port,
         )
     };
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.eval(status_script(&status, detail.as_deref(), port));
-    }
+    let _ = caller.eval(status_script(&status, detail.as_deref(), port));
 }
 
 /// The timeout, quoting whatever the runtime last said.

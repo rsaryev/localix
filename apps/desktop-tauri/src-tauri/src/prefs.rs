@@ -61,8 +61,8 @@ pub(crate) fn apply_zoom_menu<R: tauri::Runtime>(app: &AppHandle<R>, id: &str) {
         "zoom_out" => (*zoom - ZOOM_STEP).max(ZOOM_MIN),
         _ => 1.0,
     };
-    if let Some(w) = app.get_webview_window("main") {
-        let _ = w.set_zoom(*zoom);
+    for view in crate::workspace_windows::views(app) {
+        let _ = view.set_zoom(*zoom);
     }
     save_zoom(app, *zoom);
 }
@@ -72,8 +72,8 @@ pub(crate) fn restore_zoom<R: tauri::Runtime>(app: &AppHandle<R>) {
     let zoom = load_zoom(app);
     *app.state::<ZoomState>().0.lock().unwrap() = zoom;
     if (zoom - 1.0).abs() > f64::EPSILON {
-        if let Some(w) = app.get_webview_window("main") {
-            let _ = w.set_zoom(zoom);
+        for view in crate::workspace_windows::views(app) {
+            let _ = view.set_zoom(zoom);
         }
     }
 }

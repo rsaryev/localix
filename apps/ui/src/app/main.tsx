@@ -6,6 +6,7 @@ import App from './App.tsx'
 import { RootErrorBoundary } from './RootErrorBoundary'
 import { applyPlatformDataset } from '@localixai/kit/environment'
 import { installNativeContextMenu } from '@/shared/lib/nativeContextMenu'
+import { installWorkspaceLocation } from '@/shared/lib/workspaceWindow'
 import { installWindowChromeState } from '@/shared/lib/windowChrome'
 import { installFileDropGuard } from '@/shared/lib/fileDropGuard'
 import { installQuitFlush } from '@/shared/lib/quitFlush'
@@ -45,6 +46,7 @@ installNativeContextMenu(isDesktop)
 // <html> so the custom titlebar dims when unfocused and drops the traffic-light
 // padding in native fullscreen. No-op in a plain browser.
 installWindowChromeState()
+installWorkspaceLocation()
 // OS-file drop handling (web + desktop, HTML5-based): the window guard stops a
 // stray drop from navigating to a bare file:// view and routes it via
 // fileDropRouter — on DESKTOP the real path is recovered from the drag

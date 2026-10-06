@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 // Persistence for the editor grid: a single JSON blob carrying the group tree, the
 // restorable WorkItems, and the focus state (serialized grid + per-group inputs +
 // active group). Debounced save; a load
@@ -12,7 +13,7 @@ import { type GridNode, type LeafNode, leaves, mapLeaves, pruneEmptyLeaves, make
 
 const FALLBACK_GROUP_ID = 'group-root'
 
-const STORAGE_KEY = 'workspace_grid_v2'
+const STORAGE_KEY = workspaceStorageKey('workspace_grid_v2')
 
 export interface PersistedGrid {
   root: GridNode

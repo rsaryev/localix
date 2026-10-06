@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 // localStorage-backed UI preferences for the chat workspace. Each accessor
 // swallows storage failures (private-mode/quota/disabled) and degrades to a
 // null read or a no-op write so the store never throws on a flaky storage.
@@ -27,9 +28,9 @@ import { isReasoningEffort, REASONING_OPTIONS, type ReasoningEffort } from './re
  * A stale scope or chat id is already handled: the launch restore verifies the pair and
  * `forgetLastWorkspace` drops it when it is confirmed dead.
  */
-const ACTIVE_SESSION_KEY = 'localix_active_session_id'
-const ACTIVE_PROJECT_KEY = 'localix_active_project_id'
-const LAST_WORKSPACE_KEY = 'localix_last_workspace'
+const ACTIVE_SESSION_KEY = workspaceStorageKey('localix_active_session_id')
+const ACTIVE_PROJECT_KEY = workspaceStorageKey('localix_active_project_id')
+const LAST_WORKSPACE_KEY = workspaceStorageKey('localix_last_workspace')
 const LAST_REASONING_KEY = 'localix_last_reasoning'
 const PROMPT_HISTORY_KEY = 'localix_prompt_history'
 const PROMPT_HISTORY_LIMIT = 150

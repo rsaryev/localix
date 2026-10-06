@@ -40,6 +40,13 @@ export const PLUGIN_FEATURES: FeatureRow[] = [
 
 export const CRAFT_FEATURES: FeatureRow[] = [
   {
+    kicker: 'macOS only',
+    title: 'Keep projects in native workspace tabs',
+    body: 'Command+T opens a workspace with its own project, conversation, and editor layout. Detach tabs into windows or merge them again. A clean quit restores their groups, order, and selected tabs.',
+    slug: 'features--native-workspace-tabs',
+    anchor: 'native-workspace-tabs',
+  },
+  {
     kicker: 'One kit',
     title: 'The app and its plugins draw from one design system',
     body: 'More than eighty kit modules serve the workspace and every plugin. A style check rejects hand-rolled controls and raw colors in a generated one, so it looks like the ones that ship.',

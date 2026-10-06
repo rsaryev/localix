@@ -35,9 +35,6 @@ export function sessionFieldsPatch(
     ...(patch.externalAgentProvider !== undefined
       ? { externalAgentProvider: patch.externalAgentProvider }
       : {}),
-    ...(patch.externalAgentSessionKey !== undefined
-      ? { externalAgentSessionKey: patch.externalAgentSessionKey }
-      : {}),
     ...(patch.title !== undefined
       ? { title: normalizeSessionTitle(patch.title, session.title) }
       : {}),
@@ -50,5 +47,11 @@ export function sessionFieldsPatch(
     ...(patch.rosterLocked !== undefined ? { rosterLocked: patch.rosterLocked } : {}),
     ...(patch.permissionMode !== undefined ? { permissionMode: patch.permissionMode } : {}),
   }
-  return Object.keys(fields).length > 0 ? { ...fields, updatedAt: now() } : null
+  // Correlating or reopening a CLI only records identity; it is not conversation activity.
+  const identity =
+    patch.externalAgentSessionKey !== undefined
+      ? { externalAgentSessionKey: patch.externalAgentSessionKey }
+      : {}
+  if (Object.keys(fields).length > 0) return { ...fields, ...identity, updatedAt: now() }
+  return Object.keys(identity).length > 0 ? identity : null
 }

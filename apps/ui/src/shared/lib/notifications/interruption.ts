@@ -6,6 +6,7 @@ import {
 
 import { isDesktop } from '@localixai/kit/environment'
 import { notifyDesktop, type DesktopNotifyKind } from '@/shared/lib/desktopNotify'
+import { eventSignalKey } from './signal'
 import { isOriginOnScreen } from './context'
 import { onLiveRaise } from './journal'
 import { takeDeliveryHint } from './overlay'
@@ -78,14 +79,14 @@ export interface InterruptionDeps {
 
 function interruptFor(entry: NotificationEntry, deps: InterruptionDeps = {}): void {
   const hint = takeDeliveryHint(entry.id)
-  const sourceVisible = isOnScreen(entry)
+  const focused =
+    deps.focused?.() ?? (typeof document === 'undefined' ? 'unknown' : document.hasFocus())
+  const sourceVisible = focused === true && isOnScreen(entry)
   // The chat it came from is on screen and already shows it: kept, but not an unread badge.
   if (sourceVisible) useNotificationsStore.getState().markRead(entry.id)
   const kind = hint ? hint.nativeKind : nativeKindOf(entry)
   if (!kind || !(deps.desktop ?? isDesktop)) return
   const preferences = notificationPreferences()
-  const focused =
-    deps.focused?.() ?? (typeof document === 'undefined' ? 'unknown' : document.hasFocus())
   const context: NotificationContext = {
     now: Date.now(),
     focused,
@@ -95,7 +96,13 @@ function interruptFor(entry: NotificationEntry, deps: InterruptionDeps = {}): vo
   }
   const channels = notificationChannels(envelopeOf(entry), context, new Set(['native']))
   if (channels.has('native')) {
-    ;(deps.notify ?? notifyDesktop)(kind, entry.title, entry.message, preferences.condition)
+    ;(deps.notify ?? notifyDesktop)(
+      kind,
+      entry.title,
+      entry.message,
+      preferences.condition,
+      eventSignalKey(entry),
+    )
   }
 }
 

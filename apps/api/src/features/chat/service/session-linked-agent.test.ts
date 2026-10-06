@@ -31,13 +31,32 @@ test('an attached native identity is persisted at chat creation without imported
       title: 'Existing CLI review',
       externalAgentProvider: 'codex',
       externalAgentSessionKey: 'codex:native',
+      externalAgentHistory: {
+        startedAt: Date.parse('2026-01-01T10:00:00.000Z'),
+        updatedAt: Date.parse('2026-01-02T11:00:00.000Z'),
+      },
     })
     expect(chat.messages).toEqual([])
     expect(chat).toMatchObject({
       projectId: 'project',
       externalAgentProvider: 'codex',
       externalAgentSessionKey: 'codex:native',
+      createdAt: '2026-01-01T10:00:00.000Z',
+      updatedAt: '2026-01-02T11:00:00.000Z',
+      lastMessageAt: '2026-01-02T11:00:00.000Z',
     })
+    expect((await service.getSession('user', chat.id)).updatedAt).toBe(chat.updatedAt)
+    for (const key of ['codex:pending-terminal-pty', 'codex:native', 'codex:native']) {
+      const remembered = await service.updateSession('user', chat.id, {
+        externalAgentSessionKey: key,
+      })
+      expect(remembered).toMatchObject({
+        externalAgentSessionKey: key,
+        updatedAt: chat.updatedAt,
+        lastMessageAt: chat.lastMessageAt,
+        messages: [],
+      })
+    }
     expect(
       (await service.listSessions('user')).sessions.find((session) => session.id === chat.id),
     ).toMatchObject({
@@ -45,6 +64,9 @@ test('an attached native identity is persisted at chat creation without imported
       externalAgentSessionKey: 'codex:native',
     })
     expect((await service.listSessions('other-user')).sessions).toEqual([])
+    const renamed = await service.updateSession('user', chat.id, { title: 'Renamed review' })
+    expect(renamed.updatedAt).not.toBe(chat.updatedAt)
+    expect(renamed.lastMessageAt).toBe(chat.lastMessageAt)
     const ordinary = await service.createSession('user', {
       projectId: 'project',
       title: 'Existing ordinary chat',

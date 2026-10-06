@@ -29,6 +29,11 @@ export async function createSession(
   input: CreateSessionInput,
 ): Promise<SessionDetail> {
   const timestamp = ctx.now()
+  const history = input.externalAgentSessionKey ? input.externalAgentHistory : undefined
+  const createdAt = history
+    ? new Date(history.startedAt ?? history.updatedAt).toISOString()
+    : timestamp
+  const updatedAt = history ? new Date(history.updatedAt).toISOString() : timestamp
   const parent = input.parentSessionId
     ? await ctx.requireSession(userId, input.parentSessionId)
     : null
@@ -90,9 +95,9 @@ export async function createSession(
       : {}),
     sourceToolCallId: input.sourceToolCallId ?? null,
     provenance: bornProvenance(input, sessionKind),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    lastMessageAt: timestamp,
+    createdAt,
+    updatedAt,
+    lastMessageAt: updatedAt,
     executionBackend: 'local',
     executionTarget: null,
     agents,

@@ -42,7 +42,7 @@ pub struct ProjectItem {
 /// projects arrive on independent commands (`set_recent_sessions`/`set_projects`),
 /// so we hold both here and rebuild the whole menu from the merged snapshot each
 /// time either changes — a menu rebuild needs the complete picture.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(crate) struct MenuData {
     recents: Vec<RecentItem>,
     projects: Vec<ProjectItem>,
@@ -50,10 +50,16 @@ pub(crate) struct MenuData {
 }
 
 /// Managed state wrapping the last {@link MenuData} the UI pushed.
-pub(crate) struct MenuState(Mutex<MenuData>);
+pub(crate) struct MenuState(
+    Mutex<MenuData>,
+    Mutex<std::collections::HashMap<String, MenuData>>,
+);
 impl Default for MenuState {
     fn default() -> Self {
-        Self(Mutex::new(MenuData::default()))
+        Self(
+            Mutex::new(MenuData::default()),
+            Mutex::new(std::collections::HashMap::new()),
+        )
     }
 }
 
@@ -426,6 +432,8 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
         Submenu::with_items(handle, "Terminal", true, &[&new_terminal, &show_terminal])?;
     items.push(&terminal_menu);
 
+    #[cfg(target_os = "macos")]
+    let native_items = crate::workspace_menu::items(handle)?;
     let window_menu = Submenu::with_items(
         handle,
         "Window",
@@ -438,6 +446,10 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
             &close_window_item,
         ],
     )?;
+    #[cfg(target_os = "macos")]
+    for item in &native_items {
+        window_menu.append(item)?;
+    }
     // Designate it as the macOS Window menu so AppKit auto-adds the open-window
     // list + "Bring All to Front" and enables native window cycling (best-effort).
     #[cfg(target_os = "macos")]
@@ -579,12 +591,22 @@ pub(crate) fn build_tray_menu<R: tauri::Runtime>(
 /// main thread — required for AppKit menu mutation — and swap it in. Clicking an
 /// entry dispatches localix://session/<id> via on_menu_event.
 #[tauri::command]
-pub(crate) fn set_recent_sessions(app: AppHandle, items: Vec<RecentItem>) {
-    {
-        let state = app.state::<MenuState>();
-        state.0.lock().unwrap().recents = items;
+pub(crate) fn set_recent_sessions(app: AppHandle, caller: tauri::Webview, items: Vec<RecentItem>) {
+    if crate::workspace_windows::require_workspace(&caller).is_err() {
+        return;
     }
-    rebuild_menus(&app);
+    app.state::<MenuState>()
+        .1
+        .lock()
+        .unwrap()
+        .entry(caller.label().into())
+        .or_default()
+        .recents = items;
+    if crate::workspace_windows::active_view(&app)
+        .is_some_and(|view| view.label() == caller.label())
+    {
+        activate_workspace(&app, caller.label());
+    }
 }
 
 /// Project menu — the UI pushes its opened projects (most-recent first) plus the
@@ -593,14 +615,44 @@ pub(crate) fn set_recent_sessions(app: AppHandle, items: Vec<RecentItem>) {
 /// dispatches localix://project/<id> via on_menu_event (the same tested switch
 /// path the deep link uses). The tray menu is project-free, so it isn't rebuilt.
 #[tauri::command]
-pub(crate) fn set_projects(app: AppHandle, items: Vec<ProjectItem>, active: Option<String>) {
+pub(crate) fn set_projects(
+    app: AppHandle,
+    caller: tauri::Webview,
+    items: Vec<ProjectItem>,
+    active: Option<String>,
+) {
+    if crate::workspace_windows::require_workspace(&caller).is_err() {
+        return;
+    }
     {
         let state = app.state::<MenuState>();
-        let mut data = state.0.lock().unwrap();
+        let mut windows = state.1.lock().unwrap();
+        let data = windows.entry(caller.label().into()).or_default();
         data.projects = items;
         data.active_project = active;
     }
-    rebuild_menus(&app);
+    if crate::workspace_windows::active_view(&app)
+        .is_some_and(|view| view.label() == caller.label())
+    {
+        activate_workspace(&app, caller.label());
+    }
+}
+
+pub(crate) fn activate_workspace(app: &AppHandle, label: &str) {
+    let state = app.state::<MenuState>();
+    let data = state
+        .1
+        .lock()
+        .unwrap()
+        .get(label)
+        .cloned()
+        .unwrap_or_default();
+    *state.0.lock().unwrap() = data;
+    rebuild_menus(app);
+}
+
+pub(crate) fn remove_workspace(app: &AppHandle, label: &str) {
+    app.state::<MenuState>().1.lock().unwrap().remove(label);
 }
 
 /// Rebuild the native app menu (and the tray's recents) from the current

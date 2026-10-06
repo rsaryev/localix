@@ -490,6 +490,10 @@ export const backendClient = {
   // interactive shells — with their server-side liveness signals (alt-screen =
   // a full-screen TUI is running). Callers filter: the jobs strip shows the
   // command-bearing rows, the auto-reveal policy watches every row.
+  async listTerminals() {
+    return unwrap(await client.rpc.terminal.$get())
+  },
+
   async listSessionTerminals(sessionId: string): Promise<
     Array<{
       terminalId: string

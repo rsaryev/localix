@@ -3,6 +3,17 @@
 // never has to import Tauri npm packages — outside the desktop shell every call
 // is simply absent and callers no-op.
 
+interface WorkspaceWindowContext {
+  id: string
+  route: string | null
+}
+
+declare global {
+  interface Window {
+    __LOCALIX_WORKSPACE?: WorkspaceWindowContext
+  }
+}
+
 type InvokeFn = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>
 
 export type DesktopInvokePhase = 'started' | 'succeeded' | 'failed'
@@ -35,6 +46,7 @@ type UnlistenFn = () => void
 type ListenFn = (
   event: string,
   handler: (event: { payload: unknown }) => void,
+  options?: { target: { kind: 'Webview' | 'Window'; label: string } },
 ) => Promise<UnlistenFn>
 
 interface TauriWindowHandle {
@@ -126,7 +138,20 @@ export function tauriFrontendLog(scope: string, message: string): void {
  * `tauriListen()?.('name', (e) => …)` — the resolved promise is the unlisten fn.
  */
 export function tauriListen(): ListenFn | undefined {
-  return tauriGlobal()?.event?.listen
+  const listen = tauriGlobal()?.event?.listen
+  if (!listen) return undefined
+  return (event, handler) => {
+    const label = window.__LOCALIX_WORKSPACE?.id
+    // The default target is Any: emit_to(label) still reaches every Any listener.
+    // Workspace events must register an explicit target; app-wide updater events stay global.
+    const kind =
+      event.startsWith('browser:') || event === 'localix://before-quit'
+        ? 'Webview'
+        : event.startsWith('tauri://')
+          ? 'Window'
+          : null
+    return listen(event, handler, label && kind ? { target: { kind, label } } : undefined)
+  }
 }
 
 /** The current Tauri window handle, or undefined outside the desktop shell. */

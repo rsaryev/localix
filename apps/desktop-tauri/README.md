@@ -48,8 +48,9 @@ file associations.
   release still requires the matching signing key and a published `latest.json`.
 - Configured bundle targets and file associations describe packaging inputs, not evidence that a
   signed public artifact exists for every target.
-- The command capability applies to the `main` window. Browser-hosted UI sessions do not receive
-  this native bridge, and the UI must tolerate missing commands.
+- The command capability applies to trusted workspace webviews (`main` and generated `workspace-*`
+  labels). Browser-hosted UI sessions do not receive this native bridge, and the UI must tolerate
+  missing commands.
 - Local builds require Bun plus the native Rust toolchain and platform prerequisites. The
   `tauri:check` script deliberately exits successfully after a visible skip when Rust or Clippy is
   unavailable.
@@ -57,11 +58,12 @@ file associations.
 ## Capabilities
 
 [`src-tauri/capabilities/default.json`](./src-tauri/capabilities/default.json) is the entire plugin
-IPC surface: the app builds exactly one webview (label `main`), `app.security.capabilities` names
-only this file, and `build.removeUnusedCommands` strips every plugin command no permission here
-admits. That matters more than usual because `withGlobalTauri` publishes `window.__TAURI__` to the
-document, and the content-security policy lets a plugin panel iframe load libraries from four public
-CDNs — so a granted permission is a permission reachable by code the app did not write.
+IPC surface: trusted workspace webviews use `main` or generated `workspace-*` labels; browser
+children use distinct `browser-*` labels and receive no capability. `app.security.capabilities`
+names only this file, and `build.removeUnusedCommands` strips every plugin command no permission
+here admits. That matters more than usual because `withGlobalTauri` publishes `window.__TAURI__` to
+the document, and the content-security policy lets a plugin panel iframe load libraries from four
+public CDNs — so a granted permission is a permission reachable by code the app did not write.
 
 Two rules decide what belongs here, and only the second is obvious:
 
@@ -133,3 +135,59 @@ file; keep this policy a superset of it (`pluginPanelSrcDoc.test.ts` fails when 
 - [Application composition](./src-tauri/src/lib.rs)
 - [Sidecar staging](./scripts/prepare-sidecar.mjs)
 - [Main-window capabilities](./src-tauri/capabilities/default.json)
+
+## Native workspace tabs (macOS)
+
+Command+T and the native tab bar's + action create an independent workspace WebView in an AppKit
+window tab. `workspace_builder.rs` uses a full-size content overlay so the native window buttons and
+HTML breadcrumb toolbar share one row. `native_chrome.rs` measures the button gap and observes
+AppKit's KVO-compliant `contentLayoutRect`, reserving a separate native tab band without polling.
+Embedded browser bounds follow the resulting UI layout. `macos_tabs.rs` defers window tab operations
+to the GCD main queue, outside Tao's event-handler lock.
+
+`window_material.rs` places one appearance-aware vibrancy view behind the entire native frame, so
+the titlebar and workspace share the same desktop-sampling material. Theme changes replace that
+view; they do not stack another effect. The native tab band uses the UI's resolved `--sidebar`
+colour and alpha unchanged. The UI stamps its platform selectors before sampling this token at
+startup, so the native header receives the macOS coat density. The coat paints between AppKit's
+content layout and the shared toolbar row. The UI paints the toolbar itself, so its background is
+never applied twice.
+
+`native_tab_controls.rs` removes the new-tab button's bezel through public `NSButton` properties,
+keeping its native action and hit target. The bounded view search accommodates Tahoe's button
+subclass and reapplies the treatment when AppKit rebuilds the tab bar.
+
+On Tahoe, `native_titlebar_backdrop.rs` suppresses AppKit's extra titlebar background and clears its
+layer fill, following
+[Ghostty's transparent titlebar implementation](https://github.com/ghostty-org/ghostty/blob/main/macos/Sources/Features/Terminal/Window%20Styles/TransparentTitlebarTerminalWindow.swift).
+This optional hook uses internal view names with public view operations; a missing hierarchy is a
+no-op. Focus and tab operations resync the appearance after AppKit can rebuild these views.
+
+`workspace_windows.rs` tracks trusted identities and selected-window routing. Workspace and browser
+WebViews are addressed separately from their Window: Tauri's `get_webview_window` no longer finds a
+window after child browser views are added. Each browser child is named by its workspace and tab ID;
+its events and commands stay in that workspace. Layout and navigation storage keys are
+window-scoped, while account preferences and API-owned resources remain shared.
+
+The native red window button and Window → Close Window flush and save the whole native group, then
+hide it without destroying workspaces. `workspace_visibility.rs` handles this separately from native
+tab close / Close Workspace Tab, which flush and remove one workspace. Dock reopen, tray Show and
+external launches use one AppKit reveal path that preserves group selection and releases
+minimization. New Workspace Window remains an explicit fresh-workspace action.
+
+Quit flushes all workspaces under one bounded budget. Request IDs and caller labels prevent a stale
+or duplicate acknowledgement from releasing another window. The last workspace hides instead of
+exiting. A clean quit snapshots native tab groups from AppKit and restores stable labels, routes,
+group order and selected tabs on launch.
+
+Run the live AppKit smoke check on a Mac with a desktop session:
+
+```bash
+bun run --cwd apps/desktop-tauri tauri:tabs
+```
+
+It starts deterministic local HTML with a separate app identifier and no API process. A debug-only
+`workspace_probe` reads actual native groups, geometry and child ownership; this command is absent
+from release builds. It checks the native + action, close, clean quit, and tab order, selection and
+outer geometry after restart. Manual visual checks still cover vibrancy in both appearances,
+fullscreen, mouse-driven tab reordering and detaching, and the native + button's appearance.

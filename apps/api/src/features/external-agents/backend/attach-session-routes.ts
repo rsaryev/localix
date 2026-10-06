@@ -26,6 +26,7 @@ export interface AttachSessionHost {
       projectId?: string
       externalAgentProvider: string
       externalAgentSessionKey: string
+      externalAgentHistory: { startedAt?: number; updatedAt: number }
     },
   ): Promise<{ id: string; projectId: string }>
 }
@@ -66,6 +67,7 @@ export function createAttachAgentRoutes(host: AttachSessionHost) {
       ...(project ? { projectId: project } : {}),
       externalAgentProvider: source.provider,
       externalAgentSessionKey: source.key,
+      externalAgentHistory: { startedAt: source.startedAt, updatedAt: source.updatedAt },
     })
     return { sessionId: created.id, projectId: created.projectId }
   }

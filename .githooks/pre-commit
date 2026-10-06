@@ -1,4 +1,6 @@
 #!/bin/sh
+# Every commit runs quick staged-file checks; full validation belongs to CI.
+# The remaining steps are opt-in maintainer tasks.
 # Keep the vendored pi fork and its model catalog from going stale, on every maintainer commit.
 #
 # OPT-IN. Both steps need the network and one of them can stop a commit, which is the wrong default
@@ -29,13 +31,15 @@
 
 set -e
 
-# Not a maintainer commit: nothing to check, nothing to refresh.
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+bun scripts/pre-commit.mjs
+
+# Upstream synchronization and catalog refresh remain maintainer-only.
 if [ "$LOCALIX_MAINTAINER" != "1" ]; then
 	exit 0
 fi
-
-root=$(git rev-parse --show-toplevel)
-cd "$root"
 
 if [ -f scripts/vendor-pi/cli.ts ] && ! bun scripts/vendor-pi/cli.ts detect; then
 	echo "" >&2

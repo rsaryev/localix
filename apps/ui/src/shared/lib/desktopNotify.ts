@@ -23,14 +23,17 @@ export function notifyDesktop(
   title: string,
   body?: string,
   condition: NotificationCondition = 'unfocused',
+  eventKey?: string,
 ): void {
   if (!isDesktop) return
 
   const invoke = tauriInvoke()
   if (invoke) {
-    void invoke('notify', { title, body, condition }).catch(() => {
-      /* shell unreachable — ignore */
-    })
+    void invoke('notify', { title, body, condition, ...(eventKey ? { eventKey } : {}) }).catch(
+      () => {
+        /* shell unreachable — ignore */
+      },
+    )
     return
   }
 

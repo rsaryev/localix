@@ -4,7 +4,8 @@
  * so the reactive `store.ts` can import it without a circular dependency.
  */
 
-import { SHORTCUT_CATALOG, isConfigurable } from './catalog'
+import { isDesktop, IS_MAC } from '@localixai/kit/environment'
+import { CMD, SHORTCUT_CATALOG, isConfigurable } from './catalog'
 import { canonicalizeChord } from '@localixai/kit/keybindings'
 import type {
   BindingOverrides,
@@ -18,7 +19,10 @@ import type {
  * `null` = unassigned); otherwise the catalog default. Non-configurable
  * commands always resolve to their default (overrides are ignored for them).
  */
-export function resolveBindings(overrides: BindingOverrides | undefined): ResolvedBindings {
+export function resolveBindings(
+  overrides: BindingOverrides | undefined,
+  nativeTabs = isDesktop && IS_MAC,
+): ResolvedBindings {
   const out: ResolvedBindings = {}
   for (const cmd of SHORTCUT_CATALOG) {
     if (
@@ -29,6 +33,14 @@ export function resolveBindings(overrides: BindingOverrides | undefined): Resolv
       out[cmd.id] = canonicalizeChord(overrides[cmd.id])
     } else {
       out[cmd.id] = cmd.defaultChord
+    }
+  }
+  if (nativeTabs) {
+    for (const id of Object.keys(out)) {
+      if ((out[id] !== 'mod+t' && out[id] !== 'meta+t') || id === CMD.newWorkspaceTab) continue
+      // AppKit reserves Cmd+T even when a preset or saved override assigns it elsewhere.
+      out[id] =
+        id === CMD.goToFile ? 'mod+p' : id === CMD.goToSymbolWorkspace ? 'mod+alt+shift+o' : null
     }
   }
   return out

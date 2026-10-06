@@ -26,9 +26,14 @@ bun run build
 The complete setup, package layout, cross-platform conventions, and per-package test commands are in
 the [development guide](docs/internals/contributing.md).
 
-`bun install` points git at the hooks in `.githooks/`. The pre-commit hook only does work for
-maintainers, who keep the vendored `vendor/pi` fork and its model catalog current: it is opt-in
-through `LOCALIX_MAINTAINER=1`, so your commits are never stopped by it.
+`bun install` points git at the hooks in `.githooks/`. Every commit automatically checks formatting
+and lint on staged files, plus Rust formatting when Rust sources change and Cargo is available. The
+hook checks without changing or staging files. If a checked file also has unstaged changes, restage
+it before committing so the checks cover the committed contents. Full tests, type checks, builds and
+audits run in CI; do not repeat them manually just to create a commit.
+
+Maintainers can opt into the additional vendored `vendor/pi` synchronization and model catalog
+refresh through `LOCALIX_MAINTAINER=1`.
 
 Runnable applications live in `apps/`, shared TypeScript libraries in `packages/`, installable
 extensions in `plugins/`, repository automation in `scripts/`, shared configuration in `config/`,
@@ -42,9 +47,10 @@ functions, and `useX` for hooks. Tests normally sit beside production code as `*
 
 ## Required checks
 
-Run the repository-wide JavaScript and documentation gates before opening a pull request. Build
-first: several gates read the workspace packages' built output and the generated modules, and on a
-clean clone they fail until `bun run build` has produced them.
+CI runs the repository-wide JavaScript and documentation gates for pull requests. Use focused tests
+while editing and let pre-commit run the quick commit checks. The following list documents the full
+CI gates; run them locally when reproducing CI or validating a release, rather than before every
+commit. Build first in that case: several gates read built output and generated modules.
 
 ```bash
 bun run build
@@ -68,14 +74,14 @@ bun run test:dropins
 CI also runs `bun run check:bundle`, which stages the desktop bundle and starts its API outside the
 checkout. Run it when you change what the desktop app ships.
 
-Hosted CI always runs the pinned Rust formatting, Clippy, and test job. If you changed Rust under
-`apps/desktop-tauri/src-tauri`, also run `bun run check:rust` locally. Run repository-wide lint and
-formatting checks without a path filter. `bun run check:tests` is also required because it
-type-checks test files, while `bun test` executes them and the main type check excludes them.
+Hosted CI always runs the pinned Rust formatting, Clippy, and test job. Use `bun run check:rust`
+locally when diagnosing native failures. When reproducing the full CI lint and formatting gates, run
+them without a path filter. CI also runs `bun run check:tests` because it type-checks test files,
+while `bun test` executes them and the main type check excludes them.
 
 Add a deterministic regression test for changed behavior. Use DOM tests when interaction or
-accessibility needs rendered evidence. Run a focused test while iterating, then the repository-wide
-gates before opening a pull request.
+accessibility needs rendered evidence. Run a focused test while iterating; CI runs the
+repository-wide gates on the pull request.
 
 Do not commit generated output (except the tracked landing `public/sitemap.xml` refreshed by the
 documentation generator), credentials, `.env` files, `.localix/` runtime state, or changes inside

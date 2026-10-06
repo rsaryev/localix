@@ -264,6 +264,13 @@ adds one rule of its own: a native button, input, select or textarea where the k
 
 ## Limits
 
+On macOS, the native window buttons and breadcrumb toolbar share one row. The shell measures their
+button gap and row height and reserves a separate band for native workspace tabs below it. The
+toolbar paints its sidebar coat; only the native tab band receives a native coat.
+
+When a desktop window loses focus, the titlebar dims its contents only. Its sidebar ground keeps the
+same opacity as the native header, so the two bars remain aligned over the shared material.
+
 The glass theme is macOS-only: the `@supports` blocks are scoped to `[data-desktop][data-os='mac']`,
 and every other platform gets the opaque tokens, which is why a fill can look correct in a browser
 and wrong in the app. The guards are static — they read class strings, so a class assembled at

@@ -111,6 +111,7 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
 export interface CreateSessionInput {
   externalAgentProvider?: string
   externalAgentSessionKey?: string
+  externalAgentHistory?: { startedAt?: number; updatedAt: number }
   title?: string
   providerConnectionId?: string | null
   modelId?: string
@@ -198,7 +199,6 @@ export async function listSessions(
 // IS, where everything below acts on one that already exists. Re-exported so the service keeps
 // one import for the lifecycle.
 export { createSession } from './session-birth'
-
 export async function updateSession(
   ctx: SessionLifecycleCtx,
   userId: string,

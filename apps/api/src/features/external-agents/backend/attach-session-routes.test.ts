@@ -19,6 +19,7 @@ function fixture(cwd: string | undefined = '/work/project/child') {
             nativeSessionId: 'native',
             title: 'Existing review',
             cwd,
+            startedAt: 50,
             updatedAt: 100,
             sourcePath: '/history/native.jsonl',
           }
@@ -65,6 +66,7 @@ test('attaches only native identity to a normal chat, reusing it across openings
       projectId: 'selected',
       externalAgentProvider: 'codex',
       externalAgentSessionKey: 'codex:native',
+      externalAgentHistory: { startedAt: 50, updatedAt: 100 },
     },
   ])
   expect(created[0]).not.toHaveProperty('messages')

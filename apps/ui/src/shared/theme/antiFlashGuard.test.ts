@@ -21,6 +21,14 @@ const uiRoot = join(import.meta.dir, '../../..')
 const indexHtml = readFileSync(join(uiRoot, 'index.html'), 'utf8')
 const useTheme = readFileSync(join(uiRoot, 'src/shared/theme/useTheme.ts'), 'utf8')
 
+function initializesPlatformBeforeNativeTheme(source: string): boolean {
+  const boot = source.slice(source.indexOf('// Boot:'))
+  const platformAt = boot.indexOf('applyPlatformDataset()')
+  const themeAt = boot.indexOf('applyThemeModeToDom(currentMode)')
+  const nativeAt = boot.indexOf('syncNativeTheme(currentMode, currentResolved)')
+  return platformAt >= 0 && themeAt > platformAt && nativeAt > themeAt
+}
+
 /** The media query + which branch each side treats as its fallback. */
 function decision(source: string): { query: string; fallback: 'dark' | 'light' } | null {
   const match =
@@ -33,6 +41,23 @@ function decision(source: string): { query: string; fallback: 'dark' | 'light' }
 }
 
 describe('startup anti-flash guard', () => {
+  test('resolves native material selectors before sampling the header tint at startup', () => {
+    expect(initializesPlatformBeforeNativeTheme(useTheme)).toBe(true)
+  })
+
+  test('rejects missing or late platform initialization that samples the browser coat', () => {
+    expect(
+      initializesPlatformBeforeNativeTheme(useTheme.replace('  applyPlatformDataset()\n', '')),
+    ).toBe(false)
+    const late = useTheme
+      .replace('  applyPlatformDataset()\n', '')
+      .replace(
+        '  syncNativeTheme(currentMode, currentResolved)',
+        '  syncNativeTheme(currentMode, currentResolved)\n  applyPlatformDataset()',
+      )
+    expect(initializesPlatformBeforeNativeTheme(late)).toBe(false)
+  })
+
   test('asks the OS the same question the app does, with the same fallback', () => {
     const guard = decision(indexHtml)
     const app = decision(useTheme)

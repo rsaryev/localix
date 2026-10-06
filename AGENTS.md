@@ -23,19 +23,18 @@ to the code they cover as `*.test.ts` or `*.test.tsx`, and browser-like componen
 - `bun run build` builds every package and application through Turbo.
 - `bun run test` runs the workspace tests and the repository contract tests. `bun run test:dropins`
   covers the plugins.
-- `bun run type-check`, `bun run lint` and `bun run format:check` are the primary static checks. Run
-  them without a path filter: a directory-scoped run can pass while the same change leaves a
-  violation in a document or a script outside that directory.
+- `bun run type-check`, `bun run lint` and `bun run format:check` are the full static checks used by
+  CI. When diagnosing a full gate locally, run it without a path filter.
 - `bun run check:tests` type-checks the test files, which `bun run type-check` excludes and
   `bun test` does not check.
 - `bun run check:architecture` validates package, runtime, platform, storage and UI boundaries.
 - `bun run check:docs` verifies that `docs/internals/subsystems/*.md` name source files that exist.
-- `bun run check:rust` is required after changes under `apps/desktop-tauri/src-tauri`.
+- CI runs `bun run check:rust` for the native shell; use it locally when diagnosing Rust failures.
 - CI also runs `check:audit`, `check:deadcode`, `check:public`, `check:release` and `check:vendor`.
-  Run them before a change that could plausibly affect them: a new dependency, a deleted export, a
-  moved documentation link, or anything under `vendor/`. `check:audit` ignores one advisory,
-  `GHSA-vfj7-8cjw-p6xm` (`braces`): no patched release exists, and it is reached only through the
-  development tools `shadcn` and `shx`, never through shipped code. Drop the flag when a fix ships.
+  Run an individual gate locally only when the change or a failure needs it. `check:audit` ignores
+  one advisory, `GHSA-vfj7-8cjw-p6xm` (`braces`): no patched release exists, and it is reached only
+  through the development tools `shadcn` and `shx`, never through shipped code. Drop the flag when a
+  fix ships.
 
 Run a focused test while you iterate, from the repository root:
 
@@ -46,6 +45,13 @@ bun test apps/ui/src/features/chat/model/sendRefs.test.ts
 `bun test <filter>` matches substrings, so keep a filter specific. Run one file or one path rather
 than the whole suite while iterating, and stop any dev server or browser you started when you
 finish.
+
+For an ordinary commit, stage the requested changes and run `git commit`. The pre-commit hook
+automatically checks formatting and lint on staged files and Rust formatting when applicable. Do not
+run the full build, test suite, type checks, audits or repository gates solely to create a commit,
+and do not repeat the hook's checks manually. CI owns the full gate list in `CONTRIBUTING.md`.
+During implementation, run only the focused test or check needed to verify the behavior being
+changed. Fix hook failures and retry the commit; do not bypass the hook.
 
 ## Coding style
 

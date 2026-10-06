@@ -1,7 +1,11 @@
 import { useEffect } from 'react'
-import { isDesktop } from '@localixai/kit/environment'
+import { isDesktop, IS_MAC } from '@localixai/kit/environment'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { runMenuCommand } from '@/shared/lib/menuBus'
+import { CMD } from '@/shared/lib/keybindings/catalog'
+import { registerActionHandler } from '@/shared/lib/actions/registry'
+import { tauriInvoke } from '@/shared/lib/tauri'
+import { toast } from '@/shared/lib/notify'
 import { runNativeEditCommand } from '@/shared/lib/nativeEditing'
 
 declare global {
@@ -30,10 +34,29 @@ export function useNativeMenu(): void {
     window.__localixOpenSettings = () => inspector.openSettings()
     window.__localixMenu = (command: string) => runMenuCommand(command)
     window.__localixEdit = runNativeEditCommand
+    const nativeActions = IS_MAC
+      ? [
+          registerActionHandler({ commandId: CMD.newWorkspaceTab, run: () => openWorkspace(true) }),
+          registerActionHandler({
+            commandId: CMD.newWorkspaceWindow,
+            run: () => openWorkspace(false),
+          }),
+        ]
+      : []
     return () => {
+      for (const stop of nativeActions) stop()
+
       delete window.__localixOpenSettings
       delete window.__localixMenu
       delete window.__localixEdit
     }
   }, [])
+}
+
+function openWorkspace(asTab: boolean): void {
+  void tauriInvoke()?.('workspace_open', { asTab }).catch(() => {
+    toast.error('Could not open workspace', {
+      description: 'Try opening it again from the Window menu.',
+    })
+  })
 }
