@@ -34,7 +34,7 @@ export function NativeSessionRow({
       await onSelect(destination.sessionId, { project: destination.projectId })
       await openOwnedExternalSession(destination.sessionId)
     } catch (cause) {
-      toast.error('Could not open this agent session', {
+      toast.error('Could not open this agent conversation', {
         description: errorMessage(cause, '') || undefined,
       })
     } finally {

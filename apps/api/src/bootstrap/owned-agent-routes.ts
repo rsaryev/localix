@@ -12,9 +12,9 @@ export function ownedAgentRoutes(
 ) {
   return createOwnedAgentRoutes(
     {
-      session: (userId, id) => deps.chatService.getSession(userId, id),
-      cwd: (userId, id) => deps.chatService.resolveSessionCwd(userId, id),
-      terminals: (userId) => deps.terminalService.list(userId),
+      session: (...args) => deps.chatService.getSession(...args),
+      cwd: (...args) => deps.chatService.resolveSessionCwd(...args),
+      terminals: (...args) => deps.terminalService.list(...args),
       spawn: async (userId, sessionId, command) => {
         const terminal = await deps.terminalService.spawnCommand(userId, { sessionId, command })
         recordTerminalWork(deps.work, {
@@ -25,7 +25,7 @@ export function ownedAgentRoutes(
         })
         return terminal
       },
-      reportError: (error) =>
+      reportError: (...[error]) =>
         deps.logger.warn({ event: 'external_agents.identity_save_failed', error: String(error) }),
       remember: (userId, id, key) =>
         deps.chatService.updateSession(userId, id, { externalAgentSessionKey: key }),
@@ -35,7 +35,7 @@ export function ownedAgentRoutes(
     .route(
       '/',
       createLinkAgentRoutes({
-        session: (userId, id) => deps.chatService.getSession(userId, id),
+        session: (...args) => deps.chatService.getSession(...args),
         link: (userId, id, provider) =>
           deps.chatService.updateSession(userId, id, { externalAgentProvider: provider }),
       }),
@@ -43,12 +43,12 @@ export function ownedAgentRoutes(
     .route(
       '/',
       createAttachAgentRoutes({
-        native: async (key) => deps.externalAgents?.nativeSummary(key) ?? null,
-        sessions: (userId) => deps.chatService.listSessions(userId),
-        project: (userId, id) => deps.projectsService.getProject(userId, id),
-        resolveProject: async (userId, cwd) =>
-          (await deps.projectsService.resolveProjectByPath(userId, cwd)).project,
-        create: (userId, input) => deps.chatService.createSession(userId, input),
+        native: async (...args) => deps.externalAgents?.nativeSummary(...args) ?? null,
+        sessions: (...args) => deps.chatService.listSessions(...args),
+        project: (...args) => deps.projectsService.getProject(...args),
+        resolveProject: async (...args) =>
+          (await deps.projectsService.resolveProjectByPath(...args)).project,
+        create: (...args) => deps.chatService.createSession(...args),
       }),
     )
 }
