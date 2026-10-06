@@ -17,6 +17,8 @@ import { normalizeSessionTitle } from '../session-limits'
 export function sessionFieldsPatch(
   session: SessionRecord,
   patch: {
+    externalAgentProvider?: string
+    externalAgentSessionKey?: string
     title?: string
     isPinned?: boolean
     isArchived?: boolean
@@ -30,6 +32,12 @@ export function sessionFieldsPatch(
   now: () => string,
 ): Partial<SessionRecord> | null {
   const fields: Partial<SessionRecord> = {
+    ...(patch.externalAgentProvider !== undefined
+      ? { externalAgentProvider: patch.externalAgentProvider }
+      : {}),
+    ...(patch.externalAgentSessionKey !== undefined
+      ? { externalAgentSessionKey: patch.externalAgentSessionKey }
+      : {}),
     ...(patch.title !== undefined
       ? { title: normalizeSessionTitle(patch.title, session.title) }
       : {}),

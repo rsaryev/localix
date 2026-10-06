@@ -74,6 +74,8 @@ export interface SessionSummary {
   /** A group's avatar ref (media id or emoji); null = generated from the title. */
   avatar: string | null
   runtimeStatus: z.infer<typeof runtimeStatusSchema>
+  externalAgentProvider?: string | null
+  externalAgentSessionKey?: string | null
   sourceToolCallId: string | null
   pinnedSkills: string[]
   /** Ephemeral: active session loops (process-local, dies on restart). Empty when none. */

@@ -118,6 +118,8 @@ export interface UiSession {
   /** A group's avatar ref (media id or emoji). Null = generated. */
   avatar: string | null
   runtimeStatus: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
+  externalAgentProvider?: string | null
+  externalAgentSessionKey?: string | null
   sourceToolCallId: string | null
   sourceRuntime: SessionSourceRuntime | null
   pinnedSkills: string[]

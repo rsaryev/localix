@@ -348,6 +348,18 @@ export async function runAgentSessions(
       return { content: `${explain.summary}\n\n${rows.join('\n')}` }
     }
 
+    case 'resume': {
+      const result = await service.resume(input.key as string)
+      if (!result) return { content: `No session on disk for ${input.key}.` }
+      if (!result.resume)
+        return {
+          content: `Native terminal continuation is not supported for ${input.key}. You can read its transcript or import it in Localix.`,
+        }
+      return {
+        content: `To open this exact session in ${result.resume.providerName}, run bash with ${JSON.stringify({ action: 'open', command: result.resume.command })}. This lookup has not opened a terminal; execute that command before reporting the session as opened.`,
+      }
+    }
+
     case 'transcript': {
       const slice = await service.transcript(
         input.key as string,

@@ -66,6 +66,9 @@ export async function createSession(
     // it is not being asked to chat.
     ...(sessionKind === 'chat' ? { host: 'chat' } : {}),
   })
+  const externalAgentProvider =
+    input.externalAgentProvider ??
+    (sessionKind === 'chat' ? parent?.externalAgentProvider : undefined)
   const { seq, id } = await ctx.repo.allocateSessionRef(userId)
   const session: SessionRecord = {
     id,
@@ -81,6 +84,10 @@ export async function createSession(
     sessionKind,
     runtimeStatus:
       input.sessionKind === 'subagent' || input.sessionKind === 'job' ? 'running' : 'idle',
+    ...(externalAgentProvider ? { externalAgentProvider } : {}),
+    ...(input.externalAgentSessionKey
+      ? { externalAgentSessionKey: input.externalAgentSessionKey }
+      : {}),
     sourceToolCallId: input.sourceToolCallId ?? null,
     provenance: bornProvenance(input, sessionKind),
     createdAt: timestamp,

@@ -1,4 +1,6 @@
 import { Pin } from 'lucide-react'
+import { externalAgentPresentation } from '@/shared/ui/externalAgentPresentation'
+import { LocalixMark } from '@/shared/ui/LocalixMark'
 import type { ReactNode } from 'react'
 import type { UiSession } from '@/shared/api/contracts'
 import { StatusDot } from '@localixai/kit/status-dot'
@@ -38,6 +40,7 @@ export function RowBadge({ session }: { session: UiSession }) {
 
 /** One line for the conversation name; the latest message belongs in the chat itself. */
 export function SessionRowContent({
+  session,
   title,
   isActive,
 }: {
@@ -45,8 +48,18 @@ export function SessionRowContent({
   title: string
   isActive: boolean
 }) {
+  const provider = session.externalAgentProvider
+  const { Icon: AgentIcon, label: agentLabel } = externalAgentPresentation(provider ?? '')
+  const label = provider ? agentLabel : 'Localix'
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
+      <span className="flex shrink-0 text-text-soft" role="img" aria-label={label} title={label}>
+        {provider ? (
+          <AgentIcon className="size-3.5" aria-hidden="true" />
+        ) : (
+          <LocalixMark className="size-3.5" />
+        )}
+      </span>
       <span
         className={[
           'min-w-0 flex-1 truncate text-sm leading-5 transition-colors',

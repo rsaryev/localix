@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { UiSession } from '@/shared/api/contracts'
 import { canJoinConversation } from '@localixai/api/agent-policy'
@@ -21,16 +21,15 @@ import { HistorySearchResults } from './HistorySearchResults'
 import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
 import { useSessionTreeRenderer } from './SessionTree'
 import { useAddProjectFolder } from '../model/useAddProjectFolder'
-import { useTabPanelIds } from '@localixai/kit/tabs'
-import { DataSourceTabs } from '@/shared/ui/DataSourceTabs'
-import { LoadingHint } from '@localixai/kit/empty-hint'
+import { openOwnedExternalSession } from '@/features/external-agents/model/createSession'
+import { useExternalHistory } from '@/features/external-agents/model/useExternalHistory'
+import { nativeHistoryRows } from '@/features/external-agents/model/unifiedHistory'
+import { NativeSessionRow } from '@/features/external-agents/ui/NativeSessionRow'
+import { NativeHistoryStatus } from '@/features/external-agents/ui/NativeHistoryStatus'
+import { sortSessionsList } from '../model/useSidebarSessions'
 import { isPrimaryModifier } from '@/shared/lib/keybindings'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { DEFAULT_SESSION_GROUPING_MODE, type SessionGroupingMode } from '../model/sessionGrouping'
-
-const ExternalHistorySidebar = lazy(
-  () => import('@/features/external-agents/ui/ExternalHistorySidebar'),
-)
 
 interface ChatSidebarProps {
   activeSessionId: string | null
@@ -71,13 +70,7 @@ export function ChatSidebar({
     })),
   )
   const handleOpenProject = useAddProjectFolder()
-  const [historySource, setHistorySource] = useState<'localix' | 'external'>('localix')
-  const [agentsVisited, setAgentsVisited] = useState(false)
-  const historyIds = useTabPanelIds('session-history')
-  const [localSearch, setLocalSearch] = useState('')
-  const [agentSearch, setAgentSearch] = useState('')
-  const search = historySource === 'localix' ? localSearch : agentSearch
-  const setSearch = historySource === 'localix' ? setLocalSearch : setAgentSearch
+  const [search, setSearch] = useState('')
   // Search stays hidden until requested; an active query keeps it open.
   const [searchOpen, setSearchOpen] = useState(false)
   const searchVisible = searchOpen || search.length > 0
@@ -105,20 +98,21 @@ export function ChatSidebar({
   } = useSidebarSessions({
     allSessions,
     activeProjectId,
-    search: localSearch,
+    search,
     sortMode,
     showArchived,
   })
 
-  const scopeName = useMemo(
-    () => projects.find((p) => p.id === activeProjectId)?.name ?? null,
+  const activeProject = useMemo(
+    () => projects.find((p) => p.id === activeProjectId),
     [projects, activeProjectId],
   )
+  const scopeName = activeProject?.name ?? null
 
   const archivedCount = useMemo(
     () =>
       allSessions.filter(
-        (s) => s.isArchived && !s.parentSessionId && (s.projectId ?? null) === activeProjectId,
+        (s) => s.isArchived && !s.parentSessionId && s.projectId === activeProjectId,
       ).length,
     [allSessions, activeProjectId],
   )
@@ -133,8 +127,29 @@ export function ChatSidebar({
   // No slice any more: pagination belongs to the GROUP now, because one cap over the whole
   // list would truncate before the chats were split by agent — the fortieth chat of a busy
   // agent would hide the only chat of a quiet one.
-  const visibleSessions = scopeSessions
-  const orderedRootIds = useMemo(() => visibleSessions.map((s) => s.id), [visibleSessions])
+  const nativeHistory = useExternalHistory(search, Boolean(activeProject?.workingDir), {
+    cwd: activeProject?.workingDir,
+    includeDescendants: true,
+  })
+  const nativeRows = useMemo(
+    () => nativeHistoryRows(nativeHistory.sessions, allSessions, activeProject),
+    [nativeHistory.sessions, allSessions, activeProject],
+  )
+  const visibleSessions = useMemo(
+    () =>
+      sortSessionsList(
+        [
+          ...scopeSessions,
+          ...nativeRows.sessions.filter(
+            (session) =>
+              !normalizedSearch || session.title.toLowerCase().includes(normalizedSearch),
+          ),
+        ],
+        sortMode,
+      ),
+    [scopeSessions, nativeRows.sessions, normalizedSearch, sortMode],
+  )
+  const orderedRootIds = useMemo(() => scopeSessions.map((s) => s.id), [scopeSessions])
 
   // The selected root chats, filtered to sessions that still exist (a deleted or
   // vanished id simply drops out — no stale-set bookkeeping needed).
@@ -176,10 +191,11 @@ export function ChatSidebar({
   // Cross-conversation message search (server FTS5) — this is the GLOBAL,
   // cross-scope discovery path: it surfaces chats in ANY scope the scope-local
   // title filter can't, in a separate "Found in messages" section.
-  const { hits: historyHits, loading: historyLoading } = useHistorySearch(
-    historySource === 'localix' ? search : '',
+  const { hits: historyHits, loading: historyLoading } = useHistorySearch(search)
+  const sessionsById = useMemo(
+    () => new Map(allSessions.filter((s) => s.projectId === activeProjectId).map((s) => [s.id, s])),
+    [allSessions, activeProjectId],
   )
-  const sessionsById = useMemo(() => new Map(allSessions.map((s) => [s.id, s])), [allSessions])
 
   // Stable identity so the memoized SessionItem isn't invalidated every render.
   //
@@ -217,6 +233,7 @@ export function ChatSidebar({
       // opening any chat always lands in that chat's project.
       selection.clear()
       await onSelect(session.id, { project: session.projectId })
+      if (session.externalAgentProvider) await openOwnedExternalSession(session.id)
     },
     [rosterDeps],
   )
@@ -304,14 +321,12 @@ export function ChatSidebar({
       {/* Single header row: the scope switcher IS the panel title (no redundant
           static "Chats" label), with the scope-aware actions on the right. */}
       <ChatSidebarHeader
-        source={historySource}
         scopeName={scopeName}
-        isGlobal={activeProjectId === null}
+        isGlobal={activeProject?.isDefault ?? false}
         onOpenScopeSwitcher={onOpenScopeSwitcher}
         onAddProjectFolder={() => {
           void handleOpenProject()
         }}
-        onNewChat={() => handleNewChat()}
         searchVisible={searchVisible}
         onToggleSearch={() => (searchVisible ? closeSearch() : setSearchOpen(true))}
         viewMenu={{
@@ -325,19 +340,7 @@ export function ChatSidebar({
         }}
       />
 
-      <DataSourceTabs
-        value={historySource}
-        ids={historyIds}
-        label="Session history"
-        onChange={(source) => {
-          setHistorySource(source)
-          if (source === 'external') setAgentsVisited(true)
-          selection.clear()
-        }}
-      />
-
       <HistorySearchField
-        source={historySource}
         visible={searchVisible}
         value={search}
         onChange={setSearch}
@@ -346,11 +349,9 @@ export function ChatSidebar({
 
       <div
         ref={rosterRef}
-        role="tabpanel"
-        id={historyIds.panelId('localix')}
-        aria-labelledby={historyIds.tabId('localix')}
-        hidden={historySource !== 'localix'}
-        className={`${historySource === 'localix' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin`}
+        role="region"
+        aria-label="Session history"
+        className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin"
         onClick={(e) => {
           if (e.target === e.currentTarget && selection.isSelectionActive) selection.clear()
         }}
@@ -358,18 +359,32 @@ export function ChatSidebar({
         {/* The roster stands even with no chats under it: it lists who you can talk to, not
             what you have said, and hiding it left a new workspace with no way to start. It
             steps aside while SEARCHING — agents with nothing under them answer no query. */}
-        {(scopeSessions.length > 0 ||
+        {(visibleSessions.length > 0 ||
           (!search && groupingMode === 'agent' && chatRoster.length > 0)) && (
           <div className="flex flex-col gap-0.5">
             <SessionRoster
               sessions={visibleSessions}
               roster={chatRoster}
               groupingMode={groupingMode}
-              renderSession={renderSessionTree}
+              renderSession={(session) => {
+                const source = nativeRows.sources.get(session.id)
+                return source
+                  ? [
+                      <NativeSessionRow
+                        key={session.id}
+                        session={session}
+                        source={source}
+                        onSelect={onSelect}
+                      />,
+                    ]
+                  : renderSessionTree(session)
+              }}
               onNewChatWith={handleNewChat}
             />
           </div>
         )}
+
+        <NativeHistoryStatus history={nativeHistory} />
 
         {search && (
           <HistorySearchResults
@@ -384,31 +399,18 @@ export function ChatSidebar({
         )}
 
         {/* Only when the pane would otherwise be blank — the roster above is content too. */}
-        {!hasResults && emptyPane && historyHits.length === 0 && !historyLoading && (
-          <div className="flex min-h-0 flex-1 select-none items-center justify-center px-4 text-center text-xs text-sidebar-foreground/40">
-            {search
-              ? 'No matching chats in this workspace.'
-              : 'No conversations in this workspace yet.'}
-          </div>
-        )}
-      </div>
-
-      <div
-        role="tabpanel"
-        id={historyIds.panelId('external')}
-        aria-labelledby={historyIds.tabId('external')}
-        hidden={historySource !== 'external'}
-        className={historySource === 'external' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
-      >
-        {agentsVisited && (
-          <Suspense fallback={<LoadingHint>Reading agent history…</LoadingHint>}>
-            <ExternalHistorySidebar
-              owningSessionId={activeSessionId}
-              search={agentSearch}
-              enabled={historySource === 'external'}
-            />
-          </Suspense>
-        )}
+        {!hasResults &&
+          visibleSessions.length === 0 &&
+          emptyPane &&
+          historyHits.length === 0 &&
+          !historyLoading &&
+          !nativeHistory.loading && (
+            <div className="flex min-h-0 flex-1 select-none items-center justify-center px-4 text-center text-xs text-sidebar-foreground/40">
+              {search
+                ? 'No matching chats in this workspace.'
+                : 'No conversations in this workspace yet.'}
+            </div>
+          )}
       </div>
 
       {selectedSessions.length > 0 && (

@@ -8,9 +8,9 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     specifier: k('coding-agent-marks'),
     category: 'content',
     provider: 'kit',
-    exports: ['ClaudeMark', 'CodexMark'],
-    summary: 'Monochrome Claude and Codex brand marks shared by core and plugin surfaces.',
-    use: 'Identify Claude Code and Codex using their brand silhouettes.',
+    exports: ['ClaudeMark', 'CodexMark', 'GeminiMark', 'CopilotMark', 'OpenCodeMark', 'HermesMark'],
+    summary: 'Monochrome coding agent brand marks shared by core and plugin surfaces.',
+    use: 'Identify Claude Code, Codex, Gemini CLI, GitHub Copilot, OpenCode and Hermes.',
     not: 'A generic action glyph or a running-session indicator.',
   },
   {

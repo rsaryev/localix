@@ -1,3 +1,4 @@
+import { shellQuote } from '@localixai/plugin-sdk/backend'
 /**
  * Gemini CLI adapter — `gemini_cli_chat_recording_jsonl`.
  *
@@ -358,4 +359,5 @@ export const geminiCliAdapter: ProviderAdapter = {
   },
   readTranscript,
   readTurnState,
+  resumeCommand: (id) => `gemini --resume ${shellQuote(id)}`,
 }

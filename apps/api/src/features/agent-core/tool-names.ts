@@ -152,7 +152,7 @@ export const BUILTIN_TOOL_CATALOG = {
     name: 'external_agent_sessions',
     label: 'External agent sessions',
     description:
-      'Read installed CLI history and linked sessions: roster, transcript windows, context, live state, wait, usage. Start CLIs separately in a terminal.',
+      'Inspect external CLI sessions: roster, transcript, context, state, wait, usage. To open a session for the user, resolve its native command with resume, then execute it with bash action:"open". Reading a transcript does not open a session.',
     category: 'knowledge',
     exposure: CHAT_AND_CHILD,
   },

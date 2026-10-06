@@ -172,6 +172,7 @@ export const backendClient = {
   ...filesApi,
 
   async createSession(input?: {
+    externalAgentProvider?: string
     title?: string
     providerConnectionId?: string | null
     modelId?: string

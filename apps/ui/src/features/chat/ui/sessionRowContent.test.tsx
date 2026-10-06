@@ -16,6 +16,35 @@ function row(session: Partial<UiSession>) {
 }
 
 describe('the compact session row', () => {
+  test('shows the external agent mark before the session title', () => {
+    for (const [provider, label] of [
+      ['codex', 'Codex'],
+      ['claude-code', 'Claude Code'],
+      ['gemini-cli', 'Gemini CLI'],
+      ['github-copilot', 'GitHub Copilot'],
+      ['opencode', 'OpenCode'],
+      ['hermes', 'Hermes'],
+    ]) {
+      const html = row({ externalAgentProvider: provider })
+      expect(html).toContain(`aria-label="${label}"`)
+      expect(html).toContain('size-3.5')
+      expect(html.indexOf('<svg')).toBeLessThan(html.indexOf('Fix the parser'))
+    }
+  })
+
+  test('uses a generic agent icon for unknown providers', () => {
+    expect(row({ externalAgentProvider: 'custom-agent' })).toContain('lucide-bot')
+    expect(row({ externalAgentProvider: 'custom-agent' })).toContain('aria-label="custom-agent"')
+  })
+
+  test('shows the Localix bird before the title of ordinary chats', () => {
+    const html = row({})
+    expect(html).toContain('aria-label="Localix"')
+    expect(html).toContain('mask-image:url(/logo-dark.svg)')
+    expect(html.indexOf('aria-label="Localix"')).toBeLessThan(html.indexOf('Fix the parser'))
+    expect(html).not.toContain('lucide-bot')
+  })
+
   test('shows the title and time but never previews the last message', () => {
     const html = row({
       lastMessage: { from: 'user', text: 'private preview text', at: 0 },

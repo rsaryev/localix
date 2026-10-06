@@ -1,3 +1,4 @@
+import { shellQuote } from '@localixai/plugin-sdk/backend'
 /**
  * Hermes adapter — `hermes_sqlite`, `~/.hermes/state.db`.
  *
@@ -376,4 +377,5 @@ export const hermesAdapter: ProviderAdapter = {
   readSummaries,
   readTranscript,
   readTurnState,
+  resumeCommand: (id) => `hermes --resume ${shellQuote(id)}`,
 }

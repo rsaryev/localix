@@ -62,6 +62,8 @@ describe('mergeSessionBody — whole-body replaces must not wipe in-flight state
     })
     const summary = sess({
       title: 'Fresh title',
+      externalAgentProvider: 'codex',
+      externalAgentSessionKey: 'codex:native',
       bodyLoaded: false,
       pendingInteractionQueue: [],
       messages: [],
@@ -69,6 +71,8 @@ describe('mergeSessionBody — whole-body replaces must not wipe in-flight state
 
     const merged = mergeSessionBody(prev, summary)
     expect(merged.title).toBe('Fresh title')
+    expect(merged.externalAgentProvider).toBe('codex')
+    expect(merged.externalAgentSessionKey).toBe('codex:native')
     expect(merged.messages.map((message) => message.id)).toEqual(['u1'])
     expect(merged.pendingInteractionQueue).toBe(detailOnly)
     expect(merged.bodyLoaded).toBe(true)

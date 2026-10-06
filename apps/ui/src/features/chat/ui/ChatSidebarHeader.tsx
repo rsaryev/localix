@@ -1,47 +1,35 @@
 import type { ComponentProps } from 'react'
-import { FolderPlus, Plus, Search } from 'lucide-react'
+import { FolderPlus, Search } from 'lucide-react'
 import { PanelHeader } from '@localixai/kit/panel-header'
 import { IconButton } from '@localixai/kit/icon-button'
 import { SearchInput } from '@localixai/kit/search-input'
-import type { DataSource } from '@/shared/ui/DataSourceTabs'
 import { ChatSidebarViewMenu } from './ChatSidebarViewMenu'
 import { ScopeSwitcher } from './ScopeSwitcher'
 
 export function ChatSidebarHeader({
-  source,
   scopeName,
   isGlobal,
   onOpenScopeSwitcher,
   onAddProjectFolder,
-  onNewChat,
   viewMenu,
   searchVisible,
   onToggleSearch,
 }: {
-  source: DataSource
   scopeName: string | null
   isGlobal: boolean
   onOpenScopeSwitcher: () => void
   onAddProjectFolder: () => void
-  onNewChat: () => void
   viewMenu: ComponentProps<typeof ChatSidebarViewMenu>
   searchVisible: boolean
   onToggleSearch: () => void
 }) {
-  const local = source === 'localix'
-  const searchLabel = searchVisible
-    ? 'Hide search'
-    : local
-      ? 'Search chats'
-      : 'Search external sessions'
+  const searchLabel = searchVisible ? 'Hide search' : 'Search chats'
   return (
     <PanelHeader
-      title={
-        local ? <ScopeSwitcher scopeName={scopeName} onOpen={onOpenScopeSwitcher} /> : 'History'
-      }
+      title={<ScopeSwitcher scopeName={scopeName} onOpen={onOpenScopeSwitcher} />}
       actions={
         <>
-          {local && <ChatSidebarViewMenu {...viewMenu} />}
+          <ChatSidebarViewMenu {...viewMenu} />
           <IconButton
             size="sm"
             surface="sidebar"
@@ -52,7 +40,7 @@ export function ChatSidebarHeader({
           >
             <Search className="size-3.5" />
           </IconButton>
-          {local && isGlobal && (
+          {isGlobal && (
             <IconButton
               size="sm"
               surface="sidebar"
@@ -63,17 +51,6 @@ export function ChatSidebarHeader({
               <FolderPlus className="size-3.5" />
             </IconButton>
           )}
-          {local && (
-            <IconButton
-              size="sm"
-              surface="sidebar"
-              onClick={onNewChat}
-              aria-label={scopeName ? `New chat in ${scopeName}` : 'New chat'}
-              tooltip={scopeName ? `New chat in ${scopeName}` : 'New chat'}
-            >
-              <Plus className="size-3.5" />
-            </IconButton>
-          )}
         </>
       }
     />
@@ -81,13 +58,11 @@ export function ChatSidebarHeader({
 }
 
 export function HistorySearchField({
-  source,
   visible,
   value,
   onChange,
   onClose,
 }: {
-  source: DataSource
   visible: boolean
   value: string
   onChange: (value: string) => void
@@ -102,9 +77,7 @@ export function HistorySearchField({
         value={value}
         onValueChange={onChange}
         autoFocus
-        placeholder={
-          source === 'localix' ? 'Filter chats in this workspace…' : 'Find an external session…'
-        }
+        placeholder="Filter chats in this workspace…"
         className="w-full"
         onKeyDown={(event) => {
           if (event.key === 'Escape') {

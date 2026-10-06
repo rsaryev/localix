@@ -412,3 +412,8 @@ describe('mergeSessionState — a writer touching an out-of-scope session must n
     expect(merged.allSessions).toEqual([project, other])
   })
 })
+
+test('ordinary New chat never reuses an external session with an empty Localix message history', () => {
+  expect(isEmptyDraftSession(mk({ externalAgentProvider: 'codex' }))).toBe(false)
+  expect(isEmptyDraftSession(mk({}))).toBe(true)
+})

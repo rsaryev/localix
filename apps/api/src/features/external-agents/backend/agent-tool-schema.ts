@@ -6,7 +6,11 @@ import { MAX_WAIT_MS, MIN_WAIT_MS } from './live/waiters'
 
 /** Compact snake_case model contract; HTTP and domain contracts retain their typed field names. */
 export const externalAgentInputSchema = z.object({
-  action: z.enum(AGENT_SESSIONS_ACTIONS),
+  action: z
+    .enum(AGENT_SESSIONS_ACTIONS)
+    .describe(
+      'To open or continue an external session for the user: resume, then run its returned command with bash action:"open". Transcript only reads history into your context; it does not open anything for the user.',
+    ),
   key: z
     .string()
     .max(400)

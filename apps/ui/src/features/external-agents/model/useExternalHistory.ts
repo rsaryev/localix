@@ -1,4 +1,5 @@
 import useSWRInfinite from 'swr/infinite'
+import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 import { externalAgentsApi } from '../api'
 import { useInstalledAgents } from './useInstalledAgents'
 import { useHistoryStream } from './useHistoryStream'
@@ -9,7 +10,7 @@ const PAGE_SIZE = 200
 export function useExternalHistory(
   text: string,
   enabled = true,
-  scope?: { provider?: string; cwd?: string },
+  scope?: { provider?: string; cwd?: string; includeDescendants?: boolean },
 ) {
   const installed = useInstalledAgents()
   const providers = installed.agents
@@ -18,7 +19,7 @@ export function useExternalHistory(
     .join(',')
   const query = useSWRInfinite(
     (index, previous: Awaited<ReturnType<typeof externalAgentsApi.roster>> | null) => {
-      if (!providers || previous?.withheld === 0) return null
+      if (!enabled || !providers || previous?.withheld === 0) return null
       return ['external-agents:history', providers, text, scope?.cwd ?? '', index] as const
     },
     ([, ids, search, cwd, index]) =>
@@ -51,7 +52,11 @@ export function useExternalHistory(
       (row) =>
         !row.sourcePath.startsWith('terminal:') &&
         installed.agents.some((agent) => agent.id === row.provider) &&
-        (!scope?.cwd || row.cwd === scope.cwd),
+        (!scope?.cwd ||
+          row.cwd === scope.cwd ||
+          (scope.includeDescendants &&
+            row.cwd &&
+            isAtOrUnder(scope.cwd.replace(/\/+$/, '') || '/', row.cwd))),
     )
     .sort((left, right) => right.updatedAt - left.updatedAt)
   const last = query.data?.at(-1)

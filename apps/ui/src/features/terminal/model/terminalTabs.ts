@@ -205,3 +205,8 @@ export function routeTerminalState(
 ): void {
   autoRevealFullScreenTerminals(sessionId, applyTerminalState(sessionId, event))
 }
+
+/** A user-launched agent pane belongs to its Localix session, including when reopened. */
+export function openOwnedTerminal(sessionId: string, terminalId: string, title: string): void {
+  placeTerminal(makeItem({ sessionId, terminalId, title, owned: true }))
+}

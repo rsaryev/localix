@@ -240,3 +240,52 @@ describe('a filter the schema does not declare is dropped before it reaches the 
     expect(status).toBe(400)
   })
 })
+
+describe('/resume resolves continuation without reading transcript events', () => {
+  it('returns continuation and rejects missing sessions and unavailable providers', async () => {
+    const calls: string[] = []
+    const app = createAgentSessionsRoutes(
+      {
+        async resume(key: string) {
+          calls.push(key)
+          return key === 'codex:missing'
+            ? null
+            : { resume: { providerName: 'Codex', command: "codex resume 's1'" } }
+        },
+        async transcript() {
+          throw new Error('Must not read transcript')
+        },
+      } as unknown as AgentSessionsService,
+      async () => [{ id: 'codex', name: 'Codex', command: 'codex' }],
+    )
+    const request = (key: string) =>
+      app.request('/resume', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key }),
+      })
+    const response = await request('codex:s1')
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      resume: { providerName: 'Codex', command: "codex resume 's1'" },
+    })
+    expect((await request('codex:missing')).status).toBe(404)
+    expect((await request('hermes:s1')).status).toBe(404)
+    expect(calls).toEqual(['codex:s1', 'codex:missing'])
+  })
+
+  it('rejects invalid keys and handles unavailable history', async () => {
+    const app = createAgentSessionsRoutes(undefined)
+    for (const [key, status] of [
+      ['', 400],
+      ['codex:s1', 503],
+    ] as const) {
+      const response = await app.request('/resume', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key }),
+      })
+      expect(response.status).toBe(status)
+    }
+  })
+})

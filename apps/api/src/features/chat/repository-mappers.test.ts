@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { mapSession, mapMessage } from './repository-mappers'
+import { mapSession, mapMessage, toSessionSummary } from './repository-mappers'
 import { serializeMessagePayload } from '../../db/payload'
 
 describe('mapMessage', () => {
@@ -125,5 +125,21 @@ describe('mapSession', () => {
     expect(mapSession({ ...baseRow(), activated_tools: 'not json' }).activatedTools).toEqual([])
     expect(mapSession({ ...baseRow(), activated_tools: null }).activatedTools).toEqual([])
     expect(mapSession({ ...baseRow() }).activatedTools).toEqual([])
+  })
+})
+
+test('external CLI metadata is preserved by both the record and the ordinary session summary', () => {
+  const session = mapSession({
+    ...baseRow(),
+    external_agent_provider: 'codex',
+    external_agent_session_key: 'codex:native',
+  })
+  expect(session).toMatchObject({
+    externalAgentProvider: 'codex',
+    externalAgentSessionKey: 'codex:native',
+  })
+  expect(toSessionSummary(session)).toMatchObject({
+    externalAgentProvider: 'codex',
+    externalAgentSessionKey: 'codex:native',
   })
 })

@@ -21,6 +21,7 @@
  * slashes and the identity would stop round-tripping.
  */
 
+import { resumeSession } from './resume-session'
 import type {
   ResourceExpansion,
   ResourceNode,
@@ -206,6 +207,11 @@ function digest(slice: TranscriptSlice): string {
     [summary.cwd ? `cwd: ${summary.cwd}` : null, `source: ${summary.sourcePath}`]
       .filter((part): part is string => part !== null)
       .join('    '),
+    ...(resumeSession(summary)
+      ? [
+          `To open this session for the user: external_agent_sessions { action: "resume", key: "${key}" }, then execute the returned command with bash action:"open". Reading its transcript does not open a terminal.`,
+        ]
+      : []),
     `range: ${startedAt === undefined ? '(start unknown)' : isoStamp(startedAt)} → ${isoStamp(summary.updatedAt)}    events: ${total}`,
   ]
   /**

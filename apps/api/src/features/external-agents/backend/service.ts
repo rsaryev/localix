@@ -6,6 +6,7 @@
 import { homedir } from 'node:os'
 import type { TerminalRead } from '@localixai/plugin-sdk/backend'
 import type { AdapterEnv, ProviderAdapter, SourceRef } from './adapters/types'
+import { readNativeSummary, readSessionResume } from './resume-session'
 import { PROVIDER_ADAPTERS, adapterFor } from './adapters/registry'
 import { SessionIndex } from './discovery/index-cache'
 import { buildRoster } from './discovery/roster'
@@ -175,10 +176,8 @@ export class AgentSessionsService {
   }
 
   /**
-   * The roster is machine-wide: every provider's on-disk history plus every live delegation,
-   * whoever is asking. `_localixSessionId` is still accepted because callers (the resource
-   * provider's port, the HTTP route) hand their scope through, but no row is relative to it now
-   * that a session-to-session relation no longer exists.
+   * Provider history and live delegations, filtered by the query's directory and provider.
+   * The asking Localix session controls live screen refreshes, not which native rows exist.
    */
   async roster(query: RosterQuery, localixSessionId?: string): Promise<Bounded<RosterRow>> {
     // Refresh the LIVE rows before listing them. Without this the roster is a fresh list of stale
@@ -320,6 +319,15 @@ export class AgentSessionsService {
   private availableAdapters(): readonly ProviderAdapter[] {
     const ids = this.availableProviders?.()
     return ids ? PROVIDER_ADAPTERS.filter((adapter) => ids.includes(adapter.id)) : PROVIDER_ADAPTERS
+  }
+
+  /** Resolve native continuation without loading the conversation's events. */
+  async nativeSummary(key: string) {
+    return readNativeSummary(await this.findSource(key), this.env)
+  }
+
+  async resume(key: string) {
+    return readSessionResume(await this.findSource(key), this.env)
   }
 
   async transcript(

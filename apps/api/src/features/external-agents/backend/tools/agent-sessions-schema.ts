@@ -23,6 +23,7 @@ export const AGENT_SESSIONS_ACTIONS = [
   'stats',
   'explain',
   'transcript',
+  'resume',
   'context',
   'wait',
 ] as const
@@ -37,7 +38,7 @@ export function buildAgentSessionsSchema(z: typeof Zod) {
     action: z
       .enum(AGENT_SESSIONS_ACTIONS)
       .describe(
-        'What to do. "roster" lists external agent sessions (live and historical) — start here, every other action takes a key from it, and each row carries its event count so you can tell what reading it will cost. "wait" blocks until listed agents reach a state. "context" pulls transcripts from several sessions at once. "transcript" reads one. "stats" summarises them by agent, project and model, with the tokens each consumed — ask it when a count answers the question better than a list of hundreds.',
+        'What to do. "roster" lists external agent sessions (live and historical) — start here, every other action takes a key from it, and each row carries its event count so you can tell what reading it will cost. "wait" blocks until listed agents reach a state. "context" pulls transcripts from several sessions at once. "transcript" reads one without opening a terminal. "resume" returns the exact native continuation command; run it with bash action:"open" to open the session for the user. "stats" summarises them by agent, project and model, with the tokens each consumed — ask it when a count answers the question better than a list of hundreds.',
       ),
     key: z
       .string()
@@ -168,7 +169,7 @@ export type AgentSessionsInput = Zod.infer<ReturnType<typeof buildAgentSessionsS
  * costs one turn; a raw validation failure costs several.
  */
 export function agentSessionsProblem(input: AgentSessionsInput): string | null {
-  const needsKey: AgentSessionsAction[] = ['explain', 'transcript']
+  const needsKey: AgentSessionsAction[] = ['explain', 'transcript', 'resume']
   const needsKeys: AgentSessionsAction[] = ['wait', 'context']
 
   if (needsKey.includes(input.action) && !input.key) {

@@ -25,6 +25,8 @@ export const sessionStateReducers: StreamReducers<
     return {
       ...session,
       title: event.session.title,
+      externalAgentProvider: event.session.externalAgentProvider,
+      externalAgentSessionKey: event.session.externalAgentSessionKey,
       isPinned: event.session.isPinned,
       agents: event.session.agents,
       rosterLocked: event.session.rosterLocked,

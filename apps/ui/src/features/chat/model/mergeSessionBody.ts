@@ -47,6 +47,12 @@ export function mergeSessionBody(prev: UiSession | undefined, next: UiSession): 
       rootSessionId: next.rootSessionId,
       sessionKind: next.sessionKind,
       runtimeStatus: next.runtimeStatus,
+      ...(next.externalAgentProvider !== undefined
+        ? { externalAgentProvider: next.externalAgentProvider }
+        : {}),
+      ...(next.externalAgentSessionKey !== undefined
+        ? { externalAgentSessionKey: next.externalAgentSessionKey }
+        : {}),
       sourceToolCallId: next.sourceToolCallId,
       pinnedSkills: next.pinnedSkills,
       sessionTiming: next.sessionTiming,

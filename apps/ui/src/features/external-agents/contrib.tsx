@@ -1,6 +1,7 @@
 import { lazy } from 'react'
-import { Bot, FolderTree, History } from 'lucide-react'
-import { ClaudeMark, CodexMark } from '@localixai/kit/coding-agent-marks'
+import { FolderTree, History } from 'lucide-react'
+import { externalAgentPresentation } from '@/shared/ui/externalAgentPresentation'
+import { LinkedAgentTerminalPill } from './ui/LinkedAgentTerminalPill'
 import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
 import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
 import { EXTERNAL_NAMESPACE, parseExternalResource } from './model/sessionResource'
@@ -9,6 +10,7 @@ const Transcript = lazy(() => import('./ui/ExternalTranscript'))
 const HistoryTab = lazy(() => import('./ui/ExternalHistoryTab'))
 
 export function registerUi(host: PluginUiHost): void {
+  host.sessionSurfaces.register({ surface: 'composer.context', Component: LinkedAgentTerminalPill })
   host.workItems.register({
     kind: 'external-agent-transcript',
     Component: Transcript,
@@ -38,12 +40,11 @@ export function registerUi(host: PluginUiHost): void {
     id: 'core:external-agent-resource',
     namespaces: [EXTERNAL_NAMESPACE],
     icons: {
-      'claude-code': ClaudeMark,
-      codex: CodexMark,
-      'gemini-cli': Bot,
-      opencode: Bot,
-      'github-copilot': Bot,
-      hermes: Bot,
+      ...Object.fromEntries(
+        ['claude-code', 'codex', 'gemini-cli', 'opencode', 'github-copilot', 'hermes'].map(
+          (provider) => [provider, externalAgentPresentation(provider).Icon],
+        ),
+      ),
       folder: FolderTree,
       session: History,
     },

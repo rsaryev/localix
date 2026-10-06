@@ -3,6 +3,7 @@ import type {
   PluginUiHost,
   WorkItemKindContribution,
   UiAnchorContribution,
+  SessionSurfaceContribution,
 } from '@localixai/plugin-sdk/ui'
 import { registerUi } from './contrib'
 import { externalSessionUri } from './model/sessionResource'
@@ -11,11 +12,13 @@ test('core external transcripts and resource anchors work without a plugin or ex
   const workItems: WorkItemKindContribution[] = []
   const anchors: UiAnchorContribution[] = []
   const rail: unknown[] = []
+  const surfaces: SessionSurfaceContribution[] = []
   const host = {
     workItems: { register: (item: WorkItemKindContribution) => workItems.push(item) },
     anchors: { register: (anchor: UiAnchorContribution) => anchors.push(anchor) },
     railSections: { register: (item: unknown) => rail.push(item) },
     railViewlets: { register: (item: unknown) => rail.push(item) },
+    sessionSurfaces: { register: (item: SessionSurfaceContribution) => surfaces.push(item) },
   } as unknown as PluginUiHost
   registerUi(host)
   const kind = workItems.find((item) => item.kind === 'external-agent-transcript')!
@@ -36,4 +39,5 @@ test('core external transcripts and resource anchors work without a plugin or ex
     payload: { provider: 'codex', cwd: '/work/project' },
   })
   expect(rail).toEqual([])
+  expect(surfaces.map((item) => item.surface)).toEqual(['composer.context'])
 })

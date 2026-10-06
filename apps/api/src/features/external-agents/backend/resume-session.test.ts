@@ -28,9 +28,18 @@ test('resumes the specific session only for adapters with native continuation', 
     providerName: 'opencode',
     command: "opencode --session 'session-123'",
   })
-  for (const provider of ['gemini-cli', 'github-copilot', 'hermes'] as const) {
-    expect(resumeSession(summary(provider))).toBeUndefined()
-  }
+  expect(resumeSession(summary('gemini-cli'))).toEqual({
+    providerName: 'Gemini CLI',
+    command: "gemini --resume 'session-123'",
+  })
+  expect(resumeSession(summary('github-copilot'))).toEqual({
+    providerName: 'GitHub Copilot',
+    command: "copilot --resume='session-123'",
+  })
+  expect(resumeSession(summary('hermes'))).toEqual({
+    providerName: 'Hermes',
+    command: "hermes --resume 'session-123'",
+  })
   expect(resumeSession(summary('codex', ''))).toBeUndefined()
 })
 

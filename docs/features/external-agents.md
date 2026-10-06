@@ -1,35 +1,69 @@
 # External agent sessions
 
-Read conversations from installed coding-agent CLIs alongside Localix sessions, link them as
-context, and continue them with their native identity. This is part of Localix itself; no plugin is
-required.
+A Localix chat can have a coding agent linked to it. The chat keeps its normal messages, project and
+controls; opening it also opens the linked CLI terminal. The external conversation remains in the
+coding agent's own history.
 
-## History and transcripts
+## Sessions and projects
 
-The history panel has two full-width tabs: **Localix** and **External**. External history groups
-sessions by activity day, then agent. Search matches titles, session identities and working
-directories. The list loads bounded pages and keeps its scroll position when you switch tabs.
+The history panel combines Localix chats with native CLI sessions recorded in the selected directory
+and its subdirectories. Agent icons before each title identify the linked agent. Default stays
+within the Localix workspace tree; it never aggregates machine-wide CLI history. A native session
+already linked to a Localix chat appears once, under that chat. Archiving the chat does not bring
+back a native duplicate.
 
-Only supported CLIs found on the machine's executable search path appear. Localix reads history
-formats for Claude Code, Codex, opencode, Gemini CLI, GitHub Copilot and Hermes. Old history files
-alone do not make an agent available. The bottom bar offers Claude Code and Codex launch buttons
-when those CLIs are installed; they use the same movable layout as other bar items.
+All Localix chats share the same project selector, search, grouping, sorting, pinning, archive
+controls, menus and batch actions. Opening a native history row first gives it a normal linked chat,
+with those same controls. A newly created chat appears before the CLI writes a transcript.
 
-Open a session to read it with Localix's conversation renderer. Its footer offers:
+Default shows only its own sessions. Like an ordinary Localix chat, each gets a separate directory
+under the Localix workspace. Selecting a project shows its sessions and uses that project's folder.
+The folder picker and project selector are shared with ordinary chats.
 
-- **Import to Localix**: copy the readable conversation into a Localix chat, using its recorded
-  working directory's project when available. A notice states when a bounded read omitted turns.
-- **Open in …**: resume that exact native session in a terminal for adapters with a declared resume
-  command: Claude Code, Codex and opencode. Other adapters offer viewing and import.
-- **Link to chat**: attach the session to the chat from which you opened it, for review before send.
+## Starting and opening a session
 
-Previewing a transcript does not start an agent or create a Localix chat. A terminal opened from an
-app-level preview creates a Localix chat to own that terminal.
+Use the main **New chat** action to create an ordinary chat in the selected project. The history
+header has no duplicate creation button.
+
+Above the composer, the agent pill shows **Localix** while no CLI is linked. Open it and choose an
+installed coding agent. This links the selected CLI to the current chat and launches its terminal in
+that chat's working directory. It keeps the same chat, messages and draft; it creates no second chat
+and imports no external transcript. The Localix composer remains available alongside the terminal.
+
+Opening an existing external session always opens its Localix chat and its agent terminal. A live
+terminal is reused. After Localix identifies the CLI's native session, it saves that identity; an
+adapter resumes the exact native session in its recorded working directory when a new terminal is
+needed. All six supported agents declare native continuation commands. A missing native session
+reports an error rather than starting a different conversation.
+
+Each different external session you open starts its own CLI process. Switching chats keeps those
+processes running; reopening the same session reuses its live terminal. There is no global cap or
+idle eviction for these processes, so opening many sessions increases resource use. Close an agent's
+terminal tab when you want to stop its process. Browsing a native transcript alone starts no CLI.
+
+A chat with a linked CLI shows an agent pill above the composer, beside the project and Git context.
+Press it to reveal the running terminal or reopen that same native conversation. The Localix chat
+and draft stay in place.
+
+Only supported CLIs found on the machine's executable search path appear in the agent-link menu.
+Localix supports Claude Code, Codex, opencode, Gemini CLI, GitHub Copilot and Hermes.
+
+## Native transcripts
+
+Clicking an existing native session creates or reuses an ordinary Localix chat linked to its native
+identity, then opens that chat and the CLI terminal. The external conversation stays in the agent's
+own history; its messages are not imported into the Localix chat.
+
+You can separately browse native CLI history through **External Agents** under `@resource:` and
+through external statistics. A native transcript opens with Localix's conversation renderer. Its
+footer offers **Open in …** and **Link to chat** when opened from a chat. Reading a native
+transcript does not start a CLI or create a chat; its explicit terminal action uses the same
+linked-chat flow.
 
 ## Linked context
 
-Drag an External history row, the transcript's last breadcrumb, or its tab into a composer. You can
-also browse **External Agents** under `@resource:`. These paths use the same canonical session URI:
+Drag a native transcript's last breadcrumb or its tab into a composer. You can also browse
+**External Agents** under `@resource:`. These paths use the same canonical session URI:
 
 ```text
 localix://resource/external-agent/codex/session-id
@@ -51,6 +85,9 @@ The tool's model-facing fields use snake case. For example, one transcript windo
 ```
 
 Advance `from` using the returned event positions, or use `tail: true` to read the latest events.
+Reading a transcript supplies context to the agent; it does not open a terminal for you. To open or
+continue a native session, the agent uses `resume` with its session key, then runs the returned
+command with `bash` action `open`. The lookup itself does not execute commands.
 
 For agents with shell access, the runtime prompt includes a short list of installed external agents
 and their basic launch commands. Starting or driving a CLI still goes through ordinary terminal

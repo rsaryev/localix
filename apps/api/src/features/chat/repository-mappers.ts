@@ -30,6 +30,8 @@ export const mapSession = (row: {
   session_kind: AgentSessionKind
   runtime_status: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
   source_tool_call_id: string | null
+  external_agent_provider?: string | null
+  external_agent_session_key?: string | null
   invocation_json: string
   pinned_skills?: string | null
   activated_tools?: string | null
@@ -58,6 +60,10 @@ export const mapSession = (row: {
   rootSessionId: row.root_session_id ?? row.id,
   sessionKind: row.session_kind ?? 'chat',
   runtimeStatus: row.runtime_status ?? 'idle',
+  ...(row.external_agent_provider ? { externalAgentProvider: row.external_agent_provider } : {}),
+  ...(row.external_agent_session_key
+    ? { externalAgentSessionKey: row.external_agent_session_key }
+    : {}),
   sourceToolCallId: row.source_tool_call_id ?? null,
   provenance: parseSessionProvenance(row.invocation_json),
   agents: parseParticipants(row.agents_json),
@@ -119,6 +125,10 @@ export const toSessionSummary = (record: SessionRecord): SessionSummary => ({
   description: record.description,
   avatar: record.avatar,
   runtimeStatus: record.runtimeStatus,
+  ...(record.externalAgentProvider ? { externalAgentProvider: record.externalAgentProvider } : {}),
+  ...(record.externalAgentSessionKey
+    ? { externalAgentSessionKey: record.externalAgentSessionKey }
+    : {}),
   sourceToolCallId: record.sourceToolCallId,
   pinnedSkills: record.pinnedSkills ?? [],
   sessionTiming: null,

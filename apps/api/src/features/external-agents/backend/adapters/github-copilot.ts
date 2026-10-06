@@ -1,3 +1,4 @@
+import { shellQuote } from '@localixai/plugin-sdk/backend'
 /**
  * GitHub Copilot CLI — `~/.copilot/session-state/<uuid>/events.jsonl`.
  *
@@ -271,4 +272,5 @@ export const githubCopilotAdapter: ProviderAdapter = {
   },
   readTranscript,
   readTurnState,
+  resumeCommand: (id) => `copilot --resume=${shellQuote(id)}`,
 }

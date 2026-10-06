@@ -10,8 +10,6 @@ import { inspector } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
 import { openPageWorkItem } from './openPageWorkItem'
 import { pluginViewRailAction } from './pluginViewRailAction'
-import { codingAgentRailActions } from './codingAgentRailActions'
-import { useInstalledAgents } from '@/features/external-agents/model/useInstalledAgents'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
 import {
@@ -116,7 +114,6 @@ export function useRailActions({
   // React Compiler otherwise retains the assembled action array from before async plugin
   // registration, even after the activation revision and contributed viewlets change.
   const resetLayout = useGridStore((s) => s.resetLayout)
-  const { agents: installedAgents } = useInstalledAgents()
   // The id + kind of the FOCUSED group's VISIBLE active tab (scope-correct — not the
   // raw activeTab, which can be a hidden background-session tab) — drives the dots.
   const focusedActiveId = useGridStore(focusedVisibleTabId)
@@ -263,10 +260,6 @@ export function useRailActions({
           },
         ]
       : []),
-    ...codingAgentRailActions(
-      openSessionId,
-      installedAgents.map((agent) => agent.command),
-    ),
     {
       id: 'settings',
       icon: createElement(Settings, { className: 'size-4.5' }),

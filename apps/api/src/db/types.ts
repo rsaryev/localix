@@ -174,6 +174,8 @@ export interface AgentSessionsTable {
   >
   source_tool_call_id: string | null
   /** Serialized SessionProvenance. Kept separate from source_tool_call_id UI correlation. */
+  external_agent_provider: ColumnType<string | null, string | null | undefined, string | null>
+  external_agent_session_key: ColumnType<string | null, string | null | undefined, string | null>
   invocation_json: ColumnType<string, string | undefined, string>
   /** JSON array of skill names pinned (warmed into context) for this session. */
   pinned_skills: ColumnType<string, string | undefined, string | undefined>

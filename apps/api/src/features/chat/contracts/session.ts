@@ -29,6 +29,7 @@ export const createSessionRequestSchema = z
      * turn costs a member's context window per member, so a room that grows without bound
      * stops being readable long before it stops being writable.
      */
+    externalAgentProvider: z.string().min(1).max(64).optional(),
     agentIds: z.array(z.string().trim().min(1).max(200)).optional(),
   })
   .strict()
@@ -134,6 +135,8 @@ export const sessionRouteRequestSchema = z.object({
 })
 
 export const updateSessionRequestSchema = z.object({
+  externalAgentSessionKey: z.string().min(3).max(400).optional(),
+  externalAgentProvider: z.string().min(1).max(64).optional(),
   title: z.string().trim().min(1).max(SESSION_TITLE_MAX_CHARS).optional(),
   route: sessionRouteRequestSchema.optional(),
   /**

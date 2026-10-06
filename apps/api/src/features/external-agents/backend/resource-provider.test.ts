@@ -369,6 +369,9 @@ describe('external agent resource provider', () => {
     expect(content).toEndWith(
       '(Compact digest of an external claude-code session. Full transcript: external_agent_sessions { action: "transcript", key: "claude-code:abc" }. Several sessions at once: { action: "context", keys: [...] }. Live state: { action: "explain", key: "claude-code:abc" }.)',
     )
+    expect(content).toContain('action: "resume", key: "claude-code:abc"')
+    expect(content).toContain('then execute the returned command with bash action:"open"')
+    expect(content).toContain('Reading its transcript does not open a terminal.')
     // The tail, never the whole transcript: 30 turns were read, 6 at most are shown.
     expect(content.match(/^\[(user|assistant)] /gm)).toHaveLength(6)
   })

@@ -96,3 +96,20 @@ describe('scopeRootSessions (single-scope projection)', () => {
     expect(scopeRootSessions(list, 'p1', false).map((row) => row.id)).toEqual(['root'])
   })
 })
+
+test('Localix and external sessions share a project-scoped roster', () => {
+  const local = s({ id: 'local', projectId: 'default' })
+  const external = s({ id: 'external', projectId: 'default', externalAgentProvider: 'codex' })
+  const foreign = s({ id: 'other', projectId: 'other', externalAgentProvider: 'codex' })
+  const archived = s({
+    id: 'archived',
+    projectId: 'default',
+    externalAgentProvider: 'codex',
+    isArchived: true,
+  })
+  const all = [local, external, foreign, archived]
+  expect(scopeRootSessions(all, 'default', false)).toEqual([local, external])
+  expect(scopeRootSessions(all, 'default', true)).toEqual([local, external, archived])
+  expect(scopeRootSessions(all, 'other', false)).toEqual([foreign])
+  expect(scopeRootSessions(all, null, true)).toEqual([])
+})

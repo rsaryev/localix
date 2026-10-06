@@ -67,8 +67,9 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 
 ## How it works
 
-Use `ClaudeMark` and `CodexMark` from `@localixai/kit/coding-agent-marks` for Claude Code and Codex
-identities. These monochrome SVGs preserve the brand paths and inherit the surrounding text colour.
+Use `ClaudeMark`, `CodexMark`, `GeminiMark`, `CopilotMark`, `OpenCodeMark` and `HermesMark` from
+`@localixai/kit/coding-agent-marks` for coding agent identities. These monochrome SVGs inherit the
+surrounding text colour. Menus, session rows and resource references share the same marks.
 
 ### One package, two consumers
 

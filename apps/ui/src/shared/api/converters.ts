@@ -134,6 +134,12 @@ export function toUiSessionSummary(summary: SessionSummary): UiSession {
     description: summary.description,
     avatar: summary.avatar,
     runtimeStatus: summary.runtimeStatus,
+    ...(summary.externalAgentProvider
+      ? { externalAgentProvider: summary.externalAgentProvider }
+      : {}),
+    ...(summary.externalAgentSessionKey
+      ? { externalAgentSessionKey: summary.externalAgentSessionKey }
+      : {}),
     sourceToolCallId: summary.sourceToolCallId,
     sourceRuntime: null,
     pinnedSkills: summary.pinnedSkills ?? [],
@@ -225,6 +231,12 @@ export function toUiSession(detail: SessionDetail): UiSession {
     description: detail.description,
     avatar: detail.avatar,
     runtimeStatus: detail.runtimeStatus,
+    ...(detail.externalAgentProvider
+      ? { externalAgentProvider: detail.externalAgentProvider }
+      : {}),
+    ...(detail.externalAgentSessionKey
+      ? { externalAgentSessionKey: detail.externalAgentSessionKey }
+      : {}),
     sourceToolCallId: detail.sourceToolCallId,
     sourceRuntime: detail.sourceRuntime,
     pinnedSkills: detail.pinnedSkills ?? [],

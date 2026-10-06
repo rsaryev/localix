@@ -42,6 +42,8 @@ export const rosterBodySchema = z.object({
   query: rosterQuerySchema.optional(),
 })
 
+export const resumeBodySchema = z.object({ key: sessionKey })
+
 /**
  * `/items` is `/transcript` projected onto the native `AgentItem` model, so it takes the same key
  * and the same event cap. There is no `maxCharsPerEvent`: the viewer renders whole items, and a

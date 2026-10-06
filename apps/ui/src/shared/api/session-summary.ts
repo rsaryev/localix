@@ -40,6 +40,12 @@ export function uiSessionSummary(session: UiSession): UiSession {
     description: session.description,
     avatar: session.avatar,
     runtimeStatus: session.runtimeStatus,
+    ...(session.externalAgentProvider
+      ? { externalAgentProvider: session.externalAgentProvider }
+      : {}),
+    ...(session.externalAgentSessionKey
+      ? { externalAgentSessionKey: session.externalAgentSessionKey }
+      : {}),
     sourceToolCallId: session.sourceToolCallId,
     sourceRuntime: null,
     pinnedSkills: session.pinnedSkills ?? [],

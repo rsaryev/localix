@@ -6,19 +6,27 @@ import { ExternalHistoryList } from './ExternalHistoryList'
 import { toast } from '@/shared/lib/notify'
 import { useExternalHistory } from '../model/useExternalHistory'
 import { externalHistoryGroups } from '../model/historyGroups'
-import { openExternalSession } from '../model/openSession'
+import type { SessionGroupingMode } from '@/features/chat/model/sessionGrouping'
+import type { SortMode } from '@/features/chat/model/useSidebarSessions'
+import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
+import { openExternalSessionTerminal } from '../model/openSession'
 
 export default function ExternalHistorySidebar({
   owningSessionId,
   search,
   enabled,
   scope,
+  groupingMode = 'activity',
+  sortMode = 'recent',
 }: {
   owningSessionId: string | null
   search: string
   enabled: boolean
   scope?: { provider?: string; cwd?: string }
+  groupingMode?: SessionGroupingMode
+  sortMode?: SortMode
 }) {
+  const navigation = useRoutedNavigation()
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
   const [opening, setOpening] = useState<string | null>(null)
   const inFlight = useRef(false)
@@ -36,7 +44,9 @@ export default function ExternalHistorySidebar({
     inFlight.current = true
     setOpening(source.key)
     try {
-      await openExternalSession(source, owningSessionId)
+      const destination = await openExternalSessionTerminal(source, owningSessionId)
+      if (destination)
+        navigation.goToSession(destination.sessionId, { project: destination.projectId })
     } catch (cause) {
       toast.error('Could not open this agent conversation', {
         description: errorMessage(cause, '') || undefined,
@@ -70,6 +80,8 @@ export default function ExternalHistorySidebar({
       ) : null}
       <ExternalHistoryList
         groups={groups}
+        groupingMode={groupingMode}
+        sortMode={sortMode}
         agents={query.agents}
         collapsed={collapsed}
         opening={opening}

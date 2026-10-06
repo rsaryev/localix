@@ -12,6 +12,7 @@ import { useLocation } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
 
 import { useChatStore, useHasHydrated } from '@/features/chat/model/store'
+import { useExternalSessionTerminal } from '@/features/external-agents/model/useExternalSessionTerminal'
 import { useJobTerminal } from '@/features/chat/model/useJobTerminal'
 import { useCodeSnippetOpener } from '@/features/chat/model/useCodeSnippetOpener'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
@@ -175,6 +176,7 @@ export function ChatPage() {
   const isMobile = useIsMobile()
   const nav = useRoutedNavigation()
   // Page-level navigation (the rail, the shell) acts on the chat this page has open.
+  useExternalSessionTerminal(activeSessionId)
   const uiNavigation = useUiNavigation({ sessionId: activeSessionId })
   const { sessionId: routeSessionId, sectionId, projectId: routeProjectId, isLegacyRoute } = nav
   const routePathname = useLocation().pathname

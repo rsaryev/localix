@@ -75,6 +75,7 @@ const DEFAULT_SESSION_TITLE = 'New Chat'
  */
 export function isEmptyDraftSession(s: UiSession): boolean {
   return (
+    !s.externalAgentProvider &&
     s.sessionKind !== 'subagent' &&
     s.sessionKind !== 'job' &&
     !s.parentSessionId &&

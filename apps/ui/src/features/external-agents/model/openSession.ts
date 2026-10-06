@@ -1,14 +1,12 @@
-import { Import, Link2, Terminal } from 'lucide-react'
+import { Link2, Terminal } from 'lucide-react'
 import type { PluginTranscriptAction } from '@localixai/plugin-sdk/ui/runtime'
 import { MAX_TRANSCRIPT_EVENTS } from '@localixai/api/external-agent-contracts'
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
 import { externalAgentsApi } from '../api'
 import { toMessages, type ExternalTranscriptMessage } from './toMessages'
-import { backendClient } from '@/shared/api/client'
-import { projectsApi } from '@/shared/api/projects-client'
 import { useChatStore } from '@/features/chat/model/store'
 import { rememberTranscript } from '@/features/chat/model/openTranscript'
-import { openCommandTerminal } from '@/features/terminal/model/terminalTabs'
+import { openOwnedExternalSession } from './createSession'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { composerBus } from '@/shared/lib/composerBus'
 import {
@@ -33,32 +31,10 @@ export function externalSessionMessages(slice: Slice): ExternalTranscriptMessage
   ]
 }
 
-export async function importExternalSession(source: Source) {
-  const slice = await externalAgentsApi.items(source.key, MAX_TRANSCRIPT_EVENTS, true)
-  const project = source.cwd
-    ? (await projectsApi.resolveProjectByPath(source.cwd)).project
-    : undefined
-  const imported = await backendClient.importSession({
-    title: source.title,
-    messages: externalSessionMessages(slice),
-    ...(project ? { projectId: project.id } : {}),
-  })
-  await useChatStore.getState().loadProjects()
-  return { sessionId: imported.id, projectId: imported.projectId }
-}
-
 export async function prepareExternalTranscript(source: Source, owningSessionId: string | null) {
   const slice = await externalAgentsApi.items(source.key, MAX_TRANSCRIPT_EVENTS, true)
   const id = `external-agent:${source.key}`
-  const actions: PluginTranscriptAction[] = [
-    {
-      label: 'Import to Localix',
-      pendingLabel: 'Importing…',
-      icon: Import,
-      errorLabel: 'Could not import this conversation',
-      run: () => importExternalSession(source),
-    },
-  ]
+  const actions: PluginTranscriptAction[] = []
   const resume = slice.resume
   if (owningSessionId) {
     actions.unshift({
@@ -81,22 +57,7 @@ export async function prepareExternalTranscript(source: Source, owningSessionId:
       icon: Terminal,
       errorLabel: 'Could not open this agent session in a terminal',
       run: async () => {
-        // A preview creates no Localix session. Only a requested terminal needs an owner.
-        let sessionId = owningSessionId
-        let destination: { sessionId: string; projectId: string } | undefined
-        if (!sessionId) {
-          const project = source.cwd
-            ? (await projectsApi.resolveProjectByPath(source.cwd)).project
-            : undefined
-          const created = await backendClient.createSession(
-            project ? { projectId: project.id } : {},
-          )
-          sessionId = created.id
-          await useChatStore.getState().loadProjects()
-          destination = { sessionId, projectId: created.projectId }
-        }
-        await openCommandTerminal(sessionId, resume.command, resume.providerName)
-        return destination
+        return openNativeSessionTerminal(source)
       },
     })
   }
@@ -133,4 +94,16 @@ export async function openExternalSession(source: Source, owningSessionId: strin
       cwd: source.cwd,
     },
   })
+}
+
+async function openNativeSessionTerminal(source: Source) {
+  const destination = await externalAgentsApi.attachNative(source.key)
+  await useChatStore.getState().loadProjects()
+  await openOwnedExternalSession(destination.sessionId)
+  return destination
+}
+
+/** Native history clicks attach identity to a normal chat and continue the exact CLI session. */
+export async function openExternalSessionTerminal(source: Source, _owningSessionId: string | null) {
+  return openNativeSessionTerminal(source)
 }

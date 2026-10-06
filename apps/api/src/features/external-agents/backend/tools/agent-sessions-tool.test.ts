@@ -52,7 +52,7 @@ function service(over: Partial<AgentSessionsService> = {}): AgentSessionsService
 
 describe('a malformed call is answered with the fix', () => {
   test('an action that needs a key says where to get one', () => {
-    for (const action of ['explain', 'transcript'] as const) {
+    for (const action of ['explain', 'transcript', 'resume'] as const) {
       const problem = agentSessionsProblem(input({ action }))
       expect(problem).toContain('roster')
       expect(problem).toContain('key')
@@ -93,6 +93,7 @@ describe('a malformed call is answered with the fix', () => {
       input({ action: 'stats', days: 30 }),
       input({ action: 'explain', key: 'claude-code:abc' }),
       input({ action: 'transcript', key: 'codex:abc' }),
+      input({ action: 'resume', key: 'codex:abc' }),
       input({ action: 'context', keys: ['claude-code:a', 'codex:b'] }),
       input({ action: 'wait', keys: ['claude-code:a'], mode: 'all' }),
     ]
@@ -833,6 +834,42 @@ describe('every axis the statistics carry reaches the model half too', () => {
       'axis-session',
     ]) {
       expect(result.content, `${marker} is folded but never printed`).toContain(marker)
+    }
+  })
+})
+
+describe('native continuation', () => {
+  test('returns the exact command and requires opening a terminal before claiming success', async () => {
+    let key: string | undefined
+    const result = await runAgentSessions(
+      service({
+        async resume(requested) {
+          key = requested
+          return {
+            resume: { providerName: 'Codex', command: "cd -- '/work/app' && codex resume 'abc'" },
+          }
+        },
+      }),
+      input({ action: 'resume', key: 'codex:abc' }),
+    )
+    expect(key).toBe('codex:abc')
+    expect(result.content).toContain('"action":"open"')
+    expect(result.content).toContain("cd -- '/work/app' && codex resume 'abc'")
+    expect(result.content).toContain('has not opened a terminal')
+  })
+
+  test('does not invent continuation for missing sessions or unsupported adapters', async () => {
+    for (const resume of [null, { resume: undefined }]) {
+      const result = await runAgentSessions(
+        service({
+          async resume() {
+            return resume
+          },
+        }),
+        input({ action: 'resume', key: 'hermes:abc' }),
+      )
+      expect(result.content).not.toContain('"action":"open"')
+      expect(result.content).toContain(resume ? 'not supported' : 'No session on disk')
     }
   })
 })

@@ -109,6 +109,8 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
 }
 
 export interface CreateSessionInput {
+  externalAgentProvider?: string
+  externalAgentSessionKey?: string
   title?: string
   providerConnectionId?: string | null
   modelId?: string
@@ -143,6 +145,8 @@ export interface CreateSessionInput {
 }
 
 export interface UpdateSessionPatch {
+  externalAgentProvider?: string
+  externalAgentSessionKey?: string
   title?: string
   /** The conversation's permission mode — a root's only; written to its whole tree. */
   permissionMode?: PermissionMode
@@ -202,6 +206,15 @@ export async function updateSession(
   patch: UpdateSessionPatch,
 ): Promise<SessionDetail> {
   const session = await ctx.requireSession(userId, id)
+  if (patch.externalAgentProvider !== undefined) {
+    if (session.sessionKind !== 'chat')
+      throw new ApiError(400, 'not_chat_session', 'Only an ordinary chat can have a linked agent.')
+    if (
+      session.externalAgentProvider &&
+      session.externalAgentProvider !== patch.externalAgentProvider
+    )
+      throw new ApiError(409, 'agent_already_linked', 'This chat already has a linked agent.')
+  }
   if (patch.route?.providerConnectionId && ctx.connectionExists) {
     if (!(await ctx.connectionExists(userId, patch.route.providerConnectionId))) {
       throw new ApiError(

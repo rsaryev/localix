@@ -76,11 +76,12 @@ describe('session action chrome', () => {
     )
 
     expect(sidebar).not.toContain('function HeaderIconButton')
-    // Search, add-project, new-chat. The count is a baseline, not the claim: what
+    // Search and add-project use the shared icon primitive. What
     // this test defends is that every one of them is the shared primitive rather than a
     // hand-rolled button, which is what the header used to be full of.
-    expect(sidebar.match(/<IconButton/g)).toHaveLength(3)
-    expect(sidebar.match(/surface="sidebar"/g)).toHaveLength(3)
+    expect(sidebar.match(/<IconButton/g)).toHaveLength(2)
+    expect(sidebar.match(/surface="sidebar"/g)).toHaveLength(2)
+    expect(sidebar).not.toContain('New chat')
     expect(conversationHeader).toContain('<IconButton')
     expect(conversationHeader).toContain('aria-label="Find in conversation"')
     expect(conversationHeader).not.toContain('<button')

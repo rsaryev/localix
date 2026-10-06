@@ -4,7 +4,12 @@ import { jsonError } from '../../../lib/http'
 import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
 import type { AgentSessionsService } from './service'
 import { toTranscriptTurns } from './transcript/to-agent-items'
-import { itemsBodySchema, rosterBodySchema, statsBodySchema } from './route-schemas'
+import {
+  itemsBodySchema,
+  resumeBodySchema,
+  rosterBodySchema,
+  statsBodySchema,
+} from './route-schemas'
 import { resumeSession } from './resume-session'
 import { installedExternalAgents, type InstalledExternalAgent } from '../installed'
 import { parseLinkKey } from '../shared/identity'
@@ -54,6 +59,29 @@ export function createAgentSessionsRoutes(
           500,
           'history_read_failed',
           'Could not read external agent history.',
+          detail(error),
+        )
+      }
+    })
+    .post('/resume', zValidator('json', resumeBodySchema), async (c) => {
+      if (!service)
+        return jsonError(c, 503, 'history_unavailable', 'External agent history is unavailable.')
+      const { key } = c.req.valid('json')
+      try {
+        const identity = parseLinkKey(key)
+        const available = await installed()
+        if (!identity || !available.some((agent) => agent.id === identity.provider))
+          return jsonError(c, 404, 'agent_not_installed', 'This agent is not installed.')
+        const result = await service.resume(key)
+        if (!result)
+          return jsonError(c, 404, 'session_not_found', 'This session is no longer on disk.')
+        return c.json(result)
+      } catch (error) {
+        return jsonError(
+          c,
+          500,
+          'resume_read_failed',
+          'Could not resolve this agent session.',
           detail(error),
         )
       }

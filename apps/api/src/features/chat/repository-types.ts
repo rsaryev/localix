@@ -108,6 +108,8 @@ export interface SessionRecord {
   rootSessionId: string | null
   sessionKind: AgentSessionKind
   runtimeStatus: 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
+  externalAgentProvider?: string | null
+  externalAgentSessionKey?: string | null
   sourceToolCallId: string | null
   /** Durable creator/topology metadata used to reconstruct execution policy after restart. */
   provenance: SessionProvenance

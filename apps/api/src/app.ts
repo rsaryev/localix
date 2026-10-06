@@ -14,6 +14,7 @@ import {
   type LocalOriginPolicy,
 } from './lib/local-origin-guard'
 import { createCatalogRoutes, type CatalogRoutesService } from './features/catalog/routes'
+import { ownedAgentRoutes } from './bootstrap/owned-agent-routes'
 import { createAgentSessionsRoutes } from './features/external-agents/backend/routes'
 import type { AgentSessionsService } from './features/external-agents/backend/service'
 import { createChatRoutes, type ChatRoutesService } from './features/chat/routes'
@@ -256,6 +257,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route('/rpc/plugins', createPluginRoutes(deps.pluginService))
     .route('/rpc/agents', createAgentsRoutes(deps.agentsService))
     .route('/rpc/external-agents', createAgentSessionsRoutes(deps.externalAgents))
+    .route('/rpc/external-agents', ownedAgentRoutes(deps))
     .route('/rpc/skills/curator', createSkillsCuratorRoutes(deps.skillsCuratorService))
     .route('/rpc/notifications', createNotificationRoutes(deps.notifications))
     .route(MEDIA_SERVE_PREFIX, createMediaRoutes(deps.mediaStore))

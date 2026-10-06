@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Bot, ChevronRight } from 'lucide-react'
-import { ClaudeMark, CodexMark } from '@localixai/kit/coding-agent-marks'
+import { ChevronRight } from 'lucide-react'
+import { externalAgentPresentation } from '@/shared/ui/externalAgentPresentation'
 import {
   WorkbenchListRow,
   WorkbenchListRowTrigger,
@@ -12,37 +12,17 @@ import {
 import { Button } from '@localixai/kit/button'
 import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
-import type { externalHistoryGroups } from '../model/historyGroups'
+import { externalHistoryRows, type HistoryGroup } from '../model/historyRows'
+import type { SessionGroupingMode } from '@/features/chat/model/sessionGrouping'
+import type { SortMode } from '@/features/chat/model/useSidebarSessions'
 import { dragExternalResource, externalSessionUri } from '../model/sessionResource'
 
-type Group = ReturnType<typeof externalHistoryGroups>[number]
 type Agent = { id: string; name: string }
-type Row =
-  | { kind: 'day'; id: string; label: string }
-  | { kind: 'agent'; id: string; provider: string; count: number }
-  | { kind: 'session'; id: string; session: RosterRow }
-  | { kind: 'more'; id: string }
-
-function rowsOf(groups: Group[], collapsed: ReadonlySet<string>, hasMore: boolean): Row[] {
-  const rows: Row[] = []
-  for (const day of groups) {
-    rows.push({ kind: 'day', id: day.id, label: day.label })
-    for (const agent of day.agents) {
-      const id = `${day.id}:${agent.id}`
-      rows.push({ kind: 'agent', id, provider: agent.id, count: agent.sessions.length })
-      if (!collapsed.has(id)) {
-        rows.push(
-          ...agent.sessions.map((session): Row => ({ kind: 'session', id: session.key, session })),
-        )
-      }
-    }
-  }
-  if (hasMore) rows.push({ kind: 'more', id: 'more' })
-  return rows
-}
 
 export function ExternalHistoryList({
   groups,
+  groupingMode,
+  sortMode,
   agents,
   collapsed,
   opening,
@@ -52,7 +32,9 @@ export function ExternalHistoryList({
   loadingMore,
   loadMore,
 }: {
-  groups: Group[]
+  groups: HistoryGroup[]
+  groupingMode: SessionGroupingMode
+  sortMode: SortMode
   agents: Agent[]
   collapsed: ReadonlySet<string>
   opening: string | null
@@ -63,7 +45,7 @@ export function ExternalHistoryList({
   loadMore: () => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)
-  const rows = rowsOf(groups, collapsed, hasMore)
+  const rows = externalHistoryRows(groups, collapsed, hasMore, groupingMode, sortMode)
   const virtual = useVirtualizer({
     count: rows.length,
     getScrollElement: () => viewport.current,
@@ -91,12 +73,7 @@ export function ExternalHistoryList({
             const expanded = !collapsed.has(row.id)
             const name =
               agents.find((provider) => provider.id === row.provider)?.name ?? row.provider
-            const Mark =
-              row.provider === 'claude-code'
-                ? ClaudeMark
-                : row.provider === 'codex'
-                  ? CodexMark
-                  : Bot
+            const { Icon: Mark } = externalAgentPresentation(row.provider)
             content = (
               <WorkbenchListRow density="compact">
                 <WorkbenchListRowTrigger aria-expanded={expanded} onClick={() => toggle(row.id)}>

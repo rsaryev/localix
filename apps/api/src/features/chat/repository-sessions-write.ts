@@ -13,6 +13,7 @@ import {
 } from './repository-conversation-participants'
 import type { ModelRoute, SessionRecord } from './repository-types'
 import { serializeSessionProvenance } from './session-provenance'
+import { sessionRowPatch } from './repository-session-patch'
 import { sessionSubtreeForDeletion } from './session-subtree'
 
 // Session writes: ref allocation, insert (with the in-transaction agent-name claim),
@@ -42,6 +43,12 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         session_kind: record.sessionKind,
         runtime_status: record.runtimeStatus,
         source_tool_call_id: record.sourceToolCallId,
+        ...(record.externalAgentProvider
+          ? { external_agent_provider: record.externalAgentProvider }
+          : {}),
+        ...(record.externalAgentSessionKey
+          ? { external_agent_session_key: record.externalAgentSessionKey }
+          : {}),
         invocation_json: serializeSessionProvenance(record.provenance),
         pinned_skills: JSON.stringify(record.pinnedSkills ?? []),
         description: record.description,
@@ -105,45 +112,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
             .where('id', '=', id)
             .executeTakeFirst()
           if (!owned) return
-          const rowPatch = {
-            ...(patch.title !== undefined ? { title: patch.title } : {}),
-            ...(patch.isPinned !== undefined ? { is_pinned: patch.isPinned ? 1 : 0 } : {}),
-            ...(patch.projectId !== undefined ? { project_id: patch.projectId } : {}),
-            ...(patch.parentSessionId !== undefined
-              ? { parent_session_id: patch.parentSessionId }
-              : {}),
-            ...(patch.rootSessionId !== undefined ? { root_session_id: patch.rootSessionId } : {}),
-            ...(patch.sessionKind !== undefined ? { session_kind: patch.sessionKind } : {}),
-            ...(patch.runtimeStatus !== undefined ? { runtime_status: patch.runtimeStatus } : {}),
-            ...(patch.sourceToolCallId !== undefined
-              ? { source_tool_call_id: patch.sourceToolCallId }
-              : {}),
-            ...(patch.provenance !== undefined
-              ? { invocation_json: serializeSessionProvenance(patch.provenance) }
-              : {}),
-            ...(patch.pinnedSkills !== undefined
-              ? { pinned_skills: JSON.stringify(patch.pinnedSkills) }
-              : {}),
-            ...(patch.description !== undefined ? { description: patch.description } : {}),
-            ...(patch.avatar !== undefined ? { avatar: patch.avatar } : {}),
-            ...(patch.rosterLocked !== undefined
-              ? { roster_locked: patch.rosterLocked ? 1 : 0 }
-              : {}),
-            ...(patch.activatedTools !== undefined
-              ? {
-                  activated_tools: patch.activatedTools.length
-                    ? JSON.stringify(patch.activatedTools)
-                    : null,
-                }
-              : {}),
-            ...(patch.archivedAt !== undefined ? { archived_at: patch.archivedAt } : {}),
-            ...(patch.closedAt !== undefined ? { closed_at: patch.closedAt } : {}),
-            ...(patch.permissionMode !== undefined
-              ? { permission_mode: patch.permissionMode }
-              : {}),
-            ...(patch.updatedAt !== undefined ? { updated_at: patch.updatedAt } : {}),
-            ...(patch.lastMessageAt !== undefined ? { last_message_at: patch.lastMessageAt } : {}),
-          }
+          const rowPatch = sessionRowPatch(patch)
           if (Object.keys(rowPatch).length > 0)
             await trx
               .updateTable('agent_sessions')

@@ -342,3 +342,12 @@ describe('toUiSession', () => {
     ).toBeNull()
   })
 })
+
+test('external CLI choice survives detail, list and persisted launch summaries', () => {
+  const metadata = { externalAgentProvider: 'codex', externalAgentSessionKey: 'codex:native' }
+  const list = toUiSessionSummary(summary(metadata))
+  const body = toUiSession(detail(metadata))
+  expect(list).toMatchObject(metadata)
+  expect(body).toMatchObject(metadata)
+  expect(uiSessionSummary(body)).toMatchObject(metadata)
+})
