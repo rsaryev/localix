@@ -1,4 +1,11 @@
-import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react'
 import { Bell } from 'lucide-react'
 import { useLocation } from 'react-router'
 import { filterEvents } from '@/shared/lib/notifications/eventCenter'
@@ -15,12 +22,15 @@ import { PopoverContent } from '@localixai/kit/popover'
 import { DEFAULT_JOURNAL_FILTERS, EventFilterBar, type JournalFilters } from './EventFilterBar'
 import { EventRow } from './EventRow'
 import { useJournalNavigation } from './useJournalNavigation'
+import { useNativeChromeInset } from './useNativeChromeInset'
 
 /** Heavy searchable journal, loaded only when the lightweight launcher opens it. */
 export function NotificationCenterContent({
+  anchorRef,
   onRequestClose,
   focusEntryId,
 }: {
+  anchorRef: RefObject<HTMLButtonElement | null>
   onRequestClose: () => void
   /** Entry the centre was opened FOR — a surface's "Details" button. Opens expanded, scrolled to. */
   focusEntryId?: string
@@ -41,6 +51,7 @@ export function NotificationCenterContent({
   const visibleOrigin = routeEventOrigin(pathname)
   const currentSessionId = visibleOrigin.kind === 'application' ? null : visibleOrigin.sessionId
   const listRef = useRef<HTMLUListElement>(null)
+  const { inset: nativeChromeInset, sideOffset } = useNativeChromeInset(anchorRef)
   const { openOrigin, openSource, runAction } = useJournalNavigation({ markRead, onRequestClose })
 
   // A cold lazy mount happens after Radix's initial open-autofocus phase. Focus the
@@ -70,6 +81,9 @@ export function NotificationCenterContent({
   return (
     <PopoverContent
       align="end"
+      material="app"
+      sideOffset={sideOffset}
+      collisionPadding={{ top: nativeChromeInset + 8, right: 8, bottom: 8, left: 8 }}
       role="dialog"
       aria-label="Event Center"
       onOpenAutoFocus={(event) => {

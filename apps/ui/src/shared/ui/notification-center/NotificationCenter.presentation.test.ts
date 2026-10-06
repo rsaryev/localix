@@ -11,6 +11,9 @@ describe('Event Center presentation', () => {
     expect(center).toContain('shrink-0 border-b border-border-soft')
     expect(center).toContain('className="min-h-0 flex-1 overflow-y-auto py-1 scrollbar-thin"')
     expect(center).not.toContain('max-h-[min(62vh,32rem)]')
+    expect(center).toContain(
+      'collisionPadding={{ top: nativeChromeInset + 8, right: 8, bottom: 8, left: 8 }}',
+    )
   })
 
   test('models scopes as pressed filters and reuses shared controls', () => {

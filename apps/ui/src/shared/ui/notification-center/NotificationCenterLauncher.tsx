@@ -35,6 +35,7 @@ const LazyNotificationCenterContent = lazy(preloadNotificationCenter)
 /** Always-present event signal; the detailed journal is instantiated on demand. */
 export function NotificationCenterLauncher() {
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const [signal, setSignal] = useState<{ id: string; severity: NotificationSeverity } | null>(null)
   const entries = useNotificationsStore((state) => state.entries)
   const unread = useNotificationsStore(selectUnreadCount)
@@ -92,6 +93,7 @@ export function NotificationCenterLauncher() {
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
               <button
+                ref={triggerRef}
                 type="button"
                 aria-label={label}
                 aria-haspopup="dialog"
@@ -139,6 +141,7 @@ export function NotificationCenterLauncher() {
         {open && (
           <Suspense fallback={null}>
             <LazyNotificationCenterContent
+              anchorRef={triggerRef}
               onRequestClose={() => setOpen(false)}
               focusEntryId={focusEntryId}
             />

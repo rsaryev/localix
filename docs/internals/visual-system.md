@@ -268,6 +268,11 @@ On macOS, the native window buttons and breadcrumb toolbar share one row. The sh
 button gap and row height and reserves a separate band for native workspace tabs below it. The
 toolbar paints its sidebar coat; only the native tab band receives a native coat.
 
+The Event Center excludes this native chrome from its popover collision area. Its header stays below
+the tabs, and its scrollable journal uses the remaining window height, including when the native tab
+band changes or the window enters fullscreen. Its fill and backdrop blur use the same shared
+floating material as context menus.
+
 When a desktop window loses focus, the titlebar dims its contents only. Its sidebar ground keeps the
 same opacity as the native header, so the two bars remain aligned over the shared material.
 

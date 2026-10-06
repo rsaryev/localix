@@ -170,6 +170,9 @@ describe('Event Center', () => {
           ?.getAttribute('aria-describedby'),
       ).not.toBeNull()
       const dialog = document.body.querySelector('[role="dialog"]')
+      // The journal uses the same theme-owned frosted material as context menus.
+      expect(dialog?.className).toContain('lx-floating-surface')
+      expect(dialog?.className).toContain('bg-popover')
       expect(dialog?.className).toContain('w-[46rem]')
       expect(dialog?.className).toContain(
         'max-h-[min(42rem,var(--radix-popover-content-available-height))]',
