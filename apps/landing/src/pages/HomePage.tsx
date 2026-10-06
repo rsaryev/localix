@@ -13,6 +13,7 @@ import {
   AUTONOMY_FEATURES,
   BROWSER_FEATURES,
   CONTEXT_FEATURES,
+  EXTERNAL_FEATURES,
   CONVERSATION_FEATURES,
   CONTROL_FEATURES,
   CRAFT_FEATURES,
@@ -229,6 +230,24 @@ export function HomePage() {
         </SectionLede>
         <Stagger className={CARD_GRID}>
           {AUTONOMY_FEATURES.map((feature) => (
+            <FeatureLinkCard key={feature.title} {...feature} />
+          ))}
+        </Stagger>
+      </Section>
+
+      <Section id="external" className="border-t border-border-subtle py-20 md:py-28">
+        <SectionLede
+          eyebrow="External agents"
+          title="Keep your CLI conversations connected to the work"
+          guide={SECTION_GUIDES.external}
+          shot="external-agents/history"
+          shotAlt="External agent history and a linked native conversation"
+        >
+          Read the sessions from installed coding-agent CLIs, link them as context, or continue them
+          in a terminal. History and statistics share Localix and External tabs.
+        </SectionLede>
+        <Stagger className={CARD_GRID}>
+          {EXTERNAL_FEATURES.map((feature) => (
             <FeatureLinkCard key={feature.title} {...feature} />
           ))}
         </Stagger>

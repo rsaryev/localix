@@ -12,6 +12,7 @@ const HOME_SHOT_KEYS = [
   'workspace/hero',
   'conversations/participants',
   'context/composer-context',
+  'external-agents/history',
   'project-space/board',
   'browser/agent-preview',
   'plugins/agent-build',

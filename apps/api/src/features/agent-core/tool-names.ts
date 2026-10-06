@@ -148,6 +148,14 @@ export const BUILTIN_TOOL_CATALOG = {
     // human-answered actions when no human can see the prompt (features/secrets).
     exposure: CHAT_AND_CHILD,
   },
+  external_agent_sessions: {
+    name: 'external_agent_sessions',
+    label: 'External agent sessions',
+    description:
+      'Browse live and historical coding-agent sessions, read bounded transcripts, inspect states, wait for completion, and summarize usage. Session keys are <provider>:<nativeSessionId>, returned by roster. Reference a session through @resource → External Agents to attach its context. Read-only; start agents with their CLI commands in the project terminal.',
+    category: 'knowledge',
+    exposure: CHAT_AND_CHILD,
+  },
   skill: {
     name: 'skill',
     label: 'Skills',

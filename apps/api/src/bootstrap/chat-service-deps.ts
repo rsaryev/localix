@@ -68,6 +68,7 @@ export interface ChatServicePhaseInput extends Pick<
   | 'languageModelFactory'
   | 'pluginService'
   | 'announceCapabilityChange'
+  | 'externalAgents'
 > {
   uiLocationCatalogService: ChatServiceDeps['uiLocationCatalog']
   agentNotifications: NonNullable<ChatServiceDeps['notifications']>
@@ -88,6 +89,7 @@ export interface ChatServicePhase {
 }
 
 export function createChatServicePhase({
+  externalAgents,
   db,
   work,
   questions,
@@ -125,6 +127,7 @@ export function createChatServicePhase({
     getProject: (...args) => projectsService.getProject(...args),
   }
   const chatService = createChatService({
+    externalAgents,
     db,
     work,
     questions,

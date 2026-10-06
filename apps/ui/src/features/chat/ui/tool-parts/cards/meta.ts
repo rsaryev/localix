@@ -78,6 +78,14 @@ interface NonCoreMeta extends ToolMeta {
  * was a `Record<string, …>` hand-shadow of the server's map and could silently drift.
  */
 const CORE_META: Record<ToolName, ToolMeta> = {
+  external_agent_sessions: {
+    label: 'Agent history',
+    noun: 'sessions',
+    verb: 'Reading',
+    icon: History,
+    stackable: true,
+    readOnly: true,
+  },
   read: {
     label: 'Read',
     noun: 'files',

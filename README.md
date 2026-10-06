@@ -90,6 +90,21 @@ cards, pinned messages stay whole, and anything evicted is one recall away.
 [Workspace and context](docs/features/workspace.md) ·
 [Context checkpoints](docs/features/context-checkpoints.md)
 
+### Your external agent conversations, in the same workspace
+
+Switch history between **Localix** and **External**. Installed coding-agent CLIs appear with their
+sessions grouped by day and agent. Read a native transcript, import it into Localix, or resume that
+exact session in a terminal where the adapter supports it. Drag a session into a chat or choose it
+with `@resource:`: the Localix agent can investigate its recorded conversation and tool results.
+Usage & Spend has matching tabs for Localix and recorded external usage.
+
+<p align="center">
+  <img src="docs/assets/screenshots/external-agents/history--placeholder.png" alt="External agent history, a native transcript and linked conversation context">
+</p>
+
+[External agent sessions](docs/features/external-agents.md) ·
+[Run an external agent CLI](docs/recipes/bring-your-own-agent-cli.md)
+
 ### A board that you and the agents share
 
 Every project has one spatial board for notes, diagrams, mind maps, tables and live cards for its

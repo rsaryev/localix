@@ -81,6 +81,8 @@ export function useTabPanelIds(scope = 'tabs') {
 interface TabBarProps<T extends string> {
   items: ReadonlyArray<TabItem<T>>
   active: T
+  /** Distribute tabs evenly across the whole panel width. */
+  stretch?: boolean
   onChange: (id: T) => void
   /** Classes for the scrolling tab list (gutters). The row itself owns its height
    *  and its seam — do not restate either here. */
@@ -540,6 +542,7 @@ export function TabBar<T extends string>({
   onChange,
   className,
   trailing,
+  stretch = false,
   'aria-label': ariaLabel,
 }: TabBarProps<T>) {
   const stripRef = useHorizontalWheelScroll<HTMLDivElement>()
@@ -665,6 +668,7 @@ export function TabBar<T extends string>({
                 // pair to re-tune when the row measure changes.
                 className={cn(
                   'relative flex h-full shrink-0 items-center gap-1.5 px-3.5 text-sm font-medium transition-colors focus-ring',
+                  stretch && 'min-w-0 flex-1 justify-center',
                   // The shared sliding indicator above replaces the per-tab
                   // underline; the active tab keeps only its text-color change.
                   isActive ? 'text-foreground' : 'text-text-soft hover:text-foreground',

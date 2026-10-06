@@ -9,17 +9,16 @@ details, use the [plugin authoring guide](../docs/extending/plugins.md).
 
 ## Product plugins
 
-| Plugin                                 | Product surface                                                 |
-| -------------------------------------- | --------------------------------------------------------------- |
-| [`code-graph/`](code-graph/)           | Navigable map of the project's code with graph query tools.     |
-| [`database/`](database/)               | SQL and data-source workbench with schema and query tools.      |
-| [`devops/`](devops/)                   | Docker and Kubernetes inspection workbench.                     |
-| [`documents/`](documents/)             | Document readers, writers, viewers, tables, and charts.         |
-| [`external-agents/`](external-agents/) | Supported external CLI launches and bounded history inspection. |
-| [`game-2048/`](game-2048/)             | 2048 board controlled by the user or agent in a chat.           |
-| [`learning/`](learning/)               | Course creation, lessons, resources, and durable progress.      |
-| [`template/`](template/)               | System Overview: OS, CPU, memory and process inspection.        |
-| [`trading/`](trading/)                 | Public market data workspace; no order placement.               |
+| Plugin                       | Product surface                                             |
+| ---------------------------- | ----------------------------------------------------------- |
+| [`code-graph/`](code-graph/) | Navigable map of the project's code with graph query tools. |
+| [`database/`](database/)     | SQL and data-source workbench with schema and query tools.  |
+| [`devops/`](devops/)         | Docker and Kubernetes inspection workbench.                 |
+| [`documents/`](documents/)   | Document readers, writers, viewers, tables, and charts.     |
+| [`game-2048/`](game-2048/)   | 2048 board controlled by the user or agent in a chat.       |
+| [`learning/`](learning/)     | Course creation, lessons, resources, and durable progress.  |
+| [`template/`](template/)     | System Overview: OS, CPU, memory and process inspection.    |
+| [`trading/`](trading/)       | Public market data workspace; no order placement.           |
 
 ## Workflow and integration plugins
 

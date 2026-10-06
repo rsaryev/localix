@@ -169,6 +169,8 @@ export async function assembleRunTools(
   // innermost, then the timeout promoter, then the three no-progress guards. The order and
   // its reasons live with the list, so the composition dump and the code cannot disagree.
   const wrapped = applyToolWrapperChain(allTools, {
+    observe: env.deps.externalAgents?.observe,
+    sessionId: session.id,
     pluginHooks: loadedPlugins.hooks,
     pluginHookOptions: { sessionId: session.id, logger: consoleWarnLogger },
     ccHooks,

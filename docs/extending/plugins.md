@@ -340,23 +340,22 @@ native entrypoint and point `tools` at the generated self-contained file.
 Each row is a `plugin.json`: `surfaces` decides whether it adds a visible workbench or only agent
 capability, and `defaultEnabled` whether it starts on. Native code in a bundled plugin still runs in
 the trusted API process; review it as you would any dependency. Besides the four games in the
-[workbench UI guide](plugin-ui.md#a-tab-that-belongs-to-one-chat), thirteen add a workbench:
+[workbench UI guide](plugin-ui.md#a-tab-that-belongs-to-one-chat), twelve add a workbench:
 
-| Plugin              | Guide                                                              | What the workbench shows                                                              |
-| ------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| **API Client**      | [API client](../features/api.md)                                   | Saved requests, environments, imports, parameters, responses, vault-backed references |
-| **Code Graph**      | [Code Graph](../features/code-graph.md)                            | Directories, files and symbols with imports, calls, inheritance, impact and cycles    |
-| **Database**        | [Database](../features/database.md)                                | Connections, schemas, SQL and non-SQL consoles, tables, diagrams, result sets         |
-| **DevOps**          | [DevOps](../features/devops.md)                                    | Containers, images, volumes, networks, Kubernetes workloads, logs                     |
-| **Documents**       | [Documents](../features/documents.md)                              | PDF, document, spreadsheet, presentation, CSV, table, and chart surfaces              |
-| **External Agents** | [Bring your own agent CLI](../recipes/bring-your-own-agent-cli.md) | Supported coding-agent CLIs, live delegations, read-only local history                |
-| **Git**             | [Source control](../features/source-control.md)                    | Changes, conflicts, history, branches, and review context                             |
-| **Kanban board**    | [Kanban board](../features/task-board.md)                          | One passive task board per chat: epics, tasks, dependencies, owners and blockers      |
-| **Learning Studio** | [Learning loop](../features/learning-loop.md)                      | File-authored courses, lessons, and durable progress                                  |
-| **Project Space**   | [Project Space](../features/project-space.md)                      | One board per project: notes, shapes, connectors and live references to its files     |
-| **Reader**          | [Reader](../features/reader.md)                                    | EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with annotations             |
-| **Trading**         | [Market research](../features/trading.md)                          | Read-only public venues, charts, indicators, order books, and trades                  |
-| **System Overview** | this guide                                                         | OS history, process context and a reusable skill                                      |
+| Plugin              | Guide                                           | What the workbench shows                                                              |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **API Client**      | [API client](../features/api.md)                | Saved requests, environments, imports, parameters, responses, vault-backed references |
+| **Code Graph**      | [Code Graph](../features/code-graph.md)         | Directories, files and symbols with imports, calls, inheritance, impact and cycles    |
+| **Database**        | [Database](../features/database.md)             | Connections, schemas, SQL and non-SQL consoles, tables, diagrams, result sets         |
+| **DevOps**          | [DevOps](../features/devops.md)                 | Containers, images, volumes, networks, Kubernetes workloads, logs                     |
+| **Documents**       | [Documents](../features/documents.md)           | PDF, document, spreadsheet, presentation, CSV, table, and chart surfaces              |
+| **Git**             | [Source control](../features/source-control.md) | Changes, conflicts, history, branches, and review context                             |
+| **Kanban board**    | [Kanban board](../features/task-board.md)       | One passive task board per chat: epics, tasks, dependencies, owners and blockers      |
+| **Learning Studio** | [Learning loop](../features/learning-loop.md)   | File-authored courses, lessons, and durable progress                                  |
+| **Project Space**   | [Project Space](../features/project-space.md)   | One board per project: notes, shapes, connectors and live references to its files     |
+| **Reader**          | [Reader](../features/reader.md)                 | EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with annotations             |
+| **Trading**         | [Market research](../features/trading.md)       | Read-only public venues, charts, indicators, order books, and trades                  |
+| **System Overview** | this guide                                      | OS history, process context and a reusable skill                                      |
 
 Three add agent capability with no workbench of their own:
 

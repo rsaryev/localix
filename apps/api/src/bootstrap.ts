@@ -7,6 +7,7 @@ import { createStorageService } from './features/storage/service'
 import { createStorageMaintenance } from './bootstrap/storage-maintenance'
 import { createInfraPhase, type BootstrapRuntimeInfo } from './bootstrap/infra'
 import { createRegistriesPhase } from './bootstrap/registries'
+import { createExternalAgentsPhase } from './bootstrap/external-agents'
 import { createPluginHostsPhase } from './bootstrap/plugin-hosts'
 import { createDomainServicesPhase } from './bootstrap/domain-services'
 import { createEnginesPhase } from './bootstrap/engines'
@@ -71,6 +72,15 @@ export async function bootstrap(
     resourceRefsRegistry,
     previewLiveness,
   } = createRegistriesPhase({ logger, secretsService })
+  const externalAgents = createExternalAgentsPhase({
+    env,
+    logger,
+    serviceRefs,
+    resourceRefsRegistry,
+    contextProviderRegistry,
+    wsFrameRegistry,
+    subsystemRegistry,
+  })
   const { backendHost, hostRefs, startBackendHost, pluginConditions, firstReconcile } =
     createPluginHostsPhase({
       db,
@@ -116,6 +126,7 @@ export async function bootstrap(
     resourceRefsRegistry,
   })
   const { chatService } = createChatServicePhase({
+    externalAgents: externalAgents.port,
     db,
     work,
     questions,
@@ -215,6 +226,7 @@ export async function bootstrap(
     chatService,
   })
   const { app } = createAppPhase({
+    externalAgents: externalAgents.service,
     storageService,
     runtimeInfo,
     env,

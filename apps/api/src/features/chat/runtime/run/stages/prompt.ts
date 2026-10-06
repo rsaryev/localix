@@ -30,6 +30,7 @@ import type { RunToolset } from './tools'
 import type { ResolvedTurn } from './turn'
 import { speakerQuestions } from '../../question-view'
 import { approvedPlanForRun, planModeForRun } from '../../plan-view'
+import { installedAgentsPrompt } from '../../../../external-agents/installed'
 
 export type RunPrompt = Awaited<ReturnType<typeof buildRunPrompt>>
 
@@ -87,6 +88,15 @@ export async function buildRunPrompt(
     planMode: planModeForRun(session, inputs.defaultCwd),
   })
   const triggerContext = buildTurnTriggerContext(params.scope, session, historyMessages)
+  const installedAgents = (await deps.externalAgents?.installed().catch(() => [])) ?? []
+  const externalAgentsText = installedAgentsPrompt(installedAgents)
+  if (externalAgentsText && toolset.tools.some((tool) => tool.name === TOOL.bash)) {
+    baseSections.push({
+      key: 'external-agents:installed',
+      scope: 'state',
+      text: externalAgentsText,
+    })
+  }
   const otherSessions = otherWorkspaceSessionsSection(
     session,
     inputs.defaultCwd,

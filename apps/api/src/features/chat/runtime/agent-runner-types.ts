@@ -1,5 +1,6 @@
 import type { AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
 import type { AgentTool } from '@localixai/agent/agents'
+import type { ExternalAgentsPort } from '../../external-agents/contracts'
 import type { AgentToolResult } from '@localixai/agent/agents'
 import type { Kysely } from 'kysely'
 
@@ -32,6 +33,7 @@ import type { QuestionRegistry } from '../../questions/registry'
 import type { AgentNotifications } from '../../notifications/producers'
 
 export interface RunnerDeps {
+  externalAgents?: ExternalAgentsPort
   db: Kysely<AppDatabase>
   /** The process's one work registry — shared with the monitor service, hydrated at boot. */
   work: WorkRegistry

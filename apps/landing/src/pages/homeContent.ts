@@ -4,11 +4,13 @@ import type { FeatureRow } from './homeContentTypes'
 export type { FeatureRow, PluginShowcase } from './homeContentTypes'
 export * from './homeBundledPlugins'
 export * from './homeContentPlatform'
+export * from './homeContentExternal'
 
 export const SECTIONS: SectionItem[] = [
   { id: 'intro', label: 'Localix' },
   { id: 'conversations', label: 'Agents together' },
   { id: 'context', label: 'Connected context' },
+  { id: 'external', label: 'External agents' },
   { id: 'space', label: 'Project Space' },
   { id: 'browser', label: 'Agent browser' },
   { id: 'plugins', label: 'Plugins' },
@@ -21,6 +23,7 @@ export const SECTIONS: SectionItem[] = [
 export const SECTION_GUIDES = {
   conversations: { slug: 'features--conversations', label: 'Explore conversations with agents' },
   context: { slug: 'features--workspace', label: 'Explore workspace and context' },
+  external: { slug: 'features--external-agents', label: 'Explore external agent sessions' },
   space: { slug: 'features--project-space', label: 'Explore Project Space' },
   browser: {
     slug: 'features--visual-feedback',

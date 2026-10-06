@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { UiSession } from '@/shared/api/contracts'
 import { canJoinConversation } from '@localixai/api/agent-policy'
@@ -6,7 +6,7 @@ import { useChatStore } from '../model/store'
 import { useSessionRoster } from '../model/useSessionRoster'
 import type { ConversationStartStrategy } from '../model/conversationStartStrategy'
 import { useSidebarNewChat } from '../model/useSidebarNewChat'
-import { ChatSidebarViewMenu } from './ChatSidebarViewMenu'
+import { ChatSidebarHeader, HistorySearchField } from './ChatSidebarHeader'
 import { SessionRoster } from './SessionRoster'
 import { useAgents } from '@/features/settings/model/useAgents'
 import { useSidebarSessions, type SortMode } from '../model/useSidebarSessions'
@@ -21,14 +21,16 @@ import { HistorySearchResults } from './HistorySearchResults'
 import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
 import { useSessionTreeRenderer } from './SessionTree'
 import { useAddProjectFolder } from '../model/useAddProjectFolder'
-import { FolderPlus, Plus, Search as SearchIcon } from 'lucide-react'
-import { SearchInput } from '@localixai/kit/search-input'
-import { PanelHeader } from '@localixai/kit/panel-header'
-import { ScopeSwitcher } from './ScopeSwitcher'
+import { useTabPanelIds } from '@localixai/kit/tabs'
+import { DataSourceTabs } from '@/shared/ui/DataSourceTabs'
+import { LoadingHint } from '@localixai/kit/empty-hint'
 import { isPrimaryModifier } from '@/shared/lib/keybindings'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
-import { IconButton } from '@localixai/kit/icon-button'
 import { DEFAULT_SESSION_GROUPING_MODE, type SessionGroupingMode } from '../model/sessionGrouping'
+
+const ExternalHistorySidebar = lazy(
+  () => import('@/features/external-agents/ui/ExternalHistorySidebar'),
+)
 
 interface ChatSidebarProps {
   activeSessionId: string | null
@@ -69,7 +71,13 @@ export function ChatSidebar({
     })),
   )
   const handleOpenProject = useAddProjectFolder()
-  const [search, setSearch] = useState('')
+  const [historySource, setHistorySource] = useState<'localix' | 'external'>('localix')
+  const [agentsVisited, setAgentsVisited] = useState(false)
+  const historyIds = useTabPanelIds('session-history')
+  const [localSearch, setLocalSearch] = useState('')
+  const [agentSearch, setAgentSearch] = useState('')
+  const search = historySource === 'localix' ? localSearch : agentSearch
+  const setSearch = historySource === 'localix' ? setLocalSearch : setAgentSearch
   // Search stays hidden until requested; an active query keeps it open.
   const [searchOpen, setSearchOpen] = useState(false)
   const searchVisible = searchOpen || search.length > 0
@@ -77,7 +85,7 @@ export function ChatSidebar({
   const closeSearch = useCallback(() => {
     setSearch('')
     setSearchOpen(false)
-  }, [])
+  }, [setSearch])
   const [sortMode, setSortMode] = useState<SortMode>('recent')
   const [groupingMode, setGroupingMode] = useState<SessionGroupingMode>(
     DEFAULT_SESSION_GROUPING_MODE,
@@ -94,7 +102,13 @@ export function ChatSidebar({
     normalizedSearch,
     scopeSessions,
     hasResults,
-  } = useSidebarSessions({ allSessions, activeProjectId, search, sortMode, showArchived })
+  } = useSidebarSessions({
+    allSessions,
+    activeProjectId,
+    search: localSearch,
+    sortMode,
+    showArchived,
+  })
 
   const scopeName = useMemo(
     () => projects.find((p) => p.id === activeProjectId)?.name ?? null,
@@ -162,7 +176,9 @@ export function ChatSidebar({
   // Cross-conversation message search (server FTS5) — this is the GLOBAL,
   // cross-scope discovery path: it surfaces chats in ANY scope the scope-local
   // title filter can't, in a separate "Found in messages" section.
-  const { hits: historyHits, loading: historyLoading } = useHistorySearch(search)
+  const { hits: historyHits, loading: historyLoading } = useHistorySearch(
+    historySource === 'localix' ? search : '',
+  )
   const sessionsById = useMemo(() => new Map(allSessions.map((s) => [s.id, s])), [allSessions])
 
   // Stable identity so the memoized SessionItem isn't invalidated every render.
@@ -287,77 +303,54 @@ export function ChatSidebar({
     >
       {/* Single header row: the scope switcher IS the panel title (no redundant
           static "Chats" label), with the scope-aware actions on the right. */}
-      <PanelHeader
-        title={<ScopeSwitcher scopeName={scopeName} onOpen={onOpenScopeSwitcher} />}
-        actions={
-          <>
-            <ChatSidebarViewMenu
-              groupingMode={groupingMode}
-              onGroupingModeChange={setGroupingMode}
-              sortMode={sortMode}
-              onSortModeChange={setSortMode}
-              showArchived={showArchived}
-              onShowArchivedChange={setShowArchived}
-              archivedCount={archivedCount}
-            />
-            <IconButton
-              size="sm"
-              surface="sidebar"
-              onClick={() => (searchVisible ? closeSearch() : setSearchOpen(true))}
-              aria-label={searchVisible ? 'Hide chat search' : 'Search chats'}
-              tooltip={searchVisible ? 'Hide search' : 'Search chats'}
-              aria-pressed={searchVisible}
-            >
-              <SearchIcon className="size-3.5" />
-            </IconButton>
-            {activeProjectId === null && (
-              <IconButton
-                size="sm"
-                surface="sidebar"
-                onClick={() => void handleOpenProject()}
-                aria-label="Add project folder"
-                tooltip="Add project folder"
-              >
-                <FolderPlus className="size-3.5" />
-              </IconButton>
-            )}
-            <IconButton
-              size="sm"
-              surface="sidebar"
-              onClick={() => handleNewChat()}
-              aria-label={scopeName ? `New chat in ${scopeName}` : 'New chat'}
-              tooltip={scopeName ? `New chat in ${scopeName}` : 'New chat'}
-            >
-              <Plus className="size-3.5" />
-            </IconButton>
-          </>
-        }
+      <ChatSidebarHeader
+        source={historySource}
+        scopeName={scopeName}
+        isGlobal={activeProjectId === null}
+        onOpenScopeSwitcher={onOpenScopeSwitcher}
+        onAddProjectFolder={() => {
+          void handleOpenProject()
+        }}
+        onNewChat={() => handleNewChat()}
+        searchVisible={searchVisible}
+        onToggleSearch={() => (searchVisible ? closeSearch() : setSearchOpen(true))}
+        viewMenu={{
+          groupingMode,
+          onGroupingModeChange: setGroupingMode,
+          sortMode,
+          onSortModeChange: setSortMode,
+          showArchived,
+          onShowArchivedChange: setShowArchived,
+          archivedCount,
+        }}
       />
 
-      {/* Search field — revealed by the header Search icon, not always shown */}
-      {searchVisible && (
-        <div className="shrink-0 px-2 pt-2">
-          <SearchInput
-            tone="sidebar"
-            inset
-            value={search}
-            onValueChange={setSearch}
-            autoFocus
-            placeholder="Filter chats in this workspace…"
-            className="w-full"
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.stopPropagation()
-                closeSearch()
-              }
-            }}
-          />
-        </div>
-      )}
+      <DataSourceTabs
+        value={historySource}
+        ids={historyIds}
+        label="Session history"
+        onChange={(source) => {
+          setHistorySource(source)
+          if (source === 'external') setAgentsVisited(true)
+          selection.clear()
+        }}
+      />
+
+      <HistorySearchField
+        source={historySource}
+        visible={searchVisible}
+        value={search}
+        onChange={setSearch}
+        onClose={closeSearch}
+      />
 
       <div
         ref={rosterRef}
-        className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin"
+        role="tabpanel"
+        id={historyIds.panelId('localix')}
+        aria-labelledby={historyIds.tabId('localix')}
+        hidden={historySource !== 'localix'}
+        className={`${historySource === 'localix' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin`}
         onClick={(e) => {
           if (e.target === e.currentTarget && selection.isSelectionActive) selection.clear()
         }}
@@ -397,6 +390,24 @@ export function ChatSidebar({
               ? 'No matching chats in this workspace.'
               : 'No conversations in this workspace yet.'}
           </div>
+        )}
+      </div>
+
+      <div
+        role="tabpanel"
+        id={historyIds.panelId('external')}
+        aria-labelledby={historyIds.tabId('external')}
+        hidden={historySource !== 'external'}
+        className={historySource === 'external' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
+      >
+        {agentsVisited && (
+          <Suspense fallback={<LoadingHint>Reading agent history…</LoadingHint>}>
+            <ExternalHistorySidebar
+              owningSessionId={activeSessionId}
+              search={agentSearch}
+              enabled={historySource === 'external'}
+            />
+          </Suspense>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely'
 import type { AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
+import type { ExternalAgentsPort } from '../../external-agents/contracts'
 
 import type { AppDatabase } from '../../../db'
 import type { CatalogService } from '../../catalog/service'
@@ -134,6 +135,7 @@ export interface ChatServiceDeps {
   }>
   /** User-bound universal Vault manager. Values never enter its model-facing input/result. */
   vaultToolFor?: (userId: string) => AgentTool
+  externalAgents?: ExternalAgentsPort
   /** Defense-in-depth boundary for credentials reflected by an upstream tool call. */
   sanitizeToolResult?: (userId: string, result: AgentToolResult) => AgentToolResult
   sanitizeToolError?: (userId: string, error: unknown) => unknown

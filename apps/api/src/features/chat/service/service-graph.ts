@@ -166,6 +166,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       announceCapabilityChange: deps.announceCapabilityChange,
       resolveSecret: deps.resolveSecret,
       vaultToolFor: deps.vaultToolFor,
+      externalAgents: deps.externalAgents,
       sanitizeToolResult: deps.sanitizeToolResult,
       sanitizeToolError: deps.sanitizeToolError,
       sanitizeToolInput: deps.sanitizeToolInput,

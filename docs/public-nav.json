@@ -47,6 +47,7 @@
           "title": "Workspace",
           "pages": [
             "features/workspace.md",
+            "features/external-agents.md",
             "features/settings.md",
             "features/keyboard-shortcuts.md",
             "features/source-control.md",

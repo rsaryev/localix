@@ -15,6 +15,7 @@ test('default status order puts reset and sleep before the coding agents when th
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { useRailActions } = await import('./useRailActions')
+  const { SWRConfig } = await import('swr')
   const { buildRailEntries } = await import('@/widgets/workspace-shell/model/buildRailEntries')
   const { resolveRailAreas } = await import('@/widgets/workspace-shell/model/railLayout')
   let order: string[] = []
@@ -45,10 +46,34 @@ test('default status order puts reset and sleep before the coding agents when th
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
+  const cache = new Map()
+  const config = {
+    provider: () => cache,
+    fallback: {
+      'external-agents:installed': [
+        { id: 'claude-code', name: 'Claude Code', command: 'claude' },
+        { id: 'codex', name: 'Codex', command: 'codex' },
+      ],
+    },
+    revalidateOnMount: false,
+    refreshInterval: 0,
+  }
   try {
-    await React.act(async () => root.render(<Probe available={false} />))
+    await React.act(async () =>
+      root.render(
+        <SWRConfig value={config}>
+          <Probe available={false} />
+        </SWRConfig>,
+      ),
+    )
     expect(order).toEqual(['reset-layout', 'coding-agent:claude', 'coding-agent:codex'])
-    await React.act(async () => root.render(<Probe available />))
+    await React.act(async () =>
+      root.render(
+        <SWRConfig value={config}>
+          <Probe available />
+        </SWRConfig>,
+      ),
+    )
     expect(order).toEqual([
       'reset-layout',
       'keep-awake',
@@ -93,7 +118,7 @@ test('core Claude and Codex controls launch, move, reorder and unpin independent
       onCloseSidebar={() => {}}
       onCreateChat={() => {}}
       railSections={[]}
-      railActions={codingAgentRailActions(sessionId)}
+      railActions={codingAgentRailActions(sessionId, ['claude', 'codex'])}
     >
       <div />
     </WorkspaceShell>

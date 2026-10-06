@@ -11,17 +11,17 @@ paging.
 
 ## Contract
 
-| Surface               | Mechanism                                                                                                 | Boundary                                                                                           |
-| --------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Chat transcript       | Variable-height rows use `renderKey`, end anchoring, measured-height snapshots, and an eight-row overscan | `useAutoScroll` owns follow and explicit user intent; the virtualizer owns row geometry            |
-| File tree             | A flat `FileTreeRow[]` drives 24-pixel estimated rows, semantic navigation, and scroll-to-path            | Content search has its own renderer and virtualizer; the tree virtualizer is disabled in that mode |
-| Content search        | A flat `SearchRow[]` drives per-kind estimates and measured rows for folder, file, and match rows         | `useContentSearch` owns results, expansion, and replace preview; the virtualizer owns row geometry |
-| Data tables           | `TableGrid` renders 30-pixel rows and requests another page near the loaded tail                          | The caller owns paging, sorting, editing, and the total row count                                  |
-| Usage requests log    | `LogsTable` mounts a window of 36-pixel table rows between two spacer rows inside the same `<table>`      | `useUsageLogs` owns paging; the sentinel below the spacers still pages at the true tail            |
-| DevOps live logs      | Measured rows use end anchoring and `followOnAppend` while the viewer is live                             | Upward wheel or keyboard intent pauses live mode; resume returns to the tail                       |
-| External-agent roster | The plugin renders fixed 46-pixel rows and pages from the last rendered index                             | This surface exists only with the external-agents plugin                                           |
-| Source Control tree   | A flat `ChangesTreeRow[]` per section drives measured 28-pixel rows against the panel's one scroll area   | One delegated context menu per tree; the roving Tab stop is pinned into the rendered range         |
-| Diff views            | One flat document of file, hunk and line rows with exact per-kind heights and a pinned-header overlay     | The document owns parsing and change runs; highlight and word marks run per mounted line           |
+| Surface                | Mechanism                                                                                                   | Boundary                                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Chat transcript        | Variable-height rows use `renderKey`, end anchoring, measured-height snapshots, and an eight-row overscan   | `useAutoScroll` owns follow and explicit user intent; the virtualizer owns row geometry            |
+| File tree              | A flat `FileTreeRow[]` drives 24-pixel estimated rows, semantic navigation, and scroll-to-path              | Content search has its own renderer and virtualizer; the tree virtualizer is disabled in that mode |
+| Content search         | A flat `SearchRow[]` drives per-kind estimates and measured rows for folder, file, and match rows           | `useContentSearch` owns results, expansion, and replace preview; the virtualizer owns row geometry |
+| Data tables            | `TableGrid` renders 30-pixel rows and requests another page near the loaded tail                            | The caller owns paging, sorting, editing, and the total row count                                  |
+| Usage requests log     | `LogsTable` mounts a window of 36-pixel table rows between two spacer rows inside the same `<table>`        | `useUsageLogs` owns paging; the sentinel below the spacers still pages at the true tail            |
+| DevOps live logs       | Measured rows use end anchoring and `followOnAppend` while the viewer is live                               | Upward wheel or keyboard intent pauses live mode; resume returns to the tail                       |
+| External-agent history | Core virtualizes 28-pixel day headers and 32-pixel agent/session rows; 8-row overscan and 200-session pages | The External history tab and resource container views share this surface                           |
+| Source Control tree    | A flat `ChangesTreeRow[]` per section drives measured 28-pixel rows against the panel's one scroll area     | One delegated context menu per tree; the roving Tab stop is pinned into the rendered range         |
+| Diff views             | One flat document of file, hunk and line rows with exact per-kind heights and a pinned-header overlay       | The document owns parsing and change runs; highlight and word marks run per mounted line           |
 
 ## How it works
 
@@ -148,7 +148,7 @@ These values are implementation constants, not Settings controls.
   [drop index](../../plugins/kanban/ui/board/useKanbanDrag.ts)
 - [Event journal retention cap](../../apps/ui/src/shared/lib/notifications/core.ts)
 - [Live logs](../../plugins/devops/ui/LiveLogViewport.tsx)
-- [External-agent roster](../../plugins/external-agents/ui/ui/RosterList.tsx)
+- [External-agent history](../../apps/ui/src/features/external-agents/ui/ExternalHistoryList.tsx)
 - [Changes-tree rows](../../plugins/git-workspace/ui/source-control/ui/changes-tree/changesTreeRows.ts)
   · [tree](../../plugins/git-workspace/ui/source-control/ui/changes-tree/ChangesTree.tsx) ·
   [shared scroll area](../../plugins/git-workspace/ui/source-control/ui/changes-tree/ChangesScrollArea.tsx)

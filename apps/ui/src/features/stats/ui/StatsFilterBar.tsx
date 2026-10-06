@@ -13,10 +13,9 @@
  * excluded in full words, and each removes only itself, so undoing one narrowing does not
  * discard the other three.
  */
-import { X } from 'lucide-react'
+import { ActiveFilterChips } from '@/shared/ui/ActiveFilterChips'
 import { Segmented } from '@localixai/plugin-sdk/ui/segmented-control'
 import type { UsageFilters, UsageGroupBy, UsageRange } from '@/shared/hooks/useUsageStats'
-import { TextAction } from '@localixai/kit/text-action'
 import { FilterMenu, type FilterFacet } from '@/shared/ui/FilterMenu'
 
 export interface FilterField {
@@ -91,29 +90,7 @@ export function StatsFilterBar({
           <FilterMenu label="Filter usage" className="ml-auto" facets={facets} />
         )}
       </div>
-      {active.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {active.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              onClick={() => onFilter(chip.id, '')}
-              title={`Remove the ${chip.field.toLowerCase()} filter`}
-              className="inline-flex max-w-full items-center gap-1 rounded-full bg-surface-hover py-0.5 pl-2 pr-1.5 text-xs text-text-soft ring-1 ring-border-soft outline-none transition-colors hover:text-foreground focus-ring"
-            >
-              <span className="text-text-faint">{chip.field}</span>
-              <span className="truncate text-foreground">{chip.label}</span>
-              <X className="size-3 shrink-0 opacity-60" aria-hidden />
-            </button>
-          ))}
-          <TextAction
-            onClick={onClear}
-            className="rounded-md px-1.5 py-0.5 text-xs text-text-faint hover:text-foreground"
-          >
-            Clear all
-          </TextAction>
-        </div>
-      )}
+      <ActiveFilterChips chips={active} onRemove={(id) => onFilter(id, '')} onClear={onClear} />
     </div>
   )
 }

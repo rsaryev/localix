@@ -4,10 +4,10 @@ export type SessionGroupingMode = 'activity' | 'agent'
 
 export const DEFAULT_SESSION_GROUPING_MODE: SessionGroupingMode = 'activity'
 
-export interface ActivitySessionGroup {
+export interface ActivitySessionGroup<T = UiSession> {
   id: 'today' | 'yesterday' | 'previous-7-days' | 'previous-30-days' | 'older'
   label: string
-  sessions: UiSession[]
+  sessions: T[]
 }
 
 /**
@@ -15,10 +15,10 @@ export interface ActivitySessionGroup {
  * Local day boundaries match the dates shown by the session rows; elapsed-hour
  * buckets would move a late-night chat between sections in the middle of a day.
  */
-export function activitySessionGroups(
-  sessions: readonly UiSession[],
+export function activitySessionGroups<T extends { updatedAt: number }>(
+  sessions: readonly T[],
   now = Date.now(),
-): ActivitySessionGroup[] {
+): ActivitySessionGroup<T>[] {
   const startOfToday = new Date(now)
   startOfToday.setHours(0, 0, 0, 0)
   const today = startOfToday.getTime()
@@ -38,7 +38,7 @@ export function activitySessionGroups(
     { id: 'previous-30-days', label: 'Previous 30 days', minimum: daysAgo(30) },
     { id: 'older', label: 'Older', minimum: Number.NEGATIVE_INFINITY },
   ]
-  const groups = definitions.map((definition) => ({ ...definition, sessions: [] as UiSession[] }))
+  const groups = definitions.map((definition) => ({ ...definition, sessions: [] as T[] }))
 
   for (const session of sessions) {
     const group = groups.find((candidate) => session.updatedAt >= candidate.minimum)

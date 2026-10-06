@@ -6,8 +6,7 @@ import type { Logger } from './lib/logger'
 import { createRootErrorHandler, jsonError } from './lib/http'
 import { createHealthRoutes } from './health'
 import { errorMessage } from './lib/errors'
-import { requestQueryKeys, resolveRequestUserId } from './lib/request-identity'
-import { assignRequestId, logCompletedRequest, stampRequestId } from './lib/request-id'
+import { createRequestBoundary } from './lib/request-boundary'
 import { escapeHtml } from './lib/html-escape'
 import {
   createLocalOriginBoundary,
@@ -15,6 +14,8 @@ import {
   type LocalOriginPolicy,
 } from './lib/local-origin-guard'
 import { createCatalogRoutes, type CatalogRoutesService } from './features/catalog/routes'
+import { createAgentSessionsRoutes } from './features/external-agents/backend/routes'
+import type { AgentSessionsService } from './features/external-agents/backend/service'
 import { createChatRoutes, type ChatRoutesService } from './features/chat/routes'
 import {
   createProviderConnectionsRoutes,
@@ -81,6 +82,7 @@ export type AppContext = HostRouteContext
 
 // The plan, Continue, attention and comments deps (`./conversation-routes`).
 export interface AppDeps extends ConversationRouteDeps {
+  externalAgents?: AgentSessionsService
   runtimeInfo?: {
     instanceId: string
     startedAt: string
@@ -168,32 +170,7 @@ export function createApp(deps: AppDeps) {
     deps.originPolicy ?? createLocalOriginPolicy({ servesUi: Boolean(deps.uiDir) })
   app.use('*', ...createLocalOriginBoundary(originPolicy, deps.logger))
 
-  app.use('*', async (c, next) => {
-    // Sanitize the self-asserted identity at the ONE boundary (see request-identity.ts):
-    // a blank/whitespace `x-user-id:` must NOT become `''`, which downstream `if (!userId)`
-    // guards mistake for the trusted-internal caller and use to bypass ownership.
-    c.set('userId', resolveRequestUserId(c.req.header('x-user-id'), deps.defaultUserId))
-    const requestId = assignRequestId(c)
-    const startedAt = Date.now()
-    await next()
-    stampRequestId(c, requestId)
-    // Query KEYS, never values. `c.req.path` alone hid a real defect for months: a
-    // capability snapshot read in the global scope and one read in a project's scope
-    // log identically, and they return materially different answers (4 of 19 plugins
-    // enabled versus 13 of 17 — git a7f4989a3). Keys settle that, because an unscoped
-    // read simply has no `projectId`. Values must stay out: this same server's OAuth
-    // callback is handed `?code=&state=`, so logging them would write authorization
-    // codes into `~/.localix/logs/api.log`.
-    const queryKeys = requestQueryKeys(c.req.query())
-    await logCompletedRequest(c, deps.logger, {
-      method: c.req.method,
-      path: c.req.path,
-      ...(queryKeys ? { queryKeys } : {}),
-      status: c.res.status,
-      durationMs: Date.now() - startedAt,
-      requestId,
-    })
-  })
+  app.use('*', createRequestBoundary(deps.defaultUserId, deps.logger))
 
   // Desktop OAuth callback handler. The system browser redirects here (with
   // ?code=&state=) after the user authorizes with a provider. Shared by the
@@ -278,6 +255,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route('/rpc/mcp', createMcpRoutes(deps.mcpService))
     .route('/rpc/plugins', createPluginRoutes(deps.pluginService))
     .route('/rpc/agents', createAgentsRoutes(deps.agentsService))
+    .route('/rpc/external-agents', createAgentSessionsRoutes(deps.externalAgents))
     .route('/rpc/skills/curator', createSkillsCuratorRoutes(deps.skillsCuratorService))
     .route('/rpc/notifications', createNotificationRoutes(deps.notifications))
     .route(MEDIA_SERVE_PREFIX, createMediaRoutes(deps.mediaStore))

@@ -19,10 +19,6 @@ widely.
 | Give the model explicit context | The route prefixes the prompt with an external-message provenance line.   | The supplied prompt and source remain model-visible instructions.         |
 | Discover the current address    | Runtime context includes the resolved webhook URL and current session id. | The address is for this running backend instance.                         |
 
-The optional external-agents plugin uses this endpoint for report-back. Its launch and validation
-protocol belongs to the
-[plugin README](https://github.com/rsaryev/localix/blob/main/plugins/external-agents/README.md).
-
 ## How it works
 
 The route validates the JSON body, wraps the text with one provenance line, and calls the same chat

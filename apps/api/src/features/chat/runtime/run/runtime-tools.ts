@@ -148,6 +148,7 @@ export function buildRunToolRegistry(
       // them is each tool's own `exposure` (plugin default: chat only), read by the ledger.
       extraTools: [
         ...loadedPlugins.tools,
+        ...(deps.externalAgents ? [deps.externalAgents.toolFor(session.id)] : []),
         ...(deps.vaultToolFor ? [deps.vaultToolFor(userId)] : []),
       ],
     },

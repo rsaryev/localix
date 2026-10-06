@@ -29,7 +29,7 @@ export interface OpenTranscriptInput {
    * transcript stays a view — but every tab belongs to one chat, and an open that named none was
    * stamped with whichever chat was on screen.
    */
-  readonly sessionId: string
+  readonly sessionId?: string
   readonly title: string
   readonly messages: readonly Message[]
   /**
@@ -63,6 +63,7 @@ export function readTranscript(id: string): OpenTranscriptInput | undefined {
 }
 
 export function openTranscript(input: OpenTranscriptInput): void {
+  if (!input.sessionId) throw new Error('A session-scoped transcript needs its owning conversation')
   open.set(input.id, input)
   inspector.openWorkItem({
     workKind: 'transcript',
@@ -71,6 +72,11 @@ export function openTranscript(input: OpenTranscriptInput): void {
     scope: input.sessionId,
     payload: { transcriptId: input.id },
   })
+}
+
+/** App-level archive viewers retain the same content without inventing a Localix conversation. */
+export function rememberTranscript(input: OpenTranscriptInput): void {
+  open.set(input.id, input)
 }
 
 /** Drop every transcript whose tab is gone, so a long session does not accumulate histories. */

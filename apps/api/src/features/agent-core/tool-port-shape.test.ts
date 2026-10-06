@@ -33,7 +33,7 @@ const CORE_TOOLS = [
   'research',
 ]
 /** Arrive through `policy.extraTools` as host/plugin-owned instances, not through a port. */
-const EXTRA_TOOLS_CHANNEL = ['mcp_resources', 'vault']
+const EXTRA_TOOLS_CHANNEL = ['mcp_resources', 'vault', 'external_agent_sessions']
 
 function portKeys(source = read('tool-registry.ts')): string[] {
   const block = /export interface OptionalToolPorts \{([\s\S]*?)\n\}/.exec(source)?.[1]

@@ -55,9 +55,36 @@ export function applyToolWrapperChain(
     pluginHookOptions: Parameters<typeof wrapToolsWithHooks>[2]
     ccHooks: Parameters<typeof wrapToolsWithCcHooks>[1]
     logger: Parameters<typeof wrapToolsWithCcHooks>[2]
+    observe?: (event: {
+      toolName: string
+      input: unknown
+      result: { content: string; details?: unknown }
+      sessionId: string
+    }) => void
+    sessionId?: string
   },
 ): AgentTool[] {
-  const hooked = wrapToolsWithHooks(tools, input.pluginHooks, input.pluginHookOptions)
+  const observed =
+    input.observe && input.sessionId
+      ? tools.map((tool) => ({
+          ...tool,
+          async execute(...args: Parameters<AgentTool['execute']>) {
+            const result = await tool.execute(...args)
+            try {
+              input.observe?.({
+                toolName: tool.name,
+                input: args[1],
+                result,
+                sessionId: input.sessionId!,
+              })
+            } catch (error) {
+              input.logger?.warn(`External agent observation failed: ${String(error)}`)
+            }
+            return result
+          },
+        }))
+      : tools
+  const hooked = wrapToolsWithHooks(observed, input.pluginHooks, input.pluginHookOptions)
   const ccHooked = wrapToolsWithCcHooks(hooked, input.ccHooks, input.logger)
   return wrapToolsWithMistakeBreaker(
     wrapToolsWithRepeatCallReminder(

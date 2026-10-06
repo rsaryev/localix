@@ -1,7 +1,10 @@
 # Product screenshots
 
 This is the single source folder for Localix captures used by the README, documentation, and landing
-page. Uncaptured slots are omitted; dated PNG files are the only product media.
+page. Dated PNG files are real product media. A reserved `--placeholder.png` slot is a clearly
+labelled stand-in, excluded from the dated capture manifest and replaced by the next dated capture
+of the same surface. It must not depict a fabricated product screen. The External history slot is
+reserved at `external-agents/history--placeholder.png` until its real capture is supplied.
 
 ## Naming
 
