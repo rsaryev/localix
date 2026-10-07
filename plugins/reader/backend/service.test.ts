@@ -186,3 +186,19 @@ describe('ReaderService explicit library', () => {
     expect((await stat(secondPath)).isFile()).toBe(true)
   })
 })
+
+test('a shelf invalidation reloads external metadata and removes deleted cached rows', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'localix-reader-sync-'))
+  const shelf = join(root, 'library.json')
+  const service = new ReaderService(undefined, { filePath: shelf, helpers: jsonHelpers })
+  await writeFile(join(root, 'book.md'), '# Original')
+  await service.read(root, 'book.md')
+  const stored = JSON.parse(await readFile(shelf, 'utf8'))
+  stored.books[0].overrides = { title: 'External edit' }
+  await writeFile(shelf, JSON.stringify(stored))
+  service.invalidateLibrary()
+  expect((await service.list()).books[0]?.title).toBe('External edit')
+  await writeFile(shelf, JSON.stringify({ version: 2, books: [], collections: [] }))
+  service.invalidateLibrary()
+  expect((await service.list()).books).toEqual([])
+})

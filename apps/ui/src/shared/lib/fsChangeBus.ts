@@ -13,6 +13,8 @@ export interface FsChange {
   sessionId: string
   /** Absolute directory paths whose contents changed. EMPTY = coarse "reload all". */
   paths: string[]
+  changedPaths?: string[] | null
+  live?: boolean
 }
 
 type Listener = (change: FsChange) => void

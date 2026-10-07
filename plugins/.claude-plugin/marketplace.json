@@ -119,6 +119,13 @@
       "author": "Localix"
     },
     {
+      "name": "resume",
+      "source": "./resume",
+      "description": "Structured resumes with a shared editor, revision-safe agent tools and section context.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
       "name": "review",
       "source": "./review",
       "description": "Run a scoped diff review and file prioritized inline suggestions.",

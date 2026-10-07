@@ -31,17 +31,9 @@ const DOCKER_SECONDARY_COLLECTIONS = ['images', 'volumes', 'networks'] as const
 export const DOCKER_SECONDARY_POLL_MS = 20_000
 export const DOCKER_RECOVERY_POLL_MS = 8_000
 
-/**
- * The poll while the `docker events` stream is live. The events say when to re-read, so the
- * four-second container poll and the 20-second full read were requests for changes that, when
- * they happened, had already been announced. What is left is the backstop for an event the stream
- * could not deliver — one full read this often.
- */
-export const DOCKER_LIVE_BACKSTOP_MS = 30_000
-
-/** The poll cadence: the caller's own while the events stream is down, the backstop while live. */
-export function dockerPollIntervalMs(live: boolean, pollMs: number): number {
-  return live ? Math.max(pollMs, DOCKER_LIVE_BACKSTOP_MS) : pollMs
+/** Healthy event coverage needs no timer; failed reads or a lost stream retain recovery polling. */
+export function dockerPollIntervalMs(live: boolean, pollMs: number): number | null {
+  return live ? null : pollMs
 }
 
 /** What an event re-reads: a container's own list, or everything for the other collections. */

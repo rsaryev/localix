@@ -72,7 +72,7 @@ describe('file watch: what the tree is told and how a watcher comes back', () =>
 
     watchers.failNow()
     // The coarse signal: whatever happened while the watcher was failing gets re-read.
-    expect(events).toEqual([{ type: 'fs.changed', sessionId: 's', paths: [] }])
+    expect(events).toEqual([{ type: 'fs.changed', sessionId: 's', paths: [], live: false }])
     expect(svc.size()).toBe(0)
 
     // The re-list that signal causes lands inside the backoff: the tree is told it is not live.

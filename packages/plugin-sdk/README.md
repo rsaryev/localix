@@ -28,6 +28,22 @@ contributions to application registries.
 
 There is no package-root export. Import the narrow entry point that owns the required contract.
 
+## Synchronization
+
+Use the same source-to-read protocol as core:
+
+- `backend`: `observeMutations` announces successful named service mutations;
+  `createStoreChangeFeed` combines commit notifications and host-native filesystem watching.
+- `ui/resource-sync`: serialized reads, burst invalidation, stale-answer rejection and bounded
+  retries.
+- `ui/file-resource-sync`: `useFileResourceSync` for project JSON; a healthy watcher has no poll
+  timer.
+- `ui/store-resource`: one refcounted store feed across plugins and scopes, with source health.
+- `ui/store-snapshot` and `ui/route-snapshot`: validated snapshots and mutation ordering for boards.
+
+See [Plugin synchronization](../../docs/extending/plugin-sync.md). Draft merging stays with the
+resource owner; a cache must expire before an invalidation can produce an authoritative read.
+
 ## Limits
 
 - The SDK does not discover, load, authorize, or isolate a plugin. Those responsibilities remain

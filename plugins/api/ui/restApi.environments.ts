@@ -32,9 +32,12 @@ function environmentsMoved<T>(value: T): T {
 }
 
 export const environmentApi = {
-  async environments(sessionId: string): Promise<EnvironmentInfo[]> {
-    return (await readOr<EnvironmentsResponse>(await pluginApiFetch(u(sessionId)`/environments`)))
-      .environments
+  async environments(sessionId: string, signal?: AbortSignal): Promise<EnvironmentInfo[]> {
+    return (
+      await readOr<EnvironmentsResponse>(
+        await pluginApiFetch(u(sessionId)`/environments`, { signal }),
+      )
+    ).environments
   },
 
   /** Activate an environment; the empty name means "no environment" and deactivates all. */

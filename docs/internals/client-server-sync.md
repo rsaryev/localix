@@ -121,6 +121,13 @@ There is no new process-local roster cache requiring another invalidation protoc
 transactions, foreign keys and schema validation remain authoritative. Existing migration files are
 immutable, and startup backs up a persisted database before applying new migrations.
 
+## Plugin read models
+
+Core's resource scheduler and mutation observer delegate to the plugin SDK. Plugins use the same
+invalidation and authoritative-read rules through scoped file/store feeds; their domain operations
+and draft merges retain ownership. See the [authoring contract](../extending/plugin-sync.md) and
+[all bundled plugins review](plugin-sync.md) for source coverage and justified fallback timers.
+
 ## Extending the model
 
 For a new shared read model, add its key in `realtime/resources.ts`, list its successful mutations

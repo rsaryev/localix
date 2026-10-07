@@ -72,7 +72,12 @@ export function routeFsChanged(
   sessionId: string,
   parsed: Extract<AgentStreamEvent, { type: 'fs.changed' }>,
 ): void {
-  publishFsChange({ sessionId, paths: parsed.paths })
+  publishFsChange({
+    sessionId,
+    paths: parsed.paths,
+    ...(parsed.changedPaths === undefined ? {} : { changedPaths: parsed.changedPaths }),
+    ...(parsed.live === undefined ? {} : { live: parsed.live }),
+  })
 }
 
 // Document files (pdf/office/csv/xlsx) already auto-opened per session — so a

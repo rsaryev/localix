@@ -40,7 +40,7 @@ test('hidden proficiency is omitted from every visible export without modifying 
   ]
   skills.showProficiency = false
   expect(exportDocument(doc, 'text')).not.toContain('Expert')
-  expect(exportDocument(doc, 'markdown')).not.toContain('Legacy skill level')
+  expect(exportDocument(doc, 'markdown')).toContain('Legacy skill level')
   expect(JSON.stringify(resumeLayout(doc))).not.toContain('Expert')
   expect(exportDocument(doc, 'json')).toContain('Expert')
 })
@@ -127,4 +127,16 @@ test('ongoing dates sort first, and rich custom sections cannot hide list fields
     entries: [{ ...emptyEntry(), title: 'Invisible field' }],
   })
   expect(documentSchema.safeParse(doc).success).toBe(false)
+})
+
+test('hiding proficiency keeps skill evidence in preview and office exports', () => {
+  const doc = createSampleDocument('awal', 'CV')
+  const skills = doc.sections.find((section) => section.type === 'skills')!
+  skills.showProficiency = false
+  skills.entries[0]!.proficiency = 'Advanced'
+  skills.entries[0]!.body = 'AWS, Terraform, Kubernetes'
+  const layout = resumeLayout(doc)
+  const content = JSON.stringify(layout.blocks)
+  expect(content).toContain('AWS, Terraform, Kubernetes')
+  expect(content).not.toContain('Advanced')
 })

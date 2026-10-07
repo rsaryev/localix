@@ -112,6 +112,7 @@
         "extending/plugins.md",
         "extending/build-with-the-agent.md",
         "extending/plugin-ui.md",
+        "extending/plugin-sync.md",
         "extending/keyboard-ownership.md",
         "extending/plugin-problems.md",
         "extending/ui-kit.md",

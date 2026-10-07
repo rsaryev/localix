@@ -51,7 +51,7 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
     label: 'Resume',
     activeVerb: 'Working on a resume',
     description:
-      'Initialize from a template with init, then edit structured resume files shared with the Resumes workbench. guide explains fields and edit operations. list returns identifiers and revisions; get returns authoritative structured content (optionally one section). update applies a small atomic operation batch against the revision from get; on conflict read again and preserve intervening edits. duplicate creates an independent variant; export returns text, Markdown, native JSON/YAML or Lanjut interchange. Use existing read/file tools for source documents and analysis. Do not invent qualifications or achievements.',
+      'Call guide once before authoring custom content; it specifies allowed fields per section. Initialize from a template with init, then edit structured resume files shared with the Resumes workbench. guide explains fields and edit operations. list returns identifiers and revisions; get returns authoritative structured content (optionally one section). init already returns IDs and revision, so use them directly for update without a redundant get. update applies a small atomic operation batch against the revision from init or the latest get; on conflict read again and preserve intervening edits. duplicate creates an independent variant; export returns text, Markdown, native JSON/YAML or Lanjut interchange. Use existing read/file tools for source documents and analysis. Do not invent qualifications or achievements.',
     inputSchema: toolInputSchema,
     executionMode: 'sequential',
     mutates: true,
@@ -86,6 +86,12 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
                   'init creates the template-backed file and returns its workspace-relative path. Use ordinary read/edit tools to work on that file; get validates it and returns its current content hash. UI and tool edits share that file.',
                 sections: sectionDefinitions,
                 emptyDocument: emptyDocument(),
+                authoring: {
+                  skillsAndLanguages:
+                    'Use title for the skill/language, proficiency for an optional level, or body for grouped content. Always provide bullets: []. Non-empty bullets and company context are rejected in these sections. variant belongs only to custom sections.',
+                  efficientCreation:
+                    'For custom content, guide then init with a valid complete document is enough. For template-first editing, init returns section/entry IDs and revision for update; no intervening get is needed.',
+                },
                 entry: {
                   id: 'Generate a UUID',
                   title: '',

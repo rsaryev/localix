@@ -322,6 +322,8 @@ export function createDatabaseService(deps: {
     },
 
     async list(userId) {
+      // Explicit list reads are authoritative even when native watching is unavailable.
+      deps.store.invalidate?.(userId)
       const saved = await deps.store.list(userId)
       return saved.map((s) => infoFrom(s, registry.liveOf(userId, s.id)))
     },

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
+import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
 import {
   registerDom,
   registerInspectorHandler,
@@ -8,6 +9,7 @@ import {
 
 let teardown: () => Promise<void>
 let originalFetch: typeof fetch
+const realtimeMethods = { ...pluginRealtime }
 
 const connection = {
   id: 'primary',
@@ -21,6 +23,12 @@ const connection = {
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  Object.assign(pluginRealtime, {
+    onFrame: () => () => {},
+    onReconnect: () => () => {},
+    onDisconnect: () => () => {},
+    request: async () => ({ subscribed: false }),
+  })
   originalFetch = globalThis.fetch
   globalThis.fetch = (async (input) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
@@ -79,6 +87,7 @@ beforeAll(() => {
 })
 
 afterAll(async () => {
+  Object.assign(pluginRealtime, realtimeMethods)
   globalThis.fetch = originalFetch
   await teardown()
 })

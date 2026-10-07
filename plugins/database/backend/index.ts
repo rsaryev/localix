@@ -18,8 +18,15 @@
  * transaction) — the stateful bit this subsystem owns.
  */
 import type { AgentTool } from '@localixai/agent/agents'
+import { join } from 'node:path'
+import { createStoreChangeFeed, safeFileKey } from '@localixai/plugin-sdk/backend'
 import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
-import { currentDatabaseService, releaseDatabaseService } from './singleton'
+import {
+  currentDatabaseService,
+  releaseDatabaseService,
+  subscribeDatabaseWrites,
+  invalidateDatabaseSnapshot,
+} from './singleton'
 import { createDatabaseRoutes } from './routes'
 import { createDatabaseResourceProvider } from './resource-provider'
 import { createDatabaseSearchProvider } from './search-provider'
@@ -33,7 +40,7 @@ import { createDatabaseTool } from './database-tool'
  *  narrowly (a structural subset of the host `PluginContext`) so the plugin stays
  *  decoupled from core plugin internals — the loader passes the full context, of which
  *  this is a subset. */
-type DatabaseRegisterContext = Pick<PluginContext, 'dataDir' | 'host' | 'userId'>
+type DatabaseRegisterContext = Pick<PluginContext, 'dataDir' | 'host' | 'userId' | 'watchPath'>
 
 export async function register(ctx: DatabaseRegisterContext): Promise<PluginRegistration> {
   // Boot-time call supplies the real vault resolver; per-run tool loads reuse the
@@ -42,6 +49,14 @@ export async function register(ctx: DatabaseRegisterContext): Promise<PluginRegi
   const service = currentDatabaseService({
     dataDir: ctx.dataDir,
     resolveSecret: ctx.host?.resolveSecret,
+  })
+  const feed = createStoreChangeFeed({
+    plugin: 'database',
+    resolveDir: async () => ctx.dataDir,
+    subscribeWrites: subscribeDatabaseWrites,
+    watchPath: ctx.watchPath ?? ctx.host?.watchPath,
+    onExternalChange: invalidateDatabaseSnapshot,
+    acceptPath: (userId, file) => file === join(ctx.dataDir, `${safeFileKey(userId)}.json`),
   })
   const userId = ctx.userId
 
@@ -106,7 +121,11 @@ export async function register(ctx: DatabaseRegisterContext): Promise<PluginRegi
         ],
         // Release, not just close: the host unwires on a reload too and registers again, and a
         // closed singleton would refuse every connect after that (see `releaseDatabaseService`).
-        onShutdown: () => releaseDatabaseService(),
+        wsFrames: feed.wsFrames,
+        onShutdown: async () => {
+          feed.onShutdown()
+          await releaseDatabaseService()
+        },
       },
     ],
     tools: [databaseTool],

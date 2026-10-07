@@ -209,11 +209,14 @@ export function useDocker(pollMs = 4000, enabled = true) {
   }, [])
 
   // Warm-hidden work items retain their snapshot but make no steady requests. While the events
-  // stream is live this is the slow backstop; a cadence change ticks at once, which doubles as the
+  // stream is live there is no timer; a cadence change ticks once, which doubles as the
   // re-read for whatever happened while the stream was coming up or going down.
   useVisiblePolling({
     enabled,
-    intervalMs: dockerPollIntervalMs(live, pollMs),
+    intervalMs: dockerPollIntervalMs(
+      live && Object.keys(state.resourceErrors).length === 0,
+      pollMs,
+    ),
     onTick: poll,
     refreshOnFocus: true,
     immediate: true,

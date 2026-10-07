@@ -27,7 +27,7 @@ export function populatedSections(document: ResumeDocument): ResumeSection[] {
       entries: section.entries
         .map((entry) =>
           section.showProficiency === false && ['skills', 'languages'].includes(section.type)
-            ? { ...entry, proficiency: '', body: '' }
+            ? { ...entry, proficiency: '' }
             : entry,
         )
         .filter(hasEntryContent),

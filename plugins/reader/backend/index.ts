@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 
+import { createStoreChangeFeed } from '@localixai/plugin-sdk/backend'
 import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
 
 import { createReaderContextProvider } from './context-provider'
@@ -15,6 +16,14 @@ export function register(context: PluginContext): PluginRegistration {
     filePath: join(context.dataDir, 'library.json'),
     helpers: context.helpers,
   })
+  const feed = createStoreChangeFeed({
+    plugin: 'reader',
+    resolveDir: async () => context.dataDir,
+    subscribeWrites: () => () => {},
+    watchPath: context.watchPath ?? context.host?.watchPath,
+    onExternalChange: () => service.invalidateLibrary(),
+    acceptPath: (_userId, file) => file === join(context.dataDir, 'library.json'),
+  })
   const resourceProvider = createReaderResourceProvider(service)
   const statsService = new ReaderStatsService({
     filePath: join(context.dataDir, 'stats.json'),
@@ -24,6 +33,8 @@ export function register(context: PluginContext): PluginRegistration {
     backend: [
       {
         id: 'reader:backend',
+        wsFrames: feed.wsFrames,
+        onShutdown: feed.onShutdown,
         routeMount: {
           path: '/rpc/reader',
           app: createReaderRoutes(service, statsService),

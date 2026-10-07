@@ -83,7 +83,12 @@ export function createFileWatchService(deps: FileWatchDeps) {
   const tick = () => ++clock
   const keyOf = (userId: string, sessionId: string) => `${userId}:${sessionId}`
 
-  const publishChange = (entry: RootEntry, dirs: string[] | null, changes: FsChange[] | null) => {
+  const publishChange = (
+    entry: RootEntry,
+    dirs: string[] | null,
+    changes: FsChange[] | null,
+    live?: boolean,
+  ) => {
     deps.onRootChanged?.(entry.root, changes)
     for (const { userId, sessionId } of entry.sessions.values()) {
       deps.streamRegistry.publish(userId, sessionId, {
@@ -91,6 +96,8 @@ export function createFileWatchService(deps: FileWatchDeps) {
         sessionId,
         // Empty array IS the wire form of a coarse "reload everything visible" signal.
         paths: dirs ?? [],
+        ...(changes ? { changedPaths: changes.map((change) => change.path) } : {}),
+        ...(live === undefined ? {} : { live }),
       })
     }
   }
@@ -123,6 +130,7 @@ export function createFileWatchService(deps: FileWatchDeps) {
       let oldest: RootEntry | null = null
       for (const e of byRoot.values()) if (!oldest || e.lastTouch < oldest.lastTouch) oldest = e
       if (!oldest) break
+      publishChange(oldest, null, null, false)
       dropRoot(oldest.root)
     }
   }
@@ -139,7 +147,7 @@ export function createFileWatchService(deps: FileWatchDeps) {
     failures.set(root, { count: previous + 1, retryAt: now() + delay })
     const entry = byRoot.get(root)
     if (!entry) return
-    publishChange(entry, null, null)
+    publishChange(entry, null, null, false)
     dropRoot(root)
   }
 

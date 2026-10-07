@@ -27,12 +27,6 @@ import { useGraphStream } from './graphStream'
  */
 const INDEXING_POLL_MS = 1500
 const IDLE_POLL_MS = 8000
-/**
- * With the file-change signal live, an edit reaches the index through `POST /changed` and a new
- * revision reaches the tab as a stream frame, so the idle poll is only a backstop. Each idle poll
- * used to start a full walk of the project whenever the last check was 10 s old.
- */
-const LIVE_IDLE_POLL_MS = 30_000
 /** Changes folded into one re-index, from the first: a save-and-format, an agent's burst of edits. */
 const CHANGE_WINDOW_MS = 1500
 
@@ -96,10 +90,15 @@ export function useGraph(active: boolean) {
     return `?${search.toString()}`
   }, [sessionId, scope, selected, deferredQuery, external, trail, live])
 
+  const refreshRef = useRef<() => void>(() => {})
+  const streamLive = useGraphStream(sessionId, active, {
+    revision: () => refreshRef.current(),
+    reconnect: () => refreshRef.current(),
+  })
   const polled = usePolledSnapshot({
     path: `${ROUTE_PATH}/view${params}`,
     schema: graphSnapshotSchema,
-    intervalMs: indexing ? INDEXING_POLL_MS : live ? LIVE_IDLE_POLL_MS : IDLE_POLL_MS,
+    intervalMs: indexing ? INDEXING_POLL_MS : live && streamLive ? null : IDLE_POLL_MS,
     active: active && sessionId !== null,
     failureMessage: 'The code map could not be loaded.',
   })
@@ -108,8 +107,7 @@ export function useGraph(active: boolean) {
     root.current = projectRoot
   }, [projectRoot])
   // A finished refresh, or a socket that came back having missed some: read the snapshot now.
-  const { refresh: refreshSnapshot } = polled
-  useGraphStream(sessionId, active, { revision: refreshSnapshot, reconnect: refreshSnapshot })
+  refreshRef.current = polled.refresh
   const request = useAgentRequests(active, sessionId)
   const snapshot = useMemo(() => {
     if (!polled.snapshot || !request || request.revision <= (polled.snapshot.agent?.revision ?? 0))

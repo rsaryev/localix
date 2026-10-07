@@ -155,3 +155,39 @@ describe('createSharedResource', () => {
     expect(calls).toBe(2)
   })
 })
+
+test('invalidation during the first read queues a fresh snapshot instead of caching the old one', async () => {
+  const releases: Array<(value: string) => void> = []
+  const resource = createSharedResource(
+    () => new Promise<string>((resolve) => releases.push(resolve)),
+  )
+  resource.refresh('a')
+  await settle()
+  resource.refresh('a')
+  releases[0]!('old')
+  await new Promise((resolve) => setTimeout(resolve, 10))
+  expect(resource.peek('a')).toBeUndefined()
+  releases[1]!('new')
+  await settle()
+  expect(resource.peek('a')).toBe('new')
+  resource.dispose()
+})
+
+test('reset and dispose prevent pending responses from restoring discarded state', async () => {
+  for (const operation of ['reset', 'dispose'] as const) {
+    let release!: (value: string) => void
+    const resource = createSharedResource(
+      () =>
+        new Promise<string>((resolve) => {
+          release = resolve
+        }),
+    )
+    resource.refresh('a')
+    await settle()
+    resource[operation]()
+    release('discarded')
+    await settle()
+    expect(resource.peek('a')).toBeUndefined()
+    resource.dispose()
+  }
+})

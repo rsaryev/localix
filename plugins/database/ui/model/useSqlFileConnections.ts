@@ -1,3 +1,4 @@
+import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
 import { useEffect, useMemo, useState } from 'react'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import type { DbConnectionInfo } from '../dbClient'
@@ -33,6 +34,7 @@ export interface SqlFileConnectionsState {
  * at once, and a focus revalidates by JOINING any running read — N tabs, one request.
  */
 export function useSqlFileConnections(): SqlFileConnectionsState {
+  useStoreChanges({ plugin: 'database', sessionId: null }, refreshConnections)
   const workItemVisible = useWorkItemVisible()
   const { connections, loading } = useConnectionsSnapshot()
   const [pickedId, setPickedId] = useState<string | null>(null)

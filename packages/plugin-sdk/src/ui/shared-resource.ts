@@ -1,5 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 
+import { createResourceSync } from './resource-sync'
+import { runAsBackgroundWork } from './visibility'
 import { resourceKeyAffected, type ResourceTopic } from './resource-topics'
 
 /**
@@ -35,7 +37,7 @@ export interface SharedResource<T> {
    * `undefined`: a session-scoped resource with no session has nothing to address.
    */
   use(key: string | null | undefined): T | undefined
-  /** Re-read a key after something known to have changed it. No-op while a read is in flight. */
+  /** Re-read a key after something known to have changed it. A change during an in-flight read causes one fresh follow-up. */
   refresh(key: string): void
   /** The current value without subscribing — for a callback that needs the latest, not a render. */
   peek(key: string | null | undefined): T | undefined
@@ -55,7 +57,7 @@ export interface SharedResourceOptions {
    * subscribe is a reader that will one day be built without one, which is exactly how two of the
    * bundled plugins ended up with a titlebar showing whatever was true when the app started.
    *
-   * Only keys already LOADED are re-read. A key nobody has asked for has no value to correct, and
+   * Only registered readers, including an initial read in flight, are re-read. A key nobody has asked for has no value to correct, and
    * fetching it because something changed would turn an invalidation into a request per plugin per
    * session.
    */
@@ -72,27 +74,34 @@ export interface SharedResourceOptions {
 export const GLOBAL_RESOURCE_KEY = 'global'
 
 export function createSharedResource<T>(
-  load: (key: string) => Promise<T>,
+  load: (key: string, signal?: AbortSignal) => Promise<T>,
   options: SharedResourceOptions = {},
 ): SharedResource<T> {
   const values = new Map<string, T>()
-  const inFlight = new Set<string>()
+  const readers = new Map<string, () => void>()
+  const sync = createResourceSync<string>({ retryDelaysMs: [] })
+  sync.connected()
   const listeners = new Set<() => void>()
   // A counter, not the map: `useSyncExternalStore` compares snapshots by identity, and a Map
   // mutated in place is its own previous value. Bumping a number is the whole change signal.
   let version = 0
 
   const read = (key: string): void => {
-    if (inFlight.has(key)) return
-    inFlight.add(key)
-    void load(key)
-      .then((value) => {
-        values.set(key, value)
-        version += 1
-        for (const listener of listeners) listener()
-      })
-      .catch(() => undefined)
-      .finally(() => inFlight.delete(key))
+    if (readers.has(key)) {
+      sync.invalidate([key])
+      return
+    }
+    readers.set(
+      key,
+      sync.register(key, {
+        read: (signal) => runAsBackgroundWork(() => load(key, signal)),
+        apply: (value) => {
+          values.set(key, value)
+          version++
+          for (const listener of listeners) listener()
+        },
+      }),
+    )
   }
 
   const subscribe = (listener: () => void): (() => void) => {
@@ -104,9 +113,9 @@ export function createSharedResource<T>(
 
   const snapshot = (): number => version
 
-  // Only what is loaded, and only what the key says moved — see `SharedResourceOptions.topic`.
+  // Only registered readers, and only what the key says moved — see `SharedResourceOptions.topic`.
   const unfollow = options.topic?.subscribe((changed) => {
-    for (const key of Array.from(values.keys())) {
+    for (const key of Array.from(readers.keys())) {
       if (resourceKeyAffected(key, changed)) read(key)
     }
   })
@@ -116,12 +125,12 @@ export function createSharedResource<T>(
       // Read so the subscription is a real dependency of this render rather than decoration:
       // without it React has no reason to re-run the component when the value lands. The third
       // argument is the server snapshot — omitting it makes React warn rather than assume.
-      void useSyncExternalStore(subscribe, snapshot, snapshot)
+      const observedVersion = useSyncExternalStore(subscribe, snapshot, snapshot)
       useEffect(() => {
         // `has`, not a truthiness check: the fetch is owed once per key, and re-running it
         // because the answer happened to be an empty list is the bug this guard exists for.
         if (key && !values.has(key)) read(key)
-      }, [key])
+      }, [key, observedVersion])
       return key ? values.get(key) : undefined
     },
     refresh(key) {
@@ -133,7 +142,8 @@ export function createSharedResource<T>(
     subscribe,
     reset() {
       values.clear()
-      inFlight.clear()
+      for (const stop of readers.values()) stop()
+      readers.clear()
       version += 1
       for (const listener of listeners) listener()
     },
@@ -141,7 +151,8 @@ export function createSharedResource<T>(
       unfollow?.()
       listeners.clear()
       values.clear()
-      inFlight.clear()
+      for (const stop of readers.values()) stop()
+      readers.clear()
     },
   }
 }

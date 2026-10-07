@@ -281,3 +281,7 @@ export type {
   ToolSurface,
 } from '@localixai/agent/agents'
 export type { ToolBackedItem } from '@localixai/agent/agents/items'
+
+export { createStoreChangeFeed, STORE_FEED_WINDOW_MS } from './store-change-feed'
+
+export { observeMutations } from './observe-mutations'

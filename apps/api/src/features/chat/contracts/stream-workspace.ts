@@ -104,6 +104,10 @@ export type WorkspaceStreamEvent =
       type: 'fs.changed'
       sessionId: string
       paths: string[]
+      /** Changed entries, when known; directory paths remain the tree's own projection. */
+      changedPaths?: string[] | null
+      /** False when a previously live watcher failed or was evicted. */
+      live?: boolean
     }
   | {
       /**

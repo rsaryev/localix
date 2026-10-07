@@ -12,7 +12,7 @@ import {
   dockerInventoryPollScope,
   mergeDockerInventory,
 } from './useDocker'
-import { DOCKER_LIVE_BACKSTOP_MS, dockerEventScope, dockerPollIntervalMs } from './dockerInventory'
+import { dockerEventScope, dockerPollIntervalMs } from './dockerInventory'
 
 const container: DockerContainer = {
   id: 'container-1',
@@ -141,13 +141,12 @@ describe('Docker inventory polling cadence', () => {
 })
 
 describe('Docker inventory while the events stream is live', () => {
-  test('the four-second poll becomes the slow backstop, and falls back the moment it is down', () => {
+  test('the four-second poll stops, and falls back the moment it is down', () => {
     expect(dockerPollIntervalMs(false, 4_000)).toBe(4_000)
-    expect(dockerPollIntervalMs(true, 4_000)).toBe(DOCKER_LIVE_BACKSTOP_MS)
-    expect(DOCKER_LIVE_BACKSTOP_MS).toBeGreaterThan(DOCKER_SECONDARY_POLL_MS)
+    expect(dockerPollIntervalMs(true, 4_000)).toBeNull()
   })
 
-  test('the rare backstop tick reads everything', () => {
+  test('an explicit refresh while live reads everything', () => {
     expect(dockerInventoryPollScope(10_000, 14_000, {}, true)).toBe('all')
   })
 

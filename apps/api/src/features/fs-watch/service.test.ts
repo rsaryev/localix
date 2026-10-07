@@ -131,7 +131,7 @@ describe('createFileWatchService', () => {
 
   test('LRU cap evicts the least-recently-armed root', async () => {
     const w = fakeWatchers()
-    const { registry } = fakeRegistry()
+    const { registry, events } = fakeRegistry()
     const roots: Record<string, string> = { a: '/repo-a', b: '/repo-b' }
     const svc = createFileWatchService({
       streamRegistry: registry,
@@ -144,6 +144,10 @@ describe('createFileWatchService', () => {
     expect(svc.size()).toBe(1)
     expect(w.isClosed('/repo-a')).toBe(true)
     expect(w.isClosed('/repo-b')).toBe(false)
+    expect(events).toContainEqual({
+      sessionId: 'a',
+      event: { type: 'fs.changed', sessionId: 'a', paths: [], live: false },
+    })
   })
 
   test('a released session no longer receives changes', async () => {

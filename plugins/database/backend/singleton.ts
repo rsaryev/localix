@@ -16,6 +16,9 @@
  * resolver, and the latest real host always wins (captured below), so per-run calls that
  * lack a host simply reuse the already-built service.
  */
+import { join } from 'node:path'
+import { observeMutations, safeFileKey } from '@localixai/plugin-sdk/backend'
+import type { ConnectionStore } from './store'
 import { createDatabaseService, type DatabaseService } from './service'
 import { createConnectionStore } from './store'
 
@@ -25,6 +28,8 @@ export type ResolveSecret = (userId: string, key: string) => Promise<string | un
 
 interface Holder {
   service?: DatabaseService
+  store?: ConnectionStore
+  listeners?: Set<(path: string) => void>
   resolveSecret?: ResolveSecret
 }
 
@@ -48,8 +53,9 @@ export function getDatabaseService(options: {
   const h = holder()
   if (options.resolveSecret) h.resolveSecret = options.resolveSecret
   if (!h.service) {
+    h.store = createConnectionStore({ dir: options.dataDir })
     h.service = createDatabaseService({
-      store: createConnectionStore({ dir: options.dataDir }),
+      store: h.store,
       // Adapt the host's generic secret resolver to the service's narrow resolver
       // (undefined → null). Reads the LATEST bound host so a boot-time real resolver
       // is used even for a service first requested by a per-run tool load.
@@ -57,6 +63,27 @@ export function getDatabaseService(options: {
         resolve: async (userId, key) => (await holder().resolveSecret?.(userId, key)) ?? null,
       },
     })
+    observeMutations(
+      h.service,
+      {
+        connect: ['connections'],
+        reconnect: ['connections'],
+        rename: ['connections'],
+        updateConfig: ['connections'],
+        disconnect: ['connections'],
+        remove: ['connections'],
+      },
+      (userId) => {
+        const file = join(options.dataDir, `${safeFileKey(userId)}.json`)
+        for (const listener of h.listeners ?? []) {
+          try {
+            listener(file)
+          } catch {
+            /* A committed write remains successful. */
+          }
+        }
+      },
+    )
   }
   return h.service
 }
@@ -102,4 +129,17 @@ export async function releaseDatabaseService(): Promise<void> {
   const service = h.service
   h.service = undefined
   await service?.closeAll()
+}
+
+/** Shared by route and per-run tool service instances, including hot reloads. */
+export function subscribeDatabaseWrites(listener: (path: string) => void): () => void {
+  const listeners = (holder().listeners ??= new Set())
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+export function invalidateDatabaseSnapshot(userId: string): void {
+  holder().store?.invalidate?.(userId)
 }

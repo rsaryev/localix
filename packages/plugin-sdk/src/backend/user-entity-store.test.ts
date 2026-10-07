@@ -259,3 +259,16 @@ describe('createUserEntityStore — fileKey is the traversal boundary', () => {
     expect(await s.list('../../etc/passwd')).toEqual([{ id: 'a', name: 'x' }])
   })
 })
+
+test('external invalidation reloads an atomic replacement and deletion rather than a cached snapshot', async () => {
+  const dir = await freshDir()
+  const snapshot = path.join(dir, `${safeKey('owner')}.json`)
+  const entities = createUserEntityStore<{ id: string; name: string }>({ dir, fileKey: safeKey })
+  await entities.create('owner', { id: 'a', name: 'first' })
+  await writeFile(snapshot, JSON.stringify([{ id: 'a', name: 'external' }]))
+  entities.invalidate?.('owner')
+  expect(await entities.list('owner')).toEqual([{ id: 'a', name: 'external' }])
+  await rm(snapshot)
+  entities.invalidate?.('owner')
+  expect(await entities.list('owner')).toEqual([])
+})

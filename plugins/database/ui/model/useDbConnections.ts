@@ -1,3 +1,4 @@
+import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
 import { useEffect, useMemo } from 'react'
 import { useVisiblePolling, useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import type { Problem } from '@localixai/plugin-sdk/ui/problems'
@@ -91,7 +92,13 @@ export function useDbConnections(): DbConnectionsState {
   useEffect(() => {
     if (workItemVisible) ensureConnectionsListed()
   }, [workItemVisible])
-  useVisiblePolling({ intervalMs: CONNECTIONS_POLL_MS, immediate: true, onTick: pollConnections })
+  const live = useStoreChanges({ plugin: 'database', sessionId: null }, refreshConnections)
+  useVisiblePolling({
+    enabled: !live,
+    intervalMs: CONNECTIONS_POLL_MS,
+    immediate: true,
+    onTick: pollConnections,
+  })
   return useMemo(
     () => ({
       connections: snapshot.connections,

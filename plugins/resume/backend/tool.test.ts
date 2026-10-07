@@ -56,3 +56,66 @@ test('one agent tool initializes every template into a real workspace file and r
     await rm(root, { recursive: true, force: true })
   }
 })
+
+test('guide then one custom init creates grouped skills and returns the revision for editing without get', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'resume-authoring-'))
+  const ctx = {
+    z,
+    userId: 'user',
+    cwd: root,
+    defineTool: (definition: unknown) => definition,
+    ui: { open: (input: unknown) => input },
+  } as unknown as PluginContext
+  const tool = createResumeTool(ctx, createResumeService(root)) as unknown as Definition
+  try {
+    const guide = JSON.parse((await tool.execute('guide', { action: 'guide' })).content)
+    const document = {
+      ...guide.emptyDocument,
+      title: 'Illustrative DevOps resume',
+      sections: [
+        {
+          id: crypto.randomUUID(),
+          type: 'skills',
+          title: 'Skills',
+          hidden: false,
+          entries: [
+            {
+              id: crypto.randomUUID(),
+              title: 'Infrastructure',
+              organization: '',
+              location: '',
+              start: '',
+              end: '',
+              current: false,
+              body: 'AWS, Terraform, Kubernetes',
+              bullets: [],
+              link: null,
+            },
+          ],
+        },
+      ],
+    }
+    const created = await tool.execute(
+      'init',
+      toolInputSchema.parse({
+        action: 'init',
+        title: document.title,
+        document,
+      }),
+    )
+    expect(created.isError).toBeUndefined()
+    const resume = JSON.parse(created.content)
+    expect(resume.document.sections[0].entries[0].body).toBe('AWS, Terraform, Kubernetes')
+    expect(resume.revision).toMatch(/^[a-f0-9]{64}$/u)
+    const edited = await tool.execute('update', {
+      action: 'update',
+      id: resume.id,
+      revision: resume.revision,
+      operations: [{ op: 'header', value: { headline: 'DevOps Engineer' } }],
+    })
+    expect(edited.isError).toBeUndefined()
+    expect(JSON.parse(edited.content).document.header.headline).toBe('DevOps Engineer')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

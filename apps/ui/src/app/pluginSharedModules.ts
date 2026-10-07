@@ -46,6 +46,15 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
     import('@localixai/plugin-sdk/ui/message-binding-drag'),
   '@localixai/plugin-sdk/ui/path-tree': () => import('@localixai/plugin-sdk/ui/path-tree'),
   '@localixai/plugin-sdk/ui/problems': () => import('@localixai/plugin-sdk/ui/problems'),
+  '@localixai/plugin-sdk/ui/store-resource': () =>
+    import('@localixai/plugin-sdk/ui/store-resource'),
+  '@localixai/plugin-sdk/ui/route-snapshot': () =>
+    import('@localixai/plugin-sdk/ui/route-snapshot'),
+  '@localixai/plugin-sdk/ui/store-snapshot': () =>
+    import('@localixai/plugin-sdk/ui/store-snapshot'),
+  '@localixai/plugin-sdk/ui/resource-sync': () => import('@localixai/plugin-sdk/ui/resource-sync'),
+  '@localixai/plugin-sdk/ui/file-resource-sync': () =>
+    import('@localixai/plugin-sdk/ui/file-resource-sync'),
   '@localixai/plugin-sdk/ui/realtime-feed': () => import('@localixai/plugin-sdk/ui/realtime-feed'),
   '@localixai/plugin-sdk/ui/resource-topics': () =>
     import('@localixai/plugin-sdk/ui/resource-topics'),
@@ -73,6 +82,7 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
   '@localixai/plugin-sdk/ui/work-item-session': () =>
     import('@localixai/plugin-sdk/ui/work-item-session'),
   '@localixai/plugin-sdk/rich-text': () => import('@localixai/plugin-sdk/rich-text'),
+  '@localixai/plugin-sdk/store-changes': () => import('@localixai/plugin-sdk/store-changes'),
   '@localixai/plugin-sdk/document-layout': () => import('@localixai/plugin-sdk/document-layout'),
   '@localixai/plugin-sdk/navigation': () => import('@localixai/plugin-sdk/navigation'),
   '@localixai/plugin-sdk/session-resource': () => import('@localixai/plugin-sdk/session-resource'),

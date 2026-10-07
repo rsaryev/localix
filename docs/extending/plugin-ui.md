@@ -34,7 +34,7 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 | Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`         | Removed with the chat and every session beneath it.                  |
 | Give each chat its own tab     | The default work-item scope (`'session'`)                      | One tab per chat; it never moves; closed with the chat.              |
 | Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`           | The only session a tab acts for; the SDK has no active session.      |
-| React to file changes          | `usePluginWorkspaceChanges` (`ui/runtime-hooks`)               | One chat, coalesced; keep a slow poll, fast only when not live.      |
+| React to file changes          | `usePluginWorkspaceChanges` (`ui/runtime-hooks`)               | One chat, coalesced; poll only when source coverage is unavailable.  |
 | Use icons                      | Import from `lucide-react`                                     | Bundled per icon from the plugin kit.                                |
 | See an edit in the running app | Rebuild; the plugin is swapped in place                        | An open tab re-renders; the app is never reloaded.                   |
 
@@ -181,10 +181,12 @@ An open board hears the agent's move instead of polling for it. Every `openJsonS
 the views that follow its folder over the realtime socket: `createStoreFeed` in the backend,
 `useStoreSnapshot` in the view (frame tag `c`, commands `<plugin>:store.subscribe`). The folder is
 resolved with the socket's own user, so a view can follow only a chat that user owns. The nudge
-names the plugin and the chat, never the state, so the view re-reads through its route. The view
-polls at its own cadence until the feed answers and while the socket is down, and every 30 seconds
-otherwise. After a reconnect it re-reads once, because a nudge sent while the socket was down is
-lost.
+names the plugin and the chat, never the state, so the view re-reads through its route.
+
+The view polls at its own cadence until native watcher coverage is confirmed and while the socket is
+down. A healthy feed has no periodic read. The shared SDK `createStoreChangeFeed` covers committed
+store writes and external file edits; `useStoreSnapshot` lives in `ui/store-snapshot`. After a
+reconnect it re-reads once, because a nudge sent while the socket was down is lost.
 
 ### A live stream of your own
 
@@ -217,7 +219,8 @@ whether the stream is live. The feed handles these for you:
 | Hidden document | With `pauseWhileHidden`, keys unsubscribe while hidden and resubscribe when shown.       |
 
 A follower is told when liveness changes; `feed.live(key)` gives the state when it joins. Keep a
-backstop poll for the gaps: slow while the feed is live, at your usual cadence while it is not.
+fallback poll while the feed is unavailable. Keep a healthy-feed timer only for a named source the
+subscription cannot cover, such as metrics without a push API.
 
 ### Files that change under a chat
 
@@ -234,9 +237,12 @@ for that chat's workspace:
 | Live           | `onLive` / the hook's result. `false` for a remote session or a failed watcher, `null` until the host answers.      |
 
 Subscribing arms the host's watcher for that chat, so it works whether or not the file tree is open.
-Keep a backstop poll: slow while the signal is live, at the cadence you would otherwise use while it
-is not. A sandboxed view (`views`) never receives file paths; this door belongs to native workbench
-UI only.
+Use `useFileResourceSync` for file-backed lists and editors: it coordinates reads, rejects stale
+answers, and polls only while the watcher is unavailable. A sandboxed view (`views`) never receives
+file paths; this door belongs to native workbench UI only.
+
+See [Plugin synchronization](plugin-sync.md) for source coverage, authenticated scopes, caches,
+recovery, and draft policies.
 
 ### Places in the host's own surfaces
 

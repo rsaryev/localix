@@ -6,16 +6,15 @@
  * event, and environment files can be rewritten on disk. A picker showing a stale "staging" while
  * requests go to prod is worse than no picker. The tool's change arrives on `API_ENVIRONMENTS`, a
  * file rewritten in `.localix/api/environments/` through the workspace watcher
- * (`collectionChanges.ts`); the poll is the backstop, slow while that watcher is live.
+ * (`collectionChanges.ts`); the poll is used only while that watcher is unavailable.
  */
 
 import { useCallback, useRef, useState } from 'react'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useFileResourceSync } from '@localixai/plugin-sdk/ui/file-resource-sync'
 import type { EnvironmentCreate, EnvironmentEdit, EnvironmentInfo } from '../../backend/contracts'
 import { restApi } from '../restApi'
 import { useResourceTopic } from '@localixai/plugin-sdk/ui/shared-resource'
 import { API_ENVIRONMENTS } from './topics'
-import { COLLECTION_BACKSTOP_MS, useCollectionChanges } from './collectionChanges'
 import { toast } from '@localixai/plugin-sdk/ui'
 
 const POLL_MS = 15_000
@@ -23,29 +22,19 @@ const POLL_MS = 15_000
 export function useEnvironments(sessionId: string) {
   const [environments, setEnvironments] = useState<EnvironmentInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const busy = useRef(false)
 
-  const refresh = useCallback(async () => {
-    if (busy.current) return
-    busy.current = true
-    try {
-      setEnvironments(await restApi.environments(sessionId))
-    } catch {
-      // An unreachable list leaves the picker empty rather than erroring the whole sidebar: the
-      // requests below it are still usable, and the next tick reconciles.
-      setEnvironments([])
-    } finally {
+  const switching = useRef(0)
+  const { refresh, supersede } = useFileResourceSync({
+    sessionId,
+    prefix: '.localix/api',
+    fallbackMs: POLL_MS,
+    read: (signal) => restApi.environments(sessionId, signal),
+    apply: (value) => {
+      if (switching.current) return
+      setEnvironments(value)
       setLoading(false)
-      busy.current = false
-    }
-  }, [sessionId])
-
-  const watched = useCollectionChanges(sessionId, () => void refresh())
-  useVisiblePolling({
-    intervalMs: watched ? COLLECTION_BACKSTOP_MS : POLL_MS,
-    onTick: refresh,
-    refreshOnFocus: true,
-    immediate: true,
+    },
+    onError: () => setLoading(false),
   })
 
   // One signal for both directions: the agent's `collection_changed` is folded into the same
@@ -59,6 +48,8 @@ export function useEnvironments(sessionId: string) {
       // waits a round-trip to show the choice feels broken; a refresh follows either way, so a
       // failed switch corrects itself rather than lying. An empty name is the "no environment"
       // choice — every flag clears; literal URLs still work while unresolved templates fail loud.
+      switching.current++
+      supersede()
       setEnvironments((all) => all.map((e) => ({ ...e, active: e.name === name })))
       try {
         await restApi.useEnvironment(sessionId, name)
@@ -71,10 +62,11 @@ export function useEnvironments(sessionId: string) {
           },
         )
       } finally {
+        switching.current--
         await refresh()
       }
     },
-    [sessionId, refresh],
+    [sessionId, refresh, supersede],
   )
 
   // The management verbs the editor drives. Each rethrows the typed RestApiError so the editor can

@@ -5,6 +5,7 @@ import { watchWorkspace } from './pluginRuntimeFiles'
 function harness(live: boolean | Error = true) {
   const fsListeners = new Set<(change: FsChange) => void>()
   const reconnects = new Set<() => void>()
+  const disconnects = new Set<() => void>()
   const listed: string[] = []
   const changes: Array<readonly string[] | null> = []
   const lives: boolean[] = []
@@ -26,6 +27,10 @@ function harness(live: boolean | Error = true) {
       onReconnect: (handler) => {
         reconnects.add(handler)
         return () => reconnects.delete(handler)
+      },
+      onDisconnect: (handler) => {
+        disconnects.add(handler)
+        return () => disconnects.delete(handler)
       },
       watchSession: (sessionId) => {
         watching.set(sessionId, (watching.get(sessionId) ?? 0) + 1)
@@ -50,6 +55,10 @@ function harness(live: boolean | Error = true) {
     watching,
     fsListeners,
     reconnects,
+    disconnects,
+    disconnect: () => {
+      for (const handler of disconnects) handler()
+    },
   }
 }
 
@@ -109,5 +118,34 @@ describe('the workspace-change door a native plugin holds', () => {
     expect(h.fsListeners.size).toBe(0)
     expect(h.reconnects.size).toBe(0)
     expect(h.lives).toEqual([])
+  })
+})
+
+describe('workspace watcher health', () => {
+  it('drops liveness immediately on disconnect and restores it only after re-arm', async () => {
+    const h = harness(true)
+    await h.settle()
+    h.disconnect()
+    expect(h.lives).toEqual([true, false])
+    h.reconnect()
+    await h.settle()
+    expect(h.lives).toEqual([true, false, true])
+    h.off()
+    expect(h.disconnects.size).toBe(0)
+  })
+  it('forwards exact entries and does not immediately re-arm an evicted watcher', async () => {
+    const h = harness(true)
+    await h.settle()
+    h.publish({
+      sessionId: 's1',
+      paths: ['/w'],
+      changedPaths: ['/w/.localix/resumes/new/resume.json'],
+    })
+    expect(h.changes).toEqual([['/w/.localix/resumes/new/resume.json']])
+    h.publish({ sessionId: 's1', paths: [], live: false })
+    expect(h.lives.at(-1)).toBe(false)
+    await h.settle()
+    expect(h.listed).toEqual(['s1'])
+    h.off()
   })
 })

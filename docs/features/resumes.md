@@ -69,9 +69,10 @@ The agent should use your supplied facts and ask for missing information.
 
 Saved files are located at `.localix/resumes/<id>/resume.json` within the project. UI saves and
 agent updates validate the same schema and check the current file revision. If saved content changes
-while you edit, your draft remains available: merge independent edits or save a variant. Unsaved
-drafts can be recovered on the same device. Undo and Redo handle local edits; **History** restores a
-saved version as a new revision.
+while you edit, a native file-change notification refreshes the saved version without regular
+polling while the watcher is healthy. Your draft remains available: merge independent edits or save
+a variant. Unsaved drafts can be recovered on the same device. Undo and Redo handle local edits;
+**History** restores a saved version as a new revision.
 
 ## Related guides
 

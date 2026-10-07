@@ -4,12 +4,20 @@ import { resumeSchema, resumeSummarySchema, type ResumeDocument } from '../share
 import { revisionRecordSchema } from '../shared/file-contract'
 import type { ResumeOperation } from '../shared/operations'
 
-async function request(sessionId: string, path: string, method = 'GET', body?: unknown) {
+async function request(
+  sessionId: string,
+  path: string,
+  method = 'GET',
+  body?: unknown,
+  signal?: AbortSignal,
+) {
   const response = await pluginApiFetch(
     `/rpc/resume${path}?${new URLSearchParams({ sessionId })}`,
     {
       method,
-      signal: AbortSignal.timeout(10_000),
+      signal: signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+        : AbortSignal.timeout(10_000),
       ...(body === undefined
         ? {}
         : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
@@ -18,11 +26,12 @@ async function request(sessionId: string, path: string, method = 'GET', body?: u
   return unwrapPluginResponse<unknown>(response)
 }
 export const resumeApi = {
-  list: async (sessionId: string) =>
-    z.strictObject({ resumes: z.array(resumeSummarySchema) }).parse(await request(sessionId, ''))
-      .resumes,
-  get: async (sessionId: string, id: string) =>
-    resumeSchema.parse(await request(sessionId, `/${id}`)),
+  list: async (sessionId: string, signal?: AbortSignal) =>
+    z
+      .strictObject({ resumes: z.array(resumeSummarySchema) })
+      .parse(await request(sessionId, '', 'GET', undefined, signal)).resumes,
+  get: async (sessionId: string, id: string, signal?: AbortSignal) =>
+    resumeSchema.parse(await request(sessionId, `/${id}`, 'GET', undefined, signal)),
   create: async (sessionId: string, document: ResumeDocument) =>
     resumeSchema.parse(await request(sessionId, '', 'POST', { document })),
   update: async (sessionId: string, id: string, revision: string, operations: ResumeOperation[]) =>

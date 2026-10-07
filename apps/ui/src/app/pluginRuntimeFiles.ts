@@ -118,29 +118,48 @@ export function watchWorkspace(
     listDirectory: (sessionId: string) => Promise<{ live?: boolean }>
     onFsChange: typeof onFsChange
     onReconnect: (handler: () => void) => () => void
+    onDisconnect?: (handler: () => void) => () => void
     watchSession: (sessionId: string) => () => void
   } = {
     listDirectory: (id) => backendClient.listDirectory(id),
     onFsChange,
     onReconnect: (handler) => eventSocket.onReconnect(handler),
+    onDisconnect: (handler) => eventSocket.onDisconnect(handler),
     watchSession: (id) => eventSocket.watchSession(id),
   },
 ): () => void {
   let closed = false
   const unwatch = deps.watchSession(sessionId)
-  const arm = () =>
+  let attempt = 0
+  let connected = true
+  const arm = () => {
+    const ticket = ++attempt
     void deps.listDirectory(sessionId).then(
-      (listing) => !closed && handlers.onLive(listing.live === true),
-      () => !closed && handlers.onLive(false),
+      (listing) => {
+        if (!closed && connected && ticket === attempt) handlers.onLive(listing.live === true)
+      },
+      () => {
+        if (!closed && connected && ticket === attempt) handlers.onLive(false)
+      },
     )
+  }
+  const offDisconnect = deps.onDisconnect?.(() => {
+    connected = false
+    attempt++
+    handlers.onLive(false)
+  })
   const offChange = deps.onFsChange((change) => {
     if (closed || change.sessionId !== sessionId) return
     const coarse = change.paths.length === 0
-    handlers.onChange(coarse ? null : change.paths)
-    if (coarse) arm()
+    handlers.onChange(change.changedPaths ?? (coarse ? null : change.paths))
+    if (change.live === false) {
+      attempt++
+      handlers.onLive(false)
+    } else if (coarse) arm()
   })
   const offReconnect = deps.onReconnect(() => {
     if (closed) return
+    connected = true
     handlers.onChange(null)
     arm()
   })
@@ -149,6 +168,7 @@ export function watchWorkspace(
     closed = true
     offChange()
     offReconnect()
+    offDisconnect?.()
     unwatch()
   }
 }

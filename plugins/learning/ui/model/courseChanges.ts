@@ -7,6 +7,7 @@
  */
 import { pluginCommandBus, type PluginCommandEvent } from '@localixai/plugin-sdk/ui/commands'
 import { useResourceTopic } from '@localixai/plugin-sdk/ui/shared-resource'
+import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
 import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
 import {
   LEARNING_CHANGES_CHANNEL,
@@ -48,6 +49,11 @@ export function useCourseChanges(
   visible: boolean,
   refresh: () => Promise<unknown>,
 ): void {
+  const live = useStoreChanges(
+    { plugin: 'learning', sessionId },
+    () => LEARNING_COURSES.invalidate(sessionId),
+    visible,
+  )
   useResourceTopic(LEARNING_COURSES, () => void refresh(), sessionId)
-  useVisiblePolling({ enabled: visible, intervalMs: COURSE_BACKSTOP_MS, onTick: refresh })
+  useVisiblePolling({ enabled: visible && !live, intervalMs: COURSE_BACKSTOP_MS, onTick: refresh })
 }

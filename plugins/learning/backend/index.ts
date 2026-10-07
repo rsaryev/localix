@@ -1,3 +1,4 @@
+import { createStoreChangeFeed } from '@localixai/plugin-sdk/backend'
 import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
 
 import { createLearningRoutes } from './routes'
@@ -14,11 +15,20 @@ export function register(ctx: PluginContext): PluginRegistration {
     return storage.resolveDataDir(userId, sessionId)
   })
   const tutor = new LearningTutor(service, ctx.host?.wake)
+  const feed = createStoreChangeFeed({
+    plugin: 'learning',
+    watchPath: ctx.watchPath ?? ctx.host?.watchPath,
+    resolveDir: async (userId, sessionId) =>
+      sessionId && storage ? storage.resolveDataDir(userId, sessionId) : null,
+    subscribeWrites: () => () => {},
+  })
   const resourceProvider = createLearningResourceProvider(service)
   return {
     backend: [
       {
         id: 'learning:backend',
+        wsFrames: feed.wsFrames,
+        onShutdown: feed.onShutdown,
         routeMount: {
           path: '/rpc/learning',
           app: createLearningRoutes(service, tutor),

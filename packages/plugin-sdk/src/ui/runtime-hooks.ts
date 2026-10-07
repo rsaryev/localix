@@ -15,8 +15,7 @@ import {
 /**
  * Run `onChange` when files change under `sessionId`'s workspace (see `pluginFiles.watchWorkspace`)
  * and answer whether that signal is LIVE for the chat: `null` until the host has answered, then
- * true or false. A caller drives its re-reads from the signal and keeps a backstop poll — slow
- * while live, at its old cadence while not. `onChange` may change identity on every render; only
+ * true or false. A fully covered resource needs polling only while the signal is unavailable. `onChange` may change identity on every render; only
  * `sessionId`, `enabled` and `windowMs` re-subscribe.
  */
 export function usePluginWorkspaceChanges(
@@ -32,10 +31,16 @@ export function usePluginWorkspaceChanges(
   const [live, setLive] = useState<{ sessionId: string; live: boolean } | null>(null)
   useEffect(() => {
     if (!sessionId || !enabled) return
-    return pluginFiles.watchWorkspace(sessionId, (change) => handler.current(change), {
-      windowMs,
-      onLive: (next) => setLive({ sessionId, live: next }),
-    })
+    setLive(null)
+    try {
+      return pluginFiles.watchWorkspace(sessionId, (change) => handler.current(change), {
+        windowMs,
+        onLive: (next) => setLive({ sessionId, live: next }),
+      })
+    } catch {
+      setLive({ sessionId, live: false })
+      return undefined
+    }
   }, [sessionId, enabled, windowMs])
   // An answer for another chat (the hook moved on) says nothing about this one.
   // `sessionId` may be null while `live` is null too: compare only an answer that exists.

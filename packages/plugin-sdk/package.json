@@ -194,6 +194,30 @@
     "./document-layout": {
       "types": "./dist/document-layout.d.ts",
       "import": "./dist/document-layout.js"
+    },
+    "./ui/resource-sync": {
+      "types": "./dist/ui/resource-sync.d.ts",
+      "import": "./dist/ui/resource-sync.js"
+    },
+    "./ui/file-resource-sync": {
+      "types": "./dist/ui/file-resource-sync.d.ts",
+      "import": "./dist/ui/file-resource-sync.js"
+    },
+    "./store-changes": {
+      "types": "./dist/store-changes.d.ts",
+      "import": "./dist/store-changes.js"
+    },
+    "./ui/store-resource": {
+      "types": "./dist/ui/store-resource.d.ts",
+      "import": "./dist/ui/store-resource.js"
+    },
+    "./ui/route-snapshot": {
+      "types": "./dist/ui/route-snapshot.d.ts",
+      "import": "./dist/ui/route-snapshot.js"
+    },
+    "./ui/store-snapshot": {
+      "types": "./dist/ui/store-snapshot.d.ts",
+      "import": "./dist/ui/store-snapshot.js"
     }
   },
   "scripts": {

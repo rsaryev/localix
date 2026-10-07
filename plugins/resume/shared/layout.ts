@@ -152,40 +152,18 @@ export function resumeLayout(document: ResumeDocument): DocumentLayout {
     if (['bottom', 'double', 'dashed'].includes(style.rule))
       blocks.push({ kind: 'rule', width: 0.75, dashed: style.rule === 'dashed' })
     if (section.type === 'skills' || section.type === 'languages') {
-      const rows = section.entries.map((entry) =>
-        paragraph([
+      const rows = section.entries.map((entry) => {
+        const detail = [
+          entry.proficiency,
+          ...richParagraphs(entry.body).map((item) => item.runs.map((run) => run.text).join('')),
+        ]
+          .filter(Boolean)
+          .join(' · ')
+        return paragraph([
           { text: entry.title, bold: true },
-          ...(section.showProficiency === false
-            ? []
-            : [
-                {
-                  text: [
-                    entry.proficiency,
-                    typeof entry.body === 'string'
-                      ? entry.body
-                      : richParagraphs(entry.body)
-                          .flatMap((item) => item.runs)
-                          .map((run) => run.text)
-                          .join(''),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
-                    ? ` — ${[
-                        entry.proficiency,
-                        typeof entry.body === 'string'
-                          ? entry.body
-                          : richParagraphs(entry.body)
-                              .flatMap((item) => item.runs)
-                              .map((run) => run.text)
-                              .join(''),
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}`
-                    : '',
-                },
-              ]),
-        ]),
-      )
+          ...(detail ? [{ text: ` — ${detail}` }] : []),
+        ])
+      })
       const columns = section.columns ?? 2
       blocks.push({
         kind: 'columns',

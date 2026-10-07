@@ -10,8 +10,7 @@ import { useSourceControlStore } from './store'
 // now says WHEN to read; the timer is only a backstop:
 //
 //  - live signal → a 2-minute backstop, for what the watcher cannot see: a linked worktree whose
-//    git dir lives outside the project, a repository nested past the watcher's cap, an evicted
-//    watcher (the host drops the least-recent past its limit without telling anyone);
+//    git dir lives outside the project, a repository nested past the watcher's cap; watcher eviction now reports live=false;
 //  - no signal (a remote session, a failed watcher, a host without one) → the old adaptive
 //    cadence: brisk during a run, slow when idle;
 //  - a pending first probe → brisk either way, so startup discovery recovers quickly.

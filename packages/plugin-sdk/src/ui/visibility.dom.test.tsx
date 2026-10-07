@@ -83,3 +83,39 @@ test('a stopped owner does not replay polling after its inherited request settle
   await pending
   expect(calls).toBe(1)
 })
+
+test('a null interval reconciles on focus without creating a polling timer', async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const root = createRoot(document.createElement('div'))
+  const original = globalThis.setInterval
+  let intervals = 0
+  globalThis.setInterval = ((...args: Parameters<typeof setInterval>) => {
+    intervals++
+    return original(...args)
+  }) as typeof setInterval
+  let calls = 0
+  function Probe() {
+    useVisiblePolling({
+      intervalMs: null,
+      immediate: true,
+      refreshOnFocus: true,
+      onTick: () => {
+        calls++
+      },
+    })
+    return null
+  }
+  try {
+    await act(async () => root.render(<Probe />))
+    expect(calls).toBe(1)
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    expect(calls).toBe(2)
+    expect(intervals).toBe(0)
+  } finally {
+    await act(async () => root.unmount())
+    globalThis.setInterval = original
+  }
+})

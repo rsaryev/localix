@@ -38,7 +38,8 @@ export function useWorkItemVisible(): boolean {
 
 export interface VisiblePollingOptions {
   enabled?: boolean
-  intervalMs: number
+  /** Null keeps initial/focus/visibility reconciliation but creates no polling timer. */
+  intervalMs: number | null
   onTick: () => void | Promise<unknown>
   refreshOnFocus?: boolean
   immediate?: boolean
@@ -103,7 +104,7 @@ export function useVisiblePolling({
     }
     let timer: ReturnType<typeof setInterval> | null = null
     const start = () => {
-      if (!timer) timer = setInterval(tick, intervalMs)
+      if (!timer && intervalMs !== null && intervalMs > 0) timer = setInterval(tick, intervalMs)
     }
     const stop = () => {
       if (!timer) return

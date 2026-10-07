@@ -40,13 +40,16 @@ export { RestApiError }
 export const restApi = {
   ...environmentApi,
 
-  async list(sessionId: string): Promise<RequestInfo[]> {
-    return (await readOr<RequestsResponse>(await pluginApiFetch(u(sessionId)`/requests`))).requests
+  async list(sessionId: string, signal?: AbortSignal): Promise<RequestInfo[]> {
+    return (
+      await readOr<RequestsResponse>(await pluginApiFetch(u(sessionId)`/requests`, { signal }))
+    ).requests
   },
 
-  async folders(sessionId: string): Promise<string[]> {
-    return (await readOr<{ folders: string[] }>(await pluginApiFetch(u(sessionId)`/folders`)))
-      .folders
+  async folders(sessionId: string, signal?: AbortSignal): Promise<string[]> {
+    return (
+      await readOr<{ folders: string[] }>(await pluginApiFetch(u(sessionId)`/folders`, { signal }))
+    ).folders
   },
 
   async createFolder(sessionId: string, name: string): Promise<string> {

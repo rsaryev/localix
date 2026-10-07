@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { ReaderBookSummary, ReaderLibraryResponse } from '../shared/contracts'
+import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
+import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
 import { readerApi } from './api'
 
 export type ReaderLibraryLoader = () => Promise<ReaderLibraryResponse>
@@ -42,5 +44,11 @@ export function useReaderLibraryBooks(
     }
   }, [refresh, refreshKey])
 
+  const live = useStoreChanges(
+    { plugin: 'reader', sessionId: null },
+    () => void refresh(),
+    refreshKey !== null,
+  )
+  useVisiblePolling({ enabled: refreshKey !== null && !live, intervalMs: 60_000, onTick: refresh })
   return { books, refresh }
 }

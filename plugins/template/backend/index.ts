@@ -37,6 +37,7 @@ export function register(ctx: PluginContext): PluginRegistration {
   // An open view hears every write to a store under `ctx.dataDir` — the agent's mark included —
   // instead of polling for it. A per-chat store would resolve `ctx.sessionStorage` here instead.
   const feed = createStoreFeed({
+    watchPath: ctx.watchPath ?? ctx.host?.watchPath,
     plugin: 'template',
     resolveDir: async (_userId, sessionId) => (sessionId === null ? ctx.dataDir : null),
   })

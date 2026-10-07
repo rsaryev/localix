@@ -137,6 +137,7 @@ export class ReaderService {
   private readonly libraryEpoch = new Map<string, number>()
   private readonly persistence?: ReaderPersistence
   private loadPromise?: Promise<void>
+  private libraryStale = false
   private savePromise: Promise<void> = Promise.resolve()
 
   constructor(
@@ -161,6 +162,8 @@ export class ReaderService {
   }
 
   async list(): Promise<ReaderLibraryResponse> {
+    // Fallback/focus reads must also reconcile disk when the host cannot watch it.
+    if (this.persistence) this.invalidateLibrary()
     await this.ensureLoaded()
     const books = [...this.opened.values()].sort(
       (left, right) =>
@@ -479,9 +482,28 @@ export class ReaderService {
     await this.persist()
   }
 
+  /** Expire the shelf; the next read reloads after accepted writes and a previous load settle. */
+  invalidateLibrary(): void {
+    this.libraryStale = true
+  }
+
   private ensureLoaded(): Promise<void> {
     if (!this.persistence) return Promise.resolve()
-    this.loadPromise ??= this.persistence.helpers
+    if (this.libraryStale) {
+      this.libraryStale = false
+      const prior = this.loadPromise ?? Promise.resolve()
+      this.loadPromise = Promise.all([prior, this.savePromise]).then(() => {
+        this.opened.clear()
+        this.collections.clear()
+        return this.loadLibrary()
+      })
+    }
+    return (this.loadPromise ??= this.loadLibrary())
+  }
+
+  private loadLibrary(): Promise<void> {
+    if (!this.persistence) return Promise.resolve()
+    return this.persistence.helpers
       .readJson<StoredReaderLibrary>(
         this.persistence.filePath,
         { books: [], collections: [] },
@@ -512,7 +534,6 @@ export class ReaderService {
           this.opened.set(book.mediaId ? `media:${book.mediaId}` : `path:${book.path}`, book)
         }
       })
-    return this.loadPromise
   }
 
   private persist(): Promise<void> {

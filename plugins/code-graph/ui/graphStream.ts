@@ -51,6 +51,6 @@ export function useGraphStream(
   sessionId: string | null,
   enabled: boolean,
   handlers: GraphStreamListener,
-): void {
-  useRealtimeFeed(graphFeed, enabled ? sessionId : null, graphFollower(handlers))
+): boolean {
+  return useRealtimeFeed(graphFeed, enabled ? sessionId : null, graphFollower(handlers))
 }

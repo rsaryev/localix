@@ -47,6 +47,12 @@ function fakeHost() {
       },
       request: async (payload: Record<string, unknown>) => {
         commands.push(`${String(payload.t)} ${String(payload.sessionId)}`)
+        if (String(payload.t).endsWith('.subscribe')) {
+          queueMicrotask(() => {
+            for (const handler of frames)
+              handler(JSON.stringify({ plugin: 'probe', sessionId: payload.sessionId, live: true }))
+          })
+        }
         return String(payload.t).endsWith('.subscribe') ? { subscribed: true } : {}
       },
     },

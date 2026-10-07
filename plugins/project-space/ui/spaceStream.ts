@@ -1,17 +1,11 @@
+import { workspacePathsTouch } from '@localixai/plugin-sdk/ui/file-resource-sync'
 import { createRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
 import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
 import { BOARD_DIR, SPACE_FRAME_TAG, SPACE_SUBSCRIBE, SPACE_UNSUBSCRIBE } from '../shared/resource'
 
 /** A workspace change at or under the board's folder — or a coarse one, which may include it. */
 export function touchesBoard(paths: readonly string[] | null): boolean {
-  if (paths === null) return true
-  const marker = `/${BOARD_DIR}`
-  return paths.some((path) => {
-    const posix = path.replaceAll('\\', '/')
-    const at = posix.indexOf(marker)
-    const next = at < 0 ? '' : posix[at + marker.length]
-    return at >= 0 && (next === undefined || next === '/')
-  })
+  return workspacePathsTouch(paths, BOARD_DIR)
 }
 
 /**

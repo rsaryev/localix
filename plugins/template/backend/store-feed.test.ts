@@ -47,22 +47,25 @@ test('a write under the followed folder nudges once per burst, and only that sco
   const { sent, contribution, handle } = start({ a: mine })
   await settle()
   // The first nudge closes the gap between the view's last read and the subscription.
-  expect(sent).toEqual([JSON.stringify({ plugin: 'probe', sessionId: 'a' })])
+  expect(sent).toEqual([
+    JSON.stringify({ plugin: 'probe', sessionId: 'a', live: false }),
+    JSON.stringify({ plugin: 'probe', sessionId: 'a' }),
+  ])
 
   const store = counter(mine)
   await Promise.all([1, 2, 3].map((n) => store.update(() => ({ n }))))
   // `chat-ab` shares the prefix `chat-a`: the separator keeps it from matching.
   await counter(other).update(() => ({ n: 9 }))
   await settle()
-  expect(sent).toHaveLength(2)
+  expect(sent).toHaveLength(3)
 
   contribution.stop(handle)
   await store.update(() => ({ n: 4 }))
   await settle()
-  expect(sent).toHaveLength(2)
+  expect(sent).toHaveLength(3)
 })
 
-test('a scope the socket’s user may not follow streams nothing', async () => {
+test('a scope the socket’s user may not follow reports unavailable without data', async () => {
   const { mine } = folders()
   const feed = createStoreFeed({
     plugin: 'probe',
@@ -73,7 +76,7 @@ test('a scope the socket’s user may not follow streams nothing', async () => {
   feed.wsFrames[0]!.start({ sessionId: 'a' }, (data) => sent.push(data), { userId: 'someone' })
   await counter(mine).update(() => ({ n: 1 }))
   await settle()
-  expect(sent).toEqual([])
+  expect(sent).toEqual([JSON.stringify({ plugin: 'probe', sessionId: 'a', live: false })])
 })
 
 test('the commands are the plugin’s own, and shutdown releases live streams', async () => {
@@ -85,5 +88,5 @@ test('the commands are the plugin’s own, and shutdown releases live streams', 
   feed.onShutdown()
   await counter(mine).update(() => ({ n: 1 }))
   await settle()
-  expect(sent).toHaveLength(1)
+  expect(sent).toHaveLength(2)
 })

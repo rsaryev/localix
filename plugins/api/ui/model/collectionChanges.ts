@@ -1,3 +1,4 @@
+import { workspacePathsTouch } from '@localixai/plugin-sdk/ui/file-resource-sync'
 import { useCallback } from 'react'
 import type { PluginWorkspaceChange } from '@localixai/plugin-sdk/ui/runtime'
 import { usePluginWorkspaceChanges } from '@localixai/plugin-sdk/ui/runtime-hooks'
@@ -10,23 +11,12 @@ import { usePluginWorkspaceChanges } from '@localixai/plugin-sdk/ui/runtime-hook
  */
 export const COLLECTION_SEGMENTS = ['.localix', 'api'] as const
 
-/** While the workspace signal is live, how often the lists still look: a missed event's bound. */
-export const COLLECTION_BACKSTOP_MS = 120_000
-
 /**
  * Whether a workspace change can have moved the collection: a path at or under its folder, or a
  * coarse change (`paths: null` — a watcher restart or a burst too large to list), which may have.
  */
 export function touchesCollection(change: Pick<PluginWorkspaceChange, 'paths'>): boolean {
-  if (change.paths === null) return true
-  const marker = `/${COLLECTION_SEGMENTS.join('/')}`
-  return change.paths.some((path) => {
-    const posix = path.replaceAll('\\', '/')
-    const at = posix.indexOf(marker)
-    if (at < 0) return false
-    const next = posix[at + marker.length]
-    return next === undefined || next === '/'
-  })
+  return workspacePathsTouch(change.paths, COLLECTION_SEGMENTS.join('/'))
 }
 
 /**
@@ -36,8 +26,7 @@ export function touchesCollection(change: Pick<PluginWorkspaceChange, 'paths'>):
  * what it saved (`collectionEvents.ts`), but a collection is plain JSON in the workspace: the
  * agent's file tools, a `git checkout` or another editor rewrite it with nothing announced, and
  * the sidebar kept the old requests for up to a poll. The host's workspace watcher hears those
- * writes; the poll stays only as a backstop — slow while the watcher is live, at its old cadence
- * while it is not (a remote chat, a failed watcher).
+ * writes; healthy lists need no poll; unsupported or failed watchers retain a fallback.
  */
 export function useCollectionChanges(sessionId: string, refresh: () => void): boolean | null {
   const onChange = useCallback(

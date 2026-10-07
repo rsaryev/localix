@@ -11,12 +11,11 @@
  * window; the visibility gate means a hidden tab costs nothing either way.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useEffect, useState } from 'react'
+import { useFileResourceSync } from '@localixai/plugin-sdk/ui/file-resource-sync'
 import type { RequestInfo } from '../../backend/contracts'
 import { restApi } from '../restApi'
 import { subscribeApiWorkspaceCommands } from './collectionEvents'
-import { COLLECTION_BACKSTOP_MS, useCollectionChanges } from './collectionChanges'
 
 /** While the workspace watcher is not live — see the header. */
 const POLL_MS = 15_000
@@ -35,37 +34,26 @@ export function useRequests(sessionId: string) {
     loading: true,
     error: null,
   })
-  const busy = useRef(false)
 
-  const refresh = useCallback(async () => {
-    // Drop an overlapping tick rather than race two loads into setState.
-    if (busy.current) return
-    busy.current = true
-    try {
+  const { refresh } = useFileResourceSync({
+    sessionId,
+    prefix: '.localix/api',
+    fallbackMs: POLL_MS,
+    read: async (signal) => {
       const [requests, folders] = await Promise.all([
-        restApi.list(sessionId),
-        restApi.folders(sessionId),
+        restApi.list(sessionId, signal),
+        restApi.folders(sessionId, signal),
       ])
-      setState({ requests, folders, loading: false, error: null })
-    } catch (err) {
+      return { requests, folders }
+    },
+    apply: (value) => setState({ ...value, loading: false, error: null }),
+    onError: (err) =>
       setState((s) => ({
         ...s,
         loading: false,
         error: err instanceof Error ? err.message : 'Could not load the saved requests.',
-      }))
-    } finally {
-      busy.current = false
-    }
-  }, [sessionId])
-
-  const watched = useCollectionChanges(sessionId, () => void refresh())
-  useVisiblePolling({
-    intervalMs: watched ? COLLECTION_BACKSTOP_MS : POLL_MS,
-    onTick: refresh,
-    refreshOnFocus: true,
-    immediate: true,
+      })),
   })
-
   useEffect(
     () =>
       subscribeApiWorkspaceCommands((command) => {

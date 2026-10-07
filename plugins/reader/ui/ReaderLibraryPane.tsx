@@ -1,3 +1,5 @@
+import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
+import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
 import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
 import {
   useCallback,
@@ -131,23 +133,35 @@ export function LibraryPane({
     [],
   )
 
+  const readRevision = useRef({ value: 0 })
   const refresh = useCallback(async () => {
+    const revision = ++readRevision.current.value
     setLoading(true)
     try {
       const next = await readerApi.library()
+      if (revision !== readRevision.current.value) return
       setResult(next)
       const available = new Set(next.books.map(readerBookKey))
       setSelectedBookKeys((current) => new Set([...current].filter((key) => available.has(key))))
       setError(null)
     } catch (cause) {
+      if (revision !== readRevision.current.value) return
       acknowledgeInline(cause)
       setError(cause instanceof Error ? cause.message : String(cause))
     } finally {
-      setLoading(false)
+      if (revision === readRevision.current.value) setLoading(false)
     }
   }, [])
 
-  useEffect(() => void refresh(), [refresh])
+  useEffect(() => {
+    const revision = readRevision.current
+    void refresh()
+    return () => {
+      revision.value++
+    }
+  }, [refresh])
+  const live = useStoreChanges({ plugin: 'reader', sessionId: null }, () => void refresh())
+  useVisiblePolling({ enabled: !live, intervalMs: 60_000, onTick: refresh })
 
   useEffect(() => {
     if (

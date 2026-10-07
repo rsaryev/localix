@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui'
+import { useEffect, useRef, useState } from 'react'
+import { useFileResourceSync } from '@localixai/plugin-sdk/ui/file-resource-sync'
 import {
   documentSchema,
   resumeSummary,
@@ -40,49 +40,44 @@ export function useResumes(active: boolean, sessionId: string, initialId?: strin
       editing && JSON.stringify(editing.base.document) !== JSON.stringify(editing.history.value),
     )
   }
-  const refresh = useCallback(async () => {
-    if (busy.current) return
-    const ticket = ++lifecycle.current.ticket
-    try {
-      const list = await resumeApi.list(sessionId)
-      if (!lifecycle.current.alive || ticket !== lifecycle.current.ticket || busy.current) return
-      setResumes(list)
+  const { refresh } = useFileResourceSync({
+    sessionId,
+    prefix: '.localix/resumes',
+    enabled: active && !pending,
+    resetKey: initialId,
+    fallbackMs: 5_000,
+    read: async (signal) => {
+      const list = await resumeApi.list(sessionId, signal)
       const savedBase = latest.current?.base
       const selected = list.find((item) => item.id === (savedBase?.id ?? initialId))
-      if (selected && selected.revision !== savedBase?.revision) {
-        const saved = await resumeApi.get(sessionId, selected.id)
-        if (!lifecycle.current.alive || ticket !== lifecycle.current.ticket || busy.current) return
+      const saved =
+        selected && selected.revision !== savedBase?.revision
+          ? await resumeApi.get(sessionId, selected.id, signal)
+          : null
+      return { list, selected, saved, savedBase }
+    },
+    apply: ({ list, selected, saved, savedBase }) => {
+      if (busy.current) return
+      setResumes(list)
+      if (saved) {
         setRemote(saved)
         const editing = latest.current
-        const changed = Boolean(
-          editing &&
-          JSON.stringify(editing.base.document) !== JSON.stringify(editing.history.value),
-        )
-        if (!changed) adopt(saved, !editing)
+        if (!isDirty()) adopt(saved, !editing)
       } else if (savedBase && !selected) {
         setRemote(null)
-        if (JSON.stringify(savedBase.document) === JSON.stringify(latest.current?.history.value))
-          clear()
+        if (!isDirty()) clear()
       }
       setReadError(
         !selected && initialId && !savedBase
           ? 'This resume link is unavailable. Choose another resume or create one.'
           : null,
       )
-    } catch (reason) {
-      if (lifecycle.current.alive && ticket === lifecycle.current.ticket)
-        setReadError(reason instanceof Error ? reason.message : 'Cannot read resumes. Retry.')
-    } finally {
-      if (lifecycle.current.alive && ticket === lifecycle.current.ticket) setLoading(false)
-    }
-  }, [adopt, clear, initialId, latest, sessionId])
-  useVisiblePolling({
-    enabled: active,
-    intervalMs: 5_000,
-    onTick: refresh,
-    immediate: true,
-    refreshOnFocus: true,
-    resetKey: initialId,
+      setLoading(false)
+    },
+    onError: (reason) => {
+      setReadError(reason instanceof Error ? reason.message : 'Cannot read resumes. Retry.')
+      setLoading(false)
+    },
   })
   const action = async (run: () => Promise<Resume | null>) => {
     if (busy.current) return false

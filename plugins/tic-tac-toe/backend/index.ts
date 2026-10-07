@@ -24,6 +24,7 @@ export function register(ctx: PluginContext): PluginRegistration {
   // The open board hears every write to its chat's game — the agent's move included — instead of
   // polling for it. The folder is the host's, resolved with the socket's own user.
   const feed = createStoreFeed({
+    watchPath: ctx.watchPath ?? ctx.host?.watchPath,
     plugin: 'tic-tac-toe',
     resolveDir: async (userId, sessionId) =>
       sessionId && storage ? storage.resolveDataDir(userId, sessionId) : null,

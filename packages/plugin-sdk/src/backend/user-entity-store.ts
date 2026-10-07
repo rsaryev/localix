@@ -66,6 +66,8 @@ export type EntityPatch<T extends { id: string }> = {
 } & { id?: never }
 
 export interface UserEntityStore<T extends { id: string }> {
+  /** Drop a cached snapshot after an authoritative external file change. */
+  invalidate?: (userId: string) => void
   list(userId: string): Promise<T[]>
   get(userId: string, id: string): Promise<T | null>
   /**
@@ -127,6 +129,7 @@ export function createUserEntityStore<T extends { id: string }>(
   }
 
   const cache = new Map<string, T[]>()
+  let cacheEpoch = 0
   const writeTail = new Map<string, Promise<unknown>>()
   const cloneEntity = (entity: T): T => structuredClone(entity)
   const cloneList = (list: T[]): T[] => list.map(cloneEntity)
@@ -152,6 +155,7 @@ export function createUserEntityStore<T extends { id: string }>(
   async function load(userId: string): Promise<T[]> {
     const cached = cacheGet(userId)
     if (cached !== undefined) return cached
+    const epoch = cacheEpoch
     let list: T[]
     const target = fileFor(userId)
     try {
@@ -166,6 +170,7 @@ export function createUserEntityStore<T extends { id: string }>(
       if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') list = []
       else throw err
     }
+    if (epoch !== cacheEpoch) return load(userId)
     cacheSet(userId, list)
     return list
   }
@@ -217,6 +222,10 @@ export function createUserEntityStore<T extends { id: string }>(
   }
 
   return {
+    invalidate(userId) {
+      cacheEpoch++
+      cache.delete(userId)
+    },
     async list(userId) {
       return cloneList(await load(userId))
     },

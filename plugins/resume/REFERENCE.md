@@ -16,7 +16,7 @@ Sample content is explicitly illustrative. Blank creation and agent initializati
 the user's qualifications. Arbitrary source files remain the agent's ingestion responsibility;
 portable structured resume JSON can be imported directly into the creation form.
 
-The current implementation is incomplete until these surfaces have been rendered and compared.
+Reference evidence is recorded in `IMPLEMENTATION.md`, export tests and dated UI captures.
 
 ## Reference review — 2026-10-07
 
@@ -28,17 +28,12 @@ preserving its draft, panel selection and scroll position. Preview opens automat
 pane breakpoint until the user explicitly chooses a mode. Template selection stays available through
 Layout; New resume remains available through More when its toolbar action is collapsed.
 
-The reference also contains capabilities that the current plugin has not implemented:
+The previously listed presentation gaps are implemented: actual A4 PDF pages and page numbers,
+shared PDF/Word typography, font and spacing controls, portrait controls, contact icon visibility,
+skill columns/proficiency, rich/list custom sections, date ordering and structured/source imports.
+Native JSON/YAML preserve the complete Localix document; Lanjut interchange explicitly rejects
+unrepresentable fields rather than silently dropping them. Word uses editable linear flow and may
+paginate differently from PDF.
 
-- Measured A4 pagination, page numbers and matching template presentation in PDF. The current
-  preview is explicitly continuous; PDF and DOCX use the Documents plugin's linear typography.
-- Document font selection, font-size scales, line height, tracking and section spacing.
-- Optional portrait with size, corner radius and alignment controls; contact icon visibility.
-- Skills/languages column and proficiency visibility controls; separate rich/list custom sections.
-- Month/year pickers, automatic date ordering and a section-order reset.
-- Lanjut JSON/YAML interchange and its source-import leftovers review. Localix currently imports its
-  own portable structured JSON; arbitrary source ingestion is handled by the agent.
-
-These are parity gaps, not claims of completed functionality. Keep schema changes and template
-export work together so presentation controls cannot promise a result that the exported document
-ignores.
+The implementation record and tests provide current evidence; the dated UI captures demonstrate the
+adapted layout. Exact pixel reproduction of Lanjut's application shell is not the contract.
