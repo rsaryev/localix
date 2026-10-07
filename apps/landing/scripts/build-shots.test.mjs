@@ -202,3 +202,29 @@ describe('product screenshot manifest', () => {
     }
   })
 })
+
+test('keeps historical comparisons out of the current public capture manifest', async () => {
+  const { shotsDir, outFile } = await fixture()
+  await fs.mkdir(path.join(shotsDir, 'workspace'))
+  await fs.writeFile(
+    path.join(shotsDir, 'workspace/workbench-before--2026-09-30.png'),
+    pngHeader(1600, 1000),
+  )
+  expect(await buildShotManifest({ shotsDir, outFile })).toEqual([])
+  expect(await fs.readFile(outFile, 'utf8')).not.toContain('workbench-before')
+})
+
+test('publishes documentation captures at the same URL for Bun prerender and Vite hydration', async () => {
+  const { shotsDir, outFile } = await fixture()
+  await fs.mkdir(path.join(shotsDir, 'agents'))
+  const bytes = pngHeader(4800, 3000)
+  await fs.writeFile(path.join(shotsDir, 'agents/context-and-limits--2026-10-08.png'), bytes)
+  const publicDir = path.join(path.dirname(shotsDir), 'public-shots')
+  await buildShotManifest({ shotsDir, outFile, publicDir })
+  const manifest = await fs.readFile(outFile, 'utf8')
+  expect(manifest).toContain('src: "/shots/agents/context-and-limits--2026-10-08.png"')
+  expect(manifest).not.toContain('import shot')
+  expect(
+    await fs.readFile(path.join(publicDir, 'agents/context-and-limits--2026-10-08.png')),
+  ).toEqual(bytes)
+})

@@ -16,6 +16,8 @@ and workbooks. It is enabled by default and can be disabled independently of cor
 The plugin contributes no model-facing tools. Agents use the generic core `read`, `write`, and shell
 capabilities; the plugin augments `read` through a typed extension port.
 
+![Release checks opened in the Documents table viewer, with typed columns and their current results](../assets/screenshots/documents/viewer--2026-10-08.png)
+
 ## Styled document generation
 
 The [Resumes workbench](resumes.md) uses a bounded `DocumentLayout` contract from

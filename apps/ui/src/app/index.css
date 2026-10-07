@@ -20,10 +20,12 @@
    it finds in scanned sources — without this, every class a kit primitive uses would be missing
    from the app's stylesheet. */
 @source '../../../../packages/kit/src';
+@source '../../../../packages/markdown/src';
 
 /* Tests contain obsolete style examples and synthetic identifiers (e.g. m-100000) that
    Tailwind also recognizes as utilities. They are never rendered by the app, so scanning them
    adds test-only CSS to every startup. Keep all production app and kit sources in the scan. */
 @source not '../**/*.test.{ts,tsx}';
 @source not '../../../../packages/kit/src/**/*.test.{ts,tsx}';
+@source not '../../../../packages/markdown/src/**/*.test.{ts,tsx}';
 @source not '../../../../packages/kit/src/testing';

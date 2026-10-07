@@ -7,6 +7,8 @@ the same task.
 **Availability:** The grid is a desktop/web surface. Headless clients use the same backend without
 this layout.
 
+![Source code and passing fixture tests beside the team conversation](../assets/screenshots/workspace/editor-grid--2026-10-08.png)
+
 ## Native workspace tabs on macOS
 
 In the macOS desktop app, **Command+T** opens a new native workspace tab in the current window. The

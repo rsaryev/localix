@@ -3,6 +3,8 @@
 A Localix session binds a model, working folder, transcript, and runtime tools. This walkthrough
 connects a model, opens a project, runs one bounded request, and shows you where to inspect it.
 
+![A release review with Team Lead, Frontend and QA participants](../assets/screenshots/conversations/participants--2026-10-07.png)
+
 ## Terminology
 
 | Term                | Meaning here                                                                 |

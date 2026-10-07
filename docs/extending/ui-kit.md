@@ -168,3 +168,6 @@ agent to choose there before writing a control.
   — the runtime registry.
 
 [visual]: ../internals/visual-system.md
+
+Loading content can reserve its geometry with `Skeleton` from `@localixai/kit/skeleton`. The
+enclosing region owns its accessible status and `aria-busy`; individual shapes are decorative.

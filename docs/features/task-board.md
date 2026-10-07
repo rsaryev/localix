@@ -4,6 +4,8 @@ The Kanban board is a bundled plugin that gives every chat its own passive task 
 dependencies, checklists, owners and blockers, kept by you and the agent in that chat. Use this page
 to plan multi-part work so its state stays visible and durable.
 
+![Release tasks arranged by status, with owners and labels](../assets/screenshots/task-board/board--2026-10-07.png)
+
 ## Terminology
 
 | Term    | Meaning                                                                  | Boundary                                                           |

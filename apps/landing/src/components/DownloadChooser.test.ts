@@ -40,6 +40,11 @@ test('takes the chip from Client Hints first, then from the WebGL renderer', () 
   })
 })
 
-test('an unknown platform falls back to an uncertain Mac guess', () => {
-  expect(detectDownload({ userAgent: 'Android' })).toEqual({ id: 'mac-arm64', certain: false })
+test('unknown and mobile platforms never infer a Mac from GPU or architecture', () => {
+  for (const userAgent of ['Android Linux', 'iPhone', 'iPad Mac OS X', '']) {
+    expect(detectDownload({ userAgent, architecture: 'arm', renderer: 'Apple M3' })).toEqual({
+      id: 'unknown',
+      certain: false,
+    })
+  }
 })

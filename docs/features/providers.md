@@ -6,6 +6,8 @@ connection path supplies chat, auxiliary model tasks, and delegated agents.
 **Availability:** Providers and models come from the active runtime catalog. API-key connections
 need a catalog entry, and sign-in appears only when that runtime reports an OAuth flow.
 
+![The provider picker showing OpenAI connection options before credentials are entered](../assets/screenshots/providers/model-browser--2026-10-08.png)
+
 ## What you can do
 
 | Capability                   | Mechanism                                                                            | Boundary                                                               |

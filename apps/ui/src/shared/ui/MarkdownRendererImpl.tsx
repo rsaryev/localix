@@ -17,29 +17,30 @@ import {
   mathPluginsReady,
   remarkPluginsFor,
   rehypePluginsFor,
-} from './markdownPlugins'
+} from '@localixai/markdown/markdownPlugins'
 import { CodeBlock } from './code-block'
-import { closePartialMarkdown, openFenceBody } from './markdown-stream'
-import { isEscaped, markdownProseWithoutCode } from './markdown-prose'
-import { escapeLiteralDollars } from './markdown-dollars'
+import { closePartialMarkdown, openFenceBody } from '@localixai/markdown/markdown-stream'
+import { hasMathSyntax, hasHtmlSyntax } from '@localixai/markdown/syntax'
+export { hasMathSyntax, hasHtmlSyntax } from '@localixai/markdown/syntax'
+import { escapeLiteralDollars } from '@localixai/markdown/markdown-dollars'
 import { useSmoothedText } from '@/shared/hooks/useSmoothedText'
 import { useStreamingThrottle, STREAM_MARKDOWN_REPARSE_MS } from './useStreamingThrottle'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 import { inlineCodeToPath, inlineCodeLine } from './markdownFileRef'
 import { classifyMarkdownLink, markdownUrlTransform } from './markdownLink'
-import { childrenToText, getLanguage, isCodeBlock } from './markdownHelpers'
+import { childrenToText, getLanguage, isCodeBlock } from '@localixai/markdown/markdownHelpers'
 import { remarkFileMention, mentionPathFromHref } from './remarkFileMention'
 import { remarkAgentMention, agentHandleFromHref, isUserMentionHref } from './remarkAgentMention'
 import { AgentMentionChip } from './AgentMentionChip'
 import { UserMentionChip } from './UserMentionChip'
 import { FileMentionChip } from './FileMentionChip'
 import { ExternalAnchor } from './external-anchor'
-import { MarkdownBlockquote } from './MarkdownBlockquote'
+import { MarkdownBlockquote } from '@localixai/markdown/MarkdownBlockquote'
 import { MermaidDiagram } from './mermaid/MermaidDiagram'
 import { GrowingFenceContext, StreamingDiagram } from './mermaid/StreamingDiagram'
-import { DIAGRAM_FENCE_LANGUAGE, TREE_FENCE_LANGUAGE } from '@localixai/api/answer-markdown'
-import { AnswerVariant, AnswerVariants } from './AnswerVariants'
+import { DIAGRAM_FENCE_LANGUAGE, TREE_FENCE_LANGUAGE } from '@localixai/markdown/dialect'
+import { AnswerVariant, AnswerVariants } from '@localixai/markdown/AnswerVariants'
 import { FileTree } from './FileTree'
 import { MarkdownInput, SourceTasks } from './MarkdownTaskList'
 
@@ -145,74 +146,8 @@ export function shouldActivateMath(hasMath: boolean, mathReady: boolean): boolea
   return hasMath && mathReady
 }
 
-/** Detect remark-math delimiters without loading KaTeX for shell vars or code blocks. */
-export function hasMathSyntax(markdown: string): boolean {
-  const text = markdownProseWithoutCode(markdown)
-
-  for (let index = 0; index < text.length; index += 1) {
-    if (text[index] !== '$' || isEscaped(text, index)) continue
-    const delimiterLength = text[index + 1] === '$' ? 2 : 1
-
-    if (
-      delimiterLength === 1 &&
-      (text[index - 1] === '$' || text[index + 1] === '$' || !text[index + 1])
-    ) {
-      continue
-    }
-
-    for (let closing = index + delimiterLength; closing < text.length; closing += 1) {
-      if (
-        text[closing] !== '$' ||
-        isEscaped(text, closing) ||
-        (delimiterLength === 2 && text[closing + 1] !== '$') ||
-        (delimiterLength === 1 && (text[closing - 1] === '$' || text[closing + 1] === '$'))
-      ) {
-        continue
-      }
-
-      const body = text.slice(index + delimiterLength, closing)
-      const trimmedBody = body.trim()
-      if (!trimmedBody) break
-      // remark-math does not treat a single-dollar span across a blank
-      // paragraph as one inline expression.
-      if (delimiterLength === 1 && /\n[ \t]*\n/u.test(body)) {
-        index = closing
-        break
-      }
-      // `$5–$10` and similar currency ranges are prose, not an equation.
-      if (
-        delimiterLength === 1 &&
-        /^\d/.test(trimmedBody) &&
-        /\d/.test(text[closing + delimiterLength] ?? '')
-      ) {
-        index = closing
-        break
-      }
-      // Adjacent shell variables such as `$HOME/$PATH` contain two dollar
-      // signs, but the text between them is not a math expression.
-      if (
-        delimiterLength === 1 &&
-        /^[A-Z_][A-Z0-9_]*[/:.-]$/u.test(trimmedBody) &&
-        /^[A-Za-z_][A-Za-z0-9_]*/u.test(text.slice(closing + 1))
-      ) {
-        index = closing
-        break
-      }
-      return true
-    }
-  }
-
-  return false
-}
-
 export function shouldActivateHtml(hasHtml: boolean, streaming: boolean | undefined): boolean {
   return hasHtml && !streaming
-}
-
-/** Raw HTML only matters in prose. Tags shown inside fenced/indented/inline code
- * stay literal, so they must not enable the full rehype-raw + sanitize pipeline. */
-export function hasHtmlSyntax(markdown: string): boolean {
-  return /<[a-zA-Z][\w-]*[\s/>]/.test(markdownProseWithoutCode(markdown))
 }
 
 /**
@@ -300,7 +235,7 @@ const MarkdownBody = memo(function MarkdownBody({
       )
     return plugins
     // `handlesKey` stands in for `mentionHandles` by design (see above).
-  }, [mathActive, streaming, linkifyMentions, handlesKey, linkifyAgentNames])
+  }, [mathActive, linkifyMentions, handlesKey, linkifyAgentNames])
   const rehypePlugins = useMemo(
     () =>
       rehypePluginsFor(

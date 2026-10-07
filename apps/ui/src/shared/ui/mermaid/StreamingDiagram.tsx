@@ -1,5 +1,7 @@
 import { createContext, useContext } from 'react'
 import { DiagramPending, MermaidDiagram } from './MermaidDiagram'
+import { isGrowingFence } from '@localixai/markdown/markdown-stream'
+export { isGrowingFence } from '@localixai/markdown/markdown-stream'
 
 /**
  * The body of the fence a streaming message currently ends inside (`openFenceBody`), or null.
@@ -18,9 +20,4 @@ export const GrowingFenceContext = createContext<string | null>(null)
 export function StreamingDiagram({ source }: { source: string }) {
   const growing = useContext(GrowingFenceContext)
   return isGrowingFence(growing, source) ? <DiagramPending /> : <MermaidDiagram source={source} />
-}
-
-/** Whether a fence's source is the unterminated tail's body (the stabilizer closed it for display). */
-export function isGrowingFence(growing: string | null, source: string): boolean {
-  return growing !== null && growing.trimEnd() === source.trimEnd()
 }

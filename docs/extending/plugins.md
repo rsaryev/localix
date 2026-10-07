@@ -1,10 +1,11 @@
 # Build a plugin
 
-A plugin packages agent tools, procedures, commands, roles, services, or workspace UI in one
-directory. Use one when a capability needs configuration, executable behavior, or several surfaces.
+Plugins package tools, procedures, commands, agents, services and UI with their own configuration.
 
-**Trust boundary:** An installed or dropped-in plugin is disabled until you enable it; one the agent
-builds for you is enabled at creation. A native entrypoint runs as trusted code in the API process.
+**Trust boundary:** Installed plugins start disabled; agent-built plugins start enabled. Native
+entrypoints run as trusted code in the API process.
+
+![The workspace tool catalog with built-in workbenches and plugin management](../assets/screenshots/plugins/workbenches--2026-10-08.png)
 
 ## What you can do
 
@@ -339,11 +340,12 @@ native entrypoint and point `tools` at the generated self-contained file.
 
 Each row is a `plugin.json`: `surfaces` decides whether it adds a visible workbench or only agent
 capability, and `defaultEnabled` whether it starts on. Native code in a bundled plugin still runs in
-the trusted API process; review it as you would any dependency. Besides the four games in the
-[workbench UI guide](plugin-ui.md#a-tab-that-belongs-to-one-chat), thirteen add a workbench:
+the trusted API process; review it as you would any dependency. Fourteen workbenches complement the
+four [games](../features/games.md):
 
 | Plugin              | Guide                                           | What the workbench shows                                                              |
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **2048**            | [2048](../features/game-2048.md)                | A tile puzzle with human-play and agent-play modes                                    |
 | **API Client**      | [API client](../features/api.md)                | Saved requests, environments, imports, parameters, responses, vault-backed references |
 | **Code Graph**      | [Code Graph](../features/code-graph.md)         | Directories, files and symbols with imports, calls, inheritance, impact and cycles    |
 | **Database**        | [Database](../features/database.md)             | Connections, schemas, SQL and non-SQL consoles, tables, diagrams, result sets         |
@@ -357,6 +359,8 @@ the trusted API process; review it as you would any dependency. Besides the four
 | **Reader**          | [Reader](../features/reader.md)                 | EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with annotations             |
 | **Trading**         | [Market research](../features/trading.md)       | Read-only public venues, charts, indicators, order books, and trades                  |
 | **System Overview** | this guide                                      | OS history, process context and a reusable skill                                      |
+
+![The System Overview workbench reading live OS metrics and recent CPU and memory samples](../assets/screenshots/system/overview--2026-10-08.png)
 
 Three add agent capability with no workbench of their own:
 
@@ -382,9 +386,6 @@ Three add agent capability with no workbench of their own:
 ## Related guides
 
 - [Build workbench UI](plugin-ui.md)
-- [Author skills](skills-authoring.md)
-- [Monitors](../features/monitors.md)
-- [Hooks and commands](../features/hooks-and-commands.md)
 - [Connect MCP](../features/mcp.md)
 - [Architecture](../internals/architecture.md)
 

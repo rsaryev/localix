@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { archiveOnly } from '../../../scripts/screenshots/plan.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../..')
@@ -79,7 +80,7 @@ async function writeAtomically(file, source) {
 /**
  * The homepage is pre-rendered to HTML by Bun, which cannot know the content-hashed URL Vite gives
  * an imported PNG: the pre-rendered `src` and the hydrated one would differ and the picture would
- * reload at hydration. So the few images the homepage shows are copied under `public/shots/` and
+ * reload at hydration. Homepage and documentation captures are copied under `public/shots/` and
  * addressed by a plain path both renderers agree on. A dated capture replaces a placeholder of the
  * same key, and `placeholder` tells the page which of the two it is showing.
  */
@@ -87,11 +88,12 @@ async function writeHomeShots({ latest, placeholders, publicDir, homeOutFile }) 
   await fs.rm(publicDir, { recursive: true, force: true })
   const entries = []
   for (const shot of [...latest, ...placeholders]) {
-    if (!HOME_SHOT_KEYS.includes(shot.key)) continue
+    if (!shot.capturedAt && !HOME_SHOT_KEYS.includes(shot.key)) continue
     const name = `${shot.key}${shot.capturedAt ? `--${shot.capturedAt}` : '--placeholder'}.png`
     const target = path.join(publicDir, name)
     await fs.mkdir(path.dirname(target), { recursive: true })
     await fs.copyFile(shot.file, target)
+    if (!HOME_SHOT_KEYS.includes(shot.key)) continue
     entries.push(
       `  ${JSON.stringify(shot.key)}: { src: ${JSON.stringify(`/shots/${name}`)}, placeholder: ${!shot.capturedAt} },`,
     )
@@ -109,6 +111,7 @@ ${entries.join('\n')}
 
 export async function buildShotManifest({
   shotsDir = defaultShotsDir,
+  archiveKeys = archiveOnly,
   outFile = defaultOutFile,
   // Opt-in: without a public directory only the docs manifest is written.
   publicDir,
@@ -153,6 +156,7 @@ export async function buildShotManifest({
     }
 
     const key = [...parts.slice(0, -1), match.groups.surface].join('/')
+    if (archiveKeys.includes(key)) continue
     all.push({
       key,
       capturedAt: match.groups.date,
@@ -175,21 +179,23 @@ export async function buildShotManifest({
     .filter((slot) => !capturedKeys.has(slot.key))
     .sort((a, b) => a.key.localeCompare(b.key))
 
-  const imports = latest
+  const imports = (publicDir ? [] : latest)
     .map(
       (shot, index) => `import shot${index} from ${JSON.stringify(importPath(outFile, shot.file))}`,
     )
     .join('\n')
+  const sourceOf = (shot, index) =>
+    publicDir ? JSON.stringify(`/shots/${shot.key}--${shot.capturedAt}.png`) : `shot${index}`
   const entries = latest
     .map(
       (shot, index) =>
-        `  ${JSON.stringify(shot.key)}: { src: shot${index}, capturedAt: ${JSON.stringify(shot.capturedAt)} },`,
+        `  ${JSON.stringify(shot.key)}: { src: ${sourceOf(shot, index)}, capturedAt: ${JSON.stringify(shot.capturedAt)} },`,
     )
     .join('\n')
   const assetEntries = latest
     .map(
       (shot, index) =>
-        `  ${JSON.stringify(shot.repoPath)}: { src: shot${index}, capturedAt: ${JSON.stringify(shot.capturedAt)} },`,
+        `  ${JSON.stringify(shot.repoPath)}: { src: ${sourceOf(shot, index)}, capturedAt: ${JSON.stringify(shot.capturedAt)} },`,
     )
     .join('\n')
   const names = latest.map((shot) => shot.key)

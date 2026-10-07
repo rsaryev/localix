@@ -77,7 +77,8 @@
             "features/reader.md",
             "features/trading.md",
             "features/task-board.md",
-            "features/game-2048.md"
+            "features/game-2048.md",
+            "features/games.md"
           ]
         },
         {
@@ -118,7 +119,8 @@
         "extending/ui-kit.md",
         "extending/plugin-wakes.md",
         "extending/plugin-routes.md",
-        "extending/skills-authoring.md"
+        "extending/skills-authoring.md",
+        "extending/markdown.md"
       ]
     },
     {

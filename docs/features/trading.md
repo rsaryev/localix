@@ -7,6 +7,8 @@ session.
 **Availability:** The bundled `trading` plugin is enabled by default and requires network access to
 a venue. The registered surface has no credential, account, or order route.
 
+![A real public BTC/USD market chart from Kraken, with candles and market data](../assets/screenshots/trading/market-chart--2026-10-08.png)
+
 ## What you can do
 
 | Capability                             | Mechanism                                                                              | Boundary                                                                       |

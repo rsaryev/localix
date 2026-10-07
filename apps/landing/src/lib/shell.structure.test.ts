@@ -96,9 +96,9 @@ describe('landing page shell', () => {
     const main = read('main.tsx')
     expect(main).toContain('hydrateRoot')
     expect(main).toContain("hasAttribute('data-prerendered')")
-    // Docs keep their own shell, whose geometry mirrors the hydrated page:
-    // 60rem `.docs-prose` measure + PAGE_SHELL's 1.5rem inline padding.
-    expect(read('styles.css')).toMatch(/\.docs-static-shell \{[^}]*max-width: 63rem;/)
+    // Static docs use the same shell, so adding the rails never changes the article column.
+    expect(build).toContain('renderDocsShell(active, bodyHtml, headings)')
+    expect(readFileSync(join(appRoot, 'scripts/render-docs.tsx'), 'utf8')).toContain('<DocsShell')
   })
 
   test('the product sentence is the same wherever the page states it', () => {

@@ -16,7 +16,7 @@ import {
   tableRequiresKeyboardScroll,
   STREAMING_PLAIN_TEXT_THRESHOLD,
 } from './MarkdownRendererImpl'
-import { rehypePluginsFor, remarkPluginsFor } from './markdownPlugins'
+import { rehypePluginsFor, remarkPluginsFor } from '@localixai/markdown/markdownPlugins'
 import { classifyMarkdownLink, markdownUrlTransform } from './markdownLink'
 import { remarkAgentMention } from './remarkAgentMention'
 import { conversationMentionHandles } from '@localixai/api/agent-mentions'

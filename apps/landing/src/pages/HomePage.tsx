@@ -1,15 +1,13 @@
-import { Link } from 'react-router'
 import { DownloadChooser } from '@/components/DownloadChooser'
-import { RELEASE_CHANNEL } from '@/components/releaseChannel'
 import { ProductVideo } from '@/components/ProductVideo'
 import { SectionNav } from '@/components/SectionNav'
 import { AfterFirstPaint } from '@/components/home/AfterFirstPaint'
 import { HeroBird } from '@/components/home/HeroBird'
-import { Section, Stagger } from '@/components/home/Reveal'
-import { SectionLede } from '@/components/home/SectionLede'
-import { ArrowCue, FeatureLinkCard } from '@/components/home/cards'
-import { SECTIONS, PLUGINS, SECTION_GUIDES } from './homeContent'
-import { WORKSPACE_LINKS, PLATFORM_OVERVIEW } from './homeOverview'
+import { Section } from '@/components/home/Reveal'
+import { WorkflowCarousel } from '@/components/home/WorkflowCarousel'
+import { WorkbenchCarousel } from '@/components/home/WorkbenchCarousel'
+import '../components/home/workflow-carousel.css'
+import { SECTIONS } from './homeContent'
 
 export function HomePage() {
   return (
@@ -20,13 +18,10 @@ export function HomePage() {
         id="intro"
         reveal={false}
         snap={false}
-        className="relative pb-16 pt-16 md:pb-24 md:pt-24"
+        className="relative pb-12 pt-8 md:pb-24 md:pt-16"
       >
         <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-14">
           <div className="relative z-10 min-w-0">
-            <p className="mb-8 flex items-center gap-3 text-sm font-medium">
-              Localix <span className="text-xs font-normal text-text-faint">{RELEASE_CHANNEL}</span>
-            </p>
             <h1 className="display text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem] xl:text-[4.25rem]">
               One workspace for you and a team of agents
             </h1>
@@ -45,112 +40,12 @@ export function HomePage() {
         <ProductVideo className="mt-12 md:mt-16" />
       </Section>
 
-      <Section id="conversations" className="border-t border-border-subtle py-16 md:py-24">
-        <SectionLede
-          title="A team in one conversation"
-          guide={SECTION_GUIDES.conversations}
-          shot="conversations/participants"
-          shotAlt="Team Lead, Frontend, and QA Engineer reviewing a release in one shared conversation"
-        >
-          Bring agents into the same conversation. Give each a role and model, address them with
-          @handle, and follow their work in one shared transcript.
-        </SectionLede>
+      <Section id="workflow" className="border-t border-border-subtle py-16 md:py-24">
+        <WorkflowCarousel />
       </Section>
-
-      <Section id="context" className="border-t border-border-subtle py-16 md:py-24">
-        <SectionLede
-          title="Keep the work in context"
-          guide={SECTION_GUIDES.context}
-          shot="context/composer-context"
-          shotAlt="An open source file and terminal included in the next message’s context"
-        >
-          Link files, terminals, and live resources to the conversation. Open an agent&rsquo;s
-          result right where the work happens.
-        </SectionLede>
-        <Stagger className="mt-10 grid gap-x-8 md:mt-12 md:grid-cols-2">
-          {WORKSPACE_LINKS.map((feature) => (
-            <FeatureLinkCard key={feature.title} {...feature} />
-          ))}
-        </Stagger>
-      </Section>
-
-      <Section id="board" className="border-t border-border-subtle py-16 md:py-24">
-        <SectionLede
-          title="A shared Kanban board"
-          guide={SECTION_GUIDES.board}
-          shot="task-board/board"
-          shotAlt="An open Kanban board with release tasks, owners, and statuses from backlog to done"
-        >
-          Keep tasks, owners, and dependencies alongside the conversation. Plan the work together
-          and follow each card from ready to done.
-        </SectionLede>
-      </Section>
-
-      <Section id="browser" className="border-t border-border-subtle py-16 md:py-24">
-        <SectionLede
-          title="A browser for you and your agents"
-          guide={SECTION_GUIDES.browser}
-          shot="browser/agent-preview"
-          shotAlt="A running app open in Localix’s browser beside the agent conversation"
-        >
-          The agent can navigate, click, and inspect pages in the same browser you use. Open your
-          running app there to build, test, and leave visual feedback.
-        </SectionLede>
-      </Section>
-
-      <Section id="plugins" className="border-t border-border-subtle py-16 md:py-24">
-        <SectionLede
-          title="Build the tool you need"
-          guide={SECTION_GUIDES.plugins}
-          shot="plugins/agent-build"
-          shotAlt="A working Release Checklist demo plugin open next to the team conversation"
-        >
-          Describe a tracker, dashboard, or workbench. An agent builds its interface and tools from
-          the same kit Localix uses.
-        </SectionLede>
-        <div className="mt-10 border-t border-border-subtle pt-6 md:mt-12">
-          <div className="flex flex-col gap-4 lg:flex-row lg:gap-10">
-            <p className="shrink-0 text-sm text-text-soft">Included workbenches</p>
-            <ul className="flex flex-wrap gap-x-6 gap-y-3">
-              {PLUGINS.map(({ title, slug, anchor }) => (
-                <li key={title}>
-                  <Link
-                    to={`/docs/${slug}#${anchor}`}
-                    className="rounded-sm text-sm text-text-soft outline-none transition-colors hover:text-foreground focus-ring"
-                  >
-                    {title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p className="mt-6 text-xs leading-relaxed text-text-faint">
-            Plugins run unsandboxed in the Localix process, including those built by an agent.
-          </p>
-        </div>
-      </Section>
-
-      <Section id="control" className="border-t border-border-subtle py-16 md:py-24">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
-          <div>
-            <h2 className="section-title text-3xl md:text-4xl">Your models. Your rules.</h2>
-            <p className="lede mt-5 text-lg">
-              Choose the model for each workload and decide which tools an agent may use.
-            </p>
-            <Link
-              to={`/docs/${SECTION_GUIDES.control.slug}`}
-              className="group/cue mt-6 inline-flex items-center gap-2 rounded-sm text-sm font-medium outline-none focus-ring"
-            >
-              Models and permissions
-              <ArrowCue reveal={false} className="text-text-faint" />
-            </Link>
-          </div>
-          <Stagger className="grid gap-x-8 sm:grid-cols-2">
-            {PLATFORM_OVERVIEW.map((feature) => (
-              <FeatureLinkCard key={feature.title} {...feature} />
-            ))}
-          </Stagger>
-        </div>
+      <Section id="workbenches" className="border-t border-border-subtle py-16 md:py-24">
+        <p className="mb-6 text-sm text-text-soft">Built into your workspace</p>
+        <WorkbenchCarousel />
       </Section>
     </>
   )

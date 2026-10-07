@@ -11,8 +11,7 @@
  * 2. The WebGL renderer — `Apple M…` is Apple silicon, an Intel/AMD/NVIDIA GPU is an Intel Mac.
  *    Safari masks it to `Apple GPU` on both, so that string decides nothing.
  *
- * When neither answers, the guess stays Apple silicon (every Mac sold since 2023) but is marked
- * UNCERTAIN, and the chooser then says plainly that the installer is for Apple silicon.
+ * When neither answers, the chip remains uncertain and the chooser offers the source build.
  *
  * Only macOS on Apple silicon and Linux have an installer. A Windows or Intel Mac visitor is still
  * recognized, so the page can say so and point at the source build instead of offering a file
@@ -23,7 +22,7 @@
 export type DownloadId = 'mac-arm64' | 'linux'
 
 /** Every platform the page can recognize; only the ones in `DownloadId` have an installer. */
-export type PlatformId = DownloadId | 'mac-x64' | 'windows'
+export type PlatformId = DownloadId | 'mac-x64' | 'windows' | 'unknown'
 
 export interface PlatformSignals {
   platform?: string
@@ -36,7 +35,7 @@ export interface PlatformSignals {
 
 export interface DownloadGuess {
   id: PlatformId
-  /** False only for a Mac whose chip no signal revealed. */
+  /** False when the platform or Mac architecture cannot be established. */
   certain: boolean
 }
 
@@ -53,6 +52,9 @@ export function detectDownload(signals: PlatformSignals): DownloadGuess {
   const value = `${signals.platform ?? ''} ${signals.userAgent ?? ''}`.toLowerCase()
   if (value.includes('win')) return { id: 'windows', certain: true }
   if (value.includes('linux') && !value.includes('android')) return { id: 'linux', certain: true }
+  if (!value.includes('mac') || /iphone|ipad|ipod|android/iu.test(value)) {
+    return { id: 'unknown', certain: false }
+  }
   const mac = macFromSignals(signals)
   return mac ? { id: mac, certain: true } : { id: 'mac-arm64', certain: false }
 }

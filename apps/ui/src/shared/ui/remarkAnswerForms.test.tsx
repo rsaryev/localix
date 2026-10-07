@@ -4,8 +4,8 @@ import MarkdownRendererImpl from './MarkdownRendererImpl'
 import { TaskScope, toggleTaskInSource } from './MarkdownTaskList'
 
 const STORED = { 'content:0': true }
-import { parseFileTree } from './fileTreeParse'
-import { ANSWER_FORM_EXAMPLES } from '@localixai/api/answer-markdown'
+import { parseFileTree } from '@localixai/markdown/fileTreeParse'
+import { ANSWER_FORM_EXAMPLES } from '@localixai/markdown/dialect'
 
 const render = (markdown: string) =>
   renderToStaticMarkup(<MarkdownRendererImpl>{markdown}</MarkdownRendererImpl>)

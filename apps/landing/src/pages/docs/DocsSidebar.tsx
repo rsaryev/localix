@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, Search } from 'lucide-react'
-import type { DocPage } from '@/generated/docs'
-import { cn } from '@/lib/cn'
-import { featureCategoryFor, groupByCategory, groupBySection } from '../docsNav'
+import { ChevronRight } from 'lucide-react'
+import { Button } from '@localixai/kit/button'
+import { SearchInput } from '@localixai/kit/search-input'
+import type { DocPage } from '../../generated/docs'
+import { cn } from '../../lib/cn'
+import { featureCategoryFor, groupByCategory, groupBySection } from './docGroups'
 import type { DocSearch } from './useDocSearch'
 
 const branchDomId = (label: string) =>
@@ -43,7 +45,10 @@ export function DocsSidebar({ active, search }: { active: DocPage; search: DocSe
   const sections = groupBySection(filtered)
   const activeCategory = active.section === 'features' ? featureCategoryFor(active) : null
 
-  const [openBranches, setOpenBranches] = useState<Record<string, boolean>>({})
+  const [openBranches, setOpenBranches] = useState<Record<string, boolean>>(() => ({
+    [active.sectionTitle]: true,
+    ...(activeCategory ? { [`${active.sectionTitle}::${activeCategory}`]: true } : {}),
+  }))
   useEffect(() => {
     setOpenBranches((open) => ({
       ...open,
@@ -58,25 +63,14 @@ export function DocsSidebar({ active, search }: { active: DocPage; search: DocSe
     setOpenBranches((open) => ({ ...open, [key]: !(open[key] ?? false) }))
 
   return (
-    <aside className="sticky top-8 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto md:block">
-      <Link
-        to="/"
-        className="mb-5 flex items-center gap-2.5 font-heading text-base font-semibold tracking-tight text-foreground"
-      >
-        <img src="/logo.svg" alt="" className="size-6" />
-        <span>Localix</span>
-      </Link>
-      <div className="relative mb-5">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-faint" />
-        <input
-          type="search"
-          aria-label="Search docs"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search docs…"
-          className="h-9 w-full rounded-lg border border-control-border bg-surface-raised pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-text-faint focus:border-control-border-focus focus-ring"
-        />
-      </div>
+    <aside className="docs-sidebar sticky top-8 hidden h-[calc(100vh-4rem)] overflow-y-auto md:block">
+      <SearchInput
+        aria-label="Search docs"
+        value={query}
+        onValueChange={setQuery}
+        placeholder="Search docs…"
+        className="mb-6"
+      />
       {normalizedQuery && !loadedContent && !failed && (
         <p aria-live="polite" className="-mt-3 mb-3 px-3 text-xs text-text-faint">
           Searching full text…
@@ -98,18 +92,19 @@ export function DocsSidebar({ active, search }: { active: DocPage; search: DocSe
           const branchId = branchDomId(section.title)
           return (
             <div key={section.title}>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => toggle(section.title)}
                 aria-expanded={open}
                 aria-controls={branchId}
-                className="flex w-full items-center gap-1.5 rounded-md px-1 py-1 text-xs font-medium uppercase tracking-wide text-text-faint transition-colors hover:text-foreground"
+                className="w-full justify-start px-1 text-xs font-medium text-text-faint hover:text-foreground"
               >
                 <ChevronRight
                   className={cn('size-3.5 transition-transform', open && 'rotate-90')}
                 />
                 {section.title}
-              </button>
+              </Button>
               {open &&
                 // Features get collapsible sub-categories; others are a flat branch.
                 (section.pages[0]?.section === 'features' ? (
@@ -120,12 +115,13 @@ export function DocsSidebar({ active, search }: { active: DocPage; search: DocSe
                       const categoryId = `${branchId}-${branchDomId(category.title)}`
                       return (
                         <div key={category.title}>
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="default"
                             onClick={() => toggle(key)}
                             aria-expanded={categoryOpen}
                             aria-controls={categoryId}
-                            className="flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-text-soft transition-colors hover:text-foreground"
+                            className="w-full justify-start px-2 text-sm font-medium text-text-soft hover:text-foreground"
                           >
                             <ChevronRight
                               className={cn(
@@ -134,7 +130,7 @@ export function DocsSidebar({ active, search }: { active: DocPage; search: DocSe
                               )}
                             />
                             {category.title}
-                          </button>
+                          </Button>
                           {categoryOpen && (
                             <div
                               id={categoryId}

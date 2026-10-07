@@ -21,7 +21,7 @@ project files, so ordinary agent file tools and the editor work on the same cont
 - Keep independent variants for different roles. Target-role notes and a job description supply
   tailoring context without appearing in the printed resume.
 
-![The Resumes editor with a full-height document preview and adjacent form](../assets/screenshots/resume/editor-wide--2026-10-07.png)
+![The Resumes editor with a full-height document preview and adjacent form](../assets/screenshots/resume/editor-wide--2026-10-08.png)
 
 The editor adapts to its pane inside Localix. The **PDF preview** button beside Save toggles the
 preview. It opens automatically when the pane is wide enough, unless you choose a mode yourself.

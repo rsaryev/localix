@@ -4,6 +4,8 @@ Localix shows the model a bounded view of a session while the stored transcript 
 this page to understand what the agent still sees after a long conversation, and how to keep a
 message in its view.
 
+![An open source file and terminal linked to the message context](../assets/screenshots/context/composer-context--2026-10-07.png)
+
 ## Terminology
 
 | Term            | Meaning                                                                                         | Boundary                                                         |

@@ -3,11 +3,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import ReactMarkdown from 'react-markdown'
-import remarkBreaks from 'remark-breaks'
-import remarkGfm from 'remark-gfm'
+import { Markdown } from '@localixai/markdown/react'
+import { hasMathSyntax, loadMathPlugins, extractMarkdownHeadings } from '@localixai/markdown'
+import { renderDocsShell } from './render-docs.tsx'
+import { makeMdComponents } from '../src/pages/docs/markdownComponents.tsx'
 import { docPages, loadDocContent } from '../src/generated/docs.ts'
-import { slugifyDocHeading } from '../src/lib/docHeading.ts'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const defaultDistDir = path.resolve(__dirname, '../dist')
@@ -39,33 +39,30 @@ function resolveDocHref(href, page, pages) {
   return target ? `/docs/${target.slug}${hash ? `#${hash}` : ''}` : href
 }
 
-function nodeText(node) {
-  if (typeof node === 'string' || typeof node === 'number') return String(node)
-  if (Array.isArray(node)) return node.map(nodeText).join('')
-  if (React.isValidElement(node)) return nodeText(node.props.children)
-  return ''
-}
-
 /** Render useful article HTML for crawlers and no-JavaScript readers. */
 export function renderStaticMarkdown(content, page, pages = docPages) {
   const heading =
     (tag) =>
-    ({ children }) =>
-      React.createElement(tag, { id: slugifyDocHeading(nodeText(children)) }, children)
+    ({ children, id }) =>
+      React.createElement(tag, { id }, children)
   return renderToStaticMarkup(
     React.createElement(
-      ReactMarkdown,
+      Markdown,
       {
-        remarkPlugins: [remarkGfm, remarkBreaks],
+        headingIds: true,
         components: {
+          ...makeMdComponents(page.sourcePath ?? 'docs/index.md', () => {}),
           h1: heading('h1'),
           h2: heading('h2'),
           h3: heading('h3'),
+          // Static readers can see every variant without needing the client tab controls.
+          'answer-tabs': ({ children }) => React.createElement('div', null, children),
+          'answer-tab': ({ children, 'data-label': label }) =>
+            React.createElement('section', null, React.createElement('h4', null, label), children),
           a: ({ href, children }) => {
             const resolved = resolveDocHref(href, page, pages)
             return React.createElement('a', { href: resolved }, children)
           },
-          img: ({ alt }) => React.createElement('span', null, alt ?? ''),
         },
       },
       content,
@@ -74,7 +71,7 @@ export function renderStaticMarkdown(content, page, pages = docPages) {
 }
 
 /** Turn the built application shell into a crawlable, page-specific docs shell. */
-export function renderStaticDocHtml(template, page, bodyHtml = '') {
+export function renderStaticDocHtml(template, page, bodyHtml = '', content = '') {
   const title = `${page.title} · Localix Docs`
   const url = `${SITE_ORIGIN}/docs/${encodeURIComponent(page.slug)}`
   let html = template
@@ -108,9 +105,24 @@ export function renderStaticDocHtml(template, page, bodyHtml = '') {
     /(<script type="application\/ld\+json">)[\s\S]*?(<\/script>)/u,
     `$1\n      ${structuredData}\n    $2`,
   )
+  const headings = extractMarkdownHeadings(content).filter(
+    (heading) => heading.depth === 2 || heading.depth === 3,
+  )
+  const active = {
+    section: 'getting-started',
+    sectionTitle: 'Documentation',
+    sourcePath: 'docs/index.md',
+    order: 0,
+    ...page,
+  }
+  const shell = renderDocsShell(active, bodyHtml, headings)
+  const bootstrap = JSON.stringify({ slug: page.slug, content, headings }).replaceAll(
+    '<',
+    '\\u003c',
+  )
   return html.replace(
     '<div id="root"></div>',
-    `<div id="root"><main class="docs-static-shell"><article class="docs-prose">${bodyHtml}</article></main></div>`,
+    `<div id="root">${shell}</div><script type="application/json" id="doc-bootstrap">${bootstrap}</script>`,
   )
 }
 
@@ -149,9 +161,10 @@ export async function buildStaticDocs({
       throw new Error(`Unsafe documentation slug: ${page.slug}`)
     }
     const content = await loadContent(page.slug)
+    if (hasMathSyntax(content)) await loadMathPlugins()
     await fs.writeFile(
       path.join(docsDir, `${page.slug}.html`),
-      renderStaticDocHtml(template, page, renderStaticMarkdown(content, page, pages)),
+      renderStaticDocHtml(template, page, renderStaticMarkdown(content, page, pages), content),
       'utf8',
     )
   }

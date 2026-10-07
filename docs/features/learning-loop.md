@@ -7,6 +7,8 @@ evidence from an earlier session.
 **Boundary:** Localix loads stored context, but it does not extract every durable fact or workflow
 automatically.
 
+![A file-authored course open on its concept lesson, with theory, testing and practice steps](../assets/screenshots/learning/course--2026-10-08.png)
+
 ## What you can do
 
 | Surface             | Mechanism                                                                              | Boundary                                                                                               |

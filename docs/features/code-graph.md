@@ -14,6 +14,8 @@ something before you change it, or to follow how one part of the code reaches an
 | Portal  | A dashed box for code outside the level that the level's children reach      | It stands for the part of the tree the edge leads into.          |
 | Node id | `dir:<path>`, `file:<path>`, `sym:<path>#<Qualified.name>`, `pkg:<name>`     | Paths are project-relative, so ids do not depend on the machine. |
 
+![Following the progress function through its callers and source, with the Code Graph inspector open](../assets/screenshots/code-graph/project--2026-10-08.png)
+
 ## What you can do
 
 | Operation               | How                                                                       | Boundary                                                         |

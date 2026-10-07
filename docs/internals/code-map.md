@@ -174,3 +174,7 @@ copy. Two copies drifting is why `wake-provenance` exists.
 | A new kind of Continue  | a `ResumeProducer` (`features/resume/contracts.ts`: `list` + `take`) registered in `bootstrap/session-services.ts`, and `registry.changed(owner)` when its work changes; the UI needs nothing (`ResumeStrip`) unless the kind has its own row (`RESUME_KINDS_WITH_OWN_ROW`). Never a per-feature Continue button or endpoint                |
 | A plugin capability     | `plugins/<name>` + `@localixai/plugin-sdk` contract; remember plugins run from `~/.localix/plugins`                                                                                                                                                                                                                                         |
 | A schema change         | a new file in `apps/api/migrations/` + `db/types.ts`; no existing migration is ever renamed, edited or deleted, because `bun run dev` has already run it on your database (`migration-ledger.ts` refuses to boot, `migration-freeze.test.ts` refuses in CI); see `apps/api/migrations/README.md`                                            |
+
+Markdown grammar and portable rendering live in `packages/markdown`; the workspace owns mentions,
+streaming cadence and content actions, while `apps/landing/src/pages/docs` owns documentation links
+and layout. See [Shared Markdown](../extending/markdown.md).

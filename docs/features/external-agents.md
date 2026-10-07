@@ -97,6 +97,12 @@ For agents with shell access, the runtime prompt includes a short list of instal
 and their basic launch commands. Starting or driving a CLI still goes through ordinary terminal
 tools and permission rules. Linking history does not execute commands.
 
+![Claude Code open in a real terminal beside a Localix demo chat](../assets/screenshots/external-agents/history--2026-10-08.png)
+
+This isolated demo opens the installed CLI in its native terminal. No account is connected and no
+model request is made. See [interactive terminal control](../recipes/drive-interactive-terminal.md)
+for sending input and waiting for the resulting screen.
+
 ## Statistics
 
 **Usage & Spend**, beside Settings in the navigation bar, has the same **Localix / External** tabs.

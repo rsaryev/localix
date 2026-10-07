@@ -49,10 +49,18 @@
     "check:audit": "bun audit --audit-level=moderate --ignore=GHSA-vfj7-8cjw-p6xm",
     "check:deadcode": "VITE_API_BASE_URL=http://127.0.0.1:1 knip --include files,dependencies,unlisted,unresolved,binaries --no-config-hints",
     "deadcode": "VITE_API_BASE_URL=http://127.0.0.1:1 knip",
-    "check:globals": "TEST_GLOBALS_STRICT=1 bun test apps/api/src/features apps/ui/src packages"
+    "check:globals": "TEST_GLOBALS_STRICT=1 bun test apps/api/src/features apps/ui/src packages",
+    "screenshots:prepare": "bun scripts/screenshots/runtime.mjs",
+    "screenshots:seed": "bun scripts/screenshots/seed.mjs",
+    "test:screenshots": "bun scripts/screenshots/run.mjs",
+    "screenshots:update": "bun scripts/screenshots/run.mjs --update",
+    "screenshots:publish": "bun scripts/screenshots/publish.mjs",
+    "screenshots:audit": "bun scripts/screenshots/audit.mjs",
+    "screenshots:coverage": "bun scripts/screenshots/workbench-coverage.mjs"
   },
   "devDependencies": {
     "@localixai/plugin-kit-compiler": "workspace:*",
+    "@playwright/test": "1.62.1",
     "hono": "^4.12.30",
     "knip": "^6.32.0",
     "oxc-parser": "^0.137.0",

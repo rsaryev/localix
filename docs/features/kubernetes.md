@@ -7,6 +7,8 @@ pod, node, and manifest changes against a selected kubeconfig context.
 **Requires:** The plugin must stay enabled, and the Localix host needs kubeconfig credentials,
 network access to the API server, and sufficient RBAC.
 
+![The running release preview pod in the isolated demo cluster, with readiness and live container logs](../assets/screenshots/kubernetes/pod-logs--2026-10-08.png)
+
 ## What you can do
 
 | Surface       | Mechanism                                                   | Boundary                                                   |

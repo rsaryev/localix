@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { slugifyDocHeading } from '../lib/docHeading'
 import {
   AUTONOMY_FEATURES,
@@ -16,6 +16,8 @@ import {
   SECTION_GUIDES,
   SPACE_FEATURES,
 } from './homeContent'
+import { WORKFLOWS } from '../components/home/workflowContent'
+import { WORKBENCHES } from '../components/home/WorkbenchCarousel'
 import { WORKSPACE_LINKS, PLATFORM_OVERVIEW } from './homeOverview'
 
 interface NavigationGroup {
@@ -90,7 +92,12 @@ test('every capture the homepage asks for is one the shots build selects', () =>
       (match) => match[1],
     ),
   )
+  const workflow = readFileSync(
+    new URL('../components/home/workflowContent.ts', import.meta.url),
+    'utf8',
+  )
   const requested = [
+    ...workflow.matchAll(/shot: '([^']+)'/gu),
     ...homePage.matchAll(/shot="([^"]+)"/gu),
     ...readFileSync(
       new URL('../components/home/ProductShowcase.tsx', import.meta.url),
@@ -110,13 +117,44 @@ test('the section rail enumerates the sections the page actually renders', () =>
 
   expect(SECTIONS.map((section) => section.id)).toEqual(rendered)
 
-  // Every section below the hero states its own guide, and the rail label and
-  // the section eyebrow name the same thing.
-  for (const section of SECTIONS.slice(1)) {
-    expect(Object.keys(SECTION_GUIDES)).toContain(section.id)
-    expect(homePage).toContain(`SECTION_GUIDES.${section.id}`)
+  // The top tour keeps collaboration; the second carousel owns the workbenches.
+  const workflow = readFileSync(
+    new URL('../components/home/workflowContent.ts', import.meta.url),
+    'utf8',
+  )
+  for (const key of ['conversations', 'context', 'browser', 'external'] as const) {
+    expect(workflow).toContain(`slug: '${SECTION_GUIDES[key].slug}'`)
   }
-  expect(homePage).toContain('Your models. Your rules.')
+  expect(homePage).not.toContain('Your models. Your rules.')
+})
+
+test('the two tours use distinct captures and every selected workbench owner is represented', () => {
+  const all = [...WORKFLOWS, ...WORKBENCHES]
+  expect(new Set(all.map((item) => item.shot)).size).toBe(all.length)
+  expect(WORKFLOWS.map((item) => item.key)).toEqual([
+    'conversations',
+    'context',
+    'browser',
+    'external',
+  ])
+  const owners = readdirSync(new URL('../../../../plugins/', import.meta.url)).filter((name) => {
+    try {
+      const manifest = JSON.parse(
+        readFileSync(new URL(`../../../../plugins/${name}/plugin.json`, import.meta.url), 'utf8'),
+      )
+      return (
+        manifest.surfaces?.includes('workbench') &&
+        !['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe'].includes(name)
+      )
+    } catch {
+      return false
+    }
+  })
+  for (const owner of owners) expect(WORKBENCHES.map((item) => item.key)).toContain(owner)
+  expect(owners).toHaveLength(13)
+  expect(WORKBENCHES).toHaveLength(15)
+  expect(WORKBENCHES.find((item) => item.key === 'kubernetes')).toBeDefined()
+  expect(WORKBENCHES.find((item) => item.key === 'plugins')).toBeDefined()
 })
 
 test('the animated bird only appears with the two-column hero', () => {

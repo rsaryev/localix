@@ -1,15 +1,5 @@
-import { afterAll, beforeAll, expect, mock, test } from 'bun:test'
+import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-
-void mock.module('./Button', () => ({
-  Button: ({
-    variant: _variant,
-    size: _size,
-    ...props
-  }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string; size?: string }) => (
-    <button {...props} />
-  ),
-}))
 
 beforeAll(() => {
   GlobalRegistrator.register()
@@ -35,7 +25,6 @@ beforeAll(() => {
 })
 
 afterAll(async () => {
-  mock.restore()
   await GlobalRegistrator.unregister()
 })
 

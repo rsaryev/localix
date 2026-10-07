@@ -29,6 +29,32 @@ const template = `<!doctype html><html><head>
 </head><body><div id="root"></div></body></html>`
 
 describe('static docs HTML', () => {
+  test('the formatted Markdown guide retains note bodies and quote attribution', async () => {
+    const source = await fs.readFile(
+      new URL('../../../docs/extending/markdown.md', import.meta.url),
+      'utf8',
+    )
+    const body = renderStaticMarkdown(source, { sourcePath: 'docs/extending/markdown.md' })
+    expect(body).toContain('aria-label="Host behavior stays local"')
+    expect(body).toContain('<p>The document renderer does not open workspace files')
+    expect(body).toContain('aria-label="Keep the source portable"')
+    expect(body).toContain('<p>Write ordinary Markdown beneath the marker.</p>')
+    expect(body).toContain('<footer class="lx-quote-source">Localix Markdown contract</footer>')
+  })
+  test('uses the shared dialect and keeps all variants readable without JavaScript', () => {
+    const body = renderStaticMarkdown(
+      '> [!TIP] Shared grammar\n> A quiet note.\n\n> [!TABS]\n> #### First\n> Alpha\n> #### Second\n> Beta',
+      { sourcePath: 'docs/start.md' },
+      [],
+    )
+    expect(body).toContain('role="note"')
+    expect(body).toContain('<h4>First</h4>')
+    expect(body).toContain('<h4>Second</h4>')
+    expect(body).toContain('Alpha')
+    expect(body).toContain('Beta')
+    expect(body).not.toMatch(/\shidden(?:=|\s|>)/)
+    expect(body).not.toContain('[!TABS]')
+  })
   test('renders a crawlable home shell before the application starts', () => {
     const html = renderStaticHomeHtml(template, '<main><h1>The open source ADE</h1></main>')
 
@@ -74,7 +100,7 @@ describe('static docs HTML', () => {
       body,
     )
 
-    expect(html).toContain('<article class="docs-prose"><h1 id="start">Start</h1>')
+    expect(html).toContain('<h1 id="start">Start</h1>')
     expect(html).toContain('<h2 id="first-steps">First steps</h2>')
     expect(html).toContain('href="/docs/features--workspace#tools"')
   })
@@ -142,4 +168,14 @@ describe('static docs HTML', () => {
       }),
     ).rejects.toThrow('Unsafe documentation slug')
   })
+})
+
+test('renders a working public image before the documentation chunk loads', async () => {
+  const content = await fs.readFile(
+    new URL('../../../docs/features/agents.md', import.meta.url),
+    'utf8',
+  )
+  const body = renderStaticMarkdown(content, { sourcePath: 'docs/features/agents.md' })
+  expect(body).toContain('src="/shots/agents/context-and-limits--')
+  expect(body).not.toContain(process.cwd())
 })

@@ -4,8 +4,11 @@ The bundled API plugin adds a REST client for saved HTTP requests, response insp
 repository exports, and bounded agent access. Use it when an API workflow should stay visible and
 addressable inside the Localix workspace.
 
-**Availability:** The plugin is bundled but disabled by default. Review and enable it in **Settings
-→ Capabilities → Plugins** before its backend, tools, resources, or workbench can run.
+**Availability:** The bundled `api` plugin is enabled by default and can be disabled in **Settings →
+Capabilities → Plugins**. Requests to private or local hosts require the plugin’s **Allow
+private/internal hosts** option; enable it only for services you intend to call.
+
+![A saved release readiness request with a successful JSON response from the local demo service](../assets/screenshots/api/request-response--2026-10-08.png)
 
 ## What you can do
 

@@ -75,7 +75,7 @@ editor or move the element. Dragging an element starts after five screen pixels 
 movements remain clicks at every zoom level. Use **Edit**, Enter with the element itself focused, or
 double-click ordinary content to edit it.
 
-![File trees, steps, figures, pros/cons, tabs and checklists on the board beside their chat rendering](../assets/screenshots/project-space/answer-components--2026-10-03.png)
+![File trees, steps, figures, pros/cons, tabs and checklists on the editable project board](../assets/screenshots/project-space/answer-components--2026-10-08.png)
 
 The add button disappears while that fragment is on the board and returns after deletion or undo.
 Adding the same fragment from two surfaces creates one element. Returning to the source chat

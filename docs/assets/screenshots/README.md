@@ -70,3 +70,27 @@ The date is a review trigger, not an automatic expiry.
 
 Do not hardcode a feature-to-source map: the owning paths move, and the agent doing the review must
 resolve them from current docs, code search, and git history.
+
+## Optional capture tests
+
+[The capture workflow](../../../scripts/screenshots/README.md) preserves the demo setup, native UI
+compositions, readiness checks and feature assertions. It is an opt-in Playwright suite, excluded
+from the ordinary Bun suite and CI. `plan.mjs` records each image's purpose, owning guide and stable
+semantic key, plus reviewed existing captures and archive-only comparisons.
+
+Use `bun run test:screenshots --grep '<semantic-key>'` for a reviewed capture. Use
+`bun run screenshots:update --grep '<semantic-key>'` to test, refresh its dated PNG, update existing
+public Markdown references and regenerate the landing after a successful run. New figures still need
+a deliberate placement in the relevant guide. Failed runs cannot automatically publish.
+
+The 2026-10-08 documentation refresh uses the same dark product appearance and 3× standard. Agent
+profiles focus on standing instructions, context and turn limits. Resumes show a populated PDF
+beside its fields. SQLite results come from querying the fixture's release checks. The Markdown
+Guide board contains interactive components whose tab switching is checked. Queued questions are
+restored from deterministic fixture records; they are not attributed to a live model. The optional
+Docker capture opens only the dedicated demo container and shows actual logs and controls.
+
+Historical light-theme demonstrations, old landing frames, before/after comparisons and transient
+startup/error captures stay on disk as history, but are excluded from the current public manifest.
+Reserved autonomy and external CLI slots remain unpublished until a real, useful scenario is
+available. Do not fill them with an empty screen or a simulated running task.

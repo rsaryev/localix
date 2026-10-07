@@ -120,11 +120,11 @@ item's `[ ]` to `[x]` in the element's Markdown, and undo takes it back.
 
 ## How it works
 
-### One dialect, two readers
+### One shared dialect
 
-`answer-markdown.ts` owns the callout kinds, the diagram fence language, the diagram types worth
-naming and the source-line prefix. The system prompt section and the UI renderer both import it, so
-the prompt cannot name a marker the transcript would print as raw text.
+`packages/markdown/src/dialect.ts` owns the callout kinds, container forms, fence languages and
+source-line prefix. The agent prompt, workspace and documentation share that grammar. The API's
+`answer-markdown.ts` re-exports the contract for existing consumers.
 
 `system-prompt-answer-format-section.ts` renders `# Answer formatting` in the cached prompt prefix.
 It also sets the shape rules: plain prose for a short reply, a heading per thread for a long one, a
@@ -148,8 +148,9 @@ withholds a formula from its opening `$` until the closing one arrives; a curren
 | Parse per streaming tick | ~12 ms           | ~0.6 ms |
 | Math during streaming    | raw `$…$` source | typeset |
 
-The renderer caches share one bounded least-recently-used cache, `shared/lib/boundedCache.ts`:
-typeset math, highlighted code blocks, drawn diagrams, and the inspector's file snapshots.
+The renderer caches share one bounded least-recently-used cache,
+`packages/kit/src/lib/bounded-cache.ts`: typeset math, highlighted code blocks, drawn diagrams, and
+the inspector's file snapshots.
 
 The styling follows the visual system: a callout's kind is carried by its glyph in the status hue,
 never by a coloured fill, and the note itself is a veil of the foreground over its ground. An
@@ -212,6 +213,9 @@ destination plugin.
 - Only a title typed on the marker line itself is used. When that line holds inline formatting, the
   line becomes body text and the callout has no title.
 
+The documentation uses the same parser. See [Shared Markdown](../extending/markdown.md) for live
+examples and package entry points.
+
 ## Related guides
 
 - [Conversations](conversations.md)
@@ -219,15 +223,15 @@ destination plugin.
 
 ## Source of truth
 
-- [The answer dialect](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/answer-markdown.ts)
+- [The answer dialect](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/dialect.ts)
 - [The prompt section and its gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/system-prompt-answer-format-section.ts)
-- [Callout, source and figure parsing](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/remarkAnswerBlocks.ts)
-- [Steps, tabs, figures and for/against](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/remarkAnswerContainers.ts)
+- [Callout, source and figure parsing](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerBlocks.ts)
+- [Steps, tabs, figures and for/against](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerContainers.ts)
 - [File trees](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/fileTreeParse.ts)
 - [Tickable checklists](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownTaskList.tsx)
-- [Callout rendering](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownBlockquote.tsx)
-- [Diagram queue and cache](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/mermaid/renderMermaid.ts)
-- [Diagram colours from tokens](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/mermaid/mermaidLook.ts)
+- [Callout rendering](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/MarkdownBlockquote.tsx)
+- [Diagram queue and cache](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/renderMermaid.ts)
+- [Diagram colours from tokens](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/mermaidLook.ts)
 - [Drawing diagrams while a reply streams](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/mermaid/StreamingDiagram.tsx)
-- [Cached math typesetting](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/rehypeMathCached.ts)
+- [Cached math typesetting](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/rehypeMathCached.ts)
 - [The shared bounded cache](https://github.com/rsaryev/localix/blob/main/packages/kit/src/lib/bounded-cache.ts)

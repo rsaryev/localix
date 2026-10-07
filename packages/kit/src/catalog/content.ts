@@ -5,6 +5,15 @@ const k = (id: string) => `@localixai/kit/${id}`
 /** Rendered text, identity and data views, the board, and keyboard hints. */
 export const CONTENT: readonly KitCatalogEntry[] = [
   {
+    specifier: k('skeleton'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['Skeleton'],
+    summary: 'Quiet loading geometry that reserves the space of real content.',
+    use: 'Pending text, media and navigation within a named busy region. The host supplies shape and accessible loading status.',
+    not: 'Not real content or an indeterminate progress indicator.',
+  },
+  {
     specifier: k('pdf-pages'),
     category: 'content',
     provider: 'kit',

@@ -19,8 +19,9 @@ page modules and retains exact full-text search semantics. Generation runs throu
 `prebuild` hooks.
 
 Product screenshots are evidence, not mockups. `apps/landing/scripts/build-shots.mjs` includes only
-dated 1600×1000 PNGs from the canonical `docs/assets/screenshots/<feature>/` tree. Missing captures
-remain documented gaps and are not presented as product proof on the homepage.
+dated 1600×1000 PNGs or their native 2×/3× captures from the canonical
+`docs/assets/screenshots/<feature>/` tree. Missing captures remain documented gaps and are not
+presented as product proof on the homepage.
 
 ## Commands
 
@@ -37,8 +38,11 @@ From the repo root: `bun run dev:landing` / `bun run build:landing`.
 
 The site uses browser routes. Production builds emit a page-specific static HTML shell for every
 generated `/docs/<slug>` route, so canonical URLs, descriptions, and social metadata are available
-before JavaScript runs. The included host configs map only known generated docs pages; an unknown
-docs URL remains a real 404 instead of silently rendering the home page.
+before JavaScript runs. The static page uses the same header, rails and article column as the
+client. A public JSON bootstrap keeps that article visible while the interactive Markdown chunk
+loads; subsequent pages reserve their geometry with kit skeletons. The included host configs map
+only known generated docs pages; an unknown docs URL remains a real 404 instead of silently
+rendering the home page.
 
 Configs included:
 
@@ -49,3 +53,14 @@ Configs included:
 
 Point the `localix.ai` DNS at whichever host you choose; the production OG/meta tags already
 reference `https://localix.ai/`.
+
+## Markdown rendering
+
+The docs client and static build use `@localixai/markdown`, the same grammar as the workspace.
+`src/pages/docs/markdownComponents.tsx` owns repository links, capture resolution and code blocks;
+`docsNav.tsx` owns navigation grouping. Typography and rails stay in the landing stylesheet.
+
+See [Shared Markdown](../../docs/extending/markdown.md) for live examples and package ownership.
+
+The documentation offers a focus mode and text-size menu. Its shared site header uses the same black
+ground as the landing; code blocks reuse the kit glass material and syntax palette.

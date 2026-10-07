@@ -58,7 +58,7 @@ export function DocsPagination({
       {previous ? (
         <Link
           to={`/docs/${previous.slug}`}
-          className="rounded-xl border border-border-subtle p-4 transition-colors hover:border-control-border-hover"
+          className="rounded-md px-2 py-3 transition-colors hover:bg-surface-hover"
         >
           <span className="text-xs text-text-faint">← Previous</span>
           <div className="mt-0.5 text-sm font-medium text-foreground">{previous.title}</div>
@@ -69,7 +69,7 @@ export function DocsPagination({
       {next && (
         <Link
           to={`/docs/${next.slug}`}
-          className="rounded-xl border border-border-subtle p-4 text-right transition-colors hover:border-control-border-hover sm:col-start-2"
+          className="rounded-md px-2 py-3 text-right transition-colors hover:bg-surface-hover sm:col-start-2"
         >
           <span className="text-xs text-text-faint">Next →</span>
           <div className="mt-0.5 text-sm font-medium text-foreground">{next.title}</div>

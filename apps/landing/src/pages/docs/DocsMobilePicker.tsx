@@ -1,12 +1,20 @@
 import { Link, useNavigate } from 'react-router'
-import { Search } from 'lucide-react'
-import { docPages, type DocPage } from '@/generated/docs'
-import { groupBySection } from '../docsNav'
+import { ChevronDown } from 'lucide-react'
+import { Button } from '@localixai/kit/button'
+import { SearchInput } from '@localixai/kit/search-input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@localixai/kit/dropdown-menu'
+import { MenuEntries } from '@localixai/kit/menu-entries'
+import { docPages, type DocPage } from '../../generated/docs'
+import { groupBySection } from './docGroups'
 import type { DocSearch } from './useDocSearch'
 
 /**
  * Below `md` the rail is hidden, so the article carries its own way to move
- * between pages: the same search, a grouped `<select>` over every page, and the
+ * between pages: the same search, a grouped menu over every page, and the
  * top matches once a query narrows the list.
  */
 export function DocsMobilePicker({ active, search }: { active: DocPage; search: DocSearch }) {
@@ -16,45 +24,42 @@ export function DocsMobilePicker({ active, search }: { active: DocPage; search: 
 
   return (
     <div className="mb-6 md:hidden">
-      <label
-        htmlFor="documentation-search"
-        className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-text-faint"
-      >
-        Search documentation
-      </label>
-      <div className="relative mb-4">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-faint" />
-        <input
-          id="documentation-search"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search docs…"
-          className="h-10 w-full rounded-lg border border-control-border bg-surface-raised pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-text-faint focus:border-control-border-focus focus-ring"
-        />
-      </div>
-      <label
-        htmlFor="documentation-page"
-        className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-text-faint"
-      >
-        Documentation
-      </label>
-      <select
-        id="documentation-page"
-        value={active.slug}
-        onChange={(event) => void navigate(`/docs/${event.target.value}`)}
-        className="h-10 w-full rounded-lg border border-control-border bg-surface-raised px-3 text-sm text-foreground outline-none focus:border-control-border-focus focus-ring"
-      >
-        {groupBySection(docPages).map((section) => (
-          <optgroup key={section.title} label={section.title}>
-            {section.pages.map((page) => (
-              <option key={page.slug} value={page.slug}>
-                {page.title}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
+      <SearchInput
+        aria-label="Search docs"
+        value={query}
+        onValueChange={setQuery}
+        placeholder="Search docs…"
+        size="xl"
+        className="mb-2"
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="xl"
+            aria-label="Browse documentation"
+            className="w-full justify-between px-0"
+          >
+            <span className="truncate">{active.title}</span>
+            <ChevronDown aria-hidden />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <MenuEntries
+            family="dropdown"
+            entries={groupBySection(docPages).map((section) => ({
+              id: section.title,
+              label: section.title,
+              items: section.pages.map((page) => ({
+                id: page.slug,
+                label: page.title,
+                selected: page.slug === active.slug,
+                onSelect: () => void navigate(`/docs/${page.slug}`),
+              })),
+            }))}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
       {normalizedQuery && filtered.length > 0 && (
         <ul className="mt-3 space-y-1">
           {filtered.slice(0, 8).map((page) => (

@@ -8,12 +8,8 @@ export * from './homeContentExternal'
 
 export const SECTIONS: SectionItem[] = [
   { id: 'intro', label: 'Localix' },
-  { id: 'conversations', label: 'Agents together' },
-  { id: 'context', label: 'Connected context' },
-  { id: 'board', label: 'Kanban' },
-  { id: 'browser', label: 'Agent browser' },
-  { id: 'plugins', label: 'Plugins' },
-  { id: 'control', label: 'Models and control' },
+  { id: 'workflow', label: 'Explore the workspace' },
+  { id: 'workbenches', label: 'Included workbenches' },
 ]
 
 export const SECTION_GUIDES = {

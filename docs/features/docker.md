@@ -7,6 +7,8 @@ session.
 **Availability:** The DevOps Workspace is enabled by default but can be disabled. A reachable
 Docker-compatible daemon is required.
 
+![Inspecting live logs from the running release-preview container](../assets/screenshots/devops/containers--2026-10-08.png)
+
 ## What you can do
 
 | Capability              | Mechanism                                                                                      | Boundary                                                                                           |

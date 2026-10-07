@@ -7,6 +7,8 @@ database tools.
 The bundled `database` plugin is enabled by default. Live operations require an established
 connection, and each driver decides which actions are available.
 
+![A SQLite query over release checks with four returned rows](../assets/screenshots/database/console--2026-10-08.png)
+
 ## What you can do
 
 | Surface            | Mechanism                                                                             | Boundary                                                                  |

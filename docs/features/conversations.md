@@ -5,6 +5,8 @@ participants: one agent uses direct conversation behavior, while two or more age
 multi-participant strategy. Adding or removing an agent does not create another session or rewrite
 its history.
 
+![Team Lead, Frontend and QA sharing a release review in one conversation](../assets/screenshots/conversations/participants--2026-10-07.png)
+
 ## Addressing
 
 In a message you send, `@handle` asks that agent to respond and `@all` asks every active agent.

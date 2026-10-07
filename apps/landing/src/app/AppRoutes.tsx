@@ -1,9 +1,9 @@
-import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
-import { LoadingHint } from '@localixai/kit/empty-hint'
 import { ButtonLink } from '../components/Button'
 import { SiteLayout } from '../components/SiteLayout'
 import { HomePage } from '../pages/HomePage'
+import { DocsPage } from '../pages/DocsPage'
+import type { DocBootstrap } from '../pages/docs/docBootstrap'
 import { docPages } from '../generated/docs'
 
 // Catch-all for mistyped URLs — without it an unknown path renders the layout
@@ -26,32 +26,20 @@ function NotFound() {
   )
 }
 
-// Docs carry the full generated markdown corpus — keep it out of the initial
-// chunk so the marketing home stays light. Loaded on first /docs navigation.
-const DocsPage = lazy(() => import('../pages/DocsPage').then((m) => ({ default: m.DocsPage })))
 const firstDocPath = docPages[0] ? `/docs/${docPages[0].slug}` : '/'
-
-const DocsFallback = <LoadingHint className="min-h-[50vh]">Loading documentation…</LoadingHint>
 
 /**
  * The one route table. The browser mounts it under `BrowserRouter` and the build renders `/`
  * from it under `StaticRouter`, so the pre-rendered homepage is the same tree the client
  * hydrates rather than a hand-kept copy that drifts from it.
  */
-export function AppRoutes() {
+export function AppRoutes({ initialDoc }: { initialDoc?: DocBootstrap }) {
   return (
     <Routes>
       <Route element={<SiteLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/docs" element={<Navigate replace to={firstDocPath} />} />
-        <Route
-          path="/docs/:slug"
-          element={
-            <Suspense fallback={DocsFallback}>
-              <DocsPage />
-            </Suspense>
-          }
-        />
+        <Route path="/docs/:slug" element={<DocsPage initialDoc={initialDoc} />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

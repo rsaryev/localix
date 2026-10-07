@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { cn } from '@/lib/cn'
+import { cn } from '../../lib/cn'
 import type { extractHeadings } from '../docsNav'
 
 type Heading = ReturnType<typeof extractHeadings>[number]
@@ -39,10 +39,8 @@ export function DocsTableOfContents({ headings }: { headings: Heading[] }) {
   if (headings.length < 2) return null
 
   return (
-    <nav aria-label="On this page" className="sticky top-8 hidden h-fit w-52 shrink-0 lg:block">
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-text-faint">
-        On this page
-      </p>
+    <nav aria-label="On this page" className="docs-toc sticky top-8 hidden h-fit lg:block">
+      <p className="mb-3 text-xs font-medium text-text-faint">On this page</p>
       <ul className="space-y-1 border-l border-border-subtle">
         {headings.map((heading) => (
           <li key={heading.id}>

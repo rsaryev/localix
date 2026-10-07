@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { docPages, loadAllDocContent } from '@/generated/docs'
+import { docPages, loadAllDocContent } from '../../generated/docs'
 
 export interface DocSearch {
   query: string

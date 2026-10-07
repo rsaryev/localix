@@ -30,10 +30,7 @@ export function ProductShot({
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
       fetchPriority={priority ? 'high' : undefined}
-      className={cn(
-        'block aspect-[8/5] h-auto w-full rounded-xl border border-border-subtle bg-card object-cover',
-        className,
-      )}
+      className={cn('block aspect-[8/5] h-auto w-full rounded-xl object-cover', className)}
     />
   )
 }

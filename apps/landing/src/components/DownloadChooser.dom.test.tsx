@@ -1,12 +1,5 @@
-import { afterAll, beforeAll, expect, mock, test } from 'bun:test'
+import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-
-void mock.module('@/lib/cn', () => ({
-  cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
-}))
-void mock.module('../lib/cn', () => ({
-  cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
-}))
 
 beforeAll(() => {
   GlobalRegistrator.register()
@@ -14,11 +7,18 @@ beforeAll(() => {
 })
 
 afterAll(async () => {
-  mock.restore()
   await GlobalRegistrator.unregister()
 })
 
-async function mountChooser() {
+async function mountChooser(platform: string, architecture?: string, released = true) {
+  Object.defineProperty(navigator, 'platform', { configurable: true, value: platform })
+  Object.defineProperty(navigator, 'userAgent', { configurable: true, value: '' })
+  Object.defineProperty(navigator, 'userAgentData', {
+    configurable: true,
+    value: architecture
+      ? { platform, getHighEntropyValues: async () => ({ architecture }) }
+      : undefined,
+  })
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
@@ -26,9 +26,14 @@ async function mountChooser() {
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
-
-  // The chooser only exists once a release provides an installer URL.
-  const downloads = resolveDownloads({ 'mac-arm64': 'https://example.test/localix.dmg' })
+  const downloads = resolveDownloads(
+    released
+      ? {
+          'mac-arm64': 'https://example.test/localix.dmg',
+          linux: 'https://example.test/localix.AppImage',
+        }
+      : {},
+  )
   await act(async () => {
     root.render(
       <MemoryRouter>
@@ -37,89 +42,77 @@ async function mountChooser() {
     )
   })
 
-  const trigger = host.querySelector<HTMLButtonElement>('button[aria-controls]')
-  const panel = host.querySelector<HTMLElement>('#download-alternatives')
-  return { host, root, act, trigger, panel }
+  return {
+    host,
+    cleanup: async () => {
+      await act(async () => root.unmount())
+      host.remove()
+    },
+  }
 }
 
-test('before a release the chooser keeps its layout, with every installer marked coming soon', async () => {
-  const { act } = await import('react')
-  const { createRoot } = await import('react-dom/client')
+test('a recognized platform shows only its own installer without an alternative picker', async () => {
+  const { host, cleanup } = await mountChooser('Linux x86_64')
+  try {
+    expect(host.textContent).toContain('Download for Linux')
+    expect(host.textContent).not.toContain('Download for Mac')
+    expect(host.textContent).not.toContain('Also for')
+    expect(host.textContent).not.toContain('View on GitHub')
+    expect(host.textContent).not.toContain('Docs')
+    expect(host.querySelector('button[aria-controls]')).toBeNull()
+    expect(host.querySelector('a[href="https://example.test/localix.AppImage"]')).not.toBeNull()
+    expect(host.querySelectorAll('#downloads a')).toHaveLength(1)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('Apple silicon detection selects the Mac installer after client hints resolve', async () => {
+  const { host, cleanup } = await mountChooser('macOS', 'arm')
+  try {
+    expect(host.querySelector('a[href="https://example.test/localix.dmg"]')).not.toBeNull()
+    expect(host.textContent).not.toContain('Download for Linux')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('unreleased installers remain honestly disabled and marked coming soon', async () => {
+  const { host, cleanup } = await mountChooser('Linux x86_64', undefined, false)
+  try {
+    expect(host.textContent).toContain('Download for Linux')
+    expect(host.textContent).toContain('Coming soon')
+    expect(host.querySelector('button[disabled]')).not.toBeNull()
+    expect(host.querySelector('a[href*="localix.AppImage"]')).toBeNull()
+  } finally {
+    await cleanup()
+  }
+})
+
+test('unknown and unsupported platforms offer the source build as the sole platform action', async () => {
+  for (const platform of ['', 'Win32', 'macOS', 'MacIntel']) {
+    const { host, cleanup } = await mountChooser(platform, platform === 'macOS' ? 'x86' : undefined)
+    try {
+      expect(host.textContent).toContain('Build from source')
+      expect(host.textContent).not.toContain('Download for')
+      expect(
+        host.querySelector('a[href="/docs/getting-started--installation#how-it-works"]'),
+      ).not.toBeNull()
+    } finally {
+      await cleanup()
+    }
+  }
+})
+
+test('static HTML uses the safe source-build fallback before browser detection', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server')
   const { MemoryRouter } = await import('react-router')
-  const { DownloadChooser, resolveDownloads } = await import('./DownloadChooser')
-  const host = document.createElement('div')
-  document.body.append(host)
-  const root = createRoot(host)
-
-  await act(async () => {
-    root.render(
-      <MemoryRouter>
-        <DownloadChooser downloads={resolveDownloads({})} />
-      </MemoryRouter>,
-    )
-  })
-
-  // The primary installer is a disabled row, and the other platforms stay one click away, so the
-  // hero does not change shape the day a release lands.
-  expect(host.textContent).toContain('Download for Mac')
-  expect(host.textContent).toContain('Coming soon')
-  expect(host.querySelector('button[disabled]')).not.toBeNull()
-  expect(host.querySelector('button[aria-controls="download-alternatives"]')).not.toBeNull()
-  // No release means no "your platform is missing" note: nothing is missing, nothing exists yet.
-  expect(host.textContent).not.toContain('not in the release yet')
-
-  await act(async () => root.unmount())
-  host.remove()
-})
-
-test('the other platforms open on a layer instead of pushing the page', async () => {
-  const { host, root, act, trigger, panel } = await mountChooser()
-
-  expect(trigger?.textContent).toContain('Also for')
-  // Closed: the panel is in the DOM (so `aria-controls` resolves) but hidden,
-  // and it is out of flow either way — expanding it must not move the hero.
-  expect(panel?.hidden).toBe(true)
-  expect(panel?.className).toContain('absolute')
-  expect(panel?.parentElement?.className).toContain('relative')
-  expect(trigger?.getAttribute('aria-expanded')).toBe('false')
-
-  await act(async () => trigger?.click())
-  expect(panel?.hidden).toBe(false)
-  expect(trigger?.getAttribute('aria-expanded')).toBe('true')
-
-  await act(async () => root.unmount())
-  host.remove()
-})
-
-test('Escape closes the list and hands focus back to the trigger', async () => {
-  const { host, root, act, trigger, panel } = await mountChooser()
-
-  await act(async () => trigger?.click())
-  expect(panel?.hidden).toBe(false)
-
-  await act(async () => {
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-  })
-
-  expect(panel?.hidden).toBe(true)
-  expect(document.activeElement).toBe(trigger)
-
-  await act(async () => root.unmount())
-  host.remove()
-})
-
-test('a click outside dismisses the list', async () => {
-  const { host, root, act, trigger, panel } = await mountChooser()
-
-  await act(async () => trigger?.click())
-  expect(panel?.hidden).toBe(false)
-
-  await act(async () => {
-    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-  })
-
-  expect(panel?.hidden).toBe(true)
-
-  await act(async () => root.unmount())
-  host.remove()
+  const { DownloadChooser } = await import('./DownloadChooser')
+  const html = renderToStaticMarkup(
+    <MemoryRouter>
+      <DownloadChooser />
+    </MemoryRouter>,
+  )
+  expect(html).toContain('Build from source')
+  expect(html).not.toContain('Download for')
 })

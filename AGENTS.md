@@ -61,3 +61,19 @@ and label fenced blocks. Generate public Markdown changes once with
 Never commit secrets, `.env`, `.localix/`, generated output, private data, or local absolute paths.
 Use `check:public` for suspicious files. Add migrations without editing existing ones. Document
 `vendor/` synchronizations. Report vulnerabilities via `SECURITY.md`.
+
+## UI evidence and screenshots
+
+Maintain the optional capture tests with visible feature changes. Read
+[scripts/screenshots/README.md](scripts/screenshots/README.md) before taking product captures.
+Update the owning scenario and meaningful assertions when its UI or behavior changes; add a scenario
+and deterministic fixture for a new visual feature. Keep semantic keys in
+[scripts/screenshots/plan.mjs](scripts/screenshots/plan.mjs) stable and name each image for the
+action or result it proves. Avoid unrelated screens, empty placeholders and private workspace data.
+
+Run `bun run test:screenshots --grep '<semantic-key>'` deliberately; these tests are not in the
+normal suite or CI. Review their native 3× captures. `bun run screenshots:update --grep '<key>'`
+refreshes approved compositions, updates existing Markdown references and generates the landing only
+after the test run passes. Add new figures where they help the guide, not everywhere. Do not
+hand-edit generated shot manifests or recolor screenshots. Stop the isolated capture runtime and any
+fixture services you started.

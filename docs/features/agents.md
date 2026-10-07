@@ -110,7 +110,7 @@ writes stay in the project or conversation. A selected scope does not fall back 
 when unavailable. Changing it refreshes the agent's saved memory context immediately. Unscoped
 external memory providers are used only with **All available scopes**.
 
-![Agent instructions, preloaded skills, memory scope and turn limit](../assets/screenshots/agents/context-and-limits--2026-10-06.png)
+![Agent instructions, preloaded skills, memory scope and turn limit](../assets/screenshots/agents/context-and-limits--2026-10-08.png)
 
 ## Delegated teams
 

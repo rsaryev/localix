@@ -1,155 +1,127 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useParams, useNavigate } from 'react-router'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
-import { docPages, loadDocContent } from '@/generated/docs'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation, useParams } from 'react-router'
+import { docPages, loadDocContent } from '../generated/docs'
+import { Button } from '@localixai/kit/button'
 import { ButtonLink } from '../components/Button'
 import { PAGE_SHELL } from '../lib/shell'
-import { LoadingHint } from '@localixai/kit/empty-hint'
-import { extractHeadings, featureCategoryFor, makeMdComponents } from './docsNav'
-import { DocsBreadcrumb, DocsPagination } from './docs/DocsArticleNav'
-import { DocsMobilePicker } from './docs/DocsMobilePicker'
-import { DocsSidebar } from './docs/DocsSidebar'
-import { DocsTableOfContents } from './docs/DocsTableOfContents'
+import { DocsShell } from './docs/DocsShell'
+import { DocsSkeleton } from './docs/DocsSkeleton'
+import { LazyDocsArticle } from './docs/loadDocsArticle'
 import { useDocMetadata } from './docs/useDocMetadata'
-import { useDocSearch } from './docs/useDocSearch'
+import type { DocBootstrap, DocHeading } from './docs/docBootstrap'
 
 function scrollDocumentToTop() {
-  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   document.documentElement.scrollTop = 0
   document.body.scrollTop = 0
 }
 
-function DocNotFound() {
-  return (
-    <div className={`${PAGE_SHELL} flex flex-col items-center py-28 text-center`}>
-      <p className="font-heading text-5xl font-semibold tracking-tight text-text-faint">404</p>
-      <h1 className="mt-4 font-heading text-2xl font-semibold tracking-tight">
-        Documentation page not found
-      </h1>
-      <p className="mt-2 max-w-prose text-text-soft">
-        This page may have moved. Browse the current documentation instead.
-      </p>
-      <ButtonLink to="/docs" variant="outline" className="mt-8">
-        Browse docs
-      </ButtonLink>
-    </div>
-  )
-}
-
-export function DocsPage() {
+export function DocsPage({ initialDoc }: { initialDoc?: DocBootstrap }) {
   const { slug } = useParams()
-  const navigate = useNavigate()
   const location = useLocation()
-  const search = useDocSearch()
-
-  const active = useMemo(() => docPages.find((page) => page.slug === slug), [slug])
-  const [activeContent, setActiveContent] = useState<string | null>(null)
-  const [contentFailed, setContentFailed] = useState(false)
+  const active = docPages.find((page) => page.slug === slug)
+  const seed = initialDoc?.slug === slug ? initialDoc : undefined
+  const [loaded, setLoaded] = useState<{ slug: string; content: string } | undefined>(seed)
+  const [failed, setFailed] = useState<string>()
+  const [retry, setRetry] = useState(0)
+  const [outline, setOutline] = useState<{ slug: string; headings: DocHeading[] } | undefined>(seed)
   const articleRef = useRef<HTMLElement>(null)
   const previousSlug = useRef(slug)
   const focusAfterLoad = useRef(false)
+  const content = loaded && loaded.slug === slug ? loaded.content : undefined
+  const headings = outline && outline.slug === slug ? outline.headings : []
 
   useEffect(() => {
-    if (!active) return
+    if (!active || loaded?.slug === active.slug) return
     let current = true
-    setActiveContent(null)
-    setContentFailed(false)
+    setFailed(undefined)
     void loadDocContent(active.slug).then(
       (content) => {
-        if (current) setActiveContent(content)
+        if (current) setLoaded({ slug: active.slug, content })
       },
       () => {
-        if (current) setContentFailed(true)
+        if (current) setFailed(active.slug)
       },
     )
     return () => {
       current = false
     }
-  }, [active])
+  }, [active, loaded?.slug, retry])
 
-  // Reset scroll to the top when navigating between docs pages.
   useEffect(() => {
-    if (previousSlug.current !== slug) {
-      focusAfterLoad.current = true
-      previousSlug.current = slug
-      scrollDocumentToTop()
-    }
+    if (previousSlug.current === slug) return
+    previousSlug.current = slug
+    focusAfterLoad.current = true
+    scrollDocumentToTop()
   }, [slug])
 
+  const onHeadings = useCallback(
+    (headings: DocHeading[]) => {
+      if (slug) setOutline({ slug, headings })
+    },
+    [slug],
+  )
+
   useEffect(() => {
-    if (activeContent === null) return
+    if (outline?.slug !== slug) return
     const targetId = location.hash.slice(1)
     if (targetId) {
-      const target = document.getElementById(targetId)
-      target?.scrollIntoView({ block: 'start' })
-      target?.focus()
+      const target = document.getElementById(decodeURIComponent(targetId))
+      if (!target) return
+      target.scrollIntoView({ block: 'start', behavior: 'instant' })
+      target.focus({ preventScroll: true })
       focusAfterLoad.current = false
     } else if (focusAfterLoad.current) {
       focusAfterLoad.current = false
       articleRef.current?.focus({ preventScroll: true })
       scrollDocumentToTop()
-
-      // Run once more after layout so browser scroll restoration or a late
-      // Markdown height change cannot put Previous/Next back at the old offset.
       const frame = window.requestAnimationFrame(scrollDocumentToTop)
       return () => window.cancelAnimationFrame(frame)
     }
-  }, [activeContent, location.hash])
+  }, [outline, slug, location.hash])
 
   useDocMetadata(active)
-
-  const headings = useMemo(
-    () => (activeContent ? extractHeadings(activeContent) : []),
-    [activeContent],
-  )
-  const components = useMemo(
-    () => (active ? makeMdComponents(active.sourcePath, (to) => void navigate(to)) : undefined),
-    [active, navigate],
-  )
-
-  if (!active) return <DocNotFound />
-
-  const flatIndex = docPages.findIndex((page) => page.slug === active.slug)
-  const previous = flatIndex > 0 ? docPages[flatIndex - 1] : null
-  const next = flatIndex < docPages.length - 1 ? docPages[flatIndex + 1] : null
-  const activeCategory = active.section === 'features' ? featureCategoryFor(active) : null
-
+  if (!active)
+    return (
+      <div className={`${PAGE_SHELL} py-24`}>
+        <h1 className="font-heading text-3xl">Documentation page not found</h1>
+        <ButtonLink to="/docs" variant="outline" className="mt-6">
+          Browse docs
+        </ButtonLink>
+      </div>
+    )
+  const fallback =
+    seed && content === seed.content ? (
+      <div dangerouslySetInnerHTML={{ __html: seed.html }} />
+    ) : (
+      <DocsSkeleton />
+    )
   return (
-    <div className={`${PAGE_SHELL} flex gap-10 py-12`}>
-      <DocsSidebar active={active} search={search} />
-
-      <article
-        id="doc-content"
-        ref={articleRef}
-        tabIndex={-1}
-        className="min-w-0 flex-1 outline-none"
-      >
-        <DocsMobilePicker active={active} search={search} />
-        <DocsBreadcrumb active={active} category={activeCategory} />
-
-        <div className="docs-prose">
-          {contentFailed ? (
-            <p>Could not load this documentation page. Please refresh and try again.</p>
-          ) : activeContent === null ? (
-            <LoadingHint className="min-h-48 p-0">Loading documentation…</LoadingHint>
-          ) : (
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={components}>
-              {activeContent}
-            </ReactMarkdown>
-          )}
+    <DocsShell
+      active={active}
+      headings={headings}
+      loading={content === undefined && failed !== slug}
+      articleRef={articleRef}
+    >
+      {failed === slug ? (
+        <div className="py-12" role="alert">
+          <p>Could not load this page.</p>
+          <Button variant="ghost" className="mt-3" onClick={() => setRetry((value) => value + 1)}>
+            Try again
+          </Button>
         </div>
-
-        <DocsPagination previous={previous} next={next} />
-
-        <p className="mt-8 text-xs text-text-faint">
-          Source: <code className="text-text-soft">{active.sourcePath}</code> · auto-generated from
-          the repo docs.
-        </p>
-      </article>
-
-      <DocsTableOfContents headings={headings} />
-    </div>
+      ) : content === undefined ? (
+        fallback
+      ) : (
+        <Suspense fallback={fallback}>
+          <LazyDocsArticle
+            key={slug}
+            content={content}
+            sourcePath={active.sourcePath}
+            onHeadings={onHeadings}
+          />
+        </Suspense>
+      )}
+    </DocsShell>
   )
 }

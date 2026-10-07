@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Outlet, Link, useLocation } from 'react-router'
 import { PAGE_SHELL } from '../lib/shell'
 import { Button } from './Button'
 import { RELEASE_CHANNEL } from './releaseChannel'
+import { SiteHeader } from './SiteHeader'
 
-export function SiteLayout() {
+export function SiteLayout({ children }: { children?: ReactNode }) {
   const location = useLocation()
   const mainRef = useRef<HTMLElement>(null)
   const previousPath = useRef(location.pathname)
@@ -35,8 +36,9 @@ export function SiteLayout() {
       >
         Skip to content
       </a>
+      <SiteHeader />
       <main id="main-content" ref={mainRef} tabIndex={-1} className="outline-none">
-        <Outlet />
+        {children ?? <Outlet />}
       </main>
 
       <footer className="border-t border-border-subtle">

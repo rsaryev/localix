@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
-void mock.module('@/generated/docs', () => ({ docPages: [] }))
-void mock.module('@/generated/shots', () => ({ screenshotAssets: {} }))
+void mock.module('../generated/docs', () => ({ docPages: [] }))
+void mock.module('../generated/shots', () => ({ screenshotAssets: {} }))
 
 beforeAll(() => {
   GlobalRegistrator.register()
@@ -12,6 +12,39 @@ beforeAll(() => {
 afterAll(async () => {
   mock.restore()
   await GlobalRegistrator.unregister()
+})
+
+test('renders Shell fences with Bash highlighting and copies the original source', async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { Markdown } = await import('@localixai/markdown/react')
+  const { makeMdComponents } = await import('./docsNav')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const copied: string[] = []
+  const source = 'sudo apt-get update\necho "$HOME"'
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: async (text: string) => void copied.push(text) },
+  })
+
+  await act(async () => {
+    root.render(
+      <Markdown components={makeMdComponents('docs/getting-started/installation.md', () => {})}>
+        {`\`\`\`shell\n${source}\n\`\`\``}
+      </Markdown>,
+    )
+  })
+  expect(host.querySelector('.docs-code-toolbar span')?.textContent).toBe('Shell')
+  expect(host.querySelector('code .hljs-built_in')?.textContent).toBe('sudo')
+  expect(host.querySelector('code .hljs-variable')?.textContent).toBe('$HOME')
+  expect(host.querySelector('.docs-code-block')?.classList.contains('lx-glass')).toBe(false)
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="Copy code"]')?.click())
+  expect(copied).toEqual([source])
+
+  await act(async () => root.unmount())
+  host.remove()
 })
 
 test('shows and repeats clipboard failures for documentation code blocks', async () => {

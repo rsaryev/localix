@@ -7,6 +7,8 @@ tool call. Bundled plugins, and the plugins an agent builds for you, extend the 
 navigation, and capability system into additional domains without splitting them into a separate
 product.
 
+![The source editor, a real test run and the team conversation in one workspace](../assets/screenshots/workspace/hero--2026-10-07.png)
+
 ## What you can do
 
 | Work                                 | Mechanism                                                                                                                    | Guide                                                                                       |

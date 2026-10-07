@@ -35,6 +35,12 @@ touched — and the agent is told the refusal was automatic, in different words 
 person's Deny produces. That difference matters: a model that cannot tell them apart either gives up
 on work because a room was empty, or asks again after a real refusal.
 
+![A queued question waiting above the composer while the release conversation remains visible](../assets/screenshots/questions/queued--2026-10-08.png)
+
+Choose **Answer** to open the options. The selection stays explicit until you send it.
+
+![The queued question opened with options, custom text and Send answer](../assets/screenshots/questions/waiting--2026-10-08.png)
+
 ## How it works
 
 ### Routing and request order

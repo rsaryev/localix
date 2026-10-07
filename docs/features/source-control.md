@@ -7,6 +7,8 @@ leaving the workspace.
 **Scope:** Git is the only backend. Every operation targets the chat the Git tab or control belongs
 to, or one repository discovered beneath that chat's working directory.
 
+![Reviewing the release readiness changes in a local demo repository alongside the working-tree summary and commit controls](../assets/screenshots/source-control/review--2026-10-08.png)
+
 ## What you can do
 
 | Action                     | Mechanism                                                                                    | Boundary                                                                                                                         |

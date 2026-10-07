@@ -7,6 +7,8 @@ from the Localix workspace.
 The bundled `devops` plugin is enabled by default. Containers require a reachable Docker-compatible
 daemon, while Kubernetes requires a usable kubeconfig and cluster permissions.
 
+![A running demo container with its live logs and lifecycle controls](../assets/screenshots/devops/containers--2026-10-08.png)
+
 ## What you can do
 
 | Area                        | Mechanism                                                                 | Boundary                                                             |

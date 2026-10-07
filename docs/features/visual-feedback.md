@@ -7,6 +7,8 @@ source anchors.
 **Scope:** A probe-connected Localix preview is required. Arbitrary browser tabs and desktop windows
 are outside this boundary.
 
+![A real application preview in the browser beside the release conversation](../assets/screenshots/browser/agent-preview--2026-10-07.png)
+
 ## What you can do
 
 | Action                   | Mechanism                                                                                           | Boundary                                                                    |

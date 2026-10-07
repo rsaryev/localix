@@ -7,6 +7,8 @@ board game, without writing the plugin yourself.
 **Trust boundary:** A plugin the agent creates is enabled when it is created, and its native code
 runs unsandboxed in the Localix API process. Read what it made before you rely on it.
 
+![A working Release Checklist fixture plugin beside its demo conversation](../assets/screenshots/plugins/agent-build--2026-10-07.png)
+
 ## What you can do
 
 | Capability                  | Mechanism                                                                 | Boundary                                                                          |

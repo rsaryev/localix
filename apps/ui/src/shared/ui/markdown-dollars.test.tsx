@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
-import { escapeLiteralDollars, isLiteralDollar } from './markdown-dollars'
-import rehypeMathCached from './rehypeMathCached'
+import { escapeLiteralDollars, isLiteralDollar } from '@localixai/markdown/markdown-dollars'
+import rehypeMathCached from '@localixai/markdown/rehypeMathCached'
 
 describe('isLiteralDollar', () => {
   test('currency amounts and shell variables are dollar signs', () => {

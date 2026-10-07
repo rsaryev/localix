@@ -73,6 +73,7 @@
     "@localixai/agent": "workspace:*",
     "@localixai/agent-runtime-pi": "workspace:*",
     "@localixai/liveness": "workspace:*",
+    "@localixai/markdown": "workspace:*",
     "@localixai/notifications": "workspace:*",
     "@localixai/os-open": "workspace:*",
     "@localixai/path-containment": "workspace:*",

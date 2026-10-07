@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ReactMarkdown from 'react-markdown'
-import { CALLOUT_KINDS } from '@localixai/api/answer-markdown'
+import { CALLOUT_KINDS } from '@localixai/markdown/dialect'
 import MarkdownRendererImpl, { markdownComponentsForStreaming } from './MarkdownRendererImpl'
-import { remarkPluginsFor } from './markdownPlugins'
+import { remarkPluginsFor } from '@localixai/markdown/markdownPlugins'
 
 // A streaming renderer reveals text gradually from empty, so a static render of it is blank.
 // The streaming frame is therefore rendered as the renderer's body does: same plugins, the
