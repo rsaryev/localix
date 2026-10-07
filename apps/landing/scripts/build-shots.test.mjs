@@ -168,4 +168,37 @@ describe('product screenshot manifest', () => {
 
     expect(buildShotManifest({ shotsDir, outFile })).rejects.toThrow('must be 1600×1000')
   })
+
+  test('publishes native Retina captures without changing their pixels', async () => {
+    for (const density of [2, 3]) {
+      const { shotsDir, outFile } = await fixture()
+      const publicDir = path.join(path.dirname(shotsDir), 'public-shots')
+      await fs.mkdir(path.join(shotsDir, 'workspace'))
+      const pixels = pngHeader(1600 * density, 1000 * density)
+      await fs.writeFile(path.join(shotsDir, 'workspace', 'hero--2026-10-07.png'), pixels)
+
+      await buildShotManifest({ shotsDir, outFile, publicDir })
+
+      expect(await fs.readFile(path.join(publicDir, 'workspace', 'hero--2026-10-07.png'))).toEqual(
+        pixels,
+      )
+    }
+  })
+
+  test('rejects mismatched, fractional, and excessive capture density', async () => {
+    for (const [width, height] of [
+      [4800, 1000],
+      [2400, 1500],
+      [6400, 4000],
+    ]) {
+      const { shotsDir, outFile } = await fixture()
+      await fs.mkdir(path.join(shotsDir, 'workspace'))
+      await fs.writeFile(
+        path.join(shotsDir, 'workspace', 'hero--2026-10-07.png'),
+        pngHeader(width, height),
+      )
+
+      await expect(buildShotManifest({ shotsDir, outFile })).rejects.toThrow('must be 1600×1000')
+    }
+  })
 })

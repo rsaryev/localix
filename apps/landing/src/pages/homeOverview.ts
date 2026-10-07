@@ -14,12 +14,6 @@ export const WORKSPACE_LINKS: FeatureRow[] = [
     slug: 'features--visual-feedback',
     anchor: 'let-the-agent-drive-the-preview',
   },
-  {
-    title: 'Kanban',
-    body: 'Keep tasks, owners, and dependencies on the conversation’s own board.',
-    slug: 'features--task-board',
-    anchor: 'what-you-can-do',
-  },
 ]
 
 export const PLATFORM_OVERVIEW: FeatureRow[] = [

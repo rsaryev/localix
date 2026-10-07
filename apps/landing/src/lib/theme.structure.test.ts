@@ -7,70 +7,47 @@ const landingDir = join(import.meta.dir, '..', '..')
 const read = (rel: string) => readFileSync(join(landingDir, rel), 'utf8')
 
 describe('landing theme', () => {
-  const css = read('src/styles.css')
-
-  // The kit's window material paints a blue-violet gradient behind a translucent ground, which
-  // is right for the app window and made the whole marketing page navy. A page that stops
-  // declaring its own opaque ground silently falls back to it.
-  test.each(['dark', 'light'])('the %s theme opts out of the window material', (theme) => {
-    const block = new RegExp(
-      `:root:root:root\\[data-site='landing'\\]\\[data-theme='${theme}'\\]\\s*\\{([^}]*)\\}`,
-    ).exec(css)?.[1]
+  test('the black page opts out of the app window material', () => {
+    const css = read('src/styles.css')
+    const block = /:root:root:root\[data-site='landing'\]\[data-theme='dark'\]\s*\{([^}]*)\}/u.exec(
+      css,
+    )?.[1]
     expect(block).toBeDefined()
     expect(block).toContain('--window-backdrop: none')
     expect(block).toContain('--work-density: 100%')
-    expect(block).toMatch(/--window-ground: #[0-9a-f]{6}/)
+    expect(block).toContain('--window-ground: #070707')
+    expect(css).not.toContain("[data-theme='light']")
   })
 
-  test('the deep black and the classic light grounds are the documented ones', () => {
-    expect(css).toContain('--window-ground: #070707')
-    expect(css).toContain('--window-ground: #fafafa')
-  })
-
-  // The theme must be settled before the first paint and the static markup must carry the
-  // attribute the overrides select on, or the page flashes the wrong theme (or the material).
-  test('index.html chooses the theme before paint and marks the site', () => {
+  test('the first paint and browser chrome are always dark', () => {
     const html = read('index.html')
-    expect(html).toContain('data-site="landing"')
+    expect(html).toContain('data-theme="dark" data-site="landing"')
+    expect(html).toContain('<meta name="color-scheme" content="dark"')
+    expect(html).toContain('<meta name="theme-color" content="#070707"')
+    expect(html).toContain('color-scheme: dark')
+    expect(html).not.toContain('prefers-color-scheme')
     expect(html).not.toContain('localStorage')
-    expect(html).toContain('prefers-color-scheme: light')
-    expect(html.indexOf('applySystemTheme()')).toBeLessThan(html.indexOf('<div id="root">'))
-  })
-
-  test('the site has no manual theme control', () => {
     expect(read('src/components/SiteLayout.tsx')).not.toContain('ThemeToggle')
   })
 
-  test.each([false, true])('system light=%s is applied and reacts to changes', (light) => {
-    const script = read('index.html').match(/<script>([\s\S]*?)<\/script>/u)?.[1]
-    expect(script).toBeDefined()
-    const root = { dataset: { theme: 'dark' }, style: { colorScheme: 'dark' } }
-    let change: (() => void) | undefined
-    const media = {
-      matches: light,
-      addEventListener(event: string, listener: () => void) {
-        expect(event).toBe('change')
-        change = listener
-      },
+  test.each([false, true])('startup preserves dark appearance with system light=%s', (light) => {
+    const root = {
+      dataset: { theme: 'dark' },
+      style: { colorScheme: 'dark' },
+      classList: { add() {} },
     }
-    runInNewContext(script!, {
-      document: { documentElement: root },
-      matchMedia(query: string) {
-        expect(query).toBe('(prefers-color-scheme: light)')
-        return media
-      },
-      localStorage: {
-        getItem() {
-          throw new Error('System theme must not depend on saved preferences or storage access')
+    for (const match of read('index.html').matchAll(/<script>([\s\S]*?)<\/script>/gu)) {
+      runInNewContext(match[1]!, {
+        document: { documentElement: root },
+        window: { IntersectionObserver: class {} },
+        matchMedia(query: string) {
+          if (query.includes('prefers-color-scheme'))
+            throw new Error('Landing must not follow system appearance')
+          return { matches: query === '(prefers-reduced-motion: reduce)' ? false : light }
         },
-      },
-    })
-    expect(root.dataset.theme).toBe(light ? 'light' : 'dark')
-    expect(root.style.colorScheme).toBe(root.dataset.theme)
-    expect(change).toBeDefined()
-    media.matches = !light
-    change!()
-    expect(root.dataset.theme).toBe(light ? 'dark' : 'light')
-    expect(root.style.colorScheme).toBe(root.dataset.theme)
+      })
+    }
+    expect(root.dataset.theme).toBe('dark')
+    expect(root.style.colorScheme).toBe('dark')
   })
 })

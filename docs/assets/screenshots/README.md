@@ -27,13 +27,33 @@ either value in a second hand-maintained manifest.
 
 ## Capture standard
 
-- PNG, exactly **1600×1000**.
+- PNG, a **1600×1000 CSS-pixel** composition. Capture natively at 1×, 2×, or 3× density (1600×1000,
+  3200×2000, or 4800×3000 physical pixels). Use 3× for homepage media; never upscale an existing
+  capture. Placeholder slots remain 1600×1000.
 - English UI and deterministic demo data.
 - Dark appearance unless the feature is specifically about the light one.
 - Capture the real product. A fixture project is acceptable; a fabricated product screen is not.
 - No personal names, private paths, real conversations, secrets, keys, tokens, unrelated apps, or
   desktop chrome.
 - Inspect the final file at full size before committing it.
+
+## Release Studio captures
+
+The 2026-10-07 and 2026-10-08 homepage captures use the running Localix web UI with a separate demo
+database, English fixture conversations, and the Release Studio project. They show the real editor,
+terminal, browser, Project Space, Kanban, and context controls. The terminal's two passing tests
+were run in the fixture project. No model response was generated during capture.
+
+The preview project and the working Release Checklist demo plugin are preserved under
+`fixtures/release-studio/`. The plugin uses the host's UI kit; its completion counter and progress
+bar were checked by toggling a checklist item before capture. It is a capture fixture, not an
+included workbench. Databases, provider credentials, generated plugin bundles, and local runtime
+paths are not stored here.
+
+All eight captures are unretouched 4800×3000 PNGs, captured natively at 3× density with a 1600×1000
+viewport. Composition is set in the product by arranging panels and scrolling the transcript. The
+homepage's generator preserves the original pixels and selects the dated images in place of their
+placeholder slots.
 
 ## Freshness check
 

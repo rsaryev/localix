@@ -20,6 +20,7 @@ const HOME_SHOT_KEYS = [
   'autonomy/background-work',
   'providers/model-browser',
   'task-board/board',
+  'task-board/conversation',
 ]
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 const REQUIRED_WIDTH = 1600
@@ -131,9 +132,15 @@ export async function buildShotManifest({
     }
 
     const dimensions = pngDimensions(await fs.readFile(file))
-    if (dimensions.width !== REQUIRED_WIDTH || dimensions.height !== REQUIRED_HEIGHT) {
+    const density = dimensions.width / REQUIRED_WIDTH
+    const validDensity = Number.isInteger(density) && density >= 1 && density <= 3
+    if (
+      !validDensity ||
+      dimensions.height !== REQUIRED_HEIGHT * density ||
+      (placeholder && density !== 1)
+    ) {
       throw new Error(
-        `${relative} must be ${REQUIRED_WIDTH}×${REQUIRED_HEIGHT}; got ${dimensions.width}×${dimensions.height}`,
+        `${relative} must be ${REQUIRED_WIDTH}×${REQUIRED_HEIGHT}${placeholder ? '' : ' at 1×, 2×, or 3× density'}; got ${dimensions.width}×${dimensions.height}`,
       )
     }
 

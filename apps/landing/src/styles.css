@@ -24,8 +24,8 @@ html {
 }
 /* The kit's window material imitates desktop glass: a blue-violet gradient behind a translucent
    ground. It belongs to the app window. On a web page it painted the whole site navy, and the
-   wind lines picked up the same hue. The landing is a flat page — deep black, or classic light —
-   so it opts out of the material by declaring the page's own opaque grounds. The selector repeats
+   wind lines picked up the same hue. The landing is a flat, deep black page,
+   so it opts out of the material with its own opaque black ground. The selector repeats
    `:root` to out-rank the material's `:not([data-desktop][data-os])` rules whatever their order. */
 :root:root:root[data-site='landing'][data-theme='dark'] {
   --window-backdrop: none;
@@ -40,21 +40,6 @@ html {
   --surface-sunken: #030303;
   --bird-wind: var(--foreground);
   background: #070707;
-}
-
-:root:root:root[data-site='landing'][data-theme='light'] {
-  --window-backdrop: none;
-  --work-density: 100%;
-  --sidebar-density: 100%;
-  --window-ground: #fafafa;
-  --window-ground-sidebar: #f4f4f4;
-  --window-ground-raised: #ffffff;
-  --popover-solid: #ffffff;
-  --popover: #ffffff;
-  --card: #ffffff;
-  --surface-sunken: #f1f1f1;
-  --bird-wind: var(--foreground);
-  background: #fafafa;
 }
 
 /* The hero bird loops while it is visible. `HeroBird` sets `data-paused` when the hero is scrolled
@@ -584,4 +569,95 @@ body {
 .docs-static-shell .docs-prose table {
   display: block;
   overflow-x: auto;
+}
+
+/* Single screenshots reveal their native capture in the shared modal. */
+.screenshot-trigger {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-xl);
+  cursor: zoom-in;
+}
+
+.screenshot-trigger:active,
+.screenshot-image-button:active {
+  transform: none;
+}
+
+.screenshot-thumbnail {
+  transition: transform var(--dur-base) var(--ease-standard);
+}
+
+.screenshot-dialog > [data-slot='dialog-close'] {
+  top: calc(-1 * var(--chrome-control-xl));
+  right: 0;
+}
+
+.screenshot-viewer {
+  display: flex;
+  flex-direction: column;
+  width: min(94vw, 137.6dvh);
+  height: min(58.75vw, 86dvh);
+  min-height: 0;
+}
+
+.screenshot-viewer[data-zoomed='true'] {
+  height: 86dvh;
+}
+
+.screenshot-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-md);
+}
+
+.screenshot-image-button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  cursor: zoom-in;
+  transition: none;
+}
+
+.screenshot-image-button[data-zoomed='true'] {
+  width: max(200%, 1600px);
+  height: auto;
+  min-height: 100%;
+  aspect-ratio: 8 / 5;
+  cursor: zoom-out;
+}
+
+.screenshot-image-button:hover,
+.screenshot-image-button:active {
+  background: transparent;
+}
+
+.screenshot-full-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .screenshot-trigger:hover .screenshot-thumbnail {
+    transform: scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screenshot-thumbnail {
+    transition: none;
+  }
 }

@@ -22,7 +22,7 @@ export function ProductShowcase({ className }: { className?: string }) {
         <div className="showcase-panel showcase-side showcase-middle" aria-hidden="true">
           <MockupFrame>
             <Mockup>
-              <ProductShot shot="browser/agent-preview" alt="" className="rounded-md border-0" />
+              <ProductShot shot="task-board/conversation" alt="" className="rounded-md border-0" />
             </Mockup>
           </MockupFrame>
         </div>
@@ -31,7 +31,7 @@ export function ProductShowcase({ className }: { className?: string }) {
             <Mockup>
               <ProductShot
                 shot="workspace/hero"
-                alt="Localix workspace: editor, terminal, preview and the agent session side by side"
+                alt="Localix workspace: source editor, terminal test results, and a shared agent conversation"
                 priority
                 className="rounded-md border-0"
               />

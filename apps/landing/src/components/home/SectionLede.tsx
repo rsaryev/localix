@@ -1,4 +1,4 @@
-import { ProductShot } from '@/components/ProductShot'
+import { ExpandableProductShot } from '@/components/ExpandableProductShot'
 import { GuideLink } from './cards'
 
 /**
@@ -26,7 +26,7 @@ export function SectionLede({
         <p className="lede mt-5 text-lg">{children}</p>
         <GuideLink {...guide} />
       </div>
-      <ProductShot shot={shot} alt={shotAlt} />
+      <ExpandableProductShot shot={shot} alt={shotAlt} title={title} />
     </div>
   )
 }

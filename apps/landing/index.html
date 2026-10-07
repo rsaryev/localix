@@ -4,15 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="color-scheme" content="dark" />
     <title>Localix — One workspace for you and a team of agents</title>
     <meta
       name="description"
       content="Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases."
     />
     <link rel="canonical" href="https://localix.ai/" />
-    <meta name="theme-color" content="#070707" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#070707" />
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Localix" />
@@ -36,29 +35,11 @@
     />
     <meta name="twitter:image" content="https://localix.ai/og.png" />
     <meta name="twitter:image:alt" content="Localix — One workspace for you and a team of agents" />
-    <!-- The theme follows the system before the first paint and whenever its setting changes.
-         Old saved manual choices are ignored. The static markup stays dark: without script
-         the page is still a complete, readable dark page. -->
-    <script>
-      ;(function () {
-        var systemTheme = matchMedia('(prefers-color-scheme: light)')
-        function applySystemTheme() {
-          var theme = systemTheme.matches ? 'light' : 'dark'
-          document.documentElement.dataset.theme = theme
-          document.documentElement.style.colorScheme = theme
-        }
-        applySystemTheme()
-        systemTheme.addEventListener('change', applySystemTheme)
-      })()
-    </script>
+    <!-- The landing stays dark from the first paint, independently of system appearance. -->
     <style>
       html {
         background: #070707;
         color-scheme: dark;
-      }
-      html[data-theme='light'] {
-        background: #fafafa;
-        color-scheme: light;
       }
     </style>
     <!-- Sections fade in on scroll only where the observer that un-hides them exists; everywhere

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Release Studio</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f4f5f2;
+        color: #22251f;
+        font:
+          15px/1.5 ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 940px;
+        margin: 0 auto;
+        padding: 42px 38px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 26px;
+        border-bottom: 1px solid #dce0d6;
+      }
+      header b {
+        font-size: 18px;
+      }
+      small {
+        color: #697060;
+      }
+      .tag {
+        border: 1px solid #ccd2c4;
+        border-radius: 6px;
+        padding: 4px 9px;
+        font-size: 11px;
+        color: #57634b;
+      }
+      h1 {
+        font-size: 36px;
+        line-height: 1.12;
+        letter-spacing: -1px;
+        margin: 36px 0 10px;
+      }
+      p {
+        color: #697060;
+        margin: 0 0 30px;
+      }
+      .release {
+        background: white;
+        border: 1px solid #dce0d6;
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 25px 28px;
+        border-bottom: 1px solid #e6e9e1;
+      }
+      .summary h2 {
+        font-size: 19px;
+        margin: 0 0 4px;
+      }
+      .status {
+        color: #597044;
+        background: #edf2e5;
+        border: 1px solid #d8e2cc;
+        padding: 6px 11px;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+      ul {
+        margin: 0;
+        padding: 10px 28px 20px;
+        list-style: none;
+      }
+      li {
+        padding: 17px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid #eef0ea;
+      }
+      li:last-child {
+        border: 0;
+      }
+      input {
+        accent-color: #587142;
+        width: 17px;
+        height: 17px;
+      }
+      li small {
+        margin-left: auto;
+      }
+      footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 27px;
+        font-size: 12px;
+        color: #697060;
+      }
+      button {
+        border: 0;
+        border-radius: 7px;
+        background: #293923;
+        color: white;
+        padding: 10px 16px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      @media (max-width: 520px) {
+        main {
+          padding: 25px 20px;
+        }
+        h1 {
+          font-size: 29px;
+        }
+        .summary {
+          padding: 20px;
+        }
+        ul {
+          padding: 8px 20px;
+        }
+        li small {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header><b>Release Studio</b><span class="tag">Demo workspace</span></header>
+      <h1>A clear path to the next release.</h1>
+      <p>Keep the changes, checks, and release notes in one place.</p>
+      <section class="release">
+        <div class="summary">
+          <div>
+            <h2>Workspace update</h2>
+            <small>Version 1.4 · Product workspace</small>
+          </div>
+          <span class="status">In review</span>
+        </div>
+        <ul>
+          <li>
+            <input type="checkbox" checked aria-label="Review the changes" /><span
+              >Review the changes</span
+            ><small>Interface</small>
+          </li>
+          <li>
+            <input type="checkbox" checked aria-label="Check the mobile layout" /><span
+              >Check the mobile layout</span
+            ><small>Quality</small>
+          </li>
+          <li>
+            <input type="checkbox" aria-label="Publish release notes" /><span
+              >Publish release notes</span
+            ><small>Release</small>
+          </li>
+        </ul>
+      </section>
+      <footer>
+        <span>2 of 3 checks complete</span
+        ><button
+          type="button"
+          onclick="document.querySelector('.status').textContent = 'Ready for review'"
+        >
+          Review release
+        </button>
+      </footer>
+    </main>
+  </body>
+</html>

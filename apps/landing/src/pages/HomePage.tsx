@@ -50,7 +50,7 @@ export function HomePage() {
           title="A team in one conversation"
           guide={SECTION_GUIDES.conversations}
           shot="conversations/participants"
-          shotAlt="Several agents sharing one conversation, with their roles and active participant visible"
+          shotAlt="Team Lead, Frontend, and QA Engineer reviewing a release in one shared conversation"
         >
           Bring agents into the same conversation. Give each a role and model, address them with
           @handle, and follow their work in one shared transcript.
@@ -62,16 +62,40 @@ export function HomePage() {
           title="Keep the work in context"
           guide={SECTION_GUIDES.context}
           shot="context/composer-context"
-          shotAlt="Files, selections, and terminals attached to the next message in the composer"
+          shotAlt="An open source file and terminal included in the next message’s context"
         >
           Link files, terminals, and live resources to the conversation. Open an agent&rsquo;s
           result right where the work happens.
         </SectionLede>
-        <Stagger className="mt-10 grid gap-x-8 md:mt-12 md:grid-cols-3">
+        <Stagger className="mt-10 grid gap-x-8 md:mt-12 md:grid-cols-2">
           {WORKSPACE_LINKS.map((feature) => (
             <FeatureLinkCard key={feature.title} {...feature} />
           ))}
         </Stagger>
+      </Section>
+
+      <Section id="board" className="border-t border-border-subtle py-16 md:py-24">
+        <SectionLede
+          title="A shared Kanban board"
+          guide={SECTION_GUIDES.board}
+          shot="task-board/board"
+          shotAlt="An open Kanban board with release tasks, owners, and statuses from backlog to done"
+        >
+          Keep tasks, owners, and dependencies alongside the conversation. Plan the work together
+          and follow each card from ready to done.
+        </SectionLede>
+      </Section>
+
+      <Section id="browser" className="border-t border-border-subtle py-16 md:py-24">
+        <SectionLede
+          title="A browser for you and your agents"
+          guide={SECTION_GUIDES.browser}
+          shot="browser/agent-preview"
+          shotAlt="A running app open in Localix’s browser beside the agent conversation"
+        >
+          The agent can navigate, click, and inspect pages in the same browser you use. Open your
+          running app there to build, test, and leave visual feedback.
+        </SectionLede>
       </Section>
 
       <Section id="plugins" className="border-t border-border-subtle py-16 md:py-24">
@@ -79,7 +103,7 @@ export function HomePage() {
           title="Build the tool you need"
           guide={SECTION_GUIDES.plugins}
           shot="plugins/agent-build"
-          shotAlt="A plugin built by an agent, open next to the conversation"
+          shotAlt="A working Release Checklist demo plugin open next to the team conversation"
         >
           Describe a tracker, dashboard, or workbench. An agent builds its interface and tools from
           the same kit Localix uses.
