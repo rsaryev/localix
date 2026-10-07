@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation } from 'react-router'
 import { PAGE_SHELL } from '../lib/shell'
 import { Button } from './Button'
 import { RELEASE_CHANNEL } from './releaseChannel'
-import { ThemeToggle } from './ThemeToggle'
 
 export function SiteLayout() {
   const location = useLocation()
@@ -36,7 +35,6 @@ export function SiteLayout() {
       >
         Skip to content
       </a>
-      <ThemeToggle className="fixed right-4 top-4 z-50" />
       <main id="main-content" ref={mainRef} tabIndex={-1} className="outline-none">
         <Outlet />
       </main>

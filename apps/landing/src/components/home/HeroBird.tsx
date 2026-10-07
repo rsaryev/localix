@@ -41,15 +41,14 @@ export function HeroBird() {
     >
       <BirdStage
         maskUrl="/logo.svg"
-        stageClassName="h-[22rem] w-full lg:h-[30rem] lg:w-[calc(100%+7rem)]"
+        stageClassName="h-96 w-full xl:h-[30rem]"
         birdClassName="size-28 lg:size-36"
         windClassName={reduced ? 'hidden' : 'opacity-100'}
         windRight="25%"
-        windIntensity={0.9}
-        lineCount={reduced ? 0 : 28}
-        spread={360}
+        windIntensity={0.4}
+        lineCount={reduced ? 0 : 12}
+        spread={260}
         cycles={reduced ? 1 : Infinity}
-        className="translate-x-[2%]"
       />
     </div>
   )

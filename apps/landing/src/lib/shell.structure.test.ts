@@ -112,9 +112,9 @@ describe('landing page shell', () => {
       read('pages/docs/useDocMetadata.ts'),
     ]
     for (const carrier of carriers) expect(carrier).toContain(sentence)
-    // The hero says it at greater length: it names the live preview and the shared board too.
+    // The concise hero preserves the same working surfaces as the metadata.
     expect(read('pages/HomePage.tsx').replaceAll(/\s+/g, ' ')).toContain(
-      'across the editor, terminals, preview, databases, and a shared board',
+      'share the editor, terminals, preview, and databases',
     )
     // llms.txt is hand-maintained and wraps its copy inside a blockquote, so unwrap first.
     const llms = readFileSync(join(appRoot, 'public/llms.txt'), 'utf8')

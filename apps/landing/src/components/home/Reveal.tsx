@@ -21,7 +21,7 @@ function useReveal<T extends HTMLElement>() {
           }
         }
       },
-      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+      { threshold: 0, rootMargin: '0px 0px -32px 0px' },
     )
     observer.observe(element)
     return () => observer.disconnect()
@@ -32,7 +32,7 @@ function useReveal<T extends HTMLElement>() {
 export function Section({
   id,
   className,
-  snap = true,
+  snap = false,
   reveal = true,
   children,
 }: {
@@ -47,13 +47,7 @@ export function Section({
     <section
       id={id}
       ref={reveal ? ref : undefined}
-      className={cn(
-        PAGE_SHELL,
-        snap && 'snap-section',
-        snap && 'flex min-h-[78svh] flex-col justify-center lg:min-h-[84svh]',
-        reveal && 'reveal',
-        className,
-      )}
+      className={cn(PAGE_SHELL, snap && 'snap-section', reveal && 'reveal', className)}
     >
       {children}
     </section>

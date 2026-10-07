@@ -14,6 +14,7 @@
 import { isToolDirect, type RunProfile } from '../../../agent-core/run-shape'
 import type { OptionalToolPorts } from '../../../agent-core/tool-registry'
 import { TOOL } from '../../../agent-core/tool-names'
+import { agentParticipant } from '../../../../db/participant'
 import { createMemoryTool } from '../../../agent-core/tools/memory/memory'
 import { createSkillTool } from '../../../agent-core/tools/skill'
 import { createHistorySearchTool } from '../../../agent-core/tools/history/history-search'
@@ -92,7 +93,14 @@ export function buildDirectToolInstances(
         ...(!disabledTools.includes('retrieve_output') ? (['get'] as const) : []),
       ]
       return legacyActions.length > 0
-        ? createToolOutputTool(contextStore, repo, userId, session.id, legacyActions)
+        ? createToolOutputTool(
+            contextStore,
+            repo,
+            userId,
+            session.id,
+            legacyActions,
+            agentParticipant(deps.agentId),
+          )
         : undefined
     })(),
   }

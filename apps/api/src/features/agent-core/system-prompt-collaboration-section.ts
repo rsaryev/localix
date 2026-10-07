@@ -40,8 +40,8 @@ export function buildCollaborationSection(
     ...(delegate
       ? [
           withColleagues
-            ? '- Delegate (`agents` action:"delegate") only when no participant here owns that role, or for parallel isolated work.'
-            : '- Delegate (`agents` action:"delegate") when substantial work should keep its investigation out of this conversation: the child runs once, with only your brief, and reports back. Review the report before you call the work done.',
+            ? '- Delegate (`agents` action:"delegate") only when no participant here owns that role, or for parallel isolated work. Assignees join this conversation automatically; do not also schedule them here for the same task.'
+            : '- Delegate (`agents` action:"delegate") when substantial work should keep its investigation out of this conversation: the child runs once, with only your brief, and reports back. Assignees join this conversation automatically; do not also schedule them here for the same task. Review the report before you call the work done.',
         ]
       : []),
     ...(delegate
@@ -51,7 +51,7 @@ export function buildCollaborationSection(
       : []),
     ...(canInvite
       ? [
-          '- Invite a colleague (`conversation_control`) when the work needs their continuing voice in this conversation, and remove them once their part is done.',
+          '- Invite a suitable colleague (`conversation_control`) when another role is needed. Publish a concrete assignment with scope, constraints and acceptance evidence, then put them in both invite and next; inviting alone does not start work. Remove them once their part is done.',
         ]
       : invite
         ? [

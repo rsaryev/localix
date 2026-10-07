@@ -206,6 +206,7 @@ export async function streamRun(
       buildExternalizeAfterToolCall(createContextStoreRepository(deps.db), {
         userId,
         sessionId: session.id,
+        participant: agentParticipant(speakerAgentId),
         toolOutputAvailable: tools.some((tool) => tool.name === TOOL.tool_output),
         sanitizeInput: deps.sanitizeToolInput
           ? (value) => deps.sanitizeToolInput!(userId, value)

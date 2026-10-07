@@ -18,9 +18,10 @@ const root: DelegationPosition = { depth: 0, chain: [], self: 'a', group }
 const none = new Set<string>()
 
 describe('the delegation ladder', () => {
-  test('narrows 3 → 2 → 1 → none as the tree deepens', () => {
-    expect([0, 1, 2, 3, 4].map(fanoutAt)).toEqual([3, 2, 1, 0, 0])
-    expect(delegatesAt(2)).toBe(true)
+  test('permits three agents at the root and none in any child', () => {
+    expect([0, 1, 2, 3, 4].map(fanoutAt)).toEqual([3, 0, 0, 0, 0])
+    expect(delegatesAt(0)).toBe(true)
+    expect(delegatesAt(1)).toBe(false)
     expect(delegatesAt(3)).toBe(false)
   })
 
@@ -39,7 +40,7 @@ describe('the delegation ladder', () => {
   test('depth 3 delegates nothing', () => {
     const deep = admitAssignees({ depth: 3, chain: ['a', 'b', 'c'], self: 'd', group }, [b], none)
     expect(deep.ok).toBe(false)
-    if (!deep.ok) expect(deep.reason).toContain('delegation ends')
+    if (!deep.ok) expect(deep.reason).toContain('Only a root chat may delegate')
   })
 })
 
@@ -50,21 +51,15 @@ describe('no cycles', () => {
     if (!self.ok) expect(self.reason).toContain('yourself')
   })
 
-  test('b, delegated by a, may give c and d work — and never a', () => {
-    const atB: DelegationPosition = { depth: 1, chain: ['a'], self: 'b', group }
-    expect(admitAssignees(atB, [c, d], none)).toEqual({ ok: true })
-    const up = admitAssignees(atB, [a], none)
-    expect(up.ok).toBe(false)
-    if (!up.ok) expect(up.reason).toContain('cannot take work back')
-  })
-
-  test('c, delegated by d, cannot delegate back to d — it addresses d directly', () => {
-    const atC: DelegationPosition = { depth: 2, chain: ['a', 'd'], self: 'c', group }
-    const back = admitAssignees(atC, [d], none)
-    expect(back.ok).toBe(false)
-    if (!back.ok) expect(back.reason).toContain('Address it directly')
-    // b is not above c in THIS chain, so it can take the one task depth 2 allows.
-    expect(admitAssignees(atC, [b], none)).toEqual({ ok: true })
+  test('children cannot send work up or down the former delegation chain', () => {
+    for (const depth of [1, 2, 3]) {
+      const child = { ...root, depth, chain: ['a'], self: 'b' }
+      for (const target of [a, c]) {
+        const decision = admitAssignees(child, [target], none)
+        expect(decision.ok).toBe(false)
+        if (!decision.ok) expect(decision.reason).toContain('Only a root chat')
+      }
+    }
   })
 })
 

@@ -59,8 +59,93 @@ html {
 
 /* The hero bird loops while it is visible. `HeroBird` sets `data-paused` when the hero is scrolled
    away or the tab is hidden; pausing keeps the position, so it resumes mid-flight, not from zero. */
+.hero-bird {
+  --bird-wind-duration-scale: 2.5;
+  --bird-drift-duration: 10s;
+}
+
 .hero-bird[data-paused='true'] * {
   animation-play-state: paused !important;
+}
+
+/* Launch UI's published three-screen hero: each early panel occupies 24px in
+   flow, all share rotate(-24deg) / skewY(12deg), and the front panel is offset
+   32%. Use transforms for the original left offsets so spreading costs no layout.
+   https://www.launchuicomponents.com/docs/sections/hero */
+.product-showcase {
+  position: relative;
+  isolation: isolate;
+}
+
+.showcase-stack,
+.showcase-panel {
+  position: relative;
+}
+
+.showcase-side {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .group\/cue:hover .arrow-cue {
+    transform: translateX(2px);
+  }
+}
+
+@media (min-width: 48rem) and (hover: hover) and (pointer: fine) {
+  .product-showcase {
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    padding-block: 6rem 2rem;
+  }
+
+  .product-showcase::after {
+    position: absolute;
+    z-index: 2;
+    inset: 35% 0 -12% 0;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--background) 85%);
+    content: '';
+  }
+
+  .showcase-stack {
+    max-width: 90rem;
+    margin-inline: auto;
+    padding-inline: 6rem;
+  }
+
+  .showcase-panel {
+    z-index: 1;
+    transform: rotate(-24deg) skewY(12deg);
+    transition: transform 700ms var(--ease-standard);
+  }
+
+  .showcase-side {
+    display: block;
+    height: 24px;
+  }
+
+  .showcase-left {
+    transform: translateX(-24%) rotate(-24deg) skewY(12deg);
+  }
+
+  .showcase-main {
+    transform: translateX(32%) rotate(-24deg) skewY(12deg);
+  }
+}
+
+@media (min-width: 48rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .product-showcase:hover .showcase-left {
+    transform: translateX(-32%) rotate(-12deg) skewY(6deg);
+  }
+
+  .product-showcase:hover .showcase-middle {
+    transform: rotate(-12deg) skewY(6deg);
+  }
+
+  .product-showcase:hover .showcase-main {
+    transform: translateX(48%) rotate(-12deg) skewY(6deg);
+  }
 }
 
 html,
@@ -84,6 +169,12 @@ body,
   min-height: 100%;
 }
 
+/* Clip only at the page edge, never at the screenshot stage or content column.
+   Unlike overflow:hidden, clip does not create another scrolling container. */
+body {
+  overflow-x: clip;
+}
+
 /* Section anchors keep a little breathing room when jumped to (in-page #id
    links). The header is gone, so this no longer has to clear a 64px bar — just
    a small gap. We do NOT use CSS scroll-snap: combined with tall sections +
@@ -102,10 +193,7 @@ body,
    reached. */
 .reveal-ready .reveal {
   opacity: 0;
-  transform: translateY(16px);
-  transition:
-    opacity 0.6s var(--ease-soft),
-    transform 0.6s var(--ease-soft);
+  transition: opacity var(--dur-slow) var(--ease-soft);
 }
 .reveal-ready .reveal.is-visible {
   opacity: 1;
@@ -117,10 +205,10 @@ body,
    the feature rows so a section flows in rather than snapping as one block. */
 .reveal-ready .reveal-stagger > * {
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(8px);
   transition:
-    opacity 0.55s var(--ease-soft),
-    transform 0.55s var(--ease-soft);
+    opacity var(--dur-slow) var(--ease-soft),
+    transform var(--dur-slow) var(--ease-soft);
 }
 .reveal-ready .reveal-stagger.is-visible > * {
   opacity: 1;
@@ -153,6 +241,10 @@ body,
   .reveal-ready .reveal-stagger > * {
     opacity: 1;
     transform: none;
+    transition: none;
+  }
+
+  .showcase-panel {
     transition: none;
   }
 }

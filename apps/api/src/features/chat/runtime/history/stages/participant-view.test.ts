@@ -62,6 +62,18 @@ describe('participant-view — the transcript as one participant reads it', () =
     expect(projected!.payload.items).toBeUndefined()
   })
 
+  test('private context attached to a colleague reply stays with its author', () => {
+    const colleague = row('bound', DEV, 'assistant', 'public finding', {
+      bindings: [{ kind: 'text', name: 'hook context', text: 'private hook evidence' }],
+    })
+    const own = projectParticipantView([colleague], { viewer: DEV })
+    expect(own[0]!.payload.bindings).toHaveLength(1)
+    const other = projectParticipantView([colleague], { viewer: QA })
+    expect(other[0]!.payload.content).toBe('public finding')
+    expect(JSON.stringify(other)).not.toContain('private hook evidence')
+    expect(other[0]!.payload.bindings).toBeUndefined()
+  })
+
   test('a colleague that said nothing out loud contributes nothing', () => {
     // A member that called `skip_answer`, or whose turn was pure tool work: there is no
     // utterance to attribute, and an empty attributed row would read as an empty remark.

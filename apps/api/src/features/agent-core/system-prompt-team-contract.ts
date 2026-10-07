@@ -19,6 +19,7 @@ To bring a colleague in, publish the assignment and the context they need, then 
 export const CONVERSATION_TURN_CONTROL = `End each multi-agent turn with conversation_control once, after your public reply or handoff.
 Invitations and mentions do not start work: publish the assignment and its context, then schedule whoever must act next.
 Schedule only actionable participants; pass the chain to one ready owner at a time, never a status broadcast. Architecture or contracts precede implementation; QA follows what it verifies.
+After assigned work, publish the result, verification and remaining blockers. Schedule the requester or leader when they have an actionable integration or decision to make.
 Use next:[] when done, awaiting the user, work is already running or queued, or you have nothing to add — silence is that call, never an empty reply. Do not queue acknowledgements or duplicate work.`
 
 // The last two lines exist because of one live failure: the designer asked the user to approve a mockup while the

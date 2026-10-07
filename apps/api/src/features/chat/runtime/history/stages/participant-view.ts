@@ -108,6 +108,7 @@ export function projectParticipantView(
         role: 'user',
         content: speakerLine(payload, text),
         items: undefined,
+        bindings: undefined,
       },
     })
   }

@@ -83,6 +83,32 @@ function makeCtx(
   }
 }
 
+it('refuses delegated children of any subsession at the session-creation boundary', async () => {
+  const root = parentSession({ id: 'root', rootSessionId: 'root' })
+  for (const sessionKind of ['chat', 'subagent', 'job'] as const) {
+    const parent = parentSession({
+      sessionKind,
+      parentSessionId: 'root',
+      rootSessionId: 'root',
+      provenance: { kind: 'loop', parentSessionId: 'root', loopId: 'loop-1' },
+    })
+    const { ctx, getInserted } = makeCtx(parent, [parent, root])
+    await expect(
+      createSession(ctx, 'u1', {
+        parentSessionId: parent.id,
+        sessionKind: 'subagent',
+        sourceToolCallId: 'delegate-call',
+        provenance: {
+          kind: 'task-delegation',
+          parentSessionId: parent.id,
+          toolCallId: 'delegate-call',
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_delegation_parent' })
+    expect(getInserted()).toBeNull()
+  }
+})
+
 describe('createSession — what a child inherits', () => {
   it("takes the parent's reasoning effort, not the flat default", async () => {
     const { ctx, getInserted } = makeCtx(parentSession())

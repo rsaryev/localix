@@ -36,23 +36,19 @@
     />
     <meta name="twitter:image" content="https://localix.ai/og.png" />
     <meta name="twitter:image:alt" content="Localix — One workspace for you and a team of agents" />
-    <!-- The theme is chosen before the first paint, from the saved choice and then the system
-         setting, so neither theme flashes the other. The static markup stays dark: without script
+    <!-- The theme follows the system before the first paint and whenever its setting changes.
+         Old saved manual choices are ignored. The static markup stays dark: without script
          the page is still a complete, readable dark page. -->
     <script>
       ;(function () {
-        var theme = 'dark'
-        try {
-          var saved = localStorage.getItem('localix-theme')
-          theme =
-            saved === 'light' || saved === 'dark'
-              ? saved
-              : matchMedia('(prefers-color-scheme: light)').matches
-                ? 'light'
-                : 'dark'
-        } catch (error) {}
-        document.documentElement.dataset.theme = theme
-        document.documentElement.style.colorScheme = theme
+        var systemTheme = matchMedia('(prefers-color-scheme: light)')
+        function applySystemTheme() {
+          var theme = systemTheme.matches ? 'light' : 'dark'
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+        }
+        applySystemTheme()
+        systemTheme.addEventListener('change', applySystemTheme)
       })()
     </script>
     <style>

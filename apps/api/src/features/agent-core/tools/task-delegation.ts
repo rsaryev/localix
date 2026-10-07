@@ -150,8 +150,10 @@ async function launchOne(
     if ('missing' in resolved)
       return refuse(`- "${title}": no enabled agent answers to "${resolved.missing}".`)
     const { team } = resolved
-    const allowed = admitAssignees(counts.position, team, counts.engaged)
+    // Membership is validated by the host invitation, including roster locks and chat admission.
+    const allowed = admitAssignees({ ...counts.position, group: null }, team, counts.engaged)
     if (!allowed.ok) return refuse(`- "${title}": ${allowed.reason}`)
+    await opts.inviteAgents(team.map((member) => member.agentId))
     for (const member of team) counts.engaged.add(member.agentId)
 
     // The child's place in the tree: one level down, with this session's agent added to the

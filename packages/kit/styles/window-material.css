@@ -119,6 +119,15 @@
     background: transparent;
   }
 
+  /* A broad, muted wallpaper wash gives web glass the diffuse variation of native
+     macOS sampling, with black above and below rather than illuminated corners. */
+  :root:not([data-desktop='true'])[data-theme='dark'] {
+    --window-backdrop:
+      radial-gradient(ellipse 120% 28% at 10% 46%, oklch(0.32 0.018 260 / 0.65), transparent 80%),
+      radial-gradient(ellipse 80% 36% at 92% 58%, oklch(0.24 0.008 260 / 0.3), transparent 85%),
+      oklch(0 0 0);
+  }
+
   /* Nearly opaque coats over a near-black backdrop looked solid in the browser. A visible
      stationary backdrop and thinner regions provide the variation that native glass samples
      from the wallpaper, without altering the native macOS coat or text colours. */

@@ -20,6 +20,7 @@ import { createSyntheticMessages } from './synthetic-messages'
 import type { ThreadOpsContext } from './thread-ops'
 import { createTitleGenerator } from './title-generation'
 import * as turnEntry from './turn-entry'
+import { updateConversationMembership } from '../runtime/run/conversation-membership'
 
 /**
  * The context each group of chat operations is handed — command handlers, branching, file ops,
@@ -158,6 +159,16 @@ export function createOperationContexts(
       runAgent,
       sessionLifecycleCtx,
       buildLanguageModel,
+      inviteAgents: async (userId, sessionId, agentIds) => {
+        await updateConversationMembership(
+          { repo, deps: { ...deps, streamRegistry } },
+          {
+            userId,
+            sessionId,
+            invite: agentIds,
+          },
+        )
+      },
       resolveWorkingDir: resolveSessionWorkingDir,
       // Only consulted when a declared `model:` is a bare family alias — without it the alias
       // resolved to the parent's model, i.e. did nothing.

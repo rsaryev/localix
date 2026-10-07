@@ -42,6 +42,36 @@ function ports(agents: SeedableAgent[]) {
 const SEAT: SeedableAgent = { id: 'builtin:backend', handle: 'backend' }
 
 describe('seedAgentPresets', () => {
+  test('untouched v12 defaults turn delegation off for specialists and the primary assistant', async () => {
+    for (const handle of [
+      'localix',
+      'lead',
+      'pm',
+      'architect',
+      'backend',
+      'frontend',
+      'qa',
+      'design',
+      'devops',
+    ]) {
+      const seat = { id: `builtin:${handle}`, handle }
+      const { seedPorts, rules, configs } = ports([seat])
+      const old = builtinAgentPreset(handle).filter((rule) => rule.action !== 'tool:agents')
+      if (handle !== 'localix') {
+        old.splice(1, 0, { action: 'tool:agents', resource: '*', effect: 'allow' })
+      }
+      rules.set(seat.id, old)
+      configs.set(seat.id, { presetSeed: '12', presetSeedDefaults: old })
+      expect(await seedAgentPresets(seedPorts, 'user')).toEqual([seat.id])
+      expect(rules.get(seat.id)).toContainEqual({
+        action: 'tool:agents',
+        resource: '*',
+        effect: 'deny',
+      })
+      expect(configs.get(seat.id)?.presetSeed).toBe('13')
+    }
+  })
+
   test('writes a role its preset, once', async () => {
     const { seedPorts, rules, writes } = ports([SEAT])
 

@@ -318,6 +318,7 @@ export interface ToolOutputArtifactsTable {
   session_id: string
   tool_call_id: string
   tool_name: string
+  participant: string | null
   content: string
   /** 'plain': `content` is the text. 'zstd': `content` is '' and `content_z` holds it compressed. */
   encoding: 'plain' | 'zstd'

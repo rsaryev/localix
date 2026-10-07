@@ -95,11 +95,17 @@ export async function retrieveStoredOutput(
   sessionId: string,
   wanted: string,
   artifactStore?: RetrieveOutputArtifactStore,
+  participant?: string,
 ): Promise<AgentToolResult> {
   let artifactError: unknown
   if (artifactStore) {
     try {
-      const artifact = await artifactStore.getToolOutputArtifact(userId, sessionId, wanted)
+      const artifact = await artifactStore.getToolOutputArtifact(
+        userId,
+        sessionId,
+        wanted,
+        participant,
+      )
       if (artifact) return outputResult(artifactOutput(artifact), wanted)
     } catch (error) {
       // Backward-compatible message history remains an independent recovery
@@ -122,7 +128,10 @@ export async function retrieveStoredOutput(
       isError: true,
     }
   }
-  const stored = message ? storedToolCallOutput([message], wanted) : null
+  const stored =
+    message && (!participant || message.payload.from === participant)
+      ? storedToolCallOutput([message], wanted)
+      : null
   if (!stored) {
     return {
       content: `No tool call with id "${wanted}" found in this session's history.`,

@@ -27,6 +27,7 @@ export const EXTERNALIZE_THRESHOLD_BYTES = 20_000
 export interface ExternalizeOptions {
   userId: string
   sessionId: string
+  participant?: string
   threshold?: number
   /**
    * Host secret shield for tool arguments. Required because this hook is a
@@ -59,6 +60,7 @@ export function buildExternalizeAfterToolCall(
     await store.putToolOutputArtifact({
       userId: options.userId,
       sessionId: options.sessionId,
+      participant: options.participant,
       toolCallId,
       toolName,
       text,

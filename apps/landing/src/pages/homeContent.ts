@@ -10,26 +10,20 @@ export const SECTIONS: SectionItem[] = [
   { id: 'intro', label: 'Localix' },
   { id: 'conversations', label: 'Agents together' },
   { id: 'context', label: 'Connected context' },
-  { id: 'external', label: 'External agents' },
-  { id: 'space', label: 'Project Space' },
-  { id: 'browser', label: 'Agent browser' },
   { id: 'plugins', label: 'Plugins' },
-  { id: 'craft', label: 'Design' },
-  { id: 'autonomy', label: 'Long-running work' },
   { id: 'control', label: 'Models and control' },
-  { id: 'board', label: 'Kanban board' },
 ]
 
 export const SECTION_GUIDES = {
-  conversations: { slug: 'features--conversations', label: 'Explore conversations with agents' },
-  context: { slug: 'features--workspace', label: 'Explore workspace and context' },
+  conversations: { slug: 'features--conversations', label: 'Meet the agents' },
+  context: { slug: 'features--workspace', label: 'Explore the workspace' },
   external: { slug: 'features--external-agents', label: 'Explore external agent sessions' },
   space: { slug: 'features--project-space', label: 'Explore Project Space' },
   browser: {
     slug: 'features--visual-feedback',
     label: 'Explore the agent browser and Visual Feedback',
   },
-  plugins: { slug: 'extending--plugins', label: 'Explore the plugin system' },
+  plugins: { slug: 'extending--plugins', label: 'Explore plugins' },
   craft: { slug: 'extending--ui-kit', label: 'Explore the design kit' },
   autonomy: { slug: 'features--loops', label: 'Explore loops and monitors' },
   control: { slug: 'features--capabilities', label: 'Explore capabilities and permissions' },
@@ -37,10 +31,9 @@ export const SECTION_GUIDES = {
 } as const
 
 /**
- * The homepage opens on several agents in one conversation, then the surfaces they share with
- * you: connected context, the Project Space board, and the agent-driven preview. After those come
- * the platform that builds the rest, the design that holds it together, and the work that runs
- * while you are away (`homeContentPlatform.ts`). Every statement stays inside what its owning guide
+ * Detailed capability copy grouped by its owning guide. The homepage uses short entry points from
+ * `homeOverview.ts` and keeps these product contracts available for content verification.
+ * Every statement stays inside what its owning guide
  * documents. None states a speed, a duration, or a team size, because the repository measures none
  * of them, and none promises a permission MODE per participant: the mode belongs to the whole
  * conversation, while rules, role, and model belong to each agent.

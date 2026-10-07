@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { runInNewContext } from 'node:vm'
 
 const landingDir = join(import.meta.dir, '..', '..')
 const read = (rel: string) => readFileSync(join(landingDir, rel), 'utf8')
@@ -31,19 +32,45 @@ describe('landing theme', () => {
   test('index.html chooses the theme before paint and marks the site', () => {
     const html = read('index.html')
     expect(html).toContain('data-site="landing"')
-    expect(html).toContain("localStorage.getItem('localix-theme')")
+    expect(html).not.toContain('localStorage')
     expect(html).toContain('prefers-color-scheme: light')
-    expect(html.indexOf("localStorage.getItem('localix-theme')")).toBeLessThan(
-      html.indexOf('<div id="root">'),
-    )
+    expect(html.indexOf('applySystemTheme()')).toBeLessThan(html.indexOf('<div id="root">'))
   })
 
-  // Both icons render and CSS picks one: choosing an icon in React from the live theme would make
-  // the prerendered markup differ from the hydrated one.
-  test('the toggle never branches on the live theme while rendering', () => {
-    const source = read('src/components/ThemeToggle.tsx')
-    expect(source).toContain('dark:block')
-    expect(source).toContain('dark:hidden')
-    expect(source.split('export function ThemeToggle')[1]).not.toContain('dataset.theme')
+  test('the site has no manual theme control', () => {
+    expect(read('src/components/SiteLayout.tsx')).not.toContain('ThemeToggle')
+  })
+
+  test.each([false, true])('system light=%s is applied and reacts to changes', (light) => {
+    const script = read('index.html').match(/<script>([\s\S]*?)<\/script>/u)?.[1]
+    expect(script).toBeDefined()
+    const root = { dataset: { theme: 'dark' }, style: { colorScheme: 'dark' } }
+    let change: (() => void) | undefined
+    const media = {
+      matches: light,
+      addEventListener(event: string, listener: () => void) {
+        expect(event).toBe('change')
+        change = listener
+      },
+    }
+    runInNewContext(script!, {
+      document: { documentElement: root },
+      matchMedia(query: string) {
+        expect(query).toBe('(prefers-color-scheme: light)')
+        return media
+      },
+      localStorage: {
+        getItem() {
+          throw new Error('System theme must not depend on saved preferences or storage access')
+        },
+      },
+    })
+    expect(root.dataset.theme).toBe(light ? 'light' : 'dark')
+    expect(root.style.colorScheme).toBe(root.dataset.theme)
+    expect(change).toBeDefined()
+    media.matches = !light
+    change!()
+    expect(root.dataset.theme).toBe(light ? 'dark' : 'light')
+    expect(root.style.colorScheme).toBe(root.dataset.theme)
   })
 })

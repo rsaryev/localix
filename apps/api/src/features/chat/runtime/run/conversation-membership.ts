@@ -7,7 +7,9 @@ import type { RunEnv } from './types'
  * What a membership change needs from its host. The run-state guards are optional ports: a
  * board-driven invitation removes nobody, so it has no speaker to protect and no turn to cancel.
  */
-type MembershipEnv = Pick<RunEnv, 'repo' | 'deps'> & {
+type MembershipEnv = {
+  repo: RunEnv['repo']
+  deps: Pick<RunEnv['deps'], 'streamRegistry' | 'listInvocableRegistryAgents'>
   activeAgentId?: (sessionId: string) => string | undefined
   cancelAgentTurn?: (userId: string, sessionId: string, agentId: string) => Promise<void>
 }

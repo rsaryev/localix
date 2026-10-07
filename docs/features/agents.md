@@ -117,8 +117,8 @@ external memory providers are used only with **All available scopes**.
 A delegated team shares one child session and a fixed membership. The elected leader receives the
 first ordinary task turn. Members publish an actionable handoff and use `conversation_control` to
 queue a teammate; mentions alone start no work. They cannot invite or remove members. The team
-reports to its parent when its queue and children have finished. Decisions requiring the user go
-through the parent. The host's handoff limit also bounds team conversations.
+cannot delegate further and reports to its parent when its queue has finished. Decisions requiring
+the user go through the parent. The host's handoff limit also bounds team conversations.
 
 `conversation_control` is a required conversation protocol. Its model exposure and execution agree
 even if an old permission list denies it; membership and scheduling are checked by the host.

@@ -1,5 +1,13 @@
 # Delegation
 
+The `agents` tool is **off by default** in every shipped agent preset, including the primary
+assistant. Enable **Agents** in **Settings → Capabilities → Tools** for the agent that should
+delegate. The existing capability rules are the switch; there is no separate delegation setting. The
+delegation model route selects a model; it does not enable the tool.
+
+Only root chat sessions can delegate. Child chats, delegated teams, jobs and forked skills cannot
+create more delegated work, even when their profiles list the `agents` tool.
+
 `agents { action: "delegate", tasks: [{ agents, title, prompt, priority }] }` explicitly starts one
 or more focused child sessions, each run by one agent or by a team. Each prompt is that child's
 whole assignment; the parent continues independent work and receives a report **every time a run it
@@ -34,32 +42,29 @@ stops a running child to take its place.
 
 ## The tree
 
-A child can delegate in turn, so delegation forms a tree. Three rules keep it bounded.
+The root conversation can involve up to **3 different agents** across its open delegated children;
+closing a child frees its agents. It cannot delegate to the participant making the call.
 
-| Rule      | What it allows                                                                                              |
-| --------- | ----------------------------------------------------------------------------------------------------------- |
-| Ladder    | A conversation involves up to 3 different agents, its child 2, a grandchild 1; the level below none.        |
-| No cycles | Never to yourself, and never to an agent that delegated work down to you, directly or further up.           |
-| Group     | In a conversation of several participants, only those participants take work. A solo chat uses any profile. |
+Every assignee automatically joins the parent conversation before the task starts. Invitation uses
+the normal availability and membership checks. A fixed roster accepts only agents already present;
+an unavailable agent or refused invitation starts no child. Joining does not queue a second run in
+the parent: the child executes the assignment and reports to its initiator. Do not also schedule the
+same assignment with `conversation_control`.
 
-The ladder counts **different agents** across a session's open children, not tasks; closing a child
-frees its agents. An agent that needs its delegator does not delegate back up: it says so in its
-report, or addresses it in a conversation they share. Each child learns its own allowance with its
-task.
+Children cannot delegate. An agent that needs more help reports the blocker to its parent.
 
 A task for several agents is **one** session with all of them in it — a team. Who leads it is the
 same rule that decides who answers first in any conversation: the highest leadership priority. The
 team publishes handoffs and schedules teammates with `conversation_control`; mentions alone start no
-turn. Membership is fixed, so members cannot invite or remove agents. The lead can delegate a piece
-further down when it needs a fresh context. Each member uses its own skill preloads and memory
-scope. A team reports once, when its session has gone quiet: no teammate turn queued and no child of
-its own still working.
+turn. Membership is fixed, so members cannot invite or remove agents or delegate further. Each
+member uses its own skill preloads and memory scope. A team reports once its session has no queued
+teammate turns.
 
 **Seeing is not managing.** `runs` shows a session its whole subtree — every level below it,
 indented under its owner, with what each spent and the total — and nothing above it. `message`,
 `stop` and `close` act only on its own children; a deeper run answers that only its owner can manage
 it. A report goes one level up, to the session that delegated, which integrates it and reports
-upward in its own turn.
+upward in its own turn. Historical nested trees remain inspectable; new tasks have only one level.
 
 The context window shrinks with depth as well: a conversation budgets against 256k tokens, its child
 128k, and every level below 64k.

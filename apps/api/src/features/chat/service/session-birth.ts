@@ -21,6 +21,7 @@ import { normalizeSessionTitle } from '../session-limits'
 import type { SessionProvenance } from '../session-provenance'
 import { DEFAULT_TITLE } from './context'
 import { bornParticipants } from './participant-routes'
+import { isDelegationParent } from '../../agent-core/delegation-policy'
 import type { CreateSessionInput, SessionLifecycleCtx } from './session-lifecycle'
 
 export async function createSession(
@@ -54,6 +55,16 @@ export async function createSession(
   await assertStatedConnectionExists(ctx, userId, input.providerConnectionId)
   const sessionKind = input.sessionKind ?? 'chat'
   assertDelegatedSession(input, sessionKind)
+  if (
+    (sessionKind === 'subagent' || input.provenance?.kind === 'skill-fork') &&
+    (!parent || !isDelegationParent(parent))
+  ) {
+    throw new ApiError(
+      400,
+      'invalid_delegation_parent',
+      'Only a root chat may delegate. Subsessions cannot create delegated work.',
+    )
+  }
   // The ONE place a conversation's participants are decided at birth, routes and all. A session
   // is never with no one, and saying so here — rather than at the writer, or again at each
   // caller — keeps "who is in this conversation, on what" a birth property instead of a rule

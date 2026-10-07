@@ -1,5 +1,6 @@
 import type { TaskDelegationOptions } from '../../../agent-core/tools/task-delegation'
 import { isToolDirect, type RunProfile } from '../../../agent-core/run-shape'
+import { isDelegationParent } from '../../../agent-core/delegation-policy'
 import { TOOL } from '../../../agent-core/tool-names'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { SessionRecord } from '../../repository'
@@ -14,6 +15,7 @@ import { delegatesAt } from '../../../agent-core/delegation-hierarchy'
 import { delegationPlace } from '../../session-provenance'
 import { endSubagentWork, type SubagentWorkDeps } from './subagent-work'
 import { releaseChildSurfaces, type ChildSurfaceDeps } from './child-surfaces'
+import { updateConversationMembership } from './conversation-membership'
 
 /**
  * How long a delegation call watches its child before returning "running".
@@ -34,7 +36,12 @@ export interface TaskDelegationOptionsInput {
   /** The run's effective cwd — a memory-backed sub-agent resolves its memory dir from it. */
   defaultCwd: string
   agentProfile: RunProfile
-  deps: Pick<RunnerDeps, 'providerConnectionsService'> & ChildSurfaceDeps
+  repo: RunnerDeps['repo']
+  deps: Pick<
+    RunnerDeps,
+    'providerConnectionsService' | 'streamRegistry' | 'listInvocableRegistryAgents'
+  > &
+    ChildSurfaceDeps
   /** Per-run CC-hook runtime → the child run fires SubagentStart/SubagentStop. */
   ccHooks?: CcHooksRuntime
   /** Where a detached child is recorded as the session's background work (`sub-N`). */
@@ -55,9 +62,8 @@ export function buildTaskDelegationOptions(
 ): TaskDelegationOptions | undefined {
   const { userId, session, agentProfile, ccHooks } = input
 
-  if (!isToolDirect(agentProfile, TOOL.agents)) return undefined
-  // Past the end of the ladder a session delegates nothing, so it is not offered the tool at all
-  // — a tool that can only refuse costs schema tokens on every turn and invites the attempt.
+  if (!isDelegationParent(session) || !isToolDirect(agentProfile, TOOL.agents)) return undefined
+  // Persisted nested sessions remain readable, but only the root can create new delegated work.
   const place = delegationPlace(session.provenance)
   if (!delegatesAt(place.depth)) return undefined
   // The `delegation` model route is a ROUTE, never a switch for the tool. With the route off
@@ -73,6 +79,16 @@ export function buildTaskDelegationOptions(
     parentSessionId: session.id,
     projectId: session.projectId,
     resolveAgent: (reference, scope) => resolveDelegateAgent(reference, scope),
+    inviteAgents: async (agentIds) => {
+      await updateConversationMembership(
+        { repo: input.repo, deps: input.deps },
+        {
+          userId,
+          sessionId: session.id,
+          invite: agentIds,
+        },
+      )
+    },
     // The child inherits the parent's permission mode. Without this it was created
     // with `createSession`'s `auto` default, so a delegate spawned from an `ask`
     // session ran bash and wrote files with no confirmation — delegation is not a

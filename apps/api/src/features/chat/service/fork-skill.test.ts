@@ -74,6 +74,7 @@ function makeDeps(parent: SessionRecord) {
   } as unknown as SessionLifecycleCtx
 
   const deps: ForkSkillDeps = {
+    inviteAgents: async () => {},
     repo: {
       listMessages: async () => {
         throw new Error('a fresh fork child cannot have history to hydrate')
@@ -110,6 +111,38 @@ afterEach(() => {
 })
 
 describe('spawnForkSkill — delegate-parity rules', () => {
+  it('rejects subsessions before looking up settings or creating children', async () => {
+    for (const parent of [
+      parentSession({ parentSessionId: 'root' }),
+      parentSession({ sessionKind: 'subagent' }),
+      parentSession({ sessionKind: 'job' }),
+    ]) {
+      const fixture = makeDeps(parent)
+      await expect(createSpawnForkSkill(fixture.deps)('u1', 'parent', 'work')).rejects.toThrow(
+        'Only a root chat may delegate',
+      )
+      expect(fixture.getInserted()).toBeNull()
+    }
+  })
+
+  it('a native assignee must join the parent before its fork can run', async () => {
+    const fixture = makeDeps(parentSession())
+    const invited: unknown[] = []
+    fixture.deps.inviteAgents = async (...args) => {
+      expect(fixture.getInserted()).toBeNull()
+      invited.push(args)
+      throw new Error('The roster is fixed')
+    }
+    setAgentService({ resolveAgentById: async () => ({ agentId: 'native:qa' }) } as never)
+    await expect(
+      createSpawnForkSkill(fixture.deps)('u1', 'parent', 'check', {
+        agentId: 'native:qa',
+      }),
+    ).rejects.toThrow('The roster is fixed')
+    expect(invited).toEqual([['u1', 'parent', ['native:qa']]])
+    expect(fixture.getInserted()).toBeNull()
+  })
+
   it('selects native identity through the exact-ID port and projects only native defaults', async () => {
     const agentId = 'native:global:fork-agent'
     const calls: unknown[] = []

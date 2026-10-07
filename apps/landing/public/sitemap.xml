@@ -12,6 +12,7 @@
   <url><loc>https://localix.ai/docs/recipes--turn-a-vague-goal-into-a-pipeline</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--capabilities</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--agents</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--delegation</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--permission-modes</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--permissions</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--configure</loc><priority>0.7</priority></url>
@@ -20,7 +21,6 @@
   <url><loc>https://localix.ai/docs/features--conversation-history</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--answer-formatting</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--hitl</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--delegation</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--background-work</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--interactive-terminals</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--monitors</loc><priority>0.7</priority></url>

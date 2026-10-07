@@ -23,7 +23,7 @@ const CHAT_DEFAULT: ToolExposure = { chat: 'default', subagent: 'opt-in', automa
 const CHAT_ONLY: ToolExposure = { chat: 'default', subagent: 'never', automation: 'never' }
 const CONVERSATION_TREE: ToolExposure = {
   chat: 'default',
-  subagent: 'default',
+  subagent: 'never',
   automation: 'never',
 }
 
@@ -186,8 +186,7 @@ export const BUILTIN_TOOL_CATALOG = {
     label: 'Agents',
     description: 'Delegate tasks to child agents or teams, and message, stop or close them.',
     category: 'automation',
-    // A delegated child delegates in turn while the ladder allows (`delegation-hierarchy.ts`;
-    // the host withholds the tool past it). An unattended automation run never builds a tree.
+    // Only root chats build the delegation port. No subsession may acquire it from its profile.
     exposure: CONVERSATION_TREE,
   },
   loops: {

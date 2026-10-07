@@ -116,9 +116,9 @@ describe('run shapes', () => {
     expect(isToolDirect(CHAT_RUN_PROFILE, 'browser')).toBe(true)
 
     const sub = profileOf('subagent')
-    // A child delegates in turn while the ladder allows; the HOST withholds the port past it
-    // (`delegation-hierarchy.ts`). An unattended automation run never builds a tree.
-    expect(isToolDirect(sub, 'agents')).toBe(true)
+    // Subsessions cannot acquire delegation even through an explicit agent tool list.
+    expect(isToolDirect(sub, 'agents')).toBe(false)
+    expect(isToolDirect(child(['agents']), 'agents')).toBe(false)
     expect(isToolDirect(profileOf('automation'), 'agents')).toBe(false)
     expect(isToolDirect(sub, 'jobs')).toBe(false)
     expect(isToolDirect(sub, 'browser')).toBe(true)

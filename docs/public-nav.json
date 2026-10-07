@@ -30,6 +30,7 @@
           "pages": [
             "features/capabilities.md",
             "features/agents.md",
+            "features/delegation.md",
             "features/permission-modes.md",
             "features/permissions.md",
             "features/configure.md",
@@ -38,7 +39,6 @@
             "features/conversation-history.md",
             "features/answer-formatting.md",
             "features/hitl.md",
-            "features/delegation.md",
             "features/background-work.md",
             "features/interactive-terminals.md",
             "features/monitors.md",

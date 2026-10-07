@@ -115,7 +115,7 @@ export function BirdStage({
                   '--wind-delay': `${l.delay}s`,
                   '--wind-dur': `${l.duration}s`,
                   '--wind-opacity': Math.min(0.72, l.maxOpacity * windIntensity),
-                  animation: `wind-sweep var(--wind-dur, 2s) var(--wind-delay, 0s) linear ${repeat} forwards`,
+                  animation: `wind-sweep calc(var(--wind-dur, 2s) * var(--bird-wind-duration-scale, 1)) var(--wind-delay, 0s) linear ${repeat} forwards`,
                 } as CSSProperties
               }
             />
@@ -126,7 +126,9 @@ export function BirdStage({
       {/* A monochrome mask lets every theme paint the bird with its own semantic foreground. */}
       <div
         className="relative z-(--z-raised)"
-        style={{ animation: `bird-drift 6s var(--ease-standard) ${repeat}` }}
+        style={{
+          animation: `bird-drift var(--bird-drift-duration, 6s) var(--ease-standard) ${repeat}`,
+        }}
       >
         <div
           className={cn('aspect-square object-contain', birdClassName)}

@@ -59,10 +59,13 @@ participant whose task is actionable. Results move through the chain one owner a
 broadcasts to the whole roster create redundant turns and are explicitly discouraged.
 
 The `# Collaboration` rule follows the conversation. Alone, an agent does the work itself and
-delegates a card when its investigation should stay out of the conversation. Once colleagues are
-present, every participant — not only the leader — does its own part and hands a colleague's ready
-card to them with `conversation_control`, so the work happens where you can see and redirect it.
-One-shot delegation is kept for a role no participant holds, or for parallel isolated work.
+invites a suitable colleague when another role is needed. [Delegation](delegation.md) is off by
+default in agent presets and can be enabled through the agent’s tool capabilities for root chats.
+Once colleagues are present, every participant — not only the leader — does its own part and hands a
+colleague's ready card to them with `conversation_control`, so the work happens where you can see
+and redirect it. When enabled, delegation automatically invites its assignees into the parent chat
+and executes their tasks in child sessions. Invitation alone does not schedule a duplicate turn
+here.
 
 The leader coordinates and does not do a colleague's part. Work that depends on a decision you have
 not made yet, such as approving a mockup, waits for it. Whoever scheduled or delegated a piece of
@@ -123,6 +126,10 @@ badge, model and tool grants — and runs as its own turn.
 Every agent reads the public messages with immutable author attribution. Each agent also receives
 its own reasoning, tool activity, addressed runtime events and its own checkpointed view. It does
 not receive another agent's reasoning, tool calls, tool results or private notes.
+
+`tool_output` also enforces authorship for exact recovery and search. New results carry their
+participant identity before message persistence; older results require an attributed stored message.
+Outputs with no provable author are unavailable to participants.
 
 Files in the shared workspace remain visible to every process that can access that workspace. Lane
 isolation is context isolation, not a filesystem security boundary.

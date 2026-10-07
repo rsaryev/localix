@@ -23,6 +23,7 @@ function options(overrides: Partial<TaskDelegationOptions> = {}): TaskDelegation
     projectId: 'project',
     position: () => ROOT,
     resolveAgent: async () => ({ agentId: 'builtin:frontend', handle: 'frontend', maxTurns: 4 }),
+    inviteAgents: async () => {},
     createSession: async () => ({ id: `child-${++seq}`, taskName: `/root/task_${seq}` }),
     startSubagentTask: async () => undefined,
     ...overrides,
@@ -30,6 +31,50 @@ function options(overrides: Partial<TaskDelegationOptions> = {}): TaskDelegation
 }
 
 describe('one task', () => {
+  test('invites an outsider into the parent before launching exactly one child', async () => {
+    const events: string[] = []
+    const result = await delegateTasks(
+      'call',
+      [brief],
+      options({
+        position: () => ({ ...ROOT, group: ['builtin:lead', 'builtin:qa'] }),
+        inviteAgents: async (ids) => {
+          events.push(`invite:${ids.join(',')}`)
+        },
+        createSession: async () => {
+          events.push('create')
+          return { id: 'child' }
+        },
+        startSubagentTask: async () => {
+          events.push('start')
+          return undefined
+        },
+      }),
+    )
+    expect(result.isError).toBeUndefined()
+    expect(events).toEqual(['invite:builtin:frontend', 'create', 'start'])
+  })
+
+  test('a refused invitation starts no delegated work', async () => {
+    let created = false
+    const result = await delegateTasks(
+      'call',
+      [brief],
+      options({
+        inviteAgents: async () => {
+          throw new Error('The user fixed the participants')
+        },
+        createSession: async () => {
+          created = true
+          return { id: 'child' }
+        },
+      }),
+    )
+    expect(result.isError).toBe(true)
+    expect(result.content).toContain('fixed the participants')
+    expect(created).toBe(false)
+  })
+
   test('runs the resolved agent on the brief, attributed to the originating call, at its priority', async () => {
     let created: Parameters<TaskDelegationOptions['createSession']>[1] | undefined
     let resolved: [string, { projectId?: string }] | undefined
@@ -257,55 +302,27 @@ describe('teams and the tree', () => {
     expect(started).toMatchObject({ maxTurns: 3, label: 'b + c + d' })
   })
 
-  test('the ladder counts the agents this session already involves, and this call adds', async () => {
-    const created: string[] = []
+  test('a child cannot create another delegation even through a direct tool call', async () => {
+    const created: unknown[] = []
+    const invited: unknown[] = []
     const result = await delegateTasks(
       'call',
-      [
-        { ...brief, title: 'one', agents: ['@c'] },
-        { ...brief, title: 'two', agents: ['@d'] },
-      ],
+      [{ ...brief, agents: ['@c'] }],
       options({
-        position: () => ({ depth: 1, chain: ['a'], self: 'b', group: ['a', 'b', 'c', 'd', 'e'] }),
-        engagedAgents: () => ['e'],
+        position: () => ({ depth: 1, chain: ['a'], self: 'b', group: ['a', 'b', 'c'] }),
         resolveAgent: byHandle,
-        createSession: async (_u, input) => {
-          created.push(input.title)
-          return { id: input.title }
+        inviteAgents: async (ids) => {
+          invited.push(ids)
         },
-      }),
-    )
-    // Depth 1 involves at most 2: e already, c now — d would be a third.
-    expect(created).toEqual(['one'])
-    expect(result.content).toContain('at most 2 different agents')
-  })
-
-  test('a child never hands work back up its chain, and its own child sits one level lower', async () => {
-    const created: Parameters<TaskDelegationOptions['createSession']>[1][] = []
-    const atB: DelegationPosition = {
-      depth: 1,
-      chain: ['a'],
-      self: 'b',
-      group: ['a', 'b', 'c', 'd'],
-    }
-    const result = await delegateTasks(
-      'call',
-      [
-        { ...brief, title: 'back up', agents: ['@a'] },
-        { ...brief, title: 'down', agents: ['@c'] },
-      ],
-      options({
-        position: () => atB,
-        resolveAgent: byHandle,
         createSession: async (_u, input) => {
           created.push(input)
-          return { id: input.title }
+          return { id: 'child' }
         },
       }),
     )
-    expect(result.content).toContain('cannot take work back')
-    expect(created.map((input) => input.provenance)).toMatchObject([
-      { depth: 2, chain: ['a', 'b'] },
-    ])
+    expect(result.isError).toBe(true)
+    expect(result.content).toContain('Only a root chat may delegate')
+    expect(created).toEqual([])
+    expect(invited).toEqual([])
   })
 })

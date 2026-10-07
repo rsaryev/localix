@@ -31,7 +31,7 @@ export function ProductShot({
       decoding="async"
       fetchPriority={priority ? 'high' : undefined}
       className={cn(
-        'block aspect-[8/5] h-auto w-full rounded-2xl border border-border-subtle bg-card object-cover shadow-[var(--shadow-soft)]',
+        'block aspect-[8/5] h-auto w-full rounded-xl border border-border-subtle bg-card object-cover',
         className,
       )}
     />

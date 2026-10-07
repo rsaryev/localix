@@ -225,7 +225,7 @@ export function createAgentsTool(options: AgentsToolOptions) {
     // WHEN to delegate rather than do it or invite a participant is the prompt's
     // "# Collaboration" rule; this says what a delegation is.
     description: [
-      'Run tasks in child sessions — one agent, or a team sharing one session. Put independent tasks in ONE delegate call; 3 run at once, the rest wait by priority.',
+      'Only root chats can delegate. Assignees automatically join this conversation, without a second chat run. Tasks execute in child sessions — one agent, or a team sharing one session. Put independent tasks in ONE delegate call; 3 run at once, the rest wait by priority.',
       'Each finished run reports automatically as a new message; use runs only to recover a missed report, never to poll.',
       'message amends a child (a finished one runs again and reports again) — prefer it to a new delegation for follow-ups. stop ends a current run; close ends a child for good.',
     ].join(' '),

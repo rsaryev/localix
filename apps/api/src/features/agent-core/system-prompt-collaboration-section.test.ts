@@ -41,8 +41,8 @@ describe('# Collaboration follows the room', () => {
   test('a room whose participants are fixed is told so instead of taught to invite', () => {
     const open = buildCollaborationSection(all, { withColleagues: true })!
     const fixed = buildCollaborationSection(all, { withColleagues: true, rosterLocked: true })!
-    expect(open).toContain('Invite a colleague')
-    expect(fixed).not.toContain('Invite a colleague')
+    expect(open).toContain('Invite a suitable colleague')
+    expect(fixed).not.toContain('Invite a suitable colleague')
     expect(fixed).toContain('nobody can be invited or removed')
   })
 })

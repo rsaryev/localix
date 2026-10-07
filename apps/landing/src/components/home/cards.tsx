@@ -16,10 +16,9 @@ export function ArrowCue({ className, reveal = true }: { className?: string; rev
     <ArrowRight
       aria-hidden
       className={cn(
-        'size-3.5 shrink-0 transition-[transform,opacity] duration-[var(--dur-fast)]',
-        reveal
-          ? 'text-text-faint -translate-x-1 opacity-0 group-hover/cue:translate-x-0 group-hover/cue:opacity-100 group-focus-visible/cue:translate-x-0 group-focus-visible/cue:opacity-100'
-          : 'group-hover/cue:translate-x-0.5 group-focus-visible/cue:translate-x-0.5',
+        'arrow-cue size-3.5 shrink-0 transition-[transform,opacity] duration-[var(--dur-fast)] ease-[var(--ease-soft)]',
+        reveal &&
+          'text-text-faint opacity-60 group-hover/cue:opacity-100 group-focus-visible/cue:opacity-100',
         className,
       )}
     />
@@ -30,7 +29,7 @@ export function GuideLink({ slug, label = 'Read the guide' }: { slug: string; la
   return (
     <Link
       to={`/docs/${slug}`}
-      className="group/cue mt-5 inline-flex items-center gap-2 rounded-sm text-sm font-medium text-status-info outline-none hover:text-foreground focus-ring"
+      className="group/cue mt-6 inline-flex items-center gap-2 rounded-sm text-sm font-medium text-foreground outline-none focus-ring"
     >
       {label}
       <ArrowCue reveal={false} />
@@ -58,7 +57,7 @@ export function FeatureLinkCard({ title, body, slug, anchor, kicker }: FeatureLi
       className="group/cue block border-t border-border-subtle py-5 outline-none transition-colors hover:border-control-border-hover focus-visible:border-control-border-focus focus-ring"
     >
       {kicker && <p className="eyebrow mb-3">{kicker}</p>}
-      <h3 className="flex items-start gap-2 font-heading text-base font-medium text-foreground">
+      <h3 className="flex items-start justify-between gap-2 font-heading text-base font-medium text-foreground">
         <span>{title}</span>
         <ArrowCue className="mt-0.5" />
       </h3>

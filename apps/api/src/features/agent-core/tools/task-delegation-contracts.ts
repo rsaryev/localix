@@ -68,6 +68,8 @@ export interface TaskDelegationOptions {
     reference: string,
     scope: { projectId?: string },
   ) => MaybePromise<DelegateAgent | null>
+  /** Add assignees to the parent chat without scheduling a second conversation run. */
+  inviteAgents: (agentIds: readonly string[]) => Promise<void>
   /** Children created since the person last wrote (`delegation-budget.ts`). */
   delegationsSinceHuman?: () => MaybePromise<number>
   createSession: (

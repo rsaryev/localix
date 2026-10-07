@@ -1,36 +1,11 @@
 /**
- * WHO a session may hand work to, and how much — the shape of a delegation tree.
- *
- * Delegation used to be one level deep by a single bit: a child could never delegate. That kept
- * runaway trees out, and it also kept out the ordinary shape of a team, where the lead hands a
- * task to two colleagues and one of them splits off a piece for the third. Three rules replace
- * the bit, each stopping a specific failure:
- *
- *   A LADDER — each level may involve fewer different agents than the one above it
- *   (`DELEGATION_FANOUT`: 3, then 2, then 1, then none). The tree narrows as it deepens, so it
- *   ends by construction; no level can fan out as wide as the root did.
- *
- *   NO CYCLES — never to yourself (do that part yourself), never to an agent that delegated
- *   work down to you, directly or further up (`chain`). Handing work back up a chain is how two
- *   agents end up waking each other forever; an agent that needs its delegator says so in its
- *   report, or addresses it in a conversation they share.
- *
- *   THE GROUP — in a conversation of several participants, work goes only to those
- *   participants: the people in the room are the team. A solo conversation delegates to any
- *   agent profile, as it always has.
- *
- * A task for SEVERAL agents is one session with all of them in it. Who leads it is not decided
- * here: it is the conversation's own leader rule — the highest `leadershipPriority` — that every
- * multi-participant session already applies (`conversation-strategy.ts`).
- *
- * Counting DIFFERENT agents, not tasks: how many tasks are in flight is the lanes' and the
- * per-human-turn budget's business (`delegation-lanes.ts`, `delegation-budget.ts`).
- *
- * Pure: the host supplies the position and what the session has already engaged; this decides.
+ * Only root conversations delegate. Their children execute the brief and report back;
+ * they cannot create another delegation. The root may involve at most three distinct agents.
+ * Membership admission belongs to the host, which automatically invites every assignee.
  */
 
 /** Different agents a session at depth `i` may involve; past the end, none. */
-export const DELEGATION_FANOUT = [3, 2, 1] as const
+export const DELEGATION_FANOUT = [3] as const
 
 export function fanoutAt(depth: number): number {
   return DELEGATION_FANOUT[depth] ?? 0
@@ -87,7 +62,8 @@ export function admitAssignees(
   if (fanout === 0) {
     return {
       ok: false,
-      reason: `At depth ${position.depth} delegation ends. Do this yourself, or report a concrete blocker.`,
+      reason:
+        'Only a root chat may delegate. Subsessions must do their task or report a concrete blocker.',
     }
   }
   if (assignees.length === 0) return { ok: false, reason: 'A task needs at least one agent.' }

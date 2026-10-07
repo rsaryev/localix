@@ -110,6 +110,9 @@ function agentPreset(
     ...(scoped ? roleArtifactRules(handle) : []),
     ...BASELINE,
     ...(scoped ? roleCallRules(handle) : []),
+    // Default off for every shipped agent, including the open-roster primary assistant.
+    // Stored capability rules remain user-owned: the existing tool toggle can enable it.
+    ...(scoped ? [{ action: 'tool:agents', resource: '*', effect: 'deny' as const }] : []),
     { action: 'invocation:*', resource: id, effect: 'deny' },
     ...HOSTS.map((host) => ({
       action: `invocation:${host}`,

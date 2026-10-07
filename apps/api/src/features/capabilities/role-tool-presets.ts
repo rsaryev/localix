@@ -11,7 +11,6 @@ const SHARED = [
   TOOL.history_search,
   TOOL.external_agent_sessions,
   TOOL.skill,
-  TOOL.agents,
   TOOL.conversation_control,
   TOOL.configure,
   TOOL.plan,

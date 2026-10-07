@@ -67,6 +67,7 @@ export function buildOptionalToolPorts(
     agentId: params.agentId,
     defaultCwd,
     agentProfile,
+    repo,
     deps,
     ccHooks: params.ccHooks,
     subagentWork: { work: ctx.work, actionRegistry: ctx.actionRegistry },

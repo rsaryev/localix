@@ -107,6 +107,26 @@ function harness(runParams = params) {
 }
 
 describe('conversation control port', () => {
+  test('a solo chat invites help, receives a report and concludes in the same session', async () => {
+    const solo = { ...base, agents: [base.agents[0]!] }
+    const first = harness({ ...params, session: solo })
+    await first.control.finish('invite-qa', { invite: ['qa'], next: ['qa'] })
+    expect(first.queued).toEqual(['agent-q'])
+    expect(first.session().id).toBe(solo.id)
+    const report = harness({
+      ...params,
+      session: first.session(),
+      assistantMessageId: 'reply-qa',
+      scope: { ...params.scope, speakerAgentId: 'agent-q', handoffDepth: 1 },
+    })
+    await report.control.finish('report', { next: ['alpha'] })
+    expect(report.queued).toEqual(['agent-a'])
+    expect(report.triggers).toEqual([['reply-qa']])
+    expect(report.scopes).toMatchObject([{ handoffDepth: 2 }])
+    const done = harness({ ...params, session: report.session() })
+    await done.control.finish('done', { next: [] })
+    expect(done.queued).toEqual([])
+  })
   test('a delegated team hands off through the same queue without changing its roster', async () => {
     const child = sessionFixture({ ...base, sessionKind: 'subagent', parentSessionId: 'parent' })
     const { control, queued, scopes, published } = harness({ ...params, session: child })

@@ -1,10 +1,12 @@
 import { agentRoute, sessionRoute } from '../session-route'
 import { agentParticipant } from '../../../db'
 import { randomUUID } from 'node:crypto'
+import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
 import { isModelAliasFamily, resolveModelAlias } from '../../agent-core/model-alias'
 import { resolveDelegateSelection } from '../../agent-core/tools/delegate-selection'
 import { resolveRunProfile } from '../../agent-core/run-shape'
+import { isDelegationParent } from '../../agent-core/delegation-policy'
 import { GENERAL_PURPOSE_AGENT, roleNameOfSubagentType } from '../../ext/cc-agent-selection'
 import { resolveDeclaredReasoningEffort } from '../../../db/types'
 import { childExecutionContext } from '../runtime/execution-context'
@@ -22,6 +24,7 @@ export interface ForkSkillDeps {
   runAgent: RunAgentFn
   sessionLifecycleCtx: SessionLifecycleCtx
   buildLanguageModel?: ReturnType<typeof createAuxProviderHelpers>['buildLanguageModel']
+  inviteAgents: (userId: string, sessionId: string, agentIds: readonly string[]) => Promise<void>
   /** Parent session's working dir — plugin-agent discovery is cwd-scoped. */
   resolveWorkingDir: (userId: string, session: SessionRecord) => Promise<string>
   /**
@@ -64,6 +67,9 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
 
   return async (userId, parentId, prompt, opts) => {
     const parentSession = await requireSession(userId, parentId)
+    if (!isDelegationParent(parentSession)) {
+      throw new Error('Only a root chat may delegate. Subsessions cannot create delegated work.')
+    }
     // Native IDs use the same admission port as spawn. External names retain their
     // cwd-scoped adapter lookup until skill format normalization owns that selection.
     const roleName = roleNameOfSubagentType(opts?.subagentType)
@@ -137,8 +143,10 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
       if (!route) throw new Error('The native agent provider/model route is unavailable')
       providerConnectionId = route.providerConnectionId
     }
+    const childAgentId = resolved?.agentId ?? DEFAULT_AGENT_ID
+    await deps.inviteAgents(userId, parentId, [childAgentId])
     const child = await sessionLifecycle.createSession(sessionLifecycleCtx, userId, {
-      ...(resolved?.agentId ? { agents: [{ agentId: resolved.agentId }] } : {}),
+      agents: [{ agentId: childAgentId }],
       title: opts?.title ?? 'Forked skill',
       parentSessionId: parentId,
       sessionKind: 'job',

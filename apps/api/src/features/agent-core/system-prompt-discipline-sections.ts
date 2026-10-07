@@ -81,7 +81,7 @@ function buildSubagentExecutionDiscipline(toolNames: readonly string[] = []): st
   pushPresent(lines, previewVerificationLine(has, true))
 
   lines.push(
-    '- Complete the delegated task, then stop. Do not widen scope or manage visible UI state; split off a part only as your task allows.',
+    '- Complete the delegated task, then stop. Do not widen scope or create further delegated work. Report blockers to the parent.',
   )
 
   // Behavioral invariants (verify-don't-recall, honesty, compact reasoning, no routine

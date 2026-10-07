@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { BUILTIN_TOOL_CATALOG } from '../agent-core/tool-names'
 import { exposureLevel, shapeDefaultTools } from '../agent-core/run-shape'
-import { builtinAgentPreset, builtinAgentPresetFor } from '../capabilities/builtin-agent-presets'
+import {
+  builtinAgentPreset,
+  builtinAgentPresetFor,
+  inheritedAgentPreset,
+} from '../capabilities/builtin-agent-presets'
 import { evaluate, type Rule } from '../capabilities/rule'
 import { BUILTIN_AGENTS } from './builtin'
 import { BUILTIN_TEAM } from './builtin-team'
@@ -23,6 +27,19 @@ const carried = (shape: 'chat' | 'subagent' | 'automation', rules: readonly Rule
     .filter((name) => evaluate(rules, `tool:${name}`, '*', 'allow').effect !== 'deny')
 
 describe('shipped definitions and independent presets', () => {
+  test('delegation starts disabled for every agent and the existing tool rule can enable it', () => {
+    const presets = [
+      ...BUILTIN_AGENTS.map((agent) => builtinAgentPreset(agent.handle)),
+      inheritedAgentPreset('custom:agent'),
+    ]
+    for (const rules of presets) {
+      expect(evaluate(rules, 'tool:agents', '*', 'allow').effect).toBe('deny')
+      expect(carried('chat', rules)).not.toContain('agents')
+      const enabled: Rule[] = [...rules, { action: 'tool:agents', resource: '*', effect: 'allow' }]
+      expect(carried('chat', enabled)).toContain('agents')
+      expect(carried('subagent', enabled)).not.toContain('agents')
+    }
+  })
   test('every allowed tool is registered', () => {
     // Every SHIPPED agent, not only the conversational team: a name the catalog does not know
     // simply denies nothing, so a typo in a worker's list is silent without this.
@@ -116,7 +133,6 @@ describe('shipped definitions and independent presets', () => {
         'bash',
         'tool_output',
         'external_agent_sessions',
-        'agents',
         'conversation_control',
         'plan',
       ]) {
@@ -151,16 +167,17 @@ describe('shipped definitions and independent presets', () => {
     }
   })
 
-  test('the default assistant has no tool allowlist — only the confirmation guards', () => {
+  test('the primary assistant keeps an open roster with delegation explicitly off', () => {
     // It is the agent every question falls back to, so a roster it could fall behind is a
-    // worse answer than "everything installed". What it does carry is the two confirmations,
-    // because those are about arguments rather than about which tools exist.
+    // worse answer than "everything installed". Delegation is its one default-off tool;
+    // the two confirmations are about arguments rather than which tools exist.
     const toolRules = builtinAgentPreset('localix').filter((rule) =>
       rule.action.startsWith('tool:'),
     )
     expect(toolRules.map((rule) => `${rule.action} ${rule.resource} ${rule.effect}`)).toEqual([
       'tool:* outside-workspace ask',
       'tool:bash dangerous ask',
+      'tool:agents * deny',
     ])
   })
 })

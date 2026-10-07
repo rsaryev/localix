@@ -16,6 +16,7 @@ import {
   SECTION_GUIDES,
   SPACE_FEATURES,
 } from './homeContent'
+import { WORKSPACE_LINKS, PLATFORM_OVERVIEW } from './homeOverview'
 
 interface NavigationGroup {
   pages?: string[]
@@ -37,7 +38,9 @@ const CAPABILITIES = [
 ]
 
 test('homepage capabilities describe reachable product behavior', () => {
-  const marketingCopy = CAPABILITIES.flatMap(({ title, body }) => [title, body]).join(' ')
+  const marketingCopy = [...CAPABILITIES, ...WORKSPACE_LINKS, ...PLATFORM_OVERVIEW]
+    .flatMap(({ title, body }) => [title, body])
+    .join(' ')
 
   expect(marketingCopy).not.toMatch(/\b(?:groundwork|not yet wired|not wired)\b/i)
 })
@@ -47,7 +50,13 @@ test('homepage copy stays in the calm register the README uses', () => {
   // than describes has no doc to check it against, so it is banned outright —
   // including in the section ledes, which live in the page itself.
   const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
-  const copy = [...CAPABILITIES.flatMap(({ title, body }) => [title, body]), homePage].join(' ')
+  const copy = [
+    ...[...CAPABILITIES, ...WORKSPACE_LINKS, ...PLATFORM_OVERVIEW].flatMap(({ title, body }) => [
+      title,
+      body,
+    ]),
+    homePage,
+  ].join(' ')
 
   expect(copy).not.toMatch(
     /\b(?:revolutionary|seamless|seamlessly|blazing|powerful|game-changing|effortless|effortlessly|supercharge|unlock|unleash|cutting-edge|world-class)\b/i,
@@ -58,7 +67,13 @@ test('homepage copy states no speed or duration the repository does not measure'
   // The repository holds no benchmark for how fast the agent browser is or how long a generated
   // plugin takes, so a copy line that says so has nothing behind it.
   const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
-  const copy = [...CAPABILITIES.flatMap(({ title, body }) => [title, body]), homePage].join(' ')
+  const copy = [
+    ...[...CAPABILITIES, ...WORKSPACE_LINKS, ...PLATFORM_OVERVIEW].flatMap(({ title, body }) => [
+      title,
+      body,
+    ]),
+    homePage,
+  ].join(' ')
 
   expect(copy).not.toMatch(
     /\b(?:in seconds|within seconds|instantly|instant|in minutes|faster|fastest|lightning|real[- ]time)\b/i,
@@ -77,9 +92,10 @@ test('every capture the homepage asks for is one the shots build selects', () =>
   )
   const requested = [
     ...homePage.matchAll(/shot="([^"]+)"/gu),
-    ...readFileSync(new URL('../components/ProductVideo.tsx', import.meta.url), 'utf8').matchAll(
-      /shot="([^"]+)"/gu,
-    ),
+    ...readFileSync(
+      new URL('../components/home/ProductShowcase.tsx', import.meta.url),
+      'utf8',
+    ).matchAll(/shot="([^"]+)"/gu),
   ].map((match) => match[1])
 
   expect(requested.length).toBeGreaterThan(0)
@@ -100,13 +116,18 @@ test('the section rail enumerates the sections the page actually renders', () =>
     expect(Object.keys(SECTION_GUIDES)).toContain(section.id)
     expect(homePage).toContain(`SECTION_GUIDES.${section.id}`)
   }
-  expect(homePage).toContain('eyebrow="Models and control"')
+  expect(homePage).toContain('Your models. Your rules.')
 })
 
-test('the animated bird stays out of the mobile hero flow', () => {
+test('the animated bird only appears with the two-column hero', () => {
   const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
 
-  expect(homePage).toContain('hidden min-h-[22rem] items-center justify-center md:flex')
+  expect(homePage).toContain('hidden min-w-0 items-center justify-center lg:flex')
+  expect(homePage).toContain('lg:grid-cols-')
+  expect(homePage).not.toContain('lg:-ml-28')
+  const bird = readFileSync(new URL('../components/home/HeroBird.tsx', import.meta.url), 'utf8')
+  expect(bird).toContain('stageClassName="h-96 w-full xl:h-[30rem]"')
+  expect(bird).not.toContain('calc(100%+')
 })
 
 test('every homepage capability links to a published documentation page', () => {
@@ -120,7 +141,7 @@ test('every homepage capability links to a published documentation page', () => 
   const publishedSlugs = new Set(
     publicPaths.map((path) => path.replace(/\.md$/u, '').replaceAll('/', '--')),
   )
-  const capabilityLinks = CAPABILITIES
+  const capabilityLinks = [...CAPABILITIES, ...WORKSPACE_LINKS, ...PLATFORM_OVERVIEW]
   const sectionLinks = Object.values(SECTION_GUIDES)
 
   for (const link of [...sectionLinks, ...capabilityLinks]) {

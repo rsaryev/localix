@@ -76,6 +76,7 @@ export function createToolOutputTool(
   userId: string,
   sessionId: string,
   allowedActions: readonly ToolOutputAction[] = TOOL_OUTPUT_ACTIONS,
+  participant?: string,
 ) {
   const rate = createRateWindow(RATE_WINDOW_MS)
   const inputSchema = buildToolOutputInputSchema(allowedActions)
@@ -85,7 +86,7 @@ export function createToolOutputTool(
     label: 'Tool output',
     activeVerb: 'Inspecting output',
     description: [
-      'Inspect stored outputs from earlier tool calls in this session.',
+      'Inspect your own stored outputs from earlier tool calls in this session.',
       ...(allowedActions.includes('search')
         ? ['search returns only the matching sections of large results.']
         : []),
@@ -132,7 +133,7 @@ export function createToolOutputTool(
             isError: true,
           }
         }
-        return retrieveStoredOutput(repo, userId, sessionId, input.tool_call_id, store)
+        return retrieveStoredOutput(repo, userId, sessionId, input.tool_call_id, store, participant)
       }
 
       if (!input.queries?.length) {
@@ -147,11 +148,15 @@ export function createToolOutputTool(
         // the durable store first, so pointers minted before indexing (or by a
         // checkpoint's masked result) never dead-end.
         if (wanted && !(await store.hasChunks(userId, sessionId, wanted))) {
-          const artifact = await store.getToolOutputArtifact(userId, sessionId, wanted)
+          const artifact = await store.getToolOutputArtifact(userId, sessionId, wanted, participant)
           const message = artifact
             ? null
             : await repo.findActiveBranchToolCallMessage(userId, sessionId, wanted)
-          const stored = artifact ?? (message ? storedToolCallOutput([message], wanted) : null)
+          const stored =
+            artifact ??
+            (message && (!participant || message.payload.from === participant)
+              ? storedToolCallOutput([message], wanted)
+              : null)
           if (!stored) {
             return {
               content: `No tool call with id "${wanted}" found in this session's history.`,
@@ -204,6 +209,7 @@ export function createToolOutputTool(
           const rows = await store.searchChunks(userId, sessionId, match, {
             ...(wanted ? { toolCallId: wanted } : {}),
             limit: HITS_PER_QUERY,
+            participant,
           })
           for (const hit of rows) {
             const key = `${hit.toolCallId}#${hit.chunkIndex}`
