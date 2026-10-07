@@ -1,6 +1,9 @@
 import type { ResumeEntry, SectionType } from './schema'
 
-export type EntryField = Exclude<keyof ResumeEntry, 'id' | 'current' | 'link'>
+export type EntryField = Exclude<
+  keyof ResumeEntry,
+  'id' | 'current' | 'link' | 'context' | 'proficiency'
+>
 type SectionDefinition = {
   title: string
   fields: readonly EntryField[]

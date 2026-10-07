@@ -5,6 +5,15 @@ const k = (id: string) => `@localixai/kit/${id}`
 /** Rendered text, identity and data views, the board, and keyboard hints. */
 export const CONTENT: readonly KitCatalogEntry[] = [
   {
+    specifier: k('pdf-pages'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['PdfPages'],
+    summary: 'Actual PDF pages fitted to a pane, with selectable text and lazy canvas rendering.',
+    use: 'Document previews that must match the downloaded PDF. Supply a Blob; the shared engine loads only when mounted.',
+    not: 'Not a PDF editor or an HTML-to-PDF generator.',
+  },
+  {
     specifier: k('rich-text-view'),
     category: 'content',
     provider: 'kit',

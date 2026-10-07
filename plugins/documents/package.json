@@ -11,6 +11,7 @@
   "dependencies": {
     "@localixai/dataview": "workspace:*",
     "docx": "^9.7.1",
+    "fontkit": "^2.0.4",
     "hono": "^4.12.30",
     "lucide-react": "^1.24.0",
     "mammoth": "^1.12.0",

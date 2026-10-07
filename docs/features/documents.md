@@ -16,6 +16,18 @@ and workbooks. It is enabled by default and can be disabled independently of cor
 The plugin contributes no model-facing tools. Agents use the generic core `read`, `write`, and shell
 capabilities; the plugin augments `read` through a typed extension port.
 
+## Styled document generation
+
+The [Resumes workbench](resumes.md) uses a bounded `DocumentLayout` contract from
+`@localixai/plugin-sdk/document-layout` to pass A4 typography, safe links, headers, rules, columns,
+and portraits into Documents. `/rpc/documents/render` returns a PDF without storing a media item;
+`/rpc/documents/generate` accepts the same layout for PDF or DOCX. Existing Markdown generation
+remains available.
+
+Fonts are embedded in PDF, with character coverage checked before rendering. DOCX embeds the
+selected regular font and retains a linear reading order; its pagination depends on the Word
+renderer. The document font endpoint supplies the same font assets for template thumbnails.
+
 ## Supported extraction
 
 | Input                      | Result                          |
@@ -46,4 +58,5 @@ paths.
 
 - [Documents internals](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/documents.md)
 - [Native data view internals](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/data-view.md)
+- [Resumes](resumes.md)
 - [Plugins](../extending/plugins.md)

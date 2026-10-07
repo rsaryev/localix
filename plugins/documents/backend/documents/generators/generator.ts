@@ -15,6 +15,8 @@ import type {
 import { blocksToDocx } from './docx'
 import { blocksToPdf } from './pdf'
 import { contentToXlsx } from './xlsx'
+import { layoutToPdf } from './layout-pdf'
+import { layoutToDocx } from './layout-docx'
 
 /** Default base name per format when neither a hint nor a heading is available. */
 const DEFAULT_BASE: Record<GenerateFormat, string> = {
@@ -52,7 +54,14 @@ export function createDocumentGenerator(): DocumentGenerator {
 
       const blocks = parseMarkdownBlocks(input.content)
       const base = hint || slugify(firstHeadingText(blocks) ?? '') || DEFAULT_BASE[format]
-      const bytes = format === 'docx' ? await blocksToDocx(blocks) : await blocksToPdf(blocks)
+      const bytes =
+        format === 'docx'
+          ? input.layout
+            ? await layoutToDocx(input.layout)
+            : await blocksToDocx(blocks)
+          : input.layout
+            ? await layoutToPdf(input.layout)
+            : await blocksToPdf(blocks)
       return { bytes, mediaType, suggestedFilename: `${base}.${format}` }
     },
   }

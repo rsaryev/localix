@@ -190,6 +190,10 @@
     "./rich-text": {
       "types": "./dist/rich-text.d.ts",
       "import": "./dist/rich-text.js"
+    },
+    "./document-layout": {
+      "types": "./dist/document-layout.d.ts",
+      "import": "./dist/document-layout.js"
     }
   },
   "scripts": {

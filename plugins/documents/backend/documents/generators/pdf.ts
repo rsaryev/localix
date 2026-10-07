@@ -7,14 +7,15 @@
  */
 import type { Block } from '../markdown/blocks'
 import type { InlineSpan } from '../markdown/inline'
+import { registerDocumentFonts } from './fonts'
 
 /** Standard-14 font name for a span's styling. */
 function fontFor(span: InlineSpan): string {
-  if (span.code) return 'Courier'
-  if (span.bold && span.italic) return 'Helvetica-BoldOblique'
-  if (span.bold) return 'Helvetica-Bold'
-  if (span.italic) return 'Helvetica-Oblique'
-  return 'Helvetica'
+  if (span.code) return 'jetbrains-mono-0'
+  if (span.bold && span.italic) return 'inter-3'
+  if (span.bold) return 'inter-1'
+  if (span.italic) return 'inter-2'
+  return 'inter-0'
 }
 
 /** Point size per heading level (h1 largest → h6 smallest). */
@@ -30,7 +31,7 @@ function renderSpans(
 ): void {
   const parts = spans.filter((s) => s.text.length > 0)
   if (parts.length === 0) {
-    doc.font('Helvetica').fontSize(size).text(' ')
+    doc.font('inter-0').fontSize(size).text(' ')
     return
   }
   doc.fontSize(size)
@@ -77,8 +78,8 @@ function renderTable(doc: PDFKit.PDFDocument, header: string[], rows: string[][]
     doc.x = left
   }
 
-  drawRow(header, 'Helvetica-Bold')
-  for (const row of rows) drawRow(row, 'Helvetica')
+  drawRow(header, 'inter-1')
+  for (const row of rows) drawRow(row, 'inter-0')
   doc.moveDown(0.5)
 }
 
@@ -89,6 +90,8 @@ export async function blocksToPdf(blocks: Block[]): Promise<Uint8Array> {
   // bundle, so a packaged CLI moved off the builder could no longer generate even Helvetica.
   const { default: PDFDocument } = await import('pdfkit/js/pdfkit.standalone.js')
   const doc = new PDFDocument({ size: 'A4', margin: 54, autoFirstPage: true })
+
+  await registerDocumentFonts(doc, ['inter', 'jetbrains-mono'])
 
   const chunks: Buffer[] = []
   doc.on('data', (c: Buffer) => chunks.push(c))
@@ -123,7 +126,7 @@ export async function blocksToPdf(blocks: Block[]): Promise<Uint8Array> {
         break
       }
       case 'code': {
-        doc.font('Courier').fontSize(9).fillColor('#333333')
+        doc.font('jetbrains-mono-0').fontSize(9).fillColor('#333333')
         doc.text(block.text || ' ', { indent: 12 })
         doc.fillColor('#000000')
         doc.moveDown(0.5)

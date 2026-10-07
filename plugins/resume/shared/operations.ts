@@ -25,7 +25,7 @@ export const operationSchema = z.discriminatedUnion('op', [
   z.strictObject({
     op: z.literal('updateSection'),
     sectionId: idSchema,
-    value: sectionSchema.pick({ title: true, hidden: true }).partial(),
+    value: sectionSchema.omit({ id: true, type: true, entries: true }).partial(),
   }),
   z.strictObject({ op: z.literal('removeSection'), sectionId: idSchema }),
   z.strictObject({

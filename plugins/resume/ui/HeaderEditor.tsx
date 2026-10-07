@@ -3,6 +3,7 @@ import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import type { ResumeDocument } from '../shared/schema'
 import { TextField } from './TextField'
+import { PortraitEditor } from './PortraitEditor'
 
 export function HeaderEditor({
   document,
@@ -102,6 +103,7 @@ export function HeaderEditor({
           Add link
         </Button>
       </section>
+      <PortraitEditor document={document} onChange={onChange} />
       {!identityOnly && (
         <section className="space-y-4 border-t border-border pt-5" aria-label="Role context">
           <h2 className="text-sm font-medium text-text-strong">Role context</h2>

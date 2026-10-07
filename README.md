@@ -217,6 +217,7 @@ resources.
 | [**API client**](docs/features/api.md)          | Saved requests, environments, imports, responses, vault-backed references.       |
 | [**DevOps**](docs/features/devops.md)           | Containers, images, volumes, Kubernetes workloads, logs; dangerous commands ask. |
 | [**Documents**](docs/features/documents.md)     | PDF, document, spreadsheet, presentation, CSV and chart inspection.              |
+| [**Resumes**](docs/features/resumes.md)         | Six templates, a shared editor, A4 preview, source import, PDF and Word export.  |
 | [**Learning**](docs/features/learning-loop.md)  | File-authored courses with durable progress that can re-enter agent context.     |
 | [**Market research**](docs/features/trading.md) | Read-only public venues, charts, indicators, order books and trades.             |
 

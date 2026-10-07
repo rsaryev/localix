@@ -1,4 +1,6 @@
 import { Hono } from 'hono'
+import { documentFontSchema } from '@localixai/plugin-sdk/document-layout'
+import { fontBytes } from './generators/fonts'
 import { validated } from '../validator'
 import {
   defaultErrorHandler,
@@ -45,6 +47,27 @@ export function createDocumentsRoutes(service: DocumentsService, deps: Documents
   const app = new Hono<PluginRouteContext>()
 
   const routes = app
+    .get('/font/:font/:face', async (c) => {
+      const font = documentFontSchema.safeParse(c.req.param('font'))
+      const face = Number(c.req.param('face'))
+      if (!font.success || !Number.isInteger(face) || face < 0 || face > 3) return c.notFound()
+      const bytes = await fontBytes(font.data, face)
+      return new Response(new Uint8Array(bytes), {
+        headers: { 'Content-Type': 'font/ttf', 'Cache-Control': 'public, max-age=86400' },
+      })
+    })
+    .post('/render', validated('json', generateRequestSchema), async (c) => {
+      try {
+        const input = c.req.valid('json')
+        const output = await service.generate({ ...input, format: 'pdf' })
+        return new Response(output.bytes as Uint8Array<ArrayBuffer>, {
+          headers: { 'Content-Type': 'application/pdf', 'Cache-Control': 'no-store' },
+        })
+      } catch (err) {
+        const { body, status } = documentErrorResponse(err)
+        return c.json(body, status as 400)
+      }
+    })
     .post('/extract', validated('json', extractRequestSchema), async (c) => {
       try {
         const res = await service.extract(c.req.valid('json'))

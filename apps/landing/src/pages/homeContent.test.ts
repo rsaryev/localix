@@ -192,6 +192,7 @@ test('homepage claims stay assigned to their owning guides', () => {
     Trading: 'features--trading',
     'Learning Studio': 'features--learning-loop',
     Documents: 'features--documents',
+    Resumes: 'features--resumes',
     'API Client': 'features--api',
     'Your CLI history beside Localix chats': 'features--external-agents',
     'Read or continue the native session': 'features--external-agents',

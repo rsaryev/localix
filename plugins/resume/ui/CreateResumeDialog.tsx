@@ -12,8 +12,12 @@ import {
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Button } from '@localixai/kit/button'
+import { Checkbox } from '@localixai/kit/checkbox'
+import { Textarea } from '@localixai/kit/textarea'
 import { SegmentedRadioGroup } from '@localixai/plugin-sdk/ui/segmented-control'
-import { documentSchema, type ResumeDocument } from '../shared/schema'
+import { emptyEntry, type ResumeDocument } from '../shared/schema'
+import { importResumeFile } from './importFile'
+import { markdownBody } from '../shared/markdown'
 import { createTemplateDocument, type TemplateId } from '../shared/templates'
 import { createSampleDocument } from '../shared/sample'
 import { TemplateGallery } from './TemplateGallery'
@@ -37,18 +41,41 @@ export function CreateResumeDialog({
   const [template, setTemplate] = useState<TemplateId>('awal')
   const [imported, setImported] = useState<ResumeDocument | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reading, setReading] = useState(false)
+  const [leftovers, setLeftovers] = useState('')
+  const [includeLeftovers, setIncludeLeftovers] = useState(true)
+  const [sourceReview, setSourceReview] = useState(false)
   const submit = async () => {
     if (!title.trim()) {
       setError('Enter a name for this resume.')
       return
     }
     if (source === 'import' && !imported) {
-      setError('Choose a structured resume JSON file.')
+      setError('Choose a resume file to import.')
       return
     }
     const document =
       source === 'import'
-        ? { ...imported!, title: title.trim(), presentation: { template } }
+        ? {
+            ...imported!,
+            title: title.trim(),
+            presentation: { ...imported!.presentation, template },
+            sections: [
+              ...imported!.sections,
+              ...(includeLeftovers && leftovers.trim()
+                ? [
+                    {
+                      id: crypto.randomUUID(),
+                      type: 'custom' as const,
+                      variant: 'rich' as const,
+                      title: 'Imported notes',
+                      hidden: false,
+                      entries: [{ ...emptyEntry(), body: markdownBody(leftovers) }],
+                    },
+                  ]
+                : []),
+            ],
+          }
         : source === 'sample'
           ? createSampleDocument(template, title.trim())
           : createTemplateDocument(template, title.trim())
@@ -120,31 +147,73 @@ export function CreateResumeDialog({
           {source === 'import' && (
             <Field
               label="Resume file"
-              description="Import portable resume JSON. Share PDF, Word or other source files with the agent to convert them."
+              description="Localix or Lanjut JSON/YAML, PDF, Word, ODT, Markdown or plain text. Review extracted content before creating the resume."
             >
               <Input
                 type="file"
-                accept=".json,application/json"
-                disabled={pending}
+                accept=".json,.yaml,.yml,.pdf,.docx,.doc,.odt,.md,.txt"
+                disabled={pending || reading}
                 onChange={async (event) => {
                   const file = event.target.files?.[0]
                   if (!file) return
+                  setReading(true)
                   try {
-                    if (file.size > 400_000) throw new Error('Resume file exceeds 400 KB.')
-                    const document = documentSchema.parse(JSON.parse(await file.text()))
-                    setImported(document)
-                    setTemplate(document.presentation.template)
-                    if (!title.trim()) setTitle(document.title)
+                    const result = await importResumeFile(file)
+                    setImported(result.document)
+                    setLeftovers(result.leftovers)
+                    setSourceReview(result.source)
+                    setTemplate(result.document.presentation.template)
+                    if (!title.trim()) setTitle(result.document.title)
                     setError(null)
-                  } catch {
+                  } catch (failure) {
                     setImported(null)
                     setError(
-                      'This file is not valid resume JSON. Choose a portable resume export, or ask the agent to convert your source file.',
+                      failure instanceof Error ? failure.message : 'Could not import this file.',
                     )
+                  } finally {
+                    setReading(false)
                   }
                 }}
               />
             </Field>
+          )}
+          {reading && (
+            <p role="status" className="text-xs text-text-soft">
+              Reading resume…
+            </p>
+          )}
+          {source === 'import' && imported && (
+            <section aria-label="Import review" className="space-y-3">
+              <h2 className="text-sm font-medium">Review imported content</h2>
+              <p className="text-xs text-text-soft">
+                {imported.header.name || 'No name recognized'} · {imported.sections.length}{' '}
+                sections.{' '}
+                {sourceReview
+                  ? 'Section text is preserved; review roles, companies and dates in the editor after creation.'
+                  : 'Structured fields and presentation imported.'}
+              </p>
+              {leftovers && (
+                <>
+                  <Field
+                    label="Unassigned source text"
+                    description="Keep this as an editable custom section, or clear the checkbox to exclude it."
+                  >
+                    <Textarea
+                      value={leftovers}
+                      rows={5}
+                      maxLength={8_000}
+                      onChange={(event) => setLeftovers(event.target.value)}
+                    />
+                  </Field>
+                  <Field label="Include unassigned text as Imported notes" layout="inline">
+                    <Checkbox
+                      checked={includeLeftovers}
+                      onChange={(event) => setIncludeLeftovers(event.target.checked)}
+                    />
+                  </Field>
+                </>
+              )}
+            </section>
           )}
           <Field label="Template">
             <TemplateGallery value={template} onChange={setTemplate} disabled={pending} />
@@ -162,7 +231,7 @@ export function CreateResumeDialog({
           <Button
             variant="field"
             recommended
-            disabled={pending || !title.trim() || (source === 'import' && !imported)}
+            disabled={pending || reading || !title.trim() || (source === 'import' && !imported)}
             onClick={() => void submit()}
           >
             <Plus data-icon="inline-start" />

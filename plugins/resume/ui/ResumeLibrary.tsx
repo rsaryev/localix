@@ -4,8 +4,8 @@ import { Button } from '@localixai/kit/button'
 import { SearchInput } from '@localixai/kit/search-input'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
-import { SelectionTile } from '@localixai/kit/selection-tile'
-import { ResumeCard } from './ResumeCard'
+import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
+import { ResumeRow } from './ResumeRow'
 import { LibraryDialog } from './LibraryDialog'
 import type { MenuEntry } from '@localixai/plugin-sdk/ui'
 import type { downloadResume } from './export'
@@ -17,7 +17,6 @@ export function ResumeLibrary({
   onCreate,
   onBrowse,
   onOpen,
-  sessionId,
   onRename,
   onDelete,
   onDuplicate,
@@ -28,7 +27,6 @@ export function ResumeLibrary({
   onCreate: () => void
   onBrowse: () => void
   onOpen: (resume: ResumeSummary) => void
-  sessionId: string
   onRename: (resume: ResumeSummary, title: string) => Promise<boolean>
   onDelete: (resume: ResumeSummary) => Promise<boolean>
   onDuplicate: (resume: ResumeSummary) => Promise<boolean>
@@ -68,17 +66,21 @@ export function ResumeLibrary({
       label: 'Export',
       icon: Download,
       disabled: pending,
-      items: (['pdf', 'docx', 'markdown', 'text', 'json'] as const).map((format) => ({
-        id: format,
-        label: {
-          pdf: 'PDF',
-          docx: 'Word',
-          markdown: 'Markdown',
-          text: 'Plain text',
-          json: 'Resume JSON',
-        }[format],
-        onSelect: () => onExport(resume, format),
-      })),
+      items: (['pdf', 'docx', 'markdown', 'text', 'json', 'yaml', 'lanjut'] as const).map(
+        (format) => ({
+          id: format,
+          label: {
+            pdf: 'PDF',
+            docx: 'Word',
+            markdown: 'Markdown',
+            text: 'Plain text',
+            json: 'Resume JSON',
+            yaml: 'Resume YAML',
+            lanjut: 'Lanjut JSON',
+          }[format],
+          onSelect: () => onExport(resume, format),
+        }),
+      ),
     },
     { separator: true },
     {
@@ -91,23 +93,28 @@ export function ResumeLibrary({
     },
   ]
   const filtered = resumes.filter((resume) =>
-    `${resume.title} ${resume.targetRole}`.toLowerCase().includes(query.toLowerCase()),
+    `${resume.title} ${resume.targetRole}`.toLowerCase().includes(query.trim().toLowerCase()),
   )
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 py-5 @2xl:px-6">
-      <div className="flex items-center justify-between gap-3">
-        <SearchInput
-          aria-label="Search resumes"
-          placeholder="Search your resumes"
-          value={query}
-          onValueChange={setQuery}
-          className="w-64 max-w-full"
-        />
-        <Button variant="field" disabled={pending} onClick={onCreate}>
-          <Plus data-icon="inline-start" />
-          Resume
-        </Button>
-      </div>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <WorkbenchToolbar aria-label="Resume library actions">
+        <WorkbenchToolbarSection className="min-w-0 flex-1">
+          <SearchInput
+            aria-label="Search resumes"
+            placeholder="Search your resumes"
+            size="md"
+            value={query}
+            onValueChange={setQuery}
+            className="w-full min-w-0 max-w-64"
+          />
+        </WorkbenchToolbarSection>
+        <WorkbenchToolbarSection align="end">
+          <Button variant="ghost" size="sm" disabled={pending} onClick={onCreate}>
+            <Plus data-icon="inline-start" />
+            New resume
+          </Button>
+        </WorkbenchToolbarSection>
+      </WorkbenchToolbar>
       {resumes.length === 0 ? (
         <StateNotice
           icon={Inbox}
@@ -128,30 +135,21 @@ export function ResumeLibrary({
           }
         />
       ) : (
-        <div className="mt-5 grid min-h-0 grid-cols-[repeat(auto-fill,minmax(min(100%,240px),280px))] items-start gap-4 overflow-y-auto">
+        <div
+          aria-label="Saved resumes"
+          role="region"
+          className="min-h-0 flex-1 overflow-y-auto px-2 py-2"
+        >
           {filtered.length === 0 && <EmptyHint>No resumes match “{query}”.</EmptyHint>}
           {filtered.map((resume) => (
-            <ResumeCard
+            <ResumeRow
               key={resume.id}
               resume={resume}
-              sessionId={sessionId}
               onOpen={() => onOpen(resume)}
               entries={entries(resume)}
               disabled={pending}
             />
           ))}
-          {!query && (
-            <SelectionTile
-              aria-pressed={undefined}
-              aria-label="Create a new resume"
-              onClick={onCreate}
-              disabled={pending}
-              className="min-h-64 items-center justify-center gap-3 border-dashed"
-            >
-              <Plus className="size-5 text-text-faint" />
-              <span>New resume</span>
-            </SelectionTile>
-          )}
         </div>
       )}
       {dialog && (

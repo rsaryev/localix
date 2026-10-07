@@ -1,14 +1,17 @@
 import { documentBlocks, entryMetadata } from './document-blocks'
 import { richTextToText, richTextToMarkdown } from '@localixai/plugin-sdk/rich-text'
 import type { ResumeDocument, ResumeEntry, ResumeSection } from './schema'
+import { exportInterchange, exportYaml } from './interchange'
 
-export type ExportFormat = 'json' | 'markdown' | 'text'
+export type ExportFormat = 'json' | 'markdown' | 'text' | 'yaml' | 'lanjut'
 // User prose never turns into Markdown layout or executable HTML.
 const escapeMarkdown = (text: string) => text.replace(/([\\`*_{}[\]<>#|!().+~-])/g, '\\$1')
 export function entryLines(entry: ResumeEntry): string[] {
   return [
     [entry.title, entry.organization].filter(Boolean).join(' — '),
     entryMetadata(entry),
+    entry.context ?? '',
+    entry.proficiency ?? '',
     richTextToText(entry.body),
     ...entry.bullets.filter((bullet) => bullet.trim()).map((bullet) => `• ${bullet}`),
     entry.link ? `${entry.link.label || entry.link.url}: ${entry.link.url}` : '',
@@ -23,6 +26,8 @@ function markdownEntry(entry: ResumeEntry): string {
   return [
     [entry.title, entry.organization].filter(Boolean).map(escapeMarkdown).join(' — '),
     escapeMarkdown(entryMetadata(entry)),
+    escapeMarkdown(entry.context ?? ''),
+    escapeMarkdown(entry.proficiency ?? ''),
     richTextToMarkdown(entry.body),
     entry.bullets
       .filter((bullet) => bullet.trim())
@@ -39,6 +44,8 @@ function markdownEntry(entry: ResumeEntry): string {
 /** Formatting never changes the canonical reading order or includes role-context notes. */
 export function exportDocument(document: ResumeDocument, format: ExportFormat): string {
   if (format === 'json') return JSON.stringify(document, null, 2)
+  if (format === 'yaml') return exportYaml(document)
+  if (format === 'lanjut') return exportInterchange(document)
   const markdown = format === 'markdown'
   const text = documentBlocks(document)
     .map((block) => {

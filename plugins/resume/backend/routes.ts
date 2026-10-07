@@ -111,9 +111,13 @@ export function createResumeRoutes(resolveService: (workspace: string) => Resume
       },
     )
     .get('/:id/export/:format', async (c) => {
-      const format = z.enum(['json', 'markdown', 'text']).parse(c.req.param('format'))
+      const format = z
+        .enum(['json', 'markdown', 'text', 'yaml', 'lanjut'])
+        .parse(c.req.param('format'))
       const resume = await serviceFor(c).get(c.env.userId, idSchema.parse(c.req.param('id')))
-      const extension = { json: 'json', markdown: 'md', text: 'txt' }[format]
+      const extension = { json: 'json', markdown: 'md', text: 'txt', yaml: 'yaml', lanjut: 'json' }[
+        format
+      ]
       return c.body(exportDocument(resume.document, format), 200, {
         'Content-Type': `${format === 'json' ? 'application/json' : 'text/plain'}; charset=utf-8`,
         'Content-Disposition': `attachment; filename="resume-${resume.id}.${extension}"`,

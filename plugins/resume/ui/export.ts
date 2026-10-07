@@ -3,6 +3,8 @@ import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
 import { postPluginJson, unwrapPluginResponse } from '@localixai/plugin-sdk/ui/transport'
 import { exportDocument, type ExportFormat } from '../shared/format'
 import type { Resume } from '../shared/schema'
+import { resumeLayout } from '../shared/layout'
+import { renderResumePdf } from './pdf'
 
 export async function downloadResume(
   resume: Resume,
@@ -10,12 +12,17 @@ export async function downloadResume(
   sessionId: string,
 ) {
   const name = resume.document.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 100) || 'resume'
-  if (format === 'pdf' || format === 'docx') {
+  if (format === 'pdf') {
+    await pluginFiles.saveBlob(`${name}.pdf`, await renderResumePdf(resume.document))
+    return
+  }
+  if (format === 'docx') {
     // Compose with the installed Documents plugin through its public API; no office library copy.
     const response = await postPluginJson('/rpc/documents/generate', {
       format,
       content: exportDocument(resume.document, 'markdown'),
       filename: name,
+      layout: resumeLayout(resume.document),
     })
     const result = z
       .object({
@@ -35,7 +42,9 @@ export async function downloadResume(
     )
     return
   }
-  const extension = { json: 'json', markdown: 'md', text: 'txt' }[format]
+  const extension = { json: 'json', markdown: 'md', text: 'txt', yaml: 'yaml', lanjut: 'json' }[
+    format
+  ]
   await pluginFiles.download(
     `/rpc/resume/${resume.id}/export/${format}?${new URLSearchParams({ sessionId })}`,
     `${name}.${extension}`,

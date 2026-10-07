@@ -22,7 +22,7 @@ export function TemplateGallery({
     <div
       role="group"
       aria-label="Resume templates"
-      className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-3"
+      className="grid grid-cols-2 gap-3 @2xl:grid-cols-3"
     >
       {order.map((id) => (
         <SelectionTile

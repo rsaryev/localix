@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowDown, ArrowUp, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { CollapsibleSection } from '@localixai/kit/collapsible-section'
 import { IconButton } from '@localixai/kit/icon-button'
+import { Button } from '@localixai/kit/button'
 import { TabStrip, TabPanel, useTabPanelIds } from '@localixai/kit/tabs'
 import { emptyEntry, sectionTypes, type ResumeDocument } from '../shared/schema'
 import { sectionDefinitions } from '../shared/sections'
@@ -11,6 +12,8 @@ import { TemplateGallery } from './TemplateGallery'
 import { TextField } from './TextField'
 import { ChoiceMenu } from './ChoiceMenu'
 import { ValidationScope } from './validation'
+import { PresentationEditor } from './PresentationEditor'
+import { defaultSectionOrder } from '../shared/order'
 
 type PanelTab = 'editor' | 'layout' | 'document'
 export function EditorPanel({
@@ -43,7 +46,7 @@ export function EditorPanel({
       ),
     })
   return (
-    <aside aria-label="Resume editor" className="@container flex min-h-0 flex-1 flex-col">
+    <aside aria-label="Resume editor" className="@container flex min-h-0 min-w-0 flex-1 flex-col">
       <TabStrip
         aria-label="Resume editor panels"
         variant="compact"
@@ -55,7 +58,7 @@ export function EditorPanel({
           ...ids.item(id),
         }))}
       />
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
         <fieldset disabled={pending} className="min-w-0">
           <TabPanel
             active={tab === 'editor'}
@@ -133,24 +136,52 @@ export function EditorPanel({
               </ValidationScope>
             ))}
             <div className="px-4 py-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  onChange({ ...document, sections: defaultSectionOrder(document.sections) })
+                }
+              >
+                Reset section order
+              </Button>
               <ChoiceMenu
                 label="Add section"
                 disabled={document.sections.length >= 24}
-                entries={sectionTypes.map((type) => ({
-                  id: type,
-                  label: sectionDefinitions[type].title,
-                  onSelect: () => {
-                    const section = {
-                      id: crypto.randomUUID(),
-                      type,
-                      title: sectionDefinitions[type].title,
-                      hidden: false,
-                      entries: [emptyEntry()],
-                    }
-                    onChange({ ...document, sections: [...document.sections, section] })
-                    onSection(section.id)
+                entries={[
+                  ...sectionTypes.map((type) => ({
+                    id: type,
+                    label: sectionDefinitions[type].title,
+                    onSelect: () => {
+                      const section = {
+                        id: crypto.randomUUID(),
+                        type,
+                        title: sectionDefinitions[type].title,
+                        hidden: false,
+                        ...(type === 'custom' ? { variant: 'list' as const } : {}),
+                        entries: [emptyEntry()],
+                      }
+                      onChange({ ...document, sections: [...document.sections, section] })
+                      onSection(section.id)
+                    },
+                  })),
+                  {
+                    id: 'custom-rich',
+                    label: 'Custom text section',
+                    onSelect: () => {
+                      const section = {
+                        id: crypto.randomUUID(),
+                        type: 'custom' as const,
+                        variant: 'rich' as const,
+                        title: 'Additional information',
+                        hidden: false,
+                        entries: [emptyEntry()],
+                      }
+                      onChange({ ...document, sections: [...document.sections, section] })
+                      onSection(section.id)
+                    },
                   },
-                }))}
+                ]}
               />
             </div>
           </TabPanel>
@@ -163,9 +194,12 @@ export function EditorPanel({
             <h2 className="text-sm font-medium text-text-strong">Template</h2>
             <TemplateGallery
               value={document.presentation.template}
-              onChange={(template) => onChange({ ...document, presentation: { template } })}
+              onChange={(template) =>
+                onChange({ ...document, presentation: { ...document.presentation, template } })
+              }
               disabled={pending}
             />
+            <PresentationEditor document={document} onChange={onChange} />
           </TabPanel>
           <TabPanel
             active={tab === 'document'}

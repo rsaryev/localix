@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { documentLayoutSchema, type DocumentLayout } from '@localixai/plugin-sdk/document-layout'
 
 /**
  * Agnostic document-GENERATION contracts (the reverse of extraction). The generator
@@ -26,6 +27,7 @@ export interface GenerateInput {
   content: string
   /** Optional preferred base name for the produced file (extension normalised to format). */
   filename?: string
+  layout?: DocumentLayout
 }
 
 /** The generator's raw output: the encoded bytes + how to name/serve them. */
@@ -66,6 +68,7 @@ export const generateRequestSchema = z.object({
   format: generateFormatSchema,
   content: z.string().min(1, 'content is required'),
   filename: z.string().min(1).max(200).optional(),
+  layout: documentLayoutSchema.optional(),
 })
 export type GenerateRequest = z.infer<typeof generateRequestSchema>
 

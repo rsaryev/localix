@@ -35,37 +35,38 @@ for a job, learn the shared size and tone vocabulary, and add to the kit without
 
 The full catalog has about a hundred modules; these are the jobs that are most often hand-rolled.
 
-| Job                                      | Module                                                                     |
-| ---------------------------------------- | -------------------------------------------------------------------------- |
-| A command with a label / with an icon    | `button` / `icon-button`                                                   |
-| A text or number field                   | `input` inside `field`; `textarea`; `search-input` for filtering           |
-| Structured prose with formatting         | `rich-text`: `RichTextEditor` inside `field`; `rich-text-view` for viewing |
-| Visual template choices                  | `selection-tile` with an actual `document-thumbnail`                       |
-| A value in a form saved with others      | `select` (a few) / `combobox` (many, searchable)                           |
-| A pick in chrome (a mode, an agent)      | `menu-entries` rows with `selected` in a `dropdown-menu`                   |
-| Switching what a pane shows (2–4 views)  | `@localixai/plugin-sdk/ui/segmented-control`                               |
-| A status tone on a menu row's icon       | `tonedIcon` from `@localixai/plugin-sdk/ui`                                |
-| An agent or person in a menu row         | `monogramIcon` from `@localixai/kit/avatar`                                |
-| An on/off setting / a filter chip        | `switch` / `toggle-pill`; `checkbox` inside forms                          |
-| A pane header, toolbar, status row       | `panel-header`, `workbench-toolbar`, `workbench-statusbar`                 |
-| Tabs inside a pane                       | `tabs` (`TabBar`, `TabStrip`)                                              |
-| A long navigation path                   | `workbench-breadcrumb` with `scrollable` and `scrollToEndKey`              |
-| A navigable row, a tree                  | `workbench-list-row` with `tree-navigation`                                |
-| Metadata that gives way to row actions   | `WorkbenchListRowActions` with `visibility="hover"` and `fallback`         |
-| A table of records                       | `TableGrid` from `@localixai/plugin-sdk/ui/components`                     |
-| Nothing to show yet / a failure          | `empty-hint` (one line), `state-notice` (centred, with actions)            |
-| Progress, a live dot, a count badge      | `progress-bar`, `pulsing-dot`, `chip`                                      |
-| "Copied", "Nothing to undo" at a control | `action-feedback` (transient, never the journal)                           |
-| A dialog, a confirmation                 | `dialog` (its `size` is the width), `confirm-dialog`                       |
-| A menu under a button and on right-click | `menu-entries` over `dropdown-menu` and `context-menu`                     |
-| A menu of choices that need explaining   | `menu-entries` rows with `description` (a line under the label)            |
-| One choice among several in a menu       | `menu-entries` rows with `selected` (icon kept, check at the end)          |
-| Several on/off choices in a menu         | `menu-entries` rows with `checked` (drawn like `selected`)                 |
-| A pick that should not close the menu    | `menu-entries` rows with `keepOpen` (a submenu `hint` shows it)            |
-| An inline action beside a menu choice    | `menu-entries` rows with `trailingAction` (independent, stays open)        |
-| A resizable split                        | `pane-resize` with `WorkbenchSash` from `button`                           |
-| A chart                                  | `@localixai/plugin-sdk/ui/charts`                                          |
-| A graph or a board                       | `canvas`                                                                   |
+| Job                                      | Module                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------ |
+| A command with a label / with an icon    | `button` / `icon-button`                                                       |
+| A text or number field                   | `input` inside `field`; `textarea`; `search-input` for filtering               |
+| Structured prose with formatting         | `rich-text`: `RichTextEditor` inside `field`; `rich-text-view` for viewing     |
+| PDF pages matching a download            | `pdf-pages`: `PdfPages` with a PDF Blob; fit-to-pane pages and selectable text |
+| Visual template choices                  | `selection-tile` with an actual `document-thumbnail`                           |
+| A value in a form saved with others      | `select` (a few) / `combobox` (many, searchable)                               |
+| A pick in chrome (a mode, an agent)      | `menu-entries` rows with `selected` in a `dropdown-menu`                       |
+| Switching what a pane shows (2–4 views)  | `@localixai/plugin-sdk/ui/segmented-control`                                   |
+| A status tone on a menu row's icon       | `tonedIcon` from `@localixai/plugin-sdk/ui`                                    |
+| An agent or person in a menu row         | `monogramIcon` from `@localixai/kit/avatar`                                    |
+| An on/off setting / a filter chip        | `switch` / `toggle-pill`; `checkbox` inside forms                              |
+| A pane header, toolbar, status row       | `panel-header`, `workbench-toolbar`, `workbench-statusbar`                     |
+| Tabs inside a pane                       | `tabs` (`TabBar`, `TabStrip`)                                                  |
+| A long navigation path                   | `workbench-breadcrumb` with `scrollable` and `scrollToEndKey`                  |
+| A navigable row, a tree                  | `workbench-list-row` with `tree-navigation`                                    |
+| Metadata that gives way to row actions   | `WorkbenchListRowActions` with `visibility="hover"` and `fallback`             |
+| A table of records                       | `TableGrid` from `@localixai/plugin-sdk/ui/components`                         |
+| Nothing to show yet / a failure          | `empty-hint` (one line), `state-notice` (centred, with actions)                |
+| Progress, a live dot, a count badge      | `progress-bar`, `pulsing-dot`, `chip`                                          |
+| "Copied", "Nothing to undo" at a control | `action-feedback` (transient, never the journal)                               |
+| A dialog, a confirmation                 | `dialog` (its `size` is the width), `confirm-dialog`                           |
+| A menu under a button and on right-click | `menu-entries` over `dropdown-menu` and `context-menu`                         |
+| A menu of choices that need explaining   | `menu-entries` rows with `description` (a line under the label)                |
+| One choice among several in a menu       | `menu-entries` rows with `selected` (icon kept, check at the end)              |
+| Several on/off choices in a menu         | `menu-entries` rows with `checked` (drawn like `selected`)                     |
+| A pick that should not close the menu    | `menu-entries` rows with `keepOpen` (a submenu `hint` shows it)                |
+| An inline action beside a menu choice    | `menu-entries` rows with `trailingAction` (independent, stays open)            |
+| A resizable split                        | `pane-resize` with `WorkbenchSash` from `button`                               |
+| A chart                                  | `@localixai/plugin-sdk/ui/charts`                                              |
+| A graph or a board                       | `canvas`                                                                       |
 
 ## How it works
 

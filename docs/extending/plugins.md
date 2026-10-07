@@ -340,7 +340,7 @@ native entrypoint and point `tools` at the generated self-contained file.
 Each row is a `plugin.json`: `surfaces` decides whether it adds a visible workbench or only agent
 capability, and `defaultEnabled` whether it starts on. Native code in a bundled plugin still runs in
 the trusted API process; review it as you would any dependency. Besides the four games in the
-[workbench UI guide](plugin-ui.md#a-tab-that-belongs-to-one-chat), twelve add a workbench:
+[workbench UI guide](plugin-ui.md#a-tab-that-belongs-to-one-chat), thirteen add a workbench:
 
 | Plugin              | Guide                                           | What the workbench shows                                                              |
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -349,6 +349,7 @@ the trusted API process; review it as you would any dependency. Besides the four
 | **Database**        | [Database](../features/database.md)             | Connections, schemas, SQL and non-SQL consoles, tables, diagrams, result sets         |
 | **DevOps**          | [DevOps](../features/devops.md)                 | Containers, images, volumes, networks, Kubernetes workloads, logs                     |
 | **Documents**       | [Documents](../features/documents.md)           | PDF, document, spreadsheet, presentation, CSV, table, and chart surfaces              |
+| **Resumes**         | [Resumes](../features/resumes.md)               | Six templates, structured editing, source import, A4 preview, PDF and Word export     |
 | **Git**             | [Source control](../features/source-control.md) | Changes, conflicts, history, branches, and review context                             |
 | **Kanban board**    | [Kanban board](../features/task-board.md)       | One passive task board per chat: epics, tasks, dependencies, owners and blockers      |
 | **Learning Studio** | [Learning loop](../features/learning-loop.md)   | File-authored courses, lessons, and durable progress                                  |

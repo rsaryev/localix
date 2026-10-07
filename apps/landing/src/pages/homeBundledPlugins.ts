@@ -57,6 +57,12 @@ export const PLUGINS: PluginShowcase[] = [
     anchor: 'capabilities',
   },
   {
+    title: 'Resumes',
+    body: 'Create and tailor resumes with the agent using six templates, an adaptive editor, source import, and an A4 preview that matches the PDF export. Download PDF, Word, or portable project data.',
+    slug: 'features--resumes',
+    anchor: 'what-you-can-do',
+  },
+  {
     title: 'API Client',
     body: 'Build, import, parameterize, and send saved HTTP requests. Keep credentials as vault-backed references and attach API context to the conversation.',
     slug: 'features--api',

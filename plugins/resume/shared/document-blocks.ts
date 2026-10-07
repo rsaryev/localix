@@ -24,7 +24,13 @@ export function populatedSections(document: ResumeDocument): ResumeSection[] {
     .filter((section) => !section.hidden)
     .map((section) => ({
       ...section,
-      entries: section.entries.filter(hasEntryContent),
+      entries: section.entries
+        .map((entry) =>
+          section.showProficiency === false && ['skills', 'languages'].includes(section.type)
+            ? { ...entry, proficiency: '', body: '' }
+            : entry,
+        )
+        .filter(hasEntryContent),
     }))
     .filter((section) => section.entries.length > 0)
 }
@@ -39,10 +45,12 @@ export function documentBlocks(document: ResumeDocument): DocumentBlock[] {
     ]),
   ]
 }
-export function entryMetadata(entry: ResumeEntry): string {
+export function entryMetadata(entry: ResumeEntry, language: 'en' | 'id' = 'en'): string {
   return [
     entry.location,
-    [entry.start, entry.current ? 'Present' : entry.end].filter(Boolean).join(' – '),
+    [entry.start, entry.current ? (language === 'id' ? 'Sekarang' : 'Present') : entry.end]
+      .filter(Boolean)
+      .join(' – '),
   ]
     .filter(Boolean)
     .join(' · ')

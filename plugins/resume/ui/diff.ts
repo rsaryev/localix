@@ -52,8 +52,20 @@ export function documentOperations(
       continue
     }
     const value = changed(
-      { title: old.title, hidden: old.hidden },
-      { title: section.title, hidden: section.hidden },
+      {
+        title: old.title,
+        hidden: old.hidden,
+        columns: old.columns,
+        showProficiency: old.showProficiency,
+        variant: old.variant,
+      },
+      {
+        title: section.title,
+        hidden: section.hidden,
+        columns: section.columns,
+        showProficiency: section.showProficiency,
+        variant: section.variant,
+      },
     )
     if (Object.keys(value).length) ops.push({ op: 'updateSection', sectionId: section.id, value })
     for (const entry of old.entries)

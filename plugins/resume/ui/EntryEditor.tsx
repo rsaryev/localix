@@ -8,6 +8,7 @@ import { sectionDefinitions, type EntryField } from '../shared/sections'
 import type { ResumeEntry, SectionType } from '../shared/schema'
 import { TextField } from './TextField'
 import { useFieldError } from './validation'
+import { DateField } from './DateField'
 
 export function EntryEditor({
   entry,
@@ -18,6 +19,7 @@ export function EntryEditor({
   onRemove,
   onMove,
   disabled = false,
+  richOnly = false,
 }: {
   entry: ResumeEntry
   type: SectionType
@@ -27,6 +29,7 @@ export function EntryEditor({
   onRemove: () => void
   onMove: (index: number) => void
   disabled?: boolean
+  richOnly?: boolean
 }) {
   const definition = sectionDefinitions[type]
   const bodyError = useFieldError('body')
@@ -67,7 +70,7 @@ export function EntryEditor({
         </div>
       </div>
       <div className="grid gap-4 @xl:grid-cols-2">
-        {definition.fields
+        {(richOnly ? (['body'] as const) : definition.fields)
           .filter((key) => key !== 'bullets' && key !== 'body' && key !== 'start' && key !== 'end')
           .map((key) => (
             <TextField
@@ -79,26 +82,24 @@ export function EntryEditor({
             />
           ))}
       </div>
-      {definition.fields.includes('start') && (
+      {!richOnly && definition.fields.includes('start') && (
         <div className="grid grid-cols-2 gap-4">
-          <TextField
+          <DateField
             field="start"
             label="Start date"
             value={entry.start}
-            placeholder="YYYY or YYYY-MM"
             onChange={(value) => set('start', value)}
           />
-          <TextField
+          <DateField
             field="end"
             label="End date"
             value={entry.end}
-            placeholder={entry.current ? 'Present' : 'YYYY or YYYY-MM'}
             disabled={entry.current}
             onChange={(end) => onChange({ ...entry, end, current: end ? false : entry.current })}
           />
         </div>
       )}
-      {definition.fields.includes('end') && (
+      {!richOnly && definition.fields.includes('end') && (
         <Field label="Current position or ongoing activity" layout="inline">
           <Checkbox
             checked={entry.current}
@@ -121,7 +122,23 @@ export function EntryEditor({
           />
         </Field>
       )}
-      {definition.fields.includes('bullets') && (
+      {['experience', 'internship'].includes(type) && (
+        <TextField
+          field="context"
+          label="Company context"
+          value={entry.context ?? ''}
+          onChange={(context) => onChange({ ...entry, context })}
+        />
+      )}
+      {['skills', 'languages'].includes(type) && (
+        <TextField
+          field="proficiency"
+          label="Proficiency"
+          value={entry.proficiency ?? ''}
+          onChange={(proficiency) => onChange({ ...entry, proficiency })}
+        />
+      )}
+      {!richOnly && definition.fields.includes('bullets') && (
         <div className="space-y-3">
           {entry.bullets.map((bullet, i) => (
             <div key={i} className="flex items-end gap-2">
@@ -159,7 +176,7 @@ export function EntryEditor({
           </Button>
         </div>
       )}
-      {type !== 'summary' && type !== 'skills' && type !== 'languages' && (
+      {!richOnly && type !== 'summary' && type !== 'skills' && type !== 'languages' && (
         <div className="space-y-3">
           {entry.link ? (
             <>

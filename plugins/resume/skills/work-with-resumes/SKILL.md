@@ -34,6 +34,17 @@ HTML, images and layout attributes are not part of the content contract.
 Use `history` to inspect saved revisions and `restore` to recover one as a new revision without
 deleting the current saved state.
 
-Use `export` for portable JSON, linear Markdown or plain text. Existing document generation can
-produce PDF/DOCX from Markdown. Explain limitations honestly; do not claim a template guarantees ATS
-acceptance or invent a compatibility score.
+Use `export` for native JSON or YAML (complete document), Lanjut version 1 interchange (only
+representable fields), linear Markdown, or plain text. The UI previews and exports the selected
+presentation through Documents using the SDK DocumentLayout contract; Markdown generation does not
+reproduce a resume template. Save UI drafts before PDF or Word export. PDF and DOCX need the
+Documents plugin enabled. Source import accepts text/Markdown and extracted PDF/DOCX/DOC/ODT; review
+unassigned text, and do not claim scanned PDF OCR support. Explain limitations honestly; do not
+claim a template guarantees ATS acceptance or invent a compatibility score.
+
+Presentation supports fifteen document fonts, font-size scales, line height, letter spacing, section
+spacing, optional header portrait with size/radius/alignment, contact icons, and English or
+Indonesian default headings. Skills/languages support `columns` and `showProficiency`; entries have
+optional `context` and `proficiency`. A custom section has `variant: rich|list`; a rich custom
+section contains at most one body-only entry. Preserve existing presentation fields when applying a
+presentation operation. Native JSON/YAML include target-role context; visible exports omit it.

@@ -47,6 +47,21 @@ test('workspace publishes saved section, labels rich drafts and clears inactive/
   const publish = (context: PublishedMessageContext | null) => {
     publications.push(context)
   }
+  const originalRect = HTMLElement.prototype.getBoundingClientRect
+  const originalObserver = globalThis.ResizeObserver
+  const callbacks: ResizeObserverCallback[] = []
+  let paneWidth = 1600
+  HTMLElement.prototype.getBoundingClientRect = function () {
+    return { ...originalRect.call(this).toJSON(), width: paneWidth } as DOMRect
+  }
+  globalThis.ResizeObserver = class {
+    constructor(callback: ResizeObserverCallback) {
+      callbacks.push(callback)
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -68,6 +83,30 @@ test('workspace publishes saved section, labels rich drafts and clears inactive/
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10))
       })
+    const previewToggle = host.querySelector(
+      'button[aria-label="PDF preview"]',
+    ) as HTMLButtonElement
+    expect(previewToggle.getAttribute('aria-pressed')).toBe('true')
+    await act(async () => {
+      paneWidth = 320
+      callbacks.forEach((callback) => callback([], {} as ResizeObserver))
+    })
+    expect(previewToggle.getAttribute('aria-pressed')).toBe('false')
+    await act(async () => previewToggle.click())
+    expect(previewToggle.getAttribute('aria-pressed')).toBe('true')
+    await act(async () => {
+      paneWidth = 1600
+      callbacks.forEach((callback) => callback([], {} as ResizeObserver))
+    })
+    expect(previewToggle.getAttribute('aria-pressed')).toBe('true')
+    await act(async () => previewToggle.click())
+    await act(async () => {
+      paneWidth = 320
+      callbacks.forEach((callback) => callback([], {} as ResizeObserver))
+      paneWidth = 1600
+      callbacks.forEach((callback) => callback([], {} as ResizeObserver))
+    })
+    expect(previewToggle.getAttribute('aria-pressed')).toBe('false')
     expect(JSON.stringify(publications.at(-1))).toContain(
       `/resume/${created.id}/section/${section.id}`,
     )
@@ -87,6 +126,8 @@ test('workspace publishes saved section, labels rich drafts and clears inactive/
     expect(host.querySelector('[role="textbox"] strong')?.textContent).toBe('Draft achievement')
   } finally {
     await act(async () => root.unmount())
+    HTMLElement.prototype.getBoundingClientRect = originalRect
+    globalThis.ResizeObserver = originalObserver
     unbind()
     host.remove()
     localStorage.clear()

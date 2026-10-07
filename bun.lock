@@ -240,6 +240,7 @@
         "cmdk": "^1.1.1",
         "lucide-react": "^1.24.0",
         "modern-screenshot": "^4.7.0",
+        "pdfjs-dist": "6.2.108",
         "radix-ui": "^1.6.2",
         "vaul": "^1.1.2",
         "zustand": "^5.0.14",
@@ -526,6 +527,7 @@
       "dependencies": {
         "@localixai/dataview": "workspace:*",
         "docx": "^9.7.1",
+        "fontkit": "^2.0.4",
         "hono": "^4.12.30",
         "lucide-react": "^1.24.0",
         "mammoth": "^1.12.0",
@@ -667,6 +669,7 @@
         "hono": "^4.12.30",
         "lucide-react": "^1.24.0",
         "react": "^19.2.7",
+        "yaml": "^2.9.0",
         "zod": "^4.4.3",
       },
       "devDependencies": {

@@ -1,21 +1,14 @@
 import { Button } from '@localixai/kit/button'
-import { Input } from '@localixai/kit/input'
-import { Field } from '@localixai/kit/field'
-import { documentSchema } from '../shared/schema'
 import type { useResumes } from './useResumes'
 
 export function WorkspaceNotices({
   state,
   confirm,
   setConfirm,
-  importing,
-  setImporting,
 }: {
   state: ReturnType<typeof useResumes>
   confirm: 'discard' | 'delete' | null
   setConfirm: (value: 'discard' | 'delete' | null) => void
-  importing: boolean
-  setImporting: (value: boolean) => void
 }) {
   return (
     <>
@@ -89,33 +82,6 @@ export function WorkspaceNotices({
           >
             {confirm === 'delete' ? 'Delete resume' : 'Discard draft'}
           </Button>
-        </div>
-      )}
-      {importing && (
-        <div className="border-b border-border px-4 py-3">
-          <Field
-            label="Import portable resume JSON"
-            description="A new resume is created. Existing resumes are preserved."
-          >
-            <Input
-              type="file"
-              accept=".json,application/json"
-              disabled={state.pending || state.dirty}
-              onChange={async (event) => {
-                const file = event.target.files?.[0]
-                event.target.value = ''
-                if (!file) return
-                try {
-                  if (file.size > 400_000)
-                    throw new Error('Resume JSON is too large (maximum 400 KB).')
-                  state.importDocument(documentSchema.parse(JSON.parse(await file.text())))
-                  setImporting(false)
-                } catch (error) {
-                  state.setError(error instanceof Error ? error.message : 'Invalid resume JSON.')
-                }
-              }}
-            />
-          </Field>
         </div>
       )}
     </>

@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useNativeEditTarget, isPrimaryModifier } from '@localixai/kit/keybindings'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { WorkbenchStatusBar, WorkbenchStatusItem } from '@localixai/kit/workbench-statusbar'
 import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
@@ -9,13 +10,10 @@ import { WorkspaceActions } from './WorkspaceActions'
 import { WorkspaceNotices } from './WorkspaceNotices'
 import { HistoryPanel } from './HistoryPanel'
 import { ValidationScope, documentErrors } from './validation'
-import { Preview } from './Preview'
+import { ResumeCanvas } from './ResumeCanvas'
 import { ResumeLibrary } from './ResumeLibrary'
 import { downloadResume } from './export'
 import { resumeApi } from './api'
-const EditorPanel = lazy(() =>
-  import('./EditorPanel').then((module) => ({ default: module.EditorPanel })),
-)
 const CreateResumeDialog = lazy(() =>
   import('./CreateResumeDialog').then((module) => ({ default: module.CreateResumeDialog })),
 )
@@ -36,11 +34,20 @@ export function Workspace({
   const state = useResumes(active, sessionId, initialId)
   const [sectionId, setSectionId] = useState<string | null>(initialSectionId ?? null)
   const [library, setLibrary] = useState(!initialId)
-  const [creating, setCreating] = useState<'blank' | 'sample' | null>(null)
+  const [creating, setCreating] = useState<'blank' | 'sample' | 'import' | null>(null)
   const [confirm, setConfirm] = useState<'discard' | 'delete' | null>(null)
-  const [importing, setImporting] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [previewChoice, setPreviewChoice] = useState<boolean | null>(null)
+  const [wide, setWide] = useState(false)
+  const preview = previewChoice ?? wide
+  const previewId = useId()
   const [exporting, setExporting] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  useNativeEditTarget(root, (command) => {
+    if (!active || state.pending || library) return
+    if (command === 'undo') state.undo()
+    else if (command === 'redo') state.redo()
+  })
   const { draft, base } = state
   const section = draft?.sections.find((item) => item.id === sectionId)
   const context = useMemo(
@@ -74,30 +81,47 @@ export function Workspace({
   }
   return (
     <ValidationScope errors={state.validationVisible && draft ? documentErrors(draft) : {}}>
-      <div className="@container flex h-full min-h-0 flex-col">
+      <div
+        ref={root}
+        role="group"
+        aria-label="Resume workspace"
+        className="@container flex h-full min-h-0 min-w-0 flex-col"
+        onKeyDown={(event) => {
+          if (!active || state.pending || !isPrimaryModifier(event) || event.altKey) return
+          if (
+            event.target instanceof HTMLElement &&
+            event.target.closest('input, textarea, [contenteditable="true"]')
+          )
+            return
+          const key = event.key.toLowerCase()
+          if (key !== 'z' && key !== 'y') return
+          event.preventDefault()
+          if (key === 'y' || event.shiftKey) state.redo()
+          else state.undo()
+        }}
+      >
         {!library && base && draft && (
           <WorkspaceActions
             state={state}
             setConfirm={setConfirm}
-            importing={importing}
-            setImporting={setImporting}
+            preview={preview}
+            previewId={previewId}
+            onTogglePreview={() => {
+              setShowHistory(false)
+              setPreviewChoice(!preview)
+            }}
             exporting={exporting}
             exportFile={exportFile}
             onHistory={() => setShowHistory(true)}
             onNew={() => setCreating('blank')}
+            onImport={() => setCreating('import')}
             onLibrary={() => {
               setLibrary(true)
               setShowHistory(false)
             }}
           />
         )}
-        <WorkspaceNotices
-          state={state}
-          confirm={confirm}
-          setConfirm={setConfirm}
-          importing={importing}
-          setImporting={setImporting}
-        />
+        <WorkspaceNotices state={state} confirm={confirm} setConfirm={setConfirm} />
         {showHistory && base && active && !library ? (
           <HistoryPanel
             key={base.id}
@@ -113,7 +137,6 @@ export function Workspace({
           <LoadingHint>Opening resumes…</LoadingHint>
         ) : library || !draft || !base ? (
           <ResumeLibrary
-            sessionId={sessionId}
             onRename={state.renameResume}
             onDelete={state.deleteResume}
             onDuplicate={state.duplicateResume}
@@ -135,24 +158,17 @@ export function Workspace({
             }}
           />
         ) : (
-          <div className="grid min-h-0 flex-1 grid-rows-2 @3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @3xl:grid-rows-1">
-            <div aria-label="Document preview area" className="min-h-0 overflow-y-auto px-4 py-6">
-              <div className="min-h-full bg-document-paper text-document-ink">
-                <Preview document={draft} />
-              </div>
-            </div>
-            <div className="flex min-h-0 flex-col border-t border-border @3xl:border-l @3xl:border-t-0">
-              <Suspense fallback={<LoadingHint>Opening editor…</LoadingHint>}>
-                <EditorPanel
-                  document={draft}
-                  onChange={change}
-                  sectionId={sectionId}
-                  onSection={setSectionId}
-                  pending={state.pending}
-                />
-              </Suspense>
-            </div>
-          </div>
+          <ResumeCanvas
+            active={active}
+            onWideChange={setWide}
+            preview={preview}
+            previewId={previewId}
+            document={draft}
+            onChange={change}
+            sectionId={sectionId}
+            onSection={setSectionId}
+            pending={state.pending}
+          />
         )}
         {!library && (
           <WorkbenchStatusBar aria-label="Resume status">

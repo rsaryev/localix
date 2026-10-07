@@ -41,7 +41,7 @@ export const toolInputSchema = z.discriminatedUnion('action', [
   z.strictObject({
     action: z.literal('export'),
     id: idSchema,
-    format: z.enum(['json', 'markdown', 'text']),
+    format: z.enum(['json', 'markdown', 'text', 'yaml', 'lanjut']),
   }),
 ])
 
@@ -51,7 +51,7 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
     label: 'Resume',
     activeVerb: 'Working on a resume',
     description:
-      'Initialize from a template with init, then edit structured resume files shared with the Resumes workbench. guide explains fields and edit operations. list returns identifiers and revisions; get returns authoritative structured content (optionally one section). update applies a small atomic operation batch against the revision from get; on conflict read again and preserve intervening edits. duplicate creates an independent variant; export returns linear text, Markdown or portable JSON. Use existing read/file tools for source documents and analysis. Do not invent qualifications or achievements.',
+      'Initialize from a template with init, then edit structured resume files shared with the Resumes workbench. guide explains fields and edit operations. list returns identifiers and revisions; get returns authoritative structured content (optionally one section). update applies a small atomic operation batch against the revision from get; on conflict read again and preserve intervening edits. duplicate creates an independent variant; export returns text, Markdown, native JSON/YAML or Lanjut interchange. Use existing read/file tools for source documents and analysis. Do not invent qualifications or achievements.',
     inputSchema: toolInputSchema,
     executionMode: 'sequential',
     mutates: true,
@@ -97,6 +97,8 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
                   body: 'Plain text or restricted rich-text JSON (see richText)',
                   bullets: ['Plain text achievement'],
                   link: null,
+                  context: 'Optional company or project context',
+                  proficiency: 'Optional skill or language level',
                 },
                 richText: {
                   document: {
@@ -129,9 +131,9 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
                 operations: [
                   'header: merge value',
                   'metadata: merge title/targetRole/jobDescription',
-                  'presentation: value {template: awal|ketat|luasa|tebal|klasik|ketik}',
+                  'presentation: replace value preserving existing fields; template, font, language, showIcons, sectionSpacing, letterSpacing, lineHeight, nameScale, titleScale, bodyScale, photoSize, photoRadius, photoAlign',
                   'addSection: section {id,type,title,hidden,entries}',
-                  'updateSection: sectionId, value {title?,hidden?}',
+                  'updateSection: sectionId, value {title?,hidden?,columns?,showProficiency?,variant?}',
                   'removeSection: sectionId',
                   'moveSection: sectionId, index (zero-based)',
                   'addEntry: sectionId, entry',
@@ -140,9 +142,9 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
                   'moveEntry: sectionId, entryId, index',
                 ],
                 limits:
-                  '100 resumes per user; 24 sections; 60 entries per section; 30 bullets per entry; 50 operations per batch; 100,000 serialized characters per document.',
+                  '100 resumes per user; 24 sections; 60 entries per section; 30 bullets per entry; 50 operations per batch; 100,000 serialized characters excluding portrait; portrait up to 300,000 characters.',
                 workflow:
-                  'Read source files using existing tools. Ask for missing facts. Create or duplicate, get current ids/revision, update only intended fields. Hidden sections stay in JSON and get but are omitted from visible exports. Target role/job description are context only, never exported as resume prose. Export Markdown for existing document generation workflows; no ATS acceptance guarantee.',
+                  'Read source files using existing tools. Ask for missing facts. Create or duplicate, get current ids/revision, update only intended fields. Hidden sections stay in JSON and get but are omitted from visible exports. Target role/job description are context only, never exported as resume prose. The UI exports template-aware PDF/DOCX via Documents. Markdown generation is linear; no ATS acceptance guarantee.',
               },
               null,
               2,
