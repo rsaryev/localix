@@ -387,12 +387,10 @@ Three add agent capability with no workbench of their own:
 
 - [Build workbench UI](plugin-ui.md)
 - [Connect MCP](../features/mcp.md)
-- [Architecture](../internals/architecture.md)
 
 ## Source of truth
 
 - [Plugin manifest schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/contracts.ts)
-- [Shared manifest primitives](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/manifest/index.ts)
 - [Discovery and exact-scope rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery.ts)
 - [Entrypoint resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery-entrypoints.ts)
 - [Enable policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)
