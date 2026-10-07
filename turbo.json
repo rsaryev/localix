@@ -17,6 +17,7 @@
       ]
     },
     "docs:gen": {
+      "dependsOn": ["^build"],
       "outputs": ["src/generated/**"]
     },
     "dev": {
