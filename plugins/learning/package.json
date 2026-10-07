@@ -19,6 +19,6 @@
     "@localixai/plugin-sdk": "workspace:*",
     "@types/react": "^19.2.17",
     "react-dom": "^19.2.7",
-    "vite": "^8.1.4"
+    "vite": "^8.3.2"
   }
 }
