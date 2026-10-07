@@ -1,7 +1,9 @@
 import type { FeatureRow } from './homeContentTypes'
 
+type OverviewLink = Omit<FeatureRow, 'kicker'>
+
 /** Short entry points; the linked guides carry the detailed product contracts. */
-export const WORKSPACE_LINKS: FeatureRow[] = [
+export const WORKSPACE_LINKS: OverviewLink[] = [
   {
     title: 'Project Space',
     body: 'Arrange notes, diagrams, and live file cards on a board you share with the agent.',
@@ -16,7 +18,7 @@ export const WORKSPACE_LINKS: FeatureRow[] = [
   },
 ]
 
-export const PLATFORM_OVERVIEW: FeatureRow[] = [
+export const PLATFORM_OVERVIEW: OverviewLink[] = [
   {
     title: 'Model routing',
     body: 'Give conversations, completions, and delegated agents their own model routes.',
