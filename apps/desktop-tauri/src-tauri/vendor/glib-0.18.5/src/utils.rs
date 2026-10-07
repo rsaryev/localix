@@ -220,13 +220,13 @@ mod tests {
     #[test]
     fn getenv() {
         check_getenv("Test");
-        check_getenv("Тест"); // "Test" in Russian
+        check_getenv("Test🙂"); // Unicode value
     }
 
     #[test]
     fn setenv() {
         check_setenv("Test");
-        check_setenv("Тест"); // "Test" in Russian
+        check_setenv("Test🙂"); // Unicode value
     }
 
     #[test]

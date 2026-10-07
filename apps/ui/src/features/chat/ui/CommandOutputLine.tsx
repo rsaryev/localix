@@ -6,6 +6,7 @@ import { PROBLEM_SEVERITY, type SeverityPresentation } from '@/shared/ui/problem
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { cleanSystemMessageText } from '../model/systemMessageText'
 import { MessageText } from './MessageText'
+import { systemMessageLabel } from './coalesceSystemMessages'
 
 const TONE: Record<
   CommandOutput['tone'],
@@ -33,8 +34,10 @@ const TONE: Record<
  */
 export const CommandOutputLine = memo(function CommandOutputLine({
   output,
+  repeatCount,
 }: {
   output: CommandOutput
+  repeatCount?: number
 }) {
   if (output.activity?.state === 'running') {
     const activityLabel = output.activity.subject
@@ -48,7 +51,7 @@ export const CommandOutputLine = memo(function CommandOutputLine({
         data-command-activity={output.activity.action}
       >
         <ActivitySignal
-          label={activityLabel}
+          label={systemMessageLabel(activityLabel, repeatCount)}
           className="max-w-[min(90%,46rem)] px-1 py-1 text-xs text-text-soft"
           labelClassName="max-w-[min(76vw,38rem)]"
         />
@@ -57,7 +60,7 @@ export const CommandOutputLine = memo(function CommandOutputLine({
   }
 
   const { Icon, label, iconClass } = TONE[output.tone]
-  const text = cleanSystemMessageText(output.text)
+  const text = systemMessageLabel(cleanSystemMessageText(output.text), repeatCount)
 
   return (
     <div className="flex w-full justify-center py-1" data-command-output={output.command}>

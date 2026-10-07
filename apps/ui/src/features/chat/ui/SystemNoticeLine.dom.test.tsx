@@ -11,7 +11,7 @@ beforeAll(() => {
 
 afterAll(() => teardown())
 
-async function render(notice: SystemNotice, onRetry?: () => void) {
+async function render(notice: SystemNotice, onRetry?: () => void, repeatCount?: number) {
   const React = await import('react')
   const { act } = React
   const { createRoot } = await import('react-dom/client')
@@ -20,7 +20,7 @@ async function render(notice: SystemNotice, onRetry?: () => void) {
   document.body.append(host)
   const root = createRoot(host)
   await act(async () => {
-    root.render(<SystemNoticeLine notice={notice} onRetry={onRetry} />)
+    root.render(<SystemNoticeLine notice={notice} onRetry={onRetry} repeatCount={repeatCount} />)
   })
   return {
     host,
@@ -47,12 +47,17 @@ describe('a notice that can be acted on', () => {
    */
   test('offers the recovery it names', async () => {
     let retried = 0
-    const view = await render(interrupted, () => {
-      retried += 1
-    })
+    const view = await render(
+      interrupted,
+      () => {
+        retried += 1
+      },
+      3,
+    )
     try {
       const button = view.button()
       expect(button?.textContent).toContain('Retry')
+      expect(view.host.textContent).toContain('×3')
       button?.click()
       expect(retried).toBe(1)
     } finally {

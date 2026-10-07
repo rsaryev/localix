@@ -7,7 +7,8 @@ import type { PtyBackend } from './pty-backend'
  * retained must not change WHAT it retains. It used to be one string rebuilt per PTY
  * chunk (`(scrollback + data).slice(-LIMIT)`); it is now a chunk ring trimmed by code
  * units and joined on read. These pin the two properties that made the old form
- * observable: the exact cap, and the mid-chunk cut at the boundary.
+ * observable: the cap, and the mid-chunk cut at the boundary. A cut through an emoji
+ * also drops the orphaned low surrogate so reconnect never introduces invalid UTF-16.
  */
 const LIMIT = 256 * 1024
 
@@ -42,6 +43,31 @@ function makeSession(backend: PtyBackend) {
 }
 
 describe('TerminalSession scrollback retention', () => {
+  test('does not retain half of an emoji when the cap cuts through its surrogate pair', () => {
+    const { backend, push } = controllableBackend()
+    const s = makeSession(backend)
+    try {
+      push('🙂'.repeat(LIMIT / 2))
+      push('X')
+      expect(s.replay).toBe('🙂'.repeat(LIMIT / 2 - 1) + 'X')
+      expect(Buffer.from(s.replay).toString()).toBe(s.replay)
+    } finally {
+      s.dispose()
+    }
+  })
+
+  test('drops an orphaned low surrogate when its high surrogate was in an evicted chunk', () => {
+    const { backend, push } = controllableBackend()
+    const s = makeSession(backend)
+    try {
+      push('\ud83d')
+      push('\ude42' + 'x'.repeat(LIMIT - 1))
+      expect(s.replay).toBe('x'.repeat(LIMIT - 1))
+    } finally {
+      s.dispose()
+    }
+  })
+
   test('under the cap, replay is every byte in arrival order', () => {
     const { backend, push } = controllableBackend()
     const s = makeSession(backend)

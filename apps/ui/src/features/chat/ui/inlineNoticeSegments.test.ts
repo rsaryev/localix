@@ -7,6 +7,7 @@ import { inlineNoticeSegments } from './inlineNoticeSegments'
 import { createTranscriptProjectionSelector } from './transcriptProjection'
 import { mergeSessionBody } from '../model/mergeSessionBody'
 import { MessageBody } from './MessageBody'
+import { systemMessageLabel } from './coalesceSystemMessages'
 
 const event = (value: Record<string, unknown>) => value as AgentStreamEvent
 const assistant = (items: unknown[]): Message =>
@@ -23,7 +24,10 @@ const tool = (id: string) => ({ id, type: 'tool_call', status: 'running', name: 
 const body = (message: Message) =>
   inlineNoticeSegments(message).map((segment) =>
     segment.kind === 'notice'
-      ? segment.message.systemNotice?.text
+      ? systemMessageLabel(
+          segment.message.systemNotice?.text ?? '',
+          segment.message.systemRepeatCount,
+        )
       : segment.kind === 'pending'
         ? `pending:${segment.messages.length}`
         : (segment.items?.map((item) => ('text' in item ? item.text : item.id)).join('') ??
@@ -56,7 +60,7 @@ describe('notices inside a growing assistant reply', () => {
     ])
   })
 
-  test('keeps terminal events beside their tool boundary as later text arrives', () => {
+  test('keeps routine terminal activity inside its action block as later text arrives', () => {
     let current = session(assistant([text('intro', 'Before'), tool('first-tool')]))
     current = applyStreamEventToSession(
       current,
@@ -78,11 +82,11 @@ describe('notices inside a growing assistant reply', () => {
     }
     const projected = createTranscriptProjectionSelector()(current.messages)
     expect(projected.map((message) => message.id)).toEqual(['assistant-1'])
-    expect(body(projected[0]!)).toEqual([
-      'Beforefirst-tool',
-      'Background terminal finished',
-      'After',
-    ])
+    expect(body(projected[0]!)).toEqual(['Beforefirst-toolAfter'])
+    const segment = inlineNoticeSegments(projected[0]!)[0]
+    expect(segment?.kind === 'body' && segment.activity?.[0]?.withinMessage).toEqual({
+      itemId: 'first-tool',
+    })
   })
 
   test('keeps notices below the reply through a whole-body refetch', () => {
@@ -94,10 +98,11 @@ describe('notices inside a growing assistant reply', () => {
     const fresh = session(assistant([text('part', 'Before and after')]))
     const merged = mergeSessionBody(current, fresh)
     const projected = createTranscriptProjectionSelector()(merged.messages)
-    expect(body(projected[0]!)).toEqual(['Before and after', 'Background terminal finished'])
+    expect(body(projected[0]!)).toEqual(['Before and after'])
+    expect(projected[0]?.inlineNotices?.[0]?.systemNotice?.activity?.state).toBe('completed')
   })
 
-  test('keeps text whole and repeated notices visible in arrival order', () => {
+  test('keeps text whole and coalesces repeated terminal input notices', () => {
     let current = session(assistant([text('part', 'Hello')]))
     current = applyStreamEventToSession(
       current,
@@ -117,18 +122,11 @@ describe('notices inside a growing assistant reply', () => {
       messages: [assistant([text('part', 'Hello world!')]), ...current.messages.slice(1)],
     }
     const projected = createTranscriptProjectionSelector()(current.messages)
-    expect(body(projected[0]!)).toEqual([
-      'Hello world!',
-      'Interacted with background terminal',
-      'Interacted with background terminal',
-    ])
+    expect(body(projected[0]!)).toEqual(['Hello world!'])
     const html = renderToStaticMarkup(MessageBody({ message: projected[0]!, isUser: false }))
     expect(html).toContain('Hello world!')
-    expect(html).not.toContain('System events')
-    expect(html.match(/Interacted with background terminal<\/span>/g)).toHaveLength(2)
-    expect(html.indexOf('Hello world!')).toBeLessThan(
-      html.indexOf('Interacted with background terminal'),
-    )
+    expect(html).toContain('System activity')
+    expect(html).not.toContain('Interacted with background terminal')
   })
 
   test('keeps flat content whole when it arrives after an empty assistant skeleton', () => {
@@ -141,10 +139,7 @@ describe('notices inside a growing assistant reply', () => {
       ...current,
       messages: [{ id: 'assistant-1', role: 'assistant', content: 'Later' }, current.messages[1]!],
     }
-    expect(body(createTranscriptProjectionSelector()(current.messages)[0]!)).toEqual([
-      'Background terminal finished',
-      'Later',
-    ])
+    expect(body(createTranscriptProjectionSelector()(current.messages)[0]!)).toEqual(['Later'])
   })
 
   test('does not split Markdown fences or change text item identity', () => {

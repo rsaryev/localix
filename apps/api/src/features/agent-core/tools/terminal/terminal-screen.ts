@@ -1,6 +1,7 @@
 import type { TerminalToolDeps } from './terminal'
 import type { ScreenSnapshot } from './terminal-job'
 import { watchTerminalActivity } from './terminal-activity'
+import { compactScreenText } from './terminal-observation'
 
 export const QUIET_MS = 80
 
@@ -16,12 +17,16 @@ export async function readScreen(deps: TerminalToolDeps, terminalId: string): Pr
   return { screen: final, state: final ? 'exited' : 'unavailable' }
 }
 
-export function renderScreen(s: ScreenSnapshot | null): string {
+export function renderScreen(
+  s: ScreenSnapshot | null,
+  options: { compact?: boolean; waitFor?: string } = {},
+): string {
   if (!s) return '(screen unavailable; action="list" shows live terminals)'
   if (s.text.trim() === '') {
     return `screen ${s.cols}×${s.rows} is blank. Use wait_for to await expected text; avoid polling screen.`
   }
-  return `screen ${s.cols}×${s.rows}, cursor at row ${s.cursor.row} col ${s.cursor.col}:\n${s.text}`
+  const text = options.compact ? compactScreenText(s.text, options.waitFor) : s.text
+  return `screen ${s.cols}×${s.rows}, cursor at row ${s.cursor.row} col ${s.cursor.col}:\n${text}`
 }
 
 /** Render only on output, bounded by the quiet window and the overall cap. */

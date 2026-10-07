@@ -88,6 +88,7 @@ export interface TerminalDetails {
   state?: 'running' | 'exited' | 'unavailable'
   waitOutcome?: WaitOutcome
   screenChanged?: boolean
+  waitMatchPreexisting?: boolean
 }
 
 export interface TerminalActionResult {
@@ -104,7 +105,12 @@ function boundedLabel(label: string): string {
   return label.length <= EVENT_LABEL_LIMIT ? label : `${label.slice(0, EVENT_LABEL_LIMIT - 1)}…`
 }
 
-function waitLabel(input: { wait_for?: string; wait_absent?: boolean }): string {
+function waitLabel(input: {
+  wait_for?: string
+  wait_absent?: boolean
+  wait_for_exit?: boolean
+}): string {
+  if (input.wait_for_exit) return 'until process exits'
   if (!input.wait_for) return 'output to settle'
   return boundedLabel(input.wait_absent ? `until text disappears` : `until text appears`)
 }
@@ -139,22 +145,35 @@ export async function runTerminalAction(
     text?: string
     wait_for?: string
     wait_absent?: boolean
+    wait_for_exit?: boolean
     wait_timeout_ms?: number
   },
   signal?: AbortSignal,
 ): Promise<TerminalActionResult> {
   const { action } = input
   if (signal?.aborted) return { content: 'INTERRUPTED: no terminal action sent.', isError: true }
+  if (input.wait_for_exit && (input.wait_for !== undefined || input.wait_absent)) {
+    return { content: 'wait_for_exit cannot be combined with wait_for/wait_absent.', isError: true }
+  }
   if (input.wait_absent && !input.wait_for) {
     return { content: 'wait_absent requires wait_for — say WHAT should disappear.', isError: true }
   }
 
   const observe = async (terminalId: string, maxMs: number): Promise<TerminalActionResult> => {
-    if (action === 'wait' || input.wait_for || input.wait_timeout_ms !== undefined) {
+    if (
+      action === 'wait' ||
+      input.wait_for ||
+      input.wait_for_exit ||
+      input.wait_timeout_ms !== undefined
+    ) {
       const label = waitLabel(input)
       deps.onWait?.({ terminalId, active: true, label })
       try {
-        const result = await waitForScreen(deps, { terminalId, ...input }, signal)
+        const result = await waitForScreen(
+          deps,
+          { terminalId, ...input, fullScreen: action === 'screen' },
+          signal,
+        )
         return { ...result, details: { ...result.details, action, terminalId } }
       } finally {
         deps.onWait?.({ terminalId, active: false, label })
@@ -167,7 +186,7 @@ export async function runTerminalAction(
       signal,
     )
     return {
-      content: `Terminal ${terminalId}: ${snapshot.state}.\n${renderScreen(snapshot.screen)}`,
+      content: `Terminal ${terminalId}: ${snapshot.state}.\n${renderScreen(snapshot.screen, { compact: action !== 'screen' })}`,
       details: { action, terminalId, ...snapshot },
       isError: snapshot.state === 'unavailable',
       supersedeKey: `terminal:${terminalId}`,
@@ -247,6 +266,15 @@ export async function runTerminalAction(
   deps.onInput?.({ terminalId, label: sentLabel })
   const result = await observe(terminalId, 1500)
   const after = result.details?.screen
+  const waitMatchPreexisting = Boolean(
+    input.wait_for &&
+    !input.wait_absent &&
+    before?.text.includes(input.wait_for) &&
+    result.details?.waitOutcome === 'matched',
+  )
+  const preexisting = waitMatchPreexisting
+    ? '\nWait text was already visible before input; this match does not confirm a new response. Use a distinct response marker or wait_for_exit for completion.'
+    : ''
   const screenChanged =
     before && after
       ? before.text !== after.text ||
@@ -261,7 +289,7 @@ export async function runTerminalAction(
       : ''
   return {
     ...result,
-    content: `Sent ${sentLabel} to terminal ${terminalId}.${unchanged}\n${result.content}`,
-    details: { ...result.details, action, terminalId, screenChanged },
+    content: `Sent ${sentLabel} to terminal ${terminalId}.${unchanged}${preexisting}\n${result.content}`,
+    details: { ...result.details, action, terminalId, screenChanged, waitMatchPreexisting },
   }
 }

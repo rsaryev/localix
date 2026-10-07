@@ -218,6 +218,7 @@ class PiAgentRuntime implements AgentRuntime {
         const { tools, modelTools, completedTools } = runTools
         const turn: PiTurnState = { index: 0, terminated: false, maxTurns: input.maxTurns }
         let completedToolTurnIndex: number | undefined
+        let completedTurnIndex: number | undefined
         // Order is the contract — see assembleStopConditions. The firing condition's name
         // survives into the result for diagnostics.
         const stopConditions = assembleStopConditions({
@@ -262,7 +263,10 @@ class PiAgentRuntime implements AgentRuntime {
                 }
               : undefined,
             getSteeringMessages: input.takeSteering
-              ? async () => toPiMessages(await input.takeSteering!({ completedToolTurnIndex }))
+              ? async () =>
+                  toPiMessages(
+                    await input.takeSteering!({ completedTurnIndex, completedToolTurnIndex }),
+                  )
               : undefined,
             getFollowUpMessages: input.takeFollowUp
               ? async () => toPiMessages(await input.takeFollowUp!())
@@ -271,8 +275,12 @@ class PiAgentRuntime implements AgentRuntime {
             afterToolCall: runTools.afterToolCall,
           },
           async (event) => {
-            if (event.type === 'turn_start') completedToolTurnIndex = undefined
+            if (event.type === 'turn_start') {
+              completedToolTurnIndex = undefined
+              completedTurnIndex = undefined
+            }
             if (event.type === 'turn_end') {
+              completedTurnIndex = Math.max(0, turn.index - 1)
               completedToolTurnIndex =
                 event.message.role === 'assistant' &&
                 event.toolResults.length > 0 &&

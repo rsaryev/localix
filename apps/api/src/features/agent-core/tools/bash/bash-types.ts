@@ -79,6 +79,7 @@ const TERMINAL_ACTION_KEYS = {
   text: true,
   wait_for: true,
   wait_absent: true,
+  wait_for_exit: true,
   wait_timeout_ms: true,
 } as const
 

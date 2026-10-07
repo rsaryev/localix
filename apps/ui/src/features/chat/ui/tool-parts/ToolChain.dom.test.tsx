@@ -182,7 +182,7 @@ describe('ToolChain live disclosure', () => {
     try {
       let firstCard: Element | null = null
       for (const items of steps) {
-        await act(async () => root.render(<ToolChain items={items} isLatest />))
+        await act(async () => root.render(<ToolChain items={items} isLatest isRunning />))
         const cardA = host.querySelector('[data-event-tool-target="call-a"]')
         expect(cardA).not.toBeNull()
         firstCard ??= cardA

@@ -86,6 +86,39 @@ describe('TerminalSession served-URL detection', () => {
 })
 
 describe('TerminalSession.screen (lazy VT emulator)', () => {
+  test('retains the actual final grid when replay has discarded terminal modes', async () => {
+    const { backend, push, exit } = controllableBackend()
+    const s = makeSession(backend)
+    try {
+      push('\x1b[?7l\x1b[?1h') // no autowrap; application cursor mode
+      await s.screen()
+      push('X'.repeat(270_000)) // evicts those modes from replay
+      const live = await s.screen()
+      expect(live.text.split('\n')).toHaveLength(1)
+      exit()
+      expect(await s.screen()).toEqual(live)
+    } finally {
+      s.dispose()
+    }
+  })
+
+  test('retains queued final output even when exit arrives before the parser drains', async () => {
+    const { backend, push, exit } = controllableBackend()
+    const s = makeSession(backend)
+    try {
+      push('\x1b[?7l')
+      await s.screen()
+      push('X'.repeat(270_000) + '\rDONE')
+      exit()
+      const final = await s.screen()
+      expect(final.text.split('\n')).toHaveLength(1)
+      expect(final.text).toStartWith('DONE')
+      expect(await s.screen()).toEqual(final)
+    } finally {
+      s.dispose()
+    }
+  })
+
   // Regression: the emulator is built lazily, replaying the retained scrollback.
   // Because @xterm/headless parses asynchronously, the FIRST screen() used to
   // snapshot before that replay parsed → a blank grid for a live/full-screen app.

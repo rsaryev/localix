@@ -38,12 +38,30 @@ the next choice depends on the application, inspect the returned screen first. F
 confirm the selected model in the screen before sending the next prompt. A typed command, an echoed
 greeting, or an open picker does not prove that the selection or task succeeded.
 
+When the program should finish after input, add `wait_for_exit: true` to `open`, `type`, or `keys`,
+or use it with `action: "wait"`. This waits for process exit rather than quiet output and returns
+the retained final screen. A timeout explicitly says the process is still running. Exit does not
+prove success; inspect the final output. `wait_for_exit` cannot accompany `wait_for` or
+`wait_absent`.
+
+If a matched marker was already visible before input, the result warns that it does not confirm a
+new response, even when another part of the screen changed. Choose a distinct response marker for
+each request. See
+[Drive an interactive program efficiently](../recipes/drive-interactive-terminal.md) for compound
+calls that avoid unnecessary model round trips.
+
 ## Keep observations small and current
 
 An attached terminal contributes a bounded rendered viewport rather than a history of TUI redraws. A
 large viewport keeps both its beginning and end, with an explicit clipping notice;
 `action: "screen"` returns the full viewport. Terminal snapshots supersede older observations of the
 same terminal in the model's context, and job log reads supersede older reads of that job.
+
+Automatic observations from `open`, `type`, `keys`, and `wait` keep at most 2,000 UTF-16 code units
+of screen text, plus clipping notices. They retain the beginning and end, and an excerpt around a
+`wait_for` match in the omitted middle when the marker fits within 500 code units. The complete
+snapshot remains in the tool's structured details for the UI. Use `action: "screen"` when a decision
+needs the omitted area; this reads the current viewport, not the entire output history.
 
 Input actions already return a screen. Use `action: "wait"` for delayed output instead of repeatedly
 calling `screen`. Waits wake on terminal output or exit, with a deadline, rather than rendering a
@@ -68,6 +86,6 @@ These projects provide useful examples of interactive terminal contracts:
 - [interactive-shell-mcp](https://github.com/lightos/interactive-shell-mcp): separate stream and
   rendered-screen modes, idle waits, and screen regions.
 
-Localix retains complete current screens when replacing older terminal observations. Incremental
+Each observation stands on its own and replaces older observations of the same terminal. Incremental
 screen diffs would require keeping their baseline across context trimming; that is not the current
 contract.

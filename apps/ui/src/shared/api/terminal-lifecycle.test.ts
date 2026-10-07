@@ -85,8 +85,9 @@ describe('Web terminal lifecycle', () => {
       }),
     )
     expect(finished.messages[finished.messages.length - 1]?.systemNotice?.text).toBe(
-      'Background terminal finished',
+      'Background terminal exited (130)',
     )
+    expect(finished.messages.at(-1)?.systemNotice?.tone).toBe('error')
     expect(finished.messages[0]?.systemNotice?.text).toBe('Waited for background terminal')
     expect(finished.messages[0]?.terminalLifecycle?.active).toBe(false)
     expect(finished.activePhase).toBeNull()
@@ -131,5 +132,57 @@ describe('Web terminal lifecycle', () => {
     )
 
     expect(next.activePhase).toEqual({ id: 'terminal-wait:pty-1', label: 'first prompt' })
+  })
+
+  test('explicitly stopping a terminal retains its outcome without presenting a failure', () => {
+    const stopped = applyStreamEventToSession(
+      session(),
+      event({
+        type: 'terminal.finished',
+        sessionId: 'sess-1',
+        terminalId: 'pty-1',
+        exitCode: 130,
+        stopped: true,
+      }),
+    )
+    expect(stopped.messages[0]?.systemNotice).toMatchObject({
+      tone: 'neutral',
+      text: 'Background terminal stopped',
+      activity: { state: 'stopped' },
+    })
+  })
+
+  test('chatty lifecycle history cannot evict a live wait or inflate its snapshot replay count', () => {
+    const waiting = event({
+      type: 'terminal.waiting',
+      sessionId: 'sess-1',
+      terminalId: 'waiting',
+      active: true,
+    })
+    let current = applyStreamEventToSession(session(), waiting)
+    current = applyStreamEventToSession(current, waiting)
+    expect(current.messages[0]?.terminalLifecycle?.count).toBe(1)
+    expect(current.messages[0]?.systemRepeatCount).toBe(1)
+    for (let index = 0; index < 25; index += 1) {
+      current = applyStreamEventToSession(
+        current,
+        event({
+          type: 'terminal.finished',
+          sessionId: 'sess-1',
+          terminalId: `other-${index}`,
+          exitCode: 0,
+        }),
+      )
+    }
+    expect(
+      current.messages.find((message) => message.terminalLifecycle?.terminalId === 'waiting')
+        ?.terminalLifecycle?.active,
+    ).toBe(true)
+    expect(current.messages).toHaveLength(21)
+    current = applyStreamEventToSession(
+      current,
+      event({ type: 'terminal.finished', sessionId: 'sess-1', terminalId: 'waiting', exitCode: 0 }),
+    )
+    expect(current.activePhase).toBeNull()
   })
 })

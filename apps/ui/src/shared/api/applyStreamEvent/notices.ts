@@ -58,7 +58,9 @@ function terminalLifecycleNotice(
     return session
   }
   const tail = session.messages.at(-1)
-  const anchor = [...session.messages].reverse().find((message) => message.role !== 'system')
+  const anchor = [...session.messages]
+    .reverse()
+    .find((message) => message.role !== 'system' && !message.isInternal)
   const withinMessage = noticePosition(session, anchor)
   if (
     tail?.terminalLifecycle?.kind === kind &&
@@ -69,11 +71,16 @@ function terminalLifecycleNotice(
     const messages = session.messages.slice()
     messages[messages.length - 1] = {
       ...tail,
-      systemNotice: { ...tail.systemNotice!, text },
+      systemRepeatCount: (tail.systemRepeatCount ?? 1) + (kind === 'waiting' ? 0 : 1),
+      systemNotice: {
+        ...tail.systemNotice!,
+        text,
+        activity: { id: `terminal:${event.terminalId}`, state: active ? 'running' : 'completed' },
+      },
       terminalLifecycle: {
         ...tail.terminalLifecycle,
         active,
-        count: tail.terminalLifecycle.count + 1,
+        count: tail.terminalLifecycle.count + (kind === 'waiting' ? 0 : 1),
         label,
       },
     }
@@ -93,6 +100,10 @@ function terminalLifecycleNotice(
       tone: 'neutral' as const,
       text,
       detail: label,
+      activity: {
+        id: `terminal:${event.terminalId}`,
+        state: active ? ('running' as const) : ('completed' as const),
+      },
     },
     terminalLifecycle: {
       kind,
@@ -102,7 +113,11 @@ function terminalLifecycleNotice(
       label,
     },
   }
-  const existing = session.messages.filter((message) => message.terminalLifecycle)
+  const existing = session.messages.filter(
+    (message) =>
+      message.terminalLifecycle &&
+      !(message.terminalLifecycle.kind === 'waiting' && message.terminalLifecycle.active),
+  )
   const base =
     existing.length >= MAX_TERMINAL_LIFECYCLE_NOTICES
       ? session.messages.filter((message) => message.id !== existing[0]?.id)
@@ -123,7 +138,11 @@ function activeTerminalWaitPhase(messages: UiSession['messages']): UiSession['ac
 /** The wait notice for `terminalId`, marked as over. */
 const endWait = (message: UiSession['messages'][number]): UiSession['messages'][number] => ({
   ...message,
-  systemNotice: { ...message.systemNotice!, text: 'Waited for background terminal' },
+  systemNotice: {
+    ...message.systemNotice!,
+    text: 'Waited for background terminal',
+    activity: { id: `terminal:${message.terminalLifecycle!.terminalId}`, state: 'completed' },
+  },
   terminalLifecycle: { ...message.terminalLifecycle!, active: false },
 })
 
@@ -173,7 +192,9 @@ export const noticeReducers: StreamReducers<
     // compact system notice anchored after the latest conversation message.
     if (event.sessionId !== session.id) return session
     hookNoticeCounter += 1
-    const anchorMsg = [...session.messages].reverse().find((m) => m.role !== 'system')
+    const anchorMsg = [...session.messages]
+      .reverse()
+      .find((m) => m.role !== 'system' && !m.isInternal)
     const notice = {
       id: `sys-hook_notice-${Date.now()}-${hookNoticeCounter}`,
       createdAt: new Date().toISOString(),
@@ -250,8 +271,37 @@ export const noticeReducers: StreamReducers<
       ),
     }
     const next = terminalLifecycleNotice(settled, event, 'finished', 'Background terminal finished')
+    const failed = event.exitCode !== 0 && !event.stopped && !event.interactive
+    const messages = next.messages.map((message) => {
+      if (
+        message.terminalLifecycle?.kind !== 'finished' ||
+        message.terminalLifecycle.terminalId !== event.terminalId
+      )
+        return message
+      return {
+        ...message,
+        systemNotice: {
+          ...message.systemNotice!,
+          text: event.stopped
+            ? 'Background terminal stopped'
+            : failed
+              ? `Background terminal exited (${event.exitCode})`
+              : 'Background terminal finished',
+          tone: failed ? ('error' as const) : ('neutral' as const),
+          activity: {
+            id: `terminal:${event.terminalId}`,
+            state: event.stopped
+              ? ('stopped' as const)
+              : failed
+                ? ('failed' as const)
+                : ('completed' as const),
+          },
+        },
+      }
+    })
     return {
       ...next,
+      messages,
       activePhase:
         session.activePhase?.id === `terminal-wait:${event.terminalId}`
           ? activeTerminalWaitPhase(settled.messages)

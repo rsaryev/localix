@@ -1,4 +1,6 @@
-/** Wait until a runtime-announced tool turn has actually reached the host transcript.
+import type { SteeringBoundary } from '@localixai/agent'
+
+/** Wait until a runtime-announced turn has actually reached the host transcript.
  * A bounded event stream may deliver its turn_end after Pi asks for the next model sample. */
 export function createToolCheckpointGate(input: {
   signal: AbortSignal
@@ -40,4 +42,18 @@ export function createToolCheckpointGate(input: {
   }
 
   return { waitFor, notify }
+}
+
+/** A steering split cannot race older queued events into its fresh assistant row. */
+export async function takeSteeringAtCheckpoint(input: {
+  boundary?: SteeringBoundary
+  waitFor: (index: number) => Promise<boolean>
+  take: () => Promise<string[]>
+  onToolBoundary: (index: number | undefined) => void
+}): Promise<string[]> {
+  input.onToolBoundary(undefined)
+  const index = input.boundary?.completedTurnIndex ?? input.boundary?.completedToolTurnIndex
+  if (index !== undefined && !(await input.waitFor(index))) return []
+  input.onToolBoundary(input.boundary?.completedToolTurnIndex)
+  return input.take()
 }

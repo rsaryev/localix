@@ -24,7 +24,7 @@ export const terminalActionFields = {
     .enum(INTERACTIVE_ACTIONS)
     .optional()
     .describe(
-      'Omit for shell commands. PTY: open starts command; screen reads; type sends text + keys; keys navigates; wait awaits text; list/close. Input returns a fresh screen. Follow on-screen shortcuts, batch known keys, verify selection before branching.',
+      'Omit for shell commands. PTY: open starts; screen reads full viewport; type sends text + keys; keys navigates; wait observes; list/close. Input returns a screen: avoid redundant reads, batch known keys, verify before branching.',
     ),
   terminal_id: z.string().optional().describe('From open/list; required except for open/list.'),
   keys: z
@@ -44,6 +44,12 @@ export const terminalActionFields = {
       'Literal, case-sensitive screen text to await; combine with open/type/keys. Match response/status, not echoed input. Omit for quiet output; quiet does not prove completion.',
     ),
   wait_absent: z.boolean().optional().describe('Await disappearance of wait_for instead.'),
+  wait_for_exit: z
+    .boolean()
+    .optional()
+    .describe(
+      'Wait for process exit in this call, including after input. Excludes wait_for/absent.',
+    ),
   wait_timeout_ms: z
     .number()
     .int()

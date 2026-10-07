@@ -17,14 +17,7 @@ export interface InlineSpan {
   code?: boolean
 }
 
-/** Collapse `[text](url)` → `text (url)` and `![alt](url)` → `alt` before styling. */
-function flattenLinks(text: string): string {
-  return text
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, (_m, alt: string) => alt)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, url: string) =>
-      url && url !== label ? `${label} (${url})` : label,
-    )
-}
+import { flattenLinks } from './flatten-links'
 
 /** Push text onto the last span when styling matches, else start a new span. */
 function pushSpan(spans: InlineSpan[], text: string, style: Omit<InlineSpan, 'text'>): void {
@@ -56,6 +49,12 @@ export function parseInline(raw: string): InlineSpan[] {
 
   while (i < text.length) {
     const ch = text[i]
+
+    if (ch === '\\' && text[i + 1] && /[!"#$%&'()*+,./:;<=>?@[\\\]^_`{|}~-]/u.test(text[i + 1]!)) {
+      pushSpan(spans, text[i + 1]!, { bold: bold || undefined, italic: italic || undefined })
+      i += 2
+      continue
+    }
 
     // Inline code: literal run to the next backtick (no nested styling inside).
     if (ch === '`') {

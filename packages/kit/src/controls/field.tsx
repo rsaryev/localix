@@ -24,6 +24,8 @@ type FieldProps = Omit<React.ComponentPropsWithoutRef<'div'>, 'children'> & {
   optional?: boolean
   disabled?: boolean
   readOnly?: boolean
+  /** Compact checkbox/switch row; the label keeps its native association. */
+  layout?: 'stacked' | 'inline'
   children: React.ReactNode
 }
 
@@ -40,6 +42,7 @@ function Field({
   optional = false,
   disabled = false,
   readOnly = false,
+  layout = 'stacked',
   children,
   className,
   ...props
@@ -73,23 +76,26 @@ function Field({
         className={cn('flex w-full flex-col gap-1.5', className)}
         {...props}
       >
-        <label
-          id={labelId}
-          htmlFor={controlId}
-          data-slot="field-label"
-          className="flex min-w-0 items-baseline justify-between gap-2 text-xs font-medium text-text-soft data-[disabled=true]:opacity-50"
-          data-disabled={disabled || undefined}
-        >
-          <span className="min-w-0">{label}</span>
-          {required ? (
-            <span className="shrink-0 text-status-error/90">
-              <span aria-hidden="true">*</span>
-              <span className="sr-only">Required</span>
-            </span>
-          ) : optional ? (
-            <span className="shrink-0 font-normal text-text-faint">Optional</span>
-          ) : null}
-        </label>
+        <div className={layout === 'inline' ? 'flex min-w-0 items-center gap-2' : 'contents'}>
+          {layout === 'inline' && children}
+          <label
+            id={labelId}
+            htmlFor={controlId}
+            data-slot="field-label"
+            className="flex min-w-0 items-baseline justify-between gap-2 text-xs font-medium text-text-soft data-[disabled=true]:opacity-50"
+            data-disabled={disabled || undefined}
+          >
+            <span className="min-w-0">{label}</span>
+            {required ? (
+              <span className="shrink-0 text-status-error/90">
+                <span aria-hidden="true">*</span>
+                <span className="sr-only">Required</span>
+              </span>
+            ) : optional ? (
+              <span className="shrink-0 font-normal text-text-faint">Optional</span>
+            ) : null}
+          </label>
+        </div>
         {description != null && (
           <p
             id={descriptionId}
@@ -99,7 +105,7 @@ function Field({
             {description}
           </p>
         )}
-        {children}
+        {layout === 'stacked' && children}
         {error != null && (
           <p
             id={errorId}

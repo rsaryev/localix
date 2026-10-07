@@ -4,7 +4,8 @@ import type { AgentItem, ToolBackedItem } from '@localixai/agent/agents'
 import { getMessageToolDetails } from '@/shared/api/tool-details-client'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 import { COLLAPSIBLE_MOTION } from '@localixai/kit/collapsible-motion'
-import { ItemView } from './ItemView'
+import { ToolChainBody } from './ToolChainBody'
+import type { Message } from '../../model/types'
 import {
   isItemStreaming,
   hasItemError,
@@ -13,8 +14,6 @@ import {
   chainDiffStats,
 } from './itemHelpers'
 import { ToolChainHeader, type ChainAggregate } from './ToolChainHeader'
-import { groupConsecutiveItems, isCollapsedGroup } from './cards/stacking'
-import { StackedItemGroup } from './cards/StackedItemGroup'
 import { DurationsContext } from './toolTimingStore'
 import { useToolEventFocus } from './eventFocusTarget'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
@@ -24,6 +23,9 @@ import { useToolCardsVersion } from '@/shared/contrib/toolCards'
 interface ToolChainProps {
   /** One uninterrupted run of tool-backed items. */
   items: AgentItem[]
+  activity?: readonly Message[]
+  /** The response is still streaming; settled chains fold without discarding manual toggles. */
+  isRunning?: boolean
   /**
    * True only for the trailing chain of the last message — the one that stays
    * expanded while the run progresses; earlier chains fold into a digest.
@@ -40,6 +42,8 @@ export function areToolChainPropsEqual(prev: ToolChainProps, next: ToolChainProp
   // a fresh run array per render. Compare the immutable elements, not the wrapper array.
   if (
     prev.isLatest !== next.isLatest ||
+    prev.isRunning !== next.isRunning ||
+    (prev.activity?.length ?? 0) !== (next.activity?.length ?? 0) ||
     prev.messageId !== next.messageId ||
     prev.items.length !== next.items.length ||
     prev.deferredToolItemIds?.length !== next.deferredToolItemIds?.length
@@ -48,6 +52,7 @@ export function areToolChainPropsEqual(prev: ToolChainProps, next: ToolChainProp
   }
   return (
     prev.items.every((item, index) => item === next.items[index]) &&
+    (prev.activity ?? []).every((message, index) => message === next.activity?.[index]) &&
     (prev.deferredToolItemIds ?? []).every(
       (itemId, index) => itemId === next.deferredToolItemIds?.[index],
     )
@@ -63,8 +68,7 @@ function capitalize(text: string): string {
  * bare; a run of 2+ gets a bordered "track" that reads as one action group, with
  * a live aggregate header ("Reading 1 file, running 15 commands… · 3/16") that
  * folds into a digest ("Read 3 files, ran 15 commands · +120 −41 · 12.4s") when
- * a newer chain/message starts (the latest chain stays open even once the run
- * ends). Item-native: each item renders via {@link ItemView}.
+ * work ends or a newer chain starts. Routine lifecycle details share its disclosure.
  */
 const detailRequests = new Map<string, Promise<ToolBackedItem[]>>()
 
@@ -90,6 +94,8 @@ function loadMessageToolDetails(sessionId: string, messageId: string): Promise<T
 
 function ToolChainComponent({
   items,
+  activity = [],
+  isRunning,
   isLatest = false,
   messageId,
   deferredToolItemIds,
@@ -100,7 +106,7 @@ function ToolChainComponent({
   const durations = useContext(DurationsContext)
   const containsEventTarget = useToolEventFocus(items) !== null
   const [userOpen, setUserOpen] = useState<boolean | null>(null)
-  const [everExpanded, setEverExpanded] = useState(items.length <= 1)
+  const [everExpanded, setEverExpanded] = useState(items.length === 1 && activity.length === 0)
   const [resolved, setResolved] = useState<{
     key: string
     items: ToolBackedItem[]
@@ -120,8 +126,13 @@ function ToolChainComponent({
     const byId = new Map(resolvedItems.map((item) => [item.id, item]))
     return items.map((item) => byId.get(item.id) ?? item)
   }, [items, resolvedItems])
-  const isCluster = items.length > 1
-  const expanded = isCluster ? containsEventTarget || (userOpen ?? isLatest) : true
+  const isCluster = items.length > 1 || activity.length > 0
+  const isLive = Boolean(
+    isRunning ||
+    items.some(isItemStreaming) ||
+    activity.some((message) => message.systemNotice?.activity?.state === 'running'),
+  )
+  const expanded = isCluster ? containsEventTarget || (userOpen ?? (isLatest && isLive)) : true
 
   useEffect(() => {
     if (!expanded || !detailKey || !detailSessionId || !messageId || resolvedItems) return
@@ -172,9 +183,8 @@ function ToolChainComponent({
   const toolCardsVersion = useToolCardsVersion()
 
   const aggregate = useMemo((): ChainAggregate | null => {
-    if (displayedItems.length <= 1) return null
+    if (displayedItems.length <= 1 && !activity.length) return null
     const streamingItem = displayedItems.find(isItemStreaming)
-    const isLive = Boolean(streamingItem)
     let errorCount = 0
     let doneCount = 0
     let totalMs = 0
@@ -186,8 +196,10 @@ function ToolChainComponent({
     // Aggregate digest — "Reading 1 file, running 15 commands…" while live,
     // "Read 3 files, ran 15 commands" once done; falls back to the old forms.
     const title = isLive
-      ? (chainSummary(displayedItems, true) ?? capitalize(`${itemActionVerb(streamingItem!)}…`))
-      : (chainSummary(displayedItems, false) ?? `${displayedItems.length} steps`)
+      ? (chainSummary(displayedItems, true) ??
+        (streamingItem ? capitalize(`${itemActionVerb(streamingItem)}…`) : 'Working…'))
+      : (chainSummary(displayedItems, false) ??
+        (displayedItems.length ? `${displayedItems.length} steps` : 'System activity'))
     return {
       isLive,
       errorCount,
@@ -197,34 +209,12 @@ function ToolChainComponent({
       diffStats: chainDiffStats(displayedItems),
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the version stands in for the registry
-  }, [displayedItems, durations, toolCardsVersion])
+  }, [displayedItems, durations, toolCardsVersion, activity, isLive])
 
-  // Pure render-layer folding, memoized on the items array (the transcript is
-  // virtualized + memoized — recompute only when the run actually changes):
-  // read-only and same-name stackable runs fold at 2, a running call inside its
-  // group, a failed one on its own (see cards/stacking.ts).
-  const groups = useMemo(
-    () => groupConsecutiveItems(displayedItems),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the version stands in for the registry
-    [displayedItems, toolCardsVersion],
-  )
+  if (!items.length && !activity.length) return null
 
-  if (!items.length) return null
-
-  const renderBody = () =>
-    groups.map((group) =>
-      isCollapsedGroup(group) ? (
-        <StackedItemGroup key={group.items[0].id} items={group.items} />
-      ) : (
-        group.items.map((item) => <ItemView key={item.id} item={item} />)
-      ),
-    )
-
-  // Open iff this is the LAST aggregation (manual toggle overrides). An older
-  // aggregation collapses ONLY because a newer one started — `isLatest` moves
-  // forward monotonically, so each chain folds exactly once. Deliberately NOT
-  // keyed on `isLive`/`sessionIsRunning`: those flip on/off between tool calls
-  // mid-run, which made the chain jump open↔closed during streaming.
+  // Keep mounted details and manual toggles across lifecycle updates. The response's
+  // isRunning flag keeps the latest chain open between calls, until the response ends.
   if (expanded && !everExpanded) setEverExpanded(true)
 
   // ONE element tree for a lone call and a cluster: the header slot is empty for one item and
@@ -235,7 +225,7 @@ function ToolChainComponent({
     <ToolChainHeader
       aggregate={aggregate}
       expanded={expanded}
-      count={items.length}
+      count={items.length || activity.length}
       onToggle={() => setUserOpen(!expanded)}
     />
   ) : null
@@ -270,7 +260,7 @@ function ToolChainComponent({
                   )}
                 </div>
               ) : (
-                renderBody()
+                <ToolChainBody items={displayedItems} activity={activity} />
               )
             ) : null}
           </div>

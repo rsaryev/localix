@@ -163,6 +163,7 @@ describe('terminal service', () => {
       type: 'terminal.finished',
       terminalId: terminal.id,
       exitCode: 130,
+      stopped: true,
       command: 'npm test',
     })
     // Also stamped on the explicit-close path — the two publish routes must agree, or a terminal

@@ -5,6 +5,24 @@ const k = (id: string) => `@localixai/kit/${id}`
 /** Rendered text, identity and data views, the board, and keyboard hints. */
 export const CONTENT: readonly KitCatalogEntry[] = [
   {
+    specifier: k('rich-text-view'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['RichTextView'],
+    summary: 'Safe rendering of restricted structured prose without loading an editing engine.',
+    use: 'Paragraphs, marks, links and lists stored with the SDK rich-text contract. Import rich-text separately when editing is needed.',
+    not: 'Not arbitrary HTML rendering or an editable control.',
+  },
+  {
+    specifier: k('document-thumbnail'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['DocumentThumbnail'],
+    summary: 'A first-page thumbnail of actual A4 document content.',
+    use: 'Document and template galleries. Supply the same renderer as the document preview; it scales and crops the first page without adding interactive content.',
+    not: 'Not a full document viewer or a pagination engine.',
+  },
+  {
     specifier: k('coding-agent-marks'),
     category: 'content',
     provider: 'kit',

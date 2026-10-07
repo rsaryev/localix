@@ -176,6 +176,8 @@ export type WorkspaceStreamEvent =
        * their own clock exactly as before.
        */
       finishedAt?: number
+      /** Explicitly closed through the terminal controls, rather than a process failure. */
+      stopped?: true
       /**
        * The login shell the person opened from the terminal panel, not a job. The frame still
        * settles the pane; a client must not report it, since the person typed `exit` themselves.

@@ -58,6 +58,8 @@ export interface RunTurnState {
   completedTurnCheckpoint: { payload: StoredMessagePayload; createdAt: string } | undefined
   /** Most recent fully persisted tool-result turn. A child report can only join this seam. */
   completedToolTurnIndex: number | undefined
+  /** Host-consumed turn boundary; steering may not split ahead of the event writer. */
+  completedTurnIndex: number | undefined
 
   // ---- Timing telemetry -----------------------------------------------
   // Date.now() stamped at each event arrival (the loop processes events
@@ -173,6 +175,7 @@ export function createRunTurnState(init: {
     assistantCreatedAt: init.assistantCreatedAt,
     completedTurnCheckpoint: undefined,
     completedToolTurnIndex: undefined,
+    completedTurnIndex: undefined,
     timing: {
       modelMs: 0,
       revealMs: 0,

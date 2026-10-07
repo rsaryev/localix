@@ -33,13 +33,19 @@ export async function waitForScreen(
     terminalId: string
     wait_for?: string
     wait_absent?: boolean
+    wait_for_exit?: boolean
     wait_timeout_ms?: number
+    fullScreen?: boolean
   },
   signal?: AbortSignal,
 ): Promise<TerminalActionResult> {
   const timeoutMs = Math.min(input.wait_timeout_ms ?? DEFAULT_WAIT_MS, MAX_WAIT_MS)
   const needle = input.wait_for
   const absent = Boolean(input.wait_absent)
+  const waitForExit = Boolean(input.wait_for_exit)
+  if (waitForExit && (needle !== undefined || absent)) {
+    return { content: 'wait_for_exit cannot be combined with wait_for/wait_absent.', isError: true }
+  }
   if (absent && !needle) {
     return {
       content: 'wait_absent requires wait_for — say WHAT should disappear.',
@@ -86,7 +92,8 @@ export async function waitForScreen(
     } else {
       for (;;) {
         // With no needle, "quiet" is QUIET_MS without output, so the window restarts per wake.
-        const quietAt = needle ? hardDeadline : Math.min(hardDeadline, Date.now() + QUIET_MS)
+        const quietAt =
+          needle || waitForExit ? hardDeadline : Math.min(hardDeadline, Date.now() + QUIET_MS)
         const wake = await activity.next(quietAt)
         if (wake === 'aborted') {
           outcome = 'interrupted'
@@ -140,6 +147,7 @@ export async function waitForScreen(
       case 'interrupted':
         return `INTERRUPTED after ${waited}: the terminal wait was cancelled.${exited ? ' The terminal has exited.' : ' The terminal is still open.'}`
       case 'timeout':
+        if (waitForExit) return `TIMED OUT after ${waited}: the program is still running.`
         return needle
           ? `TIMED OUT after ${waited}: "${needle}" ${absent ? 'is STILL on screen' : 'never appeared'}. ` +
               'This is not necessarily a failure — the program may still be working. Wait again with a ' +
@@ -161,7 +169,7 @@ export async function waitForScreen(
     }
   }
   return {
-    content: `${verdict}\nTerminal ${input.terminalId}: ${exited ? 'exited' : 'running'}.\n${renderScreen(last)}`,
+    content: `${verdict}\nTerminal ${input.terminalId}: ${exited ? 'exited' : 'running'}.\n${renderScreen(last, { compact: !input.fullScreen, waitFor: needle })}`,
     details: {
       action: 'wait',
       terminalId: input.terminalId,

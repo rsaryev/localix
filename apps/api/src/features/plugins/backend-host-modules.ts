@@ -7,6 +7,7 @@ import * as sdkResourceRefs from '@localixai/plugin-sdk/resource-refs'
 import * as sdkSessionResource from '@localixai/plugin-sdk/session-resource'
 import * as sdkTypedError from '@localixai/plugin-sdk/typed-error'
 import * as sdkPrerequisite from '@localixai/plugin-sdk/prerequisite'
+import * as sdkRichText from '@localixai/plugin-sdk/rich-text'
 
 import type { PluginBackendHostModule } from './authoring/kit-layout'
 
@@ -29,6 +30,7 @@ const HOST_MODULES: Record<PluginBackendHostModule, Record<string, unknown>> = {
   '@localixai/plugin-sdk/session-resource': sdkSessionResource,
   '@localixai/plugin-sdk/typed-error': sdkTypedError,
   '@localixai/plugin-sdk/prerequisite': sdkPrerequisite,
+  '@localixai/plugin-sdk/rich-text': sdkRichText,
 }
 
 let installed = false

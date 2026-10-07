@@ -123,6 +123,7 @@ export function createBashTool(
             text: input.text,
             wait_for: input.wait_for,
             wait_absent: input.wait_absent,
+            wait_for_exit: input.wait_for_exit,
             wait_timeout_ms: input.wait_timeout_ms,
           },
           signal,

@@ -201,6 +201,7 @@ export function captureCompletedTurnCheckpoint(
     createdAt: ctx.state.assistantCreatedAt,
   }
   ctx.state.completedToolTurnIndex = event.toolResults.length > 0 ? event.turnIndex : undefined
+  ctx.state.completedTurnIndex = event.turnIndex
 }
 
 /**

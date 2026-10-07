@@ -24,6 +24,8 @@ import { useTranscriptNavStore } from '@/shared/lib/transcriptNavBus'
 import { nextPromptIndex } from '@/shared/lib/transcriptNav'
 import { createTrailingThrottle } from '@/shared/lib/throttle'
 import { createTranscriptProjectionSelector } from './transcriptProjection'
+import { systemMessageLabel } from './coalesceSystemMessages'
+import { ToolChain } from './tool-parts/ToolChain'
 import { messageDisplayRows, messagePositions } from '../model/messageGroups'
 import { TranscriptMinimap } from './transcript-minimap/TranscriptMinimap'
 import { buildMinimapTicks } from './transcript-minimap/minimapModel'
@@ -413,19 +415,26 @@ function MessageListImpl({
             virtualizer={virtualizer}
           >
             <SurfaceErrorBoundary key={m.id} surface="This message">
-              {m.role === 'system' && m.commandOutput ? (
-                <CommandOutputLine output={m.commandOutput} />
+              {m.systemActivity ? (
+                <ToolChain
+                  items={[]}
+                  activity={m.systemActivity}
+                  isLatest={vi.index === lastIndex}
+                />
+              ) : m.role === 'system' && m.commandOutput ? (
+                <CommandOutputLine output={m.commandOutput} repeatCount={m.systemRepeatCount} />
               ) : m.role === 'system' && m.systemNotice ? (
                 // The same re-run the message actions offer — a notice that asks for a
                 // decision gets the control to make it, not a second mechanism.
                 <SystemNoticeLine
                   notice={m.systemNotice}
                   createdAt={m.createdAt}
+                  repeatCount={m.systemRepeatCount}
                   onRetry={onRegenerate}
                 />
               ) : m.uiOnly ? (
                 <LabelDivider role="presentation" className="py-1">
-                  {m.content}
+                  {systemMessageLabel(m.content ?? '', m.systemRepeatCount)}
                 </LabelDivider>
               ) : (
                 <MessageCard

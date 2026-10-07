@@ -1,4 +1,10 @@
 import type { Message } from '../model/types'
+import { projectContinuationItems } from '@localixai/agent'
+import {
+  coalesceSystemMessages,
+  groupSystemActivity,
+  isSystemActivity,
+} from './coalesceSystemMessages'
 
 export interface TranscriptProjectionMetrics {
   mode: 'full' | 'append' | 'tail'
@@ -12,6 +18,8 @@ interface ProjectionResult {
 }
 
 function buildTranscriptProjection(messages: readonly Message[]): ProjectionResult {
+  const original = messages
+  messages = projectContinuationItems(messages)
   const notices: Message[] = []
   const realIds = new Set<string>()
   let hasInternal = false
@@ -30,7 +38,7 @@ function buildTranscriptProjection(messages: readonly Message[]): ProjectionResu
           identity: false,
           hasNotices: false,
         }
-      : { projected: messages, identity: true, hasNotices: false }
+      : { projected: messages, identity: messages === original, hasNotices: false }
   }
 
   // Interleave each system notice right after its anchor message (the message it
@@ -66,13 +74,19 @@ function buildTranscriptProjection(messages: readonly Message[]): ProjectionResu
     // ordinary notices still occupy their own transcript row after the message.
     const inline =
       message.role === 'assistant'
-        ? after?.filter((notice) => notice.withinMessage && notice.systemNotice)
+        ? after?.filter(
+            (notice) => notice.systemNotice && (notice.withinMessage || isSystemActivity(notice)),
+          )
         : undefined
     projected.push(inline?.length ? { ...message, inlineNotices: inline } : message)
     if (after) projected.push(...after.filter((notice) => !inline?.includes(notice)))
   }
   projected.push(...trailing)
-  return { projected, identity: false, hasNotices: true }
+  return {
+    projected: groupSystemActivity(coalesceSystemMessages(projected)),
+    identity: false,
+    hasNotices: true,
+  }
 }
 
 /**
@@ -107,7 +121,7 @@ export function createTranscriptProjectionSelector(
         messages[messages.length - 2] === previousMessages[previousMessages.length - 2])
     ) {
       const tail = messages[messages.length - 1]!
-      if (!tail.isInternal && tail.role !== 'system') {
+      if (!tail.isInternal && tail.role !== 'system' && !tail.continuedFromMessageId) {
         if (previousWasIdentity) {
           previousMessages = messages
           previousProjection = messages
@@ -152,7 +166,7 @@ export function createTranscriptProjectionSelector(
         visited += 1
         const message = messages[index]!
         if (message.isInternal) continue
-        if (message.role === 'system') {
+        if (message.role === 'system' || message.continuedFromMessageId) {
           hasNotice = true
           break
         }

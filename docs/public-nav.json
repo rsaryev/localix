@@ -16,6 +16,7 @@
       "title": "Recipes",
       "pages": [
         "recipes/bring-your-own-agent-cli.md",
+        "recipes/drive-interactive-terminal.md",
         "recipes/fix-a-ui-bug-by-pointing-at-it.md",
         "recipes/turn-a-vague-goal-into-a-pipeline.md"
       ]
@@ -34,6 +35,7 @@
             "features/configure.md",
             "features/sessions-and-projects.md",
             "features/conversations.md",
+            "features/conversation-history.md",
             "features/answer-formatting.md",
             "features/hitl.md",
             "features/delegation.md",

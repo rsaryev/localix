@@ -1,15 +1,15 @@
 import type { AgentItem } from '@localixai/agent/agents'
 import type { Message } from '../model/types'
+import {
+  coalesceSystemMessages,
+  isSystemActivity,
+  needsSystemMessageAttention,
+} from './coalesceSystemMessages'
 
 export type InlineSegment =
-  | { kind: 'body'; items?: AgentItem[]; content?: string }
+  | { kind: 'body'; items?: AgentItem[]; content?: string; activity?: Message[] }
   | { kind: 'notice'; message: Message }
   | { kind: 'pending'; messages: Message[] }
-
-function needsAttention(message: Message): boolean {
-  const notice = message.systemNotice
-  return Boolean(notice?.tone === 'warning' || notice?.tone === 'error' || notice?.recovery?.length)
-}
 
 /** Arrival anchors select explicit agent-item boundaries, never character offsets.
  * Ordinary notices wait for a growing narrative item to close; important notices
@@ -36,20 +36,45 @@ export function inlineNoticeSegments(message: Message, isStreaming = false): Inl
           (itemIndex === items.length - 1 &&
             (item?.type === 'text' || item?.type === 'reasoning') &&
             item.status === 'running'))
-      return { index, notice, order, pending: growing && !needsAttention(notice) }
+      return { index, notice, order, pending: growing && !needsSystemMessageAttention(notice) }
     })
     .sort((a, b) => a.index - b.index || a.order - b.order)
 
   const segments: InlineSegment[] = []
   const pending: Message[] = []
   let start = 0
-  for (const boundary of boundaries) {
+  let activity: Message[] = []
+  const groupedBoundaries: typeof boundaries = []
+  for (let index = 0; index < boundaries.length;) {
+    const first = boundaries[index]!
+    let end = index + 1
+    while (end < boundaries.length && boundaries[end]!.index === first.index) end += 1
+    const run = boundaries.slice(index, end)
+    const originals = new Map(run.map((boundary) => [boundary.notice.id, boundary]))
+    for (const notice of coalesceSystemMessages(run.map((boundary) => boundary.notice))) {
+      groupedBoundaries.push({ ...originals.get(notice.id)!, notice })
+    }
+    index = end
+  }
+  for (const boundary of groupedBoundaries) {
+    if (isSystemActivity(boundary.notice)) {
+      activity.push(boundary.notice)
+      continue
+    }
     if (boundary.index > start) {
       segments.push(
         items.length
-          ? { kind: 'body', items: items.slice(start, boundary.index) }
-          : { kind: 'body', content: message.content },
+          ? {
+              kind: 'body',
+              items: items.slice(start, boundary.index),
+              ...(activity.length ? { activity } : {}),
+            }
+          : { kind: 'body', content: message.content, ...(activity.length ? { activity } : {}) },
       )
+      activity = []
+    } else if (activity.length) {
+      segments.push({ kind: 'body', items: [], activity })
+      activity = []
     }
     if (boundary.pending) pending.push(boundary.notice)
     else segments.push({ kind: 'notice', message: boundary.notice })
@@ -58,10 +83,12 @@ export function inlineNoticeSegments(message: Message, isStreaming = false): Inl
   if (start < end) {
     segments.push(
       items.length
-        ? { kind: 'body', items: items.slice(start) }
-        : { kind: 'body', content: message.content },
+        ? { kind: 'body', items: items.slice(start), ...(activity.length ? { activity } : {}) }
+        : { kind: 'body', content: message.content, ...(activity.length ? { activity } : {}) },
     )
+    activity = []
   }
+  if (activity.length) segments.push({ kind: 'body', items: [], activity })
   if (pending.length) segments.push({ kind: 'pending', messages: pending })
   return segments
 }

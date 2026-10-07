@@ -11,6 +11,7 @@ import {
   type AsyncToolRegistry,
   type ToolAction,
   type ToolActionDescriptor,
+  type ToolBackedItem,
 } from '@localixai/agent/agents'
 
 import type { SessionRecord } from '../../repository'
@@ -18,6 +19,7 @@ import { buildToolItem } from '../items'
 import { backgroundJobFinishedReminder } from '../mid-run-reminders'
 import type { RunTurnState } from './turn-state'
 import type { RunEnv } from './types'
+import { createOwnedItemUpdater } from './owned-item-updater'
 import { wrapDelegatedWake } from '../wake-envelope'
 import type { ExitNotice } from '../exit-notices'
 import { workStatusOfJob, type WorkRecord } from '../../../work/contracts'
@@ -54,10 +56,18 @@ export function createRunAsyncRegistry(args: {
   backgroundToolNames: ReadonlySet<string>
   /** Final model roster result for context-recovery reminder wording. */
   recoveryToolAvailable?: boolean
+  /** Keep a live row's accumulator in sync so a later model delta cannot restore stale output. */
+  patchLiveItem?: (
+    toolCallId: string,
+    patch: { status?: AgentItemStatus; details?: unknown; resultText?: string },
+  ) => void
 }): AsyncToolRegistry {
   const { env, state, abort, userId, session, agentId, assistantMessageId } = args
   const { actionRegistry, work } = env.state
   const owner = { userId, sessionId: session.id }
+  const itemOwners = new Map<string, string>()
+  const currentRow = () => state.currentPayload?.id ?? assistantMessageId
+  const updateOwnedItem = createOwnedItemUpdater(env, userId, session.id)
   // Background producers report cumulative output. Publishing the whole assistant
   // message on every producer tick amplifies one growing command into O(total
   // message size × tick rate) websocket traffic. Keep one shared resync cadence for
@@ -87,8 +97,17 @@ export function createRunAsyncRegistry(args: {
   }
 
   const publishActionSnapshot = (toolCallId: string, actions?: Record<string, ToolAction>) => {
+    const messageId = itemOwners.get(toolCallId) ?? assistantMessageId
     const currentItems = state.currentPayload?.items ?? []
     const descriptors = describeToolActions(toolCallId, actions)
+    if (currentRow() !== messageId) {
+      void updateOwnedItem(messageId, toolCallId, (item) => ({
+        ...item,
+        actions: descriptors,
+      })).catch((error) => console.warn('[agent-runner] failed to persist tool actions', error))
+      return
+    }
+    args.patchLiveItem?.(toolCallId, {})
     let changed = false
     const items = currentItems.map((item) => {
       if (!isToolBackedItem(item) || item.toolCallId !== toolCallId) return item
@@ -97,11 +116,12 @@ export function createRunAsyncRegistry(args: {
     })
     if (!changed) return
     state.currentPayload = { ...state.currentPayload, items }
+    state.payload = state.currentPayload
     void env
       .persistAndPublish(
         userId,
         session.id,
-        assistantMessageId,
+        messageId,
         state.currentPayload,
         state.assistantCreatedAt,
       )
@@ -129,6 +149,7 @@ export function createRunAsyncRegistry(args: {
 
   return {
     registerActions(toolCallId, actions, options) {
+      itemOwners.set(toolCallId, currentRow())
       // Tag the owner HERE, where it is known. Sourcing it from `backgroundJobs`
       // below only covered the subset that lands there; the interact gate needs an
       // owner for EVERY registrant.
@@ -172,7 +193,7 @@ export function createRunAsyncRegistry(args: {
           kind: options?.kind ?? (isBackgroundStream ? 'stream' : 'job'),
           label,
           toolCallId,
-          messageId: assistantMessageId,
+          messageId: currentRow(),
           // A monitor names itself (`mon-1`) in the wake that reaches the agent; that id came
           // from this same registry's allocator, so adopting it cannot collide.
           ...(options?.jobId ? { displayId: options.jobId } : {}),
@@ -252,31 +273,57 @@ export function createRunAsyncRegistry(args: {
             : 'failed'
       // Rebuild the background tool's item with the latest output (live on every
       // flush, terminal on done) — it rides the message snapshot, no tool.* event.
-      const updatedItems = (state.currentPayload.items ?? []).map((it) =>
-        isToolBackedItem(it) && it.toolCallId === toolCallId
-          ? buildToolItem({
-              toolCallId,
-              name: it.name,
-              status: itemStatus,
-              input: it.input,
-              details: {
-                ...opts?.details,
-                output,
-                isStreaming: !done,
-                isBackground: true,
-                exitCode: opts?.exitCode,
-                wallTimeMs: opts?.wallTimeMs,
-                jobStatus,
-              },
-              resultText: done ? output : it.resultText,
-              standalone: it.standalone,
-              presentation: it.presentation,
-              actions: describeToolActions(toolCallId, actionRegistry.get(toolCallId)?.actions),
-              activeVerb: isToolCallItem(it) ? it.activeVerb : 'Running',
-            })
-          : it,
-      )
-      state.currentPayload = { ...state.currentPayload, items: updatedItems }
+      const messageId = itemOwners.get(toolCallId) ?? assistantMessageId
+      const ownsCurrentRow = currentRow() === messageId
+      const rebuild = (it: ToolBackedItem) => {
+        const details = {
+          ...opts?.details,
+          output,
+          isStreaming: !done,
+          isBackground: true,
+          exitCode: opts?.exitCode,
+          wallTimeMs: opts?.wallTimeMs,
+          jobStatus,
+        }
+        if (ownsCurrentRow)
+          args.patchLiveItem?.(toolCallId, {
+            status: itemStatus,
+            details,
+            ...(done ? { resultText: output } : {}),
+          })
+        const rebuilt = buildToolItem({
+          ...it,
+          toolCallId,
+          name: it.name,
+          status: itemStatus,
+          input: it.input,
+          details,
+          resultText: done ? output : it.resultText,
+          standalone: it.standalone,
+          presentation: it.presentation,
+          actions: describeToolActions(toolCallId, actionRegistry.get(toolCallId)?.actions),
+          activeVerb: isToolCallItem(it) ? it.activeVerb : 'Running',
+        })
+        if (!ownsCurrentRow) {
+          const value = (rebuilt as { output?: unknown }).output
+          if (typeof value === 'string') publishedOutputs.set(toolCallId, { value })
+          else if (
+            value &&
+            typeof value === 'object' &&
+            'output' in value &&
+            typeof value.output === 'string'
+          )
+            publishedOutputs.set(toolCallId, { value: value.output, key: 'output' })
+        }
+        return rebuilt
+      }
+      if (ownsCurrentRow) {
+        const updatedItems = (state.currentPayload.items ?? []).map((it) =>
+          isToolBackedItem(it) && it.toolCallId === toolCallId ? rebuild(it) : it,
+        )
+        state.currentPayload = { ...state.currentPayload, items: updatedItems }
+        state.payload = state.currentPayload
+      }
       const nowMs = Date.now()
       const previousOutput = publishedOutputs.get(toolCallId)
       const canAppend =
@@ -292,28 +339,29 @@ export function createRunAsyncRegistry(args: {
 
       if (snapshotDue) {
         lastBackgroundSnapshotAt = nowMs
-        rememberPublishedOutputs()
+        if (ownsCurrentRow) rememberPublishedOutputs()
         // `bun` kills the process on an unhandled rejection and this app installs no
         // handler, so a fire-and-forget DB write MUST carry its own catch — one failed
         // snapshot would otherwise take down every session in the process. Warn and carry
         // on: the next snapshot rewrites the same row, so a lost one costs freshness, not
         // data. (`createKeyedSerializer` protects the chain, not the returned promise.)
-        void env
-          .persistAndPublish(
-            userId,
-            session.id,
-            assistantMessageId,
-            state.currentPayload,
-            state.assistantCreatedAt,
-          )
-          .catch((error) =>
-            console.warn('[agent-runner] failed to persist background snapshot', error),
-          )
+        const snapshot = ownsCurrentRow
+          ? env.persistAndPublish(
+              userId,
+              session.id,
+              messageId,
+              state.currentPayload,
+              state.assistantCreatedAt,
+            )
+          : updateOwnedItem(messageId, toolCallId, rebuild)
+        void snapshot.catch((error) =>
+          console.warn('[agent-runner] failed to persist background snapshot', error),
+        )
       } else if (canAppend) {
         env.deps.streamRegistry.publish(userId, session.id, {
           type: 'message.delta',
           sessionId: session.id,
-          messageId: assistantMessageId,
+          messageId,
           itemAppends: [
             {
               itemId: toolCallId,

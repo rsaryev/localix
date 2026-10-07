@@ -47,3 +47,4 @@ export type {
   StripAssetBindingsOptions,
 } from './utils/prune-messages'
 export * from './context/index'
+export { projectContinuationItems } from './agents/continuation-items'

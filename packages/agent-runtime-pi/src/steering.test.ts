@@ -175,6 +175,7 @@ describe('takeSteering reaches the model inside the same run', () => {
 
   test('reports a completed tool seam only after the tool batch, never before the first sample', async () => {
     const boundaries: Array<number | undefined> = []
+    const completedTurns: Array<number | undefined> = []
     const script = scripted([
       fauxAssistantMessage([fauxToolCall('work', {}, { id: 'call-1' })], { stopReason: 'toolUse' }),
       fauxAssistantMessage('done'),
@@ -184,6 +185,7 @@ describe('takeSteering reaches the model inside the same run', () => {
       middleware: script.middleware,
       takeSteering: (boundary?: SteeringBoundary) => {
         boundaries.push(boundary?.completedToolTurnIndex)
+        completedTurns.push(boundary?.completedTurnIndex)
         return []
       },
     })
@@ -191,6 +193,8 @@ describe('takeSteering reaches the model inside the same run', () => {
     expect(result.terminal).toBe('completed')
     expect(boundaries[0]).toBeUndefined()
     expect(boundaries).toContain(0)
+    expect(completedTurns).toContain(1)
+    expect(completedTurns[0]).toBeUndefined()
   })
 
   test('without a taker the run is byte-identical — steering is opt-in', async () => {

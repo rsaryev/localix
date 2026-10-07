@@ -52,6 +52,8 @@ export interface RuntimeContextPolicy {
 
 /** The last settled tool turn, if the runtime is between its tools and the next model sample. */
 export interface SteeringBoundary {
+  /** Last completed turn, including a response with no tool calls. */
+  completedTurnIndex?: number
   completedToolTurnIndex?: number
 }
 

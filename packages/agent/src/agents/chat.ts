@@ -10,6 +10,7 @@ import { assetBindings, type ChatMessage } from '..'
 import type { Message as WireMessage, TextContent, ImageContent, FileContent } from '..'
 import { createChatCacheSnapshot } from '..'
 import { isToolBackedItem, type AgentItem, type ToolBackedItem } from './items'
+import { projectContinuationItems } from './continuation-items'
 import type {
   ChatCacheDiagnosticsPayload,
   ChatCacheSnapshotPayload,
@@ -328,15 +329,15 @@ function itemsToWireMessages(items: AgentItem[]): WireMessage[] {
 }
 
 /**
- * Convert stored messages to wire messages — a pure, per-message mapping. It never looks across
- * messages to change an earlier one: stale live-state snapshots (`supersedeKey`) are collapsed
+ * Convert stored messages to wire messages, repairing repeated item ids in explicitly linked
+ * continuations first. Independent live-state snapshots (`supersedeKey`) are collapsed
  * at a context checkpoint (`context/checkpoint/transforms.ts`), because collapsing one on the
  * turn a newer snapshot arrives rewrites a message the model has already read.
  */
 export function toModelMessages(messages: ChatMessage[]): WireMessage[] {
   const result: WireMessage[] = []
 
-  for (const message of messages) {
+  for (const message of projectContinuationItems(messages)) {
     if (!message.content && !message.items?.length && !message.bindings?.length) continue
 
     if (message.role === 'user') {

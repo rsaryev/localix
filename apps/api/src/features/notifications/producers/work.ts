@@ -32,6 +32,7 @@ export interface TerminalFinished {
   exitCode: number
   command?: string
   finishedAt?: number
+  stopped?: true
   interactive?: true
   wakesAgent?: true
 }
@@ -159,7 +160,7 @@ export function createWorkNotifications(deps: {
       if (endedTerminals.has(event.terminalId)) return
       const owner = { userId, sessionId }
       if (deps.runningWork(owner).some((record) => record.terminalId === event.terminalId)) return
-      const failed = event.exitCode !== 0
+      const failed = event.exitCode !== 0 && !event.stopped
       lane.run(() =>
         recordFor(
           userId,
@@ -168,10 +169,12 @@ export function createWorkNotifications(deps: {
             key: terminalKey(event.terminalId),
             topic: 'terminal.finished',
             category: 'terminal',
-            severity: failed ? 'error' : 'success',
-            title: failed
-              ? `Background terminal exited (${event.exitCode})`
-              : 'Background terminal finished',
+            severity: event.stopped ? 'info' : failed ? 'error' : 'success',
+            title: event.stopped
+              ? 'Background terminal stopped'
+              : failed
+                ? `Background terminal exited (${event.exitCode})`
+                : 'Background terminal finished',
             body: event.command,
             ...(event.finishedAt !== undefined ? { occurredAt: event.finishedAt } : {}),
           },

@@ -52,6 +52,7 @@ export interface TerminalServiceDeps {
           command?: string
           /** When the process exited — see the contract note; a replayed frame must stay datable. */
           finishedAt?: number
+          stopped?: true
           /** A login shell the person opened (`open`), not a job — see the contract note. */
           interactive?: true
           /** Its exit wakes the agent, whose turn reports it — see the contract note. */

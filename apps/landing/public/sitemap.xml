@@ -7,6 +7,7 @@
   <url><loc>https://localix.ai/docs/getting-started--privacy</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/getting-started--troubleshooting</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/recipes--bring-your-own-agent-cli</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/recipes--drive-interactive-terminal</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/recipes--fix-a-ui-bug-by-pointing-at-it</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/recipes--turn-a-vague-goal-into-a-pipeline</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--capabilities</loc><priority>0.7</priority></url>
@@ -16,6 +17,7 @@
   <url><loc>https://localix.ai/docs/features--configure</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--sessions-and-projects</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--conversations</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--conversation-history</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--answer-formatting</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--hitl</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--delegation</loc><priority>0.7</priority></url>

@@ -161,7 +161,7 @@ export function toUiSession(detail: SessionDetail): UiSession {
   const persistedMessages = detail.messages.map(toUiMessage)
   const lastConversationMessage = [...persistedMessages]
     .reverse()
-    .find((message) => message.role !== 'system')
+    .find((message) => message.role !== 'system' && !message.isInternal)
   const restoredWaitMessages = (detail.terminalWaits ?? []).map((wait) => ({
     id: `terminal-wait-snapshot-${wait.terminalId}`,
     role: 'system' as const,
@@ -176,6 +176,7 @@ export function toUiSession(detail: SessionDetail): UiSession {
       kind: 'terminal_activity' as const,
       tone: 'neutral' as const,
       text: 'Waiting for background terminal',
+      activity: { id: `terminal:${wait.terminalId}`, state: 'running' as const },
       detail: wait.label,
     },
     terminalLifecycle: {

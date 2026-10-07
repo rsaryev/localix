@@ -12,7 +12,7 @@ import {
   type ServedUrlScanner,
 } from '../agent-core/tools/preview/served-url-detect'
 
-/** Cap on retained scrollback bytes — enough to repaint a reconnect, bounded so
+/** Cap on retained scrollback UTF-16 code units — enough to repaint a reconnect, bounded so
  *  a long-lived session can't grow without limit. */
 const SCROLLBACK_LIMIT = 256 * 1024
 
@@ -94,6 +94,8 @@ export class TerminalSession {
   // (most terminals are dev-server log tails that never need a grid render).
   private emulator?: HeadlessEmulator
   private emulatorUnsub?: () => void
+  /** The last parsed grid, captured before teardown rather than reconstructed from clipped replay. */
+  private finalSnapshot?: Promise<ScreenSnapshot | null>
 
   constructor(args: {
     id: string
@@ -135,6 +137,9 @@ export class TerminalSession {
     this.finish = (code) => {
       if (this.exited) return
       this.exited = true
+      // The replay cap can have evicted mode changes or earlier TUI paints. Drain the
+      // existing parser before disposal so the archive retains what was actually visible.
+      this.finalSnapshot = this.emulator?.screen().catch(() => null)
       // Subscriber/temporary-file cleanup is advisory. A single faulty callback
       // must not strand the PTY in the registry or prevent the remaining exit
       // observers from settling (notably terminal.finished publication).
@@ -247,12 +252,13 @@ export class TerminalSession {
   /**
    * Append one PTY chunk to the retained scrollback, trimming the oldest bytes past the
    * cap. Trimming is by CODE UNITS, and the oldest surviving chunk is cut mid-string
-   * when it straddles the boundary — byte-for-byte what `slice(-LIMIT)` retained, so a
-   * reconnect repaints exactly what it did before.
+   * when it straddles the boundary. A cut through a surrogate pair also drops its
+   * orphaned low surrogate, so reconnect receives a valid Unicode tail.
    */
   private retainScrollback(data: string): void {
     this.scrollbackChunks.push(data)
     this.scrollbackBytes += data.length
+    const trimmed = this.scrollbackBytes > SCROLLBACK_LIMIT
     while (this.scrollbackBytes > SCROLLBACK_LIMIT) {
       const oldest = this.scrollbackChunks[0] as string
       const excess = this.scrollbackBytes - SCROLLBACK_LIMIT
@@ -263,6 +269,15 @@ export class TerminalSession {
         this.scrollbackChunks[0] = oldest.slice(excess)
         this.scrollbackBytes -= excess
       }
+    }
+    // A code-unit cap can bisect a supplementary character, including across chunks.
+    // Drop the orphaned low surrogate too; the retained tail stays within the cap.
+    const first = this.scrollbackChunks[0]
+    const firstCode = first?.charCodeAt(0)
+    if (trimmed && firstCode !== undefined && firstCode >= 0xdc00 && firstCode <= 0xdfff) {
+      if (first.length === 1) this.scrollbackChunks.shift()
+      else this.scrollbackChunks[0] = first.slice(1)
+      this.scrollbackBytes -= 1
     }
     this.scrollbackJoined = null
   }
@@ -285,6 +300,10 @@ export class TerminalSession {
    * emulator, then keep it fed off the same output pipe every pane already uses.
    */
   async screen(): Promise<ScreenSnapshot> {
+    if (this.finalSnapshot) {
+      const final = await this.finalSnapshot
+      if (final) return final
+    }
     if (!this.emulator) {
       this.emulator = createEmulator(this.cols, this.rows)
       // If a full-screen TUI is CURRENTLY on the alternate buffer, prepend the
@@ -295,9 +314,17 @@ export class TerminalSession {
       // enter/leave wins), so this is safe even when the slice kept the original.
       if (this.altTracker.altScreen) this.emulator.write('\x1b[?1049h')
       this.emulator.write(this.scrollback)
-      this.emulatorUnsub = this.subscribe((data) => this.emulator?.write(data))
+      if (!this.exited) this.emulatorUnsub = this.subscribe((data) => this.emulator?.write(data))
     }
-    return this.emulator.screen()
+    const snapshot = this.emulator.screen()
+    if (this.exited) {
+      // No live observer created a grid before exit. Reconstruct once and release the
+      // parser after its drain; repeated archive reads reuse the bounded snapshot.
+      this.finalSnapshot = snapshot.catch(() => null)
+      this.emulator.dispose()
+      this.emulator = undefined
+    }
+    return snapshot
   }
 
   write(data: string): void {

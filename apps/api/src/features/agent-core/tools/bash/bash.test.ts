@@ -248,6 +248,7 @@ describe('bashInputSchemaFor', () => {
     expect(k).not.toContain('terminal_id')
     expect(k).not.toContain('keys')
     expect(k).not.toContain('text')
+    expect(k).not.toContain('wait_for_exit')
     expect(k).toContain('command')
   })
 
@@ -255,6 +256,7 @@ describe('bashInputSchemaFor', () => {
     const k = keys(bashInputSchemaFor({ background: true, terminal: true }))
     expect(k).toContain('action')
     expect(k).toContain('text')
+    expect(k).toContain('wait_for_exit')
   })
 
   test('still gates background/notify on the background flag', () => {

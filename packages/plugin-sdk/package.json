@@ -186,6 +186,10 @@
     "./ui-artifact": {
       "types": "./dist/ui-artifact.d.ts",
       "import": "./dist/ui-artifact.js"
+    },
+    "./rich-text": {
+      "types": "./dist/rich-text.d.ts",
+      "import": "./dist/rich-text.js"
     }
   },
   "scripts": {

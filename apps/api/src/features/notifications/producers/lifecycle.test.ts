@@ -152,6 +152,21 @@ describe('background work', () => {
     expect(keys.filter((key) => key.startsWith('terminal:'))).toEqual(['terminal:T2'])
   })
 
+  it('an explicitly closed terminal is a stopped event rather than a failure', async () => {
+    const { producers, inbox } = await setup()
+    producers.work.terminalLifecycle(U, 'S1', {
+      type: 'terminal.finished',
+      terminalId: 'stopped',
+      exitCode: 130,
+      stopped: true,
+    })
+    expect((await inbox())[0]).toMatchObject({
+      key: 'terminal:stopped',
+      severity: 'info',
+      title: 'Background terminal stopped',
+    })
+  })
+
   it('work a restart lost is reported as a warning through the same observer', async () => {
     const repo = createMemoryWorkRepository()
     // The previous process started it and died without ending it.

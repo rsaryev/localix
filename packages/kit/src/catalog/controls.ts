@@ -5,6 +5,24 @@ const k = (id: string) => `@localixai/kit/${id}`
 /** Things a person operates: buttons, fields, pickers, toggles. */
 export const CONTROLS: readonly KitCatalogEntry[] = [
   {
+    specifier: k('selection-tile'),
+    category: 'controls',
+    provider: 'kit',
+    exports: ['SelectionTile'],
+    summary: 'A selectable visual option with an actual preview.',
+    use: 'Template or material choices where the visual preview is necessary. Supply an accessible name, selected state and preview content.',
+    not: 'Ordinary short choices use MenuEntries in a menu. This is not a generic card container.',
+  },
+  {
+    specifier: k('rich-text'),
+    category: 'controls',
+    provider: 'kit',
+    exports: ['RichTextEditor', 'RichTextView'],
+    summary: 'Restricted structured prose with a formatting toolbar and safe read-only rendering.',
+    use: 'Editable paragraphs, bold, italic, bullet and numbered lists, and safe links. Wrap RichTextEditor in Field. Store its JSON value, render with RichTextView, and use the SDK rich-text contract for validation and export.',
+    not: 'Plain multi-line text is Textarea. This is not an HTML editor or a page-layout engine.',
+  },
+  {
     specifier: k('button'),
     category: 'controls',
     provider: 'kit',

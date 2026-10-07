@@ -6,6 +6,7 @@ import type { AgentItem } from '@localixai/agent/agents'
 import { isTextItem } from '@localixai/agent/agents/items'
 import { isToolBacked, isStandaloneItem } from './tool-parts/itemHelpers'
 import type { Message } from '../model/types'
+import { activityByTool } from './tool-parts/toolActivity'
 import { MessageReasoning } from './MessageReasoning'
 import { TextBubble } from './MessageBubbles'
 import { ToolChain } from './tool-parts/ToolChain'
@@ -13,6 +14,7 @@ import { projectMessageItems } from './messageItemProjection'
 import { inlineNoticeSegments } from './inlineNoticeSegments'
 import { SystemLine, SystemNoticeLine } from './SystemNoticeLine'
 import { messageDisplayText } from '../model/messageDisplayText'
+import { systemMessageLabel } from './coalesceSystemMessages'
 
 /**
  * A message's ordered items as rendered nodes — the one place that knows how a run of items
@@ -46,6 +48,7 @@ export function MessageBody({
         key={segment.message.id}
         notice={segment.message.systemNotice!}
         createdAt={segment.message.createdAt}
+        repeatCount={segment.message.systemRepeatCount}
       />
     ) : segment.kind === 'pending' ? (
       <SystemLine
@@ -62,6 +65,7 @@ export function MessageBody({
           isStreaming: isStreaming && index === lastBodyIndex,
           isLast: isLast && index === lastBodyIndex,
           mentionHandles,
+          activity: segment.activity,
         })}
       </Fragment>
     ),
@@ -74,7 +78,8 @@ function renderMessageBody({
   isStreaming,
   isLast,
   mentionHandles,
-}: Parameters<typeof MessageBody>[0]): ReactNode {
+  activity = [],
+}: Parameters<typeof MessageBody>[0] & { activity?: readonly Message[] }): ReactNode {
   const messageId = message.id
   // An agent's checklist is tickable (`MarkdownTaskList.tsx`); a person's own message is not,
   // and neither is a reply still streaming — its boxes may yet move.
@@ -97,15 +102,25 @@ function renderMessageBody({
   if (message.items?.length) {
     const lastIndex = message.items.length - 1
     const displayItems = projectMessageItems(message.items)
+    const { byTool, beforeTool, remaining } = activityByTool(message.items, activity)
+    const itemActivity = (item: AgentItem) => [
+      ...(beforeTool.get(item.id) ?? []).map((notice) => ({
+        ...notice,
+        withinMessage: { contentOffset: 0 },
+      })),
+      ...(byTool.get(item.id) ?? []),
+    ]
     const nodes: ReactNode[] = []
     let run: AgentItem[] = []
     let lastChainIndex = -1
     let lastChainItems: AgentItem[] = []
+    let lastChainActivity: Message[] = []
 
     const flushRun = () => {
       if (!run.length) return
       lastChainIndex = nodes.length
       lastChainItems = run
+      lastChainActivity = run.flatMap(itemActivity)
       // Key on the chain's FIRST item id (stable) — NOT the node index. With a
       // positional key, streaming items that shift node positions remounted the
       // chain every delta, resetting its open/closed state and replaying the
@@ -114,6 +129,8 @@ function renderMessageBody({
         <ToolChain
           key={`chain-${run[0]!.id}`}
           items={run}
+          activity={lastChainActivity}
+          isRunning={isStreaming}
           messageId={messageId}
           deferredToolItemIds={message.deferredToolItemIds}
         />,
@@ -145,6 +162,8 @@ function renderMessageBody({
             <ToolChain
               key={item.id}
               items={[item]}
+              activity={itemActivity(item)}
+              isRunning={isStreaming}
               messageId={messageId}
               deferredToolItemIds={message.deferredToolItemIds}
             />,
@@ -189,20 +208,34 @@ function renderMessageBody({
         <ToolChain
           key={`chain-${lastChainItems[0]!.id}`}
           items={lastChainItems}
+          activity={lastChainActivity}
+          isRunning={isStreaming}
           messageId={messageId}
           deferredToolItemIds={message.deferredToolItemIds}
           isLatest
         />
       )
     }
+    if (remaining.length)
+      nodes.push(
+        <ToolChain
+          key={`activity:${remaining[0]!.id}`}
+          items={[]}
+          activity={remaining}
+          isRunning={isStreaming}
+          isLatest={isLast}
+        />,
+      )
     return nodes
   }
 
   // Flat history and optimistic sends use the same display-only projection as text items.
   const content = isUser
     ? messageDisplayText(message.content ?? '', message.bindings)
-    : message.content
-  return content
+    : message.role === 'system'
+      ? systemMessageLabel(message.content ?? '', message.systemRepeatCount)
+      : message.content
+  const body = content
     ? withTasks(
         'content',
         <TextBubble
@@ -213,4 +246,12 @@ function renderMessageBody({
         />,
       )
     : null
+  return activity.length ? (
+    <>
+      {body}
+      <ToolChain items={[]} activity={activity} isRunning={isStreaming} isLatest={isLast} />
+    </>
+  ) : (
+    body
+  )
 }

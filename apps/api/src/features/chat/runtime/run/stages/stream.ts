@@ -25,7 +25,7 @@ import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
 import { handleAgentEvent, type TurnEventContext } from '../event-handlers'
-import { createToolCheckpointGate } from '../tool-checkpoint-gate'
+import { createToolCheckpointGate, takeSteeringAtCheckpoint } from '../tool-checkpoint-gate'
 import {
   buildRequiredConversationControlFollowUp,
   buildRuntimeSteering,
@@ -66,13 +66,14 @@ export async function streamRun(
   const { connection, credential, credentialStore, providerId, rawModelId } = turn.model
   const { conversationControl, dispatchTools, tools } = toolset
 
-  // Pi can announce a settled tool turn before the bounded stream's writer commits it.
+  // Pi can announce a settled turn before the bounded stream's writer commits it.
   const toolCheckpoint = createToolCheckpointGate({
     signal: abort.signal,
-    completedIndex: () => state.completedToolTurnIndex,
+    completedIndex: () => state.completedTurnIndex,
   })
   let requestedToolTurnIndex: number | undefined
   let deliveredToolTurnIndex: number | undefined
+  let backgroundAccumulator: ReturnType<typeof createItemAccumulator> | undefined
 
   const asyncRegistry = createRunAsyncRegistry({
     env,
@@ -84,6 +85,9 @@ export async function streamRun(
     assistantMessageId,
     backgroundToolNames: toolset.backgroundToolNames,
     recoveryToolAvailable: toolset.recoveryToolAvailable,
+    patchLiveItem: (toolCallId, patch) => {
+      backgroundAccumulator?.patchToolItem(toolCallId, patch)
+    },
   })
   const takeFromQueue =
     midRunInterjectEnabled() && session.sessionKind !== 'system'
@@ -116,14 +120,15 @@ export async function streamRun(
       : undefined
   const takeSteering = buildRuntimeSteering({
     takeUserMessages: takeFromQueue
-      ? async (boundary?: SteeringBoundary) => {
-          requestedToolTurnIndex = undefined
-          const index = boundary?.completedToolTurnIndex
-          if (index !== undefined && (await toolCheckpoint.waitFor(index))) {
-            requestedToolTurnIndex = index
-          }
-          return takeFromQueue()
-        }
+      ? (boundary?: SteeringBoundary) =>
+          takeSteeringAtCheckpoint({
+            boundary,
+            waitFor: toolCheckpoint.waitFor,
+            take: takeFromQueue,
+            onToolBoundary: (index) => {
+              requestedToolTurnIndex = index
+            },
+          })
       : undefined,
   })
   const speakerRoute = agentRoute(session, speakerAgentId)
@@ -259,13 +264,14 @@ export async function streamRun(
     mutatingToolNames: toolset.mutatingToolNames,
     observeMeasuredContext,
   }
+  backgroundAccumulator = acc
   frame.steerCtxRef.current = eventCtx
 
   // Only the run's terminal state is journaled; the events themselves stream to the client.
   try {
     for await (const event of stream) {
       await handleAgentEvent(eventCtx, event)
-      if (event.type === 'turn_end' && state.completedToolTurnIndex === event.turnIndex) {
+      if (event.type === 'turn_end' && state.completedTurnIndex === event.turnIndex) {
         toolCheckpoint.notify(event.turnIndex)
       }
     }

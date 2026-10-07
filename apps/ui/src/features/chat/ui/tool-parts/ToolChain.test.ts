@@ -6,6 +6,23 @@ const item = (id: string): AgentItem =>
   ({ id, type: 'text', status: 'completed', text: id }) as AgentItem
 
 describe('areToolChainPropsEqual', () => {
+  test('compares activity records rather than freshly projected wrappers', () => {
+    const activity = { id: 'activity', role: 'system' as const, content: 'Done' }
+    expect(
+      areToolChainPropsEqual(
+        { items: [], activity: [activity] },
+        { items: [], activity: [activity] },
+      ),
+    ).toBe(true)
+    expect(
+      areToolChainPropsEqual(
+        { items: [], activity: [activity] },
+        { items: [], activity: [{ ...activity, content: 'Changed' }] },
+      ),
+    ).toBe(false)
+    expect(areToolChainPropsEqual({ items: [] }, { items: [], activity: [] })).toBe(true)
+  })
+
   test('accepts fresh arrays containing the same immutable item references', () => {
     const first = item('first')
     const second = item('second')

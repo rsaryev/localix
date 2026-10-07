@@ -72,6 +72,7 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
   // React context, or every plugin tab would read no session at all.
   '@localixai/plugin-sdk/ui/work-item-session': () =>
     import('@localixai/plugin-sdk/ui/work-item-session'),
+  '@localixai/plugin-sdk/rich-text': () => import('@localixai/plugin-sdk/rich-text'),
   '@localixai/plugin-sdk/navigation': () => import('@localixai/plugin-sdk/navigation'),
   '@localixai/plugin-sdk/session-resource': () => import('@localixai/plugin-sdk/session-resource'),
   '@localixai/plugin-sdk/resource-refs': () => import('@localixai/plugin-sdk/resource-refs'),

@@ -68,3 +68,23 @@ describe('spansToText', () => {
     expect(spansToText(parseInline('a **b** `c`'))).toBe('a b c')
   })
 })
+
+describe('literal authored prose in office exports', () => {
+  it('unescapes Markdown punctuation without styling escaped markers', () => {
+    expect(parseInline('C\\+\\+ and user\\_id and \\*literal\\*')).toEqual([
+      { text: 'C++ and user_id and *literal*' },
+    ])
+    expect(spansToText(parseInline('\\[label\\]\\(url\\)'))).toBe('[label](url)')
+  })
+  it('reads angle-delimited links and preserves percent escapes and parentheses', () => {
+    expect(spansToText(parseInline('[Portfolio](<https://example.com/a%20b(foo)_v2>)'))).toBe(
+      'Portfolio (https://example.com/a%20b(foo)_v2)',
+    )
+  })
+})
+
+it('preserves an unmatched parenthesis inside an angle-delimited URL', () => {
+  expect(spansToText(parseInline('[Docs](<https://example.com/a)foo>)'))).toBe(
+    'Docs (https://example.com/a)foo)',
+  )
+})

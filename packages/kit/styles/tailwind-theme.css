@@ -37,6 +37,9 @@
   --text-4xl--line-height: 2.5rem;
 
   --color-background: var(--background);
+  /* Physical document paper remains light in both workbench themes. */
+  --color-document-paper: #ffffff;
+  --color-document-ink: #181818;
   --color-background-solid: var(--background-solid);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

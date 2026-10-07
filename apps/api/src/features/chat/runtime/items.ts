@@ -243,7 +243,10 @@ export function createItemAccumulator(
      * longer holds the item (it was split off by `reset`), so the caller writes the stored row
      * instead: patching here would re-create the item inside the wrong row.
      */
-    patchToolItem(toolCallId: string, patch: { status?: AgentItemStatus; details?: unknown }) {
+    patchToolItem(
+      toolCallId: string,
+      patch: { status?: AgentItemStatus; details?: unknown; resultText?: string },
+    ) {
       const prev = specs.get(toolCallId)
       if (!prev) return false
       setTool(toolCallId, { name: prev.name, ...patch })

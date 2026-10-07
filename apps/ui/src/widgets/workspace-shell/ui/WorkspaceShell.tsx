@@ -299,13 +299,13 @@ export function WorkspaceShell({
           (isDesktop && IS_MAC ? (
             <div
               data-tauri-drag-region
-              className="app-titlebar flex h-[var(--titlebar-height)] shrink-0 items-center gap-1 border-b border-border-soft bg-sidebar pr-2 max-sm:hidden"
+              className="app-titlebar flex h-[var(--titlebar-height)] shrink-0 items-center gap-1 border-b border-border-soft bg-sidebar pr-2 max-sm:hidden lg:pr-1"
             >
               {titlebarContent}
               {headerStatus}
             </div>
           ) : (
-            <div className="flex h-[var(--titlebar-height)] shrink-0 items-center gap-1 border-b border-border-soft bg-sidebar px-2 max-sm:hidden">
+            <div className="flex h-[var(--titlebar-height)] shrink-0 items-center gap-1 border-b border-border-soft bg-sidebar px-2 max-sm:hidden lg:px-1">
               {titlebarContent}
               {headerStatus}
             </div>

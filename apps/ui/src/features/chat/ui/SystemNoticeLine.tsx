@@ -24,6 +24,7 @@ import type { SystemNoticeRecovery } from '@/shared/api/contracts'
 import type { SystemNotice, SystemNoticeKind, SystemNoticeTone } from '../model/types'
 import { messageClock } from '../model/messageTime'
 import { cleanSystemMessageText } from '../model/systemMessageText'
+import { systemMessageLabel } from './coalesceSystemMessages'
 import { PERMISSION_MODE_PRESENTATION } from './prompt-input/permissionModeIcons'
 
 const ICONS: Partial<Record<SystemNoticeKind, LucideIcon>> = {
@@ -118,16 +119,18 @@ function RecoveryLink({ recovery }: { recovery: SystemNoticeRecovery }) {
 export const SystemNoticeLine = memo(function SystemNoticeLine({
   notice,
   createdAt,
+  repeatCount,
   onRetry,
 }: {
   notice: SystemNotice
   /** Local reception time; independent of deferred display. */
   createdAt?: string
+  repeatCount?: number
   /** Re-run the turn this notice is about. Absent = the surface cannot run anything. */
   onRetry?: () => void
 }) {
   const clock = messageClock(createdAt)
-  const text = cleanSystemMessageText(notice.text)
+  const text = systemMessageLabel(cleanSystemMessageText(notice.text), repeatCount)
   const detail = notice.detail ? cleanSystemMessageText(notice.detail) : undefined
   const recoveries = notice.recovery ?? []
   const retry = recoveries.includes('retry') && onRetry ? onRetry : undefined

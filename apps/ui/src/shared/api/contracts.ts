@@ -288,6 +288,8 @@ export interface SystemNotice {
   text: string
   /** Optional secondary detail (reason, status code, etc.). */
   detail?: string
+  /** Routine lifecycle detail belongs to an action block; problems remain visible inline. */
+  activity?: { id: string; state: 'running' | 'completed' | 'stopped' | 'failed' }
   /**
    * The mode a `permission_mode_change` switched to, drawn with that mode's own icon and tone.
    * Absent on rows written before the server stored it — those keep the generic look.
@@ -319,6 +321,8 @@ export interface Message {
   content?: string
   /** Present iff this is an inline system notice (role === 'system'). */
   systemNotice?: SystemNotice
+  /** Count of consecutive equal system messages; client-owned presentation metadata. */
+  systemRepeatCount?: number
   /** Durable slash-command output rendered as application chrome, not assistant prose. */
   commandOutput?: CommandOutput
   /** Volatile terminal lifecycle marker used to coalesce repeated poll/input
@@ -343,6 +347,8 @@ export interface Message {
   withinMessage?: { itemId?: string; textOffset?: number; contentOffset?: number }
   /** Projection-only notices rendered between this reply's items. Never sent to the API. */
   inlineNotices?: Message[]
+  /** Projection-only standalone activity group, shown through the existing action disclosure. */
+  systemActivity?: Message[]
   reasoning?: string
   /** Normalized ordered item list — the single source of truth for rendering. */
   items?: AgentItem[]

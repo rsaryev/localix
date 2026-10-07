@@ -76,6 +76,7 @@ export const PLUGIN_BACKEND_HOST_MODULES = [
   '@localixai/plugin-sdk/session-resource',
   '@localixai/plugin-sdk/typed-error',
   '@localixai/plugin-sdk/prerequisite',
+  '@localixai/plugin-sdk/rich-text',
 ] as const
 
 export type PluginBackendHostModule = (typeof PLUGIN_BACKEND_HOST_MODULES)[number]
@@ -90,6 +91,7 @@ export const PLUGIN_BACKEND_SHARED_MODULES: readonly string[] = [
   'hono',
   'zod',
   '@localixai/plugin-sdk/backend',
+  '@localixai/plugin-sdk/rich-text',
 ]
 
 /**

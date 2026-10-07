@@ -89,6 +89,7 @@ export function useVisiblePolling({
 
   useEffect(() => {
     if (!active || typeof document === 'undefined') return
+    let live = true
     const tick = () => {
       if (inFlight.current) return
       // A timer's work, not the person's — see `runAsBackgroundWork`.
@@ -117,11 +118,23 @@ export function useVisiblePolling({
         stop()
       }
     }
-    if (immediate) tick()
+    if (immediate) {
+      // A replayed effect (StrictMode, scope change or returning to a visible tab) may
+      // inherit a request whose owner already discarded its result. Refresh as soon as
+      // it finishes instead of making the new owner wait an entire polling interval.
+      const previous = inFlight.current
+      if (previous) {
+        const resume = () => {
+          if (live) tick()
+        }
+        void previous.then(resume, resume)
+      } else tick()
+    }
     if (document.visibilityState === 'visible') start()
     document.addEventListener('visibilitychange', onVisibility)
     if (refreshOnFocus && typeof window !== 'undefined') window.addEventListener('focus', tick)
     return () => {
+      live = false
       stop()
       document.removeEventListener('visibilitychange', onVisibility)
       if (refreshOnFocus && typeof window !== 'undefined') window.removeEventListener('focus', tick)
