@@ -1,3 +1,4 @@
+import './devPerformance'
 import { startWorkspaceResourceSync } from './workspaceResourceSync'
 import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
 import { usePreviewHosts } from '@/features/inspector/model/previewHosts'

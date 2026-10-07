@@ -140,6 +140,11 @@ format check as a read-only gate before review.
 
 - `bun run dev` is a Tauri workflow. Port `5050` supplies the desktop webview during development;
   opening it as a normal browser workspace does not provide native file paths.
+- The development UI releases React Performance Track measures after emission. React's cloned prop
+  diagnostics otherwise accumulate in the browser's User Timing buffer across a long session.
+  Performance recordings and observers still receive the entries; querying the page's retained
+  measures will not return React tracks. Application timing measures remain available. Fast Refresh
+  installation clears existing measures once to release an already accumulated buffer.
 - A second runtime cannot write the same Localix database. Stop the existing desktop or API owner
   before starting a full development runtime for that database.
 - `bun run check:rust` exits successfully with a visible skip when Rust, Cargo, or Clippy is absent.
