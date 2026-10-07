@@ -11,6 +11,8 @@ describe('# Collaboration follows the room', () => {
     expect(solo).toContain('Handle straightforward work directly')
     expect(solo).toContain('coordinate substantial work with suitable agents')
     expect(solo).toContain('keep its investigation out of this conversation')
+    expect(solo).toContain('separate the user’s requirements from your proposed choices')
+    expect(solo).toContain('newer correction supersedes conflicting earlier choices')
   })
 
   // Regression: @architect, not the leader, read "do the work yourself … delegate substantial
@@ -27,6 +29,7 @@ describe('# Collaboration follows the room', () => {
     const room = buildCollaborationSection([TOOL.conversation_control], { withColleagues: true })!
     expect(room).not.toContain('action:"delegate"')
     expect(room).not.toContain('delegated run')
+    expect(room).not.toContain('A brief must')
     const solo = buildCollaborationSection([TOOL.agents], { withColleagues: false })!
     expect(solo).toContain('action:"delegate"')
     expect(solo).not.toContain('conversation_control')

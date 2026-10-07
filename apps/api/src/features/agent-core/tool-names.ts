@@ -161,7 +161,9 @@ export const BUILTIN_TOOL_CATALOG = {
     label: 'Skills',
     description: 'Create, retrieve, list, and delete reusable agent skills.',
     category: 'knowledge',
-    exposure: CHAT_DEFAULT,
+    // Delegated implementers need the same procedures as the parent. Without this,
+    // the host removes both the retrieval tool and its catalog from their prompt.
+    exposure: CHAT_AND_CHILD,
   },
   jobs: {
     name: 'jobs',

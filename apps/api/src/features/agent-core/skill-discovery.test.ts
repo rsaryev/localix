@@ -365,9 +365,12 @@ describe('foreign Claude discovery is disabled', () => {
     expect(skills.find((s) => s.name === 'shared')).toBeUndefined()
   })
 
-  it('does not discover .agents/skills', async () => {
+  it('discovers portable project .agents/skills with their source directory', async () => {
     const skills = await discoverFilesystemSkills(cdir)
-    expect(skills.find((s) => s.name === 'agents-only')).toBeUndefined()
+    const portable = skills.find((s) => s.name === 'agents-only')
+    expect(portable?.scope).toBe('project')
+    expect(portable?.dir).toBe(join(cdir, '.agents', 'skills', 'agents-only'))
+    expect(portable?.content).toBe('Foreign body.')
   })
 
   it('follows a symlinked skill directory', async () => {

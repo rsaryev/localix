@@ -13,10 +13,13 @@ import { atomicWriteFile } from './tools/file/file-io'
  * directories so they can carry scripts and other assets alongside the prompt:
  *
  *   <root>/.localix/skills/<name>/SKILL.md   (+ optional scripts, templates, …)
+ *   <project>/.agents/skills/<name>/SKILL.md (portable read source)
  *
  * This module owns the RESOLUTION policy and the write side. Resolution is
  * exact-scope: sessions without a project read PERSONAL (home) skills; project
- * sessions read only the exact project working directory. Nothing is stored in
+ * sessions read the exact project working directory, then personal Localix skills. Writes
+ * and deletes remain in `.localix/skills`; portable skills can be shadowed by a native copy.
+ * Nothing is stored in
  * a DB — skills are just files the agent (or the user) can create/edit/ship.
  *
  * How a base dir is READ (the SKILL.md directory format, symlinks, archives)
@@ -203,6 +206,9 @@ export async function deleteSkillByName(workingDir: string | null, name: string)
   const all = await discoverFilesystemSkills(workingDir)
   const skill = all.find((s) => s.name === name)
   if (!skill) return false
+  const base = skill.scope === 'global' ? homedir() : workingDir
+  // Portable project procedures are read sources, not owned by the Localix manager.
+  if (!base || !isPathWithin(skillRoot(base), skill.path)) return false
   await fs.rm(skill.dir, { recursive: true, force: true })
   return true
 }

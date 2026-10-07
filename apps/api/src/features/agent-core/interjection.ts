@@ -79,6 +79,6 @@ export function frameDelegatorMessage(content: string): string {
   return [
     'The agent that delegated your task sent you a message:',
     `<delegator_message>${body}</delegator_message>`,
-    'Treat it as an update to your assignment from whoever wrote your brief. End with a report: your final reply is sent back to that agent.',
+    'Treat it as an update to your assignment from whoever wrote your brief. It supersedes conflicting earlier directions; keep requirements it does not change. End with a report: your final reply is sent back to that agent.',
   ].join('\n')
 }

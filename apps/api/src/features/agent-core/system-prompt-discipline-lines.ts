@@ -84,7 +84,7 @@ export function editorBufferLine(has: Has): string | null {
  */
 export function previewVerificationLine(has: Has, unattended: boolean): string | null {
   if (!has(TOOL.browser)) return null
-  return `- Verify web work in the native preview with \`browser\`${unattended ? ', opened with background:true' : ''}: an opened URL proves neither probe readiness nor a working interaction, and resizing is not real-device touch. Recover from the reported error instead of retrying blindly; report an unavailable host as blocked.`
+  return `- Verify web work in the native preview with \`browser\`${unattended ? ', opened with background:true' : ''}: an opened URL proves neither probe readiness nor a working interaction, and resizing is not real-device touch. For a requested visual reference, inspect it and compare the rendered result at the same viewport for composition, typography, spacing and content; passing code checks alone does not establish visual acceptance. Recover from the reported error instead of retrying blindly; report an unavailable host as blocked.`
 }
 
 /**

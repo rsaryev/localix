@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, parse, resolve } from 'node:path'
+import { isPathWithin } from '../../lib/path-containment'
 
 import { readCappedFile } from './context-read'
 import { expandImports } from './context-imports'
@@ -19,7 +20,8 @@ import { discoverRules } from './context-rules'
  *   scopes a rule to a project subtree);
  * - `@path` imports are expanded inline (see {@link expandImports}).
  *
- * Foreign agent homes and instruction conventions are deliberately not scanned.
+ * Workspace AGENTS.md files share this bounded root-to-cwd path. Foreign agent homes
+ * and product-specific instruction conventions are not scanned.
  */
 export interface ContextFile {
   /** Absolute path to the discovered file. */
@@ -126,6 +128,17 @@ async function collectDir(
   projectRoot: string,
   collector: ContextCollector,
 ): Promise<void> {
+  // AGENTS.md is a workspace contract shared by coding agents. A checkout must not
+  // use a symlink to pull instructions from an unrelated directory into the prompt.
+  try {
+    const [root, agents] = await Promise.all([
+      fs.realpath(projectRoot),
+      fs.realpath(join(dir, 'AGENTS.md')),
+    ])
+    if (isPathWithin(root, agents)) await collector.add(join(dir, 'AGENTS.md'), 'context')
+  } catch {
+    // An absent AGENTS.md leaves native Localix context discovery intact.
+  }
   const localixDir = join(dir, '.localix')
   await collector.add(join(localixDir, 'context.md'), 'context')
   await collectRules(join(localixDir, 'rules'), projectRoot, collector)
@@ -137,7 +150,7 @@ async function collectDir(
  * Load order (broadest → nearest):
  * 1. user-global `~/.localix/context.md`, then `~/.localix/rules/**\/*.md`;
  * 2. the directory hierarchy from the git root DOWN to `cwd` (root-first), each
- *    level contributing `.localix/context.md` and `.localix/rules/**\/*.md`.
+ *    level contributing `AGENTS.md`, `.localix/context.md` and `.localix/rules/**\/*.md`.
  *
  * `@path` imports are expanded inline. Caps: {@link MAX_CHARS_PER_FILE} per file,
  * {@link MAX_CONTEXT_FILES} context files, {@link MAX_RULE_FILES} rules, and a
@@ -198,6 +211,7 @@ export function buildProjectContextSection(
   return [
     '# Project context',
     'Project-provided instructions (from files in the workspace). Follow them; if they conflict with user instructions, the user wins.',
+    'Directory-specific instructions apply within that directory. Read any deeper AGENTS.md before editing there. Later, nearer instructions take precedence within their scope.',
     '',
     ...files.map((f) => `## ${f.path}\n${f.content}`),
   ].join('\n')

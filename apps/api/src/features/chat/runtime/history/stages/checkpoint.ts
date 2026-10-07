@@ -58,6 +58,7 @@ function entriesOf(
       // A colleague's reply arrives here already projected to `user`: it starts a turn too.
       turnStart: payload.role === 'user' && !turnContext,
       internal: payload.isInternal === true || turnContext,
+      ...(payload.origin === 'delegator' && !turnContext ? { assignmentUpdate: true } : {}),
       pinned: payload.pinned === true,
       createdAt: row.createdAt,
     }

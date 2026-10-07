@@ -4,8 +4,9 @@ Skills are local `SKILL.md` files that give the agent a named procedure, descrip
 invocation controls. Use them once with `/name`, pin them to a session, or let the agent load one
 when its description matches the task.
 
-**Discovery boundary:** a session scans its own working directory's skill directory; a chat in the
-**Default** project scans the personal skill directory instead.
+**Discovery boundary:** a project session scans its working directory's `.localix/skills` and
+portable `.agents/skills`, then personal Localix skills. A chat in the **Default** project scans
+personal Localix skills.
 
 ## What you can do
 
@@ -34,22 +35,28 @@ when its description matches the task.
 
 ### Discovery and precedence
 
-| Session scope   | Filesystem root scanned               | Additional source     |
-| --------------- | ------------------------------------- | --------------------- |
-| Project         | `<working-directory>/.localix/skills` | Enabled plugin skills |
-| Default project | `~/.localix/skills`                   | Enabled plugin skills |
+| Session scope   | Filesystem root scanned                                                           | Additional source     |
+| --------------- | --------------------------------------------------------------------------------- | --------------------- |
+| Project         | `<working-directory>/.localix/skills`, `.agents/skills`, then `~/.localix/skills` | Enabled plugin skills |
+| Default project | `~/.localix/skills`                                                               | Enabled plugin skills |
 
 The scanner walks nested directories to find `SKILL.md`, up to six levels and 2,000 entries per
 root. It follows a symlink only when the canonical target remains inside the scanned safety root.
 
 Built-in slash commands keep precedence over a skill with the same name. Within one filesystem scan,
-the first sorted match wins and a duplicate-name warning identifies the ignored path.
+the first sorted match wins and a duplicate-name warning identifies the ignored path. Native project
+skills take precedence over same-name portable project skills, and project skills take precedence
+over personal skills. Portable project skills are read sources: the Localix manager does not delete
+or archive them. Saving the same name creates a native Localix copy that shadows the portable
+procedure.
 
 ### Loading and invocation
 
 The runtime initially gives the model a bounded roster of skill names and descriptions. The `skill`
 tool can list that roster or load one body; plugin skills can be read but not saved or deleted
-through the tool.
+through the tool. Default delegated workers can also retrieve skills. An agent's explicit tool list
+and capability denials still control availability; pinning a skill supplies its body even without
+the retrieval tool.
 
 One-shot `/name` invocation expands supported arguments before submitting the prompt. Filesystem
 skills can also opt into bounded local command expansion and confined file-reference expansion. A
@@ -90,8 +97,8 @@ directory under the scope's `.archive` folder; restoring moves it back into disc
 - Project and personal filesystem skills are merged, project first: a repository's own skill shadows
   a personal one of the same name. Where a skill lives decides who it travels with, not whether you
   can use it.
-- Foreign skill folders such as `.claude/skills`, `.claude/commands`, and `.agents/skills` are not
-  scanned.
+- Product-specific skill folders such as `.claude/skills` and `.claude/commands`, and personal
+  `.agents/skills`, are not scanned. Project `.agents/skills` is a portable read source.
 - Symlinks cannot extend discovery outside the selected safety root. Archived directories are also
   excluded.
 - Localix supports a defined `SKILL.md` contract, not every convention used by other tools. Check

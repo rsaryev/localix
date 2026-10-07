@@ -39,7 +39,7 @@ describe('discoverContextFiles', () => {
     expect(await discover(join(root, 'does-not-exist'))).toEqual([])
   })
 
-  test('loads only .localix/context.md and ignores ambient foreign instruction files', async () => {
+  test('loads workspace AGENTS.md and native context, ignoring product-specific instructions', async () => {
     await fs.writeFile(join(root, 'AGENTS.md'), 'agents instructions')
     await fs.writeFile(join(root, 'CLAUDE.md'), 'claude instructions')
     await fs.writeFile(join(root, '.cursorrules'), 'cursor')
@@ -47,9 +47,34 @@ describe('discoverContextFiles', () => {
     await fs.writeFile(join(root, '.claude', 'CLAUDE.md'), 'dot-claude instructions')
     await writeContext(root, 'localix instructions')
     const files = await discover(root)
-    expect(files).toHaveLength(1)
-    expect(files[0].path).toBe(join(root, '.localix', 'context.md'))
-    expect(files[0].content).toBe('localix instructions')
+    expect(files.map((file) => file.path)).toEqual([
+      join(root, 'AGENTS.md'),
+      join(root, '.localix', 'context.md'),
+    ])
+    expect(files.map((file) => file.content)).toEqual([
+      'agents instructions',
+      'localix instructions',
+    ])
+  })
+
+  test('keeps AGENTS.md directory scope in root-to-leaf order', async () => {
+    const leaf = join(root, 'apps', 'landing')
+    await fs.mkdir(leaf, { recursive: true })
+    await fs.writeFile(join(root, 'AGENTS.md'), 'root contract')
+    await fs.writeFile(join(leaf, 'AGENTS.md'), 'landing contract')
+    await writeContext(leaf, 'native landing contract')
+    expect((await discover(leaf)).map((file) => file.content)).toEqual([
+      'root contract',
+      'landing contract',
+      'native landing contract',
+    ])
+  })
+
+  test('does not admit AGENTS.md through a symlink outside the checkout', async () => {
+    await fs.writeFile(join(home, 'AGENTS.md'), 'outside contract')
+    await fs.symlink(join(home, 'AGENTS.md'), join(root, 'AGENTS.md'))
+    await writeContext(root, 'native contract')
+    expect((await discover(root)).map((file) => file.content)).toEqual(['native contract'])
   })
 
   test('walks the hierarchy ROOT-first (broadest → nearest)', async () => {

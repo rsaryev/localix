@@ -20,7 +20,11 @@ export async function resolvePromptSnapshot(input: {
     : undefined
   let snapshot = fresh
   if (cached) {
-    const skillsChanged = cached.skillOverridesRevision !== fresh.skillOverridesRevision
+    // The retrievable catalog must agree with the tool, including newly discovered
+    // repository procedures. Refresh on an actual bounded catalog change, not every run.
+    const skillsChanged =
+      cached.skillOverridesRevision !== fresh.skillOverridesRevision ||
+      cached.skillsContext !== fresh.skillsContext
     const memoryChanged = cached.memoryScopesRevision !== fresh.memoryScopesRevision
     if (memoryChanged) await input.initialize()
     snapshot =

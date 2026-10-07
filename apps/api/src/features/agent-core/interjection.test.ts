@@ -86,6 +86,8 @@ describe('frameDelegatorMessage', () => {
     const framed = frameDelegatorMessage('The endpoint moved to /v2.')
     expect(framed).toContain('<delegator_message>The endpoint moved to /v2.</delegator_message>')
     expect(framed).toContain('update to your assignment')
+    expect(framed).toContain('supersedes conflicting earlier directions')
+    expect(framed).toContain('keep requirements it does not change')
     expect(framed).not.toContain('The user sent')
     expect(framed).not.toContain('untrusted')
   })

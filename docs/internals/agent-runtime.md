@@ -191,6 +191,27 @@ separate from this transport timeout.
 - Adapter neutrality is checked through source-import rules and TypeScript contracts. It is not a
   runtime isolation boundary.
 
+## Auditing a session tree
+
+```bash
+bun apps/api/scripts/session-audit.ts SESSION-ID --tree
+bun apps/api/scripts/replay-context-policy.ts CHILD-SESSION-ID
+```
+
+The audit opens the database read-only, walks descendants, and reports transcript timing and tool
+outcomes beside authoritative ledger totals. Ledger totals include auxiliary model calls without a
+transcript message. A subscription value is an API-equivalent estimate, not a metered charge;
+unpriced rows remain visible. Cumulative input across a tool loop is not its context-window size.
+
+Replay uses the session's persisted delegation depth and the selected participant's overhead. It
+states that it reads all stored branches; it is a diagnostic replay, not a captured provider
+request. A simulated checkpoint does not change the live session or prove a better task outcome.
+
+Workspace instruction discovery includes bounded `AGENTS.md` files from the checkout root to the
+working directory, followed by native Localix context at each level. Directory scope and user
+precedence are explicit in the prompt. Portable project `.agents/skills` use the existing skill
+scanner and containment checks. Personal foreign agent homes remain outside discovery.
+
 ## Related guides
 
 - [Architecture](architecture.md)

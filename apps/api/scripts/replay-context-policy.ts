@@ -16,6 +16,8 @@
  * Rows are read in sequence order (all branches), exactly as stored. Read-only: the database is
  * opened `readonly` with `query_only`, and nothing the replay produces is written back.
  */
+import { parseSessionArgs } from './session-audit-store'
+
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -25,6 +27,7 @@ import type { PersistedMessage } from '../src/features/chat/contracts'
 import { createModelContextRepository } from '../src/features/chat/model-context-repository'
 import { resolveContextBudgetFrame } from '../src/features/chat/runtime/context-budget'
 import { createChatHistoryRun } from '../src/features/chat/runtime/history/chat-strategy'
+import { delegationPlace, parseSessionProvenance } from '../src/features/chat/session-provenance'
 import type { ChatTurnFrame } from '../src/features/chat/runtime/history/frame'
 import {
   checkpointAtTokens,
@@ -33,24 +36,28 @@ import {
 } from '../src/features/chat/runtime/model-view/checkpoint-policy'
 import { loadModelView, type ModelView } from '../src/features/chat/runtime/model-view/view'
 
-const args = process.argv.slice(2)
-const sessionId = args.find((a) => !a.startsWith('--'))
-if (!sessionId) {
-  console.error(
-    'usage: replay-context-policy <sessionId> [--upto SEQ] [--window N] [--viewer agent:<id>] [--db PATH]',
-  )
-  process.exit(2)
-}
-const flag = (name: string) => {
-  const i = args.indexOf(`--${name}`)
-  return i >= 0 ? args[i + 1] : undefined
-}
-const upto = Number(flag('upto') ?? Number.POSITIVE_INFINITY)
-const contextWindow = Number(flag('window') ?? 400_000)
-const dbPath = flag('db') ?? join(homedir(), '.localix', 'localix.db')
+const { sessionId, values } = parseSessionArgs(process.argv.slice(2), [
+  'upto',
+  'window',
+  'viewer',
+  'db',
+])
+const upto = values.upto === undefined ? Number.POSITIVE_INFINITY : Number(values.upto)
+const contextWindow = Number(values.window ?? 400_000)
+if (values.upto !== undefined && (!Number.isInteger(upto) || upto < 0))
+  throw new Error('--upto must be a non-negative integer')
+if (!Number.isFinite(contextWindow) || contextWindow <= 0)
+  throw new Error('--window must be positive and finite')
+const dbPath = values.db ?? join(homedir(), '.localix', 'localix.db')
 
 const db = createDatabase({ filename: dbPath, readonly: true })
 const repo = createModelContextRepository(db)
+const session = await db
+  .selectFrom('agent_sessions')
+  .select('invocation_json')
+  .where('id', '=', sessionId)
+  .executeTakeFirstOrThrow()
+const { depth } = delegationPlace(parseSessionProvenance(session.invocation_json))
 const rows = await db
   .selectFrom('agent_messages')
   .select(['id', 'user_id', 'sequence', 'created_at', 'payload_json'])
@@ -74,20 +81,28 @@ if (history.length === 0) {
 
 // Whose view: a checkpoint belongs to the participant whose run took it.
 const lastAssistant = [...history].reverse().find((m) => m.payload.role === 'assistant')
-const viewer = flag('viewer') ?? lastAssistant?.payload.from ?? 'agent:default'
+const viewer = values.viewer ?? lastAssistant?.payload.from ?? 'agent:default'
 // The identity the provider measurement was persisted under — its fixed overhead is what the
 // live frame subtracted, so the replayed marks match the ones the run compared against.
 const anchorRow = [...history]
   .reverse()
-  .find((m) => m.payload.role === 'assistant' && m.payload.usage?.contextIdentity)
+  .find(
+    (m) =>
+      m.payload.role === 'assistant' &&
+      m.payload.from === viewer &&
+      m.payload.usage?.contextIdentity,
+  )
 const identity = anchorRow?.payload.usage?.contextIdentity
 const frame = resolveContextBudgetFrame({
   contextWindow,
+  depth,
   fixedOverheadTokens: identity?.fixedOverheadTokens ?? 0,
 })
 const fmt = (n: number) => n.toLocaleString('en-US')
 
-console.log(`session ${sessionId}: ${history.length} rows, viewer ${viewer}`)
+console.log(
+  `session ${sessionId}: ${history.length} stored rows (all branches), viewer ${viewer}, depth ${depth}`,
+)
 console.log(
   `frame: window ${fmt(frame.rawWindow)} → policy ${fmt(frame.effectiveWindow)}, ceiling ${fmt(frame.trigger)}, fixed overhead ${fmt(frame.fixedOverhead)}, checkpoint at ${fmt(checkpointAtTokens(frame))}, low-water target ${fmt(checkpointTargetTokens(frame, 0))}`,
 )
@@ -121,6 +136,7 @@ const view = await loadModelView(repo, {
   historyMessages: history,
   currentMessageId: 'replay',
   contextWindow,
+  depth,
 })
 const inForce = view.checkpoint
 console.log(

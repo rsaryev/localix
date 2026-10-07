@@ -25,7 +25,8 @@ import {
  *   `<base>/.localix/skills/<name>/SKILL.md`
  *
  * Each skill remains a directory so it can carry scripts and assets beside the
- * prompt. Foreign skill and command homes are deliberately not enumerated here.
+ * prompt. Project `.agents/skills` is also a portable read source; native Localix
+ * skills win by name. Foreign personal skill and command homes are not enumerated.
  * `skill-discovery.ts` owns scope precedence and the write/delete side.
  */
 
@@ -444,7 +445,16 @@ export async function scanScope(
       return []
     }
   }
-  return scanSkillDir(baseDir, scope, logger, safetyRoot)
+  const native = await scanSkillDir(baseDir, scope, logger, safetyRoot)
+  if (scope !== 'project') return native
+  const portable = await readSkillsInContainer(
+    join(baseDir, '.agents', 'skills'),
+    scope,
+    logger,
+    safetyRoot,
+  )
+  const nativeNames = new Set(native.map((skill) => skill.name))
+  return [...native, ...portable.filter((skill) => !nativeNames.has(skill.name))]
 }
 
 /**

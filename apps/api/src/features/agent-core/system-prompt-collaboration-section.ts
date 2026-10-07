@@ -44,6 +44,11 @@ export function buildCollaborationSection(
             : '- Delegate (`agents` action:"delegate") when substantial work should keep its investigation out of this conversation: the child runs once, with only your brief, and reports back. Review the report before you call the work done.',
         ]
       : []),
+    ...(delegate
+      ? [
+          '- A brief must separate the user’s requirements from your proposed choices, name the acceptance evidence, and carry the relevant instructions and references. A newer correction supersedes conflicting earlier choices: message the existing owner with what changed and what still applies.',
+        ]
+      : []),
     ...(canInvite
       ? [
           '- Invite a colleague (`conversation_control`) when the work needs their continuing voice in this conversation, and remove them once their part is done.',

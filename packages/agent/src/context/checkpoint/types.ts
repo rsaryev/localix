@@ -39,6 +39,8 @@ export interface CheckpointEntry<M extends ChatMessage = ChatMessage> {
   turnStart: boolean
   /** Host-authored context (a turn's runtime context, a wake note): evictable, never quoted. */
   internal: boolean
+  /** A trusted delegator amended the assignment; quote it as an update, never as human input. */
+  assignmentUpdate?: boolean
   /** The person asked to keep this message in view. */
   pinned: boolean
   /** ISO timestamp, for the date range an epoch card states. */

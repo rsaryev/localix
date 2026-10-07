@@ -28,6 +28,11 @@ message in its view.
 There is no command that summarizes the conversation with a model. The runtime checkpoints on its
 own, and a typed `/compact` is reported as an unknown command.
 
+When a card's request list must shrink, it retains the newest requests. Trusted amendments from a
+delegator remain labeled **assignment update**; ordinary runtime wakes are not quoted as requests.
+These are bounded records, not a complete copy of every instruction: recover the original message
+when a clipped detail matters.
+
 ## How it works
 
 ### One history strategy, two moments

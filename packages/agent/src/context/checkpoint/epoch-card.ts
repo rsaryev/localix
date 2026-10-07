@@ -26,7 +26,7 @@ export interface CardFacts {
   turns: number
   firstAt?: string
   lastAt?: string
-  requests: { id: string; text: string }[]
+  requests: { id: string; text: string; assignmentUpdate?: boolean }[]
   files: FileOperations
   commands: { command: string; failed: boolean; exitCode?: number }[]
   errors: string[]
@@ -62,9 +62,18 @@ export function cardFacts(entries: readonly CheckpointEntry[]): CardFacts {
   let conclusion: CardFacts['conclusion']
   for (const entry of entries) {
     const { message } = entry
-    if (entry.turnStart && !entry.internal && typeof message.content === 'string') {
+    if (
+      entry.turnStart &&
+      (!entry.internal || entry.assignmentUpdate) &&
+      typeof message.content === 'string'
+    ) {
       const text = oneLine(message.content)
-      if (text) requests.push({ id: message.id, text })
+      if (text)
+        requests.push({
+          id: message.id,
+          text,
+          ...(entry.assignmentUpdate ? { assignmentUpdate: true } : {}),
+        })
     }
     if (message.role === 'assistant') {
       const text = lastText(message)
@@ -123,7 +132,7 @@ function listed(label: string, values: readonly string[], limit: number): string
 
 function renderFull(facts: CardFacts): string {
   const limit = LIMITS.full
-  const requests = facts.requests.slice(0, limit.requests)
+  const requests = facts.requests.slice(-limit.requests)
   const commands = facts.commands
     .slice(-limit.commands)
     .map((c) =>
@@ -136,9 +145,12 @@ function renderFull(facts: CardFacts): string {
     ...(requests.length > 0
       ? [
           'Asked:',
-          ...requests.map((r) => `- ${r.id}: ${clip(r.text, limit.requestChars)}`),
+          ...requests.map(
+            (r) =>
+              `- ${r.id}${r.assignmentUpdate ? ' (assignment update)' : ''}: ${clip(r.text, limit.requestChars)}`,
+          ),
           ...(facts.requests.length > requests.length
-            ? [`- (+${facts.requests.length - requests.length} more)`]
+            ? [`- (${facts.requests.length - requests.length} earlier requests omitted)`]
             : []),
         ]
       : []),
@@ -158,7 +170,12 @@ function renderFull(facts: CardFacts): string {
 
 function renderBrief(facts: CardFacts): string {
   const limit = LIMITS.brief
-  const asked = facts.requests.map((r) => clip(r.text, limit.requestChars))
+  const asked = facts.requests
+    .slice(-limit.requests)
+    .map(
+      (r) =>
+        `${r.assignmentUpdate ? 'Assignment update: ' : ''}${clip(r.text, limit.requestChars)}`,
+    )
   return [
     `## ${header(facts)}`,
     ...listed('Asked', asked, limit.requests),
@@ -167,8 +184,8 @@ function renderBrief(facts: CardFacts): string {
 }
 
 function renderLine(facts: CardFacts): string {
-  const first = facts.requests[0]
-  return `- ${header(facts)}${first ? `: ${clip(first.text, LIMITS.line.requestChars)}` : ''}`
+  const latest = facts.requests[facts.requests.length - 1]
+  return `- ${header(facts)}${latest ? `: ${latest.assignmentUpdate ? 'Assignment update: ' : ''}${clip(latest.text, LIMITS.line.requestChars)}` : ''}`
 }
 
 export function renderCard(facts: CardFacts, level: EpochCard['level']): EpochCard {
