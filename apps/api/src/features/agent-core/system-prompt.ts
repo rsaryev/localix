@@ -27,6 +27,7 @@ import {
 import { buildCollaborationSection } from './system-prompt-collaboration-section'
 import type { BackgroundJobSnapshot } from './system-prompt-sections'
 import type { OpenQuestionsState } from './tools/hitl/ask-queue'
+import { buildSessionTopicSection } from './session-topic'
 import { buildWithheldToolsSection } from './system-prompt-withheld-section'
 import {
   ANSWER_FORMS_PRINCIPLE,
@@ -43,6 +44,8 @@ export interface BuildAgentSystemPromptParams {
   modelId?: string
   providerId?: string
   sessionId?: string
+  /** Shared objective and prior-topic context, independent of participants and tools. */
+  sessionTopic?: { title: string; goal?: string | null; previousTopicSummary?: string | null }
   /**
    * Absolute inbound-webhook URL for THIS instance (host+port resolved at
    * runtime, so it's correct regardless of the configured port). Emitted in the
@@ -344,6 +347,9 @@ export function buildAgentSystemPromptParts(
   // this tail OUT of the system prompt into an ephemeral end-of-context message, so
   // the system+tools prefix is session-invariant and caches cross-session (esp. for
   // short sessions' turn 1).
+  // Session state changes only when its title/objective changes; keep it at the system tail
+  // so earlier instructions retain their prefix. Never freeze it in an agent's memory snapshot.
+  if (params.sessionTopic) sections.push(buildSessionTopicSection(params.sessionTopic))
   const stablePrompt = sections.join('\n\n').trimEnd()
   return { stablePrompt, runtimeSections: buildRuntimeTailSections(params, hasTool) }
 }

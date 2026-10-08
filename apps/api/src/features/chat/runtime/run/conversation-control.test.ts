@@ -5,6 +5,7 @@ import { sessionExecutionContext } from '../execution-context'
 import { dispatchParams } from '../run-params'
 import { createConversationControlPort } from './conversation-control'
 import { MAX_HANDOFF_CHAIN } from '../../turn-budget'
+import type { SessionTopic } from '../../../agent-core/session-topic'
 
 const base = sessionFixture({
   agents: [
@@ -49,6 +50,20 @@ function harness(runParams = params) {
     {
       repo: {
         getSession: async () => session,
+        updateSessionTopic: async (
+          _u: string,
+          _id: string,
+          expected: typeof session,
+          topic: SessionTopic,
+        ) => {
+          if (
+            expected.goal !== session.goal ||
+            expected.previousTopicSummary !== session.previousTopicSummary
+          )
+            return false
+          session = { ...session, ...topic }
+          return true
+        },
         updateMembership: async (
           _userId: string,
           _sessionId: string,
@@ -70,6 +85,10 @@ function harness(runParams = params) {
         triggers.push(next.triggerMessageIds)
       },
       deps: {
+        listRegistryAgents: async () => [
+          { agentId: 'agent-a', leadershipPriority: 100 },
+          { agentId: 'agent-b', leadershipPriority: 40 },
+        ],
         listInvocableRegistryAgents: async () => [
           {
             agentId: 'agent-a',
@@ -103,10 +122,107 @@ function harness(runParams = params) {
     published,
     notices,
     session: () => session,
+    setSession: (next: typeof session) => {
+      session = next
+    },
   }
 }
 
 describe('conversation control port', () => {
+  const topic = {
+    title: 'Release',
+    goal: 'Ship the verified parser.',
+    previousTopicSummary: 'Parser fixed; tests passed. Keep Bun; review deployment next.',
+  }
+
+  test('the leader publishes session state and hands off without publishing tool history', async () => {
+    const h = harness()
+    await h.control.finish('topic', { next: ['beta'], topic })
+    expect(h.session()).toMatchObject(topic)
+    expect(h.queued).toEqual(['agent-b'])
+    expect(h.notices).toEqual([])
+    expect(h.published).toEqual([
+      [
+        base.userId,
+        base.id,
+        {
+          type: 'session.updated',
+          session: expect.objectContaining(topic),
+        },
+      ],
+    ])
+  })
+
+  test('a fixed solo chat changes its topic without inviting or scheduling anyone', async () => {
+    const h = harness({
+      ...params,
+      session: { ...base, agents: [base.agents[0]!], rosterLocked: true },
+    })
+    await h.control.finish('topic', { next: [], topic })
+    expect(h.session()).toMatchObject({ ...topic, rosterLocked: true })
+    expect(h.queued).toEqual([])
+    expect(h.control.completed()).toBe(true)
+  })
+
+  test('a topic change can continue in a fresh solo run; ordinary calls cannot self-schedule', async () => {
+    const h = harness({
+      ...params,
+      session: { ...base, agents: [base.agents[0]!], rosterLocked: true },
+    })
+    await expect(h.control.finish('loop', { next: ['alpha'] })).rejects.toThrow(
+      'cannot schedule itself',
+    )
+    expect(h.queued).toEqual([])
+    await h.control.finish('topic', { next: ['alpha'], topic })
+    expect(h.queued).toEqual(['agent-a'])
+    expect(h.session()).toMatchObject(topic)
+    expect(h.triggers).toEqual([['reply-a']])
+  })
+
+  test('a specialist cannot change the topic, including by removing the leader', async () => {
+    const h = harness({ ...params, scope: { ...params.scope, speakerAgentId: 'agent-b' } })
+    await expect(h.control.finish('topic', { next: [], remove: ['alpha'], topic })).rejects.toThrow(
+      'leader',
+    )
+    expect(h.session()).toEqual(base)
+    expect(h.published).toEqual([])
+    expect(h.control.completed()).toBe(false)
+  })
+
+  test('leadership follows registry priority rather than the order participants joined', async () => {
+    const h = harness({ ...params, session: { ...base, agents: [...base.agents].reverse() } })
+    await h.control.finish('topic', { next: [], topic })
+    expect(h.session()).toMatchObject(topic)
+  })
+
+  test('a run with an outdated objective cannot erase a newer topic', async () => {
+    const h = harness()
+    h.setSession({ ...base, goal: 'Newer goal', previousTopicSummary: 'Newer decisions' })
+    await expect(h.control.finish('topic', { next: [], topic })).rejects.toThrow(
+      'changed during this turn',
+    )
+    expect(h.session().goal).toBe('Newer goal')
+    expect(h.published).toEqual([])
+    expect(h.control.completed()).toBe(false)
+  })
+
+  test('a delegated team cannot change a chat topic', async () => {
+    const h = harness({ ...params, session: { ...base, sessionKind: 'subagent' } })
+    await expect(h.control.finish('topic', { next: [], topic })).rejects.toThrow('Only chat')
+    expect(h.published).toEqual([])
+  })
+
+  test('incomplete summaries and invalid next speakers never update the topic', async () => {
+    const h = harness()
+    await expect(
+      h.control.finish('topic', { next: [], topic: { ...topic, previousTopicSummary: '' } }),
+    ).rejects.toThrow()
+    await expect(h.control.finish('topic', { next: ['missing'], topic })).rejects.toThrow(
+      'unavailable',
+    )
+    expect(h.session()).toEqual(base)
+    expect(h.published).toEqual([])
+  })
   test('a solo chat invites help, receives a report and concludes in the same session', async () => {
     const solo = { ...base, agents: [base.agents[0]!] }
     const first = harness({ ...params, session: solo })

@@ -46,6 +46,8 @@ export interface SessionSummary {
   seq: number
   title: string
   isPinned: boolean
+  goal?: string | null
+  previousTopicSummary?: string | null
   /** Soft-archived: hidden from the sidebar by default, but not deleted. */
   isArchived: boolean
   /** Never null — every session belongs to a project (`projects/default-project.ts`). */

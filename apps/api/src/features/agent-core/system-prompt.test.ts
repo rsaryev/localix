@@ -22,6 +22,34 @@ function partsOf(params: Parameters<typeof buildAgentSystemPromptParts>[0]) {
 }
 
 describe('buildAgentSystemPrompt', () => {
+  test('session objective and historical summary stay in every system prompt without tools or colleagues', () => {
+    const toolRegistry = createRuntimeToolRegistry({ policy: { agentProfile: SHAPE.job } })
+    const topic = {
+      title: 'Release',
+      goal: 'Ship the parser.',
+      previousTopicSummary: 'Keep Bun; parser tests passed.',
+    }
+    for (const conversation of [
+      undefined,
+      { self: 'lead', participants: [{ handle: 'lead' }, { handle: 'qa' }] },
+    ]) {
+      const parts = partsOf({ toolRegistry, sessionTopic: topic, conversation })
+      expect(parts.stablePrompt).toContain('# Session objective')
+      expect(parts.stablePrompt).toContain(topic.goal)
+      expect(parts.stablePrompt).toContain(topic.previousTopicSummary)
+      expect(parts.runtimeTail).not.toContain('# Session objective')
+    }
+    const changed = partsOf({
+      toolRegistry,
+      sessionTopic: { ...topic, goal: 'Deploy the parser.' },
+    })
+    expect(changed.stablePrompt).toContain('Deploy the parser.')
+    expect(changed.stablePrompt).not.toContain(topic.goal)
+    expect(changed.stablePrompt).toContain(topic.previousTopicSummary)
+    const legacy = partsOf({ toolRegistry, sessionTopic: { title: 'Legacy' } })
+    expect(legacy.stablePrompt).toContain('follow the current user request')
+    expect(legacy.stablePrompt).not.toContain('## Previous topic summary')
+  })
   test('the turn protocol follows the membership the run started with, once', () => {
     // A solo run holds `conversation_control` too (a colleague may be invited from it), but
     // the full protocol binds only once colleagues are present — the same snapshot the host

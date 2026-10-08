@@ -4,6 +4,36 @@ import { completedConversationControl } from '../conversation-control-request'
 import { createConversationControlTool } from './conversation-control'
 
 describe('conversation_control', () => {
+  test('a fixed solo descriptor can change the topic without changing membership or sharing the call', async () => {
+    const topic = {
+      title: 'Release',
+      goal: 'Ship the approved changes.',
+      previousTopicSummary: 'Parser fixed; tests passed. Keep Bun.',
+    }
+    const calls: unknown[] = []
+    const tool = createConversationControlTool({
+      membership: 'fixed',
+      canChangeTopic: true,
+      finish: async (_id, request) => {
+        calls.push(request)
+        return { invited: [], removed: [], next: [], topic: request.topic }
+      },
+    })
+    expect(tool.inputSchema.safeParse({ next: [], topic }).success).toBe(true)
+    expect(
+      tool.inputSchema.safeParse({ next: [], topic: { title: topic.title, goal: topic.goal } })
+        .success,
+    ).toBe(false)
+    expect(
+      tool.inputSchema.safeParse({ next: [], topic: { ...topic, previousTopicSummary: '' } })
+        .success,
+    ).toBe(false)
+    expect(tool.inputSchema.safeParse({ next: [], invite: ['qa'], topic }).success).toBe(false)
+    expect(tool.presentation).toEqual({ transcript: 'hidden' })
+    const result = await tool.execute('topic', { next: [], topic })
+    expect(calls).toEqual([{ next: [], topic }])
+    expect(result.terminate).toBe(true)
+  })
   test('a delegated-team descriptor exposes scheduling with fixed membership', () => {
     const tool = createConversationControlTool({
       membership: 'fixed',
@@ -12,6 +42,12 @@ describe('conversation_control', () => {
     expect(tool.inputSchema.safeParse({ next: ['qa'] }).success).toBe(true)
     expect(tool.inputSchema.safeParse({ invite: ['qa'], next: [] }).success).toBe(false)
     expect(tool.inputSchema.safeParse({ remove: ['qa'], next: [] }).success).toBe(false)
+    expect(
+      tool.inputSchema.safeParse({
+        next: [],
+        topic: { title: 'T', goal: 'G', previousTopicSummary: 'S' },
+      }).success,
+    ).toBe(false)
   })
 
   test('classify: every call changes only this conversation, so it is session', () => {

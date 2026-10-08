@@ -20,6 +20,8 @@ export function sessionFieldsPatch(
     externalAgentProvider?: string
     externalAgentSessionKey?: string
     title?: string
+    goal?: string | null
+    previousTopicSummary?: string | null
     isPinned?: boolean
     isArchived?: boolean
     projectId?: string
@@ -37,6 +39,10 @@ export function sessionFieldsPatch(
       : {}),
     ...(patch.title !== undefined
       ? { title: normalizeSessionTitle(patch.title, session.title) }
+      : {}),
+    ...(patch.goal !== undefined ? { goal: patch.goal } : {}),
+    ...(patch.previousTopicSummary !== undefined
+      ? { previousTopicSummary: patch.previousTopicSummary }
       : {}),
     ...(patch.isPinned !== undefined ? { isPinned: patch.isPinned } : {}),
     ...(patch.isArchived !== undefined

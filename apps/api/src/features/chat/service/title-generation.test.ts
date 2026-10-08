@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import type { LanguageModelRequest } from '@localixai/agent/runtime'
-import { cleanGeneratedTitle, createTitleGenerator } from './title-generation'
+import {
+  cleanGeneratedTitle,
+  createTitleGenerator,
+  parseGeneratedSessionTopic,
+} from './title-generation'
 import {
   buildInputIntentContext,
   renderInputIntentContext,
@@ -9,11 +13,11 @@ import {
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 function titleHarness(
-  options: { configured?: boolean; applyTitle?: boolean; enabled?: boolean } = {},
+  options: { configured?: boolean; applyTitle?: boolean; enabled?: boolean; content?: string } = {},
 ) {
   const calls: {
     request?: unknown
-    updates: [string, string, string, string][]
+    updates: [string, string, string, string, string?, (string | null)?][]
     published: unknown[]
   } = {
     updates: [],
@@ -21,7 +25,9 @@ function titleHarness(
   }
   const generate = createTitleGenerator({
     repo: {
-      updateTitleIfCurrent: async (...args: [string, string, string, string]) => {
+      updateTitleIfCurrent: async (
+        ...args: [string, string, string, string, string?, (string | null)?]
+      ) => {
         calls.updates.push(args)
         return options.applyTitle ?? true
       },
@@ -45,7 +51,12 @@ function titleHarness(
         model: {
           complete: async (request: LanguageModelRequest) => {
             calls.request = request
-            return { content: 'Generated title', usage: { inputTokens: 10, outputTokens: 4 } }
+            return {
+              content:
+                options.content ??
+                JSON.stringify({ title: 'Generated title', goal: 'Check the parser.' }),
+              usage: { inputTokens: 10, outputTokens: 4 },
+            }
           },
         },
       }) as never,
@@ -102,7 +113,7 @@ describe('cleanGeneratedTitle', () => {
     expect(rendered).not.toContain('DROP DATABASE')
   })
 
-  test('uses the v2 model-task wrapper and applies only the expected fallback title', async () => {
+  test('generates title and objective together and applies only the expected session state', async () => {
     const { calls, generate } = titleHarness()
     generate(
       'u1',
@@ -112,10 +123,13 @@ describe('cleanGeneratedTitle', () => {
       'Check @resource:localix://resource/git/project/status',
       undefined,
       'high',
+      'Check parser',
     )
     await flush()
 
-    expect(calls.updates).toEqual([['u1', 's1', 'Check parser', 'Generated title']])
+    expect(calls.updates).toEqual([
+      ['u1', 's1', 'Check parser', 'Generated title', 'Check the parser.', 'Check parser'],
+    ])
     expect(calls.published).toHaveLength(1)
     expect(calls.request).toMatchObject({
       systemPrompt: expect.stringContaining('You name chat sessions'),
@@ -149,7 +163,34 @@ describe('cleanGeneratedTitle', () => {
     generate('u1', 's1', 'New Chat', 'Check parser', 'Check parser')
     await flush()
 
-    expect(calls.updates).toEqual([['u1', 's1', 'Check parser', 'Generated title']])
+    expect(calls.updates).toEqual([
+      ['u1', 's1', 'Check parser', 'Generated title', 'Check the parser.', null],
+    ])
     expect(calls.published).toEqual([])
+  })
+
+  test('malformed or incomplete model output preserves both fallbacks', async () => {
+    for (const content of ['Plain title', '{"title":"Title"}', '{"title":"Title","goal":""}']) {
+      const { calls, generate } = titleHarness({ content })
+      generate('u1', 's1', 'New Chat', 'Check parser', 'Check parser')
+      await flush()
+      expect(calls.updates).toEqual([])
+      expect(calls.published).toEqual([])
+    }
+  })
+
+  test('bounds and trims generated objectives and rejects invented summary fields', () => {
+    expect(parseGeneratedSessionTopic('{"title":" Parser. ","goal":" Fix parser. "}')).toEqual({
+      title: 'Parser',
+      goal: 'Fix parser.',
+    })
+    expect(
+      parseGeneratedSessionTopic(JSON.stringify({ title: 'Parser', goal: 'x'.repeat(2001) })),
+    ).toBeNull()
+    expect(
+      parseGeneratedSessionTopic(
+        '{"title":"Parser","goal":"Fix it","previousTopicSummary":"Done"}',
+      ),
+    ).toBeNull()
   })
 })

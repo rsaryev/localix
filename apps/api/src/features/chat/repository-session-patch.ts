@@ -10,6 +10,10 @@ export function sessionRowPatch(patch: Partial<SessionRecord>) {
       ? { external_agent_session_key: patch.externalAgentSessionKey }
       : {}),
     ...(patch.title !== undefined ? { title: patch.title } : {}),
+    ...(patch.goal !== undefined ? { goal: patch.goal } : {}),
+    ...(patch.previousTopicSummary !== undefined
+      ? { previous_topic_summary: patch.previousTopicSummary }
+      : {}),
     ...(patch.isPinned !== undefined ? { is_pinned: patch.isPinned ? 1 : 0 } : {}),
     ...(patch.projectId !== undefined ? { project_id: patch.projectId } : {}),
     ...(patch.parentSessionId !== undefined ? { parent_session_id: patch.parentSessionId } : {}),

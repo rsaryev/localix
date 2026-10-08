@@ -59,7 +59,13 @@ export interface ConversationContext {
 export type ConversationEvent =
   | { kind: 'user-message'; text: string }
   | { kind: 'runtime'; recipient?: string }
-  | { kind: 'agent-request'; from: string; recipients: readonly string[] }
+  | {
+      kind: 'agent-request'
+      from: string
+      recipients: readonly string[]
+      /** Host-only: a saved topic change may continue in a fresh run by the same participant. */
+      allowSelf?: boolean
+    }
 
 /** Pure policy: returns execution intents. It never stores or executes pending work. */
 export interface ConversationStrategy {
@@ -86,7 +92,10 @@ function explicitRecipients(
   if (
     [...requested].some(
       (handle) =>
-        !members.some((member) => member.handle === handle && member.agentId !== event.from),
+        !members.some(
+          (member) =>
+            member.handle === handle && (event.allowSelf || member.agentId !== event.from),
+        ),
     )
   ) {
     throw new Error('Handoff recipients must be current colleagues, excluding yourself')

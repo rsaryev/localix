@@ -10,6 +10,8 @@ import { MAX_HANDOFF_CHAIN } from '../../turn-budget'
 import { insertUiNote } from '../message-persistence'
 import type { SessionAgentRoute } from '../../repository-types'
 import type { ConversationMembershipChange } from './conversation-membership'
+import { assertTopicAuthor, changeSessionTopic } from './session-topic'
+import { sessionTopicSchema } from '../../../agent-core/session-topic'
 
 export function createConversationControlPort(
   env: Pick<RunEnv, 'repo' | 'enqueueRun' | 'deps'> &
@@ -20,6 +22,22 @@ export function createConversationControlPort(
 
   const finish: ConversationControlPort['finish'] = async (toolCallId, request) => {
     if (completed) throw new Error('conversation_control may be completed only once per turn')
+    let topicSnapshot: typeof params.session | undefined
+    if (request.topic) {
+      sessionTopicSchema.parse(request.topic)
+      const current = await env.repo.getSession(params.userId, params.session.id)
+      if (!current) throw new Error('Conversation no longer exists.')
+      await assertTopicAuthor(env, params.userId, current, params.scope.speakerAgentId)
+      if (
+        (current.goal ?? null) !== (params.session.goal ?? null) ||
+        (current.previousTopicSummary ?? null) !== (params.session.previousTopicSummary ?? null)
+      ) {
+        throw new Error(
+          'The session topic changed during this turn; read the current topic before replacing it.',
+        )
+      }
+      topicSnapshot = current
+    }
 
     const nextHandles: string[] = []
     const membershipEnv = {
@@ -48,7 +66,7 @@ export function createConversationControlPort(
             `Agent ${JSON.stringify(reference)} is unavailable. Available: ${available || 'none'}.`,
           )
         }
-        if (member.agentId === params.scope.speakerAgentId) {
+        if (member.agentId === params.scope.speakerAgentId && !request.topic) {
           throw new Error('The current speaker cannot schedule itself as next.')
         }
         if (!nextHandles.includes(member.handle)) nextHandles.push(member.handle)
@@ -74,7 +92,9 @@ export function createConversationControlPort(
         validate: validateNext,
       })
     }
-    const updated = membership.session
+    const updated = request.topic
+      ? await changeSessionTopic(env, params.userId, topicSnapshot!, request.topic)
+      : membership.session
 
     // The chain is bounded: past the limit the floor goes back to the person instead of to
     // another participant, and the person is told why the conversation stopped here.
@@ -97,6 +117,7 @@ export function createConversationControlPort(
         invited: membership.invited.map((agent) => `@${agent.name}`),
         removed: membership.removed.map((member) => `@${member.handle}`),
         next: [],
+        ...(request.topic ? { topic: request.topic } : {}),
         stopped: `Handoff limit reached (${MAX_HANDOFF_CHAIN} in a row): nobody was queued; the conversation returns to the user.`,
       }
     }
@@ -104,7 +125,12 @@ export function createConversationControlPort(
     const recipients = await resolveTurnRecipients(
       updated,
       params.historyMessages,
-      { kind: 'agent-request', from: params.scope.speakerAgentId, recipients: nextHandles },
+      {
+        kind: 'agent-request',
+        from: params.scope.speakerAgentId,
+        recipients: nextHandles,
+        ...(request.topic ? { allowSelf: true } : {}),
+      },
       rosterLeadership(env.deps.listRegistryAgents, params.userId, updated.projectId),
     )
     // Hashed from the handing-off turn and call, so a retried tool call addresses the same slots.
@@ -132,6 +158,7 @@ export function createConversationControlPort(
       invited: membership.invited.map((agent) => `@${agent.name}`),
       removed: membership.removed.map((member) => `@${member.handle}`),
       next: nextHandles.map((handle) => `@${handle}`),
+      ...(request.topic ? { topic: request.topic } : {}),
     }
   }
 

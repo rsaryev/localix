@@ -11,15 +11,21 @@ function harness(opts: { busy?: boolean } = {}) {
   const inserted: PersistedMessage[] = []
   const events: Array<{ type: string; message?: PersistedMessage }> = []
   let updatedSession: SessionRecord | null = null
+  let currentSession: SessionRecord = session
   let runArgs: AgentTurnAdmission | null = null
   const run = createRunMacroCommand({
     repo: {
       insertMessage: async (m: PersistedMessage) => {
         inserted.push(m)
       },
-      updateSession: async (_u: string, _s: string, sess: SessionRecord) => {
-        updatedSession = sess
+      seedSessionTopic: async (_u: string, _id: string, title: string, goal: string | null) => {
+        currentSession = { ...currentSession, title, goal }
       },
+      updateSession: async (_u: string, _s: string, patch: Partial<SessionRecord>) => {
+        currentSession = { ...currentSession, ...patch }
+        updatedSession = currentSession
+      },
+      getSession: async () => currentSession,
     } as never,
     streamRegistry: {
       publish: (_u: string, _s: string, e: { type: string }) => {

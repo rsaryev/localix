@@ -44,11 +44,9 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     inputs.disabledTools,
     params.scope.extraDisabledTools,
   )
-  // Alone in a conversation whose participants are fixed, the tool has nothing left to do: its
-  // `next` has nobody to name and its `invite` would be refused. Offering it anyway taught the
-  // model an invitation it could only fail at.
+  // Topic changes belong to the session, including a fixed solo chat.
   const conversationControl =
-    (session.sessionKind === 'chat' && !(session.rosterLocked && !isMultiParticipant(session))) ||
+    session.sessionKind === 'chat' ||
     (session.sessionKind === 'subagent' && isMultiParticipant(session))
       ? createConversationControlPort(env, params)
       : undefined

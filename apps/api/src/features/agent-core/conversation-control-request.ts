@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { TOOL } from './tool-names'
+import { sessionTopicSchema } from './session-topic'
 
 const agentRefs = z
   .array(z.string().trim().min(1))
@@ -13,6 +14,11 @@ export const conversationControlRequestSchema = z
     next: agentRefs.describe('Who runs next. [] queues nobody.'),
     invite: agentRefs.optional().describe('Available agents to add to this conversation.'),
     remove: agentRefs.optional().describe('Participants whose work here is done.'),
+    topic: sessionTopicSchema
+      .optional()
+      .describe(
+        'Change the session topic and preserve important prior context. Leader or solo agent only.',
+      ),
   })
   .strict()
 

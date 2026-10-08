@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createSessionRequestSchema } from './contracts'
+import { createSessionRequestSchema, updateSessionRequestSchema } from './contracts'
+import {
+  PREVIOUS_TOPIC_SUMMARY_MAX_CHARS,
+  SESSION_GOAL_MAX_CHARS,
+} from '../agent-core/session-topic'
 import { SESSION_TITLE_MAX_CHARS } from './session-limits'
 import { MODEL_ID_MAX_CHARS, PROVIDER_CONNECTION_ID_MAX_CHARS } from '../catalog/model-identity'
 import {
@@ -74,6 +78,28 @@ describe('session provenance', () => {
 })
 
 describe('public create-session contract', () => {
+  test('shared topic fields are bounded, normalized and can be explicitly cleared', () => {
+    for (const schema of [createSessionRequestSchema, updateSessionRequestSchema]) {
+      expect(
+        schema.parse({ goal: ' Ship it. ', previousTopicSummary: ' Keep Bun. ' }),
+      ).toMatchObject({
+        goal: 'Ship it.',
+        previousTopicSummary: 'Keep Bun.',
+      })
+      expect(schema.parse({ goal: null, previousTopicSummary: null })).toMatchObject({
+        goal: null,
+        previousTopicSummary: null,
+      })
+      for (const [field, max] of [
+        ['goal', SESSION_GOAL_MAX_CHARS],
+        ['previousTopicSummary', PREVIOUS_TOPIC_SUMMARY_MAX_CHARS],
+      ] as const) {
+        expect(schema.safeParse({ [field]: ' ' }).success).toBe(false)
+        expect(schema.safeParse({ [field]: 'x'.repeat(max) }).success).toBe(true)
+        expect(schema.safeParse({ [field]: 'x'.repeat(max + 1) }).success).toBe(false)
+      }
+    }
+  })
   test('accepts root chat metadata only', () => {
     expect(createSessionRequestSchema.parse({ title: 'Chat', projectId: null })).toEqual({
       title: 'Chat',

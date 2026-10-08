@@ -19,6 +19,8 @@ export const mapSession = (row: {
   user_id: string
   seq?: number
   title: string
+  goal?: string | null
+  previous_topic_summary?: string | null
   is_pinned: number
   created_at: string
   updated_at: string
@@ -51,6 +53,8 @@ export const mapSession = (row: {
   userId: row.user_id,
   seq: row.seq ?? 0,
   title: row.title,
+  goal: row.goal ?? null,
+  previousTopicSummary: row.previous_topic_summary ?? null,
   isPinned: row.is_pinned === 1,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -115,6 +119,8 @@ export const toSessionSummary = (record: SessionRecord): SessionSummary => ({
   id: record.id,
   seq: record.seq ?? 0,
   title: record.title,
+  goal: record.goal ?? null,
+  previousTopicSummary: record.previousTopicSummary ?? null,
   isPinned: record.isPinned,
   isArchived: record.archivedAt !== null,
   projectId: record.projectId,

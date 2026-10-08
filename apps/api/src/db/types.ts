@@ -152,6 +152,8 @@ export interface AgentSessionsTable {
   /** Global sequence → the canonical `LOCALIX-<seq>` id. DB-assigned. */
   seq: ColumnType<number, number | undefined, never>
   title: string
+  goal: ColumnType<string | null, string | null | undefined, string | null>
+  previous_topic_summary: ColumnType<string | null, string | null | undefined, string | null>
   is_pinned: ColumnType<number, number | undefined, number | undefined>
   created_at: ColumnType<string, string | undefined, never>
   updated_at: ColumnType<string, string | undefined, string | undefined>

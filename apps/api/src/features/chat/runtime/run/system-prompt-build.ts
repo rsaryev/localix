@@ -199,6 +199,7 @@ export async function buildRunSystemPrompt(
   const { stablePrompt, runtimeSections } = buildAgentSystemPromptParts({
     sessionId: session.id,
     modelId: speakerRoute.modelId,
+    sessionTopic: session,
     providerId,
     webhookUrl: WEBHOOK_URL,
     deliveryContext: channelOrigin ? { channel: channelOrigin } : undefined,

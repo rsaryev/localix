@@ -229,6 +229,7 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
         prompt,
         bindings?.filter((binding) => binding.kind !== 'context' && binding.kind !== 'invocation'),
         agentRoute(updatedSession, firstSlot!)!.reasoningEffort,
+        updatedSession.goal ?? null,
       )
     // Channel turns await the full run (the caller needs the final reply);
     // interactive turns return immediately and stream over SSE.

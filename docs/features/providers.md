@@ -86,10 +86,10 @@ is a fact about the model, so it is never remembered as your preference and neve
 next model you pick.
 
 The required **Chat sessions** route is the default for a direct conversation. Optional workload
-routes cover session-title generation, inline completion, and delegated agents. Each optional route
-can inherit a documented parent route rather than requiring another connection. Reasoning
-preferences are keyed by workload, provider, and model so changing one route does not silently
-rewrite another model's preference.
+routes cover session title and objective generation, inline completion, and delegated agents. Each
+optional route can inherit a documented parent route rather than requiring another connection.
+Reasoning preferences are keyed by workload, provider, and model so changing one route does not
+silently rewrite another model's preference.
 
 The board has no route of its own. A worker's model is its agent's — **Settings → Agents** — so it
 applies on every dispatch path rather than only on a card; a card that names no model inherits the

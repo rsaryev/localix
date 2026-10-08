@@ -79,8 +79,8 @@ finishing the work alone. For a new screen, flow or visible redesign the designe
 deliverable is a rendered mockup opened in the visible preview, and implementation starts after you
 approve it; a small change to an existing screen goes straight to the engineer.
 
-`conversation_control` is also available in a one-agent conversation so that agent can invite a
-specialist, unless the participants are [fixed](#fixing-the-participants). In a multi-agent
+`conversation_control` is also available in a one-agent conversation to change the topic or invite a
+specialist. [Fixed participants](#fixing-the-participants) prevent invitations. In a multi-agent
 conversation the runtime requires one successful call before the turn can finish and gives the model
 a bounded repair opportunity if it omitted the call. Because it is the terminal protocol for a chat
 turn, per-agent capability rules cannot disable it.
@@ -136,6 +136,42 @@ Outputs with no provable author are unavailable to participants.
 Files in the shared workspace remain visible to every process that can access that workspace. Lane
 isolation is context isolation, not a filesystem security boundary.
 
+### Session objective and previous topic summary
+
+Each session stores two shared fields alongside its title: `goal`, the current objective, and
+`previousTopicSummary`, the important context carried forward from earlier topics. Both are included
+in every participant's system prompt when a run starts, including conversations with one agent. They
+belong to the session and remain available when history is checkpointed or the app restarts.
+
+The first user message supplies a fallback objective. When automatic title generation is configured,
+the same model call generates the title and objective together. A late response cannot replace a
+topic that has already changed.
+
+The conversation leader, or the sole participant, changes the topic through `conversation_control`:
+
+```json
+{
+  "next": [],
+  "topic": {
+    "title": "Parser release",
+    "goal": "Deploy the verified parser changes.",
+    "previousTopicSummary": "Parser changes are complete and focused tests passed. Keep Bun. Deployment is still pending."
+  }
+}
+```
+
+All three values are required and saved together. The summary carries forward decisions, user
+constraints, verified results, useful references and unfinished work, including anything still
+relevant in the inherited summary. Goals are limited to 2,000 characters and summaries to 8,000.
+Changing the topic ends the current turn; `next` can select the participant who continues. With a
+topic change, the leader or sole agent can put its own handle in `next` to continue the new
+objective in a fresh run with the updated system prompt. Ordinary handoffs cannot schedule their own
+author.
+
+The tool call and result remain in the author's private lane. Other participants receive the shared
+fields through the session, without access to that lane's reasoning or raw tool output. A topic
+change does not delete the transcript or reset a participant's checkpoint.
+
 ## Changing participants
 
 The composer can add participants to any existing chat; there is no separate group-creation flow.
@@ -162,9 +198,9 @@ You can change the setting only before the conversation starts, which means befo
 that you or an agent writes. Lines the product writes itself, such as "@qa joined", do not count, so
 you can still arrange the participants first. After that an open conversation shows no lock, and a
 fixed one keeps a closed lock that can no longer be clicked, and a fork inherits the setting from
-its source. The agents are told about it too. A fixed conversation with a single agent gets no
-`conversation_control`, because there is nobody left to schedule or invite. A fixed group still
-schedules its participants, but the system prompt says that nobody can be invited.
+its source. The agents are told about it too. A fixed conversation with a single agent still gets
+`conversation_control` to change its topic. A fixed group also schedules its participants, while the
+tool schema excludes invitations and removals.
 
 ## Interruptions
 

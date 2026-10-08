@@ -7,7 +7,8 @@ import { ORCHESTRATION_DELEGATE_TASK, childExecutionContext } from '../runtime/e
 import type { AgentTurnAdmission } from '../runtime/agent-turn-ticket'
 import { noLeadership } from '../runtime/conversation-strategy'
 
-function harness() {
+function harness(initialSession: SessionRecord = session) {
+  let currentSession: SessionRecord = initialSession
   const inserted: PersistedMessage[] = []
   const events: Array<{ type: string; message?: PersistedMessage }> = []
   let runArgs: AgentTurnAdmission | null = null
@@ -16,7 +17,13 @@ function harness() {
       insertMessage: async (m: PersistedMessage) => {
         inserted.push(m)
       },
-      updateSession: async () => {},
+      seedSessionTopic: async (_u: string, _id: string, title: string, goal: string | null) => {
+        currentSession = { ...currentSession, title, goal }
+      },
+      updateSession: async (_u: string, _id: string, patch: Partial<SessionRecord>) => {
+        currentSession = { ...currentSession, ...patch }
+      },
+      getSession: async () => currentSession,
     } as never,
     streamRegistry: {
       publish: (_u: string, _s: string, e: { type: string }) => {
@@ -140,7 +147,7 @@ describe('runAgent history loader', () => {
       ...msg('b1', 'assistant', 'done'),
       payload: { id: 'b1', role: 'assistant', from: 'agent:b', to: 'user', content: 'done' },
     } as unknown as PersistedMessage
-    const h = harness()
+    const h = harness(room)
     const loader = async () => [msg('m1', 'user', 'earlier'), answeredByB, ...h.inserted]
 
     await h.runAgent('u', 's', room, loader, 'now', '2026-01-01')

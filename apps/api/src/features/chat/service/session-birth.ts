@@ -91,6 +91,8 @@ export async function createSession(
     seq,
     userId,
     title: normalizeSessionTitle(input.title, DEFAULT_TITLE),
+    goal: input.goal ?? null,
+    previousTopicSummary: input.previousTopicSummary ?? null,
     isPinned: false,
     projectId,
     parentSessionId: input.parentSessionId ?? null,

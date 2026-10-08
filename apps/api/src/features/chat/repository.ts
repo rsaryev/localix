@@ -8,6 +8,7 @@ import { createRuntimeQueries } from './repository-runtime'
 import { createRecentRouteQueries } from './repository-recent-routes'
 import { createSessionReadQueries } from './repository-sessions-read'
 import { createSessionWriteQueries } from './repository-sessions-write'
+import { createSessionTopicQueries } from './repository-session-topic'
 import { createSessionLeafOps, createTreeQueries } from './repository-tree'
 import { createUsageQueries } from './repository-usage-sync'
 
@@ -40,6 +41,7 @@ export function createChatRepository(db: Kysely<AppDatabase>) {
     ...createSessionReadQueries(db),
     ...createRecentRouteQueries(db),
     ...createSessionWriteQueries(db),
+    ...createSessionTopicQueries(db),
     ...createActivatedToolQueries(db),
     ...createUsageQueries(db),
     ...createMessageQueries(db, leaf),

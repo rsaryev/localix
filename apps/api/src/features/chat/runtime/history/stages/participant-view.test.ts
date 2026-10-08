@@ -28,6 +28,31 @@ function row(
 }
 
 describe('participant-view — the transcript as one participant reads it', () => {
+  test('changing the shared topic does not make conversation-control calls visible to colleagues', () => {
+    const changed = row('topic', DEV, 'assistant', 'Moving on to deployment.', {
+      authorSnapshot: { handle: 'dev' },
+      items: [
+        {
+          type: 'tool_call',
+          id: 't-topic',
+          name: 'conversation_control',
+          status: 'completed',
+          input: {
+            next: [],
+            topic: { title: 'Deploy', goal: 'Ship it.', previousTopicSummary: 'Tests passed.' },
+          },
+          resultText: 'Private tool acknowledgement',
+        },
+        { type: 'tool_call', id: 't-read', name: 'read', resultText: 'Private source contents' },
+      ],
+    })
+    const other = projectParticipantView([changed], { viewer: QA })
+    expect(other[0]!.payload.content).toBe('dev: Moving on to deployment.')
+    expect(JSON.stringify(other)).not.toContain('previousTopicSummary')
+    expect(JSON.stringify(other)).not.toContain('Private')
+    const own = projectParticipantView([changed], { viewer: DEV })
+    expect(own[0]!.payload.items).toHaveLength(2)
+  })
   test('the viewer keeps its own rows as its own words, tool items included', () => {
     const [projected] = projectParticipantView(
       [

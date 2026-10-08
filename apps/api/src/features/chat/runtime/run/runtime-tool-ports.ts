@@ -100,7 +100,9 @@ export function buildOptionalToolPorts(
     conversation_control: params.conversationControl
       ? {
           finish: params.conversationControl,
-          membership: session.sessionKind === 'subagent' ? 'fixed' : undefined,
+          membership:
+            session.sessionKind === 'subagent' || session.rosterLocked ? 'fixed' : undefined,
+          canChangeTopic: session.sessionKind === 'chat',
         }
       : undefined,
     ...buildDirectToolInstances({

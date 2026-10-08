@@ -112,6 +112,8 @@ export interface CreateSessionInput {
   externalAgentSessionKey?: string
   externalAgentHistory?: { startedAt?: number; updatedAt: number }
   title?: string
+  goal?: string | null
+  previousTopicSummary?: string | null
   providerConnectionId?: string | null
   modelId?: string
   reasoningEffort?: ReasoningEffort
@@ -148,6 +150,8 @@ export interface UpdateSessionPatch {
   externalAgentProvider?: string
   externalAgentSessionKey?: string
   title?: string
+  goal?: string | null
+  previousTopicSummary?: string | null
   /** The conversation's permission mode — a root's only; written to its whole tree. */
   permissionMode?: PermissionMode
   /**

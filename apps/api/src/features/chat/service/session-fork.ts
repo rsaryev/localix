@@ -46,6 +46,8 @@ export async function forkSession(
     seq,
     userId,
     title: forkSessionTitle(source.title, seq),
+    goal: source.goal ?? null,
+    previousTopicSummary: source.previousTopicSummary ?? null,
     isPinned: false,
     projectId: source.projectId,
     parentSessionId: source.id,

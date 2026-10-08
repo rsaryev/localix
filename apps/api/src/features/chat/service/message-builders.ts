@@ -1,4 +1,4 @@
-import type { StoredMessagePayload } from '../../../db'
+import { USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
 import type { createChatRepository } from '../repository'
 import type { PersistedMessage } from '../contracts'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
@@ -7,8 +7,9 @@ import {
   emptyAssistantPayload,
   sessionAgent,
 } from '../runtime/message-envelope'
-import { autoTitle } from './context'
+import { autoTitle, DEFAULT_TITLE } from './context'
 import type { SessionRecord } from '../repository'
+import { SESSION_GOAL_MAX_CHARS } from '../../agent-core/session-topic'
 
 type ChatRepo = ReturnType<typeof createChatRepository>
 
@@ -61,13 +62,29 @@ export async function bumpSessionForTurn(
   historyWithUserMessage: PersistedMessage[],
   timestamp: string,
 ): Promise<SessionRecord> {
-  const updatedSession: SessionRecord = {
-    ...session,
-    title: autoTitle(session.title, historyWithUserMessage),
+  const firstUserMessage = historyWithUserMessage.find(
+    ({ payload }) =>
+      payload.role === 'user' &&
+      !payload.isInternal &&
+      !payload.uiOnly &&
+      (!payload.from || payload.from === USER_PARTICIPANT) &&
+      payload.content?.trim(),
+  )
+  if (session.goal == null || session.title === DEFAULT_TITLE) {
+    await repo.seedSessionTopic(
+      userId,
+      sessionId,
+      autoTitle(session.title, historyWithUserMessage),
+      firstUserMessage?.payload.content?.trim().slice(0, SESSION_GOAL_MAX_CHARS) ?? null,
+    )
+  }
+  // A partial patch never writes an older summary, roster, or runtime status back to the row.
+  await repo.updateSession(userId, sessionId, {
     updatedAt: timestamp,
     lastMessageAt: timestamp,
-  }
-  await repo.updateSession(userId, sessionId, updatedSession)
+  })
+  const updatedSession = await repo.getSession(userId, sessionId)
+  if (!updatedSession) throw new Error('Conversation no longer exists.')
   publishSession(updatedSession)
   return updatedSession
 }

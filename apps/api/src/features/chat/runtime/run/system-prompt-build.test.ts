@@ -9,7 +9,7 @@ import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunSessionSnapshotRow } from './session-snapshot'
 import { buildRunSystemPrompt, channelNameFromSourceKey } from './system-prompt-build'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
-import { routedParticipants } from '../../../../testing/session-fixture'
+import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
 
 const session = (
   id: string,
@@ -163,6 +163,56 @@ describe('buildPluginsPromptContext', () => {
 })
 
 describe('buildRunSystemPrompt pinned skills', () => {
+  test('every participant receives the live session topic in the system prompt, including a solo chat', async () => {
+    const chat = sessionFixture({
+      title: 'Release',
+      goal: 'Ship the parser.',
+      previousTopicSummary: 'Keep Bun; parser tests passed.',
+      agents: ['lead', 'qa'].map((agentId) => ({
+        agentId,
+        handle: agentId,
+        modelId: '',
+        providerConnectionId: null,
+        reasoningEffort: 'medium',
+      })),
+    })
+    const agentProfile = resolveRunProfile({ sessionKind: 'chat' })
+    const runtimeTools = createRuntimeToolRegistry({ policy: { agentProfile } })
+    const build = (current: SessionRecord, speakerAgentId: string) =>
+      buildRunSystemPrompt({
+        userId: current.userId,
+        session: current,
+        speakerAgentId,
+        providerId: 'test',
+        agentProfile,
+        runtimeTools,
+        loadedPlugins: { loaded: [], agents: [], promptSections: [] } as unknown as LoadedPlugins,
+        frozenContext: {},
+        pinnedSkills: [],
+        triggeredSkills: [],
+        contextFiles: [],
+        defaultCwd: '/tmp',
+        scratchDir: '/tmp/localix-test',
+        childRuntimeSessions: new Map(),
+        now: () => '2026-10-08',
+      })
+    for (const agent of chat.agents) {
+      const built = await build(chat, agent.agentId)
+      expect(built.systemPrompt).toContain(chat.goal!)
+      expect(built.systemPrompt).toContain(chat.previousTopicSummary!)
+      expect(built.runtimeSections.map((s) => s.text).join('\n')).not.toContain(
+        '# Session objective',
+      )
+    }
+    const next = await build(
+      { ...chat, agents: [chat.agents[0]!], goal: 'Deploy the parser.' },
+      'lead',
+    )
+    expect(next.systemPrompt).toContain('Deploy the parser.')
+    expect(next.systemPrompt).not.toContain(chat.goal!)
+    expect(next.systemPrompt).toContain(chat.previousTopicSummary!)
+  })
+
   test('keeps inline pinned instructions when the runtime has no skill tool', async () => {
     const runtimeTools = createRuntimeToolRegistry({
       policy: { agentProfile: SHAPE.subagent },

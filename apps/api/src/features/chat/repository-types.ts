@@ -99,6 +99,10 @@ export interface SessionRecord {
   seq?: number
   title: string
   isPinned: boolean
+  /** Current objective, shared by every participant independently of their private lane. */
+  goal?: string | null
+  /** Important context carried forward when the topic changes. */
+  previousTopicSummary?: string | null
   createdAt: string
   updatedAt: string
   lastMessageAt: string

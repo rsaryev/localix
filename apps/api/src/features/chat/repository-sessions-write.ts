@@ -36,6 +36,8 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         user_id: record.userId,
         seq: record.seq ?? 0,
         title: record.title,
+        goal: record.goal ?? null,
+        previous_topic_summary: record.previousTopicSummary ?? null,
         is_pinned: record.isPinned ? 1 : 0,
         project_id: record.projectId,
         parent_session_id: record.parentSessionId,
@@ -215,13 +217,20 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
       id: string,
       expectedTitle: string,
       title: string,
+      goal?: string,
+      expectedGoal?: string | null,
     ): Promise<boolean> {
       const result = await db
         .updateTable('agent_sessions')
-        .set({ title })
+        .set({ title, ...(goal !== undefined ? { goal } : {}) })
         .where('user_id', '=', userId)
         .where('id', '=', id)
         .where('title', '=', expectedTitle)
+        .$if(goal !== undefined, (query) =>
+          query
+            .where('goal', expectedGoal == null ? 'is' : '=', expectedGoal ?? null)
+            .where('previous_topic_summary', 'is', null),
+        )
         .executeTakeFirst()
       return Number(result.numUpdatedRows) === 1
     },

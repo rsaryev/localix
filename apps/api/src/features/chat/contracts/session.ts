@@ -4,6 +4,12 @@ import { REASONING_EFFORTS } from '../../../db/types'
 import { PERMISSION_MODES } from '../../capabilities/permission-modes'
 import { modelIdSchema, providerConnectionIdSchema } from '../../catalog/model-identity'
 import { SESSION_TITLE_MAX_CHARS } from '../session-limits'
+import { sessionTopicSchema } from '../../agent-core/session-topic'
+
+const sharedTopicFields = {
+  goal: sessionTopicSchema.shape.goal.nullable().optional(),
+  previousTopicSummary: sessionTopicSchema.shape.previousTopicSummary.nullable().optional(),
+}
 
 export const reasoningEffortSchema = z.enum(REASONING_EFFORTS)
 export const sessionKindSchema = z.enum(['chat', 'subagent', 'job', 'system'])
@@ -14,6 +20,7 @@ export const runtimeStatusSchema = z.enum(['idle', 'running', 'completed', 'fail
 export const createSessionRequestSchema = z
   .object({
     title: z.string().trim().min(1).max(SESSION_TITLE_MAX_CHARS).optional(),
+    ...sharedTopicFields,
     providerConnectionId: providerConnectionIdSchema.nullable().optional(),
     modelId: modelIdSchema.optional(),
     reasoningEffort: reasoningEffortSchema.optional(),
@@ -135,6 +142,7 @@ export const sessionRouteRequestSchema = z.object({
 })
 
 export const updateSessionRequestSchema = z.object({
+  ...sharedTopicFields,
   externalAgentSessionKey: z.string().min(3).max(400).optional(),
   externalAgentProvider: z.string().min(1).max(64).optional(),
   title: z.string().trim().min(1).max(SESSION_TITLE_MAX_CHARS).optional(),

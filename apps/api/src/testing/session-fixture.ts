@@ -48,6 +48,8 @@ export function sessionFixture(overrides: Partial<SessionRecord> = {}): SessionR
     userId: 'user-1',
     seq: 1,
     title: id,
+    goal: null,
+    previousTopicSummary: null,
     isPinned: false,
     rosterLocked: false,
     createdAt: FIXTURE_TIMESTAMP,

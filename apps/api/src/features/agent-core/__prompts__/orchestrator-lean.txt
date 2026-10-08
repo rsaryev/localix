@@ -71,7 +71,7 @@ project rules
 
 # Conversation turn control
 You are the only agent in this conversation, so a turn ends normally.
-To bring a colleague in, publish the assignment and the context they need, then call conversation_control with them in both invite and next: an invitation alone starts nothing.
+When membership is open, to bring a colleague in, publish the assignment and the context they need, then call conversation_control with them in both invite and next: an invitation alone starts nothing.
 
 # Active skills (applied to this session)
 The user has applied these skills — follow their procedures for relevant work in this session:

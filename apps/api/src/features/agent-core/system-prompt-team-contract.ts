@@ -13,7 +13,7 @@
  * and requiring it of a solo run taught a private chat a queue it has no use for.
  */
 export const SOLO_TURN_CONTROL = `You are the only agent in this conversation, so a turn ends normally.
-To bring a colleague in, publish the assignment and the context they need, then call conversation_control with them in both invite and next: an invitation alone starts nothing.`
+When membership is open, to bring a colleague in, publish the assignment and the context they need, then call conversation_control with them in both invite and next: an invitation alone starts nothing.`
 
 /** The protocol for every turn once the conversation has more than one agent. */
 export const CONVERSATION_TURN_CONTROL = `End each multi-agent turn with conversation_control once, after your public reply or handoff.

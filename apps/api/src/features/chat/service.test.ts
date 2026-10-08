@@ -1000,7 +1000,12 @@ describe('chat service', () => {
     })
     const repo = createChatRepository(db)
     const userId = 'user_fork'
-    const session = await chatService.createSession(userId, { title: 'Original' })
+    const topic = {
+      goal: 'Ship the parser.',
+      previousTopicSummary: 'Keep Bun; focused tests passed.',
+    }
+    const session = await chatService.createSession(userId, { title: 'Original', ...topic })
+    expect(session).toMatchObject(topic)
     const ts = new Date().toISOString()
     const insert = (id: string, role: 'user' | 'assistant', content: string) =>
       repo.insertMessage({
@@ -1027,6 +1032,7 @@ describe('chat service', () => {
     expect(fork.parentSessionId).toBe(session.id)
     expect(fork.sessionKind).toBe('chat')
     expect(fork.title).toBe(`Original (fork ${fork.seq})`)
+    expect(fork).toMatchObject(topic)
 
     const forkMsgs = await repo.listMessages(userId, fork.id)
     expect(forkMsgs.map((m) => m.payload.content)).toEqual(['one', 'two', 'three'])
