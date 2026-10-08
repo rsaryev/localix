@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import type { WorkItem } from '@/features/workspace-grid/model'
 import {
-  messageBindingToken,
   readMessageBindingDrag,
   setMessageBindingDrag,
+  messageBindingDragKind,
+  WORKSPACE_TAB_DRAG_MIME,
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { acceptedDragKind } from '@/features/chat/ui/prompt-input/dropzoneState'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
@@ -29,17 +30,6 @@ workItemKindRegistry.register({
   },
 })
 
-/**
- * End-to-end contract: dragging an OPEN EDITOR TAB into the chat composer links
- * it exactly like a file-tree row drop. This exercises the REAL functions on both
- * sides of the drag — the editor-grid source (workItemToMessageBinding + the TabStrip
- * dragstart order) and the composer sink (acceptedDragKind → readMessageBindingDrag →
- * messageBindingToken) — so a future change to any MIME, mapper, or token silently
- * breaking the link trips here. (The separate half of the bug — the split shield
- * covering the composer so the drop never arrives — is guarded by
- * bodyOwnsMessageBindingDrops in dropZone.test.ts.)
- */
-
 /** Minimal DataTransfer stand-in (bun test has no DOM). */
 function fakeDataTransfer() {
   const store = new Map<string, string>()
@@ -54,15 +44,10 @@ function fakeDataTransfer() {
   } as unknown as DataTransfer & { types: string[] }
 }
 
-/**
- * Reproduce a tab dragstart the way TabStrip + GroupView do it: TabStrip writes
- * `text/plain` (its own reorder payload) FIRST, then GroupView's onItemDragStart
- * arms the message binding for a linkable tab. Order matters — arming must not be
- * clobbered by the reorder payload.
- */
+/** A legacy window can still advertise a tab and a context payload together. */
 function armTabDrag(item: WorkItem): DataTransfer {
   const dt = fakeDataTransfer()
-  dt.setData('text/plain', item.id) // TabStrip reorder payload (set before onItemDragStart)
+  dt.setData(WORKSPACE_TAB_DRAG_MIME, item.id)
   const binding = workItemToMessageBinding(item)
   if (binding) setMessageBindingDrag(dt, binding)
   return dt
@@ -71,7 +56,7 @@ function armTabDrag(item: WorkItem): DataTransfer {
 const item = (over: Partial<WorkItem>): WorkItem => ({ kind: 'file', id: 'x', title: 'X', ...over })
 const COMPOSER = { messageBinding: true, attach: true } as const
 
-describe('open-tab → composer link contract', () => {
+describe('tab drags never link into the composer', () => {
   const cases: Array<{ name: string; item: WorkItem; kind: string; token: string }> = [
     {
       name: 'file tab',
@@ -110,20 +95,18 @@ describe('open-tab → composer link contract', () => {
   ]
 
   for (const c of cases) {
-    test(`${c.name} arms a payload the composer accepts, reads, and tokenizes`, () => {
+    test(`${c.name} remains movable without advertising a message link`, () => {
       const dt = armTabDrag(c.item)
-      // Composer dragover recognizes the message-binding target kind.
-      expect(acceptedDragKind(Array.from(dt.types), COMPOSER)).toBe(c.kind)
-      // Composer drop: the payload reads back and turns into the expected token.
-      const payload = readMessageBindingDrag(dt)
-      expect(payload).not.toBeNull()
-      expect(messageBindingToken(payload!)).toBe(c.token)
+      expect(dt.types).toContain(WORKSPACE_TAB_DRAG_MIME)
+      expect(acceptedDragKind(Array.from(dt.types), COMPOSER)).toBeNull()
+      expect(readMessageBindingDrag(dt)).toBeNull()
+      expect(messageBindingDragKind(Array.from(dt.types))).toBeNull()
     })
   }
 
   test('a non-linkable tab (settings) arms nothing — the composer ignores the drag', () => {
     const dt = armTabDrag(item({ kind: 'settings', id: 'settings', title: 'Settings' }))
-    // Only text/plain rode along → the composer does not treat it as a binding.
+    // Only the internal tab MIME rode along → the composer ignores it.
     expect(acceptedDragKind(Array.from(dt.types), COMPOSER)).toBeNull()
     expect(readMessageBindingDrag(dt)).toBeNull()
   })

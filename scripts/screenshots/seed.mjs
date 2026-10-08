@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { Database } from 'bun:sqlite'
+import { serializeMessagePayload } from '../../apps/api/src/db/payload-codec.ts'
 import { api, prepare, verifyDemoRuntime, databaseFile, fixtureFile } from './runtime.mjs'
 import { createTemplateDocument } from '../../plugins/resume/shared/templates.ts'
 import { seedContent } from './content-workbenches.mjs'
@@ -76,6 +77,8 @@ if (!existing.n) {
   for (const [i, message] of messages.entries()) {
     const id = `capture-${fixture.sessionId}-${i}`
     const payload = {
+      id,
+      role: message.role,
       content: message.content,
       ...(message.handle
         ? {
@@ -87,7 +90,15 @@ if (!existing.n) {
     }
     db.query(
       'INSERT INTO agent_messages(id,session_id,user_id,sequence,role,payload_json,parent_id) VALUES (?,?,?,?,?,?,?)',
-    ).run(id, fixture.sessionId, 'local-user', i + 1, message.role, JSON.stringify(payload), parent)
+    ).run(
+      id,
+      fixture.sessionId,
+      'local-user',
+      i + 1,
+      message.role,
+      serializeMessagePayload(payload),
+      parent,
+    )
     parent = id
   }
   db.query('UPDATE agent_sessions SET leaf_id=?,last_message_at=?,updated_at=? WHERE id=?').run(
@@ -96,6 +107,21 @@ if (!existing.n) {
     new Date().toISOString(),
     fixture.sessionId,
   )
+}
+// Older isolated fixtures bypassed the message codec; retain their composed content
+// while repairing only this script's own rows before a screenshot can read them.
+for (const [index] of messages.entries()) {
+  const id = `capture-${fixture.sessionId}-${index}`
+  const row = db
+    .query('SELECT role,payload_json FROM agent_messages WHERE id=? AND session_id=?')
+    .get(id, fixture.sessionId)
+  if (!row) continue
+  const payload = JSON.parse(row.payload_json)
+  if (payload.v == null)
+    db.query('UPDATE agent_messages SET payload_json=? WHERE id=?').run(
+      serializeMessagePayload({ ...payload, id, role: row.role }),
+      id,
+    )
 }
 // Durable demo question, restored into the real registry after restarting the capture API.
 const question = [

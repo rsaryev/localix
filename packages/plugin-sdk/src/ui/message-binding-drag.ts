@@ -5,9 +5,12 @@ import {
 } from './contrib'
 import { setCompactDragImage } from './drag-image'
 
-export { setCompactDragImage } from './drag-image'
+export { setCompactDragImage, setElementDragImage, setNativeWindowDragImage } from './drag-image'
 
 /** Canonical drag transport for linking any resource/context into a message. */
+/** Tabs exclusively reorder or move between workspaces; they are never message links. */
+export const WORKSPACE_TAB_DRAG_MIME = 'application/x-localix-tab'
+
 export const MESSAGE_BINDING_MIME = 'application/x-localix-message-binding'
 
 /**
@@ -210,8 +213,8 @@ export interface MessageBindingDragOptions {
    * Omitting it is the deliberate default: `text/plain` makes a terminal or any
    * native text target paste the raw token instead of letting our own drop layer
    * turn it into a link, and several producers arm this binding ON TOP of a drag
-   * that already owns `text/plain` (the tab strip's reorder id, a board card's
-   * id) — writing it here would clobber theirs. Pass it where dropping
+   * that already owns a payload (a board card's
+   * id) — writing it here would introduce an OS export. Pass it where dropping
    * outside Localix should still yield useful text.
    */
   readonly plainText?: string
@@ -222,6 +225,11 @@ export function setMessageBindingDrag(
   binding: MessageBindingDragPayload,
   options?: MessageBindingDragOptions,
 ): void {
+  if (Array.from(dataTransfer.types).includes(WORKSPACE_TAB_DRAG_MIME)) {
+    clearMessageBindingDragAvailability()
+    activeDragPayload = null
+    return
+  }
   const serialized = JSON.stringify({ ...binding, version: MESSAGE_BINDING_DRAG_VERSION })
   if (exceedsDragByteCap(serialized)) {
     // Arm nothing: an oversized payload cannot be read back, and advertising the
@@ -235,8 +243,8 @@ export function setMessageBindingDrag(
     binding.target.kind,
   )
   if (options?.plainText) dataTransfer.setData('text/plain', options.plainText)
-  // Claim the effect only when the source has not chosen one already: a tab-strip
-  // or board card drag arms this binding on top of its OWN 'move' reorder
+  // Claim the effect only when the source has not chosen one already: a board
+  // card drag arms this binding on top of its OWN 'move' reorder
   // gesture, and forcing 'copy' there makes the browser veto the reorder drop.
   const effect = dataTransfer.effectAllowed
   if (!effect || effect === 'uninitialized' || effect === 'none') {
@@ -248,6 +256,7 @@ export function setMessageBindingDrag(
 
 /** Binding kind advertised by a drag, or null when it is not message-linkable. */
 export function messageBindingDragKind(types: readonly string[]): string | null {
+  if (types.includes(WORKSPACE_TAB_DRAG_MIME)) return null
   for (const type of types) {
     if (type.startsWith(MESSAGE_BINDING_KIND_MIME_PREFIX)) {
       const kind = type.slice(MESSAGE_BINDING_KIND_MIME_PREFIX.length)
@@ -390,6 +399,7 @@ function normalizeDragEnvelope(value: unknown): MessageBindingDragPayload | null
 export function readMessageBindingDrag(
   dataTransfer: DataTransfer,
 ): MessageBindingDragPayload | null {
+  if (Array.from(dataTransfer.types).includes(WORKSPACE_TAB_DRAG_MIME)) return null
   const raw = dataTransfer.getData(MESSAGE_BINDING_MIME)
   if (!raw) {
     return Array.from(dataTransfer.types).includes(MESSAGE_BINDING_MIME) ? activeDragPayload : null

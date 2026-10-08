@@ -9,6 +9,8 @@ export type ExternalAnchorProps = Omit<
   href: string
   /** Show new-tab semantics to browser users; the desktop host still owns activation. */
   newTab?: boolean
+  /** Use the system browser for flows such as provider authorization. */
+  systemBrowser?: boolean
 }
 
 /**
@@ -17,8 +19,8 @@ export type ExternalAnchorProps = Omit<
  * intercepting activation avoids dead `_blank` links in desktop webviews.
  */
 export const ExternalAnchor = forwardRef<HTMLAnchorElement, ExternalAnchorProps>(
-  ({ href, newTab = true, onClick, onAuxClick, ...props }, ref) => {
-    const open = () => platformCapabilities().external.open(href)
+  ({ href, newTab = true, systemBrowser = false, onClick, onAuxClick, ...props }, ref) => {
+    const open = () => platformCapabilities().external.open(href, systemBrowser)
     /**
      * STOPS PROPAGATION as well as the default.
      *

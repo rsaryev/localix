@@ -70,6 +70,12 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 
 ## How it works
 
+Use `startResizeSession` from `@localixai/kit/pane-resize` for custom resize handles. It owns the
+pointer or mouse listeners, a temporary shield above embedded content, and one movement update per
+animation frame. Supply `onMove`, `onEnd` and `onCancel`; call the returned cleanup when the handle
+unmounts. Cancellation restores the caller's original size, while release commits the final
+movement.
+
 Use `ClaudeMark`, `CodexMark`, `GeminiMark`, `CopilotMark`, `OpenCodeMark` and `HermesMark` from
 `@localixai/kit/coding-agent-marks` for coding agent identities. These monochrome SVGs inherit the
 surrounding text colour. Menus, session rows and resource references share the same marks.

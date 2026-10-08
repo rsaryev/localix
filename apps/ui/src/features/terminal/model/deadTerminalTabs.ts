@@ -2,6 +2,9 @@ import { closeGridTab, useGridStore, type WorkItem } from '@/features/workspace-
 import { backendClient } from '@/shared/api/client'
 import { useLiveTerminalsStore } from './liveTerminals'
 import { forgetTerminalState } from './terminalStates'
+import { workItemTransferState } from '@/shared/lib/workItemTransferState'
+
+export const DEAD_TERMINAL_RETENTION_MS = 60_000
 
 function terminalIdOf(item: WorkItem): string | undefined {
   return item.kind === 'terminal' && typeof item.payload?.terminalId === 'string'
@@ -32,7 +35,7 @@ export interface TerminalExit {
 }
 
 /** Keep the tab and its output; only a successful explicit shell exit closes it. */
-export function finishTerminalTabs(terminalId: string, exit: TerminalExit): void {
+export function finishTerminalTabs(terminalId: string, exit: TerminalExit, now = Date.now()): void {
   const state = useGridStore.getState()
   const matching = [
     ...Object.values(state.items),
@@ -53,18 +56,30 @@ export function finishTerminalTabs(terminalId: string, exit: TerminalExit): void
   const update = (item: WorkItem): WorkItem => {
     if (terminalIdOf(item) !== terminalId) return item
     const previous = item.payload?.terminalExit as TerminalExit | undefined
-    if (previous && exit.exitCode === null) return item
+    if (previous && exit.exitCode === null && Number.isFinite(item.payload?.terminalExpiresAt))
+      return item
     const sessionId = item.payload?.sessionId
     if (typeof sessionId === 'string') forgetTerminalState(sessionId, terminalId)
     if (
       previous?.exitCode === exit.exitCode &&
       previous?.interactive === exit.interactive &&
       previous?.command === exit.command &&
-      previous?.cwd === exit.cwd
+      previous?.cwd === exit.cwd &&
+      Number.isFinite(item.payload?.terminalExpiresAt)
     )
       return item
     changed = true
-    return { ...item, payload: { ...item.payload, terminalExit: exit } }
+    return {
+      ...item,
+      payload: {
+        ...item.payload,
+        terminalExit: previous && exit.exitCode === null ? previous : exit,
+        // Duplicate stream/poll observations never extend the retention period.
+        terminalExpiresAt: Number.isFinite(item.payload?.terminalExpiresAt)
+          ? item.payload?.terminalExpiresAt
+          : now + DEAD_TERMINAL_RETENTION_MS,
+      },
+    }
   }
   useGridStore.setState((state) => {
     const items = Object.fromEntries(
@@ -76,6 +91,24 @@ export function finishTerminalTabs(terminalId: string, exit: TerminalExit): void
     })
     return changed ? { items, closed } : state
   })
+}
+
+/** Retire only confirmed exits whose retention elapsed; live PTYs never qualify. */
+export function expireDeadTerminalTabs(now = Date.now()): void {
+  const state = useGridStore.getState()
+  const ids = new Set(
+    [...Object.values(state.items), ...state.closed.map((entry) => entry.item)]
+      .filter(
+        (item) =>
+          item.payload?.terminalExit &&
+          !item.payload?.terminalRestarting &&
+          !workItemTransferState.pending(item.id) &&
+          typeof item.payload?.terminalExpiresAt === 'number' &&
+          item.payload.terminalExpiresAt <= now,
+      )
+      .flatMap((item) => terminalIdOf(item) ?? []),
+  )
+  for (const id of ids) closeDeadTerminalTabs(id)
 }
 
 /** A successful registry snapshot marks missed exits without discarding their output. */

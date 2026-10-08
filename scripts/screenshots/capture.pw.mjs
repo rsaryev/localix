@@ -38,7 +38,7 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     await page.evaluate(async () => {
       await document.fonts.ready
     })
-    await page.mouse.move(10, 10)
+    if (!spec.preservePointer) await page.mouse.move(10, 10)
     await page.waitForTimeout(650)
     expect(errors).toEqual([])
     const date = new Intl.DateTimeFormat('en-CA', {

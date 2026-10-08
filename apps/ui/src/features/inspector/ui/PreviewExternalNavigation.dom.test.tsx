@@ -19,8 +19,10 @@ afterAll(async () => {
 
 test('preview recovery routes external navigation through the configured host', async () => {
   const { createRoot } = await import('react-dom/client')
-  const opened: string[] = []
-  const restore = configurePlatformCapabilities({ external: { open: (url) => opened.push(url) } })
+  const opened: Array<{ url: string; systemBrowser?: boolean }> = []
+  const restore = configurePlatformCapabilities({
+    external: { open: (url, systemBrowser) => opened.push({ url, systemBrowser }) },
+  })
   const container = document.createElement('div')
   document.body.append(container)
   const root = createRoot(container)
@@ -39,7 +41,7 @@ test('preview recovery routes external navigation through the configured host', 
     )
     expect(button).toBeDefined()
     await act(async () => button!.click())
-    expect(opened).toEqual(['https://example.com/preview'])
+    expect(opened).toEqual([{ url: 'https://example.com/preview', systemBrowser: true }])
   } finally {
     await act(async () => root.unmount())
     container.remove()

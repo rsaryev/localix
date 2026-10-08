@@ -6,17 +6,17 @@ export const buttonVariants = cva(
   // used to be `focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30` — the
   // shout that was already removed from the SDK constant and never propagated to the primitives
   // that had transcribed it. Interpolated, so the two can no longer drift.
-  `group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-xs/relaxed font-medium whitespace-nowrap transition-[transform,background-color,border-color,color,box-shadow] duration-(--dur-fast) active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 select-none ${CONTROL_FOCUS_VISIBLE} active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 ${CONTROL_INVALID} [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4`,
+  `group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-xs/relaxed font-medium whitespace-nowrap shadow-none transition-[background-color,border-color,color,box-shadow] duration-(--dur-fast) motion-reduce:transition-none select-none ${CONTROL_FOCUS_VISIBLE} disabled:pointer-events-none disabled:opacity-50 ${CONTROL_INVALID} [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4`,
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/80',
+        default: 'bg-primary text-primary-foreground hover:bg-primary/80 active:bg-primary/70',
         // Monochrome solid primary (foreground-on-background) — the app's de-facto
         // "do it" action style, previously hand-rolled as a raw class string in
         // ~15 places. Hover dims via bg-alpha (animated by the base transition,
         // like default/secondary) for design-system consistency. Migrate raw
         // monochrome buttons to <Button variant="mono">.
-        mono: 'bg-foreground text-background hover:bg-foreground/90',
+        mono: 'bg-foreground text-background hover:bg-foreground/90 active:bg-foreground/80',
         // `aria-expanded:bg-surface-active` like `ghost`, not `bg-muted`: under glass `muted` is a
         // 6% veil while the hover above lands near 9%, so an OPEN outline trigger read weaker
         // than merely hovering it. 11% is the shared "this one is engaged" step.
@@ -24,27 +24,26 @@ export const buttonVariants = cva(
         // its name; `dark:bg-input/30` used to break that symmetry with a fill dark got and light
         // didn't, for no reason the variant's own name or its hover/engaged states call for.
         outline:
-          'border-border hover:bg-input/50 hover:text-foreground aria-expanded:bg-surface-active aria-expanded:text-foreground',
+          'border-border hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground',
         // A bordered button with a resting FILL that is a foreground veil (`--field-fill`), for a
         // button that sits on a tinted strip — a conflict or bisect band on `bg-status-*/10`.
-        // `outline` has no resting fill, and `secondary` is an opaque grey in the plain dark
-        // theme, so on a tinted band it read as a black chip punched into it; a veil only adds
-        // density to whatever colour is underneath. The same fill a field or chip rests on.
+        // `outline` has no resting fill; `field` adds a hairline around the same quiet veil
+        // as `secondary`. The veil adds density to whatever colour is underneath.
         field:
-          'border-control-border bg-field-fill text-text-soft hover:bg-surface-hover hover:text-foreground aria-expanded:bg-surface-active aria-expanded:text-foreground',
+          'border-control-border bg-field-fill text-text-soft hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
+          'bg-field-fill text-secondary-foreground hover:bg-surface-hover active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-secondary-foreground',
         ghost:
-          'hover:bg-surface-hover hover:text-foreground aria-expanded:bg-surface-active aria-expanded:text-foreground',
+          'hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground',
         // The focus ring is recoloured, not resized: the base recipe's 1px inset stays, so these
         // alphas moved up from 20-40% — a fifth of the colour was tuned for a 2px halo and is
         // invisible on a hairline.
         destructive:
-          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive/80 dark:bg-destructive/20 dark:hover:bg-destructive/30',
+          'bg-destructive/10 text-destructive hover:bg-destructive/20 active:bg-destructive/30 focus-visible:ring-destructive/80 dark:bg-destructive/20 dark:hover:bg-destructive/30',
         // Solid destructive (white-on-red) — the confirm action in destructive
         // dialogs, distinct from the subtle `destructive` tint above.
         'destructive-solid':
-          'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-white/70',
+          'bg-destructive text-white hover:bg-destructive/90 active:bg-destructive/80 focus-visible:ring-white/70',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {

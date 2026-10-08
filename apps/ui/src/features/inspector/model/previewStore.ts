@@ -13,6 +13,7 @@
 // must never discard the strip of the conversation it belongs to.
 import { create } from 'zustand'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
+import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
 import { previewHostKey, usePreviewHosts } from './previewHosts'
 import { useBrowserHistory } from './browserHistory'
@@ -31,7 +32,7 @@ export type { PreviewEntry, PreviewBySession, PreviewsBySession } from './previe
 
 // v2: per-session strips. The v1 single shared strip is not migrated — its tabs carry no
 // reliable owner, and guessing one would hand a page to the wrong chat.
-const STORAGE_KEY = 'browser_tabs_v2'
+const STORAGE_KEY = workspaceStorageKey('browser_tabs_v2')
 
 function restoredState(): PreviewMaps {
   const saved = loadJSON<PreviewMaps>(STORAGE_KEY)

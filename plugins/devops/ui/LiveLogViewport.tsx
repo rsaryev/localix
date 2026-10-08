@@ -154,7 +154,7 @@ export function LiveLogViewport({
         <Button
           variant="outline"
           size="icon-sm"
-          className="pointer-events-auto rounded-full bg-surface-raised/95 shadow-(--shadow-popover)"
+          className="pointer-events-auto rounded-full bg-surface-raised/95"
           onClick={live ? pause : resume}
           aria-pressed={!live}
           aria-label={live ? 'Pause live logs' : 'Resume and follow live logs'}

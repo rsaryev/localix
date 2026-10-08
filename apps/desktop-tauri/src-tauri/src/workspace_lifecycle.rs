@@ -55,12 +55,32 @@ pub(crate) fn register(window: &WebviewWindow) {
             close(&app, &label);
         }
         WindowEvent::Destroyed => {
-            app.state::<WorkspaceWindows>()
+            #[cfg(target_os = "macos")]
+            crate::workspace_drag_image::remove(&label);
+            app.state::<crate::workspace_transfer::WorkspaceTransfers>()
+                .cancel(&label);
+            #[cfg(target_os = "macos")]
+            crate::workspace_drag::cancel_owner(&app, &label);
+            app.state::<crate::native_browser_lifecycle::NativeBrowserLifecycle>()
+                .forget_owner(&label);
+            let removed = app
+                .state::<WorkspaceWindows>()
                 .0
                 .lock()
                 .unwrap()
                 .entries
                 .remove(&label);
+            #[cfg(target_os = "macos")]
+            if removed.is_some_and(|entry| !entry.provisional)
+                && !app.state::<crate::quit::QuitState>().is_exiting()
+            {
+                let handle = app.clone();
+                std::thread::spawn(move || {
+                    if !handle.state::<crate::quit::QuitState>().is_exiting() {
+                        crate::workspace_session::save(&handle);
+                    }
+                });
+            }
             crate::menu::remove_workspace(&app, &label);
             #[cfg(target_os = "macos")]
             crate::macos_tabs::remove_new_tab_action(&label);
@@ -80,7 +100,7 @@ pub(crate) fn register(window: &WebviewWindow) {
             .unwrap()
             .entries
             .get(&label)
-            .is_none_or(|entry| entry.ready);
+            .is_none_or(|entry| entry.ready || entry.provisional);
         if !ready {
             reveal(&app, &label);
         }
@@ -101,8 +121,7 @@ pub(crate) fn reveal(app: &AppHandle, label: &str) {
                 .entries
                 .iter()
                 .find(|(_, entry)| {
-                    entry.ready
-                        && !entry.revealed
+                    entry.allows_reveal()
                         && entry.host.as_ref().is_none_or(|host| {
                             data.entries.get(host).is_none_or(|parent| parent.revealed)
                         })
@@ -144,6 +163,8 @@ pub(crate) fn reveal(app: &AppHandle, label: &str) {
 }
 
 pub(crate) fn close(app: &AppHandle, label: &str) {
+    #[cfg(target_os = "macos")]
+    crate::workspace_drag::cancel_owner(app, label);
     let last = {
         let state = app.state::<WorkspaceWindows>();
         let mut data = state.0.lock().unwrap();
@@ -174,6 +195,12 @@ pub(crate) fn close(app: &AppHandle, label: &str) {
                         .get_mut(&label)
                     {
                         entry.closing = false;
+                        entry.hidden = true;
+                    }
+                    #[cfg(target_os = "macos")]
+                    {
+                        let handle = handle.clone();
+                        std::thread::spawn(move || crate::workspace_session::save(&handle));
                     }
                 } else {
                     handle.exit(0);

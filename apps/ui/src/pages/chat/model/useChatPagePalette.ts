@@ -32,7 +32,6 @@ interface ChatPagePaletteOptions {
   openTerminalTab: () => void
   toggleSidebar: () => void
   toggleMaximizeFocused: () => void
-  splitFocusedGroup: () => void
   focusAdjacentGroup: (direction: 1 | -1) => void
   cycleFocusedTab: (direction: 1 | -1) => void
   reopenClosedTab: () => void
@@ -56,7 +55,6 @@ export function useChatPagePalette({
   openTerminalTab,
   toggleSidebar,
   toggleMaximizeFocused,
-  splitFocusedGroup,
   focusAdjacentGroup,
   cycleFocusedTab,
   reopenClosedTab,
@@ -288,14 +286,6 @@ export function useChatPagePalette({
         run: toggleMaximizeFocused,
       },
       {
-        id: CMD.splitEditor,
-        label: 'Split editor',
-        group: 'Layout',
-        effect: 'write',
-        chordId: CMD.splitEditor,
-        run: splitFocusedGroup,
-      },
-      {
         id: CMD.focusNextGroup,
         label: 'Focus next editor group',
         group: 'Layout',
@@ -399,7 +389,6 @@ export function useChatPagePalette({
       setQuickOpen,
       setSessionSwitcher,
       setWorkspaceSymbols,
-      splitFocusedGroup,
       startNewChat,
       switchSection,
       thirdPartyViewCommands,

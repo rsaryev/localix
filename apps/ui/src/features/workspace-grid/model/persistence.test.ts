@@ -34,6 +34,24 @@ describe('loadGrid', () => {
     expect(loadGrid()).toBeNull()
   })
 
+  test('a restart interrupted by reload restores the exited terminal without a pending spawn flag', () => {
+    const payload = {
+      terminalId: 'dead',
+      sessionId: 's1',
+      terminalRestarting: true,
+      terminalExit: { exitCode: 1, command: 'bun build' },
+      terminalExpiresAt: 61_000,
+    }
+    seed({
+      root: { type: 'leaf', id: 'g1', tabs: ['terminal:dead'], activeTab: 'terminal:dead' },
+      items: [{ kind: 'terminal', id: 'terminal:dead', title: 'Build', scope: 's1', payload }],
+      activeGroup: 'g1',
+      maximizedGroup: null,
+    })
+    const { terminalRestarting: _pending, ...restoredPayload } = payload
+    expect(loadGrid()?.items['terminal:dead']?.payload).toEqual(restoredPayload)
+  })
+
   test('retains a registered plugin tab while activation is still loading', () => {
     const kind = 'slow-plugin:pending-persistence-fixture'
     pluginUiHostFor('slow-plugin').workItems.register({
@@ -293,6 +311,39 @@ describe('persistGrid before quit', () => {
     expect(store.has(STORAGE_KEY)).toBe(false)
     expect(await flushAllBeforeQuit(100)).toEqual([])
     expect(JSON.parse(store.get(STORAGE_KEY)!).activeGroup).toBe('quit-group')
+  })
+
+  test('saving a pending restart retains its launch and exit data without persisting the promise flag', async () => {
+    const store = installStorage()
+    const payload = {
+      terminalId: 'dead',
+      sessionId: 's1',
+      terminalRestarting: true,
+      terminalExit: { exitCode: 1, command: 'bun build', cwd: '/fixture' },
+      terminalExpiresAt: 61_000,
+    }
+    persistGrid({
+      ...emptyEditorState('g1'),
+      root: { type: 'leaf', id: 'g1', tabs: ['terminal:dead'], activeTab: 'terminal:dead' },
+      items: {
+        'terminal:dead': {
+          kind: 'terminal',
+          id: 'terminal:dead',
+          title: 'Build',
+          scope: 's1',
+          payload,
+        },
+      },
+    })
+    await flushAllBeforeQuit(100)
+    const saved = JSON.parse(store.get(STORAGE_KEY)!) as PersistedGrid
+    expect(saved.items[0]?.payload).toEqual({
+      terminalId: 'dead',
+      sessionId: 's1',
+      terminalExit: { exitCode: 1, command: 'bun build', cwd: '/fixture' },
+      terminalExpiresAt: 61_000,
+    })
+    expect(payload.terminalRestarting).toBe(true)
   })
 })
 

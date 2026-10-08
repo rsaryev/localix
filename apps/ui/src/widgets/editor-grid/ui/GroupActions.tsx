@@ -1,4 +1,4 @@
-import { PanelRight, PanelRightDashed } from 'lucide-react'
+import { PanelRight, PanelRightDashed, RotateCcw } from 'lucide-react'
 import { leafIds, useGridStore } from '@/features/workspace-grid/model'
 import { CMD } from '@/shared/lib/keybindings/catalog'
 import { useChordHint } from '@localixai/kit/keybindings'
@@ -28,17 +28,29 @@ export function GroupActions({ groupId }: { groupId: string }) {
       ? 'Maximize panel'
       : 'Maximize panel — the only panel'
   return (
-    <IconButton
-      aria-label={label}
-      tooltip={hint(label, CMD.toggleEditorMaximize)}
-      tooltipSide="bottom"
-      size="sm"
-      className="mr-1"
-      aria-pressed={maximized}
-      disabled={!split && !maximized}
-      onClick={() => useGridStore.getState().maximizeGroup(groupId)}
-    >
-      {maximized ? <PanelRightDashed /> : <PanelRight />}
-    </IconButton>
+    <>
+      <IconButton
+        aria-label="Arrange panels"
+        tooltip="Arrange panels · keep all tabs open"
+        tooltipSide="bottom"
+        size="sm"
+        disabled={!split && !maximized}
+        onClick={() => useGridStore.getState().arrangePanels()}
+      >
+        <RotateCcw />
+      </IconButton>
+      <IconButton
+        aria-label={label}
+        tooltip={hint(label, CMD.toggleEditorMaximize)}
+        tooltipSide="bottom"
+        size="sm"
+        className="mr-1"
+        aria-pressed={maximized}
+        disabled={!split && !maximized}
+        onClick={() => useGridStore.getState().maximizeGroup(groupId)}
+      >
+        {maximized ? <PanelRightDashed /> : <PanelRight />}
+      </IconButton>
+    </>
   )
 }

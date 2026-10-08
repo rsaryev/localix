@@ -1,34 +1,18 @@
 /* ═══════════════════════════════════════════════════════════════
-   Liquid glass — floating translucent controls
+   Flat glass — floating translucent controls
    ═══════════════════════════════════════════════════════════════ */
-/* Glass reads from the EDGE, not the fill. A single translucent panel with a
-   flat 1px border reads as a boxed div over a blur; four stacked layers read as
-   a slab of glass:
-
-     fill    the material still exists where the backdrop behind it is flat
-     sheen   a top-left specular highlight — a light source above the surface
-     rim     a DIRECTIONAL 1px ring: bright at the incident corner, nearly gone
-             through the middle, glinting again at the exit corner
-     depth   inset top hairline + bottom vignette = the thickness of the slab
-
-   The rim is a gradient painted into a `mask-composite` ring rather than a
-   `border`, which is what lets brightness vary AROUND the shape and follow the
-   corners. `blur(16px) saturate(180%)` is the settled pair for this tier;
-   saturation is what keeps colour behind the glass from going grey.
-
-   Deliberately NOT here: SVG `feDisplacementMap` edge refraction.
-   `backdrop-filter: url(#…)` is Chromium-only, and the desktop shell is
-   WKWebView — where an unsupported url() invalidates the whole
-   backdrop-filter chain and takes the blur down with it. */
+/* Context chips and scroll actions use the same translucent coat. A uniform
+   hairline separates the control from content without a specular highlight,
+   inset bevel or drop shadow. Hover and press change the coat, never geometry.
+   The rim is painted outside layout so existing chip measures stay stable. */
 .lx-glass {
   position: relative;
   background-color: var(--glass-fill);
-  background-image: var(--glass-sheen);
-  box-shadow: var(--glass-depth);
+  background-image: none;
   -webkit-backdrop-filter: var(--glass-backdrop);
   backdrop-filter: var(--glass-backdrop);
-  transition-property: background-color, box-shadow, transform;
-  transition-duration: var(--dur-base);
+  transition-property: background-color;
+  transition-duration: var(--dur-fast);
   transition-timing-function: var(--ease-soft);
 }
 .lx-glass::before {
@@ -36,18 +20,8 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 1px;
-  background: var(--glass-rim);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  opacity: 0.85;
-  transition: opacity var(--dur-base) var(--ease-soft);
+  border: 1px solid var(--control-border);
+  transition: border-color var(--dur-fast) var(--ease-soft);
   pointer-events: none;
 }
 
@@ -59,40 +33,26 @@
 .lx-glass-self:hover,
 .lx-glass-self:focus-visible {
   background-color: var(--glass-fill-hover);
-  box-shadow: var(--glass-depth-hover);
-  transform: translateY(-1px);
 }
 .lx-glass-trigger:hover .lx-glass::before,
 .lx-glass-trigger:focus-visible .lx-glass::before,
 .lx-glass-self:hover::before,
 .lx-glass-self:focus-visible::before {
-  opacity: 1;
+  border-color: var(--control-border-hover);
 }
 .lx-glass-trigger:active .lx-glass,
 .lx-glass-self:active {
+  background-color: var(--surface-active);
+}
+/* HTML drag hover is reported by the drop controller, rather than pointer :hover. */
+.lx-glass-trigger[data-drop-active='true'] .lx-glass {
   background-color: var(--glass-fill-hover);
-  box-shadow: var(--glass-depth);
-  transform: translateY(0) scale(var(--press-scale));
-  transition-duration: var(--dur-fast);
 }
-/* `lx-glass-self`: the element IS both trigger and material — a chip, not a pill inside a padded
-   button. Pair it WITH `lx-glass` (it only adds the interaction states). A chip that moves on
-   hover is noisy in a row of chips, so `lx-glass-still` opts out of the lift/press motion. */
-.lx-glass-self.lx-glass-still:hover,
-.lx-glass-self.lx-glass-still:focus-visible,
-.lx-glass-self.lx-glass-still:active {
-  transform: none;
+.lx-glass-trigger[data-drop-active='true'] .lx-glass::before {
+  border-color: var(--control-border-focus);
 }
-@media (prefers-reduced-motion: reduce) {
-  .lx-glass-trigger:hover .lx-glass,
-  .lx-glass-trigger:focus-visible .lx-glass,
-  .lx-glass-trigger:active .lx-glass,
-  .lx-glass-self:hover,
-  .lx-glass-self:focus-visible,
-  .lx-glass-self:active {
-    transform: none;
-  }
-}
+/* `lx-glass-self`: the control owns both its trigger and material. The legacy
+   `lx-glass-still` marker remains compatible; all glass actions now stay still. */
 
 /* No compositing of the backdrop at all (old WebKit, forced-colors, some Linux
    GPU blocklists): the fill alone is far too thin to separate the control from

@@ -154,21 +154,34 @@
  * 2. pointer over this composer → the stronger shared drop border from PromptInput.
  *
  * The root attribute is owned by setMessageBindingDrag, so every canonical
- * source (markets, files, tabs, tasks, calls, resources) gets this for free.
+ * source (markets, files, conversations, tasks, calls, resources) gets this for free.
  */
 :root[data-localix-agent-link-drag] [data-agent-link-drop-target]:not([data-drop-active='true']) {
   border-color: color-mix(in oklch, var(--control-border-focus), transparent 14%);
-  box-shadow:
-    0 0 0 2px color-mix(in oklch, var(--control-border-focus), transparent 58%),
-    0 0 18px color-mix(in oklch, var(--control-border-focus), transparent 78%),
-    var(--shadow-soft);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--control-border-focus), transparent 58%);
 }
 :root[data-localix-agent-link-drag] [data-agent-link-drop-target][data-drop-active='true'] {
   border-color: var(--control-border-focus);
-  box-shadow:
-    0 0 0 2px color-mix(in oklch, var(--control-border-focus), transparent 30%),
-    0 0 24px color-mix(in oklch, var(--control-border-focus), transparent 62%),
-    var(--shadow-soft);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--control-border-focus), transparent 30%);
+}
+
+/* A named drop destination fades in without moving its hit target or covering sibling panels. */
+[data-agent-link-drop-hint] {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+:root[data-localix-agent-link-drag] [data-agent-link-drop-target] > [data-agent-link-drop-hint],
+[data-agent-link-drop-target][data-drop-active='true'] > [data-agent-link-drop-hint] {
+  opacity: 1;
+}
+:root[data-localix-agent-link-drag]
+  [data-agent-link-drop-target]:not([data-drop-active='true'])
+  > [data-agent-link-drop-hint] {
+  background-color: color-mix(in oklch, var(--surface-raised), transparent 12%);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-agent-link-drop-hint] {
+    transition: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

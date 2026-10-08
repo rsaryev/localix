@@ -18,18 +18,23 @@ async function editor(page) {
   await page.locator('.monaco-editor').waitFor({ state: 'visible' })
   await button(page, 'Files').click()
   await button(page, 'Terminal').click()
-  await page.getByRole('tab', { name: 'Terminal', exact: true }).click({ button: 'right' })
-  await page.getByRole('menuitem', { name: /^Split Down/ }).click()
-  // Find the native resize sash instead of changing DOM or CSS for a capture.
-  const horizontal = page.locator(
-    '[role="separator"][aria-label="Resize editor panes"][aria-orientation="horizontal"]',
+  const terminalTab = page.getByRole('tab', { name: 'Terminal', exact: true })
+  const fileTab = page.getByRole('tab', { name: 'release.ts', exact: true })
+  // Reorder within the main column. Files and terminals share its full height.
+  await terminalTab.dragTo(fileTab, { targetPosition: { x: 8, y: 12 } })
+  if (
+    await page.locator('[aria-label="Resize editor panes"][aria-orientation="horizontal"]').count()
   )
-  const bounds = await horizontal.boundingBox()
-  if (!bounds) throw new Error('The editor split did not open.')
-  await page.mouse.move(bounds.x + 80, bounds.y + 3)
-  await page.mouse.down()
-  await page.mouse.move(bounds.x + 80, 670, { steps: 8 })
-  await page.mouse.up()
+    throw new Error('The workspace must not stack editor panels.')
+  await terminalTab.click({ button: 'right' })
+  if (await page.getByRole('menuitem', { name: /^Split (Down|Right)/ }).count())
+    throw new Error('The workspace must not offer arbitrary panel splits.')
+  await page.keyboard.press('Escape')
+  const vertical = page.locator(
+    '[role="separator"][aria-label="Resize editor panes"][aria-orientation="vertical"]',
+  )
+  await vertical.press('ArrowRight')
+  await terminalTab.click()
   const input = page.getByRole('textbox', { name: 'Terminal input' })
   await input.fill('clear; bun test src/release.test.ts')
   await input.press('Enter')
@@ -40,6 +45,8 @@ async function editor(page) {
 }
 
 export async function compose(page, scenario) {
+  if (scenario === 'session-window-drag')
+    return (await import('./session-drag.mjs')).composeSessionDrag(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
     return (await import('./platform-views.mjs')).composePlatformViews(page, scenario)
   if (['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe'].includes(scenario))
@@ -88,7 +95,7 @@ export async function compose(page, scenario) {
     await page.getByText('API Key(s) (manual)', { exact: true }).waitFor()
   } else if (scenario === 'palette') {
     await page.keyboard.press('F1')
-    await page.getByRole('dialog').getByRole('combobox').fill('split')
+    await page.getByRole('dialog').getByRole('combobox').fill('terminal')
   } else if (scenario === 'database') {
     await openTool(page, 'Database')
     await button(page, 'New query console for Release Studio').click()
@@ -119,7 +126,7 @@ export async function compose(page, scenario) {
     const input = page.getByRole('textbox', { name: 'Terminal input' })
     await input.fill('printf "Error: release configuration is missing\\n"; exit 17')
     await input.press('Enter')
-    await page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }).waitFor()
+    await page.locator('[data-slot="terminal-pane"][data-terminal-exited="true"]').waitFor()
   } else if (scenario === 'editor') {
     await editor(page)
   } else {

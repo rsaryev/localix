@@ -31,6 +31,12 @@ const BEST_EFFORT_COMMANDS = new Set([
   'set_theme',
   'set_title',
   'updater_check',
+  // Optional prewarming falls back to the existing release-time transfer.
+  'workspace_drag_prepare',
+  'workspace_drag_cancel',
+  // The receiver owns a visible error for real failures; preview cancellation is routine.
+  'workspace_transfer_presented',
+  'workspace_transfer_ready',
 ])
 
 const COMMAND_PATTERN = /^[a-z][a-z0-9_]{0,79}$/u

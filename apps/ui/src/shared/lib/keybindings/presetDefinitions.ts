@@ -120,8 +120,6 @@ export const KEYMAP_PRESETS: KeymapPreset[] = [
       [CMD.goToSymbolWorkspace]: 'mod+shift+r',
       [CMD.switchSession]: 'mod+b',
       [CMD.toggleSidebar]: 'mod+\\',
-      // Atom splits use multi-stroke chords; reserve this single chord for its sidebar.
-      [CMD.splitEditor]: null,
     },
   },
   {

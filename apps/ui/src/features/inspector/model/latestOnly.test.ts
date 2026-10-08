@@ -47,3 +47,42 @@ test('a failed delivery is reported, and the same value may be sent again', asyn
   expect(failures).toHaveLength(1)
   expect(bridge.sent).toEqual([1, 1])
 })
+
+test('closing cancels queued frames and ignores a late in-flight failure', async () => {
+  const bridge = deferredSend()
+  const failures: unknown[] = []
+  const deliver = latestOnly(bridge.send, (reason) => failures.push(reason))
+  deliver(1)
+  deliver(2)
+  deliver.cancel()
+  await bridge.settle(new Error('closed page'))
+  deliver(3)
+  expect(bridge.sent).toEqual([1])
+  expect(failures).toEqual([])
+})
+
+test('disposal sends the terminal hide after an in-flight visible frame', async () => {
+  const bridge = deferredSend()
+  const deliver = latestOnly(bridge.send, () => {})
+  deliver(1)
+  deliver(2)
+  deliver.dispose(0)
+  deliver(3)
+  expect(bridge.sent).toEqual([1])
+  await bridge.settle()
+  expect(bridge.sent).toEqual([1, 0])
+  await bridge.settle()
+  deliver(4)
+  expect(bridge.sent).toEqual([1, 0])
+})
+
+test('a failed in-flight frame still drains the final hide without stale error reports', async () => {
+  const bridge = deferredSend()
+  const failures: unknown[] = []
+  const deliver = latestOnly(bridge.send, (error) => failures.push(error))
+  deliver(1)
+  deliver.dispose(0)
+  await bridge.settle(new Error('retired renderer'))
+  expect(bridge.sent).toEqual([1, 0])
+  expect(failures).toEqual([])
+})

@@ -20,6 +20,7 @@ pub(crate) async fn workspace_probe(
             caller.clone(),
             "smoke-browser-12345678".into(),
             url,
+            None,
         )
         .await?;
     }

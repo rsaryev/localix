@@ -86,6 +86,7 @@ mod macos_tabs;
 mod main_queue;
 mod menu;
 mod native_browser;
+mod native_browser_lifecycle;
 #[cfg(target_os = "macos")]
 mod native_chrome;
 #[cfg(target_os = "macos")]
@@ -107,6 +108,15 @@ mod updater;
 mod webcrypto_key;
 mod window_material;
 mod workspace_builder;
+mod workspace_drag;
+#[cfg(target_os = "macos")]
+mod workspace_drag_capture;
+#[cfg(target_os = "macos")]
+mod workspace_drag_image;
+mod workspace_drag_snapshot;
+mod workspace_drag_state;
+#[cfg(target_os = "macos")]
+mod workspace_drag_tracking;
 mod workspace_lifecycle;
 #[cfg(target_os = "macos")]
 mod workspace_menu;
@@ -116,6 +126,8 @@ mod workspace_probe;
 mod workspace_probe_lifecycle;
 mod workspace_session;
 mod workspace_session_model;
+mod workspace_tab_drop;
+mod workspace_transfer;
 #[cfg(target_os = "macos")]
 mod workspace_visibility;
 mod workspace_windows;
@@ -199,6 +211,8 @@ pub fn run() {
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(window_state_flags())
+                // Native Mac workspace sessions own all secondary windows, including drag previews.
+                .with_filter(|label| !cfg!(target_os = "macos") || label == "main")
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
@@ -326,6 +340,7 @@ pub fn run() {
             browser_navigation_state,
             browser_reload,
             browser_close_many,
+            crate::native_browser::browser_release,
             browser_snapshot,
             browser_placeholder,
             workbench_snapshot,
@@ -335,6 +350,14 @@ pub fn run() {
             quit_ready,
             crate::workspace_windows::workspace_open,
             crate::workspace_windows::workspace_location,
+            crate::workspace_transfer::workspace_transfer_open,
+            crate::workspace_transfer::workspace_transfer_take,
+            crate::workspace_transfer::workspace_transfer_ready,
+            crate::workspace_drag::workspace_drag_prepare,
+            crate::workspace_drag::workspace_drag_commit,
+            crate::workspace_drag::workspace_drag_cancel,
+            crate::workspace_drag::workspace_transfer_presented,
+            crate::workspace_tab_drop::workspace_tab_drop_destination,
             #[cfg(all(debug_assertions, target_os = "macos"))]
             crate::workspace_probe::workspace_probe
         ])
@@ -346,7 +369,10 @@ pub fn run() {
         .manage(QuitState::default())
         .manage(crate::frontend_flush::FrontendFlush::default())
         .manage(crate::native_notifications::NativeNotifications::default())
+        .manage(crate::native_browser_lifecycle::NativeBrowserLifecycle::default())
         .manage(crate::workspace_windows::WorkspaceWindows::default())
+        .manage(crate::workspace_transfer::WorkspaceTransfers::default())
+        .manage(crate::workspace_drag_state::WorkspaceDrags::default())
         .setup(|app| {
             // Before any webview exists, so no page can reach WebKit's keychain fallback first.
             #[cfg(target_os = "macos")]
@@ -434,6 +460,24 @@ pub fn run() {
             let initial_route = None;
             #[cfg(not(target_os = "macos"))]
             let startup_label = "main";
+            #[cfg(target_os = "macos")]
+            if saved_session.groups.iter().any(|group| {
+                group.hidden && group.tabs.iter().any(|tab| tab.label == startup_label)
+            }) {
+                app.state::<crate::workspace_windows::WorkspaceWindows>()
+                    .0
+                    .lock()
+                    .unwrap()
+                    .entries
+                    .insert(
+                        startup_label.into(),
+                        crate::workspace_windows::Workspace {
+                            route: initial_route.map(str::to_string),
+                            hidden: true,
+                            ..Default::default()
+                        },
+                    );
+            }
             let main_window = crate::workspace_builder::build(
                 app.handle(),
                 startup_label,

@@ -34,6 +34,10 @@ import { useAddProjectFolder } from '@/features/chat/model/useAddProjectFolder'
 import { WorkspaceShell } from '@/widgets/workspace-shell'
 import { GridView } from '@/widgets/editor-grid'
 import { useGridStore, hydrateGrid } from '@/features/workspace-grid/model'
+import { useWorkspaceTabTransfer } from '@/widgets/editor-grid/model/useWorkspaceTabTransfer'
+import { installBrowserPageWindowTransfers } from '@/widgets/editor-grid/model/browserPageWindowTransfer'
+import { installBrowserPageOwnership } from '@/widgets/editor-grid/model/browserPageOwnership'
+import { installWorkspaceDragPreviews } from '@/widgets/editor-grid/model/workspaceDragPreviews'
 import { AttentionDialog } from '@/features/chat/ui/attention/AttentionDialog'
 import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
@@ -141,6 +145,10 @@ function useRuntimeStatus(): RuntimeStatus | undefined {
 const SIDEBAR_OPEN_KEY = 'localix_sidebar_open'
 
 export function ChatPage() {
+  useEffect(() => installBrowserPageWindowTransfers(), [])
+  useEffect(() => installBrowserPageOwnership(), [])
+  useEffect(() => installWorkspaceDragPreviews(), [])
+  const workspaceTransferReady = useWorkspaceTabTransfer()
   useDeadTerminalCleanup()
   const runtimeState = useRuntimeStatus()
   const {
@@ -242,7 +250,6 @@ export function ChatPage() {
     focusAdjacentGroup,
     openTerminalTab,
     reopenClosedTab,
-    splitFocusedGroup,
     startNewChatRef,
     toggleMaximizeFocused,
     toggleSidebar,
@@ -370,7 +377,6 @@ export function ChatPage() {
     setSessionSwitcher,
     setSidebarOpen,
     setWorkspaceSymbols,
-    splitFocusedGroup,
     startNewChatRef,
     switchSection,
     thirdPartyViewsVersion: thirdPartyViewsV,
@@ -540,7 +546,7 @@ export function ChatPage() {
       }
     >
       <Suspense fallback={<LoadingHint>Opening workspace…</LoadingHint>}>
-        <GridView resolvedTheme={resolvedTheme} isMobile={isMobile} />
+        {workspaceTransferReady && <GridView resolvedTheme={resolvedTheme} isMobile={isMobile} />}
       </Suspense>
       {hasHydrated && (
         <>

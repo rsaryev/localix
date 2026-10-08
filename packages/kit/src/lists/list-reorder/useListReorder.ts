@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useEffect, useCallback, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { setCompactDragImage } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { computeDropIndex } from './dropIndex'
 
@@ -94,6 +94,15 @@ export function useListReorder({ ids, onMove, labelOf }: ListReorderOptions): Li
     setDraggingId(null)
     setDropBefore(null)
   }, [])
+
+  useEffect(() => {
+    window.addEventListener('dragend', reset, true)
+    window.addEventListener('blur', reset)
+    return () => {
+      window.removeEventListener('dragend', reset, true)
+      window.removeEventListener('blur', reset)
+    }
+  }, [reset])
 
   const place = useCallback(
     (id: string, index: number) => {

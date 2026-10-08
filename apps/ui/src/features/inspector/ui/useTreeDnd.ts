@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
@@ -35,8 +35,7 @@ const readDragPaths = (e: React.DragEvent): string[] => {
  *     `dropEffect` so the cursor tells the truth before the drop.
  *
  * A drag is a legal target for `destDir` when AT LEAST ONE dragged entry can move into
- * it — a partially-illegal multi-drag is still offered, and the illegal members are the
- * backend's problem, not the hover's.
+ * it. Illegal members of a multi-selection are omitted before submitting a move.
  */
 export function useTreeDnd(
   selected: ReadonlySet<string>,
@@ -50,6 +49,19 @@ export function useTreeDnd(
   // the drop target.
   const sourcesRef = useRef<string[] | null>(null)
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    const end = () => {
+      sourcesRef.current = null
+      setDragOverKey(null)
+    }
+    window.addEventListener('dragend', end, true)
+    window.addEventListener('blur', end)
+    return () => {
+      window.removeEventListener('dragend', end, true)
+      window.removeEventListener('blur', end)
+    }
+  }, [])
 
   /** Start dragging a tree row. `full` is the row's path; `mention` is the payload for a
    *  composer @-mention drop (a folder's carries a trailing slash). */
@@ -82,15 +94,19 @@ export function useTreeDnd(
       e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move'
       if (dragOverKey !== rowKey) setDragOverKey(rowKey)
     },
-    onDragLeave: () => setDragOverKey((cur) => (cur === rowKey ? null : cur)),
+    onDragLeave: (e: React.DragEvent) => {
+      if (!(e.currentTarget as Node).contains(e.relatedTarget as Node | null))
+        setDragOverKey((cur) => (cur === rowKey ? null : cur))
+    },
     onDrop: (e: React.DragEvent) => {
       const srcs = sourcesRef.current ?? readDragPaths(e)
-      if (!srcs.length) return
+      const legal = srcs.filter((source) => canMoveInto(source, destDir))
+      if (!legal.length) return
       e.preventDefault()
       e.stopPropagation()
       setDragOverKey(null)
       sourcesRef.current = null
-      void dropEntries(srcs, destDir, e.altKey)
+      void dropEntries(legal, destDir, e.altKey)
     },
   })
 
@@ -112,10 +128,13 @@ export function useTreeDnd(
     onDrop: (e: React.DragEvent) => {
       const srcs = sourcesRef.current ?? readDragPaths(e)
       if (!root || e.target !== e.currentTarget || !srcs.length) return
+      const legal = srcs.filter((source) => canMoveInto(source, root))
+      if (!legal.length) return
       e.preventDefault()
+      e.stopPropagation()
       setDragOverKey(null)
       sourcesRef.current = null
-      void dropEntries(srcs, root, e.altKey)
+      void dropEntries(legal, root, e.altKey)
     },
   })
 

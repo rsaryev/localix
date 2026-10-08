@@ -11,8 +11,8 @@ calls are needed.
 bun run screenshots:prepare
 ```
 
-Use the `LOCALIX_DB_FILE`, `PORT=5151` and `LOCALIX_DEV_UI_PORT=5150` command printed by the script
-to start `bun run dev:workspace` in another terminal. This launcher supplies both HTTP and WebSocket
+Use the isolated database and port command printed by the script to start
+`bun scripts/dev-servers.mjs` in another terminal. This launcher supplies both HTTP and WebSocket
 origins. Never point the capture runner at the personal application on port 5050.
 
 ```bash
@@ -97,6 +97,11 @@ A fixture transcript is illustrative content, not evidence of a model run. The t
 editor is produced by actually running the fixture's tests. Do not depict live jobs, connections or
 CLI sessions unless they are genuinely running. Reserved slots for unavailable scenarios remain
 unpublished; empty or invented screens do not fill the gap.
+
+`workspace/session-window-drag` advertises native destinations through the typed UI port, then
+performs a sidebar drag. It verifies equal material thickness, aligned starts, symmetric spacing,
+and the shared glass coat. Native window creation is stubbed; this capture proves the UI geometry,
+not an AppKit handoff.
 
 ## Game evidence
 

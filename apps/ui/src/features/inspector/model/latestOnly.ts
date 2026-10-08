@@ -9,10 +9,11 @@
 export function latestOnly<T>(
   send: (value: T) => Promise<unknown>,
   onError: (reason: unknown) => void,
-): (value: T) => void {
+): ((value: T) => void) & { cancel: () => void; dispose: (finalValue: T) => void } {
   let pending: { value: T } | null = null
   let busy = false
   let lastSent: string | null = null
+  let cancelled = false
 
   async function drain(): Promise<void> {
     busy = true
@@ -27,14 +28,26 @@ export function latestOnly<T>(
       } catch (reason) {
         // Resend the next value even if it equals this one: this one never landed.
         lastSent = null
-        onError(reason)
+        if (!cancelled) onError(reason)
       }
     }
     busy = false
   }
 
-  return (value) => {
+  const deliver = (value: T) => {
+    if (cancelled) return
     pending = { value }
     if (!busy) void drain()
   }
+  deliver.cancel = () => {
+    cancelled = true
+    pending = null
+  }
+  deliver.dispose = (finalValue: T) => {
+    if (cancelled) return
+    cancelled = true
+    pending = { value: finalValue }
+    if (!busy) void drain()
+  }
+  return deliver
 }

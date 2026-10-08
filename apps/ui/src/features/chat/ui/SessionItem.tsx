@@ -10,8 +10,8 @@ import { useChatStore } from '../model/store'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
+  setElementDragImage,
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { refToken } from '@localixai/api/context-refs'
 import { isRowSelectClick, type PointerPoint } from '@localixai/plugin-sdk/ui/utilities'
 import { SessionItemActions } from './SessionItemActions'
 import {
@@ -173,12 +173,13 @@ export const SessionItem = memo(function SessionItem({
     (e: React.DragEvent) => {
       if (isRenaming) return
       draggedRef.current = true
+      e.dataTransfer.clearData()
       setMessageBindingDrag(
         e.dataTransfer,
         createMessageBindingDraft('session', session.id, session.title),
       )
-      e.dataTransfer.setData('text/plain', refToken('session', session.id))
       e.dataTransfer.effectAllowed = 'copy'
+      setElementDragImage(e.dataTransfer, e.currentTarget, e)
     },
     [isRenaming, session.id, session.title],
   )
@@ -225,7 +226,7 @@ export const SessionItem = memo(function SessionItem({
         draggedRef.current = false
       }}
       onClick={handleRowClick}
-      title={isRenaming ? undefined : 'Drag into the composer to link this chat'}
+      title={isRenaming ? undefined : 'Drag into the composer to link this conversation'}
       className={[
         'group group/workbench-row relative flex select-none items-center justify-between gap-1 overflow-hidden rounded-md pr-1 transition-colors',
         isRenaming ? '' : 'cursor-pointer',

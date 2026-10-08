@@ -38,6 +38,12 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 | Use icons                      | Import from `lucide-react`                                     | Bundled per icon from the plugin kit.                                |
 | See an edit in the running app | Rebuild; the plugin is swapped in place                        | An open tab re-renders; the app is never reloaded.                   |
 
+Open HTTP and HTTPS links with `pluginExternal.open(url)` from `@localixai/plugin-sdk/ui/runtime`.
+They open in the active conversation's Browser by default. Pass `true` as the second argument for
+flows that require the system browser, such as OAuth: `pluginExternal.open(authorizationUrl, true)`.
+Mail and phone links use the system handler. When no conversation workspace is ready, web links also
+fall back to the system browser. System handoffs retain the host's confirmation policy.
+
 Start with a description — it is the only thing the command takes:
 
 ```text

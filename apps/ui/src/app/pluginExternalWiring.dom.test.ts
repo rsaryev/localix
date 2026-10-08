@@ -29,13 +29,17 @@ describe('plugin external wiring', () => {
     const { configurePlatformCapabilities } = await import('@/shared/lib/platformCapabilities')
     const { pluginExternal } = await import('@localixai/plugin-sdk/ui/runtime')
 
-    const opened: string[] = []
+    const opened: Array<{ url: string; systemBrowser?: boolean }> = []
     const restore = configurePlatformCapabilities({
-      external: { open: (url) => opened.push(url) },
+      external: { open: (url, systemBrowser) => opened.push({ url, systemBrowser }) },
     })
     try {
       await pluginExternal.open('https://example.com/book/reference')
-      expect(opened).toEqual(['https://example.com/book/reference'])
+      await pluginExternal.open('https://example.com/oauth', true)
+      expect(opened).toEqual([
+        { url: 'https://example.com/book/reference', systemBrowser: false },
+        { url: 'https://example.com/oauth', systemBrowser: true },
+      ])
     } finally {
       restore()
     }

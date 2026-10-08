@@ -12,10 +12,12 @@ import type { useNativeBrowserPage } from './useNativeBrowserPage'
  */
 export function NativePageSurface({
   page,
+  pageId,
   url,
   viewport,
 }: {
   page: ReturnType<typeof useNativeBrowserPage>
+  pageId: string
   url: string
   viewport: PreviewViewportPreset
 }) {
@@ -23,14 +25,15 @@ export function NativePageSurface({
   return (
     <div
       className={cn(
-        'relative min-h-0 flex-1',
+        'relative min-h-0 min-w-0 flex-1 overflow-hidden',
         // pane-ground-allow: the sunken fill is the LETTERBOX around a pinned frame, the same mat
         // the framed preview uses; it recedes behind the page instead of being the pane's ground.
-        pinned && 'grid place-items-center overflow-hidden bg-surface-sunken p-3',
+        pinned && 'grid place-items-center bg-surface-sunken p-3',
       )}
     >
       <div
         ref={page.hostRef}
+        data-native-page-id={pageId}
         aria-label={`Browser page: ${url}`}
         className={cn(
           'relative overflow-hidden',

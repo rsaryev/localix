@@ -106,7 +106,7 @@ export function NativeBrowserTab({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <BrowserToolbar
         url={tab.url}
         onNavigate={navigate}
@@ -118,7 +118,7 @@ export function NativeBrowserTab({
         loading={loading}
         viewport={{ preset: viewport, onChange: changeViewport }}
       />
-      <NativePageSurface page={page} url={tab.url} viewport={viewport} />
+      <NativePageSurface page={page} pageId={tab.previewId} url={tab.url} viewport={viewport} />
     </div>
   )
 }

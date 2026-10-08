@@ -26,7 +26,7 @@ const FIGURE_MAX_EDGE = '28rem'
 const overlayBtn = mediaOverlayClasses({
   size: 'md',
   shape: 'square',
-  className: 'cursor-pointer active:scale-[0.97] motion-reduce:transition-none',
+  className: 'cursor-pointer motion-reduce:transition-none',
 })
 
 /** Shared caption strip: a meta line + a Save download link. */

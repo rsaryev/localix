@@ -123,7 +123,7 @@ export function BrowserWorkspace({
 
   const newTabOpen = newTab || !current
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <BrowserTabStrip
         sessionId={sessionId}
         tabs={tabs}
@@ -143,16 +143,17 @@ export function BrowserWorkspace({
           id={tabIds.panelId(NEW_TAB_ID)}
           aria-labelledby={tabIds.tabId(NEW_TAB_ID)}
           active
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         >
           <BrowserNewTab onOpen={open} onOpenHistory={openHistory} />
         </TabPanel>
       ) : (
         <TabPanel
           id={tabIds.panelId(current.previewId)}
+          data-browser-page-id={current.previewId}
           aria-labelledby={tabIds.tabId(current.previewId)}
           active
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         >
           {page}
         </TabPanel>

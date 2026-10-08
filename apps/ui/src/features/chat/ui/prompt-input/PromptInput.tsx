@@ -7,6 +7,7 @@ import { acceptAttribute } from '@/shared/lib/attachment-policy'
 import { filesFromDesktopPick } from '@/shared/lib/attachments/file-staging'
 import { desktopPickFiles } from '@/shared/lib/desktopDialogs'
 import { DROP_TARGET_FOCUS_GLOW, DROP_TARGET_SURFACE_ACTIVE } from '@localixai/kit/drop-target'
+import { Link2 } from 'lucide-react'
 import { LocalixBorderBeam } from '@localixai/kit/localix-border-beam'
 
 import { loadPromptHistory } from '../../model/persistence'
@@ -341,6 +342,14 @@ export function PromptInput(props: PromptInputProps) {
         onDragLeave={dropzone.handleDragLeave}
         onDrop={dropzone.handleDrop}
       >
+        <div
+          data-agent-link-drop-hint
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-(--z-drag-overlay) flex items-center justify-center gap-2 rounded-[inherit] bg-surface-raised/95 px-4 text-xs font-medium text-foreground opacity-0"
+        >
+          <Link2 className="size-4" />
+          Drop here to add context to the message
+        </div>
         <LocalixBorderBeam
           active={focused || isGenerating || beamIntensity > 0}
           variant={isGenerating ? 'working' : 'focus'}

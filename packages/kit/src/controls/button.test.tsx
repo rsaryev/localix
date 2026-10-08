@@ -33,7 +33,10 @@ describe('Button', () => {
     expect(html).toContain('data-variant="outline"')
     expect(html).toContain('focus-visible:ring-control-border-focus')
     expect(html).toContain('disabled:pointer-events-none')
-    expect(html).toContain('motion-reduce:active:scale-100')
+    expect(html).toContain('motion-reduce:transition-none')
+    expect(html).toContain('active:bg-surface-active')
+    expect(html).not.toContain('active:scale-')
+    expect(html).not.toContain('translate-y-')
     expect(html).toContain('disabled=""')
   })
 
@@ -103,12 +106,19 @@ describe('Button', () => {
     expect(withoutBeam).toBe(plain)
   })
 
-  test('the field variant rests on the field veil, never the opaque secondary grey', () => {
+  test('field and secondary actions rest on a flat veil over their host surface', () => {
     // On a tinted band (`bg-status-*/10`) an opaque fill reads as a black chip; the veil does not.
     const html = renderToStaticMarkup(<Button variant="field">Continue</Button>)
     expect(html).toContain('data-variant="field"')
     expect(html).toContain('bg-field-fill')
     expect(html).toContain('border-control-border')
     expect(html).not.toContain('bg-secondary')
+
+    const secondary = renderToStaticMarkup(<Button variant="secondary">Cancel</Button>)
+    expect(secondary).toContain('bg-field-fill')
+    expect(secondary).toContain('hover:bg-surface-hover')
+    expect(secondary).toContain('active:bg-surface-active')
+    expect(secondary).toContain('shadow-none')
+    expect(secondary).not.toContain('bg-secondary')
   })
 })

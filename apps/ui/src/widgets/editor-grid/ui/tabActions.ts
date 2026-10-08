@@ -1,5 +1,5 @@
 import { sessionOfScope, type WorkItem } from '@/features/workspace-grid/model'
-import { openNewTerminal } from '@/features/terminal/model/terminalTabs'
+import { openNewTerminal, restartTerminalTab } from '@/features/terminal/model/terminalTabs'
 
 /** A "create another tab of this kind" action, surfaced in the tab CONTEXT MENU.
  *  Lives in the widget layer — the place allowed to know about features — so the
@@ -30,4 +30,15 @@ export function newTabActionFor(item: WorkItem | undefined): NewTabAction | null
     }
   }
   return null
+}
+
+/** Dead processes keep their output briefly; restart belongs to the tab menu, alongside Close. */
+export function restartTabActionFor(item: WorkItem | undefined): NewTabAction | null {
+  if (item?.kind !== 'terminal' || !item.payload?.terminalExit) return null
+  return {
+    label: 'Restart terminal',
+    run: () => {
+      void restartTerminalTab(item.id)
+    },
+  }
 }

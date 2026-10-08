@@ -56,6 +56,12 @@ pub(crate) struct QuitState {
     phase: AtomicU8,
 }
 
+impl QuitState {
+    pub(crate) fn is_exiting(&self) -> bool {
+        self.phase.load(Ordering::Acquire) != IDLE
+    }
+}
+
 /// What `ExitRequested` does, given the phase it arrives in.
 #[derive(Debug, PartialEq, Eq)]
 enum Admission {

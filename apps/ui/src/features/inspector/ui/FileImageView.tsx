@@ -6,6 +6,7 @@ import { ActionPill } from '@localixai/kit/action-pill'
 import { CopyContentButton, SourceToggle } from './FileViewerControls'
 import { formatModifierText } from '@/shared/lib/keybindings'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
+import { useImagePan } from './useImagePan'
 import {
   type ImageScale,
   PIXELATION_THRESHOLD,
@@ -43,7 +44,6 @@ export function FileImageView({
   // SVG only: show the raw markup instead of the rendered image.
   const [showSource, setShowSource] = useState(false)
 
-  const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   // Displayed/natural ratio while fitting — the base for the first zoom step so
   // zooming in from Fit snaps to the next stop above what's currently on screen.
@@ -51,17 +51,10 @@ export function FileImageView({
   // Intrinsic pixel size, learned on load (0 for SVGs with only a viewBox).
   // State (not a ref) because the numeric-zoom style is derived from it at render.
   const [natural, setNatural] = useState({ w: 0, h: 0 })
-  // Drag-to-pan bookkeeping; `moved` guards click-to-zoom from firing after a pan.
-  const panRef = useRef({
-    active: false,
-    startX: 0,
-    startY: 0,
-    scrollX: 0,
-    scrollY: 0,
-    moved: false,
-  })
-
   const isFit = scale === 'fit'
+  const { isPanning, wasPanned, onPointerDown, onLostPointerCapture } = useImagePan(
+    !isFit && !showSource && !truncated,
+  )
 
   const zoomInStep = useCallback(() => {
     setScale((s) => nextZoomIn(s === 'fit' ? fitRatioRef.current || 1 : s))
@@ -83,52 +76,12 @@ export function FileImageView({
 
   const onImageClick = useCallback(
     (e: React.MouseEvent) => {
-      if (panRef.current.moved) return // finished a drag, not a click
+      if (e.detail > 0 && wasPanned()) return // pointer drag, while assistive clicks still zoom
       if (e.altKey || e.metaKey) zoomOutStep()
       else zoomInStep()
     },
-    [zoomInStep, zoomOutStep],
+    [wasPanned, zoomInStep, zoomOutStep],
   )
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      const el = containerRef.current
-      if (!el || isFit || e.button !== 0) return
-      const canPan = el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight
-      if (!canPan) return
-      panRef.current = {
-        active: true,
-        moved: false,
-        startX: e.clientX,
-        startY: e.clientY,
-        scrollX: el.scrollLeft,
-        scrollY: el.scrollTop,
-      }
-      el.setPointerCapture(e.pointerId)
-    },
-    [isFit],
-  )
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    const pan = panRef.current
-    const el = containerRef.current
-    if (!pan.active || !el) return
-    const dx = e.clientX - pan.startX
-    const dy = e.clientY - pan.startY
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) pan.moved = true
-    el.scrollLeft = pan.scrollX - dx
-    el.scrollTop = pan.scrollY - dy
-  }, [])
-
-  const endPan = useCallback((e: React.PointerEvent) => {
-    if (!panRef.current.active) return
-    panRef.current.active = false
-    containerRef.current?.releasePointerCapture(e.pointerId)
-    // Clear `moved` next tick so the trailing click event is still suppressed.
-    setTimeout(() => {
-      panRef.current.moved = false
-    }, 0)
-  }, [])
 
   const onImgLoad = useCallback(() => {
     const img = imgRef.current
@@ -219,13 +172,10 @@ export function FileImageView({
         </div>
       ) : (
         <div
-          ref={containerRef}
           onWheel={onWheel}
           onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endPan}
-          onPointerCancel={endPan}
-          className={`flex min-h-0 flex-1 overflow-auto scrollbar-thin p-4 ${isFit ? 'items-center justify-center' : ''}`}
+          onLostPointerCapture={onLostPointerCapture}
+          className={`flex min-h-0 flex-1 overflow-auto scrollbar-thin p-4 ${isFit ? 'items-center justify-center' : `touch-none select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}`}
         >
           <img
             ref={imgRef}
@@ -253,7 +203,7 @@ export function FileImageView({
             }}
             draggable={false}
             style={imgStyle}
-            className={`rounded-sm outline-none transition-[filter] focus-ring ${isFit ? 'm-auto max-h-full max-w-full cursor-zoom-in object-contain hover:brightness-95' : 'cursor-grab active:cursor-grabbing'} ${pixelated ? '[image-rendering:pixelated]' : ''}`}
+            className={`rounded-sm outline-none transition-[filter] focus-ring ${isFit ? 'm-auto max-h-full max-w-full cursor-zoom-in object-contain hover:brightness-95' : 'cursor-inherit'} ${pixelated ? '[image-rendering:pixelated]' : ''}`}
           />
         </div>
       )}

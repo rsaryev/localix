@@ -176,7 +176,7 @@ export interface TabStripProps<T extends string = string> {
    *  arms the drag (set its payload, flip a bus) here. Mutually used instead of
    *  `onReorder` — the section strip drags icons out to the rail this way. */
   onItemDragStart?: (id: T, e: React.DragEvent) => void
-  onItemDragEnd?: () => void
+  onItemDragEnd?: (id: T, event: globalThis.DragEvent | null, cancelled: boolean) => void
   /** Every tab list is named independently from adjacent editor actions. */
   'aria-label': string
 }
@@ -207,7 +207,13 @@ export function TabStrip<T extends string = string>({
   const tabRefs = useRef(new Map<T, HTMLButtonElement>())
   // The drag gesture (in-strip reorder and/or a drag out to another surface):
   // its state, its DOM handlers, and what a finished drag resets.
-  const drag = useTabReorder<T>({ onReorder, onDragStateChange, onItemDragStart, onItemDragEnd })
+  const drag = useTabReorder<T>({
+    ids: items.map((item) => item.id),
+    onReorder,
+    onDragStateChange,
+    onItemDragStart,
+    onItemDragEnd,
+  })
   const hasOverflowSlot = !!renderOverflow
   // One shared overflow measurement (ResizeObserver + scroll + window-resize),
   // re-measured when the tab set changes width. Drives BOTH the overflow menu
@@ -290,7 +296,7 @@ export function TabStrip<T extends string = string>({
             const active = item.id === activeId
             const isNew = !seenIds.current?.has(item.id)
             const tabClasses = cn(
-              'group relative flex shrink-0 items-center outline-none transition-colors',
+              'group relative flex shrink-0 items-center outline-none transition-[background-color,color,opacity] duration-(--dur-fast) ease-(--ease-out) motion-reduce:transition-none',
               isPrimary
                 ? 'h-[var(--chrome-control-lg)] max-w-56 rounded-sm px-(--workbench-gutter) text-sm font-normal leading-none focus-within:bg-surface-hover/40 focus-within:text-foreground'
                 : isUnderline

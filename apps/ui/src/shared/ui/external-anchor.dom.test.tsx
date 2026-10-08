@@ -18,8 +18,10 @@ describe('ExternalAnchor', () => {
     const { createRoot } = await import('react-dom/client')
     const { configurePlatformCapabilities } = await import('@/shared/lib/platformCapabilities')
     const { ExternalAnchor } = await import('./external-anchor')
-    const opened: string[] = []
-    const restore = configurePlatformCapabilities({ external: { open: (url) => opened.push(url) } })
+    const opened: Array<{ url: string; systemBrowser?: boolean }> = []
+    const restore = configurePlatformCapabilities({
+      external: { open: (url, systemBrowser) => opened.push({ url, systemBrowser }) },
+    })
     const host = document.createElement('div')
     const root = createRoot(host)
 
@@ -40,7 +42,20 @@ describe('ExternalAnchor', () => {
       const middle = new MouseEvent('auxclick', { button: 1, bubbles: true, cancelable: true })
       await act(async () => link.dispatchEvent(middle))
       expect(middle.defaultPrevented).toBe(true)
-      expect(opened).toEqual(['https://example.com/docs', 'https://example.com/docs'])
+      expect(opened).toEqual([
+        { url: 'https://example.com/docs', systemBrowser: false },
+        { url: 'https://example.com/docs', systemBrowser: false },
+      ])
+      await act(async () =>
+        root.render(
+          <ExternalAnchor href="https://example.com/oauth" systemBrowser>
+            Sign in
+          </ExternalAnchor>,
+        ),
+      )
+      await act(async () => host.querySelector<HTMLAnchorElement>('a')!.click())
+      expect(opened.at(-1)).toEqual({ url: 'https://example.com/oauth', systemBrowser: true })
+      expect(host.querySelector('a')!.hasAttribute('systemBrowser')).toBe(false)
     } finally {
       await act(async () => root.unmount())
       host.remove()

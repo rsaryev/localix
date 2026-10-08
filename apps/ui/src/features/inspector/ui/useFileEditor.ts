@@ -21,7 +21,13 @@ import { classifyDiskChange, fsChangeTouchesFile } from '../lib/conflict-reconci
 import { AUTO_SAVE_DELAY_MS, shouldAutoSave, useAutoSave } from '@/shared/ui/code-editor/autoSave'
 import { composeOnSaveContent, getSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { clearFileDraft, fileEditorOwnerKey, getFileDraft, setFileDraft } from '../model/fileDrafts'
+import {
+  clearFileDraft,
+  fileEditorOwnerKey,
+  getFileDraft,
+  getFileDraftSnapshot,
+  setFileDraft,
+} from '../model/fileDrafts'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { useProblemReport } from '@/shared/ui/problem-report'
 import type { Problem } from '@localixai/plugin-sdk/ui/problems'
@@ -29,6 +35,7 @@ import type { FileContentResponse } from '@/shared/api/contracts'
 import { ensureFileContentCacheInvalidation, fileContentCache } from '../model/fileContentCache'
 import { externalLineChanges } from '@/shared/ui/code-editor/externalChanges'
 import type { DirtyChange } from '@/shared/ui/code-editor/dirtyDiffGutter'
+import { fileTransferReadyKey, workItemTransferReady } from '@/shared/lib/workItemTransferReady'
 
 /** Namespace for every condition this editor publishes about a file. */
 const PROBLEM_SCOPE = 'editor'
@@ -78,6 +85,10 @@ export function useFileEditor(
   const initialReady = initialCached ? readyStateFor(path, initialCached) : null
   const initialDraft =
     sessionId && initialReady?.editable ? getFileDraft(sessionId, initialReady.absPath) : undefined
+  const initialSnapshot =
+    sessionId && initialReady?.editable
+      ? getFileDraftSnapshot(sessionId, initialReady.absPath)
+      : undefined
   const initialBuffer =
     initialReady?.editable && initialDraft !== undefined && initialDraft !== initialReady.content
       ? initialDraft
@@ -94,8 +105,12 @@ export function useFileEditor(
   // the FULL file (+ a hash) so a save never writes back a truncated buffer; save
   // uses optimistic concurrency (baseHash → 409 on drift).
   const [buffer, setBuffer] = useState(initialBuffer)
-  const [baseContent, setBaseContent] = useState(initialReady?.editable ? initialReady.content : '')
-  const [baseHash, setBaseHash] = useState(initialReady?.editable ? (initialReady.hash ?? '') : '')
+  const [baseContent, setBaseContent] = useState(
+    initialSnapshot?.baseContent ?? (initialReady?.editable ? initialReady.content : ''),
+  )
+  const [baseHash, setBaseHash] = useState(
+    initialSnapshot?.baseHash ?? (initialReady?.editable ? (initialReady.hash ?? '') : ''),
+  )
   // Absolute path the backend resolved for the open buffer — the key both the LSP
   // document sync and the diagnostics stream use (the `path` prop may be relative).
   const [editPath, setEditPath] = useState(initialReady?.editable ? initialReady.absPath : '')
@@ -111,6 +126,14 @@ export function useFileEditor(
   // Markdown only: flip the editor to a rendered, read-only preview of the buffer.
   const [previewMarkdown, setPreviewMarkdown] = useState(false)
   const dirty = Boolean(editPath) && buffer !== baseContent
+  useEffect(() => {
+    if (!sessionId || !workItemVisible) return
+    if (state.status === 'ready' && state.editable && editPath) {
+      workItemTransferReady.success(fileTransferReadyKey(sessionId, editPath))
+    } else if (state.status === 'error') {
+      workItemTransferReady.failure(fileTransferReadyKey(sessionId, path), state.message)
+    }
+  }, [sessionId, path, workItemVisible, state, editPath])
 
   // The content the language server last received. Compared against (NOT baseContent)
   // so that fixing an error back to the original text STILL syncs — otherwise the
@@ -161,9 +184,9 @@ export function useFileEditor(
   // the load effect below on remount).
   useEffect(() => {
     if (!sessionId || !editPath) return
-    if (dirty) setFileDraft(sessionId, editPath, buffer)
+    if (dirty) setFileDraft(sessionId, editPath, buffer, { baseContent, baseHash })
     else clearFileDraft(sessionId, editPath)
-  }, [sessionId, editPath, buffer, dirty])
+  }, [sessionId, editPath, buffer, dirty, baseContent, baseHash])
 
   // Buffer → language-server sync (didChange). Diagnostics return on the firehose, so
   // this is fire-and-forget. `editPath` is only set for an open file.
@@ -233,15 +256,23 @@ export function useFileEditor(
         return
       }
       const draft = restoreDraft && sessionId ? getFileDraft(sessionId, response.path) : undefined
+      const snapshot =
+        restoreDraft && sessionId ? getFileDraftSnapshot(sessionId, response.path) : undefined
       const initial = draft !== undefined && draft !== response.content ? draft : response.content
+      const baseline = snapshot?.baseContent ?? response.content
+      const baselineHash = snapshot?.baseHash ?? response.hash ?? ''
       bufferRef.current = initial
-      baseContentRef.current = response.content
-      baseHashRef.current = response.hash ?? ''
+      baseContentRef.current = baseline
+      baseHashRef.current = baselineHash
       setBuffer(initial)
-      setBaseContent(response.content)
-      setBaseHash(response.hash ?? '')
+      setBaseContent(baseline)
+      setBaseHash(baselineHash)
       setEditPath(response.path)
-      setConflict(null)
+      setConflict(
+        snapshot && response.hash && response.hash !== snapshot.baseHash
+          ? { diskContent: response.content, diskHash: response.hash }
+          : null,
+      )
       lastSyncedRef.current = initial
     },
     [sessionId, path],

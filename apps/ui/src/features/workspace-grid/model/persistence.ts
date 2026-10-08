@@ -22,13 +22,24 @@ export interface PersistedGrid {
   maximizedGroup: string | null
 }
 
+/** A spawn promise belongs to this renderer; its pending flag cannot survive a reload. */
+function persistedPayload(
+  item: WorkItem | SerializedWorkItem,
+): Record<string, unknown> | undefined {
+  if (item.kind !== 'terminal' || !item.payload || !('terminalRestarting' in item.payload))
+    return item.payload
+  const payload = { ...item.payload }
+  delete payload.terminalRestarting
+  return payload
+}
+
 function toSerializedItem(item: WorkItem): SerializedWorkItem {
   return {
     kind: item.kind,
     id: item.id,
     title: item.title,
     ...(item.scope ? { scope: item.scope } : {}),
-    ...(item.payload ? { payload: item.payload } : {}),
+    ...(item.payload ? { payload: persistedPayload(item) } : {}),
   }
 }
 
@@ -95,7 +106,7 @@ export function loadGrid(): EditorState | null {
       id: s.id,
       title: s.kind === 'preview' ? 'Browser' : s.title,
       scope,
-      ...(s.payload ? { payload: s.payload } : {}),
+      ...(s.payload ? { payload: persistedPayload(s) } : {}),
     }
   }
   const root = sanitizeTree(raw.root, new Set(Object.keys(items)))

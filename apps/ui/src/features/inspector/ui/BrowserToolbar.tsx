@@ -135,7 +135,7 @@ export function BrowserToolbar({
           size="sm"
           aria-label="Open in browser"
           tooltip="Open in browser"
-          onClick={() => platformCapabilities().external.open(url)}
+          onClick={() => platformCapabilities().external.open(url, true)}
         >
           <ExternalLink className="size-3.5" />
         </IconButton>
@@ -211,10 +211,7 @@ export function FrameSizeMenu({
 }) {
   return (
     <DropdownMenu>
-      <ActionTooltip
-        label={`Frame size · ${viewportSizeLabel(preset) ?? 'Responsive'}`}
-        side="bottom"
-      >
+      <ActionTooltip label={`Frame size · ${viewportSizeLabel(preset) ?? 'Responsive'}`} side="top">
         <DropdownMenuTrigger asChild>
           <IconButton size="sm" aria-label="Page frame size" className="shrink-0">
             <Monitor className={cn('size-3.5', isFixedViewport(preset) && 'text-status-info')} />
@@ -231,7 +228,7 @@ export function FrameSizeMenu({
 function DevServerMenu({ onNavigate }: { onNavigate: (url: string) => void }) {
   return (
     <DropdownMenu>
-      <ActionTooltip label="Dev-server ports" side="bottom">
+      <ActionTooltip label="Dev-server ports" side="top">
         <DropdownMenuTrigger asChild>
           <IconButton size="sm" aria-label="Dev-server ports">
             <Server className="size-3.5" />

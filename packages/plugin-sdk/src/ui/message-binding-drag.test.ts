@@ -282,3 +282,12 @@ describe('promptHasToken', () => {
     expect(promptHasToken('anything', '')).toBe(false)
   })
 })
+
+test('a legacy mixed tab payload is rejected before reading or showing link targets', () => {
+  const transfer = fakeDataTransfer()
+  const binding = createMessageBindingDraft('session', 'conversation', 'Conversation')
+  setMessageBindingDrag(transfer, binding)
+  transfer.setData('application/x-localix-tab', 'chat:conversation')
+  expect(messageBindingDragKind(transfer.types)).toBeNull()
+  expect(readMessageBindingDrag(transfer)).toBeNull()
+})

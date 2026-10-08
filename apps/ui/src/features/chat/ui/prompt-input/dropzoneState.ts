@@ -3,10 +3,11 @@
 import {
   messageBindingDragKind,
   OS_FILES_DRAG_KIND,
+  WORKSPACE_TAB_DRAG_MIME,
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
 
 export interface DragAcceptOptions {
-  /** The host accepts context-binding drops (files, sessions, tabs, tool calls, …). */
+  /** The host accepts context-binding drops (files, sessions, tool calls, …). */
   messageBinding: boolean
   /** OS file attachments are allowed (model has file input). */
   attach: boolean
@@ -18,6 +19,7 @@ export interface DragAcceptOptions {
  * pseudo-kind, or `null` (not our drag; don't preventDefault, don't overlay).
  */
 export function acceptedDragKind(types: readonly string[], opts: DragAcceptOptions): string | null {
+  if (types.includes(WORKSPACE_TAB_DRAG_MIME)) return null
   const binding = messageBindingDragKind(types)
   if (binding && opts.messageBinding) return binding
   if (opts.attach && types.includes('Files')) return OS_FILES_DRAG_KIND

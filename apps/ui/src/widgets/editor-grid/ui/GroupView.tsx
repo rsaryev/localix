@@ -1,14 +1,21 @@
-import { memo, useCallback, useMemo, useState, type DragEvent } from 'react'
+import { memo, useCallback, useMemo } from 'react'
 import { copyText } from '@localixai/plugin-sdk/ui/interactions'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { TabPanel, TabStrip, useTabPanelIds, type StripTabItem } from '@localixai/kit/tabs'
-import { DROP_TARGET_INSET_ACTIVE, DROP_TARGET_TRANSITION } from '@localixai/kit/drop-target'
 import { useChatStore } from '@/features/chat/model/store'
 import { problemBadge } from '@/features/inspector/model/problemsCount'
 import { workItemDragBus } from '@/shared/lib/workItemDragBus'
-import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import {
+  useWorkItemTransferPending,
+  workItemTransferState,
+} from '@/shared/lib/workItemTransferState'
+import {
+  finishOutsideTabDrag,
+  moveTabToWorkspaceWindow,
+  nativeTabTransferAvailable,
+} from '../model/windowTransfer'
+import { canTransferWorkItem } from '../model/windowTransferPayload'
 import { revealInTree } from '@/shared/lib/explorerBus'
-import { CMD } from '@/shared/lib/keybindings'
 import {
   useGridStore,
   isEphemeralItem,
@@ -21,9 +28,7 @@ import {
 } from '@/features/workspace-grid/model'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { EmptyState } from '@/features/chat/ui/EmptyState'
-import { useGroupSplitDrop } from '../model/useGroupSplitDrop'
-import { insertIndexForX, bodyOwnsMessageBindingDrops } from '../model/dropZone'
-import { sessionOfScope, workItemToMessageBinding } from '@/features/workspace-grid/model'
+import { sessionOfScope } from '@/features/workspace-grid/model'
 import type { WorkItem } from '@/features/workspace-grid/model'
 import { WorkItemBody } from './registry'
 import { workItemIcon } from './workItemIcon'
@@ -48,8 +53,7 @@ function tabVisual(item: WorkItem | undefined, id: string) {
     attention: item?.attention ?? false,
   }
 }
-import { newTabActionFor } from './tabActions'
-import { SplitOverlay } from './SplitOverlay'
+import { newTabActionFor, restartTabActionFor } from './tabActions'
 import { EmptyGroup } from './EmptyGroup'
 import { GroupActions } from './GroupActions'
 import { TabOverflowMenu } from './TabOverflowMenu'
@@ -72,6 +76,7 @@ export const GroupView = memo(function GroupView({
   resolvedTheme: ResolvedTheme
 }) {
   const items = useGridStore((s) => s.items)
+  const transferring = useWorkItemTransferPending()
   const activeScope = useGridStore((s) => s.activeScope)
   const tabIds = useTabPanelIds('editor-group')
   const activeGroup = useGridStore((s) => s.activeGroup)
@@ -79,9 +84,7 @@ export const GroupView = memo(function GroupView({
   const setActiveTab = useGridStore((s) => s.setActiveTab)
   const closeTab = useGridStore((s) => s.closeTab)
   const closeTabs = useGridStore((s) => s.closeTabs)
-  const splitGroup = useGridStore((s) => s.splitGroup)
   const reorderTab = useGridStore((s) => s.reorderTab)
-  const moveTab = useGridStore((s) => s.moveTab)
   const isFocused = activeGroup === leaf.id
   // Keep-alive bookkeeping drives both visibility and which session/global
   // background bodies stay warm (mounted-but-hidden for instant switch-back).
@@ -113,16 +116,23 @@ export const GroupView = memo(function GroupView({
   // can be deliberately reopened later; close must not create or navigate to a fresh chat.
   const closeOne = useCallback(
     (id: string) => {
+      if (workItemTransferState.pending(id)) return
       closeTab(leaf.id, id)
     },
     [closeTab, leaf.id],
   )
-  const { zone, isDragging, onDragOver, onDragLeave, onDrop } = useGroupSplitDrop(leaf.id)
 
   // Close-many over the VISIBLE tabs only: bulk closes never touch another
   // session's hidden tabs (those are freed when that session itself closes). One
   // batch reducer call (not N closeTab set()s) → a single re-render + persist.
-  const closeMany = useCallback((ids: string[]) => closeTabs(leaf.id, ids), [closeTabs, leaf.id])
+  const closeMany = useCallback(
+    (ids: string[]) =>
+      closeTabs(
+        leaf.id,
+        ids.filter((id) => !workItemTransferState.pending(id)),
+      ),
+    [closeTabs, leaf.id],
+  )
 
   // The Problems tab's open-file diagnostics → its count badge. The
   // count is of the chat the TAB belongs to (its scope), the same chat its panel lists — read off
@@ -141,6 +151,7 @@ export const GroupView = memo(function GroupView({
     const item = items[id]
     const multiple = visibleTabs.length > 1
     const newTab = newTabActionFor(item)
+    const restart = restartTabActionFor(item)
     const visual = tabVisual(item, id)
     // File/diff tabs carry an on-disk path → offer path/reveal actions.
     const filePath =
@@ -155,6 +166,7 @@ export const GroupView = memo(function GroupView({
       italic: visual.italic,
       dirty: visual.dirty,
       attention: visual.attention,
+      disabled: transferring.has(id),
       // Problems tab shows its error+warning count at a glance (error tone if any
       // error, else warn tone); hidden when the file set is clean.
       ...(item?.kind === 'problems' && problems
@@ -166,6 +178,15 @@ export const GroupView = memo(function GroupView({
         // Per-kind "open another" (e.g. New Terminal) — first so it's the primary
         // affordance; absent for kinds with no in-grid creation.
         ...(newTab ? [{ label: newTab.label, onSelect: () => newTab.run() }] : []),
+        ...(restart
+          ? [
+              {
+                label: restart.label,
+                disabled: !!item?.payload?.terminalRestarting,
+                onSelect: restart.run,
+              },
+            ]
+          : []),
         { label: 'Close', separatorBefore: !!newTab, onSelect: () => closeOne(id) },
         {
           label: 'Close Others',
@@ -173,20 +194,25 @@ export const GroupView = memo(function GroupView({
           onSelect: () => closeMany(visibleTabs.filter((t) => t !== id)),
         },
         { label: 'Close All', onSelect: () => closeMany(visibleTabs) },
-        // Splitting moves THIS tab into a new sibling group — only meaningful when
-        // the group has another tab to leave behind.
-        {
-          label: 'Split Right',
-          separatorBefore: true,
-          disabled: !multiple,
-          chordId: CMD.splitEditor,
-          onSelect: () => splitGroup(leaf.id, 'right', id),
-        },
-        {
-          label: 'Split Down',
-          disabled: !multiple,
-          onSelect: () => splitGroup(leaf.id, 'down', id),
-        },
+        ...(nativeTabTransferAvailable()
+          ? [
+              {
+                label: 'Move to New Window',
+                separatorBefore: true,
+                disabled: !canTransferWorkItem(item) || transferring.has(id),
+                onSelect: () => {
+                  void moveTabToWorkspaceWindow(id, 'window')
+                },
+              },
+              {
+                label: 'Move to New Workspace Tab',
+                disabled: !canTransferWorkItem(item) || transferring.has(id),
+                onSelect: () => {
+                  void moveTabToWorkspaceWindow(id, 'tab')
+                },
+              },
+            ]
+          : []),
         // Path / location actions for file & diff tabs. "Reveal
         // in Tree" focuses this tab so the Explorer's auto-reveal locks onto it,
         // then asks the sidebar to open Files + scroll/select the path.
@@ -207,76 +233,12 @@ export const GroupView = memo(function GroupView({
     }
   })
 
-  // A tab dragged from ANOTHER group, dropped on THIS group's tab strip → attach it
-  // here. The TabStrip's own reorder is LOCAL-only (its dragId ref is null for a
-  // foreign drag, so it never prevents-default → the drop is otherwise rejected on
-  // the bar). The body has its own split/move shield; the strip only ever MOVES
-  // (append as a tab). Intra-group reorder (fromGroup === this group) is left to the
-  // TabStrip. Closes the "can't drop a tab back onto another group's tab bar" gap.
-  const foreignTabDrag = useCallback((): string | null => {
-    const drag = workItemDragBus.get()
-    return drag?.itemId && drag.fromGroup !== leaf.id ? drag.itemId : null
-  }, [leaf.id])
-  // Highlight the whole strip while a FOREIGN tab hovers it — the only feedback
-  // that a drop here will attach the tab to THIS group. Cleared with a
-  // relatedTarget guard: dragleave also fires when crossing child tabs, and
-  // clearing on those would flicker the highlight.
-  const [stripHover, setStripHover] = useState(false)
-  const onStripDragOver = useCallback(
-    (e: DragEvent) => {
-      if (!foreignTabDrag()) return
-      e.preventDefault()
-      e.dataTransfer.dropEffect = 'move'
-      setStripHover(true)
-    },
-    [foreignTabDrag],
-  )
-  const onStripDragLeave = useCallback((e: DragEvent) => {
-    if (!(e.currentTarget as Node).contains(e.relatedTarget as Node | null)) setStripHover(false)
-  }, [])
-  const onStripDrop = useCallback(
-    (e: DragEvent) => {
-      setStripHover(false)
-      const itemId = foreignTabDrag()
-      if (!itemId) return
-      e.preventDefault()
-      workItemDragBus.end()
-      // Land the tab where the cursor is, not always at the end: measure the existing
-      // tabs' midpoints and insert at the matching slot (pure math in insertIndexForX).
-      const mids = Array.from(
-        e.currentTarget.querySelectorAll<HTMLElement>('[data-tabstrip-id]'),
-      ).map((el) => {
-        const r = el.getBoundingClientRect()
-        return r.left + r.width / 2
-      })
-      moveTab(itemId, leaf.id, insertIndexForX(mids, e.clientX))
-    },
-    [foreignTabDrag, moveTab, leaf.id],
-  )
-
   const onDragStateChange = useCallback(
     (dragging: boolean, id?: string) => {
       if (dragging && id) workItemDragBus.start({ itemId: id, fromGroup: leaf.id })
       else workItemDragBus.end()
     },
     [leaf.id],
-  )
-
-  // The SAME tab drag that reorders/splits can also land on the composer: a linkable
-  // tab (file/diff → `@file`, contributed work item → opaque `@resource`, terminal → `@terminal`)
-  // arms the message-binding payload so dropping it on the chat references what you're looking
-  // at. Whichever drop target the cursor lands on decides which meaning applies.
-  const onItemDragStart = useCallback(
-    (id: string, e: React.DragEvent) => {
-      const item = items[id]
-      const binding = workItemToMessageBinding(item)
-      if (binding) {
-        setMessageBindingDrag(e.dataTransfer, binding, {
-          previewLabel: item?.title ?? binding.target.label ?? 'Tab',
-        })
-      }
-    },
-    [items],
   )
 
   const activeItem = visibleActive ? items[visibleActive] : undefined
@@ -305,19 +267,16 @@ export const GroupView = memo(function GroupView({
           Cmd-W hits is obvious with 2+ groups. The active tab keeps its
           bg-surface-active fill; hover states stay bright. */}
       {tabItems.length > 0 && (
-        <div
-          className={cn('shrink-0', DROP_TARGET_TRANSITION, stripHover && DROP_TARGET_INSET_ACTIVE)}
-          onDragOver={onStripDragOver}
-          onDragLeave={onStripDragLeave}
-          onDrop={onStripDrop}
-        >
+        <div className="relative shrink-0">
           <TabStrip
             items={tabItems}
             activeId={visibleActive}
             onChange={(id) => setActiveTab(leaf.id, id)}
             onReorder={(from, to) => reorderTab(leaf.id, from, to)}
             onDragStateChange={onDragStateChange}
-            onItemDragStart={onItemDragStart}
+            onItemDragEnd={(id, event, cancelled) => {
+              void finishOutsideTabDrag(id, event, cancelled)
+            }}
             variant="subtle"
             edgeFade
             aria-label="Group tabs"
@@ -350,6 +309,7 @@ export const GroupView = memo(function GroupView({
               id={tabIds.panelId(id)}
               aria-labelledby={tabIds.tabId(id)}
               active={id === visibleActive}
+              inert={transferring.has(id)}
               data-work-item-id={id}
               data-work-item-kind={items[id]?.kind}
               className="absolute inset-0 flex flex-col"
@@ -368,25 +328,6 @@ export const GroupView = memo(function GroupView({
           <EmptyState sessionId={null} />
         ) : (
           <EmptyGroup />
-        )}
-        {/* Drag shield: only while a tab/group drag is in flight. A single
-            full-cover div catches dragover/drop ABOVE the body so events land on
-            React even when the body is an iframe (terminal/preview) that would
-            otherwise swallow them — and because it has no children, dragleave
-            fires only on a true exit, so the highlight never flickers.
-            SKIPPED for a body that owns its own message-binding drops (the chat's
-            composer): the shield would sit above the composer and swallow a
-            tab-link drop, so an open tab could never be linked into the chat the
-            way a file-tree row can (see bodyOwnsMessageBindingDrops). */}
-        {isDragging && !bodyOwnsMessageBindingDrops(activeItem?.kind) && (
-          <div
-            className="absolute inset-0 z-(--z-overlay)"
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-          >
-            {zone && <SplitOverlay zone={zone} />}
-          </div>
         )}
       </div>
     </section>

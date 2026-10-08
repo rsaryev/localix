@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
 export async function verifyEvidence(page, scenario) {
+  if (scenario === 'session-window-drag')
+    return (await import('./session-drag.mjs')).verifySessionDrag(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
     return (await import('./platform-views.mjs')).verifyPlatformViews(page, scenario)
   if (['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe'].includes(scenario))
@@ -63,50 +65,52 @@ export async function verifyEvidence(page, scenario) {
     await expect(page.getByText('Manage plugins…', { exact: true })).toBeVisible()
   } else if (scenario === 'palette') {
     await expect(page.getByRole('option').first()).toBeVisible()
-    await expect(page.getByRole('dialog').getByRole('combobox')).toHaveValue('split')
+    await expect(page.getByRole('dialog').getByRole('combobox')).toHaveValue('terminal')
   } else if (scenario === 'terminal-error') {
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
-    ).toBeVisible()
+    const exited = page.locator('[data-slot="terminal-pane"][data-terminal-exited="true"]')
+    const terminalTab = page.getByRole('tab', { name: /^Terminal/ })
+    await expect(exited).toBeVisible()
     await expect(page.locator('.xterm-screen')).toContainText(
       'Error: release configuration is missing',
     )
-    await expect(page.getByRole('button', { name: 'Restart', exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Close', exact: true }).last()).toBeVisible()
+    await expect(page.getByRole('status').filter({ hasText: /Process exited/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Restart terminal', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Close terminal', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^Split\b/ })).toHaveCount(0)
     // The workspace poll must not remove the evidence after the next registry snapshot.
     await page.waitForTimeout(21_000)
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
-    ).toBeVisible()
+    await expect(exited).toBeVisible()
     await expect(page.locator('.xterm-screen')).toContainText(
       'Error: release configuration is missing',
     )
     // Reopen after the server's 30-second final-screen archive has expired.
     await page.waitForTimeout(11_000)
-    await page.getByRole('button', { name: 'Close', exact: true }).last().click()
+    await terminalTab.click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Close', exact: true }).click()
     await page.keyboard.press('Meta+Shift+T')
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
-    ).toBeVisible()
+    await expect(exited).toBeVisible()
     await expect(page.locator('.xterm-screen')).toContainText(
       'Error: release configuration is missing',
     )
-    await page.getByRole('button', { name: 'Restart', exact: true }).click()
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
-    ).toHaveCount(0)
+    await terminalTab.click({ button: 'right' })
+    await expect(page.getByRole('menuitem', { name: /^Split\b/ })).toHaveCount(0)
+    await page.getByRole('menuitem', { name: 'Restart terminal', exact: true }).click()
+    await expect(exited).toHaveCount(0)
     const input = page.getByRole('textbox', { name: 'Terminal input' })
     await input.fill('exit')
     await input.press('Enter')
     await expect(page.getByRole('tab', { name: /^Terminal/ })).toHaveCount(0)
-    // Leave the final composition on the retained error and its actions.
+    // The capture shows retained output and the tab menu where Restart now lives.
     await page.getByRole('button', { name: 'Terminal', exact: true }).click()
     await input.fill('printf "Error: release configuration is missing\\n"; exit 17')
     await input.press('Enter')
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
-    ).toBeVisible()
+    await expect(exited).toBeVisible()
     await page.getByRole('button', { name: 'Maximize panel', exact: true }).first().click()
+    await terminalTab.click({ button: 'right' })
+    await expect(
+      page.getByRole('menuitem', { name: 'Restart terminal', exact: true }),
+    ).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: /^Split\b/ })).toHaveCount(0)
   } else if (scenario === 'editor') {
     await expect(page.getByRole('textbox', { name: 'Terminal input' })).toBeVisible()
     await expect(page.getByText(/2 pass/).first()).toBeVisible()

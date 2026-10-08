@@ -103,8 +103,7 @@ export function MessageContextMenu({
                 // this menu also has to offer. A strip reads as one control.
                 onClick={() => onReact(emoji)}
                 className={cn(
-                  'flex size-8 items-center justify-center rounded-full text-lg leading-none outline-none transition-transform focus-ring',
-                  'hover:scale-110',
+                  'flex size-8 items-center justify-center rounded-full text-lg leading-none outline-none transition-colors hover:bg-surface-hover focus-ring',
                   on && 'bg-accent/25 ring-1 ring-accent/50',
                 )}
               >

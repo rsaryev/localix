@@ -261,9 +261,17 @@ The overlay signal is the shared focus stack's `overlayOnScreen`. Shared dialogs
 popovers, and confirmations claim the stack through `useOverlayFocus`, a ref on the content element,
 so a claim lasts exactly as long as that element is mounted and a closed overlay claims nothing.
 
-The pane box is followed by a `ResizeObserver` and window resize and scroll events. A box hidden by
-`visibility`, as in a group maximized away, reads as no frame. The shell never reorders the page
-against the app's WebView: showing, hiding, and a picture replace any stacking change.
+The pane box and its ancestors are followed by resize and attribute observers, plus window resize
+and scroll events. Its native frame is the intersection with clipping ancestors and the window;
+hidden, inert, disconnected, or empty hosts have no frame. This catches a maximized-away group even
+when its size does not change. The shell never reorders the page against the app's WebView: showing,
+hiding, and a picture replace any stacking change.
+
+A renderer lease ties native open, bounds, and release commands to one mounted page controller.
+Commands from an old controller cannot affect its replacement. Unmount delivers a final hide after
+any pending bounds command; switching pages retains the hidden view and its history. Logical grid
+and Browser-strip ownership separately close views when the Browser or its pages are removed. Native
+workspace storage keys keep transferred page strips independent across reloads.
 
 On macOS a page introduces itself as the installed Safari: the user agent carries
 `Version/<Safari bundle version> Safari/605.1.15`. A plain WKWebView omits those tokens, and Google

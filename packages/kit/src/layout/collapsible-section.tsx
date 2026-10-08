@@ -7,6 +7,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from 'react'
+import { startResizeSession } from './resize-session'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
@@ -81,11 +82,14 @@ export function CollapsibleSection({
       ? Math.min(sectionResizeMax(minHeight), stored)
       : null
   })
+  const stopResize = useRef<(() => void) | null>(null)
+  const [resizing, setResizing] = useState(false)
+  useEffect(() => () => stopResize.current?.(), [])
   const open = isControlled ? controlledOpen : uncontrolledOpen
 
   useEffect(() => {
-    if (storageKey) saveString(storageKey, height === null ? null : String(height))
-  }, [height, storageKey])
+    if (storageKey && !resizing) saveString(storageKey, height === null ? null : String(height))
+  }, [height, storageKey, resizing])
 
   const toggle = () => {
     const next = !open
@@ -93,24 +97,33 @@ export function CollapsibleSection({
     onOpenChange?.(next)
   }
   const onResizeStart = (event: PointerEvent) => {
+    if (event.button !== 0 || stopResize.current) return
     event.preventDefault()
     event.stopPropagation()
     const startY = event.clientY
+    const initialHeight = height
     const startHeight = sectionRef.current?.getBoundingClientRect().height ?? height ?? minHeight
-    const move = (nextEvent: globalThis.PointerEvent) => {
-      setHeight(
-        Math.max(
-          minHeight,
-          Math.min(sectionResizeMax(minHeight), startHeight + nextEvent.clientY - startY),
-        ),
-      )
+    setResizing(true)
+    const end = () => {
+      stopResize.current = null
+      setResizing(false)
     }
-    const up = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
+    stopResize.current = startResizeSession(event, {
+      cursor: 'row-resize',
+      onMove: (next) => {
+        setHeight(
+          Math.max(
+            minHeight,
+            Math.min(sectionResizeMax(minHeight), startHeight + next.clientY - startY),
+          ),
+        )
+      },
+      onEnd: end,
+      onCancel: () => {
+        setHeight(initialHeight)
+        end()
+      },
+    })
   }
   const onResizeKeyDown = (event: KeyboardEvent) => {
     const max = sectionResizeMax(minHeight)

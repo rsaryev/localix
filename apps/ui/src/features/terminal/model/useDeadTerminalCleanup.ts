@@ -3,9 +3,11 @@ import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
 import { useGridStore } from '@/features/workspace-grid/model'
 import { eventSocket } from '@/shared/api/eventSocket'
 import { finishTerminalTabs, sweepDeadTerminalTabs } from './deadTerminalTabs'
+import { startTerminalExpiry } from './terminalExpiry'
 
 /** One workspace-wide sweep: hidden sessions need cleanup without mounting their terminal panes. */
 export function useDeadTerminalCleanup(): void {
+  useEffect(() => startTerminalExpiry(), [])
   const hasTerminals = useGridStore(
     (state) =>
       Object.values(state.items).some((item) => item.kind === 'terminal') ||

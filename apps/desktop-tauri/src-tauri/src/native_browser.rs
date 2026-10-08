@@ -231,7 +231,7 @@ fn page_url(value: &str) -> Result<Url, String> {
     Ok(parsed)
 }
 
-fn page_label(owner: &str, tab_id: &str) -> Result<String, String> {
+pub(crate) fn page_label(owner: &str, tab_id: &str) -> Result<String, String> {
     label(tab_id)?;
     Ok(format!("browser-{owner}--{tab_id}"))
 }
@@ -254,10 +254,28 @@ pub(crate) async fn browser_open(
     caller: Webview,
     tab_id: String,
     url: String,
+    lease: Option<String>,
 ) -> Result<(), String> {
     require_main(&caller)?;
+    crate::native_browser_lifecycle::validate_lease(lease.as_deref())?;
+    crate::native_browser_lifecycle::on_ui(move || open_page(app, caller, tab_id, url, lease)).await
+}
+
+fn open_page(
+    app: AppHandle,
+    caller: Webview,
+    tab_id: String,
+    url: String,
+    lease: Option<String>,
+) -> Result<(), String> {
     let view_label = page_label(caller.label(), &tab_id)?;
     let target = page_url(&url)?;
+    if !app
+        .state::<crate::native_browser_lifecycle::NativeBrowserLifecycle>()
+        .claim(&view_label, lease.as_deref())
+    {
+        return Ok(());
+    }
     if app.get_webview(&view_label).is_some() {
         return Ok(());
     }
@@ -328,6 +346,9 @@ pub(crate) async fn browser_open(
         Err(_) if app.get_webview(&view_label).is_some() => return Ok(()),
         Err(error) => return Err(error.to_string()),
     };
+    view.hide().map_err(|error| error.to_string())?;
+    #[cfg(target_os = "macos")]
+    crate::workspace_drag_image::raise(caller.label());
     let theme = BROWSER_THEME
         .lock()
         .ok()
@@ -340,19 +361,47 @@ pub(crate) async fn browser_open(
             }
         });
     apply_theme_to_view(&view, &theme)?;
-    view.hide().map_err(|error| error.to_string())?;
     view.navigate(target).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
-pub(crate) fn browser_bounds(
+pub(crate) async fn browser_bounds(
     app: AppHandle,
     caller: Webview,
     tab_id: String,
     bounds: BrowserBounds,
+    lease: Option<String>,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    let view = page(&app, &caller, &tab_id)?;
+    crate::native_browser_lifecycle::validate_lease(lease.as_deref())?;
+    crate::native_browser_lifecycle::on_ui(move || {
+        apply_browser_bounds(app, caller, tab_id, bounds, lease)
+    })
+    .await
+}
+
+fn apply_browser_bounds(
+    app: AppHandle,
+    caller: Webview,
+    tab_id: String,
+    bounds: BrowserBounds,
+    lease: Option<String>,
+) -> Result<(), String> {
+    let view_label = page_label(caller.label(), &tab_id)?;
+    if !app
+        .state::<crate::native_browser_lifecycle::NativeBrowserLifecycle>()
+        .accepts(&view_label, lease.as_deref())
+    {
+        return Ok(());
+    }
+    // Bounds are observations, not requests to open a page. A final resize/hide can arrive
+    // after browser_close_many removed the view; that lifecycle race is a successful no-op.
+    let Some(view) = app.get_webview(&view_label) else {
+        return Ok(());
+    };
+    if view.window().label() != caller.window().label() {
+        return Err("Browser tab belongs to another workspace".into());
+    }
     if !bounds.visible || bounds.width < 1.0 || bounds.height < 1.0 {
         return view.hide().map_err(|error| error.to_string());
     }
@@ -372,6 +421,15 @@ pub(crate) fn browser_bounds(
         bounds.height,
         app_zoom(&app),
     );
+    let window = caller.window();
+    let size = window
+        .inner_size()
+        .map_err(|error| error.to_string())?
+        .to_logical::<f64>(window.scale_factor().map_err(|error| error.to_string())?);
+    let Some((x, y, width, height)) = clip_to_content(x, y, width, height, size.width, size.height)
+    else {
+        return view.hide().map_err(|error| error.to_string());
+    };
     view.set_bounds(tauri::Rect {
         position: LogicalPosition::new(x, y).into(),
         size: LogicalSize::new(width, height).into(),
@@ -399,6 +457,32 @@ fn css_to_logical(x: f64, y: f64, width: f64, height: f64, zoom: f64) -> (f64, f
         1.0
     };
     (x * zoom, y * zoom, width * zoom, height * zoom)
+}
+
+/// A queued frame can predate a window resize. Native bounds never escape the current content.
+fn clip_to_content(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    content_width: f64,
+    content_height: f64,
+) -> Option<(f64, f64, f64, f64)> {
+    if ![x, y, width, height, content_width, content_height]
+        .iter()
+        .all(|n| n.is_finite())
+        || width <= 0.0
+        || height <= 0.0
+        || content_width <= 0.0
+        || content_height <= 0.0
+    {
+        return None;
+    }
+    let left = x.max(0.0);
+    let top = y.max(0.0);
+    let right = (x + width).min(content_width);
+    let bottom = (y + height).min(content_height);
+    (right > left && bottom > top).then_some((left, top, right - left, bottom - top))
 }
 
 #[tauri::command]
@@ -513,10 +597,11 @@ pub(crate) fn browser_go(
 }
 
 #[tauri::command]
-pub(crate) fn browser_close_many(
+pub(crate) async fn browser_close_many(
     app: AppHandle,
     caller: Webview,
     tab_ids: Vec<String>,
+    leases: Option<std::collections::BTreeMap<String, String>>,
 ) -> Result<(), String> {
     require_main(&caller)?;
     if tab_ids.len() > 100 {
@@ -524,14 +609,58 @@ pub(crate) fn browser_close_many(
     }
     let labels = tab_ids
         .iter()
-        .map(|tab_id| page_label(caller.label(), tab_id))
-        .collect::<Result<Vec<_>, _>>()?;
-    for view_label in labels {
-        if let Some(view) = app.get_webview(&view_label) {
-            view.close().map_err(|error| error.to_string())?;
+        .map(|tab_id| {
+            let lease = leases
+                .as_ref()
+                .and_then(|leases| leases.get(tab_id))
+                .cloned();
+            crate::native_browser_lifecycle::validate_lease(lease.as_deref())?;
+            Ok((page_label(caller.label(), tab_id)?, lease))
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    crate::native_browser_lifecycle::on_ui(move || {
+        let mut failure = None;
+        for (view_label, lease) in labels {
+            if !app
+                .state::<crate::native_browser_lifecycle::NativeBrowserLifecycle>()
+                .close(&view_label, lease.as_deref())
+            {
+                continue;
+            }
+            if let Some(view) = app.get_webview(&view_label) {
+                let _ = view.hide();
+                if let Err(error) = view.close() {
+                    failure = Some(error.to_string());
+                }
+            }
         }
-    }
-    Ok(())
+        failure.map_or(Ok(()), Err)
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn browser_release(
+    app: AppHandle,
+    caller: Webview,
+    tab_id: String,
+    lease: String,
+) -> Result<(), String> {
+    require_main(&caller)?;
+    let view_label = page_label(caller.label(), &tab_id)?;
+    crate::native_browser_lifecycle::validate_lease(Some(&lease))?;
+    crate::native_browser_lifecycle::on_ui(move || {
+        if app
+            .state::<crate::native_browser_lifecycle::NativeBrowserLifecycle>()
+            .release(&view_label, &lease)
+        {
+            if let Some(view) = app.get_webview(&view_label) {
+                view.hide().map_err(|error| error.to_string())?;
+            }
+        }
+        Ok(())
+    })
+    .await
 }
 
 #[derive(Serialize)]
@@ -850,7 +979,27 @@ pub(crate) fn browser_inject(
 
 #[cfg(test)]
 mod tests {
-    use super::{css_to_logical, label, page_url};
+    use super::{clip_to_content, css_to_logical, label, page_url};
+
+    #[test]
+    fn native_frames_are_clipped_to_current_window_content() {
+        assert_eq!(
+            clip_to_content(-10.0, -20.0, 100.0, 100.0, 800.0, 600.0),
+            Some((0.0, 0.0, 90.0, 80.0))
+        );
+        assert_eq!(
+            clip_to_content(750.0, 550.0, 200.0, 200.0, 800.0, 600.0),
+            Some((750.0, 550.0, 50.0, 50.0))
+        );
+        assert_eq!(
+            clip_to_content(801.0, 0.0, 100.0, 100.0, 800.0, 600.0),
+            None
+        );
+        assert_eq!(
+            clip_to_content(f64::NAN, 0.0, 100.0, 100.0, 800.0, 600.0),
+            None
+        );
+    }
 
     #[test]
     fn a_measured_pane_is_framed_at_its_zoomed_size() {

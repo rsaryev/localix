@@ -1,4 +1,6 @@
 import './devPerformance'
+import { startBrowserLinkRouting } from './browserLinkRouting'
+import { installWorkbenchGestures } from '@/shared/lib/workbenchGesture'
 import { startWorkspaceResourceSync } from './workspaceResourceSync'
 import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
 import { usePreviewHosts } from '@/features/inspector/model/previewHosts'
@@ -60,6 +62,8 @@ export function RootLayout() {
   }, [loadFromBackend])
 
   useEffect(() => startWorkspaceResourceSync(), [])
+  useLayoutEffect(() => startBrowserLinkRouting(), [])
+  useLayoutEffect(() => installWorkbenchGestures(), [])
 
   // ── Startup instrumentation, staged in two phases ───────────────────────────
   //

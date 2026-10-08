@@ -271,7 +271,7 @@ export function PreviewTab({
   })
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {!backgroundHost && (
         <BrowserToolbar
           url={url}
@@ -286,7 +286,7 @@ export function PreviewTab({
       {/* Body: iframe + optional stopped overlay */}
       <div
         className={cn(
-          'relative min-h-0 flex-1',
+          'relative min-h-0 min-w-0 flex-1',
           // A pinned frame is centered on the panel's surface, and scrolls rather
           // than being squeezed — a preset that reads "1440 × 900" must actually BE
           // 1440 CSS px wide, otherwise the breakpoint it is meant to prove is a lie.
@@ -295,6 +295,7 @@ export function PreviewTab({
           // theme (an opaque step down elsewhere), so it darkens whatever the pane's ground is
           // instead of replacing it. Only the pinned shape gets it; fit-to-pane inherits the pane.
           fixedViewport && 'grid place-items-center overflow-auto bg-surface-sunken p-3',
+          !fixedViewport && 'overflow-hidden',
         )}
       >
         {/* The frame box. Both the iframe AND the Visual Feedback overlay live in it,
@@ -317,7 +318,7 @@ export function PreviewTab({
               src={effectiveUrl}
               title={url}
               onLoad={() => dispatchOverlay({ type: 'frame-loaded', frameKey })}
-              className="h-full w-full border-0 bg-white"
+              className="block h-full w-full border-0 bg-white"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
             />
           )}

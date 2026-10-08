@@ -190,7 +190,7 @@ export function useMcpServers(scope: string, agentScope = ''): McpServersData {
           // Open the provider's consent page; the loopback callback stores the
           // token. openExternal, NOT window.open — a programmatic (post-await, no
           // user gesture) window.open is unreliable in the desktop webview.
-          platformCapabilities().external.open(result.authorizationUrl)
+          platformCapabilities().external.open(result.authorizationUrl, true)
         }
       },
     )

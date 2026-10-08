@@ -16,7 +16,13 @@
  * pre-draft behavior).
  */
 
-const drafts = new Map<string, string>()
+export interface FileDraftSnapshot {
+  content: string
+  baseContent: string
+  baseHash: string
+}
+
+const drafts = new Map<string, { content: string; baseline?: Omit<FileDraftSnapshot, 'content'> }>()
 
 /** Collision-safe owner key shared by drafts and the editor's reload coordinator. */
 export function fileEditorOwnerKey(sessionId: string, path: string): string {
@@ -24,8 +30,13 @@ export function fileEditorOwnerKey(sessionId: string, path: string): string {
 }
 
 /** Mirror a dirty buffer (called on every change while dirty — Map.set is cheap). */
-export function setFileDraft(sessionId: string, path: string, content: string): void {
-  if (sessionId && path) drafts.set(fileEditorOwnerKey(sessionId, path), content)
+export function setFileDraft(
+  sessionId: string,
+  path: string,
+  content: string,
+  baseline?: Omit<FileDraftSnapshot, 'content'>,
+): void {
+  if (sessionId && path) drafts.set(fileEditorOwnerKey(sessionId, path), { content, baseline })
 }
 
 /** Drop a draft once its buffer is clean again (saved / adopted / discarded). */
@@ -35,5 +46,14 @@ export function clearFileDraft(sessionId: string, path: string): void {
 
 /** The unsaved draft for a path, or undefined when the buffer was clean. */
 export function getFileDraft(sessionId: string, path: string): string | undefined {
-  return drafts.get(fileEditorOwnerKey(sessionId, path))
+  return drafts.get(fileEditorOwnerKey(sessionId, path))?.content
+}
+
+/** A move carries the original concurrency token; adopting a newer disk hash would lose guards. */
+export function getFileDraftSnapshot(
+  sessionId: string,
+  path: string,
+): FileDraftSnapshot | undefined {
+  const draft = drafts.get(fileEditorOwnerKey(sessionId, path))
+  return draft?.baseline ? { ...draft.baseline, content: draft.content } : undefined
 }

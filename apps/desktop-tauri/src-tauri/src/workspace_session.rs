@@ -3,7 +3,7 @@ pub(crate) use crate::workspace_session_model::valid_route;
 #[cfg(target_os = "macos")]
 use crate::workspace_session_model::{SavedGroup, SavedSession, SavedWorkspace};
 #[cfg(target_os = "macos")]
-fn session_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+fn session_path<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<std::path::PathBuf> {
     use tauri::Manager;
     app.path()
         .app_config_dir()
@@ -15,13 +15,12 @@ fn session_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
 pub(crate) fn load(app: &tauri::AppHandle) -> SavedSession {
     session_path(app)
         .and_then(|path| std::fs::read(path).ok())
-        .and_then(|bytes| serde_json::from_slice::<SavedSession>(&bytes).ok())
-        .and_then(SavedSession::validated)
+        .and_then(|bytes| crate::workspace_session_model::decode_session(&bytes))
         .unwrap_or_default()
 }
 
 #[cfg(target_os = "macos")]
-pub(crate) fn snapshot(app: &tauri::AppHandle) -> SavedSession {
+pub(crate) fn snapshot<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> SavedSession {
     use objc2_app_kit::{NSWindow, NSWindowStyleMask};
     use tauri::Manager;
     let (records, hidden) = {
@@ -30,7 +29,9 @@ pub(crate) fn snapshot(app: &tauri::AppHandle) -> SavedSession {
         (data.entries.clone(), data.hidden_groups.clone())
     };
     let windows: std::collections::HashMap<usize, _> = records
-        .keys()
+        .iter()
+        .filter(|(_, entry)| !entry.provisional)
+        .map(|(label, _)| label)
         .filter_map(|label| {
             let ptr = app.get_window(label)?.ns_window().ok()? as usize;
             Some((ptr, label.clone()))
@@ -71,6 +72,7 @@ pub(crate) fn snapshot(app: &tauri::AppHandle) -> SavedSession {
                 bounds.size.height,
             ]),
             fullscreen,
+            hidden: records[label].hidden,
         };
         for member in ordered {
             if !seen.insert(member) {
@@ -117,7 +119,9 @@ pub(crate) fn snapshot(app: &tauri::AppHandle) -> SavedSession {
 
 /// Called off the main thread after every workspace flushed; one bounded main-thread read.
 #[cfg(target_os = "macos")]
-pub(crate) fn save(app: &tauri::AppHandle) {
+pub(crate) fn save<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    static WRITES: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _write = WRITES.lock().unwrap();
     let (tx, rx) = std::sync::mpsc::channel();
     let handle = app.clone();
     crate::macos_tabs::defer(move || {
@@ -146,6 +150,11 @@ pub(crate) fn save(app: &tauri::AppHandle) {
 pub(crate) fn restore(app: &tauri::AppHandle) {
     use tauri::Manager;
     let session = load(app);
+    app.state::<crate::workspace_windows::WorkspaceWindows>()
+        .0
+        .lock()
+        .unwrap()
+        .active = session.active.clone();
     for group in session.groups {
         let mut host = None;
         for tab in &group.tabs {
@@ -159,14 +168,16 @@ pub(crate) fn restore(app: &tauri::AppHandle) {
                     .get_mut(&tab.label)
                 {
                     entry.host = host.clone();
+                    entry.hidden = group.hidden;
                 }
                 host = Some(tab.label.clone());
             } else {
-                match crate::workspace_windows::open(
+                match crate::workspace_windows::open_restored(
                     app,
                     host.clone(),
                     tab.route.clone(),
-                    Some(tab.label.clone()),
+                    tab.label.clone(),
+                    group.hidden,
                 ) {
                     Ok(label) => {
                         host = Some(label);
@@ -177,10 +188,15 @@ pub(crate) fn restore(app: &tauri::AppHandle) {
         }
         let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
         let mut data = state.0.lock().unwrap();
+        if group.hidden {
+            data.hidden_groups.push(group.clone());
+        }
         for (index, tab) in group.tabs.iter().enumerate() {
             if let Some(entry) = data.entries.get_mut(&tab.label) {
-                entry.focus_on_reveal = session.active.as_deref() == Some(&tab.label);
-                entry.select_on_reveal = index == group.selected;
+                entry.hidden = group.hidden;
+                entry.focus_on_reveal =
+                    !group.hidden && session.active.as_deref() == Some(&tab.label);
+                entry.select_on_reveal = !group.hidden && index == group.selected;
                 if index + 1 == group.tabs.len() {
                     entry.restore_frame = group.frame;
                     entry.restore_fullscreen = group.fullscreen;

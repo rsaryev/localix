@@ -166,7 +166,7 @@ export function IndicatorSettingsPopover({
               aria-label={`Colour ${color}`}
               onClick={() => onPatch({ color: color === primaryColor ? null : color })}
               className={cn(
-                'size-4 rounded-full border outline-none transition-transform hover:scale-110 focus-ring',
+                'size-4 rounded-full border outline-none transition-opacity hover:opacity-80 focus-ring',
                 color === primaryColor ? 'border-foreground' : 'border-transparent',
               )}
               style={{ backgroundColor: color }}

@@ -1,8 +1,15 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
+  'workspace/session-window-drag': {
+    guide: 'features/workspace.md',
+    purpose:
+      'A sidebar conversation links into the composer without opening workspace destinations',
+    scenario: 'session-window-drag',
+    preservePointer: true,
+  },
   'workspace/terminal-error': {
     guide: 'features/workspace.md',
-    purpose: 'A failed terminal retains its error output and offers Restart and Close',
+    purpose: 'A failed terminal retains its output without a footer and restarts from its tab menu',
     scenario: 'terminal-error',
   },
   'trading/market-chart': {
@@ -132,7 +139,7 @@ export const capturePlan = {
   },
   'workspace/editor-grid': {
     guide: 'features/workspace.md',
-    purpose: 'Real source, test output and team conversation together',
+    purpose: 'Source and terminal tabs in one main column beside the team conversation',
     scenario: 'editor',
   },
   'questions/queued': {

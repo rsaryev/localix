@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { startResizeSession } from '@localixai/kit/pane-resize'
 import type { TableColumn } from '@localixai/dataview'
 
 /** Minimum rendered width of a data column, and the floor a drag-resize clamps to. */
@@ -43,32 +44,34 @@ export function useColumnLayout(columns: TableColumn[], rowCount: number, total:
 
   // Freezes the column's current RENDERED width on grab (a `1fr` column has no explicit
   // width until then), so the drag starts from where the column visually is.
-  const dragRef = useRef<{ id: string; startX: number; startW: number; width: number } | null>(null)
+  const stopResize = useRef<(() => void) | null>(null)
+  useEffect(() => () => stopResize.current?.(), [])
   const startResize = (id: string, e: React.MouseEvent) => {
+    if (e.button !== 0 || stopResize.current) return
     e.preventDefault()
     e.stopPropagation()
+    const startX = e.clientX
     const headerCell = (e.currentTarget as HTMLElement).parentElement
     const startW = widths[id] ?? headerCell?.getBoundingClientRect().width ?? COL_MIN
-    dragRef.current = { id, startX: e.clientX, startW, width: startW }
-    const onMove = (ev: MouseEvent) => {
-      const d = dragRef.current
-      if (!d) return
-      d.width = Math.max(COL_MIN, Math.round(d.startW + (ev.clientX - d.startX)))
-      rootRef.current?.style.setProperty(
-        GRID_TEMPLATE_VAR,
-        buildTemplate(columns, { ...widths, [d.id]: d.width }, gutterWidth),
-      )
-    }
-    const onUp = () => {
-      const d = dragRef.current
-      dragRef.current = null
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-      // One state write, at the end: the pixels already moved, this is what remembers them.
-      if (d) setWidths((w) => ({ ...w, [d.id]: d.width }))
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    let width = startW
+    stopResize.current = startResizeSession(e, {
+      cursor: 'col-resize',
+      onMove: (next) => {
+        width = Math.max(COL_MIN, Math.round(startW + next.clientX - startX))
+        rootRef.current?.style.setProperty(
+          GRID_TEMPLATE_VAR,
+          buildTemplate(columns, { ...widths, [id]: width }, gutterWidth),
+        )
+      },
+      onEnd: () => {
+        stopResize.current = null
+        setWidths((value) => ({ ...value, [id]: width }))
+      },
+      onCancel: () => {
+        stopResize.current = null
+        rootRef.current?.style.setProperty(GRID_TEMPLATE_VAR, gridTemplate)
+      },
+    })
   }
 
   /** Drop a column's fixed width, returning it to the `1fr` fill pool. */

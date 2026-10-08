@@ -1,20 +1,16 @@
 import { openExternal } from './openExternal'
 import { requestConfirmation } from './confirmAction'
 
-/**
- * Opening a link, expressed as a {@link ConfirmableAction}.
- *
- * This file knows what a URL is; `confirmAction.ts` owns the asking and
- * `openExternal.ts` owns the OS handoff. Keeping the three apart is what stops
- * the confirmation from being link-shaped forever: the next outward action
- * describes itself the same way and inherits the same host, the same
- * no-host guarantee and the same single question on screen.
- *
- * `platformCapabilities().external.open` delegates here, and that port is already
- * the one choke point every layer reaches — plugins through `pluginExternal`,
- * plus the reader, terminal links, rendered Markdown, `ExternalAnchor`, the
- * preview toolbar and the OAuth flows.
- */
+/** The app supplies the Browser workspace opener without coupling shared code to features. */
+let openInAppBrowser: ((url: string) => boolean) | null = null
+
+export function registerAppBrowserOpener(open: (url: string) => boolean): () => void {
+  const previous = openInAppBrowser
+  openInAppBrowser = open
+  return () => {
+    openInAppBrowser = previous
+  }
+}
 
 function describe(url: string): { title: string; confirmLabel: string } {
   try {
@@ -58,8 +54,22 @@ function isLocalHost(url: string): boolean {
   }
 }
 
-/** Ask, then hand the URL to the OS browser. The default for every layer. */
-export function confirmAndOpenExternal(url: string): void {
+/** HTTP links default to the app Browser; true explicitly requests the system browser. */
+export function confirmAndOpenExternal(url: string, systemBrowser = false): void {
+  let protocol: string | undefined
+  try {
+    protocol = new URL(url).protocol
+  } catch {
+    // Leave validation and error reporting for OS handoffs to the existing native command.
+  }
+  if (
+    !systemBrowser &&
+    (protocol === 'http:' || protocol === 'https:') &&
+    openInAppBrowser?.(url)
+  ) {
+    return
+  }
+
   if (isLocalHost(url)) {
     openExternal(url)
     return

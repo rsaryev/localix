@@ -31,7 +31,10 @@ describe('the panel button at the end of a tab strip', () => {
     document.body.append(host)
     const root = createRoot(host)
     const render = () => act(async () => root.render(<GroupActions groupId={group} />))
-    const button = () => host.querySelector<HTMLButtonElement>('button')
+    const button = () =>
+      host.querySelector<HTMLButtonElement>(
+        'button[aria-label^="Maximize"], button[aria-label="Restore layout"]',
+      )
 
     try {
       await render()

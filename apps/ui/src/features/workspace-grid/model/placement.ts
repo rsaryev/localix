@@ -24,8 +24,8 @@ type PlacementRole = Exclude<GroupRole, 'preview' | 'bottom'>
  *  `editor` area for documents — including the live app preview AND terminals,
  *  which open CENTER STAGE as editor tabs; and one `aux` side panel that stacks
  *  the companion views — chat, source control, task, problems — as TABS. So a
- *  fresh workspace opens as editor + aux. Only the default; the user freely
- *  splits further afterwards (manual groups untagged).
+ *  workspace opens as editor + aux; tab strips and one adjustable divider keep
+ *  both areas usable without stacking additional panels.
  *  Covers every CORE kind (the Record type rejects a core kind that forgets a
  *  role); subsystem-contributed kinds are placed via the registry in
  *  `roleForKind` and need no entry here. */

@@ -33,7 +33,6 @@ interface NewChatActionOptions {
   openTerminalTab: () => void
   toggleSidebar: () => void
   toggleMaximizeFocused: () => void
-  splitFocusedGroup: () => void
   focusAdjacentGroup: (direction: 1 | -1) => void
   cycleFocusedTab: (direction: 1 | -1) => void
   reopenClosedTab: () => void

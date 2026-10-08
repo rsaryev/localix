@@ -185,6 +185,7 @@ export interface PluginUiRuntime {
     writeText(text: string): Promise<boolean>
   }
   external: {
-    open(url: string): Promise<void> | void
+    /** Defaults to the app Browser; true requests the system browser (e.g. OAuth). */
+    open(url: string, systemBrowser?: boolean): Promise<void> | void
   }
 }

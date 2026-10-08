@@ -58,6 +58,7 @@ export function DeviceAuthorizationStatus({
         {deviceInfo.verificationUri ? (
           <ExternalAnchor
             href={deviceInfo.verificationUri}
+            systemBrowser
             className="text-foreground underline underline-offset-2"
           >
             {deviceInfo.verificationUri}
@@ -202,7 +203,7 @@ export function AddConnectionForm({
                 onClick={() => {
                   void handleOAuth()
                 }}
-                className="w-full rounded-lg px-4 font-semibold shadow-(--shadow-raised)"
+                className="w-full rounded-lg px-4 font-semibold"
               >
                 {busy ? (
                   <>
@@ -276,7 +277,7 @@ export function AddConnectionForm({
               variant="mono"
               size="lg"
               disabled={trimmedKeys.length === 0}
-              className="w-full rounded-lg px-4 font-semibold shadow-(--shadow-raised)"
+              className="w-full rounded-lg px-4 font-semibold"
             >
               Add Connection
             </Button>

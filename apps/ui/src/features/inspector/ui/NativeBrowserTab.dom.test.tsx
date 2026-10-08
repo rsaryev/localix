@@ -5,6 +5,8 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import { useBrowserHistory } from '../model/browserHistory'
 import { CAPTURE_BUDGET_MS } from '../model/nativePageLayer'
 import { NativeBrowserTab } from './NativeBrowserTab'
+import { installWorkbenchGestures } from '@/shared/lib/workbenchGesture'
+import { keepFileDropActive, resetFileDrop } from '@/shared/lib/fileDropActive'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -18,6 +20,44 @@ beforeEach(() => useFocusStack.getState().reset())
 
 const TAB = { previewId: 'browser-1', url: 'https://openai.com/', version: 1 }
 const PICTURE = { data: 'cGFnZQ==', mediaType: 'image/jpeg', width: 800, height: 600 }
+
+test('app drags and sashes hide the native page immediately and restore it on release', async () => {
+  const desktop = fakeDesktop()
+  const stop = installWorkbenchGestures()
+  const view = await mount((tab) => tab)
+  try {
+    expect(desktop.pageVisible()).toBe(true)
+    await act(async () => view.host.dispatchEvent(new Event('dragstart', { bubbles: true })))
+    await settle()
+    expect(desktop.pageVisible()).toBe(false)
+    await act(async () => window.dispatchEvent(new Event('blur')))
+    await settle()
+    expect(desktop.pageVisible()).toBe(false)
+    await act(async () => view.host.dispatchEvent(new Event('dragend', { bubbles: true })))
+    await settle()
+    expect(desktop.pageVisible()).toBe(true)
+    const sash = document.createElement('div')
+    sash.setAttribute('role', 'separator')
+    view.host.append(sash)
+    await act(async () => sash.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })))
+    await settle()
+    expect(desktop.pageVisible()).toBe(false)
+    await act(async () => window.dispatchEvent(new MouseEvent('mouseup')))
+    await settle()
+    expect(desktop.pageVisible()).toBe(true)
+    await act(async () => keepFileDropActive())
+    await settle()
+    expect(desktop.pageVisible()).toBe(false)
+    await act(async () => resetFileDrop())
+    await settle()
+    expect(desktop.pageVisible()).toBe(true)
+  } finally {
+    resetFileDrop()
+    stop()
+    await view.unmount()
+    desktop.restore()
+  }
+})
 
 type Invocation = { command: string; args?: Record<string, unknown> }
 
@@ -72,7 +112,9 @@ async function layOutPageBox(host: HTMLElement): Promise<void> {
   const box = host.querySelector<HTMLElement>('[aria-label^="Browser page:"]')
   if (!box) throw new Error('Browser page box missing')
   const rect = { x: 10, y: 80, width: 800, height: 600, top: 80, left: 10, right: 810, bottom: 680 }
-  box.getBoundingClientRect = () => ({ ...rect, toJSON: () => rect })
+  for (let ancestor: HTMLElement | null = box; ancestor; ancestor = ancestor.parentElement) {
+    ancestor.getBoundingClientRect = () => ({ ...rect, toJSON: () => rect })
+  }
   await act(async () => window.dispatchEvent(new Event('resize')))
 }
 
@@ -123,7 +165,7 @@ test('the history list opens over a page that steps aside behind its picture', a
   try {
     expect(desktop.calls[0]).toEqual({
       command: 'browser_open',
-      args: { tabId: 'browser-1', url: 'https://openai.com/' },
+      args: { tabId: 'browser-1', url: 'https://openai.com/', lease: expect.any(String) },
     })
     expect(desktop.pageVisible()).toBe(true)
 

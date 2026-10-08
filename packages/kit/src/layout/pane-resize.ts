@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { startResizeSession } from './resize-session'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 
 export interface PaneResize {
@@ -99,7 +100,8 @@ export function usePaneResize(opts: {
   })
   const [available, setAvailable] = useState<number | null>(null)
   const [resizing, setResizing] = useState(false)
-  const drag = useRef<{ start: number; from: number } | null>(null)
+  const stopResize = useRef<(() => void) | null>(null)
+  useEffect(() => () => stopResize.current?.(), [])
 
   // Measure the container so the clamp tracks a resized window / re-split panel. No
   // ResizeObserver (old runtime, SSR) means `available` stays null and the static max
@@ -126,13 +128,29 @@ export function usePaneResize(opts: {
 
   const onResizeStart = useCallback(
     (e: React.PointerEvent) => {
+      if (e.button !== 0 || stopResize.current) return
       e.preventDefault()
-      // Start from the size ON SCREEN, not the stored one: after a squeeze those differ,
-      // and dragging from the stored value would make the divider jump under the cursor.
-      drag.current = { start: axis === 'x' ? e.clientX : e.clientY, from: size }
+      const start = axis === 'x' ? e.clientX : e.clientY
+      const from = size
       setResizing(true)
+      const end = () => {
+        stopResize.current = null
+        setResizing(false)
+      }
+      stopResize.current = startResizeSession(e, {
+        cursor: axis === 'x' ? 'col-resize' : 'row-resize',
+        onMove: (next) => {
+          const delta = (axis === 'x' ? next.clientX : next.clientY) - start
+          setDesired(Math.min(limit, Math.max(min, from + delta * direction)))
+        },
+        onEnd: end,
+        onCancel: () => {
+          setDesired(from)
+          end()
+        },
+      })
     },
-    [axis, size],
+    [axis, direction, limit, min, size],
   )
 
   const nudge = useCallback(
@@ -162,48 +180,6 @@ export function usePaneResize(opts: {
     setDesired(initial)
     if (storageKey) saveJSON(storageKey, initial)
   }, [initial, storageKey])
-
-  // `size` is a plain number the caller renders as an inline style, so it has to stay
-  // in React state — but pointermove fires well above the display's refresh rate (a
-  // 120Hz trackpad, coalesced high-frequency mice), and a render per event is work no
-  // frame can ever show. One state write per animation frame, carrying the LATEST
-  // position, is the same drag with the wasted renders removed.
-  useEffect(() => {
-    if (!resizing) return
-    const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : null
-    let frame: number | null = null
-    let pending: number | null = null
-    const apply = () => {
-      frame = null
-      if (pending === null) return
-      const next = pending
-      pending = null
-      setDesired(next)
-    }
-    const move = (e: PointerEvent) => {
-      const d = drag.current
-      if (!d) return
-      const delta = (axis === 'x' ? e.clientX : e.clientY) - d.start
-      pending = Math.min(max, Math.max(min, d.from + delta * direction))
-      if (!raf) return apply()
-      if (frame === null) frame = raf(apply)
-    }
-    const up = () => {
-      // Never drop the final position on the floor: land the pending frame now.
-      if (frame !== null && raf) cancelAnimationFrame(frame)
-      frame = null
-      apply()
-      setResizing(false)
-      drag.current = null
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
-    return () => {
-      if (frame !== null && raf) cancelAnimationFrame(frame)
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-    }
-  }, [resizing, axis, direction, min, max])
 
   // Persist after a drag settles (setState in an event/effect callback, not render).
   // The DESIRED size, so a temporarily narrow window doesn't overwrite the preference.

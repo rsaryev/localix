@@ -54,7 +54,7 @@ export interface NativePageLayer {
   /** The page's rectangle in window coordinates, or `null` while its box is not displayed. */
   setFrame(frame: PageFrame | null): void
   /** Whether any app overlay is on screen (the focus stack's `overlayOnScreen`). */
-  setOverlay(onScreen: boolean): void
+  setOverlay(onScreen: boolean, immediate?: boolean): void
   /** Hide the page for good and ignore everything still in flight. */
   dispose(): void
 }
@@ -126,27 +126,34 @@ export function createNativePageLayer(ports: NativePageLayerPorts): NativePageLa
 
   return {
     opened() {
+      if (disposed) return
       isOpened = true
       render()
     },
     setActive(next) {
+      if (disposed) return
       active = next
       render()
     },
     setFrame(next) {
+      if (disposed) return
       frame = next
       render()
     },
-    setOverlay(onScreen) {
+    setOverlay(onScreen, immediate = false) {
       if (disposed) return
       if (onScreen) {
         // A menu that closes as the next one opens releases and claims in the same task; showing
         // the live page between the two would flash it for one capture's length.
         cancelRelease?.()
         cancelRelease = null
-        if (overlay) return
-        overlay = true
-        beginOverlay()
+        if (!overlay) {
+          overlay = true
+          beginOverlay()
+        }
+        // A drag must reach the DOM drop surface from its first movement. A native page
+        // waiting for its screenshot would keep swallowing the gesture in the meantime.
+        if (immediate) stepAside(episode)
         render()
         return
       }
@@ -157,8 +164,10 @@ export function createNativePageLayer(ports: NativePageLayerPorts): NativePageLa
       }, 0)
     },
     dispose() {
+      if (disposed) return
       cancelBudget?.()
       cancelRelease?.()
+      episode += 1
       // A page still being created is born hidden, so only an opened one needs hiding.
       if (isOpened) ports.apply({ ...NO_FRAME, visible: false })
       disposed = true

@@ -11,11 +11,10 @@ type ComposerChipProps = React.ComponentPropsWithoutRef<'button'> & {
  * composes this same constant, so the two can never drift — which is the whole reason it is
  * exported instead of being copied by anyone who needs the classes without the button.
  *
- * The material is the scroll-to-latest pill's (`.lx-glass`: fill + sheen + rim + a 3px lens), not
- * an opaque surface — these chips float over the chat and `bg-surface-raised` read as a row of
- * black pills. `lx-glass-self` makes the chip its own hover trigger; `lx-glass-still` drops the
- * lift/press motion, which is noise in a row of chips. The rim replaces the border, so tones
- * speak through text colour alone.
+ * The material is the scroll-to-latest pill's (`.lx-glass`: translucent fill and a flat rim).
+ * These chips float over chat, so they retain backdrop blur while hover and press change only
+ * the fill. `lx-glass-self` makes the chip its own trigger. The rim replaces a layout border,
+ * so tones speak through text colour alone.
  */
 export const COMPOSER_CHIP =
   'lx-glass lx-glass-self lx-glass-still inline-flex cursor-pointer items-center gap-1.5 rounded-full text-xs text-text-soft outline-none transition-colors focus-ring hover:text-foreground disabled:cursor-default disabled:opacity-50'

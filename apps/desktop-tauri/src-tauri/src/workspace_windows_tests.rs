@@ -45,3 +45,38 @@ fn concurrent_closes_preserve_exactly_one_workspace_and_duplicates_do_not_start_
     assert_eq!(data.reserve_close("workspace-1"), Some(false));
     assert_eq!(data.reserve_close("workspace-2"), Some(true));
 }
+
+#[test]
+fn a_drag_preview_never_turns_the_last_workspace_into_a_destructive_close() {
+    let mut data = WindowData::default();
+    data.entries.insert("main".into(), Workspace::default());
+    data.entries.insert(
+        "preview".into(),
+        Workspace {
+            provisional: true,
+            ..Workspace::default()
+        },
+    );
+    assert_eq!(data.reserve_close("main"), Some(true));
+}
+
+#[test]
+fn a_restored_closed_group_retains_readiness_and_waits_for_explicit_reopen() {
+    let mut workspace = Workspace {
+        hidden: true,
+        ready: true,
+        ..Default::default()
+    };
+    assert!(!workspace.allows_reveal());
+    assert!(workspace.ready);
+    workspace.hidden = false;
+    assert!(workspace.allows_reveal());
+    workspace.provisional = true;
+    assert!(!workspace.allows_reveal());
+    workspace.provisional = false;
+    workspace.transfer_pending = true;
+    assert!(!workspace.allows_reveal());
+    workspace.transfer_pending = false;
+    workspace.transfer_presented = true;
+    assert!(workspace.allows_reveal());
+}

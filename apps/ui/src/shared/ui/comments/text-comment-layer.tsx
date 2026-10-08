@@ -225,7 +225,7 @@ export function TextCommentLayer({
           size="xs"
           // Floating-surface recipe (alpha + blur), not a bare `bg-surface-raised`: raised mixes
           // from a darker ground than the document it floats over, so the marker read as a black dot.
-          className="absolute z-(--z-controls) rounded-full border border-border bg-surface-raised/90 text-text-soft shadow-(--shadow-soft) backdrop-blur"
+          className="absolute z-(--z-controls) rounded-full border border-border bg-surface-raised/90 text-text-soft backdrop-blur"
           aria-label="Show comment"
         >
           <MessageSquare className="size-3.5" />
@@ -351,7 +351,7 @@ export function TextCommentLayer({
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => setComposing(true)}
           style={{ top: pending.top, left: pending.left }}
-          className="absolute z-(--z-overlay) -translate-x-1/2 gap-1.5 rounded-md px-2.5 py-1.5 shadow-(--shadow-popover)"
+          className="absolute z-(--z-overlay) -translate-x-1/2 gap-1.5 rounded-md px-2.5 py-1.5"
         >
           <MessageSquarePlus data-icon="inline-start" aria-hidden />
           Comment

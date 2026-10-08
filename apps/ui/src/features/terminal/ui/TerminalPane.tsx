@@ -14,9 +14,10 @@ import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
 import { PaneStateOverlay } from '@localixai/kit/pane-state-overlay'
 import { Button } from '@localixai/kit/button'
 import { closeTerminal, getTerminalLiveness, terminalStreamUrl } from '../api'
+import { workItemTransferState } from '@/shared/lib/workItemTransferState'
+import { terminalTransferReadyKey, workItemTransferReady } from '@/shared/lib/workItemTransferReady'
 import { openNewTerminal } from '../model/terminalTabs'
 import { finishTerminalTabs, type TerminalExit } from '../model/deadTerminalTabs'
-import { TerminalExitNotice } from './TerminalExitNotice'
 import { terminalOutput, resetTerminalOutput, retainTerminalOutput } from '../model/terminalOutput'
 import { createTerminalLinkProvider, readBufferLines } from './terminalLinkProvider'
 import { collectTerminalLinks, type TerminalLinkItem } from '../model/terminalLinks'
@@ -255,6 +256,7 @@ export function TerminalPane({
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
+    workItemTransferState.attached(paneId)
 
     let disposed = false
     let dropHandled = false
@@ -490,6 +492,7 @@ export function TerminalPane({
       : undefined
     if (retained !== undefined) {
       term.write(retained)
+      workItemTransferReady.success(terminalTransferReadyKey(terminalId))
       setConnected(false)
     } else {
       let firstOutput = true
@@ -511,6 +514,7 @@ export function TerminalPane({
           term.write(frame.data)
           raiseAttention()
         } else if (frame.t === 'exit') {
+          workItemTransferReady.success(terminalTransferReadyKey(terminalId))
           dropHandled = true
           term.options.disableStdin = true
           setConnected(false)
@@ -523,6 +527,10 @@ export function TerminalPane({
             cwd: frame.cwd,
           })
         } else if (frame.t === 'unavailable') {
+          workItemTransferReady.failure(
+            terminalTransferReadyKey(terminalId),
+            'The terminal is no longer available',
+          )
           const cached = firstOutput ? terminalOutput(terminalId) : undefined
           if (cached !== undefined) term.write(cached)
           dropHandled = true
@@ -535,6 +543,14 @@ export function TerminalPane({
       }
       ws.onopen = () => {
         if (disposed) return
+        const readyKey = terminalTransferReadyKey(terminalId)
+        if (workItemTransferReady.armed(readyKey)) {
+          void getTerminalLiveness(terminalId).then((liveness) => {
+            if (!disposed && liveness === 'alive' && ws?.readyState === WebSocket.OPEN) {
+              workItemTransferReady.success(readyKey)
+            }
+          })
+        }
         setConnected(true)
         // A (re)connect clears any pending disconnect/reconnect notice.
         setReconnecting(false)
@@ -593,7 +609,17 @@ export function TerminalPane({
       // Kill the PTY ONLY when the user actually closed this tab (the WorkItem is
       // gone from the grid) and this pane owned it. A hidden/warm/reload unmount
       // keeps the item, so the server-side PTY survives to be reattached.
-      if (owned && !useGridStore.getState().items[paneId]) void closeTerminal(terminalId)
+      if (
+        owned &&
+        !workItemTransferState.receiving() &&
+        !workItemTransferState.pending(paneId) &&
+        !workItemTransferState.unaccepted(paneId) &&
+        !Object.values(useGridStore.getState().items).some(
+          (item) => item.kind === 'terminal' && item.payload?.terminalId === terminalId,
+        ) &&
+        !workItemTransferState.departed(paneId)
+      )
+        void closeTerminal(terminalId)
       term.dispose()
     }
     // `connectNonce` re-runs this effect to reattach after a transient WS drop. The three
@@ -647,7 +673,12 @@ export function TerminalPane({
   // ground tokens carry alpha — a second pane-sized coat compounds into an opaque slab. This is
   // the ground `terminalTheme.ts` defers to when it hands xterm a fully transparent background.
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-col" {...pathDrop.handlers}>
+    <div
+      data-slot="terminal-pane"
+      data-terminal-exited={terminalExit ? 'true' : undefined}
+      className="relative flex h-full min-h-0 w-full flex-col"
+      {...pathDrop.handlers}
+    >
       <div className="relative min-h-0 flex-1">
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -740,7 +771,6 @@ export function TerminalPane({
           </PaneStateOverlay>
         )}
       </div>
-      {terminalExit && <TerminalExitNotice paneId={paneId} exit={terminalExit} />}
       <ConfirmDialog
         open={pastePrompt !== null}
         variant="default"

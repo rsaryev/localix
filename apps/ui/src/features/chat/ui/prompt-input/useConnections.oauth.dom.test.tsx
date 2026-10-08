@@ -43,8 +43,8 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
   }
   const restorePlatform = configurePlatformCapabilities({
     external: {
-      open: (url) => {
-        events.push(url)
+      open: (url, systemBrowser) => {
+        events.push({ url, systemBrowser })
       },
     },
     desktop: {
@@ -106,8 +106,8 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
     })
     expect(document.hidden).toBe(true)
     expect(events).toEqual([
-      'https://auth.example.test/',
-      'https://auth.example.test/',
+      { url: 'https://auth.example.test/', systemBrowser: true },
+      { url: 'https://auth.example.test/', systemBrowser: true },
       { sessionId: 'session-1', patch: { route: { providerConnectionId: 'openai-work' } } },
       'openai-work',
       { sessionId: 'session-1', providerId: 'openai', connectionId: 'openai-work' },

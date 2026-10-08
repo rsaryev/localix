@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   MESSAGE_BINDING_KIND_MIME_PREFIX,
   MESSAGE_BINDING_MIME,
+  WORKSPACE_TAB_DRAG_MIME,
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { acceptedDragKind, createDragDepth } from './dropzoneState'
 
@@ -18,6 +19,11 @@ describe('acceptedDragKind', () => {
     expect(acceptedDragKind(callDrag, { messageBinding: false, attach: false })).toBeNull()
     // …but OS files still work if attach is on.
     expect(acceptedDragKind(['Files'], { messageBinding: false, attach: true })).toBe('files')
+  })
+
+  test('tab drags cannot advertise links or file uploads through legacy mixed payloads', () => {
+    const types = [WORKSPACE_TAB_DRAG_MIME, ...callDrag, 'Files']
+    expect(acceptedDragKind(types, { messageBinding: true, attach: true })).toBeNull()
   })
 
   test('OS file drags gate on attachEnabled', () => {

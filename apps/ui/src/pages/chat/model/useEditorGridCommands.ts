@@ -65,13 +65,6 @@ export function useEditorGridCommands({
     const id = adjacentGroupId(s, dir)
     if (id) s.setActiveGroup(id)
   }, [])
-  // Split the focused editor group to the right (⌘\), "Split Editor".
-  // Reuses the store's splitGroup action with no tab moved — the source keeps its
-  // tabs and a fresh empty group opens beside it, ready to fill.
-  const splitFocusedGroup = useCallback(() => {
-    const s = useGridStore.getState()
-    s.splitGroup(s.activeGroup, 'right')
-  }, [])
   // Close the active tab in the focused group (⌘W). Resolve the active tab through
   // the scope-aware view so a hidden background-session tab is never closed.
   const closeFocusedTab = useCallback(() => {
@@ -103,7 +96,6 @@ export function useEditorGridCommands({
     cycleTab: cycleFocusedTab,
     focusGroup: focusAdjacentGroup,
     focusPart,
-    splitEditor: splitFocusedGroup,
     closeEditor: closeFocusedTab,
     reopenClosedTab,
     newChat,
@@ -116,7 +108,6 @@ export function useEditorGridCommands({
     openTerminalTab,
     cycleFocusedTab,
     focusAdjacentGroup,
-    splitFocusedGroup,
     closeFocusedTab,
     reopenClosedTab,
     startNewChatRef,

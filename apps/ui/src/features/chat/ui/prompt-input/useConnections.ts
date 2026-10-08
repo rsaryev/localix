@@ -219,7 +219,7 @@ export function useConnections(sessionId: string | null) {
       // code at the verification URL. Surface the code to the form and poll for the new
       // connection. Open the verification page to save the user a click.
       if (mode === 'device-code') {
-        if (verificationUri) platformCapabilities().external.open(verificationUri)
+        if (verificationUri) platformCapabilities().external.open(verificationUri, true)
         pollForNewConnection()
         return { mode, userCode, verificationUri } as const
       }
@@ -227,7 +227,7 @@ export function useConnections(sessionId: string | null) {
       // local-server adapters (Anthropic) redirect to their own fixed loopback URI and
       // finish server-side — never navigate the SPA away; open a window and poll.
       if (mode === 'local-server') {
-        if (redirectUrl) platformCapabilities().external.open(redirectUrl)
+        if (redirectUrl) platformCapabilities().external.open(redirectUrl, true)
         pollForNewConnection()
         return { mode } as const
       }
@@ -238,7 +238,7 @@ export function useConnections(sessionId: string | null) {
         if (redirectUrl) window.location.href = redirectUrl
         return { mode } as const
       }
-      if (redirectUrl) platformCapabilities().external.open(redirectUrl)
+      if (redirectUrl) platformCapabilities().external.open(redirectUrl, true)
       pollForNewConnection()
       return { mode } as const
     },

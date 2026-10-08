@@ -52,7 +52,6 @@ export function useEditorShortcuts(opts: {
   cycleTab: (dir: 1 | -1) => void
   focusGroup: (dir: 1 | -1) => void
   focusPart: (dir: 1 | -1) => void
-  splitEditor: () => void
   closeEditor: () => void
   reopenClosedTab: () => void
   newChat: () => void
@@ -65,7 +64,6 @@ export function useEditorShortcuts(opts: {
     cycleTab,
     focusGroup,
     focusPart,
-    splitEditor,
     closeEditor,
     reopenClosedTab,
     newChat,
@@ -143,7 +141,6 @@ export function useEditorShortcuts(opts: {
       registerActionHandler({ commandId: CMD.focusPrevGroup, run: () => focusGroup(-1) }),
       registerActionHandler({ commandId: CMD.focusNextPart, run: () => focusPart(1) }),
       registerActionHandler({ commandId: CMD.focusPrevPart, run: () => focusPart(-1) }),
-      registerActionHandler({ commandId: CMD.splitEditor, run: splitEditor }),
       registerActionHandler({ commandId: CMD.closeEditor, run: closeEditor }),
       registerActionHandler({ commandId: CMD.reopenClosedTab, run: reopenClosedTab }),
       registerActionHandler({
@@ -204,7 +201,6 @@ export function useEditorShortcuts(opts: {
     cycleTab,
     focusGroup,
     focusPart,
-    splitEditor,
     closeEditor,
     reopenClosedTab,
     newChat,

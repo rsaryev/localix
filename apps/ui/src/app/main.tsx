@@ -33,9 +33,6 @@ tauriFrontendLog(
   `entry.script epochMs=${Date.now()} docStart=${window.__LOCALIX_DOC_START ?? 0}`,
 )
 // Re-apply the persisted theme preset (plugin palette overlay) before first paint.
-// External-link handling (open in the system browser) lives entirely in the Tauri
-// shell now — `on_navigation` (plain <a> navigations) + `on_new_window`
-// (window.open / target=_blank), so no JS click interceptor is needed here.
 // Stamp data-os / data-desktop on <html> so CSS can key native-feel styling off
 // the platform (native scrollbars, font stacks, chrome) before first paint.
 applyPlatformDataset()

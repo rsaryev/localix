@@ -104,7 +104,7 @@ function ReasoningSlider({
         className={cn(
           // The resting `ring-1` is this thumb's edge, not a focus cue — focus is the shared
           // `focus-ring` outline, which draws independently of the box-shadow ring underneath.
-          'block cursor-grab rounded-full border-surface-raised bg-foreground shadow-(--shadow-raised) ring-1 ring-foreground/35 outline-none transition-[box-shadow,transform] hover:scale-110 focus-ring active:cursor-grabbing active:scale-105',
+          'block cursor-grab rounded-full border-surface-raised bg-foreground ring-1 ring-foreground/35 outline-none focus-ring active:cursor-grabbing',
           compact ? 'size-3 border-2' : 'size-4 border-[3px]',
         )}
       />

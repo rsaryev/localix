@@ -8,13 +8,14 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
     let label = label.to_string();
     crate::macos_tabs::defer(move || {
         let session = crate::workspace_session::snapshot(&app);
-        let Some(group) = session
+        let Some(mut group) = session
             .groups
             .into_iter()
             .find(|group| group.tabs.iter().any(|tab| tab.label == label))
         else {
             return;
         };
+        group.hidden = true;
         let labels: Vec<_> = group.tabs.iter().map(|tab| tab.label.clone()).collect();
         {
             let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
@@ -24,7 +25,6 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
         }
         std::thread::spawn(move || {
             crate::frontend_flush::flush(&app, &labels, false);
-            crate::workspace_session::save(&app);
             let handle = app.clone();
             crate::macos_tabs::defer(move || {
                 let selected = &group.tabs[group.selected].label;
@@ -56,9 +56,13 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
                     for label in &labels {
                         if let Some(entry) = data.entries.get_mut(label) {
                             entry.hiding = false;
+                            entry.hidden = true;
                         }
                     }
                     data.active = Some(selected.clone());
+                    drop(data);
+                    let handle = handle.clone();
+                    std::thread::spawn(move || crate::workspace_session::save(&handle));
                 }
             });
         });
@@ -124,10 +128,37 @@ pub(crate) fn reopen_for_label<R: tauri::Runtime>(app: &AppHandle<R>, label: &st
             if let Some(entry) = data.entries.get_mut(&label) {
                 entry.hiding = false;
             }
-            data.hidden_groups
+            let group = data
+                .hidden_groups
                 .iter()
                 .position(|group| group.tabs.iter().any(|tab| tab.label == label))
-                .map(|index| data.hidden_groups.remove(index))
+                .map(|index| data.hidden_groups.remove(index));
+            let labels = group
+                .as_ref()
+                .map(|group| {
+                    group
+                        .tabs
+                        .iter()
+                        .map(|tab| tab.label.clone())
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_else(|| vec![label.clone()]);
+            if labels.iter().any(|label| {
+                data.entries
+                    .get(label)
+                    .is_some_and(|entry| entry.provisional)
+            }) {
+                return;
+            }
+            for label in labels {
+                if let Some(entry) = data.entries.get_mut(&label) {
+                    entry.hidden = false;
+                    entry.hiding = false;
+                    entry.revealed = true;
+                    entry.host = None;
+                }
+            }
+            group
         };
         let selected = hidden
             .and_then(|group| restore_group(&app, group))
@@ -145,5 +176,8 @@ pub(crate) fn reopen_for_label<R: tauri::Runtime>(app: &AppHandle<R>, label: &st
             #[allow(deprecated)]
             objc2_app_kit::NSApplication::sharedApplication(mtm).activateIgnoringOtherApps(true);
         }
+        let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
+        state.0.lock().unwrap().active = Some(window.label().into());
+        std::thread::spawn(move || crate::workspace_session::save(&app));
     });
 }

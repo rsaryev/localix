@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pause, Play } from 'lucide-react'
+import { IconButton } from '@localixai/kit/icon-button'
 import { barHeight, formatTime } from './voiceMessageFormat'
 
 /**
@@ -86,24 +87,19 @@ export function VoiceMessage({
       className={`flex items-center gap-2.5 rounded-2xl border border-control-border bg-field-fill ${compact ? 'px-2 py-1.5' : 'px-3 py-2'}`}
     >
       <audio ref={audioRef} src={src} preload="metadata" />
-      <button
-        type="button"
+      <IconButton
         onClick={toggle}
         aria-label={playing ? 'Pause voice message' : 'Play voice message'}
-        // Shared press recipe (Button / IconButton): the transition has to cover
-        // `transform` or the press scale snaps, and reduced motion opts out of it.
-        className={`flex shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] motion-reduce:active:scale-100 cursor-pointer ${compact ? 'size-7' : 'size-9'}`}
+        emphasis="solid"
+        size={compact ? 'md' : 'xl'}
+        className="rounded-full"
       >
         {playing ? (
-          <Pause className={compact ? 'size-3' : 'size-4'} fill="currentColor" strokeWidth={0} />
+          <Pause fill="currentColor" strokeWidth={0} />
         ) : (
-          <Play
-            className={`${compact ? 'size-3' : 'size-4'} translate-x-px`}
-            fill="currentColor"
-            strokeWidth={0}
-          />
+          <Play className="translate-x-px" fill="currentColor" strokeWidth={0} />
         )}
-      </button>
+      </IconButton>
       <div className="flex min-w-0 flex-col gap-1">
         <div
           role="slider"

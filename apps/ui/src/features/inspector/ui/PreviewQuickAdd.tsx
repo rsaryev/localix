@@ -46,7 +46,7 @@ export function PreviewQuickAdd({
       size="default"
       // Floating-toolbar recipe (alpha + frost), not a bare `bg-surface-raised`: raised mixes
       // from a darker ground than the preview it floats over, so the pill read as a black lozenge.
-      className="pointer-events-auto absolute z-(--z-controls) w-[116px] rounded-full border-control-border bg-surface-raised/90 text-text-soft shadow-(--shadow-popover) backdrop-blur hover:bg-surface-hover hover:text-foreground"
+      className="pointer-events-auto absolute z-(--z-controls) w-[116px] rounded-full border-control-border bg-surface-raised/90 text-text-soft backdrop-blur hover:bg-surface-hover hover:text-foreground"
       style={{ left, top }}
     >
       <MessageSquarePlus className="size-3.5" />

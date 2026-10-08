@@ -79,4 +79,23 @@ describe('automatic desktop bridge tracing', () => {
     })
     expect(desktopInvokeFailureNeedsFallback(event, userContext)).toBeFalse()
   })
+
+  it('keeps optional drag preparation and receiver cancellation from reporting a second incident', () => {
+    for (const command of [
+      'workspace_drag_prepare',
+      'workspace_drag_cancel',
+      'workspace_transfer_presented',
+      'workspace_transfer_ready',
+    ]) {
+      const event = { traceId: 'native-drag', command, phase: 'failed' as const, ts: 1_000 }
+      expect(desktopInvokeTraceStep(event, userContext)?.kind).toBe(`desktop.${command}`)
+      expect(desktopInvokeFailureNeedsFallback(event, userContext)).toBeFalse()
+    }
+    expect(
+      desktopInvokeFailureNeedsFallback(
+        { traceId: 'native-move', command: 'workspace_drag_commit', phase: 'failed', ts: 1_000 },
+        userContext,
+      ),
+    ).toBeTrue()
+  })
 })

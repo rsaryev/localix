@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { startResizeSession } from '@localixai/kit/pane-resize'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 
 const SIDEBAR_MIN = 220
@@ -54,9 +55,6 @@ export function useSidebarResize(): SidebarResize {
   // Width transition is suspended only WHILE dragging the resize handle, so the
   // open/close slide still animates but the drag tracks the cursor 1:1.
   const [resizing, setResizing] = useState(false)
-  const dragging = useRef(false)
-  const startX = useRef(0)
-  const startWidth = useRef(0)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const sashRef = useRef<HTMLDivElement | null>(null)
   // The LIVE width — the single source of truth for what is painted/announced.
@@ -96,51 +94,27 @@ export function useSidebarResize(): SidebarResize {
 
   const onResizeStart = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0 || teardownRef.current) return
       e.preventDefault()
-      dragging.current = true
       setResizing(true)
-      startX.current = e.clientX
-      // The width ON SCREEN, not the last committed one — they differ if a previous
-      // drag ended without a state commit reaching this element yet.
-      startWidth.current = widthRef.current
-      document.body.style.userSelect = 'none'
-      // Viewport shield: stops child iframes (preview / terminal / webview) from
-      // swallowing the cursor mid-drag and carries the resize cursor over them —
-      // the same trick `useInspectorResize` uses.
-      const shield = document.createElement('div')
-      shield.style.cssText = 'position:fixed;inset:0;z-index:2147483647;cursor:col-resize;'
-      document.body.appendChild(shield)
-
-      const onMove = (e: MouseEvent) => {
-        if (!dragging.current) return
-        const next = Math.max(
-          SIDEBAR_MIN,
-          Math.min(SIDEBAR_MAX, startWidth.current + e.clientX - startX.current),
-        )
-        // DOM only — no setState. The shell tree is untouched for the whole drag.
-        paint(next)
-      }
-      const teardown = () => {
-        shield.remove()
-        document.body.style.userSelect = ''
-        window.removeEventListener('mousemove', onMove)
-        window.removeEventListener('mouseup', onUp)
-        window.removeEventListener('blur', onUp)
-        shield.removeEventListener('mouseleave', onUp)
+      const startX = e.clientX
+      const startWidth = widthRef.current
+      const end = () => {
+        setResizing(false)
+        commit(widthRef.current, true)
         teardownRef.current = null
       }
-      const onUp = () => {
-        dragging.current = false
-        setResizing(false)
-        // Commit + persist once per drag, not per mousemove.
-        commit(widthRef.current, true)
-        teardown()
-      }
-      window.addEventListener('mousemove', onMove)
-      window.addEventListener('mouseup', onUp)
-      window.addEventListener('blur', onUp)
-      shield.addEventListener('mouseleave', onUp)
-      teardownRef.current = teardown
+      teardownRef.current = startResizeSession(e, {
+        cursor: 'col-resize',
+        onMove: (next) => {
+          paint(Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startWidth + next.clientX - startX)))
+        },
+        onEnd: end,
+        onCancel: () => {
+          paint(startWidth)
+          end()
+        },
+      })
     },
     [commit, paint],
   )

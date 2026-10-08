@@ -97,7 +97,7 @@ export const LAYOUT: readonly KitCatalogEntry[] = [
     specifier: k('pane-resize'),
     category: 'layout',
     provider: 'kit',
-    exports: ['usePaneResize'],
+    exports: ['usePaneResize', 'startResizeSession'],
     summary:
       "Drag and keyboard resizing for a split, drawn with the Button module's WorkbenchSash.",
     use: 'Any resizable split: sidebar width, console height, table columns.',

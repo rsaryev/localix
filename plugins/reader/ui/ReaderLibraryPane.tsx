@@ -726,7 +726,7 @@ export function LibraryPane({
                           }}
                         >
                           <span
-                            className={`reader-book-cover relative block aspect-[2/3] overflow-hidden rounded-md border bg-card shadow-(--shadow-raised) transition-[transform,box-shadow] group-hover:-translate-y-0.5 group-hover:shadow-(--shadow-soft) ${
+                            className={`reader-book-cover relative block aspect-[2/3] overflow-hidden rounded-md border bg-card transition-colors group-hover:border-border-strong ${
                               selected
                                 ? 'border-foreground/50 ring-2 ring-foreground/25'
                                 : 'border-border'
@@ -761,7 +761,7 @@ export function LibraryPane({
                           <DropdownMenuTrigger asChild>
                             <IconButton
                               size="sm"
-                              className="absolute right-1 top-1 bg-popover/90 opacity-0 shadow-(--shadow-raised) group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+                              className="absolute right-1 top-1 bg-popover/90 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
                               aria-label={`Book actions for ${book.title}`}
                             >
                               <Ellipsis />

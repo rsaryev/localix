@@ -82,7 +82,7 @@ export function PreviewStatusOverlay({
   onEngage?: () => void
 }) {
   // The host owns external navigation and its confirmation policy across all UI surfaces.
-  const openInBrowserClick = () => platformCapabilities().external.open(url)
+  const openInBrowserClick = () => platformCapabilities().external.open(url, true)
   const canRestart = canStart && onStart != null
   const Icon = ICON[kind]
   // A site that refuses embedding never painted here, so anything cached under its url is

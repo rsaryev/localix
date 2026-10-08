@@ -1,6 +1,7 @@
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { tauriInvoke } from '@/shared/lib/tauri'
+import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
 
 /**
  * Close the desktop shell's native pages behind Browser tabs that are going away.
@@ -12,8 +13,23 @@ import { tauriInvoke } from '@/shared/lib/tauri'
  * tabs are already gone and nothing else would show the pages are not.
  */
 export function closeNativePages(tabIds: readonly string[], failure: string): void {
-  if (!tabIds.length) return
-  void tauriInvoke()?.('browser_close_many', { tabIds: [...tabIds] }).catch((error: unknown) =>
+  const invoke = tauriInvoke()
+  if (!invoke || !tabIds.length) return
+  const unique = [...new Set(tabIds)].flatMap((id) => {
+    const retired = nativePageRendererLease.retire(id)
+    return retired ? [{ id, lease: retired.lease }] : []
+  })
+  const tasks: Promise<unknown>[] = []
+  for (let index = 0; index < unique.length; index += 100) {
+    const pages = unique.slice(index, index + 100)
+    const tabIds = pages.map((page) => page.id)
+    const leases: Record<string, string> = {}
+    for (const { id, lease } of pages) {
+      if (lease) leases[id] = lease
+    }
+    tasks.push(invoke('browser_close_many', { tabIds, leases }))
+  }
+  void Promise.all(tasks).catch((error: unknown) =>
     toast.error(failure, { description: errorMessage(error, '') || undefined }),
   )
 }

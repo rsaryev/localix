@@ -11,7 +11,7 @@ export interface PlatformCapabilities {
     reload: () => void
   }
   external: {
-    open: (url: string) => void
+    open: (url: string, systemBrowser?: boolean) => void
   }
   desktop: {
     invoke: <T = unknown>(command: string, args?: Record<string, unknown>) => Promise<T> | null
@@ -63,10 +63,7 @@ const defaults: PlatformCapabilities = {
     reload: () => window.location.reload(),
   },
   external: {
-    // Confirm FIRST, then hand the URL to the OS browser. Every layer reaches
-    // this one port — plugins via `pluginExternal`, plus the reader, terminal
-    // links, Markdown, `ExternalAnchor`, the preview toolbar and the OAuth flows
-    // — so the question is asked once here rather than per surface.
+    // Every host and plugin surface shares the same routing and OS confirmation policy.
     open: confirmAndOpenExternal,
   },
   desktop: {

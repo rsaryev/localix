@@ -37,7 +37,6 @@ export const CMD = {
   focusPrevGroup: 'layout.focus-prev-group',
   focusNextPart: 'layout.focus-next-part',
   focusPrevPart: 'layout.focus-prev-part',
-  splitEditor: 'layout.split-editor',
   closeEditor: 'editor.close-tab',
   nextEditor: 'editor.next-tab',
   prevEditor: 'editor.prev-tab',
@@ -245,13 +244,6 @@ export const SHORTCUT_CATALOG: ShortcutCommand[] = [
     description: 'Move focus to the previous workspace part (chat → editor → sidebar).',
     category: 'layout',
     defaultChord: 'shift+f6',
-  },
-  {
-    id: CMD.splitEditor,
-    label: 'Split editor',
-    description: 'Split the focused editor group into a new group to the right.',
-    category: 'layout',
-    defaultChord: 'mod+\\',
   },
 
   // Editor tabs

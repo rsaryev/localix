@@ -233,6 +233,6 @@ function safeExternalUrl(value: string): string {
 }
 
 export const pluginExternal = {
-  open: (url: string): Promise<void> =>
-    Promise.resolve(currentRuntime().external.open(safeExternalUrl(url))),
+  open: (url: string, systemBrowser = false): Promise<void> =>
+    Promise.resolve(currentRuntime().external.open(safeExternalUrl(url), systemBrowser)),
 }

@@ -1,8 +1,12 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useGridStore, scopedViewRoot, leaves } from '@/features/workspace-grid/model'
+import { hasFixedPanelLayout } from '@/features/workspace-grid/model/arrangePanels'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { GroupView } from './GroupView'
+import { WorkspaceTabTransferTargets } from './WorkspaceTabTransferTargets'
+import { acknowledgeTransferredLayout } from '../model/workspaceTransferLayout'
 import { densityRatio } from '@localixai/kit/lib'
+import { startResizeSession } from '@localixai/kit/pane-resize'
 import { WorkbenchSash } from '@localixai/kit/button'
 import {
   minWidthOf,
@@ -106,6 +110,7 @@ function Separator({
   }
 
   const startResize = (e: React.MouseEvent) => {
+    if (e.button !== 0) return
     e.preventDefault()
     dragCleanupRef.current?.()
     const metrics = resizeMetrics()
@@ -114,35 +119,23 @@ function Separator({
     const startPos = horizontal ? e.clientX : e.clientY
     // Past the early-return guards — an aborted start can't strand the highlight.
     setDragging(true)
-    const shield = document.createElement('div')
-    shield.style.cssText = `position:fixed;inset:0;z-index:2147483647;cursor:${horizontal ? 'col-resize' : 'row-resize'};`
-    document.body.appendChild(shield)
-    const onMove = (ev: MouseEvent) => {
-      const delta = ((horizontal ? ev.clientX : ev.clientY) - startPos) / span
-      const na = Math.max(lo, Math.min(hi, a + delta))
-      // Repartition the PAIR by leaf identity (robust to the collapsed view tree
-      // differing from the raw stored tree) — na/pair is leafA's side share.
-      resizeAdjacent(leafA, leafB, na / pair)
-    }
-    const teardown = () => {
-      shield.remove()
-      document.body.style.userSelect = ''
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-      window.removeEventListener('blur', onUp)
-      shield.removeEventListener('mouseleave', onUp)
+    const end = () => {
+      setDragging(false)
       dragCleanupRef.current = null
     }
-    const onUp = () => {
-      setDragging(false)
-      teardown()
-    }
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    window.addEventListener('blur', onUp)
-    shield.addEventListener('mouseleave', onUp)
-    dragCleanupRef.current = teardown
+    dragCleanupRef.current = startResizeSession(e, {
+      cursor: horizontal ? 'col-resize' : 'row-resize',
+      onMove: (ev) => {
+        const delta = ((horizontal ? ev.clientX : ev.clientY) - startPos) / span
+        const na = Math.max(lo, Math.min(hi, a + delta))
+        resizeAdjacent(leafA, leafB, na / pair)
+      },
+      onEnd: end,
+      onCancel: () => {
+        resizeAdjacent(leafA, leafB, a / pair)
+        end()
+      },
+    })
   }
 
   // Double-click evens the two regions this boundary splits.
@@ -242,6 +235,10 @@ export function GridView({
     () => scopedViewRoot({ root, items, activeScope, activeGroup, warmScopes, scopeActiveTab }),
     [root, items, activeScope, activeGroup, warmScopes, scopeActiveTab],
   )
+  useLayoutEffect(() => {
+    const state = useGridStore.getState()
+    if (!hasFixedPanelLayout(state)) state.arrangePanels()
+  }, [root, items])
 
   // Minimums scale with the Settings density (root font-size / 14) so panes keep
   // the same perceived floor; at the default density this is byte-identical to
@@ -256,6 +253,10 @@ export function GridView({
     activeGroup,
     maximizedGroup,
     constraints,
+  })
+
+  useLayoutEffect(() => {
+    if (containerRef.current) acknowledgeTransferredLayout(containerRef.current)
   })
 
   return (
@@ -298,6 +299,7 @@ export function GridView({
       {layout.separators.map((sep) => (
         <Separator key={sep.key} sep={sep} containerRef={containerRef} />
       ))}
+      <WorkspaceTabTransferTargets />
     </div>
   )
 }

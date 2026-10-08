@@ -26,7 +26,7 @@ export function RemoveBadge({ onClick, floating }: { onClick: () => void; floati
         'flex size-4 items-center justify-center rounded-full bg-surface-active text-text-soft outline-none transition-opacity hover:bg-foreground hover:text-background focus-visible:opacity-100 focus-ring',
         // Reveal on hover of the chip; always visible on keyboard focus.
         'lx-hover-actions opacity-0 group-hover/att:opacity-100',
-        floating && 'shadow-(--shadow-raised)',
+        floating && 'border border-control-border',
       )}
     >
       <X className="size-2.5" />

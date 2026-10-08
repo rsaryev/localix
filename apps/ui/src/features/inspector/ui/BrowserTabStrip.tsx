@@ -9,6 +9,10 @@ import { TabStrip, type StripTabItem, type useTabPanelIds } from '@localixai/kit
 import { usePreviewStore, type PreviewEntry } from '../model/previewStore'
 import { BROWSER_HISTORY_URL, browserEngine, hostsInFrame } from '../model/browserUrl'
 import { closeNativePages } from '../model/nativePages'
+import {
+  browserTabTransferBus,
+  useBrowserTabTransferState,
+} from '@/shared/lib/browserTabTransferBus'
 
 /** The strip item that stands for a new tab while it has no page yet. */
 export const NEW_TAB_ID = 'browser:new-tab'
@@ -22,8 +26,12 @@ const reportNative = (failure: string) => (error: unknown) =>
   void toast.error(failure, { description: errorMessage(error, '') || undefined })
 
 export function closeBrowserTabs(ids: string[]): void {
-  usePreviewStore.getState().closeBrowserTabs(ids)
-  closeNativePages(ids, ids.length === 1 ? 'Could not close the page' : 'Could not close the pages')
+  const closable = ids.filter((id) => !browserTabTransferBus.pending(id))
+  usePreviewStore.getState().closeBrowserTabs(closable)
+  closeNativePages(
+    closable,
+    closable.length === 1 ? 'Could not close the page' : 'Could not close the pages',
+  )
 }
 
 const unpinned = (entries: readonly PreviewEntry[]) => entries.filter((entry) => !entry.pinned)
@@ -107,6 +115,7 @@ export function BrowserTabStrip({
   onCloseNewTab?: () => void
   onOpenHistory: () => void
 }) {
+  const transfer = useBrowserTabTransferState()
   useEffect(() => {
     const listen = tauriListen()
     if (!listen) return
@@ -133,6 +142,7 @@ export function BrowserTabStrip({
       title: tab.url,
       closeLabel: `Close ${label}`,
       icon: tabIcon(tab),
+      disabled: transfer.pending.has(tab.previewId),
       onClose: (id: string) => closeBrowserTabs([id]),
       onAuxClose: (id: string) => closeBrowserTabs([id]),
       onContextMenu: (_id: string, event: React.MouseEvent) => {
@@ -178,6 +188,15 @@ export function BrowserTabStrip({
       onReorder={(fromId, toId) => {
         if (fromId === NEW_TAB_ID || toId === NEW_TAB_ID) return
         usePreviewStore.getState().moveBrowserTab(sessionId, fromId, toId)
+      }}
+      onDragStateChange={(dragging, id) => {
+        if (dragging && id !== NEW_TAB_ID && tabs.some((tab) => tab.previewId === id && tab.url))
+          browserTabTransferBus.start({ sessionId, pageId: id! })
+        else browserTabTransferBus.end()
+      }}
+      onItemDragEnd={(id, event, cancelled) => {
+        if (id !== NEW_TAB_ID && tabs.some((tab) => tab.previewId === id && tab.url))
+          void browserTabTransferBus.finishOutside({ sessionId, pageId: id }, event, cancelled)
       }}
       variant="compact"
       aria-label="Browser tabs"

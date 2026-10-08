@@ -37,11 +37,58 @@ pub(crate) struct SavedGroup {
     pub(crate) frame: Option<[f64; 4]>,
     #[serde(default)]
     pub(crate) fullscreen: bool,
+    #[serde(default)]
+    pub(crate) hidden: bool,
 }
 #[derive(Default, Serialize, Deserialize)]
 pub(crate) struct SavedSession {
     pub(crate) groups: Vec<SavedGroup>,
     pub(crate) active: Option<String>,
+}
+
+/// Legacy sessions never recorded which windows were closed. Retain their content, but
+/// foreground only the last active group; explicit visibility in newer sessions is authoritative.
+pub(crate) fn decode_session(bytes: &[u8]) -> Option<SavedSession> {
+    let value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
+    let legacy: Vec<_> = value
+        .get("groups")?
+        .as_array()?
+        .iter()
+        .map(|group| {
+            group
+                .as_object()
+                .is_some_and(|group| !group.contains_key("hidden"))
+        })
+        .collect();
+    let mut session: SavedSession = serde_json::from_value(value).ok()?;
+    if legacy.iter().any(|legacy| *legacy) {
+        let original_active = session.active.take();
+        // Validate identities, routes, selections and geometry before applying the fallback.
+        session = session.validated()?;
+        let active_group = original_active
+            .as_deref()
+            .and_then(|active| {
+                session
+                    .groups
+                    .iter()
+                    .position(|group| group.tabs.iter().any(|tab| tab.label == active))
+            })
+            .or_else(|| (!session.groups.is_empty()).then_some(0));
+        session.active = active_group.map(|index| {
+            let group = &session.groups[index];
+            original_active
+                .as_ref()
+                .filter(|active| group.tabs.iter().any(|tab| &tab.label == *active))
+                .cloned()
+                .unwrap_or_else(|| group.tabs[group.selected].label.clone())
+        });
+        for (index, (group, legacy)) in session.groups.iter_mut().zip(legacy).enumerate() {
+            if legacy {
+                group.hidden = Some(index) != active_group;
+            }
+        }
+    }
+    session.validated()
 }
 
 impl SavedSession {
@@ -88,6 +135,7 @@ impl SavedSession {
                 selected,
                 frame: original.frame,
                 fullscreen: original.fullscreen,
+                hidden: true,
             });
         }
     }
@@ -137,142 +185,5 @@ impl SavedSession {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    fn group(labels: &[&str], selected: usize) -> SavedGroup {
-        SavedGroup {
-            tabs: labels
-                .iter()
-                .map(|label| SavedWorkspace {
-                    label: (*label).into(),
-                    route: None,
-                })
-                .collect(),
-            selected,
-            frame: Some([0.0, 0.0, 1280.0, 832.0]),
-            fullscreen: false,
-        }
-    }
-
-    #[test]
-    fn hidden_group_replaces_detached_appkit_stubs_without_losing_order_selection_or_live_routes() {
-        let labels = [
-            "main",
-            "workspace-0123456789abcdef",
-            "workspace-fedcba9876543210",
-        ];
-        let hidden = group(&labels, 1);
-        let mut session = SavedSession {
-            groups: labels.iter().map(|label| group(&[*label], 0)).collect(),
-            active: Some("main".into()),
-        };
-        let routes = labels
-            .iter()
-            .map(|label| ((*label).into(), Some("/project/current".into())))
-            .collect();
-        session.merge_hidden_groups(&[hidden], &routes);
-        assert_eq!(session.groups.len(), 1);
-        assert_eq!(session.groups[0].selected, 1);
-        assert_eq!(session.active.as_deref(), Some(labels[1]));
-        assert_eq!(
-            session.groups[0]
-                .tabs
-                .iter()
-                .map(|tab| tab.label.as_str())
-                .collect::<Vec<_>>(),
-            labels
-        );
-        assert!(session.groups[0]
-            .tabs
-            .iter()
-            .all(|tab| tab.route.as_deref() == Some("/project/current")));
-        assert!(session.validated().is_some());
-    }
-
-    #[test]
-    fn closed_hidden_members_are_not_revived_and_an_empty_group_is_dropped() {
-        let hidden = group(&["main", "workspace-0123456789abcdef"], 1);
-        let mut session = SavedSession::default();
-        session.merge_hidden_groups(
-            &[hidden.clone()],
-            &std::collections::BTreeMap::from([("main".into(), None)]),
-        );
-        assert_eq!(session.groups.len(), 1);
-        assert_eq!(session.groups[0].tabs.len(), 1);
-        assert_eq!(session.groups[0].selected, 0);
-        assert!(session.validated().is_some());
-        let mut empty = SavedSession::default();
-        empty.merge_hidden_groups(&[hidden], &std::collections::BTreeMap::new());
-        assert!(empty.groups.is_empty());
-    }
-
-    #[test]
-    fn only_local_routes_and_generated_workspace_labels_can_be_restored() {
-        assert!(valid_label("main"));
-        assert!(valid_label("workspace-0123456789abcdef"));
-        for label in [
-            "browser-12345678",
-            "workspace-*",
-            "workspace-ABCDEF0123456789",
-            "../main",
-        ] {
-            assert!(!valid_label(label));
-        }
-        assert!(valid_route("/project/p1/s1/files"));
-        for route in [
-            "https://example.com",
-            "//example.com",
-            "/project/p1?prompt=secret",
-            "/project/p1\n",
-            "/project/p1\\x",
-        ] {
-            assert!(!valid_route(route));
-        }
-    }
-    #[test]
-    fn corrupt_duplicate_or_oversized_groups_are_rejected() {
-        let tab = SavedWorkspace {
-            label: "main".into(),
-            route: Some("/project/p1".into()),
-        };
-        let make = |tabs, selected| SavedSession {
-            groups: vec![SavedGroup {
-                tabs,
-                selected,
-                frame: None,
-                fullscreen: false,
-            }],
-            active: Some("main".into()),
-        };
-        assert!(make(vec![tab.clone()], 0).validated().is_some());
-        assert!(make(vec![tab.clone(), tab.clone()], 0)
-            .validated()
-            .is_none());
-        assert!(make(vec![tab.clone()], 1).validated().is_none());
-        assert!(make(vec![tab; 65], 0).validated().is_none());
-        assert!(make(vec![], 0).validated().is_none());
-    }
-    #[test]
-    fn invalid_native_frames_are_rejected() {
-        for frame in [
-            [0.0, 0.0, f64::INFINITY, 600.0],
-            [f64::NAN, 0.0, 900.0, 600.0],
-            [0.0, 0.0, 899.0, 600.0],
-            [0.0, 0.0, 900.0, 599.0],
-        ] {
-            let session = SavedSession {
-                groups: vec![SavedGroup {
-                    tabs: vec![SavedWorkspace {
-                        label: "main".into(),
-                        route: None,
-                    }],
-                    selected: 0,
-                    frame: Some(frame),
-                    fullscreen: false,
-                }],
-                active: None,
-            };
-            assert!(session.validated().is_none());
-        }
-    }
-}
+#[path = "workspace_session_model_tests.rs"]
+mod tests;

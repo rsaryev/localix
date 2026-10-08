@@ -1,13 +1,13 @@
 # Use the workspace
 
-The Localix workspace is a split tab grid for chat, files, terminals, diffs, source control,
-previews, and workbench views. Use it to keep a session beside the files and runtime surfaces for
-the same task.
+The Localix workspace keeps files, Browser pages, terminals, diffs, and workbench views in a main
+column on the left, with chat and companion views on the right. Each column has its own tab strip.
+Resize the divider to give the work you are using more space.
 
 **Availability:** The grid is a desktop/web surface. Headless clients use the same backend without
 this layout.
 
-![Source code and passing fixture tests beside the team conversation](../assets/screenshots/workspace/editor-grid--2026-10-08.png)
+![Source and terminal tabs beside the team conversation](../assets/screenshots/workspace/editor-grid--2026-10-09.png)
 
 ## Native workspace tabs on macOS
 
@@ -20,6 +20,38 @@ Each native tab has its own selected project, conversation, editor grid and edit
 the project switcher inside a tab to choose its project. All tabs share one API runtime and
 server-owned projects, conversations, settings and terminals. Opening the same conversation in
 several workspaces does not duplicate its agent runtime.
+
+Native workspace tabs contain an entire workspace. Editor and terminal tabs sit inside it. Drag a
+supported editor tab beyond the left or right edge of its window to move it to a new workspace
+window. Drag above the window to move it to a new native workspace tab. Named destinations inside
+the workspace provide the same actions, and the editor tab's context menu offers **Move to New
+Window** and **Move to New Workspace Tab**.
+
+The Browser's inner page tabs support the same drag destinations. Moving one page leaves the other
+pages in the original Browser. Each native workspace saves its Browser strip independently.
+
+Drag a conversation from the sidebar into the message composer to add its context link. Sidebar rows
+only create links. Workbench tabs and Browser page tabs only reorder or move into another window or
+native workspace tab; dropping those tabs into a composer does not add message context. The window
+destination hints share a compact glass surface with aligned edges and a larger hit area than their
+visible stroke.
+
+Starting a drag immediately shows a provisional workspace that follows the cursor, including inside
+the source window, without taking focus or intercepting mouse events. You can continue reordering
+tabs in the same gesture. Releasing outside promotes that same prepared window; Escape or a drop
+into the source disposes it. Provisional windows are excluded from saved workspace layouts. Dragging
+from a fullscreen or maximized workspace creates a normal window at approximately half the display
+size, subject to the workspace minimum size and available display area.
+
+Before the destination interface is ready, a native preview shows a single snapshot of the visible
+dragged pane, including the native Browser page. An inactive tab or conversation shows its own title
+while loading, rather than another pane's content. The native window replaces the small tab drag
+image and stays attached to the pointer.
+
+![A sidebar conversation links into the message composer](../assets/screenshots/workspace/session-window-drag--2026-10-09.png)
+
+This capture shows a sidebar conversation hovering over the composer, with no workspace window
+destinations.
 
 **Command+W** closes an editor tab inside the workspace. The red window button and
 **Command+Shift+W** (**Window → Close Window**) flush and hide the entire native workspace group.
@@ -36,6 +68,9 @@ workspace tabs are available only in the macOS desktop shell; browser, Windows a
 keep their editor grid. In macOS desktop, workspace-symbol search uses **Command+Option+Shift+O**
 when its binding would otherwise use Command+T. File-search presets that use Command+T fall back to
 Command+P; other overrides using Command+T are unassigned because AppKit reserves that key.
+
+Saved window visibility is restored on launch. Older layouts without visibility information reopen
+only the last active window group; the remaining groups stay hidden and available to reopen.
 
 ## What you can do
 
@@ -58,12 +93,12 @@ lists scroll within a bounded panel, with Manage plugins fixed below the catalog
 
 | Outcome                        | Mechanism                                                                                                | Boundary                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Arrange work side by side      | Drag a tab to another group or an edge to move or split it                                               | Mobile shows only the focused group at one time             |
+| Arrange work side by side      | Resize the main and companion columns; reorder tabs within their strips                                  | Mobile shows only the focused group at one time             |
 | Keep session tabs together     | Every tab belongs to the conversation it was opened in and shows only with that conversation             | Settings, Usage and agent profiles are app-wide             |
 | Step into a sub-session        | Its chat opens as a tab beside its parent's; the files, terminals and Browser around it stay             | A sub-session has no workspace of its own; start a new chat |
 | Restore a working layout       | The grid saves its split tree, active group, and restorable tabs locally                                 | Ephemeral and non-restorable tabs are omitted               |
 | Reuse an open surface          | Browser, Problems, Activity and Search open once per chat; opening again reveals that chat's tab         | Another chat gets its own copy                              |
-| Attach explicit context        | Type a supported reference or drag a linkable tab, result, message, or selection to composer             | Each source publishes a bounded structured binding          |
+| Attach explicit context        | Type a supported reference or drag a conversation, result, message, or selection to composer             | Each source publishes a bounded structured binding          |
 | Link eligible open-tab context | Mounted workbench tabs can publish visible, dismissible context candidates                               | Only registered bindings from visible Localix surfaces join |
 | Review the send set            | The composer lists automatic and explicit context with status and estimated size                         | Server expansion at send time remains authoritative         |
 | Use terminal output directly   | Recognized file links open the editor; URLs, command marks, quick fixes, and workflows remain actionable | Parsing and shell integration are capability-dependent      |
@@ -81,13 +116,15 @@ command palette remains available through its shortcut.
 
 ### Groups and placement
 
-The grid stores a tree of groups. Each leaf holds an ordered tab strip and one visible tab. Core
-placement puts files, diffs, terminals, previews, settings, and full workbench views in the editor
-area. Chat, source control, review, tasks, and problems use the auxiliary area.
+The main column holds files, diffs, terminals, Browser, settings, and full workbench views as tabs.
+Chat, source control, review, tasks, and problems share the companion column. A column fills the
+workspace when the other has no tabs for the current conversation.
 
-Dragging a tab onto an edge creates a sibling group. Dragging it onto another tab strip moves it
-into that group. Separators resize adjacent groups; double-clicking a separator gives its two sides
-equal space. Maximizing a group hides the other groups without replacing the stored split tree.
+Drag a tab within its strip to reorder it. The divider resizes the two columns; double-click it to
+give both equal space. Tabs do not create extra stacked panels when dragged to an edge. Older
+layouts with additional splits are arranged into the two columns when restored, keeping their tabs.
+**Arrange panels** restores the default column proportions while keeping open tabs and conversation
+context. Maximizing a panel temporarily hides the other column; restoring it brings the layout back.
 
 Every group has a small panel button at the right end of its tab strip, level with the tabs. It
 maximizes the group — the whole panel, whatever tab it shows — and restores the layout, the same as
@@ -122,23 +159,28 @@ The grid writes restorable items and layout state to browser storage. Chat, file
 terminals, source control, settings, and several global views opt into restoration. A terminal tab
 reattaches to its backend PTY by id; it never creates a replacement silently.
 
-When a command finishes, its terminal tab stays open with its output and exit code, including
-successful commands and failed shells. The input is disabled, while scrolling, finding and copying
-output remain available. **Restart** starts the same program again, or a fresh shell for an
-interactive terminal, using the original launch directory; **Close** dismisses the tab. A failed
-restart leaves the original output available. A normal shell exit (`exit` or Ctrl+D with code 0)
-closes its tab automatically.
+When a command finishes, its terminal retains its output for one minute, including successful
+commands and failed shells. The input is disabled, while scrolling, finding and copying remain
+available. The terminal closes after that minute and leaves the reopen history, including when its
+conversation is hidden. A normal shell exit (`exit` or Ctrl+D with code 0) closes its tab
+immediately.
+
+Right-click the exited terminal's tab and choose **Restart terminal** to start the same program
+again, or a fresh shell for an interactive terminal, using the original launch directory. Restart
+keeps the old output available until the replacement starts. A failed restart preserves the output
+for another minute. Use the tab's close action to dismiss it earlier; exit status does not add a
+footer over the terminal.
 
 A detected dev server remembers both its start command and launch directory. **Wake preview** reruns
 that command from its original directory, including a subdirectory of the project. Older preview
 entries without a saved directory fall back to the session workspace.
 
 A workspace-wide check marks missing processes as unavailable, including hidden conversations and
-restored layouts, without deleting their tabs. Connection failures trigger reconnection attempts and
-do not prove that the process has exited. Finished tabs can be reopened from the tab history. Final
-output is kept in a bounded in-memory cache while the app is open, with a short-lived server archive
-for reattachment. It is not saved to browser storage and may be unavailable after reload or cache
-eviction.
+restored layouts, starting their one-minute retention period. Connection failures trigger
+reconnection attempts and do not prove that the process has exited. Finished tabs can be reopened
+from the tab history during their retention period. Final output is kept in a bounded in-memory
+cache while the app is open, with a short-lived server archive for reattachment. It is not saved to
+browser storage and may be unavailable after reload or cache eviction.
 
 Recently used session scopes and tabs can remain mounted but hidden for faster switching. The
 keep-alive lists are bounded; an older surface can remount when you return to it.
@@ -177,14 +219,19 @@ the platform browser. A local dev server opens framed, which is what lets
 [Visual Feedback](visual-feedback.md) reach into it. A page that cannot be opened is reported in the
 Event Center rather than over the page.
 
+Native pages follow the visible bounds of their pane and step aside for app overlays and tab drags.
+Switching pages or hiding a Browser keeps its page state; closing the Browser releases its native
+pages while retaining the saved addresses for reopening.
+
 ### Explicit and automatic context
 
 The composer accepts typed references for supported files, folders, diffs, commit history, projects,
 sessions, terminals, tool calls, and plugin-owned resources such as the chat's Kanban cards
 (`@resource:` → **Board**). Structured-only references cover selected snippets, transcript messages,
-dragged tabs, and plugin-owned resources without inserting expanded blocks into the visible prompt.
-File and folder references resolve in the directory the server assigns to the sending session, after
-checking that you own it; browsing `@resource:` with a session you do not own is refused.
+linked conversations, and plugin-owned resources without inserting expanded blocks into the visible
+prompt. File and folder references resolve in the directory the server assigns to the sending
+session, after checking that you own it; browsing `@resource:` with a session you do not own is
+refused.
 
 Eligible mounted tabs can publish live context candidates. Those candidates appear as automatic
 context in the composer; explicit attachments take precedence over a duplicate automatic link. The
@@ -219,23 +266,22 @@ platforms and Control elsewhere, while `secondary` resolves to Control on Apple 
 Meta/Windows/Super elsewhere. Matching remains exact, so the non-primary modifier cannot trigger a
 primary shortcut.
 
-| Command                          | Default                   |
-| -------------------------------- | ------------------------- |
-| Go to file                       | `Cmd/Ctrl+P`              |
-| Switch session                   | `Cmd/Ctrl+K`              |
-| Toggle sidebar                   | `Cmd/Ctrl+B`              |
-| Split focused group to the right | `Cmd/Ctrl+\`              |
-| Maximize or restore a group      | `Cmd/Ctrl+J`              |
-| Open a terminal                  | `Cmd/Ctrl+\``             |
-| Focus next or previous group     | `Cmd/Ctrl+Alt+Down/Up`    |
-| Cycle tabs in the focused group  | `Cmd/Ctrl+Alt+Right/Left` |
-| Move between workspace parts     | `F6` / `Shift+F6`         |
+| Command                         | Default                   |
+| ------------------------------- | ------------------------- |
+| Go to file                      | `Cmd/Ctrl+P`              |
+| Switch session                  | `Cmd/Ctrl+K`              |
+| Toggle sidebar                  | `Cmd/Ctrl+B`              |
+| Maximize or restore a group     | `Cmd/Ctrl+J`              |
+| Open a terminal                 | `Cmd/Ctrl+\``             |
+| Focus next or previous group    | `Cmd/Ctrl+Alt+Down/Up`    |
+| Cycle tabs in the focused group | `Cmd/Ctrl+Alt+Right/Left` |
+| Move between workspace parts    | `F6` / `Shift+F6`         |
 
 ## Limits
 
 - The grid is not a filesystem-isolation boundary. Session tabs are separate UI state, but sessions
   can use the same working directory.
-- On mobile, the stored split layout remains intact, but only the focused group is rendered at full
+- On mobile, the stored column widths remain intact, but only the focused group is rendered at full
   width.
 - Layout persistence is local browser storage. It does not synchronize between clients, and only tab
   kinds marked restorable return after reload.

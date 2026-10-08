@@ -17,6 +17,10 @@ pub(crate) struct Workspace {
     pub(crate) select_on_reveal: bool,
     pub(crate) restore_frame: Option<[f64; 4]>,
     pub(crate) restore_fullscreen: bool,
+    pub(crate) provisional: bool,
+    pub(crate) hidden: bool,
+    pub(crate) transfer_presented: bool,
+    pub(crate) transfer_pending: bool,
 }
 
 impl Default for Workspace {
@@ -32,7 +36,17 @@ impl Default for Workspace {
             select_on_reveal: true,
             restore_frame: None,
             restore_fullscreen: false,
+            provisional: false,
+            hidden: false,
+            transfer_presented: false,
+            transfer_pending: false,
         }
+    }
+}
+
+impl Workspace {
+    pub(crate) fn allows_reveal(&self) -> bool {
+        self.ready && !self.revealed && !self.provisional && !self.hidden && !self.transfer_pending
     }
 }
 
@@ -66,7 +80,12 @@ impl WindowData {
     }
 
     pub(crate) fn reserve_close(&mut self, label: &str) -> Option<bool> {
-        let last = self.entries.values().filter(|entry| !entry.closing).count() == 1;
+        let last = self
+            .entries
+            .values()
+            .filter(|entry| !entry.closing && !entry.provisional)
+            .count()
+            == 1;
         let entry = self.entries.get_mut(label)?;
         if entry.closing || entry.hiding {
             return None;
@@ -121,7 +140,18 @@ pub(crate) fn views<R: tauri::Runtime>(app: &AppHandle<R>) -> Vec<Webview<R>> {
 }
 
 pub(crate) fn active_view<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<Webview<R>> {
-    let views = views(app);
+    let views: Vec<_> = views(app)
+        .into_iter()
+        .filter(|view| {
+            app.state::<WorkspaceWindows>()
+                .0
+                .lock()
+                .unwrap()
+                .entries
+                .get(view.label())
+                .is_some_and(|entry| !entry.provisional)
+        })
+        .collect();
     if let Some(view) = views
         .iter()
         .find(|view| view.window().is_focused().unwrap_or(false))
@@ -181,6 +211,45 @@ pub(crate) fn open(
     route: Option<String>,
     saved_label: Option<String>,
 ) -> Result<String, String> {
+    open_with_mode(app, host, route, saved_label, false, false)
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn new_label() -> Result<String, String> {
+    let mut bytes = [0u8; 8];
+    getrandom::fill(&mut bytes).map_err(|error| error.to_string())?;
+    Ok(format!("workspace-{:016x}", u64::from_le_bytes(bytes)))
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn open_provisional(
+    app: &AppHandle,
+    label: String,
+    route: String,
+) -> Result<String, String> {
+    open_with_mode(app, None, Some(route), Some(label), true, false)
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn open_restored(
+    app: &AppHandle,
+    host: Option<String>,
+    route: Option<String>,
+    label: String,
+    hidden: bool,
+) -> Result<String, String> {
+    open_with_mode(app, host, route, Some(label), false, hidden)
+}
+
+#[cfg(target_os = "macos")]
+fn open_with_mode(
+    app: &AppHandle,
+    host: Option<String>,
+    route: Option<String>,
+    saved_label: Option<String>,
+    provisional: bool,
+    hidden: bool,
+) -> Result<String, String> {
     if app
         .state::<WorkspaceWindows>()
         .0
@@ -194,11 +263,7 @@ pub(crate) fn open(
     }
     let label = match saved_label {
         Some(label) => label,
-        None => {
-            let mut bytes = [0u8; 8];
-            getrandom::fill(&mut bytes).map_err(|error| error.to_string())?;
-            format!("workspace-{:016x}", u64::from_le_bytes(bytes))
-        }
+        None => new_label()?,
     };
     let script = app
         .state::<WorkspaceWindows>()
@@ -207,8 +272,37 @@ pub(crate) fn open(
         .unwrap()
         .init_script
         .clone();
-    let window = crate::workspace_builder::build(app, &label, route.as_deref(), &script)
-        .map_err(|error| error.to_string())?;
+    if provisional || hidden {
+        app.state::<WorkspaceWindows>()
+            .0
+            .lock()
+            .unwrap()
+            .entries
+            .insert(
+                label.clone(),
+                Workspace {
+                    route: route.clone(),
+                    provisional,
+                    hidden,
+                    transfer_pending: provisional,
+                    ..Workspace::default()
+                },
+            );
+    }
+    let window = match crate::workspace_builder::build(app, &label, route.as_deref(), &script) {
+        Ok(window) => window,
+        Err(error) => {
+            if provisional || hidden {
+                app.state::<WorkspaceWindows>()
+                    .0
+                    .lock()
+                    .unwrap()
+                    .entries
+                    .remove(&label);
+            }
+            return Err(error.to_string());
+        }
+    };
     // Register before the first-paint IPC can run; a builder caller is on the main thread.
     register(&window);
     if let Some(entry) = app

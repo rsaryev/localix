@@ -275,6 +275,6 @@ bindPluginUiRuntime({
     writeText: (text) => platformCapabilities().clipboard.writeText(text),
   },
   external: {
-    open: (url) => platformCapabilities().external.open(url),
+    open: (url, systemBrowser) => platformCapabilities().external.open(url, systemBrowser),
   },
 })

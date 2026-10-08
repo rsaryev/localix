@@ -67,7 +67,7 @@ export async function prepare() {
   })
   console.log(`Capture root: ${captureRoot}`)
   console.log(
-    `LOCALIX_DB_FILE=${databaseFile} PORT=5151 LOCALIX_DEV_UI_PORT=5150 bun run dev:workspace`,
+    `LOCALIX_DB_FILE=${databaseFile} LOCALIX_DEV_API_PORT=5151 LOCALIX_DEV_UI_PORT=5150 VITE_DEV_HOST=127.0.0.1 bun scripts/dev-servers.mjs`,
   )
   return projectRoot
 }

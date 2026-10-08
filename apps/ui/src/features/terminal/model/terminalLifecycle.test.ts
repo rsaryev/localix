@@ -43,9 +43,15 @@ test('a background terminal stays open when the chat reports its error before th
     type: 'terminal.finished',
     sessionId: 's1',
     terminalId: 'failed',
-    ...failure,
+    exitCode: failure.exitCode,
+    command: failure.command,
   })
-  expect(item()?.payload?.terminalExit).toEqual(failure)
+  expect(item()?.payload?.terminalExit).toMatchObject({
+    exitCode: failure.exitCode,
+    command: failure.command,
+  })
+  const exit = item()?.payload?.terminalExit as { interactive?: boolean } | undefined
+  expect(exit?.interactive).not.toBe(true)
   expect(useGridStore.getState().closed).toEqual([])
   expect(useLiveTerminalsStore.getState().ids.has('failed')).toBe(false)
 })

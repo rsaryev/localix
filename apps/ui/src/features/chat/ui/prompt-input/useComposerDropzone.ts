@@ -82,14 +82,22 @@ export function useComposerDropzone({
   useEffect(() => {
     if (dragKind === null) return
     const onWindowDragLeave = (e: DragEvent) => {
-      if (e.relatedTarget === null) clearDrag()
+      if (
+        e.relatedTarget === null &&
+        (e.target === document ||
+          e.target === document.documentElement ||
+          e.target === document.body)
+      )
+        clearDrag()
     }
     window.addEventListener('dragend', clearDrag, true)
     window.addEventListener('drop', clearDrag, true)
+    window.addEventListener('blur', clearDrag)
     window.addEventListener('dragleave', onWindowDragLeave, true)
     return () => {
       window.removeEventListener('dragend', clearDrag, true)
       window.removeEventListener('drop', clearDrag, true)
+      window.removeEventListener('blur', clearDrag)
       window.removeEventListener('dragleave', onWindowDragLeave, true)
     }
   }, [dragKind, clearDrag])

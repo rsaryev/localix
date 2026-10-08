@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { setCompactDragImage } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { computeDropIndex, type PinnedRailArea, type RailArea } from './railLayout'
 import {
@@ -44,6 +44,15 @@ export interface UseRailDnd {
 export function useRailDnd({ areaIds, onMoveEntry }: UseRailDndParams): UseRailDnd {
   const [drag, setDrag] = useState<RailDrag>(IDLE_DRAG)
   const clearDrag = useCallback(() => setDrag(IDLE_DRAG), [])
+
+  useEffect(() => {
+    window.addEventListener('dragend', clearDrag, true)
+    window.addEventListener('blur', clearDrag)
+    return () => {
+      window.removeEventListener('dragend', clearDrag, true)
+      window.removeEventListener('blur', clearDrag)
+    }
+  }, [clearDrag])
 
   const onDragStart = useCallback((e: React.DragEvent, id: string, label: string) => {
     // One canonical rail payload/preview for BOTH sources (pinned button and
