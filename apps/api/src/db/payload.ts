@@ -163,7 +163,7 @@ export interface StoredMessagePayload extends AgentChatMessage {
   /** Multi-line slash-command result rendered as system chrome, never as agent prose. */
   commandOutput?: StoredCommandOutput
   /**
-   * Marks a `/clear` boundary: the model's view of the conversation starts after the most
+   * Marks a `/clear` or topic boundary: the model's view of the conversation starts after the most
    * recent one. The rows before it stay in the transcript for the person.
    */
   contextBoundary?: boolean

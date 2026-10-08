@@ -170,7 +170,10 @@ author.
 
 The tool call and result remain in the author's private lane. Other participants receive the shared
 fields through the session, without access to that lane's reasoning or raw tool output. A topic
-change does not delete the transcript or reset a participant's checkpoint.
+change keeps the transcript for you, but starts a new context for every participant. Messages and
+tool activity through the changing agent's turn, earlier checkpoints, and earlier runtime context
+messages are excluded from subsequent runs. Only the saved summary carries earlier topics into the
+system prompt, alongside the new goal. Messages sent after the boundary form the new history.
 
 ## Changing participants
 

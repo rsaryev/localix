@@ -25,6 +25,8 @@ export interface RunTurn {
   userId: string
   session: SessionRecord
   historyMessages: PersistedMessage[]
+  /** Latest boundary removed from history at admission; carried through retries and continuations. */
+  contextBoundaryId?: string
   assistantMessageId: string
 }
 

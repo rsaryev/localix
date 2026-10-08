@@ -1,7 +1,7 @@
 /**
  * The stages that run over PERSISTED rows, before anything is turned into a model payload.
  *
- *   1. `clear-cut`    — honour `/clear`, the one boundary that cuts by position. LOAD-BEARING: if
+ *   1. `clear-cut`    — honour `/clear` and topic boundaries, which cut by position. LOAD-BEARING: if
  *                       this rule fails to apply, the model is re-sent a conversation the user
  *                       cleared, so a throw here must stop the turn, never pass through.
  *   2. `turn-context` — put every past turn's runtime context back where it was sent, and append

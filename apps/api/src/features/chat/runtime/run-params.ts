@@ -96,6 +96,9 @@ export function reenterParams(
     userId: turn.userId ?? params.userId,
     session: turn.session ?? params.session,
     historyMessages: turn.historyMessages ?? params.historyMessages,
+    ...((turn.contextBoundaryId ?? params.contextBoundaryId)
+      ? { contextBoundaryId: turn.contextBoundaryId ?? params.contextBoundaryId }
+      : {}),
     assistantMessageId: turn.assistantMessageId ?? params.assistantMessageId,
     scope: params.scope,
     chain: { ...params.chain, ...chain, continuation: true },

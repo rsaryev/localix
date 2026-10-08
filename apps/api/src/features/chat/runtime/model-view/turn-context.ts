@@ -9,7 +9,7 @@
  * and replayed in place; and because a persisted context accumulates, a turn carries only what
  * CHANGED — the `state` sections whose text differs from the agent's previous context — plus the
  * `turn` sections that belong to it alone. The first turn of every view (a fresh conversation,
- * after `/clear`, at each checkpoint) renders everything.
+ * after `/clear` or a topic change, at each checkpoint) renders everything.
  *
  * The rendered `content` is stored, not re-rendered: a renderer change must not rewrite a turn
  * that was already sent. `changes` is kept beside it only so the next turn can diff.

@@ -19,12 +19,20 @@ import { ensureSessionStores } from '../session-stores'
 import { trackChildRun } from '../subagent-work'
 import type { RunEnv, RunParams } from '../types'
 import type { RunFrame } from './frame'
+import { historyAfterBoundary } from '../../model-view/view'
 
 export async function admitRun(
   env: RunEnv,
-  params: RunParams,
+  incoming: RunParams,
   assertAdmitted: () => void,
 ): Promise<RunFrame> {
+  // Cut before prompt inputs, hooks and system bindings read the transcript, not only on the wire.
+  const history = historyAfterBoundary(incoming.historyMessages)
+  const params = {
+    ...incoming,
+    historyMessages: history.rows,
+    ...(history.clearId ? { contextBoundaryId: history.clearId } : {}),
+  }
   const { deps, repo, state: runtimeState } = env
   const { activeRuns, activeRunSessions } = runtimeState
   const { userId, session, assistantMessageId } = params

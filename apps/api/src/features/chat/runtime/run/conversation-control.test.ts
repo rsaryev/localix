@@ -39,13 +39,14 @@ const params = dispatchParams(
   },
 )
 
-function harness(runParams = params) {
+function harness(runParams = params, currentMessageId?: () => string) {
   let session = runParams.session
   const queued: string[] = []
   const scopes: Array<{ speakerAgentId: string; handoffDepth?: number }> = []
   const triggers: Array<readonly string[]> = []
   const published: unknown[] = []
   const notices: unknown[] = []
+  const boundaries: unknown[] = []
   const control = createConversationControlPort(
     {
       repo: {
@@ -55,6 +56,8 @@ function harness(runParams = params) {
           _id: string,
           expected: typeof session,
           topic: SessionTopic,
+          _updatedAt: string,
+          boundary: { messageId: string; agentId: string },
         ) => {
           if (
             expected.goal !== session.goal ||
@@ -62,6 +65,7 @@ function harness(runParams = params) {
           )
             return false
           session = { ...session, ...topic }
+          boundaries.push(boundary)
           return true
         },
         updateMembership: async (
@@ -113,6 +117,7 @@ function harness(runParams = params) {
       },
     } as never,
     runParams,
+    currentMessageId,
   )
   return {
     control,
@@ -121,6 +126,7 @@ function harness(runParams = params) {
     triggers,
     published,
     notices,
+    boundaries,
     session: () => session,
     setSession: (next: typeof session) => {
       session = next
@@ -150,6 +156,11 @@ describe('conversation control port', () => {
           session: expect.objectContaining(topic),
         },
       ],
+      [
+        base.userId,
+        base.id,
+        { type: 'session_model_view.updated', sessionId: base.id, modelView: null },
+      ],
     ])
   })
 
@@ -162,6 +173,13 @@ describe('conversation control port', () => {
     expect(h.session()).toMatchObject({ ...topic, rosterLocked: true })
     expect(h.queued).toEqual([])
     expect(h.control.completed()).toBe(true)
+  })
+
+  test('after a steer split the current assistant row starts the topic and anchors the next run', async () => {
+    const h = harness(params, () => 'steered-reply')
+    await h.control.finish('topic', { topic, next: ['beta'] })
+    expect(h.boundaries).toEqual([{ messageId: 'steered-reply', agentId: 'agent-a' }])
+    expect(h.triggers).toEqual([['steered-reply']])
   })
 
   test('a topic change can continue in a fresh solo run; ordinary calls cannot self-schedule', async () => {

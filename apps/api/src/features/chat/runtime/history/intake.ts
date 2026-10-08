@@ -29,6 +29,7 @@ import { reminderSections } from '../reminders'
 import { wrapSystemReminder } from '../system-reminder'
 import type { ChatTurnFrame } from './frame'
 import { currentSystemContextBindings } from '../../system-notice-bindings'
+import { historyAfterBoundary } from '../model-view/view'
 
 export interface IntakeArgs {
   deps: RunnerDeps
@@ -73,9 +74,8 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
 
   // System notices reach the model only through their deduplicated context bindings below.
   // Also exclude legacy model-visible notice rows so upgrading does not duplicate their prose.
-  const modelHistory = args.historyMessages.filter(
-    (m) => !m.payload.uiOnly && !m.payload.systemNotice,
-  )
+  const topicHistory = historyAfterBoundary(args.historyMessages).rows
+  const modelHistory = topicHistory.filter((m) => !m.payload.uiOnly && !m.payload.systemNotice)
   const promptMessage = modelHistory[modelHistory.length - 1]
   const isRealUserPrompt =
     promptMessage?.payload.role === 'user' &&
@@ -130,7 +130,7 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
     frame: {
       messages,
       runtimeSections,
-      systemBindings: currentSystemContextBindings(args.historyMessages),
+      systemBindings: currentSystemContextBindings(topicHistory),
       activeInvocationId: promptMessage?.id,
       assistantMessageId: args.assistantMessageId,
       assistantCreatedAt: args.assistantCreatedAt,

@@ -35,22 +35,31 @@ export interface ModelView {
   checkpointNear?: true
   /**
    * Identity of the view the model is shown: the checkpoint in force (this run's own, when one
-   * is due), else the last `/clear`, else the conversation start. The prompt snapshot and the
+   * is due), else the latest `/clear` or topic boundary, else the conversation start. The prompt snapshot and the
    * provider-measured size anchor are both valid only within one epoch.
    */
   epochId: string
 }
 
-/** The model-facing rows after the last `/clear` — the only boundary that cuts by position. */
-export function rowsAfterClear(messages: readonly PersistedMessage[]): {
+/** Raw rows in the current topic; notices are retained for their context bindings. */
+export function historyAfterBoundary(messages: readonly PersistedMessage[]): {
   rows: PersistedMessage[]
   clearId?: string
 } {
   let cut = -1
   for (let i = 0; i < messages.length; i++) if (messages[i]!.payload.contextBoundary) cut = i
   return {
-    rows: messages.slice(cut + 1).filter((m) => !m.payload.uiOnly && !m.payload.systemNotice),
+    rows: messages.slice(cut + 1),
     ...(cut >= 0 ? { clearId: messages[cut]!.id } : {}),
+  }
+}
+
+/** Model-facing rows after the latest `/clear` or topic change. */
+export function rowsAfterClear(messages: readonly PersistedMessage[]) {
+  const scoped = historyAfterBoundary(messages)
+  return {
+    ...scoped,
+    rows: scoped.rows.filter((m) => !m.payload.uiOnly && !m.payload.systemNotice),
   }
 }
 
@@ -115,6 +124,8 @@ export async function loadModelView(
     historyMessages: readonly PersistedMessage[]
     /** The assistant row this run writes — the host of any checkpoint it takes. */
     currentMessageId: string
+    /** Admission already removed the boundary and the rows preceding it. */
+    contextBoundaryId?: string
     contextWindow?: number
     /** The session's delegation depth — the window it budgets against (`contextWindowCapAt`). */
     depth?: number
@@ -161,6 +172,6 @@ export async function loadModelView(
     ...(previous ? { previous } : {}),
     ...(due ? { due } : {}),
     ...(!due && pressure === 'near' ? { checkpointNear: true } : {}),
-    epochId: due ? input.currentMessageId : (hostId ?? clearId ?? ''),
+    epochId: due ? input.currentMessageId : (hostId ?? clearId ?? input.contextBoundaryId ?? ''),
   }
 }

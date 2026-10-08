@@ -51,6 +51,7 @@ test('a run suspended on ancestry cannot register after overlapping teardown', a
   const params = {
     userId: 'u',
     session: sessionFixture({ id: 'child', userId: 'u', parentSessionId: 'parent' }),
+    historyMessages: [],
     scope: { speakerAgentId: 'builtin:localix' },
   } as RunParams
   const pending = executeRun(env, params)

@@ -168,4 +168,48 @@ describe('intake → strategy', () => {
     expect(out.wire.at(-2)?.cacheAnchor).toBe(true)
     expect(out.wire.at(-1)?.cacheAnchor).toBeUndefined()
   })
+
+  test('the latest topic boundary removes earlier prompts and system-event bindings before intake', async () => {
+    const old = message('old-notice', 'OLD_SYSTEM_EVENT', true)
+    old.payload.systemNotice = {
+      kind: 'permission_mode_change',
+      tone: 'neutral',
+      text: 'OLD_SYSTEM_EVENT',
+    }
+    old.payload.bindings = [systemNoticeBinding(old.payload.systemNotice, old.id, old.createdAt)]
+    const boundary = (id: string) => {
+      const entry = message(id, 'OLD_TOPIC_HANDOFF')
+      entry.payload.role = 'assistant'
+      entry.payload.from = 'agent:lead'
+      entry.payload.contextBoundary = true
+      return entry
+    }
+    const current = message('new-notice', 'NEW_SYSTEM_EVENT', true)
+    current.payload.systemNotice = {
+      kind: 'model_change',
+      tone: 'neutral',
+      text: 'NEW_SYSTEM_EVENT',
+    }
+    current.payload.bindings = [
+      systemNoticeBinding(current.payload.systemNotice, current.id, current.createdAt),
+    ]
+    const taken = await intake(
+      [
+        message('old-user', 'OLD_USER'),
+        old,
+        boundary('topic-1'),
+        message('intermediate-user', 'INTERMEDIATE_TOPIC'),
+        boundary('topic-2'),
+        current,
+        message('current-user', 'NEW_USER'),
+      ],
+      () => {},
+    )
+    if (!taken.ok) throw new Error('unexpected block')
+    expect(taken.frame.messages.map((m) => m.id)).toEqual(['current-user'])
+    expect(taken.frame.promptMessage?.payload.content).toBe('NEW_USER')
+    expect(taken.frame.systemBindings).toHaveLength(1)
+    expect(JSON.stringify(taken.frame.systemBindings)).toContain('NEW_SYSTEM_EVENT')
+    expect(JSON.stringify(taken.frame.systemBindings)).not.toContain('OLD_SYSTEM_EVENT')
+  })
 })

@@ -26,6 +26,7 @@ export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promi
     viewer: sessionAgent(session, speakerAgentId),
     historyMessages: params.historyMessages,
     currentMessageId: frame.assistantMessageId,
+    ...(params.contextBoundaryId ? { contextBoundaryId: params.contextBoundaryId } : {}),
     ...(turn.catalogModel?.contextLength !== undefined
       ? { contextWindow: turn.catalogModel.contextLength }
       : {}),

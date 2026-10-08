@@ -23,12 +23,13 @@ export async function assertTopicAuthor(
   }
 }
 
-/** Only shared session fields change. No colleague tool output or private lane is loaded. */
+/** Save shared fields and cut history together. No colleague tool output or private lane is loaded. */
 export async function changeSessionTopic(
   env: TopicEnv,
   userId: string,
   session: SessionRecord,
   topic: SessionTopic,
+  boundary: { messageId: string; agentId: string },
 ): Promise<SessionRecord> {
   const parsed = sessionTopicSchema.parse(topic)
   if (
@@ -38,6 +39,7 @@ export async function changeSessionTopic(
       session,
       parsed,
       new Date().toISOString(),
+      boundary,
     ))
   ) {
     throw new Error('The session topic changed while this request was being applied; reload it.')
@@ -47,6 +49,11 @@ export async function changeSessionTopic(
   env.deps.streamRegistry.publish(userId, session.id, {
     type: 'session.updated',
     session: toSessionSummary(updated),
+  })
+  env.deps.streamRegistry.publish(userId, session.id, {
+    type: 'session_model_view.updated',
+    sessionId: session.id,
+    modelView: null,
   })
   return updated
 }

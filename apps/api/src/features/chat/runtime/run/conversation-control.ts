@@ -17,11 +17,13 @@ export function createConversationControlPort(
   env: Pick<RunEnv, 'repo' | 'enqueueRun' | 'deps'> &
     Partial<Pick<RunEnv, 'state' | 'cancelAgentTurns'>>,
   params: RunParams,
+  currentMessageId: () => string = () => params.assistantMessageId,
 ): { finish: ConversationControlPort['finish']; completed: () => boolean } {
   let completed = false
 
   const finish: ConversationControlPort['finish'] = async (toolCallId, request) => {
     if (completed) throw new Error('conversation_control may be completed only once per turn')
+    const assistantMessageId = currentMessageId()
     let topicSnapshot: typeof params.session | undefined
     if (request.topic) {
       sessionTopicSchema.parse(request.topic)
@@ -93,7 +95,10 @@ export function createConversationControlPort(
       })
     }
     const updated = request.topic
-      ? await changeSessionTopic(env, params.userId, topicSnapshot!, request.topic)
+      ? await changeSessionTopic(env, params.userId, topicSnapshot!, request.topic, {
+          messageId: assistantMessageId,
+          agentId: params.scope.speakerAgentId,
+        })
       : membership.session
 
     // The chain is bounded: past the limit the floor goes back to the person instead of to
@@ -108,7 +113,7 @@ export function createConversationControlPort(
         userId: params.userId,
         sessionId: params.session.id,
         // Derived from the handing-off turn, so a retried call lands on the same row.
-        messageId: `${params.assistantMessageId}:handoff-limit`,
+        messageId: `${assistantMessageId}:handoff-limit`,
         content: text,
         systemNotice: { kind: 'handoff_limit', tone: 'neutral', text },
       }).catch((error: unknown) => console.warn('[conversation] handoff notice failed', error))
@@ -136,18 +141,18 @@ export function createConversationControlPort(
     // Hashed from the handing-off turn and call, so a retried tool call addresses the same slots.
     const slotId = (recipient: { agentId: string }) =>
       `conversation-control-${createHash('sha256')
-        .update(JSON.stringify([params.assistantMessageId, toolCallId, recipient.agentId]))
+        .update(JSON.stringify([assistantMessageId, toolCallId, recipient.agentId]))
         .digest('hex')}`
     await enqueueTurnTickets(env.enqueueRun, {
       userId: params.userId,
       session: updated,
-      triggerMessageIds: [params.assistantMessageId],
-      firstSlotId: params.assistantMessageId,
+      triggerMessageIds: [assistantMessageId],
+      firstSlotId: assistantMessageId,
       recipients,
       slotId,
       scope: {
-        conversationId: params.scope.conversationId ?? params.assistantMessageId,
-        turnTrigger: { kind: 'colleague-request', messageIds: [params.assistantMessageId] },
+        conversationId: params.scope.conversationId ?? assistantMessageId,
+        turnTrigger: { kind: 'colleague-request', messageIds: [assistantMessageId] },
         handoffDepth,
         executionContext: sessionExecutionContext(updated),
       },

@@ -87,7 +87,12 @@ export async function buildRunPrompt(
     // The mode the run was admitted under — the same record its rules were rewritten from.
     planMode: planModeForRun(session, inputs.defaultCwd),
   })
-  const triggerContext = buildTurnTriggerContext(params.scope, session, historyMessages)
+  const triggerContext = buildTurnTriggerContext(
+    params.scope,
+    session,
+    historyMessages,
+    params.contextBoundaryId,
+  )
   const installedAgents = (await deps.externalAgents?.installed().catch(() => [])) ?? []
   const externalAgentsText = installedAgentsPrompt(installedAgents)
   if (externalAgentsText && toolset.tools.some((tool) => tool.name === TOOL.bash)) {

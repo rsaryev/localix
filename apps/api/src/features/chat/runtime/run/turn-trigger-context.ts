@@ -8,8 +8,16 @@ export function buildTurnTriggerContext(
   scope: RunScope,
   session: Pick<SessionRecord, 'agents'>,
   history: readonly PersistedMessage[],
+  contextBoundaryId?: string,
 ): string | undefined {
   if (scope.turnTrigger?.kind !== 'colleague-request') return undefined
+  if (contextBoundaryId && scope.turnTrigger.messageIds.includes(contextBoundaryId)) {
+    return [
+      '# Current turn',
+      'This turn continues a newly saved session topic. Work toward the goal in the system prompt.',
+      'The previous topic is available only through its saved summary; its triggering message is outside the current history.',
+    ].join('\n')
+  }
 
   const triggerIds = new Set(scope.turnTrigger.messageIds)
   const handles = new Set<string>()

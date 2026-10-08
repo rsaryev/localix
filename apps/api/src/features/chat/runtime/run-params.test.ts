@@ -117,6 +117,12 @@ describe('dispatchParams', () => {
 })
 
 describe('reenterParams', () => {
+  test('a fresh topic epoch survives retries after its boundary row has been cut from history', () => {
+    const params = dispatchParams({ ...turn, contextBoundaryId: 'topic-change' }, fullScope)
+    const retry = reenterParams(params, { assistantMessageId: 'retry' }, { transientRetryCount: 1 })
+    expect(retry.contextBoundaryId).toBe('topic-change')
+    expect(reenterParams(retry, {}).contextBoundaryId).toBe('topic-change')
+  })
   test('carries every scope field — the sub-agent turn cap and skill grants included', () => {
     const next = reenterParams(dispatchParams(turn, fullScope), {})
     // The three fields continuations used to drop.

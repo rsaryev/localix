@@ -26,7 +26,7 @@ import { surfacePlugins, surfaceTools } from '../surface-tools'
 import { assembleRunTools } from '../tool-assembly'
 import { assertRunToolRequirements } from '../tool-requirements'
 import type { RunInputs } from './context'
-import type { RunFrame } from './frame'
+import { currentAssistantMessageId, type RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
 
 export type RunToolset = Awaited<ReturnType<typeof assembleRunToolset>>
@@ -48,7 +48,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const conversationControl =
     session.sessionKind === 'chat' ||
     (session.sessionKind === 'subagent' && isMultiParticipant(session))
-      ? createConversationControlPort(env, params)
+      ? createConversationControlPort(env, params, () => currentAssistantMessageId(frame))
       : undefined
   const runtimeTools = buildRunToolRegistry(
     {

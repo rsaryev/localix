@@ -39,7 +39,7 @@ export function createConversationControlTool(port: ConversationControlPort) {
       'End this turn and choose who answers next. It is terminal: write your public reply or handoff first.',
       ...(port.canChangeTopic
         ? [
-            'Only the leader or sole participant may change topic. topic updates title, goal and previousTopicSummary together when the objective changes. Preserve important decisions, constraints, verified results and unfinished work from the previous topic, including its inherited summary. The session publishes these fields to every participant; private tool histories stay private. To continue the new goal yourself, put your own handle in next: this is allowed only with topic and starts a fresh turn with the updated system prompt. Use next:[] if nobody needs a turn.',
+            "Only the leader or sole participant may change topic. topic saves title, goal and previousTopicSummary together and starts a fresh history: all messages, tool history and checkpoints through this turn leave every participant's context. Only the saved summary carries the previous topic into the system prompt. Preserve important decisions, constraints, verified results and unfinished work, including relevant inherited summary. Private tool histories stay private. To continue the new goal yourself, put your own handle in next: allowed only with topic. Use next:[] if nobody needs a turn.",
           ]
         : []),
       port.membership === 'fixed'
