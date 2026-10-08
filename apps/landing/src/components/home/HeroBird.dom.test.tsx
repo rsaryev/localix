@@ -50,6 +50,11 @@ test('mobile wind pauses for visibility and reduced motion removes wind without 
     await act(async () => root.render(<HeroBird />))
     expect(host.querySelector('.hero-bird-logo')).not.toBeNull()
     expect(wind()).toHaveLength(8)
+    const opacities = [...wind()].map((line) =>
+      Number((line as HTMLElement).style.getPropertyValue('--wind-opacity')),
+    )
+    expect(Math.min(...opacities)).toBeGreaterThan(0.24)
+    expect(Math.max(...opacities)).toBeGreaterThan(0.6)
     expect(bird().dataset.paused).toBe('false')
     notifyIntersection!(false)
     expect(bird().dataset.paused).toBe('true')

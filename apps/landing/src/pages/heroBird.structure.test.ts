@@ -70,10 +70,10 @@ test('wind extends behind hero copy without intercepting actions or clipping at 
   expect(bird).toContain("observer.observe(element.closest('.hero-layout') ?? element)")
 })
 
-test('landing brightens the desktop wind without accelerating and removes reduced motion', () => {
+test('landing boosts mobile wind contrast without changing desktop timing or reduced motion', () => {
   const bird = read('../components/home/HeroBird.tsx')
   const css = read('../styles.css')
-  expect(bird).toContain('windIntensity={desktop ? 1.2 : 0.7}')
+  expect(bird).toContain('windIntensity={desktop ? 1.2 : 1.4}')
   expect(bird).toContain('lineCount={reduced ? 0 : desktop ? 12 : 8}')
   expect(css).toContain('--bird-wind-duration-scale: 2.5')
   expect(css).toContain('--bird-drift-duration: 10s')

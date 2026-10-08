@@ -33,6 +33,9 @@ test('working docs render a header search trigger without permanent search field
     const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Search documentation"]')!
     expect(trigger).not.toBeNull()
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe('Docs')
+    expect(host.querySelector('.site-header [aria-label="Localix home"]')).toBeNull()
+    expect(host.querySelector('.site-header img')).toBeNull()
+    expect(host.querySelector('.site-header [aria-label="Localix on GitHub"]')).not.toBeNull()
     for (const link of host.querySelectorAll('.site-header a')) {
       expect(link.classList.contains('focus-ring')).toBe(true)
     }
@@ -48,6 +51,37 @@ test('working docs render a header search trigger without permanent search field
       document.querySelector<HTMLButtonElement>('[aria-label="Close search"]')!.click(),
     )
     expect(document.querySelector('[role="dialog"][data-state="open"]')).toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})
+
+test('home header keeps Docs and GitHub without the brand link or logo', async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { MemoryRouter } = await import('react-router')
+  const { SiteHeader } = await import('../../components/SiteHeader')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter initialEntries={['/']}>
+          <SiteHeader />
+        </MemoryRouter>,
+      ),
+    )
+    const header = host.querySelector('.site-header')!
+    expect(header.querySelectorAll('a')).toHaveLength(2)
+    expect(header.querySelector('a[href="/docs"]')?.textContent).toBe('Docs')
+    expect(header.querySelector('[aria-label="Localix on GitHub"]')?.getAttribute('href')).toBe(
+      'https://github.com/rsaryev/localix',
+    )
+    expect(header.querySelector('[aria-label="Localix home"]')).toBeNull()
+    expect(header.querySelector('img')).toBeNull()
+    expect(header.textContent).not.toContain('Beta')
   } finally {
     await act(async () => root.unmount())
     host.remove()

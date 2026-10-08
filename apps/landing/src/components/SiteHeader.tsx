@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router'
 import { PAGE_SHELL } from '../lib/shell'
-import { RELEASE_CHANNEL } from './releaseChannel'
 import { GitHubMark } from './GitHubMark'
 import { preloadDocsArticle } from '../pages/docs/loadDocsArticle'
 import { docPages, loadDocContent } from '../generated/docs'
@@ -15,15 +14,7 @@ export function SiteHeader() {
   const docs = useLocation().pathname.startsWith('/docs')
   return (
     <header className="site-header">
-      <div className={`${PAGE_SHELL} flex h-16 items-center justify-between gap-4`}>
-        <Link
-          to="/"
-          className="site-header-link focus-ring flex items-center gap-2.5 text-sm font-medium"
-          aria-label="Localix home"
-        >
-          <img src="/logo.svg" alt="" className="size-5" />
-          Localix <span className="text-xs font-normal text-text-faint">{RELEASE_CHANNEL}</span>
-        </Link>
+      <div className={`${PAGE_SHELL} flex h-16 items-center justify-end gap-4`}>
         <nav aria-label="Site navigation" className="flex items-center gap-2 text-sm md:gap-5">
           {docs && <DocsSearch />}
           <Link

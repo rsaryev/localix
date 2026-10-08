@@ -66,7 +66,7 @@ export function HeroBird() {
         birdClassName="hero-bird-logo"
         windClassName={reduced ? 'hidden' : 'hero-bird-wind opacity-100'}
         windRight={desktop ? '25%' : '15%'}
-        windIntensity={desktop ? 1.2 : 0.7}
+        windIntensity={desktop ? 1.2 : 1.4}
         lineCount={reduced ? 0 : desktop ? 12 : 8}
         spread={260}
         cycles={reduced ? 1 : Infinity}
