@@ -1,8 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { IconButton } from '@localixai/kit/icon-button'
-import type { DocPage } from '@/generated/docs'
+import { BreadcrumbSelect } from '@localixai/kit/breadcrumb-select'
+import { docPages, type DocPage } from '@/generated/docs'
+import { featureCategoryFor, groupByCategory, groupBySection } from './docGroups'
 
 const Separator = () => (
   <li aria-hidden>
@@ -15,6 +17,29 @@ export function DocsBreadcrumb({ active, category }: { active: DocPage; category
   const [edges, setEdges] = useState({ left: false, right: false })
   const navigate = useNavigate()
   const location = useLocation()
+  const sectionPages = docPages.filter((page) => page.section === active.section)
+  const pageItems = (pages: DocPage[]) =>
+    pages.map((page) => ({
+      id: page.slug,
+      label: page.title,
+      active: page.slug === active.slug,
+      onSelect: () => void navigate(`/docs/${page.slug}`),
+    }))
+  const sections = groupBySection(docPages).map((section) => ({
+    id: section.pages[0]!.section,
+    label: section.title,
+    active: section.pages[0]!.section === active.section,
+    onSelect: () => void navigate(`/docs/${section.pages[0]!.slug}`),
+  }))
+  const siblings = category
+    ? sectionPages.filter((page) => featureCategoryFor(page) === category)
+    : sectionPages
+  const categories = groupByCategory(sectionPages).map((group) => ({
+    id: group.title,
+    label: group.title,
+    active: group.title === category,
+    onSelect: () => void navigate(`/docs/${group.pages[0]!.slug}`),
+  }))
 
   useLayoutEffect(() => {
     const element = rail.current
@@ -61,27 +86,54 @@ export function DocsBreadcrumb({ active, category }: { active: DocPage; category
       >
         <ol className="flex items-center gap-2">
           <li>
-            <Link to="/" className="focus-ring hover:text-foreground">
-              Home
-            </Link>
+            <BreadcrumbSelect
+              label="Home"
+              ariaLabel="Browse site"
+              items={[
+                { id: 'home', label: 'Home', onSelect: () => void navigate('/') },
+                { id: 'docs', label: 'Docs', active: true, onSelect: () => void navigate('/docs') },
+              ]}
+            />
           </li>
           <Separator />
           <li>
-            <Link to="/docs" className="focus-ring hover:text-foreground">
-              Docs
-            </Link>
+            <BreadcrumbSelect
+              label="Docs"
+              ariaLabel="Browse documentation sections"
+              items={sections}
+            />
           </li>
           <Separator />
-          <li>{active.sectionTitle}</li>
+          <li>
+            <BreadcrumbSelect
+              label={active.sectionTitle}
+              ariaLabel="Browse section"
+              items={category ? categories : pageItems(sectionPages)}
+              searchPlaceholder="Filter pages…"
+            />
+          </li>
           {category && (
             <>
               <Separator />
-              <li>{category}</li>
+              <li>
+                <BreadcrumbSelect
+                  label={category}
+                  ariaLabel="Browse category"
+                  items={pageItems(siblings)}
+                  searchPlaceholder="Filter pages…"
+                />
+              </li>
             </>
           )}
           <Separator />
           <li aria-current="page" className="text-text-soft">
-            {active.title}
+            <BreadcrumbSelect
+              label={active.title}
+              ariaLabel="Browse sibling pages"
+              ariaCurrent="page"
+              items={pageItems(siblings)}
+              searchPlaceholder="Filter pages…"
+            />
           </li>
         </ol>
       </nav>
@@ -93,11 +145,13 @@ export function DocsBreadcrumb({ active, category }: { active: DocPage; category
 export function DocsPagination({
   previous,
   next,
+  editLink,
 }: {
   previous: DocPage | null
   next: DocPage | null
+  editLink?: ReactNode
 }) {
-  if (!previous && !next) return null
+  if (!previous && !next && !editLink) return null
 
   return (
     <nav aria-label="Documentation pagination" className="docs-pagination">
@@ -105,21 +159,22 @@ export function DocsPagination({
         <Link
           to={`/docs/${previous.slug}`}
           aria-label={`Previous article: ${previous.title}`}
+          title={previous.title}
           className="docs-pagination-link focus-ring"
         >
           <span aria-hidden="true" className="text-text-faint">
             ←
           </span>
-          <span>{previous.title}</span>
         </Link>
       ) : null}
+      {editLink}
       {next && (
         <Link
           to={`/docs/${next.slug}`}
           aria-label={`Next article: ${next.title}`}
+          title={next.title}
           className="docs-pagination-link docs-pagination-next focus-ring"
         >
-          <span>{next.title}</span>
           <span aria-hidden="true" className="text-text-faint">
             →
           </span>

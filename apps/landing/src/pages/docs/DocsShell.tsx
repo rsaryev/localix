@@ -48,18 +48,22 @@ export function DocsShell({
         >
           {children}
         </div>
-        <DocsPagination
-          previous={index > 0 ? docPages[index - 1] : null}
-          next={index >= 0 && index < docPages.length - 1 ? docPages[index + 1] : null}
-        />
-        <a
-          href={`https://github.com/rsaryev/localix/blob/main/${active.sourcePath}`}
-          target="_blank"
-          rel="noreferrer"
-          className="docs-edit-link focus-ring text-xs text-text-faint hover:text-foreground"
-        >
-          Edit on GitHub
-        </a>
+        <div className="docs-bottom-bar">
+          <DocsPagination
+            previous={index > 0 ? docPages[index - 1] : null}
+            next={index >= 0 && index < docPages.length - 1 ? docPages[index + 1] : null}
+            editLink={
+              <a
+                href={`https://github.com/rsaryev/localix/blob/main/${active.sourcePath}`}
+                target="_blank"
+                rel="noreferrer"
+                className="docs-edit-link focus-ring text-xs text-text-faint hover:text-foreground"
+              >
+                Edit on GitHub
+              </a>
+            }
+          />
+        </div>
       </article>
       <div className="docs-outline">
         {loading && headings.length === 0 ? (
