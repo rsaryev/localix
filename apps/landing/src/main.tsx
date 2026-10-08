@@ -1,7 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
-import './styles.css'
 import { AppRoutes } from './app/AppRoutes'
 import { readDocBootstrap } from './pages/docs/docBootstrap'
 import { ErrorBoundary } from './components/ErrorBoundary'

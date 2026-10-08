@@ -18,3 +18,75 @@ test('the hero bird loops while visible and pauses only while hidden', () => {
     /\.hero-bird\[data-paused='true'\] \* \{\s*animation-play-state: paused !important;/u,
   )
 })
+
+test('mobile wind phases cover one shared period instead of clustering seeded delays', () => {
+  const css = read('../styles.css')
+  expect(css).toContain('--hero-wind-period: 6s')
+  expect(css).toContain('animation-duration: var(--hero-wind-period) !important')
+  expect(css).toContain(
+    'animation-delay: calc(var(--hero-wind-period) * var(--hero-wind-phase)) !important',
+  )
+  for (let index = 0; index < 8; index++) {
+    expect(css).toContain(
+      `.hero-bird-wind > div:nth-child(${index + 1}) {\n    --hero-wind-phase: ${-index / 8};`,
+    )
+  }
+})
+
+test('the deferred hero reserves its final geometry before the bird mounts', () => {
+  expect(read('./HomePage.tsx')).toContain('hero-bird-slot')
+  expect(read('../styles.css')).toMatch(
+    /\.hero-bird-slot \{\s*grid-area: bird;\s*height: var\(--bird-slot-height\);\s*overflow: visible;/u,
+  )
+  expect(read('../styles.css')).toContain('--hero-bird-height: 24rem')
+  expect(read('../styles.css')).toContain('--hero-bird-height: 30rem')
+  expect(read('../components/home/HeroBird.tsx')).toContain('stageClassName="h-full w-full"')
+  expect(read('../components/home/HeroBird.tsx')).toContain(
+    "const desktopQuery = '(min-width: 64rem)'",
+  )
+  expect(read('../components/home/HeroBird.tsx')).not.toContain('if (!desktop) return null')
+})
+
+test('mobile bird shares the description row without narrowing the heading or action', () => {
+  const css = read('../styles.css')
+  expect(css).toContain("grid-template-areas: 'heading heading' 'description bird' 'action action'")
+  expect(css).toContain('--bird-slot-width: 7rem')
+  expect(css).toContain('--bird-slot-height: 10rem')
+  expect(css).toContain('--bird-size: 5rem')
+  expect(css).toContain('@media (max-width: 350px)')
+  expect(css).toContain('--bird-slot-width: 6rem')
+  expect(css).toContain('--bird-size: 4rem')
+})
+
+test('wind extends behind hero copy without intercepting actions or clipping at the bird', () => {
+  const css = read('../styles.css')
+  const bird = read('../components/home/HeroBird.tsx')
+  expect(css).toContain('isolation: isolate')
+  expect(css).toContain('z-index: var(--z-raised)')
+  expect(css).toMatch(/\.hero-bird-slot \{[^}]*pointer-events: none;/u)
+  expect(bird).not.toContain('[mask-image:linear-gradient')
+  expect(css).not.toContain('hero-wind-sweep')
+  expect(bird).toContain('spread={260}')
+  expect(bird).toContain("observer.observe(element.closest('.hero-layout') ?? element)")
+})
+
+test('landing brightens the desktop wind without accelerating and removes reduced motion', () => {
+  const bird = read('../components/home/HeroBird.tsx')
+  const css = read('../styles.css')
+  expect(bird).toContain('windIntensity={desktop ? 1.2 : 0.7}')
+  expect(bird).toContain('lineCount={reduced ? 0 : desktop ? 12 : 8}')
+  expect(css).toContain('--bird-wind-duration-scale: 2.5')
+  expect(css).toContain('--bird-drift-duration: 10s')
+  expect(css).toMatch(/\.hero-bird \* \{\s*animation: none !important;/u)
+})
+
+test('critical CSS and kit fonts are discovered in the document head, not after React mounts', () => {
+  const html = read('../../index.html')
+  expect(html).toContain('<link rel="stylesheet" href="/src/styles.css" />')
+  expect(html).toContain('inter-latin-wght-normal.woff2')
+  expect(html).toContain('dm-sans-latin-wght-normal.woff2')
+  expect(html.match(/as="font"/gu)).toHaveLength(2)
+  expect(read('../main.tsx')).not.toContain("import './styles.css'")
+  expect(read('../components/ProductShot.tsx')).toContain('width={1600}')
+  expect(read('../components/ProductShot.tsx')).toContain('height={1000}')
+})

@@ -1,5 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { BirdStage } from '@ui/shared/ui/BirdStage'
+
+const desktopQuery = '(min-width: 64rem)'
+
+function subscribeDesktop(listener: () => void) {
+  const media = window.matchMedia(desktopQuery)
+  media.addEventListener('change', listener)
+  return () => media.removeEventListener('change', listener)
+}
+
+function subscribeReducedMotion(listener: () => void) {
+  const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+  media.addEventListener('change', listener)
+  return () => media.removeEventListener('change', listener)
+}
 
 /**
  * The hero's moving bird, mounted after the first paint (see `AfterFirstPaint`).
@@ -12,7 +26,16 @@ import { BirdStage } from '@ui/shared/ui/BirdStage'
  * requested it is the bird alone, no wind.
  */
 export function HeroBird() {
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const desktop = useSyncExternalStore(
+    subscribeDesktop,
+    () => window.matchMedia(desktopQuery).matches,
+    () => false,
+  )
+  const reduced = useSyncExternalStore(
+    subscribeReducedMotion,
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => false,
+  )
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -22,11 +45,12 @@ export function HeroBird() {
     const apply = () => {
       element.dataset.paused = String(!onScreen || document.hidden)
     }
+    apply()
     const observer = new IntersectionObserver(([entry]) => {
       onScreen = entry?.isIntersecting ?? true
       apply()
     })
-    observer.observe(element)
+    observer.observe(element.closest('.hero-layout') ?? element)
     document.addEventListener('visibilitychange', apply)
     return () => {
       observer.disconnect()
@@ -35,18 +59,15 @@ export function HeroBird() {
   }, [reduced])
 
   return (
-    <div
-      ref={ref}
-      className="hero-bird w-full [mask-image:linear-gradient(to_right,transparent,black_42%)]"
-    >
+    <div ref={ref} className="hero-bird w-full h-full">
       <BirdStage
         maskUrl="/logo.svg"
-        stageClassName="h-96 w-full xl:h-[30rem]"
-        birdClassName="size-28 lg:size-36"
-        windClassName={reduced ? 'hidden' : 'opacity-100'}
-        windRight="25%"
-        windIntensity={0.4}
-        lineCount={reduced ? 0 : 12}
+        stageClassName="h-full w-full"
+        birdClassName="hero-bird-logo"
+        windClassName={reduced ? 'hidden' : 'hero-bird-wind opacity-100'}
+        windRight={desktop ? '25%' : '15%'}
+        windIntensity={desktop ? 1.2 : 0.7}
+        lineCount={reduced ? 0 : desktop ? 12 : 8}
         spread={260}
         cycles={reduced ? 1 : Infinity}
       />

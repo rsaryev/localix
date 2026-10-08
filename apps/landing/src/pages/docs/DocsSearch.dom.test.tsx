@@ -32,11 +32,18 @@ test('working docs render a header search trigger without permanent search field
     )
     const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Search documentation"]')!
     expect(trigger).not.toBeNull()
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe('Docs')
+    for (const link of host.querySelectorAll('.site-header a')) {
+      expect(link.classList.contains('focus-ring')).toBe(true)
+    }
     expect(host.querySelectorAll('input')).toHaveLength(0)
     await act(async () => trigger.click())
     expect(document.querySelector('[role="dialog"]')).not.toBeNull()
     expect(document.querySelector('[aria-label="Search docs"]')).not.toBeNull()
-    expect(document.body.textContent).toContain('What would you like to find?')
+    expect(document.body.textContent).toContain('Search the documentation')
+    expect(document.querySelector('.docs-search-empty-icon')?.getAttribute('aria-hidden')).toBe(
+      'true',
+    )
     await act(async () =>
       document.querySelector<HTMLButtonElement>('[aria-label="Close search"]')!.click(),
     )

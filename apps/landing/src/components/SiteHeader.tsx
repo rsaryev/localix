@@ -18,20 +18,20 @@ export function SiteHeader() {
       <div className={`${PAGE_SHELL} flex h-16 items-center justify-between gap-4`}>
         <Link
           to="/"
-          className="flex items-center gap-2.5 text-sm font-medium"
+          className="site-header-link focus-ring flex items-center gap-2.5 text-sm font-medium"
           aria-label="Localix home"
         >
           <img src="/logo.svg" alt="" className="size-5" />
           Localix <span className="text-xs font-normal text-text-faint">{RELEASE_CHANNEL}</span>
         </Link>
-        <nav aria-label="Site navigation" className="flex items-center gap-5 text-sm">
+        <nav aria-label="Site navigation" className="flex items-center gap-2 text-sm md:gap-5">
           {docs && <DocsSearch />}
           <Link
             to="/docs"
             aria-current={docs ? 'page' : undefined}
             onPointerEnter={warmDocs}
             onFocus={warmDocs}
-            className={docs ? 'text-foreground' : 'text-text-soft hover:text-foreground'}
+            className={`site-header-link focus-ring ${docs ? 'text-foreground' : 'text-text-soft hover:text-foreground'}`}
           >
             Docs
           </Link>
@@ -40,7 +40,7 @@ export function SiteHeader() {
             target="_blank"
             rel="noreferrer"
             aria-label="Localix on GitHub"
-            className="text-text-soft hover:text-foreground"
+            className="site-header-link focus-ring text-text-soft hover:text-foreground"
           >
             <GitHubMark className="size-4" />
           </a>

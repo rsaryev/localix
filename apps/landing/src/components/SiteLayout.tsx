@@ -6,6 +6,7 @@ import { SiteHeader } from './SiteHeader'
 
 export function SiteLayout({ children }: { children?: ReactNode }) {
   const location = useLocation()
+  const isDocsRoute = location.pathname.startsWith('/docs')
   const mainRef = useRef<HTMLElement>(null)
   const previousPath = useRef(location.pathname)
 
@@ -40,7 +41,9 @@ export function SiteLayout({ children }: { children?: ReactNode }) {
         {children ?? <Outlet />}
       </main>
 
-      <footer className="site-footer border-t border-border-subtle">
+      <footer
+        className={`site-footer border-t border-border-subtle${isDocsRoute ? ' docs-site-footer' : ''}`}
+      >
         <div
           className={`${PAGE_SHELL} flex flex-col items-center justify-between gap-4 py-10 text-sm text-text-faint sm:flex-row`}
         >

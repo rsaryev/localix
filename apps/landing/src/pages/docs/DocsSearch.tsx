@@ -89,10 +89,8 @@ export function DocsSearch() {
       <div className="docs-search-results" aria-label="Search results">
         {!search.normalizedQuery ? (
           <div className="docs-search-empty">
-            <p>What would you like to find?</p>
-            <p className="mt-2 text-sm text-text-soft">
-              Try “providers”, “terminal”, or “plugins”.
-            </p>
+            <Search aria-hidden="true" className="docs-search-empty-icon" />
+            <p className="font-medium">Search the documentation</p>
           </div>
         ) : search.filtered.length ? (
           <ul>
@@ -116,11 +114,9 @@ export function DocsSearch() {
           </ul>
         ) : (
           <div className="docs-search-empty" role="status">
-            <p>{settled ? 'No matching pages' : 'Searching full text…'}</p>
+            <p className="font-medium">{settled ? 'No matching pages' : 'Searching full text…'}</p>
             {settled && (
-              <p className="mt-2 text-sm text-text-soft">
-                Try a different term or clear your search.
-              </p>
+              <p className="text-sm text-text-soft">Try a different term or clear your search.</p>
             )}
           </div>
         )}
@@ -129,9 +125,6 @@ export function DocsSearch() {
             Full-text search is unavailable. Titles and summaries are still searchable.
           </p>
         )}
-      </div>
-      <div className="docs-search-footer text-xs text-text-faint">
-        Esc to close · Tab to move between results
       </div>
     </>
   )

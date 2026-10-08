@@ -17,6 +17,19 @@ export default defineConfig({
     react(),
     tailwindcss(),
     {
+      name: 'landing-font-preloads',
+      transformIndexHtml: {
+        order: 'pre',
+        handler(html, context) {
+          if (!context.server) return html
+          // Vite's CSS serves workspace fonts through /@fs in dev. Reuse that
+          // exact URL so the preload is consumed rather than fetched twice.
+          const modules = path.resolve(__dirname, '../../node_modules')
+          return html.replaceAll('../../node_modules/', `/@fs/${modules}/`)
+        },
+      },
+    },
+    {
       name: 'stage-third-party-notices',
       closeBundle() {
         stageThirdPartyNotices({

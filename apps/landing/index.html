@@ -5,6 +5,23 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
+    <!-- Load the same self-hosted faces used by the kit before CSS discovers them. -->
+    <link
+      rel="preload"
+      href="../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="../../node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <!-- Render-blocking in dev as well as production: no unstyled React frame. -->
+    <link rel="stylesheet" href="/src/styles.css" />
     <title>Localix — One workspace for you and a team of agents</title>
     <meta
       name="description"

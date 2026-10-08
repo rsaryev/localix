@@ -1,6 +1,7 @@
 /* Single source of truth: pull tokens, @theme, fonts, keyframes and base
    resets straight from the product UI. The landing never re-defines a color. */
 @import '../../ui/src/app/index.css';
+@import './fonts.css';
 
 /* Tailwind v4 scans the importing file's neighborhood; make the landing's own
    sources explicit so utility classes here are generated. */
@@ -28,6 +29,8 @@ html {
    so it opts out of the material with its own opaque black ground. The selector repeats
    `:root` to out-rank the material's `:not([data-desktop][data-os])` rules whatever their order. */
 :root:root:root[data-site='landing'][data-theme='dark'] {
+  --font-sans: 'Localix Landing Sans', Arial, sans-serif;
+  --font-heading: 'Localix Landing Heading', Arial, sans-serif;
   --window-backdrop: none;
   --work-density: 100%;
   --sidebar-density: 100%;
@@ -44,13 +47,138 @@ html {
 
 /* The hero bird loops while it is visible. `HeroBird` sets `data-paused` when the hero is scrolled
    away or the tab is hidden; pausing keeps the position, so it resumes mid-flight, not from zero. */
+.hero-layout {
+  --bird-slot-width: 7rem;
+  --bird-slot-height: 10rem;
+  --bird-size: 5rem;
+  --copy-bird-gap: 1rem;
+  --lede-gap: 1.25rem;
+  --action-gap: 2rem;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--bird-slot-width);
+  grid-template-areas: 'heading heading' 'description bird' 'action action';
+  column-gap: var(--copy-bird-gap);
+  align-items: center;
+}
+.hero-copy {
+  display: contents;
+}
+.hero-copy > h1,
+.hero-copy > .lede,
+.hero-actions {
+  position: relative;
+  z-index: var(--z-raised);
+}
+.hero-copy > h1 {
+  grid-area: heading;
+  margin-bottom: var(--lede-gap);
+}
+#intro .hero-copy > .lede {
+  grid-area: description;
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+.hero-actions {
+  grid-area: action;
+  margin-top: var(--action-gap);
+}
+.hero-bird-slot {
+  grid-area: bird;
+  height: var(--bird-slot-height);
+  overflow: visible;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-bird-logo {
+  width: var(--bird-size);
+  height: var(--bird-size);
+}
+@media (max-width: 350px) {
+  .hero-layout {
+    --bird-slot-width: 6rem;
+    --bird-size: 4rem;
+  }
+}
+@media (min-width: 64rem) {
+  .hero-layout {
+    --bird-size: 9rem;
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas: 'copy bird';
+    column-gap: 3.5rem;
+  }
+  .hero-copy {
+    display: block;
+    grid-area: copy;
+    position: relative;
+    z-index: var(--z-raised);
+  }
+  .hero-copy > h1 {
+    margin-bottom: 0;
+  }
+  #intro .hero-copy > .lede {
+    margin-top: 1.5rem;
+  }
+  .hero-bird-slot {
+    --hero-bird-height: 24rem;
+    height: var(--hero-bird-height);
+  }
+}
+@media (min-width: 80rem) {
+  .hero-bird-slot {
+    --hero-bird-height: 30rem;
+  }
+}
 .hero-bird {
   --bird-wind-duration-scale: 2.5;
   --bird-drift-duration: 10s;
 }
 
+/* Seeded delays are shorter than the scaled durations and can bunch every line offscreen.
+   A shared mobile period with evenly spaced phases guarantees a continuous train of lines.
+   Keep the shared 600px path, free overflow and all desktop timings unchanged. */
+@media (max-width: 1023px) {
+  .hero-bird-wind {
+    --hero-wind-period: 6s;
+  }
+  .hero-bird-wind > div {
+    animation-duration: var(--hero-wind-period) !important;
+    animation-delay: calc(var(--hero-wind-period) * var(--hero-wind-phase)) !important;
+  }
+  .hero-bird-wind > div:nth-child(1) {
+    --hero-wind-phase: 0;
+  }
+  .hero-bird-wind > div:nth-child(2) {
+    --hero-wind-phase: -0.125;
+  }
+  .hero-bird-wind > div:nth-child(3) {
+    --hero-wind-phase: -0.25;
+  }
+  .hero-bird-wind > div:nth-child(4) {
+    --hero-wind-phase: -0.375;
+  }
+  .hero-bird-wind > div:nth-child(5) {
+    --hero-wind-phase: -0.5;
+  }
+  .hero-bird-wind > div:nth-child(6) {
+    --hero-wind-phase: -0.625;
+  }
+  .hero-bird-wind > div:nth-child(7) {
+    --hero-wind-phase: -0.75;
+  }
+  .hero-bird-wind > div:nth-child(8) {
+    --hero-wind-phase: -0.875;
+  }
+}
+
 .hero-bird[data-paused='true'] * {
   animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-bird * {
+    animation: none !important;
+  }
 }
 
 /* Launch UI's published three-screen hero: each early panel occupies 24px in
@@ -765,6 +893,14 @@ body {
   position: relative;
   background: transparent;
 }
+.site-header-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chrome-control-touch);
+  min-width: var(--chrome-control-touch);
+  border-radius: var(--radius-sm);
+}
 .docs-layout {
   padding-top: 2rem;
   padding-bottom: calc(var(--spacing) * 3);
@@ -935,10 +1071,22 @@ body {
     padding-inline: 0.5rem;
     white-space: nowrap;
   }
+  .docs-site-footer {
+    display: none;
+  }
   .docs-layout {
     gap: 0;
     padding-top: 1rem;
     padding-inline: calc(var(--spacing) * 4);
+  }
+  .docs-bottom-bar {
+    margin-top: calc(var(--spacing) * 6);
+    padding-top: 0;
+    padding-bottom: calc(var(--spacing) * 4);
+    border-top: 0;
+  }
+  .docs-pagination {
+    gap: calc(var(--spacing) * 2);
   }
   .docs-outline {
     display: none;
