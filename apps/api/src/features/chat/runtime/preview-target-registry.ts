@@ -21,6 +21,7 @@ export interface PreviewTarget {
   title?: string
   /** The command that started the server — remembered for the relaunch button. */
   startCommand?: string
+  startCwd?: string
   /** Whether the preview has actually been opened for the current URL yet. */
   opened: boolean
 }
@@ -33,6 +34,7 @@ export interface PreviewTargetInput {
   injectUrl?: string
   title?: string
   startCommand?: string
+  startCwd?: string
 }
 
 export interface PreviewTargetRegistry {
@@ -88,6 +90,9 @@ export function createPreviewTargetRegistry(
       // A different origin means a new/different server — it hasn't been opened yet.
       // Same origin (a refresh / re-detect of the same server) keeps `opened` as-is.
       const sameOrigin = Boolean(prev?.url) && originOf(prev?.url) === originOf(input.url)
+      const sameRecipe =
+        (input.startCommand === undefined || input.startCommand === prev?.startCommand) &&
+        (input.startCwd === undefined || input.startCwd === prev?.startCwd)
       targets.set(key, {
         previewId: input.previewId ?? (sameOrigin ? prev?.previewId : undefined),
         background: input.background ?? (sameOrigin ? prev?.background : undefined),
@@ -95,7 +100,13 @@ export function createPreviewTargetRegistry(
         injectUrl: input.injectUrl ?? (sameOrigin ? prev?.injectUrl : undefined),
         title: input.title ?? (sameOrigin ? prev?.title : undefined),
         startCommand: input.startCommand ?? (sameOrigin ? prev?.startCommand : undefined),
-        opened: sameOrigin ? (prev?.opened ?? false) : false,
+        startCwd:
+          input.startCwd ??
+          (sameOrigin &&
+          (input.startCommand === undefined || input.startCommand === prev?.startCommand)
+            ? prev?.startCwd
+            : undefined),
+        opened: sameOrigin && sameRecipe ? (prev?.opened ?? false) : false,
       })
     },
 

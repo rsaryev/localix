@@ -48,6 +48,7 @@ export interface TerminalServiceDeps {
       | {
           type: 'terminal.finished'
           terminalId: string
+          cwd?: string
           exitCode: number
           command?: string
           /** When the process exited — see the contract note; a replayed frame must stay datable. */

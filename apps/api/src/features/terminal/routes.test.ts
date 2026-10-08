@@ -87,3 +87,19 @@ describe('there is no unbound terminal', () => {
     expect(opened).toBe(0)
   })
 })
+
+test('the spawn request preserves the launch directory instead of stripping it', async () => {
+  let received: unknown
+  const service = {
+    spawnCommand: async (_userId: string, input: unknown) => {
+      received = input
+      return { id: 'pty-cwd', onExit() {} }
+    },
+  } as unknown as TerminalService
+  const response = await app(service, testWork()).request(
+    '/spawn',
+    spawn({ sessionId: 's1', command: 'bun dev', cwd: '/work/frontend' }),
+  )
+  expect(response.status).toBe(201)
+  expect(received).toMatchObject({ sessionId: 's1', command: 'bun dev', cwd: '/work/frontend' })
+})

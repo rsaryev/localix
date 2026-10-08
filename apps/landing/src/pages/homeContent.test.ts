@@ -168,6 +168,19 @@ test('the animated bird only appears with the two-column hero', () => {
   expect(bird).not.toContain('calc(100%+')
 })
 
+test('mobile hides the decorative hero and keeps a scrollable tab rail', () => {
+  const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8')
+  const carousel = readFileSync(
+    new URL('../components/home/workflow-carousel.css', import.meta.url),
+    'utf8',
+  )
+  expect(styles).toMatch(
+    /@media \(max-width: 767px\)[\s\S]*#intro \.product-showcase \{\s*display: none;/u,
+  )
+  expect(carousel).toMatch(/\.workflow-tabs \{[^}]*overflow-x: auto;/u)
+  expect(carousel).toMatch(/\.workflow-tabs \.workflow-tab \{\s*flex: none;/u)
+})
+
 test('every homepage capability links to a published documentation page', () => {
   const manifest = JSON.parse(
     readFileSync(new URL('../../../../docs/public-nav.json', import.meta.url), 'utf8'),

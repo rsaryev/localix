@@ -1,4 +1,4 @@
-import { Expand, Minimize2, Type } from 'lucide-react'
+import { Type } from 'lucide-react'
 import { IconButton } from '@localixai/kit/icon-button'
 import {
   DropdownMenu,
@@ -12,20 +12,16 @@ export type ReadingSize = 'standard' | 'large' | 'larger'
 export function DocsReadingTools({
   size,
   onSize,
-  focus,
-  onFocus,
 }: {
   size: ReadingSize
   onSize: (size: ReadingSize) => void
-  focus: boolean
-  onFocus: () => void
 }) {
   return (
     <div className="flex shrink-0 items-center gap-1">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <IconButton aria-label="Reading options" size="lg">
-            <Type />
+          <IconButton aria-label="Reading options" size="touch">
+            <Type className="size-4" />
           </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -46,14 +42,6 @@ export function DocsReadingTools({
           />
         </DropdownMenuContent>
       </DropdownMenu>
-      <IconButton
-        aria-label={focus ? 'Show documentation navigation' : 'Focus on reading'}
-        size="lg"
-        aria-pressed={focus}
-        onClick={onFocus}
-      >
-        {focus ? <Minimize2 /> : <Expand />}
-      </IconButton>
     </div>
   )
 }

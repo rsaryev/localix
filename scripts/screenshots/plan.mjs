@@ -1,5 +1,10 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
+  'workspace/terminal-error': {
+    guide: 'features/workspace.md',
+    purpose: 'A failed terminal retains its error output and offers Restart and Close',
+    scenario: 'terminal-error',
+  },
   'trading/market-chart': {
     guide: 'features/trading.md',
     purpose: 'A live public BTC/USD chart from Kraken',

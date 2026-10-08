@@ -15,7 +15,7 @@ function Workspace() {
   return <p>Workspace</p>
 }
 
-test('the workspace cleans hidden terminal tabs on exit and releases its subscriptions', async () => {
+test('the workspace retains hidden terminal tabs on exit and releases its subscriptions', async () => {
   const original = useGridStore.getState()
   useGridStore.setState(emptyEditorState('test-group'))
   useGridStore.getState().openItem({
@@ -48,7 +48,9 @@ test('the workspace cleans hidden terminal tabs on exit and releases its subscri
         exitCode: 1,
       })
     })
-    expect(useGridStore.getState().items['terminal:dead']).toBeUndefined()
+    expect(useGridStore.getState().items['terminal:dead']?.payload?.terminalExit).toMatchObject({
+      exitCode: 1,
+    })
     expect(useGridStore.getState().closed).toEqual([])
     expect(host.textContent).toBe('Workspace')
     await act(async () => root.unmount())

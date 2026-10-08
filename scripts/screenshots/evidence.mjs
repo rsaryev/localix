@@ -64,6 +64,49 @@ export async function verifyEvidence(page, scenario) {
   } else if (scenario === 'palette') {
     await expect(page.getByRole('option').first()).toBeVisible()
     await expect(page.getByRole('dialog').getByRole('combobox')).toHaveValue('split')
+  } else if (scenario === 'terminal-error') {
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
+    ).toBeVisible()
+    await expect(page.locator('.xterm-screen')).toContainText(
+      'Error: release configuration is missing',
+    )
+    await expect(page.getByRole('button', { name: 'Restart', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Close', exact: true }).last()).toBeVisible()
+    // The workspace poll must not remove the evidence after the next registry snapshot.
+    await page.waitForTimeout(21_000)
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
+    ).toBeVisible()
+    await expect(page.locator('.xterm-screen')).toContainText(
+      'Error: release configuration is missing',
+    )
+    // Reopen after the server's 30-second final-screen archive has expired.
+    await page.waitForTimeout(11_000)
+    await page.getByRole('button', { name: 'Close', exact: true }).last().click()
+    await page.keyboard.press('Meta+Shift+T')
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
+    ).toBeVisible()
+    await expect(page.locator('.xterm-screen')).toContainText(
+      'Error: release configuration is missing',
+    )
+    await page.getByRole('button', { name: 'Restart', exact: true }).click()
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
+    ).toHaveCount(0)
+    const input = page.getByRole('textbox', { name: 'Terminal input' })
+    await input.fill('exit')
+    await input.press('Enter')
+    await expect(page.getByRole('tab', { name: /^Terminal/ })).toHaveCount(0)
+    // Leave the final composition on the retained error and its actions.
+    await page.getByRole('button', { name: 'Terminal', exact: true }).click()
+    await input.fill('printf "Error: release configuration is missing\\n"; exit 17')
+    await input.press('Enter')
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Maximize panel', exact: true }).first().click()
   } else if (scenario === 'editor') {
     await expect(page.getByRole('textbox', { name: 'Terminal input' })).toBeVisible()
     await expect(page.getByText(/2 pass/).first()).toBeVisible()

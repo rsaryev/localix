@@ -71,3 +71,21 @@ describe('preview-target-registry', () => {
     expect(() => createPreviewTargetRegistry({ maxEntries: 0 })).toThrow('positive safe integer')
   })
 })
+
+test('a new launch directory at the same origin refreshes the preview recipe', () => {
+  const registry = createPreviewTargetRegistry()
+  registry.record('u1', 's1', {
+    url: 'http://localhost:5173',
+    startCommand: 'bun dev',
+    startCwd: '/work/first',
+  })
+  registry.markOpened('u1', 's1')
+  registry.record('u1', 's1', {
+    url: 'http://localhost:5173',
+    startCommand: 'bun dev',
+    startCwd: '/work/second',
+  })
+  expect(registry.get('u1', 's1')).toMatchObject({ startCwd: '/work/second', opened: false })
+  registry.record('u1', 's1', { url: 'http://localhost:5173/', title: 'Page' })
+  expect(registry.get('u1', 's1')?.startCwd).toBe('/work/second')
+})

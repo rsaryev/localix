@@ -33,7 +33,7 @@ export function createTerminalRoutes(service: TerminalService, work: WorkRegistr
         label: input.command,
         terminal: session,
       })
-      return c.json({ terminalId: session.id }, 201)
+      return c.json({ terminalId: session.id, cwd: session.cwd }, 201)
     })
     .get('/', async (c) => {
       // Fill/evict served-URL on jobs from the OS listener scan (throttled) so the

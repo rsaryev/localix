@@ -97,7 +97,7 @@ export async function runBackgroundCommand(
   // it a preview whose server dies can only offer a dead reload, whatever it was run
   // with (`npm run dev`, `node server.js`, a compose stack, anything).
   if (ctx.recordPreviewTarget) {
-    proc.onPreviewUrl?.((url) => ctx.recordPreviewTarget!(url, command))
+    proc.onPreviewUrl?.((url) => ctx.recordPreviewTarget!(url, command, cwd))
   }
 
   // Amortized + memoized: see createBoundedOutput. `bgOutput()` reads the same bounded view

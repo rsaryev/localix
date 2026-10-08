@@ -74,7 +74,7 @@ test('arrow navigation wraps, moves focus, and skips animation; Home and End wor
   await view.close()
 })
 
-test('horizontal swipe advances once and suppresses its click; vertical scrolling keeps the view', async () => {
+test('content gestures never change the view or suppress subsequent clicks', async () => {
   const view = await mount()
   const panels = view.host.querySelector('.workflow-panels')!
   const touch = async (type: string, x: number, y: number) =>
@@ -90,10 +90,10 @@ test('horizontal swipe advances once and suppresses its click; vertical scrollin
   expect(view.tabs[0]!.getAttribute('aria-selected')).toBe('true')
   await touch('touchstart', 250, 100)
   await touch('touchend', 120, 110)
-  expect(view.tabs[1]!.getAttribute('aria-selected')).toBe('true')
+  expect(view.tabs[0]!.getAttribute('aria-selected')).toBe('true')
   const click = new MouseEvent('click', { bubbles: true, cancelable: true })
   panels.dispatchEvent(click)
-  expect(click.defaultPrevented).toBe(true)
+  expect(click.defaultPrevented).toBe(false)
   await view.close()
 })
 
@@ -133,4 +133,35 @@ test('the workbench tour navigates independently and fetches only current or out
   expect(main.tabs[0]!.id).not.toBe(tools.tabs[0]!.id)
   await tools.close()
   await main.close()
+})
+
+test('selection scrolls only the tab rail to reveal either edge of the selected tab', async () => {
+  const { WORKBENCHES } = await import('./WorkbenchCarousel')
+  const view = await mount(WORKBENCHES, 'Included workbenches')
+  try {
+    const rail = view.host.querySelector<HTMLElement>('[role="tablist"]')!
+    Object.defineProperty(rail, 'clientWidth', { value: 280 })
+    rail.getBoundingClientRect = () => ({ left: 21 }) as DOMRect
+    view.tabs.forEach((tab, index) => {
+      Object.defineProperty(tab, 'offsetWidth', { value: 100 })
+      tab.getBoundingClientRect = () =>
+        ({ left: 21 + index * 100 - rail.scrollLeft, width: 100 }) as DOMRect
+    })
+    await view.act(async () => view.tabs[14]!.click())
+    expect(rail.scrollLeft).toBe(1220)
+    expect(view.tabs[14]!.getAttribute('aria-selected')).toBe('true')
+    expect(view.host.querySelectorAll('[role="tabpanel"][inert]')).toHaveLength(14)
+    await view.act(async () => view.tabs[0]!.click())
+    expect(rail.scrollLeft).toBe(0)
+    expect(view.tabs[0]!.getAttribute('aria-selected')).toBe('true')
+  } finally {
+    await view.close()
+  }
+})
+
+test('unavailable captures leave no empty tour or broken image', async () => {
+  const { WORKFLOWS } = await import('./workflowContent')
+  const view = await mount([{ ...WORKFLOWS[0]!, shot: 'missing/capture' }])
+  expect(view.host.children).toHaveLength(0)
+  await view.close()
 })

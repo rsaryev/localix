@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
 import { useGridStore } from '@/features/workspace-grid/model'
 import { eventSocket } from '@/shared/api/eventSocket'
-import { closeDeadTerminalTabs, sweepDeadTerminalTabs } from './deadTerminalTabs'
+import { finishTerminalTabs, sweepDeadTerminalTabs } from './deadTerminalTabs'
 
 /** One workspace-wide sweep: hidden sessions need cleanup without mounting their terminal panes. */
 export function useDeadTerminalCleanup(): void {
@@ -34,7 +34,13 @@ export function useDeadTerminalCleanup(): void {
   useEffect(
     () =>
       eventSocket.onSessionEvent((_sessionId, event) => {
-        if (event.type === 'terminal.finished') closeDeadTerminalTabs(event.terminalId)
+        if (event.type === 'terminal.finished')
+          finishTerminalTabs(event.terminalId, {
+            exitCode: event.exitCode,
+            interactive: event.interactive,
+            command: event.command,
+            cwd: event.cwd,
+          })
       }),
     [],
   )

@@ -38,7 +38,22 @@ export function createTerminalStreamRoute(deps: { service: TerminalService; logg
         const session = deps.service.get(userId, id)
         if (!session) {
           // Single frame before an immediate close — no backpressure concern.
-          ws.send(JSON.stringify({ t: 'exit', code: 1 } satisfies TerminalServerFrame))
+          const archived = deps.service.archivedTerminal(userId, id)
+          if (archived?.replay)
+            ws.send(
+              JSON.stringify({ t: 'data', data: archived.replay } satisfies TerminalServerFrame),
+            )
+          const final: TerminalServerFrame =
+            archived && archived.exitCode !== null
+              ? {
+                  t: 'exit',
+                  code: archived.exitCode,
+                  interactive: !archived.command,
+                  command: archived.command,
+                  cwd: archived.cwd,
+                }
+              : { t: 'unavailable' }
+          ws.send(JSON.stringify(final))
           ws.close()
           return
         }
@@ -62,7 +77,13 @@ export function createTerminalStreamRoute(deps: { service: TerminalService; logg
           // Exit is out-of-band: without this the client could see "process exited"
           // ahead of the process's own last lines, still merged in the open window.
           coalescer?.flush()
-          emit({ t: 'exit', code })
+          emit({
+            t: 'exit',
+            code,
+            interactive: !session.command,
+            command: session.command,
+            cwd: session.cwd,
+          })
           ws.close()
         })
       },

@@ -50,6 +50,7 @@ export function revealPreview(sessionId: string, entry: PreviewEntry): void {
       servedFile: entry.servedFile,
       rootDir: entry.rootDir,
       startCommand: entry.startCommand,
+      startCwd: entry.startCwd,
       frameBlocked: entry.frameBlocked,
     },
     { important: true },

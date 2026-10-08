@@ -16,6 +16,7 @@ const withinBytes = (value: string, max: number): boolean => utf8.encode(value).
  */
 export const createTerminalRequestSchema = z.object({
   sessionId: z.string().min(1).max(256),
+  cwd: z.string().min(1).max(4096).optional(),
   cols: z.number().int().positive().max(1000).optional(),
   rows: z.number().int().positive().max(1000).optional(),
 })
@@ -26,6 +27,7 @@ export type CreateTerminalRequest = z.infer<typeof createTerminalRequestSchema>
  *  reason given above: an unbound command ran in $HOME and was nobody's background work. */
 export const spawnTerminalRequestSchema = z.object({
   sessionId: z.string().min(1).max(256),
+  cwd: z.string().min(1).max(4096).optional(),
   command: z
     .string()
     .min(1)
@@ -82,4 +84,7 @@ export function parseTerminalClientFrame(data: unknown): TerminalClientFrame | n
 }
 
 /** Server→client frames over the terminal WebSocket. */
-export type TerminalServerFrame = { t: 'data'; data: string } | { t: 'exit'; code: number }
+export type TerminalServerFrame =
+  | { t: 'data'; data: string }
+  | { t: 'exit'; code: number; interactive: boolean; command?: string; cwd?: string }
+  | { t: 'unavailable' }

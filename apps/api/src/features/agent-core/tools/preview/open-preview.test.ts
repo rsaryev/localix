@@ -260,8 +260,13 @@ describe('openPreviewCore', () => {
 
   test('remembers start_command on the preview event (so the UI can relaunch a stopped server)', async () => {
     const { options, events } = makeCore()
-    await openPreviewCore(options, { url: origin, start_command: '  npm run dev  ' })
+    await openPreviewCore(options, {
+      url: origin,
+      start_command: '  npm run dev  ',
+      start_cwd: '/work/frontend',
+    })
     expect(events[0].startCommand).toBe('npm run dev')
+    expect(events[0].startCwd).toBe('/work/frontend')
   })
 
   test('refuses a dead URL (nothing serving it) with guidance to use the file path', async () => {

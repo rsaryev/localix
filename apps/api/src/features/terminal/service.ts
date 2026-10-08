@@ -4,6 +4,7 @@
  * feature never imports chat internals — the dependency arrow stays one-way.
  */
 import { randomUUID } from 'node:crypto'
+import { resolve } from 'node:path'
 import { TerminalSession, type TerminalSessionInfo } from './session'
 import { scanListeningPorts, isSameOrDescendant } from './port-scan'
 import { createPortScanCache } from './port-scan-cache'
@@ -116,6 +117,7 @@ export function createTerminalService(deps: TerminalServiceDeps) {
               terminalId: sid,
               exitCode,
               command: input.command,
+              cwd,
               finishedAt: Date.now(),
               ...(stopped ? { stopped: true as const } : {}),
               // No command = the login shell `open` gives the person; they typed `exit` themselves.
@@ -157,7 +159,8 @@ export function createTerminalService(deps: TerminalServiceDeps) {
 
   return {
     async open(userId: string, input: CreateTerminalInput): Promise<TerminalSessionInfo> {
-      const cwd = input.cwd ?? (await deps.resolveCwd(userId, input.sessionId))
+      const workspaceCwd = await deps.resolveCwd(userId, input.sessionId)
+      const cwd = resolve(workspaceCwd, input.cwd ?? '.')
       return createSession(userId, cwd, {
         ...input,
         chatSessionId: input.sessionId,
@@ -183,7 +186,8 @@ export function createTerminalService(deps: TerminalServiceDeps) {
         wakesAgent?: boolean
       },
     ): Promise<TerminalSession> {
-      const cwd = input.cwd ?? (await deps.resolveCwd(userId, input.sessionId))
+      const workspaceCwd = await deps.resolveCwd(userId, input.sessionId)
+      const cwd = resolve(workspaceCwd, input.cwd ?? '.')
       return createSession(userId, cwd, {
         cols: input.cols,
         rows: input.rows,

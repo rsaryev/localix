@@ -28,6 +28,8 @@ export interface PreviewEntry {
   /** Shell command that started this server — the Preview panel reruns it to relaunch
    *  the server (from the session workspace) when it stops. Persisted with the entry. */
   startCommand?: string
+  /** Working directory retained for relaunching the command. */
+  startCwd?: string
   /** Site refuses iframing → the pane shows its open-in-browser card; the strip-proxy view
    *  is offered on demand. The proxy address is NOT stored: it is an ephemeral port the pane
    *  resolves from the live API before it mounts a frame. */
@@ -70,6 +72,11 @@ function retainLaunchRecipe(previous: PreviewEntry | undefined, entry: PreviewEn
   return {
     ...entry,
     startCommand: entry.startCommand ?? previous.startCommand,
+    startCwd:
+      entry.startCwd ??
+      (entry.startCommand === undefined || entry.startCommand === previous.startCommand
+        ? previous.startCwd
+        : undefined),
     userOpened: entry.userOpened ?? previous.userOpened,
     viewport: entry.viewport === undefined ? previous.viewport : entry.viewport,
   }

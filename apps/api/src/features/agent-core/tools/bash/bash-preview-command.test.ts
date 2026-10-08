@@ -30,16 +30,21 @@ function fakeTerminalHost(url: string): { spawn: SpawnTerminalJob; commands: str
 
 describe('background bash preview provenance', () => {
   test('records the launching command alongside the detected URL', async () => {
-    const recorded: Array<[string, string | undefined]> = []
+    const recorded: Array<[string, string | undefined, string | undefined]> = []
     const host = fakeTerminalHost('http://localhost:5174')
     const tool = createBashTool(undefined, undefined, {
       spawnTerminalJob: host.spawn,
-      recordPreviewTarget: (url, startCommand) => recorded.push([url, startCommand]),
+      recordPreviewTarget: (url, startCommand, startCwd) =>
+        recorded.push([url, startCommand, startCwd]),
     })
 
-    await tool.execute('bg-preview', { command: 'npm run dev', background: true }, undefined)
+    await tool.execute(
+      'bg-preview',
+      { command: 'npm run dev', background: true, cwd: '/work/project/frontend' },
+      undefined,
+    )
 
-    expect(recorded).toEqual([['http://localhost:5174', 'npm run dev']])
+    expect(recorded).toEqual([['http://localhost:5174', 'npm run dev', '/work/project/frontend']])
   }, 10_000)
 
   test('tells the host a notify job wakes the agent, so its exit is reported once', async () => {
@@ -58,7 +63,11 @@ describe('background bash preview provenance', () => {
       { command: 'npm test', background: true, notify: true },
       undefined,
     )
-    await tool.execute('bg-quiet', { command: 'npm run dev', background: true }, undefined)
+    await tool.execute(
+      'bg-quiet',
+      { command: 'npm run dev', background: true, cwd: '/work/project/frontend' },
+      undefined,
+    )
 
     expect(asked).toEqual([true, undefined])
   }, 10_000)

@@ -6,7 +6,7 @@ import './terminalPane.css'
 import type { TerminalClientFrame, TerminalServerFrame } from '@localixai/api/client'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { openFileInGrid } from '@/features/inspector/model/fileNav'
-import { useGridStore, groupOfTab } from '@/features/workspace-grid/model'
+import { useGridStore, closeGridTab } from '@/features/workspace-grid/model'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { StateNotice } from '@localixai/kit/state-notice'
@@ -15,7 +15,9 @@ import { PaneStateOverlay } from '@localixai/kit/pane-state-overlay'
 import { Button } from '@localixai/kit/button'
 import { closeTerminal, getTerminalLiveness, terminalStreamUrl } from '../api'
 import { openNewTerminal } from '../model/terminalTabs'
-import { closeDeadTerminalTabs } from '../model/deadTerminalTabs'
+import { finishTerminalTabs, type TerminalExit } from '../model/deadTerminalTabs'
+import { TerminalExitNotice } from './TerminalExitNotice'
+import { terminalOutput, resetTerminalOutput, retainTerminalOutput } from '../model/terminalOutput'
 import { createTerminalLinkProvider, readBufferLines } from './terminalLinkProvider'
 import { collectTerminalLinks, type TerminalLinkItem } from '../model/terminalLinks'
 import { TerminalPaneOverlays } from './TerminalPaneOverlays'
@@ -71,11 +73,11 @@ import type { NotificationOrigin } from '@/shared/lib/notifications/types'
  * the WorkItem having been removed from the grid (a hidden/teardown unmount keeps
  * the item, so it's left alive). Adopted PTYs (agent jobs, dev servers) are never
  * closed from here. A tab whose PTY is already dead on attach (e.g. reaped while
- * the page was gone) self-closes.
+ * the page was gone) retains its archived output when available.
  *
  * Recovery: when a connected PTY's socket drops we ask the backend whether the PTY
  * is still listed. A transient WS blip (PTY alive) triggers bounded silent reconnects
- * ("Reconnecting…"); a confirmed dead PTY closes its tab automatically. The same registry check protects
+ * ("Reconnecting…"); a confirmed dead PTY retains its output for inspection. The same registry check protects
  * a first attach after reload, so a temporarily unreachable daemon cannot discard
  * a live restored tab. An automatic "Restarting… connection lost" state is kept
  * distinct from a relaunch action for an exited process.
@@ -109,6 +111,9 @@ export function TerminalPane({
   } = useTerminalFind(searchRef)
   const termRef = useRef<Terminal | null>(null)
   const [connected, setConnected] = useState(false)
+  const terminalExit = useGridStore(
+    (state) => state.items[paneId]?.payload?.terminalExit as TerminalExit | undefined,
+  )
   // The PTY's WebSocket dropped after we were connected (shell process ended, dev
   // server restarted, network blip). Without a notice the pane just sits frozen —
   // exactly the confusing "typed a command then it hung forever" report — so we
@@ -153,13 +158,10 @@ export function TerminalPane({
     if (term && sticky) term.scrollToLine(sticky.line)
   }, [sticky])
 
-  // Recover a dead terminal: spawn a fresh PTY in the SAME session (the exact rail
-  // "New terminal" spawn path) and close this dead tab so the new one takes its
-  // place in the terminal group.
   const recover = useCallback(() => {
-    void openNewTerminal(sessionId)
-    const leaf = groupOfTab(useGridStore.getState().root, paneId)
-    if (leaf) useGridStore.getState().closeTab(leaf.id, paneId)
+    void openNewTerminal(sessionId).then((opened) => {
+      if (opened) closeGridTab(paneId)
+    })
   }, [sessionId, paneId])
 
   // A pane that will not come back. The transport incident above traces the reconnect attempts;
@@ -293,6 +295,9 @@ export function TerminalPane({
     const { term, fit, search } = instance
     searchRef.current = search
     termRef.current = term
+    term.options.disableStdin = Boolean(
+      useGridStore.getState().items[paneId]?.payload?.terminalExit,
+    )
 
     // File:line + URL links in the output. File links reveal the source in the
     // editor grid of THIS terminal's chat (relative paths resolve against its cwd,
@@ -405,6 +410,7 @@ export function TerminalPane({
     })
 
     const send = (frame: TerminalClientFrame) => {
+      if (useGridStore.getState().items[paneId]?.payload?.terminalExit) return
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(frame))
     }
 
@@ -441,7 +447,8 @@ export function TerminalPane({
           // Not a transport incident — the process is gone.
           terminalIncidentRef.current?.abandon()
           setReconnecting(false)
-          closeDeadTerminalTabs(terminalId)
+          term.options.disableStdin = true
+          finishTerminalTabs(terminalId, { exitCode: null })
           return
         }
         const attempt = reconnectAttemptsRef.current++
@@ -478,57 +485,90 @@ export function TerminalPane({
     })
     resizeObserver.observe(host)
 
-    ws = new WebSocket(terminalStreamUrl(terminalId))
-    ws.onmessage = (ev) => {
-      if (typeof ev.data !== 'string') return
-      let frame: TerminalServerFrame
-      try {
-        frame = JSON.parse(ev.data) as TerminalServerFrame
-      } catch {
-        return
-      }
-      if (frame.t === 'data') {
-        term.write(frame.data)
-        raiseAttention()
-      } else if (frame.t === 'exit') {
-        term.write(`\r\n\x1b[2m[process exited: ${frame.code}]\x1b[0m\r\n`)
-      }
-    }
-    ws.onopen = () => {
-      if (disposed) return
-      setConnected(true)
-      // A (re)connect clears any pending disconnect/reconnect notice.
-      setReconnecting(false)
-      setDead(null)
-      dropHandled = false
-      // A fresh attach must always tell the PTY our dimensions (it may have been
-      // created 80×24, or drifted while detached) → reset the dedupe and send now.
-      sizer.reset()
-      sizer.sync(true)
-      // Ignore the historical scrollback replay that lands right after connect —
-      // only genuinely live output should raise the tab activity dot.
-      activitySettledRef.current = false
-      setTimeout(() => {
-        if (!disposed) activitySettledRef.current = true
-      }, 500)
-      // A genuinely stable attachment earns a fresh retry budget. Resetting on
-      // every open would allow a tight open/close flap to retry forever.
-      stableTimer = setTimeout(() => {
-        if (!disposed) {
-          reconnectAttemptsRef.current = 0
-          terminalIncidentRef.current?.recover({ sourceVisible: activeRef.current })
+    const retained = useGridStore.getState().items[paneId]?.payload?.terminalExit
+      ? terminalOutput(terminalId)
+      : undefined
+    if (retained !== undefined) {
+      term.write(retained)
+      setConnected(false)
+    } else {
+      let firstOutput = true
+      ws = new WebSocket(terminalStreamUrl(terminalId))
+      ws.onmessage = (ev) => {
+        if (typeof ev.data !== 'string') return
+        let frame: TerminalServerFrame
+        try {
+          frame = JSON.parse(ev.data) as TerminalServerFrame
+        } catch {
+          return
         }
-      }, 10_000)
-    }
-    ws.onclose = () => {
-      if (disposed) return // normal teardown (unmount closed the socket) → no notice
-      // This also covers the FIRST attach after a reload: an unavailable stream is
-      // not evidence the server-owned PTY died. Registry liveness below decides
-      // retry vs recovery for both initial and post-connect drops.
-      handleDrop()
-    }
-    ws.onerror = () => {
-      if (!disposed) handleDrop()
+        if (frame.t === 'data') {
+          if (firstOutput) {
+            resetTerminalOutput(terminalId)
+            firstOutput = false
+          }
+          retainTerminalOutput(terminalId, frame.data)
+          term.write(frame.data)
+          raiseAttention()
+        } else if (frame.t === 'exit') {
+          dropHandled = true
+          term.options.disableStdin = true
+          setConnected(false)
+          setReconnecting(false)
+          terminalIncidentRef.current?.abandon()
+          finishTerminalTabs(terminalId, {
+            exitCode: frame.code,
+            interactive: frame.interactive,
+            command: frame.command,
+            cwd: frame.cwd,
+          })
+        } else if (frame.t === 'unavailable') {
+          const cached = firstOutput ? terminalOutput(terminalId) : undefined
+          if (cached !== undefined) term.write(cached)
+          dropHandled = true
+          term.options.disableStdin = true
+          setConnected(false)
+          setReconnecting(false)
+          terminalIncidentRef.current?.abandon()
+          finishTerminalTabs(terminalId, { exitCode: null })
+        }
+      }
+      ws.onopen = () => {
+        if (disposed) return
+        setConnected(true)
+        // A (re)connect clears any pending disconnect/reconnect notice.
+        setReconnecting(false)
+        setDead(null)
+        dropHandled = false
+        // A fresh attach must always tell the PTY our dimensions (it may have been
+        // created 80×24, or drifted while detached) → reset the dedupe and send now.
+        sizer.reset()
+        sizer.sync(true)
+        // Ignore the historical scrollback replay that lands right after connect —
+        // only genuinely live output should raise the tab activity dot.
+        activitySettledRef.current = false
+        setTimeout(() => {
+          if (!disposed) activitySettledRef.current = true
+        }, 500)
+        // A genuinely stable attachment earns a fresh retry budget. Resetting on
+        // every open would allow a tight open/close flap to retry forever.
+        stableTimer = setTimeout(() => {
+          if (!disposed) {
+            reconnectAttemptsRef.current = 0
+            terminalIncidentRef.current?.recover({ sourceVisible: activeRef.current })
+          }
+        }, 10_000)
+      }
+      ws.onclose = () => {
+        if (disposed) return // normal teardown (unmount closed the socket) → no notice
+        // This also covers the FIRST attach after a reload: an unavailable stream is
+        // not evidence the server-owned PTY died. Registry liveness below decides
+        // retry vs recovery for both initial and post-connect drops.
+        handleDrop()
+      }
+      ws.onerror = () => {
+        if (!disposed) handleDrop()
+      }
     }
 
     return () => {
@@ -573,6 +613,15 @@ export function TerminalPane({
     setFind,
   ])
 
+  useEffect(() => {
+    if (termRef.current) termRef.current.options.disableStdin = Boolean(terminalExit)
+    if (terminalExit) {
+      setReconnecting(false)
+      terminalIncidentRef.current?.abandon()
+    }
+    fitRef.current?.()
+  }, [terminalExit])
+
   // Becoming the active (visible) tab after being display:none means the host went
   // 0×0 → sized; re-fit so the PTY matches the new viewport.
   useEffect(() => {
@@ -598,10 +647,11 @@ export function TerminalPane({
   // ground tokens carry alpha — a second pane-sized coat compounds into an opaque slab. This is
   // the ground `terminalTheme.ts` defers to when it hands xterm a fully transparent background.
   return (
-    <div className="relative h-full min-h-0 w-full" {...pathDrop.handlers}>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          {/* The breathing room is the WRAPPER's; the xterm host itself must stay padding-free.
+    <div className="relative flex h-full min-h-0 w-full flex-col" {...pathDrop.handlers}>
+      <div className="relative min-h-0 flex-1">
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            {/* The breathing room is the WRAPPER's; the xterm host itself must stay padding-free.
               The fit addon measures the host with `getComputedStyle(host).height/width`, which
               Chrome resolves to the BORDER box — padding included. A padded host therefore
               advertised ~12px more height and ~16px more width than it had, fit handed back a row
@@ -609,86 +659,88 @@ export function TerminalPane({
               on top of that: the last line was permanently sliced by the pane's overflow-hidden and
               the right-most column ran under the edge. Measured across 200–700px at dpr 1 and 2,
               the padded host overflowed at EVERY height; padding-free, at none. */}
-          <div className="absolute inset-0 px-2 py-1.5 text-foreground">
-            <div ref={hostRef} className="h-full w-full" />
+            <div className="absolute inset-0 px-2 py-1.5 text-foreground">
+              <div ref={hostRef} className="h-full w-full" />
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent
+            // Radix returns focus to the TRIGGER, which is the xterm host rather than the helper
+            // textarea xterm actually types into — so without this the terminal looked focused and
+            // swallowed every keystroke after the menu closed.
+            onCloseAutoFocus={(event) => {
+              event.preventDefault()
+              termRef.current?.focus()
+            }}
+          >
+            <MenuEntries entries={buildTerminalMenu()} family="context" />
+          </ContextMenuContent>
+        </ContextMenu>
+        {pathDrop.active && (
+          <div
+            className={`pointer-events-none absolute inset-0 z-(--z-sticky) flex items-center justify-center rounded-[inherit] p-4 ${DROP_TARGET_TRANSITION} ${DROP_TARGET_OVERLAY_ACTIVE}`}
+          >
+            <div className={DROP_TARGET_HINT}>Drop to paste path</div>
           </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent
-          // Radix returns focus to the TRIGGER, which is the xterm host rather than the helper
-          // textarea xterm actually types into — so without this the terminal looked focused and
-          // swallowed every keystroke after the menu closed.
-          onCloseAutoFocus={(event) => {
-            event.preventDefault()
-            termRef.current?.focus()
-          }}
-        >
-          <MenuEntries entries={buildTerminalMenu()} family="context" />
-        </ContextMenuContent>
-      </ContextMenu>
-      {pathDrop.active && (
-        <div
-          className={`pointer-events-none absolute inset-0 z-(--z-sticky) flex items-center justify-center rounded-[inherit] p-4 ${DROP_TARGET_TRANSITION} ${DROP_TARGET_OVERLAY_ACTIVE}`}
-        >
-          <div className={DROP_TARGET_HINT}>Drop to paste path</div>
-        </div>
-      )}
-      {sticky && (
-        <button
-          type="button"
-          onClick={jumpToSticky}
-          title={`Running command — click to jump to its prompt\n${sticky.text}`}
-          aria-label={`Sticky command: ${sticky.text}. Click to jump to its prompt.`}
-          // No `backdrop-blur-sm`: the 95% fill already hides the scrollback behind
-          // this pill, while the filter would re-sample the backdrop on every frame
-          // of a fast terminal scroll.
-          className="focus-ring lx-occluder absolute inset-x-0 top-0 z-(--z-raised) flex items-center gap-1.5 border-b border-border-soft px-2 py-0.5 text-left font-mono text-xs text-text-soft hover:text-foreground"
-        >
-          <span className="shrink-0 select-none text-2xs text-text-soft">↳</span>
-          <span className="truncate">{sticky.text}</span>
-        </button>
-      )}
-      {find.open && (
-        <TerminalFindWidget
-          find={find}
-          inputRef={findInputRef}
-          setFind={setFind}
-          runSearch={runSearch}
-          onClose={closeFind}
+        )}
+        {sticky && (
+          <button
+            type="button"
+            onClick={jumpToSticky}
+            title={`Running command — click to jump to its prompt\n${sticky.text}`}
+            aria-label={`Sticky command: ${sticky.text}. Click to jump to its prompt.`}
+            // No `backdrop-blur-sm`: the 95% fill already hides the scrollback behind
+            // this pill, while the filter would re-sample the backdrop on every frame
+            // of a fast terminal scroll.
+            className="focus-ring lx-occluder absolute inset-x-0 top-0 z-(--z-raised) flex items-center gap-1.5 border-b border-border-soft px-2 py-0.5 text-left font-mono text-xs text-text-soft hover:text-foreground"
+          >
+            <span className="shrink-0 select-none text-2xs text-text-soft">↳</span>
+            <span className="truncate">{sticky.text}</span>
+          </button>
+        )}
+        {find.open && (
+          <TerminalFindWidget
+            find={find}
+            inputRef={findInputRef}
+            setFind={setFind}
+            runSearch={runSearch}
+            onClose={closeFind}
+          />
+        )}
+        <TerminalPaneOverlays
+          sessionId={sessionId}
+          linkPick={linkPick}
+          setLinkPick={setLinkPick}
+          cmdMenu={cmdMenu}
+          setCmdMenu={setCmdMenu}
+          focusTerm={() => termRef.current?.focus()}
+          write={(data) => writeRef.current?.(data)}
         />
-      )}
-      <TerminalPaneOverlays
-        sessionId={sessionId}
-        linkPick={linkPick}
-        setLinkPick={setLinkPick}
-        cmdMenu={cmdMenu}
-        setCmdMenu={setCmdMenu}
-        focusTerm={() => termRef.current?.focus()}
-        write={(data) => writeRef.current?.(data)}
-      />
-      {reconnecting && !dead && (
-        <PaneStateOverlay className="pointer-events-none z-(--z-controls)">
-          <ActivitySignal
-            label="Reconnecting"
-            className="text-xs text-text-soft"
-            labelClassName="min-w-0"
-          />
-        </PaneStateOverlay>
-      )}
-      {dead && (
-        <PaneStateOverlay material="subtle" className="pointer-events-none z-(--z-controls)">
-          <StateNotice
-            className="pointer-events-auto max-w-sm flex-none"
-            title="Terminal disconnected"
-            body={problem && <ProblemLine {...problem} className="items-center" />}
-            actionsLabel="Terminal recovery actions"
-            actions={
-              <Button type="button" variant="ghost" size="sm" onClick={recover}>
-                New terminal
-              </Button>
-            }
-          />
-        </PaneStateOverlay>
-      )}
+        {reconnecting && !dead && !terminalExit && (
+          <PaneStateOverlay className="pointer-events-none z-(--z-controls)">
+            <ActivitySignal
+              label="Reconnecting"
+              className="text-xs text-text-soft"
+              labelClassName="min-w-0"
+            />
+          </PaneStateOverlay>
+        )}
+        {dead && !terminalExit && (
+          <PaneStateOverlay material="subtle" className="pointer-events-none z-(--z-controls)">
+            <StateNotice
+              className="pointer-events-auto max-w-sm flex-none"
+              title="Terminal disconnected"
+              body={problem && <ProblemLine {...problem} className="items-center" />}
+              actionsLabel="Terminal recovery actions"
+              actions={
+                <Button type="button" variant="ghost" size="sm" onClick={recover}>
+                  New terminal
+                </Button>
+              }
+            />
+          </PaneStateOverlay>
+        )}
+      </div>
+      {terminalExit && <TerminalExitNotice paneId={paneId} exit={terminalExit} />}
       <ConfirmDialog
         open={pastePrompt !== null}
         variant="default"

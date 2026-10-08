@@ -15,7 +15,7 @@ import { backendClient } from '@/shared/api/client'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { createTerminal } from '../api'
+import { closeTerminal, createTerminal } from '../api'
 import { decideAutoReveal } from './terminalAutoReveal'
 import { applyTerminalState } from './terminalStates'
 
@@ -36,13 +36,21 @@ function makeItem(args: {
   terminalId: string
   owned: boolean
   title: string
+  command?: string
+  cwd?: string
 }): WorkItem {
   return {
     kind: 'terminal',
     id: `terminal:${args.terminalId}`,
     title: args.title,
     scope: args.sessionId,
-    payload: { sessionId: args.sessionId, terminalId: args.terminalId, owned: args.owned },
+    payload: {
+      sessionId: args.sessionId,
+      terminalId: args.terminalId,
+      owned: args.owned,
+      command: args.command,
+      cwd: args.cwd,
+    },
   }
 }
 
@@ -57,7 +65,7 @@ function placeTerminal(item: WorkItem, opts?: { reveal?: boolean }): void {
 }
 
 /** Create a backend PTY for the session and open it as a new (owned) terminal tab. */
-export async function openNewTerminal(sessionId: string): Promise<void> {
+export async function openNewTerminal(sessionId: string): Promise<boolean> {
   let info: Awaited<ReturnType<typeof createTerminal>>
   try {
     info = await createTerminal({ sessionId })
@@ -66,17 +74,19 @@ export async function openNewTerminal(sessionId: string): Promise<void> {
     // "the pane surfaces connection errors" was wrong in exactly the case that matters: the
     // person pressed New terminal (or Recover, on a dead one) and the app did nothing at all.
     toast.error('Could not start a terminal', { description: errorMessage(err, '') || undefined })
-    return
+    return false
   }
   const n = terminalsInScope(sessionId).length
   placeTerminal(
     makeItem({
       sessionId,
       terminalId: info.id,
+      cwd: info.cwd,
       owned: true,
       title: n === 0 ? 'Terminal' : `Terminal ${n + 1}`,
     }),
   )
+  return true
 }
 
 /**
@@ -99,14 +109,23 @@ export async function openCommandTerminal(
   command: string,
   title: string,
 ): Promise<void> {
-  let terminalId: string
+  let info: Awaited<ReturnType<typeof backendClient.spawnTerminalCommand>>
   try {
-    ;({ terminalId } = await backendClient.spawnTerminalCommand({ sessionId, command }))
+    info = await backendClient.spawnTerminalCommand({ sessionId, command })
   } catch (err) {
     toast.error(`Could not start “${title}”`, { description: errorMessage(err, '') || undefined })
     return
   }
-  placeTerminal(makeItem({ sessionId, terminalId, owned: true, title }))
+  placeTerminal(
+    makeItem({
+      sessionId,
+      terminalId: info.terminalId,
+      cwd: info.cwd,
+      owned: true,
+      title,
+      command,
+    }),
+  )
 }
 
 /** Reveal the session's most-recently-opened terminal, creating one if it has none. */
@@ -132,15 +151,23 @@ export function adoptTerminal(args: {
   terminalId: string
   sessionId: string
   title?: string
+  command?: string
+  cwd?: string
   reveal?: boolean
 }): void {
+  const grid = useGridStore.getState()
+  const id = `terminal:${args.terminalId}`
+  const retained = grid.items[id] ?? grid.closed.find((entry) => entry.item.id === id)?.item
   placeTerminal(
-    makeItem({
-      sessionId: args.sessionId,
-      terminalId: args.terminalId,
-      owned: false,
-      title: args.title ?? 'Task',
-    }),
+    retained ??
+      makeItem({
+        sessionId: args.sessionId,
+        terminalId: args.terminalId,
+        owned: false,
+        title: args.title ?? 'Task',
+        command: args.command,
+        cwd: args.cwd,
+      }),
     { reveal: args.reveal },
   )
 }
@@ -209,4 +236,46 @@ export function routeTerminalState(
 /** A user-launched agent pane belongs to its Localix session, including when reopened. */
 export function openOwnedTerminal(sessionId: string, terminalId: string, title: string): void {
   placeTerminal(makeItem({ sessionId, terminalId, title, owned: true }))
+}
+
+/** Spawn first: a failed restart must leave the original output available. */
+export async function restartTerminalTab(paneId: string): Promise<boolean> {
+  const item = useGridStore.getState().items[paneId]
+  const sessionId = item?.payload?.sessionId
+  if (!item || typeof sessionId !== 'string') return false
+  const exit = item.payload?.terminalExit as { command?: string; cwd?: string } | undefined
+  const command = exit?.command ?? item.payload?.command
+  const cwd = exit?.cwd ?? item.payload?.cwd
+  const directory = typeof cwd === 'string' ? { cwd } : {}
+  try {
+    const terminalId =
+      typeof command === 'string'
+        ? (await backendClient.spawnTerminalCommand({ sessionId, command, ...directory }))
+            .terminalId
+        : (await createTerminal({ sessionId, ...directory })).id
+    const grid = useGridStore.getState()
+    if (!grid.items[paneId]) {
+      // The person closed the source tab while spawning; do not leave an orphan.
+      await closeTerminal(terminalId)
+      return false
+    }
+    placeTerminal(
+      makeItem({
+        sessionId,
+        terminalId,
+        owned: true,
+        title: item.title,
+        command: typeof command === 'string' ? command : undefined,
+        cwd: directory.cwd,
+      }),
+    )
+    const leaf = groupOfTab(useGridStore.getState().root, paneId)
+    if (leaf) useGridStore.getState().closeTab(leaf.id, paneId)
+    return true
+  } catch (err) {
+    toast.error('Could not restart the terminal', {
+      description: errorMessage(err, '') || undefined,
+    })
+    return false
+  }
 }

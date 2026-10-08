@@ -111,6 +111,7 @@ export function BrowserWorkspace({
         sessionId={sessionId}
         servedFile={current.servedFile}
         startCommand={current.startCommand}
+        startCwd={current.startCwd}
         rootDir={current.rootDir}
         frameBlocked={current.frameBlocked}
         onNavigate={(next) => {

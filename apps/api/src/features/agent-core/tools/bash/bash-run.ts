@@ -48,7 +48,7 @@ export interface BashRunContext {
    * command is carried alongside as provenance for the relaunch. Bound to this user +
    * session at wiring time; absent in sub-sessions / tests.
    */
-  recordPreviewTarget?: (url: string, startCommand?: string) => void
+  recordPreviewTarget?: (url: string, startCommand?: string, startCwd?: string) => void
   /**
    * Enabled plugins' `bin/` directories, PREPENDED to PATH for every bash
    * subprocess (foreground/batch/bg) so a plugin's bundled CLIs resolve by bare

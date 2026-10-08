@@ -2,7 +2,6 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { Outlet, Link, useLocation } from 'react-router'
 import { PAGE_SHELL } from '../lib/shell'
 import { Button } from './Button'
-import { RELEASE_CHANNEL } from './releaseChannel'
 import { SiteHeader } from './SiteHeader'
 
 export function SiteLayout({ children }: { children?: ReactNode }) {
@@ -41,16 +40,13 @@ export function SiteLayout({ children }: { children?: ReactNode }) {
         {children ?? <Outlet />}
       </main>
 
-      <footer className="border-t border-border-subtle">
+      <footer className="site-footer border-t border-border-subtle">
         <div
           className={`${PAGE_SHELL} flex flex-col items-center justify-between gap-4 py-10 text-sm text-text-faint sm:flex-row`}
         >
           <div className="flex items-center gap-2.5">
             <img src="/logo.svg" alt="" className="size-5 opacity-80" />
-            {/* The year is read at build time on the server and in the browser later. */}
-            <span suppressHydrationWarning>
-              © {new Date().getFullYear()} Localix · localix.ai · {RELEASE_CHANNEL}
-            </span>
+            <span>Localix</span>
           </div>
           <div className="flex items-center gap-5">
             <Link to="/docs" className="hover:text-foreground">

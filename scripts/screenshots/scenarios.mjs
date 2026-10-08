@@ -113,6 +113,13 @@ export async function compose(page, scenario) {
   } else if (scenario === 'queued' || scenario === 'question') {
     await button(page, 'Answer').waitFor()
     if (scenario === 'question') await button(page, 'Answer').click()
+  } else if (scenario === 'terminal-error') {
+    await button(page, 'Terminal').click()
+    await button(page, 'Maximize panel').first().click()
+    const input = page.getByRole('textbox', { name: 'Terminal input' })
+    await input.fill('printf "Error: release configuration is missing\\n"; exit 17')
+    await input.press('Enter')
+    await page.getByRole('status').filter({ hasText: 'Process exited with code 17.' }).waitFor()
   } else if (scenario === 'editor') {
     await editor(page)
   } else {

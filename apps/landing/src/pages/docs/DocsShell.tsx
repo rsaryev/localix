@@ -2,12 +2,10 @@ import { useState, type ReactNode, type Ref } from 'react'
 import { docPages, type DocPage } from '../../generated/docs'
 import { PAGE_SHELL } from '../../lib/shell'
 import { DocsSidebar } from './DocsSidebar'
-import { DocsMobilePicker } from './DocsMobilePicker'
 import { DocsBreadcrumb, DocsPagination } from './DocsArticleNav'
 import { DocsTableOfContents } from './DocsTableOfContents'
 import { DocsReadingTools, type ReadingSize } from './DocsReadingTools'
 import { featureCategoryFor } from './docGroups'
-import { useDocSearch } from './useDocSearch'
 import type { DocHeading } from './docBootstrap'
 import { Skeleton } from '@localixai/kit/skeleton'
 
@@ -25,34 +23,23 @@ export function DocsShell({
   articleRef?: Ref<HTMLElement>
   children: ReactNode
 }) {
-  const search = useDocSearch()
   const [size, setSize] = useState<ReadingSize>('standard')
-  const [focus, setFocus] = useState(false)
   const index = docPages.findIndex((page) => page.slug === active.slug)
   return (
-    <div
-      className={`${PAGE_SHELL} docs-layout ${focus ? 'docs-focus' : ''}`}
-      data-reader-size={size}
-    >
-      <DocsSidebar active={active} search={search} />
+    <div className={`${PAGE_SHELL} docs-layout`} data-reader-size={size}>
+      <DocsSidebar active={active} />
       <article
         id="doc-content"
         ref={articleRef}
         tabIndex={-1}
         className="docs-article min-w-0 outline-none"
       >
-        <DocsMobilePicker active={active} search={search} />
         <div className="docs-reading-bar">
           <DocsBreadcrumb
             active={active}
             category={active.section === 'features' ? featureCategoryFor(active) : null}
           />
-          <DocsReadingTools
-            size={size}
-            onSize={setSize}
-            focus={focus}
-            onFocus={() => setFocus((value) => !value)}
-          />
+          <DocsReadingTools size={size} onSize={setSize} />
         </div>
         <div
           id="doc-body"
@@ -69,9 +56,9 @@ export function DocsShell({
           href={`https://github.com/rsaryev/localix/blob/main/${active.sourcePath}`}
           target="_blank"
           rel="noreferrer"
-          className="mt-8 inline-block text-xs text-text-faint hover:text-foreground"
+          className="docs-edit-link focus-ring text-xs text-text-faint hover:text-foreground"
         >
-          Edit this page on GitHub
+          Edit on GitHub
         </a>
       </article>
       <div className="docs-outline">

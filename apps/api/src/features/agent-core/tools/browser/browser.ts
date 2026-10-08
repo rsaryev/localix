@@ -51,6 +51,7 @@ export interface BrowserTarget {
   url?: string
   title?: string
   startCommand?: string
+  startCwd?: string
   /** Whether the preview has already been opened for the current URL. */
   opened: boolean
 }
@@ -84,7 +85,12 @@ export interface BrowserToolDeps {
   /** The session's remembered preview target (for lazy auto-open before driving). */
   getTarget(): BrowserTarget | undefined
   /** Record the just-opened/resolved URL as the session's preview target. */
-  recordTarget(input: { url?: string; title?: string; startCommand?: string }): void
+  recordTarget(input: {
+    url?: string
+    title?: string
+    startCommand?: string
+    startCwd?: string
+  }): void
   /** Mark the current target as opened (after a successful open). */
   markOpened(): void
   /**
@@ -114,6 +120,7 @@ export function createBrowserTool(deps: BrowserToolDeps) {
       await deps.openPreview({
         url: target.url,
         start_command: target.startCommand,
+        start_cwd: target.startCwd,
         title: target.title,
         background: target.background,
       })
@@ -136,6 +143,7 @@ export function createBrowserTool(deps: BrowserToolDeps) {
     await deps.openPreview({
       url: target.url,
       start_command: target.startCommand,
+      start_cwd: target.startCwd,
       title: target.title,
       background: target.background,
     })

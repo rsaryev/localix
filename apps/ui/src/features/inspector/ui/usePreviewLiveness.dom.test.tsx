@@ -180,3 +180,44 @@ test("takes the server's pushed answer and never asks the app itself", async () 
     globalThis.fetch = originalFetch
   }
 })
+
+test('waking a preview runs its saved command in its saved directory', async () => {
+  const { spyOn } = await import('bun:test')
+  const { backendClient } = await import('@/shared/api/client')
+  const { useGridStore } = await import('@/features/workspace-grid/model')
+  const originalGrid = useGridStore.getState()
+  const spawn = spyOn(backendClient, 'spawnTerminalCommand').mockResolvedValue({
+    terminalId: 'wake-cwd',
+  })
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  function WakePreview() {
+    const preview = usePreviewLiveness({
+      active: false,
+      url: 'http://localhost:4321',
+      version: 1,
+      sessionId: 'session-1',
+      startCommand: 'bun run dev',
+      startCwd: '/work/project/frontend',
+      watch: unwatchable,
+    })
+    return <button onClick={preview.startServer}>Wake preview</button>
+  }
+  try {
+    await act(async () => root.render(<WakePreview />))
+    await act(async () => host.querySelector('button')!.click())
+    expect(spawn).toHaveBeenCalledWith({
+      sessionId: 'session-1',
+      command: 'bun run dev',
+      cwd: '/work/project/frontend',
+    })
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+    spawn.mockRestore()
+    useGridStore.setState(originalGrid)
+  }
+})

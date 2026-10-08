@@ -74,6 +74,7 @@ export class TerminalSession {
   /** Memoized join of {@link scrollbackChunks}; invalidated by each new chunk. */
   private scrollbackJoined: string | null = ''
   private exited = false
+  exitCode: number | null = null
   /**
    * Completes the session exactly once, whether the PTY reports a natural exit or
    * its owner explicitly disposes it. Some PTY backends do not deliver `onExit`
@@ -137,6 +138,7 @@ export class TerminalSession {
     this.finish = (code) => {
       if (this.exited) return
       this.exited = true
+      this.exitCode = code
       // The replay cap can have evicted mode changes or earlier TUI paints. Drain the
       // existing parser before disposal so the archive retains what was actually visible.
       this.finalSnapshot = this.emulator?.screen().catch(() => null)

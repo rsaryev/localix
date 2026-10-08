@@ -8,6 +8,7 @@ import { usePreviewStore } from '@/features/inspector/model/previewStore'
 import { revealPreview } from '@/features/inspector/model/revealPreview'
 import { useLiveTerminalsStore } from '@/features/terminal/model/liveTerminals'
 import { forgetTerminalState } from '@/features/terminal/model/terminalStates'
+import { finishTerminalTabs } from '@/features/terminal/model/deadTerminalTabs'
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import { decideFollowReveal } from './followAgentEdits'
 import { useChatStore } from './store'
@@ -271,7 +272,12 @@ export function routeTerminalFinished(
   sessionId: string,
   parsed: Extract<AgentStreamEvent, { type: 'terminal.finished' }>,
 ): void {
-  useLiveTerminalsStore.getState().noteFinished(parsed.terminalId)
+  finishTerminalTabs(parsed.terminalId, {
+    exitCode: parsed.exitCode,
+    interactive: parsed.interactive,
+    command: parsed.command,
+    cwd: parsed.cwd,
+  })
   // Its "Open preview" and takeover state die with it, not on the next backstop poll.
   forgetTerminalState(sessionId, parsed.terminalId)
 }
@@ -295,6 +301,7 @@ export function routePreviewUpdated(
     servedFile: parsed.servedFile,
     rootDir: parsed.rootDir,
     startCommand: parsed.startCommand,
+    startCwd: parsed.startCwd,
     frameBlocked: parsed.frameBlocked,
   })
 }

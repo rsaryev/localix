@@ -28,6 +28,7 @@ interface PreviewLivenessOptions {
   sessionId: string | null
   /** Shell command that started a dev server — relaunched on demand. */
   startCommand?: string
+  startCwd?: string
   /** The server came back after being down: the frame is about to reload. */
   onRecover?: () => void
   /**
@@ -76,6 +77,7 @@ export function usePreviewLiveness({
   version,
   sessionId,
   startCommand,
+  startCwd,
   onRecover,
   watch = watchPreviewLiveness,
 }: PreviewLivenessOptions): PreviewLiveness {
@@ -119,11 +121,22 @@ export function usePreviewLiveness({
     setStartFailure(null)
     setStarting(true)
     void backendClient
-      .spawnTerminalCommand({ sessionId, command: startCommand })
-      .then(({ terminalId }) => {
+      .spawnTerminalCommand({
+        sessionId,
+        command: startCommand,
+        ...(startCwd ? { cwd: startCwd } : {}),
+      })
+      .then(({ terminalId, cwd }) => {
         setStartedTerminalId(terminalId)
         // Pre-attach the dev-server terminal hidden; revealed on demand / on failure.
-        adoptTerminal({ terminalId, sessionId, title: 'Dev server', reveal: false })
+        adoptTerminal({
+          terminalId,
+          sessionId,
+          title: 'Dev server',
+          cwd: cwd ?? startCwd,
+          command: startCommand,
+          reveal: false,
+        })
       })
       .catch((error: unknown) => {
         setStarting(false)
@@ -133,7 +146,7 @@ export function usePreviewLiveness({
           field: startCommand,
         })
       })
-  }, [startCommand, sessionId])
+  }, [startCommand, startCwd, sessionId])
 
   // Give up if a relaunched dev server never answers: the command most likely failed (the
   // cwd lacks deps, the port differs, the script is wrong). Stop the infinite "Starting…",

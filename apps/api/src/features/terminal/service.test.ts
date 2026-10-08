@@ -377,3 +377,24 @@ describe('terminal service', () => {
     expect(reported.at(-1)).toEqual(['http://localhost:5173', false])
   })
 })
+
+test('a cwd override cannot bypass session ownership validation', async () => {
+  const { backend, spawns } = makeBackend()
+  const service = createTerminalService({
+    backend,
+    resolveCwd: async () => {
+      throw new Error('session not owned')
+    },
+  })
+  await expect(
+    service.spawnCommand('foreign', {
+      sessionId: 'private',
+      cwd: '/work/frontend',
+      command: 'bun dev',
+    }),
+  ).rejects.toThrow('session not owned')
+  await expect(
+    service.open('foreign', { sessionId: 'private', cwd: '/work/frontend' }),
+  ).rejects.toThrow('session not owned')
+  expect(spawns).toEqual([])
+})

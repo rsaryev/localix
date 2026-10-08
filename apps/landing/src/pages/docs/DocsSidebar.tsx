@@ -2,11 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { SearchInput } from '@localixai/kit/search-input'
-import type { DocPage } from '../../generated/docs'
+import { docPages, type DocPage } from '../../generated/docs'
 import { cn } from '../../lib/cn'
 import { featureCategoryFor, groupByCategory, groupBySection } from './docGroups'
-import type { DocSearch } from './useDocSearch'
 
 const branchDomId = (label: string) =>
   `docs-branch-${label.toLowerCase().replaceAll(/[^a-z0-9]+/gu, '-')}`
@@ -37,12 +35,10 @@ function PageList({ pages, activeSlug }: { pages: DocPage[]; activeSlug: string 
 /**
  * The desktop rail: one collapsible branch per docs section, built entirely
  * from the auto-collected tree. Open state is keyed by branch label; the active
- * page's branch (and its Features sub-category) auto-opens, and searching
- * expands everything so a match is never hidden behind a closed branch.
+ * page's branch (and its Features sub-category) auto-opens.
  */
-export function DocsSidebar({ active, search }: { active: DocPage; search: DocSearch }) {
-  const { query, setQuery, normalizedQuery, filtered, loadedContent, failed } = search
-  const sections = groupBySection(filtered)
+export function DocsSidebar({ active }: { active: DocPage }) {
+  const sections = groupBySection(docPages)
   const activeCategory = active.section === 'features' ? featureCategoryFor(active) : null
 
   const [openBranches, setOpenBranches] = useState<Record<string, boolean>>(() => ({
@@ -57,36 +53,13 @@ export function DocsSidebar({ active, search }: { active: DocPage; search: DocSe
     }))
   }, [active, activeCategory])
 
-  const searching = query.trim().length > 0
-  const isOpen = (key: string) => searching || (openBranches[key] ?? false)
+  const isOpen = (key: string) => openBranches[key] ?? false
   const toggle = (key: string) =>
     setOpenBranches((open) => ({ ...open, [key]: !(open[key] ?? false) }))
 
   return (
     <aside className="docs-sidebar sticky top-8 hidden h-[calc(100vh-4rem)] overflow-y-auto md:block">
-      <SearchInput
-        aria-label="Search docs"
-        value={query}
-        onValueChange={setQuery}
-        placeholder="Search docs…"
-        className="mb-6"
-      />
-      {normalizedQuery && !loadedContent && !failed && (
-        <p aria-live="polite" className="-mt-3 mb-3 px-3 text-xs text-text-faint">
-          Searching full text…
-        </p>
-      )}
       <nav aria-label="Documentation" className="space-y-1.5">
-        {sections.length === 0 && (
-          <p role="status" className="px-3 text-sm text-text-faint">
-            {loadedContent || failed ? `No pages match "${query}".` : 'Searching full text…'}
-          </p>
-        )}
-        {failed && (
-          <p className="px-3 pb-1 text-xs text-text-faint">
-            Full-text search is unavailable; titles and summaries are still searchable.
-          </p>
-        )}
         {sections.map((section) => {
           const open = isOpen(section.title)
           const branchId = branchDomId(section.title)

@@ -118,6 +118,8 @@ export interface OpenPreviewRequest {
   rootDir?: string
   /** Shell command that started this server — relaunched by the Preview panel if it stops. */
   startCommand?: string
+  /** Working directory retained for relaunching the command. */
+  startCwd?: string
   /** Site refuses iframing — the pane shows its open-in-browser card. */
   frameBlocked?: boolean
 }

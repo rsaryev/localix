@@ -170,7 +170,7 @@ export interface BashToolOptions {
    * stopped preview reruns to come back — and is never used to detect the URL.
    * Bound to user + session at wiring time. Absent → no preview target is recorded.
    */
-  recordPreviewTarget?: (url: string, startCommand?: string) => void
+  recordPreviewTarget?: (url: string, startCommand?: string, startCwd?: string) => void
   /**
    * Enabled plugins' `bin/` directories, prepended to PATH for bash subprocesses
    * so bundled plugin CLIs resolve by bare name (see {@link BashRunContext}).

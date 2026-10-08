@@ -24,6 +24,7 @@ export async function openPreviewAndSnapshot(
     url: res.url,
     title: res.title,
     startCommand: input.start_command?.trim() || undefined,
+    startCwd: res.startCwd,
   })
   deps.markOpened()
 

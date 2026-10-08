@@ -40,6 +40,7 @@ interface PreviewTabProps {
   /** Shell command that started this server — relaunched (in the session workspace) when
    *  the server stops, so the stopped overlay offers "Start server" instead of a dead reload. */
   startCommand?: string
+  startCwd?: string
   /** Auto-served static file: the directory we serve. Lets the panel re-serve it (re-bind
    *  the in-process static server) when the API restarted and the ephemeral port died. */
   rootDir?: string
@@ -65,6 +66,7 @@ export function PreviewTab({
   sessionId = null,
   servedFile,
   startCommand,
+  startCwd,
   rootDir,
   frameBlocked,
   onNavigate,
@@ -88,6 +90,7 @@ export function PreviewTab({
     version,
     sessionId,
     startCommand,
+    startCwd,
     onRecover: () => endpointRef.current.refresh(),
   })
   const endpoint = usePreviewEndpoint({

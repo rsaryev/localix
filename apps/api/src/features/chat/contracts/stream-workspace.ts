@@ -68,6 +68,8 @@ export type WorkspaceStreamEvent =
       /** The shell command that started this server — remembered so the UI can relaunch
        *  it (from the session workspace) when the server stops, instead of a dead reload. */
       startCommand?: string
+      /** Working directory retained for relaunching the command. */
+      startCwd?: string
       /** The site refuses iframing (X-Frame-Options / frame-ancestors) — the UI shows its
        *  open-in-browser card and offers the strip-proxy view on demand. The proxy address
        *  itself is never on the wire: it is an ephemeral port the pane resolves from the
@@ -167,6 +169,7 @@ export type WorkspaceStreamEvent =
       type: 'terminal.finished'
       sessionId: string
       terminalId: string
+      cwd?: string
       exitCode: number
       command?: string
       /**

@@ -27,6 +27,7 @@
   display: none;
 }
 .workflow-tabs .workflow-tab {
+  flex: none;
   padding-inline: 0.4rem;
   color: var(--text-soft);
   background: transparent;
@@ -53,7 +54,6 @@
   display: grid;
   grid-template-rows: auto auto;
   min-width: 0;
-  touch-action: pan-y pinch-zoom;
 }
 .workflow-panel {
   grid-area: 1 / 1 / 3 / 2;
@@ -97,24 +97,27 @@
 .workflow-carousel[data-motion='false'] .workflow-panel {
   transition: none;
 }
-@media (max-width: 48rem) {
+@media (max-width: 767px) {
   .workflow-navigation {
     flex-wrap: wrap;
     gap: 0;
   }
   .workflow-arrows {
-    width: 100%;
-    justify-content: end;
-    margin-top: -1rem;
-    margin-bottom: 1rem;
+    display: none;
   }
   .workflow-tabs {
     flex-basis: 100%;
     margin-bottom: 1.75rem;
-    justify-content: space-between;
+    justify-content: start;
+    scrollbar-width: thin;
+    padding-bottom: 0.5rem;
+  }
+  .workflow-tabs::-webkit-scrollbar {
+    display: initial;
   }
   .workflow-tabs .workflow-tab {
-    padding-inline: 0.25rem;
+    min-height: var(--chrome-control-touch);
+    padding-inline: 0.75rem;
   }
   .workflow-caption {
     grid-template-columns: minmax(0, 1fr);
@@ -123,6 +126,10 @@
   }
   .workflow-caption h2 {
     font-size: 1.85rem;
+  }
+  .workflow-guide {
+    min-height: var(--chrome-control-touch);
+    font-size: 1rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {

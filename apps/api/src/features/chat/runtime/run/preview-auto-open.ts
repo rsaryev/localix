@@ -47,7 +47,7 @@ export interface PreviewTargetRecorderInput {
  */
 export function buildPreviewTargetRecorder(
   input: PreviewTargetRecorderInput,
-): ((url: string, startCommand?: string) => void) | undefined {
+): ((url: string, startCommand?: string, startCwd?: string) => void) | undefined {
   const { deps, userId, session, defaultCwd, agentProfile } = input
   const targets = deps.previewTargets
   if (!targets) return undefined
@@ -61,17 +61,25 @@ export function buildPreviewTargetRecorder(
       ))
   const delay = input.delay ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)))
 
-  return (url, startCommand) => {
+  return (url, startCommand, startCwd) => {
     // The command comes from the job that printed the banner, so an auto-detected preview
     // knows how to come back — the same relaunch an explicit `open` with `start_command`
     // gets. Only the DETECTION stays content-based.
-    targets.record(userId, session.id, { url, ...(startCommand ? { startCommand } : {}) })
+    targets.record(userId, session.id, {
+      url,
+      ...(startCommand ? { startCommand, startCwd: startCwd ?? defaultCwd } : {}),
+    })
     if (!canPreview) return
     const target = targets.get(userId, session.id)
     // Same origin re-detected (a restart, a second banner line) keeps `opened` — nothing to do.
     if (!target?.url || target.opened) return
     const attempt = () =>
-      open({ url: target.url, title: target.title, start_command: target.startCommand })
+      open({
+        url: target.url,
+        title: target.title,
+        start_command: target.startCommand,
+        start_cwd: target.startCwd,
+      })
     void attempt()
       .then(async (result) => {
         if (result.ok) return result

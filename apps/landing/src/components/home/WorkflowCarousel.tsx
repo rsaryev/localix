@@ -8,6 +8,37 @@ import { Button } from '@localixai/kit/button'
 import { Screenshot } from '../Screenshot'
 import { ArrowCue } from './cards'
 
+function WorkflowContent({ item, src }: { item: ShowcaseItem; src?: string }) {
+  return (
+    <>
+      <div className="workflow-caption">
+        <h2 className="section-title text-3xl md:text-4xl">{item.title}</h2>
+        <div>
+          <p className="lede text-lg">{item.body}</p>
+          <Link to={`/docs/${item.slug}`} className="workflow-guide group/cue focus-ring">
+            Read the guide <ArrowCue reveal={false} />
+          </Link>
+        </div>
+      </div>
+      <div className="workflow-media">
+        {src && (
+          <Screenshot src={src} alt={item.alt} title={item.title}>
+            <img
+              src={src}
+              alt={item.alt}
+              width={1600}
+              height={1000}
+              loading="lazy"
+              decoding="async"
+              className="screenshot-thumbnail block aspect-[8/5] h-auto w-full rounded-xl border-0 object-cover"
+            />
+          </Screenshot>
+        )}
+      </div>
+    </>
+  )
+}
+
 /** One manual tour, with native captures and a fixed footprint at every step. */
 export function WorkflowCarousel({
   items = WORKFLOWS,
@@ -23,8 +54,6 @@ export function WorkflowCarousel({
   const [previous, setPrevious] = useState<number | null>(null)
   const [motion, setMotion] = useState(true)
   const tabs = useRef<(HTMLButtonElement | null)[]>([])
-  const touch = useRef<{ x: number; y: number } | null>(null)
-  const swiped = useRef(false)
 
   function select(index: number, keyboard = false) {
     const next = (index + workflows.length) % workflows.length
@@ -34,10 +63,11 @@ export function WorkflowCarousel({
     const tab = tabs.current[next]
     const rail = tab?.parentElement
     if (rail && tab) {
-      const left = tab.offsetLeft - rail.offsetLeft
-      if (left < rail.scrollLeft) rail.scrollLeft = left
-      else if (left + tab.offsetWidth > rail.scrollLeft + rail.clientWidth)
-        rail.scrollLeft = left + tab.offsetWidth - rail.clientWidth
+      const bounds = tab.getBoundingClientRect()
+      const left = bounds.left - rail.getBoundingClientRect().left + rail.scrollLeft
+      if (left < rail.scrollLeft) rail.scrollLeft = Math.floor(left)
+      else if (left + bounds.width > rail.scrollLeft + rail.clientWidth)
+        rail.scrollLeft = Math.ceil(left + bounds.width - rail.clientWidth)
     }
     if (keyboard) tab?.focus()
   }
@@ -99,34 +129,7 @@ export function WorkflowCarousel({
           </div>
         )}
       </div>
-      <div
-        className="workflow-panels"
-        onTouchStart={(event) => {
-          if (!event.currentTarget.contains(event.target as Node)) return
-          const point = event.touches[0]
-          touch.current = point ? { x: point.clientX, y: point.clientY } : null
-          swiped.current = false
-        }}
-        onTouchCancel={() => {
-          touch.current = null
-        }}
-        onTouchEnd={(event) => {
-          const start = touch.current
-          const end = event.changedTouches[0]
-          touch.current = null
-          if (!start || !end) return
-          const dx = end.clientX - start.x
-          if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(end.clientY - start.y) * 1.5) return
-          swiped.current = true
-          select(active + (dx < 0 ? 1 : -1))
-        }}
-        onClickCapture={(event) => {
-          if (!swiped.current) return
-          event.preventDefault()
-          event.stopPropagation()
-          swiped.current = false
-        }}
-      >
+      <div className="workflow-panels">
         {workflows.map((item, index) => (
           <div
             key={item.key}
@@ -138,30 +141,10 @@ export function WorkflowCarousel({
             data-active={active === index}
             className="workflow-panel"
           >
-            <div className="workflow-caption">
-              <h2 className="section-title text-3xl md:text-4xl">{item.title}</h2>
-              <div>
-                <p className="lede text-lg">{item.body}</p>
-                <Link to={`/docs/${item.slug}`} className="workflow-guide group/cue focus-ring">
-                  Read the guide <ArrowCue reveal={false} />
-                </Link>
-              </div>
-            </div>
-            <div className="workflow-media">
-              {(index === active || index === previous) && (
-                <Screenshot src={shots[item.shot]!.src} alt={item.alt} title={item.title}>
-                  <img
-                    src={shots[item.shot]!.src}
-                    alt={item.alt}
-                    width={1600}
-                    height={1000}
-                    loading="lazy"
-                    decoding="async"
-                    className="screenshot-thumbnail block aspect-[8/5] h-auto w-full rounded-xl border-0 object-cover"
-                  />
-                </Screenshot>
-              )}
-            </div>
+            <WorkflowContent
+              item={item}
+              src={index === active || index === previous ? shots[item.shot]!.src : undefined}
+            />
           </div>
         ))}
       </div>

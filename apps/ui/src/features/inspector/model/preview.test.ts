@@ -42,9 +42,14 @@ describe('preview state transforms', () => {
   })
 
   test('refreshing the same server retains its launch command', () => {
-    const opened = recordPreview(empty, 'S', entry('a', { startCommand: 'bun run dev' }))
+    const opened = recordPreview(
+      empty,
+      'S',
+      entry('a', { startCommand: 'bun run dev', startCwd: '/work/frontend' }),
+    )
     const refreshed = recordPreview(opened, 'S', entry('a', { version: 2 }))
     expect(refreshed.previewBySession.S.startCommand).toBe('bun run dev')
+    expect(refreshed.previewBySession.S.startCwd).toBe('/work/frontend')
     expect(refreshed.previewTabsBySession.S[0]?.startCommand).toBe('bun run dev')
   })
 

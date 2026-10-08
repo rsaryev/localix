@@ -112,10 +112,12 @@ describe('buildPreviewTargetRecorder', () => {
    */
   test('carries the command that printed the banner into the opened preview', async () => {
     const h = harness(previewing)
-    h.record('http://localhost:4173', 'npm run dev')
+    h.record('http://localhost:4173', 'npm run dev', '/work/project/frontend')
     await settle()
 
     expect(h.opens[0]?.start_command).toBe('npm run dev')
+    expect(h.opens[0]?.start_cwd).toBe('/work/project/frontend')
+    expect(h.targets.get('u1', 's1')?.startCwd).toBe('/work/project/frontend')
     expect(h.targets.get('u1', 's1')?.startCommand).toBe('npm run dev')
   })
 
@@ -139,4 +141,14 @@ describe('buildPreviewTargetRecorder', () => {
     })
     expect(record).toBeUndefined()
   })
+})
+
+test('a same-origin launch from a new directory republishes the updated recipe', async () => {
+  const h = harness(previewing)
+  h.record('http://localhost:4173', 'bun dev', '/work/first')
+  await settle()
+  h.record('http://localhost:4173', 'bun dev', '/work/second')
+  await settle()
+  expect(h.opens).toHaveLength(2)
+  expect(h.opens[1]?.start_cwd).toBe('/work/second')
 })

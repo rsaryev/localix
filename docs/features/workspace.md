@@ -120,13 +120,25 @@ workbench away. When a delegated run ends, its pages and its interactive termina
 
 The grid writes restorable items and layout state to browser storage. Chat, files, previews,
 terminals, source control, settings, and several global views opt into restoration. A terminal tab
-reattaches to its backend PTY by id; a dead terminal id closes rather than creating a replacement
-silently.
+reattaches to its backend PTY by id; it never creates a replacement silently.
 
-Terminal tabs close automatically when their processes finish, including shells, coding agents and
-background jobs. A workspace-wide check also removes dead tabs in hidden conversations and restored
-layouts after a restart or reconnect. Connection failures keep the tabs intact until the backend
-confirms that their processes are gone. Finished terminals are also removed from the reopen history.
+When a command finishes, its terminal tab stays open with its output and exit code, including
+successful commands and failed shells. The input is disabled, while scrolling, finding and copying
+output remain available. **Restart** starts the same program again, or a fresh shell for an
+interactive terminal, using the original launch directory; **Close** dismisses the tab. A failed
+restart leaves the original output available. A normal shell exit (`exit` or Ctrl+D with code 0)
+closes its tab automatically.
+
+A detected dev server remembers both its start command and launch directory. **Wake preview** reruns
+that command from its original directory, including a subdirectory of the project. Older preview
+entries without a saved directory fall back to the session workspace.
+
+A workspace-wide check marks missing processes as unavailable, including hidden conversations and
+restored layouts, without deleting their tabs. Connection failures trigger reconnection attempts and
+do not prove that the process has exited. Finished tabs can be reopened from the tab history. Final
+output is kept in a bounded in-memory cache while the app is open, with a short-lived server archive
+for reattachment. It is not saved to browser storage and may be unavailable after reload or cache
+eviction.
 
 Recently used session scopes and tabs can remain mounted but hidden for faster switching. The
 keep-alive lists are bounded; an older surface can remount when you return to it.
@@ -288,3 +300,7 @@ primary shortcut.
 - [Live tab context](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/workspace-grid/model/liveTabMessageContext.ts)
 - [Context reference grammar](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/context-refs.ts)
 - [Interactive terminal](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
+
+A detected dev server remembers both its start command and launch directory. **Wake preview** reruns
+that command from its original directory, including a subdirectory of the project. Older preview
+entries without a saved directory fall back to the session workspace.

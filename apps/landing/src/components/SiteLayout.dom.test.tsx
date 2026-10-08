@@ -61,6 +61,12 @@ test('focuses cold and same-route fragments, then returns focus to main from the
   })
 
   expect(document.activeElement).toBe(document.getElementById('demo'))
+  expect(host.querySelector('footer span')?.textContent).toBe('Localix')
+  const footer = host.querySelector('footer')!
+  expect(footer.classList.contains('site-footer')).toBe(true)
+  expect(footer.querySelector('a')?.getAttribute('href')).toBe('/docs')
+  expect(footer.querySelector('a')?.textContent?.trim()).toBe('Docs')
+  expect(footer.querySelector('button')?.textContent?.trim()).toBe('Back to top')
 
   const details = Array.from(host.querySelectorAll('a')).find(
     (link) => link.textContent?.trim() === 'Open details',

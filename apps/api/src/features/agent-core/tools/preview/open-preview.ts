@@ -40,6 +40,8 @@ export interface OpenPreviewCoreInput {
   path?: string
   title?: string
   start_command?: string
+  /** Working directory of the command that launched this server. */
+  start_cwd?: string
   /**
    * The directory to SERVE when the file is not at the site's root. A static export puts
    * `/pricing` at `pricing/index.html`; serving that file's own directory (the default) makes
@@ -61,6 +63,7 @@ export type OpenPreviewCoreResult =
       version: number
       servedFile?: string
       rootDir?: string
+      startCwd?: string
       injectUrl?: string
       frameBlocked: boolean
       autoServed: boolean
@@ -240,6 +243,9 @@ export async function openPreviewCore(
   // Remembered so the UI can relaunch the server from the session workspace when
   // it stops (a "Start server" action replacing the dead "reload").
   const startCommand = (input.start_command ?? '').trim()
+  const startCwd = startCommand
+    ? path.resolve(options.defaultCwd ?? localixWorkspaceDir(), input.start_cwd ?? '.')
+    : undefined
   // Monotonic version: a higher value on a later call forces the UI to reload the
   // iframe; an identical value (SSE replay on reconnect) is a no-op. Time-based so
   // it keeps advancing across runs, but floored above the last to stay strictly
@@ -269,7 +275,7 @@ export async function openPreviewCore(
     version,
     ...(servedFile ? { servedFile } : {}),
     ...(rootDir ? { rootDir } : {}),
-    ...(startCommand ? { startCommand } : {}),
+    ...(startCommand ? { startCommand, startCwd } : {}),
     // When framing is refused, the UI shows the "can't embed" card (strip-proxy/open-in-browser).
     // The proxy address stays off the wire: it is an ephemeral port of THIS process, and a pane
     // that persisted one came back to a dead port after a restart — it resolves it on mount.
@@ -292,6 +298,7 @@ export async function openPreviewCore(
     version,
     servedFile,
     rootDir,
+    startCwd,
     injectUrl,
     frameBlocked,
     autoServed,

@@ -4,6 +4,7 @@ import { RELEASE_CHANNEL } from './releaseChannel'
 import { GitHubMark } from './GitHubMark'
 import { preloadDocsArticle } from '../pages/docs/loadDocsArticle'
 import { docPages, loadDocContent } from '../generated/docs'
+import { DocsSearch } from '../pages/docs/DocsSearch'
 
 function warmDocs() {
   void preloadDocsArticle().catch(() => {})
@@ -24,6 +25,7 @@ export function SiteHeader() {
           Localix <span className="text-xs font-normal text-text-faint">{RELEASE_CHANNEL}</span>
         </Link>
         <nav aria-label="Site navigation" className="flex items-center gap-5 text-sm">
+          {docs && <DocsSearch />}
           <Link
             to="/docs"
             aria-current={docs ? 'page' : undefined}

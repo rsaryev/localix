@@ -460,7 +460,8 @@ export const backendClient = {
   async spawnTerminalCommand(input: {
     sessionId: string
     command: string
-  }): Promise<{ terminalId: string }> {
+    cwd?: string
+  }): Promise<{ terminalId: string; cwd?: string }> {
     return unwrap(await client.rpc.terminal.spawn.$post({ json: input }))
   },
 
