@@ -7,6 +7,7 @@ import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import path from 'node:path'
 import { createThrottle } from '../../lib/debounce'
 import { languageIdForPath } from './lsp-languages'
+import { applyDiagnosticRegistrations } from './lsp-diagnostic-registrations'
 import { createDiagnosticPullCoordinator } from './lsp-diagnostics-coordinator'
 import { CLIENT_CAPABILITIES } from './lsp-capabilities'
 import { createDiagnosticsSnapshot } from './lsp-diagnostics-snapshot'
@@ -98,7 +99,6 @@ export async function createLspClient(input: {
 
   // Listeners waiting for diagnostics for a specific file
   const diagnosticsListeners = new Set<DiagnosticsListener>()
-  const registrationListeners = new Set<() => void>()
 
   function notifyDiagnosticsListeners(filePath: string) {
     for (const l of diagnosticsListeners) l(filePath)
@@ -140,30 +140,14 @@ export async function createLspClient(input: {
     const items = (params as { items?: { section?: string }[] }).items ?? []
     return items.map((item) => configurationValue(input.initialization, item.section))
   })
-  // (Un)register flow is identical: walk the entries, act only on the
-  // `textDocument/diagnostic` capability, and notify listeners iff something
-  // changed. `apply` does the set/delete; everything else is shared.
-  function applyCapabilityChanges<T extends { id: string; method: string }>(
-    entries: T[] | undefined,
-    apply: (entry: T) => void,
-  ): null {
-    let changed = false
-    for (const entry of entries ?? []) {
-      if (entry.method !== 'textDocument/diagnostic') continue
-      apply(entry)
-      changed = true
-    }
-    if (changed) for (const listener of registrationListeners) listener()
-    return null
-  }
   connection.onRequest('client/registerCapability', (params: unknown) =>
-    applyCapabilityChanges(
+    applyDiagnosticRegistrations(
       (params as { registrations?: CapabilityRegistration[] }).registrations,
       (registration) => diagnosticRegistrations.set(registration.id, registration),
     ),
   )
   connection.onRequest('client/unregisterCapability', (params: unknown) =>
-    applyCapabilityChanges(
+    applyDiagnosticRegistrations(
       (params as { unregisterations?: { id: string; method: string }[] }).unregisterations,
       (registration) => diagnosticRegistrations.delete(registration.id),
     ),
@@ -462,7 +446,6 @@ export async function createLspClient(input: {
     disposed = true
     diagnosticsDebouncer.cancel()
     diagnosticsListeners.clear()
-    registrationListeners.clear()
     try {
       void connection.sendRequest('shutdown').catch(() => undefined)
     } catch {
