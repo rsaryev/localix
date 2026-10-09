@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { createPatchTool } from './patch'
@@ -101,6 +101,51 @@ test('reports immutable public snapshots and probes editor buffers before diagno
     expect(result.content.indexOf('diagnostic evidence')).toBeLessThan(
       result.content.indexOf('editor evidence'),
     )
+  } finally {
+    await rm(cwd, { recursive: true, force: true })
+  }
+})
+
+test('cancellation after the first write keeps that file and stops before the next write', async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), 'localix-patch-cancel-'))
+  try {
+    const controller = new AbortController()
+    const progress: string[] = []
+    const result = await createPatchTool(undefined, cwd).execute(
+      'cancel-after-write',
+      {
+        patch: [
+          '*** Begin Patch',
+          '*** Add File: first.txt',
+          '+first',
+          '*** Add File: second.txt',
+          '+second',
+          '*** End Patch',
+        ].join('\n'),
+      },
+      controller.signal,
+      (details) => {
+        progress.push(`${details.status}:${details.appliedFiles}`)
+        if (details.status === 'applying' && details.appliedFiles === 1) controller.abort()
+      },
+    )
+    expect(await readFile(path.join(cwd, 'first.txt'), 'utf8')).toBe('first\n')
+    await expect(readFile(path.join(cwd, 'second.txt'), 'utf8')).rejects.toThrow('ENOENT')
+    expect(progress).toEqual([
+      'validating:0',
+      'validating:0',
+      'validating:0',
+      'applying:0',
+      'applying:1',
+    ])
+    expect(result.isError).toBeUndefined()
+    expect(result.details).toMatchObject({
+      status: 'completed',
+      totalFiles: 2,
+      appliedFiles: 1,
+      failedFiles: undefined,
+    })
+    expect(result.content).toContain('the run was cancelled')
   } finally {
     await rm(cwd, { recursive: true, force: true })
   }
