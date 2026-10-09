@@ -291,6 +291,19 @@ scale width; checked official v5.2 marker source and Next.js lazy-loading docume
 nearest-bar marker placement, the width constraint, historical update, and the App Router client
 wrapper. Remaining chart recipes and the other bundled skills still need their content review.
 
+## Remaining game, System Overview, and REST skills
+
+Compared Chess/Checkers/Tic-Tac-Toe action batches and new-game defaults, 2048 plan validation,
+System Overview/process collection and durable marks, and REST export routing/credential guards with
+source. Qualified memory availability/retention, distinguished board color swapping from tool
+new-game defaults, and documented 2048 batch limits and goal checks.
+
+Clarified that System Overview marks mutate durable plugin state (50 retained, 200-character notes).
+Changed the REST sharing example to a deliberate export folder outside Localix's private `.localix`
+state, qualified HTTP error interpretation, and removed the claim that every literal credential is
+detected or every reference-bearing export is safe to publish. Other bundled skills and the chart
+recipe details remain in scope for the audit.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.

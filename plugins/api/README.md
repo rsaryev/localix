@@ -75,9 +75,14 @@ reported instead of being replaced with empty text.
 
 ## Repository export
 
-The export action writes one JSON file per request under `.localix/rest/`. Literal credentials block
-export because removal in a later commit cannot erase a secret from git history. `secret:`
-references can be exported because they name a local vault entry without carrying its value.
+The export action writes one JSON file per request under `.localix/rest/`. Recognized literal
+credentials in auth fields, credential headers, and named query parameters block export. This is not
+a general secret scanner; review bodies, custom fields, URLs, and metadata before sharing. Vault
+references omit the value but can still disclose a meaningful key name.
+
+Set `dir` to a deliberate project-relative export directory such as `api-requests`. Keep the default
+`.localix/rest/` as local application state in the Localix repository, where `.localix` is not
+committed. The export is a portable snapshot, not a reviewed or automatically published artifact.
 
 ## Network boundary
 

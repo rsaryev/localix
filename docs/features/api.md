@@ -12,14 +12,14 @@ private/internal hosts** option; enable it only for services you intend to call.
 
 ## What you can do
 
-| Capability             | Mechanism                                                                  | Boundary                                                                   |
-| ---------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Build saved requests   | Create named requests with method, URL, headers, authentication, and body  | Request metadata and literal environment values are stored in plaintext    |
-| Send and inspect       | Resolve the active environment, send the request, and inspect the response | Response bodies are bounded and each request uses the configured timeout   |
-| Import API collections | Preview cURL, OpenAPI, Postman, Insomnia, HAR, or Localix request files    | Compatibility is a supported subset; unsupported values remain visible     |
-| Export to a repository | Write reviewable JSON request files under `.localix/rest/`                 | Literal credentials block export; the export is a snapshot, not sync       |
-| Attach API context     | Search, mention, or attach a saved request as a plugin-owned resource      | Context keeps supported secret references instead of exposing vault values |
-| Use agent tools        | Manage requests and environments through the registered plugin tools       | Tool availability depends on plugin state, mode, and effective permissions |
+| Capability             | Mechanism                                                                  | Boundary                                                                      |
+| ---------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Build saved requests   | Create named requests with method, URL, headers, authentication, and body  | Request metadata and literal environment values are stored in plaintext       |
+| Send and inspect       | Resolve the active environment, send the request, and inspect the response | Response bodies are bounded and each request uses the configured timeout      |
+| Import API collections | Preview cURL, OpenAPI, Postman, Insomnia, HAR, or Localix request files    | Compatibility is a supported subset; unsupported values remain visible        |
+| Export to a repository | Write reviewable JSON request files under `.localix/rest/`                 | Recognized credential fields block export; review the snapshot before sharing |
+| Attach API context     | Search, mention, or attach a saved request as a plugin-owned resource      | Context keeps supported secret references instead of exposing vault values    |
+| Use agent tools        | Manage requests and environments through the registered plugin tools       | Tool availability depends on plugin state, mode, and effective permissions    |
 
 ## How it works
 
@@ -75,6 +75,12 @@ Preview an import before saving it.
 - Saved request metadata and environment values are not encrypted by the plugin.
 - Repository export does not synchronize later workbench changes.
 - A bounded response can omit bytes that were available from the remote server.
+
+For repository sharing, choose a project-relative export folder with `dir`, such as `api-requests`.
+The default `.localix/rest/` is local application state and is not committed in the Localix
+repository. The exporter checks recognized credential fields, headers, and query names; it does not
+scan every body, custom field, URL, or metadata value for private data. Review the complete snapshot
+before sharing it.
 
 ## Related guides
 

@@ -72,12 +72,21 @@ than one deployment.
 - **A GraphQL endpoint answers a FAILED query with `200`** and an `errors` array — the transport
   succeeded, the query did not. This plugin has no GraphQL support and does NOT warn about it, so
   when you POST a query, read the body for `errors` yourself. Never read the 200 alone as success.
-- **A 4xx is the server answering correctly** and the request being wrong (fix it); a 5xx is the
-  server failing (retry may help). Do not report either as "the API is down" without checking which.
+- **An HTTP error status is still a response.** Inspect its status and body before assigning a
+  cause: 4xx can involve authentication, permissions, missing resources, or rate limits; 5xx may
+  indicate a server failure. Do not label every 4xx a malformed request or every error an
+  unreachable API. Retry only when the operation and failure make it appropriate.
 
 ## Sharing through the repo
 
-`{"action":"export"}` writes one file per request into `.localix/rest/` for the team to commit. A
-request holding a LITERAL credential is refused — git history is permanent. Vault it first; a
-`${secret:KEY}` reference is safe to commit, because each teammate's own vault supplies the value.
-`{"action":"import","dir":".localix/rest","save":true}` reads them back.
+`{"action":"export","dir":"api-requests"}` writes one file per saved request into a chosen
+project-relative directory. The default without `dir` is `.localix/rest`, which is local application
+state; do not commit that directory in the Localix repository. Use a deliberate export folder and
+review the files before sharing. Import them with
+`{"action":"import","dir":"api-requests","save":true}`.
+
+The exporter refuses recognized literal credentials in auth fields, credential headers, and named
+query parameters. It is not a general secret scanner: custom fields, request bodies, URLs, and
+metadata can still contain private data. Replace credentials with `${secret:KEY}` references and
+review the complete export; a reference omits the value but can still reveal a meaningful key name.
+Each teammate supplies the value through their own Vault.

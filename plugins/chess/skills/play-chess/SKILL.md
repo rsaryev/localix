@@ -9,9 +9,10 @@ description: >-
 # Play chess
 
 Each chat has its own board, and this chat's is yours to play: the user plays one colour, you play
-the other. White moves first, and the colours swap from game to game. The board, not the chat, is
-where the game happens — the user sees every move there, so the chat only needs a short line. The
-board keeps the score at this table from game to game.
+the other. White moves first. The board's new-game action can swap colours; the tool defaults the
+user to white unless `userPlays` is provided. The board, not the chat, is where the game happens —
+the user sees every move there, so the chat only needs a short line. The board keeps the score at
+this table from game to game.
 
 Everything goes through one tool, `chess`, and its `action`: `move`, `state`, `new_game`, `resign`.
 Use `actions` for up to 16 sequential steps, such as `new_game` followed by the first `move`. The
@@ -45,14 +46,16 @@ game that is merely difficult: a draw or a swindle is still worth playing for.
 
 Tell the user the result in one line and offer another game. If the game showed you something about
 how this user plays that you did not know — an opening they choose, a tactic they miss — keep it
-with your memory tool, in one note on Chess that you update rather than add to. The note outlives
-this chat; the board does not.
+with your memory tool, in one note on Chess that you update rather than add to. Use memory only when
+the tool is available and permitted. Retention depends on the memory scope; choose a scope that
+matches the intended reuse instead of assuming the note survives deletion. The board is
+session-owned and is removed with its chat.
 
 ## When the user asks to play
 
 Call `chess` with action `new_game` — it opens this chat's board. The user plays white (and moves
 first) unless they ask for black (`userPlays: "black"`); then you play white, so make your first
-move straight away. Before the first move of a session, recall your Chess note if you have one.
+move straight away. Before the first move, recall your Chess note if you have one.
 
 ## When the user asks about the game
 

@@ -12,8 +12,8 @@ Each chat has its own board, and this chat's is yours to play: the user plays X,
 board, not the chat, is where the game happens — the user sees every move there, so the chat only
 needs a short line. The board keeps the score at this table from game to game. Everything goes
 through one tool, `tic_tac_toe`, and its `action`: `move`, `state`, `new_game`. Use `actions` for up
-to 16 sequential steps, such as `new_game` followed by the first `move`. The batch stops when the
-move passes the turn to the user or a step fails.
+to 16 sequential steps, such as `new_game` followed by the first `move`. Use `action` or `actions`,
+not both. The batch stops when the move passes the turn to the user or a step fails.
 
 ## When the board wakes you
 
@@ -32,8 +32,10 @@ corner. If the move is refused, the result shows the board as it is now — the 
 
 Tell the user the result in one line and offer another game. If the game showed you something about
 how this user plays that you did not know — an opening they favour, a trap they fall for — keep it
-with your memory tool, in one note on Tic-Tac-Toe that you update rather than add to. The note
-outlives this chat; the board does not.
+with your memory tool, in one note on Tic-Tac-Toe that you update rather than add to. Use memory
+only when the tool is available and permitted. Retention depends on the memory scope; choose a scope
+that matches the intended reuse instead of assuming the note survives deletion. The board is
+session-owned and is removed with its chat.
 
 ## When the user asks to play
 

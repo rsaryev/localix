@@ -10,9 +10,10 @@ description: >-
 # Play checkers
 
 Each chat has its own board, and this chat's is yours to play: the user plays one colour, you play
-the other. White moves first, and the colours swap from game to game. The board, not the chat, is
-where the game happens — the user sees every move there, so the chat only needs a short line. The
-board keeps the score at this table from game to game.
+the other. White moves first. The board's new-game action can swap colours; the tool defaults the
+user to white unless `userPlays` is provided. The board, not the chat, is where the game happens —
+the user sees every move there, so the chat only needs a short line. The board keeps the score at
+this table from game to game.
 
 The rules are Russian draughts: a capture is compulsory and a capture that can go on must go on; men
 move forward but capture in every direction; kings move and capture any distance along a diagonal; a
@@ -21,7 +22,8 @@ all of it — you never need to work it out.
 
 Everything goes through one tool, `checkers`, and its `action`: `move`, `state`, `new_game`,
 `resign`. Use `actions` for up to 16 sequential steps, such as `new_game` followed by the first
-`move`. The batch stops when the move passes the turn to the user or a step fails.
+`move`. Use `action` or `actions`, not both. The batch stops when the move passes the turn to the
+user or a step fails.
 
 ## When the board wakes you
 

@@ -19,15 +19,22 @@ and call again. Keep going until the game ends. The board shows every move, so d
 progress or ask whether to go on.
 
 Play by preference: `prefer` is an order of directions, and each move takes the first one that
-changes the board as it is then, for `count` moves (default 32). Keep the largest tile in ONE corner
-for the whole game — for the bottom left, `["down","left","right","up"]`. Do not switch corners
-between calls: moving the largest tile out of its corner is what ends a game early. Change the order
-only for a reason you can see on the board, such as a row you need to fill before the corner can
-merge. An exact `moves` list is for a short sequence you have worked out; a move in it that would
-not change the board is skipped.
+changes the board as it is then, for `count` moves (1–32, default 32). Keep the largest tile in ONE
+corner for the whole game — for the bottom left, `["down","left","right","up"]`. Keep the corner
+strategy consistent between calls; moving the largest tile away can increase the risk of getting
+stuck, but it is a heuristic rather than a guarantee. Change the order only for a reason you can see
+on the board, such as a row you need to fill before the corner can merge.
 
-If the user set a goal ("play until 1000"), stop when you reach it and say so in one line. If a move
-is refused because the user took the board back, stop playing; do not argue with the board.
+An exact `moves` list is for a short sequence you have worked out; a move in it that would not
+change the board is skipped.
+
+Use `moves` or `prefer`, not both; `count` belongs only with `prefer`, and preferred directions must
+be unique. An exact list has at most 32 entries.
+
+If the user set a goal ("play until 1000"), check it after each result and stop when reached. Near a
+threshold, use a smaller `count` (one if needed) so a large batch does not keep playing past it. Say
+that the goal was reached in one line. If a move is refused because the user took the board back,
+stop playing; do not argue with the board.
 
 ## When a game ends
 

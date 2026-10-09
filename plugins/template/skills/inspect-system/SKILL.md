@@ -2,8 +2,9 @@
 name: inspect-system
 description: >-
   Inspect and explain the Localix backend machine's operating system, CPU utilization, memory,
-  uptime, and Bun runtime using the read-only System Overview plugin. Use for system-information,
-  runtime-health, or environment-summary requests; not for changing machine configuration.
+  uptime, Bun runtime, and processes with System Overview. Save comparison marks when requested. Use
+  for system-information, runtime-health, or environment-summary requests; not for changing machine
+  configuration.
 ---
 
 # Inspect the backend system
@@ -38,7 +39,9 @@ investigation.
 Use `system_mark` when the user wants to compare the machine before and after something — a build,
 closing an app: it saves a short note with the CPU and memory of that moment, and the mark appears
 in the System Overview view. Mark before and after the change the user names, then compare the two
-samples; say that one sample of CPU is noisy rather than calling a difference a result.
+samples; say that one sample of CPU is noisy rather than calling a difference a result. Marks are
+durable plugin state, not a read-only observation: up to 50 are retained, with notes limited to 200
+characters. They can outlive a pane or conversation.
 
 ## Processes
 
