@@ -65,15 +65,16 @@ message is shown on hover. The engine's words locate the error, not its characte
 the text a driver sends differs from the editor's (placeholders are rewritten). This covers failures
 the live checks cannot predict. The underline clears as soon as the failed statement is edited.
 
-A name is only reported when everything that could define it is known. Strings, comments, CTE names,
-table functions and tables the same script creates are never reported. DDL statements are not
-checked. The findings have their own marker owner, so they sit beside a language server's findings
-for the same file and do not replace them. The name checks run in the browser against the cached
-schema and send nothing to the database.
+The name checks use a conservative browser-side heuristic, not a full SQL parser. Recognized
+strings, comments, CTE names, table functions, and names the buffer creates are skipped. DDL
+statements are skipped by these name checks. The findings have their own marker owner, so they sit
+beside a language server's findings for the same file and do not replace them. The name checks run
+in the browser against the cached schema and send nothing to the database.
 
-After a pause in typing, the editor also runs the [engine check](#engine-checks), which catches what
-the name checks cannot see, such as a misspelled keyword (`SELEC * FROM users`). The engine's error
-is underlined at the position it reports.
+After a 700 ms pause in typing, the editor requests the [engine check](#engine-checks), which can
+catch a misspelled keyword such as `SELEC * FROM users`. A reported position marks the word there;
+without a position, the first line of the failing statement is underlined. Newer text supersedes
+older answers. Name and engine checks are skipped for buffers over 200,000 characters.
 
 The run bar counts what all three sources found and shows the first reason, for example "2 problems
 — line 3: Table "userz" does not exist." Selecting it moves the cursor to that problem.
@@ -117,10 +118,16 @@ assume a later failure undoes earlier statements.
 
 ### Engine checks
 
-The backend can ask the connected engine to compile each statement of a text without running it
-(`POST /:id/validate`). This finds errors that the schema-based live checks cannot, such as a syntax
-error. A name that an earlier statement of the same text creates is reported as unverified, not as
-an error.
+The backend’s validation endpoint (`POST /:id/validate`) uses the engine’s prepare, parse, or
+explain mechanism for diagnostics. It can catch errors the cached-schema checks cannot. Semantic
+errors after an earlier statement that might change names are treated as unverified; this can also
+suppress an unrelated missing-name error. A skipped check is not evidence that the SQL is valid.
+
+SQLite is an exception to a general "no effects" promise: some PRAGMA settings apply during
+preparation. The current validator prepares and finalizes on the live SQLite connection, so
+validating `PRAGMA query_only = ON` can change that connection’s setting before you press Run. Do
+not treat validation as a dry run for arbitrary PRAGMA text. See the
+[SQLite PRAGMA contract](https://www.sqlite.org/pragma.html).
 
 | Engine     | Mechanism                               | Finds                                                                |
 | ---------- | --------------------------------------- | -------------------------------------------------------------------- |
@@ -130,9 +137,16 @@ an error.
 | SQL Server | `sys.dm_exec_describe_first_result_set` | Syntax errors in the batch; unknown names up to its first result set |
 | ClickHouse | `EXPLAIN AST`                           | Syntax errors only                                                   |
 
-A check never waits behind a running query. SQLite skips it while its single connection is busy or a
-manual transaction is open. Every check has a short timeout, and a check that cannot run in time
-returns no verdict. Redis, MongoDB and Elasticsearch have no check.
+SQLite skips a check while its connection lease is held by another operation or a manual
+transaction. Network checks use separate connections or requests, but can still wait for pool
+capacity or schema locks. A slow or unavailable check is reported as skipped. Redis, MongoDB, and
+Elasticsearch have no validation check.
+
+The service allows up to 50 compile units, with a five-second budget checked between units; a native
+SQL Server batch is one unit. Network validators bound their wait for each unit to three seconds.
+These are not a hard five-second deadline for the whole response or a guarantee that server-side
+work stopped. SQLite preparation is synchronous and has no such timer race. SQL Server skips
+standalone DDL and other batches its describe mechanism cannot handle.
 
 ### Agent access
 
@@ -268,12 +282,14 @@ Connections saved before pinning existed are pinned on their next successful con
   | SQLite     | Iteration stops after 10,001 rows                                | A write, or a result with repeated column names, is read in full first |
   | ClickHouse | `max_result_rows` with `break`; the server stops at a block edge | Commands return no rows                                                |
 
-  The row cap does not deliberately interrupt a statement classified as a write. Explicit Stop or
-  timeout is a separate cancellation path and can still interrupt execution. Where an engine reads
-  everything before capping it, the memory is spent and only what is sent and shown is capped. The
-  cap covers SQL engines only. A MongoDB `find` with no `limit` and a Redis `LRANGE key 0 -1` still
-  return everything, so set a limit in the command. Elasticsearch returns its own page size unless
-  `size` is set.
+  Early stopping applies only when the adapter classifies the statement as a read and its
+  transaction path permits it; it is not a promise for every `SELECT`. The row cap does not
+  deliberately interrupt a statement classified as a write. Explicit Stop or timeout is a separate
+  cancellation path and can still interrupt execution. Where an engine reads everything before
+  capping it, the memory is spent and only what is sent and shown is capped. The cap covers SQL
+  engines only. A MongoDB `find` with no `limit` and a Redis `LRANGE key 0 -1` still return
+  everything, so set a limit in the command. Elasticsearch returns its own page size unless `size`
+  is set.
 
 ## Related guides
 
@@ -298,6 +314,10 @@ Connections saved before pinning existed are pinned on their next successful con
   [plugins/database/backend/service/run-validate.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/run-validate.ts)
   ·
   [plugins/database/backend/read-only/server-guard.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/read-only/server-guard.ts)
+- [Engine validation and request budgets](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/run-validate.ts)
+- [Validation timeout behavior](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/drivers/validation.ts)
+- [SQL diagnostics and UI limits](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/ui/sqlDiagnostics.ts)
+- [Shared result cap](https://github.com/rsaryev/localix/blob/main/plugins/database/shared/result-cap.ts)
 - [Agent action classification](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/database-tool-schema.ts)
 - [Saved connection storage](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/store.ts)
 - [Connection push and fallback polling](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/model/useDbConnections.ts)

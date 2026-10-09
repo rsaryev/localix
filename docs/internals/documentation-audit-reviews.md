@@ -201,8 +201,20 @@ Removed stale three-tool and live-driver admission claims, qualified read-classe
 replaced a hard 30-second stop claim with cancellation semantics. Documented plaintext literal
 configuration, scoped the no-credentials claim to connection summaries, and corrected push/fallback
 polling. Failed writes and row caps no longer imply that mutations cannot partially apply or be
-interrupted. Detailed engine validation, SQL diagnostics, and per-driver row-cap internals still
-need their remaining guide review.
+interrupted. The following review covers the SQL diagnostics and per-driver row-cap claims.
+
+## Database SQL checks and row limits
+
+Compared cached-schema diagnosis, editor marker ownership/timing/size caps, validation skip
+behavior, service budgets, and SQLite/PostgreSQL/MySQL/SQL Server/ClickHouse compile and
+row-collection paths. Reviewed validation/cap history, including removal of the DuckDB driver.
+
+Corrected unconditional side-effect-free validation and never-wait claims. A direct isolated
+`bun:sqlite` probe through `compileSqliteStatement` changed `query_only` from 0 to 1 while returning
+`ok: true`; official SQLite PRAGMA documentation confirms preparation-time effects. Documented
+position fallback, 200,000-character UI limit, skipped semantic errors, per-unit/request budgets,
+and read/transaction conditions on early row termination. This was a source comparison and one
+SQLite probe, not a live test of every network database.
 
 ## Related guides
 
