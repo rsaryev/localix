@@ -4,10 +4,14 @@
  * scrubs secret-shaped substrings before a line is written, so a leaked key never
  * lands on stdout/disk. Pure functions; wired into the pino logger via logMethod.
  *
- * (The same pattern set guards the visual-feedback capture payload — see
- * packages/visual-feedback/src/core/redact.ts. Kept duplicated rather than coupling
- * a server lib to a browser package; the backlog tracks extracting a shared module.)
+ * Token rules come from a pure leaf shared with visual-feedback captures; serialized
+ * message-body privacy and diagnostic bounds remain specific to runtime logs.
  */
+
+import {
+  hasSecretShape as hasSecretTokenShape,
+  redactSecrets as redactSecretShapes,
+} from '@localixai/visual-feedback/secret-shapes'
 
 const REDACTED = '[redacted]'
 const TRUNCATED = '[truncated]'
@@ -18,37 +22,17 @@ const TRUNCATED = '[truncated]'
 export const MAX_LOG_STRING_LENGTH = 16_384
 export const MAX_LOG_COLLECTION_ENTRIES = 100
 
-/** Token shapes that must never reach a log sink verbatim. Most-specific first. */
-const SECRET_PATTERNS: RegExp[] = [
-  /"(?:prompt|content|input|body|messages)"\s*:\s*"(?:\\.|[^"\\])*"/gi, // JSON message bodies
-  /'(?:prompt|content|input|body|messages)'\s*:\s*'(?:\\.|[^'\\])*'/gi, // inspected JS message bodies
-  /sk-ant-[A-Za-z0-9_-]{20,}/g, // anthropic
-  // `sk-`-prefixed keys. The body allows `-`/`_` because every CURRENT format puts a
-  // segment there: OpenAI issues `sk-proj-…` and `sk-svcacct-…`, OpenRouter `sk-or-v1-…`.
-  // The old `sk-[A-Za-z0-9]{20,}` demanded 20 straight ALNUM after `sk-`, so it matched
-  // only the legacy flat key and let every one of those through — `sk-ant-` survived only
-  // because it has its own line above. Leading `\b` and alnum ends are what keep it from
-  // eating ordinary hyphenated prose (`risk-assessment-…` has no boundary before `sk`).
-  /\bsk-[A-Za-z0-9][A-Za-z0-9_-]{18,}[A-Za-z0-9]/g, // openai / openrouter / sk-* keys
-  /gh[pousr]_[A-Za-z0-9]{20,}/g, // github tokens
-  /xox[baprs]-[A-Za-z0-9-]{10,}/g, // slack
-  /AKIA[0-9A-Z]{16}/g, // aws access key id
-  /-----BEGIN[ A-Z]*PRIVATE KEY-----[\s\S]*?-----END[ A-Z]*PRIVATE KEY-----/g, // PEM private key block
-  /AIza[0-9A-Za-z_-]{35}/g, // google api key
-  /GOCSPX-[0-9A-Za-z_-]{20,}/g, // google oauth client secret
-  /glpat-[0-9A-Za-z_-]{20,}/g, // gitlab personal access token
-  /\b[rs]k_(?:live|test)_[0-9A-Za-z]{10,}/g, // stripe secret/restricted key
-  /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, // jwt
-  /\bbearer\s+[A-Za-z0-9._-]{12,}/gi, // Authorization: Bearer <token>
-  // Labeled secrets incl. compound keys (access_token=, client_secret:, api_key=…).
-  /\b[a-z0-9_-]*(?:api[_-]?key|secret|token|password|passwd)\b["']?\s*[:=]\s*["']?[A-Za-z0-9._-]{8,}["']?/gi,
+/** Message-body privacy is specific to logs, not visible capture text. */
+const MESSAGE_BODY_PATTERNS: RegExp[] = [
+  /"(?:prompt|content|input|body|messages)"\s*:\s*"(?:\\.|[^"\\])*"/gi,
+  /'(?:prompt|content|input|body|messages)'\s*:\s*'(?:\\.|[^'\\])*'/gi,
 ]
 
 /** Replace secret-shaped substrings in a string with `[redacted]`. */
 export function redactSecrets(input: string): string {
   let out = input
-  for (const re of SECRET_PATTERNS) out = out.replace(re, REDACTED)
-  return out
+  for (const re of MESSAGE_BODY_PATTERNS) out = out.replace(re, REDACTED)
+  return redactSecretShapes(out)
 }
 
 /** Redact secret-shaped substrings and cap one log field to a diagnostic-sized tail.
@@ -66,10 +50,12 @@ export function sanitizeLogString(input: string): string {
 /** Admission predicate for model-visible content. Unlike `redactSecrets`, callers
  * must drop the whole contribution rather than redact and forward partial data. */
 export function hasSecretShape(input: string): boolean {
-  return SECRET_PATTERNS.some((pattern) => {
-    pattern.lastIndex = 0
-    return pattern.test(input)
-  })
+  return (
+    MESSAGE_BODY_PATTERNS.some((pattern) => {
+      pattern.lastIndex = 0
+      return pattern.test(input)
+    }) || hasSecretTokenShape(input)
+  )
 }
 
 const MAX_DEPTH = 5

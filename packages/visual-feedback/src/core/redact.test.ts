@@ -42,13 +42,6 @@ describe('redactSecrets', () => {
     expect(redactSecrets('access_token=secretvalue123')).toBe('[redacted]')
   })
 
-  /**
-   * Same hole as the server copy (`apps/api/src/lib/secret-redaction.ts`), and it matters
-   * MORE here: this payload is built from a picked element's html/text/href and goes
-   * straight into the model prompt, so a missed shape is a key handed to the provider.
-   * The old `sk-` pattern demanded 20 straight ALNUM after the prefix and so caught only
-   * OpenAI's legacy flat key; `sk-proj-`/`sk-svcacct-`/`sk-or-v1-` all slipped past.
-   */
   test('redacts sk- keys whose prefix has a segment (openai proj/svcacct, openrouter)', () => {
     expect(redactSecrets('key sk-proj-abcdefghij0123456789abcdefghij0123')).toBe('key [redacted]')
     expect(redactSecrets('key sk-svcacct-abcdefghij0123456789abcdefghij')).toBe('key [redacted]')

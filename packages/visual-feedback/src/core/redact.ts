@@ -14,43 +14,12 @@
  * the authoritative one (defense in depth, independent of probe version).
  */
 
+import { redactSecrets as redactSecretShapes } from './secret-shapes'
 import type { VfCapture } from '../protocol/index'
 
-const REDACTED = '[redacted]'
-
-/** Token shapes that must never reach the agent verbatim. Most-specific first. */
-const SECRET_PATTERNS: RegExp[] = [
-  /sk-ant-[A-Za-z0-9_-]{20,}/g, // anthropic
-  // `sk-`-prefixed keys. The body allows `-`/`_` because every CURRENT format puts a
-  // segment there: OpenAI issues `sk-proj-…` and `sk-svcacct-…`, OpenRouter `sk-or-v1-…`.
-  // The old `sk-[A-Za-z0-9]{20,}` demanded 20 straight ALNUM after `sk-`, so it matched
-  // only the legacy flat key and let every one of those through — `sk-ant-` survived only
-  // because it has its own line above. Leading `\b` and alnum ends are what keep it from
-  // eating ordinary hyphenated prose (`risk-assessment-…` has no boundary before `sk`).
-  // Keep in step with `apps/api/src/lib/secret-redaction.ts` — the duplication is
-  // deliberate (server lib vs browser package), so a pattern added to one must be added
-  // to the other or this copy silently stops covering a key shape the other one does.
-  /\bsk-[A-Za-z0-9][A-Za-z0-9_-]{18,}[A-Za-z0-9]/g, // openai / openrouter / sk-* keys
-  /gh[pousr]_[A-Za-z0-9]{20,}/g, // github tokens
-  /xox[baprs]-[A-Za-z0-9-]{10,}/g, // slack
-  /AKIA[0-9A-Z]{16}/g, // aws access key id
-  /-----BEGIN[ A-Z]*PRIVATE KEY-----[\s\S]*?-----END[ A-Z]*PRIVATE KEY-----/g, // PEM private key block
-  /AIza[0-9A-Za-z_-]{35}/g, // google api key
-  /GOCSPX-[0-9A-Za-z_-]{20,}/g, // google oauth client secret
-  /glpat-[0-9A-Za-z_-]{20,}/g, // gitlab personal access token
-  /\b[rs]k_(?:live|test)_[0-9A-Za-z]{10,}/g, // stripe secret/restricted key
-  /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, // jwt
-  /\bbearer\s+[A-Za-z0-9._-]{12,}/gi, // `Authorization: Bearer <token>`
-  // Labeled secrets incl. compound keys (`access_token=`, `client_secret:`, `api_key=…`).
-  /\b[a-z0-9_-]*(?:api[_-]?key|secret|token|password|passwd)\b["']?\s*[:=]\s*["']?[A-Za-z0-9._-]{8,}["']?/gi,
-]
-
-/** Replace secret-shaped substrings with `[redacted]`. */
+/** Preserve optional capture fields while applying the shared token rules. */
 export function redactSecrets(input: string | undefined): string | undefined {
-  if (!input) return input
-  let out = input
-  for (const re of SECRET_PATTERNS) out = out.replace(re, REDACTED)
-  return out
+  return input ? redactSecretShapes(input) : input
 }
 
 const SAFE_URL_SCHEMES = new Set(['http:', 'https:'])

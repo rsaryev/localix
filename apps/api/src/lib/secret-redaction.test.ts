@@ -1,15 +1,30 @@
 import { describe, it, expect } from 'bun:test'
+import { redactSecrets as redactSecretShapes } from '@localixai/visual-feedback/secret-shapes'
 
 import { createLogger } from './logger'
 import {
   MAX_LOG_COLLECTION_ENTRIES,
   MAX_LOG_STRING_LENGTH,
+  hasSecretShape,
   redactDeep,
   redactSecrets,
   sanitizeLogString,
 } from './secret-redaction'
 
 describe('redactSecrets', () => {
+  it('keeps serialized message privacy specific to logs', () => {
+    const input = '{"content":"ordinary visible text", "key":"ghp_AAAAAAAAAAAAAAAAAAAA"}'
+    expect(redactSecretShapes(input)).toBe(
+      '{"content":"ordinary visible text", "key":"[redacted]"}',
+    )
+    expect(redactSecrets(input)).toBe('{[redacted], "key":"[redacted]"}')
+    for (let iteration = 0; iteration < 3; iteration++) {
+      expect(hasSecretShape('{"content":"ordinary visible text"}')).toBe(true)
+      expect(hasSecretShape('ghp_AAAAAAAAAAAAAAAAAAAA')).toBe(true)
+      expect(hasSecretShape('ordinary text')).toBe(false)
+    }
+  })
+
   it('redacts provider token shapes', () => {
     expect(redactSecrets('use sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAA now')).toBe(
       'use [redacted] now',
@@ -46,15 +61,6 @@ describe('redactSecrets', () => {
     ).toBe('[redacted]')
   })
 
-  /**
-   * The `sk-` pattern used to demand 20 straight ALNUM after the prefix, so it caught
-   * only OpenAI's LEGACY flat key. Every current format puts a hyphenated segment there
-   * and slipped through: OpenAI's `sk-proj-`/`sk-svcacct-` and OpenRouter's `sk-or-v1-`
-   * — providers this app handles first-class.
-   * `sk-ant-` only ever passed because it has a dedicated pattern of its own, which is
-   * exactly what hid the hole: the one shape anyone spot-checked was the one covered
-   * twice.
-   */
   it('redacts sk- keys whose prefix has a segment (openai proj/svcacct, openrouter)', () => {
     expect(redactSecrets('key sk-proj-abcdefghij0123456789abcdefghij0123')).toBe('key [redacted]')
     expect(redactSecrets('key sk-svcacct-abcdefghij0123456789abcdefghij')).toBe('key [redacted]')

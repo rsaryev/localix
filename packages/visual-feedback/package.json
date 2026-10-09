@@ -59,6 +59,10 @@
     "./probe-entry": {
       "types": "./dist/probe/entry.d.ts",
       "default": "./dist/probe/entry.js"
+    },
+    "./secret-shapes": {
+      "import": "./dist/core/secret-shapes.js",
+      "types": "./dist/core/secret-shapes.d.ts"
     }
   },
   "publishConfig": {
