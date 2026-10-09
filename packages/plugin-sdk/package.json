@@ -222,6 +222,10 @@
     "./manifest-label": {
       "types": "./dist/manifest/label.d.ts",
       "import": "./dist/manifest/label.js"
+    },
+    "./manifest-primitives": {
+      "types": "./dist/manifest/primitives.d.ts",
+      "import": "./dist/manifest/primitives.js"
     }
   },
   "scripts": {

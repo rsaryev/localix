@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import * as manifest from './index'
+import * as primitives from './primitives'
 
 import {
   PLUGIN_API_VERSION,
@@ -136,4 +138,13 @@ describe('plugin manifest core contract', () => {
   test('accepts a generic private distribution marker', () => {
     expect(pluginManifestCoreSchema.parse({ name: 'scaffold', private: true }).private).toBe(true)
   })
+})
+
+test('the compatibility manifest retains the same primitive objects and functions', () => {
+  expect(manifest.PLUGIN_NAME_RE).toBe(primitives.PLUGIN_NAME_RE)
+  expect(manifest.PLUGIN_QUALIFIED_NAME_RE).toBe(primitives.PLUGIN_QUALIFIED_NAME_RE)
+  expect(manifest.PLUGIN_CONFIG_TYPES).toBe(primitives.PLUGIN_CONFIG_TYPES)
+  expect(manifest.PLUGIN_CATEGORIES).toBe(primitives.PLUGIN_CATEGORIES)
+  expect(manifest.normalizePluginSurfaces).toBe(primitives.normalizePluginSurfaces)
+  expect(manifest.isWorkbenchPlugin).toBe(primitives.isWorkbenchPlugin)
 })

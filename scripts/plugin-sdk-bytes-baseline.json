@@ -137,5 +137,8 @@
   },
   "./manifest-label": {
     "bytes": 719
+  },
+  "./manifest-primitives": {
+    "bytes": 841
   }
 }

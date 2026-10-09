@@ -31,6 +31,10 @@ table lists common entry points, not every export. [The manifest](package.json) 
 transport, interaction, problem-reporting, testing, chart/table, storage, synchronization,
 prerequisite, typed-error, UI-artifact, rich-text, and document-layout helpers.
 
+For naming rules, categories, config-type names, API-version constants, and surface helpers, use
+`@localixai/plugin-sdk/manifest-primitives`. This entry point has no schema dependencies; the
+`manifest` entry point retains the same exports for compatibility and owns validation schemas.
+
 ## Synchronization
 
 Use the same source-to-read protocol as core:

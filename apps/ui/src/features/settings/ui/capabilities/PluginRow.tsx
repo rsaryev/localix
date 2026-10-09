@@ -1,4 +1,4 @@
-import { isWorkbenchPlugin } from '@localixai/plugin-sdk/manifest'
+import { isWorkbenchPlugin } from '@localixai/plugin-sdk/manifest-primitives'
 import { pluginCapabilityLabels, pluginIssueSummary } from '@localixai/api/plugin-presentation'
 import type { PluginRecord, Project } from '@/shared/api/contracts'
 import { projectScopeLabel } from '@/shared/lib/projectScope'

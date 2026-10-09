@@ -11,7 +11,7 @@
  * The API writes the target and the workbench reads it, so both parse it here and cannot disagree
  * about what one is. Browser-safe: no imports beyond the manifest's name rule.
  */
-import { PLUGIN_NAME_RE } from '@localixai/plugin-sdk/manifest'
+import { PLUGIN_NAME_RE } from '@localixai/plugin-sdk/manifest-primitives'
 
 export const PLUGIN_VIEW_PREFIX = 'plugin:'
 
