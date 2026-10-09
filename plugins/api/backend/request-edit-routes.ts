@@ -1,9 +1,8 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext, PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext } from '@localixai/plugin-sdk/backend'
 import type { RestRoutesDeps } from './routes'
-import type { CollectionStore } from './collection/store'
-import type { EnvironmentService } from './environments/service'
+import type { RestRouteScope } from './route-scope'
 import { HTTP_METHODS, isHttpUrl, type RequestSpec } from './request-spec'
 import { hasTemplate } from './template'
 import { mergeAuth } from './auth-edit'
@@ -12,10 +11,7 @@ import { bindAuthSecrets } from './vault-bindings'
 import { validated, pairSchema, bodySchema } from './route-validation'
 import { REQUEST_NOT_FOUND, toInfo, resolvedFor } from './request-route-values'
 
-interface RequestEditRouteDeps {
-  uid: (context: { env: PluginRouteScope }) => string
-  collection: (context: { env?: Partial<PluginRouteScope> }) => CollectionStore
-  envs: (context: { env?: Partial<PluginRouteScope> }) => EnvironmentService
+interface RequestEditRouteDeps extends Pick<RestRouteScope, 'uid' | 'collection' | 'envs'> {
   deps: Pick<RestRoutesDeps, 'storeSecret' | 'bindSecret'>
 }
 

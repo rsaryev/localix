@@ -1,9 +1,8 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext, PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext } from '@localixai/plugin-sdk/backend'
 import type { RestRoutesDeps } from './routes'
-import type { CollectionStore } from './collection/store'
-import type { EnvironmentService } from './environments/service'
+import type { RestRouteScope } from './route-scope'
 import type { ExportFormat, ImportResponse, RequestInfo } from './contracts'
 import { EXPORT_FORMATS } from './contracts'
 import { runImportAction, uniqueNames } from './import-action'
@@ -13,13 +12,8 @@ import { toCurl } from './export/curl'
 import { validated } from './route-validation'
 import { REQUEST_NOT_FOUND, toInfo } from './request-route-values'
 
-type ScopeContext = { env?: Partial<PluginRouteScope> }
-interface CollectionRouteDeps {
-  collection: (context: ScopeContext) => CollectionStore
-}
-interface ImportRouteDeps extends CollectionRouteDeps {
-  uid: (context: { env: PluginRouteScope }) => string
-  envs: (context: ScopeContext) => EnvironmentService
+type CollectionRouteDeps = Pick<RestRouteScope, 'collection'>
+interface ImportRouteDeps extends Pick<RestRouteScope, 'collection' | 'uid' | 'envs'> {
   deps: Pick<RestRoutesDeps, 'storeSecret'>
 }
 

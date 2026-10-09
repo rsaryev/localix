@@ -1,16 +1,13 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext, PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext } from '@localixai/plugin-sdk/backend'
 import type { EnvironmentInfo } from './contracts'
-import type { EnvironmentService } from './environments/service'
+import type { RestRouteScope } from './route-scope'
 import type { SavedEnvironment } from './environments/store'
 import { environmentVariablesProblem } from './environment-vault'
 import { validated, pairSchema } from './route-validation'
 
-interface EnvironmentRoutesDeps {
-  uid: (context: { env: PluginRouteScope }) => string
-  envs: (context: { env?: Partial<PluginRouteScope> }) => EnvironmentService
-}
+type EnvironmentRoutesDeps = Pick<RestRouteScope, 'uid' | 'envs'>
 
 const ENVIRONMENT_NOT_FOUND = {
   error: 'No environment by that name.',

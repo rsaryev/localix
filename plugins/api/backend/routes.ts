@@ -22,7 +22,7 @@ import { hasTemplate } from './template'
 import { RestError } from './errors'
 import { resolveAuthSecrets, type ResolveSecret } from './secrets'
 import { sendRequest } from './send'
-import { dropHistory, listHistory, recordSend, renameHistory } from './history'
+import { recordSend } from './history'
 import type { StoreSecret } from './vault-auth'
 import type { BindSecret } from './vault-bindings'
 import { collectionFor, environmentsFor } from './collection/for-scope'
@@ -32,6 +32,7 @@ import { registerImportRoute, registerRequestExportRoute } from './import-export
 import { REQUEST_NOT_FOUND, toInfo, resolvedFor, restErrorBody } from './request-route-values'
 import { validated, pairSchema, bodySchema } from './route-validation'
 import { registerRequestEditRoutes } from './request-edit-routes'
+import { registerRequestLifecycleRoutes } from './request-lifecycle-routes'
 
 export interface RestRoutesDeps {
   /** Injected in tests; production resolves per request from `c.env.cwd`. */
@@ -213,78 +214,9 @@ export function createRestRoutes(deps: RestRoutesDeps) {
   const environmentRoutes = registerEnvironmentRoutes(requestRoutes, { uid, envs })
   const importedRoutes = registerImportRoute(environmentRoutes, { uid, collection, envs, deps })
   const editedRoutes = registerRequestEditRoutes(importedRoutes, { uid, collection, envs, deps })
-    .delete('/requests/:name', async (c) => {
-      const userId = uid(c)
-      const name = c.req.param('name')
-      const saved = await collection(c).get(name)
-      if (!saved) return c.json(REQUEST_NOT_FOUND, 404)
-      await collection(c).remove(name)
-      dropHistory(userId, name, sid(c))
-      return c.json({ ok: true })
-    })
+  const historyRoutes = registerRequestLifecycleRoutes(editedRoutes, { uid, sid, collection })
 
-    // Rename keeps everything else — createdAt, spec, auth, response history. The name is the
-    // identity, so this is remove-then-create under the new id, guarded against collisions.
-    .post('/requests/:name/rename', validated('json', z.object({ to: z.string() })), async (c) => {
-      const userId = uid(c)
-      const from = c.req.param('name')
-      const to = c.req.valid('json').to.trim()
-      if (to === '') {
-        return c.json({ error: 'A name is required.', code: 'bad_request' as const }, 400)
-      }
-      const saved = await collection(c).get(from)
-      if (!saved) return c.json(REQUEST_NOT_FOUND, 404)
-      if (to === from) return c.json({ request: toInfo(saved) })
-      if (await collection(c).get(to)) {
-        return c.json(
-          { error: `A request named "${to}" already exists.`, code: 'name_taken' as const },
-          409,
-        )
-      }
-      // The MOVE is the store's — a rename here is a file moving between folders, and the
-      // write/delete order that keeps it safe is not something each caller should re-derive.
-      const renamed = await collection(c).rename(from, to)
-      if (!renamed.ok) {
-        return c.json({ error: renamed.problem, code: 'invalid_request' as const }, 422)
-      }
-      renameHistory(userId, from, renamed.request.name, sid(c))
-      return c.json({ request: toInfo(renamed.request) })
-    })
-
-    // Duplicate under the first free `<name>-copy[-N]` — the whole spec, auth included: the copy
-    // is made server-side from the STORED record, so the credential never rode through a browser.
-    .post('/requests/:name/duplicate', async (c) => {
-      const name = c.req.param('name')
-      const saved = await collection(c).get(name)
-      if (!saved) return c.json(REQUEST_NOT_FOUND, 404)
-      const taken = new Set((await collection(c).list()).map((r) => r.name))
-      // The copy lands beside its original, in the same folder — `users/list` duplicates to
-      // `users/list-copy`, not to a stray `users/list-copy` at the collection root.
-      let copy = `${saved.name}-copy`
-      for (let n = 2; taken.has(copy); n++) copy = `${saved.name}-copy-${n}`
-      const dup = await collection(c).save(copy, saved.spec)
-      if (!dup.ok) return c.json({ error: dup.problem, code: 'invalid_request' as const }, 422)
-      return c.json({ request: toInfo(dup.request) }, 201)
-    })
-
-    // Recent responses, newest first. In-memory and recent-only by design — see history.ts.
-    .get('/requests/:name/history', (c) => {
-      return c.json({ entries: listHistory(uid(c), c.req.param('name'), sid(c)) })
-    })
-
-    // Clear a request's response history. `dropHistory` empties the ring for this name; the request
-    // itself stays. A missing request is a 404, like every other per-request route here.
-    .delete('/requests/:name/history', async (c) => {
-      const userId = uid(c)
-      const name = c.req.param('name')
-      if (!(await collection(c).get(name))) {
-        return c.json(REQUEST_NOT_FOUND, 404)
-      }
-      dropHistory(userId, name, sid(c))
-      return c.json({ ok: true })
-    })
-
-  const routes = registerRequestExportRoute(editedRoutes, { collection })
+  const routes = registerRequestExportRoute(historyRoutes, { collection })
     /**
      * Send a saved request and return its response.
      *
