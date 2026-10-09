@@ -1,4 +1,4 @@
-import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import { useCallback, type RefObject } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { baseName, errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import type { Problem } from '@localixai/plugin-sdk/ui/problems'
@@ -6,28 +6,16 @@ import { composeOnSaveContent, getSaveCleanupPrefs } from '@/shared/ui/code-edit
 import { reloadGuard } from '../lib/reloadGuard'
 import { fileEditorOwnerKey } from '../model/fileDrafts'
 import { fileContentCache } from '../model/fileContentCache'
-import type { FileConflict, FormatOnSaveRunner } from './fileEditorContracts'
-import { trackFileSaveTask, type PendingFileSave } from './fileSaveTask'
+import type { FileEditorWriteState, FormatOnSaveRunner } from './fileEditorContracts'
+import { trackFileSaveTask } from './fileSaveTask'
 
-interface FileEditorSaveOptions {
+interface FileEditorSaveOptions extends FileEditorWriteState {
   sessionId: string | null
   path: string
   buffer: string
   editPath: string
   formatOnSaveRef?: RefObject<FormatOnSaveRunner | null>
   workItemVisibleRef: RefObject<boolean>
-  bufferRef: RefObject<string>
-  baseContentRef: RefObject<string>
-  baseHashRef: RefObject<string>
-  lastSyncedRef: RefObject<string>
-  savingRef: RefObject<boolean>
-  savePromiseRef: RefObject<PendingFileSave | null>
-  setSaving: Dispatch<SetStateAction<boolean>>
-  setEditError: Dispatch<SetStateAction<Problem | null>>
-  setBaseHash: Dispatch<SetStateAction<string>>
-  setBaseContent: Dispatch<SetStateAction<string>>
-  setBuffer: Dispatch<SetStateAction<string>>
-  setConflict: Dispatch<SetStateAction<FileConflict | null>>
 }
 
 export function useFileEditorSave({

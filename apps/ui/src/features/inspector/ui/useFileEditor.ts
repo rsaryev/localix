@@ -1,19 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { toast } from '@/shared/lib/notify'
 import { backendClient } from '@/shared/api/client'
 import { useFileConnectionRecovery } from './useFileConnectionRecovery'
 import { readyStateFor, type FileLoadState } from './fileLoadState'
 export type { FileLoadState } from './fileLoadState'
-import { inspector } from '@/shared/lib/inspectorBus'
 import { baseName } from '@localixai/plugin-sdk/ui/utilities'
-import { reloadGuard } from '../lib/reloadGuard'
-import { buildCompareDiff } from '../lib/compare-diff'
 import { AUTO_SAVE_DELAY_MS, shouldAutoSave, useAutoSave } from '@/shared/ui/code-editor/autoSave'
-import { composeOnSaveContent, getSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import {
   clearFileDraft,
-  fileEditorOwnerKey,
   getFileDraft,
   getFileDraftSnapshot,
   setFileDraft,
@@ -27,13 +20,14 @@ import { externalLineChanges } from '@/shared/ui/code-editor/externalChanges'
 import type { DirtyChange } from '@/shared/ui/code-editor/dirtyDiffGutter'
 import { fileTransferReadyKey, workItemTransferReady } from '@/shared/lib/workItemTransferReady'
 
-import type { FileConflict, FormatOnSaveRunner } from './fileEditorContracts'
+import type { FileConflict, FileEditorWriteState, FormatOnSaveRunner } from './fileEditorContracts'
 export type { FileConflict, FormatOnSaveRunner } from './fileEditorContracts'
 import { useFileEditorLsp } from './useFileEditorLsp'
 import { useFileEditorLoad } from './useFileEditorLoad'
 import { useFileEditorReconcile } from './useFileEditorReconcile'
 import { useFileEditorSave } from './useFileEditorSave'
-import { trackFileSaveTask, type PendingFileSave } from './fileSaveTask'
+import { useFileConflictActions } from './useFileConflictActions'
+import type { PendingFileSave } from './fileSaveTask'
 
 /** Namespace for every condition this editor publishes about a file. */
 const PROBLEM_SCOPE = 'editor'
@@ -235,13 +229,7 @@ export function useFileEditor(
     [sessionId, path],
   )
 
-  const save = useFileEditorSave({
-    sessionId,
-    path,
-    buffer,
-    editPath,
-    formatOnSaveRef,
-    workItemVisibleRef,
+  const writeState: FileEditorWriteState = {
     bufferRef,
     baseContentRef,
     baseHashRef,
@@ -254,6 +242,15 @@ export function useFileEditor(
     setBaseContent,
     setBuffer,
     setConflict,
+  }
+  const save = useFileEditorSave({
+    sessionId,
+    path,
+    buffer,
+    editPath,
+    formatOnSaveRef,
+    workItemVisibleRef,
+    ...writeState,
   })
 
   // Auto-save after a delay: when the preference is on,
@@ -279,90 +276,15 @@ export function useFileEditor(
     return () => clearTimeout(id)
   }, [autoSaveEnabled, dirty, saving, conflict, editError, buffer, save])
 
-  // Overwrite the on-disk version with the current buffer, echoing the fresh disk
-  // hash so the concurrency check passes (deliberate clobber, user-confirmed).
-  const overwrite = useCallback((): Promise<boolean> => {
-    const c = conflict
-    if (!sessionId || !c) return Promise.resolve(false)
-    const savedBuffer = buffer
-    const task = (async (): Promise<boolean> => {
-      setSaving(true)
-      savingRef.current = true
-      if (editPath) reloadGuard.markSaving(fileEditorOwnerKey(sessionId, editPath))
-      try {
-        const composed = composeOnSaveContent(savedBuffer, null, getSaveCleanupPrefs())
-        const res = await backendClient.writeFileContent(sessionId, path, composed, c.diskHash)
-        baseHashRef.current = res.hash
-        baseContentRef.current = composed
-        setBaseHash(res.hash)
-        setBaseContent(composed)
-        if (bufferRef.current === savedBuffer) {
-          bufferRef.current = composed
-          setBuffer(composed)
-          lastSyncedRef.current = composed
-          if (editPath && composed !== savedBuffer)
-            void backendClient.lspChange(sessionId, editPath, composed)
-          if (editPath) void backendClient.lspSave(sessionId, editPath)
-        }
-        setConflict(null)
-        setEditError(null)
-        // No success row: the reconcile banner closes and the tab turns clean where it was clicked.
-        fileContentCache.putText(sessionId, path, res.path, composed, res.hash)
-        return true
-      } catch (err) {
-        toast.error(`Could not overwrite “${baseName(path)}” on disk`, {
-          description: errorMessage(err, '') || undefined,
-        })
-        return false
-      } finally {
-        savingRef.current = false
-        setSaving(false)
-      }
-    })()
-    return trackFileSaveTask(savePromiseRef, savedBuffer, task)
-  }, [sessionId, path, buffer, conflict, editPath])
-
-  // Discard local edits and take the on-disk version (from the captured conflict, or
-  // a fresh read when invoked without one).
-  const reloadFromDisk = useCallback(async () => {
-    if (conflict) {
-      adoptDisk(conflict.diskContent, conflict.diskHash)
-      return
-    }
-    if (!sessionId) return
-    try {
-      const cur = await backendClient.getFileContent(sessionId, path, { full: true })
-      if (cur.hash != null) adoptDisk(cur.content, cur.hash)
-    } catch (err) {
-      toast.error(`Could not re-read “${baseName(path)}” from disk`, {
-        description: errorMessage(err, '') || undefined,
-      })
-    }
-  }, [sessionId, path, conflict, adoptDisk])
-
-  // Open a two-file compare tab: your unsaved buffer (right) vs the on-disk version
-  // (left), so you can eyeball exactly what would be lost before choosing. The tab
-  // carries the (plain-data) apply context so it can resolve the conflict in place
-  // via its own header actions — no need to return here to the banner.
-  const compareWithDisk = useCallback(() => {
-    if (!conflict || !editPath || !sessionId) return
-    const name = baseName(editPath)
-    const diff = buildCompareDiff(editPath, editPath, conflict.diskContent, buffer)
-    inspector.openDiff({
-      sessionId,
-      path: `conflict://${editPath}`,
-      diff,
-      title: `${name} (on disk ↔ your edits)`,
-      languagePath: editPath,
-      conflict: {
-        sessionId,
-        editPath,
-        edits: buffer,
-        diskContent: conflict.diskContent,
-        diskHash: conflict.diskHash,
-      },
-    })
-  }, [conflict, editPath, buffer, sessionId])
+  const { overwrite, reloadFromDisk, compareWithDisk } = useFileConflictActions({
+    sessionId,
+    path,
+    buffer,
+    editPath,
+    conflict,
+    adoptDisk,
+    ...writeState,
+  })
 
   const retry = useCallback(() => {
     setState({ status: 'loading' })

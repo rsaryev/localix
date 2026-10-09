@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { backendClient } from '@/shared/api/client'
 import { eventSocket } from '@/shared/api/eventSocket'
+import { inspector } from '@/shared/lib/inspectorBus'
 import { publishFsChange } from '@/shared/lib/fsChangeBus'
 import { publishFilesReloaded } from '@/shared/lib/fileReloadBus'
 import { publishConflictResolved } from './conflictResolvedBus'
@@ -551,6 +552,103 @@ describe('useFileEditor save ownership', () => {
       clearFileDraft('session-a', '/workspace/shared.ts')
       write.mockRestore()
       backend.restore()
+    }
+  })
+
+  test('compare carries the captured disk snapshot and reload adopts it without another read', async () => {
+    const backend = mockEditorBackend()
+    const compare = spyOn(inspector, 'openDiff').mockImplementation(() => {})
+    const editor = await mountEditor()
+    try {
+      expect(await editor.current.overwrite()).toBe(false)
+      editor.current.compareWithDisk()
+      expect(compare).not.toHaveBeenCalled()
+      await editor.act(async () => {
+        editor.current.setBuffer('my edits')
+        publishConflictResolved({
+          sessionId: 'session-a',
+          editPath: '/workspace/shared.ts',
+          expectedBuffer: 'base',
+          content: 'disk snapshot',
+          hash: 'hash-disk',
+        })
+      })
+      editor.current.compareWithDisk()
+      expect(compare).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: 'session-a',
+          path: 'conflict:///workspace/shared.ts',
+          languagePath: '/workspace/shared.ts',
+          conflict: {
+            sessionId: 'session-a',
+            editPath: '/workspace/shared.ts',
+            edits: 'my edits',
+            diskContent: 'disk snapshot',
+            diskHash: 'hash-disk',
+          },
+        }),
+      )
+      await editor.act(async () => editor.current.reloadFromDisk())
+      expect(backend.get).toHaveBeenCalledTimes(1)
+      expect(editor.current.buffer).toBe('disk snapshot')
+      expect(editor.current.baseHash).toBe('hash-disk')
+      expect(editor.current.conflict).toBeNull()
+      expect(editor.current.dirty).toBe(false)
+    } finally {
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      compare.mockRestore()
+      backend.restore()
+    }
+  })
+
+  test('overwrite applies cleanup without formatting and preserves typing during its write', async () => {
+    setSaveCleanupPrefs({ trimTrailingWhitespace: true, ensureFinalNewline: true })
+    const backend = mockEditorBackend()
+    let finish!: (value: { path: string; bytes: number; hash: string }) => void
+    const write = spyOn(backendClient, 'writeFileContent').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    const formatted: string[] = []
+    const editor = await mountEditor(true, async (text) => {
+      formatted.push(text)
+      return text.toUpperCase()
+    })
+    try {
+      await editor.act(async () => {
+        editor.current.setBuffer('mine  ')
+        publishConflictResolved({
+          sessionId: 'session-a',
+          editPath: '/workspace/shared.ts',
+          expectedBuffer: 'base',
+          content: 'disk',
+          hash: 'hash-external',
+        })
+      })
+      let task!: Promise<boolean>
+      await editor.act(async () => {
+        task = editor.current.overwrite()
+      })
+      expect(write).toHaveBeenCalledWith('session-a', 'shared.ts', 'mine\n', 'hash-external')
+      await editor.act(async () => editor.current.setBuffer('later typing'))
+      await editor.act(async () => {
+        finish({ path: '/workspace/shared.ts', bytes: 5, hash: 'hash-written' })
+        expect(await task).toBe(true)
+      })
+      expect(formatted).toEqual([])
+      expect(editor.current.buffer).toBe('later typing')
+      expect(editor.current.baseHash).toBe('hash-written')
+      expect(editor.current.conflict).toBeNull()
+      expect(editor.current.dirty).toBe(true)
+    } finally {
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      write.mockRestore()
+      backend.restore()
+      setSaveCleanupPrefs({ trimTrailingWhitespace: false, ensureFinalNewline: false })
     }
   })
 

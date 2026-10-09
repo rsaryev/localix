@@ -115,7 +115,7 @@
   "apps/ui/src/features/inspector/ui/search/useContentSearch.ts": 314,
   "apps/ui/src/features/inspector/ui/table/TableGrid.tsx": 681,
   "apps/ui/src/features/inspector/ui/useDirectoryLoader.ts": 345,
-  "apps/ui/src/features/inspector/ui/useFileEditor.ts": 461,
+  "apps/ui/src/features/inspector/ui/useFileEditor.ts": 383,
   "apps/ui/src/features/inspector/ui/useFileTree.ts": 360,
   "apps/ui/src/features/inspector/ui/useVisualFeedback.ts": 312,
   "apps/ui/src/features/secrets/ui/VaultItemDialog.tsx": 337,
