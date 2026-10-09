@@ -21,9 +21,8 @@ daemon, while Kubernetes requires a usable kubeconfig and cluster permissions.
 
 ### Agent access
 
-The workbench contributes no agent tools. Docker and Kubernetes are CLIs the agent already drives
-through `bash`, and a wrapper tool's schema would be charged against every request whether or not
-the session touched a container.
+The workbench contributes no agent tools. Agents can run `docker` and `kubectl` through `bash` when
+those CLIs are installed and their permission rules allow the commands.
 
 `kubectl delete` and `kubectl drain` match bash's dangerous command patterns. The agent's permission
 rules decide whether the gate allows, confirms, or denies those calls.
@@ -46,8 +45,9 @@ The UI contributes one restorable DevOps Workspace with **Overview**, **Containe
 object may disappear before the next application start.
 
 Docker selects the Engine API when it can negotiate a supported socket, pipe, or plain HTTP target.
-It falls back to the `docker` CLI for SSH, TLS client-certificate, unsupported, or unreachable API
-targets.
+It falls back to the `docker` CLI for SSH, HTTPS, incompatible, or unreachable API targets. Backend
+selection is lazy, and a subsequent operation can retry Engine API negotiation after 30 seconds on
+the CLI fallback.
 
 Kubernetes talks directly to the cluster API. A context is selected per request, so choosing one in
 the workbench does not change kubeconfig's current context.
@@ -73,8 +73,9 @@ the workbench does not change kubeconfig's current context.
   and interactive container exec require the `docker` executable.
 - Kubernetes requires readable kubeconfig data, valid credentials, network access to the API server,
   and sufficient RBAC. `kubectl` is not a fallback transport.
-- A bash confirmation approves only the command shown; it does not grant a standing cluster
-  permission for later calls.
+- A one-time bash approval covers the shown call. Choosing **This session** or **Always** can
+  approve a wider program scope, such as `kubectl` commands. Review the scope on the confirmation
+  card; Localix approval does not change cluster RBAC.
 - Provider resource tabs are not restored after restart. Kubernetes port forwards and live watches
   are in-memory lifecycles rather than durable configuration.
 - Linking a Docker or Kubernetes resource adds bounded context. It does not request a review,

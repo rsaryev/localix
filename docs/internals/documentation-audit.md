@@ -317,6 +317,17 @@ revisions and the section constraints on context/proficiency fields. Remaining d
 and Learning bundle examples still need review; the other bundled skill entry points now have source
 comparisons recorded.
 
+## Docker, Kubernetes, and DevOps guides
+
+Compared lazy Docker selection/version negotiation, shell prerequisites, Kubernetes manifest apply,
+node drain, generic listing, tab-owned forward cleanup, and bash grant scopes with source. Reviewed
+the implementation history for Docker selection and manifest apply (the initial commit).
+
+Corrected startup-time selection to first use with a demand-driven 30-second CLI reprobe, removed
+unsupported per-request schema-cost estimates, and qualified CLI availability for agents. Replaced
+the single-call approval claim with the actual remembered program scope. Documented partial drain
+changes and best-effort forward cleanup, and narrowed the truncation claim to generic object lists.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.

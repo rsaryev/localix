@@ -36,7 +36,8 @@ reconciles watch changes with REST polling, which becomes the primary feed when 
 
 Pod exec creates a single-use loopback WebSocket bridge and opens it in a terminal. Port forwarding
 binds a local listener to `127.0.0.1` and tunnels through the Kubernetes port-forward subresource.
-Closing the owner tab stops its forwards; plugin shutdown closes every watch, exec, and forward.
+Closing a pod tab requests best-effort cleanup of forwards owned by that tab. Sidebar forwards have
+no tab owner and remain until stopped. Plugin shutdown closes every watch, exec, and forward.
 
 Kubernetes objects can enter chat as `localix://resource/k8s` references. The dedicated workbench
 views cover pods, deployments, services, and nodes. API discovery lists other listable kinds,
@@ -44,9 +45,9 @@ including installed custom resources.
 
 ### Agent access
 
-The workbench contributes no Kubernetes agent tools. The agent works clusters through `kubectl` in
-`bash`: dedicated tools would cost roughly 930 tokens of schema on every request to wrap verbs the
-agent can already run.
+The workbench contributes no Kubernetes agent tools. An agent can use `kubectl` through `bash` when
+it is installed and its permission rules allow the command. The workbench itself does not require
+that CLI.
 
 `kubectl delete` and `kubectl drain` match bash's dangerous command patterns. The agent's permission
 rules decide whether the gate allows, confirms, or denies those calls.
@@ -74,13 +75,16 @@ binary. A kubeconfig `exec` entry can still require its own credential helper.
 - Kubeconfig `proxyUrl` is passed to HTTP requests. The custom WebSocket handler does not pass that
   proxy setting, so watches, exec, and port forwards may fail for proxy-only clusters.
 - Pod and node usage is absent when `metrics.k8s.io` is unavailable or forbidden.
-- Object and kind listings are bounded and mark themselves as truncated when the cluster returns
-  more than the workbench requests.
+- Generic object listings return a bounded number of rows and expose `truncated` when the response
+  contains an extra row. This is not a pagination or completeness guarantee for every dedicated
+  workbench list.
 - The workbench has dedicated views only for pods, deployments, services, and nodes. Other kinds and
   custom resources appear through API discovery, not a generic workbench editor.
 - Port forwards are loopback-only and are not restored after Localix exits.
-- Drain skips completed pods, mirror pods, and DaemonSet-owned pods. It retries disruption-budget
-  rejections until no eligible pods remain or 120 seconds elapse.
+- Drain first cordons the node, then skips completed pods, mirror pods, and DaemonSet-owned pods. It
+  retries disruption-budget rejections between eviction passes, with a 120-second deadline checked
+  between passes. A failure can leave the node cordoned and some pods already evicted; drain does
+  not undo those changes.
 - Manifest apply performs a server-side dry run before server-side apply. The provider implements no
   rollback for the live change.
 

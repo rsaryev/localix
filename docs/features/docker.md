@@ -15,7 +15,7 @@ Docker-compatible daemon is required.
 | ----------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Inspect containers      | Open logs, CPU and memory stats, network and block I/O, and process rows.                      | Stats and process data depend on what the daemon reports for the selected container.               |
 | Manage containers       | Start, stop, restart, or remove containers from the workbench.                                 | Removing a running container uses force removal.                                                   |
-| Open a container shell  | Start `docker exec -it` in a workspace terminal, preferring `bash` and falling back to `sh`.   | The container must be running, and the host needs the `docker` CLI.                                |
+| Open a container shell  | Start `docker exec -it` in a workspace terminal, preferring `bash` and falling back to `sh`.   | The container must be running with `sh` available, and the host needs the `docker` CLI.            |
 | Browse Docker resources | List images, volumes, and networks; open details; remove or prune the selected resource kind.  | The UI protects the built-in `bridge`, `host`, and `none` networks from removal.                   |
 | Operate Compose groups  | Group containers by Compose project labels, then run **Up**, **Restart all**, or **Stop all**. | **Up** needs Compose v2 and may recreate or pull services; restart and stop address known members. |
 | Run manifest actions    | Open a Dockerfile or Compose file and run its generated command in a workspace terminal.       | Dockerfile builds and Compose **Up**, **Down**, **Ps**, **Logs**, and **Build** require the CLI.   |
@@ -23,23 +23,24 @@ Docker-compatible daemon is required.
 
 ### Agent access
 
-The workbench contributes no Docker agent tool. The read verbs of the CLI are already available
-through `bash`, and a wrapper would pay roughly 220 tokens of schema on every request to repeat
-them.
+The workbench contributes no Docker agent tool. An agent can run Docker commands through `bash` when
+the CLI is installed and its permission rules allow the command.
 
 Docker still reaches the agent as context rather than as a tool — `localix://resource/docker`
 references expand into read-only snapshots you can attach to a message.
 
 ## How it works
 
-At API startup, the plugin resolves the Docker endpoint and negotiates a direct Engine API client.
-The direct client handles inventory, logs, stats, lifecycle actions, removal, and prune through API
-versions 1.40 through 1.44.
+On the first backend operation, the plugin resolves the Docker endpoint and negotiates an Engine API
+client using a version from 1.40 through 1.44. A newer daemon can still use this client if it
+accepts a version in that range. The direct client handles inventory, logs, stats, lifecycle
+actions, removal, and prune.
 
-If the endpoint needs SSH or TLS handling, falls outside that API range, or cannot be reached
-directly, Localix selects the Docker CLI backend. Compose remains a CLI operation on either path.
-Interactive container shells and Dockerfile or Compose run bars also open visible CLI commands in a
-workspace terminal.
+If the endpoint uses SSH or HTTPS, has no compatible API version, or cannot be reached directly,
+Localix selects the Docker CLI backend. After 30 seconds on that fallback, the next operation probes
+the Engine API again; this is not a background timer. A successful API selection is retained for the
+process lifetime. Compose remains a CLI operation on either path. Interactive container shells and
+Dockerfile or Compose run bars also open visible CLI commands in a workspace terminal.
 
 Docker resource references resolve through the same read methods as the workbench. A container can
 expand to a summary, log tail, stats snapshot, or process table; image, volume, and network
