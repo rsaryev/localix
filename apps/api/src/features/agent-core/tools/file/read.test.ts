@@ -19,6 +19,25 @@ describe('createReadTool', () => {
     if (tempDir) await rm(tempDir, { recursive: true, force: true })
   })
 
+  test('publishes the same detail object it returns for successful and failed reads', async () => {
+    await writeFile(path.join(tempDir, 'published.txt'), 'read content', 'utf8')
+    const tool = createReadTool(undefined, tempDir)
+    for (const [name, status] of [
+      ['published.txt', 'available'],
+      ['missing.txt', 'failed'],
+    ] as const) {
+      const updates: unknown[] = []
+      const result = await tool.execute(name, { path: name }, undefined, (details) => {
+        updates.push(details)
+      })
+      expect(updates).toHaveLength(1)
+      expect(updates[0]).toBe(result.details)
+      expect(result.sources?.[0]).toMatchObject({ kind: 'file', role: 'consulted', status })
+      expect(result.details).toBeDefined()
+      expect(result.content).toBe(result.details!.output)
+    }
+  })
+
   test('byte-offset truncation and continuation never split a multi-byte character', async () => {
     // 30k check marks = 90,000 bytes of 3-byte UTF-8 chars; 64,000 is NOT a
     // multiple of 3, so naive slicing would cut through a character at both the

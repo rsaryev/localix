@@ -2,7 +2,6 @@ import type { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { ELISION_MARKER, formatSize } from '@localixai/agent'
 import { TOOL } from '../../tool-names'
-import { fileSource } from '../source-refs'
 import type { ExecutionEnvironment } from '../environment'
 import { localEnvironment } from '../environments/local'
 import {
@@ -22,7 +21,8 @@ import type { DocumentTextExtractor } from './document-ports'
 import { isViewableImagePath } from './view-image'
 import { readToolInputSchema, withLineLimit } from './read-input'
 import { tryListDirectory } from './read-directory'
-import { readDedupStub } from './read-dedup-stub'
+import { createReadResponder } from './read-results'
+import { createReadRepeatPolicy } from './read-repeat'
 
 export { readToolInputSchema } from './read-input'
 export { tryListDirectory } from './read-directory'
@@ -40,12 +40,8 @@ function isExtractableDocument(p: string): boolean {
   return dot >= 0 && EXTRACTABLE_DOC_EXTS.has(p.slice(dot + 1).toLowerCase())
 }
 
-export interface ReadToolDetails {
-  path: string
-  bytes: number
-  truncated: boolean
-  output: string
-}
+import type { ReadToolDetails } from './read-contracts'
+export type { ReadToolDetails } from './read-contracts'
 
 export function createReadTool(
   env: ExecutionEnvironment = localEnvironment,
@@ -56,8 +52,8 @@ export function createReadTool(
    * Is the result of that earlier tool call no longer intact on the model's wire
    * (elided / crushed / truncated by context compression)? Injected by the chat
    * runtime, which collects the ids from the wire it actually sends
-   * (`collectElidedToolCallIds`). A missing provider means "assume it was elided" —
-   * the safe answer, which degrades to the historical one-shot stub.
+   * (`collectElidedToolCallIds`). Without a provider, one stub is allowed per
+   * recorded full delivery before the next repeat delivers and re-arms it.
    */
   isResultElided?: (toolCallId: string) => boolean,
   /** Session-scoped read/write bookkeeping shared with write + apply_patch. */
@@ -67,30 +63,11 @@ export function createReadTool(
   /** Says when the file is open in the person's editor with unsaved edits. */
   editorBuffer?: EditorBufferProbe,
 ) {
-  // Session-scoped dedup (see `read-dedup.ts`): the hash of the last full content
-  // returned for each path, and the read that returned it. On a repeat read of an
-  // UNCHANGED file we still read fresh from disk (never serve stale content), but
-  // return a short stub instead of re-sending the whole file into context — the
-  // content is already present in an earlier turn. This is the common "re-read the
-  // file I just looked at" waste; the stub saves the tokens. It spans RUNS because
-  // the history does: the earlier read is still there after the next user message.
-  //
-  // The stub is only truthful while the EARLIER read it points at ("scroll up") is
-  // still intact on the wire. Context compression can elide that read mid-run, and a
-  // stub pointing at a pointer sends the model to `bash cat`, doubling every read
-  // (one measured session: 131 reads over 37 distinct paths = 94 redundant re-reads).
-  //
-  // So we ask, per path, whether THAT specific earlier read result was elided:
-  //   intact  → serve the stub, however many times the model re-reads;
-  //   elided  → the model genuinely lost the content: send the full file, re-arm.
-  //
-  // The previous rule ("stub at most once per path, ever") could not see the wire, so
-  // it guessed pessimistically and re-sent whole files on every second re-read even
-  // when nothing had been compressed at all. Replayed over 30 recorded sessions, the
-  // precise rule cuts read-result bytes by 23% (53% on the worst session).
-  // Fallback rule for hosts that wire no `isResultElided` (tests, embedders): we cannot
-  // see the wire, so keep the historical pessimistic one-stub-per-path behaviour. It
-  // rides on the same store, so it is session-scoped too.
+  // Reads fetch fresh bytes before checking the session-scoped repeat policy. The shared
+  // store retains each window's last delivered hash and call id across runs. A pointer
+  // is served only while that earlier result survives on the model's wire; an elided
+  // result is delivered again and re-arms the pointer. Without isResultElided, each
+  // full delivery permits one stub before the next repeat delivers the bytes again.
 
   // TDetails stated, not inferred: the early-return guards below carry no `details`, so
   // inference collapsed it to `{}` and `read` advertised a detail-less card payload
@@ -134,50 +111,7 @@ export function createReadTool(
         }
       }
 
-      /**
-       * Return one read result. Every branch below — listing, binary notice, extracted
-       * document, outline, line range, whole/paginated file, error — ends the same way:
-       * build the `ReadToolDetails`, push it to the UI, hand the model its text. Written
-       * out seven times it was seven chances to forget the `onUpdate`, or to let the
-       * card and the model disagree about what was read.
-       *
-       * `output` is what the UI shows; `content` is what the MODEL sees, and they
-       * legitimately differ (an outline is wrapped for the model; a whole file gets the
-       * line cap applied) — so it is a separate, explicit parameter, never a default.
-       */
-      const respond = (
-        output: string,
-        meta: { bytes: number; truncated?: boolean; content?: string; isError?: true },
-      ) => {
-        const details: ReadToolDetails = {
-          path: targetPath,
-          bytes: meta.bytes,
-          truncated: meta.truncated ?? false,
-          output,
-        }
-        onUpdate?.(details)
-        return {
-          content: meta.content ?? output,
-          details,
-          // Provenance for the answer's Sources list. One place, because `respond` is the single
-          // exit of all seven branches — a per-branch source would be seven chances to forget one.
-          // A failed read still publishes, marked `failed`: "we tried to look at this and could
-          // not" is part of what informed the answer, and the answer UI hides it while the tool
-          // card keeps it.
-          sources: [
-            fileSource({
-              path: targetPath,
-              ...(meta.isError ? { status: 'failed' as const } : {}),
-            }),
-          ],
-          ...(meta.isError ? { isError: true as const } : {}),
-        }
-      }
-
-      const dirResult = (listing: string) => {
-        const truncated = truncateOutput(listing)
-        return respond(truncated.output, { bytes: truncated.bytes, truncated: truncated.truncated })
-      }
+      const { respond, dirResult } = createReadResponder(targetPath, onUpdate)
 
       try {
         const fileContent = await env.readFile(targetPath, signal)
@@ -230,36 +164,7 @@ export function createReadTool(
         // typed since the last read).
         const editorNote = editorBuffer?.(targetPath, fileContent, 'read') ?? ''
         const withEditorNote = (text: string) => appendEditorBufferNote(text, editorNote)
-        /**
-         * Serve a short stub instead of re-delivering bytes the model already has.
-         *
-         * `window` is the slice identity: `undefined` for a whole-file read, `L10-40` /
-         * `O2000` for a ranged or paginated one. Two reads share a stub only when they
-         * asked for the same window AND the delivered bytes are identical — we always read
-         * fresh from disk, so a changed file simply misses the hash.
-         *
-         * The stub is only truthful while the EARLIER read it points at is still intact on
-         * the wire; `isResultElided` answers that. `suppressArm` refuses to arm a stub for
-         * a delivery that was CLIPPED while the model believed it asked for everything —
-         * a later "unchanged, scroll up" would bury the tail it never received.
-         */
-        const dedupStub = (
-          window: string | undefined,
-          delivered: string,
-          suppressArm: boolean,
-        ): string | undefined => {
-          const earlierCallId = dedup.lastCallId(targetPath, window)
-          const stubOk = isResultElided
-            ? earlierCallId !== undefined && !isResultElided(earlierCallId)
-            : !dedup.stubServed(targetPath, window)
-          if (dedup.isUnchanged(targetPath, window, delivered) && stubOk) {
-            dedup.setStubServed(targetPath, window, true)
-            const what = window === undefined ? targetPath : `${targetPath} (${window})`
-            return readDedupStub(what)
-          }
-          if (!suppressArm) dedup.record(targetPath, window, delivered, toolCallId)
-          return undefined
-        }
+        const dedupStub = createReadRepeatPolicy(targetPath, toolCallId, dedup, isResultElided)
 
         // Outline mode: symbol skeleton from the language server instead of text.
         // When it's unavailable (no LSP wired, unsupported language e.g. .md/.json,
