@@ -20,7 +20,6 @@ import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import type { MessageAttachment } from '@localixai/agent'
-import { isWireCarriableImage } from '@localixai/agent/agents'
 import type { DocumentTextExtractor } from '../../../agent-core/tools/file/document-ports'
 import type { MediaStore } from '../../../media/store'
 import { mapLimit } from '../../../../lib/map-limit'
@@ -32,32 +31,21 @@ import {
   textManifest,
 } from './attachment-manifests'
 import { materializePathAttachment } from './attachment-path'
+import { attachmentsDirRel, isFileHandoff, planAttachmentSpill } from './attachment-spill-plan'
+export {
+  MAX_INLINE_LINES,
+  MAX_INLINE_BYTES,
+  attachmentsDirRel,
+  sessionAttachmentsDirRel,
+} from './attachment-spill-plan'
 
 // The manifest vocabulary and the copy-free path handling moved to siblings; these
 // stay re-exported because they are part of this module's long-standing surface.
 export { SPILL_PREVIEW_LINES, TEXT_PREVIEW_BYTES } from './attachment-manifests'
 export { MAX_PATH_IMAGE_BYTES } from './attachment-path'
 
-/** Text/binary attachments at or below BOTH limits stay inlined (cheap). Over either → spill. */
-export const MAX_INLINE_LINES = 2000
-export const MAX_INLINE_BYTES = 50 * 1024
 /** Bound concurrent large writes/document extractions within one message. */
 export const ATTACHMENT_SPILL_CONCURRENCY = 4
-
-/** Relative dir (under the session cwd) where this session's spilled attachments live. */
-export function attachmentsDirRel(sessionId: string, messageId: string): string {
-  return path.posix.join(
-    '.localix',
-    'attachments',
-    sanitizeSegment(sessionId),
-    sanitizeSegment(messageId),
-  )
-}
-
-/** The session-scoped root (one level up from per-message dirs) — the teardown unit. */
-export function sessionAttachmentsDirRel(sessionId: string): string {
-  return path.posix.join('.localix', 'attachments', sanitizeSegment(sessionId))
-}
 
 export interface SpillContext {
   /** Resolved session cwd; without it we cannot write a readable copy, so we keep inlining. */
@@ -76,29 +64,10 @@ export interface SpillContext {
 }
 
 /**
- * Bytes the model can only reach as a FILE. Not "is it an image?" — that question excluded
- * every `image/*` from spilling on the grounds that pi carries `ImageContent`, which is only
- * true for png/jpeg/gif/webp. A HEIC/SVG/BMP/TIFF image, and likewise audio and video, were
- * excluded from spilling AND unrepresentable on the wire, so they reached the model as the
- * bare stub `[Attached file: x.heic]`. The boundary now comes from the SDK that owns the wire.
- */
-/** Attachment variants that carry bytes (vs the inlined `text` one). */
-type BinaryAttachment = Extract<MessageAttachment, { kind: 'image' | 'video' | 'file' | 'audio' }>
-
-/**
- * A TYPE PREDICATE, not a boolean: callers read `att.data` and `att.mediaId` right after asking,
- * and a plain boolean leaves `att` as the whole union — the `text` variant has neither field, so
- * every such read was a type error. Four of them shipped because a repo-wide `tsc` was skipped.
- */
-const isFileHandoff = (att: MessageAttachment): att is BinaryAttachment =>
-  (att.kind === 'file' || att.kind === 'image' || att.kind === 'audio' || att.kind === 'video') &&
-  !isWireCarriableImage(att.mediaType)
-
-/**
- * Spill the large non-image attachments of ONE message to disk, returning a new
- * attachments array (or the same reference when nothing changed). Pure aside from
- * the disk writes; safe to call every turn (per-message dir + overwrite is
- * idempotent). Images, PDFs, audio and video keep their native wire path.
+ * Materialize path attachments and spill large text or bytes the wire cannot carry.
+ * Returns a new attachments array, or the same reference when nothing changed.
+ * Safe to call every turn: per-message directories and overwrites are idempotent.
+ * Wire-carriable images keep their native path.
  */
 export async function spillMessageAttachments(
   attachments: MessageAttachment[],
@@ -134,30 +103,7 @@ export async function spillMessageAttachments(
   // Reserve collision-free names synchronously in authored order. If workers
   // called uniqueName after their first await, completion timing would decide
   // which duplicate receives `-1`, making persisted manifests nondeterministic.
-  const plans = materialized.map((att, index) => {
-    if (att.kind === 'text' && !att.spilled) {
-      const byteLen = Buffer.byteLength(att.text, 'utf8')
-      const textInfo = analyzeText(att.text)
-      const shouldSpill = textInfo.lineCount > MAX_INLINE_LINES || byteLen > MAX_INLINE_BYTES
-      return {
-        att,
-        byteLen,
-        textInfo,
-        fileName: shouldSpill ? uniqueName(att.name || 'file.txt', usedNames) : undefined,
-      }
-    }
-    // PDFs are NOT excluded — see the spill branch below for why. Both predicates must
-    // agree: a branch that spills without a planned `fileName` silently returns the
-    // attachment untouched.
-    const storedFilePath = storedFilePaths[index]
-    const shouldSpillFile = isFileHandoff(att) && Boolean(att.data || storedFilePath)
-    return {
-      att,
-      storedFilePath,
-      fileName: shouldSpillFile ? uniqueName(att.name || 'file.bin', usedNames) : undefined,
-    }
-  })
-
+  const plans = planAttachmentSpill(materialized, storedFilePaths, usedNames)
   const next = await mapLimit(
     plans,
     ATTACHMENT_SPILL_CONCURRENCY,
@@ -281,32 +227,4 @@ export async function spillMessageAttachments(
   )
 
   return changed ? next : attachments
-}
-
-/** Keep one path segment filesystem-safe (no separators / odd chars). */
-function sanitizeSegment(segment: string): string {
-  const clean = segment.replace(/[^A-Za-z0-9._-]/g, '_').replace(/^\.+/, '_')
-  return clean || 'x'
-}
-
-/**
- * Sanitize a filename (basename only) and de-dupe within a message dir by
- * inserting a numeric suffix before the extension on collision.
- */
-function uniqueName(name: string, used: Set<string>): string {
-  const base = sanitizeSegment(name.split('/').pop() ?? name) || 'file'
-  if (!used.has(base)) {
-    used.add(base)
-    return base
-  }
-  const dot = base.lastIndexOf('.')
-  const stem = dot > 0 ? base.slice(0, dot) : base
-  const ext = dot > 0 ? base.slice(dot) : ''
-  for (let i = 1; ; i++) {
-    const candidate = `${stem}-${i}${ext}`
-    if (!used.has(candidate)) {
-      used.add(candidate)
-      return candidate
-    }
-  }
 }
