@@ -139,7 +139,6 @@
   "plugins/trading/ui/model/indicator-bands.ts": 309,
   "plugins/trading/ui/model/indicator-oscillators.ts": 347,
   "plugins/trading/ui/model/indicatorSpecs.ts": 613,
-  "plugins/trading/ui/model/technicalRatings.ts": 314,
   "plugins/trading/ui/model/useOhlcv.ts": 306,
   "plugins/trading/ui/ui/ChartCanvas.tsx": 1105,
   "plugins/trading/ui/ui/ChartHeader.tsx": 421,
