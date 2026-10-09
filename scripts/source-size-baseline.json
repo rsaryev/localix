@@ -9,7 +9,6 @@
   "apps/api/src/features/agent-core/tools/web/research-backends.ts": 776,
   "apps/api/src/features/agent-core/tools/web/research.ts": 546,
   "apps/api/src/features/autocomplete/predict-next-edit-context.ts": 454,
-  "apps/api/src/features/cc-hooks/config.ts": 412,
   "apps/api/src/features/cc-hooks/contracts.ts": 336,
   "apps/api/src/features/cc-hooks/run.ts": 577,
   "apps/api/src/features/cc-settings/permission-rules.ts": 440,
