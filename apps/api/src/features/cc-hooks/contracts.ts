@@ -2,9 +2,8 @@
  * Claude Code declarative hooks — type contracts.
  *
  * These describe the CC settings-file `hooks` schema, the normalized in-memory
- * registry we build from every source (user/project/local settings + enabled
- * plugins' `hooks/hooks.json`), and the JSON input/output protocol a `command`
- * hook speaks over stdin/stdout/exit-code.
+ * registry built from enabled plugins and run-scoped skill/agent hooks. Event inputs
+ * and normalized handler outcomes live in `protocol-types.ts`.
  *
  * Scope: all five CC handler types on the events we dispatch, each on the events
  * the CC spec matrix (hooks.md §7) allows:
@@ -65,8 +64,8 @@ export type CcHookSource = 'user' | 'project' | 'local' | 'plugin' | 'skill' | '
 /**
  * Events on which a `type:"prompt"` (LLM-evaluated) handler is supported, per the
  * CC spec matrix (hooks.md §7). On every other event a prompt handler is dropped
- * at parse time (we do not fire it). `http`/`mcp_tool`/`agent` handler types stay
- * fully deferred.
+ * at parse time (we do not fire it). Other handler types use their own event
+ * policies below.
  */
 export const CC_PROMPT_HOOK_EVENTS = [
   'Stop',
@@ -116,7 +115,7 @@ export function isMcpToolHookEvent(_event: CcHookEvent): boolean {
 /**
  * Default per-hook wall-clock timeout (seconds) when a `command` handler omits
  * `timeout`. CC's documented default for `command`/`http`/`mcp_tool` hooks is
- * 600 s (60 s is only the `agent`-hook default, which we do not run). Event-
+ * 600 s (60 s is the `agent`-hook default). Event-
  * specific lower overrides (UserPromptSubmit → 30 s, SessionEnd budget) are not
  * modeled — the per-hook `timeout` field always wins over this default.
  */
@@ -133,9 +132,9 @@ export const CC_HOOK_MAX_OUTPUT_BYTES = 64 * 1024
 export const CC_POST_APPEND_CAP_BYTES = 4 * 1024
 
 /**
- * One resolved command handler, ready to spawn. Path placeholders
- * (`${CLAUDE_PROJECT_DIR}`, `${CLAUDE_PLUGIN_ROOT}`) are already substituted into
- * `command`; the same values are also exported to the child as env vars.
+ * One normalized handler, ready to execute. Shell-command path placeholders
+ * (`${CLAUDE_PROJECT_DIR}`, `${CLAUDE_PLUGIN_ROOT}`) stay in `command` and expand
+ * from the child environment. HTTP URLs receive text substitutions at parse time.
  */
 export interface CcHookHandler {
   source: CcHookSource
@@ -180,7 +179,7 @@ export interface CcHookHandler {
   /**
    * Shell command (`sh -c <command>`). Empty for prompt handlers. Its `${CLAUDE_*}` placeholders
    * are NOT substituted: the shell expands them from the child env, so a project path is never
-   * parsed as shell source (`config.ts` `bindShellCommand`).
+   * parsed as shell source (`config-handler.ts` `bindShellCommand`).
    */
   command: string
   /**
@@ -226,120 +225,18 @@ export interface CcHookGroup {
 /** The merged, normalized registry: event → ordered matcher groups (all sources fused). */
 export type CcHookRegistry = Partial<Record<CcHookEvent, CcHookGroup[]>>
 
-// ---------------------------------------------------------------------------
-// Command-hook JSON protocol
-// ---------------------------------------------------------------------------
-
-/** Common fields every hook receives as JSON on stdin. */
-export interface CcHookInputBase {
-  session_id: string
-  /** We do not persist a transcript file — passed empty. */
-  transcript_path: string
-  cwd: string
-  hook_event_name: CcHookEvent
-}
-
-export interface CcSessionStartInput extends CcHookInputBase {
-  hook_event_name: 'SessionStart'
-  /**
-   * `startup` | `resume` | `clear` | `compact`. We fire `startup` on a session's
-   * first run, `clear` after `/clear`, and `compact` after a context checkpoint
-   * (both re-fire on the NEXT run so the injected context lands in a model turn).
-   */
-  source: string
-}
-export interface CcUserPromptSubmitInput extends CcHookInputBase {
-  hook_event_name: 'UserPromptSubmit'
-  prompt: string
-}
-export interface CcPreToolUseInput extends CcHookInputBase {
-  hook_event_name: 'PreToolUse'
-  tool_name: string
-  tool_input: unknown
-  tool_use_id?: string
-}
-export interface CcPostToolUseInput extends CcHookInputBase {
-  hook_event_name: 'PostToolUse'
-  tool_name: string
-  tool_input: unknown
-  tool_response: unknown
-}
-export interface CcStopInput extends CcHookInputBase {
-  hook_event_name: 'Stop'
-  /** True when this Stop fires on a run that is ALREADY a Stop-hook-forced
-   *  continuation — a hook should check it and not block again (CC loop protection). */
-  stop_hook_active?: boolean
-}
-export interface CcSessionEndInput extends CcHookInputBase {
-  hook_event_name: 'SessionEnd'
-  /** `clear` | `resume` | `logout` | `prompt_input_exit` | `bypass_permissions_disabled` | `other`. */
-  reason: string
-}
-export interface CcSubagentStartInput extends CcHookInputBase {
-  hook_event_name: 'SubagentStart'
-  agent_id: string
-  /** Subagent type name (`general-purpose`, a plugin agent `plugin:name`, …). */
-  agent_type: string
-}
-export interface CcSubagentStopInput extends CcHookInputBase {
-  hook_event_name: 'SubagentStop'
-  agent_id: string
-  agent_type: string
-  /** The subagent's final response text (when it produced one). */
-  last_assistant_message?: string
-  /** True when this SubagentStop fires on a run already forced by a prior block. */
-  stop_hook_active?: boolean
-}
-export interface CcPreCompactInput extends CcHookInputBase {
-  hook_event_name: 'PreCompact'
-  /** Claude Code's `manual` (its `/compact`) | `auto` (size-triggered — a checkpoint, here). */
-  trigger: string
-  /** Claude Code's `/compact` argument; always empty from this host, which has no such command. */
-  custom_instructions: string
-}
-export interface CcNotificationInput extends CcHookInputBase {
-  hook_event_name: 'Notification'
-  message: string
-  title?: string
-  notification_type?: string
-}
-
-export type CcHookInput =
-  | CcSessionStartInput
-  | CcUserPromptSubmitInput
-  | CcPreToolUseInput
-  | CcPostToolUseInput
-  | CcStopInput
-  | CcSessionEndInput
-  | CcSubagentStartInput
-  | CcSubagentStopInput
-  | CcPreCompactInput
-  | CcNotificationInput
-
-/**
- * The normalized outcome of ONE command-hook invocation, folded from its exit
- * code + stdout JSON (or plain text) + stderr. All fields optional — a silent
- * exit-0 hook produces `{}`.
- */
-export interface CcHookOutcome {
-  /** True when the hook exited 2 (blocking error). `blockReason` = its stderr. */
-  blocked?: boolean
-  blockReason?: string
-  /** `continue:false` — stop all processing; `stopReason` shown to the user. */
-  continue?: boolean
-  stopReason?: string
-  /** `systemMessage` — a warning surfaced to the user. */
-  systemMessage?: string
-  /** Top-level `decision:"block"` + `reason` (PostToolUse / Stop / UserPromptSubmit). */
-  decision?: 'block'
-  reason?: string
-  /** `hookSpecificOutput.additionalContext`, or plain-text stdout for context events. */
-  additionalContext?: string
-  /** PostToolUse `hookSpecificOutput.updatedToolOutput` — REPLACES the model-facing tool result content. */
-  updatedToolOutput?: string
-  /** PreToolUse `hookSpecificOutput.permissionDecision` + reason. */
-  permissionDecision?: 'allow' | 'deny' | 'ask'
-  permissionDecisionReason?: string
-  /** PreToolUse `updatedInput` / `hookSpecificOutput.updatedInput`. */
-  updatedInput?: unknown
-}
+export type {
+  CcHookInputBase,
+  CcSessionStartInput,
+  CcUserPromptSubmitInput,
+  CcPreToolUseInput,
+  CcPostToolUseInput,
+  CcStopInput,
+  CcSessionEndInput,
+  CcSubagentStartInput,
+  CcSubagentStopInput,
+  CcPreCompactInput,
+  CcNotificationInput,
+  CcHookInput,
+  CcHookOutcome,
+} from './protocol-types'
