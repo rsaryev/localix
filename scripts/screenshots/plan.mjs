@@ -1,5 +1,10 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
+  'conversations/participants': {
+    guide: 'features/conversations.md',
+    purpose: 'Three seeded participants beside their transcript and current participant controls',
+    scenario: 'participants',
+  },
   'workspace/session-window-drag': {
     guide: 'features/workspace.md',
     purpose:
@@ -142,6 +147,11 @@ export const capturePlan = {
     purpose: 'Source and terminal tabs in one main column beside the team conversation',
     scenario: 'editor',
   },
+  'workspace/hero': {
+    guide: 'getting-started/what-is-localix.md',
+    purpose: 'A real passing fixture test run beside the seeded team conversation',
+    scenario: 'editor',
+  },
   'questions/queued': {
     guide: 'features/hitl.md',
     purpose: 'A durable question waiting above the composer',
@@ -159,16 +169,14 @@ export const capturePlan = {
   },
 }
 export const retainedShots = {
-  'conversations/participants': 'A populated team conversation; features/conversations.md',
   'context/composer-context':
-    'Source selection linked to the composer; features/context-checkpoints.md',
+    'Open file and terminal linked as automatic composer context; features/workspace.md',
   'browser/agent-preview':
     'A real browser preview beside the conversation; features/visual-feedback.md',
   'project-space/board': 'A release plan with a live source file; features/project-space.md',
   'task-board/board': 'Tasks in their current columns; features/task-board.md',
   'task-board/conversation': 'Board and group conversation in the same workspace',
   'plugins/agent-build': 'Working checklist fixture; extending/build-with-the-agent.md',
-  'workspace/hero': 'Editor and actual passing tests; getting-started/what-is-localix.md',
 }
 // Historical comparisons, theme demonstrations and transient boot states are not feature evidence.
 export const archiveOnly = [

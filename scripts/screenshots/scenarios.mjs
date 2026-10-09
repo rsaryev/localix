@@ -58,7 +58,15 @@ export async function compose(page, scenario) {
   if (['api-client', 'documents', 'reader'].includes(scenario)) {
     return (await import('./content-workbenches.mjs')).composeContent(page, scenario)
   }
-  if (scenario === 'agent') {
+  if (scenario === 'participants') {
+    await button(page, 'Chat history').click()
+    await page.locator('[data-session-row]').first().waitFor({ state: 'visible' })
+    await page.getByRole('heading', { name: 'Release checklist', exact: true }).waitFor()
+    await button(page, 'Add participant').click()
+    await page.getByRole('menu').waitFor({ state: 'visible' })
+    await page.keyboard.press('Escape')
+    await page.getByRole('heading', { name: 'Release checklist', exact: true }).click()
+  } else if (scenario === 'agent') {
     await button(page, 'Settings').click()
     await button(page, 'Agents').click()
     await button(page, 'Open Backend').click()

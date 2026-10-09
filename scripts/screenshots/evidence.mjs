@@ -14,7 +14,18 @@ export async function verifyEvidence(page, scenario) {
   if (['api-client', 'documents', 'reader'].includes(scenario)) {
     return (await import('./content-workbenches.mjs')).verifyContent(page, scenario)
   }
-  if (scenario === 'agent') {
+  if (scenario === 'participants') {
+    const roster = page.getByRole('group', { name: 'Conversation participants', exact: true })
+    await expect(roster.locator('[data-slot="participant-chip"]')).toHaveCount(3)
+    for (const handle of ['lead', 'frontend', 'qa'])
+      await expect(roster.getByTitle(`Mention @${handle}`, { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Release checklist', exact: true }),
+    ).toBeVisible()
+    await expect(page.getByText(/Both release states pass the checks/)).toBeVisible()
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    await expect(page.getByText('Add participant', { exact: true })).toHaveCount(0)
+  } else if (scenario === 'agent') {
     await expect(page.getByText('Preloaded skills', { exact: true })).toBeVisible()
     await expect(page.getByText('Max turns', { exact: true })).toBeVisible()
     await expect(page.getByText('Save changes', { exact: true })).toBeDisabled()

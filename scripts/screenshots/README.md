@@ -24,6 +24,12 @@ question. Seeding is repeatable: it keeps one project, conversation, resume, dat
 board. The runtime verifier compares the temporary database identity with both its descriptor and
 the running API, and refuses another database. Data stays outside the repository.
 
+A failed seed can leave partial fixtures. In particular, the disposable Git repository inherits
+commit signing and its initial commit can time out. Rerunning skips initialization when `.git`
+exists, so a successful rerun does not prove that commit was created. Before a Git capture, verify
+that `git -C <fixture-project> rev-parse --verify HEAD` succeeds. Resolve signing and prepare a new
+dedicated capture directory if the initial commit is missing; leave personal Git settings intact.
+
 Install the browser once:
 
 ```bash
@@ -138,7 +144,7 @@ when finished; leave the user's existing servers alone.
 The external-agent terminal scenario is skipped unless `LOCALIX_CAPTURE_CLAUDE=1`. It needs an
 installed `claude` executable that supports `--bare`. The scenario launches it with a fresh,
 unauthenticated fixture configuration, removes API-key and auth-token environment variables, and
-opens its local help. It uses no personal CLI session, account or model call.
+opens its native startup screen. It uses no personal CLI session, account or model call.
 
 ```bash
 LOCALIX_CAPTURE_CLAUDE=1 bun run test:screenshots --grep 'external-agents/history'
