@@ -26,10 +26,24 @@ each move, so only the order can express the corner strategy. It declares `idemp
 so the host's repeat guard counts the same list as a repeat only when it also got the same answer.
 
 `backend/store.ts`, `backend/store-feed.ts`, `shared/store-feed.ts`, `ui/usePolledSnapshot.ts`,
-`ui/useStoreSnapshot.ts` and `ui/useNow.ts` are the reference template's frame, kept as they are
-(`scripts/plugin-frame-copies.test.ts` checks it). The store feed is how the agent's moves reach an
-open board: every write to the chat's game nudges the board over the realtime socket, and it
-re-reads at once. The board polls only as a backstop — every 30 seconds while the feed is live, and
-at its old 800 ms / 4 s cadence while it is not.
+`ui/useStoreSnapshot.ts`, and `ui/useNow.ts` delegate to the shared reference frame. A store write
+announces a change over the realtime feed, and a visible board re-reads its snapshot. A healthy feed
+has no periodic read; when unavailable, the board polls every 800 ms during agent activity or 4
+seconds while idle. Showing the pane or reconnecting reconciles its state.
 
 See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+
+## Permissions and synchronization
+
+The tool classifies `state` as `read` and game-changing actions as `session`. Its static
+`mutates: true` flag therefore does not make every action an external mutation. Agent rules and
+conversation permission modes still apply.
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Tool actions and effect classification](backend/tools.ts)
+- [Game state and transitions](shared/game.ts)
+- [Wake requests](backend/ask-agent.ts)
+- [Visible snapshot and fallback cadence](ui/game/useGame.ts)
+- [Shared store synchronization](../../packages/plugin-sdk/src/ui/store-snapshot.ts)

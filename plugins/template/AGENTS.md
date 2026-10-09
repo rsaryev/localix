@@ -30,8 +30,8 @@ House rules the copies inherit from here:
   other live data is a `wsFrames` entry the view follows with `createRealtimeFeed` /
   `useRealtimeFeed` (`@localixai/plugin-sdk/ui/realtime-feed`); workspace files with
   `usePluginWorkspaceChanges`; a backend watching files uses `ctx.watchPath`, never `node:fs.watch`.
-  A poll is the slow backstop, and only a gauge with no write behind it — CPU, memory — is polled at
-  its own cadence.
+  A healthy store or realtime feed has no periodic read; fallback polling runs only while the signal
+  is unavailable. Gauges with no write behind them — CPU, memory — use their own cadence.
 - Build every control from the host kit, `@localixai/kit/<id>`, and colour with host tokens; the
   `plugin_build` style step and `scripts/ui-token-drift-guard.test.ts` apply the same rules. Never
   import `@/…`: the UI is built into its own artifact, and that build refuses host internals.
@@ -40,7 +40,11 @@ House rules the copies inherit from here:
 - Publish the visible snapshot as message context and clear it when the view is inactive.
 - Keep application code independent of `preview/`, which only this repository has.
 
-Check a change with `bun run build`, `bun run type-check:tests` and `bun run test` here, then
-`bun test scripts/plugin-kit.test.ts` (it scaffolds, builds and type-checks a copy from a staged
-kit) and the repository gates. Look at the result in the running app with the browser tool on
-`plugin:template`, at narrow widths too.
+Choose checks for the changed contract. Run a focused test under this plugin; use its `type-check`
+or `type-check:tests` script when static evidence is needed. Changes to the scaffold frame also need
+`bun test scripts/plugin-kit.test.ts` from the repository root: it builds and checks a copy from a
+staged kit. Full builds and repository gates belong to CI. Documentation-only edits need
+documentation validation, not a runtime build.
+
+For visible changes, inspect `plugin:template` in the running app at narrow and wide widths and
+maintain the owning optional capture scenario under the repository screenshot workflow.

@@ -36,12 +36,14 @@ writes are ordered, and stale reads cannot overwrite them. One socket subscripti
 follows changes to its project after HTTP advertises `liveUpdates`, and the host's workspace watcher
 carries hand edits of the board file (`ui/spaceStream.ts`). Ten-second reconciliation runs only
 while either signal is not live — an older backend, a dropped socket, an unwatched chat
-(`ui/spaceUpdates.dom.test.ts`). The optional `ActionContribution.subscribe` seam lets the plugin
-update action visibility without teaching the host about boards. Fragment ids are content-derived,
-so concurrent adds converge and deletion allows the same fragment to be added again.
-`ui/useSpace.dom.test.tsx` and `ui/content-action.test.ts` exercise this chain. Backend shutdown
-releases existing listeners, and a resubscription after reload replaces the old socket handle
-through the SDK's generic stream registry.
+(`ui/spaceUpdates.dom.test.ts`).
+
+The optional `ActionContribution.subscribe` seam lets the plugin update action visibility without
+teaching the host about boards. Fragment ids are content-derived, so concurrent adds converge and
+deletion allows the same fragment to be added again. `ui/useSpace.dom.test.tsx` and
+`ui/content-action.test.ts` exercise this chain. Backend shutdown releases existing listeners, and a
+resubscription after reload replaces the old socket handle through the SDK's generic stream
+registry.
 
 ## Add an element type
 
@@ -58,8 +60,9 @@ registry.
 
 - **The file is the truth.** Every change re-reads it and writes it whole, atomically; an unreadable
   file refuses writes instead of being replaced by an empty board.
-- **Nothing is lost.** An unknown type, a newer build's props, an undrawable record and unknown keys
-  are carried through a write unchanged.
+- **Preserve unrecognized records.** On a writable board, unknown types, newer props, undrawable
+  records, and unknown keys are carried through serialization. An invalid whole-file envelope
+  refuses writes.
 - **References, not copies.** A path stays a path, project-relative inside the project; only content
   without a path (a pasted screenshot) is kept in `.localix/project-space/files/`.
 - **Membership is geometry.** A frame holds what is inside it; nothing stores a parent. A group is
@@ -77,9 +80,43 @@ registry.
 - **One list of keys.** A binding is added to `ui/board/shortcuts.ts` and answered in
   `boardKeys.ts`; `shortcuts.test.ts` fails when a row of the sheet does nothing.
 
+## Storage and operation boundaries
+
+The board lives at `.localix/project-space/space.json`; pasted file content lives beside it under
+`files/`. Paths inside the project are stored project-relative; references outside it stay absolute.
+A file route can read a path inside the project or one covered by an explicit board reference.
+Containment checks are lexical, not a filesystem sandbox.
+
+| Tool          | Effect and boundary                                                               |
+| ------------- | --------------------------------------------------------------------------------- |
+| `space_read`  | `read`: inspect the roster; linked files are named rather than rewritten.         |
+| `space_apply` | `files`: writes the declared board file; referenced source files are not changed. |
+| `space_view`  | `view`: moves the camera or reads the visible report without saving board layout. |
+
+A batch applies operations individually: a refused operation appears in the results, while
+successful operations still commit. Inspect each result before reporting the entire batch as
+successful.
+
+Undo and redo belong to the actor (`user` or `agent`). The backend retains at most 100 undo patches
+per actor in memory; a runtime restart clears that history. Undo preserves records changed since the
+patch and reports conflicts instead of overwriting those changes.
+
 ## Checks
 
 ```bash
 bun test plugins/project-space
 bun run --cwd plugins/project-space type-check
 ```
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Ordered file storage and actor history](backend/space-store.ts)
+- [Path normalization and file-route access](backend/paths.ts)
+- [File envelope and record preservation](shared/format/parse.ts)
+- [Serialization](shared/format/serialize.ts)
+- [Operation application](shared/ops/apply.ts)
+- [Read/write tool classification](backend/tools.ts)
+- [Camera tool classification](backend/view-tool.ts)
+- [Shared UI snapshot ownership](ui/spaceUpdates.ts)
+- [Stream and file-watcher health](ui/spaceStream.ts)

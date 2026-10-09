@@ -33,13 +33,14 @@ The board is a session-scoped work item: each chat has its own, opening it from 
 that chat's, and deleting the chat closes it. The game lives in the chat's session storage
 (`ctx.sessionStorage`), which the host removes with the chat. Every route and tool acts on the chat
 the board belongs to — `c.env.sessionId` in a route (set only once the host checked the user owns
-it), the call's own session in a tool. When a game ends, the result asks the agent to keep anything
-it learned about how you play in its memory, where it outlives the chat.
+it), the call's own session in a tool. When a game ends, the result asks the agent to save
+observations about play through its configured memory tool. Persistence depends on its permission
+rules and memory scope.
 
 ## The agent's tool
 
-One tool, `chess`: every schema rides in every request, so one tool with an `action` costs less than
-four and leaves the model one name to choose.
+One tool, `chess`, groups its operations under `action`. Its schema is deferred until activated or
+brought onto the request by linked game context or a plugin wake.
 
 | `action`   | Does                                                                   |
 | ---------- | ---------------------------------------------------------------------- |
@@ -64,9 +65,24 @@ four and leaves the model one name to choose.
 | `skills/`                 | How the agent plays and talks about a game.                    |
 
 `backend/store.ts`, `backend/store-feed.ts`, `shared/store-feed.ts`, `ui/usePolledSnapshot.ts`,
-`ui/useStoreSnapshot.ts` and `ui/useNow.ts` are the reference template's frame, kept as they are.
-The store feed is how the agent's move reaches an open board: every write to the chat's game nudges
-the board over the realtime socket, and it re-reads at once. The board polls only as a backstop —
-every 30 seconds while the feed is live, and at its old 800 ms / 4 s cadence while it is not.
+`ui/useStoreSnapshot.ts`, and `ui/useNow.ts` delegate to the shared reference frame. A store write
+announces a change over the realtime feed, and a visible board re-reads its snapshot. A healthy feed
+has no periodic read; when unavailable, the board polls every 800 ms during agent activity or 4
+seconds while idle. Showing the pane or reconnecting reconciles its state.
 
 See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+
+## Permissions and synchronization
+
+The tool classifies `state` as `read` and game-changing actions as `session`. Its static
+`mutates: true` flag therefore does not make every action an external mutation. Agent rules and
+conversation permission modes still apply.
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Tool actions and effect classification](backend/tools.ts)
+- [Game state and transitions](shared/game.ts)
+- [Wake requests](backend/ask-agent.ts)
+- [Visible snapshot and fallback cadence](ui/game/useGame.ts)
+- [Shared store synchronization](../../packages/plugin-sdk/src/ui/store-snapshot.ts)

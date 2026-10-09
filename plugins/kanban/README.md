@@ -33,6 +33,14 @@ Each move has one action: `take` (dependencies, owner) reaches `in_progress`, `c
 action does not read is refused by name (`backend/tool-input.ts`), never dropped. An epic is closed
 with `complete` too; the completion that finishes its last task names it.
 
+## Limits
+
+- A missing, unreadable, or invalid board file reads as an empty board. A later successful write can
+  replace it; the store does not preserve malformed file contents or repair them.
+- A completed card is a recorded result, not independent verification. The board starts no work.
+- Pure-operation validation failures write nothing. Filesystem write failures reject before events
+  are announced.
+
 ## Layout
 
 | Location                | Responsibility                                                       |
@@ -51,3 +59,11 @@ with `complete` too; the completion that finishes its last task names it.
 | `backend/ws-frames.ts`  | The live stream, checked against the socket's user.                  |
 | `backend/references.ts` | The `@resource:` provider and the search provider.                   |
 | `ui/register.tsx`       | Work items, rail, anchors, search, tool card, composer strip.        |
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Action vocabulary](shared/tool.ts)
+- [Per-action fields and status guards](backend/tool-input.ts)
+- [Ordered storage and read fallback](backend/store.ts)
+- [Pure board operations](backend/operations.ts)

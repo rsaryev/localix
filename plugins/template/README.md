@@ -12,9 +12,9 @@ cd plugins/template
 bun run dev
 ```
 
-Open http://127.0.0.1:5174. This starts Vite and the Bun backend on loopback port 5175. In Localix,
-open **System Overview** from the workspace overflow menu or command palette. It appears in the
-normal plugin catalog and follows the same enablement rules as Database, DevOps and Trading.
+Open `http://127.0.0.1:5174`. This starts Vite and the Bun backend on loopback port 5175. In
+Localix, open **System Overview** from the workspace overflow menu or command palette. It appears in
+the normal plugin catalog and follows the same enablement rules as Database, DevOps and Trading.
 
 | Command                    | Purpose                                                 |
 | -------------------------- | ------------------------------------------------------- |
@@ -41,8 +41,8 @@ normal plugin catalog and follows the same enablement rules as Database, DevOps 
 | `ui/register.tsx`         | Launcher, work item, resource anchor and agent guidance       |
 | `ui/Workspace.tsx`        | The domain's root component, imported by the frame            |
 | `ui/system/`              | Responsive dashboard and visible-context publication          |
-| `ui/usePolledSnapshot.ts` | One visibility-gated poll per route, and `send()` for actions |
-| `ui/useStoreSnapshot.ts`  | The same, re-read on the store feed's nudge; backstop poll    |
+| `ui/usePolledSnapshot.ts` | Visibility-gated reads and `send()` for actions               |
+| `ui/useStoreSnapshot.ts`  | Store-change reads; polling only when the feed is unavailable |
 | `backend/store-feed.ts`   | Nudges an open view after an `openJsonStore` write            |
 | `shared/store-feed.ts`    | The store feed's frame tag, commands and frame                |
 | `ui/useNow.ts`            | A clock for values derived from a stored timestamp            |
@@ -50,10 +50,11 @@ normal plugin catalog and follows the same enablement rules as Database, DevOps 
 | `skills/inspect-system/`  | Reusable agent procedure for interpreting snapshots           |
 | `preview/`                | Standalone composition and loopback backend runner            |
 
-The plugin uses Bun's native `node:os` APIs without shell commands. CPU utilization requires two
-counter samples. Used memory is total minus free and therefore includes OS caches. Readings describe
-the backend machine, which may differ from the browser device. Hostnames, usernames, paths and
-network addresses are deliberately excluded.
+System snapshots use Bun's native `node:os` APIs. The process inspector runs `ps` on Unix or
+`powershell.exe` on Windows through the SDK's bounded subprocess reader. CPU utilization requires
+two counter samples. Used memory is total minus free and therefore includes OS caches. Readings
+describe the backend machine, which may differ from the browser device. Hostnames, usernames, paths
+and network addresses are deliberately excluded.
 
 The dashboard refreshes every three seconds while visible, keeps 30 in-memory chart samples, cancels
 in-flight requests on cleanup and preserves the last successful sample after a failure. That exact
@@ -70,3 +71,14 @@ the machine's CPU and memory at that moment, so a later sample has something to 
 Both go through one store under the plugin's data folder, so marks outlive the pane and the app.
 
 See the [plugin guide](../../docs/extending/plugins.md) for the full Localix contract.
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Development and build commands](package.json)
+- [Standalone ports and proxy](vite.config.ts)
+- [Standalone process ownership](preview/serve.ts)
+- [System readings](backend/system.ts)
+- [Process collectors](backend/processes.ts)
+- [System sampling and history limits](ui/system/useSystem.ts)
+- [Shared store synchronization](../../packages/plugin-sdk/src/ui/store-snapshot.ts)

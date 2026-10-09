@@ -16,7 +16,7 @@ modules/<module>/lessons/<lesson>/steps/<step>/content.md
 ```
 
 Drafts live under the workspace `.localix/learning-drafts`. The final `learning_course` activation
-validates every manifest, relative reference, id, Markdown file, and theory → retrieval → practice
+validates every manifest, relative reference, id, Markdown file, and theory → testing → practice
 sequence. Only a valid bundle is atomically imported into the host-owned session data directory; the
 tool returns its canonical manifest path.
 
@@ -26,12 +26,12 @@ preserve compatible learner progress when a course is adapted.
 
 Ready lessons use a learner-paced sequence shown across the top of the reader. Only the current step
 is visible, and future steps and lessons remain locked until their predecessors are complete. Quiz
-questions are separate steps: normal lessons use 3–7 and validation caps the sequence at 10. Wrong
-answers keep the correct option hidden and expose an explicit retry action. Options have a stable
-shuffled display order. Quiz correctness is checked by the backend, and lesson scores preserve
-first-attempt results across retries and reloads. Practice solutions are saved before the host wakes
-the tutor in the owning chat. The tutor records criterion-based Markdown feedback; a passing review
-unlocks continuation.
+questions are separate steps: the authoring guide recommends 3–7, and validation caps quiz questions
+at 10 per lesson. Wrong answers keep the correct option hidden and expose an explicit retry action.
+Options have a stable shuffled display order. Quiz correctness is checked by the backend, and lesson
+scores preserve first-attempt results across retries and reloads. Practice solutions are saved
+before the host wakes the tutor in the owning chat. The tutor records criterion-based Markdown
+feedback; a passing review unlocks continuation.
 
 Courses always prepare complete modules. The first module is ready at activation; later modules
 remain outlined. Halfway through a module, or when its last lesson opens, the next module begins
@@ -39,7 +39,8 @@ preparing automatically through the same host wake port. A durable claim prevent
 requests; failures retry with a bounded backoff. An open pending lesson refreshes when ready. The
 open course and the library hear each change the agent makes through `learning_course` — a review, a
 move, an activation — as a pushed plugin command (`shared/course-changes.ts`), and re-read that
-chat's courses at once; a one-minute poll remains only as a backstop while they are visible.
+chat's courses. A live store feed also invalidates courses after host-side writes. A visible view
+uses a one-minute fallback poll only when that feed is unavailable.
 
 The course library can export a validated bundle as one `.localix-course` file and import it into a
 different chat session. The portable file contains only manifest-reachable course material—never
@@ -63,3 +64,17 @@ For a targeted lesson repair or explicit regeneration:
 ```
 
 Use `/learning:adapt` to patch only the affected lesson files and re-activate the course.
+
+## Related guides
+
+- [Memory and Learning Studio](../../docs/features/learning-loop.md)
+
+## Source of truth
+
+- [Manifest and skill contributions](plugin.json)
+- [Course activation and step validation](backend/course-bundle.ts)
+- [Progress and answer handling](backend/service.ts)
+- [Module generation claims and retries](backend/module-generation.ts)
+- [Portable import and export](backend/course-portable.ts)
+- [Course invalidation and fallback polling](ui/model/courseChanges.ts)
+- [Course authoring contract](skills/build-learning-course/references/course-bundle.md)

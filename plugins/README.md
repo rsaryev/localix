@@ -7,32 +7,45 @@ discovery reads the installed copy rather than this source tree.
 For manifest fields, installation, trust rules, dependencies, hooks, UI bridges, and compatibility
 details, use the [plugin authoring guide](../docs/extending/plugins.md).
 
-## Product plugins
+## Workbenches
 
-| Plugin                       | Product surface                                             |
-| ---------------------------- | ----------------------------------------------------------- |
-| [`code-graph/`](code-graph/) | Navigable map of the project's code with graph query tools. |
-| [`database/`](database/)     | SQL and data-source workbench with schema and query tools.  |
-| [`devops/`](devops/)         | Docker and Kubernetes inspection workbench.                 |
-| [`documents/`](documents/)   | Document readers, writers, viewers, tables, and charts.     |
-| [`game-2048/`](game-2048/)   | 2048 board controlled by the user or agent in a chat.       |
-| [`learning/`](learning/)     | Course creation, lessons, resources, and durable progress.  |
-| [`template/`](template/)     | System Overview: OS, CPU, memory and process inspection.    |
-| [`trading/`](trading/)       | Public market data workspace; no order placement.           |
+| Plugin                          | Product surface                                                  |
+| ------------------------------- | ---------------------------------------------------------------- |
+| [Code Graph](code-graph/)       | Project files, symbols, imports, calls, and graph queries.       |
+| [Database](database/)           | SQL and data-source connections, schemas, and queries.           |
+| [DevOps](devops/)               | Docker and Kubernetes inspection and operations.                 |
+| [Documents](documents/)         | Extraction, generation, viewers, tables, and charts.             |
+| [Learning Studio](learning/)    | File-authored courses, lessons, assessment, and progress.        |
+| [Project Space](project-space/) | Shared notes and live file cards on a canvas.                    |
+| [Reader](reader/)               | Local books and documents with annotations and agent context.    |
+| [Resumes](resume/)              | Resume fields, templates, preview, and document export.          |
+| [System Overview](template/)    | OS, CPU, memory, and process inspection; the workbench scaffold. |
+| [Trading](trading/)             | Public market data; no order placement.                          |
 
 ## Workflow and integration plugins
 
-| Plugin                                   | Product surface                                           |
-| ---------------------------------------- | --------------------------------------------------------- |
-| [`api/`](api/)                           | HTTP request collections and API workbench.               |
-| [`deliverable/`](deliverable/)           | Turns final-response file paths into message attachments. |
-| [`kanban/`](kanban/)                     | A passive task board per chat, kept by you and the agent. |
-| [`review/`](review/)                     | Review command and inline review suggestions.             |
-| [`webhook-notifier/`](webhook-notifier/) | Signed lifecycle-event webhooks.                          |
+| Plugin                                | Product surface                                        |
+| ------------------------------------- | ------------------------------------------------------ |
+| [API Client](api/)                    | HTTP requests, collections, and environments.          |
+| [Deliverables](deliverable/)          | Attach supported files named in final responses.       |
+| [Git](git-workspace/)                 | Source control, diffs, branches, and forge operations. |
+| [Kanban](kanban/)                     | A passive task board per chat.                         |
+| [Code Review](review/)                | A registered reviewer and explicit review command.     |
+| [Webhook Notifier](webhook-notifier/) | Lifecycle-event POSTs with optional HMAC signing.      |
 
-[`template/`](template/) doubles as the reference for a workbench plugin: a shipped product (System
-Overview) whose registration entry, host adapter and backend shape are the parts to keep when
-copying, and whose domain code is the part to replace. Its `AGENTS.md` names the boundary.
+## Games
+
+| Plugin                      | Product surface                                    |
+| --------------------------- | -------------------------------------------------- |
+| [2048](game-2048/)          | A board controlled by the user or agent in a chat. |
+| [Battleship](battleship/)   | Fleet placement, shots, and agent-opponent play.   |
+| [Checkers](checkers/)       | Legal moves and agent-opponent play.               |
+| [Chess](chess/)             | Legal moves and agent-opponent play.               |
+| [Tic-Tac-Toe](tic-tac-toe/) | A per-chat board and agent-opponent play.          |
+
+[System Overview](template/) doubles as the workbench reference: retain its registration entry, host
+adapter, and backend structure when copying, then replace its domain code. Its
+[AGENTS.md](template/AGENTS.md) defines that boundary.
 
 ## Runtime model
 
@@ -43,7 +56,7 @@ contribute:
 - skills and slash commands;
 - MCP servers;
 - lifecycle hooks;
-- prompt sections and worker roles;
+- prompt sections and agent definitions;
 - sandboxed HTML views;
 - native workbench UI, built by the app into an artifact;
 - chat channels.
@@ -89,8 +102,8 @@ accepted manifest locations and token aliases.
 installs resolve permitted dependencies transitively. Native-code dependencies are never silently
 enabled for a third-party install.
 
-Treat version ranges as compatibility guidance unless the current installer reports a hard
-constraint. Do not assume that a declared dependency expands the parent's permissions.
+Dependency version checks are advisory: mismatches produce warnings, not a hard install failure. Do
+not assume that a declared dependency expands the parent's permissions.
 
 ## Contributor workflow
 
@@ -109,15 +122,25 @@ For anything smaller, copy the smallest bundled plugin whose shape matches what 
 one driven entirely by config. Keep the manifest and registration module small, split schemas from
 tool bodies, and add deterministic tests for validation and permission classification.
 
-From the repository root, run:
+Use a focused check for the plugin being changed, from the repository root:
 
 ```bash
-bun run test:dropins
-bun run type-check
-bun run check:tests
-bun run check:public
+bun test plugins/kanban
+bun run --cwd plugins/code-graph type-check
 ```
+
+Choose the matching plugin path and available package script. Hook-only plugins may have no package
+script. Build required workspace dependencies before raw package checks; see
+[Contributing](../CONTRIBUTING.md). CI owns the complete `test:dropins`, type, and repository gates.
 
 The [plugin SDK](../packages/plugin-sdk/README.md) owns typed host contracts. The
 [public authoring guide](../docs/extending/plugins.md) owns user-facing examples and should be
 updated whenever plugin behavior changes.
+
+## Source of truth
+
+- [Manifest contract](../packages/plugin-sdk/src/manifest/index.ts)
+- [Installed artifact trust](../apps/api/src/features/ext/trust.ts)
+- [Dependency planning and advisory version checks](../apps/api/src/features/plugins/dependencies.ts)
+- [Developer plugin watcher](../scripts/dev-plugin-watch.mjs)
+- [Plugin SDK entry points](../packages/plugin-sdk/README.md)

@@ -1,8 +1,8 @@
 # Tic-Tac-Toe
 
-A tic-tac-toe board in the workbench, one per chat, played against the agent in that chat. It is the
-first plugin that uses the host's wake contract: a move on the board starts a turn in the chat, and
-the agent answers with the plugin's own tool.
+A tic-tac-toe board in the workbench, one per chat, played against the agent in that chat. It uses
+the host's wake contract: a move on the board starts a turn in the owning chat, and the agent
+answers with the plugin's tool.
 
 ## How a game goes
 
@@ -29,8 +29,8 @@ plays another chat's board.
 
 ## The agent's tool
 
-One tool, `tic_tac_toe`: every schema rides in every request, so one tool with an `action` costs
-less than three and leaves the model one name to choose.
+One tool, `tic_tac_toe`, groups its operations under `action`. Its schema is deferred until
+activated or brought onto the request by linked game context or a plugin wake.
 
 | `action`   | Does                                                                   |
 | ---------- | ---------------------------------------------------------------------- |
@@ -39,8 +39,9 @@ less than three and leaves the model one name to choose.
 | `new_game` | Starts the next game at this chat's table and opens the board for you. |
 
 It never wakes the chat: a tool call is already the agent's turn, and a tool that woke the agent
-would wake it again on every move. When a game ends, the result asks the agent to keep anything it
-learned about how you play in its memory, where it outlives the chat.
+would wake it again on every move. When a game ends, the result asks the agent to save observations
+about play through its configured memory tool. Persistence depends on its permission rules and
+memory scope.
 
 ## Layout
 
@@ -57,9 +58,24 @@ learned about how you play in its memory, where it outlives the chat.
 | `skills/`                 | How the agent plays and talks about a game.                   |
 
 `backend/store.ts`, `backend/store-feed.ts`, `shared/store-feed.ts`, `ui/usePolledSnapshot.ts`,
-`ui/useStoreSnapshot.ts` and `ui/useNow.ts` are the reference template's frame, kept as they are.
-The store feed is how the agent's move reaches an open board: every write to the chat's game nudges
-the board over the realtime socket, and it re-reads at once. The board polls only as a backstop —
-every 30 seconds while the feed is live, and at its old 800 ms / 4 s cadence while it is not.
+`ui/useStoreSnapshot.ts`, and `ui/useNow.ts` delegate to the shared reference frame. A store write
+announces a change over the realtime feed, and a visible board re-reads its snapshot. A healthy feed
+has no periodic read; when unavailable, the board polls every 800 ms during agent activity or 4
+seconds while idle. Showing the pane or reconnecting reconciles its state.
 
 See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+
+## Permissions and synchronization
+
+The tool classifies `state` as `read` and game-changing actions as `session`. Its static
+`mutates: true` flag therefore does not make every action an external mutation. Agent rules and
+conversation permission modes still apply.
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Tool actions and effect classification](backend/tools.ts)
+- [Game state and transitions](shared/game.ts)
+- [Wake requests](backend/ask-agent.ts)
+- [Visible snapshot and fallback cadence](ui/game/useGame.ts)
+- [Shared store synchronization](../../packages/plugin-sdk/src/ui/store-snapshot.ts)

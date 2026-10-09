@@ -1,9 +1,9 @@
 # Webhook Notifier
 
 Webhook Notifier sends selected Localix session lifecycle events to one HTTP endpoint. Each event is
-an asynchronous JSON `POST`; a delivery failure does not interrupt the session turn. The first
-failure in a session is reported as an inline notice in that chat, so a misconfigured endpoint is
-visible rather than silent; every failure is also logged.
+an asynchronous JSON `POST`; a delivery failure does not interrupt the session turn. Every failure
+is logged. Each hook registration also reports the first failure for a session as an inline notice;
+a successful delivery clears that session’s warning suppression.
 
 ## What it does
 
@@ -57,9 +57,9 @@ trust decision.
 
 ## Default state
 
-The bundled plugin is disabled by default. Its manifest does not set `defaultEnabled`, and its
-native entrypoint makes it code-bearing; the plugin enable policy therefore requires an explicit
-enable choice. A stored user choice takes precedence on later starts.
+The bundled manifest declares `defaultEnabled: true`. Agent-owned plugin rules can disable it;
+third-party copies still require their own trust decision. No request is sent unless `WEBHOOK_URL`
+is configured, even when the hooks are loaded.
 
 ## Requirements
 
@@ -100,7 +100,8 @@ sent when `SECRET` is empty.
   acknowledgement.
 - Network failures, timeouts and non-2xx responses are logged, and the first of them in a session is
   reported once in the chat. Later failures in the same session stay in the log until a delivery
-  succeeds, so a broken endpoint reports once per session rather than once per event.
+  succeeds. The suppression set belongs to one registration instance and is keyed by session;
+  reloading or re-registering the plugin resets it.
 - Selected payloads can send user text, assistant content, tool-result content, and worker summaries
   outside the Localix process. The plugin provides no payload redaction beyond the length cap.
 - The destination method and headers are fixed. The plugin provides no custom header, bearer-token,

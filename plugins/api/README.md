@@ -49,8 +49,9 @@ this path. `.localix/` is workspace-local data and should remain ignored by git.
 The sidebar's request and environment lists hear changes instead of polling for them: a save by
 `api_client` arrives as its `collection_changed` command, and a file under `.localix/api/` rewritten
 on disk (by the agent's file tools, a checkout or another editor) through the host's workspace
-watcher. Both re-read at once. A backstop poll remains: every two minutes while the watcher is live,
-every 15 seconds while it is not, such as for a remote chat.
+watcher. Both trigger a refresh. While the workspace watcher is healthy, no polling timer runs. A
+visible workbench falls back to a 15-second poll when its watcher is unavailable; initial
+subscription, focus, and returning to visibility also reconcile the collection.
 
 Repository sharing is explicit: export writes a portable snapshot under `.localix/rest/`, and a
 later import can create a new session's working collection from that snapshot.
@@ -92,11 +93,11 @@ are an application gate, not an operating-system sandbox.
 
 ## Configuration
 
-| Key                     | Default   | Effect                                       |
-| ----------------------- | --------- | -------------------------------------------- |
-| `TIMEOUT_MS`            | `30000`   | Per-request timeout in milliseconds.         |
-| `MAX_BODY_BYTES`        | `1000000` | Maximum response bytes retained by one send. |
-| `ALLOW_PRIVATE_NETWORK` | `false`   | Allows private-network targets when enabled. |
+| Key                     | Manifest type | Default     | Effect                                       |
+| ----------------------- | ------------- | ----------- | -------------------------------------------- |
+| `TIMEOUT_MS`            | String        | `"30000"`   | Per-request timeout in milliseconds.         |
+| `MAX_BODY_BYTES`        | String        | `"1000000"` | Maximum response bytes retained by one send. |
+| `ALLOW_PRIVATE_NETWORK` | Boolean       | `false`     | Allows private-network targets when enabled. |
 
 ## Limits
 
@@ -113,4 +114,6 @@ are an application gate, not an operating-system sandbox.
 - [Request sender](./backend/send.ts)
 - [Import chain](./backend/import/registry.ts)
 - [Repository export](./backend/git-sync/action.ts)
+- [Collection synchronization](ui/model/useRequests.ts)
+- [Shared file-watcher lifecycle](../../packages/plugin-sdk/src/ui/file-resource-sync.ts)
 - [Workspace registration](./ui/register.tsx)

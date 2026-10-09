@@ -35,8 +35,9 @@ working on the plugin.
 - **Ids come from `shared/ids.ts` only**, and are project-relative.
 - **The tab is told, not polling.** File changes reach the index through `POST /changed`; a new
   revision, an agent request and a tool's camera question reach the tab as frames
-  (`backend/ws-frames.ts`). The polls that remain — the snapshot every 30 s while the change signal
-  is live, a camera report every 8 s — are backstops.
+  (`backend/ws-frames.ts`). While both change and realtime signals are live, an idle graph has no
+  snapshot poll. Indexing refreshes every 1.5 seconds; a disconnected idle graph falls back to 8
+  seconds. Camera reports retain an 8-second backstop.
 
 ## Checks
 
@@ -48,3 +49,11 @@ bun run --cwd plugins/code-graph type-check
 A language is added with a walker in `backend/extract/lang/`, its grammar in
 `backend/extract/parser.ts`, its extensions in `backend/extract/index.ts`, a module resolver in
 `backend/graph/modules/` and cases in the extraction and build tests.
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Query tool registration](backend/tools.ts)
+- [Camera tool](backend/view-tool.ts)
+- [Graph reads and signal health](ui/useGraph.ts)
+- [Camera reports](ui/useAgentCamera.ts)

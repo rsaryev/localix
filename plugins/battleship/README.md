@@ -41,8 +41,8 @@ Once a game is over, both fleets are shown to both sides.
 
 ## The agent's tool
 
-One tool, `battleship`: every schema rides in every request, so one tool with an `action` costs less
-than three and leaves the model one name to choose.
+One tool, `battleship`, groups its operations under `action`. Its schema is deferred until activated
+or brought onto the request by linked game context or a plugin wake.
 
 | `action`   | Does                                                                   |
 | ---------- | ---------------------------------------------------------------------- |
@@ -51,7 +51,8 @@ than three and leaves the model one name to choose.
 | `new_game` | Starts the next game at this chat's table and opens the board for you. |
 
 It never wakes the chat: a tool call is already the agent's turn. When a game ends, the result asks
-the agent to keep anything it learned about how you play in its memory, where it outlives the chat.
+the agent to save observations through its configured memory tool. Persistence depends on its
+permission rules and memory scope.
 
 ## Layout
 
@@ -68,10 +69,27 @@ the agent to keep anything it learned about how you play in its memory, where it
 | `skills/`                 | How the agent plays and talks about a game.                      |
 
 `backend/store.ts`, `backend/store-feed.ts`, `shared/store-feed.ts`, `ui/usePolledSnapshot.ts`,
-`ui/useStoreSnapshot.ts` and `ui/useNow.ts` are the reference template's frame, kept as they are.
-The store feed is how the agent's shot reaches an open board: every write to the chat's game nudges
-the board over the realtime socket, and it re-reads its view at once (the frame carries no state, so
-the agent's fleet still never reaches the browser). The board polls only as a backstop — every 30
-seconds while the feed is live, and at its old 800 ms / 4 s cadence while it is not.
+`ui/useStoreSnapshot.ts`, and `ui/useNow.ts` delegate to the shared reference frame. A store write
+announces a change over the realtime feed, and a visible board re-reads its snapshot. A healthy feed
+has no periodic read; when unavailable, the board polls every 800 ms during agent activity or 4
+seconds while idle. Showing the pane or reconnecting reconciles its state.
+
+The stream frame carries no fleet state; the route projects the player’s view and reveals the
+opponent fleet only when the game ends.
 
 See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+
+## Permissions and synchronization
+
+The tool classifies `state` as `read` and game-changing actions as `session`. Its static
+`mutates: true` flag therefore does not make every action an external mutation. Agent rules and
+conversation permission modes still apply.
+
+## Source of truth
+
+- [Manifest](plugin.json)
+- [Tool actions and effect classification](backend/tools.ts)
+- [Game state and transitions](shared/game.ts)
+- [Wake requests](backend/ask-agent.ts)
+- [Visible snapshot and fallback cadence](ui/game/useGame.ts)
+- [Shared store synchronization](../../packages/plugin-sdk/src/ui/store-snapshot.ts)
