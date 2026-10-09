@@ -8,6 +8,7 @@ import {
   participantsJsonFor,
   routeFromJoin,
 } from './repository-conversation-participants'
+import { createChatProjectionQueries } from './repository-chat-projections'
 import { lastMessagesByUser } from './repository-last-message'
 import type { SessionRecord } from './repository-types'
 import { MAX_SESSION_ANCESTRY_DEPTH } from './session-ancestry'
@@ -141,97 +142,7 @@ export function createSessionReadQueries(db: Kysely<AppDatabase>) {
       }))
     },
 
-    /**
-     * Narrow, bounded roster for plugin channel management. Unlike the UI list,
-     * this surface neither needs message counts nor wide session/runtime state;
-     * apply chat/project filters and LIMIT before rows leave SQLite.
-     */
-    async listRecentChatSessions(
-      userId: string,
-      opts?: { projectId?: string | null; limit?: number },
-    ) {
-      const requestedLimit = opts?.limit ?? 20
-      const limit =
-        Number.isSafeInteger(requestedLimit) && requestedLimit >= 0 ? requestedLimit : 20
-      let query = db
-        .selectFrom('agent_sessions')
-        .leftJoin('conversation_participants as route', (join) =>
-          join.onRef('route.session_id', '=', 'agent_sessions.id').on('route.position', '=', 0),
-        )
-        .select([
-          'agent_sessions.id',
-          'agent_sessions.title',
-          'agent_sessions.project_id',
-          'agent_sessions.runtime_status',
-          'route.agent_id',
-          'route.model_id',
-          'route.reasoning_effort',
-          'agent_sessions.updated_at',
-          'route.provider_connection_id',
-        ])
-        .where('agent_sessions.user_id', '=', userId)
-        .where('agent_sessions.session_kind', '=', 'chat')
-      if (opts?.projectId === null) {
-        query = query.where('agent_sessions.project_id', 'is', null)
-      } else if (opts?.projectId !== undefined) {
-        query = query.where('agent_sessions.project_id', '=', opts.projectId)
-      }
-      const rows = await query
-        .orderBy('is_pinned', 'desc')
-        .orderBy('updated_at', 'desc')
-        .limit(limit)
-        .execute()
-      return rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        projectId: row.project_id ?? null,
-        agentId: row.agent_id ?? null,
-        runtimeStatus: row.runtime_status ?? 'idle',
-        ...routeFromJoin(row),
-        updatedAt: row.updated_at,
-        sessionKind: 'chat' as const,
-      }))
-    },
-
-    /**
-     * Channel workspace actions repeatedly validate one regular chat before a
-     * mutation, usage read, stop, or HITL response. Filter and project that
-     * identity in SQLite instead of hydrating SessionDetail and its transcript.
-     */
-    async getChatSessionProjection(userId: string, id: string) {
-      const row = await db
-        .selectFrom('agent_sessions')
-        .leftJoin('conversation_participants as route', (join) =>
-          join.onRef('route.session_id', '=', 'agent_sessions.id').on('route.position', '=', 0),
-        )
-        .select([
-          'agent_sessions.id',
-          'agent_sessions.title',
-          'agent_sessions.project_id',
-          'agent_sessions.runtime_status',
-          'route.agent_id',
-          'route.model_id',
-          'route.reasoning_effort',
-          'agent_sessions.updated_at',
-          'route.provider_connection_id',
-        ])
-        .where('agent_sessions.user_id', '=', userId)
-        .where('agent_sessions.id', '=', id)
-        .where('agent_sessions.session_kind', '=', 'chat')
-        .executeTakeFirst()
-      return row
-        ? {
-            id: row.id,
-            title: row.title,
-            projectId: row.project_id ?? null,
-            agentId: row.agent_id ?? null,
-            runtimeStatus: row.runtime_status ?? 'idle',
-            ...routeFromJoin(row),
-            updatedAt: row.updated_at,
-            sessionKind: 'chat' as const,
-          }
-        : null
-    },
+    ...createChatProjectionQueries(db),
 
     /** Per-session message counts for one user, keyed by session id. Used to stamp
      *  `SessionSummary.messageCount` on the list without loading every body — child
