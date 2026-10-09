@@ -164,7 +164,6 @@
   "packages/plugin-sdk/src/ui/index.ts": 362,
   "packages/plugin-sdk/src/ui/locations.ts": 660,
   "packages/plugin-sdk/src/ui/message-binding-drag.ts": 418,
-  "packages/search/src/index.ts": 354,
   "packages/visual-feedback/src/actuate/index.ts": 432,
   "plugins/api/backend/collection/store.ts": 344,
   "plugins/api/backend/http-request-schema.ts": 317,

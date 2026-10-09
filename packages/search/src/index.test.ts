@@ -108,3 +108,23 @@ describe('stopword overmatching', () => {
     expect(scoreSearchFields([{ text: 'box' }], 'boxes')).toBeGreaterThan(0)
   })
 })
+
+test('blank intents are removed before matched-query indexes are assigned', () => {
+  expect(
+    rankSearchCandidates([{ item: 'needle', fields: [{ text: 'needle' }] }], {
+      queries: ['', '###', 'needle'],
+    })[0]?.matchedQueryIndexes,
+  ).toEqual([0])
+})
+
+test('equal candidates keep their input order and repeated items remain separate results', () => {
+  const shared = { id: 'same' }
+  const ranked = rankSearchCandidates(
+    [shared, shared, { id: 'third' }].map((item) => ({ item, fields: [{ text: 'needle' }] })),
+    { queries: 'needle', compare: () => 0 },
+  )
+  expect(ranked).toHaveLength(3)
+  expect(ranked[0]?.item).toBe(shared)
+  expect(ranked[1]?.item).toBe(shared)
+  expect(ranked[2]?.item.id).toBe('third')
+})
