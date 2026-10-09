@@ -37,8 +37,9 @@ existing marks and lists when editing formatted content. Do not replace a rich d
 string unless the user asks to remove formatting. Rich links require absolute safe URLs; arbitrary
 HTML, images and layout attributes are not part of the content contract.
 
-Use `history` to inspect saved revisions and `restore` to recover one as a new revision without
-deleting the current saved state.
+Use `history` to inspect saved revisions. `restore` requires both the current `revision` and the
+historical `target` revision; it recovers the target as a new saved revision without deleting the
+current history. Refresh the current revision after a conflict.
 
 Use `export` for native JSON or YAML (complete document), Lanjut version 1 interchange (only
 representable fields), linear Markdown, or plain text. The UI previews and exports the selected
@@ -51,6 +52,7 @@ claim a template guarantees ATS acceptance or invent a compatibility score.
 Presentation supports fifteen document fonts, font-size scales, line height, letter spacing, section
 spacing, optional header portrait with size/radius/alignment, contact icons, and English or
 Indonesian default headings. Skills/languages support `columns` and `showProficiency`; entries have
-optional `context` and `proficiency`. A custom section has `variant: rich|list`; a rich custom
-section contains at most one body-only entry. Preserve existing presentation fields when applying a
-presentation operation. Native JSON/YAML include target-role context; visible exports omit it.
+optional `context` for experience/internship and `proficiency` for skills/languages. A custom
+section has `variant: rich|list`; a rich custom section contains at most one body-only entry.
+Preserve existing presentation fields when applying a presentation operation. Native JSON/YAML
+include target-role context; visible exports omit it.

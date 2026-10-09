@@ -31,10 +31,11 @@ affected files in your plan.
 
 ## Read the coverage line
 
-Every answer opens with how much of the project the map could connect. The map reads syntax, not
-types: a method called on a value whose type the code does not state (`items.map()`, an un-annotated
-`client.send()`) is not linked. So "used by: none" means none that the map could resolve — confirm
-with a text search before telling the user something is unused or safe to delete.
+Structural lookup results include how much of the project the map could connect. Camera commands
+report view state and confirmation instead. The map reads syntax, not types: a method called on a
+value whose type the code does not state (`items.map()`, an un-annotated `client.send()`) is not
+linked. So "used by: none" means none that the map could resolve — confirm with a text search before
+telling the user something is unused or safe to delete.
 
 ## Walking the user through code
 
@@ -51,12 +52,14 @@ target, use the returned ids: `code_graph_show` refuses ambiguous or missing ref
 supplied order. `mode: "map"` shows their level and highlights them. Commands belong to this chat,
 so a second chat in the same project keeps its own view.
 
-`code_graph_view` with `kind: "inspect"` reads a fresh report from the visible tab: level, call
-trail, selection, zoom, viewport and visible node ids. After showing a target, inspect to confirm it
-arrived. To move the current camera, use `kind: "focus", nodes: ["id"]`, `kind: "fit"`,
-`kind: "zoom", zoom: 1`, `kind: "pan", x: 0.5, y: 0`, or `kind: "area"` with `x`, `y`, `width` and
-`height`. Focus applies to nodes already drawn; use show to navigate between levels. A move without
-the tab's matching report is queued, not confirmed. Camera requests expire after 15 seconds.
+`code_graph_view` with `kind: "inspect"` requests a fresh report from the visible tab: level, call
+trail, selection, zoom, viewport and visible node ids. It can fall back to the stored report if no
+new live answer arrives; do not assume every inspect result was measured at the instant of the call.
+After showing a target, inspect to confirm it arrived. To move the current camera, use
+`kind: "focus", nodes: ["id"]`, `kind: "fit"`, `kind: "zoom", zoom: 1`, `kind: "pan", x: 0.5, y: 0`,
+or `kind: "area"` with `x`, `y`, `width` and `height`. Focus applies to nodes already drawn; use
+show to navigate between levels. A move without the tab's matching report is queued, not confirmed.
+Camera requests expire after 15 seconds.
 
 This graph is derived from source files. Change source with file tools and let the index refresh; do
 not treat nodes or edges as editable Project Space elements. Missing graph edges alone do not prove

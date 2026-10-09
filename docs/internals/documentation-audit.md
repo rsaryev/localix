@@ -304,6 +304,19 @@ state, qualified HTTP error interpretation, and removed the claim that every lit
 detected or every reference-bearing export is safe to publish. Other bundled skills and the chart
 recipe details remain in scope for the audit.
 
+## Project Space, Code Graph, Learning, and Resume skills
+
+Compared Project Space's camera schema and sequence dialect, Code Graph's map/lens/view commands,
+Learning outline creation and tutor-generation outcomes, and Resume's tool union, templates, field
+guards, and export projections with source.
+
+Corrected Project Space's browser picture action to `take_screenshot`, qualified Code Graph coverage
+wording by response type and camera confirmation, and documented Learning's unavailable-tutor
+outcome with a direct link to its bundle reference. Specified Resume restore's current/target
+revisions and the section constraints on context/proficiency fields. Remaining deep chart recipes
+and Learning bundle examples still need review; the other bundled skill entry points now have source
+comparisons recorded.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.

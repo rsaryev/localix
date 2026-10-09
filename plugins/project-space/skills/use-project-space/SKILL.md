@@ -88,7 +88,9 @@ element that should recede. A locked element changes only in an update that also
 ## Show it and look at it
 
 `space_view` moves the camera of the board the person is looking at, and answers with what the view
-then shows — the rectangle, the zoom and the elements in it. One call, one move:
+then shows when the visible tab returns a matching report — the rectangle, zoom and elements. If the
+tab does not answer, the result says the move was sent but unconfirmed; do not claim the person saw
+it. One call, one move:
 
 | Input              | Does                                                            |
 | ------------------ | --------------------------------------------------------------- |
@@ -102,7 +104,7 @@ What you focus glows for a moment on the person's screen, and every move is on t
 history (⌥← takes them back), so walk them through a board with it — "here is the checkout flow",
 then `focus` the next frame — instead of describing coordinates. Its answer is the cheap way to
 check what is on screen; take a picture only when how it LOOKS matters: open `browser`
-`{ "action": "open", "url": "plugin:project-space" }`, then `screenshot`. There is no `http://`
+`{ "action": "open", "url": "plugin:project-space" }`, then `take_screenshot`. There is no `http://`
 address for the board.
 
 ## Map something
