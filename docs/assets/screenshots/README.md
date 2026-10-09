@@ -3,8 +3,9 @@
 This is the single source folder for Localix captures used by the README, documentation, and landing
 page. Dated PNG files are real product media. A reserved `--placeholder.png` slot is a clearly
 labelled stand-in, excluded from the dated capture manifest and replaced by the next dated capture
-of the same surface. It must not depict a fabricated product screen. The External history slot is
-reserved at `external-agents/history--placeholder.png` until its real capture is supplied.
+of the same surface. It must not depict a fabricated product screen. Keep a reserved slot only when
+it has an active consumer and a defined capture purpose; unused future slots are not documentation
+evidence. External history has a [real dated capture](external-agents/history--2026-10-08.png).
 
 ## Naming
 
@@ -50,10 +51,26 @@ bar were checked by toggling a checklist item before capture. It is a capture fi
 included workbench. Databases, provider credentials, generated plugin bundles, and local runtime
 paths are not stored here.
 
-All eight captures are unretouched 4800×3000 PNGs, captured natively at 3× density with a 1600×1000
-viewport. Composition is set in the product by arranging panels and scrolling the transcript. The
-homepage's generator preserves the original pixels and selects the dated images in place of their
-placeholder slots.
+The initial eight homepage captures are unretouched 4800×3000 PNGs, captured natively at 3× density
+with a 1600×1000 viewport. Composition is set in the product by arranging panels and scrolling the
+transcript. The homepage's generator preserves the original pixels and selects the dated images in
+place of their placeholder slots.
+
+The composer-context frame shows automatic open-file and terminal links, their sources and sizes. It
+belongs to workspace context guidance; it does not show a context checkpoint or a selected code
+snippet. The Source Control review frame shows an actual working-tree diff beside commit controls.
+The Release Checklist frame shows a functioning fixture whose counter was checked by a UI toggle,
+with a seeded conversation. These placements describe what is visible rather than implying an
+agent-generated plugin or completed commit/push.
+
+The Reader frame uses a generated Markdown release review guide. Its scenario opens the selected
+chapter and checks the chapter heading and two paragraph fragments. The image demonstrates chapter
+navigation and rendered text; other supported document formats require their own evidence.
+
+The Trading frame shows Kraken BTC/USD one-hour candles, volume bars, and a public order book on 8
+October 2026. Its scenario reads the live candle response and checks more than 50 candles with valid
+high/low ordering and positive closes. It does not assert order-book contents or exercise indicator
+settings. The prices belong to the dated capture.
 
 ## Freshness check
 
@@ -92,5 +109,7 @@ Docker capture opens only the dedicated demo container and shows actual logs and
 
 Historical light-theme demonstrations, old landing frames, before/after comparisons and transient
 startup/error captures stay on disk as history, but are excluded from the current public manifest.
-Reserved autonomy and external CLI slots remain unpublished until a real, useful scenario is
-available. Do not fill them with an empty screen or a simulated running task.
+The CLI capture shows the real executable's startup screen with unauthenticated fixture
+configuration; it does not prove a model run. Unused workspace-craft and autonomy placeholder slots
+have been removed. Do not create replacement figures from an empty screen or a simulated running
+task.

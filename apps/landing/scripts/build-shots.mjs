@@ -17,8 +17,6 @@ const HOME_SHOT_KEYS = [
   'project-space/board',
   'browser/agent-preview',
   'plugins/agent-build',
-  'workspace/craft',
-  'autonomy/background-work',
   'providers/model-browser',
   'task-board/board',
   'task-board/conversation',
