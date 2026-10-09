@@ -6,12 +6,11 @@
  * beacons. `save: true` is the second step, taken once the model has seen what it got.
  */
 
-import { redactSpec } from './store'
 import type { RequestSpec } from './request-spec'
+import { formatImportPreview, formatSavedImport } from './import-report'
 import type { CollectionStore } from './collection/store'
 import { importerNames, runImport } from './import/registry'
-import { isPlaceholderHost } from './import/openapi/server'
-import type { ImportedEnvironment, ImportedRequest } from './import/types'
+import type { ImportedRequest } from './import/types'
 import type { EnvironmentService } from './environments/service'
 import { authNeedsVault } from './secrets'
 import { vaultLiteralAuth, type StoreSecret } from './vault-auth'
@@ -37,16 +36,6 @@ export async function uniqueNames(
   })
 }
 
-function preview(requests: readonly ImportedRequest[]): string {
-  return requests
-    .map(({ name, spec }) => {
-      const s = redactSpec(spec)
-      const auth = s.auth.type === 'none' ? '' : ` [auth: ${s.auth.type}]`
-      return `${name}: ${s.method} ${s.url}${auth}`
-    })
-    .join('\n')
-}
-
 export interface ImportDeps {
   store: CollectionStore
   userId: string
@@ -61,55 +50,6 @@ export interface ImportDeps {
 }
 
 /**
- * A note when the import landed on the placeholder host — i.e. the spec declared a RELATIVE server
- * and could not say where it lives.
- *
- * This must be LOUD rather than left for the user to notice. The requests look completely normal;
- * only the hostname is invented, and the first sign otherwise is a confusing failure against a
- * domain nobody recognises. With an inlined url the honest answer is saying so.
- */
-function placeholderNote(specs: readonly { spec: { url: string } }[]): string | null {
-  const affected = specs.filter(({ spec }) => isPlaceholderHost(spec.url)).length
-  if (affected === 0) return null
-  return (
-    `The spec declares a RELATIVE server, so it never says which host it lives on — ` +
-    `${affected === specs.length ? 'every request uses' : `${affected} request(s) use`} the placeholder ` +
-    '`https://example.com` and will NOT work as imported. Re-run the import with the real origin, e.g. ' +
-    '{"action":"import","source":…,"baseUrl":"https://petstore3.swagger.io","save":true}.'
-  )
-}
-
-/**
- * Vault keys an import REFERENCED but did not create — the user must add them before sending.
- *
- * `created` is excluded because those keys were minted moments ago from a literal we actually had
- * (see `vaultLiteralAuth`), so they resolve. What is left are the keys an OpenAPI spec DESCRIBED:
- * a spec states that an endpoint needs a bearer token, and cannot state the token. Those are the
- * only ones a person has to go and fill in.
- */
-function danglingKeyNote(
-  specs: readonly { spec: { auth: unknown } }[],
-  created: ReadonlySet<string>,
-): string | null {
-  const keys = new Set<string>()
-  for (const { spec } of specs) {
-    const auth = spec.auth as Record<string, unknown>
-    for (const value of Object.values(auth)) {
-      if (typeof value !== 'string') continue
-      for (const m of value.matchAll(/\$\{secret:([A-Za-z0-9_.-]+)\}/g)) {
-        if (!created.has(m[1])) keys.add(m[1])
-      }
-    }
-  }
-  if (keys.size === 0) return null
-  return (
-    `The spec describes auth but cannot contain the credential, so ${keys.size === 1 ? 'the request references' : 'requests reference'} ` +
-    `${[...keys].map((k) => `\`${k}\``).join(', ')} in the secrets vault. Add ${keys.size === 1 ? 'that key' : 'those keys'} in ` +
-    'Settings → Secrets; until then a send fails with "Secret not found", naming the key.'
-  )
-}
-
-/**
  * Import one or more payloads as ONE operation.
  *
  * `sources` is a list because a directory of exported files is a list, and running the whole
@@ -118,28 +58,6 @@ function danglingKeyNote(
  * is its own document), but naming, vaulting, saving and reporting happen once over the union, so
  * dedup sees the whole batch and the answer reads as one thing that happened.
  */
-/** `2 environments` / `an environment` — for a one-line summary. */
-function environmentSummary(environments: readonly ImportedEnvironment[]): string {
-  return environments.length === 1
-    ? `the environment "${environments[0].name}"`
-    : `${environments.length} environments`
-}
-
-/** Preview environments without ever echoing an imported secret literal to the model. */
-function environmentPreview(environments: readonly ImportedEnvironment[]): string {
-  return environments
-    .map(
-      (env) =>
-        `${env.name}: ${env.variables
-          .map(
-            (v) =>
-              `${v.name}=${v.secret ? '<vault secret>' : v.value}${v.disabled ? ' (off)' : ''}`,
-          )
-          .join(', ')}`,
-    )
-    .join('\n')
-}
-
 export async function runImportAction(
   deps: ImportDeps,
   sources: string | readonly string[],
@@ -172,26 +90,7 @@ export async function runImportAction(
   const named = await uniqueNames(deps.store, outcome.requests)
   const plural = named.length === 1 ? 'request' : 'requests'
 
-  if (!save) {
-    const warn = placeholderNote(named)
-    const what = [
-      named.length > 0 ? `${named.length} ${plural}` : '',
-      outcome.environments.length > 0 ? environmentSummary(outcome.environments) : '',
-    ].filter(Boolean)
-    return {
-      ok: true,
-      content:
-        `Recognised ${outcome.importer.name}${what.length > 0 ? ` — ${what.join(' and ')}` : ''}. Not saved yet.\n\n` +
-        [named.length > 0 ? preview(named) : '', environmentPreview(outcome.environments)]
-          .filter(Boolean)
-          .join('\n\n') +
-        '\n\nRe-run with {"action":"import","source":…,"save":true} to store these.' +
-        [warn, ...outcome.notes]
-          .filter(Boolean)
-          .map((n) => `\n\n${n}`)
-          .join(''),
-    }
-  }
+  if (!save) return formatImportPreview(outcome, named, plural)
 
   // Vault every literal credential BEFORE anything is written: the plaintext must never reach the
   // collection at all, not even briefly. A stored-then-vaulted order would leave the secret in a
@@ -233,73 +132,15 @@ export async function runImportAction(
     }
   }
 
-  const notes: string[] = []
-  // A refusal is the LOUDEST thing an import can produce, so it goes first. Session JSON rejects a
-  // literal credential outright; without a vault writer bound there is nowhere safe for that
-  // credential to go, and the request genuinely cannot be saved.
-  if (refused.length > 0) {
-    notes.push(
-      `${refused.length} request(s) could NOT be saved:\n  ${refused.join('\n  ')}\n` +
-        'Saved request JSON never persists literal credentials. ' +
-        'Store it in the vault and reference it as ${secret:KEY}.',
-    )
-  }
-  if (savedEnvs.length > 0) {
-    notes.push(
-      `Saved ${savedEnvs.map((n) => `"${n}"`).join(', ')} as ${savedEnvs.length === 1 ? 'an environment' : 'environments'}. ` +
-        `NOT activated — activate with {"action":"use","target":"environment","name":"${savedEnvs[0]}"} on the api_client tool ` +
-        'when you want requests to render against it.',
-    )
-  } else if (outcome.environments.length > 0 && refusedEnvs.length === 0) {
-    // The host bound no environment service. Say so rather than dropping them on the floor.
-    notes.push(
-      `This source carries ${environmentSummary(outcome.environments)}, which could not be saved here. ` +
-        `Recreate with {"action":"save","target":"environment","name":"${outcome.environments[0].name}","variables":${JSON.stringify(
-          outcome.environments[0].variables.map((v) => ({ name: v.name, value: v.value })),
-        )}} on the api_client tool.`,
-    )
-  }
-  if (refusedEnvs.length > 0) {
-    notes.push(
-      `${refusedEnvs.length} environment(s) could NOT be saved:\n  ${refusedEnvs.join('\n  ')}\n` +
-        'A secret environment value is never allowed to fall back to plaintext.',
-    )
-  }
-  if (vaulted.length > 0) {
-    notes.push(
-      `Moved ${vaulted.length === 1 ? 'a credential' : `${vaulted.length} credentials`} into the secrets vault — ` +
-        `the saved request${named.length === 1 ? '' : 's'} now reference${named.length === 1 ? 's' : ''} ` +
-        `${vaulted.map((k) => `\`\${secret:${k}}\``).join(', ')} instead of holding the value.`,
-    )
-  }
-  if (stranded.length > 0) {
-    notes.push(
-      `A credential on ${stranded.map((n) => `"${n}"`).join(', ')} could NOT be vaulted and is stored as written. ` +
-        'Replace it with a `${secret:KEY}` reference once the key exists.',
-    )
-  }
-  // Computed from what was actually WRITTEN, not from what we tried to write: a refused record
-  // is not on disk, and a note describing it as saved would be a lie the user acts on.
-  const dangling = danglingKeyNote(saved, new Set(vaulted))
-  for (const note of [placeholderNote(saved), dangling, ...outcome.notes])
-    if (note) notes.push(note)
-
-  // Preview the RECORDS, not the parsed requests: after vaulting they are what is actually
-  // stored, and previewing the pre-vault specs would report a state that no longer exists.
-  // A Postman ENVIRONMENT export has no requests in it, by definition — so nothing below may
-  // assume `named[0]` exists. It used to: `named[0].name` would have thrown on the first such
-  // import, turning a working feature into a crash.
-  const what = [
-    named.length > 0 ? `${named.length} ${plural}` : '',
-    savedEnvs.length > 0 ? environmentSummary(outcome.environments) : '',
-  ].filter(Boolean)
-  return {
-    ok: true,
-    content:
-      `Imported ${what.join(' and ') || 'nothing'} from ${outcome.importer.name}.` +
-      (named.length > 0
-        ? `\n\n${preview(saved)}\n\nSend one with {"action":"send","name":"${named[0].name}"}.`
-        : '') +
-      (notes.length > 0 ? `\n\n${notes.join('\n\n')}` : ''),
-  }
+  return formatSavedImport({
+    outcome,
+    named,
+    plural,
+    refused,
+    saved,
+    savedEnvs,
+    refusedEnvs,
+    vaulted,
+    stranded,
+  })
 }
