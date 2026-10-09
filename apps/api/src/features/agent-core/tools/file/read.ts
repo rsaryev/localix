@@ -1,9 +1,9 @@
-import { z } from 'zod'
+import type { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { ELISION_MARKER, formatSize } from '@localixai/agent'
 import { TOOL } from '../../tool-names'
 import { fileSource } from '../source-refs'
-import { type ExecutionEnvironment, shellQuote } from '../environment'
+import type { ExecutionEnvironment } from '../environment'
 import { localEnvironment } from '../environments/local'
 import {
   appendEditorBufferNote,
@@ -14,19 +14,19 @@ import {
   type EditorBufferProbe,
   type FileMtimeStore,
 } from './file-utils'
-import { stringToInteger } from '../tool-schema'
 import { createReadDedupStore, type ReadDedupStore } from './read-dedup'
 import { renderLineRange } from './read-render'
-import {
-  MAX_DIR_ENTRIES,
-  MAX_OUTPUT_BYTES,
-  looksBinary,
-  modelFacingFile,
-  truncateOutput,
-} from './read-output'
+import { MAX_OUTPUT_BYTES, looksBinary, modelFacingFile, truncateOutput } from './read-output'
 import { formatOutline, type OutlineProvider } from './outline'
 import type { DocumentTextExtractor } from './document-ports'
 import { isViewableImagePath } from './view-image'
+import { readToolInputSchema, withLineLimit } from './read-input'
+import { tryListDirectory } from './read-directory'
+import { readDedupStub } from './read-dedup-stub'
+
+export { readToolInputSchema } from './read-input'
+export { tryListDirectory } from './read-directory'
+export { READ_DEDUP_STUB_PHRASE, readDedupStub } from './read-dedup-stub'
 
 /**
  * Office/PDF formats `read` sees as binary (a NUL-byte sniff trips on their ZIP /
@@ -40,123 +40,11 @@ function isExtractableDocument(p: string): boolean {
   return dot >= 0 && EXTRACTABLE_DOC_EXTS.has(p.slice(dot + 1).toLowerCase())
 }
 
-/**
- * `limit` is the line-count shape Claude Code's read tool taught models (`offset`/`limit`);
- * a model that brings it here used to be refused for an unknown property.
- * It folds into the start/end pair the rest of the tool reads, so the range logic has one shape.
- */
-function withLineLimit<T extends { start_line?: number; end_line?: number; limit?: number }>(
-  input: T,
-): T {
-  if (input.limit == null) return input
-  const start = input.start_line ?? 1
-  return { ...input, start_line: start, end_line: input.end_line ?? start + input.limit - 1 }
-}
-
-export const readToolInputSchema = z.object({
-  path: z.string().min(1).describe('File or directory, absolute or relative to cwd.'),
-  cwd: z.string().optional().describe('Base for relative paths (defaults to the session root).'),
-  mode: z
-    .enum(['content', 'outline'])
-    .optional()
-    .describe(
-      "'outline': the symbol outline with line spans — the cheap first look at a big file.",
-    ),
-  offset: z
-    // Same tolerance as `start_line`/`end_line` two fields down. `offset` is the field a model is
-    // MOST likely to send as a string: its own description says to reuse "the offset suggested in a
-    // previous truncated read", i.e. copy a number out of a text marker. Two fields in one schema
-    // behaving differently for the same input is the defect.
-    .preprocess(stringToInteger, z.number().int().min(0))
-    .optional()
-    .describe('Byte offset to continue a truncated read (use the suggested value).'),
-  start_line: z
-    .preprocess(stringToInteger, z.number().int().min(1))
-    .optional()
-    .describe('1-based first line of a range, e.g. from `search`. Ignores `offset`.'),
-  end_line: z
-    .preprocess(stringToInteger, z.number().int().min(1))
-    .optional()
-    .describe('Inclusive last line (default: end of file).'),
-  limit: z
-    .preprocess(stringToInteger, z.number().int().min(1))
-    .optional()
-    .describe('Lines to return from start_line.'),
-})
-
 export interface ReadToolDetails {
   path: string
   bytes: number
   truncated: boolean
   output: string
-}
-
-/**
- * If `targetPath` is a directory, return a sorted listing (one entry per line,
- * directories suffixed with `/`); otherwise return null. Uses env.exec so it works
- * identically across local / ssh / docker backends.
- */
-export async function tryListDirectory(
-  env: ExecutionEnvironment,
-  targetPath: string,
-): Promise<string | null> {
-  const q = shellQuote(targetPath)
-  // -1: one per line, -A: almost-all (skip . and ..), -p: append / to directories.
-  // Stop at one sentinel beyond the display cap. Letting `ls` finish first made
-  // the shared exec capture keep an arbitrary tail past 4 MB, then this function
-  // sorted that tail and reported its length as the directory's exact count.
-  const cmd = `if [ -d ${q} ]; then ls -1Ap -- ${q} | head -n ${MAX_DIR_ENTRIES + 1}; else printf '__NOT_A_DIR__'; fi`
-  let result: { stdout: string; stderr: string; exitCode: number }
-  try {
-    // `uncapped` is safe here because `head` has already bounded the producer to
-    // 1,001 filesystem names (each component is itself filesystem-size-bounded).
-    result = await env.exec(cmd, { uncapped: true })
-  } catch {
-    return null
-  }
-  // `head` owns the pipeline exit code, so stderr is the remaining `ls` failure signal.
-  if (result.exitCode !== 0 || result.stderr.trim() || result.stdout.includes('__NOT_A_DIR__'))
-    return null
-  const entries = result.stdout
-    .split('\n')
-    .map((s) => s.trim())
-    // The workspace's own `.localix/` is the host's cache, not the user's project.
-    .filter((s) => s && s !== '.localix/')
-    .sort()
-  const sourceTruncated = entries.length > MAX_DIR_ENTRIES
-  const shown = sourceTruncated ? entries.slice(0, MAX_DIR_ENTRIES) : entries
-  if (sourceTruncated) {
-    return `Directory ${targetPath} — more than ${MAX_DIR_ENTRIES} entries (showing first ${MAX_DIR_ENTRIES}):\n${shown.join('\n')}\n[…more entries omitted]`
-  }
-  return `Directory ${targetPath} — ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}:\n${shown.join('\n')}`
-}
-
-/**
- * The dedup stub `read` serves instead of re-delivering bytes the model already has —
- * and the PHRASE inside it, which a SECOND reader keys on.
- *
- * `chat/runtime/run/wire-dump.ts` classifies a tool result as a recoverable dedup POINTER
- * by looking for that phrase. It used to re-type the sentence to do so, because this module
- * emitted the stub as an inline template and exported nothing: two copies of one string in
- * two trees, with nothing holding the ends together. Reword the stub and the detector goes
- * quiet — an elided read silently stops being recognised as recoverable, which is the exact
- * signal the compression work is read off. The EMITTER owns it now; the detector imports it.
- *
- * MODEL-FACING, and covered by no ordinary test: this text REPLACES a file the model asked
- * for, so if it stops saying how to get the content back, the read is simply lost. The bytes
- * are pinned by a characterization test in `read.test.ts`.
- *
- * The phrase is spelled once as the constant and once inside the template, deliberately:
- * `wire-dump-stub.test.ts` (chat's tree) reads THIS SOURCE and requires the literal on the
- * emitting line. `readDedupStub()` containing `READ_DEDUP_STUB_PHRASE` is asserted in
- * `read.test.ts`, so the two cannot drift apart in silence. Collapse them once chat's lint
- * is retired in favour of importing the constant.
- */
-export const READ_DEDUP_STUB_PHRASE = 'unchanged since your earlier read'
-
-/** `what` is the path, or `path (window)` for a ranged/paginated read. */
-export function readDedupStub(what: string): string {
-  return `[${what} is unchanged since your earlier read this session — content omitted to save tokens (scroll up to that read). If it is no longer in your context, just read it again and the full content will be returned.]`
 }
 
 export function createReadTool(

@@ -22,37 +22,15 @@
  */
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { isCompressedContent, type Message as WireMessage } from '@localixai/agent'
+import type { Message as WireMessage } from '@localixai/agent'
 
-import { READ_DEDUP_STUB_PHRASE } from '../../../agent-core/tools/file/read'
+import { isWireDumpPointer } from './wire-dump-pointer'
 import { localixHome } from '../../../../lib/env'
 
 const DUMP_ROOT = path.join(localixHome(), 'tmp', 'wire-dump')
 const FLAG_FILE = path.join(localixHome(), 'wire-dump.on')
 
 const seqBySession = new Map<string, number>()
-
-/** Above this, a message is content that MENTIONS a marker, not a pointer that IS one. */
-const POINTER_MAX_TOKENS = 400
-
-/**
- * Is this serialized message a POINTER rather than content?
- *
- * `isCompressedContent` (@localixai/agent) is the OWNER's answer for the three compression
- * markers, and `READ_DEDUP_STUB_PHRASE` (agent-core's `tools/file/read.ts`) is the OWNER's
- * answer for the fourth — `read`'s dedup stub, served in place of the bytes. Asking the
- * emitters is what keeps this dump honest when a layer's wording moves: the stub used to be
- * a COPY of the string here, pinned by a source-reading lint, because read.ts exported no
- * constant. It does now, so the copy is gone.
- *
- * A GENUINE elision replaces a big payload with a tiny pointer, so the message is small; the
- * size bound rejects the false positive where the content being READ literally contains a
- * marker (e.g. reviewing prune-wire.ts / op-menu.ts, which define them).
- */
-function isPointer(serialized: string, tokensEst: number): boolean {
-  if (tokensEst >= POINTER_MAX_TOKENS) return false
-  return isCompressedContent(serialized) || serialized.includes(READ_DEDUP_STUB_PHRASE)
-}
 
 let flagCache = { at: 0, on: false }
 function flagFileOn(): boolean {
@@ -89,7 +67,7 @@ export function dumpWire(sessionId: string, model: string, messages: readonly Wi
       const s = JSON.stringify(m)
       const tokensEst = Math.ceil(s.length / 4)
       total += tokensEst
-      const elided = isPointer(s, tokensEst)
+      const elided = isWireDumpPointer(s, tokensEst)
       if (elided) elidedTokens += tokensEst
       return {
         i,

@@ -7,7 +7,7 @@
   "apps/api/src/features/agent-core/system-prompt-feature-sections.ts": 308,
   "apps/api/src/features/agent-core/system-prompt.ts": 337,
   "apps/api/src/features/agent-core/tools/bash/bash-run.ts": 435,
-  "apps/api/src/features/agent-core/tools/file/read.ts": 473,
+  "apps/api/src/features/agent-core/tools/file/read.ts": 385,
   "apps/api/src/features/agent-core/tools/file/search.ts": 301,
   "apps/api/src/features/agent-core/tools/patch/patch-apply.ts": 414,
   "apps/api/src/features/agent-core/tools/patch/patch-match.ts": 369,
