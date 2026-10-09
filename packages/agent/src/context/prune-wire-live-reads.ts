@@ -6,6 +6,12 @@ import { ALL_MUTATE_TOOLS, READ_RESULT_TOOLS } from './tool-classes'
 
 const liveReadByteLengthCache = new WeakMap<ToolResult, number>()
 
+/**
+ * The file a wire tool call observes or changes, as a normalized key. Wire calls
+ * carry raw `arguments` (the item-level `targets.ts` resolver needs items), so this
+ * is the same idea at the wire granularity: a `path`/`file_path` argument, or the
+ * file headers of an `apply_patch` body.
+ */
 function wireTargets(name: string, args: unknown): string[] {
   if (!args || typeof args !== 'object') return []
   const a = args as Record<string, unknown>
