@@ -54,6 +54,7 @@ export function buildRunToolRegistry(
   params: {
     userId: string
     conversationControl?: ConversationControlPort['finish']
+    canChangeTopic?: boolean
     session: SessionRecord
     /** The agent taking this turn — whose rules decided everything below. */
     agentId: string

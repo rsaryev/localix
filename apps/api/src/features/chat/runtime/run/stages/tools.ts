@@ -4,11 +4,12 @@
  * A tool the model is shown but the dispatcher cannot run (or the reverse) fails mid-turn with
  * an error the model cannot act on, so exposure and dispatch are derived from ONE descriptor
  * surface here and every later stage — prompt, permission gate, stream — reads this result.
- * The slow reads (MCP gather, the session roster, the agent directory) start as promises
- * before the first await so they overlap instead of queueing behind each other.
+ * The agent directory determines topic authority before descriptors are built; MCP gather and
+ * the session snapshot then run together.
  */
 import { mkdirSync } from 'node:fs'
 
+import { conversationLeader } from '../../conversation-strategy'
 import { TOOL } from '../../../../agent-core/tool-names'
 import { sessionScratchDir } from '../../../../agent-core/tools/workspace'
 import { recordComposition } from '../../../../effective-config/composition-store'
@@ -44,6 +45,14 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     inputs.disabledTools,
     params.scope.extraDisabledTools,
   )
+  const agentDirectory = (await deps.listRegistryAgents?.(userId, session.projectId)) ?? []
+  const priorities = new Map(
+    agentDirectory.map((agent) => [agent.agentId, agent.leadershipPriority ?? 0]),
+  )
+  // Topic exposure and the prompt use the same current registry priorities.
+  const canChangeTopic =
+    session.sessionKind === 'chat' &&
+    conversationLeader(session, priorities)?.agentId === params.scope.speakerAgentId
   // Topic changes belong to the session, including a fixed solo chat.
   const conversationControl =
     session.sessionKind === 'chat' ||
@@ -66,6 +75,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       session,
       agentId: inputs.agent.id,
       conversationControl: conversationControl?.finish,
+      canChangeTopic,
       env: inputs.env,
       defaultCwd,
       catalog: turn.catalog,
@@ -122,8 +132,6 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   // (see `handleToolExecutionStart`).
   const mutatingToolNames = new Set<string>()
 
-  const agentDirectoryPromise =
-    deps.listRegistryAgents?.(userId, session.projectId) ?? Promise.resolve([])
   // MCP gather + plugin tool-call hooks + repeat-failure guard, populating the two sets above.
   const assembledPromise = assembleRunTools({
     env,
@@ -159,8 +167,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const [
     { tools, dispatchTools, preflightTools, mcpInstructions, mcpInventory, ledger },
     descendantSessions,
-    agentDirectory,
-  ] = await Promise.all([assembledPromise, frame.loadSessionSnapshot(), agentDirectoryPromise])
+  ] = await Promise.all([assembledPromise, frame.loadSessionSnapshot()])
   recordToolRoster(
     preflightTools.map((tool) => tool.name),
     { userId, projectId: session.projectId },

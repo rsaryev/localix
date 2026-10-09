@@ -100,7 +100,7 @@ describe('composer header memo boundary', () => {
       ['SchedulesPanel.tsx', 'SchedulesPanel'],
       ['SpendAlertStrip.tsx', 'SpendAlertStrip'],
       ['ComposerQueuePanel.tsx', 'ComposerQueuePanel'],
-      ['UsageIndicator.tsx', 'UsageIndicator'],
+      ['SessionUsageIndicator.tsx', 'SessionUsageIndicator'],
       ['ModelSearchSelect.tsx', 'ModelSearchSelect'],
     ] as const) {
       expect(read(file)).toContain(`export const ${name} = memo(function ${name}(`)

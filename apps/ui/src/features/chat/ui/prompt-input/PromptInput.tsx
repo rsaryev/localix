@@ -1,6 +1,6 @@
 import { cloneElement, lazy, Suspense, useCallback, useId, useMemo, useRef, useState } from 'react'
 
-import { findCatalogModelForConnection } from '@localixai/agent/catalog'
+import { resolveLiveCatalogModel, findCatalogModelForConnection } from '@localixai/agent/catalog'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import { acceptAttribute } from '@/shared/lib/attachment-policy'
@@ -27,10 +27,10 @@ import { ComposerTextField } from './ComposerTextField'
 import { ComposerContextManifest } from './ContextRefChips'
 import { EditingBanner } from './EditingBanner'
 import { ModelSearchSelect } from './ModelSearchSelect'
+import { SessionPermissionModeChip } from './SessionPermissionModeChip'
 import { PinnedSkillsRow } from './PinnedSkillsRow'
 import type { PromptInputProps } from './promptInputProps'
 import { mergeDynamicSlashCommands } from './slashCommands'
-import { UsageIndicator } from './UsageIndicator'
 import { useAtRefAutocomplete } from './useAtRefAutocomplete'
 import { useChatInlineCompletion } from './useChatInlineCompletion'
 import { useComposerBusSubmit } from './useComposerBusSubmit'
@@ -122,6 +122,19 @@ export function PromptInput(props: PromptInputProps) {
       ),
     [activeConnectionId, connectionsState.connections, model, models],
   )
+  const rosterParticipants = useMemo(
+    () =>
+      participants.map((participant) => ({
+        ...participant,
+        contextWindow: resolveLiveCatalogModel(
+          models,
+          connectionsState.connections,
+          participant.modelId,
+          participant.providerConnectionId,
+        )?.model.contextLength,
+      })),
+    [participants, models, connectionsState.connections],
+  )
   const contextWindow = selectedModel?.contextLength
   const ctxRefs = useComposerContextRefs(
     prompt,
@@ -181,16 +194,7 @@ export function PromptInput(props: PromptInputProps) {
     slash.isOpen || slashArgs.isMenuOpen || atRef.isOpen || openCommandActive,
   )
 
-  const { settings, update: updateSettings } = useUserSettings()
-  // Read the LIVE settings at mutation time, not through the render closure: the stepper is
-  // clicked repeatedly and a patch built from a stale snapshot would undo the click before it.
-  const setMaxTurns = useCallback(
-    (next: number) =>
-      updateSettings({
-        agentSettings: { ...useUserSettings.getState().settings.agentSettings, maxTurns: next },
-      }),
-    [updateSettings],
-  )
+  const { settings } = useUserSettings()
   const chatCompletion = useChatInlineCompletion({
     prompt,
     setPrompt,
@@ -317,13 +321,23 @@ export function PromptInput(props: PromptInputProps) {
     />
   )
   const { contextBar } = props
+  const contextControls = (
+    <>
+      <SessionPermissionModeChip sessionId={activeSessionId} disabled={isGenerating || readOnly} />
+      {contextManifest}
+    </>
+  )
 
   return (
     <div
       data-focus-part="chat"
       className="shrink-0 px-6 pb-6 pt-3 max-sm:px-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:pt-2"
     >
-      {contextBar ? cloneElement(contextBar, { children: contextManifest }) : contextManifest}
+      {contextBar ? (
+        cloneElement(contextBar, { children: contextControls })
+      ) : (
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 pb-2">{contextControls}</div>
+      )}
       {isEditing && onCancelEdit && (
         <EditingBanner originalText={editingOriginalText ?? ''} onCancel={onCancelEdit} />
       )}
@@ -378,7 +392,8 @@ export function PromptInput(props: PromptInputProps) {
           sessionUsage={props.sessionUsage}
           loops={props.loops}
           serverQueue={serverQueue}
-          participants={participants}
+          participants={rosterParticipants}
+          participantUsage={sessionView.participantUsage}
           conversationFloor={sessionView.conversationFloor}
           addParticipantControl={
             <AddParticipantMenu
@@ -402,23 +417,19 @@ export function PromptInput(props: PromptInputProps) {
         ) : (
           <>
             <div className="px-2.5 pb-[0.1rem] pt-[0.45rem] max-sm:px-2">
-              <div className="min-w-0">
-                <ModelSearchSelect
-                  models={models}
-                  value={model}
-                  onSelectionChange={props.setModel}
-                  connectionsState={connectionsState}
-                  disabled={isGenerating || readOnly}
-                  reasoningEffort={reasoningEffort}
-                  onReasoningEffortChange={props.setReasoningEffort}
-                  participants={participants}
-                  participantScope={activeProjectId ?? ''}
-                  sessionId={activeSessionId}
-                  focused={isFocused}
-                  maxTurns={settings.agentSettings?.maxTurns}
-                  onMaxTurnsChange={setMaxTurns}
-                />
-              </div>
+              <ModelSearchSelect
+                models={models}
+                value={model}
+                onSelectionChange={props.setModel}
+                connectionsState={connectionsState}
+                disabled={isGenerating || readOnly}
+                reasoningEffort={reasoningEffort}
+                onReasoningEffortChange={props.setReasoningEffort}
+                participants={participants}
+                participantScope={activeProjectId ?? ''}
+                sessionId={activeSessionId}
+                focused={isFocused}
+              />
             </div>
             {/* Applied (pinned) skills — warmed into the session, not run */}
             <PinnedSkillsRow skills={sessionView.pinnedSkills} onChange={sessionView.setSkills} />
@@ -452,16 +463,6 @@ export function PromptInput(props: PromptInputProps) {
               hasApiKey={hasConnection && !readOnly}
               canAttach={attachEnabled}
               onAttachClick={() => void handleAttachClick()}
-              accessory={
-                <UsageIndicator
-                  usage={props.usage}
-                  latestAttempt={props.latestContextAttempt}
-                  contextDiagnostics={props.contextDiagnostics}
-                  sessionUsage={props.sessionUsage}
-                  cacheDiagnostics={props.cacheDiagnostics}
-                  contextWindow={contextWindow}
-                />
-              }
               onSend={handleSend}
               onStop={props.onStop}
               canRecord={voice.canRecord}

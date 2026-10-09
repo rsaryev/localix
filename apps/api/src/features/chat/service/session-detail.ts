@@ -1,3 +1,4 @@
+import { summarizeParticipantUsage } from '@localixai/agent'
 import { getLoopEngine } from '../../loops/runtime-binding'
 import { toLoopSummary } from '../../loops/contracts'
 import type { createProjectsRepository } from '../../projects/repository'
@@ -242,6 +243,7 @@ export async function getSessionDetail(
     sessionTiming: deriveSessionTiming(messages.map((m) => m.payload)),
     messageCount: messages.length,
     sessionUsage,
+    participantUsage: summarizeParticipantUsage(messages.map((message) => message.payload)),
     work: runner.listWork(userId, id),
     questions: runner.listQuestions?.(userId, id) ?? [],
     terminalWaits: runner.getTerminalWaits?.(userId, id) ?? [],

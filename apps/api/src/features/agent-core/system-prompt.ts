@@ -129,13 +129,14 @@ export function buildAgentSystemPromptParts(
 
   // How a turn in this conversation is run. The RULES are prefix-stable (they change when the
   // conversation goes from one agent to several); WHO is in it rides the volatile tail
-  // (system-prompt-tail.ts), because agents invite and remove each other mid-conversation.
+  // (system-prompt-tail.ts), because agents invite colleagues mid-conversation.
   // A solo run gets only the part its inviting turn needs — see system-prompt-conversation-section.
   if (hasTool(TOOL.conversation_control)) {
     sections.push(
       buildTurnControlSection({
         multi: isMultiAgentConversation(params.conversation),
         isLeader: params.conversation?.isLeader ?? false,
+        canChangeTopic: params.canChangeTopic ?? false,
       }),
     )
   }

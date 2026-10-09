@@ -19,6 +19,7 @@
   <url><loc>https://localix.ai/docs/features--sessions-and-projects</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--conversations</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--conversation-history</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--attachments</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--answer-formatting</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--hitl</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--background-work</loc><priority>0.7</priority></url>
@@ -65,6 +66,7 @@
   <url><loc>https://localix.ai/docs/extending--plugins</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--build-with-the-agent</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--plugin-ui</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--sandboxed-views</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--plugin-sync</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--keyboard-ownership</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--plugin-problems</loc><priority>0.7</priority></url>

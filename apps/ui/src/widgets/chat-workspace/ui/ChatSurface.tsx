@@ -390,7 +390,11 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
               The navigation breadcrumb lives in the app-wide top bar (WorkspaceShell
               titlebar), NEVER inside the chat — an empty spacer pushes the actions right. */}
             <div className="min-w-0 flex-1" />
-            <ChatHeaderActions activeSessionId={activeSessionId} hasMessages={hasMessages} />
+            <ChatHeaderActions
+              activeSessionId={activeSessionId}
+              hasMessages={hasMessages}
+              sessionUsage={sessionUsage}
+            />
           </div>
         </div>
 

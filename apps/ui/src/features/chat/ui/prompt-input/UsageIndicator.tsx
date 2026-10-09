@@ -1,4 +1,7 @@
 import { memo } from 'react'
+import { buildUsageIndicatorView } from '../../model/contextUsageView'
+export { buildUsageIndicatorView } from '../../model/contextUsageView'
+export type { UsageIndicatorView } from '../../model/contextUsageView'
 import type { ChatCacheDiagnosticsPayload, ChatUsagePayload } from '@localixai/agent'
 import type { ReactNode } from 'react'
 import { formatCompactTokens, formatCost } from '../../model/usageFormat'
@@ -8,11 +11,7 @@ import { SectionLabel } from '@localixai/kit/section-label'
 import { Button } from '@localixai/kit/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@localixai/kit/hover-card'
 import { inspector } from '@/shared/lib/inspectorBus'
-import type {
-  ContextAttemptSnapshot,
-  ContextTokenKind,
-  ContextWindowDiagnostics,
-} from '../../model/contextUsage'
+import type { ContextAttemptSnapshot, ContextWindowDiagnostics } from '../../model/contextUsage'
 
 interface UsageIndicatorProps {
   /** Usage from the last assistant turn that completed a provider request. */
@@ -51,121 +50,6 @@ const tokenKindLabel = {
   estimated: 'Runtime estimate',
   unknown: 'Unavailable',
 } as const
-
-export interface UsageIndicatorView {
-  attempt: {
-    outcome: ContextAttemptSnapshot['outcome']
-    stage: ContextAttemptSnapshot['stage']
-    contextTokens?: number
-    tokenKind: ContextTokenKind
-  } | null
-  physicalWindowTokens?: number
-  policyWindowTokens?: number
-  /** The whole-request ceiling — the usage denominator when known. */
-  ceilingTokens?: number
-  /** Where the next context checkpoint rewrites the model's view. */
-  checkpointAtTokens?: number
-  reservedTokens?: number
-  fraction: number | null
-  percentLabel: string
-  fractionBasis: 'ceiling' | 'policy-window' | 'physical-window' | 'unknown'
-  lastSuccessIsLatest: boolean
-}
-
-/**
- * Pure view-model builder: all provenance and denominator choices are pinned by
- * tests without coupling them to tooltip markup.
- */
-export function buildUsageIndicatorView({
-  usage,
-  latestAttempt,
-  contextDiagnostics,
-  contextWindow,
-}: Pick<
-  UsageIndicatorProps,
-  'usage' | 'latestAttempt' | 'contextDiagnostics' | 'contextWindow'
->): UsageIndicatorView {
-  const physicalWindowTokens =
-    contextDiagnostics?.fullWindowTokens && contextDiagnostics.fullWindowTokens > 0
-      ? contextDiagnostics.fullWindowTokens
-      : contextWindow && contextWindow > 0
-        ? contextWindow
-        : undefined
-  const policyWindowTokens =
-    contextDiagnostics?.policyWindowTokens && contextDiagnostics.policyWindowTokens > 0
-      ? contextDiagnostics.policyWindowTokens
-      : undefined
-  const positive = (tokens: number | undefined) => (tokens && tokens > 0 ? tokens : undefined)
-  const ceilingTokens = positive(contextDiagnostics?.ceilingTokens)
-  const checkpointAtTokens = positive(contextDiagnostics?.checkpointAtTokens)
-  const reservedTokens =
-    contextDiagnostics?.reservedTokens && contextDiagnostics.reservedTokens > 0
-      ? contextDiagnostics.reservedTokens
-      : undefined
-
-  let attempt: UsageIndicatorView['attempt'] = latestAttempt
-    ? {
-        outcome: latestAttempt.outcome,
-        stage: latestAttempt.stage,
-        contextTokens: latestAttempt.contextTokens,
-        tokenKind: latestAttempt.tokenKind,
-      }
-    : usage
-      ? {
-          outcome: 'succeeded',
-          stage: 'provider',
-          contextTokens: usage.contextTokens,
-          tokenKind: usage.contextTokens === undefined ? 'unknown' : 'measured',
-        }
-      : null
-
-  // A failed or preflight attempt can have no provider usage while the
-  // runtime still knows its resident-context estimate. Surface that estimate,
-  // but keep its provenance explicit.
-  const activeTokens = contextDiagnostics?.activeTokens
-  if (
-    attempt &&
-    attempt.contextTokens === undefined &&
-    activeTokens !== undefined &&
-    Number.isFinite(activeTokens) &&
-    activeTokens >= 0
-  ) {
-    attempt = {
-      ...attempt,
-      contextTokens: activeTokens,
-      tokenKind: contextDiagnostics?.activeTokensKind ?? 'estimated',
-    }
-  }
-
-  const basis = ceilingTokens ?? policyWindowTokens ?? physicalWindowTokens
-  const fractionBasis = ceilingTokens
-    ? 'ceiling'
-    : policyWindowTokens
-      ? 'policy-window'
-      : physicalWindowTokens
-        ? 'physical-window'
-        : 'unknown'
-  const rawFraction =
-    attempt?.contextTokens === undefined || !basis
-      ? null
-      : Math.max(attempt.contextTokens / basis, 0)
-  const fraction = rawFraction === null ? null : Math.min(rawFraction, 1)
-
-  return {
-    attempt,
-    physicalWindowTokens,
-    policyWindowTokens,
-    ceilingTokens,
-    checkpointAtTokens,
-    reservedTokens,
-    fraction,
-    // Clamp only the progress fill. The label must preserve overflow
-    // evidence (for example 101%) instead of visually rewriting it to 100%.
-    percentLabel: rawFraction === null ? '—' : `${Math.round(rawFraction * 100)}%`,
-    fractionBasis,
-    lastSuccessIsLatest: attempt?.outcome === 'succeeded',
-  }
-}
 
 function UsageSection({ title, children }: { title: string; children: ReactNode }) {
   return (

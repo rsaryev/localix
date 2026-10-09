@@ -47,13 +47,7 @@ export function workloadKey(target: PickerTarget): Exclude<ModelRoutingTaskKey, 
   return target as Exclude<ModelRoutingTaskKey, 'session'>
 }
 
-/**
- * Where this target's per-MODEL reasoning memory lives.
- *
- * Participants share the `session` bucket: remembering "gpt-5.6 on high" is a preference about
- * a model, not about who runs it, so a second agent picking the same model inherits the choice
- * rather than starting from the flat default.
- */
+/** Legacy workload bucket; named agents use agentModelSettings instead. */
 export function reasoningMemoryKey(target: PickerTarget): ModelRoutingTaskKey {
   return isAgentTarget(target) ? 'session' : (target as ModelRoutingTaskKey)
 }

@@ -15,7 +15,7 @@ async function render(value: number | undefined, disabled = false) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MaxTurnsControl } = await import('./MaxTurnsControl')
-  const changes: number[] = []
+  const changes: (number | undefined)[] = []
   const host = document.createElement('div')
   document.body.appendChild(host)
   const root = createRoot(host)
@@ -37,55 +37,57 @@ async function render(value: number | undefined, disabled = false) {
     button,
     changes,
     click: async () => {
-      await React.act(async () => button.click())
+      await React.act(async () => {
+        if (button.disabled) return
+        button.focus()
+        button.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+        await new Promise((resolve) => setTimeout(resolve, 30))
+      })
     },
     cleanup: async () => {
-      await React.act(async () => root.unmount())
+      await React.act(async () => {
+        root.unmount()
+        await new Promise((resolve) => setTimeout(resolve, 30))
+      })
       host.remove()
     },
   }
 }
 
 describe('MaxTurnsControl', () => {
-  test('an unset cap reads as no limit and announces the next preset', async () => {
+  test('opens explicit choices and can restore the inherited default', async () => {
     const ui = await render(undefined)
+    const React = await import('react')
     try {
-      expect(ui.host.textContent).toContain('∞')
-      expect(ui.button.getAttribute('aria-label')).toBe(
-        'Turns per message: no limit. Click to set 1',
-      )
-      expect(ui.button.hasAttribute('aria-haspopup')).toBe(false)
-      expect(ui.changes).toEqual([])
+      expect(ui.host.textContent).toContain('Default · No limit')
+      expect(ui.button.getAttribute('aria-label')).toBe('Turns per message: No limit')
       await ui.click()
-      expect(ui.changes).toEqual([1])
-      expect(ui.host.textContent).toBe('1')
-      expect(document.querySelector('[role="menu"]')).toBeNull()
+      const choice = Array.from(
+        document.querySelectorAll('[role="menuitemradio"], [role="menuitem"]'),
+      ).find((item) => item.textContent?.trim() === '20') as HTMLElement
+      expect(choice).toBeTruthy()
+      await React.act(async () => choice.click())
+      expect(ui.changes).toEqual([20])
+      expect(ui.host.textContent).toBe('20')
+      await ui.click()
+      const reset = Array.from(
+        document.querySelectorAll('[role="menuitemradio"], [role="menuitem"]'),
+      ).find((item) => item.textContent?.includes('Use default')) as HTMLElement
+      await React.act(async () => reset.click())
+      expect(ui.changes).toEqual([20, undefined])
+      expect(ui.host.textContent).toContain('Default · No limit')
     } finally {
       await ui.cleanup()
     }
   })
 
-  test('clicks advance through five presets and wrap back to one', async () => {
-    const ui = await render(1)
-    try {
-      for (const label of ['5', '20', '100', '∞', '1']) {
-        await ui.click()
-        expect(ui.host.textContent).toBe(label)
-      }
-      expect(ui.changes).toEqual([5, 20, 100, 1000, 1])
-    } finally {
-      await ui.cleanup()
-    }
-  })
-
-  test('a custom stored limit stays visible until a click advances it', async () => {
+  test('keeps a custom stored limit visible without changing it on open', async () => {
     const ui = await render(7)
     try {
       expect(ui.host.textContent).toBe('7')
-      expect(ui.button.getAttribute('aria-label')).toBe('Turns per message: 7. Click to set 20')
-      expect(ui.changes).toEqual([])
       await ui.click()
-      expect(ui.changes).toEqual([20])
+      expect(ui.changes).toEqual([])
+      expect(document.querySelector('[role="menu"]')?.textContent).toContain('7')
     } finally {
       await ui.cleanup()
     }
@@ -97,7 +99,7 @@ describe('MaxTurnsControl', () => {
       expect(ui.button.disabled).toBe(true)
       await ui.click()
       expect(ui.changes).toEqual([])
-      expect(ui.host.textContent).toBe('20')
+      expect(document.querySelector('[role="menu"]')).toBeNull()
     } finally {
       await ui.cleanup()
     }

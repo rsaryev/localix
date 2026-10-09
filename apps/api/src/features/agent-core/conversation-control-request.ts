@@ -13,7 +13,6 @@ export const conversationControlRequestSchema = z
   .object({
     next: agentRefs.describe('Who runs next. [] queues nobody.'),
     invite: agentRefs.optional().describe('Available agents to add to this conversation.'),
-    remove: agentRefs.optional().describe('Participants whose work here is done.'),
     topic: sessionTopicSchema
       .optional()
       .describe(

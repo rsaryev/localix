@@ -1,13 +1,5 @@
-/**
- * Remember an effort for one MODEL, so picking that model again starts where you left it.
- *
- * The memory is about a model, not about who runs it — "I like this one on high" holds whoever
- * asks — which is why every participant shares the `session` bucket (see `reasoningMemoryKey`).
- *
- * It lives here because both writers in the picker performed the same read-merge-write against
- * user settings, once when a model is chosen and once when its effort is changed, and a second
- * copy of a read-modify-write is where the two drift.
- */
+/** Named agents remember parameters per provider/model; unnamed workloads keep their own bucket. */
+import { setAgentModelSettings, type AgentModelSettings } from '@localixai/agent'
 import type { ModelRoutingTaskKey } from '@localixai/api/client'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import {
@@ -21,6 +13,7 @@ export interface ModelReasoningMemoryIo {
   read: () =>
     | {
         modelRouting?: Record<string, { reasoningPreferences?: unknown; [key: string]: unknown }>
+        agentModelSettings?: AgentModelSettings[]
       }
     | undefined
   write: (settings: Record<string, unknown>) => void
@@ -53,4 +46,12 @@ export function rememberModelReasoning(
       },
     },
   })
+}
+
+export function rememberAgentModelSettings(
+  io: ModelReasoningMemoryIo,
+  patch: AgentModelSettings,
+): void {
+  const base = io.read() ?? {}
+  io.write({ ...base, agentModelSettings: setAgentModelSettings(base.agentModelSettings, patch) })
 }

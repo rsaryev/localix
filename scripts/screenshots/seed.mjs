@@ -80,6 +80,25 @@ if (!existing.n) {
       id,
       role: message.role,
       content: message.content,
+      ...(message.role === 'assistant'
+        ? {
+            dataParts: [
+              {
+                type: 'data-context-window',
+                data: { fullWindowTokens: 12000, ceilingTokens: 6000 },
+              },
+            ],
+            usage: {
+              contextTokens: (i + 1) * 1_000,
+              inputTokens: (i + 1) * 1_000,
+              outputTokens: (i + 1) * 100,
+              totalTokens: (i + 1) * 1_100,
+              cachedInputTokens: i * 500,
+              totalCost: (i + 1) * 0.01,
+              costSource: 'estimated',
+            },
+          }
+        : {}),
       ...(message.handle
         ? {
             from: `agent:builtin:${message.handle}`,

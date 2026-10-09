@@ -11,6 +11,7 @@
  * The permission gate is run-scoped rather than kept across turns: between two turns the user
  * may have granted an approval or changed mode, and a carried-over gate would still refuse.
  */
+import { agentModelSettingsFor } from '@localixai/agent'
 import { createGateRefusalTracker } from '@localixai/agent/agents'
 
 import { intakeTurn } from '../../history/intake'
@@ -34,7 +35,17 @@ export async function intakeRunTurn(
   const { env, params, userId, session, speakerAgentId, assistantMessageId } = frame
   const { deps, now } = env
   const { ccHooks, defaultCwd } = inputs
-  const maxTurns = runTurnLimitFor(inputs.agent, params.scope, turn.globalAgentSettings?.maxTurns)
+  const modelSettings = agentModelSettingsFor(
+    turn.globalAgentSettings?.agentModelSettings,
+    speakerAgentId,
+    turn.model.providerId,
+    turn.catalogModel?.id ?? turn.model.effectiveModelId,
+  )
+  const maxTurns = runTurnLimitFor(
+    inputs.agent,
+    params.scope,
+    modelSettings?.maxTurns ?? turn.globalAgentSettings?.maxTurns,
+  )
   const intake = await intakeTurn({
     deps,
     userId,

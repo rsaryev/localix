@@ -8,7 +8,7 @@
 // down mid-edit, so a re-stage keeps the artifact that last built, and a fresh stage ships the
 // plugin without UI. Under `fatal` (release staging) a failure still stops the build.
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -66,6 +66,9 @@ export function stagePluginUi(
   }
   log(`building ${name} UI…`)
   try {
+    // The builder retains the artifact it replaces. Restore it before building so a successful
+    // re-stage carries its lazy chunks too; keep the backup for the failure path below.
+    if (previous) cpSync(previous, artifact, { recursive: true })
     const args = [BUILDER_CLI, pluginDir, artifact, pluginKitDirOf(outPlugins)]
     if (!uiSourceMaps) args.push(NO_SOURCE_MAPS_FLAG)
     run('bun', args, {

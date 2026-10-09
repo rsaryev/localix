@@ -8,6 +8,8 @@ export { stableStringify, browserHash, textEncoderByteLength } from './utils/has
 export * from './chat-stream-types'
 export * from './chat-stream-parts'
 export * from './usage-summary'
+export * from './participant-usage'
+export * from './agent-model-settings'
 export * from './terminal-lifecycle'
 export { zodToJsonSchema } from './utils/zod-schema'
 export {

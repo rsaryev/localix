@@ -94,6 +94,7 @@ describe('getSessionDetail long-history accounting', () => {
       isSummary: true,
     })
     expect(detail.sessionUsage?.totalCost).toBeCloseTo(0.175, 10)
+    expect(detail.participantUsage?.['builtin:localix']).toMatchObject({ totalTokens: 1_750 })
   })
 
   test('a root detail carries its plans; a child, or an unreadable list, carries none', async () => {

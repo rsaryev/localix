@@ -42,6 +42,78 @@ const connection = (id: string, label: string): ProviderConnection => ({
 })
 
 describe('ModelSearchSelect DOM runtime', () => {
+  test('rotates participant model names and provider marks without showing agent names', async () => {
+    const React = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { ModelSearchSelect } = await import('./ModelSearchSelect')
+    const originalInterval = globalThis.setInterval
+    const ticks: (() => void)[] = []
+    globalThis.setInterval = ((callback: () => void, delay: number) => {
+      if (delay === 4000) {
+        ticks.push(callback)
+        return 0
+      }
+      return originalInterval(callback, delay)
+    }) as typeof setInterval
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const first = connection('one', 'OpenAI')
+    const second = { ...connection('two', 'Anthropic'), providerId: 'anthropic' }
+    try {
+      await React.act(async () =>
+        root.render(
+          <ModelSearchSelect
+            models={[
+              ...models,
+              { ...models[0]!, id: 'claude', name: 'Claude', providerId: 'anthropic' },
+            ]}
+            value="gpt-5.6"
+            connectionsState={
+              { connections: [first, second], activeConnection: first, activeId: first.id } as never
+            }
+            participants={[
+              {
+                agentId: 'a',
+                handle: 'first-agent',
+                providerConnectionId: 'one',
+                modelId: 'gpt-5.6',
+                reasoningEffort: 'high',
+              },
+              {
+                agentId: 'b',
+                handle: 'second-agent',
+                providerConnectionId: 'two',
+                modelId: 'claude',
+                reasoningEffort: 'low',
+              },
+            ]}
+            onSelectionChange={() => {}}
+            onReasoningEffortChange={() => {}}
+            reasoningEffort="high"
+            sessionId="group"
+            focused
+          />,
+        ),
+      )
+      const trigger = host.querySelector('button')!
+      expect(trigger.textContent).toContain('GPT-5.6 Sol')
+      const firstMark = trigger.querySelector('svg')?.outerHTML
+      expect(ticks).toHaveLength(1)
+      await React.act(async () => ticks[0]!())
+      expect(trigger.textContent).toBe('Claude')
+      expect(trigger.querySelector('svg')?.outerHTML).not.toBe(firstMark)
+      expect(host.textContent).not.toContain('second-agent')
+      expect(host.querySelector('[aria-label^="Permission mode"]')).toBeNull()
+      await React.act(async () => ticks[0]!())
+      expect(trigger.textContent).toContain('GPT-5.6 Sol')
+    } finally {
+      globalThis.setInterval = originalInterval
+      await React.act(async () => root.unmount())
+      host.remove()
+    }
+  })
+
   test('keeps the interaction-only drawer out of the startup import graph', () => {
     const source = readFileSync(resolve(import.meta.dir, './ModelSearchSelect.tsx'), 'utf8')
 
@@ -61,7 +133,6 @@ describe('ModelSearchSelect DOM runtime', () => {
     host.style.width = '280px'
     document.body.append(host)
     const root = createRoot(host)
-    let changedEffort: string | null = null
     const render = async (activeConnection: ProviderConnection) => {
       const connectionsState = {
         connections: [activeConnection],
@@ -78,9 +149,7 @@ describe('ModelSearchSelect DOM runtime', () => {
             reasoningEffort="high"
             sessionId="session-1"
             focused
-            onReasoningEffortChange={(effort) => {
-              changedEffort = effort
-            }}
+            onReasoningEffortChange={() => {}}
           />,
         ),
       )
@@ -97,34 +166,8 @@ describe('ModelSearchSelect DOM runtime', () => {
       const reasoningTrigger = host.querySelector(
         'button[aria-label="Reasoning for GPT-5.6 Sol: High"]',
       )
-      expect(reasoningTrigger).not.toBeNull()
-      expect(reasoningTrigger?.textContent).toContain('High')
-      expect(trigger.contains(reasoningTrigger)).toBe(false)
-
-      await act(async () => {
-        ;(reasoningTrigger as HTMLButtonElement).focus()
-        reasoningTrigger!.dispatchEvent(
-          new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-        )
-        await new Promise((resolve) => setTimeout(resolve, 30))
-      })
-      const menu = document.body.querySelector('[role="menu"]')
-      expect(menu).not.toBeNull()
-      // The model the level belongs to heads the menu, then one radio row per level.
-      expect(menu?.textContent).toContain('GPT-5.6 Sol')
-      const level = (label: string) =>
-        [...menu!.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find((row) =>
-          row.textContent?.startsWith(label),
-        )
-      expect(level('High')?.getAttribute('aria-checked')).toBe('true')
-      const maxOption = level('Max')
-      expect(maxOption?.getAttribute('aria-checked')).toBe('false')
-      await act(async () => {
-        maxOption!.click()
-        await new Promise((resolve) => setTimeout(resolve, 30))
-      })
-      expect(changedEffort as string | null).toBe('max')
-      expect(reasoningTrigger?.getAttribute('aria-expanded')).toBe('false')
+      expect(reasoningTrigger).toBeNull()
+      expect(host.querySelector('button[aria-label^="Reasoning for"]')).toBeNull()
 
       await render(connection('oauth-2', 'Codex refreshed'))
       const refreshedTrigger = host.querySelector(

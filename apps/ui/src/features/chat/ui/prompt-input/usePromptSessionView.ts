@@ -43,6 +43,10 @@ export function usePromptSessionView(
   const participants =
     useChatStore((state) => findSessionInState(state, activeSessionId)?.agents) ?? NO_PARTICIPANTS
 
+  const participantUsage = useChatStore(
+    (state) => findSessionInState(state, activeSessionId)?.participantUsage,
+  )
+
   const activeAgentId =
     useChatStore((state) => findSessionInState(state, activeSessionId)?.activeAgentId) ?? null
   const conversationFloor = {
@@ -79,6 +83,7 @@ export function usePromptSessionView(
     pinnedSkills,
     activeProjectId,
     participants,
+    participantUsage,
     conversationFloor,
     participantsEditing,
     rosterLocked,

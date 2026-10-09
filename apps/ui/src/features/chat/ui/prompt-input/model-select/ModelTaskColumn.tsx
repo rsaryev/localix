@@ -75,6 +75,7 @@ interface ModelTaskColumnProps {
 
 /** One row of the party: who, and what they run on here. */
 export interface ParticipantRow {
+  maxTurnsLimit?: number
   agentId: string
   handle: string
   /** Display name from the registry; falls back to the handle when the agent is unknown. */

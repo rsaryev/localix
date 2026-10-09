@@ -1,18 +1,13 @@
 import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ChevronDown } from 'lucide-react'
+import { providerIcon } from '@/shared/ui/providerPresentation'
 import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
 import type { useConnections } from './useConnections'
 import type { ReasoningEffort } from '../../model/reasoning'
 import type { SessionAgentRoute } from '@/shared/api/contracts'
-import { ModelReasoningControl } from './model-select/ModelReasoningControl'
-import { MaxTurnsControl } from './MaxTurnsControl'
-import { PermissionModeControl } from './PermissionModeControl'
-import { usePermissionMode } from '../../model/usePermissionMode'
 import { modelTriggerLabel } from './modelTriggerLabel'
 import { subscribeModelPicker, type ModelPickerRequest } from '@/shared/lib/modelPickerBus'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
-import { rememberModelReasoning } from './model-select/rememberModelReasoning'
 
 // The trigger is present in every composer, while Vaul + the model-routing
 // browser are interaction-only. Keep the whole modal graph out of startup and
@@ -49,14 +44,6 @@ interface ModelSearchSelectProps {
   onReasoningEffortChange: (effort: ReasoningEffort, agentId?: string) => void
   sessionId: string | null
   focused: boolean
-  /**
-   * How much work one message buys, and how it is changed. User-wide rather than per
-   * conversation, deliberately: every addressed agent run reads this
-   * one number (`@localixai/api/turn-budget`), and a second per-session copy would be the
-   * second source of truth the setting exists to avoid.
-   */
-  maxTurns?: number
-  onMaxTurnsChange?: (next: number) => void
 }
 
 /**
@@ -82,11 +69,8 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
   participantScope,
   sessionId,
   focused,
-  maxTurns,
-  onMaxTurnsChange,
 }: ModelSearchSelectProps) {
   const { activeConnection, activeId } = connectionsState
-  const permissionMode = usePermissionMode(sessionId)
   const [open, setOpen] = useState(false)
   const [drawerMounted, setDrawerMounted] = useState(false)
   const [seed, setSeed] = useState<(ModelPickerRequest & { revision: number }) | null>(null)
@@ -117,34 +101,65 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
     [disabled, focused, sessionId],
   )
 
+  const [modelIndex, setModelIndex] = useState(0)
+  const isGroup = (participants?.length ?? 0) > 1
+  const routeKey = participants?.map((member) => member.agentId).join('|') ?? ''
+  useEffect(() => {
+    setModelIndex(0)
+    if (!isGroup || !focused || open) return
+    const timer = setInterval(() => setModelIndex((index) => index + 1), 4000)
+    return () => clearInterval(timer)
+  }, [routeKey, isGroup, focused, open, sessionId])
+  const shown = isGroup ? participants?.[modelIndex % participants.length] : undefined
+  const shownConnection = shown
+    ? (connectionsState.connections.find(
+        (connection) => connection.id === shown.providerConnectionId,
+      ) ?? null)
+    : activeConnection
+  const shownValue = shown?.modelId ?? value
   const selectedModel = useMemo(
-    () => findCatalogModelForConnection(models, connectionsState.connections, activeId, value),
-    [activeId, connectionsState.connections, models, value],
+    () =>
+      findCatalogModelForConnection(
+        models,
+        connectionsState.connections,
+        shownConnection?.id ?? null,
+        shownValue,
+      ),
+    [connectionsState.connections, models, shownConnection?.id, shownValue],
   )
-
-  const modelLabel = modelTriggerLabel({ selectedModel, value, models, activeConnection })
-  const showsReasoning = selectedModel?.supportsReasoning ?? false
+  const modelLabel = modelTriggerLabel({
+    selectedModel,
+    value: shownValue,
+    models,
+    activeConnection: shownConnection,
+  })
+  const ProviderIcon = providerIcon(shownConnection?.providerId)
 
   return (
-    <div className="flex h-[var(--chrome-control-lg)] w-full min-w-0 items-center gap-0.5 rounded-lg">
+    <div className="flex h-[var(--chrome-control-lg)] w-full min-w-0 items-center rounded-lg">
       <Button
-        ref={triggerRef}
         variant="ghost"
+        ref={triggerRef}
         aria-haspopup="dialog"
         aria-expanded={open}
         disabled={disabled}
         aria-label={
-          activeConnection
-            ? `Choose model. Current: ${modelLabel} via ${activeConnection.label}`
-            : 'Choose a model and connect a provider'
+          isGroup
+            ? `Choose models for ${participants?.length} participants`
+            : activeConnection
+              ? `Choose model. Current: ${modelLabel} via ${activeConnection.label}`
+              : 'Choose a model and connect a provider'
         }
         // Every control in this strip says what it is on hover. The label alone reaches a
-        // screen reader and nobody else, and the strip is three unlabelled controls in a row —
-        // a model name, a word like "high", and a number — none of which names its own subject.
+        // screen reader and nobody else; the model and turn limit each need their own subject.
         title={
-          activeConnection ? `Model: ${modelLabel} · ${activeConnection.label}` : 'Choose a model'
+          isGroup
+            ? `Models for ${participants?.length} participants`
+            : activeConnection
+              ? `Model: ${modelLabel} · ${activeConnection.label}`
+              : 'Choose a model'
         }
-        className="flex h-[var(--chrome-control-lg)] min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent px-2.5 text-xs font-normal transition-colors"
+        className="h-[var(--chrome-control-lg)] min-w-0 flex-1 gap-2 rounded-lg px-2.5 text-xs font-normal"
         onPointerEnter={() => void loadModelPickerDrawer()}
         onFocus={() => void loadModelPickerDrawer()}
         onClick={() => {
@@ -153,12 +168,13 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
           setOpen(true)
         }}
       >
+        <ProviderIcon className="size-4 shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1 truncate text-left font-medium text-foreground">
           {modelLabel}
         </span>
-        {activeConnection && (
+        {!isGroup && shownConnection && (
           <span className="hidden max-w-32 truncate text-2xs text-text-faint md:inline">
-            {activeConnection.label}
+            {shownConnection.label}
           </span>
         )}
         <ChevronDown className="size-3.5 shrink-0 text-text-faint" />
@@ -182,59 +198,6 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
             onReasoningEffortChange={onReasoningEffortChange}
           />
         </Suspense>
-      )}
-
-      {showsReasoning && (
-        <>
-          <span className="h-3 w-px shrink-0 bg-control-border/40" aria-hidden />
-          <ModelReasoningControl
-            modelLabel={modelLabel}
-            supportsReasoning
-            reasoningEfforts={selectedModel?.reasoningEfforts}
-            value={reasoningEffort}
-            selected
-            disabled={disabled}
-            className="font-normal text-text-soft"
-            onChange={(effort) => {
-              if (!effort || !selectedModel) return
-              // The compact control and the details panel must seed subsequent model picks
-              // from the same memory; otherwise reopening the picker resurrects the old level.
-              rememberModelReasoning(
-                {
-                  read: () => useUserSettings.getState().settings.agentSettings,
-                  write: (next) => useUserSettings.getState().update({ agentSettings: next }),
-                },
-                'session',
-                { providerId: selectedModel.providerId, modelId: selectedModel.id, effort },
-              )
-              onReasoningEffortChange(effort)
-            }}
-          />
-        </>
-      )}
-
-      {/* The neighbouring question: how hard it thinks per reply, then how many replies one
-          message may cost. Same strip, because both are the price of pressing send. */}
-      {onMaxTurnsChange && (
-        <>
-          <span className="h-3 w-px shrink-0 bg-control-border/40" aria-hidden />
-          <MaxTurnsControl value={maxTurns} onChange={onMaxTurnsChange} disabled={disabled} />
-        </>
-      )}
-
-      {/* And whether it stops to ask: the conversation's permission mode. */}
-      {sessionId && (
-        <>
-          <span className="h-3 w-px shrink-0 bg-control-border/40" aria-hidden />
-          <PermissionModeControl
-            value={permissionMode.mode}
-            editable={permissionMode.editable}
-            onChange={permissionMode.setMode}
-            waitingPlan={permissionMode.waitingPlan}
-            onApprovePlan={permissionMode.approvePlan}
-            disabled={disabled}
-          />
-        </>
       )}
     </div>
   )

@@ -7,7 +7,7 @@ export const capturePlan = {
   },
   'conversations/participants': {
     guide: 'features/conversations.md',
-    purpose: 'Three seeded participants beside their transcript and current participant controls',
+    purpose: 'Three seeded participants with individual usage and the accumulated session total',
     scenario: 'participants',
   },
   'workspace/session-window-drag': {

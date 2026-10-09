@@ -428,3 +428,33 @@ describe('ParticipantsStrip — the speaker leads the row', () => {
     }
   })
 })
+
+test('the active participant has a timer while idle and waiting participants show usage', async () => {
+  const { host, rerender, cleanup } = await render(
+    { speaking: 'builtin:frontend', waiting: ['builtin:qa'] },
+    { sessionId: 'usage-roster', isGenerating: true },
+  )
+  try {
+    expect(host.querySelector('[aria-label="Usage for Frontend"]')).toBeNull()
+    expect(host.querySelector('[aria-label="Usage for Qa"]')).not.toBeNull()
+    expect(host.querySelector('[data-flip-key="builtin:frontend"]')?.textContent).toMatch(/\d/)
+    await rerender(null, { sessionId: 'usage-roster', isGenerating: false })
+    expect(host.querySelectorAll('[aria-label^="Usage for"]')).toHaveLength(3)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('the roster contains participants without a session-wide usage control', async () => {
+  const { host, cleanup } = await render(
+    { speaking: 'builtin:qa', waiting: [] },
+    { sessionId: 'usage-total' },
+  )
+  try {
+    const group = host.querySelector('[aria-label="Conversation participants"]')!
+    expect(group.querySelector('[aria-label="Total session usage"]')).toBeNull()
+    expect(group.querySelector('[data-slot="participant-chip"]')?.textContent).toContain('Qa')
+  } finally {
+    await cleanup()
+  }
+})

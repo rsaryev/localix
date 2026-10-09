@@ -44,11 +44,11 @@ export function createConversationControlTool(port: ConversationControlPort) {
         : []),
       port.membership === 'fixed'
         ? 'Name current participants by handle or ID. This conversation has fixed membership.'
-        : 'Agents are named by handle (with or without @) or ID. invite/remove change membership only, and apply before next is checked — to start an invited colleague, name them in next too.',
+        : 'Agents are named by handle (with or without @) or ID. invite adds colleagues before next is checked. Only the user can remove participants — to start an invited colleague, name them in next too.',
     ].join(' '),
     inputSchema: conversationControlRequestSchema
       .omit({
-        ...(port.membership === 'fixed' ? ({ invite: true, remove: true } as const) : {}),
+        ...(port.membership === 'fixed' ? ({ invite: true } as const) : {}),
         ...(!port.canChangeTopic ? ({ topic: true } as const) : {}),
       })
       .strict(),
@@ -61,7 +61,6 @@ export function createConversationControlTool(port: ConversationControlPort) {
       const result = await port.finish(toolCallId, {
         next: [...new Set(input.next)],
         ...(input.invite ? { invite: [...new Set(input.invite)] } : {}),
-        ...(input.remove ? { remove: [...new Set(input.remove)] } : {}),
         ...(input.topic ? { topic: input.topic } : {}),
       })
       const changes = [

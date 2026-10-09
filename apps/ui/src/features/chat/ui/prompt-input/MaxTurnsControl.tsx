@@ -1,6 +1,11 @@
-/** The composer cycles through a short turn-budget scale on each press. */
+import { ChevronDown } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { ActionTooltip } from '@localixai/kit/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@localixai/kit/dropdown-menu'
+import { MenuEntries } from '@localixai/kit/menu-entries'
 import {
   clampMaxTurns,
   DEFAULT_MAX_TURNS,
@@ -8,41 +13,66 @@ import {
   MAX_TURNS_STEPS,
 } from '@localixai/api/turn-budget'
 
-/** The ceiling reads as no limit rather than a numeric budget. */
 export function maxTurnsLabel(value: number): string {
   const turns = clampMaxTurns(value)
-  return turns >= MAX_MAX_TURNS ? '∞' : String(turns)
+  return turns >= MAX_MAX_TURNS ? 'No limit' : String(turns)
 }
 
+/** A model setting for the selected participant, with an explicit inherited default. */
 export function MaxTurnsControl({
   value,
+  inherited = DEFAULT_MAX_TURNS,
+  limit,
   onChange,
   disabled,
 }: {
-  /** The stored cap, or undefined when the person has never set one. */
   value: number | undefined
-  onChange: (next: number) => void
+  inherited?: number
+  limit?: number
+  onChange: (next: number | undefined) => void
   disabled?: boolean
 }) {
-  const current = clampMaxTurns(value ?? DEFAULT_MAX_TURNS)
-  // Preserve custom stored limits until clicked, then advance to the next higher preset.
-  const next = MAX_TURNS_STEPS.find((step) => step > current) ?? MAX_TURNS_STEPS[0]
-  const currentLabel = current >= MAX_MAX_TURNS ? 'no limit' : String(current)
-  const nextLabel = next >= MAX_MAX_TURNS ? 'no limit' : String(next)
-  const hint = `Turns per message: ${currentLabel}. Click to set ${nextLabel}`
-
+  const ceiling = clampMaxTurns(limit)
+  const current = Math.min(clampMaxTurns(value ?? inherited), ceiling)
+  const options = [...new Set([...MAX_TURNS_STEPS, current, ceiling])]
+    .filter((step) => step <= ceiling)
+    .sort((a, b) => a - b)
   return (
-    <ActionTooltip side="top" label={hint}>
-      <Button
-        variant="ghost"
-        size="default"
-        disabled={disabled}
-        aria-label={hint}
-        onClick={() => onChange(next)}
-        className="px-1.5 text-2xs font-normal text-text-soft hover:text-text-strong"
-      >
-        <span className="min-w-[3ch] text-center tabular-nums">{maxTurnsLabel(current)}</span>
-      </Button>
-    </ActionTooltip>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          aria-label={`Turns per message: ${maxTurnsLabel(current)}`}
+          className="text-text-soft"
+        >
+          <span>
+            {value === undefined ? `Default · ${maxTurnsLabel(current)}` : maxTurnsLabel(current)}
+          </span>
+          <ChevronDown />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <MenuEntries
+          family="dropdown"
+          entries={[
+            {
+              id: 'default',
+              label: 'Use default',
+              hint: maxTurnsLabel(inherited),
+              selected: value === undefined,
+              onSelect: () => onChange(undefined),
+            },
+            ...options.map((step) => ({
+              id: String(step),
+              label: maxTurnsLabel(step),
+              selected: value !== undefined && current === step,
+              onSelect: () => onChange(step),
+            })),
+          ]}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

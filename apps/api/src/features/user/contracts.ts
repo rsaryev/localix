@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_MAX_TURNS } from '../chat/turn-budget'
 import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
 import { REASONING_EFFORTS } from '../../db/types'
 import {
@@ -144,6 +145,34 @@ const agentSettingsShape = {
    * its record. Missing assignment fields mean the catalog fallback.
    */
   modelRouting: z.partialRecord(modelRoutingTaskKeySchema, modelRouteSchema).optional(),
+  /** Parameters remembered separately for every agent/provider/model, across chats. */
+  agentModelSettings: z
+    .array(
+      z
+        .object({
+          agentId: z.string().min(1).max(200),
+          providerId: z.string().min(1).max(200),
+          modelId: modelIdSchema,
+          effort: z.enum(REASONING_EFFORTS).optional(),
+          maxTurns: z.number().int().min(1).max(MAX_MAX_TURNS).optional(),
+        })
+        .strict(),
+    )
+    .max(200)
+    .superRefine((settings, ctx) => {
+      const keys = new Set<string>()
+      settings.forEach((entry, index) => {
+        const key = JSON.stringify([entry.agentId, entry.providerId, entry.modelId])
+        if (keys.has(key))
+          ctx.addIssue({
+            code: 'custom',
+            path: [index],
+            message: 'Agent/provider/model settings must be unique',
+          })
+        keys.add(key)
+      })
+    })
+    .optional(),
   /**
    * Inline git blame — a dimmed line-end
    * annotation on the caret's line (author · relative date · commit summary) in the

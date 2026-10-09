@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { promises as fs } from 'node:fs'
+import { existsSync, promises as fs } from 'node:fs'
 import { basename, join } from 'node:path'
+
+import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/plugin-sdk/ui-artifact'
+
+import { retainPreviousHashedFiles } from './authoring/ui-retained-files'
 
 /**
  * One managed copy of a bundled plugin under `~/.localix/plugins/<name>`: how it is installed,
@@ -57,6 +61,12 @@ export async function installManagedCopy(
   await fs.mkdir(parent, { recursive: true })
   try {
     await fs.cp(sourceDir, tempDir, { recursive: true })
+    // Staging may have advanced past the revision an open tab imported. Retain the installed
+    // revision's lazy chunks as well, before replacing the directory the API serves them from.
+    const stagedUi = join(tempDir, PLUGIN_UI_ARTIFACT_DIR)
+    if (existsSync(stagedUi)) {
+      await retainPreviousHashedFiles(join(installDir, PLUGIN_UI_ARTIFACT_DIR), stagedUi)
+    }
     await fs.writeFile(
       join(tempDir, MARKER_FILE),
       `${JSON.stringify({ kind: MARKER_KIND, fingerprint }, null, 2)}\n`,

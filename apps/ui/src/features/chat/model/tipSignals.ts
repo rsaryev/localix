@@ -4,7 +4,7 @@ import type { TipSignal } from '@/shared/api/tips'
 import type { ContextWindowDiagnostics } from './contextUsage'
 import { useChatStore } from './store'
 import { findSessionInState } from './findSession'
-import { buildUsageIndicatorView } from '../ui/prompt-input/UsageIndicator'
+import { buildUsageIndicatorView } from './contextUsageView'
 
 /**
  * The client's half of the tip contract: which named session facts hold RIGHT NOW.

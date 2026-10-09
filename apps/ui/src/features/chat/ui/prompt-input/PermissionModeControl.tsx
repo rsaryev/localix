@@ -1,34 +1,13 @@
-/**
- * WHO DECIDES WHAT THE AGENT MAY DO IN THIS CONVERSATION — the composer's control for it.
- *
- * It sits in the strip with the reasoning level and the turn budget because it answers the same
- * kind of question about pressing send: not how hard the model thinks or how long it may run,
- * but whether it stops to ask. Kept beside them so the person sees the mode at the moment they
- * hand over work, rather than discovering it from a card that never came.
- *
- * A MENU, not a cycling button. Cycling made every mode one press from the next, so reaching
- * Plan from Bypass walked through Autonomous — a mode that refuses every question — and a press
- * meant to look at the options changed one. The app's own `DropdownMenu` lists all four with
- * what each one does, and choosing is a deliberate second click.
- *
- * The trigger is the mode's ICON alone: the strip is dense, and a label that changed width with
- * every mode made it jog sideways. The icon and its colour are the readout; the name and what the
- * mode does live in the tooltip and the menu, where there is room for them.
- *
- * WHILE A PLAN WAITS, LEAVING PLAN MODE ASKS. Picking Default used to set the presented plan
- * aside in silence — the person meant "start the work", lost the Approve button, and the agent
- * retyped the plan as a new version. So with `waitingPlan` set, each mode that leaves Plan opens
- * a level with both readings of that click: approve the plan and implement in that mode, or
- * leave Plan mode and set the plan aside. Without one the menu is the plain list it always was.
- */
+/** Conversation permission mode, shown as its own pill above the input. */
 import type { ImplementationMode, SessionPlan } from '@localixai/api/client'
+import { ChevronDown } from 'lucide-react'
 import type { MenuEntry } from '@localixai/plugin-sdk/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
-import { IconButton } from '@localixai/kit/icon-button'
+import { ComposerChip } from '@localixai/kit/composer-chip'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import {
@@ -121,8 +100,7 @@ export function PermissionModeControl({
         }
       >
         <DropdownMenuTrigger asChild disabled={disabled || !editable}>
-          <IconButton
-            size="md"
+          <ComposerChip
             aria-label={
               editable
                 ? `Permission mode: ${copy.label}. Change`
@@ -130,8 +108,10 @@ export function PermissionModeControl({
             }
             className={`shrink-0 ${tone}`}
           >
-            <Icon />
-          </IconButton>
+            <Icon className="size-3.5" />
+            <span>{copy.label}</span>
+            <ChevronDown className="size-3 shrink-0 opacity-60" aria-hidden="true" />
+          </ComposerChip>
         </DropdownMenuTrigger>
       </ActionTooltip>
       <DropdownMenuContent align="end" side="top" className="w-72">

@@ -42,6 +42,7 @@ interface ComposerHeaderStripsProps {
   serverQueue?: SessionQueueItem[]
   /** The conversation's participants, shown as the roster. */
   participants?: readonly StripParticipantRef[]
+  participantUsage?: Record<string, ChatUsagePayload>
   /** Which participant holds the floor and who is queued behind them, live. */
   conversationFloor?: ConversationFloor | null
   /** Rendered after the last participant; see ParticipantsStrip for why it is a node. */
@@ -70,6 +71,7 @@ export function ComposerHeaderStrips({
   loops,
   serverQueue,
   participants,
+  participantUsage,
   conversationFloor,
   addParticipantControl,
   onRemoveParticipant,
@@ -87,6 +89,7 @@ export function ComposerHeaderStrips({
       {participants ? (
         <ParticipantsStrip
           participants={participants}
+          participantUsage={participantUsage}
           floor={conversationFloor}
           isGenerating={isGenerating}
           sessionId={activeSessionId}

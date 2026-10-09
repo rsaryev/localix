@@ -458,6 +458,36 @@ describe('staging a plugin UI', () => {
     expect(existsSync(dirname(previous!))).toBe(false)
   })
 
+  test('a successful restage keeps the previous lazy chunks for an open tab', () => {
+    const { repo, outPlugins, artifact } = staged()
+    write(join(artifact, 'chunks', 'panel-old.js'), 'export const Panel = "old"\n')
+    write(join(artifact, '.current-files.json'), '["chunks/panel-old.js"]\n')
+    write(
+      join(repo, 'plugins', 'demo', 'ui', 'register.tsx'),
+      'export const lazyPanel = () => import("./Panel")\n',
+    )
+    write(join(repo, 'plugins', 'demo', 'ui', 'Panel.tsx'), 'export const Panel = "new"\n')
+    const previous = takeStagedUiArtifact(join(outPlugins, 'demo'))
+    const failure = stagePluginUi('demo', {
+      repoRoot: repo,
+      outPlugins,
+      log,
+      onPluginError: 'skip',
+      previous,
+      run: ((command: string, args: string[]) =>
+        execFileSync(command, [...args.slice(0, 3), kit.dir], {
+          stdio: 'pipe',
+          timeout: 30_000,
+          killSignal: 'SIGKILL',
+        })) as never,
+    })
+    expect(failure).toBeNull()
+    expect(read(artifact, 'chunks/panel-old.js')).toBe('export const Panel = "old"\n')
+    expect(JSON.parse(read(artifact, 'manifest.json')).revision).not.toBe('old')
+    expect(JSON.parse(read(artifact, '.current-files.json'))).not.toContain('chunks/panel-old.js')
+    expect(existsSync(dirname(previous!))).toBe(false)
+  })
+
   test('release staging (fatal) stops on a failed UI build', () => {
     const { repo, outPlugins } = staged()
     expect(() =>

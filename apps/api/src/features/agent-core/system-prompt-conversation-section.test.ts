@@ -84,3 +84,13 @@ describe('the turn protocol', () => {
     expect(participant).toContain('leader owns coordination and synthesis')
   })
 })
+
+test('only topic owners receive the required context-saving transition', () => {
+  for (const multi of [false, true]) {
+    const owner = buildTurnControlSection({ multi, canChangeTopic: true })
+    expect(owner).toContain('Set the goal when it is missing')
+    expect(owner).toContain('BEFORE investigating or implementing the new goal')
+    expect(owner).toContain('Keep the current topic for follow-up questions')
+    expect(buildTurnControlSection({ multi, canChangeTopic: false })).not.toContain('Set the goal')
+  }
+})

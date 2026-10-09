@@ -13,6 +13,7 @@ export interface BuildAgentSystemPromptParams {
   providerId?: string
   sessionId?: string
   /** Shared objective and prior-topic context, independent of participants and tools. */
+  canChangeTopic?: boolean
   sessionTopic?: { title: string; goal?: string | null; previousTopicSummary?: string | null }
   /**
    * Absolute inbound-webhook URL for THIS instance (host+port resolved at

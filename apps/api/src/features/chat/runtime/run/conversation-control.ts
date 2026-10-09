@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { conversationControlRequestSchema } from '../../../agent-core/conversation-control-request'
 
 import type { ConversationControlPort } from '../../../agent-core/tools/conversation-control'
 import { enqueueTurnTickets, resolveTurnRecipients } from '../conversation-dispatch'
@@ -23,6 +24,8 @@ export function createConversationControlPort(
 
   const finish: ConversationControlPort['finish'] = async (toolCallId, request) => {
     if (completed) throw new Error('conversation_control may be completed only once per turn')
+    // Validate even direct host calls before any membership, topic or queue mutation.
+    request = conversationControlRequestSchema.parse(request)
     const assistantMessageId = currentMessageId()
     let topicSnapshot: typeof params.session | undefined
     if (request.topic) {
@@ -45,7 +48,7 @@ export function createConversationControlPort(
     const membershipEnv = {
       repo: env.repo,
       deps: env.deps,
-      // The speaking participant is the caller itself; it may remove others, not itself.
+      // Membership can grow through this tool; removals belong to the user.
       ...(env.state
         ? {
             activeAgentId: (sessionId: string) =>
@@ -76,7 +79,7 @@ export function createConversationControlPort(
     }
     let membership: ConversationMembershipChange
     if (params.session.sessionKind === 'subagent') {
-      if (request.invite?.length || request.remove?.length) {
+      if (request.invite?.length) {
         throw new Error('A delegated team has fixed membership.')
       }
       const current = await env.repo.getSession(params.userId, params.session.id)
@@ -90,7 +93,6 @@ export function createConversationControlPort(
         userId: params.userId,
         sessionId: params.session.id,
         invite: request.invite,
-        remove: request.remove,
         validate: validateNext,
       })
     }

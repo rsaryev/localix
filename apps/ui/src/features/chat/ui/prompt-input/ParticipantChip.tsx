@@ -9,6 +9,9 @@
  */
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
+import type { ChatUsagePayload } from '@localixai/agent'
+import { Button } from '@localixai/kit/button'
+import { ParticipantUsageIndicator } from './ParticipantUsageIndicator'
 
 import { composerBus } from '@/shared/lib/composerBus'
 import { LocalixBorderBeam } from '@localixai/kit/localix-border-beam'
@@ -41,6 +44,7 @@ function AnswerDuration({ sessionId, agentId }: { sessionId: string; agentId: st
 export interface StripParticipantRef {
   agentId: string
   handle: string
+  contextWindow?: number
 }
 
 /** A participant's place in the live order: speaking, Nth in line, or not in this round at all. */
@@ -55,6 +59,7 @@ function standingLabel(name: string, standing: Standing): string {
 
 export function ParticipantChip({
   participant,
+  usage,
   standing,
   showDuration,
   dimmed,
@@ -63,6 +68,7 @@ export function ParticipantChip({
   sessionId,
 }: {
   participant: StripParticipantRef
+  usage?: ChatUsagePayload
   standing: Standing
   showDuration: boolean
   /** A round is running and this participant is not in it. */
@@ -73,6 +79,59 @@ export function ParticipantChip({
   sessionId?: string | null
 }) {
   const identity = useAgentHandleIdentity(participant.handle)
+  const usageProps = {
+    name: identity.name,
+    usage,
+    agentId: participant.agentId,
+    sessionId,
+    contextWindow: participant.contextWindow,
+  }
+  const mention = (
+    <Button
+      variant="ghost"
+      size="sm"
+      type="button"
+      className="focus-ring inline-flex h-full min-w-0 items-center gap-1 rounded-sm px-0"
+      aria-label={`${standingLabel(identity.name, standing)}. Mention in the message`}
+      title={`Mention @${participant.handle}`}
+      disabled={!sessionId}
+      onClick={() => {
+        // The mention goes to THIS conversation's composer; a strip with no session has none.
+        if (!sessionId) return
+        composerBus.insert({
+          text: `@${participant.handle} `,
+          sessionId,
+          // A handle joins the sentence being written, not a paragraph of its own.
+          inline: true,
+          buffer: true,
+        })
+      }}
+    >
+      <MonogramAvatar identity={identity.handle} label={identity.name} size={18} />
+      <span
+        className={
+          standing.kind === 'speaking'
+            ? 'max-w-32 truncate text-2xs text-text-strong'
+            : 'max-w-32 truncate text-2xs text-text-soft'
+        }
+      >
+        {identity.name}
+      </span>
+      {showDuration && sessionId ? (
+        <AnswerDuration key={sessionId} sessionId={sessionId} agentId={participant.agentId} />
+      ) : null}
+      {standing.kind === 'waiting' ? (
+        // The place in line, not a generic "queued" mark: with three participants waiting,
+        // which one is next is the only part of the queue the person can act on.
+        <span
+          aria-hidden
+          className="ml-0.5 inline-flex min-w-3.5 justify-center rounded-full bg-field-fill px-1 text-3xs leading-4 text-text-faint tabular-nums"
+        >
+          {standing.place}
+        </span>
+      ) : null}
+    </Button>
+  )
   return (
     <span
       data-slot="participant-chip"
@@ -113,48 +172,12 @@ export function ParticipantChip({
         prefill in the product goes through — and does not send, because who to ask is the
         person's decision and the rest of the sentence is still theirs to write.
       */}
-      <button
-        type="button"
-        className="focus-ring inline-flex h-full min-w-0 items-center gap-1 rounded-sm"
-        aria-label={`${standingLabel(identity.name, standing)}. Mention in the message`}
-        title={`Mention @${participant.handle}`}
-        disabled={!sessionId}
-        onClick={() => {
-          // The mention goes to THIS conversation's composer; a strip with no session has none.
-          if (!sessionId) return
-          composerBus.insert({
-            text: `@${participant.handle} `,
-            sessionId,
-            // A handle joins the sentence being written, not a paragraph of its own.
-            inline: true,
-            buffer: true,
-          })
-        }}
-      >
-        <MonogramAvatar identity={identity.handle} label={identity.name} size={18} />
-        <span
-          className={
-            standing.kind === 'speaking'
-              ? 'max-w-32 truncate text-2xs text-text-strong'
-              : 'max-w-32 truncate text-2xs text-text-soft'
-          }
-        >
-          {identity.name}
-        </span>
-        {showDuration && sessionId ? (
-          <AnswerDuration key={sessionId} sessionId={sessionId} agentId={participant.agentId} />
-        ) : null}
-        {standing.kind === 'waiting' ? (
-          // The place in line, not a generic "queued" mark: with three participants waiting,
-          // which one is next is the only part of the queue the person can act on.
-          <span
-            aria-hidden
-            className="ml-0.5 inline-flex min-w-3.5 justify-center rounded-full bg-field-fill px-1 text-3xs leading-4 text-text-faint tabular-nums"
-          >
-            {standing.place}
-          </span>
-        ) : null}
-      </button>
+      {showDuration ? (
+        <ParticipantUsageIndicator {...usageProps}>{mention}</ParticipantUsageIndicator>
+      ) : (
+        mention
+      )}
+      {!showDuration ? <ParticipantUsageIndicator {...usageProps} /> : null}
       {/*
         THE SLOT IS ALWAYS THERE, whether or not this participant can be removed. The
         orchestrator never can, and a chip that simply left the button out was narrower on its
@@ -163,15 +186,17 @@ export function ParticipantChip({
         even.
       */}
       {onRemove ? (
-        <button
+        <Button
+          variant="ghost"
+          size="icon-xs"
           type="button"
           // A quiet but always discoverable target also works without hover on touch devices.
           className="focus-ring inline-flex size-[var(--chrome-control-xs)] shrink-0 items-center justify-center rounded-sm text-text-faint outline-none transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:text-foreground"
           aria-label={`Remove ${identity.name}`}
           onClick={() => onRemove(participant.agentId)}
         >
-          <X className="size-3" />
-        </button>
+          <X />
+        </Button>
       ) : (
         <span aria-hidden className="inline-block size-[var(--chrome-control-xs)] shrink-0" />
       )}

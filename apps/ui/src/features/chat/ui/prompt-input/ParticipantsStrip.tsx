@@ -22,6 +22,7 @@
  * User addressing and explicit `conversation_control` requests feed the same durable queue, so
  * this strip renders scheduler state instead of owning another ordering rule.
  */
+import type { ChatUsagePayload } from '@localixai/agent'
 import { useEffect, useRef, useState } from 'react'
 import { motionSafeScrollBehavior } from '@localixai/kit/environment'
 
@@ -43,6 +44,7 @@ export interface ConversationFloor {
 
 export interface ParticipantsStripProps {
   participants: readonly StripParticipantRef[]
+  participantUsage?: Record<string, ChatUsagePayload>
   /** Whether this session's answer stream is still active. */
   isGenerating?: boolean
   /**
@@ -120,6 +122,7 @@ function useLiveOrder(
 
 export function ParticipantsStrip({
   participants,
+  participantUsage,
   floor,
   isGenerating = false,
   addControl,
@@ -190,6 +193,7 @@ export function ParticipantsStrip({
             >
               <ParticipantChip
                 participant={participant}
+                usage={participantUsage?.[participant.agentId]}
                 standing={standing}
                 showDuration={isGenerating && standing.kind === 'speaking'}
                 dimmed={running && standing.kind === 'idle'}

@@ -64,6 +64,25 @@ describe('ActionButtons', () => {
 
       await act(async () =>
         root.render(
+          <ActionButtons {...base} hasPrompt={false} canSend={false} isGenerating={false} />,
+        ),
+      )
+      expect(host.querySelector('button[aria-label="Voice input"]')).toBeNull()
+      await act(async () =>
+        root.render(
+          <ActionButtons
+            {...base}
+            hasPrompt={false}
+            canSend={false}
+            isGenerating={false}
+            canRecord
+          />,
+        ),
+      )
+      expect(host.querySelector('button[aria-label="Voice input"]')).not.toBeNull()
+
+      await act(async () =>
+        root.render(
           <ActionButtons
             {...base}
             hasPrompt={false}

@@ -1,3 +1,4 @@
+import { conversationLeader } from '../conversation-strategy'
 import { agentRoute } from '../../session-route'
 /**
  * Per-run system-prompt assembly: gathers the volatile prompt sections
@@ -170,13 +171,10 @@ export async function buildRunSystemPrompt(
   // Marks placed since this agent last spoke. Not a multi-participant-only fact: a person marks a
   // message in a one-to-one chat too, and there the mark is the whole of what they said. It rides
   // the tail rather than rewriting the rows that were marked — see `reaction-context`.
-  const conversation = conversationPromptContext(
-    session,
-    speakerRoute.agentId,
-    new Map(
-      (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent.leadershipPriority ?? 0]),
-    ),
+  const priorities = new Map(
+    (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent.leadershipPriority ?? 0]),
   )
+  const conversation = conversationPromptContext(session, speakerRoute.agentId, priorities)
   // A session with no participant has nobody to tell — and `sessionAgent` refuses to guess one.
   const reactions = session.agents?.length
     ? buildReactionContext(options.historyMessages ?? [], speaker)
@@ -200,6 +198,9 @@ export async function buildRunSystemPrompt(
     sessionId: session.id,
     modelId: speakerRoute.modelId,
     sessionTopic: session,
+    canChangeTopic:
+      session.sessionKind === 'chat' &&
+      conversationLeader(session, priorities)?.agentId === speakerAgentId,
     providerId,
     webhookUrl: WEBHOOK_URL,
     deliveryContext: channelOrigin ? { channel: channelOrigin } : undefined,

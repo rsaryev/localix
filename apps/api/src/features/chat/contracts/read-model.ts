@@ -214,6 +214,8 @@ export interface SessionDetail extends SessionSummary {
   messages: PersistedMessage[]
   /** Canonical all-history usage, even when `messages` is a windowed tail. */
   sessionUsage?: ChatUsagePayload
+  /** Whole-history assistant usage by author, including participants who left. */
+  participantUsage?: Record<string, ChatUsagePayload>
   /** Active interactive-terminal waits, independently hydrated after reconnect. */
   terminalWaits?: SessionTerminalWait[]
   /**

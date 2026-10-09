@@ -47,6 +47,8 @@ export interface UiSession {
   bodyLoaded?: boolean
   /** Server-computed all-history usage; live message snapshots replace their prior contribution. */
   sessionUsage?: ChatUsagePayload
+  /** Whole-history assistant usage by author, including participants who left. */
+  participantUsage?: Record<string, ChatUsagePayload>
   isPinned: boolean
   /** Soft-archived: hidden from the sidebar by default, but not deleted. */
   isArchived: boolean

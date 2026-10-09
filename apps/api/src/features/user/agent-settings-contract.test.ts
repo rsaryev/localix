@@ -6,6 +6,29 @@ import {
 } from './contracts'
 
 describe('agentSettingsSchema — only executable settings are advertised', () => {
+  test('validates model parameters for distinct agents and rejects duplicate triples or invalid caps', () => {
+    const entry = {
+      agentId: 'a',
+      providerId: 'openai',
+      modelId: 'gpt-test',
+      effort: 'high',
+      maxTurns: 5,
+    }
+    expect(
+      agentSettingsSchema.safeParse({
+        agentModelSettings: [entry, { ...entry, agentId: 'b', maxTurns: 20 }],
+      }).success,
+    ).toBe(true)
+    expect(agentSettingsSchema.safeParse({ agentModelSettings: [entry, entry] }).success).toBe(
+      false,
+    )
+    for (const maxTurns of [0, -1, 1.5, 1001]) {
+      expect(
+        agentSettingsSchema.safeParse({ agentModelSettings: [{ ...entry, maxTurns }] }).success,
+      ).toBe(false)
+    }
+  })
+
   test('migrates the legacy private-network policy without retaining old web tool settings', () => {
     const legacy = {
       schemaVersion: 1,

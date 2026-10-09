@@ -3,7 +3,7 @@
  * growth of a row between snapshots is `message-delta.ts`.
  */
 import { isToolBackedItem } from '@localixai/agent/agents/items'
-import { replaceUsageInSummary } from '@localixai/agent'
+import { replaceParticipantUsage, replaceUsageInSummary } from '@localixai/agent'
 
 import type { AgentStreamEvent, UiSession } from '../contracts'
 import { toUiMessage } from '../converters'
@@ -114,6 +114,7 @@ export const messageRowReducers: StreamReducers<
     return {
       ...session,
       messages: remapMessageAnchors(messages, anchorRemap),
+      participantUsage: replaceParticipantUsage(session.participantUsage, previousMessage, message),
       sessionUsage: replaceUsageInSummary(
         session.sessionUsage,
         previousMessage?.usage,
@@ -190,6 +191,7 @@ export const messageRowReducers: StreamReducers<
             }
           : stableMessage
       }),
+      participantUsage: replaceParticipantUsage(session.participantUsage, previousMessage, message),
       sessionUsage: replaceUsageInSummary(
         session.sessionUsage,
         previousMessage.usage,
@@ -214,6 +216,11 @@ export const messageRowReducers: StreamReducers<
       // contribution instead of re-summing the loaded window (which would drop
       // every unloaded turn), which keeps rollback/branch mutations honest without
       // waiting for a reconnect snapshot.
+      participantUsage: replaceParticipantUsage(
+        session.participantUsage,
+        previousMessage,
+        undefined,
+      ),
       sessionUsage: replaceUsageInSummary(session.sessionUsage, previousMessage.usage, undefined),
       messageCount: Math.max(0, (session.messageCount ?? session.messages.length) - 1),
       updatedAt: Date.now(),

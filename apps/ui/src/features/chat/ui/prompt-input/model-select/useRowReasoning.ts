@@ -8,7 +8,11 @@ import {
   normalizeModelReasoningPreferences,
 } from '../../../model/modelReasoningPreferences'
 import { isAgentTarget, reasoningMemoryKey, targetAgentId, type PickerTarget } from './pickerTarget'
-import { rememberModelReasoning, type ModelReasoningMemoryIo } from './rememberModelReasoning'
+import {
+  rememberModelReasoning,
+  rememberAgentModelSettings,
+  type ModelReasoningMemoryIo,
+} from './rememberModelReasoning'
 import { rowReasoning } from './rowReasoning'
 import type { ModelRoutingSlot } from './taskReasoning'
 
@@ -106,7 +110,10 @@ export function useRowReasoning({
     ) => {
       // Following the session must clear a preview model's saved choice too; otherwise
       // the menu accepts the click but immediately renders the same old explicit level.
-      if (effort !== undefined || !selected) {
+      const agentId = targetAgentId(taskKey)
+      if (agentId) {
+        rememberAgentModelSettings(memoryIo, { agentId, providerId, modelId, effort })
+      } else if (effort !== undefined || !selected) {
         rememberModelReasoning(memoryIo, reasoningMemoryKey(taskKey), {
           providerId,
           modelId,

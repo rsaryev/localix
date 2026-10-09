@@ -197,11 +197,9 @@ describe('conversation control port', () => {
     expect(h.triggers).toEqual([['reply-a']])
   })
 
-  test('a specialist cannot change the topic, including by removing the leader', async () => {
+  test('a specialist cannot change the topic', async () => {
     const h = harness({ ...params, scope: { ...params.scope, speakerAgentId: 'agent-b' } })
-    await expect(h.control.finish('topic', { next: [], remove: ['alpha'], topic })).rejects.toThrow(
-      'leader',
-    )
+    await expect(h.control.finish('topic', { next: [], topic })).rejects.toThrow('leader')
     expect(h.session()).toEqual(base)
     expect(h.published).toEqual([])
     expect(h.control.completed()).toBe(false)
@@ -278,7 +276,9 @@ describe('conversation control port', () => {
     const child = sessionFixture({ ...base, sessionKind: 'subagent', parentSessionId: 'parent' })
     const { control, queued } = harness({ ...params, session: child })
     await expect(control.finish('invite', { invite: ['qa'], next: [] })).rejects.toThrow('fixed')
-    await expect(control.finish('remove', { remove: ['beta'], next: [] })).rejects.toThrow('fixed')
+    await expect(
+      control.finish('remove', { remove: ['beta'], next: [] } as never),
+    ).rejects.toThrow()
     await expect(control.finish('outsider', { next: ['qa'] })).rejects.toThrow('unavailable')
     expect(queued).toEqual([])
     expect(control.completed()).toBe(false)
@@ -329,51 +329,17 @@ describe('conversation control port', () => {
     await expect(control.finish('duplicate', { next: [] })).rejects.toThrow('only once')
   })
 
-  test('invites and removes before scheduling the resulting party', async () => {
-    const { control, queued, session, published } = harness()
-    const result = await control.finish('changed', {
-      invite: ['@qa'],
-      remove: ['agent-b'],
-      next: ['qa'],
-    })
-
-    expect(result).toEqual({ invited: ['@qa'], removed: ['@beta'], next: ['@qa'] })
-    expect(session().agents.map((agent) => agent.handle)).toEqual(['alpha', 'qa'])
-    expect(queued).toEqual(['agent-q'])
-    // The change is announced in the conversation, the same way a composer edit is: without the
-    // line, the others kept addressing the participant that had left.
-    expect(published.map((args) => (args as [string, string, { type: string }])[2].type)).toEqual([
-      'message.created',
-      'session.updated',
-    ])
-  })
-
-  test('an agent cannot remove the participant that is speaking', async () => {
-    const speaking = createConversationControlPort(
-      {
-        repo: { getSession: async () => base } as never,
-        enqueueRun: async () => {},
-        deps: {
-          listInvocableRegistryAgents: async () => [],
-          streamRegistry: { publish: () => {} },
-        },
-        state: { activeRunSessions: new Map([[base.id, { agentId: 'agent-b' }]]) },
-      } as never,
-      params,
-    )
-    await expect(speaking.finish('remove-speaker', { remove: ['beta'], next: [] })).rejects.toThrow(
-      'Stop the active agent',
-    )
-  })
-
-  test('keeps at least one participant', async () => {
-    const { control } = harness()
-    await expect(
-      control.finish('empty', {
-        remove: ['alpha', 'beta'],
-        next: [],
-      }),
-    ).rejects.toThrow('at least one')
+  test('no agent can remove anyone, including an idle participant or itself', async () => {
+    for (const remove of [['beta'], ['alpha'], [], ['alpha', 'beta']]) {
+      const h = harness()
+      await expect(
+        h.control.finish('remove', { invite: ['qa'], remove, next: ['qa'] } as never),
+      ).rejects.toThrow()
+      expect(h.session()).toEqual(base)
+      expect(h.published).toEqual([])
+      expect(h.queued).toEqual([])
+      expect(h.control.completed()).toBe(false)
+    }
   })
 
   test('does not persist membership when the requested next participant is invalid', async () => {

@@ -39,6 +39,7 @@ import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'
 import { ModelBrowserSearchToolbar } from './ModelBrowserSearchToolbar'
 import { ModelFilterMenu } from './ModelFilterMenu'
+import { useAgentModelTurns } from './useAgentModelTurns'
 import { ModelDetailSettings } from './ModelDetailSettings'
 import { PickerPanelTitle } from './PickerPanelTitle'
 import { pickerColumns } from './pickerColumns'
@@ -420,18 +421,26 @@ export function ModelBrowser({
     detailModel !== null &&
     currentSlot?.providerConnectionId === detailConnectionId &&
     currentSlot?.modelId === detailModel.id
-  const modelSettings = detailModel?.supportsReasoning ? (
-    <ModelDetailSettings
-      model={detailModel}
-      current={detailIsCurrent}
-      minimumReasoning={taskKey === 'inlineCompletion'}
-      resolveRowReasoning={resolveRowReasoning}
-      inheritedRowReasoning={inheritedRowReasoning}
-      changeModelReasoning={changeModelReasoning}
-    />
-  ) : undefined
-
   const activeParticipant = participants.find((member) => member.agentId === targetAgentId(taskKey))
+  const modelTurns = useAgentModelTurns(
+    targetAgentId(taskKey),
+    detailModel?.providerId,
+    detailModel?.id,
+    activeParticipant?.maxTurnsLimit,
+  )
+  const modelSettings =
+    detailModel && (detailModel.supportsReasoning || activeParticipant) ? (
+      <ModelDetailSettings
+        model={detailModel}
+        current={detailIsCurrent}
+        minimumReasoning={taskKey === 'inlineCompletion'}
+        resolveRowReasoning={resolveRowReasoning}
+        inheritedRowReasoning={inheritedRowReasoning}
+        changeModelReasoning={changeModelReasoning}
+        turns={activeParticipant ? modelTurns : undefined}
+      />
+    ) : undefined
+
   const { taskColumnFor, providerColumnFor, nav } = pickerColumns({
     taskColumn,
     allProviders,

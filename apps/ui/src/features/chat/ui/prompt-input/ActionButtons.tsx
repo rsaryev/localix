@@ -116,17 +116,19 @@ export function ActionButtons({
             <StopIcon className="size-3.5" />
           </IconButton>
         ) : !hasPrompt ? (
-          <IconButton
-            size="lg"
-            tooltip={canRecord ? 'Record voice message' : 'Voice input unavailable'}
-            tooltipSide="top"
-            disabled={!hasApiKey || !canRecord}
-            onClick={onMicClick}
-            aria-label="Voice input"
-            className={subtleAction}
-          >
-            <MicIcon className="size-4" />
-          </IconButton>
+          canRecord && hasApiKey ? (
+            <IconButton
+              size="lg"
+              tooltip="Record voice message"
+              tooltipSide="top"
+              disabled={!hasApiKey || !canRecord}
+              onClick={onMicClick}
+              aria-label="Voice input"
+              className={subtleAction}
+            >
+              <MicIcon className="size-4" />
+            </IconButton>
+          ) : null
         ) : (
           <IconButton
             size="lg"

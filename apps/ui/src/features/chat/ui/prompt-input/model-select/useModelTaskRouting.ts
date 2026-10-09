@@ -221,7 +221,15 @@ export function useModelTaskRouting({
     currentSlot,
     reasoningEffort,
     hasParty: Boolean(participantRoute),
-    storedPreferences: routes[reasoningMemoryKey(taskKey)]?.reasoningPreferences,
+    storedPreferences: targetAgentId(taskKey)
+      ? (agentSettings?.agentModelSettings ?? [])
+          .filter((entry) => entry.agentId === targetAgentId(taskKey) && entry.effort !== undefined)
+          .map((entry) => ({
+            providerId: entry.providerId,
+            modelId: entry.modelId,
+            effort: entry.effort,
+          }))
+      : routes[reasoningMemoryKey(taskKey)]?.reasoningPreferences,
     memoryIo,
     onReasoningEffortChange,
     setRouteReasoningEffort,

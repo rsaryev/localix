@@ -202,6 +202,7 @@ export function toUiSession(detail: SessionDetail): UiSession {
     messages,
     bodyLoaded: true,
     sessionUsage: detail.sessionUsage,
+    participantUsage: detail.participantUsage,
     isPinned: detail.isPinned,
     isArchived: detail.isArchived ?? false,
     createdAt: Date.parse(detail.createdAt),

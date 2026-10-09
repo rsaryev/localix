@@ -114,11 +114,13 @@ describe('PermissionModeControl — whether the agent stops to ask', () => {
     }
   })
 
-  test('the trigger is the icon alone, so the strip never jogs as the mode changes', async () => {
+  test('the pill names the current mode beside its icon', async () => {
     const ui = await mount('plan')
     try {
-      expect(ui.trigger.textContent).toBe('')
+      expect(ui.trigger.textContent).toBe('Plan')
+      expect(ui.trigger.getAttribute('data-slot')).toBe('composer-chip')
       expect(ui.trigger.querySelector('svg')).not.toBeNull()
+      expect(ui.trigger.querySelector('.lucide-chevron-down')).not.toBeNull()
       expect(ui.trigger.getAttribute('aria-label')).toBe('Permission mode: Plan. Change')
     } finally {
       await ui.unmount()

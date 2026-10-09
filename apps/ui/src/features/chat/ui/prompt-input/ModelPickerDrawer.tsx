@@ -58,6 +58,7 @@ export function ModelPickerDrawer({
       const record = entry?.record
       return {
         agentId: member.agentId,
+        ...(record?.limits?.maxTurns ? { maxTurnsLimit: record.limits.maxTurns } : {}),
         handle: member.handle,
         // A handle the registry cannot resolve still gets a row: the conversation is with
         // someone, and hiding them would make the picker disagree with the transcript.

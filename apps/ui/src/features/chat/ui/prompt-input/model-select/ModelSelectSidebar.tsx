@@ -1,4 +1,5 @@
-import { Clock, KeyRound, LogIn, Star } from 'lucide-react'
+import { Clock, Star } from 'lucide-react'
+import { providerIcon } from '@/shared/ui/providerPresentation'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { PanelHeader } from '@localixai/kit/panel-header'
@@ -151,25 +152,31 @@ export function ModelSelectSidebar({
             <SectionLabel weight="semibold" className={PICKER_SECTION_LABEL}>
               Connections
             </SectionLabel>
-            {shownConnections.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                // Clicking a connection only previews its models — it does NOT
-                // switch the active provider/model. That happens on model click.
-                onClick={() => setSelectedItem({ type: 'connection', id: c.id })}
-                title={c.label}
-                className={pickerRow(
-                  selectedItem?.type === 'connection' && selectedItem.id === c.id,
-                )}
-              >
-                <span className={PICKER_ROW_LEADING}>{connectionDot(c, activeId)}</span>
-                <span className="min-w-0 flex-1 truncate">{c.label}</span>
-                {c.hasApiKey && (
-                  <span className={PICKER_ROW_META}>{providerCounts[c.providerId] || 0}</span>
-                )}
-              </button>
-            ))}
+            {shownConnections.map((c) => {
+              const Icon = providerIcon(c.providerId)
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  // Clicking a connection only previews its models — it does NOT
+                  // switch the active provider/model. That happens on model click.
+                  onClick={() => setSelectedItem({ type: 'connection', id: c.id })}
+                  title={c.label}
+                  className={pickerRow(
+                    selectedItem?.type === 'connection' && selectedItem.id === c.id,
+                  )}
+                >
+                  <span className={PICKER_ROW_LEADING}>
+                    <Icon className="size-4" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{c.label}</span>
+                  {connectionDot(c, activeId)}
+                  {c.hasApiKey && (
+                    <span className={PICKER_ROW_META}>{providerCounts[c.providerId] || 0}</span>
+                  )}
+                </button>
+              )
+            })}
           </>
         )}
 
@@ -183,6 +190,7 @@ export function ModelSelectSidebar({
                 (selectedItem?.type === 'provider' && selectedItem.id === p.id) ||
                 (selectedItem?.type === 'connection' && selectedConn?.providerId === p.id)
               const oauth = oauthIdSet.has(p.id)
+              const Icon = providerIcon(p.id)
               return (
                 <button
                   key={p.id}
@@ -192,7 +200,7 @@ export function ModelSelectSidebar({
                   className={pickerRow(isActive)}
                 >
                   <span className={cn(PICKER_ROW_LEADING, 'text-text-faint')}>
-                    {oauth ? <LogIn className="size-3.5" /> : <KeyRound className="size-3.5" />}
+                    <Icon className="size-4" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1 truncate">{p.name}</span>
                 </button>

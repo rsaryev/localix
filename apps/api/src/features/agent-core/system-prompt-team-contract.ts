@@ -51,3 +51,9 @@ Keep detailed investigation and tool output in this session.
 Publish progress only when the stage changes, a blocker appears, or input is needed.
 The parent reviews your report.
 The parent may message you, during this task or after your report: each message amends this assignment, and your final reply to it is sent back as a new report.`
+
+/** The topic boundary is the chat's context-saving mechanism, including in a solo chat. */
+export const TOPIC_CONTROL = `You own the shared session objective. Before starting a new user task or a materially different topic, call conversation_control with topic (title, goal, previousTopicSummary) and next selecting the ready owner, including yourself if you will continue.
+Set the goal when it is missing. If there is no previous topic, say so in the summary; otherwise carry forward decisions, user constraints, verified results, useful references and unfinished work, including relevant inherited summary.
+This call ends your turn and starts the next work with fresh context: use it BEFORE investigating or implementing the new goal, not after spending tokens on it. A public statement or a title edit does not set the goal or release old context.
+Keep the current topic for follow-up questions, corrections and remaining steps of the same task. Do not reset history on every handoff, while a user decision is pending, or to discard unfinished work. Use next:[] when no work should start. Never invent a new task merely to change the topic.`

@@ -46,11 +46,10 @@ requested participants. An unavailable next participant refuses the call without
 - `next: ["qa"]` adds QA to the pending queue.
 - `invite: ["qa"], next: ["qa"]` adds QA to the conversation and immediately schedules it.
 - `invite: ["qa"], next: []` only adds QA; it does not start QA's work.
-- `remove: ["backend"], next: []` removes Backend and adds no turn.
+- Agents cannot remove participants. Use the composer to remove someone yourself.
 - Handles work with or without `@`; immutable agent IDs work too. Use the exact spelling from the
   roster: tool references are case-sensitive, unlike mentions in a user message.
-- A call cannot invite and remove the same participant, remove the active speaker, or leave the
-  conversation empty. Ordinary handoffs cannot schedule their own author.
+- Ordinary handoffs cannot schedule their own author. Invitations keep every existing participant.
 
 Public text and queue control are independent. The transcript stores public text once, while tool
 calls, tool results, reasoning and private notes remain in the author's own agent lane.
@@ -176,7 +175,13 @@ The first user message supplies a fallback objective. When automatic title gener
 the same model call generates the title and objective together. A late response cannot replace a
 topic that has already changed.
 
-The conversation leader, or the sole participant, changes the topic through `conversation_control`:
+The conversation leader, or the sole participant, changes the topic through `conversation_control`.
+The leader is the current participant with the highest registry leadership priority, with roster
+order breaking ties. Other participants do not receive the `topic` field, and the server checks
+current leadership again before applying a change. The prompt requires setting a missing goal and
+changing topic before starting a new task; follow-ups and remaining steps keep their current topic.
+
+For example:
 
 ```json
 {
@@ -209,21 +214,38 @@ system prompt, alongside the new goal. Messages sent after the boundary form the
 The composer can add participants to any existing chat; there is no separate group-creation flow.
 For a run that can invite a participant or delegate to an agent, the runtime context includes the
 complete scope-aware agent directory as a compact table with IDs, leadership priorities and
-`participant` / `available` state. An agent can invite or remove participants through
-`conversation_control`. Adding a second agent changes the strategy of the existing session; removing
-agents until one remains restores direct conversation behavior. The session ID, title and transcript
-stay the same. The application imposes no numeric group-size ceiling.
+`participant` / `available` state. An agent can invite participants through `conversation_control`;
+only you can remove them. Adding a second agent changes the strategy of the existing session;
+removing agents until one remains restores direct conversation behavior. The session ID, title and
+transcript stay the same. The application imposes no numeric group-size ceiling.
 
 Assigning a [Kanban](task-board.md) card to an agent records an owner and nothing else: it does not
 add that agent to the conversation, start work or enqueue a turn. To bring the owner in, invite it
 with `conversation_control` or the composer; the passive board and the conversation scheduler stay
 separate layers.
 
+### Participant usage
+
+An answering participant shows elapsed time. Idle and waiting participants show a usage icon; hover
+or focus it to inspect that agent's current context percentage, request limit and accumulated tokens
+and cost in this session. Context measurements belong to that author's latest attempt; estimates and
+failed attempts are labeled. Clicking opens Usage & Spend. Agents with no recorded usage show an
+empty state instead of an invented number.
+
+The usage icon in the conversation header shows total session tokens and cost on hover, including
+participants you removed and auxiliary session services. The composer footer has no usage indicator.
+Subscription costs remain estimated API-equivalent values rather than billed subscription spend.
+
+The model selector stays inside the composer. In a group it rotates through participant model names
+with a provider icon, and opens settings for each participant. Reasoning and turns per message are
+saved per agent, provider and model; changing one participant does not change another. Authored
+agent and host limits still apply. Permission mode has its own pill above the input.
+
 ### Fixing the participants
 
 The lock button next to the add-participant button decides whether the list can change. It is open
 by default. Click it to fix the participants and every change stops: the composer shows no add or
-remove controls, and the membership writer refuses an agent's `invite` or `remove`. The participants
+remove controls, and the membership writer refuses invitations and user removals. The participants
 who are not answering are shown in grey.
 
 You can change the setting only before the conversation starts, which means before the first message
@@ -232,7 +254,7 @@ you can still arrange the participants first. After that an open conversation sh
 fixed one keeps a closed lock that can no longer be clicked, and a fork inherits the setting from
 its source. The agents are told about it too. A fixed conversation with a single agent still gets
 `conversation_control` to change its topic. A fixed group also schedules its participants, while the
-tool schema excludes invitations and removals.
+tool schema excludes invitations. Participant removal is absent from every agent tool schema.
 
 ## Interruptions
 

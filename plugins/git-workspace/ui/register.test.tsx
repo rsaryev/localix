@@ -60,8 +60,6 @@ test('registers a native auxiliary Git Workspace with a resource anchor', () => 
   // recipe on height, focus and press feedback.
   expect(statusItems.map(({ id, placement }) => ({ id, placement }))).toEqual([
     { id: 'git-workspace:branch', placement: 'titlebar' },
-    { id: 'git-workspace:composer-branch', placement: 'composer' },
-    { id: 'git-workspace:changes', placement: 'composer' },
   ])
   for (const item of statusItems) expect(typeof item.useItem).toBe('function')
 })

@@ -50,6 +50,16 @@ describe('conversation_control', () => {
     ).toBe(false)
   })
 
+  test('an open chat never exposes participant removal', () => {
+    const tool = createConversationControlTool({
+      canChangeTopic: true,
+      finish: async () => ({ invited: [], removed: [], next: [] }),
+    })
+    expect(tool.inputSchema.safeParse({ next: [], invite: ['qa'] }).success).toBe(true)
+    expect(tool.inputSchema.safeParse({ next: [], remove: ['qa'] }).success).toBe(false)
+    expect(tool.description).toContain('Only the user can remove participants')
+  })
+
   test('classify: every call changes only this conversation, so it is session', () => {
     const tool = createConversationControlTool({
       finish: async () => ({ invited: [], removed: [], next: [] }),

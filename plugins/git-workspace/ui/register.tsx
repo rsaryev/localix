@@ -19,7 +19,7 @@ import {
   type CommitProvenance,
 } from './source-control/ui/CommitProvenanceHeader'
 import { GitPoller } from './session/GitPoller'
-import { useGitBranchStatusItem, useGitChangesStatusItem } from './session/statusItems'
+import { useGitBranchStatusItem } from './session/statusItems'
 import { GitFileEnhancer } from './editor/GitFileEnhancer'
 import { GIT_WORKSPACE_KIND } from './workItemKinds'
 import { useGitFileTreeDecorations } from './editor/useFileTreeDecorations'
@@ -152,17 +152,6 @@ export function registerUi(host: PluginUiHost): void {
     id: 'git-workspace:branch',
     placement: 'titlebar',
     useItem: useGitBranchStatusItem,
-  })
-  // The same declaration, placed twice — the host decides what a pill looks like in each row.
-  host.statusItems.register({
-    id: 'git-workspace:composer-branch',
-    placement: 'composer',
-    useItem: useGitBranchStatusItem,
-  })
-  host.statusItems.register({
-    id: 'git-workspace:changes',
-    placement: 'composer',
-    useItem: useGitChangesStatusItem,
   })
   host.workItemSlots.register({
     slot: 'diff.provenance',

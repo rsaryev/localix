@@ -3,6 +3,7 @@ import {
   SOLO_TURN_CONTROL,
   TEAM_CONVERSATION,
   TEAM_LEADERSHIP,
+  TOPIC_CONTROL,
 } from './system-prompt-team-contract'
 
 export interface ConversationParticipant {
@@ -14,7 +15,7 @@ export interface ConversationParticipant {
  * The conversation in two sections, split by how often each changes.
  *
  * They used to be one section in the cached prefix, and the roster in it changes every time an
- * agent invites or removes a colleague — which agents do themselves, mid-conversation. Each
+ * agent invites a colleague or the user removes one, mid-conversation. Each
  * invite rewrote the cached prefix for every participant. So the RULES (which change only when
  * the conversation goes from one agent to several, or leadership moves) stay in the prefix, and
  * the ROSTER rides the volatile tail.
@@ -35,11 +36,18 @@ export function isMultiAgentConversation(
 }
 
 /** `# Conversation turn control` — the protocol, for a run that holds `conversation_control`. */
-export function buildTurnControlSection(input: { multi: boolean; isLeader?: boolean }): string {
-  if (!input.multi) return ['# Conversation turn control', SOLO_TURN_CONTROL].join('\n')
+export function buildTurnControlSection(input: {
+  multi: boolean
+  isLeader?: boolean
+  canChangeTopic?: boolean
+}): string {
+  const topic = input.canChangeTopic ? [TOPIC_CONTROL] : []
+  if (!input.multi) return ['# Conversation turn control', SOLO_TURN_CONTROL, ...topic].join('\n')
   return [
     '# Conversation turn control',
     CONVERSATION_TURN_CONTROL,
+    ...topic,
+    'Only the user can remove participants. Keep colleagues in the conversation after their work is done.',
     TEAM_CONVERSATION,
     'Keep conversation_control and queue mechanics out of the public reply.',
     ...(input.isLeader

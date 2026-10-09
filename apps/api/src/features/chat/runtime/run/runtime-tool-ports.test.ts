@@ -29,7 +29,12 @@ test('plugin_build suggests browser verification only when browser survives the 
   } as unknown as RuntimeToolWiringContext
   const params = {
     userId: 'user-a',
-    session: { id: 's1', projectId: null, sessionKind: 'chat' } as unknown as SessionRecord,
+    session: {
+      id: 's1',
+      projectId: null,
+      sessionKind: 'chat',
+      provenance: { kind: 'root' },
+    } as unknown as SessionRecord,
     agentId: 'agent-a',
     defaultCwd: '/tmp',
     disabledTools: [TOOL.browser],
@@ -69,7 +74,12 @@ test('the skill tool announces its save through the host capability port', async
     } as unknown as RuntimeToolWiringContext
     const params = {
       userId: 'user-a',
-      session: { id: 's1', projectId: null, sessionKind: 'chat' } as unknown as SessionRecord,
+      session: {
+        id: 's1',
+        projectId: null,
+        sessionKind: 'chat',
+        provenance: { kind: 'root' },
+      } as unknown as SessionRecord,
       agentId: 'agent-a',
       defaultCwd: dir,
       disabledTools: [],
@@ -82,5 +92,48 @@ test('the skill tool announces its save through the host capability port', async
     expect(announced).toBe(1)
   } finally {
     rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('topic schema is offered only to the elected chat owner, including a fixed solo chat', async () => {
+  const { createConversationControlTool } =
+    await import('../../../agent-core/tools/conversation-control')
+  const ctx = {
+    deps: { db: {} },
+    repo: {},
+    memoryRepo: {},
+    work: {},
+    actionRegistry: {},
+  } as unknown as RuntimeToolWiringContext
+  for (const [kind, agents, canChangeTopic] of [
+    ['chat', [{ agentId: 'a' }, { agentId: 'b' }], true],
+    ['chat', [{ agentId: 'a' }, { agentId: 'b' }], false],
+    ['chat', [{ agentId: 'a' }], true],
+    ['subagent', [{ agentId: 'a' }, { agentId: 'b' }], true],
+  ] as const) {
+    const params = {
+      userId: 'u',
+      session: {
+        id: 's',
+        sessionKind: kind,
+        agents,
+        rosterLocked: true,
+        provenance: { kind: 'root' },
+      },
+      agentId: 'a',
+      defaultCwd: '/tmp',
+      disabledTools: [],
+      agentProfile: CHAT_RUN_PROFILE,
+      loadedPlugins: { skills: [] },
+      canChangeTopic,
+      conversationControl: async () => ({ invited: [], removed: [], next: [] }),
+    } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
+    const { optional } = buildOptionalToolPorts(ctx, params, {} as never)
+    const tool = createConversationControlTool(optional.conversation_control!)
+    const request = {
+      next: [],
+      topic: { title: 'Release', goal: 'Ship it', previousTopicSummary: 'Tests passed' },
+    }
+    expect(tool.inputSchema.safeParse(request).success).toBe(kind === 'chat' && canChangeTopic)
   }
 })

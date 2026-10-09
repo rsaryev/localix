@@ -5,29 +5,15 @@ import { resolve } from 'node:path'
 const here = resolve(import.meta.dir)
 const read = (path: string) => readFileSync(resolve(here, path), 'utf8')
 
-/**
- * Git is the first consumer of the status-item seam, and it uses it in two places at once — the
- * titlebar and the composer row — from ONE declaration placed twice.
- *
- * That matters more than it looks. Those were two separate hand-written components before, and
- * they had already disagreed about how to draw the same fact: the titlebar button rendered
- * `↑2↓1` with lucide arrows at one size, the composer pill with its own markup at another. A
- * declaration cannot disagree with itself.
- */
 describe('Git contributes status items, it does not draw them', () => {
   const items = read('statusItems.ts')
   const register = read('../register.tsx')
 
-  test('one branch declaration is placed in both rows', () => {
+  test('keeps repository status in the titlebar without duplicate composer pills', () => {
     expect(register).toContain("id: 'git-workspace:branch'")
     expect(register).toContain("placement: 'titlebar'")
-    expect(register).toContain("id: 'git-workspace:composer-branch'")
-    expect(register).toContain("id: 'git-workspace:changes'")
-    expect(register).toContain("placement: 'composer'")
-    // The SAME hook behind the titlebar item and the composer pill — two registrations, one
-    // description of what the repository currently is.
-    expect(register.match(/useItem: useGitBranchStatusItem/gu)).toHaveLength(2)
-    expect(register).toContain('useItem: useGitChangesStatusItem')
+    expect(register).not.toContain("placement: 'composer'")
+    expect(register.match(/useItem: useGitBranchStatusItem/gu)).toHaveLength(1)
   })
 
   test('the hand-written titlebar button is gone', () => {
