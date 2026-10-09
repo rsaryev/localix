@@ -17,196 +17,23 @@
  */
 
 import { parse as parseYaml } from 'yaml'
-import type { Pair, RequestAuth, RequestBody, RequestSpec } from '../request-spec'
+import type { Pair, RequestSpec } from '../request-spec'
 import { parseMethod } from '../request-spec'
 import type { ImportedEnvironment, ImportedRequest, Importer } from './types'
+import type { InsoExport, InsoResource } from './insomnia-types'
+import {
+  normaliseTemplating,
+  insomniaText,
+  insomniaPairs,
+  convertAuth,
+  convertInsomniaBody,
+  inheritHeaders,
+} from './insomnia-fields'
+
+export { normaliseTemplating, convertAuth, inheritHeaders } from './insomnia-fields'
 
 /** The export formats whose `resources` array we can read. */
 const SUPPORTED_FORMATS = [2, 3, 4]
-
-interface InsoPair {
-  name?: string
-  value?: string
-  disabled?: boolean
-}
-
-interface InsoResource {
-  _id?: string
-  _type?: string
-  parentId?: string | null
-  name?: string
-  url?: string
-  method?: string
-  headers?: InsoPair[]
-  parameters?: InsoPair[]
-  pathParameters?: { name?: string; value?: string }[]
-  body?: { mimeType?: string | null; text?: string; params?: InsoPair[] } | string
-  authentication?: Record<string, unknown>
-  /** request_group / workspace only. */
-  environment?: Record<string, unknown>
-  /** environment resources. */
-  data?: Record<string, unknown>
-}
-
-interface InsoExport {
-  __export_format?: number
-  resources?: InsoResource[]
-}
-
-/**
- * `{{ _.base_url }}` → `{{base_url}}`.
- *
- * Only the `_.` namespace and the bracket form Insomnia rewrites hyphenated names into
- * (`{{ _['my-var'] }}`) — everything else is left exactly as written. A `{% tag %}` is NOT
- * translated: those belong to Insomnia's template engine (faker, response-chaining, prompts), and
- * inventing a value without that engine would be worse than leaving the tag visible.
- */
-export function normaliseTemplating(text: string): string {
-  if (!text.includes('{{')) return text
-  return text.replace(
-    /\{\{\s*_(?:\.([A-Za-z0-9_$]+)|\[['"]([^'"]+)['"]\])\s*\}\}/g,
-    (_m, dotted, bracketed) => `{{${dotted ?? bracketed}}}`,
-  )
-}
-
-const t = (v: string | undefined | null): string => normaliseTemplating(v ?? '')
-
-function pairs(list: InsoPair[] | undefined): Pair[] {
-  const out: Pair[] = []
-  for (const pair of list ?? []) {
-    if (typeof pair.name !== 'string' || pair.name === '') continue
-    out.push({
-      name: t(pair.name),
-      value: t(pair.value),
-      ...(pair.disabled ? { disabled: true } : {}),
-    })
-  }
-  return out
-}
-
-/**
- * Insomnia auth fields → the local auth union.
- *
- * `disabled: true` means the auth block exists but is switched off — it is NOT inheritance, so it
- * resolves to none rather than falling through to the parent.
- */
-export function convertAuth(auth: Record<string, unknown> | undefined): {
-  auth: RequestAuth | null
-  unsupported: string | null
-} {
-  const type = typeof auth?.type === 'string' ? auth.type.toLowerCase() : undefined
-  // `{}` — the shape Insomnia writes for "inherit from my parent".
-  if (!auth || !type) return { auth: null, unsupported: null }
-  if (auth.disabled === true || type === 'none')
-    return { auth: { type: 'none' }, unsupported: null }
-
-  const str = (k: string) => (typeof auth[k] === 'string' ? (auth[k] as string) : '')
-  switch (type) {
-    case 'bearer': {
-      const token = t(str('token'))
-      return token
-        ? { auth: { type: 'bearer', token }, unsupported: null }
-        : { auth: null, unsupported: null }
-    }
-    case 'basic':
-      return {
-        auth: { type: 'basic', username: t(str('username')), password: t(str('password')) },
-        unsupported: null,
-      }
-    case 'apikey': {
-      const key = t(str('key'))
-      if (!key) return { auth: null, unsupported: null }
-      const addTo = str('addTo').toLowerCase()
-      return {
-        auth: {
-          type: 'apikey',
-          key,
-          value: t(str('value')),
-          addTo: addTo === 'query' ? 'query' : addTo === 'cookie' ? 'cookie' : 'header',
-        },
-        unsupported: null,
-      }
-    }
-    default:
-      // oauth1/oauth2/digest/ntlm/awsIam/hawk/asap/netrc — named in their model, unsignable by us.
-      return { auth: null, unsupported: type }
-  }
-}
-
-function convertBody(body: InsoResource['body']): RequestBody | undefined {
-  // v2 wrote a bare string; v3+ writes the object expected by the local request model.
-  if (typeof body === 'string') return body === '' ? undefined : { text: normaliseTemplating(body) }
-  if (!body) return undefined
-  const mimeType = body.mimeType ?? undefined
-  if (body.params?.length) return { mimeType, form: pairs(body.params) }
-  if (!body.text) return undefined
-  return { mimeType, text: normaliseTemplating(body.text) }
-}
-
-/**
- * Header names that carry one value. Everything else accumulates — see `inheritHeaders`.
- */
-const SINGLE_VALUE_HEADERS = [
-  'proxy-authorization',
-  'content-length',
-  'content-type',
-  'content-encoding',
-  'content-location',
-  'connection',
-  'host',
-  'upgrade',
-  'range',
-  'trailer',
-]
-
-/**
- * HEADERS INHERIT THROUGH `parentId` TOO — and they do not merely override.
- *
- * Header inheritance must be materialized alongside auth inheritance. Otherwise a header set once
- * on a request group silently disappears from every imported child request.
- *
- * The merge follows HTTP field semantics:
- *   - outermost folder first, then inner folders, then the request itself — nearest wins;
- *   - a SINGLE_VALUE header is REPLACED (two `Content-Type`s is not a thing);
- *   - any other header ACCUMULATES, comma-joined, which is how HTTP spells a repeated header on
- *     one line. That matters here beyond fidelity: our send path (`toHeaderInit`) is a
- *     `Record<string, string>`, so it can only carry one value per name — comma-joining is not a
- *     stylistic choice, it is the only way a repeated `Accept` survives us at all;
- *   - a disabled or blank-named header contributes nothing TO THE MERGE;
- *   - the casing of the LAST writer wins.
- *
- * THE MERGE IS SEND-TIME LOGIC, AND THIS IS IMPORT. That distinction is the whole reason `own` is
- * a separate parameter rather than just the last context. Wire construction discards disabled
- * headers, but importing stores them as saved-but-off (`activePairs` drops them at send time).
- * Ancestors and the request's enabled headers merge; the request's disabled headers pass through
- * untouched.
- */
-export function inheritHeaders(
-  ancestors: readonly (InsoPair[] | undefined)[],
-  own: InsoPair[] | undefined,
-): Pair[] {
-  const values = new Map<string, string>()
-  const casing = new Map<string, string>()
-  for (const { name, value, disabled } of [...ancestors, own].flatMap((h) => h ?? [])) {
-    if (disabled || !name?.trim()) continue
-    const key = name.toLowerCase()
-    casing.set(key, name)
-    const merged =
-      SINGLE_VALUE_HEADERS.includes(key) || !values.has(key)
-        ? t(value)
-        : `${values.get(key)}, ${t(value)}`
-    values.set(key, merged)
-  }
-  const merged: Pair[] = [...values].map(([key, value]) => ({ name: casing.get(key)!, value }))
-  // The request's own switched-off headers, preserved as the user left them.
-  const off: Pair[] = []
-  for (const pair of own ?? []) {
-    if (pair.disabled && pair.name?.trim()) {
-      off.push({ name: t(pair.name), value: t(pair.value), disabled: true })
-    }
-  }
-  return [...merged, ...off]
-}
 
 /** `folder / subfolder / request` → one flat, sluggable name. */
 export function resourceName(path: readonly string[], name: string | undefined): string {
@@ -299,7 +126,7 @@ export function convertInsomniaExport(text: string): InsomniaImport | null {
       resolved = inherited
     }
 
-    const url = t(resource.url)
+    const url = insomniaText(resource.url)
     // Outermost ancestor first, then inner, then the request — nearest wins. `chain` is
     // nearest-first, so it is reversed. As with auth, also accept a workspace header if a hand-edited
     // export contains one.
@@ -307,12 +134,12 @@ export function convertInsomniaExport(text: string): InsomniaImport | null {
       [...chain].reverse().map((a) => a.headers),
       resource.headers,
     )
-    const query = pairs(resource.parameters)
-    const body = convertBody(resource.body)
+    const query = insomniaPairs(resource.parameters)
+    const body = convertInsomniaBody(resource.body)
     const pathParameters: Pair[] = []
     for (const parameter of resource.pathParameters ?? []) {
       if (typeof parameter.name === 'string' && parameter.name !== '') {
-        pathParameters.push({ name: parameter.name, value: t(parameter.value) })
+        pathParameters.push({ name: parameter.name, value: insomniaText(parameter.value) })
       }
     }
 
