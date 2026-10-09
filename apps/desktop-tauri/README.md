@@ -161,10 +161,11 @@ tab close / Close Workspace Tab, which flush and remove one workspace. Dock reop
 external launches use one AppKit reveal path that preserves group selection and releases
 minimization. New Workspace Window remains an explicit fresh-workspace action.
 
-Quit flushes all workspaces under one bounded budget. Request IDs and caller labels prevent a stale
-or duplicate acknowledgement from releasing another window. The last workspace hides instead of
-exiting. A clean quit snapshots native tab groups from AppKit and restores stable labels, routes,
-group order and selected tabs on launch.
+Quit requests a flush from all workspaces under one bounded budget. An unresponsive workspace may
+leave pending writes unsaved. Request IDs and caller labels prevent a stale or duplicate
+acknowledgement from releasing another window. The last workspace hides instead of exiting. A clean
+quit snapshots native tab groups from AppKit and restores stable labels, routes, group order and
+selected tabs on launch.
 
 Run the live AppKit smoke check on a Mac with a desktop session:
 
@@ -186,3 +187,11 @@ fullscreen, mouse-driven tab reordering and detaching, and the native + button's
 - [Application composition](./src-tauri/src/lib.rs)
 - [Sidecar staging](./scripts/prepare-sidecar.mjs)
 - [Main-window capabilities](./src-tauri/capabilities/default.json)
+- [Native chrome measurement](./src-tauri/src/native_chrome.rs)
+- [Window material](./src-tauri/src/window_material.rs)
+- [Native tab controls](./src-tauri/src/native_tab_controls.rs)
+- [Workspace lifecycle](./src-tauri/src/workspace_lifecycle.rs)
+- [Workspace visibility](./src-tauri/src/workspace_visibility.rs)
+- [Workspace identity and routing](./src-tauri/src/workspace_windows.rs)
+- [Bounded frontend flush](./src-tauri/src/frontend_flush.rs)
+- [Native tab smoke-check runner](./scripts/check-native-tabs.mjs)

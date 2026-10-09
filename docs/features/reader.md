@@ -13,9 +13,10 @@ explicitly selected absolute path may be anywhere on the computer; it does not h
 active project. Dropped books also open directly through Localix's media store; the file does not
 need an on-disk project path.
 
-PDFs are exposed as bounded, selectable, searchable pages while Localix's exact-layout PDF viewer
-remains available through the shared **Open With** chooser. MOBI and KF8/AZW3 use a pinned format
-engine, preserve metadata and TOC labels, and inline bounded book images and covers. Reader rejects
+PDFs appear as extracted, selectable, searchable text in a reflowed reading view. Reader does not
+perform OCR or preserve the original page layout. Localix's exact-layout PDF viewer remains
+available through the shared **Open With** chooser. MOBI and KF8/AZW3 use a pinned format engine,
+preserve metadata and TOC labels, and inline bounded book images and covers. Reader rejects
 DRM/password-protected or structurally invalid input rather than rendering active content.
 
 The library never scans the workspace or home directory. It lists only books explicitly opened or
@@ -116,39 +117,44 @@ Reader uses the same context model as the rest of Localix:
 This keeps one conversation and one binding system across code, documents, and reading material;
 there is no separate assistant history inside Reader.
 
-## Capability matrix
+## Storage and limits
 
-This table is evidence-based. “Partial” means the current UI and tests prove only the listed subset.
+The shelf, collections, metadata overrides, and reading statistics are saved in the plugin's local
+data directory. Preferences, progress, bookmarks, highlights, and notes use browser storage.
+Clearing that storage removes those reading records; they are not synchronized across browsers or
+devices. Removing a book from the shelf leaves its source file intact.
 
-| Capability                   | Current state | Evidence / remaining work                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Formats                      | Implemented   | EPUB, PDF, MOBI/KF8/AZW3, FB2, CBZ, Markdown, HTML, and TXT. EPUB fragment/cross-chapter and MOBI/KF8 file-position links resolve into safe Reader navigation; host-routed browser/mail/telephone activation supports primary and middle click without duplicate Markdown opens. PDF pages remain searchable/selectable with the exact-layout native viewer available; archive, text, page, image, and decompression budgets are enforced.        |
-| Scroll / page modes          | Implemented   | Continuous and viewport-aligned paginated layouts, resize-safe page snapping, exact page counter, keyboard/footer turns, cross-chapter boundaries, and mode-preserving progress.                                                                                                                                                                                                                                                                  |
-| Full-text search             | Implemented   | Book, chapter, and explicit-shelf search; grouped results, exact navigation, contains/whole/nearby/regex options.                                                                                                                                                                                                                                                                                                                                 |
-| Annotations                  | Implemented   | Durable contextual anchors, dedupe, five colored highlights, editable notes, instant creation, exact navigation, deletion, chapter bookmarks, agent bindings, bounded JSON import/export, semantic EPUB footnote/endnote previews, and a reflow-safe collision-aware selection toolbar with exact chapter-plus-snippet context.                                                                                                                   |
-| Dictionary / Wikipedia       | Not included  | Removed from Reader to keep selection focused on annotations and copying; no external lookup surface or network adapter ships in the plugin.                                                                                                                                                                                                                                                                                                      |
-| Parallel read                | Implemented   | A responsive two-pane reader keeps independent books, chapters, positions, controls, keyboard ownership, and merges both visible passages into one bounded agent context.                                                                                                                                                                                                                                                                         |
-| Font and layout              | Implemented   | The appearance menu (one submenu per setting) controls typeface, font size, line spacing, measure, page margins, natural/justified alignment, and reset; scroll/page mode and reading position persist.                                                                                                                                                                                                                                           |
-| Code highlighting            | Implemented   | Markdown uses the shared renderer; EPUB/HTML preserves bounded `language-*` hints and highlights common languages with Localix semantic color tokens and block limits.                                                                                                                                                                                                                                                                            |
-| File association / Open With | Implemented   | EPUB/MOBI/AZW3/FB2/CBZ open in Reader; PDF, Markdown, HTML, and TXT are alternate reading views. Native and multi-plugin collisions use the same chooser and remembered choice.                                                                                                                                                                                                                                                                   |
-| Library management           | Implemented   | Explicit add, identity dedupe, remove-without-file-delete, covers, responsive gallery, title/author/path/content search, persisted sorting, multi-membership collections (including empty shelves), reversible metadata overrides, bulk collection assignment/removal, and a revalidating keyboard-first breadcrumb book switcher.                                                                                                                |
-| OPDS / Calibre               | Missing       | External catalog/source adapters are not implemented.                                                                                                                                                                                                                                                                                                                                                                                             |
-| Translation                  | Deferred      | Removed pending a separate product-level translation design; Reader currently exposes no translation button, dialog, intent, or provider adapter.                                                                                                                                                                                                                                                                                                 |
-| TTS / read-along             | Missing       | Browser/native speech and EPUB 3 Media Overlays are not implemented.                                                                                                                                                                                                                                                                                                                                                                              |
-| Sync / KOReader              | Missing       | Progress, annotation, and file synchronization adapters remain.                                                                                                                                                                                                                                                                                                                                                                                   |
-| Accessibility                | Partial       | Browser accessibility-tree, keyboard, narrow-pane, and 320 CSS px reflow audits cover named regions/controls, active-book breadcrumb semantics/focus return, visible-page-only Tab stops, roving TOC/gallery/paragraph/selection-toolbar focus, overlay-owned Escape, exact target focus, quiet live position, drawer restoration, inert reading overlays, and reduced-motion-safe transitions. Manual VoiceOver/NVDA/Orca compatibility remains. |
-| Visual focus aids            | Implemented   | Theme-native reading ruler, viewport-following paragraph focus with roving keyboard navigation, user-controlled auto-scroll with chapter continuation, and local punctuation-paced RSVP/speed reading with exact position return.                                                                                                                                                                                                                 |
-| AI summarization             | Implemented   | The shared agent receives the visible chapter/page/selection through automatic context, so the user can ask naturally without Reader-specific prompt buttons. Whole-book work uses the read-only explicit-library research tool with bounded outline/read/search results and chapter resource provenance.                                                                                                                                         |
-| Reading stats                | Implemented   | Local idempotent active-reading events drive per-book time, sessions, positions, active days, 14-day activity, current/longest streak, average session, and progress. Idle/background time is capped and no external analytics service is used.                                                                                                                                                                                                   |
-| Audiobooks / handwriting     | Missing       | Planned after core text-reader and annotation architecture is complete.                                                                                                                                                                                                                                                                                                                                                                           |
+Sources are limited to 64 MiB. EPUB/CBZ archives accept at most 3,000 entries and 160 MiB of
+uncompressed content. Documents retain at most 400 chapters; PDFs above 400 pages are rejected.
+Oversized chapter text is truncated, and oversized markup falls back to bounded text. Books that
+exceed those limits may be rejected or only partly available for reading and agent context.
 
-## Layering
+The research tool reads up to 32,000 characters per call and returns a continuation offset. Resource
+expansion is capped at 48,000 characters, so attaching a book does not promise that the agent
+receives its complete text in one turn.
 
-- `shared/` owns bounded identities, contracts, and pure document/search policy.
-- `backend/` owns untrusted file parsing, explicit-library and private statistics persistence,
-  resource expansion and read-only agent retrieval.
-- `ui/` owns workbench state and rendering; pure pagination and selection geometry are separated
-  from their DOM lifecycle adapters, and neither reads arbitrary files or imports backend/agent
-  state directly.
-- Localix host services remain the ports for files, media, clipboard, composer bindings, search, and
-  context. External providers must be added behind ports rather than imported into the reading UI.
+Reading insights show active time, sessions, positions, progress, and streaks. The activity trail
+contains the latest 14 active dates. Events are deduplicated by ID, capped at two minutes each, and
+retained up to 50,000 records; aggregates describe that retained history.
+
+Reader currently has no external catalog, dictionary, translation, text-to-speech, audiobook, or
+handwriting adapter. These are availability limits, not a release schedule.
+
+## Related guides
+
+- [Workspace context](workspace.md#explicit-and-automatic-context)
+- [Context checkpoints](context-checkpoints.md)
+- [Reader implementation guide](https://github.com/rsaryev/localix/blob/main/plugins/reader/README.md)
+
+## Source of truth
+
+- [Format recognition](https://github.com/rsaryev/localix/blob/main/plugins/reader/shared/formats.ts)
+- [Parser limits and path containment](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/library.ts)
+- [PDF text extraction](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/pdf.ts)
+- [Shelf and metadata persistence](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/service.ts)
+- [Browser reading records](https://github.com/rsaryev/localix/blob/main/plugins/reader/ui/readerStorage.ts)
+- [Reading statistics](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/stats.ts)
+- [Research tool](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/research-tool.ts)
+- [Resource expansion](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/resource-provider.ts)
+- [Search policy](https://github.com/rsaryev/localix/blob/main/plugins/reader/shared/search.ts)
+- [Reading interactions](https://github.com/rsaryev/localix/blob/main/plugins/reader/ui/ReaderReadingPane.tsx)
