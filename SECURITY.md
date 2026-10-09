@@ -33,11 +33,13 @@ strong isolation is required. Review project instructions, skills, plugins, hook
 shell configuration before enabling them. Model requests are sent to the provider or endpoint the
 user configured and are governed by that provider's security and privacy terms.
 
-The local API is a loopback, single-user application service. Its `x-user-id` header selects local
-state; it is not authentication and must not be exposed as a multi-tenant or untrusted-network
-boundary. Web pages in the user's browser are outside that boundary: the API refuses a websocket or
-a write from any page origin other than the Localix app's, and any request whose `Host` is not a
-loopback name. A web page that drives the local API is in scope.
+The local API defaults to loopback and is a single-user application service. Its `x-user-id` header
+selects local state; it is not authentication and must not be exposed as a multi-tenant or
+untrusted-network boundary. The API refuses websocket upgrades and writes from page origins outside
+its explicit allowlist: packaged app origins, configured `LOCALIX_UI_ORIGINS`, and its own HTTP
+origin when it serves the UI. Allowed Host names are loopback names plus the configured concrete
+bind host; wildcard binds do not authorize arbitrary Host names. These checks do not authenticate
+local processes. A web page that bypasses the configured browser-access boundary is in scope.
 
 ## In scope
 

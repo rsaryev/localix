@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve Localix. Search existing issues first and remove credentials, tokens, private source, and personal data from every attachment.
+        Search existing issues first and remove credentials, tokens, private source, and personal data from every attachment. Report suspected vulnerabilities privately through [Security Advisories](https://github.com/rsaryev/localix/security/advisories/new).
 
   - type: dropdown
     id: area
@@ -15,7 +15,7 @@ body:
       label: Area
       description: Which part of Localix is affected?
       options:
-        - Desktop workspace
+        - Desktop or browser workspace
         - Agent or model runtime
         - Delegation and sub-agents
         - Editor, terminal, preview, or source control
@@ -60,11 +60,17 @@ body:
     attributes:
       label: Environment
       description:
-        Include the Localix version or commit, OS, architecture, and relevant provider or runtime.
+        Include the Localix version or commit, client and launch method, OS, architecture, and
+        relevant provider or runtime. For a source checkout, include Bun's version; for the browser
+        workspace, include the browser and version.
       placeholder: |
         Localix: <version or commit SHA>
-        OS: macOS 15 / Windows 11 / Ubuntu 24.04
+        Client: desktop / browser workspace
+        Launch: installed app / bun run dev / bun run dev:web / bun run dev:workspace
+        OS: <name and version>
         Architecture: arm64 / x64
+        Bun (source checkout):
+        Browser (web client):
         Provider or runtime:
     validations:
       required: true

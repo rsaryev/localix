@@ -90,17 +90,20 @@ removing a required gate must update the policy and workflow together.
 
 Use a focused test while editing. Ordinary commits automatically run formatting and lint on staged
 files through `.githooks/pre-commit`, plus Rust formatting when applicable and Cargo is available.
-The hook does not rewrite or stage files; restage checked files that also have unstaged changes
-before committing. Do not run the complete root gate list just to create a commit. CI owns the full
+The hook does not rewrite or stage files; checked files must match their staged contents before
+committing. Do not run the complete root gate list just to create a commit. CI owns the full
 validation; run individual gates locally to diagnose failures. `bun run check:rust` reproduces
 native validation. For desktop packaging changes, `bun run check:bundle` provides a focused smoke
 check: it stages the bundle and starts its API from a copy outside the checkout, in about ten
 seconds.
 
 Hosted CI runs the JavaScript gates sequentially in one job, sharing one dependency install and
-workspace build. Rust runs in a separate job; `Repository validation` requires both. A newer push
-cancels an unfinished CI run for the same ref, while manual runs remain independent. Sequential
-JavaScript checks reduce runner minutes at the cost of later feedback from gates near the end.
+workspace build. Rust runs in a separate job; PRs can skip it when their merge diff changes no
+desktop sources, root manifest, Bun lockfile, or CI workflow. Pushes to main and manual runs keep it
+enabled. `Repository validation` requires successful JavaScript checks and a successful or permitted
+skipped Rust job. A newer push cancels an unfinished CI run for the same ref, while manual runs
+remain independent. Sequential JavaScript checks reduce runner minutes at the cost of later feedback
+from gates near the end.
 
 The last step, `check:bundle`, is the only one that runs the packaged API; the release workflow
 repeats that check against the real macOS app and the Linux AppImage and `.deb` before it uploads

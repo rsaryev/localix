@@ -46,7 +46,7 @@ body:
       options:
         - Agent or model runtime
         - Delegation and sub-agents
-        - Desktop workspace
+        - Desktop or browser workspace
         - Editor, terminal, preview, or source control
         - Plugin or integration
         - CLI launcher

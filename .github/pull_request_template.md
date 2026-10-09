@@ -12,7 +12,7 @@
 
 <!-- List the exact commands run and their result. Add before/after screenshots or a short recording for UI changes. -->
 
-- [ ] Repository-wide required checks from `CONTRIBUTING.md` passed; exact results are listed above
+- [ ] Required CI checks passed; focused local checks and their exact results are listed above
 - [ ] `bun run check:rust` passed for Rust changes, or not applicable
 - [ ] `bun run --cwd apps/landing generate` passed for public Markdown, or not applicable
 - [ ] UI evidence attached, or not applicable

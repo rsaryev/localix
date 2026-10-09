@@ -28,8 +28,8 @@ the [development guide](docs/internals/contributing.md).
 
 `bun install` points git at the hooks in `.githooks/`. Every commit automatically checks formatting
 and lint on staged files, plus Rust formatting when Rust sources change and Cargo is available. The
-hook checks without changing or staging files. If a checked file also has unstaged changes, restage
-it before committing so the checks cover the committed contents. Full tests, type checks, builds and
+hook checks without changing or staging files. Checked files must match their staged contents;
+resolve any staged/unstaged differences before committing. Full tests, type checks, builds and
 audits run in CI; do not repeat them manually just to create a commit.
 
 Maintainers can opt into the additional vendored `vendor/pi` synchronization and model catalog
@@ -59,6 +59,7 @@ bun run check:public
 bun run check:release
 bun run check:architecture
 bun run check:docs
+bun run check:generated
 bun run check:plugins
 bun run check:audit
 bun run format:check
@@ -74,10 +75,12 @@ bun run test:dropins
 CI also runs `bun run check:bundle`, which stages the desktop bundle and starts its API outside the
 checkout. Run it when you change what the desktop app ships.
 
-Hosted CI always runs the pinned Rust formatting, Clippy, and test job. Use `bun run check:rust`
-locally when diagnosing native failures. When reproducing the full CI lint and formatting gates, run
-them without a path filter. CI also runs `bun run check:tests` because it type-checks test files,
-while `bun test` executes them and the main type check excludes them.
+Hosted CI runs pinned Rust formatting, Clippy, and tests for pushes to main and manual runs. A PR
+can skip that job only when its merge diff changes none of `apps/desktop-tauri/`, `package.json`,
+`bun.lock`, or `.github/workflows/ci.yml`; an unavailable merge diff keeps the job enabled. Use
+`bun run check:rust` locally when diagnosing native failures. When reproducing the full CI lint and
+formatting gates, run them without a path filter. CI also runs `bun run check:tests` because it
+type-checks test files, while `bun test` executes them and the main type check excludes them.
 
 Add a deterministic regression test for changed behavior. Use DOM tests when interaction or
 accessibility needs rendered evidence. Run a focused test while iterating; CI runs the
@@ -106,8 +109,10 @@ before publishing, and reuse the same canonical asset in documentation and the l
 
 ## Reporting issues
 
-Use the repository's issue tracker for bugs and feature proposals. Include your OS, Bun version,
-reproduction steps, expected behavior, actual behavior, and relevant logs with secrets removed.
+Use the repository's issue tracker for bugs and feature proposals. Include the Localix version or
+commit, client and launch method, OS, reproduction steps, expected behavior, actual behavior, and
+relevant logs with secrets removed. Source checkouts need the Bun version; browser-workspace reports
+need the browser and version. The bug-report form collects these details.
 
 Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md), never in a public
 issue.
