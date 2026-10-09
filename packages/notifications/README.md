@@ -9,6 +9,8 @@ deduplication, and terminal encoding without sharing presentation code.
 The UI records facts in the server notification journal, keeps a projection in each window, and
 persists notification preferences. Desktop-native banners provide interruption; the current web
 composition has no toast transport. Terminal hosts can encode the same facts as OSC or BEL signals.
+The current UI does not connect a terminal transport; its terminal-method preference alone does not
+emit those signals.
 
 ## Entry points
 

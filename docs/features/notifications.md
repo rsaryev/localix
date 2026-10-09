@@ -18,7 +18,7 @@ not add a duplicate generic event.
 | Return to a source session   | Select the arrow on a row that names a session              | Application messages without a session are not navigable                 |
 | Answer a waiting request     | Select **Respond** on a human-input entry                   | The entry settles once the request is answered, expires or ends          |
 | Retry a failed top-level run | Select **Retry** on the failure entry                       | Refused once a newer reply exists; settled by a later run                |
-| Hand a problem to the agent  | Select **Send to agent** on a problem entry                 | Sends the report as written, fix hints included                          |
+| Hand a problem to the agent  | Select **Send to agent** on a problem entry                 | Stages the report as context; review and send your own request           |
 | Find an entry                | Search, or filter by status, event type, severity and time  | Search syntax is listed behind the **?** in the search field             |
 | Manage unread state          | Expand an entry, open its chat, or select **Mark all read** | Opening the bell alone does not mark anything read                       |
 | Remove history               | Remove one entry, or select **Clear history**               | Clear keeps pending requests and problems that are still true            |
@@ -35,13 +35,19 @@ history**.
 | Runtime fact                                                                                   | Entry                             | Interrupts                       |
 | ---------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------- |
 | Top-level run completed                                                                        | Success                           | No                               |
-| Top-level run failed                                                                           | Error, with **Retry**             | Yes                              |
+| Top-level run failed                                                                           | Error with applicable recovery    | Yes                              |
 | Human input required                                                                           | Warning, with **Respond**         | Yes                              |
 | A participant addressed you by name (`@user` in a group)                                       | Human input                       | Yes                              |
 | Sub-agent or job session completed, failed or was stopped                                      | Success, error or information     | Only a failure                   |
 | Background terminal exited                                                                     | Success for code zero, else error | Only a nonzero exit              |
 | A problem the app or a plugin found (a file that will not validate, a connection that is down) | One standing entry per subject    | Only when nothing could be shown |
 | An action you took that failed, or that needs a decision from you                              | Error or warning                  | Only an error                    |
+
+A logical run reports once after retries and continuations finish. Successful top-level runs report
+when no later turns remain queued; nested chats do not add the same completion entry. **Retry**
+appears only when the failure's recovery supports it. Authentication and rate-limit failures owned
+by a provider connection update its standing problem instead of adding a duplicate run-failure
+entry.
 
 Some facts are deliberately not entries: a slash command's reply, a shell you opened yourself
 exiting, and every answer to your own action that is not a failure (a rename in the file tree, a
@@ -90,6 +96,17 @@ failure or warning entry, such as **Force push** after a rejected push, stays av
 minute: after that the state it would act on has moved on, and the button is gone. **Undo** after a
 rename belongs to the answer beside the control, not to an entry.
 
+### Ask an agent about a problem
+
+Open the problem's source conversation, then select **Send to agent**. For an application-wide
+problem, open the conversation you want to use first. The button attaches the headline and report
+body, including any fix hints, as context in that conversation's composer. It does not send a
+message or start a run.
+
+Check that the context appeared, add what you want the agent to do, and send the message. The button
+does not open a missing source composer or save the attachment for a later opening. An
+application-wide problem with no open conversation asks you to open one first.
+
 ### Where history lives
 
 The journal lives in the server’s configured SQLite database, normally under `~/.localix`;
@@ -100,7 +117,15 @@ propagates to connected windows for the same user.
 A client-originated problem can appear locally while the server is unreachable. The client buffers
 up to 1,000 unacknowledged journal operations and attempts to replay them when the server returns.
 Oldest operations are dropped beyond that cap. Reload recovery uses browser local storage and is
-best-effort; this buffer is not an unlimited delivery guarantee.
+best-effort; this buffer is not an unlimited delivery guarantee. Connected clients retry failed
+delivery with backoff from two seconds up to one minute. Invalid batches are dropped. The server
+retains operation IDs for seven days; replay after those receipts are pruned may apply an old
+operation again.
+
+Reconnecting retrieves the current journal state, not every historical transition. If the saved
+cursor predates retained events, the client reloads the current inbox; a server cursor behind the
+client's triggers a reload from zero. Catch-up rows update history without interrupting you. Native
+banners are considered for eligible live entries or this window's newly acknowledged events.
 
 ### Retention
 
@@ -122,16 +147,19 @@ event does not add a row or reset its read state.
 | --------------------------------- | --------------------------------------- | -------------------- | ------------------------------------------------------------- |
 | **Notify me**                     | Always, When app is inactive, Never     | When app is inactive | Controls interruptive channels                                |
 | **Waiting count on the app icon** | On or off                               | On                   | Counts chats waiting on you where the desktop badge API works |
-| **Terminal compatibility**        | Automatic, OSC 9, OSC 777, Audible bell | Automatic            | Stores a web preference for terminal-signal delivery          |
+| **Terminal compatibility**        | Automatic, OSC 9, OSC 777, Audible bell | Automatic            | Stores a preference; current UI emits no terminal signals     |
 
 Notification preferences use browser local storage for the current app/profile. They are separate
 from the shared server journal and can differ between clients.
 
-### Terminal signals
+### Terminal compatibility
 
-Automatic terminal delivery requires a TTY, `TERM_PROGRAM=WarpTerminal`, and a non-empty
-`WARP_CLIENT_VERSION`; it uses OSC 777. Other terminal emulators require an explicit OSC 9, OSC 777,
-or BEL method.
+The advanced setting stores a terminal-protocol preference. The current web/desktop notification
+path only delivers native banners; changing this setting does not make it emit terminal signals.
+
+The shared notification package provides OSC 9, OSC 777 and BEL adapters for hosts that connect
+them. Its automatic detection requires a TTY, `TERM_PROGRAM=WarpTerminal`, and a non-empty
+`WARP_CLIENT_VERSION`, and selects OSC 777. Other terminal emulators require an explicit method.
 
 ## Limits
 
@@ -143,14 +171,15 @@ or BEL method.
   do not interrupt, even with **Notify me → Always**.
 - Interruption is age-limited independently of history: run events have a ten-minute window, waiting
   requests and standing conditions a one-hour window. An older event can remain in the journal
-  without producing a banner on reconnect. **Always** changes focus policy, not this age limit.
+  without producing a banner. Catch-up history does not interrupt even when recent. **Always**
+  changes focus policy, not this age limit.
 - Desktop banners contain title and body only. Retry, Respond and source navigation stay in the
   Event Center.
 - The app icon badge counts chats waiting on you (a blocked request, a plan, a mention — see
   [Cross-session attention](hitl.md#cross-session-attention)), not unread history, which stays on
   the bell. Windows has no numeric badge; the shell shows a red-dot overlay instead.
-- Native delivery depends on operating-system permission. Automatic terminal detection recognizes
-  Warp only.
+- Native delivery depends on operating-system permission. The shared terminal adapter's automatic
+  detection recognizes Warp only.
 - The routing contract accepts a quiet flag, but there is no user-facing quiet schedule or
   do-not-disturb control.
 
@@ -166,6 +195,8 @@ or BEL method.
 - [Event normalization](https://github.com/rsaryev/localix/blob/main/packages/notifications/src/events.ts)
 - [Channel policy](https://github.com/rsaryev/localix/blob/main/packages/notifications/src/policy.ts)
 - [Event Center](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/notification-center/NotificationCenter.tsx)
+- [Client journal delivery](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/journalDelivery.ts)
+- [Logical run reporting](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/notifications/producers/runs.ts)
 - [Retention priority and caps](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/notifications/retention.ts)
 - [Cleanup schedule](https://github.com/rsaryev/localix/blob/main/apps/api/src/bootstrap/ops-timers.ts)
 - [Client projection cap](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/core.ts)
@@ -176,3 +207,6 @@ or BEL method.
 - [Notification preferences](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/prefs.ts)
 - [Answers to your own actions](https://github.com/rsaryev/localix/blob/main/packages/kit/src/feedback/action-feedback.tsx)
 - [Failure headlines](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/operationPhrases.ts)
+- [Problem context handoff](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/agentHandoff.ts)
+- [Composer context delivery](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/composerBus.ts)
+- [Terminal adapters](https://github.com/rsaryev/localix/blob/main/packages/notifications/src/terminal.ts)

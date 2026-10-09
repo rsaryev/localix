@@ -189,14 +189,16 @@ has no toast transport: its interruption is the desktop native banner, decided i
 chat is on screen. It asks only for a row that OPENS by a change delivered live (an `n` frame, or
 the answer to this window's own op); a catch-up read is history and never interrupts.
 
-The banner kind is `hitl` for the two waiting topics and `run` otherwise; a fact this window raised
-states its own wish (`nativeKind`, or none: an outage stays in the app). A row from the session on
-screen is marked read. Setting the condition to `always` bypasses the focus check; it does not make
-successful completions or ordinary warnings interruptive.
+The banner kind is `hitl` for the `human-input` category and `run` otherwise; a fact this window
+raised states its own wish (`nativeKind`, or none: an outage stays in the app). A row from the
+session on screen is marked read. Setting the condition to `always` bypasses the focus check; it
+does not make successful completions or ordinary warnings interruptive.
 
-Unknown focus delegates the final decision to the transport. Automatic terminal detection emits OSC
-777 only for a TTY with `TERM_PROGRAM=WarpTerminal` and a non-empty `WARP_CLIENT_VERSION`. Other
-terminal emulators require an explicit method.
+Unknown focus delegates the final decision to the transport. The current web/desktop composition
+selects only the native channel and does not connect a terminal transport, even though preferences
+store a terminal method. For a host that connects the shared terminal adapter, automatic detection
+selects OSC 777 only for a TTY with `TERM_PROGRAM=WarpTerminal` and a non-empty
+`WARP_CLIENT_VERSION`. Other terminal emulators require an explicit method.
 
 ### Keep a window's copy of the journal
 
@@ -241,6 +243,12 @@ The rendered list is newest-first and capped at 200 rows by `trimToCap`, which d
 SETTLED rows first: a pending request or a standing condition outlives newer noise. Opening the
 Event Center does not mark anything read; expanding a row, running its action or opening its source
 does.
+
+Operation receipts are retained for seven days, independently of thirty-day journal retention. After
+pruning a receipt, the same client operation ID can be accepted again; exactly-once replay is not a
+permanent guarantee. Failed delivery retries at 2–60 seconds while connected. Invalid batches are
+removed from the outbox rather than retried. Catch-up reconstructs current inbox rows and removals,
+not each intermediate event state.
 
 ### Conditions and request failures
 
@@ -292,7 +300,7 @@ is outside the shared `NotificationPreferences` contract.
 - Native banners still depend on shell support and operating-system permission. The shared router
   cannot prove that the operating system displayed a selected notification.
 - Automatic terminal capability detection recognizes one exported terminal contract. Generic
-  terminals remain silent until the user chooses OSC 9, OSC 777, or BEL explicitly.
+  terminals need an explicit OSC 9, OSC 777 or BEL method and a host that connects the adapter.
 - The router accepts a quiet flag, but no user-facing schedule or do-not-disturb configuration owns
   it today.
 - The web app dedupes by journal key on the server; the terminal transport's router dedupe is
