@@ -19,7 +19,12 @@ import { waitForStates, type WaitRequest, type WaitOutcome } from './live/waiter
 import { HistoryWatch, hostWatchSlot, watchFiles, type WatchPath } from './live/history-watch'
 import { compose, DEFAULT_BUDGET_CHARS, type ComposeResult } from './context/compose'
 import { linkKeyOf, parseLinkKey } from './../shared/identity'
-import { MAX_TRANSCRIPT_EVENTS } from '../shared/contracts'
+import {
+  transcriptEventLimit,
+  transcriptRequest,
+  transcriptSlice,
+  uniqueContextKeys,
+} from './session-transcript'
 import type {
   Bounded,
   ProviderStatus,
@@ -29,10 +34,8 @@ import type {
   TranscriptSlice,
 } from '../shared/contracts'
 
-const DEFAULT_MAX_EVENTS = 400
 /** How often a wait re-reads the panes it is waiting on. */
 const WAIT_POLL_MS = 2_000
-const DEFAULT_MAX_EVENT_CHARS = 4_000
 
 export class AgentSessionsService {
   private readonly log: (message: string) => void
@@ -50,14 +53,8 @@ export class AgentSessionsService {
   constructor(
     stateDir: string,
     log: (message: string) => void,
-    /**
-     * Where the provider histories live. Defaults to this machine's real ones, which is the only
-     * thing production ever wants — and the reason a test that only cares about LIVE delegations was
-     * silently paying for a cold scan of the developer's own 1965 sessions on every case. That cost
-     * 380 ms when the summary was a bounded window; once summaries began a full pass for token usage
-     * it became 3.2 s, and under parallel suite load the case tipped past its timeout. An empty home
-     * makes such a test hermetic as well as fast.
-     */
+    /** Provider history roots. Defaults to this machine's home; tests can supply
+     * an isolated home to avoid scanning real session histories. */
     env?: AdapterEnv,
     availableProviders?: () => readonly string[],
   ) {
@@ -344,66 +341,25 @@ export class AgentSessionsService {
     const { adapter, ref } = found
     const [summary] = await adapter.readSummaries([ref], this.env)
     if (!summary) return null
-    const limit = Math.min(Math.max(1, maxEvents ?? DEFAULT_MAX_EVENTS), MAX_TRANSCRIPT_EVENTS)
+    const limit = transcriptEventLimit(maxEvents)
     const result = await adapter.readTranscript(
-      {
-        ref,
-        maxEvents: limit,
-        maxCharsPerEvent: maxCharsPerEvent ?? DEFAULT_MAX_EVENT_CHARS,
-        ...(tail ? { tail: true } : {}),
-        ...(from ? { from } : {}),
-      },
+      transcriptRequest(ref, limit, maxCharsPerEvent, tail, from),
       this.env,
     )
-    return {
-      key,
-      summary,
-      events: result.events,
-      withheld: Math.max(0, result.total - result.events.length),
-      total: result.total,
-      ...(result.sourceTruncated ? { sourceTruncated: true } : {}),
-      // Recorded here rather than in six adapters: this is the request that produced the slice, and
-      // every adapter honours it through `eventWindow`.
-      readFrom: tail === true ? 'tail' : 'head',
-    }
+    return transcriptSlice(key, summary, result, tail)
   }
 
-  /**
-   * Pull context from SEVERAL sessions at once. See context/compose.ts for the ordering decision.
-   *
-   * Reads each session's END by default, which is the opposite of `transcript`. The reason is the
-   * ratio: pulling the five largest sessions of a real history delivered 175 of 23,147 events (0.76%),
-   * so the end you read is not a detail of the answer, it IS the answer. Someone naming five
-   * sessions at once is asking where those agents got to — `transcript` stays head-first because
-   * reading ONE session to learn what it was asked is a real use, and this is not it. Pass
-   * `tail: false` for the openings; either way each section states which positions it holds.
-   */
+  /** Read unique sessions in parallel and compose their context.
+   * Defaults to each session's latest events; `tail: false` reads the openings.
+   * The composer determines section order and enforces the character budget. */
   async context(
     keys: readonly string[],
     budgetChars?: number,
     tail?: boolean,
   ): Promise<ComposeResult> {
     const slices: TranscriptSlice[] = []
-    // ONE section per session, however many times it was named.
-    //
-    // A repeated key used to be read again, rendered again, and charged against the budget again:
-    // measured on a real session, passing one key three times produced three identical sections and
-    // 10,665 characters where 3,435 were warranted. Assembling `keys` from two places is the
-    // ordinary way that happens, and the cost falls on the OTHER sessions, whose fair share shrinks
-    // to pay for a copy. The FIRST occurrence is the one kept; where its section then lands is
-    // `compose`'s business, which orders by recency and breaks ties on the key so the text a model
-    // sees is stable across calls.
-    const seen = new Set<string>()
-    const unique = keys.filter((key) => (seen.has(key) ? false : (seen.add(key), true)))
-    /**
-     * Read in PARALLEL, in the order asked.
-     *
-     * Each read enumerates its provider's sources to find the file — 6 ms for the 1,177 Claude Code
-     * sessions of a real history, 3 ms for Codex — and serially that repeated once per key: measured
-     * at 136 ms for two sessions and 263 ms for twelve, most of the difference being enumerations
-     * waiting on each other. The reads touch different files and share nothing, so the only reason
-     * they were sequential is that a `for` loop is the shorter thing to write.
-     */
+    const unique = uniqueContextKeys(keys)
+    // Preserve request order while independent session reads run in parallel.
     const read = await Promise.all(
       unique.map((key) => this.transcript(key, undefined, undefined, tail ?? true)),
     )
