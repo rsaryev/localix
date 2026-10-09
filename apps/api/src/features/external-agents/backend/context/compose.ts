@@ -34,6 +34,12 @@
  */
 
 import type { TranscriptSlice, TranscriptEvent } from '../../shared/contracts'
+import type { ComposeSection, ComposeResult } from './compose-types'
+import { MAX_EVENT_CHARS, PER_EVENT_OVERHEAD, clipEvent, costOf, totalChars } from './compose-cost'
+import { hasOverlap, render } from './compose-render'
+
+export type { ComposeSection, ComposeResult } from './compose-types'
+export { MAX_EVENT_CHARS } from './compose-cost'
 
 /** Default total character budget. Roughly 30k tokens — large enough to be useful, small enough to bound. */
 export const DEFAULT_BUDGET_CHARS = 120_000
@@ -62,42 +68,11 @@ export const NAMED_OMISSIONS = 5
 /** Below this a section is a header with nothing under it, so the count gives way instead. */
 export const MIN_BODY_CHARS = 1_000
 
-/** No single event may eat a whole section's share. */
-export const MAX_EVENT_CHARS = 4_000
-
 /**
  * The least a foothold event may show. Below this a section would carry a header, an ellipsis and no
  * readable content — which costs more than it says.
  */
 const MIN_FOOTHOLD_CHARS = 200
-
-export interface ComposeSection {
-  readonly key: string
-  /** The adapter's byte cap cut the source, so its positions are not the session's. */
-  readonly sourceTruncated?: boolean
-  /** Which end the read came from — the one end-claim a truncated slice CAN support. */
-  readonly readFrom?: 'head' | 'tail'
-  readonly provider: string
-  readonly title: string
-  readonly cwd?: string
-  readonly sourcePath: string
-  readonly events: readonly TranscriptEvent[]
-  readonly renderedChars: number
-  readonly withheldEvents: number
-  readonly totalEvents: number
-  readonly earliest?: number
-  readonly latest?: number
-}
-
-export interface ComposeResult {
-  readonly sections: readonly ComposeSection[]
-  readonly text: string
-  readonly totalWithheldEvents: number
-  readonly budgetChars: number
-  readonly usedChars: number
-  /** Human-readable notes about ordering and budget. Always surfaced; never silently applied. */
-  readonly notes: readonly string[]
-}
 
 /**
  * Section order: most recently updated session first, ties broken by key so the output is stable
@@ -480,93 +455,4 @@ export function compose(slices: readonly TranscriptSlice[], budgetChars: number)
         : []),
     ],
   }
-}
-
-/**
- * Planning and packing MUST cost an event identically. They used to differ by one character — the
- * ellipsis added when clipping — which made a section's whole allocation one short of its single
- * oversized event, so that event was dropped entirely instead of being included clipped.
- */
-const PER_EVENT_OVERHEAD = 24
-
-function clipEvent(text: string): string {
-  return text.length > MAX_EVENT_CHARS ? `${text.slice(0, MAX_EVENT_CHARS)}…` : text
-}
-
-function costOf(text: string): number {
-  return text.length + PER_EVENT_OVERHEAD
-}
-
-function totalChars(events: readonly TranscriptEvent[]): number {
-  let sum = 0
-  for (const event of events) sum += costOf(clipEvent(event.text))
-  return sum
-}
-
-function hasOverlap(sections: readonly ComposeSection[]): boolean {
-  const ranges = sections
-    .filter((s) => s.earliest !== undefined && s.latest !== undefined)
-    .map((s) => [s.earliest as number, s.latest as number] as const)
-    .sort((a, b) => a[0] - b[0])
-  for (let i = 1; i < ranges.length; i += 1) {
-    if (ranges[i][0] <= ranges[i - 1][1]) return true
-  }
-  return false
-}
-
-function iso(ms: number | undefined): string {
-  return ms === undefined ? 'unknown' : new Date(ms).toISOString()
-}
-
-/**
- * WHICH events a section holds, not merely how many.
- *
- * Measured on a real local history: pulling context for the five largest sessions delivered 175 of 23,147
- * events — 0.76%. At that ratio the window IS the answer, and "49 shown of 8596" describes it no
- * better than silence does. Derived from the payload's own ordinals rather than from the caller's
- * `tail` request, so it stays true when the character budget lands the window at neither end.
- */
-function windowOf(section: ComposeSection): string {
-  /**
-   * A capped source cannot support POSITIONS — its own `total` counts only what fitted, so a position
-   * within the window is not a position within the session. It can support the END, and that is the
-   * useful half: a tail read of an oversized file reads backwards and really does finish where the
-   * session finishes, a head read really does start where it starts. Saying neither, which this did
-   * for a day, is as wrong as naming the wrong one.
-   */
-  if (section.sourceTruncated) {
-    const count = section.events.length
-    if (count === 0) return ''
-    const end = section.readFrom === 'tail' ? 'the latest' : 'the opening'
-    return ` (${count} — ${end}, from a source too large to read whole)`
-  }
-  const ordinals = section.events.map((event) => event.ordinal)
-  if (ordinals.length === 0 || ordinals.some((ordinal) => ordinal === undefined)) return ''
-  const positions = ordinals as readonly number[]
-  const first = Math.min(...positions) + 1
-  const last = Math.max(...positions) + 1
-  // The whole session is present; there is no window to name.
-  if (first === 1 && last === section.totalEvents) return ''
-  const end = first === 1 ? ' — the opening' : last === section.totalEvents ? ' — the latest' : ''
-  return ` (positions ${first}–${last}${end})`
-}
-
-function render(sections: readonly ComposeSection[], notes: readonly string[]): string {
-  const out: string[] = ['# External agent sessions', '']
-  for (const note of notes) out.push(`> ${note}`, '')
-  for (const section of sections) {
-    out.push(`## ${section.provider} — ${section.title}`)
-    out.push(`- key: \`${section.key}\``)
-    if (section.cwd) out.push(`- cwd: \`${section.cwd}\``)
-    out.push(`- source: \`${section.sourcePath}\``)
-    out.push(`- time range: ${iso(section.earliest)} → ${iso(section.latest)}`)
-    out.push(
-      `- events: ${section.events.length} of ${section.totalEvents}${windowOf(section)}${
-        section.withheldEvents > 0 ? `, ${section.withheldEvents} withheld` : ''
-      }`,
-    )
-    out.push('')
-    for (const event of section.events) out.push(`**${event.role}**: ${event.text}`, '')
-  }
-  return out.join('\n')
 }

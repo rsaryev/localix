@@ -37,7 +37,7 @@
   "apps/api/src/features/external-agents/backend/adapters/gemini-cli.ts": 360,
   "apps/api/src/features/external-agents/backend/adapters/hermes.ts": 378,
   "apps/api/src/features/external-agents/backend/adapters/opencode.ts": 401,
-  "apps/api/src/features/external-agents/backend/context/compose.ts": 572,
+  "apps/api/src/features/external-agents/backend/context/compose.ts": 458,
   "apps/api/src/features/external-agents/backend/discovery/stats.ts": 418,
   "apps/api/src/features/external-agents/backend/resource-provider.ts": 465,
   "apps/api/src/features/external-agents/backend/service.ts": 434,
