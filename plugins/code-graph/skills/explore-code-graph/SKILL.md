@@ -29,6 +29,12 @@ Start an unfamiliar codebase with `code_graph_overview`, then narrow with `path`
 that matters. Before a refactor, run `code_graph_impact` on what you will change and name the
 affected files in your plan.
 
+Impact follows resolved incoming edges for three hops by default; `depth` accepts 1–5. It lists
+potential dependents, not proven runtime failures or every affected consumer. Path lookup follows
+edge direction for at most eight hops. `undirected: true` also walks edges backwards to find a
+structural connection; that result is not a directional call trace. No path found does not prove the
+two targets cannot connect.
+
 ## Read the coverage line
 
 Structural lookup results include how much of the project the map could connect. Camera commands
@@ -36,6 +42,12 @@ report view state and confirmation instead. The map reads syntax, not types: a m
 value whose type the code does not state (`items.map()`, an un-annotated `client.send()`) is not
 linked. So "used by: none" means none that the map could resolve — confirm with a text search before
 telling the user something is unused or safe to delete.
+
+Only supported TypeScript/TSX, JavaScript/JSX, Python and Go sources are mapped. Discovery skips
+ignored files, symlinks, dependency/build directories, oversized files and minified sources, and
+caps source discovery at 20,000 files. The omitted-file counter describes overflow past that cap; it
+does not count every ignored or skipped file. Check indexing status and refresh errors before
+treating a retained map as current.
 
 ## Walking the user through code
 
@@ -64,3 +76,5 @@ Camera requests expire after 15 seconds.
 This graph is derived from source files. Change source with file tools and let the index refresh; do
 not treat nodes or edges as editable Project Space elements. Missing graph edges alone do not prove
 that a declaration is unused.
+
+See the [Code Graph guide](../../../../docs/features/code-graph.md) for indexing and refresh limits.

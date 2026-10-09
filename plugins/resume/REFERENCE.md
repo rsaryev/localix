@@ -16,7 +16,8 @@ Sample content is explicitly illustrative. Blank creation and agent initializati
 the user's qualifications. Arbitrary source files remain the agent's ingestion responsibility;
 portable structured resume JSON can be imported directly into the creation form.
 
-Reference evidence is recorded in `IMPLEMENTATION.md`, export tests and dated UI captures.
+Reference evidence is recorded in [the implementation record](IMPLEMENTATION.md), export tests and
+dated UI captures. [Product purpose](PRODUCT.md) owns the durable scope.
 
 ## Reference review — 2026-10-07
 

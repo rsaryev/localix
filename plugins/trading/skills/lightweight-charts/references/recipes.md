@@ -46,10 +46,12 @@ chart.panes()[1].setHeight(120)
 Color individual bars by putting the color on the **data point**, not via a separate API:
 
 ```ts
+import type { UTCTimestamp } from 'lightweight-charts'
+
 // Candlesticks: per-point color / borderColor / wickColor override series defaults
 candles.setData([
   {
-    time: 1700000000,
+    time: 1700000000 as UTCTimestamp,
     open: 1,
     high: 2,
     low: 0.5,
@@ -59,7 +61,7 @@ candles.setData([
     wickColor: '#26a69a',
   },
   {
-    time: 1700003600,
+    time: 1700003600 as UTCTimestamp,
     open: 1.5,
     high: 1.8,
     low: 1.1,
@@ -72,8 +74,8 @@ candles.setData([
 
 // Histogram (e.g. up/down volume): per-point color
 volume.setData([
-  { time: 1700000000, value: 100, color: 'rgba(38,166,154,0.5)' },
-  { time: 1700003600, value: 80, color: 'rgba(239,83,80,0.5)' },
+  { time: 1700000000 as UTCTimestamp, value: 100, color: 'rgba(38,166,154,0.5)' },
+  { time: 1700003600 as UTCTimestamp, value: 80, color: 'rgba(239,83,80,0.5)' },
 ])
 ```
 
@@ -84,44 +86,69 @@ option. Do not create extra series or use markers to recolor bars.
 
 ```ts
 import { createSeriesMarkers } from 'lightweight-charts'
+import type { UTCTimestamp } from 'lightweight-charts'
 
 const markers = createSeriesMarkers(candles, [
-  { time: 1700000000, position: 'aboveBar', color: '#e53935', shape: 'arrowDown', text: 'Sell' },
+  {
+    time: 1700000000 as UTCTimestamp,
+    position: 'aboveBar',
+    color: '#e53935',
+    shape: 'arrowDown',
+    text: 'Sell',
+  },
 ])
 
 markers.setMarkers([
-  { time: 1700003600, position: 'belowBar', color: '#43a047', shape: 'arrowUp', text: 'Buy' },
+  {
+    time: 1700003600 as UTCTimestamp,
+    position: 'belowBar',
+    color: '#43a047',
+    shape: 'arrowUp',
+    text: 'Buy',
+  },
 ])
 ```
 
-`color` is required on every marker (`position`, `shape`, `time` too); `text`, `size`, `id`, `price`
-are optional. Do not put marker objects into `setData()` points. Do not call
-`series.setMarkers(...)` in v5.
+`color`, `position`, `shape`, and `time` are required. `text`, `size`, and `id` are optional.
+`price` is required for `atPriceTop`, `atPriceBottom`, and `atPriceMiddle`; bar-relative positions
+(`aboveBar`, `belowBar`, `inBar`) do not require it. Do not put marker objects into `setData()`
+points. Do not call `series.setMarkers(...)` in v5.
 
 ### Timezone display
 
 ```ts
-const zone = 'America/New_York'
-const formatTime = (timestamp: number) =>
-  new Intl.DateTimeFormat('en-US', {
-    timeZone: zone,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(new Date(timestamp * 1000))
+import { TickMarkType } from 'lightweight-charts'
+import type { Time } from 'lightweight-charts'
+
+const clock = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+})
+const formatTime = (time: Time): string => {
+  if (typeof time === 'number') return clock.format(new Date(time * 1000))
+  if (typeof time === 'string') return time
+  return `${time.year}-${String(time.month).padStart(2, '0')}-${String(time.day).padStart(2, '0')}`
+}
 
 chart.applyOptions({
   timeScale: {
     timeVisible: true,
     secondsVisible: true,
-    tickMarkFormatter: (time) => (typeof time === 'number' ? formatTime(time) : String(time)),
+    tickMarkFormatter: (time: Time, kind: TickMarkType) =>
+      typeof time === 'number' &&
+      (kind === TickMarkType.Time || kind === TickMarkType.TimeWithSeconds)
+        ? formatTime(time)
+        : null,
   },
-  localization: {
-    timeFormatter: (time) => (typeof time === 'number' ? formatTime(time) : String(time)),
-  },
+  localization: { timeFormatter: formatTime },
 })
 ```
+
+Keep date-level axis labels with the default formatter (`null`) rather than turning years and months
+into clock times. Business-day values remain calendar dates, not timezone-shifted instants.
 
 Do not invent `timeScale: { timezone: 'America/New_York' }`. If the user needs exchange-session
 boundaries to generate in a local timezone, explain the trade-off of shifting source timestamps
@@ -161,17 +188,27 @@ let syncing = false
 priceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
   if (!range || syncing) return
   syncing = true
-  indicatorChart.timeScale().setVisibleLogicalRange(range)
-  syncing = false
+  try {
+    indicatorChart.timeScale().setVisibleLogicalRange(range)
+  } finally {
+    syncing = false
+  }
 })
 
 indicatorChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
   if (!range || syncing) return
   syncing = true
-  priceChart.timeScale().setVisibleLogicalRange(range)
-  syncing = false
+  try {
+    priceChart.timeScale().setVisibleLogicalRange(range)
+  } finally {
+    syncing = false
+  }
 })
 ```
+
+Logical indices align only when the charts share the same ordered time points. For different
+datasets, synchronize visible time ranges instead and handle unavailable endpoints. Keep named
+callbacks in a mounted wrapper and unsubscribe them during teardown.
 
 For v5 panes inside one chart, prefer `chart.addSeries(SeriesType, options, paneIndex)` and
 `chart.panes()[i].setHeight(px)`. If the original pane can move, keep the `IPaneApi` reference and
@@ -182,6 +219,7 @@ call `pane.paneIndex()` instead of assuming index `0` forever.
 ```ts
 chart.subscribeClick((param) => {
   if (!param.point || param.time === undefined) return
+  if (param.paneIndex !== series.getPane().paneIndex()) return
 
   const price = series.coordinateToPrice(param.point.y)
   const logical = chart.timeScale().coordinateToLogical(param.point.x)
@@ -249,7 +287,7 @@ Use the standalone IIFE build when there is no bundler:
 
 ```html
 <div id="chart" style="width: 600px; height: 300px"></div>
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
   const chart = LightweightCharts.createChart(document.getElementById('chart'))
   const series = chart.addSeries(LightweightCharts.LineSeries)
@@ -259,7 +297,7 @@ Use the standalone IIFE build when there is no bundler:
 Choose the loading shape by environment:
 
 - **Bundler (Vite/webpack/Next):** bare `import { createChart } from 'lightweight-charts'`. The
-  package `exports` resolve the right ESM/CJS build.
+  package `exports` select its ESM build; the installed 5.2.0 package is ESM-only.
 - **Browser `<script>` (no bundler):** the standalone IIFE build above exposes the
   `LightweightCharts` global; there is no bare-specifier resolution.
 - **Browser native ESM (`<script type="module">`):** import from a concrete `.mjs` URL (e.g. the

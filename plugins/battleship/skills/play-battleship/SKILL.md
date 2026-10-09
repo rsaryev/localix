@@ -10,13 +10,17 @@ description: >-
 
 Each chat has its own game, and this chat's is yours to play. You and the user each have a fleet of
 ten ships — one of four cells, two of three, three of two, four of one — placed at random, straight,
-never touching even at a corner. The user's fleet is hidden from you, as it would be across a real
-table: no tool, wake or message will show it, so never claim to know where a ship is. The board
-keeps the score at this table from game to game.
+never touching even at a corner. While the game is playing, the user's unsunk fleet is hidden from
+your game tools and board context. Only shot results and sunk ships are visible, so do not claim to
+know the remaining positions. After the game ends, the state reveals both fleets. The board keeps
+the score at this table from game to game.
 
 Everything goes through one tool, `battleship`, and its `action`: `fire`, `state`, `new_game`. Use
-`actions` for up to 16 sequential steps. Hits can continue within a batch; it stops after a miss
-passes the turn to the user or a step fails.
+`actions` for up to 16 sequential steps, instead of a top-level `action`. Hits can continue within a
+batch; it stops when a miss or new game hands the turn to the user, when the game ends, or when a
+step is refused. Earlier completed actions remain applied. Read the completed count and refusal text
+even when `isError` is absent; re-read the board before planning another batch. Single shots let you
+adjust your aim after each result.
 
 ## When the board wakes you
 

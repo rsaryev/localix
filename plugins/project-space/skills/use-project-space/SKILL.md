@@ -22,8 +22,10 @@ the file as it is now and opens it.
    large board with `frame`, `ids` or `query` (every word, in any order — the person's search on the
    board matches the same way). It names files by path; read them with your file tools — the board
    never holds a copy.
-2. `space_apply` takes a batch of operations, applied in order and each on its own. A refused one is
-   reported with the reason and changes nothing; fix only that one — never resend the batch.
+2. `space_apply` takes 1–200 operations, evaluated in order. A refused one is reported with the
+   reason and changes nothing; other accepted operations remain in the batch's saved result. Fix
+   only refused operations rather than resending successful ones. Accepted changes are persisted
+   together in one board write; per-operation acceptance is not a separate disk commit.
 
 | Operation    | Use it to                                                                        |
 | ------------ | -------------------------------------------------------------------------------- |
@@ -44,10 +46,11 @@ stacks as one piece.
 ## Place without coordinates
 
 Omit `x`/`y` and say where it belongs: `in` a frame, or `near` an element. A free spot is found, so
-elements never pile up on one point. For a tidy layout do not compute positions: create the
-elements, then `arrange` them (`in` a frame lays out what it holds and fits the frame around it),
-`align` or `distribute` them. Give coordinates only when the layout is not a row, column or grid: x
-grows right, y grows down, a note is 200×200.
+placement is automatic. A full frame can fall back to a position that overlaps existing content;
+resize the frame or arrange its contents rather than assuming collision-free placement. For a tidy
+layout do not compute positions: create the elements, then `arrange` them (`in` a frame lays out
+what it holds and fits the frame around it), `align` or `distribute` them. Give coordinates only
+when the layout is not a row, column or grid: x grows right, y grows down, a note is 200×200.
 
 ## Layers
 
@@ -64,7 +67,9 @@ element that should recede. A locked element changes only in an update that also
   `sequenceDiagram`, `actor User`, `participant Web as Web UI`, `database DB`, then
   `User->>Web: create` (a call), `Web-)Queue: event` (async), `API-->>Web: 201` (a return). It draws
   lifelines and keeps every message on its own row; boxes plus a text list of arrows is not a
-  diagram.
+  diagram. This native editor accepts a sequence subset; use a `mermaid` element with `props.source`
+  for complete Mermaid definitions, including branches and loops. Unsupported lines in the native
+  sequence parser can be skipped, so read the saved result back.
 - **A flow** is `shape`s joined by `connect`: `kind` `rounded` for a step, `diamond` for a decision,
   `ellipse` for start and end, `cylinder` for a database, `document`, `cloud`.
 - **Connectors** carry a `label`, a `route` (`curved`, `straight`, `elbow`), caps `start`/`end`
@@ -91,6 +96,11 @@ element that should recede. A locked element changes only in an update that also
 then shows when the visible tab returns a matching report — the rectangle, zoom and elements. If the
 tab does not answer, the result says the move was sent but unconfirmed; do not claim the person saw
 it. One call, one move:
+
+Confirmation waits up to 2.5 seconds for a listening tab, or six seconds when opening it. A pending
+camera command is retained for 15 seconds; no matching report means the visible result is unproved.
+View rosters summarize beyond 40 elements, and ordinary `space_read` summarizes beyond 150; narrow
+by frame or IDs when details matter.
 
 | Input              | Does                                                            |
 | ------------------ | --------------------------------------------------------------- |

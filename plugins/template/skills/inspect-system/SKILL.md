@@ -16,7 +16,8 @@ and API run on different machines.
 ## Interpret the snapshot
 
 - Treat CPU utilization as a sampled value, not a capacity guarantee. A first sample may say that a
-  second sample is required; call the tool once more if current utilization matters.
+  second sample is required. Snapshots are cached for one second; wait at least that long before
+  repeating the tool if current utilization matters. An immediate repeat can return the same sample.
 - Treat used memory as total minus free. It includes memory used for operating-system caches, so a
   high percentage alone does not prove memory pressure.
 - Distinguish system uptime from Bun process uptime. A recently restarted Localix process can run on
@@ -32,7 +33,7 @@ available and differ, identify their timestamps instead of silently combining th
 Report unavailable fields as unavailable. Do not infer hostnames, usernames, paths, network
 addresses, temperatures, disk state, process command lines, or a diagnosis: this plugin
 intentionally does not collect them. Ask before proposing any separate mutating or shell-based
-investigation.
+investigation unless the user's existing request already authorizes it.
 
 ## Marks
 
@@ -43,6 +44,10 @@ samples; say that one sample of CPU is noisy rather than calling a difference a 
 durable plugin state, not a read-only observation: up to 50 are retained, with notes limited to 200
 characters. They can outlive a pane or conversation.
 
+Mark values use the same one-second snapshot cache. A newly saved mark does not force a new CPU
+sample. The tool's mutation effect is `host`, so conversation permissions can refuse it even when
+the read-only tools remain available.
+
 ## Processes
 
 Use `system_processes` for a current, CPU-sorted process list. It provides process names, PIDs,
@@ -50,3 +55,10 @@ parent PIDs, CPU, and memory. When the user asks to manage a process, identify i
 the impact, and use native system tools only after the user's intent is clear. Refresh the list
 before acting to reduce the risk of targeting a reused PID, and verify the result afterward. The
 plugin intentionally provides context rather than hardcoded process actions.
+
+The collector retains at most 500 rows; the tool formats the first 100, and pane/resource context
+formats the first 50 before the host's context budget applies. These are partial lists, so an
+omitted process is not proof that it is absent. Unix CPU values come from `ps`; Windows values use
+counter deltas divided by logical core count and are unavailable on the first read. Do not assume
+the two platforms' percentages describe identical sampling intervals or compare them directly with
+the system-wide CPU gauge.

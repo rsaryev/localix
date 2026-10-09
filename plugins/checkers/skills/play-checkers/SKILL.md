@@ -21,9 +21,10 @@ man that reaches the far row mid-capture becomes a king and carries on capturing
 all of it — you never need to work it out.
 
 Everything goes through one tool, `checkers`, and its `action`: `move`, `state`, `new_game`,
-`resign`. Use `actions` for up to 16 sequential steps, such as `new_game` followed by the first
-`move`. Use `action` or `actions`, not both. The batch stops when the move passes the turn to the
-user or a step fails.
+`resign`. Use `action` or `actions`, not both. A batch accepts up to 16 sequential steps; for a new
+game followed by your first move, set `userPlays: "black"` on the `new_game` step. It stops when a
+mutation hands the turn to the user, the game ends, you resign, or a step is refused. Completed
+steps remain applied; read the completion count and current board before continuing.
 
 ## When the board wakes you
 
@@ -50,8 +51,10 @@ not resign a game that is merely difficult: a draw or a comeback is still worth 
 
 Tell the user the result in one line and offer another game. If the game showed you something about
 how this user plays that you did not know — an opening they favour, a trade they avoid — keep it
-with your memory tool, in one note on Checkers that you update rather than add to. The note outlives
-this chat; the board does not.
+with your memory tool, in one note on Checkers that you update rather than add to. Use memory only
+when the tool is available and permitted. Retention depends on its scope; choose a scope that
+matches the intended reuse instead of assuming the note survives deletion. The board is
+session-owned and is removed with its chat.
 
 ## When the user asks to play
 

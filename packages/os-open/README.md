@@ -31,9 +31,15 @@ an `&` in a URL query started a second command.
 
 ## Limits
 
-- A successful result means the OS accepted the target, not that anything appeared. `open` reports
-  success once LaunchServices delivers a URL — including to a stale background browser instance that
-  drops it. Supply `HandoffOptions.log` to retain a diagnostic trace; the default logger is a no-op.
+- `ok: true` records the platform handoff's success criterion, not visible application behavior.
+  macOS/Linux opener paths require exit zero; direct named applications answer on spawn. Windows
+  `rundll32` handoffs accept any numeric exit code because that helper's code is unreliable. Treat
+  these results as handoff outcomes rather than proof that the target opened.
+- Opener waits default to 15 seconds and can use `timeoutMs`. A timeout stops waiting but does not
+  kill the child, so a late handoff can still occur. Direct application spawning uses the spawn
+  event rather than this opener timeout.
+- Supply `HandoffOptions.log` for a diagnostic trace; the default logger is a no-op. Log messages
+  include the target, so the caller owns how that text is retained or redacted.
 - Scheme policy is the caller's. This package does not decide whether a URL is safe to open; the
   UI's outward-action gate and the shell's validator do.
 - A target starting with `-` is refused: neither `open` nor `xdg-open` accepts a `--` end-of-options

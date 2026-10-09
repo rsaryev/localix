@@ -14,6 +14,14 @@ least half of the current module’s lessons are completed (rounded up), or its 
 pending current module takes priority. A missed or failed tutor wake leaves generation failed rather
 than preparing material; inspect that state and use a reachable tutor to continue.
 
+Warm requests are bounded to three attempts per pending module. A queued request suppresses another
+request for 15 minutes; failed requests cannot retry sooner than 60 seconds after the last request.
+These conditions are checked when the course is read or updated through a route that warms it, not
+by an independent retry timer. A delivered wake remains queued until preparation succeeds or later
+course activity detects the stale request. At the attempt limit, inspect the failure and prepare the
+pending module manually in the canonical bundle; activating ready lessons clears that module's
+pending-generation record.
+
 Ask only for missing goals, experience, depth or time constraints. Reuse preferences already given.
 Use small modules of 2–4 focused lessons so a prepared module is useful without a long wait. Plan
 backwards from the final observable outcome. Order modules by the concepts and skills their tasks
@@ -45,7 +53,10 @@ file, and never rewrite other modules during warm-up.
 - Keep distractors plausible and similar in length. Avoid positional hints and "all of the above";
   display order is automatically shuffled while option ids and saved answers stay stable.
 - Give practice observable criteria. The learner submits a solution; the tutor checks every
-  criterion and records specific feedback with action `review`. Reading is not proof of mastery.
+  criterion and records specific feedback with action `review`, using the current `submission_id`
+  from `get`'s `assessments[step_id].submissionId`. Stale IDs are refused; a repeated review of an
+  already reviewed ID retains its result. A passing review enables learner continuation but does not
+  complete the step. Reading is not proof of mastery.
 - Use earlier first-attempt mistakes and practice feedback to choose examples and guidance. Do not
   manufacture progress or change difficulty solely because the learner clicked Continue.
 - Research authoritative sources for changing facts. Cite links in the Markdown you write, use only
@@ -58,6 +69,9 @@ file, and never rewrite other modules during warm-up.
   reported file on failure; activate only when the requested module is complete.
 - Keep stable ids for compatible material. Changes to quiz questions/options, practice prompts or
   criteria, or flashcards invalidate their evidence; theory polish preserves compatible progress.
+  Quiz explanations and practice hints are outside the assessed-task revision. Changing a correct
+  answer or the stored option order also changes a quiz's revision, even if its step id stays
+  stable.
 
 ```text
 <course-id>/
@@ -247,4 +261,6 @@ Walkthrough — theory material stays inline, with at least two stages:
 - [Bundle schemas and path guards](../../../backend/course-bundle.ts)
 - [Import file selection](../../../backend/course-import.ts)
 - [Module generation](../../../backend/module-generation.ts)
+- [Assessed-task revision fields](../../../shared/task-content.ts)
+- [Progress reconciliation](../../../backend/materialize-course.ts)
 - [Tool actions and canonical paths](../../../backend/tool.ts)

@@ -15,8 +15,9 @@ hidden information.
    turn — the board shows the shot, so no chat line is needed. When a fleet is sunk, the result
    appears over the boards, and the agent's whole fleet is shown.
 
-The first shot alternates from game to game, and the table keeps the score. If the chat cannot take
-the turn, the board says so and offers to ask again.
+The board's **New game** action alternates who fires first when no starter is specified. The agent's
+`new_game` tool defaults to the user, or accepts `first: "agent"`. The table keeps the score. If the
+chat cannot take the turn, the board says so and offers to ask again.
 
 ## One game per chat
 
@@ -30,12 +31,12 @@ call's own session in a tool.
 
 The whole game — both fleets — exists only on the server. Nothing leaves it unprojected:
 
-| Reader               | Gets                                              | Built by                 |
-| -------------------- | ------------------------------------------------- | ------------------------ |
-| The view (routes)    | Your fleet; of the agent's, only what you sank    | `viewFor(game, 'you')`   |
-| The agent (tools)    | Its own fleet; its shots at yours and the results | `viewFor(game, 'agent')` |
-| The agent (wake)     | The same, as the message that asks for its shot   | `askForShot`             |
-| The agent (chat box) | The shots and the score, never your fleet         | `describeForChat`        |
+| Reader               | Gets                                                        | Built by                 |
+| -------------------- | ----------------------------------------------------------- | ------------------------ |
+| The view (routes)    | Your fleet; of the agent's, only what you sank              | `viewFor(game, 'you')`   |
+| The agent (tools)    | Its own fleet; its shots at yours and the results           | `viewFor(game, 'agent')` |
+| The agent (wake)     | Its target grid, recent shots, score and aiming suggestions | `askForShot`             |
+| The agent (chat box) | The shots and the score, never your fleet                   | `describeForChat`        |
 
 Once a game is over, both fleets are shown to both sides.
 
@@ -53,6 +54,13 @@ or brought onto the request by linked game context or a plugin wake.
 It never wakes the chat: a tool call is already the agent's turn. When a game ends, the result asks
 the agent to save observations through its configured memory tool. Persistence depends on its
 permission rules and memory scope.
+
+Use either a top-level `action` or an `actions` array of 1–16 steps. A batch stops when the turn
+passes to the user, the game ends, or a step is refused. Earlier changes remain applied; after a
+later refusal the result reports the completed count and the unplayed step without marking the whole
+call as an error. A refusal before any completed step returns `isError: true` and the current agent
+view. A miss ends the model turn only when it answers a pending board wake; a shot requested
+directly in chat can retain the agent's reply.
 
 ## Layout
 

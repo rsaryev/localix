@@ -5,6 +5,10 @@ description:
   existing file-reading capabilities.
 ---
 
+# Work with resumes
+
+## Create and edit
+
 Call `resume` with `action: guide` for the current field and operation contract. Use existing `read`
 and file tools for source resumes, job descriptions and exported documents; do not introduce a
 separate ingestion workflow.
@@ -17,8 +21,10 @@ Call `guide` before custom content; do not guess which fields each section accep
 languages use a title and optional proficiency; grouped content goes in body, never bullets or
 company context. Keep `bullets: []` in those entries. Only custom sections have a variant.
 
-Initialize with `init` and one of the six template IDs returned by `guide`. The result names the
-canonical `.localix/resumes/<id>/resume.json` file in this conversation's workspace.
+Initialize with `init` and one of the six template IDs returned by `guide`; omitted `template`
+defaults to `awal`. For custom content, `init` can take a complete validated `document` directly.
+Its `title` argument sets the saved title. The result names the canonical
+`.localix/resumes/<id>/resume.json` file in this conversation's workspace.
 
 The `init` result already supplies IDs and a revision; use it directly for the first update. Use
 `list` and `get` before editing a resume whose current state you have not just received. Ordinary
@@ -27,6 +33,11 @@ file tools can edit the same JSON; `get` validates it and returns a fresh conten
 section/entry IDs and the revision returned by `get`. A conflict means another writer changed the
 document: read it again and reapply the intended change, never overwrite the entire resume to force
 an old draft through.
+
+An `update` accepts 1–50 operations and validates the resulting document before writing it; do not
+assume an invalid later operation leaves earlier changes saved.
+
+## Preserve content
 
 Use section links for focused discussion. A published editor draft may differ from saved state; read
 authoritative state before mutating. Hidden sections remain in the core but do not appear in text or
@@ -37,9 +48,13 @@ existing marks and lists when editing formatted content. Do not replace a rich d
 string unless the user asks to remove formatting. Rich links require absolute safe URLs; arbitrary
 HTML, images and layout attributes are not part of the content contract.
 
+## History and export
+
 Use `history` to inspect saved revisions. `restore` requires both the current `revision` and the
-historical `target` revision; it recovers the target as a new saved revision without deleting the
-current history. Refresh the current revision after a conflict.
+historical `target` revision; it recovers the target as a new saved revision. On-disk history
+retains up to 60 snapshots, removing older ones as new snapshots are saved. `history` can also
+report a current externally edited state, but ordinary file edits do not automatically preserve
+every intermediate version. Refresh the current revision after a conflict.
 
 Use `export` for native JSON or YAML (complete document), Lanjut version 1 interchange (only
 representable fields), linear Markdown, or plain text. The UI previews and exports the selected
@@ -48,6 +63,13 @@ reproduce a resume template. Save UI drafts before PDF or Word export. PDF and D
 Documents plugin enabled. Source import accepts text/Markdown and extracted PDF/DOCX/DOC/ODT; review
 unassigned text, and do not claim scanned PDF OCR support. Explain limitations honestly; do not
 claim a template guarantees ATS acceptance or invent a compatibility score.
+
+The tool's `export` returns serialized content in its result; it does not save an export file or
+create PDF/DOCX. Use an authorized file tool to write returned content when a file is requested, or
+the workbench's export controls for document downloads. Do not claim an export file exists because
+the tool returned text.
+
+## Presentation
 
 Presentation supports fifteen document fonts, font-size scales, line height, letter spacing, section
 spacing, optional header portrait with size/radius/alignment, contact icons, and English or

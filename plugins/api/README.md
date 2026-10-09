@@ -1,7 +1,7 @@
 # API plugin
 
 The API plugin adds a REST client that people and agents can use from the Localix workspace. It
-stores named requests as session-owned JSON, resolves environment variables, imports common API
+stores named requests as workspace-local JSON, resolves environment variables, imports common API
 formats, and can explicitly export reviewable request files into a repository.
 
 The bundled plugin is enabled by default. Its tools and workspace surface still follow the active
@@ -27,24 +27,31 @@ Localix credential vault when it sends the request; list, search, export, and co
 the reference instead of exposing the value.
 
 Imported literal credentials are moved into the vault when the host supplies its create-only secret
-writer. If that safe path is unavailable, the import is refused rather than silently storing the
-credential in the request database. Add and rotate credentials in the native **Vault** workspace,
-opened directly from the Vault rail item or through **Settings → Capabilities → Secrets → Open
-Vault**.
+writer. Requests with recognized literal credentials are refused if vaulting fails, while other
+items can still save. Imports are not transactional: requests and environments save independently,
+and created vault items can remain after a save failure. Review the per-item result. Add and rotate
+credentials in the native **Vault** workspace, opened from the Vault rail item.
 
 Request environments keep ordinary values such as hosts, API versions, and tenant identifiers in
 their file. Rows marked Secret are backed by Localix's native Vault: the file stores only a
 `${secret:KEY}` reference, and the value is resolved server-side only for the outgoing request.
 
-## Session storage
+## Collection storage
 
-Each chat session owns its working collection directly under `.localix/api/` in that session's
-resolved workspace. Requests use the typed `*.request.json` suffix, so Localix and the OS can open
-them as API requests instead of treating them as arbitrary JSON. Valid legacy `*.json` requests are
-migrated on first read. Requests and environments are separate JSON files; the active-environment
-pointer lives in the hidden `.localix/api/.state/` folder and is not mixed into a shareable
-environment document. The host resolves a session-specific workspace before the plugin constructs
-this path. `.localix/` is workspace-local data and should remain ignored by git.
+The working collection lives under `.localix/api/` in the session's resolved working directory.
+Sessions using the same directory share requests, environments, and the active-environment service;
+a session ID does not create a separate collection folder. Project sessions normally resolve to the
+project directory; sessions without a project use the host's session workspace.
+
+Requests use the typed `*.request.json` suffix. Valid legacy `*.json` requests migrate on first
+read. Requests and environments are separate files. The active-environment pointer uses a hidden
+`.state/` folder for a service first opened with a session, or the plugin state directory for an
+unscoped service; services are cached by collection root. `.localix/` is local data and should
+remain ignored by git.
+
+Saved-request history is separate: at most ten responses per request, keyed by user and session,
+held in backend memory. Restart clears it, and memory pressure can evict older history. It is not a
+durable request log.
 
 The sidebar's request and environment lists hear changes instead of polling for them: a save by
 `api_client` arrives as its `collection_changed` command, and a file under `.localix/api/` rewritten
@@ -54,7 +61,7 @@ visible workbench falls back to a 15-second poll when its watcher is unavailable
 subscription, focus, and returning to visibility also reconcile the collection.
 
 Repository sharing is explicit: export writes a portable snapshot under `.localix/rest/`, and a
-later import can create a new session's working collection from that snapshot.
+later import can populate another working collection from that snapshot.
 
 ## Imports
 
@@ -71,7 +78,22 @@ Import previews first; set `save` only after checking the result.
 | Localix request files | Reimports the files produced by the plugin's repository export.              |
 
 Dynamic variables are a supported subset. Unknown or unsupported values remain visible and are
-reported instead of being replaced with empty text.
+reported instead of being replaced with empty text. At send time, `{{name}}` substitution runs once
+in URL, headers, query, path parameters, and body. Missing variables block sending. Authentication
+fields use native `${secret:KEY}` references directly. Substitution is textual and does not
+implicitly escape JSON strings.
+
+### Compatibility details
+
+- cURL imports request fields, not the shell command's complete behavior. Proxy, certificate,
+  `--insecure`, retry, timeout, and output options are ignored. File arguments such as `@payload`
+  remain text; the importer does not load their bytes.
+- OpenAPI and Swagger resolve local `#/...` references. Bundle external references into the document
+  before importing. Unsupported authentication can leave a request unauthenticated.
+- Postman scripts are not imported. Dynamic `{{$...}}` variables and Insomnia `{% ... %}` template
+  tags remain literal text; import warnings identify them, but sending does not evaluate them.
+- Recorded or referenced upload filenames do not supply file bytes. Postman file-body uploads are
+  omitted with a warning; form fields can retain filenames as text.
 
 ## Repository export
 
@@ -84,17 +106,34 @@ Set `dir` to a deliberate project-relative export directory such as `api-request
 `.localix/rest/` as local application state in the Localix repository, where `.localix` is not
 committed. The export is a portable snapshot, not a reviewed or automatically published artifact.
 
+Export overwrites existing files with the same generated name. It does not remove files for deleted
+or renamed requests, export environments, commit changes, or push them. Credential refusals and
+filename collisions can produce a partial snapshot; a filesystem error can stop after earlier files
+were written. Review the output and remove obsolete files before sharing.
+
+Export directory containment checks path spelling; it does not resolve symlinks. Use a directory
+whose actual destination you control.
+
 ## Network boundary
 
 - Private, loopback, and link-local destinations are denied by default.
 - `ALLOW_PRIVATE_NETWORK=true` is required when intentionally calling a service on the local or
   private network.
-- Redirect destinations are checked again, and authorization is stripped across origins.
+- Redirect destinations are checked again. Cross-origin redirects remove `Authorization` and
+  `Cookie`, but preserve custom headers and any body retained by the redirect method rules.
 - Response bodies are bounded by `MAX_BODY_BYTES`; requests use the configured timeout.
 - Redirect cookies exist only for the current send and are not a persistent cookie jar.
 
 The plugin is trusted backend code and can make outbound requests when enabled. Localix permissions
 are an application gate, not an operating-system sandbox.
+
+Returned response text, headers, URLs, cookies, and history mask recognized credential values and
+resolved Secret environment values using literal and URI-encoded matches. Transformed credentials
+and other private response data are outside that matching rule.
+
+The fetch timeout is shared by the redirect chain, with a positive request-level `timeoutMs` taking
+precedence. Environment/vault resolution precedes that timer, and destination DNS checks do not
+receive its abort signal. The timeout is not a deadline for the complete operation.
 
 ## Configuration
 
@@ -119,6 +158,10 @@ are an application gate, not an operating-system sandbox.
 - [Request sender](./backend/send.ts)
 - [Import chain](./backend/import/registry.ts)
 - [Repository export](./backend/git-sync/action.ts)
+- [Collection scope](./backend/collection/for-scope.ts)
+- [In-memory history](./backend/history.ts)
+- [Environment rendering](./backend/render-spec.ts)
+- [Response masking](./backend/response-redaction.ts)
 - [Collection synchronization](ui/model/useRequests.ts)
 - [Shared file-watcher lifecycle](../../packages/plugin-sdk/src/ui/file-resource-sync.ts)
 - [Workspace registration](./ui/register.tsx)

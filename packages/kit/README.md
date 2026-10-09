@@ -14,6 +14,7 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
   its folder.
 - **The paint contract:** [docs/internals/visual-system.md](../../docs/internals/visual-system.md).
 - **Changing the kit:** [AGENTS.md](AGENTS.md).
+- **Brand mark attribution:** [NOTICE.md](NOTICE.md), covering the paths used by coding-agent marks.
 
 ## Entry points
 
@@ -47,12 +48,17 @@ application and plugin compiler bundle the appropriate entry points.
 
 ## Checks
 
+Choose checks for the changed contract. For a catalog or token change:
+
 ```bash
-bun test packages/kit                    # the kit's own tests, catalog included
-bun run --cwd packages/kit type-check   # types
-bun test scripts/ui-token-drift-guard.test.ts scripts/pane-ground-guard.test.ts
-bun run check:architecture               # the kit imports no app code
+bun test packages/kit/src/catalog/catalog.test.ts
+bun test scripts/ui-token-existence-guard.test.ts scripts/ui-token-drift-guard.test.ts
 ```
+
+For a component change, run its colocated test; use the shared DOM harness when interaction or
+accessibility requires rendered evidence. Documentation-only changes need documentation validation.
+The full kit suite, package type check and repository architecture gate belong to CI; run an
+individual gate locally when it answers a concrete question or is explicitly requested.
 
 ## Source of truth
 

@@ -54,7 +54,9 @@ Eight layers, in dependency order. Most bugs come from confusing one for another
 3. **Scales** — `chart.timeScale()` (`ITimeScaleApi`), `chart.priceScale(id)` (`IPriceScaleApi`).
    Govern range, ticks, autoscale, visibility.
 4. **Data model** — arrays of `{ time, … }` points. `Time = UTCTimestamp | BusinessDay | string`.
-   `UTCTimestamp` is **seconds**, not milliseconds. Times must be unique and ascending per series.
+   `UTCTimestamp` is **seconds**, not milliseconds. In TypeScript, validate numeric timestamps and
+   type them as `UTCTimestamp`; plain numbers do not satisfy the branded type. Times must be unique
+   and ascending per series.
 5. **Interaction** — `chart.subscribeCrosshairMove`, `chart.subscribeClick`,
    `timeScale.subscribeVisibleLogicalRangeChange`, etc.
 6. **Layout** — `chart.panes()`, `chart.addPane()`. Adding a series with an out-of-range `paneIndex`
@@ -70,10 +72,11 @@ The conventions that catch people copying older snippets:
 
 ```ts
 import { createChart, CandlestickSeries, LineSeries } from 'lightweight-charts'
+import type { UTCTimestamp } from 'lightweight-charts'
 
 const chart = createChart(container, {/* ChartOptions */})
 const candles = chart.addSeries(CandlestickSeries, {/* options */})
-candles.setData([{ time: 1700000000, open: 1, high: 2, low: 0.5, close: 1.5 }])
+candles.setData([{ time: 1700000000 as UTCTimestamp, open: 1, high: 2, low: 0.5, close: 1.5 }])
 ```
 
 Key v5 changes versus older snippets:

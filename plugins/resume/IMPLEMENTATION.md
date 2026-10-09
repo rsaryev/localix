@@ -22,8 +22,8 @@ implementations of the reference directions, not copied source.
 | Fresh install                              | Empty library and creation without a trailing-slash 404                                                                | `ui/api.test.ts`; full live opening still needs verification                                                                                                            |
 | Documentation and packaging                | Manifest, agent skill, workspace lockfile, shared rich-text SDK and kit                                                | Resume UI/backend build against staged kit verified; public guide, catalog entry and dated UI captures are present                                                      |
 
-`REFERENCE.md` records the adapted reference contract. PDF pagination is owned by Documents and
-preview renders those PDF bytes; Word retains a linear editable reading order.
+[The reference contract](REFERENCE.md) records the adapted workflow. PDF pagination is owned by
+Documents and preview renders those PDF bytes; Word retains a linear editable reading order.
 
 ## Adaptive workspace verification — 2026-10-07
 

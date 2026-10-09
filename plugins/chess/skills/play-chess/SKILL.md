@@ -15,11 +15,14 @@ the user sees every move there, so the chat only needs a short line. The board k
 this table from game to game.
 
 Everything goes through one tool, `chess`, and its `action`: `move`, `state`, `new_game`, `resign`.
-Use `actions` for up to 16 sequential steps, such as `new_game` followed by the first `move`. The
-batch stops when the move passes the turn to the user or a step fails. The board enforces every rule
-— castling, en passant, promotion, check, and the draws by stalemate, threefold repetition, the
-fifty-move rule and insufficient material. You never need to work out whether a move is legal: the
-legal moves are listed for you.
+Use `action` or `actions`, not both. A batch accepts up to 16 sequential steps; for a new game
+followed by your first move, set `userPlays: "black"` on the `new_game` step. It stops when a
+mutation hands the turn to the user, the game ends, you resign, or a step is refused. Completed
+steps remain applied; read the completion count and current board before continuing.
+
+The board enforces castling, en passant, promotion, check, and the draws by stalemate, threefold
+repetition, the fifty-move rule and insufficient material. You never need to work out whether a move
+is legal: the legal moves are listed for you.
 
 ## When the board wakes you
 

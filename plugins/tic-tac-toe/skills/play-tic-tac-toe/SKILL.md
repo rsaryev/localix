@@ -8,12 +8,16 @@ description: >-
 
 # Play tic-tac-toe
 
-Each chat has its own board, and this chat's is yours to play: the user plays X, you play O. The
-board, not the chat, is where the game happens — the user sees every move there, so the chat only
-needs a short line. The board keeps the score at this table from game to game. Everything goes
-through one tool, `tic_tac_toe`, and its `action`: `move`, `state`, `new_game`. Use `actions` for up
-to 16 sequential steps, such as `new_game` followed by the first `move`. Use `action` or `actions`,
-not both. The batch stops when the move passes the turn to the user or a step fails.
+Each chat has its own board: the user plays X and you play O. The user starts by default;
+`first: "agent"` makes O move first without swapping marks. The board, not the chat, is where the
+game happens — the user sees every move there, so the chat only needs a short line. The board keeps
+the score at this table from game to game.
+
+Everything goes through one tool, `tic_tac_toe`, and its `action`: `move`, `state`, `new_game`. Use
+`action` or `actions`, not both. A batch accepts up to 16 sequential steps; for a new game followed
+by your first move, set `first: "agent"` on the `new_game` step. It stops when a mutation hands the
+turn to the user, the game ends, or a step is refused. Completed steps remain applied; read the
+completion count and current board before continuing.
 
 ## When the board wakes you
 

@@ -46,9 +46,9 @@ paint contract itself is [docs/internals/visual-system.md](../../docs/internals/
 
 ## Checks
 
-```bash
-bun test packages/kit                    # the kit's own tests, catalog included
-bun run --cwd packages/kit type-check   # types
-bun test scripts/ui-token-drift-guard.test.ts scripts/ui-token-existence-guard.test.ts scripts/pane-ground-guard.test.ts
-bun run check:architecture               # the kit imports no app code
-```
+Follow the root development workflow and choose checks for the changed contract. The
+[package README](README.md#checks) gives focused catalog and token examples. Run a component's
+colocated tests when its behavior changes, using the shared DOM harness for interaction or
+accessibility evidence. Documentation-only changes need documentation validation. Full suites, type
+checks and repository gates belong to CI; run an individual gate only for a concrete question or an
+explicit request.

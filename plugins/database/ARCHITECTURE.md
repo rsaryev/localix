@@ -54,7 +54,9 @@ UI API client ──> shared connection model
 ```
 
 No UI component imports a concrete database client. No driver receives agent or React state.
-Credentials never enter list, resource, search or model-facing responses.
+Connection lists, resources, search metadata and structured connection descriptions omit sensitive
+configuration fields. Underlying error text and arbitrary query results are separate paths; this
+omission is not a general credential-redaction guarantee.
 
 ## Workspace flows
 
@@ -82,12 +84,15 @@ Credentials never enter list, resource, search or model-facing responses.
 - **Query parameters** are scanned from the focused statement using the selected driver's manifest
   (`?`, `:name`, and supported native forms such as `$1`, `@name`, `?1`, or `$name`). The console
   confirms values before every run, remembers them only for that console instance, and sends them
-  out-of-band through the common `DbDriver.query(sql, params)` port. User values are never
-  interpolated into SQL.
+  out-of-band through the common `DbDriver.query(sql, params)` port where the driver supports binds.
+  SQL Server rewrites positional `?` placeholders to named bound parameters, skipping strings,
+  identifiers and comments. User values are not inserted into query text by the common console
+  parser.
 - **Scripts and engine checks** share one splitter (`shared/sql-statements.ts`). The service runs a
   multi-statement text statement by statement on one session (`service/run-script.ts`) unless the
-  driver declares `nativeScripts`, and `DbDriver.validate` compiles a statement without executing it
-  (`service/run-validate.ts`).
+  driver declares `nativeScripts`. `DbDriver.validate` uses engine prepare, parse, or explain
+  (`service/run-validate.ts`); it does not run the ordinary query path. This is not a universal
+  no-effects guarantee: some SQLite PRAGMAs change connection state during prepare.
 - **Database work items** (workspace, connection, console, table and diagram) are restorable
   editor-grid tabs that belong to the chat they were opened in. A console runs edit prediction for
   its chat and the other tabs open consoles and tables into theirs, so every open names the chat
@@ -120,3 +125,15 @@ An engine addition is compile-time visible across the system:
 The catalog and registry tests require one unique manifest and executable definition for every
 dialect. UI engine lists, defaults, capability gates and agent query examples then update from that
 declaration without their own dialect switches.
+
+## Related guides
+
+- [Database user guide and engine validation boundaries](../../docs/features/database.md)
+- [Bundled plugin ownership](../README.md)
+
+## Source of truth
+
+- [Script execution](backend/service/run-script.ts)
+- [Validation orchestration](backend/service/run-validate.ts)
+- [SQL Server parameter boundary](backend/drivers/mssql.ts)
+- [SQLite prepare/finalize validation](backend/drivers/sqlite-validate.ts)
