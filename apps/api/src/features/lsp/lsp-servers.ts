@@ -11,6 +11,7 @@ import {
   which,
 } from './lsp-bin-resolve'
 import { isDockerfileName } from './lsp-languages'
+import { createBundledJsServer } from './lsp-bundled-server'
 import { matchingLspServers } from './lsp-server-match'
 
 export interface LspServerHandle {
@@ -179,23 +180,11 @@ export const RustServer: LspServerDef = {
   },
 }
 
-export const HtmlServer: LspServerDef = {
+export const HtmlServer: LspServerDef = createBundledJsServer({
   id: 'html',
   extensions: ['.html', '.htm'],
-  resolveRoot(_filePath, projectRoot) {
-    return projectRoot
-  },
-  async spawn(rootDir, projectRoot) {
-    const bin =
-      resolveNpmBin('html-languageserver', rootDir) ??
-      resolveNpmBin('html-languageserver', projectRoot) ??
-      which('html-languageserver')
-    if (!bin) return undefined
-    const proc = spawnJsServer(bin, ['--stdio'], rootDir)
-    if (!proc) return undefined
-    return { process: proc, initialization: {} }
-  },
-}
+  binName: 'html-languageserver',
+})
 
 /**
  * JSON language server (vscode-json-language-server, bundled via
@@ -205,91 +194,43 @@ export const HtmlServer: LspServerDef = {
  * the extension at all. Resolved from the monorepo node_modules so it works
  * without the user installing anything.
  */
-export const JsonServer: LspServerDef = {
+export const JsonServer: LspServerDef = createBundledJsServer({
   id: 'json',
   extensions: ['.json', '.jsonc'],
-  resolveRoot(_filePath, projectRoot) {
-    return projectRoot
-  },
-  async spawn(rootDir, projectRoot) {
-    const bin =
-      resolveNpmBin('vscode-json-language-server', rootDir) ??
-      resolveNpmBin('vscode-json-language-server', projectRoot) ??
-      which('vscode-json-language-server')
-    if (!bin) return undefined
-    const proc = spawnJsServer(bin, ['--stdio'], rootDir)
-    if (!proc) return undefined
-    return { process: proc, initialization: {} }
-  },
-}
+  binName: 'vscode-json-language-server',
+})
 
 /**
  * CSS/SCSS/Less language server (vscode-css-language-server, same bundle).
  * Reports stylesheet syntax + unknown-property diagnostics.
  */
-export const CssServer: LspServerDef = {
+export const CssServer: LspServerDef = createBundledJsServer({
   id: 'css',
   extensions: ['.css', '.scss', '.less'],
-  resolveRoot(_filePath, projectRoot) {
-    return projectRoot
-  },
-  async spawn(rootDir, projectRoot) {
-    const bin =
-      resolveNpmBin('vscode-css-language-server', rootDir) ??
-      resolveNpmBin('vscode-css-language-server', projectRoot) ??
-      which('vscode-css-language-server')
-    if (!bin) return undefined
-    const proc = spawnJsServer(bin, ['--stdio'], rootDir)
-    if (!proc) return undefined
-    return { process: proc, initialization: {} }
-  },
-}
+  binName: 'vscode-css-language-server',
+})
 
 /**
  * Dockerfile language server (dockerfile-language-server-nodejs, bundled). Emits
  * `dockerfile-utils` diagnostics (e.g. "Unknown instruction" / "No source image
  * provided with FROM"). Detected by FILENAME — Dockerfiles have no extension.
  */
-export const DockerServer: LspServerDef = {
+export const DockerServer: LspServerDef = createBundledJsServer({
   id: 'dockerfile',
   extensions: ['.dockerfile'],
   matchesFilename: isDockerfileName,
-  resolveRoot(_filePath, projectRoot) {
-    return projectRoot
-  },
-  async spawn(rootDir, projectRoot) {
-    const bin =
-      resolveNpmBin('docker-langserver', rootDir) ??
-      resolveNpmBin('docker-langserver', projectRoot) ??
-      which('docker-langserver')
-    if (!bin) return undefined
-    const proc = spawnJsServer(bin, ['--stdio'], rootDir)
-    if (!proc) return undefined
-    return { process: proc, initialization: {} }
-  },
-}
+  binName: 'docker-langserver',
+})
 
 /**
  * YAML language server (yaml-language-server, bundled). Syntax + schema
  * diagnostics for `.yaml`/`.yml`.
  */
-export const YamlServer: LspServerDef = {
+export const YamlServer: LspServerDef = createBundledJsServer({
   id: 'yaml',
   extensions: ['.yaml', '.yml'],
-  resolveRoot(_filePath, projectRoot) {
-    return projectRoot
-  },
-  async spawn(rootDir, projectRoot) {
-    const bin =
-      resolveNpmBin('yaml-language-server', rootDir) ??
-      resolveNpmBin('yaml-language-server', projectRoot) ??
-      which('yaml-language-server')
-    if (!bin) return undefined
-    const proc = spawnJsServer(bin, ['--stdio'], rootDir)
-    if (!proc) return undefined
-    return { process: proc, initialization: {} }
-  },
-}
+  binName: 'yaml-language-server',
+})
 
 export const ALL_SERVERS: LspServerDef[] = [
   DenoServer,

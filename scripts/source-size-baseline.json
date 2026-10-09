@@ -47,7 +47,6 @@
   "apps/api/src/features/external-agents/backend/resource-provider.ts": 465,
   "apps/api/src/features/external-agents/backend/service.ts": 434,
   "apps/api/src/features/external-agents/backend/tools/agent-sessions-tool.ts": 436,
-  "apps/api/src/features/lsp/lsp-servers.ts": 315,
   "apps/api/src/features/mcp/client-manager.ts": 1050,
   "apps/api/src/features/mcp/mcp-tools.ts": 304,
   "apps/api/src/features/plugins/backend-host.ts": 414,
