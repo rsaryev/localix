@@ -497,6 +497,63 @@ describe('useFileEditor save ownership', () => {
     }
   })
 
+  test('an older save settling cannot detach a pending overwrite from duplicate saves', async () => {
+    setSaveCleanupPrefs({ trimTrailingWhitespace: false, ensureFinalNewline: false })
+    const backend = mockEditorBackend()
+    const finishes: Array<(value: { path: string; bytes: number; hash: string }) => void> = []
+    const write = spyOn(backendClient, 'writeFileContent').mockImplementation(
+      () => new Promise((resolve) => finishes.push(resolve)),
+    )
+    const editor = await mountEditor()
+    try {
+      await editor.act(async () => editor.current.setBuffer('first snapshot'))
+      let first!: Promise<boolean>
+      await editor.act(async () => {
+        first = editor.current.save()
+      })
+      await editor.act(async () => {
+        editor.current.setBuffer('overwrite snapshot')
+        publishConflictResolved({
+          sessionId: 'session-a',
+          editPath: '/workspace/shared.ts',
+          expectedBuffer: 'base',
+          content: 'external snapshot',
+          hash: 'hash-external',
+        })
+      })
+      let overwrite!: Promise<boolean>
+      await editor.act(async () => {
+        overwrite = editor.current.overwrite()
+      })
+      expect(write.mock.calls.map((call) => [call[2], call[3]])).toEqual([
+        ['first snapshot', 'hash-base'],
+        ['overwrite snapshot', 'hash-external'],
+      ])
+      await editor.act(async () => {
+        finishes[0]!({ path: '/workspace/shared.ts', bytes: 14, hash: 'hash-first' })
+        expect(await first).toBe(true)
+      })
+      let joined!: Promise<boolean>
+      await editor.act(async () => {
+        joined = editor.current.save()
+      })
+      expect(joined).toBe(overwrite)
+      expect(write).toHaveBeenCalledTimes(2)
+      await editor.act(async () => {
+        finishes[1]!({ path: '/workspace/shared.ts', bytes: 18, hash: 'hash-overwrite' })
+        expect(await overwrite).toBe(true)
+      })
+      expect(editor.current.buffer).toBe('overwrite snapshot')
+      expect(editor.current.baseHash).toBe('hash-overwrite')
+      expect(editor.current.dirty).toBe(false)
+    } finally {
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      write.mockRestore()
+      backend.restore()
+    }
+  })
+
   test('returns false when persistence fails', async () => {
     setSaveCleanupPrefs({ trimTrailingWhitespace: false, ensureFinalNewline: false })
     const backend = mockEditorBackend()
