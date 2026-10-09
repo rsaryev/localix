@@ -1,6 +1,7 @@
 import { createLspClient, type LspClientInfo, type LspDiagnostic } from './lsp-client'
 import { getServersForFile, type LspServerDef } from './lsp-servers'
 import { createLspManagerQueries } from './lsp-manager-queries'
+import { createIdleEviction } from './lsp-idle-eviction'
 import { createProjectOperations } from './lsp-project-operations'
 import { createProjectDiagnostics } from './lsp-project-diagnostics'
 import { createDiagnosticsWait, SILENT_COOLDOWN_MS } from './lsp-diagnostics-wait'
@@ -60,33 +61,16 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
   const updateHandlers = new Set<(projectRoot: string, states: LspServerState[]) => void>()
   let disposed = false
 
-  function clearIdleTimer(mc: ManagedClient): void {
-    if (mc.idleTimer) clearTimeout(mc.idleTimer)
-    mc.idleTimer = undefined
-  }
-
-  function disposeManaged(projectRoot: string, key: string, mc: ManagedClient): void {
-    clearIdleTimer(mc)
-    try {
-      mc.client?.dispose()
-    } catch {
-      /* idempotent */
-    }
-    const clients = byProject.get(projectRoot)
-    if (clients?.get(key) === mc) clients.delete(key)
-    if (clients?.size === 0) byProject.delete(projectRoot)
-    notifyUpdate(projectRoot)
-  }
-
-  function armIdleEviction(projectRoot: string, key: string, mc: ManagedClient): void {
-    clearIdleTimer(mc)
-    if (disposed || idleTimeoutMs <= 0 || !mc.client || mc.client.hasOpenDocuments()) return
-    mc.idleTimer = setTimeout(() => {
-      if (!mc.client?.hasOpenDocuments() && !startingMap.get(projectRoot)?.has(key))
-        disposeManaged(projectRoot, key, mc)
-    }, idleTimeoutMs)
-    mc.idleTimer.unref?.()
-  }
+  const { clearIdleTimer, armIdleEviction } = createIdleEviction({
+    idleTimeoutMs,
+    isDisposed: () => disposed,
+    isStarting: (root, key) => startingMap.get(root)?.has(key),
+    getClients: (root) => byProject.get(root),
+    deleteProject: (root) => {
+      byProject.delete(root)
+    },
+    notifyUpdate,
+  })
 
   /** Built-in servers for a file, then any plugin-contributed servers registered for this root. */
   function candidateServers(filePath: string, projectRoot: string): LspServerDef[] {
