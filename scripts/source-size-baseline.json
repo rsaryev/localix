@@ -148,7 +148,6 @@
   "packages/plugin-sdk/src/ui/charts/CartesianChart.tsx": 369,
   "packages/plugin-sdk/src/ui/index.ts": 362,
   "packages/visual-feedback/src/actuate/index.ts": 432,
-  "plugins/api/backend/http-request.ts": 369,
   "plugins/api/backend/routes.ts": 910,
   "plugins/api/ui/RequestTab.tsx": 696,
   "plugins/api/ui/RestApiSidebar.tsx": 645,
