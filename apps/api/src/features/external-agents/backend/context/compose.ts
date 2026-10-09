@@ -38,6 +38,9 @@ import type { ComposeSection, ComposeResult } from './compose-types'
 import { MAX_EVENT_CHARS, PER_EVENT_OVERHEAD, costOf } from './compose-cost'
 import { hasOverlap, render } from './compose-render'
 import { sectionOrder, packSections } from './compose-packing'
+import { omissionNote, composeNotes } from './compose-notes'
+
+export { NAMED_OMISSIONS } from './compose-notes'
 
 export type { ComposeSection, ComposeResult } from './compose-types'
 export { MAX_EVENT_CHARS } from './compose-cost'
@@ -55,9 +58,6 @@ export const PER_SECTION_RESERVE = 320
 /** Bound on the trim-to-fit pass; each round removes one event, so it terminates on its own. */
 const MAX_TRIM_ROUNDS = 512
 
-/** How many omitted keys the note spells out before it starts counting instead. */
-export const NAMED_OMISSIONS = 5
-
 /** Below this a section is a header with nothing under it, so the count gives way instead. */
 export const MIN_BODY_CHARS = 1_000
 
@@ -66,22 +66,6 @@ export const MIN_BODY_CHARS = 1_000
  * readable content — which costs more than it says.
  */
 const MIN_FOOTHOLD_CHARS = 200
-
-/**
- * What was left out entirely, said once and bounded.
- *
- * Naming every omission looked like the honest choice and broke the ceiling it was added to
- * protect: 30 real keys (`claude-code:cc71d515-…`, 48 characters each) made a 1,898-character note
- * and a 2,869-character answer against a 2,000 budget. A disclosure that overruns the bound is the
- * bug it discloses. Enough keys to act on, then a count.
- */
-function omissionNote(keys: readonly string[], keptSections: number): string {
-  const named = keys.slice(0, NAMED_OMISSIONS)
-  const rest = keys.length - named.length
-  return `${keys.length} session(s) were not included at all: this character budget carries ${keptSections} labelled section(s) before any events are rendered. Ask for fewer sessions, or raise budgetChars. Omitted: ${named.join(
-    ', ',
-  )}${rest > 0 ? `, and ${rest} more` : ''}.`
-}
 
 export function compose(slices: readonly TranscriptSlice[], budgetChars: number): ComposeResult {
   const budget = Math.min(Math.max(budgetChars, 2_000), MAX_BUDGET_CHARS)
@@ -170,15 +154,7 @@ export function compose(slices: readonly TranscriptSlice[], budgetChars: number)
    */
   const omitted: string[] = dropped.map((slice) => slice.key)
   const withNote = (count: number): string =>
-    render(sections, [
-      ...notes,
-      ...(omitted.length > 0 ? [omissionNote(omitted, sections.length)] : []),
-      ...(count > 0
-        ? [
-            `${count} event(s) were withheld to stay within the ${budget.toLocaleString('en-US')}-character budget. Each section reports its own withheld count; request a single session for its full transcript.`,
-          ]
-        : []),
-    ])
+    render(sections, composeNotes(notes, omitted, sections, count, budget))
 
   let text = withNote(totalWithheld)
   for (let guard = 0; text.length > budget && guard < MAX_TRIM_ROUNDS; guard += 1) {
@@ -288,14 +264,6 @@ export function compose(slices: readonly TranscriptSlice[], budgetChars: number)
     totalWithheldEvents: totalWithheld,
     budgetChars: budget,
     usedChars: text.length,
-    notes: [
-      ...notes,
-      ...(omitted.length > 0 ? [omissionNote(omitted, sections.length)] : []),
-      ...(totalWithheld > 0
-        ? [
-            `${totalWithheld} event(s) were withheld to stay within the ${budget.toLocaleString('en-US')}-character budget. Each section reports its own withheld count; request a single session for its full transcript.`,
-          ]
-        : []),
-    ],
+    notes: composeNotes(notes, omitted, sections, totalWithheld, budget),
   }
 }
