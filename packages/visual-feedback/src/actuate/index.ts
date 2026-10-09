@@ -13,8 +13,7 @@
 
 import type { VfCommand, VfSnapshot } from '../protocol/index'
 import { getElementSummary } from '../core/identify'
-import { getViewportRect, scrollContainerIn } from '../core/geometry'
-import { motionSafeScrollBehavior } from '../core/motion'
+import { getViewportRect } from '../core/geometry'
 import { buildSnapshot } from '../snapshot/index'
 import { rasterizeElement } from '../rasterize/index'
 import {
@@ -30,6 +29,7 @@ import {
 import { stateForDiff } from './diff'
 import { stepNote, failedStep } from './batch-report'
 import { postAction } from './post-action'
+import { performScroll } from './scroll'
 import { serializeEvalResult, compileEvalExpression } from './evaluate'
 
 // The console ring buffer + interaction synthesis + interactive-tree diffing live
@@ -52,6 +52,8 @@ import {
   resolveWithHeal,
   healFailResult,
   interceptedClickResult,
+  withHeal,
+  snapAfter,
   type Healed,
 } from './target'
 
@@ -67,17 +69,6 @@ export async function runCommand(cmd: VfCommand, deps: ActuateDeps): Promise<Act
       errorCode: 'failed',
     }
   }
-}
-
-/** Append the self-heal note (when a stale ref was recovered) to an action note. */
-function withHeal(note: string, t?: Healed): string {
-  return t?.healNote ? `${note} ${t.healNote}` : note
-}
-
-/** Force a fresh post-action snapshot whenever we self-healed (the recovery's whole
- *  point is to leave the agent with usable refs); otherwise honor the command flag. */
-function snapAfter(cmd: VfCommand, t?: Healed): boolean {
-  return Boolean(cmd.snapshotAfter) || Boolean(t?.healNote)
 }
 
 async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResult> {
@@ -175,41 +166,13 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
     }
 
     case 'scroll': {
-      if (cmd.ref || cmd.selector) {
-        const t = resolveWithHeal(cmd, deps)
-        if (isHealFail(t)) return healFailResult('scroll', t)
-        t.el.scrollIntoView({
-          behavior: motionSafeScrollBehavior('smooth'),
-          block: 'center',
-        })
-        return {
-          ok: true,
-          result: {
-            action: 'scroll',
-            rect: getViewportRect(t.el),
-            target: getElementSummary(t.el),
-            note: withHeal(`scrolled ${getElementSummary(t.el)} into view`, t),
-            ...(await postAction(deps, snapAfter(cmd, t), consoleCursor)),
-          },
-        }
-      }
-      const scroller = deps.root ? scrollContainerIn(deps.root) : null
-      const amt = cmd.amount ?? Math.round((scroller?.clientHeight ?? window.innerHeight) * 0.8)
-      const dx = cmd.direction === 'left' ? -amt : cmd.direction === 'right' ? amt : 0
-      const dy = cmd.direction === 'up' ? -amt : amt // default: down
-      const by: ScrollToOptions = {
-        left: dx,
-        top: cmd.direction === 'left' || cmd.direction === 'right' ? 0 : dy,
-        behavior: motionSafeScrollBehavior('smooth'),
-      }
-      if (scroller) scroller.scrollBy(by)
-      else window.scrollBy(by)
+      const scrolled = performScroll(cmd, deps)
+      if (!scrolled.ok) return scrolled.failure
       return {
         ok: true,
         result: {
-          action: 'scroll',
-          note: `scrolled ${cmd.direction ?? 'down'} ${amt}px`,
-          ...(await postAction(deps, cmd.snapshotAfter, consoleCursor)),
+          ...scrolled.result,
+          ...(await postAction(deps, scrolled.snapshotAfter, consoleCursor)),
         },
       }
     }

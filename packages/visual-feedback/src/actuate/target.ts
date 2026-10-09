@@ -167,3 +167,14 @@ export function interceptedClickResult(
     result: { action: 'click', snapshot: buildSnapshot(deps.reg, { root: deps.root }) },
   }
 }
+
+/** Append the self-heal note (when a stale ref was recovered) to an action note. */
+export function withHeal(note: string, t?: Healed): string {
+  return t?.healNote ? `${note} ${t.healNote}` : note
+}
+
+/** Force a fresh post-action snapshot whenever we self-healed (the recovery's whole
+ *  point is to leave the agent with usable refs); otherwise honor the command flag. */
+export function snapAfter(cmd: VfCommand, t?: Healed): boolean {
+  return Boolean(cmd.snapshotAfter) || Boolean(t?.healNote)
+}
