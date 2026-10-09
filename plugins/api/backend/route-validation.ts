@@ -17,3 +17,11 @@ export const pairSchema = z.object({
   value: z.string(),
   disabled: z.boolean().optional(),
 })
+
+export const bodySchema = z
+  .object({
+    mimeType: z.string().optional(),
+    text: z.string().optional(),
+    form: pairSchema.array().optional(),
+  })
+  .optional()
