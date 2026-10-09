@@ -1,13 +1,17 @@
 # Annotate a live preview
 
-Visual Feedback captures source-mapped UI context from a Localix preview and adds it to the session.
-Use it to point at a live element, describe a visual change, and give the agent concrete DOM and
-source anchors.
+Visual Feedback captures element context and available source locations from a Localix preview and
+adds them to the session. Use it to point at a live element, describe a visual change, and give the
+agent DOM details and any source hints the page provides.
 
 **Scope:** A probe-connected Localix preview is required. Arbitrary browser tabs and desktop windows
 are outside this boundary.
 
-![A real application preview in the browser beside the release conversation](../assets/screenshots/browser/agent-preview--2026-10-07.png)
+![A real application preview in the browser beside the release conversation](../assets/screenshots/browser/agent-preview--2026-10-09.png)
+
+_Preview captured on 9 October 2026 after **Just browse → Review release** changed the demo page
+status to **Ready for review**. The conversation is seeded; this frame does not show a feedback
+attachment or a model run._
 
 ## What you can do
 
@@ -136,6 +140,10 @@ is remembered from an explicit open and from a dev server detected in a backgrou
 `npm run dev`, `node server.js`, or any other launch comes back the way it went up.
 
 ## Configuration
+
+If the **Live preview** introduction appears, choose **Just browse** to interact with the page or
+**Visual Feedback** to select an element for an observation. You can change mode later in the
+toolbar.
 
 The compact browser toolbar keeps navigation and actions in one row. Enter an HTTP(S) address, a
 local host and port, a relative route, or search text in **Browser address** and press Enter. Escape

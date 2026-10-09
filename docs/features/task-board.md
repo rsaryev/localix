@@ -4,7 +4,11 @@ The Kanban board is a bundled plugin that gives every chat its own passive task 
 dependencies, checklists, owners and blockers, kept by you and the agent in that chat. Use this page
 to plan multi-part work so its state stays visible and durable.
 
-![Release tasks arranged by status, with owners and labels](../assets/screenshots/task-board/board--2026-10-07.png)
+![Release tasks arranged by status, with owners and labels](../assets/screenshots/task-board/board--2026-10-09.png)
+
+The 9 October capture uses four illustrative cards in an isolated demo chat. A real keyboard move
+placed **Write release notes** in Ready; the Done cards were seeded, not completed by an agent run.
+Empty columns are collapsed to keep the cards readable.
 
 ## Terminology
 
@@ -29,10 +33,10 @@ to plan multi-part work so its state stays visible and durable.
 
 ## How the agent works with it
 
-An agent in the chat gets the plugin's `kanban` tool. Its actions are `list`, `search`, `create`,
-`update`, `take`, `complete`, `block`, `reorder`, `delete` and `detail`. While the board's tab is
-linked to the message, the tool is on the wire. Without the tab it is deferred like every plugin
-tool: the agent loads it once with `activate_tools`, and the session remembers that.
+An agent allowed to use the plugin gets its `kanban` tool. Its actions are `list`, `search`,
+`create`, `update`, `take`, `complete`, `block`, `reorder`, `delete` and `detail`. While the board's
+tab is linked to the message, the tool is on the wire. Without the tab it is deferred like every
+plugin tool: the agent loads it once with `activate_tools`, and the session remembers that.
 
 1. The agent puts multi-part, durable work on the board; a small single deliverable needs no card. A
    `create` batch may wire dependencies to earlier entries by title, and it opens the board once.

@@ -114,6 +114,71 @@ The file's inactive tab still contributed automatic context alongside the active
 not prove the model later consumed either source. The Playwright browser and isolated runtime were
 stopped after the check. Historical captures remain available as history.
 
+## Live preview figure and source-hint boundary
+
+Restored `browser/agent-preview` to the active plan with a deterministic local HTTP fixture. The
+scenario opens the URL through the current address combobox, dismisses the first-preview intro via
+**Just browse**, performs the page's **Review release** click and verifies its changed status plus
+the three checkbox states. Sidebar composition uses the real Toggle sidebar palette command.
+
+Initial startup failed while independent API edits temporarily removed a monitor-loader export.
+After that export returned, the isolated runtime passed identity verification. The first browser
+attempt used a textbox selector; another hit the undisposed intro overlay. Corrected the workflow
+and then refined sidebar composition. The final scoped run passed in 5.1 seconds. Viewed the native
+4800×3000 image before publishing the 9 October replacement and updating the existing figures.
+
+Qualified the guide's opening: DOM capture can carry available source hints but does not guarantee a
+file/line location. One existing synthetic source-resolver test passed for file/line metadata,
+component-only metadata and absence of a source. This figure proves live preview interaction, not
+probe attachment, model activity or source-map completeness. No private data, provider credentials
+or image retouching was used. The browser, isolated runtime and HTTP fixture listeners were stopped.
+
+Affected documentation checks and generation passed: 77 pages, 37 current captures from 50 dated
+assets. Failed attempts supplied no published replacement.
+
+The eight-file checkpoint passed formatting/lint hooks but native 1Password signing failed. Changes
+remained staged at that attempt; the failure did not stop publication of the reviewed local assets.
+
+## Kanban figure refresh
+
+Both retained keys have distinct consumers: the full board appears in README, the owning guide and
+the homepage workbench gallery; the adjacent-chat view appears in the product showcase. Added four
+deterministic cards to the dedicated fixture chat. Seeding verifies runtime identity, project
+membership and canonical root before writing, and refuses unrelated cards rather than deleting them.
+Four focused refusal tests passed for those boundaries, with no writes in each rejected case.
+
+The scenario performs Alt+ArrowRight on the release-notes card and checks Ready through both the UI
+and board API. Initial checks matched hidden transcript handles and then omitted the card's arrow;
+scoped title selectors now verify the actual owner chips. Corrected Restore layout to its current
+label. A later attempt hit the app's recovery screen before opening the board; no image from that
+failed run was published. This does not establish the cause of that transient load failure.
+
+Visual review found completed cards clipped in the adjacent-chat composition. Collapsed empty
+columns through the UI and added full-viewport assertions for every card. The final two-scenario run
+passed in 7.3 seconds. Reviewed both native 4800×3000 images and published the 9 October
+replacements, updating the guide and README. The passive board and seeded Done states do not prove
+agent execution; the captions now say so. No model calls, personal data or image retouching were
+used. The Playwright browser, isolated API/UI runtime and HTTP fixture were stopped; their ports are
+free.
+
+Seven affected Markdown pages passed anchor, quoted-source and readability checks. Generation
+collected 77 public pages and selected 37 current captures from 52 dated assets, with no
+placeholders.
+
+The combined 16-file browser/Kanban checkpoint passed formatting and lint hooks after one formatting
+correction. Native 1Password signing then returned an agent error, so no commit was created and the
+intended changes remained staged at that attempt. Independent database refactoring and sitemap
+output were excluded; signing configuration and hooks were left intact.
+
+## Stopping point — 10 October
+
+At the user's request, stopped opening new audit work after the reviewed browser/Kanban batch. The
+Project Space follow-up only inspected sources and attempted a read from the isolated API; no new
+board fixture, screenshot or public guide change was made. Its capture runtime was stopped. Project
+Space and the Release Checklist retain their older figures and remain on the outstanding evidence
+list. The full documentation audit is not claimed complete; the remaining scope is recorded in the
+[main audit](documentation-audit.md).
+
 ## Related guides
 
 - [Vault user guide](../features/secrets.md)

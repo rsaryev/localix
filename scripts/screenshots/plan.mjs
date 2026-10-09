@@ -50,6 +50,21 @@ export const capturePlan = {
     purpose: 'Closing a template preview restores the filtered chooser and selected tile',
     scenario: 'motion-template-return',
   },
+  'task-board/board': {
+    guide: 'features/task-board.md',
+    purpose: 'Four seeded cards with a real keyboard move persisted from Backlog to Ready',
+    scenario: 'kanban-board',
+  },
+  'task-board/conversation': {
+    guide: 'features/task-board.md',
+    purpose: 'The same chat-owned board after a keyboard move beside its seeded conversation',
+    scenario: 'kanban-conversation',
+  },
+  'browser/agent-preview': {
+    guide: 'features/visual-feedback.md',
+    purpose: 'Live local preview after a real release-review action beside the seeded conversation',
+    scenario: 'browser-preview',
+  },
   'context/composer-context': {
     guide: 'features/workspace.md',
     purpose: 'Automatic open-file and terminal context with source labels and estimated sizes',
@@ -224,11 +239,7 @@ export const capturePlan = {
   },
 }
 export const retainedShots = {
-  'browser/agent-preview':
-    'A real browser preview beside the conversation; features/visual-feedback.md',
   'project-space/board': 'A release plan with a live source file; features/project-space.md',
-  'task-board/board': 'Tasks in their current columns; features/task-board.md',
-  'task-board/conversation': 'Board and group conversation in the same workspace',
   'plugins/agent-build': 'Working checklist fixture; extending/build-with-the-agent.md',
 }
 // Historical comparisons, theme demonstrations and transient boot states are not feature evidence.

@@ -16,6 +16,8 @@ export async function verifyEvidence(page, scenario) {
     ].includes(scenario)
   )
     return (await import('./motion-workbench.mjs')).verifyMotion(page, scenario)
+  if (['kanban-board', 'kanban-conversation'].includes(scenario))
+    return (await import('./kanban-workbenches.mjs')).verifyKanban(page, scenario)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).verifySessionDrag(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
@@ -29,7 +31,18 @@ export async function verifyEvidence(page, scenario) {
   if (['api-client', 'documents', 'reader'].includes(scenario)) {
     return (await import('./content-workbenches.mjs')).verifyContent(page, scenario)
   }
-  if (scenario === 'participants') {
+  if (scenario === 'browser-preview') {
+    await expect(page.getByRole('region', { name: 'Session history', exact: true })).toBeHidden()
+    const preview = page.frameLocator('iframe[title^="http://127.0.0.1:5160"]')
+    await expect(preview.getByText('Ready for review', { exact: true })).toBeVisible()
+    await expect(preview.getByRole('checkbox', { name: 'Review the changes' })).toBeChecked()
+    await expect(preview.getByRole('checkbox', { name: 'Check the mobile layout' })).toBeChecked()
+    await expect(preview.getByRole('checkbox', { name: 'Publish release notes' })).not.toBeChecked()
+    await expect(
+      page.getByRole('group', { name: 'Conversation participants', exact: true }),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Visual Feedback', exact: true })).toBeVisible()
+  } else if (scenario === 'participants') {
     const roster = page.getByRole('group', { name: 'Conversation participants', exact: true })
     await expect(roster.locator('[data-slot="participant-chip"]')).toHaveCount(3)
     for (const handle of ['lead', 'frontend', 'qa'])

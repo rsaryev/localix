@@ -122,6 +122,14 @@ These are illustrative positions, not recorded model games. The other four games
 agent-opponent UI; no human-versus-human mode is invented, and the scenarios never wake a model.
 Each scenario resets its own isolated game state so reruns keep the same starting position.
 
+## Kanban evidence
+
+The two Kanban scenarios seed four cards in the dedicated fixture chat and move the release-notes
+card from Backlog to Ready with a real keyboard action. They check the persisted status, owners and
+full card visibility before capture. Empty columns are collapsed through the UI. Seeding verifies
+the runtime identity, chat's project and canonical project root, and refuses a board containing
+unrelated cards. Done cards and the adjacent transcript are illustrative, not recorded agent work.
+
 ## Optional Docker evidence
 
 The container scenario is skipped unless `LOCALIX_CAPTURE_DOCKER=1`. Start a dedicated container

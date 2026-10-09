@@ -61,6 +61,8 @@ export async function compose(page, scenario) {
     ].includes(scenario)
   )
     return (await import('./motion-workbench.mjs')).composeMotion(page, scenario)
+  if (['kanban-board', 'kanban-conversation'].includes(scenario))
+    return (await import('./kanban-workbenches.mjs')).composeKanban(page, scenario)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).composeSessionDrag(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
@@ -74,7 +76,23 @@ export async function compose(page, scenario) {
   if (['api-client', 'documents', 'reader'].includes(scenario)) {
     return (await import('./content-workbenches.mjs')).composeContent(page, scenario)
   }
-  if (scenario === 'participants') {
+  if (scenario === 'browser-preview') {
+    await button(page, 'Browser').click()
+    const address = page.getByRole('combobox', { name: 'Browser address', exact: true })
+    await address.fill('http://127.0.0.1:5160')
+    await address.press('Enter')
+    const preview = page.frameLocator('iframe[title^="http://127.0.0.1:5160"]')
+    await preview.getByRole('heading', { name: 'A clear path to the next release.' }).waitFor()
+    await button(page, 'Just browse').click()
+    await preview.getByRole('button', { name: 'Review release', exact: true }).click()
+    await preview.getByText('Ready for review', { exact: true }).waitFor()
+    if (await page.getByRole('region', { name: 'Session history', exact: true }).isVisible()) {
+      await button(page, 'Chat history').focus()
+      await page.keyboard.press('F1')
+      await page.getByRole('dialog').getByRole('combobox').fill('Toggle sidebar')
+      await page.getByRole('option', { name: /Toggle sidebar/ }).click()
+    }
+  } else if (scenario === 'participants') {
     await button(page, 'Chat history').click()
     await page.locator('[data-session-row]').first().waitFor({ state: 'visible' })
     await page.getByRole('heading', { name: 'Release checklist', exact: true }).waitFor()

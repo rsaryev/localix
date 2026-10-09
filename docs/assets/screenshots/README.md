@@ -65,6 +65,14 @@ Release Checklist frame shows a functioning fixture whose counter was checked by
 seeded conversation. These placements describe what is visible rather than implying an
 agent-generated plugin or completed commit/push.
 
+The 9 October browser refresh opens the local fixture through the address field and checks the
+status change from its Review release button; it does not demonstrate feedback attachment.
+
+The 9 October Kanban figures use four seeded cards in the dedicated fixture chat. A real keyboard
+move places the release-notes card in Ready, and the assertions check the saved status and all four
+cards fully inside the viewport. Empty columns are collapsed through their controls. Done states and
+the adjacent transcript are illustrative fixture data, not evidence of an agent run.
+
 The Reader frame uses a generated Markdown release review guide. Its scenario opens the selected
 chapter and checks the chapter heading and two paragraph fragments. The image demonstrates chapter
 navigation and rendered text; other supported document formats require their own evidence.

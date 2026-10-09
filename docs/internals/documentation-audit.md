@@ -346,7 +346,10 @@ These items are unresolved; the audit is not complete.
 - **Dead and duplicated documentation:** trace incoming references and implementation ownership
   before deleting or merging a page.
 - **Product evidence:** finish figure freshness comparisons against current source and owning
-  scenarios. Placeholder cleanup and coverage metadata are not complete live UI evidence.
+  scenarios. Two retained keys still need a current composition check: `project-space/board` and
+  `plugins/agent-build`. Hero, participants, composer context, browser preview and both Kanban views
+  have current scoped captures recorded in interface reviews. Placeholder cleanup and coverage
+  metadata are not complete live UI evidence.
 - **Core schema budget:** the current composed 23-tool fixture estimates 7,507 tokens and fails its
   7,500-token ceiling. The tools guide labels this as a test ceiling; the threshold was not relaxed.
 - **Permission guard test:** its position assertion treats the later `agents` denial as a tool

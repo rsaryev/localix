@@ -60,11 +60,11 @@ Included workbenches cover [databases](docs/features/database.md),
 
 ### Live preview
 
-![A demo app open in Localix's browser beside the agent conversation](docs/assets/screenshots/browser/agent-preview--2026-10-07.png)
+![A live demo preview after a release-review click beside the seeded conversation](docs/assets/screenshots/browser/agent-preview--2026-10-09.png)
 
 ### Task board
 
-![Release tasks with owners and statuses on a conversation's Kanban board](docs/assets/screenshots/task-board/board--2026-10-07.png)
+![Release tasks with owners and statuses on a conversation's Kanban board](docs/assets/screenshots/task-board/board--2026-10-09.png)
 
 ### Custom plugin
 

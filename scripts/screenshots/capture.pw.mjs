@@ -20,6 +20,8 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       `Enable ${spec.requires} with its isolated dependency first.`,
     )
     const fixture = JSON.parse(await fs.readFile(fixtureFile, 'utf8'))
+    if (['kanban-board', 'kanban-conversation'].includes(spec.scenario))
+      await (await import('./kanban-workbenches.mjs')).seedKanban(fixture)
     const board = spec.scenario === 'answer-board'
     const prefix = board
       ? 'board'
