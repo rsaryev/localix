@@ -1,14 +1,12 @@
+import { createEditorMutations } from './lsp-editor-mutations'
 import type { MessageConnection } from 'vscode-jsonrpc/node'
 
 import { withTimeout } from '../../lib/timeout'
 import {
-  CODE_ACTION_TRIGGER_AUTOMATIC,
-  CODE_ACTION_TRIGGER_INVOKED,
   DIAGNOSTICS_REQUEST_TIMEOUT_MS,
   fileUri,
   markupToText,
   normalizeCallHierarchyItems,
-  normalizeCodeActions,
   normalizeCompletionItems,
   normalizeDocumentColors,
   normalizeDocumentHighlights,
@@ -17,30 +15,20 @@ import {
   normalizeIncomingCallSites,
   normalizeLocations,
   normalizeOutgoingCallSites,
-  normalizePrepareRename,
   normalizeSignatureHelp,
-  normalizeTextEdits,
-  normalizeWorkspaceEdit,
   normalizeWorkspaceSymbols,
-  type CodeActionTrigger,
   type LspCallHierarchyItem,
   type LspClientInfo,
-  type LspCodeAction,
   type LspColorInfo,
   type LspCompletionItem,
-  type LspDiagnostic,
   type LspDocumentHighlight,
   type LspDocumentSymbol,
-  type LspFormattingOptions,
   type LspHoverInfo,
   type LspInlayHint,
   type LspLocation,
   type LspPosition,
-  type LspPrepareRename,
   type LspRange,
   type LspSignatureHelp,
-  type LspTextEdit,
-  type LspWorkspaceEditFile,
   type LspWorkspaceSymbol,
   type ServerCapabilities,
 } from './lsp-protocol'
@@ -273,82 +261,12 @@ export function createEditorFeatures(ctx: EditorFeatureContext): EditorFeatures 
     return featureRequest('workspace/symbol', { query }, normalizeWorkspaceSymbols, [])
   }
 
-  function prepareRename(
-    filePath: string,
-    position: LspPosition,
-  ): Promise<LspPrepareRename | null> {
-    return atPosition(
-      'textDocument/prepareRename',
-      filePath,
-      position,
-      normalizePrepareRename,
-      null,
-    )
-  }
-
-  function rename(
-    filePath: string,
-    position: LspPosition,
-    newName: string,
-  ): Promise<LspWorkspaceEditFile[]> {
-    return atPosition('textDocument/rename', filePath, position, normalizeWorkspaceEdit, [], {
-      newName,
+  const { prepareRename, rename, formatDocument, codeAction, resolveCodeAction } =
+    createEditorMutations({
+      getCapabilities: () => ctx.capabilities,
+      featureRequest,
+      atPosition,
     })
-  }
-
-  function formatDocument(filePath: string, options: LspFormattingOptions): Promise<LspTextEdit[]> {
-    // Respect the advertised capability — no provider → silent no-op, mirroring
-    // how every other LSP feature degrades when the server doesn't support it.
-    if (!ctx.capabilities?.documentFormattingProvider) return Promise.resolve([])
-    return featureRequest(
-      'textDocument/formatting',
-      { textDocument: { uri: fileUri(filePath) }, options },
-      normalizeTextEdits,
-      [],
-    )
-  }
-
-  function codeAction(
-    filePath: string,
-    range: LspRange,
-    diagnostics: LspDiagnostic[],
-    kinds: string[] = ['quickfix'],
-    trigger: CodeActionTrigger = 'invoked',
-  ): Promise<LspCodeAction[]> {
-    // Respect the advertised capability — no provider → silent no-op (like format).
-    if (!ctx.capabilities?.codeActionProvider) return Promise.resolve([])
-    return featureRequest(
-      'textDocument/codeAction',
-      {
-        textDocument: { uri: fileUri(filePath) },
-        range,
-        // `kinds` scopes the request (`context.only`) — quick-fix, source, refactor,
-        // or a specific sub-kind like `source.organizeImports`. `diagnostics` are
-        // the squiggles overlapping `range`. `triggerKind` is always sent: absent, a
-        // server may treat the lightbulb's probe as a person asking (see `CodeActionTrigger`).
-        context: {
-          diagnostics,
-          only: kinds,
-          triggerKind:
-            trigger === 'automatic' ? CODE_ACTION_TRIGGER_AUTOMATIC : CODE_ACTION_TRIGGER_INVOKED,
-        },
-      },
-      (res) => normalizeCodeActions(res, kinds),
-      [],
-    )
-  }
-
-  // Resolve a lazy code action: echo the ORIGINAL action back (its `data` is
-  // preserved between codeAction and resolve per spec) so the server can attach
-  // the deferred WorkspaceEdit. Returns the enriched action (with `edit`) or null.
-  function resolveCodeAction(action: LspCodeAction): Promise<LspCodeAction | null> {
-    return featureRequest(
-      'codeAction/resolve',
-      { title: action.title, kind: action.kind, data: action.data },
-      (res) => normalizeCodeActions([res])[0] ?? null,
-      null,
-    )
-  }
 
   return {
     hover,
