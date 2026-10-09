@@ -10,15 +10,15 @@ restores that scope's remembered location.
 
 ## What you can do
 
-| Task                         | Mechanism                                                                              | Boundary                                                                                           |
-| ---------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Group work by repository     | Create a project backed by one working directory.                                      | Deleting a project HIDES it. Its sessions and rules stay; re-opening the directory brings it back. |
-| Start work with no project   | Just start a chat — it lands in **Default**, which gives it its own scratch directory. | That directory is deleted with the chat; open a real project to keep files somewhere you own.      |
-| Resume work                  | Switch by project, session tree, title search, or message search.                      | Message search starts at two characters and returns one result row per session.                    |
-| Explore another response     | Regenerate or edit a message to create a sibling conversation branch.                  | Only one branch is active in the transcript at a time.                                             |
-| Recover an unfinished reply  | Press **Retry** on the notice the transcript leaves in its place.                      | Offered only where re-running makes sense; the unfinished attempt is kept as a branch.             |
-| Split work into another chat | Run `/fork` to copy the active message path into a linked child session.               | This is a conversation operation, not a Git branch operation.                                      |
-| Retire or preserve a chat    | Archive, export, or permanently delete a session.                                      | Each action has a different retention boundary; see Limits.                                        |
+| Task                         | Mechanism                                                                              | Boundary                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Group work by repository     | Create a project backed by one working directory.                                      | Deleting a project HIDES it. Its sessions and settings stay; re-opening the directory brings it back. |
+| Start work with no project   | Just start a chat — it lands in **Default**, which gives it its own scratch directory. | That directory is deleted with the chat; open a real project to keep files somewhere you own.         |
+| Resume work                  | Switch by project, session tree, title search, or message search.                      | Message search starts at two characters and returns one result row per session.                       |
+| Explore another response     | Regenerate or edit a message to create a sibling conversation branch.                  | Only one branch is active in the transcript at a time.                                                |
+| Recover an unfinished reply  | Press **Retry** on the notice the transcript leaves in its place.                      | Offered only where re-running makes sense; the unfinished attempt is kept as a branch.                |
+| Split work into another chat | Run `/fork` to copy the active message path into a linked child session.               | This is a conversation operation, not a Git branch operation.                                         |
+| Retire or preserve a chat    | Archive, export, or permanently delete a session.                                      | Each action has a different retention boundary; see Limits.                                           |
 
 ## How it works
 
@@ -133,7 +133,10 @@ one. Editing a user message creates another sibling branch with the prior active
 continues from the edit.
 
 `/fork` creates a child session and copies the selected active message path in chronological order.
-The child inherits the project, model, and pinned skills.
+The child inherits the project, participants, explicit provider/model choices, participant lock, and
+pinned skills. Inherited model settings stay inherited rather than becoming a fixed choice. The
+copied messages receive new IDs; later transcript edits are independent, while files remain shared
+through the root conversation's working directory.
 
 Generated fork titles use one suffix with the new conversation number, such as **Greeting
 (fork 42)**. Forking that conversation replaces the suffix with the next fork's number. Legacy
@@ -141,7 +144,9 @@ repeated suffixes are condensed in the sidebar and breadcrumb without rewriting 
 
 ### Drafts and queued messages
 
-Composer text drafts are kept per session in client memory. Staged attachments are cleared when the
+Composer text drafts are kept per session and saved to browser storage after a 400 ms debounce, with
+a flush on normal quit or page hide. Storage retains the 50 most recently edited drafts, up to
+32,000 characters each; larger drafts remain in memory only. Staged attachments are cleared when the
 active session changes so they cannot be sent to the wrong chat.
 
 Messages sent while an agent is busy enter a durable SQLite queue. Plain text without attachments
@@ -150,12 +155,12 @@ for a normal queued turn.
 
 ### Retention actions
 
-| Action          | Result                                                                                           |
-| --------------- | ------------------------------------------------------------------------------------------------ |
-| Archive         | Sets an archive timestamp and hides the session from the default list.                           |
-| Export          | Serializes the active message path to Markdown in the client.                                    |
-| Redacted export | Replaces tool items and structured bindings with typed placeholders.                             |
-| Delete          | Stops active resources, removes the session and its direct children, and deletes their messages. |
+| Action          | Result                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Archive         | Sets an archive timestamp and hides the session from the default list.                       |
+| Export          | Serializes the active message path to Markdown in the client.                                |
+| Redacted export | Replaces tool items and structured bindings with typed placeholders.                         |
+| Delete          | Stops active resources, removes the session and all descendants, and deletes their messages. |
 
 ## Configuration
 
@@ -172,13 +177,13 @@ persisted per session where applicable.
 
 ## Limits
 
-- Composer drafts are in memory and are lost on reload. Staged attachments are cleared when you
-  switch sessions.
-- Sessions in **Default** share one working directory. That is the trade for giving them a real
-  project: a "no project" session would use the GLOBAL capability scope, so a rule switched in a
-  throwaway chat would apply to the whole installation and nothing below could undo it.
-- Deleting a project is a soft delete. The row, its sessions and its capability rules remain, and
-  re-opening the same directory revives it rather than creating a second project for that path.
+- Drafts survive reloads within the same browser storage context, subject to the stored count and
+  size limits. Clearing browser storage, eviction, or interruption before a save can lose a draft.
+  Staged attachments are transient and are cleared when you switch sessions.
+- Root chats in **Default** have separate scratch directories. Their children and forks share their
+  root's directory. They share the Default project settings, not one common chat directory.
+- Deleting a project is a soft delete. The row, its sessions and its settings remain, and re-opening
+  the same directory revives it rather than creating a second project for that path.
 - **Default** cannot be deleted. It is where a chat you start without a project lands, so the next
   session would revive the same row anyway — deleting it only hid your own chats until something
   did. Renaming it is fine: which project is the default is decided by its directory, not its name.
@@ -188,12 +193,15 @@ persisted per session where applicable.
   navigation.
 - Standard and redacted exports include only the active message path. Redacted export replaces
   structured tool data but does not scan ordinary user or assistant prose for secrets.
-- Session deletion is permanent. It removes the selected session and its direct children after
-  best-effort runtime cleanup.
+- Session deletion is permanent. It removes the selected session and all descendants after stopping
+  their runtime resources, children first. A failed tree lookup or teardown leaves storage in place
+  so deletion can be retried. Filesystem cleanup follows the committed row deletion.
 - Deleting a project hides it and its sessions rather than unfiling them. Re-adding the same
   directory brings the project and its transcripts back.
-- Deleting a chat in **Default** deletes its scratch directory with it. Files you want to keep
-  belong in a project whose directory you chose.
+- Deleting a root chat in **Default** attempts to remove its scratch directory. Deleting a child
+  does not remove the shared root directory. Chosen project directories are preserved; session-owned
+  plugin data is removed for the deleted tree. Filesystem cleanup is best-effort and may leave
+  residual files. Keep important files in a project directory you chose.
 
 ## Related guides
 
@@ -211,6 +219,10 @@ persisted per session where applicable.
 - [Session working-directory resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/session-cwd.ts)
 - [Message branching operations](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/branching-ops.ts)
 - [Session fork](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-fork.ts)
+- [Composer draft persistence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/composerDrafts.ts)
+- [Session Markdown export](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/chatExport.ts)
+- [Session-tree deletion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-deletion.ts)
+- [Deletion tree traversal](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/session-subtree.ts)
 - [Session lifecycle and deletion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
 - [Durable agent queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue-store.ts)
 - [URL-backed workspace navigation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/pages/chat/model/useUrlStoreSync.ts)

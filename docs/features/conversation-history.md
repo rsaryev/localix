@@ -21,9 +21,10 @@ different message interrupts the sequence: `A → A → B → A` becomes `A ×2 
 statuses and recovery actions remain distinct. Unique secondary details are retained in the notice
 tooltip.
 
-When an assistant response continues in another segment, a repeated item ID belongs to the segment
-that first recorded it. The history uses its latest outcome once, keeping the new segment's new work
-in order. Independent calls with the same wording remain separate.
+Within explicitly linked assistant continuation segments by the same author, a repeated item ID
+belongs to the segment that first recorded it. The history uses its latest outcome once, keeping the
+new segment's new work in order. Independent messages, different authors, and calls with the same
+wording remain separate.
 
 ## Model context
 
@@ -38,5 +39,7 @@ See [Conversations](conversations.md), [Background work](background-work.md) and
 ## Source of truth
 
 - [Transcript projection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/transcriptProjection.ts)
+- [Adjacent notice equality](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/coalesceSystemMessages.ts)
+- [Model wire-history projection](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/chat.ts)
 - [Action blocks](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/tool-parts/ToolChain.tsx)
 - [Continuation item ownership](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/continuation-items.ts)

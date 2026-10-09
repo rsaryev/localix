@@ -208,6 +208,27 @@ owner history includes `7d384c8`; current functions determine the documented beh
 This review establishes these mechanisms. The detailed plan-tab UI lifecycle and the external CLI
 HITL adapter section still need their own source comparison before those guides are fully reviewed.
 
+## Session storage, deletion, and activity history
+
+Compared working-directory resolution, scratch cleanup, project soft deletion, full-tree deletion,
+fork construction, composer draft persistence, Markdown export, transcript projection, adjacent
+notice coalescing, linked continuation ownership, and model wire projection with current source.
+Owner history includes `18cd8e0`, `6150d76`, and `9745776`.
+
+- Removed the stale common-Default-directory and global-capability-scope explanation. Root scratch
+  chats have separate directories; children/forks share their root's directory and project settings.
+- Corrected deletion to include all descendants, with teardown before row removal and filesystem
+  cleanup afterward. Documented preservation on tree/teardown failure, the child scratch exception,
+  project-directory preservation, and best-effort residual-file cleanup.
+- Replaced the obsolete memory-only draft claim with the browser-storage contract: 400 ms debounce,
+  50 stored drafts, and a 32,000-character per-draft persistence ceiling. Attachments remain
+  transient.
+- Described copied fork identities and inherited versus explicit model choices. Qualified repeated
+  item recovery to explicitly linked continuation segments with the same author.
+- The inspected queue priority bands agree with the conversation guide. Its participant addressing,
+  full control protocol, retry selection, and topic-boundary claims still need a separate full
+  review; the session-list UI/search details also remain to be checked.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
