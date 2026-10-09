@@ -131,5 +131,12 @@ export function useFileEditorLoad({
     initialCached,
     installResponse,
     failedConnectionRef,
+    loadedKeyRef,
+    bufferRef,
+    baseContentRef,
+    baseHashRef,
+    setState,
+    setConflict,
+    setEditError,
   ])
 }

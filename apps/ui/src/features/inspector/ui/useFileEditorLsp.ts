@@ -38,12 +38,12 @@ export function useFileEditorLsp({
     if (text === lastSyncedRef.current) return
     lastSyncedRef.current = text
     void backendClient.lspChange(sessionId, editPath, text)
-  }, [sessionId, editPath])
+  }, [sessionId, editPath, workItemVisibleRef, bufferRef, lastSyncedRef])
   useEffect(() => {
     if (!workItemVisible || !sessionId || !editPath || buffer === lastSyncedRef.current) return
     const id = setTimeout(flushLspSync, LSP_SYNC_DELAY_MS)
     return () => clearTimeout(id)
-  }, [workItemVisible, sessionId, editPath, buffer, flushLspSync])
+  }, [workItemVisible, sessionId, editPath, buffer, flushLspSync, lastSyncedRef])
 
   // The server-side LSP document follows GRID visibility, not mount lifetime: warm
   // editors stay mounted under display:none, but their language-server resources do not.
@@ -54,7 +54,7 @@ export function useFileEditorLsp({
     return () => {
       void backendClient.lspClose(sessionId, editPath)
     }
-  }, [workItemVisible, sessionId, editPath])
+  }, [workItemVisible, sessionId, editPath, bufferRef])
 
   return flushLspSync
 }
