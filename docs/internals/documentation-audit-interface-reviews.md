@@ -63,6 +63,16 @@ recorded in maintenance reviews; creating a checkpoint does not add new product 
 The screenshot checkpoint stores native 3× images; it does not prove a model run or completed
 onboarding. Remaining guide edits and source-aligned content reviews are still separate audit work.
 
+## README and public guide checkpoint
+
+Reviewed README, the documentation index, first-session/overview changes, attachments, sandboxed
+HTML views and their two navigation entries as one seven-file checkpoint. Checked its projected HEAD
+rather than assuming other staged guides were already committed: 193 owned Markdown files had no
+invalid inline heading anchors, and added Markdown targets resolved in that projection. This does
+not validate external URLs or every HTML anchor. Affected readability/source checks passed, and
+native signing created `06b787a`. The generation evidence remains the preceding 77-page run;
+committing unchanged content does not require another generation.
+
 ## Related guides
 
 - [Vault user guide](../features/secrets.md)

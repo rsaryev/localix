@@ -54,6 +54,20 @@ factory, the image runtime, the OAuth runtime and the model catalog behind one a
 every phase after it is typed by the neutral ports. Test files are not exempt from the seam; a
 behaviour that needs the real loop is asserted in the adapter package.
 
+### Steering and tool checkpoints
+
+The adapter passes `SteeringBoundary` to `takeSteering`: the completed turn index and, only after a
+successful turn with tool results, the completed tool-turn index. The host waits for that turn to
+reach its transcript checkpoint before admitting a queued message into a new assistant row. A
+checkpoint wait expires after two seconds by default; timeout or abort leaves the queue untouched.
+
+User messages are filtered by the current speaker's address. A delegator's message can amend a
+running child's assignment. Chat runs also opt into one eligible child report per completed tool
+turn, addressed to the running delegator; only solo chats accept an unaddressed report. Reports with
+bindings, execution overrides, or an independent completion waiter remain on the standalone run
+path. Other machine wakes retain their own turns. `LOCALIX_MID_RUN_INTERJECT=0` disables this
+mid-run queue consumption.
+
 ### Tool deferral
 
 Plugin and MCP tool schemas are the half of the tool list that grows without bound, so they are
@@ -62,35 +76,28 @@ name.
 
 | Surface            | Mechanism                                                                                                              | Boundary                                                                                              |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Core toolkit       | On the wire — every core tool is available on every supported interactive run.                                         | Run shape can still exclude a tool that the host cannot support, such as human-only UI in automation. |
+| Core toolkit       | Assembled core tools remain on the wire after policy and run-shape filtering.                                          | Run shape can still exclude a tool that the host cannot support, such as human-only UI in automation. |
 | Deferred tools     | `activate_tools` advertises them; the adapter appends an activated schema before the next model turn.                  | A deferred implementation stays dispatchable, so deferral is a wire decision only.                    |
 | Session activation | An activated name is remembered on the session and promoted onto the wire at the start of every later run.             | Bounded per session; the oldest activation is released and the model is told which.                   |
 | Surface tools      | A plugin whose tab the person's latest message links, or whose wake the turn answers, brings every tool it registered. | Per turn and never stored; appended after the session's activations, sorted by name.                  |
 | The loader itself  | Stays present while any external tool exists, with an empty-catalog description once all are active.                   | Names resolve through the run's own registry, never through the remembered list.                      |
 
-Activation is session state because the model's decision outlives the turn that made it. While it
-lived in a per-run closure, a session activated a plugin tool, used it, and two minutes later spent
-a second full model turn activating the same tool again — the model was behaving correctly and the
-host kept forgetting. The set is read back at the start of a turn instead of being rebuilt from the
-turn's own history.
+Activation persists on the session rather than being inferred from transcript history. Remembered
+names preserve activation order; a later run promotes only names still available in its authorized
+registry. Context checkpoints can remove an old activation call without removing the remembered
+name. Changes to capabilities, plugin availability, or the activation budget can change the next
+run's tool list.
 
-Three properties hold this together, each chosen against a measured cost rather than an assumed one:
-one plugin tool's schema is about 550 tokens on the wire, and the wasted turn it replaces cost about
-four cents in the session that motivated the work.
+The activator accepts at most eight exact names per call. Unknown names are reported without
+preventing known names from activating. Persistence is best-effort: a failed storage write leaves
+activation available in the current run, but a later run may need to activate again. Releasing an
+old name from the remembered set affects later assembly; the Pi adapter only appends revealed
+schemas and does not remove them from a run already in progress.
 
-- **Promotion follows activation order**, so the earlier part of the tool list stays byte-identical
-  between turns. After the turn that activates, the array stops changing at all, which is the
-  cheapest possible state for a provider's prompt cache.
-- **The loader stays active for the whole session.** Removing a tool from the list is a non-additive
-  change that costs the cached prefix and buys nothing, and a model still holding the loader in its
-  history would call a tool that no longer exists.
-- **The system prompt does not depend on the promoted set.** It is built from the core registry's
-  tool names, so activating a tool never rebuilds the prompt — the other way a lazily loaded tool
-  can invalidate a cached prefix.
-
-Because the remembered set is session state and not transcript state, it also survives a context
-checkpoint: once a checkpoint has evicted the `activate_tools` call from the view, the tool it
-activated is still on the wire.
+The prompt is assembled once per run from its initial wire roster, including remembered and surface
+promotions. Mid-run activation reveals schemas without rebuilding that prompt. The next run builds
+its own roster again. Stable ordering can help prompt-cache reuse; it does not guarantee an
+unchanged prefix or a fixed token cost or price for activation.
 
 Surface tools follow the current message context and stay outside the session's remembered
 activation set. The host stamps a plugin tab binding with `MessageContextBinding.plugin` and a
@@ -106,8 +113,7 @@ owners and promotes their registered tools for the relevant turn:
   tool its plugin does not own, and a renamed tool arrives under its new name.
 - **The list is appended and sorted.** Surface tools follow the session's activations, so a tab
   opening or closing changes only the tail of the list. Moving focus between tabs does not reorder
-  it. Opening or closing a tab does change the list once, which costs one cache miss at the next
-  request.
+  it. Cache effects depend on the resulting prompt, tool list, and provider behavior.
 
 ### Context and recovery
 
@@ -232,6 +238,12 @@ scanner and containment checks. Personal foreign agent homes remain outside disc
   [Pi engine](../../packages/agent-runtime-pi/src/engine.ts)
 - [Cache anchor → `cache_control` (pi adapter)](../../packages/agent-runtime-pi/src/cache-anchor.test.ts)
 - [Prompt-cache TTL from the host's idle gap](../../packages/agent-runtime-pi/src/cache-retention.ts)
+- [Steering boundary](../../packages/agent/src/runtime/index.ts)
+- [Host checkpoint gate](../../apps/api/src/features/chat/runtime/run/tool-checkpoint-gate.ts)
+- [Addressed report eligibility](../../apps/api/src/features/chat/runtime/wake-queue/steering.ts)
+- [Activation persistence](../../apps/api/src/features/chat/runtime/run/tool-deferral.ts)
+- [Initial prompt roster](../../apps/api/src/features/chat/runtime/run/system-prompt-build.ts)
+- [Activator input and partial name resolution](../../apps/api/src/features/agent-core/tools/activate-tools/activate-tools.ts)
 - [Steering placement](../../packages/agent-runtime-pi/src/steering.test.ts)
 - [Per-request context policy](../../apps/api/src/features/chat/runtime/history/request-transform.ts)
 - [Retry and checkpoint recovery](../../apps/api/src/features/chat/runtime/run/recovery.ts)

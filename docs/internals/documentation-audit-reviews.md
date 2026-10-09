@@ -252,6 +252,142 @@ pending-entry eviction under the hard cap, the 1,000-operation offline buffer, a
 preferences. Qualified configured SQLite storage and background server lifetime, corrected the badge
 terminology, and distinguished browser-only history from desktop interruption with age limits.
 
+## Memory scope, deletion, and prompt refresh
+
+Compared shared memory scope policy, tool mutation classes, file paths/parser/budgets, direct user
+commands, persisted participant-lane snapshots, skill refresh exceptions, and memory-provider
+admission/output handling with source. Reviewed the memory-scope and checkpoint/portable-skill
+implementation commits.
+
+Qualified the unrestricted-scope table and direct-command behavior, documented deletion across all
+visible scopes, and separated memory selection from filesystem confinement. Corrected frozen prompt
+wording for persisted lanes, scope/catalog refresh, and direct reads. Added UTF-16 budget
+accounting, manual-file-edit boundaries, non-default user paths, and provider-only output caps.
+Corrected both guides’ provider boundary: selected scope blocks prompt recall, while an enabled
+completion hook can still receive the finished turn; its timeout does not cancel provider work.
+
+## Skill discovery and preprocessing boundaries
+
+Compared filesystem scope selection, canonical traversal, regular-file/UTF-8/size guards, portable
+read sources, and write ownership with both public skill guides. Reviewed `53ef5f1` and the current
+scanner split in `afc8358`. Replaced the authoring guide's obsolete project-only table with native,
+portable, and personal precedence; clarified exact working-directory selection and native writes.
+
+Corrected symlink wording: project targets stay within the working directory and plugin targets
+within their declared root, while personal skill links allow external targets. Documented scan
+termination at skill directories and rejection of empty bodies. Compared slash preprocessing and
+argument substitution: shell output cannot spawn additional expansions but can feed the later
+file-reference and argument stages. Direct preprocessing spawn does not use Bash tool approval or
+inline tool overrides. Checked the curator's seven-day first-observation deferral and documented it.
+
+Then compared the frontmatter field mapping, roster/pin/trigger paths, skill tool limits,
+exact-scope curator inventory, usage recorder, archive replacement, and current
+Settings/composer/API paths. Removed unsupported name-only/user-only overrides; added keyword
+semantics and clarified that roster hiding does not disable triggers. Documented omitted pins, the
+independent prompt budgets, and the 64,000-byte retrieval cap. Current slash/session-pin resolution
+uses filesystem sources, while model retrieval and agent preloads can use enabled plugin skills.
+Qualified best-effort usage versus procedure completion, pin/trigger telemetry, age basis, and
+manual versus automatic archiving. Skill-scoped hook dispatch was compared; the broader hook
+implementation belongs to its own guide.
+
+## Native hook failures and output caps
+
+Compared native tool/message/lifecycle dispatch, the callback wait helper, SDK binding limits, and
+session-start invocation with the public hook guide. Corrected the post-hook append unit to UTF-16,
+documented converted execution errors versus pre-hook blocks, and added binding count/payload caps.
+Qualified replacement-text limits, timeout-without-cancellation, synchronous event-loop blocking,
+and the session-start synchronous-throw path outside its rejected-promise handler. Relevant current
+owners originate in `ed1ab8d`. Declarative execution, matching/once guards, lifecycle verdict folds,
+and plugin command discovery still need the rest of their source comparison.
+
+## Declarative hook selection, verdicts, and cancellation
+
+Compared registry normalization, runtime selection/folding, tool wrapping, shell/HTTP/MCP
+transports, model/verifier evaluators, process-memory trackers, and continuation callers. Reviewed
+`7d384c8` and the original owners. Added event-specific verdict effects, ignored prompt/Stop
+matchers, alias/regex behavior, original-input `if` filtering, fail-open comparison fields, and
+consumed `once` markers with shared-key and restart boundaries.
+
+Documented the five hook-requested continuation cap, per-stream command output caps, UTF-16
+post-tool append budget, malformed-model verdicts, billed evaluator calls, configurable verifier
+turn counts, and MCP permission handling. Qualified direct shell execution and shell-child
+cancellation versus descendant cleanup or rollback. A focused runtime probe confirmed alias and
+invalid-regex matching, missing-field filter behavior, ignored prompt matchers, and selection
+consuming later `once` handlers even when an earlier handler blocks. Plugin command discovery,
+argument validation, option scripts, and the complete authoring examples remain to compare.
+
+## Plugin command discovery, arguments, and dynamic options
+
+Compared inline/Markdown command precedence, native-additive versus compatibility replacement
+discovery, canonical artifact bounds, namespaced dispatch, positional parsing, prompt preprocessing,
+UI-facing catalog metadata, and the options caller/runner/parser. Relevant owners originate in
+`ed1ab8d`. Qualified static versus dynamic validation, final-text remainder, conditional fields,
+extra-token handling, and preprocessing before user-value insertion.
+
+Added a real schema-validated inline command fragment and dynamic-options stdin/stdout contract, cwd
+fallbacks, eight-second deadline, 256 KiB capture, 200-result cap, and non-zero exit behavior.
+Replaced the blanket script-confinement claim with its lexical path check and direct local-execution
+boundary. An isolated temporary subprocess confirmed usable JSON survives exit 1; pure probes
+verified the guide's actual JSON example, prompt rendering, and unlisted dynamic-choice acceptance.
+The hook/command guide's current runtime contracts have now been compared; broader plugin manifest,
+installation/build, native HTML bridge, and UI contribution claims remain separate audit work.
+
+## Keyboard focus, conflicts, and profile persistence
+
+Compared preset batches/detection/adaptation, catalog resolution, bubble-phase surface dispatch,
+native editing-key ownership, Monaco exceptions, terminal routing, chord recording, and profile
+save/synchronization precedence. Reviewed `287f44e`, `c8f7ce2`, `823a1af`, and `7d384c8` for those
+owners. Added default-editor exceptions and native Command+T remapping; qualified same-category
+conflict warnings, explicit collision confirmation, and OS/browser interception.
+
+Documented optimistic local changes, the 800 ms profile debounce, save retries, best-effort browser
+cache, and the initial server-precedence barrier. Replaced a blanket upstream verification claim
+with reference wording. Current Zed, Cursor, and Windsurf reference pages were inspected; remaining
+upstream links and complete per-editor convention comparison are still pending. Four focused
+existing test files passed: 46 cases covering preset validation/adaptation, conflict scope, native
+tab reservation, Monaco default ownership, and terminal key routing. This is not live OS-wide UI
+evidence.
+
+## Settings profile scope and synchronization
+
+Compared navigation, Preferences/Editor controls, agent Context/limit fields, research/exclusion
+forms, profile contracts/service, top-level delta construction, initial precedence, peer merge, and
+save retry ordering. Reviewed `9745776`, `c8f7ce2`, and `7d384c8` for these owners. Corrected blank
+agent limits from unlimited to inherited, added the missing Context row, and replaced installation-
+wide research wording with the current user-profile boundary.
+
+Added exclusion count/code-unit/segment guards and distinguished optimistic local application from
+server persistence. Documented initial server-envelope precedence, pending peer edits, 800 ms save
+debounce, retry backoff, and nested-value replacement despite top-level patches. Seventeen focused
+existing tests passed across the settings store and profile-delta tests, including failed GETs,
+failed writes, ordered saves, explicit flush, and peer synchronization. Detailed record-editor,
+storage-removal, and diagnostics contracts remain with their owning feature reviews.
+
+## API collection, import, and send boundaries
+
+Compared the workbench guide and plugin README with host working-directory resolution, collection
+and environment caches, import persistence, history eviction, template rendering, response masking,
+and redirect/timeout handling. Relevant backend history currently resolves to the initial commit.
+Corrected session-owned collection wording: project sessions can share a working directory, and both
+collection and environment services cache by root. A pure probe confirmed identical service handles
+for two session IDs at one root without writing files.
+
+Documented ten-response in-memory history, restart/eviction behavior, partial import saves and vault
+side effects, Secret environment rows, single-pass textual substitution, missing-variable refusal,
+and direct vault references in authentication fields. Qualified cross-origin header removal and
+fetch timeout coverage, including DNS preflight and pre-timer secret resolution. Response masking
+covers recognized values rather than arbitrary sensitive content. Removed an unverified settings
+route from the plugin README while retaining the implemented Vault rail entry. Six focused existing
+test files passed: 114 cases for history, imports, sends, rendering, and response masking. The full
+workbench UI behavior still needs its own comparison.
+
+A further 112 existing cases passed for export writing/refusal, filename collisions, tool permission
+classification, and session scope. Compared format parsers and notes: added ignored cURL options,
+file-byte omissions, local-only references, and unevaluated dynamic/template expressions. Export
+writes overwrite existing names without pruning or rollback; its containment is lexical. These
+limits now appear in both guides. Another 262 existing parser tests passed across five files; an
+isolated export fixture confirmed overwriting and retaining obsolete files, then was removed.
+
 ## Related guides
 
 - [Audit scope and remaining work](documentation-audit.md)

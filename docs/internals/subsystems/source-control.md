@@ -143,6 +143,12 @@ writes a best-effort Git note under `refs/notes/localix`. A successful commit is
 failed because note annotation failed. The notes rewrite configuration is written once per
 repository for each process run, not on every commit.
 
+File/folder Discard restores the worktree from the index and cleans selected untracked paths; staged
+content survives. Nuke with HEAD resets tracked staged and unstaged content, then optionally cleans
+untracked paths. On an unborn branch it clears the index instead. The service write queue orders
+host mutations and retries index-lock contention twice at 120/240 ms; it neither serializes external
+Git processes nor rolls back completed commands when a later command fails.
+
 ### Partial changes and drift guards
 
 [`line-staging.ts`](../../../plugins/git-workspace/backend/source-control/git/line-staging.ts) reads
@@ -177,9 +183,9 @@ the normal Changes tree; users resolve and stage files through the existing edit
 
 ### Remote and forge boundaries
 
-[`actions.ts`](../../../plugins/git-workspace/backend/source-control/git/actions.ts) implements
-`fetch --prune`, `pull --ff-only`, and push. Push retries with `-u origin HEAD` only when Git
-reports that the current branch lacks an upstream.
+[`remote-ops.ts`](../../../plugins/git-workspace/backend/source-control/git/remote-ops.ts)
+implements `fetch --prune`, `pull --ff-only`, and push. Push retries with `-u origin HEAD` only when
+Git reports that the current branch lacks an upstream.
 
 Forge integration is a separate port under
 [`forge/`](../../../plugins/git-workspace/backend/source-control/forge/ports.ts). The current
@@ -204,7 +210,7 @@ requests forge status and pull requests only while its work item is visible.
 | Repository status concurrency | 8                            | Bounds multi-root status reads                         |
 | Service log limit             | 30 commits                   | Callers may request another bounded route value        |
 | Panel log page                | 40 commits                   | The current Commit Graph request size                  |
-| Local Git deadline            | 30 seconds                   | Push, pull, fetch, and clone are exempt by default     |
+| Local Git deadline            | 30 seconds                   | Push, pull, fetch, and clone use a ten-minute deadline |
 | Git output ceiling            | 8,000,000 bytes              | Applies per invocation                                 |
 | Workspace change window       | 2 seconds                    | One read per window of file changes, from the first    |
 | Backstop poll with live watch | 120 seconds                  | The watcher signal drives reads; this catches its gaps |
@@ -220,12 +226,13 @@ Directory discovery skips hidden directories plus `node_modules`, `dist`, `build
   another supported version-control system.
 - An explicit multi-root target fails closed. A stale UI root cannot silently operate on the scan
   root or another discovered repository.
-- Fetch, pull, and push have no default wall-clock deadline. A stalled network helper can therefore
-  hold the request until the process or caller cancels it.
+- Fetch, pull, push, and clone default to a ten-minute wall-clock deadline. HTTP transfers also set
+  a 1,000-byte/second low-speed limit for 60 seconds; SSH relies on the wall-clock backstop. An
+  explicit timeout overrides these defaults, with zero disabling it.
 - Pull is fast-forward only. Diverged branches require an explicit rebase or merge outside that
   action.
-- Git terminal, credential, signing, SSH passphrase, editor, and askpass prompts are disabled. A
-  workflow requiring interaction fails instead of opening a prompt.
+- Git terminal prompting and askpass are disabled. The panel cannot answer signing, SSH, hook,
+  credential, or editor prompts; a helper that still waits can reach the process deadline.
 - Discard, Nuke, hard reset, force branch delete, stash drop, and history rewrites can remove data.
   The subsystem does not provide a general undo stack.
 - Nuke uses `git clean -fd`, not `-fdx`; ignored files survive even when untracked removal is

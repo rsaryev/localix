@@ -57,17 +57,19 @@ One flow connects a published release to an installed app. Each step names the c
 3. **Notice.** `useDesktopUpdate` holds one shared state, so three surfaces agree: `UpdateStrip`
    above the focused composer (`ComposerHeaderStrips`), the rail button, and Settings → Updates.
    Hiding the strip is remembered per version.
-4. **Press.** All three go through `restartToUpdate`. If any session has a running turn or
-   background job, it asks first and names what stops; otherwise it installs at once.
-5. **Install.** `updater_install` marks the state `installing`, holds runtime respawns, downloads
-   (progress events, about twice a second, become the strip's percentage), and verifies the minisign
-   signature against the public key inside the app. Then `leave_cleanly` flushes the page, saves the
-   window and stops the runtime (`shutdown`, bounded, then the kill), and `app.restart()`
-   relaunches.
-6. **Relaunch.** The new shell starts the new runtime, which applies its embedded migrations after
-   copying an existing database to `~/.localix/backups/migrations`.
-7. **Failure.** Any error before the restart releases the respawn hold, clears `installing`, shows
-   "Could not install the update" with the reason, and leaves the old version running.
+4. **Press.** All three go through `restartToUpdate`. The loaded UI roster supplies top-level
+   running turns and non-monitor work rows. A non-empty counted set requires confirmation; otherwise
+   installation starts at once. Every monitor row is excluded, including stream watches that cannot
+   survive restart, so the count is not a complete runtime inventory.
+5. **Install.** UI state becomes `installing`; the native command holds runtime respawns and invokes
+   `download_and_install`, with throttled progress and signature verification. On macOS and Linux
+   installation completes before bounded `leave_cleanly` and `app.restart()`. Windows uses the
+   updater's pre-exit hook to leave cleanly before the installer handoff.
+6. **Relaunch.** The new runtime backs up a database with migration history and pending upgrades
+   beside its database file under `backups/migrations`, then runs the migrations. Old-backup cleanup
+   is best-effort and targets all but the two newest for that filename.
+7. **Failure.** A returned install error releases the respawn hold; the UI clears `installing` and
+   reports the reason. This does not prove that the installer made no changes or rolled them back.
 
 A build without `LOCALIX_UPDATER_ENABLED` skips all of it: `UPDATER_ENABLED` is false, the init
 script sets `__LOCALIX_UPDATER=false`, and the page never polls or shows a notice.

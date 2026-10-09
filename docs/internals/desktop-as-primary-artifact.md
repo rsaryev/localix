@@ -117,7 +117,7 @@ health probes; quitting or installing an update suppresses recovery.
 
 ### Local API browser boundary
 
-The API has no credentials and listens on loopback, and every page the user's browser opens can
+The API has no request authentication and defaults to loopback; pages the user's browser opens can
 reach loopback. So `apps/api/src/lib/local-origin-guard.ts` runs before CORS and every route,
 including websocket upgrades and plugin routes, and answers 403 to anything it refuses.
 
@@ -278,8 +278,9 @@ production-safe until an equivalent approval boundary is available.
 
 - The release workflow and bundle targets are packaging configuration, not proof that downloadable,
   signed artifacts exist. Check the repository's GitHub Releases page for a published build.
-- A build from a checkout has no updater at all. A working one additionally requires the matching
-  signing key, uploaded signed bundles, and a published `latest.json` on the latest release.
+- Ordinary checkout builds omit the updater; the dedicated release command enables it. A working
+  updater additionally requires the matching signing key, uploaded signed bundles, and a published
+  `latest.json` on the latest release.
 - The deep-link parser records `new=1`, but the UI path handler currently ignores that field. A path
   handoff therefore reuses or creates the project by working directory rather than forcing a fresh
   project.
