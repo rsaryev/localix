@@ -31,15 +31,21 @@ request by hand — the importer already handles the parts that are easy to get 
 `--data-urlencode`, `$ref`s, which parameters are optional).
 
 - Import PREVIEWS by default. Add `"save":true` once the user has seen what it found.
-- **A credential in the paste is fine.** It is moved into the secrets vault on import and the saved
-  request keeps only a `${secret:KEY}` reference. Do not strip it first, and do not warn the user
-  off pasting it.
+- Preview writes neither requests nor Vault entries. On save, recognized literal auth values move
+  into the Vault only when the host supplies its secret writer. Recognized credentials that remain
+  literal prevent that request from saving. Read the per-item result: other requests can still save,
+  and created Vault entries are not rolled back when a later save fails. Custom fields and bodies
+  are not covered by a general secret scanner; do not promise that every credential is detected.
 - A Postman collection's `{{variables}}` work as-is; create a matching environment (the import names
   them). Its `{{$dynamic}}` variables (`{{$guid}}`, `{{$randomInt}}`) are NOT supported — the import
   says so, and those requests need a real value before they will work.
 - An OpenAPI spec with a RELATIVE server (`url: /api/v3`) cannot say which host it lives on. The
-  import says so and every request gets `https://example.com`. Ask the user for the origin and
-  re-import with `"baseUrl":"https://…"` — do not save the placeholder.
+  import says so and affected requests get a `https://example.com` placeholder. Ask the user for the
+  origin and re-import with `"baseUrl":"https://…"` — do not save the placeholder.
+
+Import names are deduplicated against saved requests and the batch itself. Use the names actually
+reported as saved rather than assuming the pasted name stayed unchanged. Imported environments are
+saved without activation; explicitly choose one before sending requests that depend on it.
 
 ## Credentials live in the vault, not in the request
 
@@ -49,8 +55,8 @@ never shows the value back to you.
 - A send that fails with `Secret not found: KEY` is a SETUP step, not a transport bug. If the
   credential belongs to an environment, save that variable through `api_client` with
   `"target":"environment"` and `"secret":true`; its literal is moved into the native Vault. A
-  request auth `${secret:KEY}` reference can also be filled in the native **Vault** workspace
-  (direct Vault rail item, or **Settings → Capabilities → Secrets → Open Vault**).
+  request auth `${secret:KEY}` reference can also be filled in the native **Vault** workspace (open
+  **Vault** from the workspace rail).
 - An OpenAPI import mints references for the schemes a spec describes. The spec cannot contain the
   credential, so those keys start empty and the import names them.
 
@@ -77,6 +83,16 @@ than one deployment.
   indicate a server failure. Do not label every 4xx a malformed request or every error an
   unreachable API. Retry only when the operation and failure make it appropriate.
 
+## Read the response boundary
+
+The tool returns selected headers and a body subject to configured size limits and credential
+redaction. Check truncation and encoding notices before treating it as a complete response. An
+optional JSONPath `filter` replaces the body in the agent's result. A failed filter reports its
+error without dumping the full body; zero matches do not distinguish a wrong path from an absent
+field. Neither is proof that the endpoint failed. A filter cannot recover bytes already excluded by
+the response-size cap, and filtered output does not include the unfiltered body's truncation notice.
+Narrow the request itself when possible.
+
 ## Sharing through the repo
 
 `{"action":"export","dir":"api-requests"}` writes one file per saved request into a chosen
@@ -90,3 +106,8 @@ query parameters. It is not a general secret scanner: custom fields, request bod
 metadata can still contain private data. Replace credentials with `${secret:KEY}` references and
 review the complete export; a reference omits the value but can still reveal a meaningful key name.
 Each teammate supplies the value through their own Vault.
+
+## Related guides
+
+- [API Client](../../../../docs/features/api.md)
+- [Secrets Vault](../../../../docs/features/secrets.md)

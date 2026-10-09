@@ -18,6 +18,21 @@ can access both the ciphertext and its key.
 | Review use             | Open an item to inspect bindings, version metadata, and audit activity.                         | Read routes return metadata, not plaintext values.                                     |
 | Remove an item         | Delete an unbound item, or explicitly force deletion after reviewing bindings.                  | Forced deletion removes the item and all encrypted versions.                           |
 
+## Add or rotate an item
+
+Open **Vault** from the workspace rail and select **Add item**. Choose a type, enter a unique alias
+such as `service-token`, and put the credential in the masked value field. Select **Add item** to
+save it; the item's **Copy reference** action copies `secret:service-token`, not the value.
+
+To replace a value, select the item and choose **Item actions → Rotate value**. Enter the
+replacement and select **Create version**. The alias stays unchanged. Provider- and system-managed
+items omit rotation and deletion from this menu; manage their value lifecycle through the owning
+connection.
+
+The form clears its value field when a create or rotation request is sent, including when the
+request later fails. Re-enter the value before retrying. If the version changed meanwhile, refresh
+the item before attempting another rotation.
+
 ## How it works
 
 ### Terms
@@ -46,6 +61,11 @@ Rotation and metadata edits append a version, then advance the item's current-ve
 API exposes version metadata for inspection but has no route to reveal or restore an older plaintext
 value.
 
+Deleting a Vault item does not revoke a credential at its provider or remove copies outside Vault.
+The binding guard checks registered consumers; it does not scan arbitrary files or external systems
+for `secret:<alias>` references. An empty binding list therefore does not prove that nothing still
+depends on the alias.
+
 ### Runtime access
 
 | Consumer                       | Plaintext access                                                         | Control                                                      |
@@ -66,6 +86,40 @@ strings per user; newer registrations can evict older entries. It redacts matche
 results, errors, tool-input records, and progress events; it does not alter the input sent to the
 trusted consumer.
 
+### References and agent inputs
+
+Use `secret:service-token` in a consumer that accepts a Vault reference. In a plugin field that
+supports interpolation, `${secret:service-token}` substitutes the value inside a larger string.
+These spellings do not make arbitrary tools resolve secrets. Interpolation inserts the literal
+value; it does not URL-encode or shell-escape it. A missing referenced item fails resolution rather
+than substituting an empty value.
+
+The agent can inspect the item's metadata with this `vault` input:
+
+```json
+{ "action": "get", "key": "service-token" }
+```
+
+To request rotation, it uses the version returned by `get` and explains the request:
+
+```json
+{
+  "action": "rotate",
+  "key": "service-token",
+  "expected_version": 3,
+  "reason": "Replace the expiring service credential."
+}
+```
+
+Enter the replacement value in the masked prompt. The tool schema rejects a `value` field; the agent
+receives the storage outcome. Metadata such as the title, description, and tags is visible to the
+agent through `list` and `get`, so keep credential values in the encrypted value field.
+
+Approval is not a guarantee that a mutation succeeds. A stale version must be read again before
+retrying. The agent's delete action also respects bindings and cannot force removal; use the Vault
+workspace to review bindings before an explicit forced deletion. Masked input and deletion approval
+use the shared five-minute decision deadline.
+
 ### HTTP boundary
 
 Vault routes are scoped to the request's self-asserted Localix user id and return
@@ -84,12 +138,11 @@ responsibilities are deliberately narrow:
 
 ## Configuration
 
-| Surface                           | Use                                                                      |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| Vault rail item                   | Create, rotate, inspect, and delete items.                               |
-| Settings → Capabilities → Secrets | Open the Vault summary and workspace entry point.                        |
-| Alias                             | Use letters, digits, `_`, `.`, or `-`; maximum length is 128 characters. |
-| Value                             | Store at most 8,192 characters in the primary encrypted field.           |
+| Surface         | Use                                                                      |
+| --------------- | ------------------------------------------------------------------------ |
+| Vault rail item | Create, rotate, inspect, and delete items.                               |
+| Alias           | Use letters, digits, `_`, `.`, or `-`; maximum length is 128 characters. |
+| Value           | Store at most 8,192 characters in the primary encrypted field.           |
 
 Item types and sources are typed metadata. They help consumers classify a credential; they do not
 select a different implemented storage backend today.

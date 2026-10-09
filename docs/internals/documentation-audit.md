@@ -12,18 +12,18 @@ state; remove obsolete instructions and consolidate duplicated contracts.
 
 ## Evidence collected
 
-| Review                  | Evidence and result                                                                                                                                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Inventory               | 187 first-party Markdown files in the current audit, including bundled skill instructions and new internal references; 75 published pages.                                                                 |
-| Public navigation       | The documentation index now links every page in `docs/public-nav.json`.                                                                                                                                    |
-| Local links and anchors | `check:public` passed; the landing generator's anchor and quoted-source validators passed across all 187 owned Markdown files.                                                                             |
-| Subsystem references    | `check:docs` resolved 217 source references in 24 tracked subsystem notes, with no allowlisted debt; the broader validator covered all owned Markdown.                                                     |
-| GitHub source links     | Checked first-party Markdown links to this repository's `blob/main` files against the checkout; repaired the moved file-tree parser link.                                                                  |
-| Quoted source paths     | Extended the landing validator to all owned Markdown for this audit; repaired two abbreviated desktop script paths.                                                                                        |
-| GitHub feedback         | Paginated repository-wide inline PR, issue/PR discussion, and commit-comment queries returned no comments. PR #14 has no submitted review; its proposed CI wording was compared with the current workflow. |
-| Release state           | GitHub API returned two draft entries for `v0.1.0-beta.1`, neither published. Removed the installation guide's claim that the beta was public.                                                             |
-| Reference documentation | Reviewed OpenCode, Cline, and Continue entry pages for task navigation and onboarding structure.                                                                                                           |
-| Public generation       | `bun run --cwd apps/landing generate` collected 75 pages and selected 37 current captures; two placeholder slots remain.                                                                                   |
+| Review                  | Evidence and result                                                                                                                                                                                                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inventory               | Refreshed working-tree inventory: 194 Markdown files outside imported skill/vendor trees, 191 copied skill files, and 14 vendor-tree files; 77 published pages. Includes staged and untracked additions; excludes deleted paths. |
+| Public navigation       | The documentation index now links every page in `docs/public-nav.json`.                                                                                                                                                          |
+| Local links and anchors | Initial `check:public` passed. Current anchor, quoted-source and readability checks passed across all 194 owned Markdown files; the earlier inline relative-link scan found no missing targets.                                  |
+| Subsystem references    | `check:docs` resolved 217 source references in 24 tracked subsystem notes, with no allowlisted debt; the broader validator covered all owned Markdown.                                                                           |
+| GitHub source links     | Checked first-party Markdown links to this repository's `blob/main` files against the checkout; repaired the moved file-tree parser link.                                                                                        |
+| Quoted source paths     | Extended the landing validator to all owned Markdown for this audit; repaired two abbreviated desktop script paths.                                                                                                              |
+| GitHub feedback         | Paginated repository-wide inline PR, issue/PR discussion, and commit-comment queries returned no comments. PR #14 has no submitted review; its proposed CI wording was compared with the current workflow.                       |
+| Release state           | GitHub API returned two draft entries for `v0.1.0-beta.1`, neither published. Removed the installation guide's claim that the beta was public.                                                                                   |
+| Reference documentation | Reviewed OpenCode, Cline, and Continue entry pages for task navigation and onboarding structure.                                                                                                                                 |
+| Public generation       | Latest `bun run --cwd apps/landing generate` collected 77 pages and selected 37 current captures; no uncaptured placeholder slots remain.                                                                                        |
 
 ## Corrections made
 
@@ -43,10 +43,8 @@ state; remove obsolete instructions and consolidate duplicated contracts.
 
 - Split desktop packaging into packaging/launcher ownership,
   [runtime lifecycle](desktop-runtime-lifecycle.md), and [browser integration](desktop-browser.md).
-  The original page now has 332 lines.
 - Split [composer tip contracts](subsystems/composer-tips.md) from capability resolution, and
-  [notification problems](subsystems/notification-problems.md) from journal and channel policy. The
-  owning capability and notification pages now have 346 and 329 lines.
+  [notification problems](subsystems/notification-problems.md) from journal and channel policy.
 - Fixed the stale single-restart claim against `supervisor.rs`: recovery allows five restarts within
   three minutes, with bounded backoff and health probes.
 - Updated the startup byte ceiling to 2,050,000 and qualified the manifest's five known platform
@@ -108,6 +106,79 @@ current manifest owns that capability.
 - Compared game-state transitions, Chess's local engine wrapper, Checkers capture/draw rules,
   Battleship projections, and 2048 plan execution. Qualified memory retention by agent policy and
   memory scope rather than promising that every saved observation survives its chat.
+- Completed the Battleship instruction follow-up against game projections and tool batches.
+  Corrected end-of-game fleet disclosure, board-versus-tool starter defaults, wake contents, and
+  partial batch results. Thirty-seven focused rules/backend tests passed; a subsequent package
+  command also ran its existing registration/layout and four DOM tests (46 passing tests total). DOM
+  fixtures verify board-owned session routing, shots and reshuffle; no live model or browser session
+  was used. Git history for the tool and game contract contains only their initial commit.
+- Refined Learning's adaptation command and bundle guide against assessed-task revisions and module
+  generation. Explanations/hints preserve unchanged assessments; stored quiz option order changes
+  the revision. Documented the three-attempt cap and activity-driven recovery rather than a retry
+  timer. Three focused service tests passed; an in-memory generator probe checked the 15-minute
+  queued boundary and attempt exhaustion, and direct task-content probes checked revision fields.
+  The relevant generator/revision history traces to the initial commit; no course was created in a
+  user's session.
+- Clarified plugin synchronization's separate file-resource and route-snapshot refresh contracts,
+  live/fallback intervals, last-good snapshots, cooperative cancellation and eight-second request
+  timeout. Four focused scheduler/path/DOM tests passed; in-memory probes confirmed one terminal
+  error after four failed reads and waiter release without applying an uncancellable disposed read.
+  Route mutation ordering and timeout behavior were checked in source, without a new DOM test for
+  those paths. Relevant owner history includes `3a0d3c3`.
+- Refined the plugin-route guide against the validator, host scope resolver and startup dispatcher.
+  Documented headline/detail differences, malformed JSON outside the custom envelope,
+  optional-schema acceptance of non-JSON input, and per-request `c.env` ownership. Qualified
+  first-reconcile failure and the uncancelled late-scope scan. Sixteen focused
+  validator/scope/startup tests passed; direct Hono requests confirmed malformed JSON, absent
+  content type, unknown-field stripping and the all-optional text/plain case. Relevant owner history
+  traces to the initial commit.
+- Refined inbound webhook guidance against provenance framing, origin/Host policy and wake
+  admission. Removed the direct slash-dispatch and priority-zero claims: wrapped slash text stays a
+  prompt, and queued external turns use the default machine-wake band. Corrected concrete bind
+  hosts, explicitly allowed browser origins and the client-header boundary. Thirty-six focused
+  webhook, identity and origin-policy tests passed; direct framing and priority probes confirmed
+  `/clear` is not parsed as a command and external/loop priorities are both 10. No real session was
+  messaged. Reviewed `ecb6209` and initial owner history for the guide and request boundary.
+- Reconciled SECURITY, privacy and desktop descriptions of local API access with the same origin
+  policy and bootstrap wiring. Documented the explicit allowed browser origins, concrete bind-host
+  exception and self-asserted user scope without implying process authentication. Reused the
+  preceding request-boundary test evidence; these edits changed prose only. The repository-wide
+  search found no remaining copies of the obsolete app-origin-only or loopback-Host-only claims.
+- Added MCP's interactive sign-in and recovery workflow after inspecting Settings controls, callback
+  routing, the encrypted store and pending-flow registry. Documented ten-minute/single-use
+  callbacks, process restart and 64-flow eviction, interactive Streamable HTTP, and local sign-out
+  without provider revocation. Twenty-three focused status/store/provider/registry tests passed. The
+  actual provider consent and code-exchange round trip remains source-reviewed rather than
+  live-tested; no browser, remote OAuth server or user credentials were used.
+- Corrected Monitors' public `bash until` deadline: its tool schema accepts at most 600 seconds,
+  despite the shared engine's one-hour ceiling. Values below 60 use the 300-second default.
+  Documented the separate 5–30-second check timeout and stopped-poll result suppression without
+  implying immediate cancellation. Twenty-four focused adapter/service tests passed; a real tool
+  object with a fake wait host verified deadline normalization and rejection above 600 without
+  executing shell commands. Relevant bash-schema history includes `e3101ca` and `6150d76`.
+- Corrected Loops' fixed-versus-dynamic quota behavior, manual fire gate bypass, initial one-hour
+  dynamic watchdog and failure-backoff floor. Qualified cancellation: only session-target wakes are
+  withdrawn; an in-flight or concurrency-waiting child fire is not stopped by removing its schedule.
+  Twenty-seven focused service/child/trigger/backoff tests passed; a real trigger-engine fixture
+  confirmed manual gate bypass and child-fire survival after cancellation. The first probe used a
+  nonexistent fixture session and was corrected to its seeded owner; no product session ran.
+- Qualified Background work's promotion and update-confirmation claims against bash dispatch and the
+  UI roster. Documented background deadline normalization and promotion without a new deadline. The
+  update collector excludes every monitor row, not only resumed polls; the guide no longer promises
+  a warning for stream watches. Eleven focused restart/collector/settle tests passed. Timeout and
+  promotion behavior were source-reviewed; no new background process was started.
+- Qualified HITL's deadlines and queued-answer delivery: the blocking clock starts on request
+  creation, queued questions have no deadline, and a recalled queued question survives timeout or
+  run cancellation. Recovery retries recent unanswered deliveries within the seven-day receipt
+  horizon; admission is not proof that the agent acted. Twenty-eight controller/queued-ask/facade
+  tests passed. Facade delivery uses fixtures; the horizon and decided-delivery branches were
+  checked in source. Relevant owner history traces to the initial commit.
+- Corrected Configure's unsupported stale-policy guard and Settings provenance claims. Current
+  remedies apply switches without comparing a captured revision; tool rules retain origin while
+  plugin/MCP provenance is in proposal audit rows. Documented separate application/status writes and
+  shortened obsolete remedy history. Sixteen focused tool/registry tests passed; the real tool with
+  a fake host confirmed a committed setting can report failure when final audit recording fails. No
+  actual configuration was changed. Owner history traces to the initial commit.
 - Compared System Overview ports and commands with its package and preview runner, sampling limits
   with its UI hook, and collectors with `backend/processes.ts`. Corrected the claim that process
   inspection uses no commands and aligned its contributor checks with focused repository practice.
@@ -172,8 +243,53 @@ Recent plugin history was checked; all current plugin READMEs now have a content
   source owners. Removed unsupported future sequencing and audit-proof wording; corrected reflowed
   PDF support and the 14-active-date statistics trail.
 - Inspected the shortcut preset inventory (17 choices), platform variants, and native reservation.
-  The public keyboard guide still needs its detailed focus/persistence claims and external
-  references checked before its content review is complete.
+  Subsequent content reviews compare its focus/persistence claims and selected editor references;
+  remaining external-editor comparisons and live evidence are still separate work.
+
+## Incoming-link and ownership pass
+
+The refreshed parsed Markdown-link graph identifies four non-entry files without incoming links: the
+GitHub PR template and Learning's `adapt`, `create`, and `lesson` commands. GitHub consumes the
+template by convention; the plugin loader discovers the three command files from its default tree.
+The earlier pass also found Database architecture and three Resume records; these now have incoming
+links from the bundled-plugin index or Resume cross-references.
+
+The current parse covers inline, reference-style and HTML links; it excludes code fences, inline
+code, conventional entry files, imported skills and vendor trees, including Tauri's nested GLib
+directory. All 1,773 relative-link occurrences resolve to existing paths. This does not validate
+external URLs or target anchors, prove semantic duplication, or establish every loader reference.
+Kit brand attribution now has a link from its package README.
+
+The imported skill packages are documented in the [project skills wrapper](../../.agents/README.md).
+Their upstream provenance and Localix precedence are separate from first-party product guidance.
+Vendor-owned documentation keeps its synchronization policy. No deletion was justified by this
+incoming-link pass alone.
+
+## Capture slots and coverage review
+
+The two uncaptured slots were unused `workspace/craft` and `autonomy/background-work` artwork, with
+no active consumer or scenario. Removed those assets and their unused homepage selection keys. The
+generator now reports 37 current captures and zero uncaptured placeholder slots. Corrected the
+screenshot README's obsolete missing-CLI claim and the capture workflow's help-versus-startup
+wording.
+
+The coverage tool found dated captures linked from the owning guides for all 18 workbench owners,
+plus the separate Kubernetes provider. Twelve manifest tests passed, including native-pixel
+preservation, dated selection, density guards, and archived-frame exclusion. Reviewed the agent
+context/limits and external CLI captures at native size against their source/scenario. This does not
+prove every current figure's freshness or replace live scenario checks.
+
+Reviewed Reader and Trading's 4800×3000 originals against their scenarios. Reader demonstrates a
+sample Markdown chapter; Trading shows dated Kraken one-hour candles, volume, and the order book.
+Clarified their captions and recorded which assertions cover each frame. The post-capture changes in
+`287f44e` affect Reader library covers and Trading indicator colour hover controls, neither visible
+in these frames. No new capture run was performed; the order book has no scenario content assertion.
+
+## Workflow follow-ups
+
+The [workflow review record](documentation-audit-workflow-reviews.md) covers tool-budget scope,
+conversation addressing/control, queue cancellation, and Stop settlement. It separates direct probes
+and existing test coverage from live model behavior that was not exercised.
 
 ## Review checkpoints
 
@@ -194,21 +310,47 @@ permissions, sessions, automation, privacy, MCP, plugin lifetimes, bundled skill
 background work, plans, and Learning bundle examples. Keeping those records separate leaves this
 page focused on scope, aggregate evidence, and unresolved work.
 
+## Subsequent runtime and extension comparisons
+
+The [runtime review record](documentation-audit-runtime-reviews.md) now covers provider/key and
+model/effort selection, API workbench import/export, usage attribution, LSP recovery/edit scope,
+storage/log/diagnostics troubleshooting, onboarding, execution adapters, answer formatting,
+checkpoint/topic boundaries, history search/export, Git mutations, notification delivery, and
+remaining chart recipes. These are source comparisons with scoped tests/probes, not a blanket claim
+of live UI or provider integration coverage.
+
+Sandboxed HTML bridge guidance is now a [separate authoring page](../extending/sandboxed-views.md)
+with index/navigation ownership, explicit limits, and a compiled SDK example. CSP, storage, timeout,
+and exact backend scope contracts were compared; native iframe loading remains distinct product
+evidence. Signed checkpoint creation for the current batch remains outstanding.
+
+## Maintenance follow-ups
+
+[Maintenance reviews](documentation-audit-maintenance-reviews.md) record Kubernetes cache/apply,
+DevOps mutation outcomes, root README privacy wording, and contribution/CI policy comparisons.
+[Interface procedure reviews](documentation-audit-interface-reviews.md) record further comparisons
+of practical controls, retry steps and their limits.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
 
 - **Public feature and extension claims:** compare remaining guides with source owners, route
   contracts, settings, and failure cases. Link checks alone do not establish accuracy.
-- **Bundled skills:** finish the remaining chart recipes and other bundled instructions against
-  their tool contracts; the long Battleship block and chart entry have been restructured.
+- **Bundled skills:** finish unverified examples and interaction evidence against their tool
+  contracts. Battleship's instruction contracts and four DOM interactions have been checked; seven
+  chart entry/recipe snippets compile against the installed library, with date/DST probes recorded.
 - **Git history:** repository-wide comment queries found no feedback. Review relevant implementation
   history as each remaining guide is audited; unmerged PR bodies are proposals, not product
   evidence.
 - **Dead and duplicated documentation:** trace incoming references and implementation ownership
   before deleting or merging a page.
-- **Product evidence:** review the two reserved capture slots and figure freshness. A placeholder is
-  not UI evidence.
+- **Product evidence:** finish figure freshness comparisons against current source and owning
+  scenarios. Placeholder cleanup and coverage metadata are not complete live UI evidence.
+- **Core schema budget:** the current composed 23-tool fixture estimates 7,507 tokens and fails its
+  7,500-token ceiling. The tools guide labels this as a test ceiling; the threshold was not relaxed.
+- **Permission guard test:** its position assertion treats the later `agents` denial as a tool
+  allowance. It fails even though direct backend-preset checks still ask for both guarded calls.
 - **Final verification:** run affected documentation checks, verify index/navigation agreement, and
   review the final diff. Complete the audit only after the content review is finished.
 
@@ -217,6 +359,8 @@ These items are unresolved; the audit is not complete.
 - [Documentation index](../README.md)
 - [Documentation standards](doc-standards.md)
 - [Detailed content reviews](documentation-audit-reviews.md)
+- [Runtime content reviews](documentation-audit-runtime-reviews.md)
+- [Workflow content reviews](documentation-audit-workflow-reviews.md)
 - [Capture workflow](../../scripts/screenshots/README.md)
 
 ## Source of truth
