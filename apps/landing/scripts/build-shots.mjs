@@ -21,6 +21,8 @@ const HOME_SHOT_KEYS = [
   'task-board/board',
   'task-board/conversation',
 ]
+// Keep the approved source-editor composition in the homepage trio.
+const HOME_CAPTURE_DATES = { 'workspace/hero': '2026-10-07' }
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 const REQUIRED_WIDTH = 1600
 const REQUIRED_HEIGHT = 1000
@@ -82,16 +84,22 @@ async function writeAtomically(file, source) {
  * addressed by a plain path both renderers agree on. A dated capture replaces a placeholder of the
  * same key, and `placeholder` tells the page which of the two it is showing.
  */
-async function writeHomeShots({ latest, placeholders, publicDir, homeOutFile }) {
+async function writeHomeShots({ latest, placeholders, all, publicDir, homeOutFile }) {
   await fs.rm(publicDir, { recursive: true, force: true })
+  const pinned = all.filter(
+    (shot) =>
+      HOME_CAPTURE_DATES[shot.key] === shot.capturedAt &&
+      !latest.some((current) => current.key === shot.key && current.capturedAt === shot.capturedAt),
+  )
   const entries = []
-  for (const shot of [...latest, ...placeholders]) {
+  for (const shot of [...latest, ...placeholders, ...pinned]) {
     if (!shot.capturedAt && !HOME_SHOT_KEYS.includes(shot.key)) continue
     const name = `${shot.key}${shot.capturedAt ? `--${shot.capturedAt}` : '--placeholder'}.png`
     const target = path.join(publicDir, name)
     await fs.mkdir(path.dirname(target), { recursive: true })
     await fs.copyFile(shot.file, target)
     if (!HOME_SHOT_KEYS.includes(shot.key)) continue
+    if (pinned.some((capture) => capture.key === shot.key && capture !== shot)) continue
     entries.push(
       `  ${JSON.stringify(shot.key)}: { src: ${JSON.stringify(`/shots/${name}`)}, placeholder: ${!shot.capturedAt} },`,
     )
@@ -209,7 +217,7 @@ ${assetEntries}
 
   await writeAtomically(outFile, source)
   if (publicDir) {
-    await writeHomeShots({ latest, placeholders, publicDir, homeOutFile })
+    await writeHomeShots({ latest, placeholders, all, publicDir, homeOutFile })
   }
 
   console.log(
