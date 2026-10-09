@@ -1,18 +1,22 @@
 # Start your first session
 
-A Localix session binds a model, working folder, transcript, and runtime tools. This walkthrough
-connects a model, opens a project, runs one bounded request, and shows you where to inspect it.
+A Localix session keeps a conversation, agent configuration, and access to a working folder. This
+walkthrough connects a model, opens a project, runs one bounded request, and shows you where to
+inspect it.
 
-![A release review with Team Lead, Frontend and QA participants](../assets/screenshots/conversations/participants--2026-10-07.png)
+![A release review with Team Lead, Frontend and QA participants](../assets/screenshots/conversations/participants--2026-10-09.png)
+
+_Demo workspace captured on 9 October 2026. The conversation is seeded; it does not demonstrate a
+successful model request or provider setup._
 
 ## Terminology
 
-| Term                | Meaning here                                                                 |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Session             | A persisted transcript and runtime configuration for one stream of work.     |
-| Project             | A Localix record whose working directory points at a folder on this machine. |
-| Provider connection | Saved configuration and credentials for a model provider.                    |
-| Agent               | The instructions plus capability rules that decide what a run may use.       |
+| Term                | Meaning here                                                             |
+| ------------------- | ------------------------------------------------------------------------ |
+| Session             | A persisted transcript and runtime configuration for one stream of work. |
+| Project             | A Localix record for a working directory and shared project settings.    |
+| Provider connection | Saved configuration and credentials for a model provider.                |
+| Agent               | The instructions plus capability rules that decide what a run may use.   |
 
 ## What you can do
 
@@ -26,29 +30,39 @@ connects a model, opens a project, runs one bounded request, and shows you where
 
 ## How it works
 
-1. Start Localix using the [source installation guide](installation.md).
+1. [Install and launch Localix](installation.md) with your chosen desktop or source workflow.
 2. Complete `/setup`: choose a provider connection and model, then finish the wizard. The
    [onboarding guide](../features/onboarding.md) owns the complete setup and replay flow.
 3. Select **Add project folder** and choose a disposable repository or confirm that `git status` is
    clean before using a mutating example. Selecting a previously added directory switches to its
    existing project.
-4. Send a request with a small, visible outcome. For example: _“Add one sentence to the installation
+4. Check the model selector for the new conversation. Setup saves its Chat pair on the default
+   project (or first loaded project when no default exists); opening another folder does not copy
+   those settings. Select a usable connection and model if the conversation has no resolved pair.
+   Agent or session choices can take priority over project defaults.
+5. Send a request with a small, visible outcome. For example: _“Add one sentence to the installation
    section in `README.md`, then show me the diff.”_
-5. Read the transcript as tools run. Open Source Control to inspect the resulting Git diff; use the
+6. Read the transcript as tools run. Open Source Control to inspect the resulting Git diff; use the
    [workspace guide](../features/workspace.md) for the editor, terminal, preview, and diff surfaces.
-6. If the run heads in the wrong direction, send a short text correction. The backend gives user
+7. If the run heads in the wrong direction, send a short text correction. The backend gives user
    messages priority over internal wake work and retains queued items across reconnects.
+
+Use **Attach file** or drop material into the composer when your request needs a document or image.
+The [attachment guide](../features/attachments.md) explains stored uploads, original paths,
+previews, and format limits.
 
 ## Configuration
 
-| Control        | What it changes                                         | Boundary                                                      |
-| -------------- | ------------------------------------------------------- | ------------------------------------------------------------- |
-| Model selector | The provider connection and model used by this session. | The saved connection must still exist.                        |
-| Agent selector | The agent that runs the turn, and with it the tool set. | An agent never gains a tool its capability rules deny.        |
-| `/help`        | The built-in command list and command-specific help.    | Plugin and surface-specific commands can add to this catalog. |
+| Control        | What it changes                                          | Boundary                                                          |
+| -------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
+| Model selector | The connection and model for a participant's route.      | The saved connection must still exist.                            |
+| Participants   | **Add participant** chooses agents for the conversation. | Available tools depend on the answering agent's effective policy. |
+| `/help`        | The built-in command list and command-specific help.     | Plugin and surface-specific commands can add to this catalog.     |
 
 The [capabilities guide](../features/capabilities.md) owns policy details. The
-[commands guide](../features/hooks-and-commands.md) owns the current slash-command catalog.
+[commands guide](../features/hooks-and-commands.md) owns the current slash-command catalog. Use the
+[conversation guide](../features/conversations.md) for addressing participants and choosing who
+answers.
 
 ## Limits
 

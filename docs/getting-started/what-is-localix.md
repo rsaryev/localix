@@ -1,13 +1,14 @@
 # Understand Localix
 
-Localix is an open source **ADE** (Agentic Development Environment): one workspace for you and a
-team of agents. Several agents work in one conversation, in the editor, terminals, browser preview,
-databases, and shared project board built into one app, with context you can see and rules for every
-tool call. Bundled plugins, and the plugins an agent builds for you, extend the same context,
-navigation, and capability system into additional domains without splitting them into a separate
-product.
+Localix is an open source **ADE** (Agentic Development Environment): a workspace where you and
+agents share conversations, an editor, terminals, previews, databases, and a project board. Assign
+participants their own roles and models, attach visible context, and control agent tool access
+through capability rules. Bundled and custom plugins add workbenches and tools to the same app.
 
-![The source editor, a real test run and the team conversation in one workspace](../assets/screenshots/workspace/hero--2026-10-07.png)
+![A real test run, an open source-file tab and the team conversation in one workspace](../assets/screenshots/workspace/hero--2026-10-09.png)
+
+_Demo workspace captured on 9 October 2026. The conversation is seeded; the terminal shows two
+passing fixture tests._
 
 ## What you can do
 
@@ -17,8 +18,8 @@ product.
 | Choose a model for each kind of work | Route supported providers, models, and reasoning preferences to sessions and auxiliary workloads                             | [Providers and models](../features/providers.md)                                            |
 | Edit, run, and inspect a project     | Open files, run PTY terminals, inspect diffs, and keep previews beside the session                                           | [Workspace](../features/workspace.md)                                                       |
 | Work with one agent                  | Bind a project, provider connection, model, and agent to one stored session                                                  | [Your first session](first-session.md)                                                      |
-| Coordinate a larger goal             | Track a chat's tasks on the Kanban plugin's board and explicitly delegate a brief with `agents` `delegate`                   | [Kanban board](../features/task-board.md)                                                   |
-| Point at a UI defect                 | Capture source-mapped element context from a probed Localix preview into the session                                         | [Visual Feedback](../features/visual-feedback.md)                                           |
+| Coordinate a larger goal             | Track tasks on a chat's Kanban board; enable `agents` to delegate a self-contained brief from a root chat                    | [Kanban board](../features/task-board.md)                                                   |
+| Point at a UI defect                 | Attach rendered element context and available source locations from a supported Localix preview                              | [Visual Feedback](../features/visual-feedback.md)                                           |
 | Inspect infrastructure and data      | Inspect containers, Kubernetes resources, and saved database connections directly through bundled workbenches                | [DevOps Workspace](../features/devops.md) and [Database workbench](../features/database.md) |
 | Produce documents                    | Extract supported files, open read-only viewers, and generate DOCX, XLSX, or PDF from the workspace                          | [Documents](../features/documents.md)                                                       |
 
@@ -27,7 +28,7 @@ product.
 | Term                                | Meaning                                                                                                         |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | **Agentic Development Environment** | The Localix category: connected development surfaces, context, model routes, agents, and extensible workbenches |
-| **Session**                         | A stored transcript and its project, provider/model selection, agent, and runtime state                         |
+| **Session**                         | A stored transcript with project, model selections, participants, and runtime state                             |
 | **Sub-agent**                       | A child session started explicitly by an agent through the `agents` `delegate` action                           |
 | **Workbench**                       | A plugin-contributed product surface and its matching domain capabilities                                       |
 
@@ -39,15 +40,16 @@ runtime.
 
 A direct run uses the session's selected provider connection and model. Auxiliary routes can select
 different models for session titles, inline completion, and explicit sub-agent work. The runtime
-builds its tool surface from the session's agent and its capability rules, enabled plugins, skills,
-and other configured extensions.
+builds each turn's tool surface from the answering agent's capability rules, enabled plugins,
+skills, and other configured extensions.
 
 The bundled Kanban plugin keeps one board per chat with its tasks, dependencies, and results. It
 never starts work. An agent explicitly takes a task and may explicitly call the `agents` `delegate`
 action with a self-contained brief when a child session is useful.
 
-Bundled plugins register domain tools and workspace contributions. Their active state is resolved
-for the current project, so disabling a plugin removes its gated tools and views together.
+Plugin discovery follows the current project. The shared UI catalog uses the default assistant's
+plugin policy; each agent run uses its own policy. Opening a plugin view does not give every agent
+permission to call its tools.
 
 ## Configuration
 
@@ -70,10 +72,12 @@ for the current project, so disabling a plugin removes its gated tools and views
   owning session hierarchy and workspace.
 - Nothing checks a completed Kanban task automatically. The acting agent records the result with
   `complete`; delegate an explicit verification brief when a change needs an independent look.
-- Visual Feedback requires a Localix preview with its probe connected. It does not inspect an
-  arbitrary browser tab or desktop window.
-- The Kanban, database, DevOps, and documents plugins are bundled and default-enabled. Agent rules
-  can disable their tools and views; see [Capabilities](../features/capabilities.md).
+- Visual Feedback requires a supported Localix preview with a connected or injectable probe. Source
+  locations depend on available mapping; arbitrary browser tabs and desktop windows are not capture
+  targets.
+- Kanban, database, DevOps, and documents are bundled and default-enabled. Agent tool availability
+  still follows role, host, model, and capability restrictions; see
+  [Capabilities](../features/capabilities.md).
 - Document extraction and generation support different format sets. Input-size and parser limits
   also apply.
 - Checked package manifests currently declare no first-party analytics or crash-reporting SDK.
@@ -96,5 +100,6 @@ for the current project, so disabling a plugin removes its gated tools and views
 - [Agent-owned permission policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
 - [Passive Kanban board](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/operations.ts)
 - [Kanban agent tool](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/tools.ts)
-- [Plugin activation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)
+- [Plugin trust classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)
+- [UI and agent plugin policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/service.ts)
 - [Visual Feedback capture](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/probe/capture.ts)

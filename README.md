@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/screenshots/workspace/hero--2026-10-07.png" alt="Localix with a source editor, terminal test results, and a shared conversation with three agents">
+  <img src="docs/assets/screenshots/workspace/hero--2026-10-09.png" alt="Localix with passing terminal tests, an open source-file tab, and a shared conversation with three agents">
 </p>
 
 ## What you can do
@@ -48,7 +48,7 @@ Included workbenches cover [databases](docs/features/database.md),
 
 ### Agent conversation
 
-![Three agents reviewing a release in one conversation](docs/assets/screenshots/conversations/participants--2026-10-07.png)
+![Three participants in a seeded release-review conversation](docs/assets/screenshots/conversations/participants--2026-10-09.png)
 
 ### Message context
 
@@ -72,6 +72,8 @@ Included workbenches cover [databases](docs/features/database.md),
 
 These are real product captures using English demo data. The Release Checklist is a demo plugin, not
 an included workbench.
+
+The hero was captured on 9 October 2026 with a seeded conversation and two passing fixture tests.
 
 </details>
 
@@ -103,12 +105,16 @@ and [troubleshooting](docs/getting-started/troubleshooting.md) for startup probl
 
 ## Data and permissions
 
-Workspace data stays on your machine. Model requests go to the providers you connect; enabled tools
-and servers can make their own requests. Credentials are stored in an encrypted vault.
+Localix stores conversations and configuration on your machine. Model requests go to the providers
+you connect; enabled tools, plugins, and servers can make their own requests. Localix-managed
+credentials are stored in an encrypted vault; external coding-agent CLIs manage their own login
+data.
 
 Tool permissions use `allow`, `ask`, and `deny`. Approvals are not an operating-system sandbox;
-plugins run unsandboxed in the Localix process. See [permissions](docs/features/permissions.md),
-[privacy](docs/getting-started/privacy.md), and [SECURITY.md](SECURITY.md).
+native plugin backend and UI code runs with the access of its Localix host. HTML views use a
+separate [sandboxed iframe boundary](docs/extending/sandboxed-views.md). See
+[permissions](docs/features/permissions.md), [privacy](docs/getting-started/privacy.md), and
+[SECURITY.md](SECURITY.md).
 
 ## Contributing
 

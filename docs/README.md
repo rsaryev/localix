@@ -44,24 +44,25 @@ Each recipe walks through one task from setup to a visible result.
 
 ### Core
 
-| Guide                                                                         | Covers                                                                |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| [Decide what an agent may do](features/capabilities.md)                       | Choose the tools, skills, plugins, and MCP access an agent holds.     |
-| [Agent presets](features/agents.md)                                           | Edit shipped roles, instructions, context, and turn limits.           |
-| [Delegation](features/delegation.md)                                          | Start child sessions with explicit briefs and receive their reports.  |
-| [Choose how much the agent asks](features/permission-modes.md)                | Choose Default, Plan, Bypass, or Autonomous for a conversation.       |
-| [Permission rules](features/permissions.md)                                   | Write ordered allow, ask, and deny rules.                             |
-| [Let the agent propose configuration changes](features/configure.md)          | Review an agent’s proposal to enable a missing capability.            |
-| [Organize work with projects and sessions](features/sessions-and-projects.md) | Organize projects, sessions, branches, drafts, and attachments.       |
-| [Conversations with several agents](features/conversations.md)                | Address participants with their own roles and models in one chat.     |
-| [Read conversation activity](features/conversation-history.md)                | Inspect messages, tool activity, and navigation through a transcript. |
-| [Answer formatting](features/answer-formatting.md)                            | Use supported Markdown, structured content, links, and deliverables.  |
-| [Respond to human-in-the-loop requests](features/hitl.md)                     | Answer questions, quizzes, and confirmation requests.                 |
-| [Background work](features/background-work.md)                                | Follow delegated runs, jobs, and unattended work.                     |
-| [Let an agent interact with a terminal](features/interactive-terminals.md)    | Let an agent send input to a terminal and inspect its screen.         |
-| [Wait for something to happen](features/monitors.md)                          | Wait for a command or plugin event to wake a session.                 |
-| [Repeat work on a schedule](features/loops.md)                                | Repeat prompts while the Localix runtime is running.                  |
-| [Set up a provider and model](features/onboarding.md)                         | Connect a provider and select the default chat model.                 |
+| Guide                                                                         | Covers                                                                 |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [Decide what an agent may do](features/capabilities.md)                       | Choose the tools, skills, plugins, and MCP access an agent holds.      |
+| [Agent presets](features/agents.md)                                           | Edit shipped roles, instructions, context, and turn limits.            |
+| [Delegation](features/delegation.md)                                          | Start child sessions with explicit briefs and receive their reports.   |
+| [Choose how much the agent asks](features/permission-modes.md)                | Choose Default, Plan, Bypass, or Autonomous for a conversation.        |
+| [Permission rules](features/permissions.md)                                   | Write ordered allow, ask, and deny rules.                              |
+| [Let the agent propose configuration changes](features/configure.md)          | Review an agent’s proposal to enable a missing capability.             |
+| [Organize work with projects and sessions](features/sessions-and-projects.md) | Organize projects, sessions, branches, drafts, and attachments.        |
+| [Conversations with several agents](features/conversations.md)                | Address participants with their own roles and models in one chat.      |
+| [Read conversation activity](features/conversation-history.md)                | Inspect messages, tool activity, and navigation through a transcript.  |
+| [Give the agent files and images](features/attachments.md)                    | Attach uploads or original paths and understand model-facing previews. |
+| [Answer formatting](features/answer-formatting.md)                            | Use supported Markdown, structured content, links, and deliverables.   |
+| [Respond to human-in-the-loop requests](features/hitl.md)                     | Answer questions, quizzes, and confirmation requests.                  |
+| [Background work](features/background-work.md)                                | Follow delegated runs, jobs, and unattended work.                      |
+| [Let an agent interact with a terminal](features/interactive-terminals.md)    | Let an agent send input to a terminal and inspect its screen.          |
+| [Wait for something to happen](features/monitors.md)                          | Wait for a command or plugin event to wake a session.                  |
+| [Repeat work on a schedule](features/loops.md)                                | Repeat prompts while the Localix runtime is running.                   |
+| [Set up a provider and model](features/onboarding.md)                         | Connect a provider and select the default chat model.                  |
 
 ### Workspace
 
@@ -131,6 +132,7 @@ Each recipe walks through one task from setup to a visible result.
 | [Build a plugin](extending/plugins.md)                             | Author a plugin manifest, tools, commands, and contributions.      |
 | [Build a plugin with the agent](extending/build-with-the-agent.md) | Describe a plugin and review the agent’s build result.             |
 | [Build workbench UI](extending/plugin-ui.md)                       | Build a workbench interface against the host bridge.               |
+| [Build a sandboxed HTML view](extending/sandboxed-views.md)        | Use the iframe bridge, scoped backend actions, and scratch state.  |
 | [Plugin synchronization](extending/plugin-sync.md)                 | Synchronize plugin resources and live views.                       |
 | [Keyboard ownership](extending/keyboard-ownership.md)              | Keep plugin shortcuts within their focus and ownership boundaries. |
 | [Report plugin failures](extending/plugin-problems.md)             | Report plugin failures through the host’s problem surfaces.        |
