@@ -7,37 +7,25 @@ import type {
   Model as PiModel,
 } from '@earendil-works/pi-ai'
 
-import {
-  attachProviderResponse,
-  providerResponseOf,
-  validateToolRegistry,
-  type AgentEvent,
-} from '@localixai/agent/agents'
-import type {
-  AgentRuntime,
-  AgentRuntimeResult,
-  AgentRuntimeRun,
-  AgentRuntimeRunInput,
-} from '@localixai/agent/runtime'
+import { validateToolRegistry, type AgentEvent } from '@localixai/agent/agents'
+import type { AgentRuntime, AgentRuntimeResult, AgentRuntimeRun } from '@localixai/agent/runtime'
 
 import type { AgentMessage } from '@localixai/agent/agents'
 
 import { normalizeEventBufferCapacity, enqueueRuntimeEvent } from './runtime-event-buffer'
 import { createContextTransform, toPiMessages } from './runtime-context'
+import type { PiRuntimeOptions, PiAgentRuntimeRunInput } from './runtime-contract'
+import { failedWithProviderFacts } from './runtime-provider-facts'
 import { mergeSignals } from './runtime-signal'
 import { BoundedEventBuffer } from './bounded-event-buffer'
 import { mapEvent, type PiTurnState } from './event-codec'
 import { fromPiMessage } from './message-codec'
 import { isConversationalPiMessage, isPiMessage, toPiSystemMessage } from './pi-transcript'
-import { wrapPiModel, type PiModelMiddleware } from './middleware'
+import { wrapPiModel } from './middleware'
 import { createPiModels } from './models'
-import {
-  assembleStopConditions,
-  composeStopConditions,
-  type StopCondition,
-} from './stop-conditions'
+import { assembleStopConditions, composeStopConditions } from './stop-conditions'
 import { assertRequestServable, resolveReasoningEffort } from './preflight'
-import { withPiRunStreamOptions, type PiRequestTuning } from './stream-options'
+import { withPiRunStreamOptions } from './stream-options'
 import { createRunTools } from './run-tools'
 
 // The budget predicate moved with the stop-condition seam; re-exported so existing
@@ -46,46 +34,9 @@ export { shouldStopForTurnBudget } from './stop-conditions'
 
 export { toPiMessages } from './runtime-context'
 
-export interface PiRuntimeOptions extends PiRequestTuning {
-  maxBufferedEvents?: number
-  /**
-   * Deployment-wide middleware, applied OUTSIDE any per-run entry. A watchdog or a
-   * provider-quirk shim is a property of the deployment, not of one run, so it must not
-   * depend on every call site remembering to pass it — and being outermost means a per-run
-   * entry cannot bypass it.
-   */
-  middleware?: readonly PiModelMiddleware[]
-}
+export type { PiRuntimeOptions, PiAgentRuntimeRunInput } from './runtime-contract'
 
 export { normalizeEventBufferCapacity, enqueueRuntimeEvent } from './runtime-event-buffer'
-
-/**
- * Pi-adapter extension of the agnostic run input. The hook types are pi-shaped (they see
- * pi's stream params and turn ledger), so they live here rather than in the agnostic
- * runtime port — a host that wants them imports this adapter's types explicitly. Every
- * field is optional: a plain {@link AgentRuntimeRunInput} runs byte-identically.
- */
-export interface PiAgentRuntimeRunInput extends AgentRuntimeRunInput {
-  /** Composed around the resolved model's stream call; absent or `[]` leaves it untouched. */
-  middleware?: readonly PiModelMiddleware[]
-  /** Extra turn-boundary stop rules, evaluated after the built-in turn budget. */
-  stopConditions?: readonly StopCondition[]
-}
-
-/**
- * Re-attach the provider response to the error the host will classify. Without this the
- * whole run reduces to a message string: `Retry-After` is gone, and every rate-limit
- * cooldown falls back to an invented constant however precisely the server stated its
- * window. An error that already carries its own response (an SDK error that reached us
- * unflattened) is left alone — that one is closer to the failure than our last-seen refusal.
- */
-function failedWithProviderFacts(
-  error: Error,
-  refusal: { status: number; headers: Record<string, string> } | undefined,
-): Error {
-  if (!refusal || providerResponseOf(error)) return error
-  return attachProviderResponse(error, refusal)
-}
 
 // Resolved from the vendored pi package itself so a re-vendor can't silently
 // leave a lying hardcode behind; 'unknown' only if the exports map ever hides it.

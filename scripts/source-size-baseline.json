@@ -132,7 +132,6 @@
   "apps/ui/src/widgets/editor-grid/ui/registry.tsx": 315,
   "apps/ui/src/widgets/workspace-shell/model/railLayout.ts": 312,
   "apps/ui/src/widgets/workspace-shell/ui/WorkspaceShell.tsx": 489,
-  "packages/agent-runtime-pi/src/runtime.ts": 338,
   "packages/agent/src/agents/chat.ts": 446,
   "packages/agent/src/agents/types.ts": 752,
   "packages/kit/src/controls/breadcrumb-select.tsx": 309,
