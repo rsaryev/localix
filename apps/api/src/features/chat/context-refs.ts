@@ -9,8 +9,6 @@
  *   @file:path/to/file.ts          — file contents
  *   @file:path/to/file.ts:10-25    — 1-indexed inclusive line range (or :42 single line)
  *   @folder:path/to/dir            — directory listing (names, not contents)
- *   @diff                          — git diff of the working dir (unstaged)
- *   @git:5                         — last N commit messages
  *   @session:LOCALIX-42            — compact digest of another chat session
  *   @project:<projectId>           — compact project digest (name, working dir, sessions)
  *   @terminal:<id>                 — digest of an open terminal (id or unique prefix)

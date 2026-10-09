@@ -40,8 +40,6 @@ describe('parseContextRefs', () => {
     ])
   })
 
-  test('clamps git count to 1..20', () => {})
-
   test('strips trailing punctuation and dedups by key', () => {
     expect(parseContextRefs('see @file:a.ts. and again @file:a.ts')).toMatchObject([
       { path: 'a.ts' },
@@ -482,8 +480,10 @@ describe('refToken (the inverse of parse)', () => {
     expect(refToken('message', 's1/abc')).toBe('@message:s1/abc')
   })
 
-  test('diff is value-less — the one kind whose grammar is not `@kind:value`', () => {
-    // even given a stray value, diff never grows a colon
+  test('retired source-control tokens are not parsed as context refs', () => {
+    expect(parseContextRefs('Review @diff and @git:5 before editing.')).toEqual([])
+    expect(isAtomicRefToken('diff')).toBe(false)
+    expect(isAtomicRefToken('git:5')).toBe(false)
   })
 
   test('refToken round-trips through parse for the parseable kinds', () => {

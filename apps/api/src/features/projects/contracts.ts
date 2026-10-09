@@ -153,16 +153,16 @@ export const projectParamsSchema = z.object({
 })
 
 /** Max inline content carried by a `snippet` ref (client-minted). Defined ONCE in
- *  the pure ref-kind registry (`features/chat/context-ref-kinds.ts`) so the mint
+ *  the pure ref-kind contracts (`features/chat/context-ref-kind-contracts.ts`) so the mint
  *  path (`makeSnippetRef`) can clamp to it client-side; the schema below enforces
  *  it as a backstop. Re-exported here for wire-contract consumers. */
 export { SNIPPET_CONTENT_MAX }
 
 /**
- * Composer context references (`@file:` / `@folder:` / `@diff` / `@session:` / `@terminal:` /
- * `@call:` / `@resource:` / `snippet`, plus whatever a plugin contributes — the
- * REF-KIND REGISTRY in `features/chat/context-ref-kinds.ts` is the source of truth for the
- * grammar, and naming a provider's own kind here would make this a second, staler copy of it). The UI parses the typed syntax client-side and sends structured
+ * Composer context references (`@file:` / `@folder:` / `@session:` / `@project:` / `@terminal:` /
+ * `@call:` / `@resource:` / `message` / `snippet`). The ref-kind registry in
+ * `features/chat/context-ref-kinds.ts` is the source of truth for the token grammar;
+ * resource providers own their URI namespaces. The UI parses typed syntax and sends structured
  * refs here; the server resolves them against the working directory (project working
  * dir, or the session sandbox workspace for project-less sessions) and returns the
  * expanded content. Read-only, path-confined, sensitive paths and binary files
@@ -251,7 +251,7 @@ export const expandRefsRequestSchema = z.object({
 export const contextRefExpansionSchema = z.object({
   raw: z.string(),
   ok: z.boolean(),
-  /** Expanded content (file lines, folder listing, diff, commit list). */
+  /** Expanded content (file lines, folder listing, linked resource or session digest). */
   content: z.string().optional(),
   /** Fence language hint for file refs (from extension). */
   language: z.string().optional(),
