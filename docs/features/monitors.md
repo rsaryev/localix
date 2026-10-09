@@ -6,9 +6,8 @@ service starts answering. The agent starts one with the `bash` tool — the chec
 `until: <seconds>` — and ends its turn; the engine behind it (`features/monitors`) polls the command
 on that interval and wakes the session when it exits 0.
 
-**Replaces the timer and the poll loop.** A `sleep` woke the agent on a clock, which then had to go
-and look; a `while … sleep` loop written into a command burns the turn and dies at the timeout. A
-wait lives outside the conversation and delivers the result itself.
+Use a wait when a condition should resume the conversation. Localix runs the checks outside the
+agent turn and delivers the matching output or ending reason to the owning participant.
 
 ## Terminology
 
@@ -16,20 +15,20 @@ wait lives outside the conversation and delivers the result itself.
 | ---------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
 | Monitor    | One background watch owned by one session, addressed as `mon-1`, `mon-2`.      | A trigger plus a work record, both durable; a polled wait survives an API restart.         |
 | Wait       | The agent-facing shape: `bash` with `until`, polled until the command exits 0. | One predicate on purpose; richer logic (grep, jq, `--exit-status`) belongs in the command. |
-| Watch mode | A long-running command whose every stdout line becomes one event.              | Engine capability; not exposed as a tool field. Its process ends with the server.          |
-| Event      | One thing worth a turn: lines within 200 ms arrive as a single wake.           | Every event costs a model turn, so the filter decides the price.                           |
+| Watch mode | A long-running command whose output lines become events.                       | Engine capability; not exposed as a tool field. Its process ends with the server.          |
+| Event      | One thing worth a turn: lines within 200 ms arrive as a single wake.           | Several events can share one turn through batching and wake-queue coalescing.              |
 | Ending     | Condition met, command exited, timeout, stopped, rate-limited, or error.       | A monitor ends exactly once, and the reason travels with the last events.                  |
 
 ## What you can do
 
-| Need                            | Mechanism                                                                           | Boundary                                                                |
-| ------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Wait for a condition            | `bash` with `command` and `until: <seconds>`; the agent ends its turn.              | The interval floor is 5 s; 30 s or more is appropriate for remote APIs. |
-| Bound the wait                  | `timeout` (seconds, ≥ 60) is the deadline; the agent is woken when it passes too.   | Default 300 s, maximum 3,600 s. A timed-out wait reports as a failure.  |
-| See what is being watched       | The composer's background-work strip lists it with its event count and last event.  | It lists running work; an ended monitor leaves the strip.               |
-| Stop one                        | The row's Stop button, or the agent's `jobs` tool with `action="stop"`.             | A user stop does not wake the agent; every other ending does.           |
-| Inspect recent events           | `jobs` with `action="read"` returns the monitor's bounded event log.                | The log is capped and kept in memory; a restart starts it empty.        |
-| Watch an authenticated endpoint | `${secret:KEY}` in the command; the value is injected into the process environment. | The model never reads a value; it is resolved at start and at resume.   |
+| Need                            | Mechanism                                                                           | Boundary                                                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Wait for a condition            | `bash` with `command` and `until: <seconds>`; the agent ends its turn.              | The interval floor is 5 s; 30 s or more is appropriate for remote APIs.                      |
+| Bound the wait                  | `timeout` (seconds, ≥ 60) is the deadline; the agent is woken when it passes too.   | Default 300 s, maximum 3,600 s. A timed-out wait reports as a failure.                       |
+| See what is being watched       | The composer's background-work strip lists it with its event count and last event.  | It lists running work; an ended monitor leaves the strip.                                    |
+| Stop one                        | The row's Stop button, or the agent's `jobs` tool with `action="stop"`.             | An explicit stop by the user or agent does not start a turn; other endings notify the owner. |
+| Inspect recent events           | `jobs` with `action="read"` returns the monitor's bounded event log.                | The log is capped and kept in memory; a restart starts it empty.                             |
+| Watch an authenticated endpoint | `${secret:KEY}` in the command; the value is injected into the process environment. | Resolved at start and resume; the displayed command retains the reference.                   |
 
 ## How it works
 
@@ -122,8 +121,8 @@ background fields, so no wait can be started.
 
 ### Plugin monitors are not agent waits
 
-A plugin manifest's `monitors` field and the agent's `bash until` wait share a word and nothing
-else.
+A plugin manifest's `monitors` field and the agent's `bash until` wait have different owners and
+lifecycles, although they share output-line splitting infrastructure.
 
 |               | Manifest `monitors`                                                      | Agent `bash until` wait                                     |
 | ------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------- |
@@ -145,8 +144,9 @@ else.
 | `cwd`         | No       | Session root | Working directory for the command                                                          |
 | `timeout`     | No       | 300 s        | Deadline in seconds (≥ 60), maximum 3,600 s                                                |
 
-Limits the engine enforces: four concurrent monitors per session, 60 events per minute per monitor,
-a 5 s interval floor, and a 2,000-character cap per event line.
+Limits include four concurrent monitors per session, a 5 s poll-interval floor, and a watch rate
+limit of 60 events in a sliding minute. Watch output uses a 2,000-character line cap; the 61st event
+ends that watch. A wake shows at most 20 event entries and reports how many were omitted.
 
 ## Limits
 
@@ -159,9 +159,10 @@ a 5 s interval floor, and a 2,000-character cap per event line.
   ends.
 - Silence is not success. A filter or predicate that matches only the happy path leaves a crash
   looking exactly like "still waiting"; cover the failure states.
-- A user stop is deliberately silent for the agent, so a stopped watch produces no turn.
+- An explicit stop by the user or agent produces no new turn.
 - An ended monitor is no longer running work: it leaves the composer strip at once, and `jobs` can
-  no longer read it. Its ending wake carries the last events.
+  no longer read it. Its ending wake carries up to 20 pending event entries. Omitted entries cannot
+  be recovered with `jobs read` after the monitor ends.
 
 ## Related guides
 

@@ -328,6 +328,18 @@ unsupported per-request schema-cost estimates, and qualified CLI availability fo
 the single-call approval claim with the actual remembered program scope. Documented partial drain
 changes and best-effort forward cleanup, and narrowed the truncation claim to generic object lists.
 
+## Background work and monitor lifecycle
+
+Compared job admission, owner-filtered jobs access, PTY/child capture, initial-output settling,
+completion reminders, exit notices, monitor logs/batching, and restart recovery with source.
+Reviewed the jobs wiring history, including the terminal-control correction.
+
+Corrected the admission count to include monitors and other work while excluding sub-agents; monitor
+creation still has its separate cap. Qualified readable output by terminal availability, removed
+immediate-return and universal-action claims, and documented asynchronous row persistence. Clarified
+silent explicit stops, notification fallback, watch event batching, and the 20-entry wake limit with
+no ended-monitor log retrieval.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
