@@ -181,7 +181,8 @@ describe('the described-menu walker', () => {
     try {
       const rows = view.rows().filter((row) => rowKind(row).startsWith('menuitem'))
       expect(rows).toHaveLength(2)
-      for (const row of rows) expect(row.className).toContain('pl-8')
+      for (const row of rows)
+        expect(row.firstElementChild?.getAttribute('data-slot')).toBe('menu-leading-icon')
     } finally {
       await view.close()
     }
@@ -193,7 +194,8 @@ describe('the described-menu walker', () => {
       { id: 'pull', label: 'Pull', onSelect: () => {} },
     ])
     try {
-      for (const row of view.rows()) expect(row.className).not.toContain('pl-8')
+      for (const row of view.rows())
+        expect(row.querySelector('[data-slot="menu-leading-icon"]')).toBeNull()
     } finally {
       await view.close()
     }
@@ -211,7 +213,7 @@ describe('the described-menu walker', () => {
       const rows = view.rows().filter((row) => rowKind(row).startsWith('menuitem'))
       expect(rows.map(rowKind)).toEqual(['menuitem', 'menuitemcheckbox', 'menuitemcheckbox'])
       for (const row of rows) {
-        expect(row.className).toContain('pl-8')
+        expect(row.firstElementChild?.getAttribute('data-slot')).toBe('menu-leading-icon')
         // A direct SVG is an extra flex child before the label, which shifts that row's label.
         expect([...row.children].some((child) => child.tagName.toLowerCase() === 'svg')).toBe(false)
         // The icon sits in the leading slot, before the label.
@@ -235,7 +237,8 @@ describe('the described-menu walker', () => {
       { id: 'b', label: 'Warnings', checked: false, onSelect: () => {} },
     ])
     try {
-      for (const row of view.rows()) expect(row.className).not.toContain('pl-8')
+      for (const row of view.rows())
+        expect(row.querySelector('[data-slot="menu-leading-icon"]')).toBeNull()
     } finally {
       await view.close()
     }
@@ -248,7 +251,8 @@ describe('the described-menu walker', () => {
     ])
     try {
       const rows = view.rows()
-      for (const row of rows) expect(row.className).toContain('pl-8')
+      for (const row of rows)
+        expect(row.firstElementChild?.getAttribute('data-slot')).toBe('menu-leading-icon')
       expect(rows[0]?.querySelector('svg')).not.toBeNull()
     } finally {
       await view.close()
@@ -326,7 +330,7 @@ describe('the described-menu walker', () => {
       for (const row of rows) {
         // The icon sits in the leading slot, before the label.
         expect(row.firstElementChild?.querySelector('svg')).not.toBeNull()
-        expect(row.className).toContain('pl-8')
+        expect(row.firstElementChild?.getAttribute('data-slot')).toBe('menu-leading-icon')
       }
       // The chosen row ends on the check; the other keeps the slot empty so hints align.
       expect(rows[0]?.lastElementChild?.querySelector('svg')).not.toBeNull()

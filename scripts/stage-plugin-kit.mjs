@@ -245,13 +245,17 @@ function stageVendorPackages(repoRoot, outDir) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
     if (typeof manifest.module !== 'string') throw new Error(`${name} ships no ES module entry`)
     const target = join(outDir, name)
-    cpSync(join(root, dirname(manifest.module)), join(target, dirname(manifest.module)), {
+    // Some ES trees keep helpers beside src/ (media codecs, for example). Copy that portable
+    // module tree as well, rather than publishing an entry whose relative imports are missing.
+    const moduleDir = dirname(manifest.module)
+    const moduleTree = basename(moduleDir) === 'src' ? dirname(moduleDir) : moduleDir
+    cpSync(join(root, moduleTree), join(target, moduleTree), {
       recursive: true,
       filter: (src) => !src.endsWith('.map'),
     })
     writeFileSync(
       join(target, 'package.json'),
-      `${JSON.stringify({ name, version: manifest.version, type: 'module', sideEffects: false }, null, 2)}\n`,
+      `${JSON.stringify({ name, version: manifest.version, type: 'module', sideEffects: false, browser: manifest.browser }, null, 2)}\n`,
     )
     modules[name] = join(PLUGIN_KIT_UI_VENDOR_DIR, name, manifest.module).split(sep).join('/')
   }

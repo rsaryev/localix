@@ -71,7 +71,7 @@ describe('Button', () => {
   test('on a filled variant the beam is the fill kind; on a ground one it is not', () => {
     // The plan's Approve is `mono`: a ground beam's bright stop is the fill's own colour, so it
     // showed nothing there. The filled beam leads with the accent (`effects.css`).
-    for (const variant of ['mono', 'default', 'destructive-solid'] as const)
+    for (const variant of ['mono', 'destructive-solid'] as const)
       expect(
         renderToStaticMarkup(
           <Button variant={variant} recommended>
@@ -79,7 +79,7 @@ describe('Button', () => {
           </Button>,
         ),
       ).toContain('data-surface="fill"')
-    for (const variant of ['ghost', 'outline', 'field'] as const)
+    for (const variant of ['default', 'ghost', 'outline', 'field'] as const)
       expect(
         renderToStaticMarkup(
           <Button variant={variant} recommended>

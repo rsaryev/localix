@@ -1,5 +1,45 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
+  'motion/dark-hook': {
+    guide: 'features/motion-studio.md',
+    purpose: 'A playable Blackout hook with oversized type on a measured dark stage',
+    scenario: 'motion-dark-hook',
+  },
+  'motion/product-reveal': {
+    guide: 'features/motion-studio.md',
+    purpose: 'Relay reveals an editable connected product flow after its opening hook',
+    scenario: 'motion-product-reveal',
+  },
+  'motion/editor': {
+    guide: 'features/motion-studio.md',
+    purpose: 'An authored motion scene at a precise frame beside editable settings and export',
+    scenario: 'motion-editor',
+  },
+  'motion/templates': {
+    guide: 'features/motion-studio.md',
+    purpose: 'Eleven motion directions on a dedicated creation page, with rendered previews',
+    scenario: 'motion-library',
+  },
+  'motion/projects': {
+    guide: 'features/motion-studio.md',
+    purpose: 'A quiet project library with one creation action',
+    scenario: 'motion-projects',
+  },
+  'motion/empty-library': {
+    guide: 'features/motion-studio.md',
+    purpose: 'An empty motion library with one centered creation action',
+    scenario: 'motion-empty',
+  },
+  'motion/template-preview': {
+    guide: 'features/motion-studio.md',
+    purpose: 'Review a complete motion template before creating an editable video',
+    scenario: 'motion-template-preview',
+  },
+  'motion/template-return': {
+    guide: 'features/motion-studio.md',
+    purpose: 'Closing a template preview restores the filtered chooser and selected tile',
+    scenario: 'motion-template-return',
+  },
   'context/composer-context': {
     guide: 'features/workspace.md',
     purpose: 'Automatic open-file and terminal context with source labels and estimated sizes',

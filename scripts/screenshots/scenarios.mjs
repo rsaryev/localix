@@ -46,6 +46,19 @@ async function editor(page) {
 }
 
 export async function compose(page, scenario) {
+  if (
+    [
+      'motion-editor',
+      'motion-library',
+      'motion-projects',
+      'motion-empty',
+      'motion-template-preview',
+      'motion-template-return',
+      'motion-dark-hook',
+      'motion-product-reveal',
+    ].includes(scenario)
+  )
+    return (await import('./motion-workbench.mjs')).composeMotion(page, scenario)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).composeSessionDrag(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))

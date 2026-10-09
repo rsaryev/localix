@@ -32,7 +32,7 @@ type ButtonProps = React.ComponentPropsWithoutRef<'button'> &
  * stand off the edge (`LocalixBorderBeam` `surface="fill"`): the ground beam's bright stop is the
  * foreground, the very colour of a `mono` fill, so the recommended Approve showed nothing.
  */
-const FILLED_VARIANTS: ReadonlySet<string> = new Set(['default', 'mono', 'destructive-solid'])
+const FILLED_VARIANTS: ReadonlySet<string> = new Set(['mono', 'destructive-solid'])
 
 type WorkbenchSashProps = Omit<
   React.ComponentPropsWithoutRef<'div'>,

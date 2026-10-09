@@ -89,6 +89,23 @@ const chunks = (dir: string) => readdirSync(join(dir, 'chunks')).filter((f) => f
 const build = (pluginDir: string, outDir = join(tempDir(), 'out')) =>
   buildPluginUiArtifact({ kit, pluginDir, outDir })
 
+test('relocated media encoding vendor retains its browser exclusions without node_modules', async () => {
+  const plugin = fixturePlugin({
+    'ui/Panel.tsx':
+      "import { CanvasSource, BufferTarget, Output, Mp4OutputFormat } from 'mediabunny'\nexport const Panel = [CanvasSource, BufferTarget, Output, Mp4OutputFormat]\n",
+  })
+  const out = join(tempDir(), 'media')
+  await build(plugin, out)
+  const code = [
+    read(out, 'entry.js'),
+    ...chunks(out).map((file) => read(join(out, 'chunks'), file)),
+  ].join('\n')
+  expect(code).not.toContain('node:fs')
+  expect(code).not.toContain('node:stream')
+  expect(code).not.toContain('Cannot find module')
+  expect(code).toContain('video/mp4')
+})
+
 describe('plugin UI artifact', () => {
   test('bundles the plugin, takes shared modules from the host, loads the heavy one lazily', async () => {
     const out = join(tempDir(), 'out')
@@ -467,6 +484,12 @@ describe('staging a plugin UI', () => {
       'export const lazyPanel = () => import("./Panel")\n',
     )
     write(join(repo, 'plugins', 'demo', 'ui', 'Panel.tsx'), 'export const Panel = "new"\n')
+    const runUiBuild = (command: string, args: string[]) =>
+      execFileSync(command, [...args.slice(0, 3), kit.dir], {
+        stdio: 'pipe',
+        timeout: 30_000,
+        killSignal: 'SIGKILL',
+      })
     const previous = takeStagedUiArtifact(join(outPlugins, 'demo'))
     const failure = stagePluginUi('demo', {
       repoRoot: repo,
@@ -474,18 +497,31 @@ describe('staging a plugin UI', () => {
       log,
       onPluginError: 'skip',
       previous,
-      run: ((command: string, args: string[]) =>
-        execFileSync(command, [...args.slice(0, 3), kit.dir], {
-          stdio: 'pipe',
-          timeout: 30_000,
-          killSignal: 'SIGKILL',
-        })) as never,
+      run: runUiBuild as never,
     })
     expect(failure).toBeNull()
     expect(read(artifact, 'chunks/panel-old.js')).toBe('export const Panel = "old"\n')
     expect(JSON.parse(read(artifact, 'manifest.json')).revision).not.toBe('old')
     expect(JSON.parse(read(artifact, '.current-files.json'))).not.toContain('chunks/panel-old.js')
     expect(existsSync(dirname(previous!))).toBe(false)
+
+    const revision = JSON.parse(read(artifact, 'manifest.json')).revision
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const kept = takeStagedUiArtifact(join(outPlugins, 'demo'))
+      expect(
+        stagePluginUi('demo', {
+          repoRoot: repo,
+          outPlugins,
+          log,
+          onPluginError: 'skip',
+          previous: kept,
+          run: runUiBuild as never,
+        }),
+      ).toBeNull()
+      expect(JSON.parse(read(artifact, 'manifest.json')).revision).toBe(revision)
+      expect(read(artifact, 'chunks/panel-old.js')).toBe('export const Panel = "old"\n')
+      expect(existsSync(dirname(kept!))).toBe(false)
+    }
   })
 
   test('release staging (fatal) stops on a failed UI build', () => {

@@ -1,6 +1,19 @@
 import { expect } from '@playwright/test'
 
 export async function verifyEvidence(page, scenario) {
+  if (
+    [
+      'motion-editor',
+      'motion-library',
+      'motion-projects',
+      'motion-empty',
+      'motion-template-preview',
+      'motion-template-return',
+      'motion-dark-hook',
+      'motion-product-reveal',
+    ].includes(scenario)
+  )
+    return (await import('./motion-workbench.mjs')).verifyMotion(page, scenario)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).verifySessionDrag(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
@@ -100,6 +113,20 @@ export async function verifyEvidence(page, scenario) {
   } else if (scenario === 'catalog') {
     await expect(page.getByText('Database', { exact: true }).last()).toBeVisible()
     await expect(page.getByText('Manage plugins…', { exact: true })).toBeVisible()
+    const rows = await page
+      .locator('[role="menu"] [data-slot="menu-leading-icon"]')
+      .evaluateAll((icons) =>
+        icons.map((icon) => {
+          const mark = icon.getBoundingClientRect()
+          const label = icon.nextElementSibling.getBoundingClientRect()
+          return { gap: label.left - mark.right, position: getComputedStyle(icon).position }
+        }),
+      )
+    expect(rows.length).toBeGreaterThan(5)
+    for (const row of rows) {
+      expect(row.gap).toBeGreaterThanOrEqual(4)
+      expect(row.position).toBe('static')
+    }
   } else if (scenario === 'palette') {
     await expect(page.getByRole('option').first()).toBeVisible()
     await expect(page.getByRole('dialog').getByRole('combobox')).toHaveValue('terminal')

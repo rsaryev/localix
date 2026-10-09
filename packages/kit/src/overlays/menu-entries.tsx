@@ -3,7 +3,7 @@ import type { MenuActionEntry, MenuEntry, MenuSubmenuEntry } from '@localixai/pl
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { MENU_FAMILIES as FAMILIES, type MenuFamilyName } from './menu-families'
 import { MenuRowLabel, MenuTrailingCheck } from './menu-row-parts'
-import { MENU_INDICATOR, MENU_SHORTCUT } from './popover-surface'
+import { MENU_SHORTCUT } from './popover-surface'
 import {
   isMenuHeader,
   isMenuSeparator,
@@ -93,7 +93,6 @@ function MenuLevel({ entries, family }: { entries: readonly MenuEntry[]; family:
               key={entry.id}
               checked={entry.checked}
               disabled={entry.disabled}
-              inset={gutter}
               className={entry.trailingAction ? 'min-w-0 flex-1' : undefined}
               onSelect={onSelect}
             >
@@ -119,9 +118,6 @@ function MenuLevel({ entries, family }: { entries: readonly MenuEntry[]; family:
             key={entry.id}
             disabled={entry.disabled}
             {...(recommended ? { 'data-recommended': true } : {})}
-            // Always, icon or not: the icon moves INTO the indicator slot when a level has a
-            // gutter, so the row still needs the indent that slot sits in.
-            inset={gutter}
             className={entry.trailingAction ? 'min-w-0 flex-1' : undefined}
             tone={entry.danger ? 'danger' : 'default'}
             onSelect={onSelect}
@@ -212,7 +208,7 @@ function Submenu({
   }, [])
   return (
     <Sub open={open} onOpenChange={setOpen}>
-      <SubTrigger ref={trigger} disabled={entry.disabled} inset={gutter}>
+      <SubTrigger ref={trigger} disabled={entry.disabled}>
         <MenuRow entry={entry} gutter={gutter} />
       </SubTrigger>
       <SubContent>
@@ -236,10 +232,9 @@ function Submenu({
  * Shared by actions, checkboxes and submenu triggers so the three cannot drift on truncation or on
  * where their trailing text sits — the drift this file exists to prevent, one level down.
  *
- * `gutter` puts the icon in the ABSOLUTE leading slot rather than inline, which is what makes an
- * icon row and a bare row in the same level line their labels up on one column. No check ever
- * takes that slot: `selected` and `checked` rows both end on their check, so every kind of row
- * keeps its icon.
+ * A real flex column reserves the icon width on every row in the level. An absolute slot
+ * depended on separately generated left padding and could overlap labels after a CSS update.
+ * Selected and checked rows keep their independent trailing indicator.
  */
 function MenuRow({
   entry,
@@ -254,15 +249,16 @@ function MenuRow({
   const chordId = 'chordId' in entry ? entry.chordId : undefined
   return (
     <>
-      {/* No size on the icon: `MENU_ITEM` already sizes an unsized one, and every call site that
-          spelled `size-3.5` was one more place to drift from it. */}
-      {Icon && gutter ? (
-        <span className={MENU_INDICATOR}>
-          <Icon aria-hidden="true" />
+      {/* The column reserves physical space even when a row has no icon. */}
+      {gutter && (
+        <span
+          data-slot="menu-leading-icon"
+          aria-hidden="true"
+          className="flex size-3.5 shrink-0 items-center justify-center text-text-soft"
+        >
+          {Icon ? <Icon aria-hidden="true" /> : null}
         </span>
-      ) : Icon ? (
-        <Icon aria-hidden="true" />
-      ) : null}
+      )}
       <MenuRowLabel label={entry.label} description={description} />
       {hint && (
         <span className={cn(MENU_SHORTCUT, 'max-w-32 truncate tracking-normal')}>{hint}</span>

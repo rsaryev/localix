@@ -47,7 +47,7 @@ export const PLUGIN_KIT_CATALOG = 'KIT.md'
  * the package's per-icon modules let the bundler keep only the ones a plugin uses (one icon: ~5 KB
  * against ~740 KB for a single prebundled file).
  */
-export const PLUGIN_UI_VENDOR_PACKAGES: readonly string[] = ['lucide-react']
+export const PLUGIN_UI_VENDOR_PACKAGES: readonly string[] = ['lucide-react', 'mediabunny']
 
 /**
  * Backend shared modules a plugin's UI bundles too, from the same prebuilt copy: the contracts in

@@ -1,6 +1,8 @@
 import { existsSync, promises as fs } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 
+import { PLUGIN_UI_ARTIFACT_MANIFEST } from '@localixai/plugin-sdk/ui-artifact'
+
 import { isPathBelow } from '../../../lib/path-containment'
 
 /** Files from this revision only; inherited chunks are deliberately omitted. */
@@ -26,10 +28,29 @@ export async function recordCurrentHashedFiles(dir: string, files: string[]): Pr
   await fs.writeFile(join(dir, CURRENT_FILES), `${JSON.stringify(files.filter(isHashedFile))}\n`)
 }
 
-/** Keep one previous revision's hashed files for a view that has a pending lazy import. */
+async function readRevision(dir: string): Promise<string | null> {
+  try {
+    const manifest: unknown = JSON.parse(
+      await fs.readFile(join(dir, PLUGIN_UI_ARTIFACT_MANIFEST), 'utf8'),
+    )
+    if (!manifest || typeof manifest !== 'object' || !('revision' in manifest)) return null
+    return typeof manifest.revision === 'string' && manifest.revision ? manifest.revision : null
+  } catch {
+    return null
+  }
+}
+
+/** Keep the previous distinct revision for a view that has a pending lazy import. */
 export async function retainPreviousHashedFiles(previous: string, staged: string): Promise<void> {
   if (!existsSync(previous)) return
   const realPrevious = await fs.realpath(previous)
+  const [previousRevision, stagedRevision] = await Promise.all([
+    readRevision(previous),
+    readRevision(staged),
+  ])
+  // Backend/docs-only restaging doesn't advance the UI revision. Preserve its inherited files
+  // too, or a second identical build removes the chunks an open older tab still imports.
+  const unchanged = previousRevision !== null && previousRevision === stagedRevision
   let current: unknown
   try {
     current = JSON.parse(await fs.readFile(join(previous, CURRENT_FILES), 'utf8'))
@@ -38,7 +59,7 @@ export async function retainPreviousHashedFiles(previous: string, staged: string
     // revision carries a marker, so this fallback cannot grow retention without bound.
   }
   const files =
-    Array.isArray(current) && current.every((file) => typeof file === 'string')
+    !unchanged && Array.isArray(current) && current.every((file) => typeof file === 'string')
       ? (current as string[])
       : await listUiArtifactFiles(previous)
   for (const file of files) {

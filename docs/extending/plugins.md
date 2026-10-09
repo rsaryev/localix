@@ -5,7 +5,7 @@ Plugins package tools, procedures, commands, agents, services and UI with their 
 **Trust boundary:** Installed plugins start disabled; agent-built plugins start enabled. Native
 entrypoints run as trusted code in the API process.
 
-![The workspace tool catalog with built-in workbenches and plugin management](../assets/screenshots/plugins/workbenches--2026-10-08.png)
+![The workspace tool catalog with built-in workbenches and plugin management](../assets/screenshots/plugins/workbenches--2026-10-09.png)
 
 ## What you can do
 

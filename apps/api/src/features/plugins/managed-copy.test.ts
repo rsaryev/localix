@@ -45,6 +45,15 @@ test('a managed update retains the installed revision chunks even when staging s
   )
   expect(await readManagedFingerprint(installed)).toBe('v3')
 
+  // Updating backend/docs changes the managed fingerprint, but not the UI revision. An open
+  // v1 tab must retain its lazy chunks through repeated identical UI installations.
+  for (const fingerprint of ['v3-backend', 'v3-docs']) {
+    await build('v3')
+    await installManagedCopy(source, installed, fingerprint)
+    expect(existsSync(join(installedUi, 'chunks', 'v1.js'))).toBe(true)
+    expect(await readManagedFingerprint(installed)).toBe(fingerprint)
+  }
+
   await build('v4')
   await installManagedCopy(source, installed, 'v4')
   expect(existsSync(join(installedUi, 'chunks', 'v1.js'))).toBe(false)

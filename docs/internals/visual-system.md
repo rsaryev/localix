@@ -98,6 +98,15 @@ the [light workbench](../assets/screenshots/workspace/workbench-light--2026-09-3
 shortcut sheet uses a shared key column across sections, allows alternative chords to wrap, and
 keeps descriptions aligned even when they span multiple lines.
 
+### Quiet actions
+
+Ordinary `Button` actions rest as text, with a foreground veil on hover and press. The existing
+`outline` API is a compatibility name for the same borderless secondary action; it no longer draws a
+resting enclosure. Use an `IconButton` with an accessible name and tooltip for familiar compact
+actions such as creating a project. Keep text when the action needs explanation. `mono` remains
+available for a strong primary action, and `field` encloses actions on tinted state bands. Focus,
+disabled and busy states use the existing kit recipes.
+
 ### Settings hierarchy
 
 Settings groups follow the same workbench tokens: one faint outline and a 2% foreground veil per

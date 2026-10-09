@@ -1,0 +1,14 @@
+{
+  "name": "motion",
+  "category": "content",
+  "displayName": "Motion Studio",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "license": "MIT",
+  "author": "Localix",
+  "description": "Motion videos with editable templates, scene timing, shared agent authoring and local video export.",
+  "defaultEnabled": true,
+  "surfaces": ["agent", "workbench"],
+  "tools": "./backend/index.ts",
+  "skills": "./skills"
+}

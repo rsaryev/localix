@@ -10,21 +10,18 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/80 active:bg-primary/70',
+        default:
+          'text-foreground hover:bg-surface-hover active:bg-surface-active aria-expanded:bg-surface-active',
         // Monochrome solid primary (foreground-on-background) — the app's de-facto
         // "do it" action style, previously hand-rolled as a raw class string in
         // ~15 places. Hover dims via bg-alpha (animated by the base transition,
         // like default/secondary) for design-system consistency. Migrate raw
         // monochrome buttons to <Button variant="mono">.
         mono: 'bg-foreground text-background hover:bg-foreground/90 active:bg-foreground/80',
-        // `aria-expanded:bg-surface-active` like `ghost`, not `bg-muted`: under glass `muted` is a
-        // 6% veil while the hover above lands near 9%, so an OPEN outline trigger read weaker
-        // than merely hovering it. 11% is the shared "this one is engaged" step.
-        // No resting fill in either theme — the border alone carries "outline" at rest, matching
-        // its name; `dark:bg-input/30` used to break that symmetry with a fill dark got and light
-        // didn't, for no reason the variant's own name or its hover/engaged states call for.
+        // Compatibility name for quiet text actions. A resting outline makes every secondary
+        // action look like a raised control; only field buttons need a visible enclosure.
         outline:
-          'border-border hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground',
+          'hover:bg-surface-hover hover:text-foreground active:bg-surface-active aria-expanded:bg-surface-active aria-expanded:text-foreground',
         // A bordered button with a resting FILL that is a foreground veil (`--field-fill`), for a
         // button that sits on a tinted strip — a conflict or bisect band on `bg-status-*/10`.
         // `outline` has no resting fill; `field` adds a hairline around the same quiet veil
