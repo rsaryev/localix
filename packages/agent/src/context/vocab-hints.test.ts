@@ -145,3 +145,10 @@ describe('the pointers carry the hints without disturbing what they said before'
     expect(readPointer('refreshed', DUMP.length, 'tc1', DUMP)).not.toContain('terms found in it')
   })
 })
+
+test('keeps the first qualifying spelling and source order when ranks tie', () => {
+  const body = (terms: string) => terms.padEnd(HINT_MIN_SOURCE_CHARS, ' ')
+  expect(vocabularyHints(body('chartcanvas ChartCanvas CHARTCANVAS'))).toEqual(['ChartCanvas'])
+  expect(vocabularyHints(body('AlphaCase OtherCase'), 2)).toEqual(['AlphaCase', 'OtherCase'])
+  expect(vocabularyHints(body('OtherCase AlphaCase'), 2)).toEqual(['OtherCase', 'AlphaCase'])
+})
