@@ -22,17 +22,16 @@
  * semantics the user's own editor has, in a directory they own.
  */
 
-import { mkdir, readdir, readFile, rename, rm, rmdir, stat } from 'node:fs/promises'
-import type { Dirent } from 'node:fs'
+import { mkdir, readFile, rename, rm, rmdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
 import type { RequestSpec } from '../request-spec'
 import { buildRequestFile, gitSafetyProblem, parseRequestFile } from '../git-sync/format'
 import { ENVIRONMENTS_DIR } from './environments'
+import { walkCollectionFiles, walkCollectionFolders } from './tree'
 import {
   collectionFolderPath,
-  LEGACY_REQUEST_EXT,
   normalizeFolderName,
   REQUEST_EXT,
   legacyRequestFilePath,
@@ -73,60 +72,6 @@ export interface CollectionStore {
   removeFolder?(name: string): Promise<{ ok: true } | { ok: false; problem: string }>
   /** The absolute directory this collection lives in — for messages that name a path. */
   root(): string
-}
-
-/** Depth cap for the walk: a collection is a human-maintained tree, not a filesystem. */
-const MAX_DEPTH = 8
-
-async function walk(dir: string, root: string, depth: number): Promise<string[]> {
-  if (depth > MAX_DEPTH) return []
-  // `encoding: 'utf8'` rides along so the entries carry STRING names: the plain
-  // `withFileTypes: true` overload types them as buffers under this tsconfig, and a buffer has
-  // no `.startsWith`.
-  let entries: Dirent[]
-  try {
-    entries = await readdir(dir, { withFileTypes: true, encoding: 'utf8' })
-  } catch {
-    return [] // no collection yet, or unreadable — an empty collection, not a crash
-  }
-  const found: string[] = []
-  for (const entry of entries) {
-    const absolute = path.join(dir, entry.name)
-    // A dot-directory is not part of the collection (see `paths.ts` on hidden segments), and
-    // skipping it here keeps a stray `.git` or `.DS_Store` out of the walk entirely.
-    if (entry.name.startsWith('.')) continue
-    // `environments/` at the ROOT is the reserved folder those live in (see
-    // collection/environments.ts). Nested, the name is an ordinary folder — the reservation is
-    // one level deep, so `users/environments/list` stays a perfectly good request.
-    if (depth === 0 && entry.isDirectory() && entry.name === ENVIRONMENTS_DIR) continue
-    if (entry.isDirectory()) found.push(...(await walk(absolute, root, depth + 1)))
-    else if (
-      entry.isFile() &&
-      (entry.name.endsWith(REQUEST_EXT) || entry.name.endsWith(LEGACY_REQUEST_EXT))
-    ) {
-      found.push(absolute)
-    }
-  }
-  return found
-}
-
-async function walkFolders(dir: string, root: string, depth: number): Promise<string[]> {
-  if (depth > MAX_DEPTH) return []
-  let entries: Dirent[]
-  try {
-    entries = await readdir(dir, { withFileTypes: true, encoding: 'utf8' })
-  } catch {
-    return []
-  }
-  const found: string[] = []
-  for (const entry of entries) {
-    if (!entry.isDirectory() || entry.name.startsWith('.')) continue
-    if (depth === 0 && entry.name === ENVIRONMENTS_DIR) continue
-    const absolute = path.join(dir, entry.name)
-    const relative = path.relative(root, absolute).split(path.sep).join('/')
-    found.push(relative, ...(await walkFolders(absolute, root, depth + 1)))
-  }
-  return found
 }
 
 export function createCollectionStore(root: string): CollectionStore {
@@ -178,7 +123,7 @@ export function createCollectionStore(root: string): CollectionStore {
     root: () => root,
 
     async list() {
-      const files = await walk(root, root, 0)
+      const files = await walkCollectionFiles(root)
       const canonicalByName = new Map<string, string>()
       const legacyByName = new Map<string, string>()
       for (const file of files) {
@@ -205,7 +150,7 @@ export function createCollectionStore(root: string): CollectionStore {
     },
 
     async listFolders() {
-      return (await walkFolders(root, root, 0)).sort((a, b) => a.localeCompare(b))
+      return (await walkCollectionFolders(root)).sort((a, b) => a.localeCompare(b))
     },
 
     async createFolder(name) {

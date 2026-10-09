@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { mkdtemp, mkdir, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { RequestSpec } from '../request-spec'
@@ -7,8 +7,8 @@ import { createCollectionStore, type CollectionStore } from './store'
 
 /**
  * A real directory, because every claim here is about the filesystem: that folders appear from
- * names, that an empty one is pruned, that a colleague's `git pull` is picked up without an index
- * to invalidate. A fake fs would agree with whatever this code does.
+ * names, that an emptied one remains visible, that a colleague's `git pull` is picked up without
+ * an index to invalidate. A fake fs would agree with whatever this code does.
  *
  * `DRIVER TESTS USE IN-WORKSPACE PATHS` does not apply — these are pure temp dirs with no HITL
  * gate, and the repo's own store tests do the same.
@@ -61,6 +61,43 @@ describe('the tree falls out of the names', () => {
     await mkdir(path.join(root, 'environments'), { recursive: true })
     expect(await store.listFolders?.()).toEqual([])
     expect((await store.createFolder?.('environments/private'))?.ok).toBe(false)
+  })
+})
+
+describe('collection traversal boundaries', () => {
+  test('reserves environments only at the root and ignores hidden entries and symlinks', async () => {
+    const text = JSON.stringify({
+      localixRestRequest: 1,
+      name: 'ignored',
+      spec: spec('https://api.dev'),
+    })
+    for (const folder of ['environments', '.hidden']) {
+      await mkdir(path.join(root, folder))
+      await writeFile(path.join(root, folder, 'ignored.request.json'), text)
+    }
+    await writeFile(path.join(root, '.hidden.request.json'), text)
+    await symlink(path.join(root, '.hidden'), path.join(root, 'linked-folder'))
+    await symlink(
+      path.join(root, '.hidden/ignored.request.json'),
+      path.join(root, 'linked.request.json'),
+    )
+    await store.save('users/environments/list', spec('https://api.dev/users'))
+    expect((await store.list()).map((request) => request.name)).toEqual(['users/environments/list'])
+    expect(await store.listFolders?.()).toEqual(['users', 'users/environments'])
+  })
+
+  test('includes the boundary folder while stopping request traversal below depth eight', async () => {
+    const folders = Array.from({ length: 10 }, (_, index) => `level-${index + 1}`)
+    const atEight = folders.slice(0, 8).join('/')
+    const atNine = folders.slice(0, 9).join('/')
+    await store.save(`${atEight}/visible`, spec('https://api.dev/visible'))
+    await store.save(`${atNine}/deep`, spec('https://api.dev/deep'))
+    await mkdir(path.join(root, ...folders), { recursive: true })
+    expect((await store.list()).map((request) => request.name)).toEqual([`${atEight}/visible`])
+    expect(await store.listFolders?.()).toEqual(
+      folders.slice(0, 9).map((_, index) => folders.slice(0, index + 1).join('/')),
+    )
+    expect((await store.get(`${atNine}/deep`))?.spec.url).toBe('https://api.dev/deep')
   })
 })
 
