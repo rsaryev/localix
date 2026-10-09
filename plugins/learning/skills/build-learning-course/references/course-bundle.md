@@ -1,14 +1,18 @@
 # Learning course bundle v1
 
 All paths are relative to the manifest that declares them. Absolute paths, `..` escapes, and
-symlinks leaving the course root are rejected. IDs are unique course-wide kebab-case identifiers.
+symlinks leaving the course root are rejected. Course, module, lesson, objective, and step IDs must
+be unique across the course and use kebab-case. Quiz option IDs belong to their question and may
+repeat in other questions; keep them distinct within a question.
 
 ## Generation contract
 
 Courses always prepare one complete module at a time. Create a coherent outline for the whole route,
 author every lesson in the first module, and leave later modules pending. Do not ask the learner to
-choose progressive versus upfront generation. The plugin requests the next module automatically
-halfway through the current one (or when its last lesson opens).
+choose progressive versus upfront generation. The plugin can request the next pending module when at
+least half of the current module’s lessons are completed (rounded up), or its last lesson opens. A
+pending current module takes priority. A missed or failed tutor wake leaves generation failed rather
+than preparing material; inspect that state and use a reachable tutor to continue.
 
 Ask only for missing goals, experience, depth or time constraints. Reuse preferences already given.
 Use small modules of 2–4 focused lessons so a prepared module is useful without a long wait. Plan
@@ -69,6 +73,24 @@ file, and never rewrite other modules during warm-up.
               step.json
               content.md
 ```
+
+## Validation boundaries
+
+- A pending lesson must have empty objectives and steps. A ready lesson must include theory
+  (`concept`, `code`, or `walkthrough`), testing (`quiz` or `flashcards`), and practice, in that
+  order. Three to seven quiz questions is authoring guidance; the validator enforces a maximum of
+  ten and accepts flashcards as testing.
+- Course and module manifests allow up to 32 modules and 32 lessons per module. A lesson allows up
+  to 32 steps and 12 objectives. Quiz questions allow 2–8 options; `correctOptionId` must name one
+  of them.
+- Each JSON file is limited to 256,000 bytes; Markdown and code-source files to 512,000 bytes.
+  Narrative file references must end in `.md`.
+- Activation imports only files reachable from the manifests, not the surrounding directory.
+  Continue editing the returned canonical `manifest_path` for an existing course.
+
+The examples below are manifest fragments. The ready lesson requires all five referenced step
+manifests and their content files; the first quiz example must be repeated with distinct step IDs
+and appropriate questions for `retrieval-check-2` and `retrieval-check-3`.
 
 ## `course.json`
 
@@ -152,7 +174,8 @@ Concept theory — lecture body must be Markdown:
 }
 ```
 
-Code theory — source is a separate code file, explanation is Markdown:
+Code theory — source is a separate code file. The optional explanation is Markdown; include it when
+the source needs teaching context:
 
 ```json
 {
@@ -194,5 +217,34 @@ Practice — prompt and optional hint are Markdown:
 }
 ```
 
-`flashcards` keeps `cards: [{ "front": "...", "back": "..." }]` in `step.json`. `walkthrough` keeps
-`steps: [{ "label": "...", "detail": "..." }]` in `step.json`.
+Flashcards — testing material stays inline in the step manifest:
+
+```json
+{
+  "id": "recall-runtime",
+  "type": "flashcards",
+  "title": "Recall the runtime boundaries",
+  "cards": [{ "front": "When is policy checked?", "back": "Before the tool runs." }]
+}
+```
+
+Walkthrough — theory material stays inline, with at least two stages:
+
+```json
+{
+  "id": "trace-runtime",
+  "type": "walkthrough",
+  "title": "Trace one tool call",
+  "steps": [
+    { "label": "Validate", "detail": "Check policy and arguments before execution." },
+    { "label": "Observe", "detail": "Record the result and decide whether another step is needed." }
+  ]
+}
+```
+
+## Source of truth
+
+- [Bundle schemas and path guards](../../../backend/course-bundle.ts)
+- [Import file selection](../../../backend/course-import.ts)
+- [Module generation](../../../backend/module-generation.ts)
+- [Tool actions and canonical paths](../../../backend/tool.ts)
