@@ -38,9 +38,30 @@ cost is always excluded. Added picker/fallback guidance and mixed-session alert 
 to the owning Vault and cost guides.
 
 Eight focused existing tests passed for mixed provenance, threshold/dismissal behavior and alert-row
-presentation. Agent selection and the subscription-only suppression branch were checked in source;
-these tests do not establish live settings navigation, a server save or actual provider billing.
-Relevant history includes `7d384c8` and `ed1ab8d`, whose feedback checks are recorded previously.
+presentation. A synthetic server-rendered component probe additionally confirmed that subscription
+cost hides the strip while the same above-threshold estimated cost shows it. Agent selection was
+checked in source; this does not establish live settings navigation, a server save or provider
+billing. Relevant history includes `7d384c8` and `ed1ab8d`, whose feedback checks are recorded
+previously.
+
+Affected checks and generation passed: 77 pages, 37 current captures from 48 dated assets. Native
+signing succeeded for the five-file intermediate checkpoint `99a6795`; earlier audit changes remain
+staged separately.
+
+## Signed checkpoints after signing recovered
+
+Reviewed the current diffs before committing three previously verified changes. Native signing and
+the applicable pre-commit formatting/lint checks passed. Existing runtime/capture evidence is
+recorded in maintenance reviews; creating a checkpoint does not add new product coverage.
+
+| Checkpoint | Result                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| `d16de40`  | Generator validates heading IDs through the shared renderer extractor, with regression coverage. |
+| `6c7855d`  | Current hero/participant captures and their owning scenario/assertions are committed.            |
+| `1ff800f`  | Shortcut procedures and notification handoff/terminal boundaries are committed.                  |
+
+The screenshot checkpoint stores native 3× images; it does not prove a model run or completed
+onboarding. Remaining guide edits and source-aligned content reviews are still separate audit work.
 
 ## Related guides
 
