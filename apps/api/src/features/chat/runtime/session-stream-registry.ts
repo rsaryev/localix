@@ -1,4 +1,5 @@
 import type { AgentStreamEvent } from '../contracts'
+import { pushToRing } from './session-stream-replay-ring'
 import { NON_REPLAYABLE_EVENTS, WATCH_GATED_EVENTS } from './session-stream-policy'
 
 export {
@@ -120,54 +121,6 @@ export function createSessionStreamRegistry() {
         if (globalEventLog.size <= MAX_TRACKED_USERS) break
       }
     }
-  }
-
-  // Drop a stale snapshot-shaped event from a replay ring before pushing the new
-  // one: their UI handling is pure last-wins, so a long streaming turn would
-  // otherwise park hundreds of near-identical multi-KB `message.updated` snapshots
-  // (and replay them all as a burst on reconnect). `session_timing.updated` is
-  // one-per-session. Returns the (possibly mutated) buffer for chaining.
-  const compactSnapshot = (buffer: StreamEnvelope[], event: AgentStreamEvent) => {
-    if (event.type === 'message.updated') {
-      const messageId = event.message.id
-      const stale = buffer.findIndex(
-        (e) =>
-          e.event.type === 'message.updated' &&
-          e.event.sessionId === event.sessionId &&
-          e.event.message.id === messageId,
-      )
-      if (stale !== -1) buffer.splice(stale, 1)
-    } else if (event.type === 'session_timing.updated') {
-      // Match per-session: the global ring interleaves users/sessions, so a bare
-      // type match would wrongly drop another session's timing snapshot.
-      const stale = buffer.findIndex(
-        (e) => e.event.type === 'session_timing.updated' && e.event.sessionId === event.sessionId,
-      )
-      if (stale !== -1) buffer.splice(stale, 1)
-    }
-    return buffer
-  }
-
-  // Append an envelope to a ring buffer keyed by session/user: compact stale
-  // snapshots first, push, trim to `maxSize`, re-insert at the tail (so the key
-  // counts as most-recently-used for eviction), then run the ring's eviction.
-  // Shared by the per-session and per-user (global firehose) rings.
-  const pushToRing = (
-    log: Map<string, StreamEnvelope[]>,
-    key: string,
-    event: AgentStreamEvent,
-    envelope: StreamEnvelope,
-    maxSize: number,
-    evict: () => void,
-  ) => {
-    const buffered = compactSnapshot(log.get(key) ?? [], event)
-    buffered.push(envelope)
-    if (buffered.length > maxSize) {
-      buffered.splice(0, buffered.length - maxSize)
-    }
-    log.delete(key)
-    log.set(key, buffered)
-    evict()
   }
 
   // Is `envelope` in scope for this connection? An unscoped firehose takes everything; a scoped
@@ -355,7 +308,7 @@ export function createSessionStreamRegistry() {
         return
       }
 
-      // Compact snapshot-shaped events (see compactSnapshot) in BOTH rings before
+      // Compact snapshot-shaped events (see session-stream-replay-ring.ts) in BOTH rings before
       // pushing — the global ring must dedup too, or one session's streaming turn
       // floods it and evicts other sessions' terminal (run.completed) events.
       pushToRing(sessionEventLog, sessionId, event, envelope, MAX_BUFFERED_EVENTS, evictIfNeeded)
