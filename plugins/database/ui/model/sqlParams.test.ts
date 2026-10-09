@@ -188,6 +188,28 @@ describe('compileSql', () => {
     expect(params).toEqual([7, 'x', 7, 'x'])
   })
 
+  it('reserves numbered positions before assigning anonymous placeholders', () => {
+    const sql = 'SELECT ?2, ?, ?1, ?, ?2'
+    expect(scanParams(sql, 'sqlite').map((slot) => slot.key)).toEqual([
+      'p:1',
+      'p:2',
+      'p:0',
+      'p:3',
+      'p:1',
+    ])
+    expect(
+      compileSql(sql, 'sqlite', {
+        'p:0': 'zero',
+        'p:1': 'one',
+        'p:2': 'two',
+        'p:3': 'three',
+      }),
+    ).toEqual({
+      text: 'SELECT ?, ?, ?, ?, ?',
+      params: ['one', 'two', 'zero', 'three', 'one'],
+    })
+  })
+
   it('leaves a parameter-free query untouched', () => {
     expect(compileSql('SELECT 1', 'sqlite', {})).toEqual({ text: 'SELECT 1', params: [] })
   })
