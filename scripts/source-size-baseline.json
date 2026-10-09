@@ -19,7 +19,6 @@
   "apps/api/src/features/plugins/discovery.ts": 451,
   "apps/api/src/features/plugins/loader.ts": 466,
   "apps/api/src/features/plugins/marketplace-registry.ts": 491,
-  "apps/api/src/features/plugins/native.ts": 311,
   "apps/api/src/features/plugins/service.ts": 701,
   "apps/api/src/features/projects/service.ts": 319,
   "apps/api/src/features/provider-connections/service.ts": 642,
