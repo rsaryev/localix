@@ -158,6 +158,35 @@ describe('createBridgeRequests', () => {
     expect(requests.size).toBe(0)
   })
 
+  test('settles replies out of order without consuming other pending requests', async () => {
+    const requests = createBridgeRequests()
+    const first = requests.create()
+    const second = requests.create()
+    const value = { answer: 42 }
+    expect(requests.settle(resultMessage(second.id, value))).toBe(true)
+    expect(await second.promise).toBe(value)
+    expect(requests.size).toBe(1)
+    expect(requests.settle(errorMessage(first.id, 'first failed'))).toBe(true)
+    await expect(first.promise).rejects.toThrow('first failed')
+    expect(requests.size).toBe(0)
+  })
+
+  test('rejectAll preserves explicit reasons and permits new requests afterward', async () => {
+    for (const reason of [false, 0, '', { closed: true }]) {
+      const requests = createBridgeRequests()
+      const request = requests.create(100)
+      const rejected = request.promise.catch((error: unknown) => error)
+      requests.rejectAll(reason)
+      expect(await rejected).toBe(reason)
+      expect(requests.size).toBe(0)
+      expect(requests.settle(resultMessage(request.id, 'late'))).toBe(false)
+      const next = requests.create()
+      expect(next.id).not.toBe(request.id)
+      expect(requests.settle(resultMessage(next.id, 'reopened'))).toBe(true)
+      expect(await next.promise).toBe('reopened')
+    }
+  })
+
   test('mints unique ids', async () => {
     const requests = createBridgeRequests()
     const reqs = [requests.create(), requests.create(), requests.create()]

@@ -145,7 +145,6 @@
   "packages/kit/src/controls/breadcrumb-select.tsx": 309,
   "packages/kit/src/layout/tabs/tabs.tsx": 714,
   "packages/kit/src/overlays/dialog.tsx": 314,
-  "packages/plugin-sdk/src/ui/bridge.ts": 302,
   "packages/plugin-sdk/src/ui/charts/CartesianChart.tsx": 369,
   "packages/plugin-sdk/src/ui/index.ts": 362,
   "packages/visual-feedback/src/actuate/index.ts": 432,
