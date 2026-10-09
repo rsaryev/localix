@@ -19,9 +19,9 @@ that cannot be written that way is bound to a host feature: it is lent by the ap
 1. **The file** goes in the folder for its job (`src/controls/`, `src/overlays/`, `src/layout/`,
    `src/lists/`, `src/feedback/`, `src/content/`, `src/keyboard/`, `src/canvas/`); shared helpers go
    in `src/lib/`. New source files stay under 300 lines (`scripts/source-size-guard.test.ts`).
-2. **The door**, `src/entries/<id>.ts`, is the only public module: an explicit re-export list, never
-   `export *`. The door is the contract — the plugin kit staging (`scripts/stage-plugin-kit.mjs`)
-   reads its names, and an export nobody listed is not public.
+2. **The door**, `src/entries/<id>.ts`, is the component or helper’s public module: an explicit
+   re-export list, never `export *`. The door is the contract — the plugin kit staging
+   (`scripts/stage-plugin-kit.mjs`) reads its names, and an export nobody listed is not public.
 3. **The catalog entry** goes in the `src/catalog/<category>.ts` for its category: the job it is for
    (`use`) and what it must not be confused with (`not`). A props list does not tell anyone which
    primitive a job needs, and the catalog is what the plugin authoring agent chooses from
@@ -48,7 +48,7 @@ paint contract itself is [docs/internals/visual-system.md](../../docs/internals/
 
 ```bash
 bun test packages/kit                    # the kit's own tests, catalog included
-cd packages/kit && npx tsc --noEmit      # types
+bun run --cwd packages/kit type-check   # types
 bun test scripts/ui-token-drift-guard.test.ts scripts/ui-token-existence-guard.test.ts scripts/pane-ground-guard.test.ts
 bun run check:architecture               # the kit imports no app code
 ```

@@ -14,19 +14,22 @@ Bundled plugins use the backend, UI, resource, and navigation contracts. The
 extends the manifest schema, while the [UI host](../../apps/ui/src/shared/contrib/host.ts) adapts UI
 contributions to application registries.
 
-## Workspace entry points
+## Common workspace entry points
 
-| Entry point                              | Contract                                                                                                                                                                                     |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@localixai/plugin-sdk/backend`          | Server-side `PluginContext`, `PluginRegistration`, `BackendSubsystem`, typed UI actions and request scope, tools, hooks, channels, providers, host-service ports, and backend helpers.       |
-| `@localixai/plugin-sdk/ui`               | `PluginUiHost`, workbench and editor contributions, search and UI-location declarations, message-context drafts, notifications, and types for the acquired sandboxed UI API/bridge protocol. |
-| `@localixai/plugin-sdk/ui/focus`         | The shared focus stack: which surface owns the keyboard, what classes of global shortcut it tolerates, and the hooks a surface or overlay uses to claim it while it is on screen.            |
-| `@localixai/plugin-sdk/manifest`         | The host-independent manifest schema, API and naming constants, config and file-association schemas, surface normalization, and installability predicates.                                   |
-| `@localixai/plugin-sdk/resource-refs`    | Resource-node, provider, browse, and registry contracts plus resource URI and navigation helpers without importing the full backend barrel.                                                  |
-| `@localixai/plugin-sdk/navigation`       | Pure builders and strict parsers for canonical `localix://ui/...` and `localix://resource/...` destinations, including files, settings, and capabilities.                                    |
-| `@localixai/plugin-sdk/session-resource` | The address of a resource that exists once per chat (a game board): its bare URI, one chat's URI, and the session a URI names, built on the navigation grammar.                              |
+| Entry point                              | Contract                                                                                                                                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@localixai/plugin-sdk/backend`          | Server-side `PluginContext`, `PluginRegistration`, `BackendSubsystem`, typed UI actions and request scope, tools, hooks, channels, providers, host-service ports, and backend helpers. |
+| `@localixai/plugin-sdk/ui`               | `PluginUiHost`, workbench and editor contributions, search and UI-location declarations, message-context drafts, notifications, and host API and bridge-protocol types.                |
+| `@localixai/plugin-sdk/ui/focus`         | The shared focus stack: which surface owns the keyboard, what classes of global shortcut it tolerates, and the hooks a surface or overlay uses to claim it while it is on screen.      |
+| `@localixai/plugin-sdk/manifest`         | The host-independent manifest schema, API and naming constants, config and file-association schemas, surface normalization, and installability predicates.                             |
+| `@localixai/plugin-sdk/resource-refs`    | Resource-node, provider, browse, and registry contracts plus resource URI and navigation helpers without importing the full backend barrel.                                            |
+| `@localixai/plugin-sdk/navigation`       | Pure builders and strict parsers for canonical `localix://ui/...` and `localix://resource/...` destinations, including files, settings, and capabilities.                              |
+| `@localixai/plugin-sdk/session-resource` | The address of a resource that exists once per chat (a game board): its bare URI, one chat's URI, and the session a URI names, built on the navigation grammar.                        |
 
-There is no package-root export. Import the narrow entry point that owns the required contract.
+There is no package-root export. Import the narrow entry point that owns the required contract. The
+table lists common entry points, not every export. [The manifest](package.json) also lists
+transport, interaction, problem-reporting, testing, chart/table, storage, synchronization,
+prerequisite, typed-error, UI-artifact, rich-text, and document-layout helpers.
 
 ## Synchronization
 
@@ -45,6 +48,9 @@ See [Plugin synchronization](../../docs/extending/plugin-sync.md). Draft merging
 resource owner; a cache must expire before an invalidation can produce an authoritative read.
 
 ## Limits
+
+- A typed bridge limits the operations its interface exposes; it is not a runtime sandbox for plugin
+  code. Native plugin UI imports run in the host document.
 
 - The SDK does not discover, load, authorize, or isolate a plugin. Those responsibilities remain
   with the API and UI hosts.

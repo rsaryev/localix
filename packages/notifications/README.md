@@ -6,9 +6,9 @@ deduplication, and terminal encoding without sharing presentation code.
 
 ## Consumers
 
-The UI supplies Notification Center, toast, and desktop-native transports and persists its own
-preferences. The terminal transport encodes the same agent lifecycle facts as an OSC or BEL signal
-for a host that runs on a TTY.
+The UI records facts in the server notification journal, keeps a projection in each window, and
+persists notification preferences. Desktop-native banners provide interruption; the current web
+composition has no toast transport. Terminal hosts can encode the same facts as OSC or BEL signals.
 
 ## Entry points
 
@@ -21,13 +21,19 @@ Only the package root is exported. Source-file paths are not public subpath entr
 ## Limits
 
 - The package marks durable or ephemeral intent but stores nothing. Hosts provide history,
-  preference storage, toast, and native transports.
+  preference storage, and any supported interruption transports.
 - Durable events reach an available history transport even when quiet, focused, or past their
-  interruption TTL. Interruptive channels are selected only for errors and `hitl.required`.
+  interruption TTL. Interruptive channels are selected for severity `error` or category
+  `human-input`, covering questions, mentions, and plans waiting on the person.
 - Router deduplication is in memory and scoped to one router instance. `reset()` clears it.
 - Terminal output requires a TTY. Automatic detection recognizes Warp through `TERM_PROGRAM` and
   `WARP_CLIENT_VERSION`; other terminals require an explicit OSC 9, OSC 777, or BEL method.
 - Actions are declarative data. A transport may omit action kinds it cannot render.
+
+## Related guides
+
+- [User notification controls](../../docs/features/notifications.md)
+- [Journal and delivery contracts](../../docs/internals/subsystems/notifications.md)
 
 ## Source of truth
 

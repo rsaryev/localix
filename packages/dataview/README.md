@@ -31,10 +31,10 @@ Only the package root is exported. Source-file paths are not public subpath entr
 
 ## Source of truth
 
-- [Root exports](https://github.com/rsaryev/localix/blob/main/packages/dataview/src/index.ts)
-- [Table model](https://github.com/rsaryev/localix/blob/main/packages/dataview/src/model.ts)
-- [Parsing](https://github.com/rsaryev/localix/blob/main/packages/dataview/src/parse.ts)
-- [Queries](https://github.com/rsaryev/localix/blob/main/packages/dataview/src/query.ts)
-- [Charts](https://github.com/rsaryev/localix/blob/main/packages/dataview/src/chart.ts)
-- [Export registry](https://github.com/rsaryev/localix/blob/main/packages/dataview/src/export/registry.ts)
-- [Open-target catalog](https://github.com/rsaryev/localix/blob/main/packages/dataview/src/open/targets.ts)
+- [Root exports](src/index.ts)
+- [Table model](src/model.ts)
+- [Parsing](src/parse.ts)
+- [Queries](src/query.ts)
+- [Charts](src/chart.ts)
+- [Export registry](src/export/registry.ts)
+- [Open-target catalog](src/open/targets.ts)

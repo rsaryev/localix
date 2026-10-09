@@ -18,8 +18,9 @@ scanner.
 
 ## Limits
 
-- The scanner recognizes JavaScript and TypeScript source extensions. It skips test files,
-  dependencies, build output, version-control data, and Turbo caches.
+- The scanner recognizes JavaScript and TypeScript source extensions. It skips filenames matching
+  `*.test.<source-extension>`, dependencies, build output, version-control data, and Turbo caches. A
+  `*.spec.ts` file is not excluded by that filename rule.
 - Comment removal is a purpose-built lexical scan, not a JavaScript parser. It preserves strings,
   template literals, regular-expression literals, and character offsets for source-shape tests.
 - `walkSources()` returns an empty list for an absent root. Contract tests should use `sourceTree()`

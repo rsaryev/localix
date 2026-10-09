@@ -15,11 +15,23 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 - **The paint contract:** [docs/internals/visual-system.md](../../docs/internals/visual-system.md).
 - **Changing the kit:** [AGENTS.md](AGENTS.md).
 
+## Entry points
+
+| Import                          | Contract                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------- |
+| `@localixai/kit/<id>`           | A component or helper module declared in `src/entries/<id>.ts`; no package-root barrel. |
+| `@localixai/kit/styles.css`     | The shared stylesheet cascade from `styles/index.css`; imported by the host.            |
+| `@localixai/kit/catalog`        | The module catalog used by plugin authoring and documentation.                          |
+| `@localixai/kit/testing/<name>` | Source-level test helpers; use only in tests.                                           |
+
+The package exports TypeScript source and CSS. It has no build script or compiled `dist` entry; the
+application and plugin compiler bundle the appropriate entry points.
+
 ## Layout
 
 | Path                  | Holds                                                                 |
 | --------------------- | --------------------------------------------------------------------- |
-| `src/entries/<id>.ts` | The doors — the only public modules, each an explicit re-export list. |
+| `src/entries/<id>.ts` | Component/helper entry modules, each an explicit re-export list.      |
 | `src/controls/`       | Buttons, fields, pickers, toggles.                                    |
 | `src/overlays/`       | Dialogs, popovers, menus, tooltips, the command palette.              |
 | `src/layout/`         | Headers, toolbars, tabs, status bars, sections, resizing.             |
@@ -29,7 +41,7 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 | `src/keyboard/`       | Keycaps, chord hints, the chord engine and the live chord store.      |
 | `src/canvas/`         | The one board every graph is drawn on.                                |
 | `src/lib/`            | Platform reads and small shared helpers.                              |
-| `src/testing/`        | The test harness (`@localixai/kit/testing/<name>`), never shipped.    |
+| `src/testing/`        | Test-only harnesses (`@localixai/kit/testing/<name>`).                |
 | `src/catalog/`        | The catalog and its completeness test.                                |
 | `styles/`             | Tokens, themes and style layers; `styles/index.css` is the cascade.   |
 
@@ -37,7 +49,14 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 
 ```bash
 bun test packages/kit                    # the kit's own tests, catalog included
-cd packages/kit && npx tsc --noEmit      # types
+bun run --cwd packages/kit type-check   # types
 bun test scripts/ui-token-drift-guard.test.ts scripts/pane-ground-guard.test.ts
 bun run check:architecture               # the kit imports no app code
 ```
+
+## Source of truth
+
+- [Package exports and scripts](package.json)
+- [Component and helper entry points](src/entries/)
+- [Catalog completeness contract](src/catalog/catalog.test.ts)
+- [Shared stylesheet cascade](styles/index.css)

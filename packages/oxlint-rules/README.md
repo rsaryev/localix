@@ -24,21 +24,21 @@ modules own their exact scope and exceptions; finding counts belong to current l
 
 ## Scope is part of each rule
 
-Every rule here was run over the whole repository before being enabled, and every one of them was
-narrowed by what that run reported. The narrowing is not incidental:
+Each rule defines the source trees and node shapes it checks. Its implementation records the
+exceptions; do not infer wider coverage from a clean lint result:
 
 - A colour literal is only wrong where it PAINTS. `SpaceColorPicker` offers hex values to the user,
   `ChartCanvas` keeps one as a `readVar` fallback because a `<canvas>` cannot resolve a CSS
   variable, and `RootErrorBoundary` paints `var(--color-background, #070707)` precisely because it
-  must render when the stylesheet that defines the token never loaded. A rule matching every string
-  literal would have reported all thirty of those and been switched off within a week.
+  must render when the stylesheet that defines the token never loaded. Value strings and deliberate
+  fallback colors remain outside that surface-token requirement.
 - A props type shared by several components, or declared in another file, is not this file's to
   rename. Neither is the props type of a memoized inner function, which belongs to the exported
   component rather than to the `Impl` wrapper.
-- The action registry lives in `apps/ui`, and kit primitives render inside that workspace. The
-  landing site has none, and the visual-feedback probe runs inside the page being previewed, so for
-  both a global listener is the only listener there is. Plugin surfaces are out of scope only until
-  the SDK exposes keyboard registration; today a plugin has nothing to migrate to.
+- Global keyboard listeners are checked in the workspace UI, kit, and plugin UI. Plugin commands use
+  the SDK's `useFocusEntry` with a DOM scope; element listeners remain available for native keyboard
+  interactions. The landing site and injected preview probe are outside that rule's scope. The
+  rule's exemption list identifies deliberate global owners.
 
 Exemption lists carry their reason inline and are lists of deliberate owners, not backlogs.
 
@@ -57,9 +57,9 @@ Exemption lists carry their reason inline and are lists of deliberate owners, no
 
 ## Notes
 
-oxlint loads `src/index.ts` directly — there is no build step, because `jsPlugins` accepts
-TypeScript and both Bun and Node ≥22 strip the types themselves. A compiled `dist/` would only add a
-way for the linter to run against a stale copy of its own rules.
+The repository config passes `src/index.ts` directly through `jsPlugins`. This package has no build
+script or `dist` entry, so lint reads the current rule source. The repository pins Node 24 for its
+JavaScript toolchain.
 
 The plugin is loaded through **Node's** ESM resolver, which does not guess extensions, so every
 relative import in this package is written with its `.ts` suffix.

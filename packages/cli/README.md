@@ -1,13 +1,13 @@
 # Localix CLI workspace
 
 This private workspace builds Localix's command-line launcher: `localix <path>` hands a folder or
-file to the running desktop app. It starts no server, renders no session, and opens no browser.
+file to the registered desktop app. It starts no server, renders no session, and opens no browser.
 
 ## Consumers
 
 The desktop sidecar build stages the launcher shim and its bundled entry. The API's shell-command
-service installs that staged launcher on `PATH`. Local package builds use the `localix` executable
-declared in `package.json`.
+service writes a launcher shim and reports whether its directory is on `PATH`. Local package builds
+use the `localix` executable declared in `package.json`.
 
 ## Entry points
 
@@ -20,8 +20,10 @@ declared in `package.json`.
 ## Limits
 
 - Bun 1.3 or newer is required. A Node invocation locates Bun and re-executes the launcher under it.
-- Opening a path requires a registered, running desktop app. The command does not start a runtime of
-  its own, and a failed handoff is reported on stderr rather than through the exit status.
+- Opening a path requires an installed app with a registered `localix://` handler. The operating
+  system can activate its window or launch it. The CLI starts no API of its own.
+- A failed OS handoff is reported on stderr without a nonzero exit status. Unknown flags exit `2`;
+  loading failures or a missing Bun executable exit `1`.
 - This workspace remains private until a verified Localix package scope and release channel exist.
 
 ## Source of truth

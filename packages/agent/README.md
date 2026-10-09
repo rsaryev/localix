@@ -18,6 +18,7 @@ an application layer.
 | [`@localixai/agent/chat`](./src/chat.ts)                         | Persisted chat messages, assets, context and invocation bindings, structured data parts, tool errors, and presentation helpers.                    |
 | [`@localixai/agent/chat-cache`](./src/chat-cache.ts)             | Prompt-cache snapshots, volatile-token detection, stable/dynamic prompt partitioning, and the shared runtime-context marker.                       |
 | [`@localixai/agent/context`](./src/context/index.ts)             | Token estimation, dependency and value scoring, compression planning and application, wire pruning, live-read handling, and compression markers.   |
+| [`@localixai/agent/history`](./src/history/index.ts)             | Host-owned history strategy ports, staged history transforms, stage reports, savings accounting, and JSON-block extraction.                        |
 | [`@localixai/agent/runtime`](./src/runtime/index.ts)             | Ports for credentials and authentication, model references, agent runs, buffered completions, and context policy.                                  |
 | [`@localixai/agent/catalog`](./src/catalog/index.ts)             | Provider and model metadata plus media filtering, connection-aware lookup, live-model resolution, and ordering helpers.                            |
 | [`@localixai/agent/images/downscale`](./src/images/downscale.ts) | PNG/JPEG long-edge downscaling and a bounded process-local result cache.                                                                           |
