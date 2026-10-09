@@ -1,6 +1,6 @@
 import type { HumanInLoopController } from './human-in-loop'
 import type { AsyncToolRegistry } from './tool-actions'
-import type { AgentToolResult } from './types'
+import type { AgentToolResult } from './tool-result'
 
 /**
  * Generic per-session host capability handed to every tool's execution context.

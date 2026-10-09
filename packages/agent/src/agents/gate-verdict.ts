@@ -1,4 +1,4 @@
-import type { ToolGateProvenance } from './types'
+import type { ToolGateProvenance } from './tool-call-hooks'
 
 /**
  * The permission gate's verdict on one call — what `beforeToolCall` returns.
