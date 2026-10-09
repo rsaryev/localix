@@ -55,4 +55,42 @@ describe('bounded plugin command/agent markdown discovery', () => {
       ])
     }
   })
+
+  test('unsafe replacement paths do not hide the default commands', async () => {
+    const root = await fs.mkdtemp(join(tmpdir(), 'plugin-md-fallback-'))
+    try {
+      await fs.mkdir(join(root, 'commands'))
+      const command = join(root, 'commands', 'default.md')
+      await fs.writeFile(command, 'Default prompt.')
+
+      const files = await collectMarkdownFiles(root, ['../outside', '/outside'], 'commands', {
+        replaceDefault: true,
+      })
+
+      expect(files).toEqual([{ file: await fs.realpath(command), name: 'default' }])
+    } finally {
+      await fs.rm(root, { recursive: true, force: true })
+    }
+  })
+
+  test('the first explicit source wins a name collision before default discovery', async () => {
+    const root = await fs.mkdtemp(join(tmpdir(), 'plugin-md-precedence-'))
+    try {
+      for (const dir of ['first', 'second', 'commands']) {
+        await fs.mkdir(join(root, dir))
+        await fs.writeFile(join(root, dir, 'deploy.md'), `${dir} prompt.`)
+      }
+      const unique = join(root, 'commands', 'audit.md')
+      await fs.writeFile(unique, 'Audit prompt.')
+
+      const files = await collectMarkdownFiles(root, ['./first', './second'], 'commands')
+
+      expect(files).toEqual([
+        { file: await fs.realpath(unique), name: 'audit' },
+        { file: await fs.realpath(join(root, 'first', 'deploy.md')), name: 'deploy' },
+      ])
+    } finally {
+      await fs.rm(root, { recursive: true, force: true })
+    }
+  })
 })

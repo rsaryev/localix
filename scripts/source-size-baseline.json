@@ -14,7 +14,6 @@
   "apps/api/src/features/external-agents/backend/service.ts": 416,
   "apps/api/src/features/mcp/client-manager.ts": 1050,
   "apps/api/src/features/mcp/mcp-tools.ts": 304,
-  "apps/api/src/features/plugins/discovery-cc-files.ts": 519,
   "apps/api/src/features/plugins/discovery.ts": 301,
   "apps/api/src/features/plugins/loader.ts": 402,
   "apps/api/src/features/plugins/marketplace-registry.ts": 491,
