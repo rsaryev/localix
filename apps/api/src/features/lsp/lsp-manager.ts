@@ -6,6 +6,7 @@ import {
 } from './lsp-client'
 import { getServersForFile, type LspServerDef } from './lsp-servers'
 import { createLspManagerQueries } from './lsp-manager-queries'
+import { createDiagnosticsWait, SILENT_COOLDOWN_MS } from './lsp-diagnostics-wait'
 import { matchingLspServers } from './lsp-server-match'
 import { buildInlineDiagnostics } from './diagnostics-report'
 import { notifyWatchedFiles } from './lsp-watched-files'
@@ -28,11 +29,7 @@ interface ManagedClient {
 }
 
 export const LSP_IDLE_TIMEOUT_MS = 5 * 60_000
-/** Consecutive unanswered diagnostics waits before a project stops waiting on its server. */
-export const SILENT_STRIKES = 2
-/** How long the project skips the wait before giving the server another hearing. */
-export const SILENT_COOLDOWN_MS = 2 * 60_000
-
+export { SILENT_STRIKES, SILENT_COOLDOWN_MS } from './lsp-diagnostics-wait'
 interface LspManagerOptions {
   idleTimeoutMs?: number
   /** Test seam for the silent-project cooldown; production keeps SILENT_COOLDOWN_MS. */
@@ -295,31 +292,7 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
     return undefined
   }
 
-  /**
-   * Agent-write diagnostics wait, with a memory. A server that never answers within the
-   * 6s deadline (a cold project graph, a file type it parses but never reports on) charges
-   * every write the full deadline for nothing — measured at 6.0–6.2s on each of three
-   * consecutive writes in a fresh workspace. After two silent waits in a row
-   * the project stops waiting: the file is still pushed so the server stays current, and the
-   * next answered push clears the mark. Bounded by a cooldown so a server that warms up
-   * gets to be heard again.
-   */
-  const silentProjects = new Map<string, { strikes: number; until: number }>()
-  function touchAndWait(filePath: string, projectRoot: string): Promise<boolean | undefined> {
-    const silent = silentProjects.get(projectRoot)
-    const skipWait =
-      silent !== undefined && silent.strikes >= SILENT_STRIKES && Date.now() < silent.until
-    return pushDocument(filePath, projectRoot, async (c) => {
-      const answered = await c.touchFileAndWait(filePath, !skipWait)
-      if (skipWait) return undefined
-      if (answered) silentProjects.delete(projectRoot)
-      else {
-        const strikes = (silent?.strikes ?? 0) + 1
-        silentProjects.set(projectRoot, { strikes, until: Date.now() + silentCooldownMs })
-      }
-      return answered
-    })
-  }
+  const touchAndWait = createDiagnosticsWait(pushDocument, silentCooldownMs)
 
   /** Push EDITOR buffer content for a file and wait for diagnostics (editor path). */
   async function syncDocument(

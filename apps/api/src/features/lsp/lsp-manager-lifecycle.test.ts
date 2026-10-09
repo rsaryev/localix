@@ -232,4 +232,32 @@ describe('LSP manager lifecycle', () => {
     expect(waits).toEqual([true, true, false, true, true])
     manager.dispose()
   })
+
+  test('parallel unanswered writes retain their captured project strike state', async () => {
+    const waits: boolean[] = []
+    const manager = createLspManager({
+      idleTimeoutMs: 0,
+      createClient: (async (input) => ({
+        ...fakeClient(input.onReady ?? (() => {})).client,
+        touchFileAndWait: async (_file: string, wait = true) => {
+          waits.push(wait)
+          return false
+        },
+      })) as typeof createLspClient,
+    })
+    manager.setPluginServers('/workspace', [
+      fakeServer(async () => ({
+        process: { kill: () => true } as unknown as ChildProcessWithoutNullStreams,
+        initialization: {},
+      })),
+    ])
+    try {
+      await manager.reportFileDiagnostics(['/workspace/a.fake', '/workspace/b.fake'], '/workspace')
+      await manager.reportFileDiagnostics(['/workspace/c.fake'], '/workspace')
+      await manager.reportFileDiagnostics(['/workspace/d.fake'], '/workspace')
+      expect(waits).toEqual([true, true, true, false])
+    } finally {
+      manager.dispose()
+    }
+  })
 })
