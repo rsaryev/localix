@@ -1,12 +1,32 @@
 import type { AssistantMessage } from '..'
 import type { HumanInLoopRequestBase, HumanInLoopResponseBase } from './human-in-loop'
-import type {
-  AgentMessage,
-  AgentMessageOrigin,
-  AgentStopReason,
-  AgentToolResult,
-  ToolGateProvenance,
-} from './types'
+import type { AgentMessage, AgentMessageOrigin, AgentToolResult, ToolGateProvenance } from './types'
+
+/**
+ * Why `agentLoop` stopped. Only `completed` and `tool_terminate` are ordinary
+ * endings; every other value means the run was CUT SHORT with work possibly left
+ * undone. It used to live only on the OTel span, so a host had no way to tell a
+ * finished agent from a braked one and the user saw a run that simply trailed off.
+ */
+export type AgentStopReason =
+  /** The model produced a final message with no tool calls. */
+  | 'completed'
+  /** A tool returned `terminate: true` (sleep, a game move that ends the turn). */
+  | 'tool_terminate'
+  /**
+   * Burned every turn in `maxTurns` without finishing. Under the pi loop this is
+   * ALSO the only in-loop no-progress brake left: the home-grown loop's guard
+   * reasons (consecutive_tool_errors / repeated_tool_calls / oscillating_tool_calls /
+   * content_loop / exploration_stall / output_cap_stall) were deleted with that loop
+   * — pi has no such guards, so the union no longer advertises stops that can never
+   * happen. Anti-thrash now lives in the host's failure-guard (repeat-identical-
+   * failing-call hint → hard stop).
+   */
+  | 'max_turns'
+  /** The caller's `AbortSignal` fired. */
+  | 'aborted'
+  /** The provider stream failed; an `error` event was emitted alongside. */
+  | 'stream_error'
 
 /**
  * One assistant-part update. `delta` is always the newly appended provider
