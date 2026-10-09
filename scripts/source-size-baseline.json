@@ -11,7 +11,6 @@
   "apps/api/src/features/chat/service/branching-ops.ts": 414,
   "apps/api/src/features/chat/service/command-handlers.ts": 449,
   "apps/api/src/features/chat/service/file-content.ts": 427,
-  "apps/api/src/features/chat/service/file-search.ts": 398,
   "apps/api/src/features/chat/service/file-tree-ops.ts": 392,
   "apps/api/src/features/chat/service/turn-entry.ts": 418,
   "apps/api/src/features/chat/slash-catalog.ts": 441,
