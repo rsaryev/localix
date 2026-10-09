@@ -15,7 +15,7 @@
   "apps/api/src/features/mcp/client-manager.ts": 1050,
   "apps/api/src/features/mcp/mcp-tools.ts": 304,
   "apps/api/src/features/plugins/discovery-cc-files.ts": 519,
-  "apps/api/src/features/plugins/discovery.ts": 451,
+  "apps/api/src/features/plugins/discovery.ts": 376,
   "apps/api/src/features/plugins/loader.ts": 466,
   "apps/api/src/features/plugins/marketplace-registry.ts": 491,
   "apps/api/src/features/plugins/service.ts": 701,
