@@ -1,6 +1,11 @@
 import type { Message, ToolCall, ToolResult } from '../types'
 import { textEncoderByteLength } from '../utils/hash'
-import type { ReadFate } from './live-reads'
+import {
+  DEFAULT_LIVE_READ_BUDGET_BYTES,
+  resolveLiveReadBudgetBytes,
+  resolveMaxLiveReads,
+  type ReadFate,
+} from './live-reads'
 import { normalizePathKey } from './path-key'
 import { ALL_MUTATE_TOOLS, READ_RESULT_TOOLS } from './tool-classes'
 
@@ -128,4 +133,87 @@ export function liveReadCallIds(
     kept.add(r.id)
   }
   return kept
+}
+
+type LiveReadMemo = {
+  minChars: number
+  maxLiveReads: number
+  budgetBytes: number
+  recoveryToolAvailable: boolean
+  fates: Map<string, ReadFate>
+  live: Set<string>
+}
+const liveReadMemoCache = new WeakMap<object, LiveReadMemo[]>()
+
+interface LiveReadAccessorInput {
+  inputMessages: Message[]
+  messages: Message[]
+  minChars: number
+  maxLiveReads: number
+  liveReadBudgetBytes: number
+  recoveryToolAvailable: boolean
+}
+
+export function createWireLiveReadAccessor({
+  inputMessages,
+  messages,
+  minChars,
+  maxLiveReads,
+  liveReadBudgetBytes,
+  recoveryToolAvailable,
+}: LiveReadAccessorInput): () => LiveReadMemo {
+  // The last un-superseded read of each file is the model's only copy of it — protect a
+  // bounded number of them wherever they sit in the history. `fates` also classifies the
+  // reads we DO elide, so each gets the pointer that is actually true for it: replayable,
+  // changed-on-disk, or already re-read below. Computed lazily: the early returns below are
+  // the common case and must stay a scan-free identity.
+  return () => {
+    let entries = liveReadMemoCache.get(inputMessages)
+    const cached = entries?.find(
+      (entry) =>
+        entry.minChars === minChars &&
+        entry.maxLiveReads === maxLiveReads &&
+        entry.budgetBytes === liveReadBudgetBytes &&
+        entry.recoveryToolAvailable === recoveryToolAvailable,
+    )
+    if (cached) return cached
+
+    const fates = new Map<string, ReadFate>()
+    const live = liveReadCallIds(messages, minChars, maxLiveReads, liveReadBudgetBytes, fates)
+    const memo = {
+      minChars,
+      maxLiveReads,
+      budgetBytes: liveReadBudgetBytes,
+      recoveryToolAvailable,
+      fates,
+      live,
+    }
+    entries ??= []
+    entries.push(memo)
+    liveReadMemoCache.set(inputMessages, entries)
+    return memo
+  }
+}
+
+/**
+ * Resolve the live-read budget, FAILING CLOSED on every degenerate input.
+ *
+ * Only a positive finite number is a budget; absent / `0` / negative / `NaN` all mean
+ * "no budget given" and get the safe default — never "protect nothing". `keepRecentTokens`
+ * may still scale the default UP (one protected-tail's worth), but the floor means it can
+ * never scale it to zero.
+ */
+export function liveReadBudget(budget: number | undefined, keepRecentTokens: number): number {
+  const scaled = Number.isFinite(keepRecentTokens) ? keepRecentTokens * 4 : 0
+  return resolveLiveReadBudgetBytes(budget, Math.max(scaled, DEFAULT_LIVE_READ_BUDGET_BYTES))
+}
+
+/**
+ * Resolve the live-read COUNT. Unlike the budget, `0` is meaningful here: it is the
+ * protection's one explicit, named off-switch. A negative or non-finite count is not a
+ * switch though — it is a broken count (and `NaN` would silently unbound the count
+ * entirely, since `kept.size >= NaN` is always false), so it falls back to the default.
+ */
+export function liveReadCount(max: number | undefined): number {
+  return resolveMaxLiveReads(max)
 }
