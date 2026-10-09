@@ -44,13 +44,14 @@ the same mode, and changing the mode reaches every delegated session on its next
 session's own button shows the mode but cannot change it.
 
 A change takes effect on the next run. A run already in progress finishes under the mode it started
-with; stop it if it must not continue.
+with; stop it if it must not continue. Plan presentation also checks the root conversation’s current
+mode at call time, so leaving Plan prevents an existing run from presenting a new review.
 
 ## Review and approve a plan
 
 In Plan mode the agent investigates, then presents a plan: a markdown document with the goal, the
-approach, the steps, the risks and the open questions. Presenting ends its turn; nothing happens
-until you decide.
+approach, the steps, the risks and the open questions. Presenting ends that agent’s turn and waits
+for your review. It does not stop background work or other turns already running.
 
 The plan is a file in the conversation's working folder, so the agent revises it with small edits
 instead of rewriting it, and you can open it like any other file:
@@ -63,24 +64,28 @@ instead of rewriting it, and you can open it like any other file:
 `<conversation>` is the conversation's reference, such as `LOCALIX-42`. Only Markdown files directly
 inside this conversation's own plan folder receive the Plan-mode file exception: writing another
 conversation's `PLAN.md` counts as an ordinary file change and is refused, and a delegated agent
-writes no plan file at all. The files belong to your project: deleting the conversation does not
-delete them.
+writes no plan file at all. The folder is relative to the root conversation’s working directory.
+Chosen project directories are preserved when the chat is deleted. A root chat in **Default** uses a
+scratch directory, whose cleanup can remove its plan files; copy anything you need to keep into a
+chosen project first.
 
 The exception covers Markdown files in that directory, not only `PLAN.md`. Version snapshots are
 owned by Localix: the database version is authoritative, and the host rewrites a snapshot from it
 when that version is touched. Editing a snapshot does not change the approved plan.
 
-Each presentation snapshots the draft as the next version. Presenting text identical to the newest
-version does not make a new one: if that version is waiting, nothing changes; if it was set aside,
-the same version comes back for review; if it was already approved, the agent is told to edit the
-draft to propose a change. The plan view says when the draft changed after the newest version and
-has not been presented yet.
+Each changed presentation snapshots the draft as the next version. Comparison collapses whitespace,
+so rewrapping paragraphs or changing indentation alone does not create a new version. If the newest
+version is waiting, presenting equivalent text changes nothing; if it was set aside, that version
+comes back for review. If it was approved or completed, the agent must change the draft to propose a
+new version. The plan view says when the draft changed after the newest version and has not been
+presented yet.
 
 A strip above the composer shows the plan waiting for you — its version, its title and how many
-comments you have written — and the plan opens in its own tab. The tab opens by itself at the moment
-a version is presented or brought back for review, once per version; reloading the app or
-reconnecting never opens it again. **Open** in the strip, or **Open plan** on the plan's card in the
-transcript, brings it back after you close it.
+comments you have written — and the plan opens in its own tab. A live presentation or
+return-to-review event can open the tab in an available composer for that conversation, at most once
+per version during the current UI lifetime. Reloading or reconnecting does not replay that event,
+and the version list alone does not open a tab. **Open** in the strip, or **Open plan** on the
+plan's card in the transcript, brings it back after you close it.
 
 If another window already decided on the version — you approve a plan that was approved meanwhile —
 the strip updates to what happened and a short note says so ("Plan v2 was already approved"); no
@@ -90,19 +95,24 @@ mode, changes nothing and wakes no one a second time.
 | Action              | Where                                                  | What happens                                                                                                                                                                                                  |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Comment**         | Select text in the plan tab                            | The comment is saved at once and marks the sentence. Edit or delete it from the mark or the comment count.                                                                                                    |
-| **Request changes** | Strip, or the comment count in the tab                 | Sends your open comments to the agent, which revises the plan as a new version. Needs at least one open comment.                                                                                              |
+| **Request changes** | Strip, or the comment count in the tab                 | Sends your open comments to the agent, which can revise the draft and present a new version. Needs at least one open comment.                                                                                 |
 | **Approve ▾**       | Strip, plan tab header, the attention dialog           | Pick the mode — Default, Bypass or Autonomous — and, in a chat with several agents, who starts: any agent (the default), one participant, or everyone. The conversation switches to that mode and wakes them. |
 | **Dismiss**         | Strip                                                  | Puts the plan aside. The agent is not woken.                                                                                                                                                                  |
 | **Back to review**  | Plan tab header, once the newest version was set aside | Brings that same version back for review and returns the conversation to Plan mode. Only the newest version.                                                                                                  |
 
 Every version is kept. The tab's version menu switches between them, and **Changes** shows what the
 selected version changed against the one before it. A version that is superseded or dismissed is
-read-only. When a new version arrives, comments you had not sent move to it if their sentence is
-still there; the rest are kept and listed as outdated rather than deleted.
+read-only. The UI carries unsent comments from the preceding version when their quoted text still
+matches its simplified Markdown text. This is a heuristic: comments that do not match stay listed as
+outdated rather than being deleted.
 
-An approved plan stays in the agent's instructions until it is completed or set aside, and the strip
-shows "Implementing plan vN" meanwhile. When the work is done an agent marks the plan completed with
-a short summary; it is told to say plainly when only part is done instead.
+An approved plan stays in the agent’s instructions until it is completed or set aside. The strip
+uses conversation activity to show **Implementing** or **Paused**; it does not measure completion of
+individual plan steps. The agent marks an approved plan completed with a summary. This records the
+agent’s report, without independently verifying the implementation.
+
+The approved strip’s close action is labelled **Mark the plan done — the agent stops following it**.
+It sets the plan aside; it does not record an agent completion summary or stop a running turn.
 
 Every step of a plan is one line in the conversation, which you read and every agent in the
 conversation reads too, and at most one Event Center entry:
@@ -135,19 +145,20 @@ send a message to continue.
 
 ### Continue a plan that stopped
 
-While the agent works on an approved plan, the strip above the composer reads **Implementing plan
-vN**. If the work stops before the plan is done — you pressed Stop, a reply failed, the app
-restarted — nobody is working on it any more, and the strip says **Plan vN paused** with
-**Continue**. Continue hands the plan back to the conversation: the agent gets the plan again,
-checks what is already done, and carries on. The conversation shows "Plan vN continued.", and the
-reply that follows is marked as started by Continue.
+An approved, unfinished plan offers **Plan vN paused** with **Continue** when the UI considers the
+conversation idle. Otherwise the strip reads **Implementing plan vN**. A stop, failed reply, or
+restart can leave the approved plan available to continue. Continue hands the plan back to the
+conversation: the agent gets the plan again, checks what is already done, and carries on. The
+conversation shows "Plan vN continued.", and the reply that follows is marked as started by
+Continue.
 
 Continue appears only while nothing else is happening in the conversation: no reply running, no
 message or wake waiting in the queue, no request waiting for you, and no delegated agent still
 working. A plan the agent has completed, or that you set aside, offers nothing to continue.
 
-Continue is not specific to plans. Any work the agent stopped on can offer it the same way, and each
-kind appears in the same place with the same button.
+Background bash jobs and monitors do not block this idle check, so Continue does not establish that
+all processes have stopped. Continue is shared infrastructure for features that register resume
+points; it does not automatically recover every interrupted task.
 
 ### Who takes the approved plan
 
@@ -175,6 +186,14 @@ turn the work is. Otherwise the line names only the mode. Approve does not add a
 conversation: use **Add participant** in the composer first. The composer's mode menu approves with
 the defaults: Any agent.
 
+### Plan limits
+
+- A presented body is limited to 50,000 characters; a title to 200. Completion summaries are limited
+  to 4,000 characters.
+- Snapshot file writes are best-effort. A disk error does not undo a stored presentation or
+  approval; the database remains the approved text’s authority.
+- If delivery of a change request fails, its comments return to open status so you can resend them.
+
 ## How a call is judged
 
 Each tool states, before a call runs, where that call's effect lands:
@@ -196,6 +215,7 @@ anything irreversible" is one rule: `tool:*` over `irreversible` with effect `as
 ## Related guides
 
 - [Permission rules](permissions.md)
+- [Sessions and project storage](sessions-and-projects.md)
 - [Human-in-the-loop requests](hitl.md)
 - [Agent capabilities](capabilities.md)
 
@@ -207,4 +227,8 @@ anything irreversible" is one rule: `tool:*` over `irreversible` with effect `as
 - [Plan-file call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/file/file-call-class.ts)
 - [Plan presentation and snapshots](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-present.ts)
 - [Plan approval](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-approve.ts)
+- [Live plan-tab routing](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/plans.ts)
+- [Comment carry heuristic](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/planCommentCarry.ts)
+- [Continue availability](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/resume.ts)
+- [Plan tool live-mode check](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/plan-options.ts)
 - [Plan lifecycle notices](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/notices.ts)

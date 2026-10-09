@@ -340,6 +340,18 @@ immediate-return and universal-action claims, and documented asynchronous row pe
 silent explicit stops, notification fallback, watch event batching, and the 20-entry wake limit with
 no ended-monitor log retrieval.
 
+## Plan review, continuation, and version lifecycle
+
+Compared presentation normalization and limits, approval/comment delivery, live tab routing, comment
+carry, completion/dismissal, live-mode checks, and Continue availability with source. Relevant plan
+service and UI history currently traces to the initial commit.
+
+Qualified presentation as ending its author’s turn, automatic tabs as live cues, and unchanged
+versions as whitespace-normalized comparisons. Distinguished activity labels and agent-reported
+completion from verified implementation. Documented the approved strip’s close action as dismissal,
+background jobs not blocking Continue, snapshot failures, and returned comments after failed wakes.
+Corrected unconditional file retention: root Default-chat scratch cleanup can remove its plan files.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
