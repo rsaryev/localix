@@ -138,7 +138,7 @@
   "packages/kit/src/overlays/dialog.tsx": 314,
   "packages/plugin-sdk/src/ui/charts/CartesianChart.tsx": 369,
   "packages/plugin-sdk/src/ui/index.ts": 362,
-  "packages/visual-feedback/src/actuate/index.ts": 432,
+  "packages/visual-feedback/src/actuate/index.ts": 393,
   "plugins/api/ui/RequestTab.tsx": 696,
   "plugins/api/ui/RestApiSidebar.tsx": 645,
   "plugins/api/ui/ui/EnvironmentEditor.tsx": 498,
