@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { backendClient } from '@/shared/api/client'
 import { eventSocket } from '@/shared/api/eventSocket'
+import { publishFsChange } from '@/shared/lib/fsChangeBus'
+import { publishFilesReloaded } from '@/shared/lib/fileReloadBus'
+import { publishConflictResolved } from './conflictResolvedBus'
+import { reloadGuard } from '../lib/reloadGuard'
+import { fileEditorOwnerKey } from '../model/fileDrafts'
 import { ApiError } from '@/shared/api/failure'
 import { clearFileDraft } from '../model/fileDrafts'
 import { fileContentCache } from '../model/fileContentCache'
@@ -365,6 +370,89 @@ describe('useFileEditor save ownership', () => {
       await editor.unmount()
       clearFileDraft('session-a', '/workspace/shared.ts')
       backend.restore()
+    }
+  })
+
+  test('resolved compare snapshots preserve later typing and reject a different owner', async () => {
+    const backend = mockEditorBackend()
+    const editor = await mountEditor()
+    const resolution = {
+      sessionId: 'session-a',
+      editPath: '/workspace/shared.ts',
+      expectedBuffer: 'base',
+      content: 'resolved',
+      hash: 'hash-resolved',
+    }
+    try {
+      await editor.act(async () => {
+        editor.current.setBuffer('later typing')
+        publishConflictResolved({ ...resolution, sessionId: 'another-session' })
+        publishConflictResolved({ ...resolution, editPath: '/workspace/other.ts' })
+      })
+      expect(editor.current.conflict).toBeNull()
+      await editor.act(async () => publishConflictResolved(resolution))
+      expect(editor.current.buffer).toBe('later typing')
+      expect(editor.current.conflict).toEqual({
+        diskContent: 'resolved',
+        diskHash: 'hash-resolved',
+      })
+      await editor.act(async () =>
+        publishConflictResolved({ ...resolution, expectedBuffer: 'later typing' }),
+      )
+      expect(editor.current.buffer).toBe('resolved')
+      expect(editor.current.baseHash).toBe('hash-resolved')
+      expect(editor.current.conflict).toBeNull()
+      expect(editor.current.dirty).toBe(false)
+    } finally {
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      backend.restore()
+    }
+  })
+
+  test('visible file signals schedule owned reloads and hiding cancels pending work', async () => {
+    const backend = mockEditorBackend()
+    const scheduled: Array<{ key: string; run: () => void }> = []
+    const schedule = spyOn(reloadGuard, 'scheduleReload').mockImplementation((key, run) => {
+      scheduled.push({ key, run })
+    })
+    const cancel = spyOn(reloadGuard, 'cancel')
+    const editor = await mountEditor()
+    try {
+      publishFsChange({ sessionId: 'another-session', paths: ['/workspace'] })
+      publishFsChange({ sessionId: 'session-a', paths: ['/elsewhere'] })
+      publishFilesReloaded(['/workspace/other.ts'])
+      expect(scheduled).toEqual([])
+      publishFsChange({ sessionId: 'session-a', paths: ['/workspace'] })
+      publishFilesReloaded(['/workspace/shared.ts'])
+      const owner = fileEditorOwnerKey('session-a', '/workspace/shared.ts')
+      expect(scheduled.map(({ key }) => key)).toEqual([owner, owner])
+      // The callback must inspect live typing, not the clean buffer at scheduling time.
+      await editor.act(async () => editor.current.setBuffer('new typing'))
+      backend.get.mockResolvedValueOnce({
+        path: '/workspace/shared.ts',
+        content: 'external write',
+        bytes: 14,
+        truncated: false,
+        hash: 'hash-external',
+      })
+      await editor.act(async () => scheduled[0]!.run())
+      expect(editor.current.buffer).toBe('new typing')
+      expect(editor.current.conflict).toEqual({
+        diskContent: 'external write',
+        diskHash: 'hash-external',
+      })
+      await editor.setVisible(false)
+      expect(cancel).toHaveBeenCalledWith(owner)
+      publishFsChange({ sessionId: 'session-a', paths: ['/workspace'] })
+      publishFilesReloaded(['/workspace/shared.ts'])
+      expect(scheduled).toHaveLength(2)
+    } finally {
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      backend.restore()
+      schedule.mockRestore()
+      cancel.mockRestore()
     }
   })
 
