@@ -148,7 +148,7 @@ three:
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | [`ctx.agents.list(userId, sessionId)`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/context.ts)                              | The enabled agents of the session's scope, its project's included: `{ id, handle, description? }` | Read-only; rejects a session the user does not own. Store `id`. |
 | [`context.session.speaker`](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/types.ts) in `execute`                                    | `{ agentId, handle }` of the agent whose turn it is                                               | Absent when the run has no addressable speaker.                 |
-| [`start(params, send, { userId })`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The user of the authenticated socket                                                              | Tags `s`, `r` and `n` are core's; registration rejects them.    |
+| [`start(params, send, { userId })`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The host-supplied Localix user ID of the socket                                                   | Tags `s`, `r` and `n` are core's; registration rejects them.    |
 
 ### Watching files
 

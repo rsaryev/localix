@@ -267,6 +267,18 @@ empty-project boundary: ordinary chats, including Default, do not inherit it. Qu
 for stale lazy descriptors and added resource-list caps. OAuth UI/round-trip and declarative-hook
 behavior remain pending their detailed content audit.
 
+## Plugin synchronization and host lifetime
+
+Compared the shared resource scheduler, project-file adapter, store publisher/snapshot reader,
+explicit mutation observer, and shared-module page lifetime with their implementations. Owner
+history includes `3a0d3c3`.
+
+Qualified `refresh()` as waiter completion rather than proof of a successful snapshot, documented
+bounded retries, and replaced authenticated-scope wording with host-supplied identity plus ownership
+checks. Corrected the UI-kit-only host-access claim and distinguished `pagehide` from hidden panes.
+Moved keyboard ownership into related guides so source references remain the final section. The full
+manifest, authoring/build pipeline, and HTML bridge sections still need their content audit.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.

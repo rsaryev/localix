@@ -27,14 +27,17 @@ const sync = useFileResourceSync({
 })
 ```
 
-Pass cancellation through the client to the request. `refresh()` waits for the current authoritative
-read, including a follow-up owed after an overlapping invalidation. `supersede()` expires an older
-read when a direct mutation answer already supplies the newer value. Keep optimistic/draft state out
-of an unconditional `apply`: merge independent changes or surface a conflict.
+Pass cancellation through the client to the request. `refresh()` waits for registered reads to
+settle, including a follow-up owed after an overlapping invalidation. It returns `Promise<void>`
+rather than a snapshot or success verdict; disconnect, teardown, and exhausted retries also release
+waiters. Keep failure state in `onError` and treat only `apply` as a new accepted snapshot.
+`supersede()` expires an older read when a direct mutation answer already supplies the newer value.
+Keep optimistic/draft state out of an unconditional `apply`: merge independent changes or surface a
+conflict.
 
 ## Publish after commit
 
-A JSON-store backend registers `createStoreChangeFeed` with its plugin name, an authenticated
+A JSON-store backend registers `createStoreChangeFeed` with its plugin name, an ownership-checking
 `resolveDir(userId, sessionId)`, a committed-write subscription, and `ctx.watchPath` when available.
 Register its `wsFrames` and release it through `onShutdown`. Never accept an absolute subscription
 path or trust a user ID from the command payload. `acceptPath` can narrow a directory to the owning
@@ -43,7 +46,8 @@ user's file; coarse filesystem events invalidate conservatively.
 The shared protocol uses commands `<plugin>:store.subscribe` and `<plugin>:store.unsubscribe`, frame
 tag `c`, and `{ plugin, sessionId }` invalidations. A status frame additionally supplies `live`.
 `sessionId: null` names installation-owned plugin state, not an arbitrary user's state. The socket's
-authenticated user still governs resolution and reads. Frames never contain credentials or
+host-supplied user ID still governs resolution and reads. The local API uses self-asserted identity;
+this scope contract does not authenticate a network caller. Frames never contain credentials or
 documents.
 
 `live: true` means the native source is covered, not merely that the host accepted a command.
@@ -59,9 +63,10 @@ successful committed write into a failed mutation.
 
 `createResourceSync` from `ui/resource-sync` is shared with core. It coalesces invalidations,
 serializes each registered reader, rejects superseded answers, aborts cancellable reads on teardown,
-and retries failures with bounded delays. New invalidation bypasses a pending retry delay. Shared
-resources use this scheduler too, including invalidations during their first load and cache reset
-while a request is pending.
+and retries failures with bounded delays (1, 2, and 4 seconds by default, then waits for a new
+invalidation or refresh). New invalidation bypasses a pending retry delay. Shared resources use this
+scheduler too, including invalidations during their first load and cache reset while a request is
+pending.
 
 Subscribe and then reconcile to close the initial-read gap. Reconcile again after reconnect and
 returning to visibility. Follow the owning work item's visibility; hidden store feeds unsubscribe
@@ -85,3 +90,16 @@ Exercise initial subscription, edits from another window, agent/API writes, atom
 bursts during an in-flight read, reconnect, scope changes, watcher failure and unmount. Assert that
 an older answer cannot undo a newer mutation, a dirty draft survives, and a healthy idle resource
 makes no periodic requests. Test user isolation and release both write and filesystem listeners.
+
+## Related guides
+
+- [Workbench UI](plugin-ui.md)
+- [Permission rules](../features/permissions.md)
+
+## Source of truth
+
+- [Resource scheduler](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/resource-sync.ts)
+- [Project-file synchronization](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/file-resource-sync.ts)
+- [Store change publisher](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/store-change-feed.ts)
+- [Store snapshot reader](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/store-snapshot.ts)
+- [Explicit mutation notifications](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/observe-mutations.ts)

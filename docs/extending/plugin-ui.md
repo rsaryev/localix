@@ -10,7 +10,7 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 | -------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | UI artifact    | `dist/ui/` in a plugin's folder: an entry, hashed chunks, styles, a manifest.    | Built by the app from the plugin's `ui/` sources.            |
 | Revision       | A hash of every artifact file, carried in the plugin record.                     | Moves when the UI changed, not when the backend or docs did. |
-| UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.             | The only way plugin code reaches the host.                   |
+| UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.             | Public components; SDK services are separate host ports.     |
 | Shared module  | React, `@localixai/plugin-sdk` and the kit, taken from the host at runtime.      | Every other dependency is bundled into the artifact.         |
 | Plugin kit     | What the app ships to build plugins: template, shared-module exports, theme CSS. | `resources/plugin-kit`; no source tree or toolchain needed.  |
 | Frame / domain | The template's fixed shell versus the part a copy replaces.                      | The frame imports no domain module.                          |
@@ -247,7 +247,7 @@ Use `useFileResourceSync` for file-backed lists and editors: it coordinates read
 answers, and polls only while the watcher is unavailable. A sandboxed view (`views`) never receives
 file paths; this door belongs to native workbench UI only.
 
-See [Plugin synchronization](plugin-sync.md) for source coverage, authenticated scopes, caches,
+See [Plugin synchronization](plugin-sync.md) for source coverage, host-bound scopes, caches,
 recovery, and draft policies.
 
 ### Places in the host's own surfaces
@@ -357,15 +357,17 @@ streaming and mention options rather than adding a second Markdown parser.
 - A plugin edit remounts that plugin's panels; React Fast Refresh does not preserve state inside a
   plugin.
 - A dependency that `require`s a shared module synchronously is supported only for React.
-- A plugin UI must not use a top-level `await` of its own. The build emits one for each shared
-  import, and the host keeps those safe by never settling a shared-module load after the page is
-  hidden. WebKit freezes the app when it resumes any other top-level `await` after a reload.
+- Avoid plugin-owned top-level `await`: it is outside the host's page-lifetime protection. Shared
+  imports use host-controlled awaits whose promises stop settling after `pagehide`, to prevent the
+  observed WebKit reload failure. Hiding a workbench tab is not the same as ending the page
+  lifetime.
 
 ## Related guides
 
 - [Build plugins](plugins.md)
 - [Report plugin failures](plugin-problems.md)
 - [Author a skill](skills-authoring.md)
+- [Keyboard ownership](keyboard-ownership.md) — scoped commands must yield to controls and overlays.
 
 ## Source of truth
 
@@ -394,6 +396,3 @@ streaming and mention options rather than adding a second Markdown parser.
   and
   [session surfaces](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/contrib.ts)
 - [UI kit](https://github.com/rsaryev/localix/tree/main/apps/ui/src/app/kit)
-
-Pane keyboard commands must follow DOM focus and yield to controls and overlays.
-[Keyboard ownership](keyboard-ownership.md) explains scoped registration and command precedence.
