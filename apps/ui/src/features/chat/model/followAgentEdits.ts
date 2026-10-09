@@ -10,8 +10,8 @@
 // two are mutually exclusive by construction (viewer docs are excluded here), so
 // the two routers never fight over the same file.
 //
-// No React / DOM / network — just string math over paths, so the router's
-// (stateful) dedup/active-session gate is the only untested part.
+// No React / DOM / network — just string math over paths. sessionFileEvents owns
+// the replay history and active-session gates.
 
 import { fileExtension, hasDedicatedViewer } from '@/shared/lib/contentTypeRouting'
 
