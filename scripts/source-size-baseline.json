@@ -133,7 +133,7 @@
   "apps/ui/src/widgets/workspace-shell/model/railLayout.ts": 312,
   "apps/ui/src/widgets/workspace-shell/ui/WorkspaceShell.tsx": 489,
   "packages/agent/src/agents/chat.ts": 446,
-  "packages/agent/src/agents/types.ts": 752,
+  "packages/agent/src/agents/types.ts": 722,
   "packages/kit/src/controls/breadcrumb-select.tsx": 309,
   "packages/kit/src/layout/tabs/tabs.tsx": 714,
   "packages/kit/src/overlays/dialog.tsx": 314,

@@ -8,11 +8,7 @@ import type {
   ImageContent,
   FileContent,
 } from '..'
-import type {
-  HumanInLoopController,
-  HumanInLoopRequestBase,
-  HumanInLoopResponseBase,
-} from './human-in-loop'
+import type { HumanInLoopController } from './human-in-loop'
 import type { AgentSource } from './sources'
 import type { CallClass } from './call-class'
 
@@ -679,85 +675,7 @@ export interface AgentMessageOrigin {
   model: string
 }
 
-/**
- * One assistant-part update. `delta` is always the newly appended provider
- * fragment (empty for lifecycle-only start/end frames); cumulative text and the
- * authoritative final message deliberately do not travel on `message_update`.
- */
-export type AgentMessageDelta =
-  | {
-      kind: 'text'
-      phase: 'start' | 'delta' | 'end'
-      contentIndex: number
-      delta: string
-      origin: AgentMessageOrigin
-      textSignature?: string
-    }
-  | {
-      kind: 'reasoning'
-      phase: 'start' | 'delta' | 'end'
-      contentIndex: number
-      delta: string
-      origin: AgentMessageOrigin
-      thinkingSignature?: string
-      redacted?: boolean
-    }
-  | {
-      kind: 'tool_call'
-      phase: 'start' | 'delta' | 'end'
-      contentIndex: number
-      delta: string
-      id: string
-      name: string
-      input: unknown
-      origin: AgentMessageOrigin
-      thoughtSignature?: string
-    }
-
-export type AgentEvent =
-  | { type: 'agent_start'; timestamp: number }
-  | {
-      type: 'agent_end'
-      timestamp: number
-      stopReason?: AgentStopReason
-    }
-  | { type: 'turn_start'; turnIndex: number }
-  | {
-      type: 'turn_end'
-      turnIndex: number
-      message: AssistantMessage
-      toolResults: AgentToolResult[]
-    }
-  | { type: 'message_start'; message: AgentMessage }
-  | { type: 'message_update'; delta: AgentMessageDelta }
-  | { type: 'message_end'; message: AgentMessage }
-  | {
-      type: 'tool_execution_start'
-      toolCallId: string
-      toolName: string
-      input: unknown
-    }
-  | { type: 'tool_execution_update'; toolCallId: string; details: unknown }
-  | {
-      type: 'human_in_loop_request'
-      toolCallId: string
-      toolName: string
-      request: HumanInLoopRequestBase
-    }
-  | {
-      type: 'human_in_loop_response'
-      toolCallId: string
-      toolName: string
-      response: HumanInLoopResponseBase
-    }
-  | {
-      type: 'tool_execution_end'
-      toolCallId: string
-      toolName: string
-      result: AgentToolResult
-      provenance?: ToolGateProvenance
-    }
-  | { type: 'error'; error: Error }
+export type { AgentMessageDelta, AgentEvent } from './event-types'
 
 export interface BeforeToolCallContext {
   toolCallId: string
