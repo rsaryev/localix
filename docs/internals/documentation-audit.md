@@ -241,6 +241,19 @@ inspection: shell expansion can place it in argv. Documented cached Vault resolu
 and replaced the obsolete multi-policy permission wording with the actual per-run rule gate.
 Background-job lifecycle and the remaining monitor/plugin streaming claims still need review.
 
+## Privacy storage map and Vault bounds
+
+Compared Vault database/version ownership, master-key loading, authenticated payload context, legacy
+cipher handling, per-user exposure-shield variants, MCP OAuth storage, updater cadence/error
+posture, wire-dump placement, and the shell WebCrypto fallback with source. Owner history includes
+`a00fef1` and the initial implementation.
+
+Corrected the privacy table: encrypted Vault versions and readable metadata live in SQLite; the
+separate Vault directory owns the master key. Documented the paired backup boundary and key refusal
+instead of replacement. Qualified the WebCrypto keychain claim by initialization success/fallback.
+Clarified the shield's trimmed-length floor, 256-variant per-user cache, and eviction behavior. The
+broader outbound and native-plugin privacy claims still need their full source review.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.

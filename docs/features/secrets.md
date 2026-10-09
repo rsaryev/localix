@@ -33,10 +33,14 @@ can access both the ciphertext and its key.
 ### Storage and versioning
 
 The `local-aes` backend encrypts each value with AES-256-GCM. Localix creates a random master key at
-`~/.localix/vault/.masterkey` and requests owner-only file permissions.
+`~/.localix/vault/.masterkey` and requests owner-only file permissions. Item metadata and encrypted
+versions live in the configured SQLite database; the key directory is not the value store. Keep the
+database and master key together for backup and restoration. A malformed or unreadable existing key
+is refused rather than silently replaced.
 
-Authenticated data binds ciphertext to the user, item, version, and Vault format version. Moving
-encrypted payloads between those records therefore fails authentication.
+Current `v2.` ciphertext uses authenticated data binding the user, item, version, and Vault format.
+Moving that ciphertext between records fails authentication. The cipher still reads legacy
+unprefixed tokens, which do not carry this context binding.
 
 Rotation and metadata edits append a version, then advance the item's current-version pointer. The
 API exposes version metadata for inspection but has no route to reveal or restore an older plaintext
@@ -57,8 +61,10 @@ available; metadata updates remain non-interactive, and the tool classifies each
 rule keeps `list`/`get` while denying the rest.
 
 After a runtime resolves a value, the exposure shield tracks its exact raw, URL-encoded, and Base64
-forms for that process. It redacts matches from recorded results, errors, tool-input records, and
-progress events; it does not alter the input sent to the trusted consumer.
+forms for that Vault user in the current process. The bounded cache holds at most 256 variant
+strings per user; newer registrations can evict older entries. It redacts matches from recorded
+results, errors, tool-input records, and progress events; it does not alter the input sent to the
+trusted consumer.
 
 ### HTTP boundary
 
@@ -96,8 +102,9 @@ select a different implemented storage backend today.
   do not make an external service available.
 - Trusted provider and plugin code can receive plaintext after resolution. Install and run that code
   with the same care as other local code.
-- The exposure shield is process-local and exact-match based. Values shorter than 12 non-whitespace
-  characters are not registered, and values resolved outside the process are unknown to it.
+- The exposure shield is process-local and exact-match based. Values whose trimmed length is below
+  12 characters are not registered. Older variants can be evicted, and values resolved outside the
+  process are unknown to it.
 - Encoded forms beyond the tracked raw, URL-encoded, and Base64 variants are not guaranteed to be
   redacted.
 - Version history is an audit trail, not a restore interface. Deleting an item also deletes its
@@ -115,6 +122,9 @@ select a different implemented storage backend today.
 ## Source of truth
 
 - [Vault service and versioning](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/service.ts)
+- [Exposure shield and cache bounds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/exposure-shield.ts)
+- [Vault master-key loading](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/master-key.ts)
+- [Vault database storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/store.ts)
 - [Vault HTTP routes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/routes.ts)
 - [Encryption and authenticated-data format](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/cipher.ts)
 - [Agent Vault tool and approval boundary](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/agent-tool.ts)

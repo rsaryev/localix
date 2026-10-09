@@ -46,16 +46,17 @@ remain on the same machine unless you deliberately expose or proxy the API.
 
 ### Local storage
 
-| Data                                                          | Default location                                                                     | Protection and scope                                                                                                                                                                                                                                                                                                  |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sessions, projects, tasks, transcripts, and configuration     | `~/.localix/localix.db`                                                              | SQLite rows are plaintext. Plugin config and non-OAuth MCP config can contain credentials, environment tokens, or authorization headers; use supported secret references. The database, WAL, and SHM files receive owner-only permissions on a best-effort basis.                                                     |
-| Documents, tables, media, and other row-backed blobs          | Beside the configured database                                                       | Changing `LOCALIX_DB_FILE` moves this database-adjacent storage.                                                                                                                                                                                                                                                      |
-| Provider credentials and secret values                        | `~/.localix/vault`                                                                   | Values use AES-256-GCM. The 32-byte master key is stored at `~/.localix/vault/.masterkey`.                                                                                                                                                                                                                            |
-| MCP OAuth credentials                                         | `~/.localix/mcp-oauth`                                                               | Sensitive fields use AES-256-GCM; server URLs remain readable for status and invalidation.                                                                                                                                                                                                                            |
-| Memories, plugin state, temporary files, and runtime state    | Subdirectories under `~/.localix`                                                    | Format and sensitivity depend on the feature that wrote the file.                                                                                                                                                                                                                                                     |
-| UI preferences and recent selections                          | Browser `localStorage` and `sessionStorage`                                          | Stored in the desktop webview or browser profile, outside SQLite.                                                                                                                                                                                                                                                     |
-| Desktop shell state: window zoom, theme, WebCrypto master key | The app config directory (`~/Library/Application Support/ai.localix.tauri` on macOS) | Plain files owned by the desktop shell, not the API. On macOS 15 and later the 16-byte key that wraps the `CryptoKey` objects websites store in the built-in browser lives in `webcrypto-master-key` with owner-only permissions, instead of the login keychain, so the browser never asks for the keychain password. |
-| API and desktop boot logs                                     | Beside the database and in the operating-system temporary directory                  | Logs can contain diagnostics; the API log file is created with owner-only permissions.                                                                                                                                                                                                                                |
+| Data                                                          | Default location                                                                     | Protection and scope                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sessions, projects, tasks, transcripts, and configuration     | `~/.localix/localix.db`                                                              | Most SQLite rows are plaintext; Vault value payloads are encrypted. Plugin config and non-OAuth MCP config can contain credentials, environment tokens, or authorization headers; use supported secret references. The database, WAL, and SHM files receive owner-only permissions on a best-effort basis. |
+| Documents, tables, media, and other row-backed blobs          | Beside the configured database                                                       | Changing `LOCALIX_DB_FILE` moves this database-adjacent storage.                                                                                                                                                                                                                                           |
+| Vault metadata and encrypted credential versions              | The configured SQLite database                                                       | Item metadata is readable; primary values use AES-256-GCM in version rows. The key is stored separately.                                                                                                                                                                                                   |
+| Vault master key                                              | `~/.localix/vault/.masterkey`                                                        | A 32-byte key, requested with owner-only file permissions. Preserve it with database backups; the database alone cannot decrypt Vault versions.                                                                                                                                                            |
+| MCP OAuth credentials                                         | `~/.localix/mcp-oauth`                                                               | Sensitive fields use AES-256-GCM; server URLs remain readable for status and invalidation.                                                                                                                                                                                                                 |
+| Memories, plugin state, temporary files, and runtime state    | Subdirectories under `~/.localix`                                                    | Format and sensitivity depend on the feature that wrote the file.                                                                                                                                                                                                                                          |
+| UI preferences and recent selections                          | Browser `localStorage` and `sessionStorage`                                          | Stored in the desktop webview or browser profile, outside SQLite.                                                                                                                                                                                                                                          |
+| Desktop shell state: window zoom, theme, WebCrypto master key | The app config directory (`~/Library/Application Support/ai.localix.tauri` on macOS) | On macOS 15+, the shell supplies a 16-byte WebCrypto wrapping key from `webcrypto-master-key` when initialization succeeds. Failure falls back to WebKit's keychain path.                                                                                                                                  |
+| API and desktop boot logs                                     | Beside the database and in the operating-system temporary directory                  | Logs can contain diagnostics; the API log file is created with owner-only permissions.                                                                                                                                                                                                                     |
 
 Project files stay in the directories you select. Generated artifacts create additional files;
 opening a project does not copy it into the database.
@@ -73,17 +74,21 @@ Use the [secrets guide](../features/secrets.md) for vault references and rotatio
 
 ## Limits
 
-- Local storage is not the same as operating-system isolation. A process running as the same user
-  can read the database, the vault master key, and the browser's WebCrypto master key.
-- On macOS 13 and 14 WebKit keeps the browser's WebCrypto master key in the login keychain. The
-  signed release reads it without a prompt; an unsigned or ad-hoc build can be asked for the
-  keychain password.
+- Local storage is not the same as operating-system isolation. The database and file-backed keys are
+  accessible to processes with sufficient local account privileges; system keychain access depends
+  on the operating system's checks.
+- On macOS 13 and 14 WebKit keeps the browser's WebCrypto master key in the login keychain. Release
+  signing is intended to avoid repeated prompts; development builds or shell-key fallback can still
+  use the keychain and prompt.
 - Vault encryption protects stored values from casual plaintext inspection. It cannot protect a
   value after an enabled consumer resolves and sends it.
-- The SQLite transcript and most product configuration are not encrypted by Localix.
+- The SQLite transcript, Vault metadata, and most product configuration are not encrypted by
+  Localix.
 - Plugin backend code is trusted native code in the API process. Localix does not centrally inspect
   or constrain every destination it can contact.
 - Provider, MCP, plugin, Git, package-registry, and fetched-URL retention is outside Localix.
+- Back up the database and `vault/.masterkey` together to preserve encrypted Vault values. Changing
+  `LOCALIX_DB_FILE` relocates the encrypted versions with the database, but does not move that key.
 - Removing the application does not promise removal of the database, vault, browser preferences,
   launcher, or logs. Back up related state together before any destructive reset.
 
@@ -99,6 +104,8 @@ Use the [secrets guide](../features/secrets.md) for vault references and rotatio
 
 - [Home and database paths](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/env.ts)
 - [SQLite permissions and adjacent storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/db/connection.ts)
+- [Vault database and key ownership](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/store.ts)
+- [Vault version persistence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/store-internals.ts)
 - [Vault cipher](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/cipher.ts)
 - [Vault master key](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/master-key.ts)
 - [MCP OAuth storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/store.ts)
