@@ -241,6 +241,17 @@ roots, browser-local recovery, 60-step local undo versus 60 saved snapshots, fil
 PDF byte reuse while a matching layout is cached. Other detailed viewer and Resume UI/import claims
 remain in scope for their remaining review.
 
+## Notification retention, buffering, and delivery
+
+Compared journal projection/retention, cleanup timers, client operation buffering, preferences,
+native interruption policy, and current badge labels with source. Relevant retention and buffer
+history currently traces to the initial commit.
+
+Removed unconditional forever-retention and newest-200 claims. Documented periodic per-user pruning,
+pending-entry eviction under the hard cap, the 1,000-operation offline buffer, and client-local
+preferences. Qualified configured SQLite storage and background server lifetime, corrected the badge
+terminology, and distinguished browser-only history from desktop interruption with age limits.
+
 ## Related guides
 
 - [Audit scope and remaining work](documentation-audit.md)

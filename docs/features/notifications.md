@@ -1,27 +1,29 @@
 # Manage notifications
 
-The Event Center is the one journal of what happened while you were not looking: agent runs,
-sub-agents and jobs, requests for your input, background terminals, problems the app or a plugin
-found, and your own actions that failed. Every message the app shows about an event lands here and
-stays until you clear it; errors and requests for input can also interrupt you on supported clients.
-The answer to something you just did — "Copied", "Nothing to undo", "Branch already exists" — is not
-an event: it appears for a few seconds beside the control you used and is never written here.
+The Event Center records agent runs, sub-agents and jobs, requests for your input, background
+terminals, and problems the app or a plugin found. Errors and requests for input can also interrupt
+you on supported clients. History is retained by the server until it is cleared or removed by
+retention; not every message the interface shows creates an entry.
+
+The answer to something you just did — "Copied", "Nothing to undo", "Branch already exists" —
+appears briefly beside the control and is not journaled. A form that already shows its failure does
+not add a duplicate generic event.
 
 ## What you can do
 
-| Action                       | Mechanism                                                   | Boundary                                                         |
-| ---------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- |
-| Review recent activity       | Open the title-bar bell; entries appear newest first        | History is kept by the local server; every window shows the same |
-| Read an entry in full        | Select the row; its body, actions and trace expand          | Expanding an entry marks it read                                 |
-| Return to a source session   | Select the arrow on a row that names a session              | Application messages without a session are not navigable         |
-| Answer a waiting request     | Select **Respond** on a human-input entry                   | The entry settles once the request is answered, expires or ends  |
-| Retry a failed top-level run | Select **Retry** on the failure entry                       | Refused once a newer reply exists; settled by a later run        |
-| Hand a problem to the agent  | Select **Send to agent** on a problem entry                 | Sends the report as written, fix hints included                  |
-| Find an entry                | Search, or filter by status, event type, severity and time  | Search syntax is listed behind the **?** in the search field     |
-| Manage unread state          | Expand an entry, open its chat, or select **Mark all read** | Opening the bell alone does not mark anything read               |
-| Remove history               | Remove one entry, or select **Clear history**               | Clear keeps pending requests and problems that are still true    |
-| Control interruptions        | Choose **Always**, **When app is inactive**, or **Never**   | Durable history is unaffected by this choice                     |
-| Show an app-icon count       | Enable **Unread count on the app icon**                     | Requires the desktop shell and operating-system support          |
+| Action                       | Mechanism                                                   | Boundary                                                                 |
+| ---------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Review recent activity       | Open the title-bar bell; entries appear newest first        | The local server shares history with connected windows for the same user |
+| Read an entry in full        | Select the row; its body, actions and trace expand          | Expanding an entry marks it read                                         |
+| Return to a source session   | Select the arrow on a row that names a session              | Application messages without a session are not navigable                 |
+| Answer a waiting request     | Select **Respond** on a human-input entry                   | The entry settles once the request is answered, expires or ends          |
+| Retry a failed top-level run | Select **Retry** on the failure entry                       | Refused once a newer reply exists; settled by a later run                |
+| Hand a problem to the agent  | Select **Send to agent** on a problem entry                 | Sends the report as written, fix hints included                          |
+| Find an entry                | Search, or filter by status, event type, severity and time  | Search syntax is listed behind the **?** in the search field             |
+| Manage unread state          | Expand an entry, open its chat, or select **Mark all read** | Opening the bell alone does not mark anything read                       |
+| Remove history               | Remove one entry, or select **Clear history**               | Clear keeps pending requests and problems that are still true            |
+| Control interruptions        | Choose **Always**, **When app is inactive**, or **Never**   | Durable history is unaffected by this choice                             |
+| Show an app-icon count       | Enable the waiting count or indicator on the app icon       | Requires the desktop shell and operating-system support                  |
 
 The command palette provides **Event Center**, **Mark all events read**, and **Clear event
 history**.
@@ -90,18 +92,27 @@ rename belongs to the answer beside the control, not to an entry.
 
 ### Where history lives
 
-The journal is kept by the local server, under `~/.localix`, so an agent that finishes while every
-window is closed is waiting in the bell when you come back, and reading or clearing an entry in one
-window does it in all of them. A problem the app notices while the server is unreachable is shown at
-once and delivered when the server is back.
+The journal lives in the server’s configured SQLite database, normally under `~/.localix`;
+`LOCALIX_DB_FILE` can change that location. While the server keeps running, an agent can finish
+without a window connected and its event is available when you return. Reading or clearing an entry
+propagates to connected windows for the same user.
+
+A client-originated problem can appear locally while the server is unreachable. The client buffers
+up to 1,000 unacknowledged journal operations and attempts to replay them when the server returns.
+Oldest operations are dropped beyond that cap. Reload recovery uses browser local storage and is
+best-effort; this buffer is not an unlimited delivery guarantee.
 
 ### Retention
 
-An entry that no longer needs anything from you leaves the journal 30 days after it was last seen,
-and the journal never holds more than 5,000 entries; the bell shows the newest 200. When the journal
-is full, the oldest settled entries go first; a request still waiting for you or a problem still
-true is kept over newer noise. Replaying the same lifecycle event does not add a row or reset its
-read state.
+Entries that no longer need action become eligible for removal 30 days after their last occurrence.
+Cleanup runs about one minute after server startup and then daily. It also trims each user’s journal
+to 5,000 entries: oldest non-pending entries go first, followed by oldest pending entries if
+necessary. Waiting requests and unresolved problems get priority, not permanent protection from that
+cap.
+
+The bell’s client projection holds at most 200 entries and preferentially keeps pending work. It is
+not always the newest 200 rows or a complete view of server history. Replaying the same lifecycle
+event does not add a row or reset its read state.
 
 ## Configuration
 
@@ -113,6 +124,9 @@ read state.
 | **Waiting count on the app icon** | On or off                               | On                   | Counts chats waiting on you where the desktop badge API works |
 | **Terminal compatibility**        | Automatic, OSC 9, OSC 777, Audible bell | Automatic            | Stores a web preference for terminal-signal delivery          |
 
+Notification preferences use browser local storage for the current app/profile. They are separate
+from the shared server journal and can differ between clients.
+
 ### Terminal signals
 
 Automatic terminal delivery requires a TTY, `TERM_PROGRAM=WarpTerminal`, and a non-empty
@@ -123,10 +137,13 @@ or BEL method.
 
 - A button that runs code in the window that showed it, such as **Undo** or a problem's **Open**,
   exists only in that window and is gone after a reload; the entry itself stays.
-- The web and desktop app interrupt through native desktop banners only; there is no pop-up toast.
-  The few-second answer to your own action is not an interruption and has no history: once it is
-  gone, it is gone. Successful completions and ordinary warnings never interrupt, even when **Notify
-  me** is **Always**.
+- Browser-only clients keep the Event Center without native desktop banners. The desktop shell
+  delivers native banners when the OS permits them; the web/desktop notification path has no pop-up
+  toast. Brief control feedback has no journal history. Successful completions and ordinary warnings
+  do not interrupt, even with **Notify me → Always**.
+- Interruption is age-limited independently of history: run events have a ten-minute window, waiting
+  requests and standing conditions a one-hour window. An older event can remain in the journal
+  without producing a banner on reconnect. **Always** changes focus policy, not this age limit.
 - Desktop banners contain title and body only. Retry, Respond and source navigation stay in the
   Event Center.
 - The app icon badge counts chats waiting on you (a blocked request, a plan, a mention — see
@@ -149,6 +166,10 @@ or BEL method.
 - [Event normalization](https://github.com/rsaryev/localix/blob/main/packages/notifications/src/events.ts)
 - [Channel policy](https://github.com/rsaryev/localix/blob/main/packages/notifications/src/policy.ts)
 - [Event Center](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/notification-center/NotificationCenter.tsx)
+- [Retention priority and caps](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/notifications/retention.ts)
+- [Cleanup schedule](https://github.com/rsaryev/localix/blob/main/apps/api/src/bootstrap/ops-timers.ts)
+- [Client projection cap](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/core.ts)
+- [Offline operation buffer](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/outbox.ts)
 - [Server journal](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/notifications/journal.ts)
 - [Window copy of the journal](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/journal.ts)
 - [Interruption in the window](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/notifications/interruption.ts)
