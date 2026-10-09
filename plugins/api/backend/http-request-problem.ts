@@ -1,5 +1,6 @@
 import type { HttpRequestInput } from './http-request-schema'
-import { HTTP_METHODS, isHttpUrl, parseMethod } from './request-spec'
+import { HTTP_METHODS, parseMethod } from './request-spec'
+import { isHttpUrl } from './request-url-policy'
 import { hasTemplate } from './template'
 
 /**

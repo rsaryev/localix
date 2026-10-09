@@ -23,16 +23,15 @@ import {
   bodyIsForm,
   buildUrl,
   FORM_URLENCODED,
-  isHttpUrl,
   isMultipart,
   methodAllowsBody,
   type Pair,
   type RequestSpec,
   unfilledPathParams,
   unfilledPathParamsProblem,
-  urlProblem,
 } from './request-spec'
 import { redactUrlCredentials } from './request-credentials'
+import { isHttpUrl, urlProblem } from './request-url-policy'
 
 export interface SendOptions {
   timeoutMs: number
