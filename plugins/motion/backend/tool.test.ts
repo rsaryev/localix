@@ -6,7 +6,7 @@ import { z } from 'zod'
 import type { PluginContext } from '@localixai/plugin-sdk/backend'
 import { register, createRoutes } from './index'
 import { toolInputSchema } from './tool'
-import { layerSchema } from '../shared/schema'
+import { cameraSchema, layerSchema } from '../shared/schema'
 import { createTemplateDocument } from '../shared/templates'
 
 const dirs: string[] = []
@@ -36,6 +36,7 @@ test('agent guide and custom authoring share canonical state with the workbench 
   expect(guide.templates.relay.category).toBe('Product')
   expect(guide.templates.nightfall.category).toBe('Brand')
   expect(guide.primitives.layouts).toEqual(expect.arrayContaining(['hook', 'focus', 'wordmark']))
+  expect(cameraSchema.safeParse(guide.primitives.cameraExample).success).toBe(true)
   expect(guide.schema.properties.scenes).toBeDefined()
   const document = createTemplateDocument('kinetic', 'Authored film')
   document.scenes[0]!.layers = [

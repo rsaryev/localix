@@ -54,9 +54,10 @@ selection criterion. No external skill is silently installed or made a runtime d
   selection, and a template can be reviewed before creating a draft. The Localix shell and kit
   remain the visual authority.
 
-The implemented motion vocabulary is original: clipped poster type, diagonal ribbons, geometric
-orbits, serif editorial frames, connected steps and editable bar charts. Reusable ring, rosette,
-orbital mark and line layers combine with complete Pop, Glide, Pulse and Turn keyframe recipes.
+The implemented motion vocabulary is original: clipped poster type, projected lettering, folded
+planes, gathering cards, a faceted cylindrical token, an illustrative editorial page, connected
+steps and editable bar charts. Reusable ring, rosette, orbital mark and line layers remain available
+alongside rectangle, grid and frame layers, with complete Pop, Glide, Pulse and Turn recipes.
 
 ## Dark hook and cinematic studies
 
@@ -71,7 +72,41 @@ specifically `references/motion-craft.md` and `references/visual-standard.md`: e
 visual handoff, and one leading idea per beat. That repository is AGPL-3.0; it is a linked authoring
 reference, with no copied instructions, implementation or media.
 
-Blackout, Relay and Nightfall are original frame-sampled studies of this direction. Hook uses a
-measured stage and clipped type with a short scale settle. Focus reveals an aperture or editable
-product flow. Wordmark resolves into a quiet lockup. Grid and aperture-frame layers are reusable
-validated primitives. All dark film colors remain content palettes, independent of host chrome.
+Blackout and Nightfall retain original frame-sampled studies of this direction, with controlled
+camera tracks and settled closing holds. Hook uses a measured stage and clipped type. Focus reveals
+an aperture or editable product flow. Wordmark resolves into a quiet lockup; its enclosing tilted
+oval was removed following the user's explicit rejection. Grid and aperture-frame layers remain
+reusable validated primitives. All dark film colors remain content palettes, independent of host
+chrome.
+
+## Local camera reference study and template choreography
+
+Four user-supplied local films were decoded and inspected as timed native frames on 2026-10-09. The
+studies covered a lit rotating token and traveling rail, a tactile app dock leading into a product
+interface, layered collection and sorting, and a tilted portfolio page with a file handoff. Their
+lesson was continuous spatial choreography: camera movement, object scale, depth and the handoff
+between beats should explain one composition rather than decorate independent slides. Private paths,
+filenames and reference media are not preserved in this repository.
+
+Relay was reviewed first as the single prototype requested by the user. The user then approved
+extending its camera and composition approach across the template library. Relay studies the second
+film's sequence with original geometry and content: title, dark dock, isolated double-chevron mark,
+product close-up and a retreat into a wall of screens. It remains one continuous eight-second scene
+with a settled final screen composition. The workspace is an original illustrative creative board;
+none of the reference film's interface, footage or assets is redistributed. An uploaded image can
+replace the illustration while retaining the camera track.
+
+The remaining directions use distinct original stages rather than repeating the dock sequence. Orbit
+introduces a cylindrical token with lit facets before its product and steps. Type play and Offbeat
+stage projected lines of lettering; Daylight and Connect gather editable items into a stack.
+Momentum renders the scene's value, suffix and series as a spatial chart. Soft signal uses folded
+rectangular planes instead of its former rings. Field notes follows a file handoff into an
+illustrative editorial page, with an optional user image and a serif closing frame. Blackout and
+Nightfall preserve their masks, grids and aperture language.
+
+The implementation adds validated camera poses, layer depth and tilt, and frame-sampled projective
+surfaces. Preview, seeking and export use the same renderer; changing scene duration retimes the
+camera and layer keyframes proportionally. Projected lettering preserves its texture-to-plane aspect
+ratio, and Typeset scenes expose a sans serif or serif choice. All eleven directions use camera
+choreography and readable final holds. This records the approved approach and its original
+implementation, not a claim of photorealistic rendering or equivalence to the supplied films.

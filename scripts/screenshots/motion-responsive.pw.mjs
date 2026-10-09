@@ -77,7 +77,16 @@ for (const [name, width, theme] of [
     const columns = await page
       .getByRole('group', { name: 'Motion templates' })
       .evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(' ').length)
-    expect(columns).toBe(width < 600 ? 2 : 4)
+    expect(columns).toBe(width < 600 ? 2 : 6)
+    if (width >= 1000) {
+      const last = page.getByRole('button', { name: 'Preview Field notes template', exact: true })
+      const withinBody = await last.evaluate(
+        (node) =>
+          node.getBoundingClientRect().bottom <=
+          node.closest('[data-slot="motion-creation-body"]').getBoundingClientRect().bottom,
+      )
+      expect(withinBody).toBe(true)
+    }
     await expect(
       page.getByRole('button', { name: 'Start from scratch', exact: true }),
     ).toBeVisible()

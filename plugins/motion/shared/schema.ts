@@ -1,6 +1,14 @@
 import { z } from 'zod'
 
 export const idSchema = z.string().uuid()
+export const spatialLayouts = [
+  'showcase',
+  'typeset',
+  'token',
+  'gather',
+  'portfolio',
+  'chart',
+] as const
 export const layouts = [
   'title',
   'kinetic',
@@ -18,6 +26,7 @@ export const layouts = [
   'hook',
   'focus',
   'wordmark',
+  ...spatialLayouts,
   'custom',
 ] as const
 export const paletteIds = [
@@ -55,6 +64,27 @@ export const keyframeSchema = z.strictObject({
   opacity: z.number().min(0).max(1).default(1),
   easing: z.enum(['linear', 'smooth', 'out', 'spring']).default('out'),
 })
+export const cameraFrameSchema = z.strictObject({
+  time: z.number().min(0).max(20),
+  x: z.number().min(-12).max(12).default(0),
+  y: z.number().min(-12).max(12).default(0),
+  z: z.number().min(0.3).max(16).default(2.4),
+  pitch: z.number().min(-80).max(80).default(0),
+  yaw: z.number().min(-80).max(80).default(0),
+  roll: z.number().min(-180).max(180).default(0),
+  easing: z.enum(['linear', 'smooth', 'out']).default('smooth'),
+})
+export const cameraSchema = z.strictObject({
+  fov: z.number().min(25).max(90).default(50),
+  frames: z
+    .array(cameraFrameSchema)
+    .min(1)
+    .max(24)
+    .refine(
+      (frames) => frames.every((frame, i) => i === 0 || frame.time > frames[i - 1]!.time),
+      'Camera frame times must increase.',
+    ),
+})
 export const layerSchema = z.strictObject({
   id: idSchema,
   kind: z.enum([
@@ -74,6 +104,9 @@ export const layerSchema = z.strictObject({
   width: z.number().min(0.01).max(2).default(0.4),
   height: z.number().min(0.01).max(2).default(0.2),
   fontSize: z.number().min(0.01).max(0.3).default(0.08),
+  depth: z.number().min(-6).max(6).default(0),
+  tiltX: z.number().min(-85).max(85).default(0),
+  tiltY: z.number().min(-85).max(85).default(0),
   assetId: idSchema.nullable().default(null),
   keyframes: z
     .array(keyframeSchema)
@@ -89,11 +122,13 @@ export const sceneSchema = z.strictObject({
   id: idSchema,
   layout: z.enum(layouts),
   headline: z.string().trim().max(180),
+  typeface: z.enum(['sans', 'serif']).default('sans'),
   body: z.string().max(600).default(''),
   label: z.string().max(80).default(''),
   duration: z.number().min(1).max(20).default(4),
   transition: z.enum(['cut', 'fade', 'wipe']).default('fade'),
   palette: z.enum(paletteIds).nullable().default(null),
+  camera: cameraSchema.nullable().default(null),
   items: z.array(z.string().max(100)).max(6).default([]),
   series: z
     .array(z.strictObject({ label: z.string().max(40), value: z.number().min(0).max(1e9) }))
@@ -135,6 +170,12 @@ export const documentSchema = z
         message: 'Scene and layer IDs must be unique.',
       })
     document.scenes.forEach((scene, index) => {
+      if (scene.camera?.frames.some((frame) => frame.time > scene.duration))
+        ctx.addIssue({
+          code: 'custom',
+          path: ['scenes', index, 'camera'],
+          message: 'Camera frames exceed the scene duration.',
+        })
       if (
         scene.layers.some((layer) => layer.keyframes.some((frame) => frame.time > scene.duration))
       )
@@ -179,6 +220,8 @@ export type MotionDocument = z.infer<typeof documentSchema>
 export type MotionScene = z.infer<typeof sceneSchema>
 export type MotionLayer = z.infer<typeof layerSchema>
 export type Keyframe = z.infer<typeof keyframeSchema>
+export type CameraFrame = z.infer<typeof cameraFrameSchema>
+export type MotionCamera = z.infer<typeof cameraSchema>
 export type MotionProject = z.infer<typeof projectSchema>
 export type MotionAsset = z.infer<typeof assetSchema>
 export type MotionLibrary = z.infer<typeof librarySchema>

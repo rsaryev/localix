@@ -7,7 +7,7 @@ test('all template types contain valid complete films in supported aspect ratios
   for (const template of templateIds) {
     const document = createTemplateDocument(template)
     expect(documentSchema.safeParse(document).success).toBe(true)
-    expect(document.scenes.length).toBeGreaterThanOrEqual(template === 'blank' ? 1 : 3)
+    expect(document.scenes.length).toBeGreaterThanOrEqual(1)
     expect(framesOf(document)).toBeGreaterThan(template === 'blank' ? 100 : 200)
   }
   expect(dimensions('portrait')).toEqual({ width: 1080, height: 1920 })

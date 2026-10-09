@@ -15,6 +15,7 @@ import { NumberField } from './NumberField'
 import { LayerEditor } from './LayerEditor'
 import { DataSeriesFields } from './DataSeriesFields'
 import { CollapsibleSection } from '@localixai/kit/collapsible-section'
+import { retimeScene } from '../shared/retime-scene'
 
 function LayersEditor({
   scene,
@@ -135,15 +136,31 @@ export function SceneEditor({
           </Field>
         </>
       )}
+      {scene.layout === 'typeset' && (
+        <ChoiceMenu
+          label={`Typeface: ${scene.typeface}`}
+          disabled={disabled}
+          entries={(['sans', 'serif'] as const).map((typeface) => ({
+            id: typeface,
+            label: typeface === 'sans' ? 'Sans serif' : 'Serif',
+            selected: scene.typeface === typeface,
+            onSelect: () => set({ typeface }),
+          }))}
+        />
+      )}
       <NumberField
         label="Duration (seconds)"
         value={scene.duration}
         min={1}
         max={20}
         step={0.5}
-        onChange={(duration) => set({ duration })}
+        onChange={(duration) => onChange(retimeScene(scene, duration))}
       />
-      {(scene.layout === 'cards' || scene.layout === 'steps' || scene.layout === 'focus') && (
+      {(scene.layout === 'cards' ||
+        scene.layout === 'steps' ||
+        scene.layout === 'focus' ||
+        scene.layout === 'showcase' ||
+        scene.layout === 'gather') && (
         <Field label="Items" description="One item per line, up to six.">
           <Textarea
             rows={4}
@@ -160,7 +177,7 @@ export function SceneEditor({
           />
         </Field>
       )}
-      {(scene.layout === 'stat' || scene.layout === 'bars') && (
+      {(scene.layout === 'stat' || scene.layout === 'bars' || scene.layout === 'chart') && (
         <div className="grid grid-cols-2 gap-3">
           <NumberField
             label="Value"
@@ -179,8 +196,12 @@ export function SceneEditor({
           </Field>
         </div>
       )}
-      {scene.layout === 'bars' && <DataSeriesFields scene={scene} onChange={onChange} />}
-      {scene.layout === 'product' && (
+      {(scene.layout === 'bars' || scene.layout === 'chart') && (
+        <DataSeriesFields scene={scene} onChange={onChange} />
+      )}
+      {(scene.layout === 'product' ||
+        scene.layout === 'showcase' ||
+        scene.layout === 'portfolio') && (
         <div className="space-y-2">
           <ChoiceMenu
             label={

@@ -157,16 +157,6 @@ export function drawDarkLayout(
     const size = u * (portrait ? 0.19 : 0.2)
     const block = lines.length * size * 1.08
     ctx.save()
-    ctx.translate(w / 2, h * 0.45)
-    const radius = u * (0.23 + enter * 0.1)
-    ctx.strokeStyle = p.accent
-    ctx.lineWidth = u * 0.0013
-    ctx.globalAlpha *= 0.4
-    ctx.beginPath()
-    ctx.ellipse(0, 0, radius * 1.6, radius, -0.25 + time * 0.015, 0, Math.PI * 2 * enter)
-    ctx.stroke()
-    ctx.restore()
-    ctx.save()
     ctx.beginPath()
     ctx.rect(g, h * 0.45 - block / 2, (w - 2 * g) * enter, block + u * 0.025)
     ctx.clip()

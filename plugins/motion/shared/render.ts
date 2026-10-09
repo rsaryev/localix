@@ -1,9 +1,9 @@
-import type { MotionDocument, MotionScene } from './schema'
-import { palettes, fittedText, roundRect, circle, drawImageCover, type Painter } from './graphics'
+import { spatialLayouts, type MotionDocument, type MotionScene } from './schema'
+import { palettes, type Painter } from './graphics'
 import { sceneAt, sampleLayer } from './timing'
 import { drawLayout } from './layouts'
-import { ring, rosette, orbitalMark } from './motifs'
-import { apertureFrame, stageGrid } from './dark-primitives'
+import { paintLayer } from './layer-painter'
+import { drawSpatialScene } from './spatial-scenes'
 
 function drawScene(
   ctx: Painter,
@@ -17,6 +17,10 @@ function drawScene(
   const palette = palettes[scene.palette ?? document.palette]
   ctx.fillStyle = palette.background
   ctx.fillRect(0, 0, w, h)
+  if (scene.camera || (spatialLayouts as readonly string[]).includes(scene.layout)) {
+    drawSpatialScene(ctx, scene, time, palette, images)
+    return
+  }
   drawLayout(ctx, scene, time, w, h, palette, images)
   for (const layer of scene.layers) {
     const transform = sampleLayer(layer.keyframes, time)
@@ -27,26 +31,7 @@ function drawScene(
     ctx.globalAlpha *= transform.opacity
     const lw = layer.width * w
     const lh = layer.height * h
-    const color = palette[layer.color]
-    if (layer.kind === 'text')
-      fittedText(ctx, layer.text, 0, -lh / 2, lw, layer.fontSize * Math.min(w, h), color, {
-        align: 'center',
-        maxLines: 5,
-      })
-    else if (layer.kind === 'circle') circle(ctx, 0, 0, Math.min(lw, lh) / 2, color)
-    else if (layer.kind === 'rectangle')
-      roundRect(ctx, -lw / 2, -lh / 2, lw, lh, Math.min(lw, lh) * 0.08, color)
-    else if (layer.kind === 'line')
-      roundRect(ctx, -lw / 2, -lh * 0.04, lw, lh * 0.08, lh * 0.04, color)
-    else if (layer.kind === 'ring') ring(ctx, Math.min(lw, lh) / 2, color)
-    else if (layer.kind === 'rosette') rosette(ctx, Math.min(lw, lh) / 2, color)
-    else if (layer.kind === 'orbit') orbitalMark(ctx, Math.min(lw, lh) / 2, 1, color)
-    else if (layer.kind === 'grid' || layer.kind === 'frame') {
-      ctx.translate(-lw / 2, -lh / 2)
-      if (layer.kind === 'grid') stageGrid(ctx, lw, lh, color)
-      else apertureFrame(ctx, lw, lh, color)
-    } else if (layer.assetId && images.has(layer.assetId))
-      drawImageCover(ctx, images.get(layer.assetId)!, -lw / 2, -lh / 2, lw, lh)
+    paintLayer(ctx, layer, lw, lh, layer.fontSize * Math.min(w, h), palette[layer.color], images)
     ctx.restore()
   }
 }

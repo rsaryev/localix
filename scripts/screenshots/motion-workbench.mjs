@@ -51,6 +51,8 @@ export async function composeMotion(page, scenario) {
       'motion-template-return',
       'motion-dark-hook',
       'motion-product-reveal',
+      'motion-gather-preview',
+      'motion-portfolio-preview',
     ].includes(scenario)
   )
     await page.getByRole('button', { name: 'Create video', exact: true }).click()
@@ -62,12 +64,30 @@ export async function composeMotion(page, scenario) {
   }
   if (scenario === 'motion-template-preview')
     await page.getByRole('button', { name: 'Preview Offbeat template', exact: true }).click()
-  if (scenario === 'motion-dark-hook' || scenario === 'motion-product-reveal') {
-    const name = scenario === 'motion-dark-hook' ? 'Blackout' : 'Relay'
+  if (
+    [
+      'motion-dark-hook',
+      'motion-product-reveal',
+      'motion-gather-preview',
+      'motion-portfolio-preview',
+    ].includes(scenario)
+  ) {
+    const name = {
+      'motion-dark-hook': 'Blackout',
+      'motion-product-reveal': 'Relay',
+      'motion-gather-preview': 'Connect',
+      'motion-portfolio-preview': 'Field notes',
+    }[scenario]
     await page.getByRole('button', { name: `Preview ${name} template`, exact: true }).click()
     await page
       .getByRole('slider', { name: 'Video playhead', exact: true })
-      .fill(scenario === 'motion-dark-hook' ? '45' : '150')
+      .fill(
+        scenario === 'motion-dark-hook'
+          ? '45'
+          : scenario === 'motion-product-reveal'
+            ? '150'
+            : '180',
+      )
   }
   if (scenario === 'motion-editor') {
     await page.getByRole('button', { name: /Motion study — demo.*Product/ }).click()
@@ -101,13 +121,25 @@ export async function verifyMotion(page, scenario) {
       )
     return
   }
-  if (['motion-template-preview', 'motion-dark-hook', 'motion-product-reveal'].includes(scenario)) {
+  if (
+    [
+      'motion-template-preview',
+      'motion-dark-hook',
+      'motion-product-reveal',
+      'motion-gather-preview',
+      'motion-portfolio-preview',
+    ].includes(scenario)
+  ) {
     const name =
       scenario === 'motion-dark-hook'
         ? 'Blackout'
         : scenario === 'motion-product-reveal'
           ? 'Relay'
-          : 'Offbeat'
+          : scenario === 'motion-gather-preview'
+            ? 'Connect'
+            : scenario === 'motion-portfolio-preview'
+              ? 'Field notes'
+              : 'Offbeat'
     await expect(
       page
         .getByRole('region', { name: 'Video creation', exact: true })
@@ -115,6 +147,23 @@ export async function verifyMotion(page, scenario) {
     ).toBeVisible()
     await expect(page.getByRole('button', { name: 'Use template', exact: true })).toBeEnabled()
     await expect(page.getByRole('img', { name: 'Motion video preview', exact: true })).toBeVisible()
+    if (scenario === 'motion-gather-preview' || scenario === 'motion-portfolio-preview') {
+      await expect(page.getByRole('slider', { name: 'Video playhead', exact: true })).toHaveValue(
+        '180',
+      )
+      const colors = await page
+        .getByRole('img', { name: 'Motion video preview', exact: true })
+        .evaluate((canvas) => {
+          const pixels = canvas
+            .getContext('2d')
+            .getImageData(0, 0, canvas.width, canvas.height).data
+          const colors = new Set()
+          for (let i = 0; i < pixels.length; i += 64)
+            colors.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`)
+          return colors.size
+        })
+      expect(colors).toBeGreaterThan(20)
+    }
     return
   }
   if (scenario === 'motion-library') {

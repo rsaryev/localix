@@ -1,5 +1,15 @@
 import { createBrandScenes } from './brand-scenes'
-import { createBlackoutScenes, createNightfallScenes, createRelayScenes } from './dark-scenes'
+import { createBlackoutScenes, createNightfallScenes } from './dark-scenes'
+import { createSpatialRelay } from './cinematic-templates'
+import {
+  createOrbitScenes,
+  createTypePlayScenes,
+  createDaylightScenes,
+  createConnectScenes,
+  createMomentumScenes,
+  createOffbeatScenes,
+  createFieldNotesScenes,
+} from './refined-scenes'
 import {
   documentSchema,
   sceneSchema,
@@ -22,7 +32,7 @@ export const templates: Record<
     name: 'Relay',
     category: 'Product',
     description:
-      'A bold opening becomes a precise product reveal. Cool light, fine frames and connected ideas.',
+      'A camera study: a tactile app dock, a close-up of the product and a wide pullback.',
   },
   nightfall: {
     name: 'Nightfall',
@@ -38,12 +48,12 @@ export const templates: Record<
   kinetic: {
     name: 'Type play',
     category: 'Typography',
-    description: 'Elastic letters, diagonal ribbons and punchy cuts.',
+    description: 'Large dimensional type, camera accents and punchy cuts.',
   },
   social: {
     name: 'Daylight',
     category: 'Social',
-    description: 'A warm vertical campaign with bold type and a playful graphic.',
+    description: 'A warm vertical collection: separate thoughts become one composition.',
   },
   explainer: {
     name: 'Connect',
@@ -58,17 +68,17 @@ export const templates: Record<
   identity: {
     name: 'Soft signal',
     category: 'Brand',
-    description: 'Interlocking geometry, lilac space and a quiet brand reveal.',
+    description: 'Folded planes, lilac depth and a quiet brand reveal.',
   },
   event: {
     name: 'Offbeat',
     category: 'Events',
-    description: 'A rotating rosette, oversized type and festival-poster energy.',
+    description: 'Oversized poster type, sharp camera moves and a clean festival sign-off.',
   },
   editorial: {
     name: 'Field notes',
     category: 'Editorial',
-    description: 'Serif headlines, moving print forms and measured pacing.',
+    description: 'A serif editorial page, a tracked document handoff and a measured pullback.',
   },
   blank: {
     name: 'Untitled video',
@@ -85,149 +95,16 @@ export function createTemplateDocument(
 ): MotionDocument {
   const scenes: Record<TemplateId, () => MotionScene[]> = {
     blackout: createBlackoutScenes,
-    relay: createRelayScenes,
+    relay: createSpatialRelay,
     nightfall: createNightfallScenes,
-    launch: () => [
-      scene('orbit', 'Room for\nwhat’s next.', { label: 'Orbit / product film', duration: 3.5 }),
-      scene('product', 'One place.\nMore possibility.', {
-        body: 'Your ideas, brought together.',
-        label: 'Orbit',
-        duration: 4.5,
-      }),
-      scene('steps', 'From thought\nto momentum.', {
-        items: ['Collect', 'Connect', 'Create'],
-        palette: 'citrus',
-        duration: 4,
-      }),
-      scene('orbit', 'Make your\nnext move.', {
-        label: 'Orbit',
-        body: 'A fictional product study',
-        duration: 3.5,
-        transition: 'wipe',
-      }),
-    ],
-    kinetic: () => [
-      scene('ribbon', 'MAKE\nSOME\nNOISE.', {
-        label: 'Type play / a motion study',
-        duration: 2.5,
-        transition: 'cut',
-      }),
-      scene('kinetic', 'Move.', { palette: 'ink', duration: 1.5, transition: 'cut' }),
-      scene('poster', 'BREAK\nTHE\nPATTERN.', {
-        palette: 'ember',
-        duration: 2.5,
-        transition: 'cut',
-      }),
-      scene('ribbon', 'YOUR\nNEXT\nIDEA.', {
-        body: 'Give it a little room to move.',
-        duration: 3.5,
-        transition: 'wipe',
-      }),
-    ],
-    social: () => [
-      scene('poster', 'GOOD\nTHINGS\nAHEAD.', {
-        label: 'Daylight / studio collection',
-        duration: 3,
-      }),
-      scene('product', 'A brighter\neveryday.', {
-        body: 'A fictional collection. Add your own product image.',
-        duration: 4,
-      }),
-      scene('ribbon', 'SMALL\nDETAILS.\nBIG FEELING.', {
-        palette: 'ember',
-        duration: 3,
-        transition: 'cut',
-      }),
-      scene('editorial', 'Find your\nsunny side.', {
-        body: 'Explore the collection',
-        duration: 3.5,
-      }),
-    ],
-    explainer: () => [
-      scene('orbit', 'Ideas work\nbetter together.', {
-        label: 'Connect / an idea in motion',
-        duration: 3.5,
-      }),
-      scene('steps', 'Three moves.\nOne clear idea.', {
-        items: ['Find the question', 'Join the dots', 'Make the next step'],
-        duration: 5,
-      }),
-      scene('ribbon', 'LESS\nNOISE.\nMORE CLARITY.', {
-        palette: 'paper',
-        duration: 3,
-        transition: 'cut',
-      }),
-      scene('orbit', 'See the\nconnection.', { body: 'An illustrative explainer', duration: 3.5 }),
-    ],
-    report: () => [
-      scene('ribbon', 'A YEAR\nIN\nMOTION.', {
-        label: 'Momentum / illustrative data',
-        duration: 3,
-        transition: 'cut',
-      }),
-      scene('bars', 'A small change.\nA bigger story.', {
-        value: 72,
-        suffix: '%',
-        series: [
-          { label: 'Q1', value: 31 },
-          { label: 'Q2', value: 42 },
-          { label: 'Q3', value: 60 },
-          { label: 'Q4', value: 72 },
-        ],
-        body: 'Illustrative figures and bars — replace with verified data.',
-        duration: 5,
-        palette: 'paper',
-      }),
-      scene('steps', 'What builds\nmomentum?', {
-        items: ['A clear direction', 'Steady progress', 'A shared goal'],
-        duration: 4,
-      }),
-      scene('editorial', 'On to the\nnext chapter.', {
-        body: 'An illustrative annual review',
-        palette: 'paper',
-        duration: 3.5,
-      }),
-    ],
+    launch: createOrbitScenes,
+    kinetic: createTypePlayScenes,
+    social: createDaylightScenes,
+    explainer: createConnectScenes,
+    report: createMomentumScenes,
     identity: createBrandScenes,
-    event: () => [
-      scene('poster', 'OFF\nBEAT.', {
-        label: 'Sound, art & everything between',
-        body: 'An imaginary festival / 18–20 July',
-        duration: 3.5,
-      }),
-      scene('ribbon', 'FIND\nYOUR\nFREQUENCY.', {
-        palette: 'ink',
-        duration: 2.5,
-        transition: 'cut',
-      }),
-      scene('poster', 'COME\nAS YOU\nARE.', {
-        body: 'Three nights. A thousand possibilities.',
-        duration: 3.5,
-        transition: 'cut',
-      }),
-      scene('ribbon', 'OFFBEAT\n18—20\nJULY.', {
-        body: 'A fictional event-poster study',
-        duration: 3.5,
-        transition: 'wipe',
-      }),
-    ],
-    editorial: () => [
-      scene('editorial', 'A different\nkind of pace.', {
-        label: 'Field notes / a moving journal',
-        duration: 4,
-      }),
-      scene('editorial', 'Notice\nthe little\nthings.', {
-        palette: 'rose',
-        body: 'Space, rhythm, and a new perspective.',
-        duration: 4.5,
-        transition: 'wipe',
-      }),
-      scene('orbit', 'Take the\nlong way.', { palette: 'ink', duration: 3.5 }),
-      scene('editorial', 'Field\nnotes.', {
-        body: 'A fictional editorial motion study',
-        duration: 4,
-      }),
-    ],
+    event: createOffbeatScenes,
+    editorial: createFieldNotesScenes,
     blank: () => [scene('custom', '', { duration: 4 })],
   }
   const palette: Record<TemplateId, MotionDocument['palette']> = {

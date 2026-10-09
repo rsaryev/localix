@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs'
 import { Input, BufferSource, ALL_FORMATS } from 'mediabunny'
 import { createTemplateDocument } from '../../plugins/motion/shared/templates.ts'
 import { layerSchema } from '../../plugins/motion/shared/schema.ts'
+import { retimeScene } from '../../plugins/motion/shared/retime-scene.ts'
 import { fixtureFile, uiOrigin, verifyDemoRuntime } from './runtime.mjs'
 import { motionApi as api } from './motion-workbench.mjs'
 import { openTool } from './scenarios.mjs'
@@ -59,7 +60,7 @@ for (const format of ['mp4', 'webm']) {
     document.format = 'square'
     document.soundtrackId = audio.id
     document.scenes = [
-      { ...document.scenes[1], duration: 2, headline: 'Render evidence', imageId: image.id },
+      { ...retimeScene(document.scenes[1], 2), headline: 'Render evidence', imageId: image.id },
     ]
     document.scenes[0].layers = [
       layerSchema.parse({

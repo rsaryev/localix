@@ -1,5 +1,15 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
+  'motion/collecting-ideas': {
+    guide: 'features/motion-studio.md',
+    purpose: 'Editable ideas collect into one dimensional composition in the Connect preview',
+    scenario: 'motion-gather-preview',
+  },
+  'motion/editorial-page': {
+    guide: 'features/motion-studio.md',
+    purpose: 'Field notes tracks an editorial page and resolves its document handoff',
+    scenario: 'motion-portfolio-preview',
+  },
   'motion/dark-hook': {
     guide: 'features/motion-studio.md',
     purpose: 'A playable Blackout hook with oversized type on a measured dark stage',

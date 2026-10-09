@@ -12,6 +12,10 @@ const previewFrames: Partial<Record<TemplateId, number>> = {
   relay: 150,
   explainer: 150,
   report: 180,
+  launch: 81,
+  social: 180,
+  identity: 162,
+  editorial: 180,
 }
 export function TemplateGallery({
   onChoose,
@@ -38,7 +42,7 @@ export function TemplateGallery({
       <div
         role="group"
         aria-label="Motion templates"
-        className="grid grid-cols-1 gap-3 @lg/motion-creation:grid-cols-2 @2xl/motion-creation:grid-cols-3 @5xl/motion-creation:grid-cols-4"
+        className="grid grid-cols-1 gap-2 @lg/motion-creation:grid-cols-2 @2xl/motion-creation:grid-cols-3 @4xl/motion-creation:grid-cols-4 @6xl/motion-creation:grid-cols-5 @7xl/motion-creation:grid-cols-6"
       >
         {ids
           .filter((id) => category === 'All directions' || templates[id].category === category)
@@ -53,20 +57,24 @@ export function TemplateGallery({
               disabled={disabled}
               aria-label={`Preview ${templates[id].name} template`}
             >
-              <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-sm bg-foreground/[0.04]">
+              <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-sm bg-foreground/[0.04]">
                 <div
                   className={
-                    samples[id]!.format === 'portrait' ? 'h-full w-auto aspect-[9/16]' : 'w-full'
+                    samples[id]!.format === 'portrait'
+                      ? 'h-full w-auto aspect-[9/16]'
+                      : 'h-full w-auto max-w-full aspect-video'
                   }
                 >
                   <FilmCanvas document={samples[id]!} frame={previewFrames[id] ?? 36} thumbnail />
                 </div>
               </div>
-              <span className="mt-2 flex w-full items-baseline justify-between gap-2">
-                <span className="font-medium text-foreground">{templates[id].name}</span>
+              <span className="mt-1.5 w-full truncate font-medium text-foreground">
+                {templates[id].name}
+              </span>
+              <span className="mt-0.5 flex w-full items-baseline justify-between gap-2">
+                <span className="truncate text-2xs text-text-soft">{templates[id].category}</span>
                 <span className="text-2xs text-text-faint">{durationOf(samples[id]!)}s</span>
               </span>
-              <span className="mt-0.5 text-2xs text-text-soft">{templates[id].category}</span>
             </SelectionTile>
           ))}
       </div>

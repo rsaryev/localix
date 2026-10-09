@@ -11,6 +11,8 @@ export async function verifyEvidence(page, scenario) {
       'motion-template-return',
       'motion-dark-hook',
       'motion-product-reveal',
+      'motion-gather-preview',
+      'motion-portfolio-preview',
     ].includes(scenario)
   )
     return (await import('./motion-workbench.mjs')).verifyMotion(page, scenario)
