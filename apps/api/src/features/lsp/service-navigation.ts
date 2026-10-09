@@ -3,29 +3,9 @@ import { fileURLToPath } from 'node:url'
 import { mapLimit } from '../../lib/map-limit'
 import type { LspPosition, LspRange } from './lsp-response-types'
 import type { LspManager } from './lsp-manager-types'
-import type { LspDocumentService } from './service'
-
-/** A resolved code location (absolute path + 0-based position). */
-export interface CodeLocation {
-  file: string
-  line: number
-  character: number
-}
-
-/** A reference with display label + a one-line preview of the target line. */
-export interface CodeReference extends CodeLocation {
-  fileLabel: string
-  preview: string
-}
-
-/** A project-wide symbol hit (workspace/symbol) — name + kind + resolved location. */
-export interface WorkspaceSymbol extends CodeLocation {
-  name: string
-  /** LSP SymbolKind (1–26). */
-  kind: number
-  /** Enclosing container (class/namespace/file), when the server provides it. */
-  containerName?: string
-}
+import type { LspDocumentService } from './service-contract'
+import type { CodeLocation, CodeReference, WorkspaceSymbol } from './service-result-types'
+export type { CodeLocation, CodeReference, WorkspaceSymbol } from './service-result-types'
 
 const uriToPath = (uri: string): string | null => {
   try {
