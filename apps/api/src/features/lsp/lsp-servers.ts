@@ -11,6 +11,7 @@ import {
   which,
 } from './lsp-bin-resolve'
 import { isDockerfileName } from './lsp-languages'
+import { matchingLspServers } from './lsp-server-match'
 
 export interface LspServerHandle {
   process: ChildProcessWithoutNullStreams
@@ -310,8 +311,5 @@ export function getServersForExtension(ext: string): LspServerDef[] {
 
 /** Servers that handle a file — by extension OR by a filename match (Dockerfile). */
 export function getServersForFile(filePath: string): LspServerDef[] {
-  const base = filePath.split(/[\\/]/).pop() ?? ''
-  const dot = base.lastIndexOf('.')
-  const ext = dot >= 0 ? base.slice(dot).toLowerCase() : ''
-  return ALL_SERVERS.filter((s) => (ext && s.extensions.includes(ext)) || s.matchesFilename?.(base))
+  return matchingLspServers(ALL_SERVERS, filePath)
 }

@@ -6,6 +6,7 @@ import {
 } from './lsp-client'
 import { getServersForFile, type LspServerDef } from './lsp-servers'
 import { createLspManagerQueries } from './lsp-manager-queries'
+import { matchingLspServers } from './lsp-server-match'
 import { buildInlineDiagnostics } from './diagnostics-report'
 import { notifyWatchedFiles } from './lsp-watched-files'
 import { killProcessTree, stillRunning } from '../agent-core/tools/bash/process-tree'
@@ -98,12 +99,7 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
     const builtins = getServersForFile(filePath)
     const extra = pluginServers.get(projectRoot)
     if (!extra?.length) return builtins
-    const base = filePath.split(/[\\/]/).pop() ?? ''
-    const dot = base.lastIndexOf('.')
-    const ext = dot >= 0 ? base.slice(dot).toLowerCase() : ''
-    const matched = extra.filter(
-      (s) => (ext && s.extensions.includes(ext)) || s.matchesFilename?.(base),
-    )
+    const matched = matchingLspServers(extra, filePath)
     return [...builtins, ...matched]
   }
 

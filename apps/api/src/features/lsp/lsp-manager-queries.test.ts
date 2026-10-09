@@ -88,3 +88,56 @@ test('failed and unavailable queries retain their neutral results and fresh fall
     manager.dispose()
   }
 })
+
+test('plugin selection keeps definition order and falls through an unresolved root', async () => {
+  const resolved: string[] = []
+  const filenameChecks: string[] = []
+  const manager = createLspManager({
+    idleTimeoutMs: 0,
+    createClient: async (input) => {
+      input.onReady?.()
+      return {
+        hover: async () => ({ value: input.serverId }),
+        hasOpenDocuments: () => false,
+        dispose: () => {},
+      } as unknown as LspClientInfo
+    },
+  })
+  manager.setPluginServers(project, [
+    {
+      ...server,
+      id: 'unresolved',
+      resolveRoot: () => {
+        resolved.push('unresolved')
+        return undefined
+      },
+    },
+    {
+      ...server,
+      id: 'filename',
+      extensions: [],
+      matchesFilename: (base) => {
+        filenameChecks.push(base)
+        return base === 'query.fake'
+      },
+      resolveRoot: (_file, root) => {
+        resolved.push('filename')
+        return root
+      },
+    },
+    {
+      ...server,
+      id: 'later',
+      resolveRoot: () => {
+        throw new Error('later root must not be consulted')
+      },
+    },
+  ])
+  try {
+    expect(await manager.hover(project, file, range.start)).toEqual({ value: 'filename' })
+    expect(resolved).toEqual(['unresolved', 'filename'])
+    expect(filenameChecks).toEqual(['query.fake'])
+  } finally {
+    manager.dispose()
+  }
+})
