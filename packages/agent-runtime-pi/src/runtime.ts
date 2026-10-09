@@ -23,6 +23,8 @@ import type {
 
 import type { AgentMessage } from '@localixai/agent/agents'
 
+import { normalizeEventBufferCapacity, enqueueRuntimeEvent } from './runtime-event-buffer'
+import { mergeSignals } from './runtime-signal'
 import { BoundedEventBuffer } from './bounded-event-buffer'
 import { mapEvent, type PiTurnState } from './event-codec'
 import { fromPiMessage, toPiMessage } from './message-codec'
@@ -63,41 +65,7 @@ export interface PiRuntimeOptions extends PiRequestTuning {
   middleware?: readonly PiModelMiddleware[]
 }
 
-const DEFAULT_MAX_BUFFERED_EVENTS = 256
-
-export function normalizeEventBufferCapacity(value: number | undefined): {
-  capacity: number
-  error?: RangeError
-} {
-  if (value === undefined) return { capacity: DEFAULT_MAX_BUFFERED_EVENTS }
-  if (Number.isSafeInteger(value) && value >= 1) return { capacity: value }
-  return {
-    capacity: DEFAULT_MAX_BUFFERED_EVENTS,
-    error: new RangeError('maxBufferedEvents must be a positive safe integer'),
-  }
-}
-
-/** Enqueue one runtime event, coalescing only replaceable per-call progress snapshots. */
-export async function enqueueRuntimeEvent(
-  queue: BoundedEventBuffer<AgentEvent>,
-  event: AgentEvent,
-  consumerStarted: boolean,
-): Promise<void> {
-  // The vendored pi loop bounds each tool's update pump, while this second boundary
-  // bounds snapshots from concurrent calls waiting on the shared runtime buffer.
-  // Progress details are replaceable state: retain only the newest pending snapshot
-  // per call while keeping lifecycle events (start/error/end) lossless and
-  // backpressured.
-  if (event.type === 'tool_execution_update') {
-    const matchesCall = (queued: AgentEvent) =>
-      queued.type === 'tool_execution_update' && queued.toolCallId === event.toolCallId
-    if (consumerStarted) await queue.pushCoalescing(event, matchesCall)
-    else if (!queue.coalesce(event, matchesCall)) queue.pushLatest(event)
-    return
-  }
-  if (consumerStarted) await queue.push(event)
-  else queue.pushLatest(event)
-}
+export { normalizeEventBufferCapacity, enqueueRuntimeEvent } from './runtime-event-buffer'
 
 /**
  * Pi-adapter extension of the agnostic run input. The hook types are pi-shaped (they see
@@ -125,20 +93,6 @@ function failedWithProviderFacts(
 ): Error {
   if (!refusal || providerResponseOf(error)) return error
   return attachProviderResponse(error, refusal)
-}
-
-function mergeSignals(
-  controller: AbortController,
-  external?: AbortSignal,
-): { signal: AbortSignal; cleanup: () => void } {
-  if (!external) return { signal: controller.signal, cleanup: () => {} }
-  if (external.aborted) controller.abort(external.reason)
-  const relay = () => controller.abort(external.reason)
-  if (!external.aborted) external.addEventListener('abort', relay, { once: true })
-  return {
-    signal: controller.signal,
-    cleanup: () => external.removeEventListener('abort', relay),
-  }
 }
 
 // Resolved from the vendored pi package itself so a re-vendor can't silently
