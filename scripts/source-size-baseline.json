@@ -8,7 +8,7 @@
   "apps/api/src/features/agent-core/system-prompt.ts": 337,
   "apps/api/src/features/agent-core/tools/bash/bash-run.ts": 435,
   "apps/api/src/features/agent-core/tools/file/search.ts": 301,
-  "apps/api/src/features/agent-core/tools/patch/patch.ts": 461,
+  "apps/api/src/features/agent-core/tools/patch/patch.ts": 390,
   "apps/api/src/features/agent-core/tools/preview/preview-proxy.ts": 349,
   "apps/api/src/features/agent-core/tools/web/research-backends.ts": 776,
   "apps/api/src/features/agent-core/tools/web/research.ts": 546,

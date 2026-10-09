@@ -5,6 +5,7 @@
 // here, and none of it touches how a hunk is located or written.
 
 import { diffLines } from 'diff'
+import { appendDiagnostics, appendEditorBufferNote } from '../file/file-utils'
 
 export interface PatchFileChange {
   path: string
@@ -161,4 +162,69 @@ export function buildPatchSummary(
   }
   if (matchNotes.length > 0) lines.push(...matchNotes)
   return lines.join('\n')
+}
+
+/** Validated file content held privately until the write phase finishes. */
+export interface PreparedPatchChange extends PatchFileChange {
+  originalPath: string
+  oldContent: string
+  newContent: string
+}
+
+/** Strip private write state from the snapshots sent to the UI. */
+export function projectPatchChanges(changes: PreparedPatchChange[]) {
+  const additions = changes.reduce((sum, change) => sum + change.additions, 0)
+  const deletions = changes.reduce((sum, change) => sum + change.deletions, 0)
+  const files = changes.map(
+    ({ originalPath: _originalPath, oldContent: _oldContent, newContent: _newContent, ...rest }) =>
+      rest,
+  )
+  return { additions, deletions, files }
+}
+
+/** Cap the post-edit echo so a wide multi-file patch can't balloon the result. */
+const MAX_REGION_ECHO_FILES = 3
+
+export function buildAppliedPatchSummary(
+  applied: PreparedPatchChange[],
+  details: PatchToolDetails,
+  matchNotes: string[],
+  aborted: boolean,
+  diagnostics: Parameters<typeof appendDiagnostics>[1],
+  editorNotes: string,
+): string {
+  // Echo the post-edit state of every file we changed in place, so the next
+  // patch anchors on disk reality instead of the model's pre-edit memory.
+  // A file whose content came out identical changed NOTHING, yet the summary would
+  // read "Applied patch to 1 file (+0 -0)" — the model then builds on an edit that
+  // never happened. Not an error (re-applying an already-applied patch is a normal
+  // idempotent outcome), but it must be said out loud.
+  for (const change of applied) {
+    // Only plain updates: a rename or an empty Add File legitimately has no line delta.
+    if (change.kind === 'update' && change.additions === 0 && change.deletions === 0) {
+      matchNotes.push(
+        `note: ${change.path} was NOT changed — its content already matches the patch's result. If you expected a change, your "-" and "+" lines are identical, or the edit is already in the file.`,
+      )
+    }
+  }
+
+  const allEchoes = applied
+    .filter((change) => change.kind === 'update' || change.kind === 'move')
+    .map((change) => ({
+      path: change.path,
+      regions: buildUpdatedRegions(change.oldContent, change.newContent),
+    }))
+    .filter((echo) => echo.regions.text !== '')
+  const regionEchoes = allEchoes.slice(0, MAX_REGION_ECHO_FILES)
+  if (allEchoes.length > regionEchoes.length) {
+    matchNotes.push(
+      `note: ${allEchoes.length - regionEchoes.length} more applied file(s) were changed but not echoed here`,
+    )
+  }
+
+  const content = appendEditorBufferNote(
+    appendDiagnostics(buildPatchSummary(details, matchNotes, aborted, regionEchoes), diagnostics),
+    editorNotes,
+  )
+  return content
 }

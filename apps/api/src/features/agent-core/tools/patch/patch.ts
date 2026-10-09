@@ -4,8 +4,6 @@ import { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../../tool-names'
 import {
-  appendDiagnostics,
-  appendEditorBufferNote,
   createFileMtimeStore,
   detectLineEnding,
   normalizeToLF,
@@ -36,19 +34,17 @@ import type { FileToolConcurrencyOptions } from '../file/file-utils'
 import { parsePatchText, type PatchHunk } from './patch-parse'
 import { applyUpdateChunks, errorResult, trimTrailingPatchMetadata } from './patch-apply'
 import {
-  buildPatchSummary,
-  buildUpdatedRegions,
+  buildAppliedPatchSummary,
+  projectPatchChanges,
   toLineCount,
   type PatchFailure,
-  type PatchFileChange,
+  type PreparedPatchChange,
   type PatchToolDetails,
 } from './patch-report'
 import { patchTargetPaths } from './patch-scope'
 import { malformedPatchMessage } from './patch-messages'
+import { unreadFileDiagnosis } from './patch-diagnosis'
 import { fileWriteClass } from '../file/file-call-class'
-
-/** Cap the post-edit echo so a wide multi-file patch can't balloon the result. */
-const MAX_REGION_ECHO_FILES = 3
 
 export const patchToolInputSchema = z.object({
   patch: z
@@ -82,44 +78,6 @@ async function deleteFile(env: ExecutionEnvironment, filePath: string) {
   if (result.exitCode !== 0) {
     throw new Error(result.stderr || `Failed to delete ${filePath}`)
   }
-}
-
-/**
- * A context-match failure on a file this session never READ means the patch's context
- * lines were recalled, not copied. Measured on the recorded corpus: 13 of the 65
- * "Failed to locate the context" failures patched a file the agent had never read.
- * The generic message ("watch indentation … retry with exact whole-line context") sends
- * the model to fiddle with whitespace on lines it invented, so it retries and fails
- * again. Name the real cause instead. The mtime store is the session's record of every
- * file a tool read or wrote, so `!has(path)` is exactly "unseen".
- *
- * A second cause wears the same "unseen" disguise: the session read the file, then the
- * USER edited it (invalidateFileMtime dropped the record so the guards stay honest).
- * `wasInvalidated(path)` tells the two apart — that one gets "the user may have edited
- * the file", not "you never read it".
- */
-function unreadFileDiagnosis(error: unknown, path: string, mtimes: FileMtimeStore): string {
-  const message = errorMessage(error)
-  if (!/Failed to locate the context/.test(message)) return ''
-  // The session DID read the file, but it then changed by a route no agent tool
-  // observed (the user saving it in the editor, most of all) — the mtime record
-  // was dropped by `invalidateFileMtime`, so the stale guard let matching run
-  // against the CURRENT disk content and it missed. Name the real cause: the
-  // context lines are from a version that no longer exists, not a typo to fix.
-  if (mtimes.wasInvalidated(path)) {
-    const cause = `\n\n${path} was modified outside this session after you last read it — the user may have edited the file since you read it, so your context lines may describe a version that no longer exists.`
-    // Only claim "the lines above are current" when the error actually printed them.
-    return /\nActual lines |\nThe full file \(/.test(message)
-      ? `${cause} The file lines printed above are the CURRENT content — rebuild your hunk from them, not from memory.`
-      : `${cause} Read it again, then re-issue the patch.`
-  }
-  if (mtimes.has(path)) return ''
-  const cause = `\n\nYou have not read ${path} with the \`read\` tool in this session, so the context lines above came from memory, not from the file.`
-  // A small file is printed IN the error. Telling the model to read it there would
-  // contradict the same error's "no re-read needed" and cost a pointless turn.
-  return /\nThe full file \(/.test(message)
-    ? `${cause} Use the real lines printed above.`
-    : `${cause} Read it first, then patch it.`
 }
 
 /** Every path a patch touches, resolved — `patchTargetPaths` splits a standalone "Move to:
@@ -213,13 +171,7 @@ export function createPatchTool(
 
       return withPathLocks(workspaceLockPaths(cwd, lockPaths), async () => {
         // Files that validated and are queued to write (Phase 2 applies these).
-        const validated: Array<
-          PatchFileChange & {
-            originalPath: string
-            oldContent: string
-            newContent: string
-          }
-        > = []
+        const validated: PreparedPatchChange[] = []
         // Files we could NOT apply — recorded with an actionable reason instead of
         // aborting the whole patch, so one bad hunk never blocks the good files.
         const failures: PatchFailure[] = []
@@ -230,16 +182,7 @@ export function createPatchTool(
           appliedFiles: number,
           currentFile?: string,
         ) => {
-          const additions = validated.reduce((sum, change) => sum + change.additions, 0)
-          const deletions = validated.reduce((sum, change) => sum + change.deletions, 0)
-          const files = validated.map(
-            ({
-              originalPath: _originalPath,
-              oldContent: _oldContent,
-              newContent: _newContent,
-              ...rest
-            }) => rest,
-          )
+          const { additions, deletions, files } = projectPatchChanges(validated)
           onUpdate?.({
             cwd,
             status,
@@ -392,16 +335,7 @@ export function createPatchTool(
           }
         }
 
-        const additions = applied.reduce((sum, change) => sum + change.additions, 0)
-        const deletions = applied.reduce((sum, change) => sum + change.deletions, 0)
-        const files = applied.map(
-          ({
-            originalPath: _originalPath,
-            oldContent: _oldContent,
-            newContent: _newContent,
-            ...rest
-          }) => rest,
-        )
+        const { additions, deletions, files } = projectPatchChanges(applied)
 
         const details: PatchToolDetails = {
           cwd,
@@ -431,40 +365,12 @@ export function createPatchTool(
             ? await reportDiagnostics?.(modifiedPaths).catch(() => undefined)
             : undefined
 
-        // Echo the post-edit state of every file we changed in place, so the next
-        // patch anchors on disk reality instead of the model's pre-edit memory.
-        // A file whose content came out identical changed NOTHING, yet the summary would
-        // read "Applied patch to 1 file (+0 -0)" — the model then builds on an edit that
-        // never happened. Not an error (re-applying an already-applied patch is a normal
-        // idempotent outcome), but it must be said out loud.
-        for (const change of applied) {
-          // Only plain updates: a rename or an empty Add File legitimately has no line delta.
-          if (change.kind === 'update' && change.additions === 0 && change.deletions === 0) {
-            matchNotes.push(
-              `note: ${change.path} was NOT changed — its content already matches the patch's result. If you expected a change, your "-" and "+" lines are identical, or the edit is already in the file.`,
-            )
-          }
-        }
-
-        const allEchoes = applied
-          .filter((change) => change.kind === 'update' || change.kind === 'move')
-          .map((change) => ({
-            path: change.path,
-            regions: buildUpdatedRegions(change.oldContent, change.newContent),
-          }))
-          .filter((echo) => echo.regions.text !== '')
-        const regionEchoes = allEchoes.slice(0, MAX_REGION_ECHO_FILES)
-        if (allEchoes.length > regionEchoes.length) {
-          matchNotes.push(
-            `note: ${allEchoes.length - regionEchoes.length} more applied file(s) were changed but not echoed here`,
-          )
-        }
-
-        const content = appendEditorBufferNote(
-          appendDiagnostics(
-            buildPatchSummary(details, matchNotes, aborted, regionEchoes),
-            diagnostics,
-          ),
+        const content = buildAppliedPatchSummary(
+          applied,
+          details,
+          matchNotes,
+          aborted,
+          diagnostics,
           editorNotes,
         )
 
