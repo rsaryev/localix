@@ -1,251 +1,21 @@
-// Fuzzy text-matching engine for apply_patch: locates a pattern block in
-// a file via a strictest-first ladder of strategies (exact → trailing-ws →
-// indentation → trimmed → punctuation → whitespace-normalized → block-anchor →
-// levenshtein fuzzy). Pure string logic, no IO — extracted from patch.ts so that
-// file owns patch PARSING + APPLICATION and this one owns MATCHING. Distance
-// primitives live in patch-distance.ts; the not-found HINT builders live in
-// patch-hints.ts and are re-exported here for existing importers.
+// Matching policy: scan candidates in strictest-first order, then enforce uniqueness.
+import { normalizeUnicode } from './patch-text'
+import {
+  scanLines,
+  scanIndentFlexible,
+  blockAnchorCandidates,
+  fuzzyCandidates,
+} from './patch-match-scans'
+import type {
+  MatchStrategy,
+  PatchMatch,
+  StrategyFinder,
+  UniqueMatchResult,
+} from './patch-match-contracts'
 
-import { blockSimilarity, levenshtein } from './patch-distance'
-
+export type { MatchStrategy, PatchMatch, UniqueMatchResult } from './patch-match-contracts'
+export { reindentNewLines, unescapeLiteral } from './patch-text'
 export { buildNotFoundHint, buildRepairDiagnosis, closestLineHint } from './patch-hints'
-
-function normalizeUnicode(value: string): string {
-  return value
-    .normalize('NFKC')
-    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
-    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
-    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, '-')
-    .replace(/[\u00A0\u2002-\u200A\u202F\u205F\u3000]/g, ' ')
-}
-
-interface MatchCandidate {
-  index: number
-  length: number
-}
-
-/** Scan for windows where every line matches the pattern under `normalize`. */
-function scanLines(
-  lines: string[],
-  pattern: string[],
-  start: number,
-  eof: boolean,
-  normalize: (value: string) => string,
-  limit: number,
-): MatchCandidate[] {
-  if (pattern.length === 0 || pattern.length > lines.length) return []
-  const maxStart = lines.length - pattern.length
-  const searchStart = eof ? maxStart : start
-  if (searchStart > maxStart) return []
-  const normPattern = pattern.map((p) => normalize(p ?? ''))
-  const out: MatchCandidate[] = []
-  for (let i = searchStart; i <= maxStart && out.length < limit; i += 1) {
-    let ok = true
-    for (let j = 0; j < pattern.length; j += 1) {
-      if (normalize(lines[i + j] ?? '') !== normPattern[j]) {
-        ok = false
-        break
-      }
-    }
-    if (ok) out.push({ index: i, length: pattern.length })
-  }
-  return out
-}
-
-/** Strip the block's common minimum indentation (blank lines ignored); trimEnd per line. */
-function stripCommonIndent(block: string[]): string[] {
-  const nonEmpty = block.filter((l) => l.trim().length > 0)
-  if (nonEmpty.length === 0) return block.map(() => '')
-  const minIndent = Math.min(...nonEmpty.map((l) => (l.match(/^[ \t]*/)?.[0] ?? '').length))
-  return block.map((l) => (l.trim().length === 0 ? '' : l.slice(minIndent).trimEnd()))
-}
-
-/**
- * Indentation-flexible matching:
- * compare blocks after removing each side's common minimum indentation, so a
- * uniformly shifted block matches while relative indentation still must agree --
- * stricter than per-line trim, which is why it sits before it in the ladder.
- */
-function scanIndentFlexible(
-  lines: string[],
-  pattern: string[],
-  start: number,
-  eof: boolean,
-  limit: number,
-): MatchCandidate[] {
-  if (pattern.length === 0 || pattern.length > lines.length) return []
-  const maxStart = lines.length - pattern.length
-  const searchStart = eof ? maxStart : start
-  if (searchStart > maxStart) return []
-  const target = stripCommonIndent(pattern).join('\n')
-  const out: MatchCandidate[] = []
-  for (let i = searchStart; i <= maxStart && out.length < limit; i += 1) {
-    const window = lines.slice(i, i + pattern.length)
-    if (stripCommonIndent(window).join('\n') === target)
-      out.push({ index: i, length: pattern.length })
-  }
-  return out
-}
-
-function leadingWs(s: string): string {
-  return s.match(/^[ \t]*/)?.[0] ?? ''
-}
-
-/**
- * When a match was found by a non-exact strategy, the replacement lines were
- * written with the pattern's indentation, which may differ from the file's.
- * Shift every inserted line by the delta between the pattern's first old line and
- * the actual matched file line so the block lands at the file's indentation.
- */
-export function reindentNewLines(
-  newLines: string[],
-  oldFirst: string,
-  fileFirst: string,
-): string[] {
-  const oldIndent = leadingWs(oldFirst)
-  const fileIndent = leadingWs(fileFirst)
-  if (oldIndent === fileIndent) return newLines
-  return newLines.map((line) => {
-    if (line.trim() === '') return line
-    const stripped = line.startsWith(oldIndent)
-      ? line.slice(oldIndent.length)
-      : line.replace(/^[ \t]*/, '')
-    return fileIndent + stripped
-  })
-}
-
-/**
- * Block-anchor candidates: anchor on the first + last (trimmed) pattern lines
- * and score each candidate region's middle similarity. Regions may have a
- * different length than the pattern. Heavily gated (size ratio + similarity)
- * because a lone first/last-line coincidence is exactly how block-anchor
- * misapplies. Returns gated candidates, best score first.
- */
-function blockAnchorCandidates(
-  lines: string[],
-  pattern: string[],
-  start: number,
-  _eof: boolean,
-  limit: number,
-): MatchCandidate[] {
-  if (pattern.length < 3) return []
-  const first = pattern[0].trim()
-  const last = pattern[pattern.length - 1].trim()
-  if (!first || !last) return []
-  const candidates: Array<{ index: number; length: number; score: number }> = []
-  for (let i = start; i < lines.length; i++) {
-    if ((lines[i] ?? '').trim() !== first) continue
-    for (let j = i + 2; j < lines.length; j++) {
-      if ((lines[j] ?? '').trim() !== last) continue
-      const region = lines.slice(i, j + 1)
-      const score = blockSimilarity(region, pattern)
-      candidates.push({ index: i, length: region.length, score })
-      break
-    }
-  }
-  const gated = candidates.filter((c) => {
-    const sizeRatio = Math.min(c.length, pattern.length) / Math.max(c.length, pattern.length)
-    return sizeRatio >= 0.75 && c.score >= 0.5
-  })
-  gated.sort((a, b) => b.score - a.score)
-  return gated.slice(0, limit).map(({ index, length }) => ({ index, length }))
-}
-
-/**
- * Fuzzy candidates: Levenshtein over the joined window with a tight 5%
- * threshold -- fuzzy is the last resort and a loose budget is exactly how a
- * near-duplicate block elsewhere gets matched instead of the intended one.
- * Overlapping hit windows are merged into one region (keeping the best
- * distance), so two adjacent windows over the same block never count as two
- * occurrences. Returns regions sorted by distance, best first.
- */
-function fuzzyCandidates(
-  lines: string[],
-  pattern: string[],
-  start: number,
-  eof: boolean,
-  limit: number,
-): MatchCandidate[] {
-  if (pattern.length === 0 || pattern.length > lines.length) return []
-  const needle = pattern.join('\n').trim()
-  if (needle.length < 16) return [] // too short to fuzzy-match safely
-  const maxStart = lines.length - pattern.length
-  const searchStart = eof ? maxStart : start
-  if (searchStart > maxStart) return []
-  const threshold = Math.ceil(needle.length * 0.05)
-  const regions: Array<{ index: number; dist: number }> = []
-  for (let i = searchStart; i <= maxStart; i++) {
-    const hay = lines
-      .slice(i, i + pattern.length)
-      .join('\n')
-      .trim()
-    const dist = levenshtein(hay, needle, threshold)
-    if (dist > threshold) continue
-    const lastRegion = regions[regions.length - 1]
-    if (lastRegion && i < lastRegion.index + pattern.length) {
-      if (dist < lastRegion.dist) {
-        lastRegion.index = i
-        lastRegion.dist = dist
-      }
-    } else {
-      regions.push({ index: i, dist })
-    }
-  }
-  regions.sort((a, b) => a.dist - b.dist)
-  return regions.slice(0, limit).map((r) => ({ index: r.index, length: pattern.length }))
-}
-
-const ESCAPE_MAP: Record<string, string> = {
-  n: '\n',
-  t: '\t',
-  r: '\r',
-  f: '\f',
-  v: '\v',
-  '0': '\0',
-  '"': '"',
-  "'": "'",
-  '`': '`',
-  '\\': '\\',
-}
-
-/**
- * Convert literal escape sequences (the two chars backslash-n/-t/-" etc.) into
- * the characters they denote — for the common failure where a model double-
- * escapes match text in the tool-call JSON so it can't be found in the file.
- * Single-pass so `\\` is consumed as one unit (no sequential-replace order bug).
- * `includeNewlines` is OFF for apply_patch's per-line use (a `\n` inside a single
- * patch line must stay literal, never split the line) and ON (the default) when a
- * caller unescapes a whole multi-line string at once.
- */
-export function unescapeLiteral(s: string, includeNewlines = true): string {
-  const re = includeNewlines ? /\\([ntrfv0"'`\\])/g : /\\([trfv0"'`\\])/g
-  return s.replace(re, (m, c: string) => ESCAPE_MAP[c] ?? m)
-}
-
-export type MatchStrategy =
-  | 'exact'
-  | 'trailing-whitespace'
-  | 'indentation'
-  | 'trimmed'
-  | 'punctuation'
-  | 'whitespace'
-  | 'block-anchor'
-  | 'fuzzy'
-
-export interface PatchMatch {
-  index: number
-  length: number
-  exact: boolean
-  strategy: MatchStrategy
-}
-
-type StrategyFinder = (
-  lines: string[],
-  pattern: string[],
-  start: number,
-  eof: boolean,
-  limit: number,
-) => MatchCandidate[]
 
 /**
  * Strict-first strategy ladder. Line strategies are ordered so each is a strict
@@ -336,11 +106,6 @@ export function findMatch(
   }
   return null
 }
-
-export type UniqueMatchResult =
-  | { kind: 'match'; match: PatchMatch }
-  | { kind: 'ambiguous'; strategy: MatchStrategy; count: number }
-  | { kind: 'none' }
 
 /**
  * Whole-file unique match: require exactly one unambiguous location. Ambiguity

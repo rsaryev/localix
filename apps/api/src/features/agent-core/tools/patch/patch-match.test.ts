@@ -163,8 +163,10 @@ describe('findUniqueMatch', () => {
 
 describe('reindentNewLines', () => {
   it('is a no-op when the matched line shares the pattern indentation', () => {
-    const out = reindentNewLines(['  a', '  b'], '  old', '  file')
+    const lines = ['  a', '  b']
+    const out = reindentNewLines(lines, '  old', '  file')
     expect(out).toEqual(['  a', '  b'])
+    expect(out).toBe(lines)
   })
 
   it('shifts inserted lines to the file indentation when it differs from the pattern', () => {
