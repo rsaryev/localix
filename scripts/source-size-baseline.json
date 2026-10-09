@@ -3,7 +3,6 @@
   "apps/api/src/bootstrap.ts": 316,
   "apps/api/src/client.ts": 354,
   "apps/api/src/db/types.ts": 657,
-  "apps/api/src/features/agent-core/tools/file/search.ts": 301,
   "apps/api/src/features/agent-core/tools/web/research-backends.ts": 776,
   "apps/api/src/features/agent-core/tools/web/research.ts": 546,
   "apps/api/src/features/chat/routes.ts": 672,

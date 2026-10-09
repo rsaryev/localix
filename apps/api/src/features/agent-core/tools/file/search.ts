@@ -3,7 +3,6 @@ import { basename, dirname } from 'node:path'
 import { stat } from 'node:fs/promises'
 import { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
-import { DEFAULT_MAX_LINES } from '@localixai/agent'
 import { TOOL } from '../../tool-names'
 import { type ExecutionEnvironment, shellQuote, resolveToolCwd } from '../environment'
 import { localEnvironment } from '../environments/local'
@@ -15,7 +14,7 @@ import {
   searchRetries,
   truncateOutput,
 } from './search-output'
-import { plural } from '../tool-output'
+import { FILE_LIST_LIMIT, presentFileListing } from './search-file-listing'
 
 /**
  * Wall-clock ceiling per invocation, including retries and file listings.
@@ -23,8 +22,7 @@ import { plural } from '../tool-output'
  * the caller's cancellation signal can end it sooner.
  */
 export const SEARCH_TIMEOUT_SECONDS = 120
-/** Keep one sentinel beyond the model-facing line cap so truncation is observable. */
-export const FILE_LIST_LIMIT = DEFAULT_MAX_LINES
+export { FILE_LIST_LIMIT } from './search-file-listing'
 import { createSearchDedupStore, type SearchDedupStore } from '../../search/search-dedup'
 
 // Re-export the pure search helpers so existing importers (tests) keep their
@@ -121,40 +119,7 @@ export function createSearchTool(
         } catch (err) {
           return { content: `Failed to list files: ${errorMessage(err)}`, isError: true }
         }
-        const listed = res.stdout.trim()
-        if (listed) {
-          const paths = listed.split('\n')
-          const sourceTruncated = paths.length > FILE_LIST_LIMIT
-          const files = (sourceTruncated ? paths.slice(0, FILE_LIST_LIMIT) : paths).join('\n')
-          const bounded = truncateOutput(files)
-          const details: SearchToolDetails = {
-            query: '',
-            cwd,
-            glob: input.glob,
-            ...bounded,
-            truncated: sourceTruncated || bounded.truncated,
-          }
-          onUpdate?.(details)
-          const count = sourceTruncated ? FILE_LIST_LIMIT : paths.length
-          const countLabel = sourceTruncated
-            ? `More than ${FILE_LIST_LIMIT} files (showing first ${FILE_LIST_LIMIT})`
-            : plural(count, 'file')
-          return {
-            content: `${countLabel} matching glob "${input.glob}":\n${modelFacingMatches(bounded.output, 'file')}`,
-            details,
-          }
-        }
-        if (res.exitCode === 127 || /not found|no such file|ENOENT/i.test(res.stderr)) {
-          return {
-            content: 'ripgrep (rg) is not available here — use `bash` with find for this.',
-            isError: true,
-          }
-        }
-        if (res.exitCode > 1 || res.stderr.trim()) {
-          const reason = res.stderr.trim() || `ripgrep failed (exit code ${res.exitCode})`
-          return { content: `glob error: ${reason.slice(0, 200)}`, isError: true }
-        }
-        return { content: `No files matching glob "${input.glob}" in ${cwd}.` }
+        return presentFileListing({ res, input, cwd, onUpdate })
       }
 
       let rawOutput: string
