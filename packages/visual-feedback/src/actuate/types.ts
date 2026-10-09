@@ -42,3 +42,8 @@ export interface ActuateResult {
   error?: string
   errorCode?: VfCommandErrorCode
 }
+
+/** A synchronous action outcome, ready for the dispatcher to settle and sample. */
+export type PreparedActionResult =
+  | { ok: true; result: VfCommandResult; snapshotAfter: boolean | undefined }
+  | { ok: false; failure: ActuateResult }

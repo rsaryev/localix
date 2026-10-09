@@ -23,13 +23,13 @@ import {
   dispatchPointer,
   synthClick,
   fillValue,
-  pressKey,
   hitTarget,
 } from './input'
 import { stateForDiff } from './diff'
 import { stepNote, failedStep } from './batch-report'
 import { postAction } from './post-action'
 import { performScroll } from './scroll'
+import { performPress } from './press'
 import { serializeEvalResult, compileEvalExpression } from './evaluate'
 
 // The console ring buffer + interaction synthesis + interactive-tree diffing live
@@ -54,7 +54,6 @@ import {
   interceptedClickResult,
   withHeal,
   snapAfter,
-  type Healed,
 } from './target'
 
 /** Execute one command. DOM side effects; returns a serializable result. Async
@@ -240,31 +239,13 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
     }
 
     case 'press': {
-      // Accept a single `key` or a `keys` SEQUENCE (sent in order, one round-trip).
-      const keys = cmd.keys?.length ? cmd.keys : cmd.key ? [cmd.key] : null
-      if (!keys) return fail('bad_request', '`press` requires `key` or `keys`.')
-      let target: Element | undefined
-      let heal: Healed | undefined
-      if (cmd.ref || cmd.selector) {
-        const t = resolveWithHeal(cmd, deps)
-        if (isHealFail(t)) return healFailResult('press', t)
-        target = t.el
-        heal = t
-      }
-      // Untargeted keys go where a keyboard sends them: the element focused NOW, which a
-      // Tab earlier in the same sequence may have just changed — inside the root, when there is one.
-      const focused = () => {
-        const active = document.activeElement
-        if (!deps.root) return active ?? document.body
-        return active && deps.root.contains(active) ? active : deps.root
-      }
-      for (const k of keys) pressKey(target ?? focused(), k, deps.root)
+      const pressed = performPress(cmd, deps)
+      if (!pressed.ok) return pressed.failure
       return {
         ok: true,
         result: {
-          action: 'press',
-          note: withHeal(`pressed ${keys.join(' ')}`, heal),
-          ...(await postAction(deps, snapAfter(cmd, heal), consoleCursor)),
+          ...pressed.result,
+          ...(await postAction(deps, pressed.snapshotAfter, consoleCursor)),
         },
       }
     }
