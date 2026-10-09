@@ -11,7 +11,7 @@
  *  - React-friendly value setting (native setter) so `input` events register.
  */
 
-import type { VfCommand, VfCommandResult, VfSnapshot } from '../protocol/index'
+import type { VfCommand, VfSnapshot } from '../protocol/index'
 import { getElementSummary, getSemanticRole } from '../core/identify'
 import { getViewportRect, scrollContainerIn } from '../core/geometry'
 import { motionSafeScrollBehavior } from '../core/motion'
@@ -28,6 +28,7 @@ import {
   hitTarget,
 } from './input'
 import { stateForDiff } from './diff'
+import { stepNote, failedStep } from './batch-report'
 import { postAction } from './post-action'
 import { serializeEvalResult, compileEvalExpression } from './evaluate'
 
@@ -77,24 +78,6 @@ function withHeal(note: string, t?: Healed): string {
  *  point is to leave the agent with usable refs); otherwise honor the command flag. */
 function snapAfter(cmd: VfCommand, t?: Healed): boolean {
   return Boolean(cmd.snapshotAfter) || Boolean(t?.healNote)
-}
-
-/** One-line note for a completed step in a `steps` batch. A READ action
- *  (`snapshot`/`evaluate`/`console`) carries its output on the result, not on `note`, so
- *  surface it here — otherwise an act-then-observe batch (`[{click…},{snapshot}]` /
- *  `[{click…},{evaluate 'data-theme'}]`) would drop the very thing the agent asked for.
- *  Interactions keep their own note. */
-function stepNote(action: string, result?: VfCommandResult): string {
-  if (result?.action === 'snapshot') {
-    const s = result.snapshot
-    return s ? `snapshot → ${s.stats.nodes} nodes (${s.stats.interactive} interactive)` : 'snapshot'
-  }
-  if (result?.action === 'evaluate') return `evaluate → ${result.value ?? 'undefined'}`
-  if (result?.action === 'console') {
-    const tail = (result.console ?? []).slice(-1)[0]
-    return tail ? `console → [${tail.level}] ${tail.text}` : 'console → (empty)'
-  }
-  return result?.note ?? `${action} done`
 }
 
 async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResult> {
@@ -353,22 +336,7 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
           inBatch: true,
         })
         if (!sub.ok) {
-          // The earlier steps ALREADY RAN, and they mutate the page (a typed field, a
-          // click). Reporting only "step 3 failed" invites the model to re-send the whole
-          // batch, duplicating those side effects. Say what already happened — same rule
-          // as bash's partial-batch summary: a result must disclose what it did.
-          const done = notes.length
-            ? `\nSteps 1-${i} already ran and their effects are on the page — do NOT repeat them: ${notes.join(' → ')}`
-            : ''
-          // Carry the failing step's fresh snapshot (from self-heal) up to the agent.
-          return {
-            ok: false,
-            error: `step ${i + 1} (${steps[i].action}): ${sub.error}${done}`,
-            errorCode: sub.errorCode,
-            ...(sub.result?.snapshot
-              ? { result: { action: 'steps', snapshot: sub.result.snapshot } }
-              : {}),
-          }
+          return failedStep(steps, i, notes, sub)
         }
         if (sub.result?.action === 'snapshot' && sub.result.snapshot)
           stepSnapshot = sub.result.snapshot
