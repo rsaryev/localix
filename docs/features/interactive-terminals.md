@@ -3,6 +3,8 @@
 Localix agents can drive a live terminal through the `bash` tool: type text, press named keys, read
 the rendered screen, and wait for screen content. The terminal pane remains available for you to
 watch or take over. These actions are exposed when the run has a terminal host and `bash` access.
+Permission rules still govern each call. Live and archived panes are confined to the calling user
+and chat session; participants in the same chat share that terminal scope.
 
 ## Send input and observe the result
 
@@ -73,6 +75,24 @@ for the `bash` interactive actions. The `until` parameter is a different mechani
 condition and wakes the agent on success. Omit `action` for that mechanism; `action: "until"` is not
 supported. See [Wait for something](monitors.md).
 
+## Lifetimes and limits
+
+| Surface          | Retention or limit                                                  | What it means                                                                           |
+| ---------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Explicit wait    | 15 seconds by default; `wait_timeout_ms` accepts 100–120,000 ms     | Quiet output may return sooner; a deadline is not a task completion signal              |
+| API scrollback   | Up to 262,144 UTF-16 code units per live terminal                   | Reconnection replays a retained tail, not all historical output                         |
+| Post-exit screen | Up to 30 seconds, with 16 archived terminals across the API process | A later read can find no final screen, even when the process did exit                   |
+| UI replay cache  | Up to 16 terminals, with 262,144 code units per terminal            | Kept in memory for tab remounts; terminal output is not persisted to disk by this cache |
+
+A tab layout can survive a UI reload and reattach while its API-owned PTY is still alive. An API
+restart does not restore that process or its in-memory scrollback. Retained output may remain in the
+current UI while its replay cache survives. Relaunching an exited tab starts a new process with its
+recorded command or a new shell; it does not resume the old one.
+
+Closing a user-created terminal tab closes its PTY. Closing a tab adopted from an agent job or dev
+server leaves that process with its launcher. Use `jobs stop` for running registered work, or
+`bash action: "close"` for a terminal in this chat, when you intend to stop it.
+
 ## Related implementations
 
 These projects provide useful examples of interactive terminal contracts:
@@ -89,3 +109,15 @@ These projects provide useful examples of interactive terminal contracts:
 Each observation stands on its own and replaces older observations of the same terminal. Incremental
 screen diffs would require keeping their baseline across context trimming; that is not the current
 contract.
+
+## Source of truth
+
+- [Action fields and wait limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-schema.ts)
+- [Automatic observation cap](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-observation.ts)
+- [Wait and post-exit behavior](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/terminal/terminal-wait.ts)
+- [API final-screen archive](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/terminal/service.ts)
+- [API scrollback retention](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/terminal/session-scrollback.ts)
+- [Agent session ownership](https://github.com/rsaryev/localix/blob/main/apps/api/src/bootstrap/terminal-ports.ts)
+- [UI replay cache](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/model/terminalOutput.ts)
+- [Tab closing and reconnect](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
+- [Explicit relaunch](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/model/restartTerminalTab.ts)

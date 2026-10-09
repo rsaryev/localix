@@ -216,6 +216,18 @@ position fallback, 200,000-character UI limit, skipped semantic errors, per-unit
 and read/transaction conditions on early row termination. This was a source comparison and one
 SQLite probe, not a live test of every network database.
 
+## Interactive terminal retention and ownership
+
+Compared action schemas, literal waits, compact observations, session guards, final-screen archive,
+scrollback, UI replay, closing ownership, reconnect, and explicit relaunch with source. Reviewed the
+terminal-retention and interactive-control commits. Checked the four linked terminal reference
+projects against their current primary README contracts.
+
+Documented the 30-second/16-entry API exit archive, separate in-memory UI replay, UTF-16 caps, wait
+bounds, and shared chat scope. Distinguished UI reload/reconnect from process restoration, and
+adopted-tab closing from terminating a job. Corrected the recipe’s accumulated-log advice to running
+PTY jobs, with transcript/file alternatives for finished or non-terminal work.
+
 ## Related guides
 
 - [Audit scope and remaining work](documentation-audit.md)

@@ -62,8 +62,10 @@ the output for failure; process exit alone does not establish success. This avoi
 call just to confirm that this terminal closed.
 
 Large automatic observations include a clipping notice. Read `action: "screen"` if the next decision
-needs the omitted area. For accumulated background output, use `jobs action: "read"`; retained logs
-are bounded, so direct output to a file when every line must remain available.
+needs the omitted area. For accumulated output of a running PTY job, use `jobs action: "read"`.
+Finished work is no longer readable through `jobs`, and a child-process job without a terminal has
+no PTY scrollback. Inspect its transcript output or direct output to a file when every line must
+remain available.
 
 Read [Interactive terminals](../features/interactive-terminals.md) for the complete observation and
 waiting contract.

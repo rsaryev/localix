@@ -220,9 +220,14 @@ detached text copy.
 ### Terminal as a working surface
 
 Terminal tabs attach to server-owned PTYs and replay retained scrollback after a supported
-reconnection. Recognized `file:line` output opens the file in the grid, while recognized URLs open
-through the client platform boundary. Shell integration can add command outcome marks, prompt
-navigation, sticky command headers, output-aware quick fixes, and copy or rerun actions.
+reconnection to the same live API process. A restored layout does not restore a PTY after an API
+restart. The UI keeps a bounded in-memory output tail for remounts; an explicit relaunch starts a
+new process. See [Interactive terminals](interactive-terminals.md#lifetimes-and-limits) for
+retention and closing rules.
+
+Recognized `file:line` output opens the file in the grid, while recognized URLs open through the
+client platform boundary. Shell integration can add command outcome marks, prompt navigation, sticky
+command headers, output-aware quick fixes, and copy or rerun actions.
 
 The terminal confirms unsafe multiline paste when bracketed-paste handling cannot make it harmless.
 
