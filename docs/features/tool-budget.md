@@ -8,17 +8,19 @@ no cached tool inventory are named but not counted.
 
 ## What you can do
 
-| Action                        | Mechanism                                                         | Boundary                                                                 |
-| ----------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Check the current surface     | The composer's budget pill, or ask the agent for `context_budget` | The number is an estimate, not a provider token measurement              |
-| Remove a tool from later runs | A `tool:<name>` rule with effect `deny` for the scope             | The change applies to the next run; it does not interrupt a running turn |
+| Action                        | Mechanism                                                            | Boundary                                                                  |
+| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Check the current surface     | Inspect Settings → Capabilities → Tools, or ask for `context_budget` | Settings shows configured tools; `context_budget` estimates schema tokens |
+| Remove a tool from later runs | A `tool:<name>` rule with effect `deny` for the agent                | The change applies to the next run; it does not interrupt a running turn  |
 
 ## How it works
 
 ### Surface estimate
 
-The report starts with the same capability snapshot used by the Tools settings page: the scope's
-`disabledTools`, its enabled plugin contributions, and cached MCP inventories.
+The backend report starts with the same capability snapshot used by the Tools settings page:
+agent-rule filtering, enabled plugin contributions, and cached MCP inventories. The report is
+available through `GET /rpc/tools/gc`; the UI does not display a separate tool-budget pill or
+unused-tool suggestions.
 
 With no MCP server in scope, the estimator removes the MCP resource tools that cannot be assembled.
 It then counts the remaining built-in, plugin, and cached MCP names once.

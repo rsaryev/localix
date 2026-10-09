@@ -227,7 +227,7 @@ examples and package entry points.
 - [The prompt section and its gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/system-prompt-answer-format-section.ts)
 - [Callout, source and figure parsing](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerBlocks.ts)
 - [Steps, tabs, figures and for/against](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerContainers.ts)
-- [File trees](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/fileTreeParse.ts)
+- [File trees](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/fileTreeParse.ts)
 - [Tickable checklists](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownTaskList.tsx)
 - [Callout rendering](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/MarkdownBlockquote.tsx)
 - [Diagram queue and cache](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/renderMermaid.ts)

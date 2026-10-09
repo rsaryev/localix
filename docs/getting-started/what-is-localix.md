@@ -55,7 +55,7 @@ for the current project, so disabling a plugin removes its gated tools and views
 | ----------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | Project                       | Sets the session's base workspace root                                      | [Sessions and projects](../features/sessions-and-projects.md) |
 | Provider connection and model | Selects the runtime route used by a direct session                          | [Providers and models](../features/providers.md)              |
-| Capability rules              | Decide which tools a scope may use and when it must ask first               | [Capabilities](../features/capabilities.md)                   |
+| Capability rules              | Decide which tools an agent may use and when it must ask first              | [Capabilities](../features/capabilities.md)                   |
 | Plugins                       | Adds or removes project-scoped tools, commands, skills, and workbench views | [Plugins](../extending/plugins.md)                            |
 | A card's agent                | Records which agent explicitly took responsibility for the task             | [Kanban](../features/task-board.md)                           |
 
@@ -72,8 +72,8 @@ for the current project, so disabling a plugin removes its gated tools and views
   `complete`; delegate an explicit verification brief when a change needs an independent look.
 - Visual Feedback requires a Localix preview with its probe connected. It does not inspect an
   arbitrary browser tab or desktop window.
-- The Kanban, database, DevOps, and documents plugins are bundled and default-enabled. The
-  penetration testing plugin defaults off and must be used only for authorized, in-scope work.
+- The Kanban, database, DevOps, and documents plugins are bundled and default-enabled. Agent rules
+  can disable their tools and views; see [Capabilities](../features/capabilities.md).
 - Document extraction and generation support different format sets. Input-size and parser limits
   also apply.
 - Checked package manifests currently declare no first-party analytics or crash-reporting SDK.

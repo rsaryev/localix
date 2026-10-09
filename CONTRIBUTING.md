@@ -17,7 +17,7 @@ recording; logic changes should include a regression test when practical.
 Localix uses Bun 1.3.14 and Turborepo:
 
 ```bash
-git clone <repository-url> localix
+git clone https://github.com/rsaryev/localix.git
 cd localix
 bun install --frozen-lockfile
 bun run build
@@ -98,10 +98,11 @@ bun run --cwd apps/landing generate
 ```
 
 Store product captures only in `docs/assets/screenshots/`, named
-`<feature>/<surface>--YYYY-MM-DD.png`. Real captures must be 1600×1000, English-only, and free of
-personal names, private paths, secrets, provider keys, real conversations, and unrelated desktop
-chrome. Inspect each final image at full size and reuse the same canonical asset in documentation
-and the landing page.
+`<feature>/<surface>--YYYY-MM-DD.png`. Use a 1600×1000 CSS-pixel composition, captured natively at
+3× density (4800×3000 physical pixels) for current product media. Use English demo data without
+personal names, private paths, secrets, provider keys, real conversations, or unrelated desktop
+chrome. Follow the [capture workflow](scripts/screenshots/README.md), inspect the native image
+before publishing, and reuse the same canonical asset in documentation and the landing page.
 
 ## Reporting issues
 

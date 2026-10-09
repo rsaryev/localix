@@ -27,8 +27,12 @@ Use this section order for a new or substantially rewritten technical page:
 | 4     | `How it works`    | Name the modules, state transitions, storage, or protocol behind them.     |
 | 5     | `Configuration`   | Tabulate commands, settings, flags, environment values, or choices.        |
 | 6     | `Limits`          | State missing wiring, dependencies, non-goals, and failure boundaries.     |
-| 7     | `Source of truth` | Link the current owning source and tests with repository-relative links.   |
-| 8     | `Related guides`  | Link sibling concepts instead of restating their explanations.             |
+| 7     | `Related guides`  | Link sibling concepts instead of restating their explanations.             |
+| 8     | `Source of truth` | Link current owning source and tests; use GitHub URLs on published pages.  |
+
+Use the outline where it helps the reader; a recipe can use numbered steps, and a reference can lead
+with its command or option table. Omit empty sections. `Related guides` and `Source of truth` use
+compact lists of descriptive links, in that order, with source evidence last.
 
 The opening is two concrete sentences. The first defines the subject; the second tells the reader
 when the page is useful.
@@ -81,9 +85,10 @@ Store captures under the one canonical screenshot tree:
 docs/assets/screenshots/<feature>/<surface>--YYYY-MM-DD.png
 ```
 
-Use a semantic lowercase-hyphenated feature and surface. Real captures are 1600×1000 PNGs with
-English deterministic data and no names, private paths, secrets, provider keys, unrelated windows,
-or desktop chrome.
+Use a semantic lowercase-hyphenated feature and surface. Compose captures at 1600×1000 CSS pixels;
+the current capture workflow produces native 3× PNGs (4800×3000 physical pixels). Use English
+deterministic data without names, private paths, secrets, provider keys, unrelated windows, or
+desktop chrome. Follow the [capture workflow](../../scripts/screenshots/README.md).
 
 A pending slot may name a dated PNG before the image exists. Place at most one useful capture in a
 section, immediately after the claim it demonstrates; a screenshot proves visible state only.

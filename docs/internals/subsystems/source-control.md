@@ -88,8 +88,9 @@ host's [`VirtualDiff`](../../../apps/ui/src/shared/ui/diff/VirtualDiff.tsx). A p
 into a flat document
 ([`diffDocument.ts`](../../../apps/ui/src/shared/ui/diff/document/diffDocument.ts)), laid out as
 fixed-height rows ([`diffRows.ts`](../../../apps/ui/src/shared/ui/diff/document/diffRows.ts)) and
-windowed, so mounted rows stay bounded however large the diff is. Syntax highlighting and word marks
-are computed per mounted line and cached
+windowed, so mounted rows stay bounded however large the diff is.
+
+Syntax highlighting and word marks are computed per mounted line and cached
 ([`lineCache.ts`](../../../apps/ui/src/shared/ui/diff/document/lineCache.ts)). Pinned file and hunk
 headers are an overlay whose geometry comes from the row offsets
 ([`diffSticky.ts`](../../../apps/ui/src/shared/ui/diff/document/diffSticky.ts)). The staging view
@@ -112,14 +113,17 @@ A status read whose session directory the host has not resolved yet (common duri
 resolved directory without a repository shows "Not a git repository" and keeps the idle discovery
 interval. The poller is mounted per chat — on the `chat.background` surface while that chat's pane
 is focused, and by the Git tab for its own chat while the tab is visible — never for "the active
-session". Session/project changes use a fresh read after any older request settles; pending
-directory resolution retries at the active cadence, while negative probes remain at the idle
-cadence. The poller subscribes to the chat's workspace changes (`pluginFiles.watchWorkspace`, which
-reports `.git` too), so a terminal branch switch is read within the change window; the status read
-runs with `GIT_OPTIONAL_LOCKS=0`, because a refreshing `git status` rewrites `.git/index` and that
-write would itself be the change that schedules the next read. Line deltas come from
-`git diff --numstat -z`: without `-z`, a non-ASCII path is C-quoted and a rename printed as
-`old => new`, neither of which joins porcelain status by path.
+session".
+
+Session/project changes use a fresh read after any older request settles; pending directory
+resolution retries at the active cadence, while negative probes remain at the idle cadence.
+
+The poller subscribes to the chat's workspace changes (`pluginFiles.watchWorkspace`, which reports
+`.git` too), so a terminal branch switch is read within the change window; the status read runs with
+`GIT_OPTIONAL_LOCKS=0`, because a refreshing `git status` rewrites `.git/index` and that write would
+itself be the change that schedules the next read. Line deltas come from `git diff --numstat -z`:
+without `-z`, a non-ASCII path is C-quoted and a rename printed as `old => new`, neither of which
+joins porcelain status by path.
 
 Every diff read goes through
 [`git/diff-read.ts`](../../../plugins/git-workspace/backend/source-control/git/diff-read.ts). When a

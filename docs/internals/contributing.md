@@ -16,19 +16,20 @@ regressions.
 
 ## What you can do
 
-| Operation                  | Command                                                          | Boundary                                                             |
-| -------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Install exact dependencies | `bun install --frozen-lockfile`                                  | Run from the repository root.                                        |
-| Seed build outputs         | `bun run build`                                                  | Builds the full Turbo graph and public documentation dependencies.   |
-| Open desktop development   | `bun run dev`                                                    | Requires Rust and the platform-native Tauri prerequisites.           |
-| Build a native bundle      | `bun run build:desktop`                                          | Produces a host-platform local build, not a verified public release. |
-| Run one API test file      | `cd apps/api && bun test src/features/projects/projects.test.ts` | Build workspace dependencies first.                                  |
-| Validate public Markdown   | `bun run --cwd apps/landing docs:gen`                            | Formats nothing; use Oxfmt separately on the files you own.          |
+| Operation                         | Command                                                          | Boundary                                                             |
+| --------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Install exact dependencies        | `bun install --frozen-lockfile`                                  | Run from the repository root.                                        |
+| Seed build outputs                | `bun run build`                                                  | Builds the full Turbo graph and public documentation dependencies.   |
+| Open desktop development          | `bun run dev`                                                    | Requires Rust and the platform-native Tauri prerequisites.           |
+| Open isolated browser development | `bun run dev:web`                                                | Uses `.data/dev/localix.db` by default; no native desktop bridges.   |
+| Build a native bundle             | `bun run build:desktop`                                          | Produces a host-platform local build, not a verified public release. |
+| Run one API test file             | `cd apps/api && bun test src/features/projects/projects.test.ts` | Build workspace dependencies first.                                  |
+| Validate public Markdown          | `bun run --cwd apps/landing docs:gen`                            | Formats nothing; use Oxfmt separately on the files you own.          |
 
 Start a fresh checkout with the pinned tools, install dependencies, and seed package outputs:
 
 ```bash
-git clone <repository-url> localix
+git clone https://github.com/rsaryev/localix.git
 cd localix
 bun install --frozen-lockfile
 bun run build
@@ -161,8 +162,9 @@ format check as a read-only gate before review.
   API's file tree uses, so a scaffold's whole burst of new files re-stages the plugin.
 - Generated desktop resources, sidecar binaries, package `dist` trees, Turbo state, and generated
   landing modules are ignored build products. Change their inputs instead.
-- Release configuration describes a pipeline, not the existence of a public signed artifact. Use the
-  release-state gate in the product evidence ledger before publishing download language.
+- Release configuration describes a pipeline, not the existence of a public signed artifact. Check
+  [GitHub Releases](https://github.com/rsaryev/localix/releases) for a published release and its
+  actual assets before writing download instructions. A draft release is not publicly available.
 
 ## Related guides
 

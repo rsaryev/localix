@@ -116,9 +116,10 @@ Application settings and agent profiles use `SettingsWorkspace` for the pane lay
 `SettingsNavigation` for the grouped rail and narrow section picker. Agent profiles group Definition
 separately from Capabilities. Both use `SettingsSection`; registry lists inside it inherit the
 section surface. `SettingsFieldGrid` aligns paired kit Fields on shared label, help, control, and
-error tracks using CSS subgrid, with a single column below 36rem of field-container width. Form
-actions use the same 36px `xl` control tier as their inputs. The sticky action row wraps rather than
-overflowing a narrow pane. Switching profile sections retains the unsaved definition. A section
+error tracks using CSS subgrid, with a single column below 36rem of field-container width.
+
+Form actions use the same 36px `xl` control tier as their inputs. The sticky action row wraps rather
+than overflowing a narrow pane. Switching profile sections retains the unsaved definition. A section
 containing one control omits the second heading/body tier: `SettingsSection` without children puts
 its value in the heading row, uses `p-3` padding and a medium 13px label, and stacks below 36rem.
 Keymap, recent views and spend alerts share this compact form.
@@ -220,10 +221,12 @@ A surface with one expected next step marks it with the kit `Button`'s `recommen
 travelling accent turned down so the person finds the step without anything shouting. Mark one step
 per surface, and only a safe one: never a permission grant (Allow or Approve on a confirm card),
 never a destructive action, and never while the run is busy. The flag follows the state, so it is
-gone once the step is taken. The plan's Approve menu is the reference: the trigger is recommended
-while a version waits with no open comments, and Request changes takes the mark instead when there
-are some. A menu's action row can carry the flag too (`recommended` on the `MenuActionEntry`), so
-Approve marks both its trigger and its own row in the menu it opens.
+gone once the step is taken.
+
+The plan's Approve menu is the reference: the trigger is recommended while a version waits with no
+open comments, and Request changes takes the mark instead when there are some. A menu's action row
+can carry the flag too (`recommended` on the `MenuActionEntry`), so Approve marks both its trigger
+and its own row in the menu it opens.
 
 ### Rules are enforced, not documented
 

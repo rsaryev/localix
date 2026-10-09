@@ -92,14 +92,10 @@ Because the remembered set is session state and not transcript state, it also su
 checkpoint: once a checkpoint has evicted the `activate_tools` call from the view, the tool it
 activated is still on the wire.
 
-Surface tools are the opposite case, and are kept out of that set on purpose. Naming an open plugin
-tab's tools in the message context as text only would make the agent spend a call fetching the
-schema of the tool the tab is about, and writing a plugin wake's tools into the remembered set would
-make a board closed an hour earlier still send its schema with every request. Availability follows
-the context that makes a tool relevant, in the shape of a `when` clause. The host stamps each
-binding of a plugin tab with the tab's owner (`MessageContextBinding.plugin`), and a plugin's wake
-stamps its row (`plugins`). The run reads the owners from its history and promotes every tool those
-plugins registered on the current load (`apps/api/src/features/chat/runtime/run/surface-tools.ts`):
+Surface tools follow the current message context and stay outside the session's remembered
+activation set. The host stamps a plugin tab binding with `MessageContextBinding.plugin` and a
+plugin wake with `plugins`. `apps/api/src/features/chat/runtime/run/surface-tools.ts` reads those
+owners and promotes their registered tools for the relevant turn:
 
 - **Tabs come from the person's latest message**, not from the row the run answers. A sub-agent's
   report or a job's exit wakes the session with a row that links no tabs. Reading only that row
@@ -160,16 +156,19 @@ Runtime settings are assembled in the API bootstrap, not in user settings.
 Context-policy round trips preserve prompt-cache anchors on user, assistant, and tool messages. At
 the client/service boundary, failed-retry recovery snapshots cannot overwrite newer stream state.
 Authoritative message updates replace corrected tool payloads even when their terminal status is
-unchanged. Cancellation releases producers blocked by a full event queue; an attached consumer can
-drain already-buffered events, but cancellation does not promise delivery of pending events. Thrown
+unchanged.
+
+Cancellation releases producers blocked by a full event queue; an attached consumer can drain
+already-buffered events, but cancellation does not promise delivery of pending events. Thrown
 middleware failures retain messages through the last fully settled turn in the runtime result. The
 stream silence watchdog interrupts a pending iterator on caller cancellation and releases the
-provider connection when a consumer stops iteration early. Post-tool processing keeps the stored
-text and content parts aligned with the effective Pi result, so shortened output cannot be replaced
-by stale pre-hook parts. Human-in-loop requests inherit tool-run cancellation, including when a tool
-supplies an additional request signal. Without an explicit invocation trigger ID, binding
-materialization selects the last non-internal, non-UI-only user message; synthetic reminders do not
-consume its one-shot instruction.
+provider connection when a consumer stops iteration early.
+
+Post-tool processing keeps the stored text and content parts aligned with the effective Pi result,
+so shortened output cannot be replaced by stale pre-hook parts. Human-in-loop requests inherit
+tool-run cancellation, including when a tool supplies an additional request signal. Without an
+explicit invocation trigger ID, binding materialization selects the last non-internal, non-UI-only
+user message; synthetic reminders do not consume its one-shot instruction.
 
 The agent loop and buffered completions share transport retry settings. A configured `timeoutMs`
 also reaches buffered completions, such as title generation; production bootstrap currently leaves

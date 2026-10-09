@@ -1,115 +1,172 @@
 # Localix documentation
 
-Localix is an open source **ADE** (Agentic Development Environment): one workspace for you and a
-team of agents. Several agents work in one conversation, in the editor, terminals, browser preview,
-databases, and shared project board built into one app, with context you can see and rules for every
-tool call.
-
-Work directly in a visible surface, bring that surface into agent context, add agents to the
-conversation, route a model for the job, let an agent drive the preview or build a plugin, or
-coordinate larger work through explicit delegation and a passive task board.
+Localix brings agent conversations, source files, terminals, previews, and workbenches into one
+workspace. Start with setup and a first session, follow a recipe for a concrete task, or use the
+reference below to find a feature's controls and limits.
 
 ## Start here
 
-If you are new, read these in order:
+1. [Understand Localix](getting-started/what-is-localix.md) — workspace concepts and supported
+   workflows.
+2. [Run Localix](getting-started/installation.md) — desktop prerequisites, browser development, and
+   local builds.
+3. [Start your first session](getting-started/first-session.md) — connect a provider, open a
+   project, and make a change.
 
-1. **[What is Localix?](getting-started/what-is-localix.md)** — the pitch, and what it deliberately
-   is not.
-2. **[Run Localix from source](getting-started/installation.md)** — requirements and desktop
-   commands.
-3. **[Your first session](getting-started/first-session.md)** — connect a provider, open a project,
-   and watch one change land.
-4. **[Kanban board](features/task-board.md)** — keep multi-part work of one chat on a passive board.
+Read [Privacy](getting-started/privacy.md) to understand data storage and outbound requests. Use
+[Troubleshooting](getting-started/troubleshooting.md) when setup or a run fails.
+
+## Find a task
+
+| I want to…                           | Read                                                                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Work with several agents             | [Conversations](features/conversations.md) · [Delegation](features/delegation.md)                                          |
+| Control what enters the next request | [Workspace context](features/workspace.md#explicit-and-automatic-context) · [Checkpoints](features/context-checkpoints.md) |
+| Review actions before they run       | [Permission modes](features/permission-modes.md) · [Permission rules](features/permissions.md)                             |
+| Choose a provider or model           | [Providers](features/providers.md) · [Onboarding](features/onboarding.md)                                                  |
+| Track a larger goal                  | [Kanban](features/task-board.md) · [Session tasks recipe](recipes/turn-a-vague-goal-into-a-pipeline.md)                    |
+| Wait for CI or repeat a prompt       | [Monitors](features/monitors.md) · [Loops](features/loops.md)                                                              |
+| Add a tool or workbench              | [Build with the agent](extending/build-with-the-agent.md) · [Plugin authoring](extending/plugins.md)                       |
+| Change Localix itself                | [Contributing](internals/contributing.md) · [Code map](internals/code-map.md)                                              |
 
 ## Recipes
 
-Task-shaped walkthroughs, each one end to end:
+Each recipe walks through one task from setup to a visible result.
 
-| Recipe                                                                            | What you get                                             |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| [Fix a UI bug by pointing at it](recipes/fix-a-ui-bug-by-pointing-at-it.md)       | Click the broken element; the agent gets the source line |
-| [Turn a vague goal into a pipeline](recipes/turn-a-vague-goal-into-a-pipeline.md) | A chat's board of tasks, ordered, taken or delegated     |
-| [Bring your own agent CLI](recipes/bring-your-own-agent-cli.md)                   | A supported coding-agent CLI inside the environment      |
+| Recipe                                                                               | Result                                                           |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| [Fix a UI bug by pointing at it](recipes/fix-a-ui-bug-by-pointing-at-it.md)          | Attach element context from the preview to a message.            |
+| [Turn a vague goal into session tasks](recipes/turn-a-vague-goal-into-a-pipeline.md) | Break down work on a passive board and delegate explicit briefs. |
+| [Bring your own agent CLI](recipes/bring-your-own-agent-cli.md)                      | Run a supported external coding agent in Localix.                |
+| [Drive an interactive program](recipes/drive-interactive-terminal.md)                | Send PTY input and wait for rendered terminal output.            |
 
-Then pick by what you are trying to do:
+## Feature reference
 
-| I want to…                                    | Read                                                                                                                       |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Understand the workspace I am looking at      | [Workspace tour](features/workspace.md)                                                                                    |
-| See and control what enters agent context     | [Workspace context](features/workspace.md#explicit-and-automatic-context) · [Checkpoints](features/context-checkpoints.md) |
-| Control how much the agent is allowed to do   | [Capabilities](features/capabilities.md) · [Permissions](features/permissions.md)                                          |
-| Point at a UI bug instead of describing it    | [Visual Feedback](features/visual-feedback.md)                                                                             |
-| Choose providers, models, and workload routes | [Providers](features/providers.md) · [Secrets](features/secrets.md)                                                        |
-| Keep a long piece of work on track            | [Kanban](features/task-board.md) · [Context checkpoints](features/context-checkpoints.md)                                  |
-| Wait for CI, a deploy, or a service           | [Monitors](features/monitors.md)                                                                                           |
-| Add my own tools, skills, or panels           | [Plugins](extending/plugins.md) · [Skills authoring](extending/skills-authoring.md)                                        |
-| Work from a terminal                          | [CLI](features/cli.md)                                                                                                     |
-| Fix something that is not working             | [Troubleshooting](getting-started/troubleshooting.md)                                                                      |
+### Core
 
-## Getting started
+| Guide                                                                         | Covers                                                                |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Decide what an agent may do](features/capabilities.md)                       | Choose the tools, skills, plugins, and MCP access an agent holds.     |
+| [Agent presets](features/agents.md)                                           | Edit shipped roles, instructions, context, and turn limits.           |
+| [Delegation](features/delegation.md)                                          | Start child sessions with explicit briefs and receive their reports.  |
+| [Choose how much the agent asks](features/permission-modes.md)                | Choose Default, Plan, Bypass, or Autonomous for a conversation.       |
+| [Permission rules](features/permissions.md)                                   | Write ordered allow, ask, and deny rules.                             |
+| [Let the agent propose configuration changes](features/configure.md)          | Review an agent’s proposal to enable a missing capability.            |
+| [Organize work with projects and sessions](features/sessions-and-projects.md) | Organize projects, sessions, branches, drafts, and attachments.       |
+| [Conversations with several agents](features/conversations.md)                | Address participants with their own roles and models in one chat.     |
+| [Read conversation activity](features/conversation-history.md)                | Inspect messages, tool activity, and navigation through a transcript. |
+| [Answer formatting](features/answer-formatting.md)                            | Use supported Markdown, structured content, links, and deliverables.  |
+| [Respond to human-in-the-loop requests](features/hitl.md)                     | Answer questions, quizzes, and confirmation requests.                 |
+| [Background work](features/background-work.md)                                | Follow delegated runs, jobs, and unattended work.                     |
+| [Let an agent interact with a terminal](features/interactive-terminals.md)    | Let an agent send input to a terminal and inspect its screen.         |
+| [Wait for something to happen](features/monitors.md)                          | Wait for a command or plugin event to wake a session.                 |
+| [Repeat work on a schedule](features/loops.md)                                | Repeat prompts while the Localix runtime is running.                  |
+| [Set up a provider and model](features/onboarding.md)                         | Connect a provider and select the default chat model.                 |
 
-| Page                                                   | What's covered                                                                            |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| [What is Localix?](getting-started/what-is-localix.md) | The category, what it is good for, what it is not, and who it is for                      |
-| [Installation](getting-started/installation.md)        | Source checkout, desktop development, local bundles, and requirements per platform        |
-| [Your first session](getting-started/first-session.md) | A change end to end, the slash-command table, steering a run in progress                  |
-| [Privacy](getting-started/privacy.md)                  | What leaves your machine, what your provider sees, where data lives, and how to verify it |
-| [Troubleshooting](getting-started/troubleshooting.md)  | Startup, providers, permissions, workbenches, diagnostics, and useful bug reports         |
+### Workspace
 
-## Features
+| Guide                                                             | Covers                                                             |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Use the workspace](features/workspace.md)                        | Arrange panels and inspect explicit and automatic message context. |
+| [Native workspace tabs](features/native-workspace-tabs.md)        | Manage native windows, tabs, and workspace restoration.            |
+| [External agent sessions](features/external-agents.md)            | Link supported external coding-agent sessions.                     |
+| [Settings](features/settings.md)                                  | Find application, project, provider, and capability settings.      |
+| [Keyboard shortcuts](features/keyboard-shortcuts.md)              | Find keyboard actions and their focus boundaries.                  |
+| [Use Source Control](features/source-control.md)                  | Inspect diffs, stage changes, commit, and manage branches.         |
+| [Annotate a live preview](features/visual-feedback.md)            | Attach source-mapped element feedback from a live preview.         |
+| [Use language server features](features/lsp.md)                   | Use diagnostics and language-server features.                      |
+| [Track model usage and estimated cost](features/cost-tracking.md) | Inspect model usage and estimated request cost.                    |
+| [Manage notifications](features/notifications.md)                 | Configure notifications and review recorded events.                |
+| [Use Localix from the command line](features/cli.md)              | Open a project or file through the desktop shell launcher.         |
 
-| Page                                                         | What's covered                                                                                                                                                                                                |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Workspace tour](features/workspace.md)                      | The editor grid (code editor, preview, diffs, terminal, files), the navigation rail, global search, streaming UI, tool rendering, the composer                                                                |
-| **[Visual Feedback](features/visual-feedback.md)**           | Click an element in the live preview and send its source `file:line`, selector, computed styles, and screenshot to the agent; frame-size presets for breakpoints; the `browser` tool the agent drives it with |
-| [Capabilities](features/capabilities.md)                     | What an agent may do: one rule list per agent, with no agent modes                                                                                                                                            |
-| [Sessions & projects](features/sessions-and-projects.md)     | Project sidebar, forking & branch navigation, rollback, message queue, attachments                                                                                                                            |
-| [Delegation](features/delegation.md)                         | Explicit sub-agents from a self-contained brief, a report for every run, follow-up messages, and the runtime panel                                                                                            |
-| [Monitors](features/monitors.md)                             | Background waits that wake the session on an event: `bash` with `until` polls a check until it exits 0; the composer strip and the engine behind plugin monitors                                              |
-| [HITL](features/hitl.md)                                     | Ask / quiz / confirm — how the agent (and external CLI runs) pause for your input                                                                                                                             |
-| [Database workbench](features/database.md)                   | SQL console + schema browser over sqlite / postgres / mysql / mssql, plus Redis, MongoDB & Elasticsearch; read-only connections, SSH tunnels, the one `database_client` agent tool                            |
-| [API workbench](features/api.md)                             | Saved HTTP requests, bounded response inspection, supported collection imports, vault-backed secret references, and reviewable repository exports                                                             |
-| [DevOps Workspace](features/devops.md)                       | Containers and Kubernetes: health, resource browsers, logs, exec, manifests, port forwarding, and confirmed operational mutations                                                                             |
-| [Containers](features/docker.md)                             | Docker inventory, resource details, logs, exec, stats, Compose projects, and agent links                                                                                                                      |
-| [Kubernetes](features/kubernetes.md)                         | Contexts and namespaces, workloads, live pod state, manifests, events, logs, exec, and port forwarding                                                                                                        |
-| [Trading workbench](features/trading.md)                     | Live public market data — candles, order book, tape, indicators; the read-only `market_data` tool                                                                                                             |
-| [Documents](features/documents.md)                           | Office/PDF extraction, read-only viewers, spreadsheet data views, and document generation routes                                                                                                              |
-| [Reader Workspace](features/reader.md)                       | Focused EPUB/PDF/MOBI/AZW3/FB2/CBZ/Markdown/HTML/text reading with annotations, global search, and live agent context                                                                                         |
-| [Kanban board](features/task-board.md)                       | The bundled Kanban plugin: one passive board per chat with tasks, epics, dependencies and the `kanban` tool                                                                                                   |
-| [Secrets](features/secrets.md)                               | The write-only vault and `${secret:KEY}` interpolation                                                                                                                                                        |
-| [Webhook](features/webhook.md)                               | Let an external system (or a delegated CLI agent) push a message into a session                                                                                                                               |
-| [Providers](features/providers.md)                           | Provider-neutral runtime boundary, connection catalog, OAuth, encrypted credentials, and connection resolution                                                                                                |
-| [Learning Studio](features/learning-loop.md)                 | Memory and recall plus importable courses, lessons, quizzes, practice, and durable progress                                                                                                                   |
-| [Onboarding](features/onboarding.md)                         | The guided `/setup` first run — provider, default chat model, and a structural readiness summary                                                                                                              |
-| [Skills](features/skills.md)                                 | Reusable procedures — running, pinning, autonomous saving                                                                                                                                                     |
-| [MCP servers](features/mcp.md)                               | Connecting external tool servers, persistent connections, MCP via plugins                                                                                                                                     |
-| [CLI](features/cli.md)                                       | The `localix` command — `localix .` / `localix <path>` open in the running app; installs into PATH from the desktop app                                                                                       |
-| [LSP](features/lsp.md)                                       | Language-server diagnostics in the loop                                                                                                                                                                       |
-| [Context checkpoints](features/context-checkpoints.md)       | How long sessions stay inside the model window without a model call                                                                                                                                           |
-| [Tool roster](features/tools.md)                             | Which tools ride on every request, which are deferred behind `activate_tools`, and where the folded-away tools went                                                                                           |
-| [Cost tracking](features/cost-tracking.md)                   | Context ring, per-response cost, and the usage & spend dashboard                                                                                                                                              |
-| [Execution environments](features/execution-environments.md) | Local execution plus the SSH/Docker adapter groundwork and current selector limitation                                                                                                                        |
+### Workbenches
 
-## Extending
+| Guide                                                 | Covers                                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| [Use Database Workspace](features/database.md)        | Query supported databases and inspect schemas and connection limits.    |
+| [Code Graph](features/code-graph.md)                  | Explore code relationships in the graph workbench.                      |
+| [Project Space](features/project-space.md)            | Arrange shared notes and live file cards on a canvas.                   |
+| [Use the API workbench](features/api.md)              | Save and send HTTP requests, inspect responses, and import collections. |
+| [Use DevOps Workspace](features/devops.md)            | Inspect containers and Kubernetes through the shared DevOps surface.    |
+| [Containers](features/docker.md)                      | Browse Docker resources, logs, terminals, and Compose projects.         |
+| [Operate Kubernetes clusters](features/kubernetes.md) | Inspect workloads, manifests, logs, and port forwards.                  |
+| [Documents](features/documents.md)                    | Extract supported files, use viewers, and generate documents.           |
+| [Resumes](features/resumes.md)                        | Edit a resume and preview or export its document.                       |
+| [Reader Workspace](features/reader.md)                | Read supported book and document formats with annotations.              |
+| [Research public markets](features/trading.md)        | Inspect public market data through read-only tools.                     |
+| [Kanban board](features/task-board.md)                | Track tasks, owners, epics, and dependencies on a chat’s board.         |
+| [2048](features/game-2048.md)                         | Play 2048 with the bundled workbench.                                   |
+| [Games with your agent](features/games.md)            | Play the bundled board games with an agent.                             |
 
-| Page                                              | What's covered                                                                     |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [Plugins](extending/plugins.md)                   | Full authoring guide: manifest, native tools, MCP, commands, sub-agents, migration |
-| [Skills authoring](extending/skills-authoring.md) | The `SKILL.md` format, resolution rules, tool & REST surfaces                      |
+### Models & context
 
-## Internals
+| Guide                                                                            | Covers                                                     |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| [Connect model providers](features/providers.md)                                 | Connect providers and route models to different workloads. |
+| [Keep a long session inside the request budget](features/context-checkpoints.md) | Keep long sessions within the request budget.              |
+| [Know the tool roster](features/tools.md)                                        | Inspect live, deferred, and withheld tools.                |
+| [Manage the tool budget](features/tool-budget.md)                                | Understand schema estimates and the backend usage report.  |
 
-| Page                                                                     | What's covered                                                       |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| [Architecture](internals/architecture.md)                                | Monorepo layout, agent loop, runtime pipeline                        |
-| [Environment variables](internals/environment.md)                        | Every env var, and what deliberately isn't one                       |
-| [SDK](internals/sdk.md)                                                  | Building on `@localixai/agent` directly                              |
-| [Desktop package and launcher](internals/desktop-as-primary-artifact.md) | Native packaging, sidecar startup, deep links, and the shell command |
-| [Workspace scope and sidebar](internals/single-scope-sidebar.md)         | Routed scope, session selection, and workspace restoration           |
-| [UI virtualization](internals/ui-virtualization.md)                      | Bounded rendering, follow behavior, and logical navigation           |
-| [Question interaction](internals/question-interaction.md)                | The accepted pattern for queued and waiting agent questions          |
-| [Contributing](internals/contributing.md)                                | Development setup and conventions                                    |
+### Memory & skills
 
-**[Subsystem notes](internals/subsystems/README.md)** cover context refs, source control,
-workbenches, documents, global search, and other architectural boundaries. Read the matching note
-before changing that subsystem.
+| Guide                                                      | Covers                                                    |
+| ---------------------------------------------------------- | --------------------------------------------------------- |
+| [Carry context into later work](features/learning-loop.md) | Use memory, recall, courses, and saved learning progress. |
+| [Reuse procedures with skills](features/skills.md)         | Load, pin, and reuse procedures.                          |
+
+### Integrations
+
+| Guide                                                          | Covers                                                         |
+| -------------------------------------------------------------- | -------------------------------------------------------------- |
+| [Connect MCP servers](features/mcp.md)                         | Connect external tool servers and inspect their availability.  |
+| [Use hooks and slash commands](features/hooks-and-commands.md) | Use lifecycle hooks and slash commands.                        |
+| [Execution environments](features/execution-environments.md)   | Understand local execution and the remote-adapter limitations. |
+| [Manage credentials with Vault](features/secrets.md)           | Store vault credentials and use secret interpolation.          |
+| [Send messages into a session](features/webhook.md)            | Push an external message into a session.                       |
+
+## Extending Localix
+
+| Guide                                                              | Covers                                                             |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| [Build a plugin](extending/plugins.md)                             | Author a plugin manifest, tools, commands, and contributions.      |
+| [Build a plugin with the agent](extending/build-with-the-agent.md) | Describe a plugin and review the agent’s build result.             |
+| [Build workbench UI](extending/plugin-ui.md)                       | Build a workbench interface against the host bridge.               |
+| [Plugin synchronization](extending/plugin-sync.md)                 | Synchronize plugin resources and live views.                       |
+| [Keyboard ownership](extending/keyboard-ownership.md)              | Keep plugin shortcuts within their focus and ownership boundaries. |
+| [Report plugin failures](extending/plugin-problems.md)             | Report plugin failures through the host’s problem surfaces.        |
+| [The UI kit](extending/ui-kit.md)                                  | Use shared components, tokens, and supported import paths.         |
+| [Wake a session from a plugin](extending/plugin-wakes.md)          | Wake a session from a plugin event.                                |
+| [Validate plugin route requests](extending/plugin-routes.md)       | Validate plugin HTTP request contracts.                            |
+| [Author a skill](extending/skills-authoring.md)                    | Write SKILL.md procedures and supporting resources.                |
+| [Shared Markdown](extending/markdown.md)                           | Use the shared Markdown renderer and interactive components.       |
+
+## Contributor references
+
+The public contributor guides cover setup and architecture. Repository-only notes provide source
+ownership and contracts for work on a particular subsystem.
+
+| Guide                                             | Covers                                                           |
+| ------------------------------------------------- | ---------------------------------------------------------------- |
+| [Architecture](internals/architecture.md)         | Understand package boundaries and runtime composition.           |
+| [Environment variables](internals/environment.md) | Find environment variables, defaults, and development overrides. |
+| [Contributing](internals/contributing.md)         | Set up a checkout and choose focused verification.               |
+
+- [Code map](internals/code-map.md) — locate the owning module before editing.
+- [Subsystem notes](internals/subsystems/README.md) — context, workbenches, search, and integration
+  boundaries.
+- [Agent runtime](internals/agent-runtime.md) · [SDK](internals/sdk.md) — runtime and programmatic
+  entry points.
+- [Desktop lifecycle](internals/desktop-runtime-lifecycle.md) ·
+  [Native browser](internals/desktop-browser.md) — shutdown, recovery, and browser integration.
+- [Desktop packaging](internals/desktop-as-primary-artifact.md) — native shell, staging, launcher,
+  and updates.
+- [Workspace scope](internals/single-scope-sidebar.md) ·
+  [Client/server sync](internals/client-server-sync.md) — routed state and restoration.
+- [UI virtualization](internals/ui-virtualization.md) ·
+  [Question interaction](internals/question-interaction.md) — rendering and queued questions.
+- [Visual system](internals/visual-system.md) — repository UI components and tokens.
+- [Documentation standards](internals/doc-standards.md) — page structure, evidence, links, and
+  captures.
+
+The [public navigation](public-nav.json) defines the pages published on the documentation site. This
+index also links repository-only references; those are read in the checkout or on GitHub.

@@ -157,8 +157,9 @@ scope, resource anchors, and chart command listener.
   A venue selected in the UI is not automatically added to their connection roster.
 - `manage_chart` requires `workbench-ui`, including its server-side `detect` action. Headless
   clients do not receive the tool.
-- Chart-changing `manage_chart` calls declare no mutation classifier. The default host policy treats
-  them as read-only tool calls even though they mutate Localix UI state.
+- `manage_chart` supplies a per-call classifier: `snapshot` and plain `detect` are `read`;
+  recognized chart changes and `detect` with `auto_draw: true` are `view`; unknown actions are
+  `external`. Agent rules and conversation modes decide the permission result.
 - A `snapshot` of an unmounted chart returns last-known state or stored preferences. Live viewport,
   candle, and computed-indicator values appear only while the chart is mounted.
 - REST and WebSocket availability varies by venue, symbol, timeframe, and channel. Fallback polling
@@ -181,6 +182,8 @@ scope, resource anchors, and chart command listener.
 - [Capabilities and permissions](../../features/capabilities.md)
 
 ## Source of truth
+
+- [Chart action effect classifier](../../../plugins/trading/backend/manage-chart-class.ts)
 
 - [Plugin manifest](../../../plugins/trading/plugin.json)
 - [Backend registration](../../../plugins/trading/backend/index.ts)

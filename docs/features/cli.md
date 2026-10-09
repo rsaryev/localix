@@ -1,7 +1,7 @@
 # Use Localix from the command line
 
-The `localix` binary is a launcher: it sends a folder or file to the running desktop app. Use it to
-continue in Localix from wherever your shell already is.
+The `localix` binary is a launcher: it sends a folder or file to the registered desktop app. Use it
+to continue in Localix from wherever your shell already is.
 
 ## What you can do
 
@@ -56,7 +56,9 @@ legacy `localix` launcher that still points into an expired `.mount_*` path; lau
 durable packages are left untouched.
 
 The launcher forwards all arguments to the CLI shim with the Bun executable selected by the local
-runtime. A stale launcher remains installed until you choose **Reinstall**.
+runtime. Desktop startup best-effort installs a missing launcher or refreshes one whose contents
+point at a different CLI entry. **Reinstall** repeats the operation on demand; ordinary web
+development does not automatically install a launcher.
 
 ### Flags
 

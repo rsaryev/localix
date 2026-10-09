@@ -6,14 +6,16 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
-## v0.1.0-beta.1 — 2026-10-05
+## v0.1.0-beta.1 — draft prepared 2026-10-05
 
-The first beta. Only macOS has been tested; the Linux build is experimental. There is no Windows or
-Intel Mac installer.
+The first beta is being prepared. The GitHub release is a draft, not a published installer channel.
+Check [GitHub Releases](https://github.com/rsaryev/localix/releases) for publication and actual
+assets.
 
 ### Added
 
-- Desktop application for macOS on Apple silicon, signed and notarized.
+- Desktop application for macOS on Apple silicon; the release pipeline requires signing and
+  notarization.
 - Experimental, untested Linux (x64, `.AppImage` and `.deb`) builds from the same release pipeline.
 - Building from source is documented in
   [Run Localix from source](docs/getting-started/installation.md).
@@ -34,7 +36,8 @@ than the current latest is refused before the publish.
 
 An entry is therefore written when a tag is prepared, not when a commit merges:
 
-- Add a `## v<version> — <date>` section above `## Unreleased` for the tag being released.
+- Prepare a `## v<version> — draft prepared <date>` section below `## Unreleased` for the tag.
+  Replace the draft label with the publication date only after the release is public.
 - Group its lines under `Added`, `Changed`, `Fixed`, and `Removed`.
 - Name the platforms whose installers that release actually published. The workflow currently runs
   two native build legs (macOS arm64, Linux x64) with `fail-fast: false`, so one broken leg lets the

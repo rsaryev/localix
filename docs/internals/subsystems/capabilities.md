@@ -104,14 +104,10 @@ rm". A positive list closes its kind the same way — `tool:* * deny` first, the
 There is ONE resolution rule, and no effect is special. A `deny` is not terminal: written before a
 narrower `allow` it is an allowlist with an exception, which is the shape every preset uses.
 
-A deny is enforced by ABSENCE, not by refusal. `projectCapabilities` subtracts the denied names from
-the roster it is handed, the registry never builds them, and the model is never offered the schema —
-so the tokens are saved and a call the rules would refuse cannot be made. Only an exception that
-could make some call reachable keeps a tool registered: an `allow`, or an `ask` that NAMES the tool
-(a person can open that door). A wildcard `ask` cannot — it is the confirmation floor every preset
-ends with, and reading it as an exception made a closed allowlist remove nothing at all: `qa` had
-one blanket deny, 23 allows, and shipped all 28 catalog tools, refusing the calls one at a time.
-`resolve.test.ts` and `runtime-policy.test.ts` pin both halves.
+`projectCapabilities` removes tools denied for every call before the registry builds their schemas.
+A narrower `allow`, or an `ask` that names the tool, keeps a reachable candidate registered. A
+wildcard `ask` does not reopen a closed allowlist. `resolve.test.ts` and `runtime-policy.test.ts`
+cover both projection and call-time enforcement.
 
 What the rules do NOT arbitrate is a name the catalog does not carry. `RESERVED_NON_TOOL_NAMES`
 (`agent-core/tool-names-reserved.ts`) is core-owned machinery — `activate_tools` is built from the
@@ -182,23 +178,20 @@ card every other proposal uses.
 
 ### An enabled plugin's tools are inspected once, not once per launch
 
-The snapshot lists an enabled native plugin's tools by importing its backend and running its
-`register()`. Paid on every launch, that was ~20 backend bundles (14 MB, ~265 ms) before the first
-snapshot could answer. `apps/api/src/features/plugins/inspection-store.ts` keeps each successful
-answer in `~/.localix/cache/plugin-inspection-cache-v1.json`, valid only while every input matches:
-the manifest, a digest of the config, the entry files' stat, the user and cwd, the host build, and
-the plugin's code — the content fingerprint of a managed copy, or a stat of a user install's tree.
-An enable, disable, config change, install, removal or `/plugin reload` drops the entry, a failed
-inspection is never stored, and a file that does not parse is an empty cache.
+The snapshot inspects an enabled native plugin by importing its backend and running `register()`.
+`apps/api/src/features/plugins/inspection-store.ts` persists successful inspections in
+`~/.localix/cache/plugin-inspection-cache-v1.json`. Cache identity includes the manifest, config
+digest, entry-file stats, user, working directory, host build, and plugin code fingerprint.
 
-On the client the snapshot's enabled set and tools publish at once. A plugin whose UI artifact has
-not registered yet reads as `pending` (`apps/ui/src/shared/contrib/pluginActivation.ts`), so a
-restored tab of a kind it has not registered yet is kept rather than closed as unavailable. A FAILED
-import is not a settle (`apps/ui/src/shared/contrib/pluginUiLoads.ts`): the plugin stays pending and
-is retried on the startup backoff. Once its retries are used up it reads as failed. Its tabs are
-still kept, and the next snapshot publish tries it again, because a 503 while the sidecar restarts
-is as likely as a broken build. Settling belongs to the pass whose snapshot was PUBLISHED, so a
-later request that fails before it publishes cannot orphan it.
+Enablement, configuration, installation, removal, and `/plugin reload` invalidate the entry. Failed
+inspections are never cached; an unreadable cache is treated as empty.
+
+The client publishes the snapshot's enabled plugins and tool roster together. A plugin UI not yet
+registered is `pending` (`apps/ui/src/shared/contrib/pluginActivation.ts`), so its restored tabs
+remain open. Failed imports retry on the startup backoff
+(`apps/ui/src/shared/contrib/pluginUiLoads.ts`); exhausted retries become `failed`, while retaining
+the tabs. A later snapshot publish retries the import. A request that fails before publishing cannot
+settle another pass's pending work.
 
 ### A role's defaults are a SEED, not an overlay
 
@@ -294,82 +287,11 @@ context as `availability`. The plugin loader and the MCP gather read it from the
 downstream could only produce a different answer, which is the exact failure this subsystem exists
 to prevent: the settings screen and the run disagreeing.
 
-### Composer tips are a PROJECTION of the snapshot
+### Composer tips
 
-The composer teaches the product while a run streams, and what it says is derived from the same
-document — `tips` on the snapshot, composed by `composerTips` from the fields resolved above.
-
-The client does not own that list: it could only describe a workspace it had guessed at, naming
-individual plugins or tools (`bash`, `apply_patch`) with no way to know whether either is present in
-the install it is running in. Composing the pool here means a plugin nobody installed is never
-advertised, a tip about a denied tool is dropped before it ships, and a skill saved a minute ago is
-offered without anyone editing a list.
-
-Two rules keep it honest:
-
-- **A curated line names the capability it talks about.** `CURATED_TIPS` entries carry
-  `requiresAnyTool`, checked against `tools.enabled`; the gate is stripped before the tip goes on
-  the wire.
-- **A generated line's trigger comes from the extension's own manifest.** A tip for an
-  installed-but-off plugin gets its `when.textPattern` from `tipKeywordPattern(name, description)`,
-  so the host never decides which plugin is "the browser one".
-- **A built-in command's tip is derived from the command.** `TEACHABLE_COMMANDS` is an editorial
-  list of names; the text comes from `SLASH_COMMANDS` (the leaf the parser and the composer menu
-  already share), so a reworded command rewords its tip and a removed one removes it.
-
-The gate on the wire is DATA — a regexp source, tool names, signal names — so the client evaluates
-it without understanding any of it (`apps/ui/src/features/chat/model/streamTips.ts`). The client
-authors NO tip: it decides when one shows and which of the eligible ones it is, and nothing else.
-`composerTipsAgnostic.test.ts` pins that by failing on any sentence-shaped literal in those modules.
-
-#### What makes a tip relevant
-
-Two halves of one answer, because neither side can give it alone.
-
-| Knows                                                    | Who answers | How                                                                          |
-| -------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
-| What the scope HAS — plugins, tools, skills, commands    | server      | the snapshot's own fields; `requiresAnyTool` drops a tip about a denied tool |
-| What the user just ASKED                                 | client      | `when.textPattern`, a regexp source tested against the last message          |
-| What the agent is DOING                                  | client      | `when.tools`, matched against the streaming tool                             |
-| What is true of the SESSION — queue, context, loops, age | client      | `when.signals` / `notSignals`, resolved by `tipSignals.ts`                   |
-
-`TIP_SIGNALS` is the whole vocabulary of that last row, declared on the server and answered on the
-client: the server says which fact a tip needs, the client says whether it holds. A member nobody
-resolves makes its tips unreachable and nothing fails, so the client's `tipSignals.test.ts`
-enumerates the exported list rather than a copy of it.
-
-Ranking falls out of the same data. `pickStreamTip` scores each eligible tip by how many conditions
-its gate names and only the top tier competes, so a tip that matches the streaming tool AND a
-session fact beats a generic product line, and the generic pool surfaces only when nothing sharper
-applies. That is what makes a longer list safe: a tip that can appear only in its own moment costs
-nothing at every other moment.
-
-#### Pacing, and the one interruption
-
-`tipSelection.ts` decides WHICH; `streamTips.ts` decides WHEN, and only that:
-
-| Moment                  | Behaviour                                                       |
-| ----------------------- | --------------------------------------------------------------- |
-| First 2 s of a run      | Nothing — a quick reply must never flash a tip on its way past  |
-| Then every 7 s          | The next tip; ambient pace, read it or ignore it                |
-| Something more specific | Swapped in at once, but never inside 2.5 s of the tip on screen |
-| Pool exhausted          | The run's shown-set recycles rather than the band going silent  |
-
-The interruption is a comparison, not a guess: a gate's specificity already ranks tips, so the band
-swaps only when the best eligible tip is MORE specific than the one up — a tool started streaming,
-the context filled, a message queued. Waiting out a rotation to say that is the difference between a
-band that reads as ambient and one that reads as attentive. `shouldSwapForMoment` is that rule, pure
-and tested; the effect around it only re-arms the interval so the new tip gets a whole turn.
-
-#### Quick actions
-
-A tip that ends in "…in Settings → Plugins" loses most of its readers to the navigation, so a tip
-carries up to two actions instead: `insert` stages editable text through the composer bus, and
-`navigate` opens a `localix://ui/…` destination through the same registry every agent action and
-search hit resolves through. URIs are built with the SDK's navigation helpers
-(`capabilitySettingsUiUri`), never typed by hand, so a tip about a disabled plugin lands on that
-plugin's own settings row. A destination that does not resolve in this build renders nothing at all
-— advice with a dead button attached reads as a bug.
+The capability snapshot also supplies the composer tip pool. The server derives the copy and
+availability gates; the client selects and paces eligible tips.
+[Composer tip contracts](composer-tips.md) cover triggers, ranking, timing, and quick actions.
 
 ## Limits
 
@@ -390,6 +312,7 @@ plugin's own settings row. A destination that does not resolve in this build ren
 
 ## Related guides
 
+- [Composer tip contracts](composer-tips.md)
 - [Tools](../../features/tools.md)
 - [MCP](../../features/mcp.md)
 - [Plugins](../../extending/plugins.md)
@@ -419,11 +342,4 @@ plugin's own settings row. A destination that does not resolve in this build ren
 - [Snapshot composition](../../../apps/api/src/features/capabilities/snapshot.ts)
 - [Persisted tool inspection](../../../apps/api/src/features/plugins/inspection-store.ts) ·
   [inspection-store.test.ts](../../../apps/api/src/features/plugins/inspection-store.test.ts)
-- [Composer tips](../../../apps/api/src/features/capabilities/tips.ts) ·
-  [tip-contracts.ts](../../../apps/api/src/features/capabilities/tip-contracts.ts) ·
-  [tips-curated.ts](../../../apps/api/src/features/capabilities/tips-curated.ts) ·
-  [tips-session.ts](../../../apps/api/src/features/capabilities/tips-session.ts) ·
-  [tips-actions.ts](../../../apps/api/src/features/capabilities/tips-actions.ts) ·
-  [tips-keywords.ts](../../../apps/api/src/features/capabilities/tips-keywords.ts) ·
-  [tips.test.ts](../../../apps/api/src/features/capabilities/tips.test.ts)
 - [Schema](../../../apps/api/migrations/20260601T000000_init_schema.ts)

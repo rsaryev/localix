@@ -121,16 +121,15 @@ A row whose button no longer acts on anything is settled: `resolvedAt` is set an
 marked unavailable. Lifecycle rows are settled by the server (below); the one client-side settle is
 the Retry the person clicked (`apps/ui/src/shared/lib/notifications/runLifecycle.ts`).
 
-Retry is a `retry_run` command carrying its run on the action (`runId`), so it works the same from a
-row the server just recorded and from one found after a reload. Regenerate rewrites the latest
-assistant row, a slash command's output included, so Retry names its run as `expectedMessageId` and
-the SERVER decides, under the session's mutation lock (`regenerate` in
-`apps/api/src/features/chat/service/branching-ops.ts`): a run that is no longer the latest reply is
-refused with 409 `regenerate_superseded`, one that never wrote a reply with `regenerate_no_reply`. A
-client that read the session first and regenerated second left a window in which a new reply could
-land and be rewritten. A refusal becomes an information row and settles the clicked row as
-`superseded`; an accepted regenerate settles it as `retried`; a failed one leaves it live. The chat
-supplies the regenerate (`retrySessionRun`), so the run paints as started.
+Retry carries `runId` in a `retry_run` command, so it works after a reload. The chat supplies
+`retrySessionRun` and sends that run as `expectedMessageId` to regenerate. Under the session's
+mutation lock (`regenerate` in `apps/api/src/features/chat/service/branching-ops.ts`), the server
+refuses a superseded reply with 409 `regenerate_superseded` and a run with no reply with
+`regenerate_no_reply`.
+
+A refusal creates an information row and settles the clicked event as `superseded`. An accepted
+regenerate settles it as `retried`; a failed request leaves it live. The guard and mutation stay in
+one server operation, so a newer reply cannot land between a client check and regeneration.
 
 Stopping a parent stops every child it spawned (`stop-session.ts`). The children whose live run a
 cascade took down are marked (`cascadeStoppedSessionIds`), and their run ends record nothing: the
@@ -183,15 +182,17 @@ applies the interruption lifetime, quiet flag, attention test, condition, and fo
 order. An expired, quiet, disabled, or focused event can therefore enter history without producing a
 toast, native banner, or terminal escape.
 
-The attention test returns true only for severity `error` or topic `hitl.required` or
-`user.mentioned`. The web and desktop app has no toast transport: its interruption is the desktop
-native banner, decided in the window (`apps/ui/src/shared/lib/notifications/interruption.ts`) — only
-the window knows its focus and which chat is on screen. It asks only for a row that OPENS by a
-change delivered live (an `n` frame, or the answer to this window's own op); a catch-up read is
-history and never interrupts. The banner kind is `hitl` for the two waiting topics and `run`
-otherwise; a fact this window raised states its own wish (`nativeKind`, or none: an outage stays in
-the app). A row from the session on screen is marked read. Setting the condition to `always`
-bypasses the focus check; it does not make successful completions or ordinary warnings interruptive.
+The attention test returns true for severity `error` or category `human-input`. The category covers
+blocking requests, queued questions, mentions, and plans waiting for review. The web and desktop app
+has no toast transport: its interruption is the desktop native banner, decided in the window
+(`apps/ui/src/shared/lib/notifications/interruption.ts`) — only the window knows its focus and which
+chat is on screen. It asks only for a row that OPENS by a change delivered live (an `n` frame, or
+the answer to this window's own op); a catch-up read is history and never interrupts.
+
+The banner kind is `hitl` for the two waiting topics and `run` otherwise; a fact this window raised
+states its own wish (`nativeKind`, or none: an outage stays in the app). A row from the session on
+screen is marked read. Setting the condition to `always` bypasses the focus check; it does not make
+successful completions or ordinary warnings interruptive.
 
 Unknown focus delegates the final decision to the transport. Automatic terminal detection emits OSC
 777 only for a TTY with `TERM_PROGRAM=WarpTerminal` and a non-empty `WARP_CLIENT_VERSION`. Other
@@ -241,122 +242,11 @@ SETTLED rows first: a pending request or a standing condition outlives newer noi
 Event Center does not mark anything read; expanding a row, running its action or opening its source
 does.
 
-### Settle standing conditions
+### Conditions and request failures
 
-A condition only the client knows is raised with `condition: true` and settled by prefix through
-`resolveNotificationCondition` (`store.ts`), a `settle` op with `prefix` and `keep`. The raise and
-its settle travel in one ordered op stream, so the newest report is the one kept however fast they
-come. A key longer than the server's 400-character cap is shortened deterministically part by part
-(`boundedKeyPart` in `inboxMapping.ts`), so the prefix a producer settles by stays the prefix of its
-keys.
-
-- **Problem reports** (`problems.ts`): the key is `problemSubjectKey` + a fingerprint of the problem
-  set; its parts are URI-encoded so one subject's prefix never covers another's. A new report
-  settles the superseded ones, keeping itself. Republishing the report that is already the subject's
-  one open row sends nothing — a save loop is not traffic — and only replaces its callbacks.
-- **Transport incidents** (`journalIncident.ts`): an outage is one condition keyed by incident kind
-  and origin. Recovery settles it and adds no row of its own; the next outage reopens it. A recovery
-  with no incident in memory still settles, which is what closes an outage restored from the journal
-  after a reload; an owner that goes away (`abandon`) settles its reported outage too.
-
-### Record server conditions
-
-What only the server knows is recorded where it is learned, through
-`apps/api/src/features/notifications/conditions/condition.ts`. A row's key is its subject plus a
-fingerprint of the problem, so the same problem republished is one row, a changed problem supersedes
-the old row, the subject working again settles it as `fixed`, and the problem returning reopens it
-with its count advanced. Key parts are URI-encoded and every prefix ends in `:`.
-
-| Subject                            | Raised by                                                                                                                                                              | Settled by                                                                             |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `plugin:<name>:load:<projectId>:`  | a load that reports an error for the plugin                                                                                                                            | a clean load; the plugin leaving the enabled set                                       |
-| `plugin:<name>:backend:`           | the backend host refusing a subsystem                                                                                                                                  | a pass that wires it                                                                   |
-| `plugin:<name>:channel:<channel>:` | a channel's receive loop crashing                                                                                                                                      | the channel starting again                                                             |
-| `plugin:<name>:monitor:<monitor>:` | a `when: always` monitor's output ending                                                                                                                               | the monitor starting again                                                             |
-| `plugins:reconcile:`               | a backend reconcile throwing                                                                                                                                           | the next reconcile that succeeds                                                       |
-| `mcp:<server>:<projectId>:`        | a connect failing or asking for sign-in                                                                                                                                | a connect that succeeds                                                                |
-| `trigger:<id>:`                    | a loop failing twice in a row                                                                                                                                          | the next fire that succeeds; the loop ending                                           |
-| `provider:<connectionId>:`         | an OAuth refresh throwing (not a cancel); a run on the connection ending rate-limited, over its plan limit, or with a refused credential (`AgentErrorInfo.authFailed`) | a refresh that writes a token; a new sign-in; any run on the connection that completes |
-| `plugins:load:<projectId>:`        | the whole per-run plugin load of a workspace throwing (`prompt-context.ts`)                                                                                            | the next load that completes                                                           |
-| `lsp:<serverId>:<rootDir>:`        | a language server crashing or failing to start                                                                                                                         | the server reporting ready                                                             |
-
-A wake a detached producer could not deliver is an event, not a condition: one error row keyed
-`delivery:<deliveryKey>`, and none for a chat that is gone
-(`apps/api/src/features/notifications/conditions/triggers.ts`).
-
-### Keep one row per failure
-
-A failed mutation or user-initiated read schedules a generic fallback row (`incidentFallback.ts`,
-900 ms grace). A row whose trace carries that failure cancels it — and, since a trace names only the
-newest failure of its scope, also every other pending failure of the same session (or of the
-application scope) within 10 seconds of it. That is what keeps a batch that reports "Could not
-delete 3 entries" from also producing two anonymous rows.
-
-### Trace a failure to its request
-
-A row's trace is never guessed from "the newest failed request of the session": a Kubernetes poll
-failing every second would win that race against the Docker request a Docker problem is about, and
-the row would show the wrong cause. A problem NAMES its request:
-
-- The host transport marks every response with the trace id it minted (`markResponseTrace`), and a
-  plugin's API error reads it back with `problemRequestOf` (both in
-  `packages/plugin-sdk/src/ui/transport.ts`) into `Problem.request` — method, path, status, trace id
-  and the server's `x-request-id`.
-- `publishProblemReport` passes those requests as the fact's `causes`; `recordClientFact`
-  (`apps/ui/src/shared/lib/notifications/clientFacts.ts`) traces exactly them through
-  `causalTraceSnapshot` (`trace.ts`), marks each as `cause`, and files the row where they happened.
-  A cause no longer buffered is rebuilt from the request itself; nothing nearby is substituted. The
-  time-window guess remains only for facts that name no request.
-- The body ends with one context line per problem: `code · METHOD path → status · request <id>`. A
-  code rides in `Problem.code`, never in `field`, which renders as a location.
-- `EventTrace.tsx` shows a failed step's status in the line and labels the named cause.
-- A request a timer started is not the person's action: the SDK poller runs its tick inside
-  `runAsBackgroundWork` (`packages/plugin-sdk/src/ui/visibility.tsx`), and the host credits no click
-  to it (`operationContext.ts`). Before, a poll that landed within two seconds of a click raised
-  anonymous "Could not load the data" rows.
-
-On the API side every answer carries `x-request-id` (`apps/api/src/lib/request-id.ts`), the access
-log line carries the same id, and a rejected JSON answer logs its own `code`, message and `detail`
-as `request.rejected` — a plugin route answers its typed body itself, so before this the log had the
-status and nothing else. An unrecognized throw logs its stack (`apps/api/src/lib/http.ts`).
-
-### Write an entry
-
-`toast.*` (`apps/ui/src/shared/lib/notify.ts`) keeps a toast's call shape, but every call is a
-durable row. The wording is pinned by `apps/ui/src/shared/lib/notifications/wording.test.ts`, which
-reads every literal headline in the host, the plugins and the plugin SDK:
-
-- the title is a headline: no trailing full stop, no exclamation mark;
-- a failure says what did not happen, actively — "Could not save “a.ts”", never "Failed to…",
-  "Couldn't…", "X failed" or "The X could not be Y";
-- the reason goes in `description`, from `errorMessage(...)`, never `String(error)`.
-
-A success row is written only for a result the person cannot already see where they acted. A
-precondition ("nothing to export") is information, not an error, because an error interrupts. A
-toast's `action`/`cancel` callbacks expire after `TOAST_ACTION_LIFETIME_MS` (one minute); a choice
-that stays valid for as long as its condition holds belongs in `toast.problems`, whose recovery
-actions do not expire.
-
-### Attribute plugin rows
-
-Every plugin UI shares one SDK `toast`, so without attribution a plugin's row read "System". The
-host lends plugins a wrapper (`apps/ui/src/shared/contrib/pluginToast.ts`) that attributes each call
-from its stack: each loaded plugin UI is imported from its own artifact directory, and
-`attributePluginCaller` (`apps/ui/src/shared/contrib/pluginAttribution.ts`) names the plugin whose
-directory the innermost matching frame lies under, in V8 and JavaScriptCore stacks alike. A
-`runPluginAction` failure publishes on a later microtask, so the SDK lends the call-time stack for
-that publish. The wrapper passes the plugin's display name as `source`, which `recordClientFact`
-(`clientFacts.ts`) applies as `originLabel`: a label on the derived origin, never a replacement for
-it. An unattributable call publishes unchanged; a problem report falls back to its `scope`. A
-`source` a plugin supplies itself is dropped.
-
-A plugin's `ctx.reportProblem` is recorded by the server as a standing warning under
-`plugin:<name>:problem:<source>:` (`apps/api/src/features/plugins/problem-reporter.ts`), on every
-load that runs plugin code — the per-run load, the boot-time backend load and channels. A problem
-that names a `sessionId` inside a chat run is also drawn as a transcript line through a
-`hook.notice` frame carrying `plugin`
-(`apps/api/src/features/chat/runtime/plugin-problem-notice.ts`). Only Settings inspection binds no
-reporter, so reading a plugin's roster never files a problem.
+[Notification problem contracts](notification-problems.md) define condition keys, recovery, request
+attribution, duplicate suppression, wording, and plugin labels. A problem's journal row must
+identify the failure it reports and settle when its owning condition clears.
 
 ## Configuration
 
@@ -410,6 +300,7 @@ is outside the shared `NotificationPreferences` contract.
 
 ## Related guides
 
+- [Notification problem contracts](notification-problems.md)
 - [Manage notifications](../../features/notifications.md)
 - [Human in the loop](../../features/hitl.md)
 - [Delegation](../../features/delegation.md)

@@ -125,10 +125,11 @@ URLs disappear when their listener dies; banner-derived URLs remain latched. Eit
 full-screen app entering or leaving the alternate screen, is pushed as `terminal.state`, so the
 composer's "Open preview" and the terminal auto-reveal do not wait for its registry poll; that poll
 (every 20 seconds while terminals are live) remains the only source of a banner-less listener and
-the baseline after a reconnect. Only the background bash path subscribes to `onPreviewUrl`. It
-records the session target and, when the run can preview at all, opens it at once
-(`run/preview-auto-open.ts`); the bind-all banners `0.0.0.0` and `[::]` both normalize to
-`localhost`.
+the baseline after a reconnect.
+
+Only the background bash path subscribes to `onPreviewUrl`. It records the session target and, when
+the run can preview at all, opens it at once (`run/preview-auto-open.ts`); the bind-all banners
+`0.0.0.0` and `[::]` both normalize to `localhost`.
 
 ### Recovery invariants
 
@@ -179,15 +180,13 @@ Interactions are step shapes inside `steps`, not top-level actions:
 | `press`          | `key` or non-empty `keys` | Target; otherwise the element focused when each key is sent         | Keys run in the supplied order; Tab moves focus |
 | `scroll`         | None                      | Target, direction defaults to down, amount defaults to 80% viewport | A target scrolls into view                      |
 
-The schema carries the interaction vocabulary once, in the step shape, and execute accepts exactly
-what the schema declares. The old flat form (`action: "click", ref: "e3"`, or step fields such as
-`text` at top level with no action) is refused before validation with the one-step `steps` call
-built from the model's own fields, because the validator's own refusal ("must be equal to one of the
-allowed values") does not say where interactions went. `title`, `interactiveOnly` and `maxDepth` are
-not part of the schema and are refused as unknown fields. The input schema allows an omitted action
-only when `inferAction` finds one unambiguous signature (`expression`, `steps`, `file_path`/`url`,
-`viewport`); a bare `ref` names no action. Callers should still set the action explicitly. Ref
-normalization accepts copied forms such as `[ref=e3]`, `ref=e3`, and `#e3`.
+Interactions use the step shape inside `steps`; execution accepts the same vocabulary as the schema.
+Old flat interactions are refused with a replacement one-step batch. Unknown fields such as `title`,
+`interactiveOnly`, and `maxDepth` are rejected.
+
+Set `action` explicitly. When omitted, `inferAction` accepts only an unambiguous signature:
+`expression`, `steps`, `file_path`/`url`, or `viewport`. A bare `ref` names no action. Reference
+normalization accepts `[ref=e3]`, `ref=e3`, and `#e3`.
 
 A batch is checked whole before any of it runs: a targeting step without `ref` or `selector`, a
 `press` step without keys, an `evaluate` step without an expression, or an empty `steps` array

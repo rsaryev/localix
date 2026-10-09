@@ -95,8 +95,8 @@ To use the browser workspace instead of the desktop shell:
 bun run dev:web
 ```
 
-This opens the UI on `localhost:5050` with its API on `127.0.0.1:5051`. It uses a separate,
-git-ignored database at `.data/dev/localix.db`.
+Open `http://localhost:5050` after the servers start; the API listens on `127.0.0.1:5051`. This uses
+a separate, git-ignored database at `.data/dev/localix.db`.
 
 See [installation](docs/getting-started/installation.md) for platform requirements and local builds,
 and [troubleshooting](docs/getting-started/troubleshooting.md) for startup problems.

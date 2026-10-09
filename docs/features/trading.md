@@ -62,6 +62,10 @@ references at send time and records a revisioned snapshot for the session.
 | `market_data`  | List the tool's connection roster, quote one market or up to 20 symbols, read candles and depth, compute indicators, or estimate visible-book slippage | Read-only; one-market candle windows cap at 200 and depth at 50 per side                           |
 | `manage_chart` | Open or inspect a chart, set timeframe, indicators, chart type, and scale, navigate, manage drawings, or run server-side detection                     | UI mutations use the session command stream; snapshot and detection can read without opening a tab |
 
+The host classifies `snapshot` and plain `detect` as reads. Chart-changing actions, including
+`detect` with `auto_draw: true`, have effect `view`; permission rules and the conversation's mode
+still apply. None of these calls places an exchange order.
+
 `manage_chart` commands are emitted as replayable `plugin.command` session events. The Trading UI
 accepts commands for its plugin and chart channel, opens or focuses the matching chart when
 required, and applies the command through the chart control bus.

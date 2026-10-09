@@ -33,10 +33,10 @@ you can create and edit like any other. [Permissions](permissions.md) owns the r
 What a project still decides is where things are INSTALLED — its plugins, MCP servers and skills —
 not what may run.
 
-There is one answer and one place to change it. A conversation's
-[permission mode](permission-modes.md) does not add a second answer: it rewrites this same list for
-the conversation's runs, so the roster, the gate and the prompt read one result, and a tool switched
-on in Capabilities is never missing from the turn because of a mode.
+A conversation's [permission mode](permission-modes.md) derives the effective rules for its runs
+from the agent's list. Plan mode adds mutation denials; Bypass and Autonomous replace `ask` effects
+with `allow` while retaining denials. The stored agent rules stay unchanged. Run shape, host
+services, and model compatibility can also withhold a tool enabled in Settings.
 
 ### Plugin tools
 
@@ -64,8 +64,9 @@ read it on screen, then press **Apply**, and nothing is stored until you do.
 
 ### Spending fewer tokens
 
-Every tool's schema rides on every request — the default chat roster is about 4,900 tokens of fixed
-tax before the first word of conversation. An MCP server can add forty tools on its own.
+Tool schemas contribute to each model request. Core schemas are sent directly; plugin and MCP
+schemas are deferred until activated or brought by a linked workbench. Use `context_budget` to
+inspect the current request cost; the [tool roster guide](tools.md) explains the measured boundary.
 
 There is no session switch for this. A run that should be lean is an AGENT that is lean: switch off
 the tools it does not need in **Settings → Capabilities**, and its plugins and MCP servers with them

@@ -66,9 +66,9 @@ Linux keeps its group shortcuts because Monaco uses Shift+Alt+Up/Down there. The
 
 The default Tauri build has no updater: its config carries no key or endpoint, and `build.rs` does
 not compile the plugin in. The release command (`run-tauri.mjs --release`) adds an overlay generated
-by `scripts/build-release-config.mjs` that turns on signed updater bundles and supplies the key and
-endpoint, and sets `LOCALIX_UPDATER_ENABLED=1` so the plugin is compiled in. Afterwards it fails the
-build unless the public key is inside the built binary.
+by `apps/desktop-tauri/scripts/build-release-config.mjs` that turns on signed updater bundles and
+supplies the key and endpoint, and sets `LOCALIX_UPDATER_ENABLED=1` so the plugin is compiled in.
+Afterwards it fails the build unless the public key is inside the built binary.
 
 ### The Bun runtime
 
@@ -84,10 +84,10 @@ The copy is the Bun that ran the build, so its version is the pinned one (`packa
 `bun-version` in the workflows). On x64 Linux and Windows that Bun is the AVX2 build, because
 `setup-bun` picks by the runner's processor, and it dies on a machine without AVX2, a common
 virtual-machine default. The release build therefore sets `LOCALIX_SIDECAR_BASELINE=1`:
-`scripts/sidecar-bun.mjs` downloads Bun's `-baseline` build for the same version, checks it against
-the release's `SHASUMS256.txt`, runs it once to confirm its version, and stages that instead. arm64
-has none and keeps the build's Bun. A native build per platform is required: a sidecar cannot be
-cross-built.
+`apps/desktop-tauri/scripts/sidecar-bun.mjs` downloads Bun's `-baseline` build for the same version,
+checks it against the release's `SHASUMS256.txt`, runs it once to confirm its version, and stages
+that instead. arm64 has none and keeps the build's Bun. A native build per platform is required: a
+sidecar cannot be cross-built.
 
 ### Production startup
 
@@ -110,10 +110,10 @@ The owned runtime also stops when the shell's end of its stdin pipe closes
 cannot be fooled by Windows reusing the shell's process id. It is armed only when stdin is a pipe,
 never for a terminal, `/dev/null` or a redirected file.
 
-A runtime the shell owns that exits after it was ready is started once more, after a one-second
-pause and on a fresh port. The page reads `starting` again and reloads onto the new port when the
-new runtime reports ready. A second such exit, or one while the app quits or installs an update, is
-reported as an error instead.
+After a ready runtime crashes, the supervisor applies a sliding restart budget and backoff, then
+starts it on a fresh port. The page waits in `starting` and reloads when the new runtime is ready.
+[Lifecycle recovery](desktop-runtime-lifecycle.md#keeping-the-runtime-alive) defines the budget and
+health probes; quitting or installing an update suppresses recovery.
 
 ### Local API browser boundary
 
@@ -128,12 +128,12 @@ including websocket upgrades and plugin routes, and answers 403 to anything it r
 | No `Origin` | A write carrying `x-localix-client` or a non-form `Content-Type` (JSON).     | A browser that omits `Origin` on a body-less `POST` or `DELETE`.      |
 | CORS        | Reflects only an allowed origin.                                             | A foreign page reading a response.                                    |
 
-| Mode                    | Allowed page origins                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| Packaged desktop        | `tauri://localhost` (macOS, Linux), `http://tauri.localhost` and `https://tauri.localhost` (Windows). |
-| `bun run dev`           | The packaged origins, plus `http://localhost:5050` and `http://127.0.0.1:5050` from the launcher.     |
-| `bun run dev:workspace` | The same as `bun run dev`; `LOCALIX_DEV_UI_PORT` moves both dev origins.                              |
-| API serves the UI       | With `LOCALIX_UI_DIR`, the API's own origin is added.                                                 |
+| Mode                                        | Allowed page origins                                                                                  |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Packaged desktop                            | `tauri://localhost` (macOS, Linux), `http://tauri.localhost` and `https://tauri.localhost` (Windows). |
+| `bun run dev`                               | The packaged origins, plus `http://localhost:5050` and `http://127.0.0.1:5050` from the launcher.     |
+| `bun run dev:web` / `bun run dev:workspace` | The same as `bun run dev`; `LOCALIX_DEV_UI_PORT` moves both dev origins.                              |
+| API serves the UI                           | With `LOCALIX_UI_DIR`, the API's own origin is added.                                                 |
 
 `scripts/dev-servers.mjs` passes the dev origins as `LOCALIX_UI_ORIGINS`. Reads (`GET`, `HEAD`) stay
 open to any origin, because CORS already withholds the response and preview pages load the probe
@@ -142,168 +142,17 @@ interfaces use that transport. The header name lives in `apps/api/src/lib/client
 both sides import. A non-browser client that sends a write without a body, such as `curl -X POST`,
 must add `x-localix-client: 1`; the documented webhook call sends JSON and needs nothing extra.
 
-### Quitting, restarting and updating
+### Runtime lifecycle
 
-Every way out first lets the page save, then gives the runtime its `shutdown` line and a bounded
-wait before the shell kills it.
-
-The page keeps its newest state in debounced writes: the editor grid, a caret and scroll position, a
-settings change sent to the runtime, and a half-typed message. A quit that ended the process while
-those timers were pending restored an older state on the next launch, and a settings edit came back
-reverted because the server copy won the sync. So the shell runs a before-quit handshake
-(`apps/desktop-tauri/src-tauri/src/quit.rs`): it defers the exit, emits `localix://before-quit` to
-the page, and waits up to 1.5 s for the page's `quit_ready`. Then it saves the window size and
-position and stops the runtime. The handshake runs in development builds too, where there is no
-runtime child to stop. On the page, `apps/ui/src/shared/lib/quitFlush.ts` is the one list of pending
-writes: each owner registers its flush there, and the handshake awaits all of them, bounded at 1.2
-s. The same list also runs on `pagehide` and when the page is hidden, which covers the reloads that
-follow a port handoff or a runtime respawn.
-
-| Route                                                  | Page flush | Wait before the kill | Why this route                                                    |
-| ------------------------------------------------------ | ---------- | -------------------- | ----------------------------------------------------------------- |
-| Quit in the app menu, File menu or tray                | 1.5 s      | 6 s                  | `app.exit` raises `ExitRequested`, which defers the exit.         |
-| Closing the last window, as Alt+F4 does without a tray | 1.5 s      | 6 s                  | The close is turned into the same `app.exit` while the page runs. |
-| `restart_app`; an update install on macOS or Linux     | 1.5 s      | 6 s                  | Tauri cannot defer a restart, so the initiator runs both first.   |
-| Windows update install                                 | 1.5 s      | 6 s                  | The installer hook runs both before `std::process::exit`.         |
-| macOS Dock Quit or logout; a Windows `WM_QUIT`         | none       | 3 s                  | These reach only `Exit`, as the process is already ending.        |
-
-The window geometry is saved in the handshake as well as on `Exit`, because the Windows installer
-path never raises `Exit`. A crash still loses the geometry since the last clean exit.
-
-Quit is a custom menu item, because the predefined one skips `ExitRequested` on macOS and Windows
-and does nothing on Linux. It is bound to Cmd+Q on macOS and Ctrl+Q on Linux. Windows File ▸ Exit
-has no accelerator: Alt+F4 quits there, and Ctrl+Q stays with the terminal. On Windows the runtime
-runs in its own Job Object that kills its remaining processes when the job closes, including when
-the shell itself dies.
-
-### Updating
-
-One flow connects a published release to an installed app. Each step names the code that owns it.
-
-1. **Publish.** `release.yml` stamps the tag's version (`scripts/stamp-version.mjs`), builds with
-   `tauri:release` (the overlay, the updater compiled in, updater artifacts signed with
-   `TAURI_SIGNING_PRIVATE_KEY`), smokes the packaged app, then builds `latest.json` from the signed
-   bundles. The release is published as the **latest** one, a `-beta.N` version included, because
-   the app reads `releases/latest/download/latest.json` and GitHub's `latest` skips a prerelease.
-   `scripts/assert-newest-release.mjs` refuses a version older than the current latest.
-2. **Check.** The rail's `DesktopUpdateButton` is the one poller: thirty seconds after launch, then
-   hourly, it calls `updater_check` (`updater.rs`), which reads the manifest, compares versions and
-   keeps the `Update` handle. A failed check is quiet and reports "no update".
-3. **Notice.** `useDesktopUpdate` holds one shared state, so three surfaces agree: `UpdateStrip`
-   above the focused composer (`ComposerHeaderStrips`), the rail button, and Settings → Updates.
-   Hiding the strip is remembered per version.
-4. **Press.** All three go through `restartToUpdate`. If any session has a running turn or
-   background job, it asks first and names what stops; otherwise it installs at once.
-5. **Install.** `updater_install` marks the state `installing`, holds runtime respawns, downloads
-   (progress events, about twice a second, become the strip's percentage), and verifies the minisign
-   signature against the public key inside the app. Then `leave_cleanly` flushes the page, saves the
-   window and stops the runtime (`shutdown`, bounded, then the kill), and `app.restart()`
-   relaunches.
-6. **Relaunch.** The new shell starts the new runtime, which applies its embedded migrations after
-   copying an existing database to `~/.localix/backups/migrations`.
-7. **Failure.** Any error before the restart releases the respawn hold, clears `installing`, shows
-   "Could not install the update" with the reason, and leaves the old version running.
-
-A build without `LOCALIX_UPDATER_ENABLED` skips all of it: `UPDATER_ENABLED` is false, the init
-script sets `__LOCALIX_UPDATER=false`, and the page never polls or shows a notice.
-
-Development takes a different path. Tauri's `beforeDevCommand` stages build-script prerequisites,
-then the shared supervisor starts the API watcher and Vite process while the native shell loads the
-development URL.
-
-The production UI keeps editor, diff, terminal, HITL, and contributed workbench renderers behind
-surface-local dynamic imports. The generated `index.html` is the startup-graph authority: the build
-counts that document, its entry module, static module preloads, and startup stylesheet against both
-a 269-file and 1,940,000-byte uncompressed budget. This guards first paint without merging small
-chunks in ways that can pull a lazy Monaco or workbench dependency back into startup.
-
-### Keeping the runtime alive
-
-The shell supervises its API child in `sidecar.rs`, with the policy in `supervisor.rs`. A runtime
-that dies after it was ready is started again, and what is shown while it is down is the `starting`
-status, so reads wait at the page's readiness barrier instead of failing. The page reloads onto the
-new port, which is deliberate: whatever the dead runtime was running is gone, and a reload is the
-one way to be sure the page shows nothing it left behind.
-
-How often is a sliding window: five restarts within three minutes, with pauses of about 0.5, 1, 2, 4
-and 8 seconds, spread by up to a quarter either way. A runtime that stays up for the window gets a
-fresh budget, so an occasional crash is always recovered, while one that crashes in a loop is given
-up on and reported with its last output. This replaced a single restart per shell lifetime, after
-which the second crash left a window with no backend until the person quit by hand.
-
-A runtime that is alive but silent was never noticed, because the shell only watched for an exit.
-Once the runtime is ready, the shell asks `/health` every five seconds with a three second limit. A
-`503 draining` counts as an answer, because the shutdown path owns that case. Four unanswered checks
-in a row, about twenty seconds, mark the runtime hung: it is ended and takes the same path as a
-crash. A gap between beats much longer than five seconds is a sleeping machine and forgives the
-count.
-
-Ending a process never goes through `CommandChild::pid` or `kill`. Both take an inner lock that the
-plugin's wait thread keeps while the child is stopped, so they can block for good on a suspended
-runtime. The shell records the pid at spawn and ends the process by signal on Unix, or by closing
-its Job Object on Windows. `bun run --cwd apps/desktop-tauri tauri:resilience` replays all of it
-against a built app: three crashes, a freeze, and a quit that must leave nothing running.
+The shell flushes pending UI writes before a clean exit and supervises the API after startup.
+[Desktop runtime lifecycle](desktop-runtime-lifecycle.md) owns quit deadlines, updater state, crash
+recovery, and hung-process detection.
 
 ### Native browser pages
 
-A browser tab showing an external site is a child WebView that the shell stacks above the app's own
-WebView. App HTML can never paint over it, so the page steps aside while any app overlay is up.
-
-| Moment               | What the page does                                                          | Boundary                                                     |
-| -------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| No overlay on screen | The native view is framed to its pane box and shown.                        | Hidden while its tab, group, or pane box is not displayed.   |
-| An overlay opens     | A JPEG of the current frame is painted in the box, then the view is hidden. | The view hides after 150 ms even when no picture has landed. |
-| While it is hidden   | The picture is toned with half of the app's opaque ground.                  | The app's glass surfaces stay legible over a bright page.    |
-| The overlay closes   | The native view is shown again over its picture.                            | A close and reopen within one task keeps the view hidden.    |
-| The pane moves       | `browser_bounds` receives the new frame, one call at a time, newest only.   | Framing, showing, and hiding are the whole native protocol.  |
-
-The overlay signal is the shared focus stack's `overlayOnScreen`. Shared dialogs, drawers, menus,
-popovers, and confirmations claim the stack through `useOverlayFocus`, a ref on the content element,
-so a claim lasts exactly as long as that element is mounted and a closed overlay claims nothing.
-
-The pane box and its ancestors are followed by resize and attribute observers, plus window resize
-and scroll events. Its native frame is the intersection with clipping ancestors and the window;
-hidden, inert, disconnected, or empty hosts have no frame. This catches a maximized-away group even
-when its size does not change. The shell never reorders the page against the app's WebView: showing,
-hiding, and a picture replace any stacking change.
-
-A renderer lease ties native open, bounds, and release commands to one mounted page controller.
-Commands from an old controller cannot affect its replacement. Unmount delivers a final hide after
-any pending bounds command; switching pages retains the hidden view and its history. Logical grid
-and Browser-strip ownership separately close views when the Browser or its pages are removed. Native
-workspace storage keys keep transferred page strips independent across reloads.
-
-On macOS a page introduces itself as the installed Safari: the user agent carries
-`Version/<Safari bundle version> Safari/605.1.15`. A plain WKWebView omits those tokens, and Google
-then serves its legacy page, which has no dark theme and does not follow the pane's width.
-
-One rule, `browserEngine` in `browserUrl.ts`, picks the engine for every tab.
-
-| Tab                                         | Engine           | Boundary                                            |
-| ------------------------------------------- | ---------------- | --------------------------------------------------- |
-| The history list                            | The history view | No page behind it.                                  |
-| A local page that allows framing            | The in-app frame | The only engine with Visual Feedback and HMR relay. |
-| Any other page, or one opened as a web page | A native WebView | macOS and Windows shells; elsewhere it is framed.   |
-
-A typed address loads in place when the tab's engine serves it, and opens where a fresh tab for it
-would otherwise (`addressDestination`). A page opened in the browser keeps the native engine, so a
-link or redirect to a local server never moves it.
-
-Both engines share `BrowserToolbar`. Reload, frame sizes, dev-server ports, and opening in the
-system browser appear on every page; back and forward appear where the engine keeps the page's own
-history, which is the native WebView; Visual Feedback and stopping a dev server appear only for a
-framed local page. A load in flight sweeps along the toolbar's bottom edge. What belongs to the
-browser rather than to one page lives once on the tab strip: history, a new tab, closing, and
-reordering by drag. A new tab is a tab of its own, its address field focused over the pages visited
-most recently.
-
-The agent bridge is injected once the page's document has parsed and is the one the tab is loading,
-never by comparing addresses: a page that rewrites its own URL after loading, as Google search does,
-is still the page that loaded. While WebKit reports a load in flight, a `complete` document is the
-outgoing one and waits; an `interactive` one is the incoming page and takes the bridge without
-waiting for its last resource. A command the bridge cannot run is answered to the agent that sent
-it; a page that fails to open, reload, or navigate is reported to the Event Center rather than in a
-strip over the page.
+Browser pages use a framed local preview or a native child WebView according to the URL and host.
+[Desktop browser integration](desktop-browser.md) owns engine selection, overlays, renderer leases,
+bridge readiness, and platform limits.
 
 ### Shell launcher
 
@@ -338,7 +187,8 @@ finds or creates one project by normalized working directory.
 
 The release workflow verifies one semver tag commit before creating a draft. Two native runners
 build macOS arm64 and Linux x64 artifacts; publication waits for every matrix leg and the signed
-updater manifest. Windows and Intel Mac have no installer: they build from source.
+updater manifest. The current matrix has no Windows or Intel Mac leg; use source builds on those
+platforms. Check published release assets separately from this configuration.
 
 | Platform | Requested bundle targets | Additional package policy                                |
 | -------- | ------------------------ | -------------------------------------------------------- |
@@ -351,8 +201,10 @@ target list.
 The updater manifest (`scripts/build-updater-manifest.mjs`) gives each Linux install its own
 package: `linux-x86_64` points at the AppImage and `linux-x86_64-deb` at the signed `.deb`. The
 updater looks up the installer-specific key first, and its Debian installer rejects any other
-payload, so without that key a `.deb` install could never update. A release missing any of the five
-signed bundles fails before publication.
+payload, so without that key a `.deb` install could never update. The workflow passes
+`RELEASE_PLATFORMS` to the manifest builder. Every listed platform must have a signed artifact; the
+current macOS arm64 and Linux x64 matrix requires three entries. The builder knows five platform
+keys, but requires all five only when no platform list is supplied.
 
 The shell and the API runtime share one contract, and its source of truth is
 `apps/api/src/lib/runtime-protocol.ts`: the ready-frame prefix and fields, the `shutdown` word, the
@@ -373,8 +225,7 @@ plugin (`scripts/embed-migrations-plugin.mjs`) answers one virtual module that s
 every file in `apps/api/migrations` and carries its text, so `kysely` is bundled with them and the
 bundle has no `migrations/` folder or vendored `node_modules` beside it. The migration ledger
 digests the embedded text exactly as it digests a file, so one database opens in the dev server and
-in the packaged app. Spacedrive, GitButler and Buzz compile their migrations into the binary the
-same way.
+in the packaged app.
 
 `apps/desktop-tauri/scripts/smoke-bundle.mjs` starts the API the way the shell does: the sidecar Bun
 runs `server.js --desktop-runtime` against a throwaway home, the script waits for the
@@ -440,24 +291,16 @@ production-safe until an equivalent approval boundary is available.
   The repository still runs an unbundled development shell.
 - Platform association lists and installer settings do not prove every target has been tested on a
   physical machine.
-- Only macOS captures a native browser page's picture. On Windows the page still hides under an app
-  overlay, and its box shows the plain app ground until the overlay closes.
-- Linux has no native browser page. Tauri packs a child WebView into the window's vbox, where wry
-  ignores its bounds, so every page is framed until the shell hosts pages in a `gtk::Fixed`.
 - On Windows, a program the runtime starts belongs to its Job Object and closes when Localix quits.
   That includes an app opened from Localix that was not already running, unless it leaves the job.
-- While an app overlay is up, the browser page is a still picture: its video and animation appear
-  paused, and a click lands on the app rather than the page. Tooltips and hover cards make no focus
-  claim, so one that reaches over the page renders underneath it.
-- A native page cannot be clipped or scrolled like an iframe, so a pinned frame size larger than the
-  pane is shown at the pane's size. The agent's `viewport` action still refuses a fixed size for a
-  native tab.
 - Generated third-party notices inventory the installed npm runtime graph and bundled Monaco/Pi
   notices. Packages that publish only license metadata are identified but cannot contribute text
   absent from their package, and Rust crate licensing is not yet emitted as a separate inventory.
 
 ## Related guides
 
+- [Desktop runtime lifecycle](desktop-runtime-lifecycle.md)
+- [Desktop browser integration](desktop-browser.md)
 - [Installation](../getting-started/installation.md)
 - [Command-line interface](../features/cli.md)
 - [Architecture](architecture.md)
@@ -476,15 +319,6 @@ production-safe until an equivalent approval boundary is available.
 - [Development launcher](../../scripts/dev-servers.mjs)
 - [Sidecar process tree](../../apps/desktop-tauri/src-tauri/src/process_tree.rs)
 - [Native application composition](../../apps/desktop-tauri/src-tauri/src/lib.rs)
-- [Native browser pages](../../apps/desktop-tauri/src-tauri/src/native_browser.rs)
-- [Browser WebCrypto master key](../../apps/desktop-tauri/src-tauri/src/webcrypto_key.rs)
-- [Browser page layering](../../apps/ui/src/features/inspector/model/nativePageLayer.ts)
-- [Browser page host](../../apps/ui/src/features/inspector/ui/useNativeBrowserPage.ts)
-- [Browser engine rule](../../apps/ui/src/features/inspector/model/browserUrl.ts)
-- [Browser toolbar](../../apps/ui/src/features/inspector/ui/BrowserToolbar.tsx)
-- [Browser tab strip](../../apps/ui/src/features/inspector/ui/BrowserTabStrip.tsx)
-- [Browser bridge readiness](../../apps/ui/src/features/inspector/ui/nativeProbe.ts)
-- [Overlay focus claims](../../packages/plugin-sdk/src/ui/focus/useOverlayFocus.ts)
 - [Shell launcher plan](../../apps/api/src/features/shell-command/plan.ts)
 - [Shell launcher service](../../apps/api/src/features/shell-command/service.ts)
 - [Desktop launcher bootstrap](../../apps/api/src/boot/shell-command.ts)

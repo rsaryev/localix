@@ -1,24 +1,24 @@
 # Know the tool roster
 
-The tool roster is the set of model-facing tools a run places on each model request. Every schema on
-the wire is paid before the first token of conversation, so the roster is deliberately small: the
-edit-and-verify loop rides by default, everything rarely reached is one `activate_tools` call away.
+The tool roster is the set of model-facing tools available to a run. Core tools are sent directly;
+plugin and MCP tool schemas are deferred until activated, unless the turn's linked workbench brings
+them onto the request.
 
-**Effect and coverage:** A fully composed chat's 23 tool schemas stay within an estimated
-7,500-token budget, counted from the real factories. `context_budget` reports the breakdown to the
-model, and a ratchet test pins the schema budget.
+The schema-budget test caps the fully composed core chat registry at an estimated 7,500 tokens, with
+an 800-token ceiling per tool. This is a test ceiling, not a measurement of every request: agent
+rules, host services, model compatibility, and activated extensions change the actual roster.
 
 ## What you can do
 
-| Action                        | Mechanism                                                                                  | Availability and boundary                                                         |
-| ----------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| See the roster of a session   | Ask the agent, or read the scope's rules in **Settings → Capabilities → Tools**.           | The composer's budget pill counts what the next request carries.                  |
-| Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the scope in Settings → Capabilities.      | Applies to the next run; see [Manage the tool budget](tool-budget.md).            |
-| Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                      | The activation is remembered on the session and survives a context checkpoint.    |
-| Use an open plugin's tools    | Link the plugin's tab to the message (open tabs link by default), or let it wake the chat. | On the wire for that turn only; a closed tab or a removed chip brings none.       |
-| Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.     | Read-only. A switched-off tool also names the change that restores it.            |
-| Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.    | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).   |
-| Plan before building          | The Kanban plugin's `kanban` tool: put the work on the chat's board before starting.       | A deferred plugin tool on a passive board; see the [Kanban guide](task-board.md). |
+| Action                        | Mechanism                                                                                      | Availability and boundary                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| See the roster of a session   | Inspect the agent's tools in **Settings → Capabilities → Tools**, or ask for `context_budget`. | Settings shows configured access; `context_budget` measures the current run's schemas. |
+| Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Capabilities.          | Applies to the next run; see [Manage the tool budget](tool-budget.md).                 |
+| Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                          | The activation is remembered on the session and survives a context checkpoint.         |
+| Use an open plugin's tools    | Link the plugin's tab to the message (open tabs link by default), or let it wake the chat.     | On the wire for that turn only; a closed tab or a removed chip brings none.            |
+| Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.         | Read-only. A switched-off tool also names the change that restores it.                 |
+| Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.        | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).        |
+| Plan before building          | The Kanban plugin's `kanban` tool: put the work on the chat's board before starting.           | A deferred plugin tool on a passive board; see the [Kanban guide](task-board.md).      |
 
 For live PTY input and rendered-screen waits, see
 [Interact with a terminal](interactive-terminals.md).
@@ -58,17 +58,19 @@ only tools that still need activation.
 
 ### Why a tool is withheld
 
-Four layers decide, in this order, and a lower one can never return what an upper one took.
+The ledger checks shape, host authority, model compatibility, and policy in that order. Deferral
+then changes which allowed schemas are sent; it does not grant access.
 
-| Layer     | Question                                                 | Remediable                                                    |
-| --------- | -------------------------------------------------------- | ------------------------------------------------------------- |
-| Shape     | May a chat / sub-agent / unattended run carry it at all? | No. The tool declares this itself, and the run is never told. |
-| Authority | Does the host have the service or power it needs?        | No. Connect the workbench or service it needs.                |
-| Policy    | Did you switch it off for this scope?                    | Yes — the agent may propose the switch back.                  |
-| Economy   | Is it on the wire or behind `activate_tools`?            | Not a denial; the model activates it itself.                  |
+| Layer     | Question                                                   | Remediable                                                      |
+| --------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
+| Shape     | May a chat / sub-agent / unattended run carry it at all?   | No. The tool declares this itself, and the run is never told.   |
+| Authority | Does the host have the service or power it needs?          | No. Connect the workbench or service it needs.                  |
+| Model     | Can the selected model read the output this tool requires? | No. Choose a compatible model, such as one that accepts images. |
+| Policy    | Did you switch it off for this agent?                      | Yes — the agent may propose the switch back.                    |
+| Economy   | Is it on the wire or behind `activate_tools`?              | Not a denial; the model activates it itself.                    |
 
-Only a policy reason carries a remedy, and only those reach the agent: they are listed in its
-`# Unavailable tools` section with the change that restores each one. See
+Only policy reasons carry a configuration remedy. The `# Unavailable tools` section lists those
+remediable denials and the change that restores each tool. See
 [Propose configuration changes](configure.md).
 
 ### Where familiar operations went
@@ -87,21 +89,18 @@ the system prompt with per-section sizes and every tool's schema size.
 
 ### Schema budget
 
-`tool-schema-budget.test.ts` renders the roster a fully composed chat host builds, from the real
-tool factories (`vault`, `configure` and bash's terminal fields included), and fails when the sum
-passes 7,500 tokens or one tool passes 800. The core external-history reader uses a compact schema
-within the added 500-token allowance. A second case fails when the harness measures a stub or misses
-a host-injected tool. `browser` advertises interactions once, as the step shape inside `steps`, and
-`vault` is one flat object rather than a union per action. Every field name is snake_case
-(`tool-schema-case.test.ts`). A flat `browser` interaction written the old way is refused with the
-one-step batch that replaces it.
+`tool-schema-budget.test.ts` builds the core chat registry from real factories, including `vault`,
+`configure`, and Bash terminal fields. It rejects a total above 7,500 estimated tokens, any tool
+above 800, missing host-injected tools, and name-only stubs. The separate `tool-schema-case.test.ts`
+checks snake_case field names. Plugin and MCP schemas added during a run are outside this
+core-registry ceiling.
 
 ## Configuration
 
-| Setting                         | Effect                                            | Boundary                                                     |
-| ------------------------------- | ------------------------------------------------- | ------------------------------------------------------------ |
-| `disabledTools` (user, project) | Removes named tools from the next run.            | Protected tools are never suggested for removal by the GC.   |
-| Role profile                    | Fixes the tool exposure of a sub-agent or worker. | A role never gains a tool its shape declares as unavailable. |
+| Setting                | Effect                                                         | Boundary                                                          |
+| ---------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Agent permission rules | A `tool:<name>` denial removes that candidate from later runs. | The rule belongs to the agent; see [Permissions](permissions.md). |
+| Role profile           | Fixes the tool exposure of a sub-agent or worker.              | A role never gains a tool its shape declares as unavailable.      |
 
 ## Limits
 

@@ -1,10 +1,9 @@
 # Run Localix from source
 
-Localix runs from a source checkout, and the first beta is published on the
-[Releases](https://github.com/rsaryev/localix/releases) page. That beta was tested only on macOS;
-its Linux installer is experimental and there is no Windows installer. Build from source to run on
-any other setup: use the native desktop development command for day-to-day work, or build a bundle
-for your current machine.
+Run Localix from a source checkout as a native desktop app or an isolated browser workspace. This
+guide covers prerequisites, development commands, and local bundles. For packaged builds, check
+[GitHub Releases](https://github.com/rsaryev/localix/releases): a draft or a configured build matrix
+does not mean an installer is publicly available.
 
 ## Terminology
 
@@ -23,19 +22,33 @@ Run these commands from the repository root.
 | ------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `bun install --frozen-lockfile` | Installs the exact Bun workspace lockfile.                                         | Requires Bun 1.3.14. This repository does not use npm or Yarn for workspace installation. |
 | `bun run dev`                   | Opens the native Tauri window and supervises the API and Vite development servers. | This is an unbundled development run.                                                     |
+| `bun run dev:web`               | Starts the API and browser workspace with a separate development database.         | No Rust toolchain is needed; native desktop bridges are unavailable.                      |
 | `bun run dev:workspace`         | Starts the API and workspace development tasks without the native shell.           | Native file dialogs, deep links, and desktop update APIs are unavailable.                 |
 | `bun run build:desktop`         | Builds a Tauri bundle for the current host.                                        | It is not a cross-build, signed release, or updater-enabled release artifact.             |
 
 ## How it works
 
 ```bash
-cd <localix-checkout>
+git clone https://github.com/rsaryev/localix.git
+cd localix
 bun install --frozen-lockfile
 bun run dev
 ```
 
 `bun run dev` starts the desktop shell. Its development supervisor runs the API watcher and Vite;
 the webview loads Vite on port 5050 and the API listens on port 5051 by default.
+
+For a browser workspace, use:
+
+```bash
+bun run dev:web
+```
+
+Open `http://localhost:5050` once the servers start. The API listens on `127.0.0.1:5051`. This
+command defaults to the git-ignored `.data/dev/localix.db`, separate from the installed app's
+`~/.localix/localix.db`; an explicit `LOCALIX_DB_FILE` overrides that default. Stop the servers with
+Ctrl+C. `bun run dev:workspace` starts the wider workspace development tasks and uses the normal
+runtime database unless you override it.
 
 `bun run build:desktop` first stages the built UI, API, bundled plugins, CLI, and Bun sidecar. Tauri
 then packages those resources with the native shell for the current host.
@@ -95,9 +108,9 @@ itself.
 
 ## Limits
 
-- Only macOS installers have been tested. The Linux installer on the Releases page is experimental,
-  and no package-manager channel exists. There are no Windows or Intel Mac installers: build from
-  source.
+- The current release workflow configures macOS arm64 and Linux x64 builds. It does not configure
+  Windows or Intel Mac release builds. Check the assets of a published release for availability; old
+  drafts can contain artifacts from a different build matrix.
 - Every source-built bundle is local and unofficial. Do not present it as a Localix release.
 - A desktop build made from a checkout has no updater: it never reads the release feed, and never
   offers an update. Only the release workflow compiles the updater in, with its public key and
@@ -105,7 +118,7 @@ itself.
 - Configured extensions such as `.dmg`, `.AppImage`, and `.deb` do not prove that a current
   downloadable artifact exists.
 - Opening the Vite address in a browser does not provide native paths or other desktop bridges. Use
-  `bun run dev:workspace` only when those native capabilities are not required.
+  `bun run dev:web` when those native capabilities are not required.
 
 ## Related guides
 
