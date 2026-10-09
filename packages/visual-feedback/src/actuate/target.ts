@@ -8,7 +8,7 @@
 import type { VfCommand, VfCommandErrorCode, VfSnapshot } from '../protocol/index'
 import { buildSnapshot, type RefRegistry } from '../snapshot/index'
 import type { ActuateDeps, ActuateResult } from './types'
-import { getElementSummary } from '../core/identify'
+import { getElementSummary, getSemanticRole } from '../core/identify'
 import { stateForDiff } from './diff'
 
 /* ------------------------------- targeting -------------------------------- */
@@ -148,4 +148,22 @@ export function findCloseControl(blocker: Element): Element | null {
     if (/^(×|✕|✖|╳|x|close)$/i.test((b.textContent ?? '').trim())) return b
   }
   return null
+}
+
+/** Describe a click blocked by an overlay, including dismissal guidance and fresh refs. */
+export function interceptedClickResult(
+  target: Element,
+  blocker: Element,
+  deps: ActuateDeps,
+): ActuateResult {
+  const closer = findCloseControl(blocker)
+  const hint = closer
+    ? ` Dismiss it first: click ${getElementSummary(closer)} or press Escape, then retry.`
+    : ' Dismiss it first (press Escape or click its close/dismiss control), then retry.'
+  return {
+    ok: false,
+    errorCode: 'intercepted',
+    error: `${getElementSummary(target)} is covered by ${getElementSummary(blocker)} (${getSemanticRole(blocker) ?? blocker.tagName.toLowerCase()}).${hint}`,
+    result: { action: 'click', snapshot: buildSnapshot(deps.reg, { root: deps.root }) },
+  }
 }

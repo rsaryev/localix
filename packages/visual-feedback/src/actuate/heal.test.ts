@@ -69,12 +69,35 @@ describe('self-healing click', () => {
     const buyRef = /- button "Buy" \[ref=(e\d+)\]/.exec(snap.tree)?.[1]
     expect(buyRef).toBeTruthy()
 
-    const r = await runCommand({ action: 'click', ref: buyRef! }, deps)
-    // happy-dom may not fully compute occlusion; assert the shape only when it fires.
-    if (!r.ok) {
+    const buy = document.querySelector('.buy')!
+    const overlay = document.querySelector('[role="dialog"]')!
+    buy.getBoundingClientRect = () => ({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 100,
+      bottom: 40,
+      width: 100,
+      height: 40,
+      toJSON: () => ({}),
+    })
+    const previousHitTest = document.elementFromPoint
+    document.elementFromPoint = () => overlay
+    let clicked = false
+    buy.addEventListener('click', () => {
+      clicked = true
+    })
+    try {
+      const r = await runCommand({ action: 'click', ref: buyRef! }, deps)
+      expect(r.ok).toBe(false)
       expect(r.errorCode).toBe('intercepted')
       expect((r.error ?? '').toLowerCase()).toContain('covered')
+      expect(r.error).toContain('Close dialog')
       expect(r.result?.snapshot).toBeDefined()
+      expect(clicked).toBe(false)
+    } finally {
+      document.elementFromPoint = previousHitTest
     }
   })
 })

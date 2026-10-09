@@ -12,7 +12,7 @@
  */
 
 import type { VfCommand, VfSnapshot } from '../protocol/index'
-import { getElementSummary, getSemanticRole } from '../core/identify'
+import { getElementSummary } from '../core/identify'
 import { getViewportRect, scrollContainerIn } from '../core/geometry'
 import { motionSafeScrollBehavior } from '../core/motion'
 import { buildSnapshot } from '../snapshot/index'
@@ -51,7 +51,7 @@ import {
   resolveTarget,
   resolveWithHeal,
   healFailResult,
-  findCloseControl,
+  interceptedClickResult,
   type Healed,
 } from './target'
 
@@ -244,19 +244,7 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
       target.scrollIntoView({ block: 'center' })
       const blocker = occludedBy(target)
       if (blocker) {
-        // A modal/overlay covers the target. Point the agent straight at the escape
-        // hatch — its close control (if any) plus Escape — and attach a fresh snapshot
-        // so the covering element's own [ref=eN]s are available to act on right away.
-        const closer = findCloseControl(blocker)
-        const hint = closer
-          ? ` Dismiss it first: click ${getElementSummary(closer)} or press Escape, then retry.`
-          : ' Dismiss it first (press Escape or click its close/dismiss control), then retry.'
-        return {
-          ok: false,
-          errorCode: 'intercepted',
-          error: `${getElementSummary(target)} is covered by ${getElementSummary(blocker)} (${getSemanticRole(blocker) ?? blocker.tagName.toLowerCase()}).${hint}`,
-          result: { action: 'click', snapshot: buildSnapshot(deps.reg, { root: deps.root }) },
-        }
+        return interceptedClickResult(target, blocker, deps)
       }
       synthClick(target)
       return {
