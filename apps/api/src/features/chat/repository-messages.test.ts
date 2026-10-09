@@ -256,6 +256,55 @@ describe('repository.listMessages active-branch hydration', () => {
     await destroyDatabase(db)
   })
 
+  test('retains a per-repository six-session LRU cache', async () => {
+    const db = createDatabase()
+    try {
+      await migrateToLatest(db)
+      const repo = createChatRepository(db)
+      const initial = new Map<string, StoredMessagePayload>()
+      for (let i = 0; i < 7; i++) {
+        const id = `lru-${i}`
+        await repo.insertSession(session(id))
+        await insert(repo, id, `message-${i}`)
+        if (i < 6) initial.set(id, (await repo.listMessages(userId, id))[0]!.payload)
+      }
+      expect((await repo.listMessages(userId, 'lru-0'))[0]!.payload).toBe(initial.get('lru-0')!)
+      await repo.listMessages(userId, 'lru-6')
+      expect((await repo.listMessages(userId, 'lru-0'))[0]!.payload).toBe(initial.get('lru-0')!)
+      expect((await repo.listMessages(userId, 'lru-1'))[0]!.payload).not.toBe(initial.get('lru-1')!)
+      expect((await createChatRepository(db).listMessages(userId, 'lru-0'))[0]!.payload).not.toBe(
+        initial.get('lru-0')!,
+      )
+    } finally {
+      await destroyDatabase(db)
+    }
+  })
+
+  test('deletions invalidate only their session cache while empty deletions retain it', async () => {
+    const db = createDatabase()
+    try {
+      await migrateToLatest(db)
+      const repo = createChatRepository(db)
+      for (const id of ['deleting', 'retained']) {
+        await repo.insertSession(session(id))
+        await insert(repo, id, `${id}-root`)
+        await insert(repo, id, `${id}-tail`)
+      }
+      const deleting = await repo.listMessages(userId, 'deleting')
+      const retained = await repo.listMessages(userId, 'retained')
+      await repo.deleteMessagesByIds(userId, 'deleting', [])
+      expect((await repo.listMessages(userId, 'deleting'))[0]!.payload).toBe(deleting[0]!.payload)
+      await repo.deleteMessagesByIds(userId, 'deleting', ['deleting-tail'])
+      const after = await repo.listMessages(userId, 'deleting')
+      expect(after.map((msg) => msg.id)).toEqual(['deleting-root'])
+      expect(after[0]!.payload).toEqual(deleting[0]!.payload)
+      expect(after[0]!.payload).not.toBe(deleting[0]!.payload)
+      expect((await repo.listMessages(userId, 'retained'))[0]!.payload).toBe(retained[0]!.payload)
+    } finally {
+      await destroyDatabase(db)
+    }
+  })
+
   test('measures discarded payload work on a realistic branched session', async () => {
     const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
     await migrateToLatest(db)
