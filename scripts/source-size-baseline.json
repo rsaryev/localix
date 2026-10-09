@@ -10,7 +10,6 @@
   "apps/api/src/features/agent-core/tools/web/research.ts": 546,
   "apps/api/src/features/chat/routes.ts": 672,
   "apps/api/src/features/chat/runtime/agent-runner-state.ts": 401,
-  "apps/api/src/features/chat/runtime/context-token-estimate.ts": 314,
   "apps/api/src/features/chat/runtime/items.ts": 311,
   "apps/api/src/features/chat/runtime/message-persistence.ts": 332,
   "apps/api/src/features/chat/runtime/run/attachment-spill.ts": 312,
