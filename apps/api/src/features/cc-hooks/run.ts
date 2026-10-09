@@ -18,12 +18,8 @@
  * Layer: api feature module. No chat/UI imports.
  */
 import type { CcHookEvent, CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
-import { executeHook, executeHookInBackground } from './executor'
-import { executeHttpHook } from './http'
-import { runMcpToolHook } from './mcp-tool-hook'
+import { executeHookInBackground } from './executor'
 import { matchesField, matchesToolName } from './matcher'
-import { mapPromptOutcome } from './prompt-hook'
-import { runHookOperation } from '../lifecycle-hooks/operation'
 import type {
   CcHooksRuntime,
   CreateCcHooksRuntimeOptions,
@@ -31,6 +27,7 @@ import type {
 } from './runtime-contracts'
 import { EMPTY_RUNTIME, joinContext, contextFrom, blockedFrom } from './runtime-results'
 import { createHookSelector, type SelectOptions } from './runtime-selection'
+import { createHookHandlerRunner } from './runtime-handler'
 
 export type {
   PreToolUseResult,
@@ -59,9 +56,6 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
   const hasAny = Object.values(registry).some((groups) => groups && groups.length > 0)
   if (!enabled || !hasAny) return EMPTY_RUNTIME
 
-  // Last non-blocking `systemMessage` surfaced this run — used to drop identical
-  // consecutive warnings (e.g. one hook that fires on every tool call).
-  let lastNotice: string | undefined
   // Teardown has its own bounded lifetime: cancelling a turn must not skip cleanup hooks.
   const signalFor = (event: CcHookEvent) => (event === 'SessionEnd' ? undefined : runSignal)
 
@@ -73,6 +67,15 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
   })
 
   const select = createHookSelector({ registry, sessionId, logger, onceKeys, signalFor })
+  const runHandler = createHookHandlerRunner({
+    projectDir,
+    logger,
+    evaluatePromptHook,
+    runAgentHook,
+    callMcpTool,
+    emitNotice,
+    signalFor,
+  })
 
   /** Fire background (`async`) handlers — never awaited, never affect the decision. */
   function fireAsync(handlers: CcHookHandler[], input: CcHookInput): void {
@@ -111,75 +114,6 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     for (const h of selected.sync)
       outcomes.push(await runHandler(event, h, input, addContextOnZero))
     return outcomes
-  }
-
-  /**
-   * Execute ONE handler and fold it to an outcome, dispatching by handler kind.
-   * All five types share the fold layer:
-   *   - `prompt`/`agent` run an injected `{ok,reason}` evaluator → `mapPromptOutcome`;
-   *   - `http`/`mcp_tool` run their fetch/MCP call → command-stdout output schema;
-   *   - `command` spawns the shell hook.
-   * Every non-command evaluator fails open (`{}` / `{ok:true}`) when its injected
-   * capability is absent or throws. `addContextOnZero` gates plain-text-as-context
-   * (SessionStart / UserPromptSubmit) for the stdout-dialect types.
-   */
-  async function runHandler(
-    event: CcHookEvent,
-    h: CcHookHandler,
-    input: CcHookInput,
-    addContextOnZero: boolean,
-  ): Promise<CcHookOutcome> {
-    const result = await runHookOperation({
-      timeoutMs: h.timeoutMs,
-      signal: signalFor(event),
-      run: (signal) => runHandlerInner(event, h, input, addContextOnZero, signal),
-    })
-    if (result.kind !== 'completed') {
-      logger.warn(`[cc-hooks] ${event} ${h.kind ?? 'command'} handler ${result.kind} — ignored`)
-      return {}
-    }
-    const outcome = result.value
-    // Surface a non-blocking `systemMessage` warning (CC: shown to the user in the
-    // transcript). Fires for EVERY event, deduping identical consecutive messages.
-    const notice = outcome.systemMessage?.trim()
-    if (emitNotice && notice && notice !== lastNotice) {
-      lastNotice = notice
-      try {
-        emitNotice(notice, event)
-      } catch (err) {
-        logger.warn?.(`[cc-hooks] emitNotice failed: ${String(err)}`)
-      }
-    }
-    return outcome
-  }
-
-  async function runHandlerInner(
-    event: CcHookEvent,
-    h: CcHookHandler,
-    input: CcHookInput,
-    addContextOnZero: boolean,
-    signal: AbortSignal,
-  ): Promise<CcHookOutcome> {
-    if (h.kind === 'prompt' || h.kind === 'agent') {
-      const evaluate = h.kind === 'agent' ? runAgentHook : evaluatePromptHook
-      if (!evaluate || !h.prompt) return {}
-      const result = await evaluate({
-        prompt: h.prompt,
-        inputJson: JSON.stringify(input),
-        model: h.promptModel,
-        timeoutMs: h.timeoutMs,
-        signal,
-        ...(h.kind === 'agent' && h.agentMaxTurns ? { maxTurns: h.agentMaxTurns } : {}),
-      }).catch(() => ({ ok: true })) // fail-open on any evaluator error
-      return mapPromptOutcome(event, result)
-    }
-    if (h.kind === 'http') {
-      return executeHttpHook(h, input, logger, addContextOnZero, signal)
-    }
-    if (h.kind === 'mcp_tool') {
-      return runMcpToolHook(h, input, callMcpTool, addContextOnZero, logger, signal)
-    }
-    return executeHook(h, input, projectDir, logger, addContextOnZero, signal)
   }
 
   return {
