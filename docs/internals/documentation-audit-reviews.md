@@ -190,6 +190,20 @@ that swallow errors internally. Qualified timeout/abort boundaries, later-page f
 filtering after capped history matching, and omitted-id semantics. Added workspace instructions for
 quick search, explicit live domains, and bounded totals.
 
+## Database connections, agent actions, and cancellation
+
+Compared the unified `database_client` registration/classifier, saved configuration store,
+credential resolution, SQLite probe effects, query cancellation, script failure, UI reconnection,
+and connection sync with source. Reviewed unified-tool/query history and the event-driven
+synchronization commit.
+
+Removed stale three-tool and live-driver admission claims, qualified read-classed SQLite tests, and
+replaced a hard 30-second stop claim with cancellation semantics. Documented plaintext literal
+configuration, scoped the no-credentials claim to connection summaries, and corrected push/fallback
+polling. Failed writes and row caps no longer imply that mutations cannot partially apply or be
+interrupted. Detailed engine validation, SQL diagnostics, and per-driver row-cap internals still
+need their remaining guide review.
+
 ## Related guides
 
 - [Audit scope and remaining work](documentation-audit.md)

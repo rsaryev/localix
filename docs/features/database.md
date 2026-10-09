@@ -2,7 +2,7 @@
 
 Database Workspace connects Localix to saved SQL and non-SQL data sources through a shared driver
 catalog. Use it to inspect schema and data, run engine-native queries, and give a session bounded
-database tools.
+database access.
 
 The bundled `database` plugin is enabled by default. Live operations require an established
 connection, and each driver decides which actions are available.
@@ -104,16 +104,16 @@ console, `.sql` files and the agent's `query` action. A `;` ends a statement onl
 comments, parentheses and compound bodies, so a SQLite trigger, a MySQL routine or a PostgreSQL
 `BEGIN ATOMIC` body is sent whole.
 
-| Behaviour  | What happens                                                                          |
-| ---------- | ------------------------------------------------------------------------------------- |
-| Session    | All statements run on one session: the open manual transaction, or one pinned session |
-| Failure    | The run stops at the first failing statement; the error names it and how many ran     |
-| Result     | The last statement that returned rows, else the summed affected-row count             |
-| Parameters | Refused when the text has more than one statement, before anything runs               |
-| SQL Server | The batch is sent whole, because `DECLARE` and temp tables are scoped to one batch    |
+| Behaviour  | What happens                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| Session    | All statements run on one session: the open manual transaction, or one pinned session       |
+| Failure    | The run stops at the first failing statement; the error names it and how many ran           |
+| Result     | The last statement that returned rows, else the summed affected-row count                   |
+| Parameters | Refused for scripts the service splits; native SQL Server batches use the driver’s handling |
+| SQL Server | The batch is sent whole, because `DECLARE` and temp tables are scoped to one batch          |
 
-Outside a manual transaction each statement commits on its own, so statements before a failure stay
-applied.
+The service does not wrap a script in an implicit transaction. Outside a manual transaction, do not
+assume a later failure undoes earlier statements.
 
 ### Engine checks
 
@@ -160,11 +160,16 @@ another's: a SQL read that calls only known side-effect-free built-ins (`count`,
 — `nextval`, `pg_terminate_backend`, a function of your own — counts as a write, because a function
 can write. `connect` and `test` with a SQLite file declare that path, so path rules apply to it.
 
-A write waits for confirmation when the agent's matching permission rule says `ask`. `connect` goes
+`test` is classified as read and does not save a connection entry. It still opens the target: a
+writable SQLite test can create a missing database file. Its declared path lets path rules apply;
+read classification does not make the probe free of filesystem effects.
+
+A write waits for confirmation when the agent’s matching permission rule says `ask`. `connect` goes
 through the same validation as the connection form: the target is probed before it is saved,
 re-adding a saved target reopens that entry, and a password may be a `${secret:KEY}` vault
-reference. The tool's replies name connections by display name, engine and id, and never repeat a
-password or URL. `query` uses the same timeout and read-only checks as the query consoles.
+reference. Connection summaries list the display name, engine and id while omitting configuration
+fields. Error replies can include the underlying error text; that omission is not a general
+redaction guarantee. `query` uses the same timeout and read-only checks as the query consoles.
 
 The agent's changes show up in the Database workbench without a reload. After a successful write,
 the tool tells the workbench what changed, and the workbench re-reads only that:
@@ -175,10 +180,11 @@ the tool tells the workbench what changed, and the workbench re-reads only that:
 | A DDL `query` (`CREATE`, `ALTER`, `DROP`, …)   | That connection's schema tree and open table pages |
 | Another writing `query`                        | That connection's open table pages                 |
 
-Reads and failed calls change nothing. A schema or page that is not on screen is re-read when it is
-next shown. The console's own writes refresh open table pages the same way. As a backstop for
-changes nobody announces, the connection list is re-read every few seconds while the workbench, its
-sidebar or a connection tab is visible.
+Reads and failed tool calls publish no change event. A failed write may still have applied changes
+in the database, especially statements before a script failure. A schema or page that is not on
+screen is re-read when next shown. The console’s own writes refresh open table pages the same way.
+The connection list receives pushed store changes; when that live channel is unavailable, visible
+surfaces poll every 60 seconds. Showing a surface again refreshes a list older than 30 seconds.
 
 ## Configuration
 
@@ -198,6 +204,11 @@ sidebar or a connection tab is visible.
 The connection form imports supported URLs into editable fields. Default ports and available
 operations come from the driver catalog rather than engine-name checks in the UI.
 
+Saved configurations live in per-user JSON files in the plugin’s host data directory. Literal
+passwords, credential-bearing URLs, TLS material, and SSH credentials are saved as supplied; this
+configuration store does not encrypt them. A `${secret:KEY}` value stays a reference in that file,
+and its resolved value is used to open the live driver or tunnel.
+
 ### Runtime options
 
 | Option        | Primary behavior                                                    | Boundary                                                                                  |
@@ -207,7 +218,7 @@ operations come from the driver catalog rather than engine-name checks in the UI
 | TLS           | Uses library defaults or supplied CA, client certificate, and key   | Certificate verification follows the saved TLS policy                                     |
 | SSH tunnel    | Forwards a local ephemeral port with password or private-key auth   | Direct network targets only; no local `ssh` binary is used                                |
 | SSH host key  | Pins the bastion's key on first connect; later connects must match  | A changed key is refused until you choose "Forget host key"; moving the bastion unpins it |
-| Query timeout | Stops a console or agent query after 30 seconds by default          | The service reports timeout even when a driver cannot prove the server stopped work       |
+| Query timeout | Requests cancellation after 30 seconds by default                   | A driver may finish later; reporting timeout does not prove remote work stopped           |
 | Secrets       | Stores selected credentials as `${secret:KEY}` references           | Clearing the storage option saves the literal value in the connection configuration       |
 
 ### SSH host keys
@@ -215,7 +226,7 @@ operations come from the driver catalog rather than engine-name checks in the UI
 The tunnel checks the bastion's host key the way OpenSSH's `known_hosts` does. The first successful
 connect stores the key's SHA256 fingerprint on the saved connection. This is the same `SHA256:…`
 form that `ssh-keygen -lf` prints, so you can compare it on the bastion. Every later connect must
-present that key. This applies to the console, reconnects and the agent's database tools. A
+present that key. This applies to the console, reconnects and the agent's database access. A
 different key fails with an SSH error that names both fingerprints, and nothing is saved.
 
 | Action                                | Effect on the pin                                                   |
@@ -230,19 +241,21 @@ Connections saved before pinning existed are pinned on their next successful con
 
 ## Limits
 
-- Disabling the `database` plugin removes its workbench, file associations, resources, and three
-  agent tools. Agent tools also require a live connection.
+- Disabling the `database` plugin removes its workbench, file associations, resources, and
+  `database_client` tool. Listing saved connections and testing or opening a target need no existing
+  live driver; schema, browse, and query operations do.
 - Read-only is an accidental-write guard, not a substitute for database permissions. Use database
   credentials without write privileges when enforcement must survive another client or a missed
   classifier case.
 - SQLite, Redis, MongoDB, and Elasticsearch do not implement query cancellation. Cancellation on
   other engines can still race with completion, so a timeout does not prove remote work stopped.
+  Synchronous SQLite execution can also delay the event loop that runs the cancellation timer.
 - `mongodb+srv://` cannot use the plugin's SSH tunnel because DNS discovers the target rather than
   naming one host and port.
 - SQL Server has no explain action. ClickHouse and the non-SQL engines have no row or schema editor;
   capability flags hide those actions.
-- The three agent tools return bounded model-facing results. Use the workbench or a narrower query
-  when a full data export is required.
+- The agent tool returns bounded model-facing results. A workbench query also has SQL row caps; use
+  paged reads or a deliberate export method when you need a full dataset.
 - A SQL query result holds at most 10,000 rows. A larger result shows its first 10,000, and the
   console, the `.sql` panel and the agent's `query` all say it was cut off. Browsing a table pages
   through it and is not capped. How each engine stops:
@@ -255,11 +268,12 @@ Connections saved before pinning existed are pinned on their next successful con
   | SQLite     | Iteration stops after 10,001 rows                                | A write, or a result with repeated column names, is read in full first |
   | ClickHouse | `max_result_rows` with `break`; the server stops at a block edge | Commands return no rows                                                |
 
-  A write is never stopped part-way, because that would change what it did. Where an engine can only
-  read everything, the memory is spent and only what is sent and shown is capped. The cap covers SQL
-  engines only. A MongoDB `find` with no `limit` and a Redis `LRANGE key 0 -1` still return
-  everything, so set a limit in the command. Elasticsearch returns its own page size unless `size`
-  is set.
+  The row cap does not deliberately interrupt a statement classified as a write. Explicit Stop or
+  timeout is a separate cancellation path and can still interrupt execution. Where an engine reads
+  everything before capping it, the memory is spent and only what is sent and shown is capped. The
+  cap covers SQL engines only. A MongoDB `find` with no `limit` and a Redis `LRANGE key 0 -1` still
+  return everything, so set a limit in the command. Elasticsearch returns its own page size unless
+  `size` is set.
 
 ## Related guides
 
@@ -284,6 +298,9 @@ Connections saved before pinning existed are pinned on their next successful con
   [plugins/database/backend/service/run-validate.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/run-validate.ts)
   ·
   [plugins/database/backend/read-only/server-guard.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/read-only/server-guard.ts)
+- [Agent action classification](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/database-tool-schema.ts)
+- [Saved connection storage](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/store.ts)
+- [Connection push and fallback polling](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/model/useDbConnections.ts)
 - [UI registration and connection form](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/register.tsx)
   ·
   [plugins/database/ui/ui/connect-form/model.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/ui/connect-form/model.ts)
