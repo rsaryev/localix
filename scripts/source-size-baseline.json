@@ -34,7 +34,6 @@
   "apps/api/src/features/context-fabric/plugin-contract-kit.ts": 399,
   "apps/api/src/features/external-agents/backend/adapters/claude-code.ts": 359,
   "apps/api/src/features/external-agents/backend/adapters/codex.ts": 370,
-  "apps/api/src/features/external-agents/backend/adapters/gemini-cli.ts": 360,
   "apps/api/src/features/external-agents/backend/adapters/hermes.ts": 378,
   "apps/api/src/features/external-agents/backend/adapters/opencode.ts": 401,
   "apps/api/src/features/external-agents/backend/service.ts": 432,
