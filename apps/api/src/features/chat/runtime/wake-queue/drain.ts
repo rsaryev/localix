@@ -20,6 +20,16 @@ import { createDrainScheduler } from './drain-scheduler'
 
 export type { DrainOptions } from './drain-contracts'
 
+function fatalDrainOutcome(error: unknown): RunExecutionOutcome {
+  return {
+    status: 'failed',
+    kind: 'fatal',
+    message: error instanceof Error ? error.message : String(error),
+    retryable: false,
+    rateLimited: false,
+  }
+}
+
 export function createDrainOperations(
   shared: WakeQueueSharedState,
   dependencies: DrainDependencies,
@@ -84,6 +94,13 @@ export function createDrainOperations(
         for (const id of bandIds) drainLeases.add(id)
         shared.leasedDrainIds.set(sessionId, drainLeases)
         const next = band[0]!.value // derive AFTER binding isolation
+        // Durable acknowledgement precedes this synchronous local retirement.
+        const retireAcknowledgedBand = (): void => {
+          for (const item of band) q.remove(item.id)
+          leases.resetDrainRetry(sessionId)
+          leases.releaseDrainBand(sessionId, bandIds)
+          publishQueue(next.userId, sessionId)
+        }
         try {
           if (
             !(bandIds.length === 1 && (promotedId ?? options.preclaimedItemId) === bandIds[0]) &&
@@ -123,10 +140,7 @@ export function createDrainOperations(
           if (latestSession.closedAt) {
             if (!(await leases.ack(next.userId, sessionId, bandIds)))
               throw new Error('Delivery lost its durable lease')
-            for (const item of band) q.remove(item.id)
-            leases.resetDrainRetry(sessionId)
-            leases.releaseDrainBand(sessionId, bandIds)
-            publishQueue(next.userId, sessionId)
+            retireAcknowledgedBand()
             continuations.settleCompletion(bandIds, {
               status: 'failed',
               kind: 'dismissed',
@@ -161,13 +175,7 @@ export function createDrainOperations(
             } catch (error) {
               if (bandIds.some((id) => q.list().some((item) => item.id === id))) throw error
               onError(error)
-              outcome = {
-                status: 'failed',
-                kind: 'fatal',
-                message: error instanceof Error ? error.message : String(error),
-                retryable: false,
-                rateLimited: false,
-              }
+              outcome = fatalDrainOutcome(error)
             }
             continuations.settleCompletion(bandIds, outcome)
             continue
@@ -205,10 +213,7 @@ export function createDrainOperations(
           if (recipients.length === 0) {
             if (!(await leases.ack(next.userId, sessionId, bandIds)))
               throw new Error('Delivery lost its durable lease')
-            for (const item of band) q.remove(item.id)
-            leases.resetDrainRetry(sessionId)
-            leases.releaseDrainBand(sessionId, bandIds)
-            publishQueue(next.userId, sessionId)
+            retireAcknowledgedBand()
             continuations.settleCompletion(bandIds, {
               status: 'failed',
               kind: 'dismissed',
@@ -288,21 +293,12 @@ export function createDrainOperations(
             // interrupted fan-out uses the same assistant ids and cannot duplicate a ticket.
             if (!(await leases.ack(next.userId, sessionId, bandIds)))
               throw new Error('Delivery lost its durable lease')
-            for (const item of band) q.remove(item.id)
-            leases.resetDrainRetry(sessionId)
-            leases.releaseDrainBand(sessionId, bandIds)
-            publishQueue(next.userId, sessionId)
+            retireAcknowledgedBand()
             outcome = { status: 'continued' }
           } catch (error) {
             if (bandIds.some((id) => q.list().some((item) => item.id === id))) throw error
             onError(error)
-            outcome = {
-              status: 'failed',
-              kind: 'fatal',
-              message: error instanceof Error ? error.message : String(error),
-              retryable: false,
-              rateLimited: false,
-            }
+            outcome = fatalDrainOutcome(error)
           }
           if (outcome.status !== 'continued') completion?.settle(outcome)
           continuations.settleCompletion(bandIds, outcome)
@@ -315,13 +311,7 @@ export function createDrainOperations(
           // left the queue there is no retry owner and the failure is terminal.
           const retryPending = bandIds.some((id) => q.list().some((item) => item.id === id))
           if (!retryPending) {
-            continuations.settleCompletion(bandIds, {
-              status: 'failed',
-              kind: 'fatal',
-              message: error instanceof Error ? error.message : String(error),
-              retryable: false,
-              rateLimited: false,
-            })
+            continuations.settleCompletion(bandIds, fatalDrainOutcome(error))
           }
           leases.scheduleDrainRetry(sessionId)
           return

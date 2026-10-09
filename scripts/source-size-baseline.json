@@ -7,7 +7,7 @@
   "apps/api/src/features/agent-core/tools/web/research.ts": 546,
   "apps/api/src/features/chat/routes.ts": 672,
   "apps/api/src/features/chat/runtime/session-stream-registry.ts": 583,
-  "apps/api/src/features/chat/runtime/wake-queue/drain.ts": 343,
+  "apps/api/src/features/chat/runtime/wake-queue/drain.ts": 333,
   "apps/api/src/features/chat/service/branching-ops.ts": 414,
   "apps/api/src/features/chat/service/command-handlers.ts": 449,
   "apps/api/src/features/chat/service/file-content.ts": 427,
