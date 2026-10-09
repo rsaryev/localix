@@ -1,7 +1,8 @@
 # Reader Workspace
 
 Reader is a focused local reading surface for EPUB, PDF, MOBI/KF8/AZW3, FB2, CBZ, Markdown, HTML,
-and plain-text documents. It keeps reading state on the client and exposes books, chapters, and
+and plain-text documents. It stores reading preferences, annotations, and progress in the browser;
+its backend persists the explicit shelf and reading statistics. It exposes books, chapters, and
 selected passages through Localix's native resource, binding, search, and context systems.
 
 ## What it provides
@@ -12,9 +13,9 @@ selected passages through Localix's native resource, binding, search, and contex
   searchable book switcher in the breadcrumb with type-first focus, result announcements, and
   Arrow/Enter keyboard selection. Opening the switcher revalidates the shelf with latest-request
   ownership, so additions, removals, and metadata edits do not require a plugin restart.
-- EPUB spine/navigation parsing; selectable PDF pages; MOBI/KF8 metadata, TOC, cover, text, and
-  bounded images plus resolved `filepos`/Kindle position links; browser/mail/telephone links use the
-  desktop host for primary and middle click without duplicate delegated opens; FB2 sections;
+- EPUB spine/navigation parsing; selectable, reflowed PDF text; MOBI/KF8 metadata, TOC, cover, text,
+  and bounded images plus resolved `filepos`/Kindle position links; browser/mail/telephone links use
+  the desktop host for primary and middle click without duplicate delegated opens; FB2 sections;
   naturally ordered CBZ pages with ComicInfo metadata; Markdown headings, HTML, and plain text.
 - Path-backed books from anywhere on the computer and media-backed files opened by drag-and-drop.
 - A distraction-light reader with table of contents, progress restoration, typeface, spacing,
@@ -37,10 +38,10 @@ selected passages through Localix's native resource, binding, search, and contex
 - Natural shared-chat agent work without Reader-specific prompt buttons: current resources and
   snippets flow through the ordinary automatic context pipeline instead of mutating the draft.
 - A read-only `reader_research` tool that can inspect outlines, bounded chapters, and exact passages
-  only for books already on the explicit shelf; long chapters continue through contiguous Unicode-
-  safe offsets.
-- Private local reading insights for active time, sessions, positions, streaks, and a 14-day trail;
-  background/idle segments are bounded and retries are idempotent.
+  only for books already on the explicit shelf; long chapters continue through contiguous UTF-16
+  offsets that preserve surrogate pairs.
+- Private local reading insights for active time, sessions, positions, streaks, and a trail of the
+  latest 14 active dates; background/idle segments are bounded and retries are idempotent.
 - Search hits for explicitly opened books and a resource tree the agent can browse or expand.
 
 Reader never modifies source documents or scans folders. Parsed content, archive expansion, and
@@ -50,6 +51,25 @@ rendering.
 
 The workbench has no private theme. It inherits Localix surface, text, border, selection, accent,
 font, radius, and light/dark tokens so it stays visually aligned with the active UI theme.
+
+## Persistence and limits
+
+- The backend stores `library.json` and `stats.json` in the plugin data directory. The shelf records
+  source identities, metadata overrides, and collections; it does not copy path-backed books.
+  Removing a shelf entry leaves its source document intact.
+- Preferences, highlights/notes, bookmarks, sorting, and per-book progress use browser
+  `localStorage`. They follow that browser storage context; clearing it removes those records.
+- Sources are limited to 64 MiB. EPUB/CBZ archive parsing accepts at most 3,000 entries and 160 MiB
+  of uncompressed content. Parsed documents retain at most 400 chapters; PDF inputs above 400 pages
+  are rejected. Large chapter text is truncated, and oversized chapter markup falls back to bounded
+  text.
+- PDF support extracts existing text into a reflowed reading view. It does not render the original
+  page layout or provide OCR for scanned pages.
+- Resource expansion is capped at 48,000 characters. `reader_research` reads at most 32,000
+  characters per call and returns a continuation offset when more remains.
+- Reading events are capped at two minutes each, deduplicated by event ID, and retained up to 50,000
+  events. Aggregate history reflects the retained events; the daily trail lists active dates rather
+  than filling every calendar day.
 
 ## Architecture
 
@@ -80,5 +100,18 @@ workbench, context integration, persistence, and safety policy are independent.
 ```sh
 bun run --cwd plugins/reader type-check
 bun test plugins/reader
-bun run check:plugins
 ```
+
+## Source of truth
+
+- [Manifest and file associations](./plugin.json)
+- [Backend registration and storage paths](./backend/index.ts)
+- [Explicit shelf and collections](./backend/service.ts)
+- [Format parsing and path containment](./backend/library.ts)
+- [PDF text extraction](./backend/pdf.ts)
+- [MOBI/KF8 adapter](./backend/mobi.ts)
+- [Research tool and continuation offsets](./backend/research-tool.ts)
+- [Resource expansion](./backend/resource-provider.ts)
+- [Reading events and aggregates](./backend/stats.ts)
+- [Browser storage](./ui/readerStorage.ts)
+- [Reading interactions](./ui/ReaderReadingPane.tsx)
