@@ -6,7 +6,7 @@
   "apps/api/src/features/agent-core/tools/web/research-backends.ts": 776,
   "apps/api/src/features/agent-core/tools/web/research.ts": 546,
   "apps/api/src/features/chat/routes.ts": 672,
-  "apps/api/src/features/chat/runtime/session-stream-registry.ts": 583,
+  "apps/api/src/features/chat/runtime/session-stream-registry.ts": 411,
   "apps/api/src/features/chat/runtime/wake-queue/drain.ts": 333,
   "apps/api/src/features/chat/slash-catalog.ts": 314,
   "apps/api/src/features/context-fabric/manager.ts": 585,
