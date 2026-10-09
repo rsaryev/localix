@@ -14,9 +14,9 @@ state; remove obsolete instructions and consolidate duplicated contracts.
 
 | Review                  | Evidence and result                                                                                                                                                                                        |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Inventory               | 185 first-party Markdown files in the current audit, including bundled skill instructions and new internal references; 75 published pages.                                                                 |
+| Inventory               | 186 first-party Markdown files in the current audit, including bundled skill instructions and new internal references; 75 published pages.                                                                 |
 | Public navigation       | The documentation index now links every page in `docs/public-nav.json`.                                                                                                                                    |
-| Local links and anchors | `check:public` passed; the landing generator's anchor and quoted-source validators passed across all 185 owned Markdown files.                                                                             |
+| Local links and anchors | `check:public` passed; the landing generator's anchor and quoted-source validators passed across all 186 owned Markdown files.                                                                             |
 | Subsystem references    | `check:docs` resolved 217 source references in 24 tracked subsystem notes, with no allowlisted debt; the broader validator covered all owned Markdown.                                                     |
 | GitHub source links     | Checked first-party Markdown links to this repository's `blob/main` files against the checkout; repaired the moved file-tree parser link.                                                                  |
 | Quoted source paths     | Extended the landing validator to all owned Markdown for this audit; repaired two abbreviated desktop script paths.                                                                                        |
@@ -279,14 +279,26 @@ checks. Corrected the UI-kit-only host-access claim and distinguished `pagehide`
 Moved keyboard ownership into related guides so source references remain the final section. The full
 manifest, authoring/build pipeline, and HTML bridge sections still need their content audit.
 
+## Bundled Battleship and chart skills
+
+Compared Battleship's actions, batch limit, hidden fleet, random setup, and session-owned storage
+with its tool/service. Split the oversized introductory prose and removed guaranteed memory
+retention and unsupported placement inference.
+
+Split the 631-line chart skill into a main workflow and a linked recipe reference. Compared the
+installed 5.2.0 declarations with chart/pane APIs, historical update, primitive names, and minimum
+scale width; checked official v5.2 marker source and Next.js lazy-loading documentation. Corrected
+nearest-bar marker placement, the width constraint, historical update, and the App Router client
+wrapper. Remaining chart recipes and the other bundled skills still need their content review.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
 
 - **Public feature and extension claims:** compare remaining guides with source owners, route
   contracts, settings, and failure cases. Link checks alone do not establish accuracy.
-- **Bundled skills:** review the long Battleship block and 632-line chart reference for structure,
-  accuracy, and ownership before editing or splitting them.
+- **Bundled skills:** finish the remaining chart recipes and other bundled instructions against
+  their tool contracts; the long Battleship block and chart entry have been restructured.
 - **Git history:** repository-wide comment queries found no feedback. Review relevant implementation
   history as each remaining guide is audited; unmerged PR bodies are proposals, not product
   evidence.

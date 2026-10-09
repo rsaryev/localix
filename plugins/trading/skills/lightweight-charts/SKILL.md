@@ -160,8 +160,9 @@ source tree just to answer a normal usage question. Use
 - **Pre-shifting timestamps changes chart semantics.** It can make ticks line up in a chosen
   timezone, but it also changes where bars sit on the UTC time scale. Prefer formatter-based display
   unless the user intentionally wants shifted data.
-- **Series data must be strictly ascending by `time`, with unique values.** Duplicates replace
-  silently; out-of-order points are dropped or throw.
+- **Series data must be strictly ascending by `time`, with unique values.** Do not rely on duplicate
+  replacement in `setData`; validate full arrays before passing them to the library. Use `update` to
+  replace the latest point.
 - **One time format per series.** `BusinessDay` (`'YYYY-MM-DD'` string or `{ year, month, day }`) or
   `UTCTimestamp`, but do not mix within a single series.
 - **Whitespace points carry `time` only** (no `value` / `open` / …). Use them to create gaps or
@@ -181,7 +182,8 @@ source tree just to answer a normal usage question. Use
   `chart.applyOptions({ leftPriceScale: { visible: true }, rightPriceScale: { visible: true } })` or
   `chart.priceScale('left').applyOptions({ visible: true })`.
 - **Overlay series** (`priceScaleId: ''` or any custom id) get an autoscaled, hidden scale by
-  default. Make it visible explicitly if you want axis labels.
+  default. Use the visible left or right scale if you need axis labels; do not assume a custom
+  overlay scale can display an axis.
 - **`autoscaleInfoProvider` runs on every layout pass.** Keep it cheap; do not allocate per call.
 - **`addSeries(_, _, paneIndex)` creates the pane** if `paneIndex` is one past the current count.
   Pane order is creation order; sizes are controlled via `chart.panes()[i].setHeight(px)`.
@@ -189,16 +191,16 @@ source tree just to answer a normal usage question. Use
   `IPaneApi`; `mainPane.paneIndex()` gives its current index after `swapPanes` or moves.
 - **Sync separate charts with public time-scale events.** Use `subscribeVisibleLogicalRangeChange`
   and `setVisibleLogicalRange`; avoid `_private__chartWidget`, `paneWidgets`, or DOM offset hacks.
-- **Price-scale width is readable, not directly settable.** Use `series.priceScale().width()` or
-  `chart.priceScale(id).width()` to measure when aligning adjacent containers.
+- **Read scale width with `width()`.** Use the scale option `minimumWidth` to reserve room when
+  aligning charts; the final rendered width can be larger.
 
 ### Markers and interaction
 
 - **v5 markers are a primitive.**
   `const m = createSeriesMarkers(series, [...]); m.setMarkers([...])`. `series.setMarkers` does not
   exist on `ISeriesApi` in v5.
-- **Marker `time` must match an existing data point's `time`** for that series. Misaligned markers
-  are dropped silently.
+- **Use existing bar times for predictable marker placement.** In v5.2, marker indexing can use
+  nearest-bar lookup; a mismatched time is not guaranteed to be dropped.
 - **`subscribeCrosshairMove`** fires with `param.time === undefined` outside the data range. Always
   null-check before reading.
 - **`param.seriesData.get(series)`** returns `undefined` between bars or before the first bar.
@@ -237,360 +239,20 @@ source tree just to answer a normal usage question. Use
 - **Don't drive `setData` from props on every render.** Use `series.update(...)` for incremental
   changes; only call `setData` when the dataset truly replaces.
 - **Next.js/SSR must be client-only.** Put chart code in a `'use client'` component, create it in
-  `useEffect`, and import that component with `next/dynamic(..., { ssr: false })` from
-  server-rendered pages when needed.
+  `useEffect`, and import that component with `next/dynamic(..., { ssr: false })` from a Client
+  Component when needed; a Server Component can render that client wrapper.
 - **Plain HTML is not npm resolution.** The standalone `.js` build exposes
   `window.LightweightCharts`; ESM in the browser must import an actual `.mjs` URL or use an import
   map. `import { createChart } from 'lightweight-charts'` only works when a bundler/runtime resolves
   the package name.
 
-## Canonical recipes
-
-### Realtime updates
-
-```ts
-import { createChart, CandlestickSeries } from 'lightweight-charts'
-
-const chart = createChart(container, {})
-const series = chart.addSeries(CandlestickSeries, {})
-series.setData(initialBars) // full history once
-
-ws.onmessage = (ev) => {
-  const bar = JSON.parse(ev.data) // { time, open, high, low, close }
-  series.update(bar) // appends if time > last; replaces if time === last
-}
-```
-
-`update()` only handles the latest bar. To insert in the middle or prepend, rebuild the array and
-call `setData`.
-
-### Two price scales (left + right)
-
-```ts
-const right = chart.addSeries(LineSeries, { priceScaleId: 'right' })
-const left = chart.addSeries(LineSeries, { priceScaleId: 'left' })
-chart.applyOptions({
-  leftPriceScale: { visible: true },
-  rightPriceScale: { visible: true },
-})
-```
-
-### Volume in its own pane
-
-```ts
-const price = chart.addSeries(CandlestickSeries, {}, 0)
-const volume = chart.addSeries(HistogramSeries, { priceFormat: { type: 'volume' } }, 1)
-chart.panes()[1].setHeight(120)
-```
-
-### Per-bar / per-point colors
-
-Color individual bars by putting the color on the **data point**, not via a separate API:
-
-```ts
-// Candlesticks: per-point color / borderColor / wickColor override series defaults
-candles.setData([
-  {
-    time: 1700000000,
-    open: 1,
-    high: 2,
-    low: 0.5,
-    close: 1.5,
-    color: '#26a69a',
-    borderColor: '#26a69a',
-    wickColor: '#26a69a',
-  },
-  {
-    time: 1700003600,
-    open: 1.5,
-    high: 1.8,
-    low: 1.1,
-    close: 1.2,
-    color: '#ef5350',
-    borderColor: '#ef5350',
-    wickColor: '#ef5350',
-  },
-])
-
-// Histogram (e.g. up/down volume): per-point color
-volume.setData([
-  { time: 1700000000, value: 100, color: 'rgba(38,166,154,0.5)' },
-  { time: 1700003600, value: 80, color: 'rgba(239,83,80,0.5)' },
-])
-```
-
-Line/Area points also take a per-point `color`. An omitted point color falls back to the series
-option. Do not create extra series or use markers to recolor bars.
-
-### Series markers
-
-```ts
-import { createSeriesMarkers } from 'lightweight-charts'
-
-const markers = createSeriesMarkers(candles, [
-  { time: 1700000000, position: 'aboveBar', color: '#e53935', shape: 'arrowDown', text: 'Sell' },
-])
-
-markers.setMarkers([
-  { time: 1700003600, position: 'belowBar', color: '#43a047', shape: 'arrowUp', text: 'Buy' },
-])
-```
-
-`color` is required on every marker (`position`, `shape`, `time` too); `text`, `size`, `id`, `price`
-are optional. Do not put marker objects into `setData()` points. Do not call
-`series.setMarkers(...)` in v5.
-
-### Timezone display
-
-```ts
-const zone = 'America/New_York'
-const formatTime = (timestamp: number) =>
-  new Intl.DateTimeFormat('en-US', {
-    timeZone: zone,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(new Date(timestamp * 1000))
-
-chart.applyOptions({
-  timeScale: {
-    timeVisible: true,
-    secondsVisible: true,
-    tickMarkFormatter: (time) => (typeof time === 'number' ? formatTime(time) : String(time)),
-  },
-  localization: {
-    timeFormatter: (time) => (typeof time === 'number' ? formatTime(time) : String(time)),
-  },
-})
-```
-
-Do not invent `timeScale: { timezone: 'America/New_York' }`. If the user needs exchange-session
-boundaries to generate in a local timezone, explain the trade-off of shifting source timestamps
-separately from display formatting.
-
-### Text watermark
-
-```ts
-import { createTextWatermark } from 'lightweight-charts'
-
-createTextWatermark(chart.panes()[0], {
-  horzAlign: 'center',
-  vertAlign: 'center',
-  lines: [{ text: 'DEMO', color: 'rgba(0, 0, 0, 0.25)', fontSize: 48 }],
-})
-```
-
-The old `watermark` chart option is not the v5 API.
-
-### Whitespace gaps
-
-```ts
-line.setData([
-  { time: '2024-01-01', value: 10 },
-  { time: '2024-01-02' }, // whitespace point: time only
-  { time: '2024-01-03', value: 12 },
-])
-```
-
-Do not use `value: null`, `undefined`, or `NaN` to create gaps.
-
-### Sync separate charts or panes
-
-```ts
-let syncing = false
-
-priceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-  if (!range || syncing) return
-  syncing = true
-  indicatorChart.timeScale().setVisibleLogicalRange(range)
-  syncing = false
-})
-
-indicatorChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-  if (!range || syncing) return
-  syncing = true
-  priceChart.timeScale().setVisibleLogicalRange(range)
-  syncing = false
-})
-```
-
-For v5 panes inside one chart, prefer `chart.addSeries(SeriesType, options, paneIndex)` and
-`chart.panes()[i].setHeight(px)`. If the original pane can move, keep the `IPaneApi` reference and
-call `pane.paneIndex()` instead of assuming index `0` forever.
-
-### Coordinate conversion
-
-```ts
-chart.subscribeClick((param) => {
-  if (!param.point || param.time === undefined) return
-
-  const price = series.coordinateToPrice(param.point.y)
-  const logical = chart.timeScale().coordinateToLogical(param.point.x)
-  if (price === null || logical === null) return
-
-  // Store { time: param.time, price } or convert logical back later:
-  const x = chart.timeScale().logicalToCoordinate(logical)
-  const y = series.priceToCoordinate(price)
-})
-```
-
-Use the public conversion APIs for drawing tools and annotations. DOM canvas coordinates alone
-cannot tell you the chart price/time.
-
-### Next.js client-only component
-
-```tsx
-'use client'
-
-import { createChart, LineSeries } from 'lightweight-charts'
-import type { ISeriesApi, LineData, Time } from 'lightweight-charts'
-import { useEffect, useRef } from 'react'
-
-export function LwcChart({ data }: { data: LineData<Time>[] }) {
-  const ref = useRef<HTMLDivElement | null>(null)
-  const seriesRef = useRef<ISeriesApi<'Line'> | null>(null)
-
-  useEffect(() => {
-    if (!ref.current) return
-    const chart = createChart(ref.current, { autoSize: true })
-    const series = chart.addSeries(LineSeries)
-    seriesRef.current = series
-    return () => {
-      seriesRef.current = null
-      chart.remove()
-    }
-  }, [])
-
-  useEffect(() => {
-    seriesRef.current?.setData(data)
-  }, [data])
-
-  return <div ref={ref} style={{ width: '100%', height: 320 }} />
-}
-```
-
-From a server-rendered Next.js page, import the component with:
-
-```tsx
-import dynamic from 'next/dynamic'
-
-const LwcChart = dynamic(() => import('./LwcChart').then((m) => m.LwcChart), {
-  ssr: false,
-})
-```
-
-### Plain HTML loading
-
-Use the standalone IIFE build when there is no bundler:
-
-```html
-<div id="chart" style="width: 600px; height: 300px"></div>
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-<script>
-  const chart = LightweightCharts.createChart(document.getElementById('chart'))
-  const series = chart.addSeries(LightweightCharts.LineSeries)
-</script>
-```
-
-Choose the loading shape by environment:
-
-- **Bundler (Vite/webpack/Next):** bare `import { createChart } from 'lightweight-charts'`. The
-  package `exports` resolve the right ESM/CJS build.
-- **Browser `<script>` (no bundler):** the standalone IIFE build above exposes the
-  `LightweightCharts` global; there is no bare-specifier resolution.
-- **Browser native ESM (`<script type="module">`):** import from a concrete `.mjs` URL (e.g. the
-  standalone `.mjs`) or add an import map; a bare `'lightweight-charts'` specifier will not resolve.
-- **SSR frameworks:** load client-only (see the Next.js recipe above) — never import at module top
-  level in a server component.
-
-### Plugin starter
-
-```sh
-npm create lwc-plugin@latest
-```
-
-Use the generated project and `plugin-examples/` as the base. Decide the extension type first:
-
-- **Primitive** (`IPanePrimitive` / `ISeriesPrimitive`, attached via `attachPrimitive`) — for
-  drawings, overlays, labels, bands, annotations, hit-testing. This is the default; reach for it
-  unless you need real series behavior.
-- **Custom series** (`ICustomSeriesPaneView`) — only when the extension needs its own data,
-  autoscale, or price/time-scale integration. It is heavier; do not use it for decorations.
-
-For draggable drawings, attach a primitive with `series.attachPrimitive(...)` or
-`pane.attachPrimitive(...)`, then manage interaction with `subscribeClick` /
-`subscribeCrosshairMove` and coordinate conversion APIs. Import renderer-only
-`CanvasRenderingTarget2D` from `fancy-canvas`. The renderer interface is `IPrimitivePaneRenderer`
-(not `IPanePrimitivePaneRenderer`).
-
-### Non-financial data
-
-```ts
-import { createOptionsChart } from 'lightweight-charts'
-
-const chart = createOptionsChart(container)
-```
-
-Decide first whether the horizontal axis is truly non-time:
-
-- **True custom horizontal scale** (option chains, sensor sweeps by a non-time key): use
-  `createOptionsChart` for a numeric x-axis, or `createChartEx` with a custom `IHorzScaleBehavior`
-  (verify both in local typings).
-- **Just non-financial y units** (temperature, load) on an ordinary time/category axis: keep the
-  normal `createChart` series model and set `priceFormat` / `localization.priceFormatter` so labels
-  match the domain.
-- **Categorical x that is really ordered**: mapping categories to ascending `BusinessDay` strings is
-  simpler than a custom scale — but say that the axis is then date-like, not truly categorical.
-
-### Custom price formatter
-
-```ts
-chart.applyOptions({
-  localization: {
-    priceFormatter: (p: number) => `$${p.toFixed(2)}`,
-  },
-})
-```
-
-For per-series formatting, set `priceFormat: { type: 'custom', formatter, minMove }` in the series
-options — the chart-level `priceFormatter` is the fallback.
-
-### Minimal pane primitive
-
-```ts
-import type {
-  IPanePrimitive,
-  IPanePrimitivePaneView,
-  IPrimitivePaneRenderer,
-  Time,
-} from 'lightweight-charts'
-import type { CanvasRenderingTarget2D } from 'fancy-canvas'
-
-class Overlay implements IPanePrimitive<Time> {
-  paneViews(): IPanePrimitivePaneView[] {
-    return [new View()]
-  }
-}
-class View implements IPanePrimitivePaneView {
-  renderer(): IPrimitivePaneRenderer {
-    return new Renderer()
-  }
-}
-class Renderer implements IPrimitivePaneRenderer {
-  draw(target: CanvasRenderingTarget2D): void {
-    target.useMediaCoordinateSpace(({ context, mediaSize }) => {
-      context.fillStyle = 'rgba(0,0,0,0.05)'
-      context.fillRect(0, 0, mediaSize.width, mediaSize.height)
-    })
-  }
-}
-
-chart.panes()[0].attachPrimitive(new Overlay())
-```
-
-Working examples live under `plugin-examples/src/plugins/` — copy structure from there before
-writing one from scratch.
+## Recipe reference
+
+Read [Canonical recipes](references/recipes.md) for the relevant implementation only: realtime
+updates, scales, panes, markers, timezone labels, watermarks, synchronization, coordinates, Next.js,
+HTML loading, custom plugins, and non-financial axes. Check its example against the installed
+version before copying; examples assume the surrounding chart, container, and data unless shown
+explicitly.
 
 ## Worked example
 
@@ -598,7 +260,7 @@ writing one from scratch.
 
 1. **Layers involved:** data model (4) and time scale (3).
 2. **Suspect:** the code calls `series.setData(...)` on every tick instead of `series.update(...)`.
-   `setData` resets the visible range.
+   `setData` can change the visible range depending on the dataset and scale options.
 3. **Verify:** ask whether the call path is `setData` or `update`. If `setData`, ask whether the
    visible logical range is captured before and restored after — the v4-era workaround.
 4. **Fix:** switch to `series.update(bar)` for incremental ticks; reserve `setData` for full-history
@@ -629,3 +291,12 @@ When answering a lightweight-charts question:
 2. Show one minimal snippet, not a mega-demo.
 3. Call out the main foot-gun for that task.
 4. Say what local source was checked (version/typings), or state that it could not be verified.
+
+## Source references
+
+- [v5.2 marker placement](https://github.com/tradingview/lightweight-charts/blob/v5.2.0/src/plugins/series-markers/primitive.ts)
+- [Price-scale options](https://tradingview.github.io/lightweight-charts/docs/api/interfaces/PriceScaleOptions)
+- [Next.js lazy loading](https://nextjs.org/docs/app/guides/lazy-loading)
+
+The local Trading dependency was checked at 5.2.0. Recheck the installed version for another
+project.
