@@ -19,7 +19,11 @@
  */
 
 import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
-import { credentialHeaders, credentialQueryPairs, credentialUrlParams } from '../request-spec'
+import {
+  credentialHeaders,
+  credentialQueryPairs,
+  credentialUrlParams,
+} from '../request-credentials'
 import type { RequestAuth, RequestSpec } from '../request-spec'
 
 /** Bumped only when an older file would be read WRONG, never for an additive field. */

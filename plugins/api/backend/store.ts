@@ -13,7 +13,11 @@
  */
 
 import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
-import { credentialHeaders, credentialQueryPairs, redactUrlCredentials } from './request-spec'
+import {
+  credentialHeaders,
+  credentialQueryPairs,
+  redactUrlCredentials,
+} from './request-credentials'
 import type { Pair, RequestAuth, RequestSpec } from './request-spec'
 
 /** The mask a literal credential wears on the wire. Exported so the auth-edit path can treat an

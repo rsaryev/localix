@@ -26,13 +26,13 @@ import {
   isHttpUrl,
   isMultipart,
   methodAllowsBody,
-  redactUrlCredentials,
   type Pair,
   type RequestSpec,
   unfilledPathParams,
   unfilledPathParamsProblem,
   urlProblem,
 } from './request-spec'
+import { redactUrlCredentials } from './request-credentials'
 
 export interface SendOptions {
   timeoutMs: number

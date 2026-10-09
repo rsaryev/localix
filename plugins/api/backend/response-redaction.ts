@@ -2,13 +2,8 @@
 
 import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
 import type { ResponseCookie } from './contracts'
-import {
-  credentialHeaders,
-  credentialQueryPairs,
-  credentialUrlParams,
-  type Pair,
-  type RequestSpec,
-} from './request-spec'
+import { credentialHeaders, credentialQueryPairs, credentialUrlParams } from './request-credentials'
+import type { Pair, RequestSpec } from './request-spec'
 
 export const RESPONSE_REDACTED = 'REDACTED'
 
