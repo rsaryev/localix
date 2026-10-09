@@ -26,6 +26,7 @@ import { useFileEditorLsp } from './useFileEditorLsp'
 import { useFileEditorLoad } from './useFileEditorLoad'
 import { useFileEditorReconcile } from './useFileEditorReconcile'
 import { useFileEditorSave } from './useFileEditorSave'
+import { editorSnapshotFor } from './fileEditorSnapshot'
 import { useFileConflictActions } from './useFileConflictActions'
 import type { PendingFileSave } from './fileSaveTask'
 
@@ -63,12 +64,8 @@ export function useFileEditor(
     sessionId && initialReady?.editable
       ? getFileDraftSnapshot(sessionId, initialReady.absPath)
       : undefined
-  const initialBuffer =
-    initialReady?.editable && initialDraft !== undefined && initialDraft !== initialReady.content
-      ? initialDraft
-      : initialReady?.editable
-        ? initialReady.content
-        : ''
+  const initialEdit = editorSnapshotFor(initialReady, initialDraft, initialSnapshot)
+  const initialBuffer = initialEdit.buffer
   // A recently-evicted clean text model paints synchronously, then the load effect
   // revalidates its hash. Misses retain the normal loading state.
   const [state, setState] = useState<FileLoadState>(initialReady ?? { status: 'loading' })
@@ -79,12 +76,8 @@ export function useFileEditor(
   // the FULL file (+ a hash) so a save never writes back a truncated buffer; save
   // uses optimistic concurrency (baseHash → 409 on drift).
   const [buffer, setBuffer] = useState(initialBuffer)
-  const [baseContent, setBaseContent] = useState(
-    initialSnapshot?.baseContent ?? (initialReady?.editable ? initialReady.content : ''),
-  )
-  const [baseHash, setBaseHash] = useState(
-    initialSnapshot?.baseHash ?? (initialReady?.editable ? (initialReady.hash ?? '') : ''),
-  )
+  const [baseContent, setBaseContent] = useState(initialEdit.baseContent)
+  const [baseHash, setBaseHash] = useState(initialEdit.baseHash)
   // Absolute path the backend resolved for the open buffer — the key both the LSP
   // document sync and the diagnostics stream use (the `path` prop may be relative).
   const [editPath, setEditPath] = useState(initialReady?.editable ? initialReady.absPath : '')
@@ -209,22 +202,16 @@ export function useFileEditor(
       const draft = restoreDraft && sessionId ? getFileDraft(sessionId, response.path) : undefined
       const snapshot =
         restoreDraft && sessionId ? getFileDraftSnapshot(sessionId, response.path) : undefined
-      const initial = draft !== undefined && draft !== response.content ? draft : response.content
-      const baseline = snapshot?.baseContent ?? response.content
-      const baselineHash = snapshot?.baseHash ?? response.hash ?? ''
-      bufferRef.current = initial
-      baseContentRef.current = baseline
-      baseHashRef.current = baselineHash
-      setBuffer(initial)
-      setBaseContent(baseline)
-      setBaseHash(baselineHash)
+      const next = editorSnapshotFor(ready, draft, snapshot)
+      bufferRef.current = next.buffer
+      baseContentRef.current = next.baseContent
+      baseHashRef.current = next.baseHash
+      setBuffer(next.buffer)
+      setBaseContent(next.baseContent)
+      setBaseHash(next.baseHash)
       setEditPath(response.path)
-      setConflict(
-        snapshot && response.hash && response.hash !== snapshot.baseHash
-          ? { diskContent: response.content, diskHash: response.hash }
-          : null,
-      )
-      lastSyncedRef.current = initial
+      setConflict(next.conflict)
+      lastSyncedRef.current = next.buffer
     },
     [sessionId, path],
   )

@@ -8,7 +8,7 @@ import { publishConflictResolved } from './conflictResolvedBus'
 import { reloadGuard } from '../lib/reloadGuard'
 import { fileEditorOwnerKey } from '../model/fileDrafts'
 import { ApiError } from '@/shared/api/failure'
-import { clearFileDraft } from '../model/fileDrafts'
+import { clearFileDraft, setFileDraft } from '../model/fileDrafts'
 import { fileContentCache } from '../model/fileContentCache'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { setSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
@@ -196,6 +196,62 @@ describe('useFileEditor save ownership', () => {
       get.mockRestore()
     }
   })
+
+  for (const cached of [false, true]) {
+    test(`restores the draft's original save baseline on a ${cached ? 'cached' : 'cold'} open`, async () => {
+      setFileDraft('session-a', '/workspace/shared.ts', 'retained edits', {
+        baseContent: 'original disk',
+        baseHash: 'hash-original',
+      })
+      if (cached) {
+        fileContentCache.put('session-a', 'shared.ts', {
+          path: '/workspace/shared.ts',
+          content: 'cached disk',
+          bytes: 11,
+          truncated: false,
+          hash: 'hash-cached',
+        })
+      }
+      const backend = mockEditorBackend()
+      let finish!: (value: Awaited<ReturnType<typeof backendClient.getFileContent>>) => void
+      const pending = new Promise<Awaited<ReturnType<typeof backendClient.getFileContent>>>(
+        (resolve) => {
+          finish = resolve
+        },
+      )
+      backend.get.mockImplementation(() => pending)
+      const editor = await mountEditor()
+      try {
+        if (cached) {
+          expect(editor.current.buffer).toBe('retained edits')
+          expect(editor.current.baseHash).toBe('hash-original')
+          // Cached first paint does not show a conflict until the network revalidation.
+          expect(editor.current.conflict).toBeNull()
+        }
+        await editor.act(async () => {
+          finish({
+            path: '/workspace/shared.ts',
+            content: 'fresh disk',
+            bytes: 10,
+            truncated: false,
+            hash: 'hash-current',
+          })
+          await pending
+        })
+        expect(editor.current.buffer).toBe('retained edits')
+        expect(editor.current.baseHash).toBe('hash-original')
+        expect(editor.current.dirty).toBe(true)
+        expect(editor.current.conflict).toEqual({
+          diskContent: 'fresh disk',
+          diskHash: 'hash-current',
+        })
+      } finally {
+        await editor.unmount()
+        clearFileDraft('session-a', '/workspace/shared.ts')
+        backend.restore()
+      }
+    })
+  }
 
   test('paints a cached snapshot before revalidation and never overwrites newer typing', async () => {
     fileContentCache.put('session-a', 'shared.ts', {
