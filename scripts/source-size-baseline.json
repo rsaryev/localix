@@ -141,7 +141,6 @@
   "packages/agent-runtime-pi/src/message-codec.ts": 387,
   "packages/agent-runtime-pi/src/runtime.ts": 370,
   "packages/agent/src/agents/chat.ts": 446,
-  "packages/agent/src/agents/error-classification.ts": 484,
   "packages/agent/src/agents/types.ts": 752,
   "packages/agent/src/context/op-menu.ts": 354,
   "packages/agent/src/context/prune-wire.ts": 994,
