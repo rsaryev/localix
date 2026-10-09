@@ -9,7 +9,6 @@ import type {
 
 import {
   attachProviderResponse,
-  normalizeToolCallHistory,
   providerResponseOf,
   validateToolRegistry,
   type AgentEvent,
@@ -24,10 +23,11 @@ import type {
 import type { AgentMessage } from '@localixai/agent/agents'
 
 import { normalizeEventBufferCapacity, enqueueRuntimeEvent } from './runtime-event-buffer'
+import { createContextTransform, toPiMessages } from './runtime-context'
 import { mergeSignals } from './runtime-signal'
 import { BoundedEventBuffer } from './bounded-event-buffer'
 import { mapEvent, type PiTurnState } from './event-codec'
-import { fromPiMessage, toPiMessage } from './message-codec'
+import { fromPiMessage } from './message-codec'
 import { isConversationalPiMessage, isPiMessage, toPiSystemMessage } from './pi-transcript'
 import { wrapPiModel, type PiModelMiddleware } from './middleware'
 import { createPiModels } from './models'
@@ -44,15 +44,7 @@ import { createRunTools } from './run-tools'
 // imports of the runtime module keep resolving.
 export { shouldStopForTurnBudget } from './stop-conditions'
 
-/** Localix conversation messages → pi wire messages (system/other roles dropped). */
-export function toPiMessages(messages: readonly AgentMessage[]) {
-  return normalizeToolCallHistory(messages).flatMap((message) =>
-    'role' in message &&
-    (message.role === 'user' || message.role === 'assistant' || message.role === 'tool')
-      ? toPiMessage(message)
-      : [],
-  )
-}
+export { toPiMessages } from './runtime-context'
 
 export interface PiRuntimeOptions extends PiRequestTuning {
   maxBufferedEvents?: number
@@ -201,21 +193,7 @@ class PiAgentRuntime implements AgentRuntime {
               stoppedBy = name
             }),
             convertToLlm: (messages) => messages.filter(isPiMessage),
-            transformContext: input.contextPolicy
-              ? async (messages) => {
-                  // pi's own system messages — the prompt and the tool loadout — are NOT the
-                  // host's to compact, and losing the prompt would be silent. They ride
-                  // through untouched, ahead of whatever the policy returns; a tool
-                  // declaration that ends up out of position is re-derived next turn, but a
-                  // dropped prompt never is.
-                  const system = messages.filter((message) => message.role === 'system')
-                  const local = messages.flatMap((message) =>
-                    isConversationalPiMessage(message) ? [fromPiMessage(message)] : [],
-                  )
-                  const transformed = await input.contextPolicy!.transform(local, signal)
-                  return [...system, ...toPiMessages(transformed)]
-                }
-              : undefined,
+            transformContext: createContextTransform(input, signal),
             getSteeringMessages: input.takeSteering
               ? async () =>
                   toPiMessages(
