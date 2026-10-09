@@ -7,10 +7,10 @@
  * binary files rejected); workdir-free kinds (session/terminal/call) resolve via
  * loaders injected by the composition root so this module stays dependency-free.
  */
-import path from 'node:path'
 import { resolveWithin } from '../../lib/path-containment'
-import { readFile, readdir, stat } from 'node:fs/promises'
-import { hasBinarySignature } from '@localixai/plugin-sdk/backend'
+import { stat } from 'node:fs/promises'
+import { expandFile, expandFolder, isSensitivePath } from './expand-filesystem-refs'
+import { fail, succeed } from './ref-expansion-result'
 
 import type { ContextRef, ContextRefExpansion } from './contracts'
 
@@ -83,15 +83,8 @@ export interface WeakResourceExpansion {
  * its job — so this is NOT "move the normalizer onto the registry" (that would force the
  * generic port to learn one consumer's preferred shape, for no gain).
  *
- * What WAS wrong is that the adapter was ANONYMOUS, INLINE IN bootstrap.ts, AND MIRRORED:
- * `agent-core/resource-refs/resource-refs.test.ts` re-implemented it as a local
- * `hostLoader` in order to test the real path — a fake built from our own code. Let the
- * bootstrap copy drift (drop `language`, say) and that test stays green, because it is
- * asserting against its own reimplementation, not against the code that ships.
- *
- * So the adapter gets a NAME, and lives beside the strict type that demands it, where it
- * can be unit-tested once. The two defaults below are POLICY, not plumbing — they decide
- * what a provider's silence MEANS — and policy does not belong in a wiring file:
+ * This named adapter is shared by bootstrap and tests. Its defaults express what a
+ * provider's missing fields mean to the consumer:
  *
  *   - `ok` with no `content` → `''`. An expansion that succeeded but produced nothing is
  *     an EMPTY resource, not a failed one. (A ref to an empty table expands to nothing.)
@@ -113,156 +106,8 @@ export interface ExpandRefsOptions {
   loadResource?: ResourceRefLoader
 }
 
-/** Max lines returned for a single @file ref. */
-const MAX_FILE_LINES = 4000
-/** Max bytes read from a single file before refusing. */
-const MAX_FILE_BYTES = 1_500_000
-/** Max entries in a @folder listing. */
-const MAX_FOLDER_ENTRIES = 200
-
-/** File basenames that are always blocked (credential files). */
-const SENSITIVE_BASENAMES = [
-  /^\.env(\..+)?$/i,
-  /^id_rsa/i,
-  /^id_ed25519/i,
-  /^id_ecdsa/i,
-  /^id_dsa/i,
-  /^\.netrc$/i,
-  /^\.npmrc$/i,
-  /^\.pgpass$/i,
-  /^\.pypirc$/i,
-  /\.pem$/i,
-  /\.key$/i,
-]
-
-/** Directory segments that block any file inside them. */
-const SENSITIVE_DIR_SEGMENTS = new Set(['.ssh', '.aws', '.kube', '.gnupg'])
-
-const EXT_LANGUAGE: Record<string, string> = {
-  ts: 'ts',
-  tsx: 'tsx',
-  js: 'js',
-  jsx: 'jsx',
-  mjs: 'js',
-  cjs: 'js',
-  json: 'json',
-  md: 'md',
-  css: 'css',
-  scss: 'scss',
-  html: 'html',
-  py: 'python',
-  rb: 'ruby',
-  rs: 'rust',
-  go: 'go',
-  java: 'java',
-  kt: 'kotlin',
-  swift: 'swift',
-  c: 'c',
-  h: 'c',
-  cpp: 'cpp',
-  hpp: 'cpp',
-  cs: 'csharp',
-  sh: 'bash',
-  bash: 'bash',
-  zsh: 'bash',
-  yml: 'yaml',
-  yaml: 'yaml',
-  toml: 'toml',
-  sql: 'sql',
-  xml: 'xml',
-  php: 'php',
-  graphql: 'graphql',
-}
-
-function languageForPath(filePath: string): string {
-  const ext = path.extname(filePath).slice(1).toLowerCase()
-  return EXT_LANGUAGE[ext] ?? ''
-}
-
-function isSensitivePath(absPath: string): boolean {
-  const base = path.basename(absPath)
-  if (SENSITIVE_BASENAMES.some((re) => re.test(base))) return true
-  return absPath.split(path.sep).some((seg) => SENSITIVE_DIR_SEGMENTS.has(seg))
-}
-
 /** Resolves `p` inside `workingDir`; returns null when it escapes the root. */
 const confine = resolveWithin
-
-function fail(ref: ContextRef, error: string): ContextRefExpansion {
-  return { raw: ref.raw, ok: false, error, chars: 0 }
-}
-
-function succeed(
-  ref: ContextRef,
-  content: string,
-  extra?: Partial<ContextRefExpansion>,
-): ContextRefExpansion {
-  return { raw: ref.raw, ok: true, content, chars: content.length, ...extra }
-}
-
-async function expandFile(workingDir: string, ref: ContextRef): Promise<ContextRefExpansion> {
-  if (!ref.path) return fail(ref, 'missing path')
-  const resolved = confine(workingDir, ref.path)
-  if (!resolved) return fail(ref, 'path is outside the project working directory')
-  if (isSensitivePath(resolved)) return fail(ref, 'path looks like a sensitive credential file')
-
-  let info
-  try {
-    info = await stat(resolved)
-  } catch {
-    return fail(ref, 'file not found')
-  }
-  if (info.isDirectory()) return fail(ref, 'path is a directory — use @folder:')
-  if (info.size > MAX_FILE_BYTES)
-    return fail(ref, `file too large (${Math.round(info.size / 1024)}KB)`)
-
-  const buffer = await readFile(resolved)
-  if (hasBinarySignature(buffer)) return fail(ref, 'binary files are not supported')
-
-  let lines = buffer.toString('utf8').split('\n')
-  let rangeNote = ''
-  if (ref.startLine) {
-    const start = ref.startLine
-    const end = ref.endLine ?? ref.startLine
-    if (end >= start && start <= lines.length) {
-      lines = lines.slice(start - 1, end)
-    } else {
-      // Invalid range falls through to the full file — but SAY so, or the model
-      // silently gets 4000 lines when the user asked for one.
-      const asked = end === start ? `line ${start}` : `lines ${start}-${end}`
-      rangeNote = `[requested ${asked} is out of range — file has ${lines.length} lines; showing the full file]\n`
-    }
-  }
-  const truncated = lines.length > MAX_FILE_LINES
-  if (truncated) lines = lines.slice(0, MAX_FILE_LINES)
-  let content = rangeNote + lines.join('\n')
-  if (truncated) content += `\n[…truncated at ${MAX_FILE_LINES} lines…]`
-  return succeed(ref, content, { language: languageForPath(resolved), truncated })
-}
-
-async function expandFolder(workingDir: string, ref: ContextRef): Promise<ContextRefExpansion> {
-  const target = ref.path ?? '.'
-  const resolved = confine(workingDir, target)
-  if (!resolved) return fail(ref, 'path is outside the project working directory')
-  if (isSensitivePath(resolved)) return fail(ref, 'path looks like a sensitive directory')
-
-  let entries
-  try {
-    entries = await readdir(resolved, { withFileTypes: true })
-  } catch {
-    return fail(ref, 'folder not found')
-  }
-  const names = entries
-    .map((e) => (e.isDirectory() ? `${e.name}/` : e.name))
-    .sort((a, b) => {
-      const aDir = a.endsWith('/')
-      const bDir = b.endsWith('/')
-      return aDir !== bDir ? (aDir ? -1 : 1) : a.localeCompare(b)
-    })
-  const truncated = names.length > MAX_FOLDER_ENTRIES
-  const shown = truncated ? [...names.slice(0, MAX_FOLDER_ENTRIES), '…'] : names
-  return succeed(ref, shown.map((n) => `- ${n}`).join('\n'), { truncated })
-}
 
 /** Generic loader-backed expander for the workdir-free kinds. */
 async function expandViaLoader(

@@ -41,7 +41,6 @@
   "apps/api/src/features/plugins/native.ts": 311,
   "apps/api/src/features/plugins/service.ts": 701,
   "apps/api/src/features/plugins/validate.ts": 337,
-  "apps/api/src/features/projects/expand-refs.ts": 446,
   "apps/api/src/features/projects/service.ts": 319,
   "apps/api/src/features/provider-connections/service.ts": 642,
   "apps/api/src/features/realtime/ws-commands.ts": 456,
