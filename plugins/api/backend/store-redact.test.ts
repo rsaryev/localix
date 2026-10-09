@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { redactHeaders, redactSpec } from './store'
+import { REDACTED, redactHeaders, redactQuery, redactSpec } from './store'
 import type { RequestSpec } from './request-spec'
 
 const spec = (over: Partial<RequestSpec> = {}): RequestSpec => ({
@@ -167,4 +167,43 @@ describe('a credential in the query string is masked, in the url and in the pair
   test('a url with no query string is returned unchanged', () => {
     expect(redactSpec(spec({ url: 'https://api.dev/x/:id' })).url).toBe('https://api.dev/x/:id')
   })
+})
+
+describe('credential pair identity and duplicate names', () => {
+  test.each([
+    ['headers', redactHeaders, 'Authorization'],
+    ['query', redactQuery, 'token'],
+  ] as const)('%s clones only masked rows and preserves source pairs', (_kind, redact, name) => {
+    const literal = { name, value: 'literal', disabled: true }
+    const reference = { name, value: '${secret:KEY}' }
+    const ordinary = { name: 'trace', value: 'visible' }
+    const input = [literal, reference, ordinary]
+    const out = redact(input)
+    expect(out).not.toBe(input)
+    expect(out[0]).toEqual({ ...literal, value: REDACTED })
+    expect(out[0]).not.toBe(literal)
+    expect(out[1]).toBe(reference)
+    expect(out[2]).toBe(ordinary)
+    expect(literal.value).toBe('literal')
+  })
+
+  test.each([
+    ['headers', redactHeaders, 'Authorization'],
+    ['query', redactQuery, 'token'],
+  ] as const)(
+    '%s retains exact-spelling duplicate selection for blank values',
+    (_kind, redact, name) => {
+      const blank = { name, value: '  ' }
+      expect(redact([blank])[0]).toBe(blank)
+      const out = redact([
+        blank,
+        { name, value: 'literal' },
+        { name: name.toUpperCase(), value: '  ' },
+      ])
+      expect(out[0]!.value).toBe(REDACTED)
+      expect(out[1]!.value).toBe(REDACTED)
+      expect(out[2]!.value).toBe('  ')
+      expect(blank.value).toBe('  ')
+    },
+  )
 })

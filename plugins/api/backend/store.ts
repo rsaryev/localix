@@ -58,10 +58,7 @@ export function redactAuth(auth: RequestAuth): RequestAuth {
  * the HAR and cURL importers deliberately put credentials in headers instead.
  */
 export function redactHeaders(headers: readonly Pair[]): Pair[] {
-  const leaky = new Set(credentialHeaders(headers).map((h) => h.name))
-  return headers.map((h) =>
-    leaky.has(h.name) && !hasSecretTokens(h.value) ? { ...h, value: REDACTED } : h,
-  )
+  return redactCredentialPairs(headers, credentialHeaders)
 }
 
 /**
@@ -74,9 +71,17 @@ export function redactHeaders(headers: readonly Pair[]): Pair[] {
  * `send.ts` masked only the parameter NAMED BY THE AUTH BLOCK, so a literal had nothing covering it.
  */
 export function redactQuery(query: readonly Pair[]): Pair[] {
-  const leaky = new Set(credentialQueryPairs(query).map((q) => q.name))
-  return query.map((q) =>
-    leaky.has(q.name) && !hasSecretTokens(q.value) ? { ...q, value: REDACTED } : q,
+  return redactCredentialPairs(query, credentialQueryPairs)
+}
+
+/** Keep unmasked pairs by identity; clone only the rows whose credential values need masking. */
+function redactCredentialPairs(
+  pairs: readonly Pair[],
+  credentials: (pairs: readonly Pair[]) => Pair[],
+): Pair[] {
+  const leaky = new Set(credentials(pairs).map((pair) => pair.name))
+  return pairs.map((pair) =>
+    leaky.has(pair.name) && !hasSecretTokens(pair.value) ? { ...pair, value: REDACTED } : pair,
   )
 }
 
