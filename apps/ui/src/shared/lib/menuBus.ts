@@ -1,3 +1,5 @@
+import { createEventChannel } from './eventChannel'
+
 /**
  * Bridge for native application-menu items that map to in-app actions with no
  * deep-link route (Open File, Save, Toggle Sidebar, the View panel openers, …).
@@ -30,15 +32,14 @@ export type MenuCommand =
 
 type MenuListener = (command: MenuCommand) => void
 
-const listeners = new Set<MenuListener>()
+const channel = createEventChannel<[command: MenuCommand]>()
 
 /** Dispatch a native-menu command to every subscriber (from `window.__localixMenu`). */
 export function runMenuCommand(command: string): void {
-  listeners.forEach((listener) => listener(command as MenuCommand))
+  channel.publish(command as MenuCommand)
 }
 
 /** Subscribe to native-menu commands; returns an unsubscribe for teardown/HMR. */
 export function subscribeMenuCommands(listener: MenuListener): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  return channel.subscribe(listener)
 }

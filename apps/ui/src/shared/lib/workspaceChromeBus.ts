@@ -1,3 +1,5 @@
+import { createEventChannel } from './eventChannel'
+
 /**
  * One-way "collapse the workspace chrome" channel. A sibling slice (e.g. a
  * distraction-free `localix <file>` open) can ask the page shell to hide the
@@ -11,15 +13,14 @@
 
 type ChromeListener = () => void
 
-const listeners = new Set<ChromeListener>()
+const channel = createEventChannel<[]>()
 
 /** Ask the page shell to collapse the workspace chrome (close the sidebar). */
 export function collapseWorkspaceChrome(): void {
-  listeners.forEach((listener) => listener())
+  channel.publish()
 }
 
 /** Subscribe to collapse requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeWorkspaceChrome(listener: ChromeListener): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  return channel.subscribe(listener)
 }

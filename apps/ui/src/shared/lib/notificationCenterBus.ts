@@ -1,3 +1,5 @@
+import { createEventChannel } from './eventChannel'
+
 /**
  * One-way signal to open the Event Center bell popover from anywhere —
  * e.g. a surface's "Details" button. The bell's open state is
@@ -6,7 +8,7 @@
  * lives in the always-mounted titlebar, so there's no subscribe-after-fire race).
  */
 type Listener = (entryId?: string) => void
-const listeners = new Set<Listener>()
+const channel = createEventChannel<[entryId?: string]>()
 
 /**
  * Request the Event Center popover open, optionally on one entry.
@@ -16,11 +18,10 @@ const listeners = new Set<Listener>()
  * clicked through to.
  */
 export function openNotificationCenter(entryId?: string): void {
-  listeners.forEach((listener) => listener(entryId))
+  channel.publish(entryId)
 }
 
 /** Subscribe to open requests; returns an unsubscribe. */
 export function subscribeNotificationCenter(listener: Listener): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  return channel.subscribe(listener)
 }

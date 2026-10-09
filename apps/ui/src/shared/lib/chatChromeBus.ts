@@ -1,3 +1,5 @@
+import { createEventChannel } from './eventChannel'
+
 /**
  * Seam between the in-column chat header (the {@link UnifiedBreadcrumb}, now
  * rendered per chat surface deep in the editor grid) and the page-level chrome
@@ -14,10 +16,10 @@
 type ChromeEvent = 'project-switcher' | 'session-switcher' | 'new-chat'
 type ChromeListener = (event: ChromeEvent) => void
 
-const listeners = new Set<ChromeListener>()
+const channel = createEventChannel<[event: ChromeEvent]>()
 
 function emit(event: ChromeEvent): void {
-  listeners.forEach((listener) => listener(event))
+  channel.publish(event)
 }
 
 /** Open the full project/workspace switcher modal (Search all…). */
@@ -29,6 +31,5 @@ export const requestNewChat = (): void => emit('new-chat')
 
 /** Subscribe to chat-chrome requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeChatChrome(listener: ChromeListener): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  return channel.subscribe(listener)
 }

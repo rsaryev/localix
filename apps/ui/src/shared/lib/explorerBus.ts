@@ -1,3 +1,5 @@
+import { createEventChannel } from './eventChannel'
+
 /**
  * One-way "reveal a file in the Explorer (file tree)" channel.
  * The editor tab menu (a `widgets/editor-grid` slice)
@@ -12,17 +14,16 @@
 
 type RevealListener = (absolutePath: string) => void
 
-const listeners = new Set<RevealListener>()
+const channel = createEventChannel<[absolutePath: string]>()
 
 /** Ask every subscriber to reveal `absolutePath` in the Explorer tree. */
 export function revealInTree(absolutePath: string): void {
-  listeners.forEach((listener) => listener(absolutePath))
+  channel.publish(absolutePath)
 }
 
 /** Subscribe to reveal requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeRevealInTree(listener: RevealListener): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  return channel.subscribe(listener)
 }
 
 // ── Focus the tree's search field ────────────────────────────────────────────
@@ -36,17 +37,16 @@ export type TreeSearchMode = 'names' | 'content'
 
 type TreeSearchListener = (mode: TreeSearchMode) => void
 
-const searchListeners = new Set<TreeSearchListener>()
+const searchChannel = createEventChannel<[mode: TreeSearchMode]>()
 
 /** Ask the file tree to open + focus its search field in `mode`. */
 export function focusTreeSearch(mode: TreeSearchMode): void {
-  searchListeners.forEach((listener) => listener(mode))
+  searchChannel.publish(mode)
 }
 
 /** Subscribe to tree-search focus requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeTreeSearch(listener: TreeSearchListener): () => void {
-  searchListeners.add(listener)
-  return () => searchListeners.delete(listener)
+  return searchChannel.subscribe(listener)
 }
 
 // ── Begin a new file at the project root ─────────────────────────────────────
@@ -57,15 +57,14 @@ export function subscribeTreeSearch(listener: TreeSearchListener): () => void {
 
 type NewFileListener = () => void
 
-const newFileListeners = new Set<NewFileListener>()
+const newFileChannel = createEventChannel<[]>()
 
 /** Ask the file tree to begin an inline new-file entry at the root. */
 export function beginNewFile(): void {
-  newFileListeners.forEach((listener) => listener())
+  newFileChannel.publish()
 }
 
 /** Subscribe to new-file requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeNewFile(listener: NewFileListener): () => void {
-  newFileListeners.add(listener)
-  return () => newFileListeners.delete(listener)
+  return newFileChannel.subscribe(listener)
 }

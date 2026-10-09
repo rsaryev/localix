@@ -1,3 +1,5 @@
+import { createEventChannel } from './eventChannel'
+
 /**
  * One-way "open a workspace sidebar section" channel. Sibling slices (e.g. the
  * `.sql` file panel in the widgets layer) can ask the page shell to reveal a named
@@ -10,15 +12,14 @@
 
 type SectionListener = (sectionId: string | null) => void
 
-const listeners = new Set<SectionListener>()
+const channel = createEventChannel<[sectionId: string | null]>()
 
 /** Ask the page shell to open the given sidebar section. */
 export function openSidebarSection(sectionId: string | null): void {
-  listeners.forEach((listener) => listener(sectionId))
+  channel.publish(sectionId)
 }
 
 /** Subscribe to section-open requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeSidebarSection(listener: SectionListener): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  return channel.subscribe(listener)
 }
