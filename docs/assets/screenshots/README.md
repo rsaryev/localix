@@ -59,8 +59,10 @@ place of their placeholder slots.
 The composer-context frame shows automatic open-file and terminal links, their sources and sizes. It
 belongs to workspace context guidance; it does not show a context checkpoint or a selected code
 snippet. The Source Control review frame shows an actual working-tree diff beside commit controls.
-The Release Checklist frame shows a functioning fixture whose counter was checked by a UI toggle,
-with a seeded conversation. These placements describe what is visible rather than implying an
+The 9 October context refresh checks two automatic sources and their estimated sizes in the popup;
+the source file remains in an inactive tab beside the terminal, with no vertical editor split. The
+Release Checklist frame shows a functioning fixture whose counter was checked by a UI toggle, with a
+seeded conversation. These placements describe what is visible rather than implying an
 agent-generated plugin or completed commit/push.
 
 The Reader frame uses a generated Markdown release review guide. Its scenario opens the selected

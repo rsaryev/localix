@@ -10,7 +10,8 @@ export async function openTool(page, title) {
 
 async function editor(page) {
   await button(page, 'Files').click()
-  await page.getByRole('treeitem').filter({ hasText: /^src$/ }).click()
+  const sourceFolder = page.getByRole('treeitem').filter({ hasText: /^src$/ })
+  if ((await sourceFolder.getAttribute('aria-expanded')) !== 'true') await sourceFolder.click()
   await page
     .getByRole('treeitem')
     .filter({ hasText: /^release\.ts$/ })
@@ -135,8 +136,10 @@ export async function compose(page, scenario) {
     await input.fill('printf "Error: release configuration is missing\\n"; exit 17')
     await input.press('Enter')
     await page.locator('[data-slot="terminal-pane"][data-terminal-exited="true"]').waitFor()
-  } else if (scenario === 'editor') {
+  } else if (scenario === 'editor' || scenario === 'composer-context') {
     await editor(page)
+    if (scenario === 'composer-context')
+      await page.getByRole('button', { name: /^Review \d+ included context items?$/ }).click()
   } else {
     throw new Error(`No composition for ${scenario}`)
   }

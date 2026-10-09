@@ -122,10 +122,21 @@ export async function verifyEvidence(page, scenario) {
       page.getByRole('menuitem', { name: 'Restart terminal', exact: true }),
     ).toBeVisible()
     await expect(page.getByRole('menuitem', { name: /^Split\b/ })).toHaveCount(0)
-  } else if (scenario === 'editor') {
+  } else if (scenario === 'editor' || scenario === 'composer-context') {
     await expect(page.getByRole('textbox', { name: 'Terminal input' })).toBeVisible()
     await expect(page.getByText(/2 pass/).first()).toBeVisible()
     await expect(page.getByRole('tab', { name: 'release.ts', exact: true })).toBeVisible()
+    if (scenario === 'composer-context') {
+      const context = page.getByRole('list', { name: 'Context', exact: true })
+      const rows = context.getByRole('listitem')
+      await expect(rows).toHaveCount(2)
+      await expect(context.getByText('release.ts', { exact: true })).toBeVisible()
+      await expect(rows.filter({ hasText: /terminal/i })).toHaveCount(1)
+      for (const row of await rows.all()) {
+        await expect(row.getByText('Automatic · open tab', { exact: true })).toBeVisible()
+        await expect(row.getByText(/· \d+(?:\.\d+)?k? chars/)).toBeVisible()
+      }
+    }
   } else if (scenario === 'containers') {
     const panel = page.getByRole('tabpanel', { name: 'localix-capture-preview', exact: true })
     await expect(panel).toBeVisible()

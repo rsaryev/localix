@@ -96,6 +96,24 @@ only the historical audit explanation of the deleted placeholder keys, with no r
 This clears the 103-file prepared queue, not the remaining content/product evidence gaps. The
 working tree also contains independent API edits and generated sitemap output; those were excluded.
 
+## Composer context figure refresh
+
+Compared the retained 7 October figure with the current workspace. It showed a vertical editor/
+terminal split that the current UI does not offer. Restored the stable `context/composer-context`
+key to the active plan and added composition/assertions for the actual automatic-context popup. The
+check requires exactly two rows, file/terminal identity, Automatic source labels and estimated
+character sizes, after a real two-test fixture run.
+
+The first capture failed before context verification: the editor helper collapsed an already open
+source folder, then waited for its detached child. Made folder expansion conditional on its state.
+The same scoped capture subsequently passed in 6.4 seconds. Reviewed the native 4800×3000 image and
+published the 9 October replacement through the publisher, updating the existing owning guide and
+README figure. No message, model request, private data or image retouching was used.
+
+The file's inactive tab still contributed automatic context alongside the active terminal; this does
+not prove the model later consumed either source. The Playwright browser and isolated runtime were
+stopped after the check. Historical captures remain available as history.
+
 ## Related guides
 
 - [Vault user guide](../features/secrets.md)

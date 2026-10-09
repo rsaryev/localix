@@ -200,11 +200,11 @@ prompt. File and folder references resolve in the directory the server assigns t
 session, after checking that you own it; browsing `@resource:` with a session you do not own is
 refused.
 
-![Automatic context from an open source file and terminal, with sources and estimated sizes](../assets/screenshots/context/composer-context--2026-10-07.png)
+![Automatic context from an open source file and terminal, with sources and estimated sizes](../assets/screenshots/context/composer-context--2026-10-09.png)
 
-The context popover in this capture lists the open `release.ts` file and terminal as automatic
-sources. The terminal contains output from the fixture's actual tests; the conversation is seeded
-illustrative content.
+The context popover captured on 9 October 2026 lists the open `release.ts` file and terminal as
+automatic sources, including the file in the inactive tab. The terminal contains output from the
+fixture's actual tests; the conversation is seeded illustrative content. No message was sent.
 
 Eligible mounted tabs can publish live context candidates. Those candidates appear as automatic
 context in the composer; explicit attachments take precedence over a duplicate automatic link. The

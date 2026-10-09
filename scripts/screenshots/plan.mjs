@@ -1,5 +1,10 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
+  'context/composer-context': {
+    guide: 'features/workspace.md',
+    purpose: 'Automatic open-file and terminal context with source labels and estimated sizes',
+    scenario: 'composer-context',
+  },
   'conversations/participants': {
     guide: 'features/conversations.md',
     purpose: 'Three seeded participants beside their transcript and current participant controls',
@@ -169,8 +174,6 @@ export const capturePlan = {
   },
 }
 export const retainedShots = {
-  'context/composer-context':
-    'Open file and terminal linked as automatic composer context; features/workspace.md',
   'browser/agent-preview':
     'A real browser preview beside the conversation; features/visual-feedback.md',
   'project-space/board': 'A release plan with a live source file; features/project-space.md',

@@ -52,7 +52,7 @@ Included workbenches cover [databases](docs/features/database.md),
 
 ### Message context
 
-![An open source file and terminal included with the next message](docs/assets/screenshots/context/composer-context--2026-10-07.png)
+![Automatic file and terminal context in the composer popup](docs/assets/screenshots/context/composer-context--2026-10-09.png)
 
 ### Project Space
 
