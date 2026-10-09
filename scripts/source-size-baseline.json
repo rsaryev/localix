@@ -38,7 +38,7 @@
   "apps/api/src/features/external-agents/backend/adapters/hermes.ts": 378,
   "apps/api/src/features/external-agents/backend/adapters/opencode.ts": 401,
   "apps/api/src/features/external-agents/backend/resource-provider.ts": 465,
-  "apps/api/src/features/external-agents/backend/service.ts": 433,
+  "apps/api/src/features/external-agents/backend/service.ts": 432,
   "apps/api/src/features/external-agents/backend/tools/agent-sessions-tool.ts": 436,
   "apps/api/src/features/mcp/client-manager.ts": 1050,
   "apps/api/src/features/mcp/mcp-tools.ts": 304,

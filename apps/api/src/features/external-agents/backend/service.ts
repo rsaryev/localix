@@ -13,7 +13,8 @@ import { buildRoster } from './discovery/roster'
 import { computeStats, type ExternalAgentStats, type StatsQuery } from './discovery/stats'
 import { ManifestRegistry } from './detection/registry'
 import { LiveStore, type LiveEntry } from './live/store'
-import { CORRELATE_ATTEMPT_DELAYS_MS, correlateOnce } from './live/correlate'
+import { correlateOnce } from './live/correlate'
+import { scheduleCorrelationAttempt } from './live/correlation-scheduler'
 import { observeToolCall } from './live/observe'
 import { waitForStates, type WaitRequest, type WaitOutcome } from './live/waiters'
 import { HistoryWatch, hostWatchSlot, watchFiles, type WatchPath } from './live/history-watch'
@@ -138,14 +139,12 @@ export class AgentSessionsService {
    * instant the terminal opens. Timers are tracked so shutdown can cancel them.
    */
   private scheduleCorrelation(terminalId: string, attempt = 0): void {
-    if (attempt >= CORRELATE_ATTEMPT_DELAYS_MS.length) return
-    const timer = setTimeout(() => {
-      this.timers.delete(timer)
-      void this.tryCorrelate(terminalId).then((adopted) => {
-        if (!adopted) this.scheduleCorrelation(terminalId, attempt + 1)
-      })
-    }, CORRELATE_ATTEMPT_DELAYS_MS[attempt])
-    this.timers.add(timer)
+    scheduleCorrelationAttempt({
+      attempt,
+      timers: () => this.timers,
+      correlate: () => this.tryCorrelate(terminalId),
+      retry: () => this.scheduleCorrelation(terminalId, attempt + 1),
+    })
   }
 
   private async tryCorrelate(terminalId: string): Promise<boolean> {
