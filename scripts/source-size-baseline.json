@@ -34,7 +34,6 @@
   "apps/api/src/lib/source-lint.ts": 541,
   "apps/ui/src/features/chat/model/agent-runtime.ts": 557,
   "apps/ui/src/features/chat/model/sessionActionsSlice.ts": 491,
-  "apps/ui/src/features/chat/model/sessionListHelpers.ts": 381,
   "apps/ui/src/features/chat/model/store.ts": 556,
   "apps/ui/src/features/chat/model/useContextRefs.ts": 529,
   "apps/ui/src/features/chat/ui/ChatSidebar.tsx": 414,
