@@ -169,6 +169,17 @@ Native pages follow the visible bounds of their pane and step aside for app over
 Switching pages or hiding a Browser keeps its page state; closing the Browser releases its native
 pages while retaining the saved addresses for reopening.
 
+### Search across the workspace
+
+Press **Cmd+Shift+F** on macOS or **Ctrl+Shift+F** elsewhere to open quick search; the shortcut is
+remappable. Use **Open in Search** to keep the query in this chat’s Search tab. Choose a scope or
+type a known prefix, such as `f:` for files or `msg:` for messages. File results use the search’s
+own chat working directory. **Show all** opens one domain’s paged results.
+
+**All** searches eager domains; live Docker, Kubernetes, and trading domains need their explicit
+scopes. A failed domain can leave other results available, with a problem shown alongside them.
+Results are bounded previews, so a displayed total is not a count of every possible source match.
+
 ### Explicit and automatic context
 
 Drag a conversation from the sidebar into the message composer to add its context link. Sidebar rows
@@ -283,6 +294,9 @@ primary shortcut.
 - [Plugins](../extending/plugins.md)
 
 ## Source of truth
+
+- [Global search scopes](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/search/model/scopes.ts)
+- [Search surface and partial results](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/search/ui/GlobalSearchTab.tsx)
 
 - [Surface registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
 - [Split rendering](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/GridView.tsx)

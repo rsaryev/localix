@@ -6,14 +6,14 @@ grouping and pagination.
 
 ## Terminology
 
-| Term           | Meaning                                                     | Boundary                                                |
-| -------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
-| Domain         | A stable provider id used for filtering and result grouping | One provider owns each registered id                    |
-| Eager provider | Runs when a query has no explicit domain filter             | Each call still has a 2.5-second registry timeout       |
-| Lazy provider  | Runs only when its domain is selected                       | Default “All” search does not contact it                |
-| Aggregate view | Several domains grouped in registry order                   | Shows a capped preview per group                        |
-| Scoped view    | Exactly one backend domain with offset-cursor pagination    | Client-only scopes never call the backend               |
-| Activation URI | A result's `uri`, or its `id` when `uri` is absent          | Resolution belongs to the shared UI navigation registry |
+| Term           | Meaning                                                     | Boundary                                                           |
+| -------------- | ----------------------------------------------------------- | ------------------------------------------------------------------ |
+| Domain         | A stable provider id used for filtering and result grouping | One provider owns each registered id                               |
+| Eager provider | Runs when a query has no explicit domain filter             | Registry waits at most 2.5 seconds; provider work is not cancelled |
+| Lazy provider  | Runs only when its domain is selected                       | Default “All” search does not contact it                           |
+| Aggregate view | Several domains grouped in registry order                   | Shows a capped preview per group                                   |
+| Scoped view    | Exactly one backend domain with offset-cursor pagination    | Client-only scopes never call the backend                          |
+| Activation URI | A result's `uri`, or its `id` when `uri` is absent          | Resolution belongs to the shared UI navigation registry            |
 
 ## What you can do
 
@@ -45,16 +45,16 @@ GlobalSearchPalette or GlobalSearchTab
 
 ### Module contracts
 
-| Module                                                                                                  | Mechanism and invariant                                                                                                      | Failure when violated                                                            |
-| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [`search-provider.ts`](../../../packages/plugin-sdk/src/backend/search-provider.ts)                     | Rejects duplicate ids, selects eager or named providers, stamps domains, and converts provider failure or timeout to no hits | One provider can stall or mislabel the complete result set                       |
-| [`boot/search.ts`](../../../apps/api/src/boot/search.ts)                                                | Registers core providers in display order and attaches the live plugin backend registry                                      | Group order changes or plugin enable/disable stops matching availability         |
-| [`service.ts`](../../../apps/api/src/features/search/service.ts)                                        | Owns cross-provider sorting, grouped previews, totals, and single-domain pagination                                          | Endpoint consumers can disagree about result shape or page boundaries            |
-| [`contracts.ts`](../../../apps/api/src/features/search/contracts.ts)                                    | Requires non-empty text and caps the requested limit at 100                                                                  | Unbounded or empty searches reach every selected provider                        |
-| [`scopes.ts`](../../../apps/ui/src/features/search/model/scopes.ts)                                     | Maps known prefixes to backend or client-only domains and merges plugin scope atoms                                          | UI filters can request an unregistered provider or hide a live plugin domain     |
-| [`searchClient.ts`](../../../apps/ui/src/features/search/model/searchClient.ts)                         | Searches Settings, registered UI locations, and commands without server state                                                | Navigation-only results leak into backend contracts                              |
-| [`searchRequestCoordinator.ts`](../../../apps/ui/src/features/search/model/searchRequestCoordinator.ts) | Aborts superseded fetches and allows one load-more request per current sequence                                              | Slow results overwrite a newer query or duplicate a page                         |
-| [`activateSearch.ts`](../../../apps/ui/src/features/search/model/activateSearch.ts)                     | Uses registry-first URI activation and permits write intent only for selected command hits                                   | Search becomes a second, inconsistent navigation table or widens write authority |
+| Module                                                                                                  | Mechanism and invariant                                                                                                                         | Failure when violated                                                            |
+| ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [`search-provider.ts`](../../../packages/plugin-sdk/src/backend/search-provider.ts)                     | Rejects duplicate ids, selects eager or named providers, stamps domains, caps hits, and reports provider failure or timeout as a domain problem | One provider can stall or mislabel the complete result set                       |
+| [`boot/search.ts`](../../../apps/api/src/boot/search.ts)                                                | Registers core providers in display order and attaches the live plugin backend registry                                                         | Group order changes or plugin enable/disable stops matching availability         |
+| [`service.ts`](../../../apps/api/src/features/search/service.ts)                                        | Owns cross-provider sorting, grouped previews, totals, and single-domain pagination                                                             | Endpoint consumers can disagree about result shape or page boundaries            |
+| [`contracts.ts`](../../../apps/api/src/features/search/contracts.ts)                                    | Requires non-empty text and caps the requested limit at 100                                                                                     | Unbounded or empty searches reach every selected provider                        |
+| [`scopes.ts`](../../../apps/ui/src/features/search/model/scopes.ts)                                     | Maps known prefixes to backend or client-only domains and merges plugin scope atoms                                                             | UI filters can request an unregistered provider or hide a live plugin domain     |
+| [`searchClient.ts`](../../../apps/ui/src/features/search/model/searchClient.ts)                         | Searches Settings, registered UI locations, and commands without server state                                                                   | Navigation-only results leak into backend contracts                              |
+| [`searchRequestCoordinator.ts`](../../../apps/ui/src/features/search/model/searchRequestCoordinator.ts) | Aborts superseded fetches and allows one load-more request per current sequence                                                                 | Slow results overwrite a newer query or duplicate a page                         |
+| [`activateSearch.ts`](../../../apps/ui/src/features/search/model/activateSearch.ts)                     | Uses registry-first URI activation and permits write intent only for selected command hits                                                      | Search becomes a second, inconsistent navigation table or widens write authority |
 
 ### Registered core domains
 
@@ -92,6 +92,25 @@ tab or palette belongs to — and returns no hits without one, because a board b
 The tab merges all three client domains. The palette also receives the live command registry. Both
 surfaces use the same client-group builder and server hook.
 
+### Partial results and request lifetime
+
+Providers can return a plain hit array or `{ hits, problem }`. The registry preserves reported
+problems, stamps their domain, and turns an exception or timeout into a problem with no hits from
+that provider. The service includes `problems` only when that list is non-empty; other domains can
+still return results.
+
+The search tab renders one report for request and domain failures and owns its Event Center entry.
+The transient palette renders the same findings without owning that entry. A failed HTTP request
+blocks the results surface; a domain problem appears beside available results. Some providers still
+catch failures internally and return an empty array, so absence of `problems` is not proof that
+every underlying source was successfully searched.
+
+The UI aborts obsolete requests and ignores late responses when a query or scope changes. The
+provider port has no abort signal: the registry timeout bounds waiting, not the provider’s lifetime.
+Load-more requests re-run the provider and append the returned slice. A failed page shows a toast
+and keeps the earlier hits; domain problems from a later page are not merged into the primary
+response’s findings.
+
 ## Configuration
 
 | Control                | Current value      | Effect                                                  |
@@ -102,7 +121,7 @@ surfaces use the same client-group builder and server hook.
 | Scoped page size       | `30`               | Hits requested for each single-domain page              |
 | Aggregate provider cap | `24`               | Maximum hits accepted from one provider before grouping |
 | Scoped provider cap    | `200`              | Maximum searchable depth for one backend domain         |
-| Provider timeout       | `2500` ms          | Converts one slow provider into an empty contribution   |
+| Provider timeout       | `2500` ms          | Returns no hits and a problem for a slow provider       |
 | UI debounce            | `90` ms            | Delays the server fetch after query changes             |
 | Default keybinding     | `mod+shift+f`      | Opens or closes the quick-search palette                |
 
@@ -112,13 +131,16 @@ composition changes.
 
 ## Limits
 
-- The endpoint rejects an empty query. The UI clears results instead of sending one.
+- The endpoint rejects a zero-length query, but does not trim whitespace. The UI trims queries and
+  clears server results for a blank query instead of sending it.
 - “All” selects eager providers only. Docker, Kubernetes, trading, and other live or expensive
   domains require their explicit scopes.
-- A timeout, missing daemon, disabled plugin, permission failure, and a genuine zero-match result
-  all contribute no hits. The response does not expose per-provider errors.
-- Project and session ids are hints in the shared query. Each provider decides whether they affect
-  its own data source.
+- Timeouts and uncaught provider errors are reported as domain problems. A disabled plugin is absent
+  from the registry. An internally swallowed provider error can still look like no matches.
+- Project and session ids are interpreted by each provider. The service turns omitted ids into
+  `null`; Chats and Messages filter by that project value, so omission is not an unfiltered history
+  query. Message matching fetches at most 60 history hits before the project filter; matches beyond
+  that window may not appear even in a scoped search.
 - File search requires the search's own session and uses that session's effective working directory.
 - Aggregate totals are totals after provider caps, not counts of every possible source record.
 - The offset cursor is opaque at the API boundary but currently encodes a numeric offset. Changing
@@ -142,6 +164,8 @@ composition changes.
 - [HTTP route](../../../apps/api/src/features/search/routes.ts)
 - [Shared UI state](../../../apps/ui/src/features/search/model/useGlobalSearch.ts) ·
   [searchRequestCoordinator.test.ts](../../../apps/ui/src/features/search/model/searchRequestCoordinator.test.ts)
+- [Request sequencing and aborts](../../../apps/ui/src/features/search/model/searchRequestCoordinator.ts)
+- [Core file and history providers](../../../apps/api/src/features/chat/search-provider.ts)
 - [Search tab and palette](../../../apps/ui/src/features/search/ui/GlobalSearchTab.tsx) ·
   [GlobalSearchPalette.tsx](../../../apps/ui/src/features/search/ui/GlobalSearchPalette.tsx)
 - [Client navigation indexes](../../../apps/ui/src/features/search/model/searchClient.ts) ·

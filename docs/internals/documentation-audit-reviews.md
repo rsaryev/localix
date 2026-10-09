@@ -179,6 +179,17 @@ six step types, pending lessons, and rejected invalid progression. Reviewed the 
 commands against draft/activation and materialization contracts; qualified their automatic-warm
 claims. Relevant loader and generation history traces to the initial commit.
 
+## Global search scope, failures, and pagination
+
+Compared registry fan-out and timeout, HTTP grouping, core file/history providers, UI scopes,
+request sequencing, paged appends, result activation, and tab/palette problem ownership with source.
+Relevant provider/service history currently traces to the initial commit.
+
+Replaced silent-failure claims with the current partial-result contract, while documenting providers
+that swallow errors internally. Qualified timeout/abort boundaries, later-page findings, project
+filtering after capped history matching, and omitted-id semantics. Added workspace instructions for
+quick search, explicit live domains, and bounded totals.
+
 ## Related guides
 
 - [Audit scope and remaining work](documentation-audit.md)
