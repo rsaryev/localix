@@ -10,7 +10,7 @@
   "apps/api/src/features/agent-core/tools/web/research.ts": 546,
   "apps/api/src/features/autocomplete/predict-next-edit-context.ts": 454,
   "apps/api/src/features/cc-hooks/contracts.ts": 336,
-  "apps/api/src/features/cc-hooks/run.ts": 577,
+  "apps/api/src/features/cc-hooks/run.ts": 365,
   "apps/api/src/features/cc-settings/permission-rules.ts": 440,
   "apps/api/src/features/chat/context-ref-kinds.ts": 362,
   "apps/api/src/features/chat/context-refs.ts": 499,

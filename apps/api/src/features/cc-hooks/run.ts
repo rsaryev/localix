@@ -17,220 +17,29 @@
  *
  * Layer: api feature module. No chat/UI imports.
  */
-import {
-  isToolEvent,
-  type CcHookEvent,
-  type CcHookHandler,
-  type CcHookInput,
-  type CcHookRegistry,
-  type CcHookOutcome,
-  type CcHookSource,
-} from './contracts'
-import { executeHook, executeHookInBackground, type HookLogger, type HookRewake } from './executor'
+import type { CcHookEvent, CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
+import { executeHook, executeHookInBackground } from './executor'
 import { executeHttpHook } from './http'
-import { plural } from '../../lib/plural'
-import { runMcpToolHook, type CcMcpToolCaller } from './mcp-tool-hook'
-import { evaluateIfGuard } from './if-guard'
+import { runMcpToolHook } from './mcp-tool-hook'
 import { matchesField, matchesToolName } from './matcher'
-import { mapPromptOutcome, type PromptHookEvaluator } from './prompt-hook'
-import type { AgentHookEvaluator } from './agent-hook'
+import { mapPromptOutcome } from './prompt-hook'
 import { runHookOperation } from '../lifecycle-hooks/operation'
+import type {
+  CcHooksRuntime,
+  CreateCcHooksRuntimeOptions,
+  PreToolUseResult,
+} from './runtime-contracts'
+import { EMPTY_RUNTIME, joinContext, contextFrom, blockedFrom } from './runtime-results'
+import { createHookSelector, type SelectOptions } from './runtime-selection'
 
-/** Aggregated PreToolUse decision handed to the tool wrapper. */
-export interface PreToolUseResult {
-  /** `deny` blocks the call; `allow`/`ask` are advisory; `proceed` = no opinion. */
-  decision: 'deny' | 'allow' | 'ask' | 'proceed'
-  reason?: string
-  /** Composed input rewrite (re-validated by the caller against the tool schema). */
-  updatedInput?: unknown
-  didRewrite: boolean
-}
-
-export interface PromptSubmitResult {
-  blocked: boolean
-  reason?: string
-  additionalContext?: string
-}
-
-export interface StopResult {
-  blocked: boolean
-  reason?: string
-}
-
-/**
- * What `PreCompact` handlers answered. A context checkpoint is announced to them but never
- * waits on or yields to them — see `run/stages/history.ts` — so `blocked` is reported, not obeyed.
- */
-export interface PreCompactResult {
-  blocked: boolean
-  reason?: string
-}
-
-export interface CcHooksRuntime {
-  /** True when at least one supported hook is registered AND the feature is enabled. */
-  readonly active: boolean
-  /**
-   * Fire the SessionStart hooks. `source` (CC: `startup` | `resume` | `clear` |
-   * `compact`, default `startup`) is both reported in the hook input AND used as
-   * the matcher value — a hook whose matcher is `compact` only fires on a `compact`
-   * source. Returns the joined `additionalContext` to inject into the model.
-   */
-  runSessionStart(source?: string): Promise<{ additionalContext?: string }>
-  runUserPromptSubmit(prompt: string): Promise<PromptSubmitResult>
-  runPreToolUse(toolName: string, input: unknown, toolUseId?: string): Promise<PreToolUseResult>
-  runPostToolUse(
-    toolName: string,
-    input: unknown,
-    result: { content: string; details?: unknown },
-  ): Promise<{ additionalContext?: string; updatedToolOutput?: string }>
-  /**
-   * Fire the Stop hooks. `stopHookActive` is reported to hooks as `stop_hook_active`
-   * — true when this run is ALREADY a Stop-hook-forced continuation (CC loop
-   * protection). A `decision:"block"` outcome is surfaced as `{blocked, reason}` for
-   * the caller to re-enter the run with.
-   */
-  runStop(opts?: { stopHookActive?: boolean }): Promise<StopResult>
-  /** Session-terminating side-effect hooks. Fire-and-forget (no decision control). */
-  runSessionEnd(reason: string): Promise<void>
-  /**
-   * Fire the Notification hooks — CC's "agent needs the user" signal, raised when a
-   * HITL request (ask/quiz/confirm) surfaces. `notificationType` (e.g.
-   * `permission_prompt` for a confirm gate, `agent_needs_input` for an ask/quiz) is
-   * both reported to hooks AND used as the matcher value. Observer-only side-effect
-   * (no decision control, per the CC spec) — fire-and-forget, output ignored.
-   */
-  runNotification(notification: {
-    message: string
-    notificationType?: string
-    title?: string
-  }): Promise<void>
-  /** A sub-agent is starting. Returns context to inject into the child (advisory). */
-  runSubagentStart(agentType: string, agentId: string): Promise<{ additionalContext?: string }>
-  /**
-   * A sub-agent finished. `decision:block` is logged (no re-entry), like Stop.
-   * `sourcesOnly` restricts firing to the given hook sources — used when a
-   * sub-agent run fires its OWN SubagentStop for its scoped (skill/agent)
-   * frontmatter hooks, so generic user/project SubagentStop hooks (which the
-   * PARENT already fires via the delegate seam) are not double-fired.
-   */
-  runSubagentStop(
-    agentType: string,
-    agentId: string,
-    lastMessage: string | null,
-    opts?: { sourcesOnly?: readonly CcHookSource[]; stopHookActive?: boolean },
-  ): Promise<StopResult>
-  /**
-   * Claude Code's PreCompact: exit 2 / `decision:block` reports a block. This host fires it
-   * with `auto` when a context checkpoint is taken, after the view is already decided, so it
-   * reads the result as a notice and never lets a block stop the turn.
-   */
-  runPreCompact(trigger: 'manual' | 'auto', customInstructions?: string): Promise<PreCompactResult>
-}
-
-export interface CreateCcHooksRuntimeOptions {
-  signal?: AbortSignal
-  registry: CcHookRegistry
-  sessionId: string
-  /** Session cwd → hook cwd + `CLAUDE_PROJECT_DIR`. */
-  projectDir: string
-  /** Kill switch — when false the runtime is inert. */
-  enabled: boolean
-  logger: HookLogger
-  /**
-   * Arms the one wake an `asyncRewake` hook may send, as it starts; the hook's exit 2 fires it
-   * with the composed rewake message, any other ending dismisses it.
-   * Absent → asyncRewake degrades to plain `async` (fire-and-forget, no wake).
-   */
-  rewake?: HookRewake
-  /**
-   * Per-SESSION set of `once`-handler keys that already ran (owned by the caller
-   * so it survives across the per-run runtimes). Absent → `once` is not enforced.
-   */
-  onceKeys?: Set<string>
-  /**
-   * Injected single-shot LLM evaluator for `type:"prompt"` handlers. Absent → prompt
-   * handlers fail open (treated as `ok`, never block). Keeps cc-hooks chat-agnostic.
-   */
-  evaluatePromptHook?: PromptHookEvaluator
-  /**
-   * Injected bounded-sub-agent evaluator for `type:"agent"` handlers (a tool-using
-   * verifier). Absent → agent handlers fail open. Keeps cc-hooks chat-agnostic.
-   */
-  runAgentHook?: AgentHookEvaluator
-  /**
-   * Injected MCP tool caller for `type:"mcp_tool"` handlers, built by the chat
-   * runtime from the process-lifetime MCP client manager. Absent → mcp_tool handlers
-   * fail open. Keeps cc-hooks free of any MCP-feature import.
-   */
-  callMcpTool?: CcMcpToolCaller
-  /**
-   * Injected sink for a hook's non-blocking `systemMessage` — a user-facing
-   * warning (CC: "shown to the user in the transcript"). The chat runtime wires
-   * this to publish a `hook.notice` stream event. Absent → the message is dropped
-   * (keeps cc-hooks chat/UI-agnostic). Identical CONSECUTIVE messages within a run
-   * are de-duped before this fires.
-   */
-  emitNotice?: (message: string, event: CcHookEvent) => void
-}
-
-const noop = async () => {}
-const EMPTY_RUNTIME: CcHooksRuntime = {
-  active: false,
-  async runSessionStart() {
-    return {}
-  },
-  async runUserPromptSubmit() {
-    return { blocked: false }
-  },
-  async runPreToolUse() {
-    return { decision: 'proceed', didRewrite: false }
-  },
-  async runPostToolUse() {
-    return {}
-  },
-  async runStop() {
-    return { blocked: false }
-  },
-  runSessionEnd: noop,
-  runNotification: noop,
-  async runSubagentStart() {
-    return {}
-  },
-  async runSubagentStop() {
-    return { blocked: false }
-  },
-  async runPreCompact() {
-    return { blocked: false }
-  },
-}
-
-/** Join non-empty context strings with a blank line. */
-function joinContext(parts: (string | undefined)[]): string | undefined {
-  const kept = parts.filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
-  return kept.length > 0 ? kept.join('\n\n') : undefined
-}
-
-/** The context every handler of a context-carrying event contributed, joined. */
-function contextFrom(outcomes: CcHookOutcome[]): string | undefined {
-  return joinContext(outcomes.map((o) => o.additionalContext))
-}
-
-/**
- * The block verdict for a decision-carrying event that CANNOT short-circuit
- * (Stop / SubagentStop / PreCompact): every handler runs, the run is blocked if
- * ANY of them blocked, and the last handler to give a reason owns it.
- */
-function blockedFrom(outcomes: CcHookOutcome[]): StopResult {
-  let blocked = false
-  let reason: string | undefined
-  for (const o of outcomes) {
-    if (o.blocked || o.decision === 'block') {
-      blocked = true
-      reason = o.blockReason || o.reason || reason
-    }
-  }
-  return { blocked, ...(reason ? { reason } : {}) }
-}
+export type {
+  PreToolUseResult,
+  PromptSubmitResult,
+  StopResult,
+  PreCompactResult,
+  CcHooksRuntime,
+  CreateCcHooksRuntimeOptions,
+} from './runtime-contracts'
 
 export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooksRuntime {
   const {
@@ -263,61 +72,7 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     hook_event_name: event,
   })
 
-  /** `once` per-session key for a handler (stable across the per-run runtimes). */
-  const onceKey = (event: CcHookEvent, h: CcHookHandler): string =>
-    `${event}::${h.source}::${h.pluginName ?? ''}::${h.command || h.prompt || ''}`
-
-  interface SelectOptions {
-    /** Tool-event context for `if` guards. */
-    ifCtx?: { toolName: string; toolInput: unknown }
-    /** Extra restriction applied BEFORE the guards (SubagentStop's `sourcesOnly`). */
-    filter?: (h: CcHookHandler) => boolean
-  }
-
-  /**
-   * The handlers that will actually RUN for one event — or `null` when the event is
-   * INERT (no group matched, every `if` guard failed, or the only `once` handlers
-   * already ran this session). Every dispatch point short-circuits on that single
-   * fact instead of re-deriving "did anything match?" for itself.
-   *
-   * Selection, in order — the order is the contract:
-   *   - group matcher accepts the event's match value (`matchFn`);
-   *   - caller `filter`;
-   *   - `if` guard: on tool events keep a handler only if its guard passes; on
-   *     non-tool events a handler carrying an `if` never runs (CC §3);
-   *   - `once`: skip handlers whose key already ran this session; MARK the rest as
-   *     run — a selected `once` handler is spent whether or not it later blocks;
-   *   - partition into `sync` (block-capable) and `async` (fire-and-forget).
-   */
-  function select(
-    event: CcHookEvent,
-    matchFn: (matcher: string | undefined) => boolean,
-    opts: SelectOptions = {},
-  ): { sync: CcHookHandler[]; async: CcHookHandler[] } | null {
-    if (signalFor(event)?.aborted) return null
-    const sync: CcHookHandler[] = []
-    const asyncH: CcHookHandler[] = []
-    for (const group of registry[event] ?? []) {
-      if (!matchFn(group.matcher)) continue
-      for (const h of group.handlers) {
-        if (opts.filter && !opts.filter(h)) continue
-        if (h.if) {
-          if (!isToolEvent(event) || !opts.ifCtx) continue // `if` only applies on tool events
-          if (!evaluateIfGuard(h.if, opts.ifCtx.toolName, opts.ifCtx.toolInput)) continue
-        }
-        if (h.once && onceKeys) {
-          const key = onceKey(event, h)
-          if (onceKeys.has(key)) continue
-          onceKeys.add(key)
-        }
-        ;(h.async ? asyncH : sync).push(h)
-      }
-    }
-    const count = sync.length + asyncH.length
-    if (count === 0) return null
-    logger.info?.(`[cc-hooks] session ${sessionId}: ${event} fired ${plural(count, 'hook')}`)
-    return { sync, async: asyncH }
-  }
+  const select = createHookSelector({ registry, sessionId, logger, onceKeys, signalFor })
 
   /** Fire background (`async`) handlers — never awaited, never affect the decision. */
   function fireAsync(handlers: CcHookHandler[], input: CcHookInput): void {
