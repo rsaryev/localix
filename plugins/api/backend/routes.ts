@@ -12,36 +12,26 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import type { PluginRouteContext, PluginRouteScope } from '@localixai/plugin-sdk/backend'
 import { defaultErrorHandler } from '@localixai/plugin-sdk/backend'
-import type {
-  ExportFormat,
-  ImportResponse,
-  RequestInfo,
-  ResolvedPreview,
-  RestErrorResponse,
-  SendResponse,
-} from './contracts'
-import { EXPORT_FORMATS } from './contracts'
-import { mapRestError, statusFor, toErrorInfo } from './errors'
-import { redactSpec } from './store'
+import type { SendResponse } from './contracts'
+import { statusFor } from './errors'
 import { mergeAuth } from './auth-edit'
 import { HTTP_METHODS, isHttpUrl, type RequestSpec } from './request-spec'
 import type { EnvironmentService } from './environments/service'
-import { missingVarsProblem, renderSpec } from './render-spec'
+import { missingVarsProblem } from './render-spec'
 import { renderEnvironmentForSend } from './render-environment'
 import { hasTemplate } from './template'
 import { RestError } from './errors'
 import { resolveAuthSecrets, type ResolveSecret } from './secrets'
 import { sendRequest } from './send'
 import { dropHistory, listHistory, recordSend, renameHistory } from './history'
-import { runImportAction, uniqueNames } from './import-action'
-import { runImport } from './import/registry'
-import { toCurl } from './export/curl'
 import type { StoreSecret } from './vault-auth'
 import { bindAuthSecrets, type BindSecret } from './vault-bindings'
 import { vaultLiteralAuth } from './vault-auth'
 import { collectionFor, environmentsFor } from './collection/for-scope'
-import type { CollectionRequest, CollectionStore } from './collection/store'
+import type { CollectionStore } from './collection/store'
 import { registerEnvironmentRoutes } from './environment-routes'
+import { registerImportRoute, registerRequestExportRoute } from './import-export-routes'
+import { REQUEST_NOT_FOUND, toInfo, resolvedFor, restErrorBody } from './request-route-values'
 import { validated, pairSchema } from './route-validation'
 
 export interface RestRoutesDeps {
@@ -71,24 +61,6 @@ export interface RestRoutesDeps {
   collection?: (cwd: string | undefined, sessionId?: string) => CollectionStore
   /** Send settings, resolved from plugin config by the caller — routes own no config parsing. */
   send: { timeoutMs: number; maxBodyBytes: number; allowPrivateNetwork: boolean }
-}
-
-/**
- * The 404 bodies.
- *
- * `error` is the sentence a surface puts on its line; `code` is the classification a caller
- * branches on. Both fields used to carry the CODE, so a person whose request had been renamed
- * elsewhere read the words `request_not_found` on the sidebar — the same defect the Database
- * workbench shipped and fixed.
- */
-const REQUEST_NOT_FOUND = {
-  error: 'No saved request by that name.',
-  code: 'request_not_found' as const,
-}
-/** Serialize any thrown value into the typed `{ error, code, detail }` body. */
-function restErrorBody(err: unknown): RestErrorResponse {
-  const info = toErrorInfo(mapRestError(err))
-  return { error: info.message, code: info.code, detail: info.detail }
 }
 
 /**
@@ -139,19 +111,6 @@ const updateRequestSchema = z.object({
 })
 
 /**
- * The workbench import payload. `source` is pasted text (a cURL command, an OpenAPI/Swagger spec, a
- * Postman/Insomnia export, a HAR). `save` writes them; absent/false is a preview. `dir` is accepted
- * for wire-parity with the agent tool but refused here — reading repo files needs the plugin's
- * working directory, which the tool has and these routes do not.
- */
-const importSchema = z.object({
-  source: z.string().optional(),
-  save: z.boolean().optional(),
-  dir: z.string().optional(),
-  baseUrl: z.string().optional(),
-})
-
-/**
  * The auth block, editable from the UI. A secret-bearing field left equal to the redaction mask
  * (`••••••`) means "keep the stored secret" — see `mergeAuth`. A `${secret:KEY}` reference or a
  * fresh literal overwrites. Auth type can change freely (none → bearer, etc.).
@@ -185,37 +144,6 @@ const createRequestSchema = z.object({
 })
 
 const createFolderSchema = z.object({ name: z.string() })
-
-/**
- * What a request resolves to right now, or undefined when it uses no variables.
- *
- * Computed on the READ, not cached: the active environment changes under a tab that is already
- * open, and a preview that went stale would say the request points somewhere it no longer does —
- * which is exactly the confusion environments exist to remove.
- */
-async function resolvedFor(
-  environments: EnvironmentService,
-  userId: string,
-  saved: CollectionRequest,
-): Promise<ResolvedPreview | undefined> {
-  if (!hasTemplate(saved.spec.url)) return undefined
-  const rendered = renderSpec(saved.spec, await environments.activeVars(userId))
-  return {
-    url: rendered.spec.url,
-    missing: rendered.missing,
-    environment: await environments.activeName(userId),
-  }
-}
-
-/** The wire view of a stored record — redacted, always. */
-function toInfo(saved: CollectionRequest): RequestInfo {
-  return {
-    name: saved.name,
-    createdAt: saved.createdAt,
-    updatedAt: saved.updatedAt,
-    spec: redactSpec(saved.spec),
-  }
-}
 
 export function createRestRoutes(deps: RestRoutesDeps) {
   // Typed with the host's per-request scope: `c.env.cwd` is the project this call belongs to,
@@ -347,99 +275,8 @@ export function createRestRoutes(deps: RestRoutesDeps) {
       return c.json({ request: toInfo(saved), resolved: await resolvedFor(envs(c), userId, saved) })
     })
 
-  const routes = registerEnvironmentRoutes(requestRoutes, { uid, envs })
-    /**
-     * Import pasted text as previewed — or, with `save: true`, saved — requests.
-     *
-     * Reuses `runImportAction` for the SIDE EFFECTS (vaulting a pasted literal, saving requests and
-     * any environments, and the prose summary the tool prints) and `runImport` + `uniqueNames` for
-     * the STRUCTURED response the browser reads. The names are computed against the current store
-     * BEFORE the action writes anything, so the read-back after a save resolves the very records
-     * that were stored — and every request in the response goes through `toInfo`, redacted.
-     */
-    .post('/import', validated('json', importSchema), async (c) => {
-      const userId = uid(c)
-      const { source, save, dir, baseUrl } = c.req.valid('json')
-      if (dir !== undefined) {
-        return c.json(
-          {
-            error: 'Directory import is not available from the workbench.',
-            code: 'bad_request' as const,
-            detail:
-              "Reading the repo's exported files needs the plugin's working directory, which the " +
-              'agent tool has and these routes do not. Paste the source into "source" instead, or run ' +
-              'a directory import through the agent.',
-          },
-          400,
-        )
-      }
-      const text = source?.trim()
-      if (!text) {
-        return c.json(
-          {
-            error: 'Nothing to import.',
-            code: 'bad_request' as const,
-            detail:
-              'Paste a cURL command, an OpenAPI/Swagger spec, a Postman/Insomnia export, or a HAR ' +
-              'archive into "source".',
-          },
-          400,
-        )
-      }
-
-      const importDeps = {
-        store: collection(c),
-        userId,
-        storeSecret: deps.storeSecret,
-        environments: envs(c),
-      }
-      // Structured parse, and the target names — computed while the store is still untouched, so a
-      // later read-back finds the exact ids `runImportAction` will save under.
-      const parsed = runImport(text, { baseUrl })
-      const named = parsed ? await uniqueNames(collection(c), parsed.requests) : []
-      const collisions: string[] = []
-      if (parsed) {
-        for (const [index, request] of named.entries()) {
-          if (request.name !== parsed.requests[index].name) collisions.push(request.name)
-        }
-      }
-
-      const action = await runImportAction(importDeps, text, save === true, { baseUrl })
-      // An unrecognised format (or an OpenAPI-shaped doc describing nothing) comes back here: reuse
-      // the action's own crafted problem text rather than restating the list of formats.
-      if (!action.ok) {
-        return c.json(
-          { error: 'Import failed.', code: 'bad_request' as const, detail: action.problem },
-          400,
-        )
-      }
-      const requests = await Promise.all(
-        named.map(async (n): Promise<RequestInfo> => {
-          if (save === true) {
-            // Read the ACTUAL stored record — after vaulting it references `${secret:KEY}` rather
-            // than the pasted literal, and the response must describe the state on disk.
-            const rec = await collection(c).get(n.name)
-            // `runImportAction` just saved every named record. Keep a defensive
-            // redacted fallback for a custom store with weaker read-after-write.
-            // Zero stamps, not `Date.now()`: the record is NOT on disk, so there is no
-            // filesystem time to report and inventing one would date a file that never existed.
-            return rec
-              ? toInfo(rec)
-              : { name: n.name, createdAt: 0, updatedAt: 0, spec: redactSpec(n.spec) }
-          }
-          // A preview was never written; redact the parsed spec so the wire view is still safe.
-          return { name: n.name, createdAt: 0, updatedAt: 0, spec: redactSpec(n.spec) }
-        }),
-      )
-      const body: ImportResponse = {
-        requests,
-        collisions,
-        saved: save === true,
-        message: action.content,
-      }
-      return c.json(body)
-    })
-
+  const environmentRoutes = registerEnvironmentRoutes(requestRoutes, { uid, envs })
+  const importedRoutes = registerImportRoute(environmentRoutes, { uid, collection, envs, deps })
     .put('/requests/:name', validated('json', updateRequestSchema), async (c) => {
       const name = c.req.param('name')
       const existing = await collection(c).get(name)
@@ -603,30 +440,7 @@ export function createRestRoutes(deps: RestRoutesDeps) {
       return c.json({ ok: true })
     })
 
-    /**
-     * Export a saved request as a shareable command. `?format=curl` (the default and only format).
-     *
-     * The serializer redacts INTERNALLY (see export/curl.ts): a literal credential is masked, a
-     * `${secret:KEY}` reference kept verbatim, and the vault is never read. So this GET carries no
-     * secret — which is exactly why it is safe as a plain, preflight-free read.
-     */
-    .get('/requests/:name/export', async (c) => {
-      const saved = await collection(c).get(c.req.param('name'))
-      if (!saved) return c.json(REQUEST_NOT_FOUND, 404)
-      const format = c.req.query('format') ?? 'curl'
-      if (!EXPORT_FORMATS.includes(format as ExportFormat)) {
-        return c.json(
-          {
-            error: `Unknown export format "${format}".`,
-            code: 'bad_request' as const,
-            detail: `Supported formats: ${EXPORT_FORMATS.join(', ')}.`,
-          },
-          400,
-        )
-      }
-      return c.text(toCurl(saved.spec), 200, { 'content-type': 'text/plain; charset=utf-8' })
-    })
-
+  const routes = registerRequestExportRoute(importedRoutes, { collection })
     /**
      * Send a saved request and return its response.
      *
