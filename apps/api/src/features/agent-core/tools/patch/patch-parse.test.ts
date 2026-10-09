@@ -606,3 +606,30 @@ describe('envelope-less and mis-headed patches (recorded corpus)', () => {
     ).toThrow(/use the `write` tool/)
   })
 })
+
+it('appends normalization and section tolerance notes in encounter order', () => {
+  const notes = ['existing note']
+  const hunks = parsePatchText(
+    [
+      'preface',
+      '*** Begin Patch',
+      '*** Explanation',
+      '*** Update File: file.ts',
+      '@@',
+      '@@',
+      '-old',
+      '+new',
+      '*** End Patch',
+      'afterword',
+    ].join('\n'),
+    notes,
+  )
+  expect(hunks).toHaveLength(1)
+  expect(notes).toEqual([
+    'existing note',
+    'note: ignored 1 line(s) before the patch envelope',
+    'note: ignored 1 line(s) after the patch envelope',
+    'note: ignored 1 decorative "***" narration line',
+    'note: ignored 1 body-less "@@" anchor',
+  ])
+})
