@@ -11,6 +11,7 @@ import type {
 } from '@localixai/agent/agents'
 
 import { buildToolItem, reasoningItem, textItem, type ToolItemSpec } from './item-builders'
+import { mergeToolItemSpec } from './item-tool-spec'
 
 // Re-export the pure item builders so the historical `./items` import surface
 // (callers + tests importing buildToolItem/classifyTool/textItem/reasoningItem/
@@ -23,22 +24,6 @@ export {
   type ToolItemSpec,
 } from './item-builders'
 
-const STATUS_RANK: Record<AgentItemStatus, number> = {
-  pending: 0,
-  running: 1,
-  completed: 2,
-  failed: 2,
-  aborted: 2,
-}
-
-/**
- * Stateful accumulator that folds an agent run's streaming events into an ordered
- * `AgentItem[]` — the item-native replacement for the old contentBlocks+toolParts
- * bookkeeping. Items are upserted by id, order preserved by first appearance:
- * narrative text/reasoning per turn, tool-backed items materialized from accumulated
- * specs via `buildToolItem`. Pure given its inputs; the runtime just feeds it events
- * and reads `list()`.
- */
 export interface ItemAccumulatorOptions {
   /**
    * Applied to every tool `input` and `details` this accumulator records, before the spec is stored.
@@ -64,6 +49,14 @@ export interface ItemAccumulatorOptions {
   actionsFor?: (toolCallId: string) => ToolActionDescriptor[] | undefined
 }
 
+/**
+ * Stateful accumulator that folds an agent run's streaming events into an ordered
+ * `AgentItem[]` — the item-native replacement for the old contentBlocks+toolParts
+ * bookkeeping. Items are upserted by id, order preserved by first appearance:
+ * narrative text/reasoning per turn, tool-backed items materialized from accumulated
+ * specs via `buildToolItem`. Pure given its inputs; the runtime just feeds it events
+ * and reads `list()`.
+ */
 export function createItemAccumulator(
   activeVerbFor: (name: string) => string,
   opts: ItemAccumulatorOptions = {},
@@ -102,29 +95,7 @@ export function createItemAccumulator(
 
   const setTool = (toolCallId: string, patch: Partial<ToolItemSpec> & { name: string }) => {
     const prev = specs.get(toolCallId)
-    // Never downgrade status (pending → running → terminal); merge details/result.
-    const status =
-      patch.status && (!prev || STATUS_RANK[patch.status] >= STATUS_RANK[prev.status])
-        ? patch.status
-        : (prev?.status ?? 'pending')
-    const spec: ToolItemSpec = {
-      toolCallId,
-      activeVerb: activeVerbFor(patch.name),
-      ...prev,
-      ...patch,
-      presentation: opts.presentationFor?.(patch.name) ?? prev?.presentation,
-      actions: opts.actionsFor ? opts.actionsFor(toolCallId) : prev?.actions,
-      standalone:
-        opts.standaloneFor?.(patch.name) === true ||
-        opts.presentationFor?.(patch.name)?.transcript === 'content' ||
-        prev?.standalone,
-      // After the spreads, so a patch that carries either field cannot land unshielded. `in` rather
-      // than a truthiness check: a patch omitting the key must keep `prev`'s value, and an explicit
-      // `undefined`/`null`/`''` must still pass through the sanitizer rather than resurrect `prev`'s.
-      ...('input' in patch ? { input: sanitize(patch.input) } : {}),
-      ...('details' in patch ? { details: sanitize(patch.details) } : {}),
-      status,
-    }
+    const spec = mergeToolItemSpec({ toolCallId, patch, prev, activeVerbFor, opts, sanitize })
     specs.set(toolCallId, spec)
     upsert(buildToolItem(spec))
   }
