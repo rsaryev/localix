@@ -233,6 +233,30 @@ describe('docs generator', () => {
     ).toThrow('docs/features/details.md: #not-here')
   })
 
+  test('validates rendered duplicate and setext ids while excluding tilde-fenced headings', () => {
+    const page = {
+      sourcePath: 'docs/headings.md',
+      content: [
+        '## Repeat',
+        '',
+        '## Repeat',
+        '',
+        'Setext title',
+        '============',
+        '',
+        '~~~markdown',
+        '## Fake heading',
+        '~~~',
+        '',
+        '[Second](#repeat-1) and [Setext](#setext-title)',
+      ].join('\n'),
+    }
+    expect(() => validateDocAnchors([page])).not.toThrow()
+    expect(() =>
+      validateDocAnchors([{ ...page, content: `${page.content}\n[Missing](#fake-heading)` }]),
+    ).toThrow('docs/headings.md: #fake-heading')
+  })
+
   test('rejects stale repository file references in public prose', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'localix-doc-sources-'))
     tempRoots.push(root)

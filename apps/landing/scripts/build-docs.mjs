@@ -6,7 +6,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
-import { slugifyDocHeading } from '../src/lib/docHeading.ts'
+import { extractMarkdownHeadings } from '@localixai/markdown'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../..')
@@ -221,20 +221,7 @@ export async function validateRelativeDocLinks(pages, sourceRoot) {
 }
 
 function headingIds(content) {
-  const ids = new Set()
-  let inFence = false
-  for (const line of content.split('\n')) {
-    if (line.trim().startsWith('```')) {
-      inFence = !inFence
-      continue
-    }
-    if (inFence) continue
-    const match = /^(#{1,6})\s+(.+)$/u.exec(line)
-    if (!match) continue
-    const text = match[2].replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1').replace(/<[^>]+>/gu, '')
-    ids.add(slugifyDocHeading(text))
-  }
-  return ids
+  return new Set(extractMarkdownHeadings(content).map((heading) => heading.id))
 }
 
 export function validateDocAnchors(pages) {
