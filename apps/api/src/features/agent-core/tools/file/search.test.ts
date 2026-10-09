@@ -395,6 +395,47 @@ describe('createSearchTool — ripgrep integration', () => {
   })
 })
 
+test('publishes live details before checking whether the earlier result survived compression', async () => {
+  const trace: string[] = []
+  const elided = new Set<string>()
+  const env: ExecutionEnvironment = {
+    config: localEnvironment.config,
+    readFile: localEnvironment.readFile.bind(localEnvironment),
+    writeFile: localEnvironment.writeFile.bind(localEnvironment),
+    exec: localEnvironment.exec.bind(localEnvironment),
+    async searchFiles() {
+      trace.push('search')
+      return 'a.ts:1:needle\n'
+    },
+  }
+  const tool = createSearchTool(env, '/workspace', (id) => {
+    trace.push(`elision:${id}`)
+    return elided.has(id)
+  })
+  let updates = 0
+  const update = () => {
+    trace.push('update')
+    if (++updates === 2) elided.add('first')
+  }
+  const first = await tool.execute('first', { query: 'needle' }, undefined, update)
+  const second = await tool.execute('second', { query: 'needle' }, undefined, update)
+  const third = await tool.execute('third', { query: 'needle' }, undefined, update)
+  expect(first.content).toContain('a.ts')
+  expect(second.content).toContain('a.ts')
+  expect(third.content).toContain('identical to your earlier search')
+  expect(third.details?.output).toBe('a.ts:1:needle\n')
+  expect(trace).toEqual([
+    'search',
+    'update',
+    'search',
+    'update',
+    'elision:first',
+    'search',
+    'update',
+    'elision:second',
+  ])
+})
+
 describe('createSearchTool — repeat-search dedup', () => {
   let dir: string
   beforeEach(async () => {
