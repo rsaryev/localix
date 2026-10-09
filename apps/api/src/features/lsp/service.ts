@@ -1,8 +1,7 @@
-import type { LspWorkspaceEditFile } from './lsp-response-types'
 import type { LspDocumentService, LspServiceDeps, OpenDoc } from './service-contract'
-import type { RenameResult } from './service-result-types'
 import { createLspEditCommitter } from './edit-commit'
-import { bufferEditFor, routeWorkspaceEdit } from './edit-routing'
+import { bufferEditFor } from './edit-routing'
+import { createWorkspaceEditApplicator } from './service-workspace-edit'
 import { createServiceNavigation } from './service-navigation'
 
 export type { LspDocumentService, LspServiceDeps } from './service-contract'
@@ -58,25 +57,10 @@ export function createLspDocumentService(deps: LspServiceDeps): LspDocumentServi
   // buffer, the rest commit to disk (`edit-routing.ts`; `edit-commit.ts` owns the
   // optimistic-concurrency baseline of the disk half).
   const { commitWorkspaceEdit } = createLspEditCommitter(deps.writeFile)
-  async function applyWorkspaceEdit(
-    userId: string,
-    sessionId: string,
-    fileEdits: LspWorkspaceEditFile[],
-  ): Promise<RenameResult> {
-    const docs = new Map<string, OpenDoc>()
-    for (const { file } of fileEdits) {
-      const doc = open.get(key(sessionId, file))
-      if (doc?.userId !== userId) continue
-      // Every range is computed against the text the server holds once this settles.
-      await doc.syncing.catch(() => {})
-      docs.set(file, doc)
-    }
-    return routeWorkspaceEdit(
-      fileEdits,
-      (file) => docs.get(file)?.text,
-      (diskEdits) => commitWorkspaceEdit(userId, sessionId, diskEdits),
-    )
-  }
+  const applyWorkspaceEdit = createWorkspaceEditApplicator({
+    getOpenDoc: (sessionId, file) => open.get(key(sessionId, file)),
+    commitWorkspaceEdit,
+  })
 
   async function ownedOpenDoc(
     userId: string,

@@ -1,6 +1,6 @@
 import { applyTextEdits, textDigest, type BufferEdit } from './lsp-edits'
 import type { LspWorkspaceEditFile } from './lsp-protocol'
-import type { RenameResult } from './service'
+import type { RenameResult } from './service-result-types'
 
 /**
  * Where one language-server WorkspaceEdit lands, file by file.
