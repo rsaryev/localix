@@ -7,10 +7,7 @@ import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import path from 'node:path'
 import { createThrottle } from '../../lib/debounce'
 import { languageIdForPath } from './lsp-languages'
-import {
-  requestDocumentDiagnosticReport,
-  requestWorkspaceDiagnosticReport,
-} from './lsp-diagnostics-pull'
+import { createDiagnosticPullCoordinator } from './lsp-diagnostics-coordinator'
 import { CLIENT_CAPABILITIES } from './lsp-capabilities'
 import { createDiagnosticsSnapshot } from './lsp-diagnostics-snapshot'
 import { createEditorFeatures } from './lsp-editor-features'
@@ -118,6 +115,14 @@ export async function createLspClient(input: {
       input.onDiagnosticsUpdate?.(buildDiagnosticsSnapshot())
     })
   }
+
+  const requestDiagnostics = createDiagnosticPullCoordinator({
+    connection,
+    diagnosticRegistrations,
+    hasStaticPullDiagnostics: () => hasStaticPullDiagnostics,
+    getWorkspacePullInFlight: () => workspacePullInFlight,
+    mergePullResults,
+  })
 
   connection.onNotification(
     'textDocument/publishDiagnostics',
@@ -245,62 +250,7 @@ export async function createLspClient(input: {
   const saveCarriesText = saveIncludesText(initialized.capabilities)
   const hasStaticPullDiagnostics = Boolean(initialized.capabilities?.diagnosticProvider)
 
-  function pullRegistrations(workspaceDiagnostics: boolean) {
-    return [...diagnosticRegistrations.values()].filter(
-      (registration) => registration.registerOptions?.workspaceDiagnostics === workspaceDiagnostics,
-    )
-  }
-
-  /**
-   * A workspace diagnostic report takes NO file path — its answer covers the whole
-   * project and is identical whichever document asked for it. But it is requested
-   * per file, and several files ask at once: three editors syncing together, or the
-   * server's own `workspace/diagnostic/refresh`, which re-pulls EVERY open
-   * document. Each of those made the server run a whole-project analysis to produce
-   * another copy of the same report (measured: 3 open documents → 3 requests).
-   *
-   * Share the in-flight request per identifier. A pull that starts after the
-   * previous one settled still gets fresh results — this collapses the concurrent
-   * duplicates only, never a later, genuinely-new request.
-   */
   const workspacePullInFlight = new Map<string, Promise<DiagnosticRequestResult>>()
-  function sharedWorkspaceReport(identifier?: string): Promise<DiagnosticRequestResult> {
-    const key = identifier ?? ''
-    const existing = workspacePullInFlight.get(key)
-    if (existing) return existing
-    const pending = requestWorkspaceDiagnosticReport(connection, identifier).finally(() => {
-      workspacePullInFlight.delete(key)
-    })
-    workspacePullInFlight.set(key, pending)
-    return pending
-  }
-
-  async function requestDiagnostics(filePath: string) {
-    const documentRegistrations = pullRegistrations(false)
-    const workspaceRegistrations = pullRegistrations(true)
-    const documentIdentifiers = [
-      ...new Set(documentRegistrations.flatMap((r) => r.registerOptions?.identifier ?? [])),
-    ]
-    const workspaceIdentifiers = [
-      ...new Set(workspaceRegistrations.flatMap((r) => r.registerOptions?.identifier ?? [])),
-    ]
-
-    const requests: Promise<DiagnosticRequestResult>[] = []
-    if (hasStaticPullDiagnostics || documentRegistrations.length > 0) {
-      requests.push(requestDocumentDiagnosticReport(connection, filePath))
-      requests.push(
-        ...documentIdentifiers.map((identifier) =>
-          requestDocumentDiagnosticReport(connection, filePath, identifier),
-        ),
-      )
-    }
-    if (workspaceRegistrations.length > 0) {
-      requests.push(sharedWorkspaceReport())
-      requests.push(...workspaceIdentifiers.map((identifier) => sharedWorkspaceReport(identifier)))
-    }
-    if (!requests.length) return { handled: false, matched: false }
-    return mergePullResults(filePath, await Promise.all(requests))
-  }
 
   /** Wait up to `timeout` ms for a diagnostics push for `filePath` */
   function waitForPush(filePath: string, timeout: number): Promise<boolean> {
