@@ -30,77 +30,18 @@
  * the plugin's live streams/sockets), then unregisters, then drops the mount.
  */
 import { Hono } from 'hono'
-import type { Env, MiddlewareHandler, Schema } from 'hono'
+import type { Env, Schema } from 'hono'
 import { createDebouncer } from '../../lib/debounce'
-import type { BackendSubsystem, SubsystemRegistry } from '../ext/subsystem-contrib'
-import type { CapabilityRegistry } from '../ext/capability-registry'
-import type { WsFrameRegistry } from '../ext/ws-frame-registry'
-import type { ResourceProviderRegistry } from '../agent-core/resource-refs/provider'
+import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import type { SearchProviderRegistry } from '../agent-core/search/provider'
-import type { ContextProviderRegistry } from '../context-fabric/registry'
-import type { TextInputSurfaceRegistry } from '../suggest/surface-registry'
 import type { PluginRouteScope } from '@localixai/plugin-sdk/backend'
-import type { PluginConditions } from '../notifications/conditions/plugins'
-import { createPluginUiActionTable, type PluginUiActionCall } from './backend-host-ui-actions'
+import { createPluginUiActionTable } from './backend-host-ui-actions'
 
-export interface PluginBackendHostDeps {
-  /** Thunk over `loadPluginBackends` — the desired (enabled) set, freshly loaded. */
-  loadBackends: () => Promise<
-    Array<{
-      pluginName: string
-      projectId?: string
-      backend: BackendSubsystem
-      /** Identity of the code it came from; a changed revision re-wires the plugin. */
-      revision?: string
-    }>
-  >
-  subsystemRegistry: SubsystemRegistry
-  capabilityRegistry: CapabilityRegistry
-  wsFrameRegistry: WsFrameRegistry
-  resourceRefsRegistry: ResourceProviderRegistry
-  contextProviderRegistry: ContextProviderRegistry
-  /** Plugin text fields with ghost-text completion, side by side (absent in a leaner host). */
-  textInputSurfaceRegistry?: TextInputSurfaceRegistry
-  /** Called after a reconcile settles (state actually changed on toggle paths) —
-   *  bootstrap publishes the `resources.changed` stream event through it, so the UI
-   *  never refetches a state whose routes are still half-wired. */
-  onSettled?: () => void
-  /**
-   * WHERE a plugin route call is happening — resolved per request, never captured at load.
-   *
-   * A backend is wired ONCE per plugin (see the `wired.has(pluginName)` guard below), so the cwd
-   * it was loaded with is whichever project happened to come first. A plugin that keeps state in
-   * the workspace needs the CURRENT one, which only the request can say. Absent in a leaner host:
-   * the plugin app then receives no environment and falls back to whatever it captured.
-   */
-  resolveScope?: (input: {
-    userId: string
-    request: Request
-  }) => Promise<PluginRouteScope> | PluginRouteScope
-  /** Where a rejected backend or a failed reconcile becomes a standing Event Center row. */
-  conditions?: Pick<PluginConditions, 'backendProblems' | 'reconciled'>
-  logger?: {
-    info?: (msg: string) => void
-    warn: (msg: string, meta?: unknown) => void
-  }
-}
+import type { PluginBackendHostDeps, PluginBackendHost } from './backend-host-contracts'
+import { planPluginBackends } from './backend-host-plan'
 
-export interface PluginBackendHost {
-  /** The stable route dispatcher — mount ONCE where the static subsystem
-   *  `app.route()` loop used to sit (before the `/rpc` chat catch-all). */
-  middleware(): MiddlewareHandler
-  /** Debounced, serialized reconcile — the `onChanged` hook for plugin toggles. */
-  refresh(): void
-  /** Recompute desired vs wired and converge. Exposed for boot + tests. */
-  reconcile(): Promise<void>
-  /** The search registry is composed AFTER boot's first reconcile (boot/search.ts);
-   *  setting it registers the already-wired subsystems' search providers. */
-  setSearchRegistry(registry: SearchProviderRegistry): void
-  /** Invoke one operation owned by an enabled plugin's sandboxed UI. */
-  invokeUiAction(input: PluginUiActionCall): Promise<unknown>
-  /** Currently wired plugin names (diagnostics/tests). */
-  wired(): string[]
-}
+export type { PluginBackendHostDeps, PluginBackendHost } from './backend-host-contracts'
+export { pluginBackendIdentityProblems } from './backend-host-plan'
 
 const REFRESH_DEBOUNCE_MS = 300
 
@@ -108,34 +49,6 @@ interface WiredBackend {
   backend: BackendSubsystem
   /** The pre-built delegate app for the route mount (absent when no routeMount). */
   wrapper?: Hono
-}
-
-/**
- * Process-global registry keys contributed by a plugin belong to its manifest
- * namespace. Public/model-facing names (tools, routes and resource URIs) keep
- * their own contracts; these internal routing keys must never be ambiguous.
- */
-export function pluginBackendIdentityProblems(
-  pluginName: string,
-  backend: BackendSubsystem,
-): string[] {
-  const namespace = `${pluginName}:`
-  const problems: string[] = []
-  const requireOwned = (surface: string, identity: string) => {
-    if (identity.startsWith(namespace) && identity.length > namespace.length) return
-    problems.push(`${surface} identity "${identity}" must be namespaced by owner "${namespace}"`)
-  }
-
-  requireOwned('backend subsystem', backend.id)
-  if (backend.searchProvider) requireOwned('search provider', backend.searchProvider.id)
-  for (const contribution of backend.contextProviders ?? []) {
-    requireOwned('context provider', contribution.provider.id)
-  }
-  for (const contribution of backend.wsFrames ?? []) {
-    requireOwned('websocket subscribe command', contribution.subscribeCommand)
-    requireOwned('websocket unsubscribe command', contribution.unsubscribeCommand)
-  }
-  return problems
 }
 
 export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBackendHost {
@@ -272,51 +185,7 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
     // instance kept, so live streams/services are never churned by an unrelated
     // toggle.
     const desired = await deps.loadBackends()
-    const desiredByName = new Map<string, BackendSubsystem[]>()
-    const backendOwners = new Map<string, string>()
-    const nextUiActions = createPluginUiActionTable()
-    const processScopeByPlugin = new Map<string, string>()
-    const desiredRevisions = new Map<string, Set<string>>()
-    // Why each plugin's backend was refused this pass — told to the person, not only the log.
-    const refused = new Map<string, string[]>()
-    for (const { pluginName, projectId = '', backend, revision } of desired) {
-      const problems = refused.get(pluginName) ?? []
-      refused.set(pluginName, problems)
-      const identityProblems = pluginBackendIdentityProblems(pluginName, backend)
-      if (identityProblems.length > 0) {
-        deps.logger?.warn(`plugin backend rejected: ${pluginName}/${backend.id}`, {
-          problems: identityProblems,
-        })
-        problems.push(...identityProblems)
-        continue
-      }
-      nextUiActions.add(pluginName, projectId, backend)
-
-      // Providers/routes are process-global and keep the long-standing first
-      // discovered scope. UI actions are scoped above and therefore do not lose
-      // a project-local override with the same plugin name.
-      const processScope = processScopeByPlugin.get(pluginName)
-      if (processScope !== undefined && processScope !== projectId) continue
-      processScopeByPlugin.set(pluginName, projectId)
-      const existingOwner = backendOwners.get(backend.id)
-      if (existingOwner) {
-        deps.logger?.warn(`duplicate plugin backend id "${backend.id}" rejected`, {
-          owner: existingOwner,
-          duplicateOwner: pluginName,
-        })
-        problems.push(`backend id "${backend.id}" is already used by "${existingOwner}"`)
-        continue
-      }
-      backendOwners.set(backend.id, pluginName)
-      const list = desiredByName.get(pluginName) ?? []
-      list.push(backend)
-      desiredByName.set(pluginName, list)
-      const revisions = desiredRevisions.get(pluginName) ?? new Set<string>()
-      if (revision) revisions.add(revision)
-      desiredRevisions.set(pluginName, revisions)
-    }
-    const revisionOf = (pluginName: string) =>
-      [...(desiredRevisions.get(pluginName) ?? [])].sort().join('\n')
+    const { desiredByName, nextUiActions, refused, revisionOf } = planPluginBackends(desired, deps)
 
     // Deleting the CURRENT key mid-iteration is well-defined for a Map, and the awaits
     // below cannot interleave another writer (reconciles are serialized on `lifecycle`).
