@@ -3,7 +3,6 @@ import { toast } from '@/shared/lib/notify'
 import { backendClient } from '@/shared/api/client'
 import { eventSocket } from '@/shared/api/eventSocket'
 import { useFileConnectionRecovery } from './useFileConnectionRecovery'
-import { isRecoverableReadError } from '@/shared/api/readRecovery'
 import { readyStateFor, type FileLoadState } from './fileLoadState'
 export type { FileLoadState } from './fileLoadState'
 import { inspector } from '@/shared/lib/inspectorBus'
@@ -37,20 +36,16 @@ import { externalLineChanges } from '@/shared/ui/code-editor/externalChanges'
 import type { DirtyChange } from '@/shared/ui/code-editor/dirtyDiffGutter'
 import { fileTransferReadyKey, workItemTransferReady } from '@/shared/lib/workItemTransferReady'
 
+import type { FileConflict, FormatOnSaveRunner } from './fileEditorContracts'
+export type { FileConflict, FormatOnSaveRunner } from './fileEditorContracts'
+import { useFileEditorLsp } from './useFileEditorLsp'
+import { useFileEditorLoad } from './useFileEditorLoad'
+
 /** Namespace for every condition this editor publishes about a file. */
 const PROBLEM_SCOPE = 'editor'
 
 /** Quiet time before a buffer edit is sent to the language server (see `flushLspSync`). */
-export const LSP_SYNC_DELAY_MS = 40
-
-/** The file diverged on disk while the editor held unsaved edits — captured so the
- *  reconciliation banner can Compare / Overwrite / Reload against this exact snapshot. */
-export interface FileConflict {
-  /** Current on-disk content (what an external writer left). */
-  diskContent: string
-  /** Its concurrency token — the hash an Overwrite must echo back to win the save. */
-  diskHash: string
-}
+export { LSP_SYNC_DELAY_MS } from './useFileEditorLsp'
 
 /**
  * The inspector file panel's load + edit-buffer state machine, extracted from
@@ -62,15 +57,6 @@ export interface FileConflict {
  * clean buffer, surface a Compare/Overwrite/Reload banner for a dirty one).
  * The buffer/editPath it returns feed the comment layer.
  */
-/**
- * Runs the LSP formatter on `text` (the buffer being saved) and resolves with the
- * formatted text, or `null` when the language has no formatting provider, the
- * request errors, or the edits were computed for other text. Provided by FileTab
- * (where `formatSource` + the setting are in scope) via a ref so `save()` reads
- * the live value without the hook needing the LSP layer as an argument.
- */
-export type FormatOnSaveRunner = (text: string) => Promise<string | null>
-
 export function useFileEditor(
   sessionId: string | null,
   path: string,
@@ -188,38 +174,15 @@ export function useFileEditor(
     else clearFileDraft(sessionId, editPath)
   }, [sessionId, editPath, buffer, dirty, baseContent, baseHash])
 
-  // Buffer → language-server sync (didChange). Diagnostics return on the firehose, so
-  // this is fire-and-forget. `editPath` is only set for an open file.
-  //
-  // The delay is the first link of the "typed an error → red squiggle" chain, and every
-  // later link (the server's own check delay, tsserver, the publish debounce) waits for
-  // it, so it is short: long enough to fold a burst of keystrokes into one sync, not a
-  // perceptible pause. The server sends only the delta (`lsp-incremental.ts`), so a sync
-  // per short pause is cheap. A request that needs the document NOW (completion, hover,
-  // a quick fix) does not wait for it at all — it flushes first (`flushLspSync`).
-  const flushLspSync = useCallback(() => {
-    const text = bufferRef.current
-    if (!workItemVisibleRef.current || !sessionId || !editPath) return
-    if (text === lastSyncedRef.current) return
-    lastSyncedRef.current = text
-    void backendClient.lspChange(sessionId, editPath, text)
-  }, [sessionId, editPath])
-  useEffect(() => {
-    if (!workItemVisible || !sessionId || !editPath || buffer === lastSyncedRef.current) return
-    const id = setTimeout(flushLspSync, LSP_SYNC_DELAY_MS)
-    return () => clearTimeout(id)
-  }, [workItemVisible, sessionId, editPath, buffer, flushLspSync])
-
-  // The server-side LSP document follows GRID visibility, not mount lifetime: warm
-  // editors stay mounted under display:none, but their language-server resources do not.
-  // Re-show opens the latest buffer (including an unsaved draft) without re-reading disk.
-  useEffect(() => {
-    if (!workItemVisible || !sessionId || !editPath) return
-    void backendClient.lspOpen(sessionId, editPath, bufferRef.current)
-    return () => {
-      void backendClient.lspClose(sessionId, editPath)
-    }
-  }, [workItemVisible, sessionId, editPath])
+  const flushLspSync = useFileEditorLsp({
+    sessionId,
+    editPath,
+    workItemVisible,
+    workItemVisibleRef,
+    buffer,
+    bufferRef,
+    lastSyncedRef,
+  })
 
   // Adopt fresh on-disk content into the buffer + base snapshot (silent reload of a
   // clean buffer, or the explicit "discard my edits" reconcile action). Re-syncs the
@@ -639,94 +602,23 @@ export function useFileEditor(
     retry,
     reconcileFromDisk,
   )
-  useEffect(() => {
-    if (!workItemVisible || !sessionId || loadedKeyRef.current === loadKey) return
-    let cancelled = false
-    const loadController = new AbortController()
-    const cached = reloadNonce === 0 ? initialCached : null
-    // Full read (untruncated + hash) so editable files can open straight in the editor.
-    // Retiring the tab aborts the transport too: a boolean guard alone drops the
-    // response but still makes the API read, transfer and parse a file nobody will use.
-    backendClient
-      .getFileContent(sessionId, path, {
-        full: true,
-        ...(cached?.hash ? { knownHash: cached.hash } : {}),
-        signal: loadController.signal,
-        onRecovery: () => {
-          if (!cancelled && !cached) setState({ status: 'loading', reconnecting: true })
-        },
-      })
-      .then((res) => {
-        if (cancelled) return
-        loadedKeyRef.current = loadKey
-        failedConnectionRef.current = false
-        if (res.unchanged) return
-        fileContentCache.put(sessionId, path, res)
-        if (cached) {
-          // A cache hit can predate the file growing past the full-read safety cap.
-          // Such a response has no concurrency hash: replace a clean snapshot with
-          // the truthful read-only/truncated state, but never erase live typing.
-          if (res.hash == null) {
-            if (bufferRef.current !== baseContentRef.current) {
-              // No `location`: the report's subject already carries the file, and reading
-              // `editPath` here would pull it into this effect's dependencies.
-              setEditError({
-                message: 'This file changed on disk and grew past the size this editor reconciles.',
-                hint: 'Copy your unsaved edits elsewhere before reloading — they cannot be merged.',
-              })
-            } else {
-              installResponse(res, false)
-            }
-            return
-          }
-          const action = classifyDiskChange(
-            res.hash,
-            baseHashRef.current,
-            bufferRef.current !== baseContentRef.current,
-          )
-          if (action === 'conflict') {
-            setConflict({ diskContent: res.content, diskHash: res.hash! })
-          } else if (action === 'adopt') {
-            installResponse(res, false)
-          }
-        } else {
-          // Seed the editor + restore a surviving unsaved draft on a cold load.
-          installResponse(res, true)
-        }
-      })
-      .catch((err) => {
-        // A cache hit is still useful while offline. Keep it visible and retry on
-        // the next remount instead of replacing good text with a transient error.
-        if (!cancelled && !loadController.signal.aborted && !cached) {
-          failedConnectionRef.current = isRecoverableReadError(err)
-          if (failedConnectionRef.current) {
-            setState({ status: 'loading', reconnecting: true })
-            return
-          }
-          setState({
-            status: 'error',
-            // The backend answers `Cannot read /very/long/absolute/path` for every failure mode
-            // it cannot tell apart — deleted, unreadable, or the environment gone. That path wall
-            // was the whole sentence a person got; it is now the detail behind a readable one.
-            message: 'This file could not be read.',
-            detail: errorMessage(err, '') || undefined,
-          })
-        }
-      })
-    return () => {
-      cancelled = true
-      loadController.abort()
-    }
-  }, [
+  useFileEditorLoad({
     workItemVisible,
     sessionId,
     path,
     reloadNonce,
     loadKey,
+    loadedKeyRef,
     initialCached,
     installResponse,
     failedConnectionRef,
-  ])
+    bufferRef,
+    baseContentRef,
+    baseHashRef,
+    setState,
+    setConflict,
+    setEditError,
+  })
 
   // The tab's ONE standing condition. A file that failed to load has no editor to fail a save in,
   // so the two can never both be true — and one owner is what the centre requires: a second hook

@@ -340,6 +340,34 @@ describe('useFileEditor save ownership', () => {
     }
   })
 
+  test('flushes same-tick typing once and suppresses LSP sync while hidden', async () => {
+    const backend = mockEditorBackend()
+    const editor = await mountEditor()
+    try {
+      await editor.act(async () => {
+        editor.current.setBuffer('first edit')
+        editor.current.flushLspSync()
+        editor.current.flushLspSync()
+        editor.current.setBuffer('second edit')
+        editor.current.flushLspSync()
+      })
+      expect(backend.change.mock.calls).toEqual([
+        ['session-a', '/workspace/shared.ts', 'first edit'],
+        ['session-a', '/workspace/shared.ts', 'second edit'],
+      ])
+      await editor.setVisible(false)
+      await editor.act(async () => {
+        editor.current.setBuffer('hidden edit')
+        editor.current.flushLspSync()
+      })
+      expect(backend.change).toHaveBeenCalledTimes(2)
+    } finally {
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      backend.restore()
+    }
+  })
+
   test('joins duplicate saves and does not clobber edits typed during the write', async () => {
     setSaveCleanupPrefs({ trimTrailingWhitespace: false, ensureFinalNewline: false })
     const backend = mockEditorBackend()
