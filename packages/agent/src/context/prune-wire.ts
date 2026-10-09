@@ -27,9 +27,10 @@ import {
   PAGED_READ_RESULT_TOOLS,
   READ_RESULT_TOOLS,
 } from './tool-classes'
-import { normalizePathKey } from './path-key'
 import type { PruneWireOptions } from './prune-wire-options'
 import { estimateWireMessageTokens } from './tokens'
+import { liveReadCallIds } from './prune-wire-live-reads'
+import { boundFreshMutationArgs } from './prune-wire-fresh-mutations'
 
 export type { PruneWireOptions } from './prune-wire-options'
 
@@ -42,7 +43,6 @@ const boundToolResultCache = new WeakMap<
   ToolResult,
   { withRecovery?: ToolResult; withoutRecovery?: ToolResult }
 >()
-const liveReadByteLengthCache = new WeakMap<ToolResult, number>()
 type LiveReadMemo = {
   minChars: number
   maxLiveReads: number
@@ -263,86 +263,6 @@ function boundToolResults(messages: Message[], recoveryToolAvailable: boolean): 
   return changed ? out : messages
 }
 
-/**
- * Bound a fresh, successfully-applied mutation's recoverable payload before the
- * recent-tail and pressure gates can protect it. A single `write`/`edit` call can
- * otherwise exceed the next request's whole context by itself.
- *
- * Only fields that the durable tool item can replay through `tool_output` are
- * eligible. Failed and still-pending calls are deliberately untouched: their input
- * may be the only copy of a change that never reached disk. When several moderate
- * fields jointly exceed the budget, elide the largest first until the serialized
- * arguments fit; this preserves as much verbatim context as possible.
- */
-function boundFreshMutationArgs(
-  messages: Message[],
-  successfulToolCallIds: ReadonlySet<string>,
-  recoveryToolAvailable: boolean,
-): Message[] {
-  let changed = false
-  const out = messages.map((message) => {
-    if (message.role !== 'assistant') return message
-    let messageChanged = false
-    const content = message.content.map((part) => {
-      const tc = part as ToolCall
-      if (
-        tc.type !== 'tool_call' ||
-        !successfulToolCallIds.has(tc.id) ||
-        !ALL_MUTATE_TOOLS.has(tc.name) ||
-        !tc.arguments ||
-        typeof tc.arguments !== 'object'
-      ) {
-        return part
-      }
-      const args = tc.arguments as Record<string, unknown>
-      if (textEncoderByteLength(JSON.stringify(args)) <= DEFAULT_MAX_BYTES) return part
-
-      const candidates: Array<{ field: string; text: string; bytes: number; order: number }> = []
-      let order = 0
-      for (const field of ['content', 'patch', 'old_string', 'new_string'] as const) {
-        const value = args[field]
-        if (typeof value === 'string' && !carriesMarker(value, ELISION_MARKER)) {
-          candidates.push({
-            field,
-            text: value,
-            bytes: textEncoderByteLength(value),
-            order: order++,
-          })
-        }
-      }
-      if (Array.isArray(args.edits)) {
-        const text = JSON.stringify(args.edits)
-        if (!carriesMarker(text, ELISION_MARKER)) {
-          candidates.push({ field: 'edits', text, bytes: textEncoderByteLength(text), order })
-        }
-      }
-      candidates.sort((a, b) => b.bytes - a.bytes || a.order - b.order)
-
-      let next: Record<string, unknown> | undefined
-      for (const candidate of candidates) {
-        next = {
-          ...(next ?? args),
-          [candidate.field]: elidedPointer(
-            candidate.field,
-            candidate.text.length,
-            tc.id,
-            candidate.text,
-            recoveryToolAvailable,
-          ),
-        }
-        if (textEncoderByteLength(JSON.stringify(next)) <= DEFAULT_MAX_BYTES) break
-      }
-      if (!next) return part
-      messageChanged = true
-      return { ...tc, arguments: next }
-    })
-    if (!messageChanged) return message
-    changed = true
-    return { ...message, content }
-  })
-  return changed ? out : messages
-}
-
 // Bound an OLD non-recoverable output (≥ CRUSH_MIN_CHARS). Prefer a STRUCTURAL crush
 // (JSON array / log) — it keeps far more signal per kept char and is reversible — when
 // it shrinks the output meaningfully. Only the >4500-char giants additionally fall back
@@ -475,124 +395,6 @@ export function collectElidedArgToolCallIds(messages: readonly Message[]): strin
  * is the same idea at the wire granularity: a `path`/`file_path` argument, or the
  * file headers of an `apply_patch` body.
  */
-function wireTargets(name: string, args: unknown): string[] {
-  if (!args || typeof args !== 'object') return []
-  const a = args as Record<string, unknown>
-  for (const field of ['path', 'file_path'] as const) {
-    const v = a[field]
-    if (typeof v === 'string' && v.trim()) return [normalizePathKey(v)]
-  }
-  const patch = a.patch
-  if (typeof patch === 'string') {
-    const out: string[] = []
-    for (const m of patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm))
-      out.push(normalizePathKey(m[1].trim()))
-    return out
-  }
-  return []
-}
-
-/**
- * `tool_call_id`s of read results that are the model's ONLY live copy of a file:
- * the last read of that path, with no later read that re-delivered its bytes and no
- * later mutation of it. Eliding those is what makes the agent either re-read the
- * file (a wasted turn) or — measured on the recorded corpus — patch it from memory
- * and fail with "context not found": of the reads the wire layer elided under a
- * failing patch, all but one were still the live copy.
- *
- * A superseded read stays elidable: its bytes are stale, and the newer observation
- * (or `apply_patch`'s post-edit echo) already carries the current state. A read whose
- * result is BELOW `minChars` never supersedes — that is `read`'s "unchanged since your
- * earlier read" stub, which delivers no bytes of its own.
- *
- * Bounded: at most `maxLiveReads` of them, most recent first, and only while their
- * cumulative UTF-8 size fits `budgetBytes` — so a session that reads fifty files cannot
- * defeat pruning, and the live working set never outgrows the recent window.
- */
-function liveReadCallIds(
-  messages: readonly Message[],
-  minChars: number,
-  maxLiveReads: number,
-  budgetBytes: number,
-  fates?: Map<string, ReadFate>,
-): Set<string> {
-  const resultContent = new Map<string, string>()
-  const resultOk = new Map<string, boolean>()
-  const resultObject = new Map<string, ToolResult>()
-  for (const m of messages) {
-    if (m.role !== 'tool') continue
-    for (const r of m.results) {
-      if (!r.toolCallId || typeof r.content !== 'string') continue
-      resultContent.set(r.toolCallId, r.content)
-      resultOk.set(r.toolCallId, r.isError !== true)
-      resultObject.set(r.toolCallId, r)
-    }
-  }
-
-  // Ordered scan of every tool call, so "superseded" means "a later observation of
-  // the same key delivered bytes or changed the file".
-  const reads: Array<{ id: string; keys: string[]; order: number; chars: number; bytes: number }> =
-    []
-  const supersededAfter = new Map<string, number>() // key → order of the last superseding call
-  const mutatedAfter = new Map<string, number>() // key → order of the last call that CHANGED the file
-  let order = 0
-  for (const m of messages) {
-    if (m.role !== 'assistant') continue
-    for (const part of m.content) {
-      const tc = part as ToolCall
-      if (tc.type !== 'tool_call') continue
-      order += 1
-      const keys = wireTargets(tc.name, tc.arguments)
-      if (keys.length === 0) continue
-      if (ALL_MUTATE_TOOLS.has(tc.name)) {
-        // A mutation whose result ERRORED never reached disk — the earlier read is still
-        // the live copy, and must not be marked stale ("the file has CHANGED") or lose
-        // its live-read protection. Same rule as `failedToolCallIds` for mutate args.
-        if (resultOk.get(tc.id) === false) continue
-        for (const k of keys) {
-          supersededAfter.set(k, order)
-          mutatedAfter.set(k, order)
-        }
-      } else if (READ_RESULT_TOOLS.has(tc.name) && resultOk.get(tc.id) === true) {
-        const content = resultContent.get(tc.id) ?? ''
-        const chars = content.length
-        const result = resultObject.get(tc.id)!
-        let bytes = liveReadByteLengthCache.get(result)
-        if (bytes === undefined) {
-          bytes = textEncoderByteLength(content)
-          liveReadByteLengthCache.set(result, bytes)
-        }
-        reads.push({ id: tc.id, keys, order, chars, bytes })
-        if (chars > minChars) for (const k of keys) supersededAfter.set(k, order)
-      }
-    }
-  }
-
-  if (fates) {
-    for (const r of reads) {
-      const mutated = r.keys.some((k) => (mutatedAfter.get(k) ?? 0) > r.order)
-      const reread = r.keys.some((k) => (supersededAfter.get(k) ?? 0) > r.order)
-      fates.set(r.id, mutated ? 'stale' : reread ? 'refreshed' : 'live')
-    }
-  }
-
-  const live = reads.filter((r) => {
-    if (r.chars <= minChars || r.bytes > budgetBytes) return false
-    return r.keys.every((k) => (supersededAfter.get(k) ?? 0) <= r.order)
-  })
-  live.sort((a, b) => b.order - a.order)
-
-  const kept = new Set<string>()
-  let spent = 0
-  for (const r of live) {
-    if (kept.size >= maxLiveReads) break
-    if (spent + r.bytes > budgetBytes) continue
-    spent += r.bytes
-    kept.add(r.id)
-  }
-  return kept
-}
-
 /**
  * The live-read budget's OWN default — independent of every other option. One large
  * file's worth of protected reads: the same number, and the same shape, as the
