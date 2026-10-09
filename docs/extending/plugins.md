@@ -189,43 +189,10 @@ the user installed, not an agent wait
 | Native workbench UI | `ui/register.tsx`, built into an artifact ([guide](plugin-ui.md))  | Bundled, or enabled by the user  |
 | Keyboard ownership  | `@localixai/plugin-sdk/ui/focus` claims the keyboard for a surface | Host and plugins share one stack |
 
-A view opens as a work-item tab in the editor grid, reachable from its rail button and from the
-command palette. There is no second placement; a legacy `surface` key is dropped, not rejected. View
-HTML runs in a sandboxed iframe. The host injects `acquireLocalixApi()` before the plugin HTML
-executes; acquiring it returns one frozen client over the versioned message bridge:
-
-```html
-<script type="module">
-  const localix = acquireLocalixApi()
-  localix.onEvent((event) => console.log(event.name, event.data))
-  localix.ready()
-
-  const context = await localix.invoke('getContext')
-  const state = (await localix.getState()) || {}
-  await localix.setState({ ...state, lastSession: context.sessionId })
-  const dashboard = await localix.callBackend('loadDashboard', { page: 1 })
-</script>
-```
-
-`ready()` explicitly opts into live theme and safe session-lifecycle messages. Theme variables are
-applied automatically. File changes are not among them: a sandboxed view never receives file paths
-([native UI can subscribe](plugin-ui.md#files-that-change-under-a-chat)). `invoke()` correlates
-results, propagates host errors, bounds pending requests, and times out. Built-in actions are
-`ping`, `sendPrompt`, `getContext`, `getViewState`, `setViewState`, `callBackend`, and
-`publishMessageContext`; a capability unavailable on the current surface rejects instead of being
-silently ignored.
-
-The host injects the workbench's visual-preference backstop into every view: reduced motion makes
-CSS animation, transitions and smooth scrolling instant, and increased contrast, reduced
-transparency and forced colors cross the iframe too. For JavaScript animation, read and subscribe to
-the iframe's own `matchMedia('(prefers-reduced-motion: reduce)')`; no bridge call is needed.
-
-`callBackend(name, payload)` is the installed-UI data path. Return the handler under the backend's
-`uiActions` from `register()` — the module is the only source for what a plugin contributes; there
-is no manifest mirror of it. The handler receives a host-bound
-`{ userId, projectId, sessionId?, viewId, cwd }` context. The iframe cannot select another plugin,
-forge that scope, or bypass the bridge with network access. Requests/results must be JSON and are
-size- and time-bounded by the host.
+A sandboxed HTML view opens as a work-item tab from its rail button or the command palette. It uses
+`acquireLocalixApi()` for theme events, its owning chat, scratch state, context publication, and
+same-plugin backend actions. See [Build a sandboxed HTML view](sandboxed-views.md) for the bridge
+example, scope rules, CSP, and request/state limits. Native workbench UI uses its own SDK path.
 
 ## Configuration
 
@@ -294,9 +261,10 @@ promotes compatibility and hygiene warnings to errors for review.
 | `disableModelInvocation`          | Records a user-only command policy.                              | Plugin commands are not model-listed today, so the flag changes nothing. |
 
 Each arg accepts `name`, `type`, `description`, `placeholder`, `required`, static `options`, an
-`optionsScript`, and an optional `{ arg, equals }` condition. A dynamic option script runs through
-Bun in the session working directory and must stay inside the enabled plugin. Use either static
-`options` or `optionsScript` for one arg.
+`optionsScript`, and an optional `{ arg, equals }` condition. Use either static `options` or
+`optionsScript` for one arg. See
+[command authoring](../features/hooks-and-commands.md#plugin-command-example-and-options) for
+parsing, preprocessing, the example manifest fragment, and dynamic-script trust boundaries.
 
 ### Native agent contributions
 

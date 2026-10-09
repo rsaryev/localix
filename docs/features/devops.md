@@ -44,6 +44,10 @@ The UI contributes one restorable DevOps Workspace with **Overview**, **Containe
 **Kubernetes** areas. Docker and Kubernetes resource tabs are transient because a daemon or cluster
 object may disappear before the next application start.
 
+The workspace and container/pod tabs belong to the root chat's display workspace. Docker image,
+volume, and network detail tabs are global: they inspect daemon resources without a chat-bound
+terminal or composer action. Tab placement does not isolate the selected daemon or cluster.
+
 Docker selects the Engine API when it can negotiate a supported socket, pipe, or plain HTTP target.
 It falls back to the `docker` CLI for SSH, HTTPS, incompatible, or unreachable API targets. Backend
 selection is lazy, and a subsequent operation can retry Engine API negotiation after 30 seconds on
@@ -80,6 +84,12 @@ the workbench does not change kubeconfig's current context.
   are in-memory lifecycles rather than durable configuration.
 - Linking a Docker or Kubernetes resource adds bounded context. It does not request a review,
   diagnosis, or modification.
+- Manual workbench actions call provider routes and use their own UI confirmations. Agent permission
+  modes govern agent tool calls; setting a chat to Plan does not make these manual controls
+  read-only.
+- Compose restart/stop addresses members independently, so some can succeed while others fail.
+  Mutation handlers also refresh inventory after the action; a refresh error can appear after a
+  successful mutation. Inspect current resource state before retrying instead of assuming rollback.
 
 ## Related guides
 
@@ -100,3 +110,5 @@ the workbench does not change kubeconfig's current context.
 - [Provider UI contributions](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/ui/register.tsx)
   ·
   [plugins/devops/kubernetes/ui/register.tsx](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/register.tsx)
+- [Docker action outcomes](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/ui/model/useDockerSidebarActions.ts)
+- [Kubernetes action outcomes](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/model/useKubernetesSidebarActions.ts)

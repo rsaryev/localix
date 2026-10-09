@@ -39,8 +39,8 @@ sideways trackpad swipe), while line numbers stay in place. The current file and
 pinned at the top while you scroll; `j`/`k` (or F7/Shift+F7) step between changes. Select a line
 number to open that repository's file.
 
-Large diffs open at the same speed as small ones: only the rows on screen are rendered, and syntax
-colours are computed as rows scroll into view. In a repository-wide diff, a file longer than 1,500
+Large diffs render only visible rows and compute syntax colours as rows scroll into view. Reading
+and parsing the patch still depend on its size. In a repository-wide diff, a file longer than 1,500
 lines starts collapsed behind **Show diff**, and a binary file is listed without content. A diff
 larger than the read cap (8 MB) opens with a **Diff truncated** notice and the complete files that
 fit, instead of opening empty or failing. A single line longer than 10,000 characters shows its
@@ -53,9 +53,10 @@ behavior.
 
 ## How it works
 
-The API resolves the working directory of the session the request names. An optional repository root
-must match a repository found beneath that directory, so a request cannot redirect an operation to
-an unrelated server path.
+The API resolves the working directory of the session the request names. If that directory is inside
+a repository, operations run at its nearest repository root and can affect files outside the session
+subfolder. An optional repository root must match a repository found beneath that directory, so a
+request cannot redirect an operation to an unrelated server path.
 
 Repository discovery scans breadth-first to four directory levels and returns at most 200
 repositories. It skips hidden, dependency, build, coverage, target, and vendor directories. A
@@ -78,11 +79,29 @@ repository.
 
 Mutations return a freshly read repository status. Local Git commands run as argument arrays without
 a shell, with terminal prompting disabled, a 30-second deadline, and an 8 MB output ceiling. Fetch,
-pull, and push are not subject to the local-command deadline.
+pull, and push use a ten-minute deadline instead. HTTP transfers also abort when their speed stays
+below 1,000 bytes per second for 60 seconds. This low-speed guard does not cover SSH transfers.
 
 Commits and amends made through the panel append `Co-Authored-By: Localix <noreply@localix.ai>`. The
 service also writes best-effort provenance to `refs/notes/localix`; commits made from a terminal do
 not use this annotation path.
+
+### Staging and discard boundaries
+
+A file or folder **Discard** restores tracked working files from the index, preserving staged
+content, and removes untracked files within the selected paths. If you staged version A and then
+edited it to B, Discard restores A. Ignored files remain. Block discard reverse-applies only the
+selected changes, subject to the diff-drift guard.
+
+**Nuke** with an existing `HEAD` resets tracked staged and unstaged changes to that commit. Its
+optional untracked cleanup uses `git clean -fd`, preserving ignored files. Before the first commit,
+it clears the index instead of restoring tracked files from a nonexistent `HEAD`; file removal then
+depends on the untracked option.
+
+The service serializes its own writes per working directory and briefly retries index-lock
+contention. Terminal commands and other processes remain independent. Multi-step operations are not
+transactions: if Commit stages everything and then signing or a hook fails, those files stay staged.
+A failed later step does not undo earlier successful Git commands.
 
 ## Configuration
 
@@ -99,6 +118,8 @@ not use this annotation path.
   not provide another version-control implementation.
 - Ahead and behind counts come from local tracking refs. They can remain stale until Fetch
   completes.
+- A rejected Push may offer **Force push**, implemented as `--force-with-lease`. The lease compares
+  the remote against local tracking refs; review and fetch before rewriting published history.
 - Pull uses `git pull --ff-only`. Divergent history is refused instead of creating a merge commit or
   starting a rebase.
 - The panel cannot answer Git credential, signing, SSH passphrase, hook, or editor prompts.

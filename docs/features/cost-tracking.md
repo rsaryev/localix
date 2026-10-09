@@ -14,15 +14,26 @@ session, auxiliary calls, or cross-session totals.
 | **Usage & Spend** workbench | Explore totals, trends, breakdowns, and a request log.       | Data comes from the local usage ledger.          |
 | Spend alert                 | Warn after session cost crosses a configured threshold.      | The client-side alert never stops a run.         |
 
+This guide describes the workbench's **Localix** tab. The **External** tab reads separate agent
+history; see [External agents](external-agents.md#statistics).
+
 The workbench supports 7-day, 30-day, 90-day, and all-time ranges. Its model, provider, agent, and
 session filters apply to summary cards, trends, breakdowns, and the paginated request log. Active
 filters are listed as chips under the controls, and each chip removes only its own filter.
 
+Ranges begin an exact number of 24-hour days before the panel opened, rather than at local midnight.
+That anchor stays fixed while the panel remains mounted. Seven-day trends use hourly buckets; the
+other ranges use daily buckets. Ledger timestamps and trend buckets use UTC.
+
+The Session filter includes that session's own rows, without its children's rows. The separate
+backend session-tree filter includes the root and descendants. The request log loads 50 rows at a
+time, newest first; changing filters resets it, and scrolling loads older pages.
+
 ### Spend per agent
 
-Every ledger row records which agent produced it, so a group chat's cost divides between its members
-even though they share one session and may share one model. Group by `Agent` for the breakdown, or
-filter by one agent to see everything it spent across every session it took part in.
+Recorded turns carry the producing agent when that attribution is available, so a group chat's cost
+can divide between members even when they share a session and model. Group by `Agent` for the
+breakdown, or filter by one agent to see everything it spent across every session it took part in.
 
 Background calls a session makes for itself, such as title generation, have no speaker and group
 under `No agent`. That bucket is shown rather than dropped, so the breakdown still adds up to the
@@ -56,7 +67,7 @@ Runtime estimates use the `cost` fields in the vendored model catalog. Its gener
 models.dev metadata, provider catalogs, and explicit corrections when the catalog is built.
 
 Localix does not fetch live prices for a run. Its OpenRouter metadata request refreshes release
-dates for catalog ordering; it does not replace prices or add models.
+dates and published reasoning levels; it does not replace prices or add models.
 
 ### Cost provenance
 
@@ -66,9 +77,10 @@ dates for catalog ordering; it does not replace prices or add models.
 | `estimated`    | Localix calculated USD from reported usage and catalog rates. | Used for current API-key requests with usage and pricing. |
 | `subscription` | Catalog-estimated API-equivalent value for an OAuth request.  | Not metered plan spend or provider billing telemetry.     |
 
-The provider connection store records credential type, not commercial plan type. Any estimated OAuth
-request is therefore classified as `subscription`, even when the provider's arrangement is not a
-flat subscription.
+The provider connection store records credential type, not commercial plan type. Estimated chat
+turns using OAuth are classified as `subscription`, even when the provider's arrangement is not a
+flat subscription. Current auxiliary writers receive usage without that credential-based
+classification and default to `estimated`; an OAuth session can therefore contain both sources.
 
 ### Persistence and rollups
 
@@ -80,11 +92,23 @@ flat subscription.
 | Auxiliary ledger row    | Title, completion, and prompt calls.               | High-frequency calls accumulate by route and kind.         |
 | Session usage snapshot  | Visible turns plus non-turn auxiliary ledger rows. | Turn ledger rows are excluded to avoid double-counting.    |
 
-Current auxiliary writers cover session titles, editor next-edit prediction, and inline text
-completion. Historical prompt-improvement spend remains in its retired kind bucket. Context
+Current auxiliary writers cover session titles, editor next-edit prediction, inline text completion,
+and model-based prompt hooks. Agent-based hook verifiers run in child sessions and record ordinary
+turns there. Historical prompt-improvement spend remains in its retired kind bucket. Context
 checkpoints make no model call, so they add no ledger row; spend recorded under the retired
 `compaction` kind folds into turns. Durable ledger writes publish a replacement
 `session_usage.updated` snapshot to connected clients.
+
+Repeated auxiliary calls accumulate in one row per session, kind, connection, and model. The request
+log and auxiliary counts therefore show recorded buckets, not one row per provider request. An
+accumulated row retains its first creation timestamp: later additions appear on that original date,
+and a date-range filter can omit new spend added to an older bucket. These aggregates are useful for
+session totals but do not provide exact request-by-request daily auxiliary spend.
+
+Boot reconciliation uses persisted assistant-message usage to repair ordinary turn rows. It does not
+replay model calls, recover missing auxiliary usage, or reprice history using today's catalog. When
+an older message lacks its own model or agent attribution, repair can fall back to the session's
+first participant; that historical attribution is approximate.
 
 Usage is not attributed to [Kanban](task-board.md) cards. A delegated child's rows carry the child's
 own `session_id`, so the workbench lists it as its own session; a query that bounds a session's work
@@ -137,9 +161,13 @@ whole multiple of its threshold after dismissal.
 - [Request pricing and cost-source classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run-accounting.ts)
 - [Turn aggregation and persistence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/event-handlers.ts)
 - [Auxiliary ledger writers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/usage-normalize.ts)
+- [Model-based hook accounting](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/cc-hook-evaluators.ts)
 - [Usage-kind contract](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/usage/usage-types.ts)
 - [Session rollup](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/usage/session-summary.ts)
 - [Usage queries and session-tree rollup](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/usage/repository.ts)
+- [Sliced startup reconciliation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/usage/reconcile-slices.ts)
+- [Usage range calculation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/usageRange.ts)
+- [Usage queries and paging lifecycle](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/useUsageStats.ts)
 - [Usage workbench](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/stats/ui/StatsPanel.tsx)
 - [Session timing status](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/StatusBar.tsx)
 - [Composer usage indicator](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/UsageIndicator.tsx)

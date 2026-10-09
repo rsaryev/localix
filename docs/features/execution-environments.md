@@ -34,19 +34,29 @@ operation that writes a remote value first.
 
 Local full-file writes use a temporary file and rename, so concurrent readers do not observe a
 partial result. Shell and search calls pass cancellation and configured timeouts to their child
-processes.
+processes. Foreground execution inherits the repaired login-shell environment with a non-interactive
+overlay and enabled plugins' `bin/` directories at the front of `PATH`.
+
+Interactive terminals and PTY background jobs use the terminal service on the API host. Language
+servers also run on that host; the execution adapter is not a general routing layer for every
+process Localix starts.
 
 ## Configuration
 
 | Variable            | Precedence | Behavior                                                                   |
 | ------------------- | ---------- | -------------------------------------------------------------------------- |
 | `LOCALIX_SHELL`     | First      | Uses this file path when it exists.                                        |
-| `LOCALIX_BASH_PATH` | Second     | Legacy fallback when `LOCALIX_SHELL` is unset.                             |
+| `LOCALIX_BASH_PATH` | Second     | Legacy fallback when `LOCALIX_SHELL` is unset or blank.                    |
 | `SHELL`             | Unix only  | Late fallback after Bash lookup; Windows still requires a Bash executable. |
 
 On Unix-like systems, Localix checks Bash on `PATH`, `/bin/bash`, and `/usr/bin/bash` before the
-`SHELL` fallback. On Windows, it checks Bash on `PATH` and standard Git for Windows install
-locations. It does not fall back to PowerShell or `cmd.exe`.
+`SHELL` fallback, then uses `sh` if none is found. On Windows, it checks Bash on `PATH`, Bash beside
+the Git executable found on `PATH`, and standard Git for Windows install locations. Automatic
+discovery rejects the WSL launcher. It does not fall back to PowerShell or `cmd.exe`.
+
+Overrides must name an existing file; the resolver does not verify that it is executable or Bash. A
+nonblank invalid `LOCALIX_SHELL` skips the legacy override and falls through to discovery. Shell
+resolution is cached for the API process, so changing these variables requires a restart.
 
 There is no supported setting, environment variable, API field, composer control, or slash command
 for choosing `ssh` or `docker`. `sshHost`, `sshPort`, and `containerName` are internal adapter
@@ -77,9 +87,11 @@ configuration fields.
 ## Source of truth
 
 - [Environment contract](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/environment.ts)
+- [Shell resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/environments/shell.ts)
+- [Terminal host ports](https://github.com/rsaryev/localix/blob/main/apps/api/src/bootstrap/terminal-ports.ts)
 - [Environment factory](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/environments/index.ts)
 - [Local adapter](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/environments/local.ts)
 - [Dormant SSH and Docker adapters](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/environments/remote.ts)
-- [Session creation default](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
+- [Session creation default](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-birth.ts)
 - [Public session schemas](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/contracts/session.ts)
 - [Session file-operation routing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/file-ops-context.ts)

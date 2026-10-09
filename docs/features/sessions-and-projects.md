@@ -158,9 +158,19 @@ for a normal queued turn.
 | Action          | Result                                                                                       |
 | --------------- | -------------------------------------------------------------------------------------------- |
 | Archive         | Sets an archive timestamp and hides the session from the default list.                       |
-| Export          | Serializes the active message path to Markdown in the client.                                |
+| Export          | Writes prose from the active message path to Markdown in the client.                         |
 | Redacted export | Replaces tool items and structured bindings with typed placeholders.                         |
 | Delete          | Stops active resources, removes the session and all descendants, and deletes their messages. |
+
+Export fetches the conversation before writing it, including messages not currently open in the
+sidebar. Standard export omits tool-only turns, reasoning, internal messages, system notices, and
+structured attachments. Redacted export keeps tool names/statuses and binding types as placeholders;
+it also omits reasoning. Both retain authored prose and code blocks, use generic **You** and
+**Assistant** headings, and omit participant identities and message timestamps. They are readable
+conversation copies rather than a complete backup or round-trip import format.
+
+[Conversation activity and history search](conversation-history.md#find-and-recover-earlier-messages)
+explains how the sidebar and agent recover stored text beyond the current model context.
 
 ## Configuration
 

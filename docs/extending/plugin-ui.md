@@ -32,7 +32,7 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 | Complete what is typed         | `usePluginTextInputCompletion` + `textInputCompletionSurfaces` | Surface id `<plugin>.<field>`; open tabs are added by the host.      |
 | Keep what the user creates     | `openJsonStore` from the frame's `backend/store.ts`            | Under `ctx.dataDir`; one change at a time per file.                  |
 | Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`         | Removed with the chat and every session beneath it.                  |
-| Give each chat its own tab     | The default work-item scope (`'session'`)                      | One tab per chat; it never moves; closed with the chat.              |
+| Keep tabs in their workspace   | The default work-item scope (`'session'`)                      | Scoped instances stay in their root workspace.                       |
 | Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`           | The only session a tab acts for; the SDK has no active session.      |
 | React to file changes          | `usePluginWorkspaceChanges` (`ui/runtime-hooks`)               | One chat, coalesced; poll only when source coverage is unavailable.  |
 | Use icons                      | Import from `lucide-react`                                     | Bundled per icon from the plugin kit.                                |
@@ -43,8 +43,6 @@ They open in the active conversation's Browser by default. Pass `true` as the se
 flows that require the system browser, such as OAuth: `pluginExternal.open(authorizationUrl, true)`.
 Mail and phone links use the system handler. When no conversation workspace is ready, web links also
 fall back to the system browser. System handoffs retain the host's confirmation policy.
-
-Start with a description — it is the only thing the command takes:
 
 ```text
 /plugin create Show GPU temperature and fan speeds, and warn me above 85 °C
@@ -103,10 +101,10 @@ it as `plugin:<name>`: `open` records the target, and every command for it is cl
 workbench, which opens the plugin's tab (its rail viewlet, or its only work-item kind) and runs the
 command against that panel with the same actuator a page probe uses, scoped to the panel.
 
-A view registered with `scope: 'session'` is drawn once per chat, and only the chat on screen shows
-its copy. A command from the agent is answered from its OWN chat's tab; when the person is in
-another chat, the command is refused with that reason instead of reading the other chat's view, and
-the agent reads the plugin's state with the plugin's own tools.
+A session view belongs to the named session's root workspace. A command from the agent targets that
+workspace's tab; when the person is in another chat, the command is refused with that reason instead
+of reading the other chat's view, and the agent reads the plugin's state with the plugin's own
+tools.
 
 | Action                          | On a plugin view                                                                                                                                |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -134,12 +132,8 @@ and "click Pods in DevOps" need no guessing.
    new ones registered. A plugin that left the enabled set is unloaded. An open tab of the plugin
    re-reads its registration on the swap and remounts under the new one, so it shows the new build
    at once and a tab that had crashed recovers; other plugins' tabs keep their state.
-4. A shared import in the artifact is a small module that reads the host's instance. React is loaded
-   before any artifact and read synchronously; SDK and kit modules are awaited, so a kit module
-   loads with the chunk that needs it. The build's resolve hooks match only the imports they claim —
-   shared modules, the kit's vendored modules and the host-internal paths they refuse — and every
-   other import goes to the bundler's own resolver. A hook that matched an import and declined it
-   could make Bun drop a `sideEffects: false` re-export barrel while the build still succeeded.
+4. Shared imports read the host's instance. React is available synchronously; SDK and kit modules
+   are awaited. Other permitted imports go through the bundler's resolver.
 
 A build that fails keeps the artifact that last built; the plugin's backend and tools keep running.
 The host checks resolved imports against the plugin, the shipped kit, and installed packages before
@@ -149,14 +143,15 @@ already requested by an open tab.
 
 ### A tab that belongs to one chat
 
-Every tab belongs to one chat. A work item is a session kind unless it is registered with
-`scope: 'global'`, and it belongs to the chat it was opened in for its whole life:
+Work items default to session scope; `scope: 'global'` is the app-level exception. Session tabs are
+placed in the root conversation's workspace. Child sessions share that workspace; display scope does
+not merge their server-side data ownership.
 
-- The host keeps one such tab per chat. Opening it from another chat opens that chat's own tab; it
-  never moves an existing one out of the chat it belongs to.
-- `useWorkItemSessionId()` returns that chat. The SDK has no "active session": a surface acts for
-  the chat it belongs to, never for whichever chat is on screen, and names it as `?sessionId=` on
-  its routes.
+- Reopening the same scoped instance reveals its tab; distinct instance ids can create multiple
+  tabs. Another root workspace gets its own instance rather than moving the existing tab.
+- `useWorkItemSessionId()` reads context derived from the tab's display scope. For a session tab
+  this is the root workspace's session. Use it explicitly in requests; it does not follow the chat
+  on screen or recover a child id from an open payload.
 - Every open names its chat: `openWorkItem({ …, scope })`, `openFile({ sessionId, … })`,
   `openDiff({ sessionId, … })`, `openPreview({ sessionId, … })`, `composer.insert({ sessionId, … })`
   and the terminal calls. The host refuses a session tab that names none.
@@ -169,6 +164,10 @@ Every tab belongs to one chat. A work item is a session kind unless it is regist
 `scope: 'global'` is for an app-level surface that reads no session at all. It is visible in every
 chat, `useWorkItemSessionId()` is `null` inside it, and it opens with `scope: null`. A surface that
 sends to a chat, opens a chat's files or calls its backend for a chat is a session kind.
+
+Instance ids passed to `pluginWorkspace.openWorkItem` must begin with the registered owner's name
+and a colon, such as `my-plugin:report-42`. The host rejects another namespace. Use the hook's
+session context, not the opaque `item.scope`, for session requests.
 
 That data lives under `ctx.sessionStorage.resolveDataDir(userId, sessionId)`. The routes (boot-time
 backend) and each run's tools both carry it, and both resolve the same folder for a session:
@@ -339,10 +338,8 @@ keep the focused one.
 
 ## Limits
 
-Render Markdown with `MarkdownRenderer` from `@localixai/kit/markdown`; its `MarkdownRendererProps`
-type is exported from the same module. It uses the conversation's renderer and code blocks,
-including syntax highlighting and copy actions. Pass source as `children`, and use the host's typed
-streaming and mention options rather than adding a second Markdown parser.
+Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`; see
+[Shared Markdown](markdown.md) for renderer options and boundaries.
 
 - A user plugin's backend may import only `hono`, `zod`, `@localixai/plugin-sdk/backend`, `node:*`,
   `bun:*` and its own files; its UI only the shared modules, `zod`, `lucide-react` and its own
@@ -396,3 +393,7 @@ streaming and mention options rather than adding a second Markdown parser.
   and
   [session surfaces](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/contrib.ts)
 - [UI kit](https://github.com/rsaryev/localix/tree/main/apps/ui/src/app/kit)
+
+- [Tab scopes](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/workspace-grid/model/scope.ts)
+  and
+  [instance guard](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/uiContrib.ts).

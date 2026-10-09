@@ -24,7 +24,7 @@ agent turn and delivers the matching output or ending reason to the owning parti
 | Need                            | Mechanism                                                                           | Boundary                                                                                     |
 | ------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Wait for a condition            | `bash` with `command` and `until: <seconds>`; the agent ends its turn.              | The interval floor is 5 s; 30 s or more is appropriate for remote APIs.                      |
-| Bound the wait                  | `timeout` (seconds, ≥ 60) is the deadline; the agent is woken when it passes too.   | Default 300 s, maximum 3,600 s. A timed-out wait reports as a failure.                       |
+| Bound the wait                  | `timeout` sets the deadline; the agent is woken when it passes too.                 | Default 300 s; explicit deadlines 60–600 s. A timed-out wait reports as a failure.           |
 | See what is being watched       | The composer's background-work strip lists it with its event count and last event.  | It lists running work; an ended monitor leaves the strip.                                    |
 | Stop one                        | The row's Stop button, or the agent's `jobs` tool with `action="stop"`.             | An explicit stop by the user or agent does not start a turn; other endings notify the owner. |
 | Inspect recent events           | `jobs` with `action="read"` returns the monitor's bounded event log.                | The log is capped and kept in memory; a restart starts it empty.                             |
@@ -58,10 +58,36 @@ credential.
 
 The engine's predicates are `exit_zero`, `contains`, `not_contains`, `regex`, and a numeric bound
 with an optional JSON path; the `bash until` wait uses `exit_zero` and leaves the rest of the logic
-to the shell (`grep -q`, `jq -e`, `gh run watch --exit-status`). The check's own output becomes the
-event text, so a wake carries what the command printed rather than "condition met". A check that
-cannot execute (exit 126 or 127) ends the wait with an error on the first poll instead of watching
-nothing.
+to the shell (`test`, `grep -q`, `jq -e`). The check's own output becomes the event text, so a wake
+carries what the command printed rather than "condition met".
+
+An ordinary nonzero exit keeps the wait pending. A failed pipeline, authentication error or network
+failure can therefore look like an unsatisfied condition unless the command distinguishes them. For
+a pipeline that should resume the conversation on either success or failure, test for any terminal
+state and print its actual conclusion. Inspect that output before reporting the task's result;
+satisfying the exit-zero predicate does not establish the business outcome.
+
+An unrunnable check (126, 127 or the runner's `-1` failure signal) ends immediately on the first
+poll. If checks stop executing later, four consecutive such failures are tolerated and the fifth
+ends with an error; an ordinary nonzero result resets that counter.
+
+Each individual check has its own execution timeout: the poll interval, bounded to 5–30 seconds. The
+overall wait deadline does not give one command that whole period to run. Use a short status check
+that returns promptly, rather than a command that itself waits for the remote job to finish.
+
+For example, when another process writes a readiness marker in the session's working directory:
+
+```json
+{
+  "command": "test -f ready.flag",
+  "until": 10,
+  "timeout": 300,
+  "description": "Wait for the readiness marker"
+}
+```
+
+The first poll is due at once; later polls follow the cadence. The example waits for existence;
+choose a stronger command when readiness also depends on the file's contents or a service check.
 
 ### From an event to a turn
 
@@ -109,8 +135,9 @@ Monitor events and ending details pass through the exposure shield before reachi
 | Every event, log line and ending detail passes the exposure shield. | An authenticated check echoes its own header often enough (`curl -v`, a reflecting error body) that a watch's OUTPUT is an exposure path — and a wake is persisted as a message. |
 | The resolve is recorded against the monitor.                        | The Vault's activity log answers "which watch used this key", not just "the agent".                                                                                              |
 
-The model can reference any key by name but can never read a value: `vault` returns metadata only,
-and resolution happens server-side.
+The agent names a Vault key in the command. The `vault` tool returns metadata, and the monitor
+resolves the value server-side instead of returning it to the model. This does not isolate Vault
+storage from other processes running under the same OS account.
 
 ### Permissions
 
@@ -142,7 +169,7 @@ lifecycles, although they share output-line splitting infrastructure.
 | `until`       | Yes      | —            | Requested poll interval (minimum 5 s); clamped so at least four intervals fit the deadline |
 | `description` | No       | the command  | Shown in every wake and in the composer strip                                              |
 | `cwd`         | No       | Session root | Working directory for the command                                                          |
-| `timeout`     | No       | 300 s        | Deadline in seconds (≥ 60), maximum 3,600 s                                                |
+| `timeout`     | No       | 300 s        | Explicit deadlines 60–600 s; accepted values 1–59 are ignored and use the default          |
 
 Limits include four concurrent monitors per session, a 5 s poll-interval floor, and a watch rate
 limit of 60 events in a sliding minute. Watch output uses a 2,000-character line cap; the 61st event
@@ -160,6 +187,8 @@ ends that watch. A wake shows at most 20 event entries and reports how many were
 - Silence is not success. A filter or predicate that matches only the happy path leaves a crash
   looking exactly like "still waiting"; cover the failure states.
 - An explicit stop by the user or agent produces no new turn.
+- Stopping a polled wait prevents future reports and checks. A check already running is not
+  immediately cancelled; its result is discarded when it finishes within its execution timeout.
 - An ended monitor is no longer running work: it leaves the composer strip at once, and `jobs` can
   no longer read it. Its ending wake carries up to 20 pending event entries. Omitted entries cannot
   be recovered with `jobs read` after the monitor ends.
@@ -186,5 +215,8 @@ ends that watch. A wake shows at most 20 event entries and reports how many were
 - [Poll and stream trigger kinds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/kinds/poll.ts)
 - [Command source](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/sources/command.ts)
 - [`bash until` → wait spec](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)
+- [Accepted bash fields and timeout range](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-types.ts)
+- [Background deadline normalization](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash.ts)
+- [Individual check deadline and result suppression](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/action.ts)
 - [Wake queue priority and coalescing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue.ts)
 - [Composer strip](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/WorkStrip.tsx)

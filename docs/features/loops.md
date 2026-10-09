@@ -6,13 +6,13 @@ with `/loop`. Loops are stored in the database and survive an API restart.
 
 ## Terminology
 
-| Term         | Meaning                                                                         | Boundary                                                                  |
-| ------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Fixed loop   | Fires on a 5-field cron, read in the time zone it was created in.               | A slot the session cannot take is skipped, not replayed later.            |
-| Dynamic loop | Fires after a delay the agent chooses each time with `reschedule` (60–3,600 s). | It keeps firing at its last delay until it is removed.                    |
-| Target       | `session` runs the task in this conversation; `subsession` in a fresh child.    | Only a fixed loop can use `subsession`: a child cannot reschedule itself. |
-| Owner        | The participant that created the loop. Its fires are addressed to that agent.   | If the owner has left the conversation, the conversation chooses.         |
-| Hold         | A fire waiting because the session is busy or the owner's quota is exhausted.   | A quota hold is stored, so a restart does not fire into the same quota.   |
+| Term         | Meaning                                                                               | Boundary                                                                  |
+| ------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Fixed loop   | Fires on a 5-field cron, read in the time zone it was created in.                     | A slot the session cannot take is skipped, not replayed later.            |
+| Dynamic loop | Fires after a delay the agent chooses each time with `reschedule` (60–3,600 s).       | It keeps firing at its last delay until it is removed.                    |
+| Target       | `session` runs the task in this conversation; `subsession` in a fresh child.          | Only a fixed loop can use `subsession`: a child cannot reschedule itself. |
+| Owner        | The participant that created the loop. Its fires are addressed to that agent.         | If the owner has left the conversation, the conversation chooses.         |
+| Hold         | A dynamic fire waiting because the session is busy or its owner's route is exhausted. | The hold is stored; fixed loops skip those occurrences.                   |
 
 ## What you can do
 
@@ -21,7 +21,7 @@ with `/loop`. Loops are stored in the database and survive an API restart.
 | Start one             | `/loop <task>`, or ask the agent; it calls `loops` with `action="add"`.    | The same task, cadence and target is one job; a repeat add returns it. |
 | See what is scheduled | The composer strip lists cadence, next run, run count and the last result. | The agent sees the same list through `loops` with `action="list"`.     |
 | Run one now           | The strip's Run button, or `loops` with `action="run"`.                    | An extra run: it does not use up a fixed loop's next slot.             |
-| Cancel one            | The strip's Cancel button, or `loops` with `action="remove"`.              | Cancels only this loop's own run in flight, nothing else.              |
+| Cancel one            | The strip's Cancel button, or `loops` with `action="remove"`.              | Removes the schedule; session-target runs have scoped cancellation.    |
 
 ## How a loop behaves
 
@@ -42,11 +42,15 @@ firing. A temporary rate limit holds that one model; an exhausted plan or credit
 model on that connection. A loop whose owner has left waits only while every participant's route is
 exhausted, because the conversation may choose any of them. The strip shows the time the hold ends.
 
+These holds apply to dynamic session-target loops. Fixed session-target loops skip the affected
+occurrence and try their next cron slot, rather than replaying it after the cooldown.
+
 ### When fires fail
 
-A fixed loop that keeps failing waits longer between attempts — one minute, then two, four, up to an
-hour — and returns to its schedule after the first success. A dynamic loop keeps the pace the agent
-set; the agent sees the error in the loop list.
+A fixed loop's failed run can push its next due time later: at least one minute after completion,
+then two, four, up to an hour for consecutive failures, without advancing an already later scheduled
+slot. A successful run clears the streak. A dynamic loop keeps the pace the agent set; before its
+first `reschedule`, its watchdog delay is one hour. The agent sees failures in the loop list.
 
 ### After a restart
 
@@ -59,8 +63,14 @@ the agent reschedules it. Failure-backoff streaks are in memory and reset on res
 
 Run now refuses to overlap a fire already in progress.
 
-Cancelling a loop removes its fire from the queue if it is waiting, or stops that run if it is
-running. Other messages in the queue and sub-agents started by other work keep going.
+Run now is an explicit extra fire and bypasses the automatic busy/quota gate. A session-target fire
+can therefore enter the session's wake queue while another turn is active. It leaves the existing
+due time in place, though a failed manual run can still apply the fixed loop's failure backoff.
+
+Cancelling a session-target loop withdraws its own queued wake or stops its own active run. Other
+messages and runs are unaffected. Cancelling a subsession-target loop removes future scheduling but
+does not stop a child fire already running or waiting for the child runner's concurrency slot.
+Inspect and stop that child separately when needed.
 
 ## Related guides
 
@@ -71,7 +81,9 @@ running. Other messages in the queue and sub-agents started by other work keep g
 
 - [Loop creation and cancellation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/loops/service.ts)
 - [Target routing and fire gates](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/loops/action.ts)
+- [Child-run lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/loops/subsession-runner.ts)
 - [Fixed schedule and restart policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/kinds/cron.ts)
 - [Dynamic delay and watchdog](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/kinds/delay.ts)
 - [Trigger lifecycle and manual fires](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/engine.ts)
 - [Failure backoff](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/backoff.ts)
+- [Automatic gate and fire settlement](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/cycle.ts)

@@ -11,7 +11,7 @@ to plan multi-part work so its state stays visible and durable.
 | Term    | Meaning                                                                  | Boundary                                                           |
 | ------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------ |
 | Board   | The tasks of one chat, stored in that chat's plugin folder.              | There is no global or project board; deleting the chat deletes it. |
-| Card    | One task or epic on the board, addressed as `LX-<n>`.                    | Numbers are per board and never reused within it.                  |
+| Card    | One task or epic on the board, addressed as `LX-<n>`.                    | Numbers are per board; ordinary deletion does not reuse them.      |
 | Epic    | A card that groups tasks.                                                | An epic cannot be taken; take one of its tasks.                    |
 | Take    | The agent's act of claiming a card: it becomes the owner, `in_progress`. | Refused while a dependency is not `done`.                          |
 | Passive | The board records work and never starts it.                              | No card state starts a run, wakes an agent or invites anyone.      |
@@ -37,7 +37,9 @@ tool: the agent loads it once with `activate_tools`, and the session remembers t
 1. The agent puts multi-part, durable work on the board; a small single deliverable needs no card. A
    `create` batch may wire dependencies to earlier entries by title, and it opens the board once.
 2. To do a card itself, the agent calls `take`. The host names the agent taking it, so a model
-   cannot take a card in someone else's name.
+   cannot take a card in someone else's name. `take` accepts tasks in `backlog`, `ready` or
+   `blocked`, with all dependencies `done`. If another agent owns the card, reassign it first or
+   give its owner the work.
 3. For a card another agent should do, the agent gives that participant a turn, or delegates it with
    the `agents` tool, using the card's `detail` as the brief. Delegation knows nothing about the
    board: the card stays the parent's to complete or block after it reviews the report.
@@ -47,6 +49,11 @@ tool: the agent loads it once with `activate_tools`, and the session remembers t
    unticked, or `block` with the obstacle.
 6. An epic is never taken, and its status is its own: the board does not close it. The completion
    that finishes an epic's last task says so, and the agent closes the epic with `complete`.
+
+A tool `create` batch saves entries one by one. If a later entry is refused, the earlier cards
+remain and the reply names the refused entry; retry only the missing work. A filesystem or other
+unexpected failure can also leave earlier entries saved. This differs from a multi-card drag, which
+validates and saves the complete move batch together.
 
 Each workflow move has one action. `update` changes a card's text, owner, epic, priority,
 dependencies and checklist, and moves it only to `backlog`, `ready` or `cancelled`: `in_progress` is
@@ -64,8 +71,9 @@ reached through `take`, which checks dependencies, `done` through `complete` and
 | `done`        | Work was marked complete.                    |
 | `cancelled`   | Work was explicitly abandoned; final.        |
 
-A cancelled card is closed for both of you: create a new task instead of reopening it. A `done` card
-can be reopened. Moving a blocked card back to `ready` clears its blocker.
+A cancelled card cannot change status again, but its fields can still be edited or it can be
+deleted. Create a new task to resume its work. A `done` card can be reopened. Moving a blocked card
+back to `ready` clears its blocker.
 
 ## How it works
 
@@ -94,6 +102,15 @@ See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a too
 
 ## Limits
 
+- A missing, unreadable, or invalid `board.json` reads as an empty board. A later successful write
+  can replace it and restart card numbering; the store does not preserve or repair malformed
+  contents. If an existing board unexpectedly appears empty, inspect or restore its file before
+  creating new cards.
+- Tool `list` and `search` return at most 50 cards in board order and report when there are more.
+  Narrow the search or request a known card with `detail`; an absent list entry is not proof that
+  the card does not exist.
+- Deleting a card removes its dependency edges from other cards. Deleting an epic leaves its child
+  tasks on the board without that parent; it does not delete their work.
 - The board never runs anything. Nothing checks a `done` card; the agent's report and the chat are
   the record of what changed and how it was verified.
 - The volatile board digest the core prompt once carried is gone: the agent reads the board with

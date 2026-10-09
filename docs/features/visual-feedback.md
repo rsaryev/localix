@@ -14,11 +14,11 @@ are outside this boundary.
 | Action                   | Mechanism                                                                                           | Boundary                                                                    |
 | ------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | Comment on one element   | Click an element to capture its selector, DOM path, text, role, styles, rectangle, and source hint. | Source resolution and the automatic JPEG are best-effort.                   |
-| Add selected text        | Select page text, then use **Attach context** to attach its captured context.                       | Text quick-add creates no screenshot.                                       |
+| Add selected text        | Select page text in Visual Feedback mode; it attaches as context immediately.                       | Text quick-add creates no screenshot.                                       |
 | Mark empty space         | Drag a rectangle to capture its viewport coordinates.                                               | A region has no element selector or source location.                        |
 | Mark several elements    | Drag across elements to retain leaf selectors and discard wrapping ancestors.                       | The capture records one primary element plus a bounded member list.         |
 | Comment on the screen    | Sweep across most of the window to capture the whole page instead of a part of it.                  | A sweep that wide discards any text selection it crossed on the way.        |
-| Collect review comments  | Each observation becomes one attached context item in the composer, screenshot included.            | Attaching does not send a turn. Commented elements carry a quiet page tint. |
+| Collect review comments  | Each observation becomes one attached context item in the composer, with an optional screenshot.    | Attaching does not send a turn. Commented elements carry a quiet page tint. |
 | Check responsive layouts | Pin the iframe to a named CSS viewport size and rotate its width and height.                        | This changes layout size only, not browser or device identity.              |
 
 ### Let the agent drive the preview
@@ -91,7 +91,8 @@ stays untouched and focus stays in the preview.
 
 Picking an element opens a note card anchored to it, the way commenting on a sentence does. The note
 is optional: the screenshot already identifies the element, so an empty note attaches "look at
-this", and typing sharpens it. Selecting text needs no card — the words are the comment.
+this", and typing sharpens it. Selecting text needs no card or extra attach button: the words become
+a comment immediately, bounded to 500 UTF-16 code units. Text quick-add captures no screenshot.
 
 The composer's attached-context list is the one place an observation is reviewed and removed. Each
 row expands to the full comment text and its screenshots, which open full size. Removing a row
@@ -149,12 +150,12 @@ The attach action waits for screenshot preparation to finish.
 Visual Feedback has no settings key. Its controls live in the preview toolbar; what has been
 attached is reviewed in the composer's attached-context list.
 
-| Control             | Effect                                                                 | Availability                                       |
-| ------------------- | ---------------------------------------------------------------------- | -------------------------------------------------- |
-| **Visual Feedback** | Toggles element selection without reloading a connected preview.       | Enabled when a probe is connected or can be loaded |
-| **Page frame size** | Chooses responsive fill, phone, tablet, laptop, or desktop dimensions. | Available on every page                            |
-| **Rotate frame**    | Swaps the selected fixed width and height.                             | Hidden for responsive fill                         |
-| **Attach feedback** | Attaches the observation as context, screenshot nested inside it.      | Requires a session and a note or attachment        |
+| Control             | Effect                                                                 | Availability                                           |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------ |
+| **Visual Feedback** | Toggles element selection without reloading a connected preview.       | Enabled when a probe is connected or can be loaded     |
+| **Page frame size** | Chooses responsive fill, phone, tablet, laptop, or desktop dimensions. | Available on every page                                |
+| **Rotate frame**    | Swaps the selected fixed width and height.                             | Hidden for responsive fill                             |
+| **Attach feedback** | Attaches the observation as context, screenshot nested inside it.      | Requires a selected capture and session; note optional |
 
 | Preview input                 | Probe path                                                                 | Boundary                                                                              |
 | ----------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -188,10 +189,10 @@ attached is reviewed in the composer's attached-context list.
 
 ## Source of truth
 
+- [Selection gestures and text bound](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/selection/fsm.ts)
 - [Probe capture](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/probe/capture.ts)
 - [Layered source resolution](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/source/index.ts)
 - [Capture redaction and limits](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/core/redact.ts)
-- [Selection state machine](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/selection/fsm.ts)
 - [Host bridge](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/useVisualFeedback.ts)
 - [Comment batching](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/VisualFeedbackLayer.tsx)
 - [Static and proxied probe injection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/preview/preview-probe.ts)

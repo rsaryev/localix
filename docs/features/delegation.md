@@ -3,7 +3,9 @@
 The `agents` tool is **off by default** in every shipped agent preset, including the primary
 assistant. Enable **Agents** in **Settings → Capabilities → Tools** for the agent that should
 delegate. The existing capability rules are the switch; there is no separate delegation setting. The
-delegation model route selects a model; it does not enable the tool.
+model browser's **Delegated agents** assignment is saved, but current child creation does not apply
+that workload route. A child snapshots each assigned participant's effective parent model, falling
+back to the parent's main participant. The route's switch does not enable or disable the tool.
 
 Only root chat sessions can delegate. Child chats, delegated teams, jobs and forked skills cannot
 create more delegated work, even when their profiles list the `agents` tool.
@@ -28,8 +30,8 @@ without all four of `agents`, `title`, `prompt` and `priority` is refused before
 | Task field | Value                                                                        | Boundary                                                              |
 | ---------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | `agents`   | 1–3 agents by registry id or handle, with or without `@`; several are a team | Each must be enabled and allowed by the [delegation tree](#the-tree). |
-| `title`    | A short task name, 1–120 characters                                          | Becomes the child session's title.                                    |
-| `prompt`   | The whole assignment: goal, scope, constraints, files and done criteria      | The child sees nothing else.                                          |
+| `title`    | A short task name, 1–120 UTF-16 code units                                   | Becomes the child session's title.                                    |
+| `prompt`   | The whole assignment: goal, scope, constraints, files and done criteria      | The parent transcript is not inherited.                               |
 | `priority` | `high`, `normal` or `low` — **required**                                     | Orders the queue when children wait for one of the 3 slots.           |
 
 The children are created in the order given; the short settle window each started child is watched
@@ -152,19 +154,20 @@ delegator afterwards adds to that brief; it does not replace it.
 | Children running at once   | 3 per parent                                   | The next one **waits**: by priority, then first come first served |
 | Tasks in one `delegate`    | 6                                              | The call is refused; split it                                     |
 | New children, unattended   | 24 since the person's last message in the chat | `delegate` is refused until the person writes again               |
-| Self-caused turns in a row | 12 per session                                 | Further wakes queue but do not open a turn until a person writes  |
-| Different agents involved  | 3 at depth 0, 2 at depth 1, 1 at depth 2       | Refused; at depth 3 the session is not offered `agents` at all    |
+| Self-caused turns in a row | 12 per session                                 | Further wakes wait for a turn caused by an external event         |
+| Different agents involved  | 3 across open children of a root chat          | Children cannot delegate; only root chats are offered delegation  |
 
 The queue governs every run an agent starts in a child — a new delegation and a message that wakes a
 finished child alike. `delegate` over the cap answers that the child is queued, with its position,
 and `runs` shows it as `queued (#N)`. A person writing into a child's chat is not queued: the cap
-guards against an agent's burst, not against the person.
+guards against an agent's burst, not against the person. Lane scheduling and follow-up messages
+waiting for a lane live in process memory; restarting the server does not restore those queues.
 
-The budget counts children **created**, not runs: messaging an existing child creates none, so a
-long-lived conversation can keep reusing its children indefinitely. It replaced a lifetime cap of 24
-per conversation, which every endless chat would eventually hit in ordinary use while doing nothing
-sooner about an agent spawning children in one unattended minute. Only a message the person writes
-resets it — a wake or a child's report does not.
+The budget counts children **created**, not runs: messaging an existing child creates none. Only a
+message the person writes resets the creation budget; a wake or a child's report does not. The
+separate self-wake streak resets on an externally caused turn, including a scheduled loop or webhook
+wake; ordinary runtime tickets neither reset nor increment it. Its counter lives in the process, so
+a restart resets the streak.
 
 Three lanes are an upper bound, not an instruction to fill them: delegate concurrently only when
 briefs are independent. Architecture or contract work precedes its implementation, and QA follows
@@ -197,19 +200,29 @@ transcript link. A report decided against is recorded under its key too, so reco
 what the live path chose not to.
 
 Receipts are kept for seven days, and recovery considers only children that ended inside that
-window, so a pruned receipt never causes a second report. When the parent is already running, a
-child report waits for its own review turn. It is never injected as a mid-response user
-interjection, which keeps the original assistant row owned by the run that created it.
+window, so a pruned receipt never causes a second report. When the parent is already running, a an
+eligible child report can join the delegating participant's next model request after a fully
+completed tool turn. At most one report is delivered at each such boundary; a multi-participant chat
+takes only reports addressed to its current speaker, while a solo chat can also take an unaddressed
+report. Reports that do not qualify remain queued for a separate turn. Disabling
+`LOCALIX_MID_RUN_INTERJECT` also keeps them on that path. This delivery waits for the host's tool
+checkpoint, so pending tool updates cannot race into the new assistant row.
 
 A completed run is not proof that the requested outcome is ready. The parent must review the report
 against the brief's done criteria before it calls the work done, and completes or blocks any card it
 tracks for it. Background Preview hosts are released after the child settles; previews opened by the
 user remain available.
 
-Implementation:
-[the `agents` tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/agents.ts),
-[task delegation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/task-delegation.ts),
-[the delegation tree](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/delegation-hierarchy.ts),
-[runtime wiring](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/task-delegation-options.ts)
-and
-[per-run reports](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/child-run-report.ts).
+## Source of truth
+
+- [Report admission at tool checkpoints](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/stages/stream.ts)
+- [Report queue eligibility](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue/steering.ts)
+- [Tool checkpoint settlement](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-checkpoint-gate.ts)
+- [Self-wake budget](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue/self-wake-budget.ts)
+- [Agents tool and input schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/agents.ts)
+- [Task delegation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/task-delegation.ts)
+- [Delegation tree](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/delegation-hierarchy.ts)
+- [Runtime wiring](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/task-delegation-options.ts)
+- [Per-run reports](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/child-run-report.ts)
+- [In-memory lane queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/delegation-lanes.ts)
+- [Buffered follow-up messages](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/subagent-messages.ts)

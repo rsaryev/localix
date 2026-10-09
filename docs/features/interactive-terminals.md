@@ -37,14 +37,27 @@ Match response or status text rather than text echoed from your own input. Match
 case-sensitive. Input results flag an unchanged display when the effect could not be confirmed.
 Batch keystrokes whose order is already known and follow the application's on-screen shortcuts. When
 the next choice depends on the application, inspect the returned screen first. For a model switch,
-confirm the selected model in the screen before sending the next prompt. A typed command, an echoed
+confirm the selected model in the screen before sending the next prompt. Unknown key names are sent
+as literal text rather than refused, so copy named shortcuts carefully. A typed command, an echoed
 greeting, or an open picker does not prove that the selection or task succeeded.
 
 When the program should finish after input, add `wait_for_exit: true` to `open`, `type`, or `keys`,
 or use it with `action: "wait"`. This waits for process exit rather than quiet output and returns
 the retained final screen. A timeout explicitly says the process is still running. Exit does not
 prove success; inspect the final output. `wait_for_exit` cannot accompany `wait_for` or
-`wait_absent`.
+`wait_absent`. `wait_absent: true` requires a non-empty `wait_for`; these conflicting or missing
+conditions are refused before opening a terminal or sending input.
+
+Explicit `wait_timeout_ms` accepts 100–120,000 milliseconds and defaults to 15,000. Without a wait
+condition or explicit timeout, input calls use a shorter screen-settling observation. Wait outcomes
+are `matched`, `vanished`, `quiet`, `timeout`, `exited` or `interrupted`; timeout and interruption
+are reported conditions, not evidence of a completed task. A wait can return `exited` when the
+program ended without the requested marker appearing.
+
+Cancelling a wait does not send Ctrl+C or close the PTY. Cancelling an input batch stops its
+remaining writes, but text or keys sent earlier stay sent. Inspect the current screen before
+repeating a batch. To interrupt the program, send its interrupt key or explicitly close its
+terminal.
 
 If a matched marker was already visible before input, the result warns that it does not confirm a
 new response, even when another part of the screen changed. Choose a distinct response marker for

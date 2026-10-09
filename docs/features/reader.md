@@ -3,7 +3,7 @@
 Reader turns books and long-form documents into first-class Localix context. Open **Reader** from
 the navigation rail and choose a book, open it from the file tree, or drop it into the workspace.
 
-![A local release review guide open in Reader, with its table of contents and the selected chapter](../assets/screenshots/reader/document--2026-10-08.png)
+![A sample Markdown release review guide in Reader, with its table of contents and selected chapter](../assets/screenshots/reader/document--2026-10-08.png)
 
 ## Supported documents
 

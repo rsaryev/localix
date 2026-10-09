@@ -35,6 +35,30 @@ waiters. Keep failure state in `onError` and treat only `apply` as a new accepte
 Keep optimistic/draft state out of an unconditional `apply`: merge independent changes or surface a
 conflict.
 
+`read` must settle and honor its abort signal; the scheduler supplies no request deadline of its
+own. Give network reads an appropriate timeout as well as cancellation. For a failing read,
+`onError` runs after retries are exhausted, rather than on every attempt. Deactivating or disposing
+the reader releases refresh waiters even if a read ignores cancellation; that read's result cannot
+be applied, but its underlying work can continue.
+
+## Route snapshot options
+
+`useStoreSnapshot` keeps a schema-validated last-good snapshot. Its `intervalMs` is the fallback
+cadence while the store feed is not live; `backstopMs` is the cadence with live coverage and
+defaults to `null`. Setting `intervalMs: null` disables the disconnected fallback too. Choose a
+non-null fallback when external edits must remain visible without native coverage.
+
+This hook's `refresh()` returns `void`: it starts a read, unlike the awaitable file-resource refresh
+above. Observe `snapshot` and `error` for its result. `send(body, options)` sends a mutation and
+validates its returned snapshot with the same schema; it resolves to that response or `null` on
+failure. Scope and request ordering determine whether the response is applied to the visible state.
+A failed read retains the previous valid snapshot.
+
+Reads and sends use an eight-second abort timeout by default, configurable with `timeoutMs`. A
+timeout or invalid mutation response does not roll back a server write that already committed.
+Reconcile before retrying a mutation whose outcome is unknown, using the owning domain's revision or
+idempotency contract.
+
 ## Publish after commit
 
 A JSON-store backend registers `createStoreChangeFeed` with its plugin name, an ownership-checking
@@ -102,4 +126,5 @@ makes no periodic requests. Test user isolation and release both write and files
 - [Project-file synchronization](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/file-resource-sync.ts)
 - [Store change publisher](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/store-change-feed.ts)
 - [Store snapshot reader](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/store-snapshot.ts)
+- [Route snapshot validation and ordering](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/route-snapshot.ts)
 - [Explicit mutation notifications](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/observe-mutations.ts)

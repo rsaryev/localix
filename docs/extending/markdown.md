@@ -4,7 +4,25 @@ The workspace and this documentation use `@localixai/markdown`. The package owns
 host chooses its links, images and reading layout. Plugins use the host's
 [MarkdownRenderer](ui-kit.md) from the UI kit.
 
-## Render a document
+## Render Markdown in a plugin
+
+Use the renderer served by the running host:
+
+```tsx
+import { MarkdownRenderer } from '@localixai/kit/markdown'
+
+export function PluginNotes({ source }: { source: string }) {
+  return <MarkdownRenderer>{source}</MarkdownRenderer>
+}
+```
+
+The host supplies its links, media resolution, code controls, and styles. If the Markdown itself is
+an editable store, pass `onSourceChange` and save the returned source to that store. Without that
+callback, checkboxes outside a conversation message are read-only.
+
+## Render a standalone document
+
+Inside a workspace host that owns document presentation, use the shared package directly:
 
 ```tsx
 import { Markdown } from '@localixai/markdown/react'
@@ -18,10 +36,12 @@ export function Document({ source }: { source: string }) {
 }
 ```
 
-Pass a `components` map to resolve application links, render images or add a code-copy toolbar. GFM,
+Supply the kit stylesheet and document wrapper styles; this component does not install a theme. Pass
+a `components` map to resolve application links, render images or add a code-copy toolbar. GFM,
 callouts, figures, tabs, file trees, math and diagrams keep the same grammar in every host.
-`headingIds` enables stable anchors; repeated headings receive distinct ids. Build a matching
-outline with `extractMarkdownHeadings` from the package root.
+`headingIds` enables anchors derived from heading text; repeated headings receive distinct ids.
+Changing a heading or the order of duplicates can change its anchor. Build a matching outline with
+`extractMarkdownHeadings` from the package root.
 
 > [!NOTE] Host behavior stays local
 >
@@ -114,6 +134,9 @@ $$
 Prices such as $5 and $10, shell variables such as `$HOME`, and fenced code stay literal. Formulas
 share a bounded KaTeX cache, including when the workspace streams a reply.
 
+Math loads asynchronously on first use. A failed math chunk leaves readable source; a new document
+can retry the load. Rendering a formula is not a synchronous guarantee of the standalone component.
+
 A quote's closing `— Author` line becomes its attribution:
 
 > Keep one grammar and let each host own its behavior.
@@ -151,4 +174,8 @@ product behavior merely because a Markdown block is present.
   — parsing and sanitization.
 - [`packages/markdown/src/react.tsx`](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/react.tsx)
   — document renderer.
+- [Plugin host entry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/kit/markdown.ts)
+  and
+  [workspace renderer props](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/MarkdownRendererImpl.tsx).
+- [Heading ids and outline](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/headings.ts).
 - [Answer formatting](../features/answer-formatting.md) — workspace behavior and limits.

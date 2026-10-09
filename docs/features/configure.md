@@ -14,25 +14,26 @@ would restore it. Nothing is applied until you approve the card it raises.
 
 ## What you can do
 
-| Action                           | Mechanism                                                                | Availability and boundary                                                      |
-| -------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| Ask why a tool is missing        | The agent calls `configure` with `action: "inspect"`.                    | Read-only, needs no approval, and never re-reads policy mid-run.               |
-| Approve a proposed change        | Press **Approve** on the card.                                           | The change is written as you, with the agent's session recorded as its origin. |
-| Refuse a proposed change         | Press **Deny**, close the card, or leave it for five minutes.            | All three mean no; the agent may not propose the same change again this run.   |
-| Review what an agent changed     | Settings → Capabilities shows the rule and the session that proposed it. | Reverting is an ordinary edit in the same screen.                              |
-| Take the tool away from an agent | Turn `configure` off in that agent's rules.                              | Sub-agents and unattended runs never have it at all.                           |
+| Action                           | Mechanism                                                                 | Availability and boundary                                                      |
+| -------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Ask why a tool is missing        | The agent calls `configure` with `action: "inspect"`.                     | Read-only, needs no approval, and never re-reads policy mid-run.               |
+| Approve a proposed change        | Press **Approve** on the card.                                            | The change is written as you, with the agent's session recorded as its origin. |
+| Refuse a proposed change         | Press **Deny**, close the card, or leave it for five minutes.             | All three mean no; the agent may not propose the same change again this run.   |
+| Review what an agent changed     | Inspect the proposal result in chat and the resulting switch in Settings. | Reverting is an ordinary edit; provenance storage differs by remedy.           |
+| Take the tool away from an agent | Turn `configure` off in that agent's rules.                               | Sub-agents and unattended runs never have it at all.                           |
 
 ## How it works
 
 ### The agent proposes; your click is the authority
 
-`configure` writes nothing. `action: "propose"` validates the change, renders a card, and raises a
-`config_change` human-in-the-loop request — the same mechanism as Ask and Confirm, so it routes to
-your root chat even when a descendant raised it. The host applies the change only after an approval
-comes back, then records what was approved and what happened.
+`action: "propose"` validates the change, renders a card, and raises a `config_change`
+human-in-the-loop request — the same mechanism as Ask and Confirm, so it routes to the chat's
+approval surface. The built-in tool is omitted from closed child and automation profiles. The host
+applies the change only after an approval comes back, then records what was approved and what
+happened.
 
-Silence is a refusal — the same five-minute deadline every human-in-the-loop card carries, and the
-same outcome: denied, with nothing changed. A configuration change that applied itself because
+Silence is a refusal — the shared five-minute deadline for blocking human-in-the-loop requests, and
+the same outcome: denied, with nothing changed. A configuration change that applied itself because
 nobody was looking would be the opposite of the boundary this tool exists to keep.
 
 ### What can be proposed
@@ -42,21 +43,21 @@ nobody was looking would be the opposite of the boundary this tool exists to kee
 | `tool.enable`                        | One tool's switch.                         | The proposing agent. |
 | `plugin.enable`, `mcp.server.enable` | A plugin or an MCP server, with its tools. | The proposing agent. |
 
-Three, and they answer one question: this run does not hold something, may it. Writing an agent's
-prompt or model, its tool list, its invocation hosts, duplicating or deleting a role, choosing a
-model for a workload — those were remedies once, and they were a second way to author configuration
-that you could only reach by asking a model to do it. The screen that owns each of them does the job
-better. Authoring is yours; asking for access is the agent's.
+Each change names its target and accepts optional `enabled`, defaulting to `true`. Setting it to
+`false` proposes disabling the same capability. Prompt/model editing, role creation and workload
+model routing are managed through their owning Settings screens.
 
 Each remedy delegates to the write path that already owns its data, so an approved change lands
 exactly where the same edit made in Settings would.
 
+Tool-switch rules retain the proposing session and proposal id as rule origin. Plugin and MCP
+switches use their capability write path; their proposal provenance lives in the backend's
+`config_proposals` audit rows. This is not a separate audit-history screen in Settings.
+
 ### A proposal lands on the agent that made it
 
-Rules belong to an agent, so there is nowhere else a proposal could go: the card names that agent
-and offers no choice. The agent that ran into the limit is the one whose rules change, which also
-rules out a proposal that reads as reasonable and is not — a model asking for an installation-wide
-grant because its own role denied it something.
+The card names the proposing agent and offers no scope selector. Approved switches update that
+agent's rules; review the named target before approving.
 
 ### Scope of the tool itself
 
@@ -75,11 +76,15 @@ schema and are never told it exists, so they cannot spend a turn discovering the
 
 - An approved change usually takes effect on the next turn, because a run resolves its capabilities
   once at the start. The card states which class of change it is.
-- Shape, authority and model reasons carry no remedy: a tool a sub-agent can never hold, one whose
-  host service is absent, or one the run's model cannot read the output of, is reported but never
-  proposed.
-- A proposal computed against stale policy is refused when it lands, with the conflict reported to
-  the agent rather than retried.
+- Shape, authority and model reasons carry no suggested remedy: a tool a sub-agent can never hold,
+  one whose host service is absent, or one the run's model cannot read the output of, is reported
+  but never suggested for a configuration proposal.
+- A card is not a version-locked policy snapshot. Current switch remedies do not compare a captured
+  policy revision on approval; they apply to the agent's current configuration. Check Settings if
+  another window changed the same target while the card was open.
+- Application and proposal-status recording are separate writes. A failed result does not prove that
+  the setting stayed unchanged: the mutation may have committed before audit recording failed.
+  Inspect the actual switch before retrying; there is no automatic rollback of that mutation.
 - Approving records the change as agent-proposed; it does not record which model asked.
 
 ## Related guides
@@ -94,5 +99,6 @@ schema and are never told it exists, so they cannot spend a turn discovering the
 - [The `configure` tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/configure/configure.ts)
 - [Tool ledger and withhold reasons](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
 - [Remedy registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/registry.ts)
+- [Switch writes and rule provenance](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/remedies/toggles.ts)
 - [Proposal host and provenance](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/config-proposals/service.ts)
 - [The card](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/hitl/ConfigChangeInteractionView.tsx)

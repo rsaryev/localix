@@ -17,13 +17,16 @@ no cached tool inventory are named but not counted.
 
 ### Surface estimate
 
-The backend report starts with the same capability snapshot used by the Tools settings page:
-agent-rule filtering, enabled plugin contributions, and cached MCP inventories. The report is
-available through `GET /rpc/tools/gc`; the UI does not display a separate tool-budget pill or
-unused-tool suggestions.
+The backend report uses the capability snapshot service that also supplies the Tools settings page.
+It combines project-level permission filtering, enabled plugin contributions, and cached MCP
+inventories. The report is available through `GET /rpc/tools/gc?projectId=<id>`; omit `projectId`
+for the no-project scope. The UI does not display a separate tool-budget pill or unused-tool
+suggestions. The route accepts `sessionId`, but the current snapshot service does not use it to
+resolve an agent. The report is a project-level estimate; use the agent's Tools settings or a run's
+`context_budget` reading to inspect that agent's surface.
 
 With no MCP server in scope, the estimator removes the MCP resource tools that cannot be assembled.
-It then counts the remaining built-in, plugin, and cached MCP names once.
+It then counts the remaining built-in and plugin entries, plus the cached MCP tool entries.
 
 | Count source | Included                                         | Boundary                                                  |
 | ------------ | ------------------------------------------------ | --------------------------------------------------------- |
@@ -35,7 +38,9 @@ It then counts the remaining built-in, plugin, and cached MCP names once.
 
 At run start, Localix records the surfaced tool roster. After a tool finishes, it records one call
 and whether the result was an error. These best-effort writes use a `tool_usage` row keyed by user,
-project scope, and tool name.
+project scope, and tool name. Agents in the same user/project scope share those counters; the report
+does not measure an individual agent's disuse. Calls from tools no longer enabled still contribute
+to the scope's 200-call and seven-day evidence gate.
 
 Worker and child-session calls pass through the same completion handler. A tool used only by
 delegated work therefore still receives usage credit in the owning project scope.
@@ -70,13 +75,12 @@ agent's runs are judged by.
 
 - The count is explicitly an estimate. Cached MCP state can be incomplete, and the capability
   snapshot cannot predict every host-dependent tool assembled for a run.
-- When MCP servers exist but none advertises resources, the estimate can retain the three MCP
-  resource-tool names. It only proves those names are absent when no MCP server is present.
+- When MCP servers exist but none advertises resources, the estimate can retain the MCP
+  resource-tool name `mcp_resources`. It proves that name absent only when no MCP server is present.
 - Usage recording is fire-and-forget and swallows storage errors. Missing writes can delay or
   suppress a suggestion.
 - The unused-tool report is served by `GET /rpc/tools/gc` and no surface renders it. A switch and a
-  `tool:<name>` rule are the same stored row, so a list that read it through a second path could
-  update on a different beat and contradict the screen that edits it.
+  `tool:<name>` rule are the same stored permission rule.
 - The report carries warning and hot thresholds, but no surface renders them. They disable, hide,
   defer, group, and truncate nothing: Localix provides no automatic tool-removal mode.
 - Disabling a model-facing tool does not remove host-side permission checks, transcript storage, or
@@ -92,8 +96,10 @@ agent's runs are judged by.
 ## Source of truth
 
 - [Suggestion rules and thresholds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-gc.ts)
-- [Protected tool names](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-names.ts)
+- [Protected tool names](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
 - [Capability and usage report](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/gc-report.ts)
+- [Report route and scope](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/routes.ts)
+- [Agent-aware capability snapshots](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/snapshot.ts)
 - [Wire-count exclusions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/wire-tools.ts)
 - [Usage persistence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/tools/usage-repository.ts)
 - [Run roster recording](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/stages/tools.ts)

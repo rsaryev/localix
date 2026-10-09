@@ -107,8 +107,10 @@ outside-workspace and dangerous-command confirmations.
 **Memory scope** limits both recall and saved notes to conversation, project or global notes. With
 **All available scopes**, recall searches conversation, project and global notes, while default
 writes stay in the project or conversation. A selected scope does not fall back to another scope
-when unavailable. Changing it refreshes the agent's saved memory context immediately. Unscoped
-external memory providers are used only with **All available scopes**.
+when unavailable. Changing it refreshes the agent's saved memory context on the next run. Unscoped
+external memory-provider prompt recall is used only with **All available scopes**. This selection
+does not disable an enabled provider’s completion hook, which can still receive the finished turn.
+See [stored context](learning-loop.md#recall-and-courses).
 
 ![Agent instructions, preloaded skills, memory scope and turn limit](../assets/screenshots/agents/context-and-limits--2026-10-08.png)
 

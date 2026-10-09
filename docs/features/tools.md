@@ -10,15 +10,15 @@ rules, host services, model compatibility, and activated extensions change the a
 
 ## What you can do
 
-| Action                        | Mechanism                                                                                      | Availability and boundary                                                              |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| See the roster of a session   | Inspect the agent's tools in **Settings → Capabilities → Tools**, or ask for `context_budget`. | Settings shows configured access; `context_budget` measures the current run's schemas. |
-| Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Capabilities.          | Applies to the next run; see [Manage the tool budget](tool-budget.md).                 |
-| Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                          | The activation is remembered on the session and survives a context checkpoint.         |
-| Use an open plugin's tools    | Link the plugin's tab to the message (open tabs link by default), or let it wake the chat.     | On the wire for that turn only; a closed tab or a removed chip brings none.            |
-| Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.         | Read-only. A switched-off tool also names the change that restores it.                 |
-| Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.        | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).        |
-| Plan before building          | The Kanban plugin's `kanban` tool: put the work on the chat's board before starting.           | A deferred plugin tool on a passive board; see the [Kanban guide](task-board.md).      |
+| Action                        | Mechanism                                                                                      | Availability and boundary                                                               |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| See the roster of a session   | Inspect the agent's tools in **Settings → Capabilities → Tools**, or ask for `context_budget`. | Settings shows configured access; `context_budget` estimates the current run's schemas. |
+| Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Capabilities.          | Applies to the next run; see [Manage the tool budget](tool-budget.md).                  |
+| Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                          | The activation is remembered on the session and survives a context checkpoint.          |
+| Use an open plugin's tools    | Link the plugin's tab to the message (open tabs link by default), or let it wake the chat.     | Uses the message's linked context; tab/chip changes take effect when you send.          |
+| Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.         | Read-only; requires `configure` in the run. Known withheld tools report their reasons.  |
+| Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.        | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).         |
+| Plan before building          | The Kanban plugin's `kanban` tool: put the work on the chat's board before starting.           | A deferred plugin tool on a passive board; see the [Kanban guide](task-board.md).       |
 
 For live PTY input and rendered-screen waits, see
 [Interact with a terminal](interactive-terminals.md).
@@ -38,23 +38,26 @@ original payload, including any text omitted from the bounded conversation previ
 
 ### One verdict per tool
 
-A run decides its roster once, in the tool ledger, and every consumer reads that answer: the model's
-schemas, the system prompt, the Capabilities screen, and the error a withheld tool returns. Each
-verdict is one of three states.
+Run assembly records a verdict for each known tool in the tool ledger. The initial schemas and
+prompt roster follow that assembly; `configure inspect` reads its reasons. Settings builds a
+capability snapshot for the selected scope, rather than reading a running session's ledger. Host
+services and model compatibility can therefore make an allowed Settings tool unavailable to this
+run. Later activation reveals additional schemas through the adapter. Each assembly verdict is one
+of three states.
 
-| State    | Meaning                                                                   | Boundary                                                              |
-| -------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Live     | On the wire this turn.                                                    | `read`, `edit`, `write`, `apply_patch`, `search`, `bash`, `ask`, …    |
-| Deferred | Dispatchable, but its schema is not sent until `activate_tools` names it. | Named only in the `activate_tools` catalog; activation is remembered. |
-| Withheld | Not in this run at all, with the reason recorded.                         | A call to it returns the reason, not a bare "tool not found".         |
+| State    | Meaning                                                                   | Boundary                                                                    |
+| -------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Live     | On the wire this turn.                                                    | `read`, `edit`, `write`, `apply_patch`, `search`, `bash`, `ask`, …          |
+| Deferred | Dispatchable, but its schema is not sent until `activate_tools` names it. | Named only in the `activate_tools` catalog; activation is remembered.       |
+| Withheld | Not available for execution, with the reason recorded.                    | Known withheld names have dispatch-only error stubs; unknown names may not. |
 
-Every core tool is sent directly on supported interactive runs. Plugin and MCP call tools are
-deferred by provenance because their combined catalog can grow without bound; `activate_tools` makes
-those schemas available when the agent needs them. The prompt's `# Available tools` roster lists
-what is on the wire — the activator included, deferred tools not — and `# Plugins` counts each
-plugin's direct tools and the ones still to activate. The activation catalog excludes tools already
-available in the run, including tools brought by an open plugin view. An unknown-name response lists
-only tools that still need activation.
+Core tools that survive run-shape, host, model, and policy gates are sent directly. Plugin and MCP
+call tools are deferred by provenance because their combined catalog can grow without bound;
+`activate_tools` makes those schemas available when the agent needs them. The prompt's
+`# Available tools` roster lists what is on the wire — the activator included, deferred tools not —
+and `# Plugins` counts each plugin's direct tools and the ones still to activate. The activation
+catalog excludes tools already available in the run, including tools brought by an open plugin view.
+An unknown-name response lists only tools that still need activation.
 
 ### Why a tool is withheld
 
@@ -104,13 +107,18 @@ core-registry ceiling.
 
 ## Limits
 
-- Deferral is a wire decision: a deferred tool stays dispatchable, and a model that never activates
-  it still sees its name in the system prompt.
+- Deferral is a wire decision: a deferred implementation stays dispatchable, but its schema is not
+  on the initial request. Its name appears in the activation catalog; the initial **Available
+  tools** prompt roster lists only tools already on the wire.
+- Activation storage is best-effort and only preserves names available to later runs. Changes to
+  permissions or plugin availability can remove a remembered tool. A context checkpoint does not
+  itself remove the remembered names.
 - The default roster figure is an estimate from the JSON Schema; providers tokenize schemas
   differently, and the measured fixed overhead of a request also includes the system prompt and the
   runtime context rows.
-- `browser` drives a page only through an open, engaged Browser tab; without one it reports that it
-  could not look.
+- `browser open` can create a Preview, but control requires a connected Localix application and a
+  ready page bridge. Opening a URL and observing the page are separate outcomes: check the opening
+  result's readiness before claiming a visual check. See [Visual Feedback](visual-feedback.md).
 
 ## Related guides
 
@@ -123,7 +131,10 @@ core-registry ceiling.
 
 - [Tool catalog and per-shape exposure](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-names.ts)
 - [Tool ledger: one verdict per tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-ledger.ts)
-- [Policy sets: GC-protected, deferred](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
+- [Protected names for usage suggestions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-policy-sets.ts)
 - [Wire assembly and deferral](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
+- [Scoped Settings projection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/snapshot.ts)
+- [Known withheld-name errors](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/withheld-stub.ts)
+- [Browser opening and readiness](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/browser/browser-open.ts)
 - [Schema budget ratchet](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tool-schema-budget.test.ts)
 - [`bash until` wait](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-until.ts)

@@ -111,6 +111,23 @@ HTTP records may include `headers` and an `oauth` object with `clientId`, `clien
 PKCE, token exchange, and refresh. Silent runtime connections use stored tokens but never open a
 browser.
 
+### Complete an OAuth sign-in
+
+Test the HTTP server first. If the probe reports an authentication challenge and the server has no
+stored authorization, its row offers **Sign in**. Open it, approve the provider's consent page, and
+keep the same Localix API instance running until the callback finishes. The callback page reports
+success or failure; return to Settings and test again to check the live tool inventory. An OAuth
+badge alone does not prove that the server's tools are reachable.
+
+A pending sign-in expires after ten minutes and its callback is single-use. Restarting the API loses
+pending flows; an expired, reused or failed callback needs a new sign-in attempt. At most 64 flows
+are retained across the process, with older entries evicted at the limit. Interactive sign-in uses
+Streamable HTTP; the ordinary connection path's legacy SSE fallback is a separate mechanism.
+
+**Sign out** removes the server's locally stored tokens, client registration and PKCE verifier. It
+does not call the provider's authorization-revocation endpoint. Revoke access through the provider
+when that is required.
+
 OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM encrypted under
 `~/.localix/mcp-oauth/`. The master key is stored beside that data.
 
@@ -162,4 +179,7 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 - [Result bounds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/mcp-result.ts)
 - [Runtime assembly](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/mcp-tools.ts)
 - [OAuth storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/store.ts)
+- [Interactive sign-in and callback](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/flow.ts)
+- [Pending sign-in lifetime](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/oauth/pending-flow-registry.ts)
+- [Settings sign-in controls](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/mcpStatus.ts)
 - [Default server seed](https://github.com/rsaryev/localix/blob/main/apps/api/migrations/20260601T000000_init_schema.ts)

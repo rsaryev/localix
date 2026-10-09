@@ -56,12 +56,18 @@ Docker endpoint resolution follows this order:
 | 2        | `DOCKER_CONTEXT`, otherwise `currentContext` in Docker config | Reads that context from `DOCKER_CONFIG` or the default Docker configuration directory.           |
 | 3        | Platform default                                              | Uses `/var/run/docker.sock` on Unix-like systems or `npipe:////./pipe/docker_engine` on Windows. |
 
-| Endpoint or action                                      | Backend                | Additional requirement                               |
-| ------------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
-| Unix socket, Windows named pipe, plain TCP, or HTTP     | Engine API when usable | Docker API negotiation must succeed.                 |
-| `ssh://`, HTTPS/TLS, unsupported, or failed negotiation | Docker CLI             | `docker` must be on the API process's `PATH`.        |
-| Compose project **Up**                                  | Docker CLI             | Compose v2 and project location labels are required. |
-| Dockerfile, Compose run bar, or interactive exec        | Workspace terminal     | The local `docker` CLI must be available.            |
+| Endpoint or action                                       | Backend                | Additional requirement                               |
+| -------------------------------------------------------- | ---------------------- | ---------------------------------------------------- |
+| Unix socket, Windows named pipe, plain TCP, or HTTP      | Engine API when usable | Docker API negotiation must succeed.                 |
+| `ssh://`, `https://`, unsupported, or failed negotiation | Docker CLI             | `docker` must be discoverable by the API process.    |
+| Compose project **Up**                                   | Docker CLI             | Compose v2 and project location labels are required. |
+| Dockerfile, Compose run bar, or interactive exec         | Workspace terminal     | The local `docker` CLI must be available.            |
+
+The native resolver reads the endpoint URL, not `DOCKER_TLS_VERIFY` or context certificate metadata.
+`tcp://` and `http://` become plain HTTP transports even when those settings exist; an HTTPS URL
+selects the CLI immediately. A daemon that rejects the native connection also causes CLI fallback.
+Missing or unreadable context metadata, an empty context host, and the `default` context use the
+platform default endpoint.
 
 ## Limits
 
@@ -72,6 +78,9 @@ Docker endpoint resolution follows this order:
 - Compose project discovery depends on `com.docker.compose.project` labels. **Up** also needs the
   stored working-directory or config-file labels used to locate the Compose manifest.
 - The workbench can mutate Docker state. Docker resource references are read-only.
+- Inventory and actions address the selected daemon, not containers isolated to the current chat or
+  Localix project. Prune calls apply to the selected resource kind daemon-wide, using Docker's own
+  eligibility rules; they are not restricted to a Compose group shown in the UI.
 - Docker execution environments for agent sessions are a separate, currently unreachable surface.
   See [Execution environments](execution-environments.md).
 

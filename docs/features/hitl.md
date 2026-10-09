@@ -21,19 +21,23 @@ optional; without it the card shows its own waiting line.
 
 Every request that blocks a run is answered the same way, whatever raised it.
 
-| Element          | What it is                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------- |
-| Title            | An imperative naming the act and its object — "Read useTheme.ts", "Run a command", "Start Tech Lead".   |
-| **Deny**         | Refuse. For approval cards, `Escape` and closing the card also deny. For a queueable Ask, they defer.   |
-| **Answer later** | Keep an Ask question in the queue and release the waiting tool without choosing an option.              |
-| **Approve**      | Agree. `Enter`, and it is always the rightmost button.                                                  |
-| Middle buttons   | Only where they mean something — stepping through a multi-question form.                                |
-| Deadline         | Every card shows one: **no answer in five minutes is a denial**, counted down as "Auto-deny in 4m 12s". |
+| Element          | What it is                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| Title            | An imperative naming the act and its object — "Read useTheme.ts", "Run a command", "Start Tech Lead". |
+| **Deny**         | Refuse. For approval cards, `Escape` and closing the card also deny. For a queueable Ask, they defer. |
+| **Answer later** | Keep an Ask question in the queue and release the waiting tool without choosing an option.            |
+| **Approve**      | Agree. `Enter`, and it is always the rightmost button.                                                |
+| Middle buttons   | Only where they mean something — stepping through a multi-question form.                              |
+| Deadline         | Blocking cards expire after five minutes without an answer. Queued questions have no countdown.       |
 
 An expired card changes nothing — no rule is written, no secret stored, no agent started, no setting
 touched — and the agent is told the refusal was automatic, in different words from the ones a
 person's Deny produces. That difference matters: a model that cannot tell them apart either gives up
 on work because a room was empty, or asks again after a real refusal.
+
+The blocking deadline starts when the backend creates the request, rather than when its card becomes
+visible. A request waiting behind an older one can therefore use part of its five-minute budget
+before you see it. Expiration refuses the proposed action; it does not undo earlier work in the run.
 
 ![A queued question waiting above the composer while the release conversation remains visible](../assets/screenshots/questions/queued--2026-10-08.png)
 
@@ -90,15 +94,21 @@ id (`q-3`), the agent keeps working, and the question waits for you.
 | The sidebar        | A session with an open question shows a question mark in its status slot.                                                         |
 | The transcript     | The `ask` card shows the id while open, then the answer, "skipped" or "asked again later".                                        |
 
-Your answer reaches the agent that asked, and only that agent:
+Your answer is addressed to the agent that asked:
 
 - if it is still working, at its next step, the way a message you type mid-run does;
 - if it is idle, as a new turn, marked **via Answer**.
 
-An answer is delivered once and survives a crash. It is recorded first, which decides between two
-tabs answering at once — the second is told the question is already closed. Its wake then carries a
-delivery receipt; a minute sweep re-sends any recorded answer without one, and the receipt makes a
-re-send the same delivery. An answer that names none of the questions asked is refused.
+The answer is recorded first, which decides between two tabs answering at once — the second is told
+the question is already closed. Its wake then carries a delivery receipt. A minute recovery sweep
+retries answered records without a receipt from the last seven days; the receipt prevents duplicate
+queue admission. It does not confirm that the agent completed a turn using the answer. If the
+session can no longer accept that wake, delivery is marked decided and is not retried. An answer
+that names none of the questions asked is refused.
+
+If the agent opens a blocking card for an already queued question, a timeout or stopped run leaves
+the original queued question open with the same id. Answering or explicitly denying that card closes
+the queued copy; **Answer later** keeps it open without creating a second question.
 
 A skip is not a turn: the agent's next prompt says it, once, and the agent goes on with its own
 judgement. Each turn also lists the agent's still-open questions, so it neither asks one again nor
@@ -238,6 +248,7 @@ available for retry; `hitl.resolved` removes the matching request and exposes th
 - [Queued questions: what the agent reads](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/hitl/ask-queue.ts)
 - [Queued question registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/questions/registry.ts)
 - [Answering and delivering a queued question](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/question-facade.ts)
+- [Delivery receipt and recovery horizon](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/delivery-receipts.ts)
 - [Generic request controller](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/human-in-loop.ts)
 - [Request routing and queue registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/hitl-registry.ts)
 - [Permission confirmation flow](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/confirm-requester.ts)

@@ -92,29 +92,38 @@ hour. When one exists, a quiet row appears above the message box in the focused 
 available**, the new version beside the one you have, and **Restart to update**. The same update is
 marked on the rail and offered in Settings → System → Updates, where you can also check on demand.
 
-1. Press **Restart to update**. If a turn or a background job is running, Localix says what the
-   restart will stop and waits for you to confirm; with nothing running it starts at once.
+1. Press **Restart to update**. When the UI reports running root turns or work items other than
+   monitors, Localix describes what the restart will stop and asks for confirmation. Otherwise it
+   starts at once. This warning uses the UI's known work roster.
 2. The row turns into **Updating** with the download's progress. Nothing else on the row can be
    pressed, and it stays that way if you switch to another chat meanwhile.
-3. The download is checked against Localix's public key before anything is installed. Then Localix
-   saves your windows and drafts, stops its local runtime, installs, and reopens on the new version.
-4. Your data is kept. If the new version changes the database, the old one is copied to
-   `~/.localix/backups/migrations` first.
+3. The download is checked against Localix's public key before installation. The shell installs and
+   relaunches, requesting window/draft saves and stopping its runtime on the exit path. Platform
+   installation order differs; saving has a time limit, so an unresponsive window can leave pending
+   writes unsaved.
+4. For a database with migration history and pending upgrades, Localix writes a backup first. It
+   lives beside that database under `backups/migrations` — normally `~/.localix/backups/migrations`.
+   Cleanup keeps the two newest backups for that database filename; older-file removal is
+   best-effort. This is not a backup of all workspace files or the Vault master key.
 
-If the install fails, you get a message with the reason, the row goes back to **Restart to update**,
-and nothing has changed. The × on the row hides it for that version only; the rail mark and Settings
-still show it, and a newer version brings the row back. A Localix built from source never updates
-itself.
+If the install fails, you get a message with the reason and the row leaves its busy state. This does
+not guarantee rollback of the installer's side effects. The × on the row hides it for that version
+only; the rail mark and Settings still show it, and a newer version brings the row back. A Localix
+built with the ordinary source-build commands has no updater.
+
+**No newer version found** is not proof that the release feed was reached: a native check failure
+also returns no available update and records the failure in the desktop log. Retry when connectivity
+is restored; see [startup logs](troubleshooting.md#read-the-logs-of-one-launch).
 
 ## Limits
 
 - The current release workflow configures macOS arm64 and Linux x64 builds. It does not configure
   Windows or Intel Mac release builds. Check the assets of a published release for availability; old
   drafts can contain artifacts from a different build matrix.
-- Every source-built bundle is local and unofficial. Do not present it as a Localix release.
-- A desktop build made from a checkout has no updater: it never reads the release feed, and never
-  offers an update. Only the release workflow compiles the updater in, with its public key and
-  endpoint.
+- An ordinary source-built bundle is local and unofficial. Do not present it as a Localix release.
+- Ordinary `build:desktop` bundles have no updater. The dedicated `tauri:release` command, used by
+  the release workflow, enables it through the release overlay and build flag. Building from a
+  checkout alone does not determine whether the updater is enabled.
 - Configured extensions such as `.dmg`, `.AppImage`, and `.deb` do not prove that a current
   downloadable artifact exists.
 - Opening the Vite address in a browser does not provide native paths or other desktop bridges. Use
@@ -135,3 +144,7 @@ itself.
 - [Tauri bundle configuration](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/tauri.conf.json)
 - [Updater release overlay](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/scripts/build-release-config.mjs)
 - [Native release matrix](https://github.com/rsaryev/localix/blob/main/.github/workflows/release.yml)
+- [Native updater outcomes](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/updater.rs)
+- [Bounded save request](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/frontend_flush.rs)
+- [Restart warning roster](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/interruptibleWork.ts)
+- [Migration backup and retention](https://github.com/rsaryev/localix/blob/main/apps/api/src/db/connection.ts)

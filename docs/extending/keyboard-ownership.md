@@ -9,20 +9,41 @@ For commands spanning a native plugin pane, use `useFocusEntry` from
 visibility flag. A mounted pane receives only events whose DOM path includes its scope.
 
 ```tsx
-const root = useRef<HTMLDivElement>(null)
-const id = useId()
-useFocusEntry({
-  id: `my-pane:${id}`,
-  kind: 'surface',
-  active: visible,
-  scope: () => root.current,
-  onKeyDown: (event) => {
-    if (event.key !== 'Escape') return
-    event.preventDefault()
-    closeLocalSelection()
-    return true
-  },
-})
+import { useId, useRef, type ReactNode } from 'react'
+import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { matchesChord } from '@localixai/kit/keybindings'
+
+export function PluginPane({
+  visible,
+  hasSelection,
+  closeLocalSelection,
+  children,
+}: {
+  visible: boolean
+  hasSelection: boolean
+  closeLocalSelection: () => void
+  children: ReactNode
+}) {
+  const root = useRef<HTMLDivElement>(null)
+  const id = useId()
+  useFocusEntry({
+    id: `my-pane:${id}`,
+    kind: 'surface',
+    active: visible,
+    scope: () => root.current,
+    onKeyDown: (event) => {
+      if (!hasSelection || !matchesChord(event, 'escape')) return
+      event.preventDefault()
+      closeLocalSelection()
+      return true
+    },
+  })
+  return (
+    <div ref={root} hidden={!visible}>
+      {children}
+    </div>
+  )
+}
 ```
 
 Attach `root` to the pane element. Return `true` only when the pane claims the key. Leave typing and
@@ -39,4 +60,30 @@ Claims with the same scope prefer the latest registration. Modal claims stop fal
 underneath them. Cleanup releases a claim when its component unmounts or becomes inactive, and
 handlers and scope getters read current component values.
 
+## Choose the global shortcut policy
+
+The `kind` selects a default policy for workspace shortcuts after local handlers have declined:
+
+| Kind                        | Plain workspace keys | Workspace modifier chords |
+| --------------------------- | -------------------- | ------------------------- |
+| `surface`                   | Allowed              | Allowed                   |
+| `text-input`, `editor`      | Blocked              | Allowed                   |
+| `dialog`, `menu`, `overlay` | Blocked              | Blocked                   |
+
+`keyboard` can override those booleans. Policies combine restrictively across applicable claims;
+registering a field above a modal cannot reopen shortcuts behind it. Overlay-like kinds remain
+barriers to the surface-handler walk even when their policy is overridden.
+
+A scope getter returning `null` owns no event. Portalled content outside the pane root is outside
+that scope; use the kit's overlay ownership for dialogs and menus rather than assuming the pane
+claim covers them. This hook applies to native DOM plugin panes; sandboxed iframe views have a
+separate [host boundary](sandboxed-views.md).
+
 See [Keyboard shortcuts](../features/keyboard-shortcuts.md) for user-facing focus behavior.
+
+## Source of truth
+
+- [Hook lifetime and current values](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/focus/useFocusEntry.ts)
+- [Scope routing and modal barriers](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/focus/store.ts)
+- [Default key policies](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/focus/types.ts)
+- [Exact chord matching](https://github.com/rsaryev/localix/blob/main/packages/kit/src/keyboard/chord.ts)

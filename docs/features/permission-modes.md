@@ -13,31 +13,47 @@ lists the four modes with what each one does.
 | **Bypass**     | Tool calls proceed without permission cards when the remaining rules allow them. Denials still block.                                                    | You, for the agent's own questions (`ask`).               |
 | **Autonomous** | Everything Bypass allows.                                                                                                                                | Nobody: questions and approval cards are refused at once. |
 
-Three things no mode changes:
+Restrictions that modes preserve:
 
-- **A denial stays a denial.** A rule that denies a tool or a command denies it in every mode. A
-  mode never widens what an agent is.
+- **Denial rows are retained.** Modes do not delete or convert an agent's `deny` rows. Ordered
+  matching still applies: a later named-tool or command question can already override an earlier
+  denial, and Bypass converts that question to an allowance at the same position.
 - **The host-root guard stays active.** A mode cannot lift it. Opening the Localix checkout as the
   session project is its existing exemption; see
   [the host-root guard](permissions.md#the-host-root-guard).
-- **Bypass and Autonomous still refuse catastrophic commands** — wiping a disk, a home directory or
-  the machine — because "stop asking" is not "allow anything".
+- **Bypass and Autonomous add a catastrophic-command denial.** It covers the shell classifier's
+  recognized destructive forms, including disk formatting and recursive forced deletion of a home or
+  system root. This is a lexical guard, not a guarantee about every executable's behavior.
 
 ## How a mode works
 
 A mode rewrites the agent's rules for this conversation's runs. The rules you see in Settings never
 change.
 
-- **Plan** appends denials for every call whose effect lands in files, in the agent's durable state
-  (memory, skills, loops, plugins, configuration) or outside the machine. Reads, previews, and the
-  conversation's own state — a board card, a game move, a queued question, a delegated explorer —
-  stay allowed.
+- **Plan** appends denials for calls classified as `files`, `host`, or `external`. This includes
+  ordinary file edits, project/global memory writes, and external processes. Reads, previews, and
+  the conversation's own state — a board card, a game move, a queued question, a delegated explorer
+  — stay allowed.
 - **Bypass** removes tool `ask` rules about call classes, such as `outside-workspace` and
   `dangerous`, leaving the other rules to decide. It turns questions about a named tool or command
   into `allow` at the same position, then appends a denial for catastrophic commands. Plugin, skill,
   and agent admission rules are left unchanged.
 - **Autonomous** does what Bypass does, then refuses every call that waits on a person, and tells
   tools that raise their own cards (secrets, configuration proposals) that nobody will answer.
+
+Assuming the agent's other rules permit the tool, Plan treats these calls differently:
+
+| Call                                                 | Class      | Plan result                                         |
+| ---------------------------------------------------- | ---------- | --------------------------------------------------- |
+| Bash `git status` in the foreground                  | `read`     | May run; path rules can still ask.                  |
+| Bash `npm run dev`                                   | `external` | Refused.                                            |
+| Bash typing `git status` into an existing terminal   | `external` | Refused; the terminal's current program is unknown. |
+| Memory `set` with `scope: "session"`                 | `session`  | May run when that scope is available to the agent.  |
+| Memory `set` with `scope: "project"` or `"global"`   | `host`     | Refused.                                            |
+| File edit confined to this root chat's plan Markdown | `session`  | May run; ordinary file targets are refused.         |
+
+Plan permits some state changes, including board edits and delegated work. It does not make the
+whole application read-only; use the call's classification and permission rules to trace a refusal.
 
 A mode belongs to the whole conversation tree: a sub-agent the conversation delegates to runs under
 the same mode, and changing the mode reaches every delegated session on its next run. A delegated
@@ -207,10 +223,11 @@ Each tool states, before a call runs, where that call's effect lands:
 | `host`     | Changes the agent's durable state beyond this conversation.                  |
 | `external` | Reaches past the machine — processes, remote data, messages — or is unknown. |
 
-A call may also be marked irreversible, or as waiting on a person. A tool that states nothing is
-treated as `external`, the widest answer. The same classes are available to your own rules as
-resources — `effect:files`, `effect:external`, `irreversible`, `needs-human` — so "ask before
-anything irreversible" is one rule: `tool:*` over `irreversible` with effect `ask`.
+A call may also be marked irreversible, or as waiting on a person. Without a per-call classifier,
+`mutates: false` declares a read; `mutates: true` or an omitted flag yields `external`. The same
+classes are available to your own rules as resources — `effect:files`, `effect:external`,
+`irreversible`, `needs-human` — so "ask before anything irreversible" is one rule: `tool:*` over
+`irreversible` with effect `ask`.
 
 ## Related guides
 
@@ -223,6 +240,9 @@ anything irreversible" is one rule: `tool:*` over `irreversible` with effect `as
 
 - [Mode vocabulary](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-modes.ts)
 - [Per-run mode rewrite](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
+- [Classification fallback](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/call-class.ts)
+- [Bash call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-call-class.ts)
+- [Memory scope classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/memory/memory.ts)
 - [Plan paths and file exception](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/plan-paths.ts)
 - [Plan-file call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/file/file-call-class.ts)
 - [Plan presentation and snapshots](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-present.ts)

@@ -5,18 +5,31 @@ participants: one agent uses direct conversation behavior, while two or more age
 multi-participant strategy. Adding or removing an agent does not create another session or rewrite
 its history.
 
-![Team Lead, Frontend and QA sharing a release review in one conversation](../assets/screenshots/conversations/participants--2026-10-07.png)
+![Team Lead, Frontend and QA sharing a release review in one conversation](../assets/screenshots/conversations/participants--2026-10-09.png)
+
+_Demo workspace captured on 9 October 2026 with a seeded conversation. It shows the participant
+controls, not a recorded model run._
 
 ## Addressing
 
-In a message you send, `@handle` asks that agent to respond and `@all` asks every active agent.
-Without an address, the conversation strategy selects one agent deterministically from the public
-history. The highest-priority participant receives the first unaddressed turn and leads the
-conversation. The priority is read from each agent's own settings at that moment, so changing it
-applies to existing conversations at once; equal priorities keep the participants' order. When work
-belongs to another participant or clearly matches that participant's role, the leader passes the
-next turn through `conversation_control`; the user does not need to mention the specialist.
-Repeating the same handle does not create duplicate turns.
+In a message you send, `@handle` asks that active participant to respond. Handles are
+case-insensitive: `@QA` addresses `@qa`. Repeating a handle does not create duplicate turns, and
+naming an agent outside the conversation does not invite it. Several addresses select those
+participants in roster order, rather than the order of mentions in the message.
+
+`@all` selects every active participant. If the message also names individual participants, those
+explicitly addressed agents are queued first; the remaining participants follow as broadcast turns.
+
+Without an address, the strategy chooses one participant from the public history. Before any
+participant has published a public answer, the highest leadership priority wins; ties keep roster
+order. That election reads current agent settings. Later unaddressed messages return to the last
+public answer's author when that author is still present and their answer is the last history row.
+Otherwise the participant whose latest assistant row is oldest answers; someone with no assistant
+row comes first. Changing leadership priority affects a future election, not this continuity rule.
+
+The leader is instructed to pass work that belongs to another participant through
+`conversation_control`. Role matching is an agent instruction; the scheduler does not inspect the
+message's subject to choose a specialist automatically.
 
 An agent's public `@handle` is not a new scheduling command. Agents can quote a colleague, publish a
 score table, or list the participants without accidentally starting another round. A recognized bare
@@ -25,15 +38,19 @@ when the colleague already has a positive-weight pending turn.
 
 ## Passing work between agents
 
-In a conversation with two or more agents, every agent finishes its turn with exactly one successful
-`conversation_control` call. It applies membership changes first and then schedules the requested
-participants.
+A turn that starts with two or more participants and has `conversation_control` must finish with one
+successful call. Write the public reply or handoff before calling it: success ends the turn. The
+call validates `next` against the proposed roster before saving membership, then queues the
+requested participants. An unavailable next participant refuses the call without saving that roster.
 
 - `next: ["qa"]` adds QA to the pending queue.
 - `invite: ["qa"], next: ["qa"]` adds QA to the conversation and immediately schedules it.
 - `invite: ["qa"], next: []` only adds QA; it does not start QA's work.
 - `remove: ["backend"], next: []` removes Backend and adds no turn.
-- Handles work with or without `@`; immutable agent IDs work too.
+- Handles work with or without `@`; immutable agent IDs work too. Use the exact spelling from the
+  roster: tool references are case-sensitive, unlike mentions in a user message.
+- A call cannot invite and remove the same participant, remove the active speaker, or leave the
+  conversation empty. Ordinary handoffs cannot schedule their own author.
 
 Public text and queue control are independent. The transcript stores public text once, while tool
 calls, tool results, reasoning and private notes remain in the author's own agent lane.
@@ -81,9 +98,16 @@ approve it; a small change to an existing screen goes straight to the engineer.
 
 `conversation_control` is also available in a one-agent conversation to change the topic or invite a
 specialist. [Fixed participants](#fixing-the-participants) prevent invitations. In a multi-agent
-conversation the runtime requires one successful call before the turn can finish and gives the model
-a bounded repair opportunity if it omitted the call. Because it is the terminal protocol for a chat
-turn, per-agent capability rules cannot disable it.
+conversation the runtime gives the model up to two repair turns if it omitted the required call. If
+the call is still missing, the run fails. Repair text replaces the earlier draft only when it
+contains meaningful prose; whitespace preserves the earlier public answer. A second completed call
+in the same turn is refused. Because this is the terminal protocol for a chat turn, per-agent
+capability rules cannot disable it.
+
+Membership, topic changes, and queue admission are separate writes. A queue or publication failure
+can leave a saved membership change in place even when the tool fails; earlier recipients may also
+have been queued. Inspect the current roster and queue before retrying. A successful `next: []` adds
+no turns and does not cancel work already waiting.
 
 ## The shared queue
 
@@ -114,11 +138,16 @@ Execution is serial inside one session and may run concurrently across different
 queues park their session dispatcher. They do not complete, archive or otherwise close the session.
 Pending rows and their ordering survive process restart.
 
-Only a visible user message may steer an already running response, and only when it is addressed to
-the agent that is running: it names nobody, names that agent, or names `@all`. "@qa stop" typed
-while @backend works waits for its own turn with @qa. Machine-generated wakes such as sub-agent
-reports, webhooks and loops remain in the durable queue and receive a separate turn. This prevents a
-late asynchronous tool update from overwriting a response row that was split for another run.
+A visible user message can steer an already running response when it names nobody, the running
+agent, or `@all`. "@qa stop" typed while @backend works waits for its own turn with @qa. A parent's
+message can also amend its running delegated child's brief at a step boundary.
+
+An eligible child report can join its delegator's next model request after a fully completed tool
+turn, at most one report per tool boundary. Group chats require the report to address the current
+speaker; a solo chat can also take an unaddressed report. Other reports, webhooks and loops wait for
+a separate turn. The host waits for tool-checkpoint settlement before splitting the assistant row;
+see [Delegation](delegation.md#progress-and-report-delivery). Disabling `LOCALIX_MID_RUN_INTERJECT`
+keeps these queued messages and reports for later turns.
 
 A slash command sent while the session is busy waits in the queue as a whole command — with its
 badge, model and tool grants — and runs as its own turn.
@@ -162,11 +191,11 @@ The conversation leader, or the sole participant, changes the topic through `con
 
 All three values are required and saved together. The summary carries forward decisions, user
 constraints, verified results, useful references and unfinished work, including anything still
-relevant in the inherited summary. Goals are limited to 2,000 characters and summaries to 8,000.
-Changing the topic ends the current turn; `next` can select the participant who continues. With a
-topic change, the leader or sole agent can put its own handle in `next` to continue the new
-objective in a fresh run with the updated system prompt. Ordinary handoffs cannot schedule their own
-author.
+relevant in the inherited summary. Titles are limited to 200 UTF-16 code units, goals to 2,000, and
+summaries to 8,000; all three values are trimmed and must be non-empty. Changing the topic ends the
+current turn; `next` can select the participant who continues. With a topic change, the leader or
+sole agent can put its own handle in `next` to continue the new objective in a fresh run with the
+updated system prompt. Ordinary handoffs cannot schedule their own author.
 
 The tool call and result remain in the author's private lane. Other participants receive the shared
 fields through the session, without access to that lane's reasoning or raw tool output. A topic
@@ -207,18 +236,43 @@ tool schema excludes invitations and removals.
 
 ## Interruptions
 
-A new user message drops pending colleague handoffs before the strategy addresses it; turns still
-answering your earlier message stay. Editing a message or regenerating a reply drops every pending
-turn, because those answer messages that are no longer on the branch. Stop cancels the active run
-and its pending conversation turns. Cards on the chat's board keep their status; nothing on the
-board was running.
+A new user message removes pending colleague handoff tickets; tickets still answering your earlier
+message remain. Editing a message or regenerating a reply cancels pending agent tickets for the
+session because the branch changes. Neither operation clears every queued user message or machine
+wake, and tickets already claimed for execution are not removed by this cancellation.
+
+**Stop** aborts the live run and, when a live run is registered, cancels its session's unclaimed
+agent tickets. It does not clear queued user messages or machine wakes; pressing Stop while no live
+run is registered does not itself cancel pending agent tickets. Use **Clear queue** to remove all
+cancellable queued items. Items already claimed for execution remain visible and are reported as
+retained. Stop waits up to five seconds for the exact live run to relinquish its slot and reports an
+error if it is still shutting down.
+
+An operator Stop also attempts to stop spawned child sessions recursively after the parent settles.
+Child-enumeration and individual child-stop failures do not fail the parent's stop, so the parent's
+acknowledgement alone does not prove every child ended. Replacing a run with a new message does not
+apply this child cascade. To end future [loop](loops.md) runs, cancel the loop separately.
+
+Cards on the chat's board keep their status; an assignment alone did not start work.
 
 ## Source of truth
 
+- [Mention grammar](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/agent-mentions.ts)
+- [Turn fan-out and history boundary](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/conversation-dispatch.ts)
+- [Reference promotion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue/agent-turns.ts)
 - [Conversation strategies](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/conversation-strategy.ts)
 - [Durable execution queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue.ts)
 - [Queue priority policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/queue-policy.ts)
 - [Agent turn tickets](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/agent-turn-ticket.ts)
 - [Conversation control](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/conversation-control.ts)
+- [Control membership validation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/conversation-membership.ts)
+- [Control execution and queue admission](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/conversation-control.ts)
+- [Required-call repair](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/runtime-execution.ts)
+- [Topic input bounds](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/session-topic.ts)
+- [Stop admission and ticket cancellation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/agent-runner-queue.ts)
+- [Stop settlement](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/stop-session.ts)
+- [Child-stop cascade](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/stop-cascade.ts)
+- [Queue clearing and leased rows](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue/steering.ts)
+- [Branch-change cancellation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/branching-ops.ts)
 - [Fixed participants](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/roster-lock.ts)
 - [Per-agent history projection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/history/stages/participant-view.ts)

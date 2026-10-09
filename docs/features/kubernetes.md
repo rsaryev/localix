@@ -26,7 +26,8 @@ a request does not rewrite kubeconfig's `current-context`.
 ## How it works
 
 The provider loads `@kubernetes/client-node` on first use and calls `KubeConfig.loadFromDefault()`.
-Each request selects its context on an in-memory config. Typed Kubernetes clients, object discovery,
+The provider selects context on an in-memory config, cached by requested context for up to 60
+seconds. Context discovery reloads the default config explicitly. Typed clients, object discovery,
 metrics, watches, exec, and port forwarding all use that config; the provider does not invoke
 `kubectl`.
 
@@ -68,6 +69,11 @@ resource references expand into read-only snapshots you can attach to a message.
 Static tokens, basic authentication, and certificates supported by the client need no `kubectl`
 binary. A kubeconfig `exec` entry can still require its own credential helper.
 
+The workbench restores a still-valid saved context first, otherwise kubeconfig's current context or
+the first listed context. A missing saved namespace falls back to a valid current selection,
+`default`, or the first namespace. **All namespaces** is retained as a special selection. These
+choices are UI state; they do not alter kubeconfig files.
+
 ## Limits
 
 - The provider does not create clusters or credentials. Invalid credentials, unreachable servers,
@@ -87,6 +93,12 @@ binary. A kubeconfig `exec` entry can still require its own credential helper.
   not undo those changes.
 - Manifest apply performs a server-side dry run before server-side apply. The provider implements no
   rollback for the live change.
+- Apply accepts one YAML object with `apiVersion`, `kind`, and `metadata.name`, rather than a
+  multi-document bundle. It strips `status` and server-managed metadata such as `resourceVersion`,
+  `uid`, and `managedFields`, then applies with field manager `localix-kubernetes` and no forced
+  ownership override. Dry-run success does not guarantee the later live apply succeeds.
+- Kubeconfig edits may remain unseen by ordinary calls until the 60-second cached config expires.
+  That expiry governs later config reads, not automatic reconnection of existing watches.
 
 ## Related guides
 
@@ -112,4 +124,6 @@ binary. A kubeconfig `exec` entry can still require its own credential helper.
   [plugins/devops/kubernetes/backend/api-exec.ts](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-exec.ts)
 - [Workbench contributions](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/register.tsx)
 - [Context and namespace state](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/model/useKubernetesScope.ts)
+- [Configuration cache and manifest cleanup](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-internals.ts)
+- [Manifest apply calls](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-manifests.ts)
 - [Manifest editor](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/model/useManifestEditor.ts)

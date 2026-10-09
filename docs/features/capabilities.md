@@ -1,9 +1,10 @@
 # Decide what an agent may do
 
-An agent has no modes of its own and no permission scopes. What a run may use is one question with
-one answer: the rules of the agent taking the turn. What it should do with them is the agent's own
-instructions. The conversation's [permission mode](permission-modes.md) only changes how often you
-are asked, and it never lifts a `deny` rule.
+Permission rules belong to the agent taking the turn. Its instructions describe the work it should
+do; its rules govern the calls it may make. The conversation's
+[permission mode](permission-modes.md) derives effective rules for a run without changing the stored
+list. Run shape, host services, and model compatibility can further limit tools that Settings
+allows.
 
 ## What you can do
 
@@ -23,7 +24,8 @@ are asked, and it never lifts a `deny` rule.
 ### The agent decides authority
 
 ```text
-the agent's rules → run shape
+run shape + host services + model compatibility + effective agent rules
+  → allowed tool candidates → immediate or deferred schemas
 ```
 
 Permission rules belong to an agent and to nothing else. A run reads that one ordered list and the
@@ -34,9 +36,10 @@ What a project still decides is where things are INSTALLED — its plugins, MCP 
 not what may run.
 
 A conversation's [permission mode](permission-modes.md) derives the effective rules for its runs
-from the agent's list. Plan mode adds mutation denials; Bypass and Autonomous replace `ask` effects
-with `allow` while retaining denials. The stored agent rules stay unchanged. Run shape, host
-services, and model compatibility can also withhold a tool enabled in Settings.
+from the agent's list. Plan mode adds mutation denials. Bypass and Autonomous remove call-class
+confirmation rules and turn named-tool questions into allows while keeping existing denials. The
+stored agent rules stay unchanged. Run shape, host services, and model compatibility can also
+withhold a tool enabled in Settings.
 
 ### Plugin tools
 
@@ -46,10 +49,11 @@ A plugin's tools join the same roster as the built-in ones, so one rule shape an
 servers. The run projects the rules only after the loaded plugins are known, so a plugin tool
 switched off in Settings never reaches the turn.
 
-A read-only phase is the conversation's **Plan** [permission mode](permission-modes.md): the agent
-investigates and presents a plan for you to approve before anything is changed. An agent that must
-never touch the project, in any conversation, is one whose rules deny the write tools. Agreed work
-can be tracked on the chat's [Kanban board](task-board.md), which the bundled Kanban plugin
+The conversation's **Plan** [permission mode](permission-modes.md) constrains project changes while
+allowing its own plan files and permitted session-state changes. Use it to investigate and prepare a
+plan for approval. For a lasting restriction, give the agent rules that deny the relevant calls;
+denying file-write tools alone does not prevent writes through shell commands or other tools. Agreed
+work can be tracked on the chat's [Kanban board](task-board.md), which the bundled Kanban plugin
 provides; the board starts no model or session. When separate execution is useful, the agent
 explicitly calls `agents` `delegate`, whose child receives its own tool set.
 
@@ -70,8 +74,9 @@ inspect the current request cost; the [tool roster guide](tools.md) explains the
 
 There is no session switch for this. A run that should be lean is an AGENT that is lean: switch off
 the tools it does not need in **Settings → Capabilities**, and its plugins and MCP servers with them
-— a server the agent's rules deny is never even connected. A tool you switch off is REMOVED from the
-run, not refused when it is called: the schema never ships, so the saving is real. The
+— a server denied by the agent's rules is not connected for that run. A whole-tool denial with no
+later argument exception removes the candidate's schema. A conditional allow or named-tool question
+can keep the schema available, while the permission gate judges each call's arguments. The
 [specialist presets](agents.md) use different candidate lists and action restrictions; their
 permission choices remain editable.
 
@@ -80,9 +85,8 @@ to be able to carry it, which is the run shape's answer rather than the rule's �
 session is allowed but its run shape never hands it is simply absent. The shipped roles are checked
 against this, so an allow one of them holds is one it can actually reach.
 
-There is no per-session "economy mode". It would be a second answer to "which tools does this run
-get" — invisible in Capabilities, so a tool switched ON there could still be missing from the turn —
-and everything it could do is expressible as an agent whose rules say so.
+There is no separate per-session economy switch. Configure the agent's rules and inspect the
+assembled roster with `context_budget`; enabled tools can still be withheld by structural gates.
 
 ## Configuration
 
@@ -94,8 +98,10 @@ and everything it could do is expressible as an agent whose rules say so.
 
 The four registry tabs and the rules tab write the same thing. A switch is a rule: turning a skill
 off stores `skill:<name>` over `*` with effect `deny`, which is exactly the row the rules tab would
-show. The tabs are the fast way to say yes or no; the rules tab is where everything else a rule can
-express lives, for every kind at once.
+show. The registry switches send their changes immediately. The rules editor and **Reset to
+defaults** stage a draft until **Apply**. Turning a switch on writes an explicit `allow`; clearing a
+rule in the editor instead restores the artifact's default/trust behavior. The rules tab also
+supports argument patterns and order, which a whole-item switch cannot express.
 
 ## Limits
 
@@ -119,9 +125,12 @@ express lives, for every kind at once.
 ## Source of truth
 
 - [Capability rules and evaluation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/rule.ts)
-- [The capability resolver](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/resolve.ts)
+- [Capability resolver and whole-tool denial](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/resolve.ts)
 - [Permission-rule composition](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
 - [The permission gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
+- [Permission-mode rewriting](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
+- [Switch-to-rule translation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/capabilityRules.ts)
+- [Draft and Apply behavior](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/model/usePermissionRules.ts)
 - [Run shape](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/run-shape.ts)
 - [Plugin roster narrowing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/narrow.ts)
   and

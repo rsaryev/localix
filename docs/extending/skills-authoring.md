@@ -12,11 +12,11 @@ This page defines the package format and the behavior of each authoring field.
 | -------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Write a reusable procedure | Put instructions in a `SKILL.md` body.             | A skill guides the agent; it does not run until selected, invoked, or pinned. |
 | Accept arguments           | Use positional, named, or session placeholders.    | Substitution is textual and happens once.                                     |
-| Gather live context        | Embed a bounded `!` command in a filesystem skill. | The command runs during explicit slash invocation through the agent's Bash.   |
+| Gather live context        | Embed a bounded `!` command in a filesystem skill. | The command runs during explicit slash preprocessing in the resolved shell.   |
 | Include a file             | Reference `@path` from a filesystem skill.         | The resolved file must stay inside the working directory or skill directory.  |
 | Delegate the procedure     | Set `context: fork`.                               | Model, effort, and role hints affect this forked path only.                   |
 | Narrow an inline run       | Declare allowed or disallowed tools.               | These overrides apply to an inline slash invocation, not a fork or a pin.     |
-| Ship a read-only procedure | Put the same directory under a plugin skill root.  | Plugin skills do not receive shell or file-reference expansion.               |
+| Ship a read-only procedure | Put the same directory under a plugin skill root.  | Model retrieval and agent preloads use the stored body without preprocessing. |
 
 ## How it works
 
@@ -25,7 +25,7 @@ This page defines the package format and the behavior of each authoring field.
 | Term             | Meaning                                                                 |
 | ---------------- | ----------------------------------------------------------------------- |
 | Skill            | A parsed `SKILL.md` plus its containing directory.                      |
-| Filesystem skill | A skill stored below a project or personal `.localix/skills` root.      |
+| Filesystem skill | A skill in a Localix root or the project's portable `.agents/skills`.   |
 | Plugin skill     | A read-only skill contributed by an enabled plugin.                     |
 | Model roster     | Skill names and descriptions shown to the model for possible selection. |
 | Slash invocation | An explicit `/<skill-name> [arguments]` request.                        |
@@ -63,16 +63,25 @@ Keep instructions operational: name inputs, commands, expected evidence, and sto
 Relative script paths are interpreted by the agent or shell command you author; Localix does not
 automatically execute files merely because they sit beside `SKILL.md`.
 
-### Exact-scope discovery
+### Discovery and write scope
 
-| Session scope | Directory scanned            | Inheritance                       |
-| ------------- | ---------------------------- | --------------------------------- |
-| Project       | `<project>/.localix/skills/` | Personal skills are not included. |
-| No project    | `~/.localix/skills/`         | Project skills are not included.  |
+| Session scope | Directories scanned                                                               | Precedence                         |
+| ------------- | --------------------------------------------------------------------------------- | ---------------------------------- |
+| Project       | `<working-directory>/.localix/skills`, `.agents/skills`, then `~/.localix/skills` | Native project, portable, personal |
+| Default       | `~/.localix/skills`                                                               | Personal filesystem skills         |
+
+The project scan uses the session's exact working directory; it does not search parent projects.
+Localix writes and deletes only its own `.localix/skills` entries. A portable skill can be shadowed
+by saving a native copy with the same name.
 
 The scanner accepts nested skill directories within the selected root. It ignores archive folders,
 caps traversal at six levels and 2,000 entries, and reads regular UTF-8 `SKILL.md` files up to 1
 MiB.
+
+Project symlinks must resolve inside the working directory; personal skill symlinks may point
+outside the home directory. Plugin skill links stay inside their declared skill root. Once a
+directory contains `SKILL.md`, the container scan treats it as one skill and does not descend into
+its assets for nested skills.
 
 ### Invocation pipeline
 
@@ -84,8 +93,10 @@ An explicit filesystem-skill slash invocation follows this order:
 4. Substitute arguments and session placeholders.
 5. Run inline with tool overrides, or start a child session for `context: fork`.
 
-Plugin skills skip steps 2 and 3. A pinned skill takes a separate path: its full stored body is
-injected into later runs without the slash preprocessing pipeline.
+Current slash resolution uses filesystem skills. Plugin skills are available through model retrieval
+and agent-profile preloads. A pinned or keyword-triggered skill takes a separate path: its stored
+body enters the prompt without the slash preprocessing pipeline, including tool overrides, fork
+routing, or skill hooks.
 
 The system prompt can suggest saving a repeatable workflow through the `skill` tool. Saving is a
 model decision or an explicit user request, not a guaranteed post-run action.
@@ -107,6 +118,7 @@ model decision or an explicit user request, not a guaranteed post-run action.
 | `allowed-tools`                | token list               | Auto-approves matching tools for an inline slash run.                  | Ignored by forked and pinned execution paths.                                                                 |
 | `disallowed-tools`             | token list               | Removes matching tools from an inline slash run.                       | Ignored by forked and pinned execution paths.                                                                 |
 | `paths`                        | glob token list          | Filters model-roster visibility against the session working directory. | Explicit slash invocation and pinning do not use this filter.                                                 |
+| `keywords`                     | phrase list              | Injects the body when the latest user message contains a phrase.       | Case-insensitive word-boundary matching; roster hiding does not disable it, but agent skill denial does.      |
 | `context`                      | `fork`                   | Starts the skill in a detached child session.                          | Any other value uses the inline path.                                                                         |
 | `agent`                        | role name                | Selects the child role for `context: fork`.                            | Ignored for inline runs.                                                                                      |
 | `model`                        | model id or family alias | Requests the child model for `context: fork`.                          | Ignored for inline runs; routing can still reject or resolve the request.                                     |
@@ -119,6 +131,10 @@ model decision or an explicit user request, not a guaranteed post-run action.
 
 Token lists accept a YAML list, an inline array, or comma- or space-separated text. Parenthesized
 tool patterns remain one token, so `Bash(git *)` is not split at its space.
+
+`keywords` uses comma-separated phrases or a YAML list; spaces within a phrase are preserved.
+Keyword injection has its own 32,000-code-unit body budget and skips already pinned names. It adds
+instructions to the prompt; it does not guarantee that the model follows them or record curator use.
 
 `${CLAUDE_PROJECT_DIR}` inside an `allowed-tools` value resolves before the auto-approval rule is
 created.
@@ -169,7 +185,10 @@ above, runs at most 16 commands with concurrency four, and allows ten seconds an
 command. Aggregate inserted stdout is capped at 64 KiB. Failures become visible error text in the
 skill body.
 
-Expansion is single-pass. Output is not scanned for more commands or placeholders.
+Shell expansion is single-pass: output cannot start more `!` commands. It does pass through the
+later file-reference and argument stages, so an emitted `@path` or `$ARGUMENTS` can still expand.
+These preprocessing commands spawn directly before the agent run; they do not pass through Bash tool
+approval or the skill's inline tool overrides.
 
 ### File references
 
@@ -206,7 +225,7 @@ and non-zero-exit behavior. For a forked skill, verify the chosen role has every
   process, time, output, and count limits.
 - Plugin skills are read-only through the skill tool. Disable the owning plugin or copy the skill to
   a writable filesystem scope before editing it.
-- Pinned skill bodies share a 32,000-character prompt budget. Content after the aggregate cap is
+- Pinned skill bodies share a 32,000-code-unit prompt budget. Content after the aggregate cap is
   truncated and replaced with an omission notice.
 
 ## Related guides
@@ -219,7 +238,7 @@ and non-zero-exit behavior. For a forked skill, verify the chosen role has every
 ## Source of truth
 
 - [Frontmatter parser](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-frontmatter.ts)
-- [Exact-scope discovery and writes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
+- [Discovery precedence and writes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
 - [Bounded directory scanner](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-scan.ts)
 - [Slash-command dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers.ts)
 - [Dynamic command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-commands.ts)

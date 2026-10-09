@@ -40,10 +40,10 @@ lists scroll within a bounded panel, with Manage plugins fixed below the catalog
 | Outcome                        | Mechanism                                                                                                | Boundary                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | Arrange work side by side      | Resize the main and companion columns; reorder tabs within their strips                                  | Mobile shows only the focused group at one time             |
-| Keep session tabs together     | Every tab belongs to the conversation it was opened in and shows only with that conversation             | Settings, Usage and agent profiles are app-wide             |
+| Keep session tabs together     | Session tabs appear in the named conversation's root workspace                                           | Settings, Usage and agent profiles are app-wide             |
 | Step into a sub-session        | Its chat opens as a tab beside its parent's; the files, terminals and Browser around it stay             | A sub-session has no workspace of its own; start a new chat |
 | Restore a working layout       | The grid saves its split tree, active group, and restorable tabs locally                                 | Ephemeral and non-restorable tabs are omitted               |
-| Reuse an open surface          | Browser, Problems, Activity and Search open once per chat; opening again reveals that chat's tab         | Another chat gets its own copy                              |
+| Reuse an open surface          | Browser, Problems, Activity and Search reuse their tab in the root workspace                             | Another root workspace gets its own copy                    |
 | Attach explicit context        | Type a supported reference or drag a conversation, result, message, or selection to composer             | Each source publishes a bounded structured binding          |
 | Link eligible open-tab context | Mounted workbench tabs can publish visible, dismissible context candidates                               | Only registered bindings from visible Localix surfaces join |
 | Review the send set            | The composer lists automatic and explicit context with status and estimated size                         | Server expansion at send time remains authoritative         |
@@ -79,12 +79,12 @@ but is disabled.
 
 ### Session scope and restoration
 
-Every tab belongs to one session and appears only with it; a chat's [Kanban](task-board.md) board,
-its Browser, Problems, Activity and Search tabs are among them. Each open names its session — the
-chat a tool card, a link or a command belongs to — and a tab never takes the session of whichever
-chat happens to be on screen. Only app-level tabs (Settings, Usage, an agent profile, and plugin
-views registered as global) belong to no session and stay available in every chat. A saved layout
-drops a session tab that names no session.
+Session tabs are placed in their root conversation's workspace; [Kanban](task-board.md), Browser,
+Problems, Activity and Search are among them. Each open names its session — the chat a tool card, a
+link or a command belongs to — and a tab never takes the session of whichever chat happens to be on
+screen. Only app-level tabs (Settings, Usage, an agent profile, and plugin views registered as
+global) belong to no session and stay available in every chat. A saved layout drops a session tab
+that names no session.
 
 A session's workspace is its ROOT conversation's (`apps/ui/src/shared/lib/workspaceOf.ts`). A
 sub-session of any kind — a delegated agent, a thread, a fork — has none of its own: what it opens
@@ -146,11 +146,10 @@ directory when it is enabled.
 
 ### The browser
 
-Each session has its own Browser work item with its own tab strip. A page opened in one session — by
-you, by its agent, or as a dev-server preview — appears only in that session's Browser, and only
-that session's agent sees it among its tabs. A tab shows a web page, the history list, or a new tab
-waiting for an address. Browsing history is the one thing shared across sessions: it records the
-pages you visited, and an entry opens in the Browser of the session you open it from.
+Each root workspace has a Browser work item and page strip. Pages opened by its root or child
+sessions share that strip; a page retains the session that opened it. Another root workspace has a
+separate strip. A tab shows a web page, the history list, or a new tab waiting for an address.
+Browsing history is shared across workspaces: an entry opens in the workspace you open it from.
 
 | Control         | What it does                                                                       | Boundary                                                  |
 | --------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -200,6 +199,12 @@ linked conversations, and plugin-owned resources without inserting expanded bloc
 prompt. File and folder references resolve in the directory the server assigns to the sending
 session, after checking that you own it; browsing `@resource:` with a session you do not own is
 refused.
+
+![Automatic context from an open source file and terminal, with sources and estimated sizes](../assets/screenshots/context/composer-context--2026-10-07.png)
+
+The context popover in this capture lists the open `release.ts` file and terminal as automatic
+sources. The terminal contains output from the fixture's actual tests; the conversation is seeded
+illustrative content.
 
 Eligible mounted tabs can publish live context candidates. Those candidates appear as automatic
 context in the composer; explicit attachments take precedence over a duplicate automatic link. The
@@ -293,6 +298,8 @@ primary shortcut.
   output. A dead or unreachable PTY can require an explicit replacement terminal.
 
 ## Related guides
+
+- [Files and images in chat](attachments.md)
 
 - [Your first session](../getting-started/first-session.md)
 - [Sessions and projects](sessions-and-projects.md)

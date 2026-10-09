@@ -8,13 +8,13 @@ windows are outside this workflow.
 
 ## What you can do
 
-| Outcome                | Mechanism                                                             | Boundary                                                        |
-| ---------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Describe one element   | Pick it and save a note with its capture and optional JPEG.           | Source resolution and screenshot rasterization are best-effort. |
-| Reproduce a breakpoint | Pin the preview iframe to a named CSS viewport and rotate it.         | This does not emulate a device, browser, or touch input.        |
-| Mark empty space       | Drag a region and record its viewport coordinates.                    | A region has no element selector or source line.                |
-| Add selected text      | Select text and use **Add to chat** to update the composer draft.     | This quick path creates no note or screenshot.                  |
-| Batch related defects  | Save several comments; each lands in the composer's attached context. | Attaching to the composer does not send the message.            |
+| Outcome                | Mechanism                                                                      | Boundary                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Describe one element   | Pick it and save a note with its capture and optional JPEG.                    | Source resolution and screenshot rasterization are best-effort.            |
+| Reproduce a breakpoint | Pin the preview iframe to a named CSS viewport and rotate it.                  | This does not emulate a device, browser, or touch input.                   |
+| Mark empty space       | Drag a region and record its viewport coordinates.                             | A region has no element selector or source line.                           |
+| Add selected text      | Select text while Visual Feedback is on; it attaches to the draft immediately. | No note card or screenshot is created; the selected words are the comment. |
+| Batch related defects  | Save several comments; each lands in the composer's attached context.          | Attaching to the composer does not send the message.                       |
 
 The [Visual Feedback guide](../features/visual-feedback.md) owns probe injection, source resolution,
 redaction, and screenshot behavior. This recipe covers the shortest fix-and-verify path.
@@ -42,8 +42,11 @@ You should see the iframe adopt the displayed CSS dimensions. For example, **iPh
 Turn on **Visual Feedback**, then click the element. Enter a short observation such as “extra space
 below this label,” keep or remove the staged screenshot, and choose **Attach feedback**.
 
-You should see a numbered pin and a saved comment. The capture can include a selector, DOM path,
-text, role, compact computed styles, rectangle, component ancestry, and best-effort source location.
+You should see a quiet tint on the commented element and one attached-context entry in the session
+composer. Expand that entry to review the note and any screenshot. There are no numbered pins. The
+capture can include a selector, DOM path, text, role, compact computed styles, rectangle, component
+ancestry, and best-effort source location. The note is optional: an empty note attaches a short
+observation about the selected element, even if screenshot capture failed.
 
 ### 4. Review the attached context, then send
 
@@ -63,17 +66,19 @@ you compare its current DOM and style context with the original note.
 
 ## Configuration
 
-| Control             | Effect                                                      | Availability                                      |
-| ------------------- | ----------------------------------------------------------- | ------------------------------------------------- |
-| **Visual Feedback** | Enables element, text, multi-element, and region selection. | Requires a connected or injectable preview probe. |
-| **Page frame size** | Selects responsive fill or a fixed CSS viewport.            | Available in the browser toolbar.                 |
-| **Rotate frame**    | Swaps a fixed preset's width and height.                    | Hidden for responsive fill.                       |
-| **Attach feedback** | Attaches an observation and its images to draft context.    | Requires a session and a note or attachment.      |
+| Control             | Effect                                                      | Availability                                                   |
+| ------------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| **Visual Feedback** | Enables element, text, multi-element, and region selection. | Requires a connected or injectable preview probe.              |
+| **Page frame size** | Selects responsive fill or a fixed CSS viewport.            | Available in the browser toolbar.                              |
+| **Rotate frame**    | Swaps a fixed preset's width and height.                    | Hidden for responsive fill.                                    |
+| **Attach feedback** | Attaches an observation and its images to draft context.    | Requires a selected capture and session; the note is optional. |
 
 ## Limits
 
 - Source mapping is best-effort. Production bundles and non-React pages may provide no line number;
   a Localix-served static file can supply only a file-level fallback.
+- Text selection attaches up to 500 UTF-16 code units from the selected words. Select a smaller
+  passage or attach the source document when the omitted text matters.
 - Element screenshots re-render DOM through a canvas path. Cross-origin images can be omitted, and
   rasterization can fail.
 - A fixed viewport does not emulate user agent, device pixel ratio, touch, sensors, or a specific

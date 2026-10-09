@@ -73,19 +73,19 @@ more common than timelines. The prompt makes Steps the default for any staged an
 numbered list a model writes by habit, and steers diagrams to branching flows, structure and data.
 
 ```text
-> [!STEPS] Recovery after surgery
-> 1. **First 24 hours**
->    *Day 1*
->    Coming out of anaesthesia; keep her warm and still.
-> 2. **Activity returns**
->    *Days 2–3*
->    Appetite comes back; keep walks short.
+> [!STEPS] Restore a workspace
+> 1. **Inspect the backup**
+>    *Before restoring*
+>    Check the saved files and choose the version to restore.
+> 2. **Verify the result**
+>    *After restoring*
+>    Open the workspace and check the files you need.
 ```
 
 The other container forms follow the same rule: a marker of ours over ordinary Markdown, so the
 source still reads as a quote holding a list or sections anywhere else. **Tabs** split on the first
-heading level under the marker; every panel stays in the page, hidden, so find-in-page and copying
-the message still reach them.
+heading level under the marker. The first panel opens initially; switch tabs to read the other
+variants. Hidden panels remain mounted, and copying the whole message retains their Markdown.
 
 **Figures** take each item's bold lead as the number. **For/against** pairs a `PROS` and a `CONS`
 written one after the other into one block. A comparison of options is a tab per option holding its
@@ -106,16 +106,17 @@ Space, and the arrow keys move between rows.
 
 A **checklist** is GFM's own task list. In an agent's reply each box can be ticked, and the mark is
 stored on the message — the same in every window and after a reload — keyed by where the item sits
-in the text. The agent's words never change, and the marks are never sent to the model. A checklist
+in the text. The agent's words never change, and the marks are never sent to the model. Checkmarks
+appear immediately; a failed server save restores the prior state and shows an error. A checklist
 added to Project Space can be ticked there too: there the text is the store, so a tick changes the
 item's `[ ]` to `[x]` in the element's Markdown, and undo takes it back.
 
 ```text
 > [!TABS]
 > #### macOS
-> brew install localix
+> sw_vers
 > #### Linux
-> curl -fsSL get.localix.sh | sh
+> cat /etc/os-release
 ```
 
 ## How it works
@@ -138,19 +139,14 @@ HTML, so the sanitize pipeline gains nothing new to trust. It runs while a reply
 callout does not re-flow the message when the reply settles. A marker still being typed, such as
 `> [!WARN`, is withheld by the streaming stabilizer until its `]` arrives.
 
-Math is typeset while a reply streams. `rehypeMathCached` keeps every formula it has set in a
-bounded cache, so a streaming tick pays KaTeX only for an expression it has not seen. The stabilizer
+Math is typeset while a reply streams. `rehypeMathCached` keeps recently typeset formulas in a
+bounded cache, so repeated expressions can reuse their rendered nodes until eviction. The stabilizer
 withholds a formula from its opening `$` until the closing one arrives; a currency amount such as
 `$5` and a shell variable such as `$HOME` are left as text.
 
-| Measure (30 formulas)    | Before           | After   |
-| ------------------------ | ---------------- | ------- |
-| Parse per streaming tick | ~12 ms           | ~0.6 ms |
-| Math during streaming    | raw `$…$` source | typeset |
-
-The renderer caches share one bounded least-recently-used cache,
-`packages/kit/src/lib/bounded-cache.ts`: typeset math, highlighted code blocks, drawn diagrams, and
-the inspector's file snapshots.
+Math, code highlighting, diagrams, and inspector snapshots each use a bounded cache built with the
+shared cache utility. Reusing a formula avoids repeated typesetting, but the time saved depends on
+the content and device.
 
 The styling follows the visual system: a callout's kind is carried by its glyph in the status hue,
 never by a coloured fill, and the note itself is a veil of the foreground over its ground. An
@@ -175,12 +171,8 @@ pinch or use the zoom controls to enlarge. **100%** restores reading scale and *
 shows the whole diagram. Long chains open at reading scale from their beginning. Escape or the close
 button returns to the reply. The viewer reuses the rendered SVG and the shared graph camera.
 
-Its window follows the diagram's dimensions: horizontal chains stay shallow, tall diagrams have more
-vertical space, and the viewport clamps both. The viewer presents the diagram without a panel, grid
-or persistent caption. Its backdrop uses the full modal scrim: stronger dimming and blur than the
-half-weight model picker, so the underlying reply does not compete with the diagram. The camera is
-available when the diagram is shown in the reply, and its initial viewport is supplied before
-mounting, so opening does not wait for another module download or a hidden canvas placement pass.
+The viewer adapts to the diagram's dimensions and available viewport. It reuses the rendered SVG
+rather than computing another Mermaid layout.
 
 When Project Space is enabled, **Add to Project Space** appears on settled reply fragments:
 headings, paragraphs, lists, quotes, callouts, formulas, tables, code, diagrams, images and links.

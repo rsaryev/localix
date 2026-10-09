@@ -194,10 +194,11 @@ by side, or a file inside a frame, are not a connection.
 ## How it works
 
 The board is a file, and every change is an operation on it. The view, the agent's `space_apply`
-tool and undo all speak the same operations, and each one is applied on its own: a refused operation
-is reported and the rest of its batch still lands. The store reads the file before every change and
-writes it back whole, so an edit made to the file by hand or with another tool is never overwritten
-by a stale copy.
+tool and undo all speak the same operations. An agent batch accepts 1–200 operations: a refused
+operation is reported without changing the board, while accepted operations are saved together in
+one board write. The store serializes its own changes per project and rereads the file before each
+change. Direct file edits outside that queue can still race a read and write; avoid simultaneous
+editing of the board JSON through unrelated file tools.
 
 A reference card shows its target as it is now. When the file changes on disk the card reads it
 again; when the file is gone the card says so and keeps the path until you point it elsewhere or

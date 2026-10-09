@@ -83,6 +83,11 @@ keep up to 60 local edit steps, grouping consecutive typing within 700 ms; the u
 recovered with the draft. **History** restores a saved version as a new revision and keeps up to 60
 history snapshots beside the resume file.
 
+Ordinary file edits change the content revision and can appear as the current state in History, but
+do not automatically snapshot every intermediate edit. The agent's `export` returns content; it does
+not write a download file. Use file tools to save that content or the workbench export controls for
+downloads.
+
 ## Related guides
 
 - [Documents](documents.md)

@@ -14,13 +14,13 @@ page to trace which rule decides that call.
 
 ## Permission contract
 
-| Mechanism       | Behavior                                                                  | Boundary                                                    |
-| --------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Rule evaluation | The LAST rule that matches the call decides.                              | A call no rule matches is allowed.                          |
-| Whose rules     | The agent taking the turn owns them; there is no scope above it.          | A narrower role is a different agent, not a narrower scope. |
-| Shipped guards  | Every role we ship confirms outside-workspace access and dangerous shell. | They are rows in its own list, placed last (see below).     |
-| Session grant   | **This session** remembers the chosen breadth in the API process.         | A process restart or a different session asks again.        |
-| Permanent rule  | **Always** writes that breadth's rule into the asking agent's own list.   | Offered only when the rule would allow the call it answers. |
+| Mechanism       | Behavior                                                                 | Boundary                                                              |
+| --------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Rule evaluation | The LAST rule that matches the call decides.                             | A call no rule matches is allowed.                                    |
+| Whose rules     | The agent taking the turn owns them; there is no scope above it.         | A narrower role is a different agent, not a narrower scope.           |
+| Shipped guards  | Every role includes outside-workspace and dangerous-shell question rows. | They follow its general tool allowances; later rows can still decide. |
+| Session grant   | **This session** remembers the chosen breadth in the API process.        | A process restart or a different session asks again.                  |
+| Permanent rule  | **Always** writes that breadth's rule into the asking agent's own list.  | Offered only when the rule would allow the call it answers.           |
 
 ## How it works
 
@@ -63,9 +63,26 @@ directory, which is the host application; a source lint keeps `process.cwd()` ou
 | `action`     | `allow`, `ask`, or `deny`.                                    | None of the three is terminal; position decides.              |
 | `message`    | Supplies the explanation shown for an `ask` or `deny`.        | It does not change evaluation.                                |
 
-Rules are evaluated in one pass, in order, and the last match wins. That is the whole rule. A `deny`
-stated before a narrower `allow` is an allowlist with an exception — the shape every shipped preset
-uses (`tool:* * deny`, then an `allow` per tool).
+Rules are evaluated in order; the last match wins. Specificity has no separate priority: a broad
+rule placed later can override a narrow one. A `deny` before a narrower `allow` creates an allowlist
+with an exception, as in the shipped presets.
+
+For example, these rows in **Permission rules** allow ordinary Git commands while asking about
+dangerous commands:
+
+| Position | Capability  | Resource    | Effect  |
+| -------- | ----------- | ----------- | ------- |
+| 1        | `tool:bash` | `*`         | `ask`   |
+| 2        | `tool:bash` | `git *`     | `allow` |
+| 3        | `tool:bash` | `dangerous` | `ask`   |
+
+`git status` matches rows 1 and 2, so it is allowed. `git push --force` also matches row 3, so it
+asks. Moving row 2 below row 3 would allow that force push. These rows illustrate ordering; keep the
+preset's other guards when editing your list.
+
+The editor stores these columns as `action`, `resource`, and `effect`. For live tool calls, Localix
+projects them to the `permission`, `pattern`, and `action` fields above, removing the `tool:` prefix
+from the tool name.
 
 A skill's `allowed-tools` are evaluated as separate preapprovals after the original ordered policy
 has decided. They can answer an ordinary matching tool or argument question; they cannot reorder the
@@ -100,12 +117,9 @@ backups) is outside, so touching it asks
 facts, not compared against its text. That is what makes them robust where a glob is not — `rm -fr`,
 `rm -r -f` and `rm --recursive --force` are one class and three different strings.
 
-Every class is declared once, in
-[`resource-classes.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/resource-classes.ts),
-with its predicate, the kinds it applies to, and the line the editor shows beside it. The matcher
-answers from that list and the snapshot ships it, so adding a class teaches the engine to match it
-and the rules editor to suggest it at once — nothing on the client names one. A guard reads the
-matcher's source and fails if it compares a resource against a name the list does not declare.
+The rules editor suggests the classes declared in
+[`resource-classes.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/resource-classes.ts).
+That list defines their predicates and the capability kinds they apply to.
 
 An artifact's trust class (`bundled`, `opt-in`, `untrusted`) is in the same list and works the same
 way in a rule, but it is a fact about the ARTIFACT rather than the call — so it applies to
@@ -119,16 +133,19 @@ declare native resources through `permissionResources`.
 
 ### The guards a shipped role carries
 
-Every role we ship carries these, LAST in its preset:
+Every shipped role includes these rows after its general tool allowances:
 
 | Permission  | Pattern             | Action | Purpose                                                  |
 | ----------- | ------------------- | ------ | -------------------------------------------------------- |
 | `tool:*`    | `outside-workspace` | `ask`  | Confirm reads or writes beyond the session workspace.    |
 | `tool:bash` | `dangerous`         | `ask`  | Confirm commands matched by the shell danger classifier. |
 
-Their position is the whole mechanism. Every roster carries `tool:read * allow` and most carry
-`tool:bash * allow`; placed first, those would answer for an outside-workspace read too. Placed
-last, the guards are the more specific statement and they hold.
+The guards follow the roster's general tool allowances. This order makes an outside-workspace read
+ask even though an earlier row allows the read tool. The guards win because they come later, rather
+than because class patterns have a higher priority.
+
+They are not necessarily the final rows. Role-specific restrictions and the default `agents` tool
+denial follow them; a matching later restriction can refuse a call instead of asking.
 
 What **Always** writes is placed to keep that true. It must come after the rule that raised the
 card, or it silences nothing. Appended at the very end it would also put `tool:bash git * allow`
@@ -136,10 +153,9 @@ after `tool:bash dangerous ask`, and the last match for `git push --force` would
 So the new row goes in just before the trailing `dangerous`, `catastrophic` and `secrets` guards
 that could decide the same calls: past everything else, never past a guard.
 
-They are removable, deliberately, by the person who owns the installation: a rule naming the same
-class (`tool:bash dangerous allow`) is the way, and it is a row they can see in the editor. What the
-arrangement prevents is the QUIET removal — a click on a card about one command silently disarming
-the guard for every other.
+You can explicitly override a guard with a later row naming the same class, such as
+`tool:bash dangerous allow`. Permanent approvals preserve the trailing guards so approving one
+command does not silently allow every dangerous command.
 
 The shell classifier recognizes specific destructive families, privileged execution, writes to real
 device paths, force pushes, power commands, and common download-to-shell forms. It is a lexical
@@ -164,9 +180,9 @@ denial for calls needing a person. Plan appends file, host, and external-effect 
 preserves the relative order of the retained agent rules.
 
 Skill preapprovals never reorder this policy or override a denial. MCP hooks use the same tool
-policy and call gate; an unattended hook cannot execute a call that requires confirmation. A tool
-that declares no `classify` is classed `external`, so an undeclared tool is refused by Plan rather
-than passing as a read.
+policy and call gate; an unattended hook cannot execute a call that requires confirmation. Without
+`classify`, a tool with `mutates: false` is a read. A true or omitted mutation flag yields
+`external`, which Plan refuses.
 
 ## Configuration
 

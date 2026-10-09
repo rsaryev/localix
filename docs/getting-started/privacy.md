@@ -44,6 +44,22 @@ version. A check that cannot reach the manifest reports no newer version rather 
 The desktop UI also calls the Localix API over loopback. Those requests cross a process boundary but
 remain on the same machine unless you deliberately expose or proxy the API.
 
+### Local API access
+
+The API defaults to loopback and has no request authentication. `x-user-id` is a self-asserted data
+scope; omission or a blank value uses the configured default user. Ownership checks use that
+resolved identity, so the header is not a trusted multi-user login boundary.
+
+Host and browser-origin checks restrict which pages can drive the API. Allowed page origins include
+the packaged app, explicitly configured `LOCALIX_UI_ORIGINS`, and the API's own HTTP origin when it
+serves the UI. Allowed Host names include loopback names and a configured concrete bind host. Other
+local processes can still make requests without a browser origin; these checks are not process
+authentication.
+
+Keep the API on loopback or put authentication in front of it before exposing it to untrusted
+network callers. The [webhook guide](../features/webhook.md) describes the same request boundary for
+inbound external messages.
+
 ### Local storage
 
 | Data                                                          | Default location                                                                     | Protection and scope                                                                                                                                                                                                                                                                                       |
@@ -103,6 +119,8 @@ Use the [secrets guide](../features/secrets.md) for vault references and rotatio
 ## Source of truth
 
 - [Home and database paths](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/env.ts)
+- [Host and browser-origin checks](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/local-origin-guard.ts)
+- [Self-asserted request identity](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/request-identity.ts)
 - [SQLite permissions and adjacent storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/db/connection.ts)
 - [Vault database and key ownership](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/store.ts)
 - [Vault version persistence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/store-internals.ts)

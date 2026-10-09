@@ -69,8 +69,8 @@ accept:
 
 ## How it works
 
-1. **Discovery** walks the project in-process and honours every `.gitignore`, the repository's
-   `.git/info/exclude` and the global excludes file (`core.excludesFile`, else
+1. **Discovery** walks the project in-process and honours `.gitignore` files within that project,
+   the repository's `.git/info/exclude` and the global excludes file (`core.excludesFile`, else
    `~/.config/git/ignore`), so it needs neither git nor ripgrep. Dependency and build directories
    (`node_modules`, `dist`, `.venv`, …) are always skipped. An open map hears file changes in the
    chat's project and re-indexes about a second and a half after them; edits under skipped
@@ -110,8 +110,14 @@ answer reports how many calls were linked, went into dependencies, or stayed unr
 ## Limits
 
 - Languages: TypeScript, TSX, JavaScript, Python and Go.
-- At most 20,000 source files per project are indexed; files over 1 MB and minified files are
-  skipped, and the view says how many were left out.
+- At most 20,000 source files per project are indexed; files over 1 MB, minified sources and
+  symlinks are skipped. The omitted-file counter reports overflow past the file-count cap, not all
+  skipped files or complete project coverage.
+- Ignore-file configuration reads direct `core.excludesFile` settings; Git config `include`
+  directives are not followed. Ancestor `.gitignore` files above the opened project are not read.
+- Agent impact lookup follows incoming resolved edges for three hops by default (`depth`: 1–5). Path
+  lookup follows outgoing edges for up to eight hops; `undirected: true` also follows reversed
+  edges. These show potential dependencies and structural connections, not proven runtime failures.
 - Resolution is syntactic. It does not infer return types, generics or dynamic dispatch, so an
   absent "called by" is not proof that nothing calls a symbol.
 - Parsing runs in the API process and yields to the event loop every few milliseconds; a first index
@@ -126,6 +132,9 @@ answer reports how many calls were linked, went into dependencies, or stayed unr
 
 ## Source of truth
 
+- [Discovery filters and source-file ceiling](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/indexing/discover.ts)
+- [Repository and global ignore configuration](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/indexing/repo-excludes.ts)
+- [Impact and shortest-path traversal](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/graph/traverse.ts)
 - [Tree-sitter loading and the per-language extractors](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/extract/)
 - [Build phases and resolution statistics](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/graph/build.ts)
 - [Name, export, member and field-type lookup](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/graph/scope.ts)

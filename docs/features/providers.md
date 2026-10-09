@@ -16,7 +16,7 @@ need a catalog entry, and sign-in appears only when that runtime reports an OAut
 | Connect from the environment | Select a catalog provider whose server-side environment key exists                   | Only the variable name reaches the client; its value stays server-side |
 | Sign in through OAuth        | Start the interaction advertised by the runtime adapter                              | Availability and interaction style depend on the provider definition   |
 | Keep separate connections    | Add and label more than one connection for the same provider                         | A session stores one preferred connection                              |
-| Manage connection keys       | Add, remove, enable, or disable masked keys                                          | The final key cannot be removed or disabled                            |
+| Manage connection keys       | Add, remove, enable, or disable masked keys                                          | Cannot remove the only key or disable the last enabled key             |
 | Choose a session model       | Bind a catalog model and connection from the composer                                | The model must belong to the connection's provider                     |
 | Inspect model fit            | Compare capabilities, modalities, limits, wire protocol, and pricing including tiers | Catalog records can be partial or change with the active runtime       |
 | Narrow the model list        | Search models, or filter by tools, reasoning, vision, priced caching, or free        | A facet appears only when some model in the list matches it            |
@@ -42,6 +42,11 @@ the model details panel, with its settings, opens in place of the list.
 Creating a connection writes its label, provider id, authentication type, key order, and enabled
 state to SQLite. API keys and OAuth token fields are stored separately in the encrypted credential
 vault. Connection responses contain only a masked key suffix and metadata.
+
+Environment detection offers providers that are not already connected. Connecting copies the current
+server-side environment value into the vault; it does not keep a live link to that variable.
+Changing the environment later does not rotate the saved connection key. Add or replace the key in
+Localix when you rotate it.
 
 If you close the browser before finishing sign-in, return to the provider form and start sign-in
 again. A new attempt cancels your pending login for that provider and waits for its local callback
@@ -73,34 +78,69 @@ final room fallback: it prevents an otherwise unconfigured participant from fail
 conversation already has a working model. The picker labels this source as **main model**.
 
 Because the chain is applied on READ, nothing is frozen at birth: a model you set on the project
-today reaches the conversations you started yesterday. A participant seated later joins with no
-model of its own and is answered the same way. A delegated child snapshots its assigned
-participant's effective route from the parent, falling back to the parent's main model. This
-inherited route does not become that agent's cross-session “last used” preference.
+today can reach the conversations you started yesterday when no higher-priority choice wins. Default
+lookups are cached for up to five seconds. A participant seated later joins with no model of its own
+and is answered the same way. A delegated child snapshots its assigned participant's effective route
+from the parent, falling back to the parent's main model. This inherited route does not become that
+agent's cross-session “last used” preference.
 
-**Reasoning effort** follows the same order but is settled once, when a participant is seated,
-because it is the dial for the task in front of you: a conversation started on `high` stays on
-`high` when a level below it changes later. A child takes its parent's. With nothing stated anywhere
-it starts at **medium**. A model that cannot reason is simply asked for none at request time; that
-is a fact about the model, so it is never remembered as your preference and never carried to the
-next model you pick.
+**Reasoning effort** is saved when a conversation starts. An explicit participant or conversation
+value wins; otherwise a new top-level conversation consults recent effort for that agent, its
+default, and the project, then uses **medium**. Recent effort comes from the most recently updated
+session containing that agent, rather than the model-selection timestamp. Later changes to defaults
+do not alter the saved conversation effort. A participant added to an existing conversation starts
+with its main participant's current effort. Children inherit parent effort unless their creation
+supplies an explicit override.
 
-The required **Chat sessions** route is the default for a direct conversation. Optional workload
-routes cover session title and objective generation, inline completion, and delegated agents. Each
-optional route can inherit a documented parent route rather than requiring another connection.
-Reasoning preferences are keyed by workload, provider, and model so changing one route does not
-silently rewrite another model's preference.
+A model that cannot reason receives no reasoning request. For models that support it, the runtime
+clamps the requested effort to a supported level; that runtime adjustment does not rewrite the
+conversation's stored preference.
+
+The model browser offers these optional workload settings:
+
+| Workload          | Current runtime behavior                                                                                                                                                                                              |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort inherits the session effort.                                                                   |
+| Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary.                                   |
+| Delegated agents  | The setting is persisted and displayed, but current delegated-session creation does not apply it. Children snapshot their assigned participants' effective parent routes. Tool availability follows capability rules. |
+
+Reasoning preferences in the picker are keyed by workload, provider, and model. The runtime behavior
+above determines whether each workload uses a saved effort.
 
 The board has no route of its own. A worker's model is its agent's — **Settings → Agents** — so it
 applies on every dispatch path rather than only on a card; a card that names no model inherits the
 session that owns the board, like any other unrouted workload.
 
-Within one connection, the runtime selects the enabled key with the lowest numeric priority. OAuth
-refresh runs through a connection-scoped credential store; refresh updates for one key are
-serialized so concurrent runs do not overwrite rotating tokens.
+Within one connection, the runtime selects the enabled key with the lowest numeric priority.
+Disabling the last enabled key and removing the only remaining key are separate guards. Removing an
+enabled key while disabled keys remain can leave the connection with no runnable key; enable its
+replacement before removing it. OAuth refresh runs through a connection-scoped credential store;
+refresh updates for one key are serialized so concurrent runs do not overwrite rotating tokens.
 
 The catalog adapter can enrich existing OpenRouter model records with public release dates for
 sorting. It never creates a model that is absent from the runtime's built-in catalog.
+
+### Sign-in lifecycle
+
+Browser and device-code sign-in finish in the API process. The interface looks for a new or changed
+connection for the provider: up to 40 polls, with three seconds between attempts. Slow requests can
+extend this beyond the roughly two-minute wait shown in the interface. Navigating away can stop
+polling, and starting another sign-in stops the previous poll; this does not itself cancel the
+server's login.
+
+The server allows up to 15 minutes for a flow and 30 seconds for its first interactive event. If the
+interface times out, check the connection list before retrying: server-side sign-in may still
+finish. Pending flows are held in memory and do not survive an API restart. A retry replaces only
+that user's pending flow for the same provider and waits for the adapter's cleanup.
+
+Signing in again with the same provider and exact connection label adds an enabled key to the
+existing connection. It does not replace older keys: the new key receives a higher numeric priority,
+so an older enabled key remains first. If you intend to replace the old credential, enable the new
+one and disable or remove the old one. Use a different connection label for a separate account.
+
+Runtime login prompts have a limited adapter: a selection uses the first offered option, text
+prompts receive an empty answer, and interactive secret prompts are rejected. Flows needing custom
+answers to those prompts cannot be completed through the current provider form.
 
 ## Configuration
 
@@ -113,21 +153,21 @@ retained in `~/.localix/oauth-device-id` across restarts and projects. `OpenAI C
 remains a separate provider using the older ChatGPT backend transport; existing connections keep
 their provider identity.
 
-| Control or value       | Contract                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| Provider source        | Runtime catalog projected by the engine's `listCatalog()`                      |
-| API-key connection     | Requires at least one non-empty key                                            |
-| Environment detection  | Uses catalog-declared variable names in the server process                     |
-| OAuth connection       | Uses the runtime-reported browser, loopback-server, or device-code interaction |
-| Connection label       | User-editable; does not change provider identity                               |
-| Key display            | Masked to the final four characters                                            |
-| Key selection          | Enabled keys ordered by ascending numeric priority                             |
-| Model identity         | Stored as `<providerId>/<modelId>`                                             |
-| Catalog metadata cache | `~/.localix/catalog-metadata.json`                                             |
-| Required route         | Chat sessions                                                                  |
-| Context routes         | Session titles, inline completion                                              |
-| Worker route           | Delegated agents; with the route off, a child runs on the session model        |
-| Reasoning preference   | Stored for the workload plus provider/model pair when supported                |
+| Control or value       | Contract                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| Provider source        | Runtime catalog projected by the engine's `listCatalog()`                               |
+| API-key connection     | Requires at least one non-empty key                                                     |
+| Environment detection  | Uses catalog-declared variable names in the server process                              |
+| OAuth connection       | Uses the runtime-reported browser, loopback-server, or device-code interaction          |
+| Connection label       | User-editable; does not change provider identity                                        |
+| Key display            | Masked to the final four characters                                                     |
+| Key selection          | Enabled keys ordered by ascending numeric priority                                      |
+| Model identity         | Stored as `<providerId>/<modelId>`                                                      |
+| Catalog metadata cache | `~/.localix/catalog-metadata.json`                                                      |
+| Required route         | Chat sessions                                                                           |
+| Context routes         | Session titles, inline completion                                                       |
+| Worker route           | Delegated-agent setting is saved; current child creation uses parent participant routes |
+| Reasoning preference   | Stored for the workload plus provider/model pair when supported                         |
 
 The onboarding provider step embeds the same model browser used by the workspace. It can connect a
 detected environment key, create an API-key or OAuth connection, and remember the selected
@@ -156,11 +196,12 @@ connection and model for the first session.
   clamps again before the request, so a level from an older client or an unpublished capability
   degrades instead of failing the run.
 - Release dates and published reasoning levels come from OpenRouter's public model list. Localix
-  asks for it once per launch (at most every five minutes), in the background, with a 1.5-second
-  timeout. Nothing waits for the answer: the catalog is served from the last saved answer, or from
-  the generated metadata on a first launch or when the network is unreachable. When the answer
-  arrives, the next catalog read uses it and it is saved for the next launch. A failed request is
-  never saved.
+  starts a background refresh on the first catalog projection in a process, then can refresh on
+  another projection after five minutes. This is demand-driven, not a periodic timer. Each fetch has
+  a 1.5-second timeout. Nothing waits for the answer: the catalog is served from the last saved
+  answer, or from the generated metadata on a first launch or when the network is unreachable. When
+  the answer arrives, the next catalog read uses it and it is saved for the next launch. A failed
+  request is never saved.
 - The catalog endpoint answers with an `ETag`. A client that already holds the current catalog gets
   `304 Not Modified` instead of the full list.
 - Providers that offer no chat models, such as classifier-only ones, are not offered for connection,
@@ -188,8 +229,15 @@ connection and model for the first session.
 - [Runtime authentication bridge](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/auth.ts)
 - [Connection API and DTOs](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/contracts.ts)
 - [Credential storage and refresh](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/service.ts)
+- [OAuth flow lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/oauth-flow-manager.ts)
+- [OAuth completion polling](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/oauthConnectionPolling.ts)
 - [Environment-key detection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/env-detect.ts)
 - [Model and connection resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-resolution.ts)
+- [Participant model and effort precedence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/agent-route-resolution.ts)
+- [Participant birth and reseating](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/participant-routes.ts)
+- [Recent model and effort selection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/repository-recent-routes.ts)
+- [Inline workload resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/autocomplete/resolve-model.ts)
+- [Title workload](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/title-generation.ts)
 - [Key-selection policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/provider-keys.ts)
 - [Model browser](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/model-select/ModelBrowser.tsx)
 - [Workload route catalog](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/model-task-catalog.ts)
