@@ -10,7 +10,6 @@
   "apps/api/src/features/chat/runtime/wake-queue/drain.ts": 333,
   "apps/api/src/features/chat/service/branching-ops.ts": 414,
   "apps/api/src/features/chat/service/command-handlers.ts": 449,
-  "apps/api/src/features/chat/service/file-content.ts": 334,
   "apps/api/src/features/chat/service/turn-entry.ts": 418,
   "apps/api/src/features/chat/slash-catalog.ts": 441,
   "apps/api/src/features/context-fabric/manager.ts": 585,
