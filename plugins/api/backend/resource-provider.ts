@@ -20,6 +20,7 @@ import type {
   ResourceRefScope,
 } from '@localixai/plugin-sdk/backend'
 import { redactSpec } from './store'
+import { describeRequest } from './request-summary'
 import type { CollectionRequest, CollectionStore } from './collection/store'
 import { activePairs, type RequestAuth } from './request-spec'
 import { buildRequestUri, parseRestUri } from './uri'
@@ -133,9 +134,7 @@ export function expandCollection(all: readonly CollectionRequest[]): string {
   }
   const lines = [`${all.length} saved request${all.length === 1 ? '' : 's'}:`]
   for (const saved of all) {
-    const spec = redactSpec(saved.spec)
-    const auth = spec.auth.type === 'none' ? '' : ` [auth: ${spec.auth.type}]`
-    lines.push(`  ${saved.name}: ${spec.method} ${spec.url}${auth}`)
+    lines.push(`  ${describeRequest(saved)}`)
   }
   lines.push(
     '',

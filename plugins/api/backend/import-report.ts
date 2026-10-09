@@ -1,4 +1,4 @@
-import { redactSpec } from './store'
+import { describeRequest } from './request-summary'
 import { isPlaceholderHost } from './import/openapi/server'
 import type { ImportedEnvironment, ImportedRequest } from './import/types'
 
@@ -21,13 +21,7 @@ interface SavedImportReport {
 }
 
 function preview(requests: readonly ImportedRequest[]): string {
-  return requests
-    .map(({ name, spec }) => {
-      const s = redactSpec(spec)
-      const auth = s.auth.type === 'none' ? '' : ` [auth: ${s.auth.type}]`
-      return `${name}: ${s.method} ${s.url}${auth}`
-    })
-    .join('\n')
+  return requests.map(({ name, spec }) => describeRequest({ name, spec })).join('\n')
 }
 
 /**

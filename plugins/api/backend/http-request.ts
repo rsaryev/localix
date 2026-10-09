@@ -19,7 +19,8 @@ import { overlayInput, specFromInput } from './input-to-spec'
 import type { ResolveSecret } from './secrets'
 import { bindAuthSecrets, type BindSecret } from './vault-bindings'
 import { redactSpec } from './store'
-import type { CollectionRequest, CollectionStore } from './collection/store'
+import { describeRequest } from './request-summary'
+import type { CollectionStore } from './collection/store'
 import { buildCollectionUri, buildRequestUri } from './uri'
 
 export interface HttpRequestDeps {
@@ -38,12 +39,6 @@ export interface HttpRequestDeps {
   ) =>
     | { store: CollectionStore; environments: EnvironmentService }
     | Promise<{ store: CollectionStore; environments: EnvironmentService }>
-}
-
-function describe(saved: CollectionRequest): string {
-  const spec = redactSpec(saved.spec)
-  const auth = spec.auth.type === 'none' ? '' : ` [auth: ${spec.auth.type}]`
-  return `${saved.name}: ${spec.method} ${spec.url}${auth}`
 }
 
 export function createHttpRequestTool(deps: HttpRequestDeps): AgentTool {
@@ -161,7 +156,7 @@ export function createHttpRequestTool(deps: HttpRequestDeps): AgentTool {
                   'No saved requests yet. Save one with {"action":"save","name":"github-user","url":"https://api.github.com/users/octocat"}.',
               }
             }
-            return { content: all.map(describe).join('\n') }
+            return { content: all.map(describeRequest).join('\n') }
           }
 
           case 'get': {
