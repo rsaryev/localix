@@ -109,7 +109,6 @@
   "plugins/database/backend/drivers/sqlite.ts": 347,
   "plugins/database/backend/resource-provider.ts": 545,
   "plugins/database/backend/service.ts": 416,
-  "plugins/database/ui/model/alterTable.ts": 452,
   "plugins/database/ui/model/useSqlConsole.ts": 324,
   "plugins/database/ui/ui/connect-form/model.ts": 331,
   "plugins/git-workspace/backend/completion-context.ts": 540,
