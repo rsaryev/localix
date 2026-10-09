@@ -1,6 +1,6 @@
 /**
  * The `http_request` tool body. Wiring only: validate → resolve → act → format. Every rule about
- * misuse lives in `http-request-schema.ts`, every rule about the wire lives in `send.ts`.
+ * misuse lives in `http-request-problem.ts`, every rule about the wire lives in `send.ts`.
  */
 
 import type { AgentTool, AgentToolExecutionContext } from '@localixai/agent/agents'
@@ -10,11 +10,8 @@ import { classifyHttpRequestCall } from './call-class'
 import { requestFilePath } from './collection/paths'
 import type { EnvironmentService } from './environments/service'
 import { formatResponse } from './format-response'
-import {
-  buildHttpRequestSchema,
-  httpRequestProblem,
-  type HttpRequestInput,
-} from './http-request-schema'
+import { buildHttpRequestSchema, type HttpRequestInput } from './http-request-schema'
+import { httpRequestProblem } from './http-request-problem'
 import { exportDirFor, exportRequests, readExportedFiles } from './git-sync/action'
 import { recordSend } from './history'
 import { runImportAction } from './import-action'

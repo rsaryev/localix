@@ -62,6 +62,27 @@ describe('httpRequestProblem', () => {
     expect(httpRequestProblem(input({ url: 'https://x.dev', ...over }))).toContain(field)
   })
 
+  test.each([
+    [{ action: 'save', url: 'bad', method: 'TRACE' }, 'needs a "name"'],
+    [{ action: 'save', name: 'x', method: 'TRACE' }, 'needs a "url"'],
+    [{ action: 'send', method: 'TRACE', authType: 'bearer' }, 'needs a "url"'],
+    [{ action: 'import', url: 'bad', timeoutMs: 0 }, 'needs a "source"'],
+    [{ action: 'import', source: 'curl https://x.dev', dir: '', url: 'bad' }, 'not both'],
+    [{ url: 'bad', method: 'TRACE', timeoutMs: 0 }, 'not an http(s) URL'],
+    [
+      { url: 'https://x.dev', method: 'TRACE', body: '{}', form: [{ name: 'a', value: 'b' }] },
+      'not a supported method',
+    ],
+    [
+      { url: 'https://x.dev', body: '{}', form: [{ name: 'a', value: 'b' }], timeoutMs: 0 },
+      'not both',
+    ],
+    [{ url: 'https://x.dev', timeoutMs: 0, maxRedirects: 0, authType: 'bearer' }, '"timeoutMs"'],
+    [{ url: 'https://x.dev', maxRedirects: 0, authType: 'bearer' }, '"maxRedirects"'],
+  ] as const)('preserves the first actionable error for %j', (over, message) => {
+    expect(httpRequestProblem(input(over as Partial<HttpRequestInput>))).toContain(message)
+  })
+
   describe('auth guards', () => {
     test('basic needs both halves', () => {
       expect(
