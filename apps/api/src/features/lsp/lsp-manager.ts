@@ -1,11 +1,7 @@
-import {
-  createLspClient,
-  type LspClientInfo,
-  type LspDiagnostic,
-  type LspWorkspaceSymbol,
-} from './lsp-client'
+import { createLspClient, type LspClientInfo, type LspDiagnostic } from './lsp-client'
 import { getServersForFile, type LspServerDef } from './lsp-servers'
 import { createLspManagerQueries } from './lsp-manager-queries'
+import { createProjectOperations } from './lsp-project-operations'
 import { createProjectDiagnostics } from './lsp-project-diagnostics'
 import { createDiagnosticsWait, SILENT_COOLDOWN_MS } from './lsp-diagnostics-wait'
 import { matchingLspServers } from './lsp-server-match'
@@ -307,6 +303,13 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
     return fallback
   }
 
+  const { saveDocument, closeDocument, workspaceSymbols } = createProjectOperations({
+    getClients: (root) => byProject.get(root),
+    clearIdleTimer,
+    armIdleEviction,
+    notifyUpdate,
+  })
+
   return {
     async reportFileDiagnostics(filePaths, projectRoot) {
       // Touch every changed file in parallel and wait for diagnostics to settle.
@@ -331,53 +334,12 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
       return syncDocument(filePath, projectRoot, content)
     },
 
-    async saveDocument(projectRoot, filePath) {
-      const clients = byProject.get(projectRoot)
-      if (!clients) return
-      await Promise.all(
-        Array.from(clients.values(), async (mc) => {
-          await mc.client?.saveDocument(filePath).catch(() => {})
-        }),
-      )
-    },
-
-    async closeDocument(projectRoot, filePath) {
-      const clients = byProject.get(projectRoot)
-      if (!clients) return
-      await Promise.all(
-        Array.from(clients.entries(), async ([key, mc]) => {
-          if (!mc.client) return
-          await mc.client.closeDocument(filePath).catch(() => {})
-          mc.diagnostics = mc.client.diagnostics()
-          armIdleEviction(projectRoot, key, mc)
-        }),
-      )
-      notifyUpdate(projectRoot)
-    },
+    saveDocument,
+    closeDocument,
 
     ...createLspManagerQueries(withReadyClient, collectDiagnostics),
 
-    // workspace/symbol is project-scoped (no file), so it can't go through
-    // withReadyClient (which needs a file to pick/start a server). Instead query
-    // EVERY already-running server for the root and merge, so only the language servers
-    // currently alive are searched.
-    async workspaceSymbols(projectRoot, query) {
-      const clients = byProject.get(projectRoot)
-      if (!clients) return []
-      const ready = [...clients.values()].filter((mc) => mc.client && mc.status === 'ready')
-      const batches = await Promise.all(
-        ready.map(async (mc) => {
-          const key = `${mc.serverId}:${mc.rootDir}`
-          clearIdleTimer(mc)
-          try {
-            return await mc.client!.workspaceSymbols(query).catch(() => [] as LspWorkspaceSymbol[])
-          } finally {
-            armIdleEviction(projectRoot, key, mc)
-          }
-        }),
-      )
-      return batches.flat()
-    },
+    workspaceSymbols,
 
     notifyWatchedFiles: (projectRoot, changes) =>
       notifyWatchedFiles(byProject.get(projectRoot)?.values(), changes),
