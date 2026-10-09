@@ -4,7 +4,7 @@ import type {
   LspColorInfo,
   LspCompletionItem,
   LspSignatureHelp,
-} from './lsp-protocol'
+} from './lsp-response-types'
 import { toPosition, toRange } from './lsp-normalize-values'
 
 /**

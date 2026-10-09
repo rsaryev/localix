@@ -4,7 +4,7 @@ import type {
   LspTextEdit,
   LspWorkspaceEditFile,
   LspPrepareRename,
-} from './lsp-protocol'
+} from './lsp-response-types'
 import { uriToPath, toRange, toTextEdit } from './lsp-normalize-values'
 
 /** Normalize a `textDocument/formatting` result: a flat `TextEdit[]` (or null). */

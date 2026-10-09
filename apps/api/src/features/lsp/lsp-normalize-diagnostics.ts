@@ -1,4 +1,9 @@
-import type { LspDiagnostic, LspRange, LspPosition, LspRelatedInformation } from './lsp-protocol'
+import type {
+  LspDiagnostic,
+  LspRange,
+  LspPosition,
+  LspRelatedInformation,
+} from './lsp-response-types'
 import { uriToPath, toRange } from './lsp-normalize-values'
 
 /**

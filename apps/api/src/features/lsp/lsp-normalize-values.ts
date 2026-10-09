@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
-import type { LspPosition, LspTextEdit } from './lsp-protocol'
+import type { LspPosition, LspTextEdit } from './lsp-response-types'
 
-// Shared wire-value conversions; lsp-protocol imports remain type-only.
+// Shared wire-value conversions use the normalized response models.
 export function uriToPath(uri: unknown): string | null {
   if (typeof uri !== 'string' || !uri.startsWith('file://')) return null
   try {

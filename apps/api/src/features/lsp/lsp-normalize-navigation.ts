@@ -3,7 +3,7 @@ import type {
   LspCallHierarchyItem,
   LspWorkspaceSymbol,
   LspDocumentSymbol,
-} from './lsp-protocol'
+} from './lsp-response-types'
 import { toRange } from './lsp-normalize-values'
 
 /** Normalize a `textDocument/definition` or `references` result (Location | Location[] | LocationLink[]). */
