@@ -6,6 +6,7 @@ import {
 } from './lsp-client'
 import { getServersForFile, type LspServerDef } from './lsp-servers'
 import { createLspManagerQueries } from './lsp-manager-queries'
+import { createProjectDiagnostics } from './lsp-project-diagnostics'
 import { createDiagnosticsWait, SILENT_COOLDOWN_MS } from './lsp-diagnostics-wait'
 import { matchingLspServers } from './lsp-server-match'
 import { buildInlineDiagnostics } from './diagnostics-report'
@@ -110,28 +111,9 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
     return startingMap.get(projectRoot)!
   }
 
-  function computeStates(projectRoot: string): LspServerState[] {
-    const clients = byProject.get(projectRoot)
-    if (!clients) return []
-    return Array.from(clients.values()).map((mc) => {
-      let errorCount = 0
-      let warningCount = 0
-      for (const diags of Object.values(mc.diagnostics)) {
-        for (const d of diags) {
-          if (d.severity === 1) errorCount++
-          else if (d.severity === 2) warningCount++
-        }
-      }
-      return {
-        serverId: mc.serverId,
-        serverName: mc.serverName,
-        rootDir: mc.rootDir,
-        status: mc.status,
-        errorCount,
-        warningCount,
-      }
-    })
-  }
+  const { computeStates, collectDiagnostics } = createProjectDiagnostics((root) =>
+    byProject.get(root),
+  )
 
   function notifyUpdate(projectRoot: string) {
     const states = computeStates(projectRoot)
@@ -323,19 +305,6 @@ export function createLspManager(options: LspManagerOptions = {}): LspManager {
       }
     }
     return fallback
-  }
-
-  function collectDiagnostics(projectRoot: string): Record<string, LspDiagnostic[]> {
-    const clients = byProject.get(projectRoot)
-    if (!clients) return {}
-    const merged: Record<string, LspDiagnostic[]> = {}
-    for (const mc of clients.values()) {
-      for (const [file, diags] of Object.entries(mc.diagnostics)) {
-        if (!merged[file]) merged[file] = []
-        merged[file].push(...diags)
-      }
-    }
-    return merged
   }
 
   return {
