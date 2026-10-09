@@ -1,4 +1,4 @@
-import type { Message, ToolResult } from '../types'
+import type { Message, TextContent, ToolResult } from '../types'
 import { textEncoderByteLength } from '../utils/hash'
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateHead, truncateTail } from '../utils/truncate'
 import { crushNonRecoverable, CRUSH_MARKER } from './crushers'
@@ -241,4 +241,40 @@ export function boundLargeOutput(
     return crushed && crushed.text.length <= truncated.length ? crushed.text : truncated
   }
   return s
+}
+
+/** Rewrite only result text, retaining media order and unchanged object identities. */
+export function createToolResultPruner(
+  prunedText: (result: ToolResult, text: string) => string,
+): (result: ToolResult) => ToolResult {
+  return (r) => {
+    if (typeof r.content === 'string') {
+      const next = prunedText(r, r.content)
+      return next === r.content ? r : { ...r, content: next }
+    }
+    if (!Array.isArray(r.content)) return r
+    const parts = r.content
+    const textAt = parts.flatMap((part, index) => (part.type === 'text' ? [index] : []))
+    // No text to elide (an image- or file-only result): the pointer would describe
+    // nothing and the bytes are not recoverable by re-reading.
+    if (textAt.length === 0) return r
+    const joined = textAt.map((index) => (parts[index] as TextContent).text).join('')
+    const next = prunedText(r, joined)
+    if (next === joined) return r
+    // Collapse the text run into ONE part at the first text position and keep every
+    // non-text part in order. Dropping an image/file part here would lose bytes no
+    // `tool_output` pointer can bring back, so only text is ever rewritten.
+    const first = textAt[0]!
+    const absorbed = new Set(textAt.slice(1))
+    return {
+      ...r,
+      content: parts.flatMap((part, index) =>
+        index === first
+          ? [{ ...(part as TextContent), text: next }]
+          : absorbed.has(index)
+            ? []
+            : [part],
+      ),
+    }
+  }
 }

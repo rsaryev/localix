@@ -8,7 +8,7 @@
  * global tool-output safety bound. Idempotent (skips content already carrying a
  * compression marker).
  */
-import type { Message, TextContent, ToolCall, ToolResult } from '../types'
+import type { Message, ToolCall, ToolResult } from '../types'
 import { quantizeBoundaryStart } from './boundary'
 import {
   DEFAULT_LIVE_READ_BUDGET_BYTES,
@@ -16,25 +16,26 @@ import {
   resolveMaxLiveReads,
   type ReadFate,
 } from './live-reads'
-import { carriesMarker, ELISION_MARKER } from './op-menu'
-import { elidedPointer, readPointer } from './pointers'
-import { ALL_MUTATE_TOOLS, NONIDEMPOTENT_TOOLS, READ_RESULT_TOOLS } from './tool-classes'
+import { readPointer } from './pointers'
+import { READ_RESULT_TOOLS } from './tool-classes'
 import type { PruneWireOptions } from './prune-wire-options'
 import { estimateWireMessageTokens } from './tokens'
 import { liveReadCallIds } from './prune-wire-live-reads'
 import { boundFreshMutationArgs } from './prune-wire-fresh-mutations'
+import { elideToolCallArgs } from './prune-wire-args'
 import {
   boundToolResults,
+  createToolResultPruner,
   boundLargeOutput,
-  truncateMiddle,
   isCompressedContent,
   pointerOnlyBody,
   MIDDLE_TRUNCATE_THRESHOLD,
-  MIDDLE_TRUNCATE_MARKER,
   CRUSH_MIN_CHARS,
 } from './prune-wire-output'
 
 export { isCompressedContent, pointerOnlyBody, MIDDLE_TRUNCATE_MARKER } from './prune-wire-output'
+
+export { collectElidedToolCallIds, collectElidedArgToolCallIds } from './prune-wire-markers'
 
 export type { PruneWireOptions } from './prune-wire-options'
 
@@ -47,112 +48,6 @@ type LiveReadMemo = {
   live: Set<string>
 }
 const liveReadMemoCache = new WeakMap<object, LiveReadMemo[]>()
-function elideToolCallArgs(
-  tc: ToolCall,
-  minChars: number,
-  failedToolCallIds: ReadonlySet<string>,
-  recoveryToolAvailable: boolean,
-): ToolCall | undefined {
-  // A FAILED mutation never reached disk, so its content/patch args are NOT
-  // recoverable by re-reading — eliding them would lose the intended-but-
-  // unapplied change irrecoverably (same rule as VBC's heavyMutateInputs).
-  if (failedToolCallIds.has(tc.id)) return undefined
-  const args = tc.arguments
-  if (!args || typeof args !== 'object') return undefined
-  const a = args as Record<string, unknown>
-
-  // Non-recoverable tools (bash/terminal): a VERY large command arg is almost
-  // always a heredoc writing a file (`cat > f <<EOF …EOF`). Unlike a `write`
-  // call's content (a recoverable mutate arg, pointer-elided below), a bash
-  // command isn't pointer-recoverable AND was never bounded at all — so the whole
-  // body replayed every turn for the rest of the session. Head/tail bound it,
-  // mirroring how the bash OUTPUT is bounded: the command head (what ran) + tail
-  // (the closing EOF / trailing command) survive, the heredoc bulk is dropped.
-  if (NONIDEMPOTENT_TOOLS.has(tc.name)) {
-    const cmd = a.command
-    if (
-      typeof cmd === 'string' &&
-      cmd.length > MIDDLE_TRUNCATE_THRESHOLD &&
-      !carriesMarker(cmd, MIDDLE_TRUNCATE_MARKER)
-    ) {
-      return { ...tc, arguments: { ...a, command: truncateMiddle(cmd) } }
-    }
-    return undefined
-  }
-
-  if (!ALL_MUTATE_TOOLS.has(tc.name)) return undefined
-  // Elide EVERY heavy recoverable field, not just the first hit — an `edit` call
-  // can carry both old_string and new_string above the threshold.
-  let next: Record<string, unknown> | undefined
-  for (const field of ['content', 'patch', 'old_string', 'new_string'] as const) {
-    const v = a[field]
-    if (typeof v === 'string' && v.length > minChars && !carriesMarker(v, ELISION_MARKER)) {
-      next = {
-        ...(next ?? a),
-        [field]: elidedPointer(field, v.length, tc.id, v, recoveryToolAvailable),
-      }
-    }
-  }
-  if (Array.isArray(a.edits)) {
-    const json = JSON.stringify(a.edits)
-    if (json.length > minChars && !carriesMarker(json, ELISION_MARKER)) {
-      next = {
-        ...(next ?? a),
-        edits: elidedPointer('edits', json.length, tc.id, json, recoveryToolAvailable),
-      }
-    }
-  }
-  return next ? { ...tc, arguments: next } : undefined
-}
-
-/**
- * The `tool_call_id`s whose results are no longer intact on this wire — elided to a
- * pointer, structurally crushed, or middle-truncated. Pure; scans the FINAL wire, so
- * it sees both compression layers (turn-start VBC and this per-request prune).
- *
- * A host uses it to answer "does the model still have the full output of that call?"
- * — e.g. `read`'s unchanged-file stub ("scroll up to that read") is only truthful
- * while the earlier read is intact; once elided, a repeat read must return the file.
- */
-export function collectElidedToolCallIds(messages: readonly Message[]): string[] {
-  const out: string[] = []
-  for (const m of messages) {
-    if (m.role !== 'tool') continue
-    for (const r of m.results) {
-      if (!r.toolCallId) continue
-      const compressed =
-        typeof r.content === 'string'
-          ? isCompressedContent(r.content)
-          : r.content.some((part) => part.type === 'text' && isCompressedContent(part.text))
-      if (compressed) out.push(r.toolCallId)
-    }
-  }
-  return out
-}
-
-/**
- * The arg half of {@link collectElidedToolCallIds}: `tool_call_id`s of assistant
- * tool calls whose heavy mutate ARGUMENTS are no longer intact on this wire.
- */
-export function collectElidedArgToolCallIds(messages: readonly Message[]): string[] {
-  const out: string[] = []
-  for (const m of messages) {
-    if (m.role !== 'assistant') continue
-    for (const part of m.content) {
-      const tc = part as ToolCall
-      if (tc.type !== 'tool_call' || !tc.id || !tc.arguments || typeof tc.arguments !== 'object')
-        continue
-      const hasMarker = Object.values(tc.arguments as Record<string, unknown>).some(
-        (v) =>
-          typeof v === 'string' &&
-          (carriesMarker(v, ELISION_MARKER) || carriesMarker(v, MIDDLE_TRUNCATE_MARKER)),
-      )
-      if (hasMarker) out.push(tc.id)
-    }
-  }
-  return out
-}
-
 /**
  * The live-read budget's OWN default — independent of every other option. One large
  * file's worth of protected reads: the same number, and the same shape, as the
@@ -303,46 +198,7 @@ export function pruneWireMessages(
     return text
   }
 
-  /**
-   * The pruned form of one tool result, or `r` itself when nothing should change.
-   *
-   * BOTH content shapes are handled, and that is the whole point of this wrapper: the pi
-   * codec builds `content` as an ARRAY for every in-loop result (`fromPiMessage` →
-   * `fromPiParts`), so a `typeof content !== 'string'` bail-out left this entire layer
-   * inert in production — measured, a 27-read history came back byte-identical — while the
-   * string path kept passing its tests. `collectElidedToolCallIds` was already
-   * shape-agnostic; only this half was not.
-   */
-  const pruneResult = (r: ToolResult): ToolResult => {
-    if (typeof r.content === 'string') {
-      const next = prunedText(r, r.content)
-      return next === r.content ? r : { ...r, content: next }
-    }
-    if (!Array.isArray(r.content)) return r
-    const parts = r.content
-    const textAt = parts.flatMap((part, index) => (part.type === 'text' ? [index] : []))
-    // No text to elide (an image- or file-only result): the pointer would describe
-    // nothing and the bytes are not recoverable by re-reading.
-    if (textAt.length === 0) return r
-    const joined = textAt.map((index) => (parts[index] as TextContent).text).join('')
-    const next = prunedText(r, joined)
-    if (next === joined) return r
-    // Collapse the text run into ONE part at the first text position and keep every
-    // non-text part in order. Dropping an image/file part here would lose bytes no
-    // `tool_output` pointer can bring back, so only text is ever rewritten.
-    const first = textAt[0]!
-    const absorbed = new Set(textAt.slice(1))
-    return {
-      ...r,
-      content: parts.flatMap((part, index) =>
-        index === first
-          ? [{ ...(part as TextContent), text: next }]
-          : absorbed.has(index)
-            ? []
-            : [part],
-      ),
-    }
-  }
+  const pruneResult = createToolResultPruner(prunedText)
 
   /**
    * Re-elide only the results the ratchet already claimed, leaving everything else alone.

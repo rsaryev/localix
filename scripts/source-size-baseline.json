@@ -142,7 +142,7 @@
   "packages/agent/src/agents/chat.ts": 446,
   "packages/agent/src/agents/types.ts": 752,
   "packages/agent/src/context/op-menu.ts": 354,
-  "packages/agent/src/context/prune-wire.ts": 554,
+  "packages/agent/src/context/prune-wire.ts": 410,
   "packages/agent/src/context/vocab-hints.ts": 391,
   "packages/kit/src/controls/breadcrumb-select.tsx": 309,
   "packages/kit/src/layout/tabs/tabs.tsx": 714,
