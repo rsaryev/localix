@@ -228,6 +228,19 @@ bounds, and shared chat scope. Distinguished UI reload/reconnect from process re
 adopted-tab closing from terminating a job. Corrected the recipe’s accumulated-log advice to running
 PTY jobs, with transcript/file alternatives for finished or non-terminal work.
 
+## Documents extraction and Resume persistence
+
+Compared extraction/window/cache behavior, full-table ingestion, generation input/response shapes,
+resource rendering, Resume workspace resolution and file guards, local draft recovery/undo, saved
+history retention, and PDF caching with source. Reviewed the reference-editor/export commit and
+earlier implementation history.
+
+Distinguished response caps from full cached extraction and parser memory; explained PDF bytes
+versus media metadata and separate file saving. Qualified Resume storage in Default-chat scratch
+roots, browser-local recovery, 60-step local undo versus 60 saved snapshots, file-size bounds, and
+PDF byte reuse while a matching layout is cached. Other detailed viewer and Resume UI/import claims
+remain in scope for their remaining review.
+
 ## Related guides
 
 - [Audit scope and remaining work](documentation-audit.md)

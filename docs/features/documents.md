@@ -41,9 +41,23 @@ renderer. The document font endpoint supplies the same font assets for template 
 | XLSX, XLS, XLSM, XLSB, CSV | Typed columns and rows          |
 | Markdown formats           | Verbatim UTF-8 text             |
 
-Extraction rejects inputs over 25 MiB, caps Markdown at 1,500,000 characters, and caps tables at
-10,000 rows. Core `read` delegates the supported binary formats through the capability registry; CSV
-and Markdown continue through normal text reading unless opened in the Documents viewer.
+Extraction rejects inputs over 25 MiB. Each extraction response is windowed to at most 1,500,000
+Markdown characters or 10,000 table rows, after parsing; the cache retains the full extraction.
+These response limits do not bound parser memory or cached output size. Spreadsheet ingestion uses
+that full cached table, so its viewer can page beyond the extraction response’s 10,000-row window.
+
+Core `read` delegates the supported binary formats through the capability registry; CSV and Markdown
+continue through normal text reading unless opened in the Documents viewer.
+
+## Generated output
+
+`/rpc/documents/render` responds with PDF bytes. `/rpc/documents/generate` responds with metadata
+and a media id when the host’s media sink is available; it does not save a named file into your
+project. A caller downloads or saves that media separately. Without a media sink the id is null.
+DOCX and PDF accept Markdown or the styled layout; XLSX accepts a Markdown table or JSON rows.
+
+The viewers and generators are separate surfaces. A read-only viewer does not make generation,
+table-copy edits, or export read-only operations.
 
 ## Architecture
 
@@ -62,3 +76,11 @@ paths.
 - [Native data view internals](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/data-view.md)
 - [Resumes](resumes.md)
 - [Plugins](../extending/plugins.md)
+
+## Source of truth
+
+- [Extraction windows and full cache](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/documents/service.ts)
+- [Full table ingestion](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/singleton.ts)
+- [Generation responses](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/documents/routes.ts)
+- [Generation input contract](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/documents/generate-contracts.ts)
+- [Bounded resource expansion](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/resource-provider.ts)

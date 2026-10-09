@@ -47,13 +47,13 @@ source formatting proves a qualification.
 
 Save your draft before exporting. The editor and library offer:
 
-| Format                | Result                                                                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PDF                   | A4 pages using the selected template, typography, portrait, and section layout. The preview and download use the same PDF bytes.                    |
-| Word                  | An editable DOCX with the selected typography, portrait, and a linear reading order. Word may paginate differently from PDF.                        |
-| Markdown / plain text | Visible content in document order, without private tailoring notes.                                                                                 |
-| Localix JSON / YAML   | The complete structured resume for backup and reimport. These files include role context.                                                           |
-| Lanjut JSON           | Version 1 interchange for representable reference fields. Export rejects fields it cannot preserve; use Localix JSON or YAML for a complete backup. |
+| Format                | Result                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PDF                   | A4 pages using the selected template, typography, portrait, and section layout. Preview and download share the renderer and reuse bytes while that layout is cached. |
+| Word                  | An editable DOCX with the selected typography, portrait, and a linear reading order. Word may paginate differently from PDF.                                         |
+| Markdown / plain text | Visible content in document order, without private tailoring notes.                                                                                                  |
+| Localix JSON / YAML   | The complete structured resume for backup and reimport. These files include role context.                                                                            |
+| Lanjut JSON           | Version 1 interchange for representable reference fields. Export rejects fields it cannot preserve; use Localix JSON or YAML for a complete backup.                  |
 
 PDF and Word generation use the bundled [Documents plugin](documents.md). PDF fonts are embedded and
 checked for missing characters; supported fallback glyphs preserve Cyrillic even when the chosen
@@ -67,15 +67,34 @@ a role. The `resume` tool provides validated initialization, reads, revision-saf
 duplication, history, and text or structured exports. It links its result back to the resume tab.
 The agent should use your supplied facts and ask for missing information.
 
-Saved files are located at `.localix/resumes/<id>/resume.json` within the project. UI saves and
-agent updates validate the same schema and check the current file revision. If saved content changes
-while you edit, a native file-change notification refreshes the saved version without regular
-polling while the watcher is healthy. Your draft remains available: merge independent edits or save
-a variant. Unsaved drafts can be recovered on the same device. Undo and Redo handle local edits;
-**History** restores a saved version as a new revision.
+Saved files are located at `.localix/resumes/<id>/resume.json` in the chat’s effective working
+directory. A chosen project keeps these files after chat deletion. A root chat in **Default** uses a
+scratch directory, whose cleanup can remove them; save a copy in a chosen project to keep it.
+Reading a resume file over 500,000 bytes is refused.
+
+UI saves and agent updates validate the same schema and check the current file revision. If saved
+content changes while you edit, a native file-change notification refreshes the saved version
+without regular polling while the watcher is healthy. Your draft remains available: merge
+independent edits or save a variant.
+
+Unsaved draft recovery uses browser local storage in the current app/profile and is best-effort;
+unavailable or full storage can lose recovery. It is separate from a project save. Undo and Redo
+keep up to 60 local edit steps, grouping consecutive typing within 700 ms; the undo stack is not
+recovered with the draft. **History** restores a saved version as a new revision and keeps up to 60
+history snapshots beside the resume file.
 
 ## Related guides
 
 - [Documents](documents.md)
 - [Plugin system](../extending/plugins.md)
 - [Workspace](workspace.md)
+- [Sessions and storage](sessions-and-projects.md)
+
+## Source of truth
+
+- [Workspace resolution](https://github.com/rsaryev/localix/blob/main/plugins/resume/backend/index.ts)
+- [Saved files and size guard](https://github.com/rsaryev/localix/blob/main/plugins/resume/backend/files.ts)
+- [Saved history retention](https://github.com/rsaryev/localix/blob/main/plugins/resume/backend/revisions.ts)
+- [Draft recovery](https://github.com/rsaryev/localix/blob/main/plugins/resume/ui/useResumeDraft.ts)
+- [Local undo grouping](https://github.com/rsaryev/localix/blob/main/plugins/resume/ui/history.ts)
+- [Shared PDF cache](https://github.com/rsaryev/localix/blob/main/plugins/resume/ui/pdf.ts)
