@@ -1,15 +1,8 @@
-import type { AgentDefinition } from '@localixai/agent/agents'
 import type { ResolvedRunAgent } from '../../agents/invocation-service'
-import {
-  NO_ROSTERS,
-  projectCapabilities,
-  skillOverridesOf,
-  type ToolDenial,
-} from '../../capabilities/resolve'
+import { NO_ROSTERS, projectCapabilities, skillOverridesOf } from '../../capabilities/resolve'
 import { narrowLoadedPlugins } from '../../plugins/narrow'
 import { BUILTIN_TOOL_NAMES } from '../../agent-core/tool-names'
 import { safeJsonParse } from '../../../lib/json'
-import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
 import {
   PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS,
   type PermissionRule,
@@ -19,91 +12,26 @@ import { createEnvironment } from '../../agent-core/tools/environments'
 import type { ExecutionEnvironmentConfig } from '../../agent-core/tools/environment'
 import { discoverFilesystemSkills } from '../../agent-core/skill-discovery'
 import { discoverContextFiles } from '../../agent-core/context-files'
-import type { TriggeredSkill } from './prompt-skill-triggers'
 import { resolveAgentPromptContext } from './prompt-agent-context'
 import { loadEnabledPlugins, type LoadedPlugins } from '../../plugins/loader'
 import { emptyLoadedPlugins } from '../../plugins/loader-contract'
-import { availabilityOf, type AvailabilityReader } from '../../capabilities/availability'
+import { availabilityOf } from '../../capabilities/availability'
 import type { loadUserSettingsContext } from '../../user/runtime-settings'
 import { prefixedWarnLogger } from './plugin-hook-logger'
 import { buildSkillsContext } from './prompt-skills'
 import { agentRoute } from '../session-route'
 import { recordPluginCatalogLoad } from '../../notifications/conditions/plugins'
-import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
-import type { FrozenSessionContext } from './agent-runner-types'
-import type { RuntimeState } from './agent-runner-state'
 import type { SessionRecord } from '../repository'
 import { resolveBaseSessionCwd } from '../session-cwd'
 import { userHome } from '../../../lib/env'
 import type { PersistedMessage } from '../contracts'
-import type { createMemoryRepository } from '../../memory/repository'
-import type { createProjectsRepository } from '../../projects/repository'
-import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
-import type { SkillOverrides } from '../../agent-core/skill-overrides'
 import { loadProjectStructureSnapshot } from '../../agent-core/project-structure'
 import { memoryScopePolicy } from '../../memory/scope-policy'
+import type { PromptContextDeps, PreparedRunContext } from './prompt-context-contracts'
 
 type UserSettingsContext = Awaited<ReturnType<typeof loadUserSettingsContext>>
 
-export interface PromptContextDeps {
-  memoryRepo: ReturnType<typeof createMemoryRepository>
-  projectsRepo: ReturnType<typeof createProjectsRepository>
-  pluginRepo: CapabilitySourceRepository
-  contextSnapshots: RuntimeState['contextSnapshots']
-  laneSnapshots: ParticipantLaneSnapshotRepository
-  /**
-   * Scope-level discovery cache (plugins / skills / providers / context files), shared by
-   * a parent and every child that inherits its scope. See run-scope.ts.
-   */
-  runScopes: RuntimeState['runScopes']
-  now: () => string
-  logger?: SkillDiscoveryLogger
-  /**
-   * Deliver a plugin's user-facing problem onto a session's firehose.
-   *
-   * A pure function of its arguments on purpose: the plugin CONTEXT it ends up on is
-   * cached per scope (`runScopes`) and reused by every child run, so anything this
-   * closure captured from one particular run would go stale. It captures nothing.
-   */
-  publishPluginProblem?: (input: {
-    userId: string
-    sessionId: string
-    pluginName: string
-    message: string
-    detail?: string
-    source?: string
-  }) => void
-  /** Per-plugin session storage (`plugins/session-storage.ts`); pure, like `publishPluginProblem`. */
-  pluginSessionStorage?: Parameters<typeof loadEnabledPlugins>[0]['sessionStorageFor']
-  /** The agents a plugin may name (`plugins/agent-directory.ts`); pure, like the storage. */
-  pluginAgentDirectory?: Parameters<typeof loadEnabledPlugins>[0]['agentDirectory']
-}
-
-export interface PreparedRunContext {
-  agent: AgentDefinition
-  capabilities: ResolvedRunAgent['capabilities']
-  env: ReturnType<typeof createEnvironment>
-  defaultCwd: string
-  disabledTools: string[]
-  /** The denying scope+rule behind each `disabledTools` entry — the ledger's `policy` reason. */
-  toolDenials: ToolDenial[]
-  /**
-   * What this run's rules say, as the three-way answer. Carried on the prepared context
-   * rather than re-read downstream: the chain was resolved once here, for this run's
-   * (project, agent), and a second read could only answer differently.
-   */
-  availability: AvailabilityReader
-  permissionRules: PermissionRule[]
-  loadedPlugins: LoadedPlugins
-  contextFiles: Awaited<ReturnType<typeof discoverContextFiles>>
-  allSkills: Array<Awaited<ReturnType<typeof discoverFilesystemSkills>>[number]>
-  frozenContext: FrozenSessionContext
-  pinnedSkills: Array<{ name: string; content: string }>
-  /** Skills a keyword in the latest user message forced in for this turn. */
-  triggeredSkills: TriggeredSkill[]
-  skillOverrides: SkillOverrides
-  projectStructure?: string
-}
+export type { PromptContextDeps, PreparedRunContext } from './prompt-context-contracts'
 
 /**
  * Load every prompt-context input for a run: native definition and policy, memory, execution

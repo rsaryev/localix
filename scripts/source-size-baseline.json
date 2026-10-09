@@ -13,7 +13,6 @@
   "apps/api/src/features/chat/runtime/context-token-estimate.ts": 314,
   "apps/api/src/features/chat/runtime/items.ts": 311,
   "apps/api/src/features/chat/runtime/message-persistence.ts": 332,
-  "apps/api/src/features/chat/runtime/prompt-context.ts": 358,
   "apps/api/src/features/chat/runtime/run/attachment-spill.ts": 312,
   "apps/api/src/features/chat/runtime/run/event-handlers.ts": 408,
   "apps/api/src/features/chat/runtime/run/finalize.ts": 354,
