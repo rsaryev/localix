@@ -7,6 +7,7 @@ import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import path from 'node:path'
 import { createThrottle } from '../../lib/debounce'
 import { languageIdForPath } from './lsp-languages'
+import { createPushWait } from './lsp-push-wait'
 import { applyDiagnosticRegistrations } from './lsp-diagnostic-registrations'
 import { createDiagnosticPullCoordinator } from './lsp-diagnostics-coordinator'
 import { CLIENT_CAPABILITIES } from './lsp-capabilities'
@@ -26,7 +27,6 @@ import {
   TEXT_DOCUMENT_SYNC_INCREMENTAL,
   type CapabilityRegistration,
   type DiagnosticRequestResult,
-  type DiagnosticsListener,
   type LspClientInfo,
   type LspDiagnostic,
   type ServerCapabilities,
@@ -97,12 +97,7 @@ export async function createLspClient(input: {
   let disposed = false
   const diagnosticsDebouncer = createThrottle(DIAGNOSTICS_PUBLISH_INTERVAL_MS)
 
-  // Listeners waiting for diagnostics for a specific file
-  const diagnosticsListeners = new Set<DiagnosticsListener>()
-
-  function notifyDiagnosticsListeners(filePath: string) {
-    for (const l of diagnosticsListeners) l(filePath)
-  }
+  const { notifyDiagnosticsListeners, waitForPush, clearListeners } = createPushWait()
 
   const { buildDiagnosticsSnapshot, mergePullResults } = createDiagnosticsSnapshot(
     pushDiagnostics,
@@ -235,24 +230,6 @@ export async function createLspClient(input: {
   const hasStaticPullDiagnostics = Boolean(initialized.capabilities?.diagnosticProvider)
 
   const workspacePullInFlight = new Map<string, Promise<DiagnosticRequestResult>>()
-
-  /** Wait up to `timeout` ms for a diagnostics push for `filePath` */
-  function waitForPush(filePath: string, timeout: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        diagnosticsListeners.delete(listener)
-        resolve(false)
-      }, timeout)
-      const listener: DiagnosticsListener = (fp) => {
-        if (fp === filePath) {
-          clearTimeout(timer)
-          diagnosticsListeners.delete(listener)
-          resolve(true)
-        }
-      }
-      diagnosticsListeners.add(listener)
-    })
-  }
 
   async function touchFileAndWait(filePath: string, wait = true): Promise<boolean> {
     if (disposed) return false
@@ -445,7 +422,7 @@ export async function createLspClient(input: {
     if (disposed) return // guard against double dispose / double kill
     disposed = true
     diagnosticsDebouncer.cancel()
-    diagnosticsListeners.clear()
+    clearListeners()
     try {
       void connection.sendRequest('shutdown').catch(() => undefined)
     } catch {
