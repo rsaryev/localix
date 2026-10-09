@@ -73,6 +73,29 @@ not validate external URLs or every HTML anchor. Affected readability/source che
 native signing created `06b787a`. The generation evidence remains the preceding 77-page run;
 committing unchanged content does not require another generation.
 
+## Prepared documentation batches committed
+
+Reviewed the current staged inventory and grouped the previously checked changes into public guides,
+packages/plugins, contribution/security policy, internal runtime evidence and capture cleanup.
+Native signing and all applicable pre-commit checks passed for every batch.
+
+| Checkpoint | Files | Result                                                                                |
+| ---------- | ----- | ------------------------------------------------------------------------------------- |
+| `f3e4582`  | 59    | Public feature/extension guides, installation/privacy/troubleshooting and recipes.    |
+| `9621ee3`  | 24    | Package boundaries, plugin references and bundled procedures.                         |
+| `51e11ed`  | 7     | Contribution checks, security wording, community forms and environment contracts.     |
+| `8cbb55f`  | 9     | Internal runtime/subsystem corrections and scoped evidence records.                   |
+| `183efb8`  | 4     | Two unused placeholders removed with their generator slots and capture documentation. |
+
+All 195 owned Markdown files passed anchor, quoted-source and readability validation. A parsed
+relative-target pass found 1,782 occurrences, three reference-style uses and nine quoted HTML
+attributes, with no missing targets. It excludes code examples, external URLs and root-absolute
+paths; target existence does not establish external link health or semantic accuracy. A search found
+only the historical audit explanation of the deleted placeholder keys, with no remaining consumer.
+
+This clears the 103-file prepared queue, not the remaining content/product evidence gaps. The
+working tree also contains independent API edits and generated sitemap output; those were excluded.
+
 ## Related guides
 
 - [Vault user guide](../features/secrets.md)

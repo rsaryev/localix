@@ -12,18 +12,18 @@ state; remove obsolete instructions and consolidate duplicated contracts.
 
 ## Evidence collected
 
-| Review                  | Evidence and result                                                                                                                                                                                                              |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Inventory               | Refreshed working-tree inventory: 194 Markdown files outside imported skill/vendor trees, 191 copied skill files, and 14 vendor-tree files; 77 published pages. Includes staged and untracked additions; excludes deleted paths. |
-| Public navigation       | The documentation index now links every page in `docs/public-nav.json`.                                                                                                                                                          |
-| Local links and anchors | Initial `check:public` passed. Current anchor, quoted-source and readability checks passed across all 194 owned Markdown files; the earlier inline relative-link scan found no missing targets.                                  |
-| Subsystem references    | `check:docs` resolved 217 source references in 24 tracked subsystem notes, with no allowlisted debt; the broader validator covered all owned Markdown.                                                                           |
-| GitHub source links     | Checked first-party Markdown links to this repository's `blob/main` files against the checkout; repaired the moved file-tree parser link.                                                                                        |
-| Quoted source paths     | Extended the landing validator to all owned Markdown for this audit; repaired two abbreviated desktop script paths.                                                                                                              |
-| GitHub feedback         | Paginated repository-wide inline PR, issue/PR discussion, and commit-comment queries returned no comments. PR #14 has no submitted review; its proposed CI wording was compared with the current workflow.                       |
-| Release state           | GitHub API returned two draft entries for `v0.1.0-beta.1`, neither published. Removed the installation guide's claim that the beta was public.                                                                                   |
-| Reference documentation | Reviewed OpenCode, Cline, and Continue entry pages for task navigation and onboarding structure.                                                                                                                                 |
-| Public generation       | Latest `bun run --cwd apps/landing generate` collected 77 pages and selected 37 current captures; no uncaptured placeholder slots remain.                                                                                        |
+| Review                  | Evidence and result                                                                                                                                                                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inventory               | Current owned inventory: 195 Markdown files outside imported skill/vendor trees; 77 published pages. The preceding broader inventory separately counted 191 copied skill files and 14 vendor-tree files.                                             |
+| Public navigation       | The documentation index now links every page in `docs/public-nav.json`.                                                                                                                                                                              |
+| Local links and anchors | Initial `check:public` passed. Anchor, quoted-source and readability checks passed across all 195 owned Markdown files. Parsed relative-link checking found 1,782 occurrences, including resolved reference/HTML attributes, and no missing targets. |
+| Subsystem references    | `check:docs` resolved 217 source references in 24 tracked subsystem notes, with no allowlisted debt; the broader validator covered all owned Markdown.                                                                                               |
+| GitHub source links     | Checked first-party Markdown links to this repository's `blob/main` files against the checkout; repaired the moved file-tree parser link.                                                                                                            |
+| Quoted source paths     | Extended the landing validator to all owned Markdown for this audit; repaired two abbreviated desktop script paths.                                                                                                                                  |
+| GitHub feedback         | Paginated repository-wide inline PR, issue/PR discussion, and commit-comment queries returned no comments. PR #14 has no submitted review; its proposed CI wording was compared with the current workflow.                                           |
+| Release state           | GitHub API returned two draft entries for `v0.1.0-beta.1`, neither published. Removed the installation guide's claim that the beta was public.                                                                                                       |
+| Reference documentation | Reviewed OpenCode, Cline, and Continue entry pages for task navigation and onboarding structure.                                                                                                                                                     |
+| Public generation       | Latest `bun run --cwd apps/landing generate` collected 77 pages and selected 37 current captures; no uncaptured placeholder slots remain.                                                                                                            |
 
 ## Corrections made
 
@@ -322,7 +322,7 @@ of live UI or provider integration coverage.
 Sandboxed HTML bridge guidance is now a [separate authoring page](../extending/sandboxed-views.md)
 with index/navigation ownership, explicit limits, and a compiled SDK example. CSP, storage, timeout,
 and exact backend scope contracts were compared; native iframe loading remains distinct product
-evidence. Signed checkpoint creation for the current batch remains outstanding.
+evidence. Reviewed batches now have signed checkpoints listed in the interface review record.
 
 ## Maintenance follow-ups
 
