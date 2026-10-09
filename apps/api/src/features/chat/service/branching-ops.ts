@@ -2,12 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { ApiError } from '../../../lib/errors'
 import { participantAgentId, USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
-import {
-  assertMutableChatSession,
-  assertSessionNotBusy,
-  type SessionMutationLock,
-} from './session-access'
-import { previewBranchPayload, walkPathToRoot, indexMessageTree } from './branching'
+import { walkPathToRoot, indexMessageTree } from './branching'
 import {
   persistAndPublishMessage,
   toPersistedMessage,
@@ -15,59 +10,20 @@ import {
   sessionAgent,
 } from './message-builders'
 import { logRunStartFailure } from './run-dispatch'
-import type { createChatRepository, SessionRecord } from '../repository'
-import type { AgentRunner } from '../runtime/agent-runner'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import { rootExecutionContext } from '../runtime/execution-context'
 import { enqueueTurnTickets, resolveTurnRecipients } from '../runtime/conversation-dispatch'
 import type { ToolSurface } from '@localixai/agent/agents'
-import type { AgentNotifications } from '../../notifications/producers'
-import type {
-  MessageMutationResponse,
-  PersistedMessage,
-  RollbackResponse,
-  SessionBranchTree,
-  SessionDetail,
-} from '../contracts'
+import type { MessageMutationResponse, PersistedMessage, RollbackResponse } from '../contracts'
 
-/** Shared 404 raised when a referenced message id is absent from the session. */
-export const messageNotFound = () => new ApiError(404, 'message_not_found', 'Message not found')
+import {
+  messageNotFound,
+  withBranchMutation,
+  type BranchingOpsContext,
+} from './branching-ops-context'
 
-/** Closure values the branching operations need from createChatService. */
-export interface BranchingOpsContext {
-  repo: ReturnType<typeof createChatRepository>
-  runner: AgentRunner
-  streamRegistry: SessionStreamRegistry
-  now: () => string
-  requireSession: (userId: string, id: string) => Promise<SessionRecord>
-  getSessionDetail: (userId: string, id: string) => Promise<SessionDetail>
-  withSessionMutationLock: SessionMutationLock
-  /** An accepted regenerate retires the Retry of the failure it re-runs. */
-  notifications?: Pick<AgentNotifications, 'runs'>
-}
-
-/**
- * One concurrency boundary for every operation that changes the active message
- * branch. The busy check deliberately happens *after* acquiring the per-session
- * lock: a mutation queued behind regenerate/edit must observe the run that the
- * first mutation started, rather than racing it from a stale pre-lock snapshot.
- *
- * Keep callers from taking this lock themselves. The keyed serializer is not
- * re-entrant, so centralising ownership here also makes accidental self-deadlocks
- * visible in review.
- */
-const withBranchMutation = <T>(
-  ctx: BranchingOpsContext,
-  userId: string,
-  sessionId: string,
-  mutate: (session: SessionRecord) => Promise<T>,
-): Promise<T> =>
-  ctx.withSessionMutationLock(sessionId, async () => {
-    const session = await ctx.requireSession(userId, sessionId)
-    assertMutableChatSession(session)
-    assertSessionNotBusy(ctx.runner, sessionId)
-    return mutate(session)
-  })
+export { messageNotFound, type BranchingOpsContext } from './branching-ops-context'
+export { switchBranch, getBranchTree, checkoutBranch } from './branch-navigation'
 
 /** Drop a message from the live view (it stays in the tree as a sibling branch). */
 const publishMessageRemoved = (
@@ -334,81 +290,5 @@ export async function rollback(
     }
 
     return { restoredPrompt: target.payload.content ?? '' }
-  })
-}
-
-export async function switchBranch(
-  ctx: BranchingOpsContext,
-  userId: string,
-  sessionId: string,
-  messageId: string,
-  branchIndex: number,
-): Promise<SessionDetail> {
-  const { repo } = ctx
-  return withBranchMutation(ctx, userId, sessionId, async () => {
-    // Tree-native: `messageId` is the currently-shown sibling at a branch point;
-    // `branchIndex` is the target sibling (children of the same parent, ordered
-    // by sequence). Move the active leaf to the deepest leaf of that sibling's
-    // subtree so listMessages returns the chosen branch.
-    const siblings = await repo.siblings(sessionId, messageId)
-    const targetId = siblings[branchIndex]
-    if (!targetId) {
-      throw new ApiError(404, 'branch_not_found', 'Branch not found')
-    }
-    const newLeaf = await repo.descendToLeaf(sessionId, targetId)
-    await repo.setSessionLeaf(sessionId, newLeaf)
-    return ctx.getSessionDetail(userId, sessionId)
-  })
-}
-
-/** Full message tree (all branches) + active path, for the branch-tree UI. */
-export async function getBranchTree(
-  ctx: BranchingOpsContext,
-  userId: string,
-  sessionId: string,
-): Promise<SessionBranchTree> {
-  const { repo } = ctx
-  await ctx.requireSession(userId, sessionId)
-  const [nodes, leafId] = await Promise.all([
-    repo.listMessageNodes(userId, sessionId),
-    repo.getSessionLeaf(sessionId),
-  ])
-
-  const { parentById } = indexMessageTree(nodes)
-  const activePath = walkPathToRoot(parentById, leafId)
-
-  return {
-    sessionId,
-    leafId,
-    activePath,
-    nodes: nodes.map(({ message, parentId }) => ({
-      id: message.id,
-      parentId,
-      role: message.payload.role,
-      preview: previewBranchPayload(message.payload),
-      createdAt: message.createdAt,
-      ...(message.payload.isInternal ? { isInternal: true } : {}),
-    })),
-  }
-}
-
-/**
- * Jump the active branch to ANY message in the tree (not just a sibling of
- * the currently shown one): the leaf moves to the deepest descendant of the
- * target, so listMessages returns that whole branch.
- */
-export async function checkoutBranch(
-  ctx: BranchingOpsContext,
-  userId: string,
-  sessionId: string,
-  messageId: string,
-): Promise<SessionDetail> {
-  const { repo } = ctx
-  return withBranchMutation(ctx, userId, sessionId, async () => {
-    const target = await repo.getMessage(userId, sessionId, messageId)
-    if (!target) throw messageNotFound()
-    const newLeaf = await repo.descendToLeaf(sessionId, messageId)
-    await repo.setSessionLeaf(sessionId, newLeaf)
-    return ctx.getSessionDetail(userId, sessionId)
   })
 }
