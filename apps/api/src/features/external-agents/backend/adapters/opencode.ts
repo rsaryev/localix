@@ -29,31 +29,19 @@ import type {
   TranscriptRequest,
   TranscriptResult,
 } from './types'
-import type { SessionSummary, TranscriptEvent } from '../../shared/contracts'
-import { clip, pathExists } from './fs-read'
-import { eventWindow } from './event-window'
+import type { SessionSummary } from '../../shared/contracts'
+import { pathExists } from './fs-read'
 import { TURN_EVIDENCE_MS, type TurnState } from '../live/turn-state'
-import { linkKeyOf } from '../../shared/identity'
-import { asRecord, asString, firstText, textOfContent } from './json-util'
-import { normalizeTokenSample, SessionUsageAccumulator } from './usage'
+import { asRecord, asString } from './json-util'
 
-const ID = 'opencode'
-
-/**
- * Text a harness injected into the conversation rather than something a person typed.
- *
- * Every one of these opens a turn that LOOKS like a user message, so a title taken from the first
- * user text lands on the harness's own preamble. The shapes are the providers' own markers, matched
- * at the start only — a message that merely mentions one is still a message.
- */
-function isInjectedBlock(text: string): boolean {
-  return /^\s*<(system-reminder|environment_context|command-name|local-command|permissions)/.test(
-    text,
-  )
-}
-
-/** opencode's own unnamed-session title. Matching it is what tells a placeholder from a real name. */
-const PLACEHOLDER_TITLE = /^New session - \d{4}-\d{2}-\d{2}T/
+import {
+  ID,
+  summarizeOpencodeRows,
+  transcriptFromOpencodeRows,
+  type SessionRow,
+  type UsageRow,
+  type MessageRow,
+} from './opencode-rows'
 
 function dbPath(env: AdapterEnv): string {
   const explicit = env.env.OPENCODE_DB?.trim()
@@ -75,31 +63,9 @@ function openReadonly(path: string): Database {
   return new Database(path, { readonly: true })
 }
 
-interface SessionRow {
-  id: string
-  parent_id: string | null
-  directory: string
-  title: string
-  time_created: number
-  time_updated: number
-}
-
 interface MessageCountRow {
   session_id: string
   messages: number
-}
-
-interface UsageRow {
-  session_id: string
-  day: string
-  model: string | null
-  requests: number
-  input_tokens: number
-  cached_input_tokens: number
-  cache_write_tokens: number
-  output_tokens: number
-  reasoning_tokens: number
-  total_tokens: number
 }
 
 async function listSources(env: AdapterEnv): Promise<readonly SourceRef[]> {
@@ -163,7 +129,6 @@ async function readSummaries(
         .all()
         .map((row) => [row.session_id, row.messages]),
     )
-    const usageBySession = new Map<string, SessionUsageAccumulator>()
     const usageRows = db
       .query<UsageRow, []>(
         `select session_id,
@@ -182,68 +147,10 @@ async function readSummaries(
           group by session_id, day, model`,
       )
       .all()
-    for (const usageRow of usageRows) {
-      if (!wanted.has(usageRow.session_id)) continue
-      const accumulator = usageBySession.get(usageRow.session_id) ?? new SessionUsageAccumulator()
-      accumulator.add(
-        normalizeTokenSample(
-          {
-            inputTokens: usageRow.input_tokens,
-            cachedInputTokens: usageRow.cached_input_tokens,
-            cacheWriteTokens: usageRow.cache_write_tokens,
-            outputTokens: usageRow.output_tokens,
-            reasoningTokens: usageRow.reasoning_tokens,
-            totalTokens: usageRow.total_tokens,
-            reasoningIncludedInOutput: false,
-          },
-          usageRow.requests,
-        ),
-        usageRow.model ?? undefined,
-        Date.parse(`${usageRow.day}T00:00:00.000Z`),
-      )
-      usageBySession.set(usageRow.session_id, accumulator)
-    }
-
-    const out: SessionSummary[] = []
-    for (const row of rows) {
-      if (!wanted.has(row.id)) continue
-      let title = row.title || ''
-      if (!title || PLACEHOLDER_TITLE.test(title)) {
-        // A few, not one: the opening turns of a session are often injected context rather than
-        // anything the user typed, and titling a session after a system reminder names the harness
-        // instead of the work.
-        for (const part of firstPrompt.all(row.id)) {
-          const text = asString(asRecord(safeParse(part.data))?.text)
-          if (!text || isInjectedBlock(text)) continue
-          title = firstText(text, 120) ?? title
-          break
-        }
-      }
-      const measured = usageBySession.get(row.id)?.result()
-      out.push({
-        key: linkKeyOf({ provider: ID, nativeSessionId: row.id }),
-        provider: ID,
-        nativeSessionId: row.id,
-        title: title || row.id,
-        cwd: row.directory || undefined,
-        startedAt: row.time_created,
-        updatedAt: row.time_updated,
-        ...(messageCounts.has(row.id) ? { messageCount: messageCounts.get(row.id) } : {}),
-        ...(measured ? { usage: measured } : {}),
-        sourcePath: path,
-        parentNativeSessionId: row.parent_id ?? undefined,
-      })
-    }
-    return out
+    return summarizeOpencodeRows(rows, wanted, usageRows, messageCounts, firstPrompt, path)
   } finally {
     db.close()
   }
-}
-
-interface MessageRow {
-  id: string
-  time_created: number
-  data: string
 }
 
 async function readTranscript(req: TranscriptRequest, env: AdapterEnv): Promise<TranscriptResult> {
@@ -267,76 +174,9 @@ async function readTranscript(req: TranscriptRequest, env: AdapterEnv): Promise<
     // `state` holding the input and the output. In a real local history that is 868 of 3000 sampled parts:
     // the majority of the session, and all of the work.
     const parts = partsFor.all(req.ref.nativeSessionId)
-    const byMessage = new Map<string, Record<string, unknown>[]>()
-    for (const part of parts) {
-      const data = asRecord(safeParse(part.data))
-      if (!data) continue
-      const list = byMessage.get(part.message_id)
-      if (list) list.push(data)
-      else byMessage.set(part.message_id, [data])
-    }
-
-    const window = eventWindow(req.maxEvents, req.tail, req.from)
-    const push = (event: Omit<TranscriptEvent, 'provider' | 'nativeSessionId' | 'ordinal'>) => {
-      window.emit({ provider: ID, nativeSessionId: req.ref.nativeSessionId, ...event })
-    }
-
-    for (const message of messages) {
-      const data = asRecord(safeParse(message.data))
-      const role = asString(data?.role)
-      if (role !== 'user' && role !== 'assistant') continue
-      const timestamp = message.time_created
-
-      for (const part of byMessage.get(message.id) ?? []) {
-        const type = asString(part.type)
-        // `step-start` / `step-finish` are turn bookkeeping with nothing to read; `compaction` is
-        // opencode's own history surgery. None of them is something anyone said or did.
-        if (type === 'tool') {
-          const state = asRecord(part.state)
-          const name = asString(part.tool)
-          if (!name) continue
-          const callId = asString(part.callID)
-          push({
-            role: 'assistant',
-            timestamp,
-            text: name,
-            toolName: name,
-            ...(callId ? { toolCallId: callId } : {}),
-            toolInput: state?.input,
-          })
-          const output = asString(state?.output) ?? textOfContent(state?.output)
-          if (output) {
-            push({
-              role: 'tool',
-              timestamp,
-              text: clip(output, req.maxCharsPerEvent),
-              ...(callId ? { toolCallId: callId } : {}),
-            })
-          }
-          continue
-        }
-        const text = asString(part.text) ?? textOfContent(part.content)
-        if (!text) continue
-        // Reasoning is a real part here (unlike Codex, which encrypts it), so it is carried as the
-        // `system` role the projection renders as a muted strip rather than as a spoken turn.
-        push({
-          role: type === 'reasoning' ? 'system' : role,
-          timestamp,
-          text: clip(text, req.maxCharsPerEvent),
-        })
-      }
-    }
-    return window.result()
+    return transcriptFromOpencodeRows(messages, parts, req)
   } finally {
     db.close()
-  }
-}
-
-function safeParse(raw: string): unknown {
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return undefined
   }
 }
 
