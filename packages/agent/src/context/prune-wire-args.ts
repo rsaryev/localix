@@ -1,5 +1,5 @@
 import type { ToolCall } from '../types'
-import { carriesMarker, ELISION_MARKER } from './op-menu'
+import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { elidedPointer } from './pointers'
 import { ALL_MUTATE_TOOLS, NONIDEMPOTENT_TOOLS } from './tool-classes'
 import {

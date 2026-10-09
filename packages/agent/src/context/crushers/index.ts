@@ -10,7 +10,7 @@ import { crushJsonArray } from './json'
 import { crushLog } from './log'
 import type { CrushResult } from './types'
 
-import { carriesMarker } from '../op-menu'
+import { carriesMarker } from '../compression-markers'
 
 export { crushJsonArray } from './json'
 export { crushLog } from './log'

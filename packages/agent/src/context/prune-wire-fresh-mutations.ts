@@ -1,7 +1,7 @@
 import type { Message, ToolCall } from '../types'
 import { textEncoderByteLength } from '../utils/hash'
 import { DEFAULT_MAX_BYTES } from '../utils/truncate'
-import { carriesMarker, ELISION_MARKER } from './op-menu'
+import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { elidedPointer } from './pointers'
 import { ALL_MUTATE_TOOLS } from './tool-classes'
 

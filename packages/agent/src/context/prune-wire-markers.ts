@@ -1,5 +1,5 @@
 import type { Message, ToolCall } from '../types'
-import { carriesMarker, ELISION_MARKER } from './op-menu'
+import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { isCompressedContent, MIDDLE_TRUNCATE_MARKER } from './prune-wire-output'
 
 /**

@@ -2,7 +2,7 @@ import type { Message, TextContent, ToolResult } from '../types'
 import { textEncoderByteLength } from '../utils/hash'
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateHead, truncateTail } from '../utils/truncate'
 import { crushNonRecoverable, CRUSH_MARKER } from './crushers'
-import { carriesMarker, ELISION_MARKER } from './op-menu'
+import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { PAGED_READ_RESULT_TOOLS, READ_RESULT_TOOLS } from './tool-classes'
 
 // Results are immutable snapshots: weak keys reuse bounds for the same object, while

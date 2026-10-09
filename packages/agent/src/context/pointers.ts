@@ -22,7 +22,7 @@
  * whether the model can still see a result. See its declaration in `op-menu.ts`.
  */
 import type { ReadFate } from './live-reads'
-import { ELISION_MARKER } from './op-menu'
+import { ELISION_MARKER } from './compression-markers'
 import { hintClause } from './vocab-hints'
 
 /**

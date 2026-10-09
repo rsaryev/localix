@@ -17,9 +17,8 @@ import { pruneMessages, itemResultModelText, type PruneRule } from '../utils/pru
 import { truncateMiddle } from '../utils/truncate-middle'
 import type { CompressionPlan } from './plan'
 import { crushNonRecoverable, CRUSH_MARKER } from './crushers'
+import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import {
-  carriesMarker,
-  ELISION_MARKER,
   FOLD_KEEP_CHARS,
   FOLD_MIN_CHARS,
   heavyMutateInputs,
@@ -31,7 +30,7 @@ import { hintClause } from './vocab-hints'
 import type { ReadFate } from './live-reads'
 
 // Carries ELISION_MARKER by INTERPOLATION (never by re-typing the phrase) so later
-// passes/layers skip it — see the marker's declaration in `op-menu.ts` for why that is a
+// passes/layers skip it — see the marker's declaration in `compression-markers.ts` for why that is a
 // contract and not a label. Used only when the item has no `toolCallId` to hand back —
 // see {@link pointerPlaceholder}.
 export const POINTER_PLACEHOLDER = `[Old tool output ${ELISION_MARKER}]`

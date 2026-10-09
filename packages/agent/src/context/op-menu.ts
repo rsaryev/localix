@@ -21,69 +21,12 @@ import { isFileChangeItem, isToolBackedItem, type ToolBackedItem } from '../agen
 import { itemResultModelText } from '../utils/prune-messages'
 import { textEncoderByteLength } from '../utils/hash'
 import { estimateChatMessageTokens, estimateItemResultTokens, estimateTextTokens } from './tokens'
+import { carriesMarker, ELISION_MARKER } from './compression-markers'
 import { READ_RESULT_TOOLS } from './tool-classes'
 
 export type OpKind = 'verbatim' | 'truncate' | 'oneline' | 'pointer' | 'elide' | 'fold'
 
-/**
- * THE elision marker — the phrase every compression layer leaves in place of content
- * it removed, and the ONLY way anything downstream can tell that it did.
- *
- * It is not a label. It is a CONTRACT, read back by `.includes()` in two places that
- * both fail silently when it drifts:
- *
- *   1. THE RATCHET. Every layer guards `!text.includes(ELISION_MARKER)` before eliding
- *      (`heavyMutateInputs`, `recoverableReadResult`, `rewriteItem`, `elideToolCallArgs`).
- *      That guard is what makes compression idempotent — "an elided result never
- *      re-inflates, and never gets re-elided". Miss it and the pass squeezes pointers
- *      into pointers.
- *
- *   2. THE INTACT-OR-NOT QUESTION. `collectElidedToolCallIds` answers "does the model
- *      still have the full output of that call?" A `read` of an UNCHANGED file returns a
- *      stub — "scroll up to that earlier read" — which is only TRUE while the earlier
- *      read is intact. If the marker stops matching, the stub points the model at a
- *      pointer: it is told the content is above, and it is not.
- *
- * The pointer prose that carries it reads like copy, and nothing type-checks a template
- * literal — so a reword is a one-word change with a two-layer blast radius and no red
- * test. Every emitter therefore INTERPOLATES this constant rather than re-typing the
- * phrase (`context/pointers.ts`, `apply.ts`); `pointers.test.ts` pins that structurally.
- *
- * Siblings, same rule: `CRUSH_MARKER` (`crushers/index.ts`) and `MIDDLE_TRUNCATE_MARKER`
- * (`prune-wire.ts`).
- */
-export const ELISION_MARKER = 'elided to save context'
-
-/**
- * Does `text` CARRY one of our compression markers, as opposed to merely mentioning the
- * words? Every emitter wraps the marker in one bracketed placeholder — `[Old tool output
- * …`, `[… N chars …`, `[<label> …`, `[<CRUSH_MARKER> — …` — so requiring an unclosed `[`
- * before it on the same line is what separates OUR signal from DATA that contains the
- * phrase.
- *
- * A bare `.includes()` could not tell them apart, and the markers are ordinary English
- * sitting verbatim in this very file: an agent that reads or greps `op-menu.ts` fed
- * itself the signal. Its own read result was then judged already-compressed (so never
- * bounded), and — worse — its tool_call_id was latched into the session's elided set,
- * which flips `read` from a stub back to the whole file on every re-read for the rest of
- * the session. That is exactly the duplication read-dedup exists to stop.
- *
- * A tightening, not a proof: a document that writes the phrase INSIDE brackets still
- * forges it. What it buys is that our own source, a grep hit, and ordinary prose no
- * longer do.
- */
-export function carriesMarker(text: string, marker: string): boolean {
-  let from = 0
-  for (;;) {
-    const i = text.indexOf(marker, from)
-    if (i < 0) return false
-    // Walk back to the nearest `[` without crossing `]` or a line break.
-    let j = i - 1
-    while (j >= 0 && text[j] !== '[' && text[j] !== ']' && text[j] !== '\n') j--
-    if (j >= 0 && text[j] === '[') return true
-    from = i + marker.length
-  }
-}
+export { carriesMarker, ELISION_MARKER } from './compression-markers'
 
 /**
  * The heavy, recoverable string payloads a mutation tool call carries in its ARGS:
