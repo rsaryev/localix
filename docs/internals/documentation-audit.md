@@ -17,7 +17,7 @@ state; remove obsolete instructions and consolidate duplicated contracts.
 | Inventory               | 185 first-party Markdown files in the current audit, including bundled skill instructions and new internal references; 75 published pages.                                                                 |
 | Public navigation       | The documentation index now links every page in `docs/public-nav.json`.                                                                                                                                    |
 | Local links and anchors | `check:public` passed; the landing generator's anchor and quoted-source validators passed across all 185 owned Markdown files.                                                                             |
-| Subsystem references    | `check:docs` resolved 190 source references in 22 tracked subsystem notes, with no allowlisted debt; the broader validator also covered the new untracked guides.                                          |
+| Subsystem references    | `check:docs` resolved 217 source references in 24 tracked subsystem notes, with no allowlisted debt; the broader validator covered all owned Markdown.                                                     |
 | GitHub source links     | Checked first-party Markdown links to this repository's `blob/main` files against the checkout; repaired the moved file-tree parser link.                                                                  |
 | Quoted source paths     | Extended the landing validator to all owned Markdown for this audit; repaired two abbreviated desktop script paths.                                                                                        |
 | GitHub feedback         | Paginated repository-wide inline PR, issue/PR discussion, and commit-comment queries returned no comments. PR #14 has no submitted review; its proposed CI wording was compared with the current workflow. |
@@ -182,6 +182,7 @@ Recent plugin history was checked; all current plugin READMEs now have a content
 - `37b3a2f`: native-tab consolidation and public Reader limits.
 - `f3242c7`: package README exports and runtime contracts.
 - `a569839`: plugin defaults, synchronization, storage, and font corrections.
+- `db85164`: documentation index, contributor guidance, internal guide splits, and audit report.
 
 These commits are intermediate checkpoints. They do not prove that the remaining public guides,
 skill instructions, obsolete-page inventory, or visual evidence have completed their review.
