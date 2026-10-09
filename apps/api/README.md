@@ -14,6 +14,8 @@ launcher; it does not bundle this backend.
 
 ## Entry points
 
+The table highlights common seams. The package manifest is the complete export inventory.
+
 | Entry point                                                                      | Contract                                                                                                                       |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | [`localix`](./bin/localix)                                                       | Resolves a built UI, defaults the combined server to port 5050, then executes the backend entry.                               |
@@ -43,8 +45,9 @@ subpaths. They remain declared boundaries, not permission to import other backen
 ## Limits
 
 - The server defaults to `127.0.0.1:5051` and a single local user. Its request identity is a
-  sanitized caller-supplied header, and CORS admits loopback origins; this is not an internet-facing
-  authentication or multi-tenant boundary.
+  sanitized caller-supplied header. The origin boundary checks loopback Host names, an explicit set
+  of allowed browser origins, and non-browser mutation headers; it is not authentication or a
+  multi-tenant boundary.
 - One process owns a database runtime at a time. Managed startup may attach to a compatible live
   runtime, while incompatible runtime descriptors are stopped before replacement.
 - `@localixai/api/client` exports contracts and pure values, not a configured network client. Each
@@ -63,3 +66,5 @@ subpaths. They remain declared boundaries, not permission to import other backen
 - [Runtime composition](./src/bootstrap.ts)
 - [HTTP and WebSocket route composition](./src/app.ts)
 - [Client contract barrel](./src/client.ts)
+- [Request origin boundary](./src/lib/local-origin-guard.ts)
+- [Request identity](./src/lib/request-identity.ts)

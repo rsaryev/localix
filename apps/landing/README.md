@@ -1,10 +1,10 @@
 # @localixai/landing
 
-Marketing + documentation site for **localix.ai**. A standalone Vite + React app that **reuses the
-product's design system** (it never forks the look):
+Product and documentation site for **localix.ai**, built as a standalone Vite + React application.
+It shares the product's UI foundations and adds styles for the public site:
 
-- `src/styles.css` imports `apps/ui/src/app/index.css` by relative path, so every color token, font,
-  keyframe and base reset is the single source the chat workspace uses.
+- `src/styles.css` imports `apps/ui/src/app/index.css` for shared tokens, fonts, keyframes, and
+  resets, then overrides page scrolling, site fonts, surface colors, and layout.
 - The page declares a dark theme in `index.html`; it does not offer the workspace's theme switcher.
 - The hero uses the product's `BirdStage` component through the `@ui` alias, with the shared logo.
 
@@ -24,6 +24,8 @@ dated 1600×1000 PNGs or their native 2×/3× captures from the canonical
 presented as product proof on the homepage.
 
 ## Commands
+
+Run these commands from `apps/landing`:
 
 ```bash
 bun run dev        # dev server on http://localhost:5173 (regenerates docs first)
@@ -64,3 +66,12 @@ See [Shared Markdown](../../docs/extending/markdown.md) for live examples and pa
 
 The documentation offers a focus mode and text-size menu. Its shared site header uses the same black
 ground as the landing; code blocks reuse the kit glass material and syntax palette.
+
+## Source of truth
+
+- [Package scripts](./package.json)
+- [Site stylesheet](./src/styles.css)
+- [Public navigation manifest](../../docs/public-nav.json)
+- [Documentation generation](./scripts/build-docs.mjs)
+- [Static documentation generation](./scripts/build-static-docs.mjs)
+- [Screenshot validation](./scripts/build-shots.mjs)

@@ -72,26 +72,23 @@ Two rules decide what belongs here, and only the second is obvious:
    `event.listen`, and the current window's `isFullscreen()` / `setBadgeCount()`. Hence
    `core:default` plus `set-badge-count` (not in the core defaults) and `start-dragging` (what
    `data-tauri-drag-region` invokes behind the custom titlebar).
-2. A permission is also needed when the **plugin injects a JavaScript shim** that calls its own
-   command — the shim is injected whether or not the permission is granted, so denying it does not
-   remove an API, it leaves a broken one:
-   - `opener:default` — the plugin intercepts clicks on `<a target="_blank">` and Cmd/Ctrl-clicks
-     and invokes `plugin:opener|open_url`. Without it every external link in the app silently does
-     nothing. (`open_external` in `commands.rs` goes through the Rust API and would still work,
-     which is exactly why this failure would be so hard to attribute.)
-   - `dialog:default` — the plugin replaces `window.alert` / `window.confirm`.
-   - `notification:default` — the plugin replaces `window.Notification`.
+2. A permission is also needed when a **plugin injects a JavaScript shim**. The current capability
+   grants `opener:allow-open-url` and `opener:allow-default-urls` for the opener's click handler,
+   and `notification:allow-is-permission-granted` for the notification permission probe. These are
+   narrower than either plugin's default permission set. Native dialogs, notifications, and links
+   also have shell-owned Rust commands; registering a plugin does not grant all its JavaScript
+   commands.
 
 Deliberately **absent**, because the shell drives them from Rust and no JavaScript touches them —
 the plugin's Rust `…Ext` traits do not go through the ACL, so removing the permission removes only
 the webview's ability to call them:
 
-| Plugin         | Used from                                    | Why the webview must not reach it                    |
-| -------------- | -------------------------------------------- | ---------------------------------------------------- |
-| `updater`      | `updater_check` / `updater_install` commands | `plugin:updater                                      | download_and_install` runs an installer. |
-| `deep-link`    | `on_open_url` / `get_current` in `lib.rs`    | Scheme (de)registration is a launch-time concern.    |
-| `window-state` | the plugin's own save/restore hooks          | Geometry is restored on the window the shell builds. |
-| `shell`        | `sidecar.rs` (the Bun sidecar)               | `plugin:shell                                        | execute` would be arbitrary execution.   |
+| Plugin         | Used from                                    | Why the webview must not reach it                         |
+| -------------- | -------------------------------------------- | --------------------------------------------------------- |
+| `updater`      | `updater_check` / `updater_install` commands | `plugin:updater\|download_and_install` runs an installer. |
+| `deep-link`    | `on_open_url` / `get_current` in `lib.rs`    | Scheme (de)registration is a launch-time concern.         |
+| `window-state` | the plugin's own save/restore hooks          | Geometry is restored on the window the shell builds.      |
+| `shell`        | `sidecar.rs` (the Bun sidecar)               | `plugin:shell\|execute` would be arbitrary execution.     |
 
 Nothing grants `fs`, `http`, or the asset protocol: the UI reaches the filesystem and the network
 through the local API sidecar, not through Tauri.
@@ -109,13 +106,11 @@ list.**
 | A file, an application, a reveal                          | The API sidecar — [`@localixai/os-open`](../../packages/os-open/README.md)   | The webview has no filesystem; the sidecar does, and it is where the plugin `files` port already lives.                                                     |
 | A `localix://` deep link from a shell prompt              | The CLI launcher — the same package                                          | There is no app process yet; the launcher's whole job is to reach one.                                                                                      |
 
-The split is deliberate and must not be collapsed. Routing a browser open through the sidecar looks
-like deduplication and is not: the sidecar is a different process, it can be started in a different
-session, and on a hosted deployment it is not even on the person's machine — so "open this link"
-would open it somewhere nobody is sitting. The thing that must not be duplicated is the CONTRACT,
-and that is what the package and `open_external` share: wait for the opener, treat its exit status
-as the answer, log every attempt (successes included, so an empty log cannot mean both "never
-called" and "called and ignored"), and never fail quietly.
+The shell opens clicked links in the person's GUI session. The sidecar owns filesystem handoffs and
+may run in a different session or on another machine. Both paths report handler failures. The shell
+logs external-link attempts; `@localixai/os-open` records attempts only when its caller supplies a
+logger, and bounds its wait for an opener to 15 seconds by default. A successful handoff means the
+handler accepted the request, not that the destination is visibly open.
 
 ### The CSP is not as loose as it looks
 
@@ -126,15 +121,6 @@ that carry their own, much stricter `<meta>` policy — but a `srcdoc` frame INH
 policy and the two intersect. Removing a host here silently removes it from every plugin view, no
 matter what the view's own CSP allows. The single source for the list is `PANEL_CDN_HOSTS` in that
 file; keep this policy a superset of it (`pluginPanelSrcDoc.test.ts` fails when it is not).
-
-## Source of truth
-
-- [Package scripts](./package.json)
-- [Native dependency manifest](./src-tauri/Cargo.toml)
-- [Desktop and bundle configuration](./src-tauri/tauri.conf.json)
-- [Application composition](./src-tauri/src/lib.rs)
-- [Sidecar staging](./scripts/prepare-sidecar.mjs)
-- [Main-window capabilities](./src-tauri/capabilities/default.json)
 
 ## Native workspace tabs (macOS)
 
@@ -191,3 +177,12 @@ It starts deterministic local HTML with a separate app identifier and no API pro
 from release builds. It checks the native + action, close, clean quit, and tab order, selection and
 outer geometry after restart. Manual visual checks still cover vibrancy in both appearances,
 fullscreen, mouse-driven tab reordering and detaching, and the native + button's appearance.
+
+## Source of truth
+
+- [Package scripts](./package.json)
+- [Native dependency manifest](./src-tauri/Cargo.toml)
+- [Desktop and bundle configuration](./src-tauri/tauri.conf.json)
+- [Application composition](./src-tauri/src/lib.rs)
+- [Sidecar staging](./scripts/prepare-sidecar.mjs)
+- [Main-window capabilities](./src-tauri/capabilities/default.json)

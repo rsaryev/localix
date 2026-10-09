@@ -1,8 +1,8 @@
 # Localix database schema
 
 `20260601T000000_init_schema.ts` is the frozen baseline: the schema every database starts from. It
-is never edited again, and `src/db/migration-freeze.test.ts` fails on any change to it. Every later
-schema change is its own forward migration beside it.
+is never edited again, and `src/db/migration-freeze.test.ts` fails on any change to its contents.
+Every later schema change is its own forward migration beside it.
 
 ## Changing the schema
 
@@ -87,9 +87,18 @@ the schema matches the app.
 
 Regression tests in `src/db/schema-quality.test.ts` inspect production query plans and include
 negative controls. Migration behaviour is in `src/db/migrator.test.ts`, the freeze in
-`src/db/migration-freeze.test.ts`. Run the full gates, including `check:tests`, after changes.
+`src/db/migration-freeze.test.ts`. Run the focused database tests above after schema changes; full
+repository gates belong to CI.
 
 The index layout follows SQLite's
 [query-planning guidance](https://www.sqlite.org/queryplanner.html) and
 [foreign-key indexing guidance](https://www.sqlite.org/foreignkeys.html). Query-plan tests use
 [EXPLAIN QUERY PLAN](https://www.sqlite.org/eqp.html), not wall-clock thresholds.
+
+## Source of truth
+
+- [Migration runner](../src/db/migrator.ts)
+- [Migration ledger](../src/db/migration-ledger.ts)
+- [Committed migration freeze](../src/db/migration-freeze.test.ts)
+- [Read-only audit](../src/db/audit-cli.ts)
+- [Packaged migration embedding](../../../scripts/embed-migrations-plugin.mjs)
