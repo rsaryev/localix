@@ -2,7 +2,6 @@ import type { AgentMessage as PiAgentMessage } from '@earendil-works/pi-agent-co
 import type { ConversationalPiMessage } from './pi-transcript'
 import type {
   AssistantMessage as PiAssistantMessage,
-  AssistantMessageEvent as PiAssistantMessageEvent,
   ImageContent as PiImageContent,
   JsonObject as PiJsonObject,
   JsonValue as PiJsonValue,
@@ -11,12 +10,7 @@ import type {
   UserMessage as PiUserMessage,
 } from '@earendil-works/pi-ai'
 
-import type {
-  AgentMessage,
-  AgentMessageDelta,
-  AgentMessageOrigin,
-  AgentToolResult,
-} from '@localixai/agent/agents'
+import type { AgentMessage, AgentToolResult } from '@localixai/agent/agents'
 import type {
   AssistantMessage,
   FileContent,
@@ -288,138 +282,4 @@ export function toolResultFromPi(result: {
   }
 }
 
-function originOf(message: PiAssistantMessage): AgentMessageOrigin {
-  return {
-    api: message.api,
-    provider: message.provider,
-    model: message.model,
-  }
-}
-
-/**
- * Translate one Pi part update without converting its cumulative partial message.
- *
- * Pi's `partial.content` grows throughout a response. Mapping that whole array on
- * every token made the adapter itself O(total generated content²), before the host
- * saw the event. Direct indexed access keeps this boundary O(size of this delta);
- * `message_end` still decodes the complete message once as the reconciliation
- * checkpoint.
- */
-export function mapAssistantDelta(event: PiAssistantMessageEvent): AgentMessageDelta | undefined {
-  if (event.type === 'start' || event.type === 'done' || event.type === 'error') return undefined
-  const origin = originOf(event.partial)
-  const part = event.partial.content[event.contentIndex]
-  switch (event.type) {
-    case 'text_start':
-      return {
-        kind: 'text',
-        phase: 'start',
-        contentIndex: event.contentIndex,
-        delta: '',
-        origin,
-        ...(part?.type === 'text' && part.textSignature
-          ? { textSignature: part.textSignature }
-          : {}),
-      }
-    case 'text_delta':
-      return {
-        kind: 'text',
-        phase: 'delta',
-        contentIndex: event.contentIndex,
-        delta: event.delta,
-        origin,
-        ...(part?.type === 'text' && part.textSignature
-          ? { textSignature: part.textSignature }
-          : {}),
-      }
-    case 'text_end':
-      return {
-        kind: 'text',
-        phase: 'end',
-        contentIndex: event.contentIndex,
-        delta: '',
-        origin,
-        ...(part?.type === 'text' && part.textSignature
-          ? { textSignature: part.textSignature }
-          : {}),
-      }
-    case 'thinking_start':
-      return {
-        kind: 'reasoning',
-        phase: 'start',
-        contentIndex: event.contentIndex,
-        delta: '',
-        origin,
-        ...(part?.type === 'thinking' && part.thinkingSignature
-          ? { thinkingSignature: part.thinkingSignature }
-          : {}),
-        ...(part?.type === 'thinking' && part.redacted ? { redacted: true } : {}),
-      }
-    case 'thinking_delta':
-      return {
-        kind: 'reasoning',
-        phase: 'delta',
-        contentIndex: event.contentIndex,
-        delta: event.delta,
-        origin,
-        ...(part?.type === 'thinking' && part.thinkingSignature
-          ? { thinkingSignature: part.thinkingSignature }
-          : {}),
-        ...(part?.type === 'thinking' && part.redacted ? { redacted: true } : {}),
-      }
-    case 'thinking_end':
-      return {
-        kind: 'reasoning',
-        phase: 'end',
-        contentIndex: event.contentIndex,
-        delta: '',
-        origin,
-        ...(part?.type === 'thinking' && part.thinkingSignature
-          ? { thinkingSignature: part.thinkingSignature }
-          : {}),
-        ...(part?.type === 'thinking' && part.redacted ? { redacted: true } : {}),
-      }
-    case 'toolcall_start':
-      return {
-        kind: 'tool_call',
-        phase: 'start',
-        contentIndex: event.contentIndex,
-        id: part?.type === 'toolCall' ? part.id : '',
-        name: part?.type === 'toolCall' ? part.name : '',
-        input: part?.type === 'toolCall' ? part.arguments : {},
-        delta: '',
-        origin,
-        ...(part?.type === 'toolCall' && part.thoughtSignature
-          ? { thoughtSignature: part.thoughtSignature }
-          : {}),
-      }
-    case 'toolcall_delta':
-      return {
-        kind: 'tool_call',
-        phase: 'delta',
-        contentIndex: event.contentIndex,
-        id: part?.type === 'toolCall' ? part.id : '',
-        name: part?.type === 'toolCall' ? part.name : '',
-        input: part?.type === 'toolCall' ? part.arguments : {},
-        delta: event.delta,
-        origin,
-        ...(part?.type === 'toolCall' && part.thoughtSignature
-          ? { thoughtSignature: part.thoughtSignature }
-          : {}),
-      }
-    case 'toolcall_end':
-      return {
-        kind: 'tool_call',
-        phase: 'end',
-        contentIndex: event.contentIndex,
-        id: event.toolCall.id,
-        name: event.toolCall.name,
-        input: event.toolCall.arguments,
-        delta: '',
-        origin,
-        ...(event.toolCall.thoughtSignature
-          ? { thoughtSignature: event.toolCall.thoughtSignature }
-          : {}),
-      }
-  }
-}
+export { mapAssistantDelta } from './message-delta-codec'
