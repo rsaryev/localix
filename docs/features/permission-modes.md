@@ -6,18 +6,20 @@ lists the four modes with what each one does.
 
 ## The four modes
 
-| Mode           | What the agent may do                                                                                   | Who answers questions                                     |
-| -------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Default**    | What the agent's own [permission rules](capabilities.md) say. An `ask` rule shows you a card.           | You.                                                      |
-| **Plan**       | Read, look, and change only this conversation's own state. Nothing on disk, in the host, or outside it. | You — and the agent presents a plan for you to approve.   |
-| **Bypass**     | Every call an `ask` rule would have asked about runs without a card. Denials still block.               | You, for the agent's own questions (`ask`).               |
-| **Autonomous** | Everything Bypass allows.                                                                               | Nobody: questions and approval cards are refused at once. |
+| Mode           | What the agent may do                                                                                                                                    | Who answers questions                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Default**    | What the agent's own [permission rules](capabilities.md) say. An `ask` rule shows you a card.                                                            | You.                                                      |
+| **Plan**       | Read, look, and change only this conversation's own state. Ordinary file, host, and external changes are blocked; its own plan Markdown is an exception. | You — and the agent presents a plan for you to approve.   |
+| **Bypass**     | Tool calls proceed without permission cards when the remaining rules allow them. Denials still block.                                                    | You, for the agent's own questions (`ask`).               |
+| **Autonomous** | Everything Bypass allows.                                                                                                                                | Nobody: questions and approval cards are refused at once. |
 
 Three things no mode changes:
 
 - **A denial stays a denial.** A rule that denies a tool or a command denies it in every mode. A
   mode never widens what an agent is.
-- **The host stays closed.** No mode lets an agent read or edit the Localix application itself.
+- **The host-root guard stays active.** A mode cannot lift it. Opening the Localix checkout as the
+  session project is its existing exemption; see
+  [the host-root guard](permissions.md#the-host-root-guard).
 - **Bypass and Autonomous still refuse catastrophic commands** — wiping a disk, a home directory or
   the machine — because "stop asking" is not "allow anything".
 
@@ -30,8 +32,10 @@ change.
   (memory, skills, loops, plugins, configuration) or outside the machine. Reads, previews, and the
   conversation's own state — a board card, a game move, a queued question, a delegated explorer —
   stay allowed.
-- **Bypass** turns each `ask` about a tool call into `allow`, in place, and appends a denial for
-  catastrophic commands.
+- **Bypass** removes tool `ask` rules about call classes, such as `outside-workspace` and
+  `dangerous`, leaving the other rules to decide. It turns questions about a named tool or command
+  into `allow` at the same position, then appends a denial for catastrophic commands. Plugin, skill,
+  and agent admission rules are left unchanged.
 - **Autonomous** does what Bypass does, then refuses every call that waits on a person, and tells
   tools that raise their own cards (secrets, configuration proposals) that nobody will answer.
 
@@ -51,15 +55,20 @@ until you decide.
 The plan is a file in the conversation's working folder, so the agent revises it with small edits
 instead of rewriting it, and you can open it like any other file:
 
-| File                                    | Written by | What it is                                                        |
-| --------------------------------------- | ---------- | ----------------------------------------------------------------- |
-| `.localix/plans/<conversation>/PLAN.md` | The agent  | The working draft. The only file Plan mode lets the agent change. |
-| `.localix/plans/<conversation>/v2.md`   | Localix    | Version 2 exactly as it was presented — the text you approve.     |
+| File                                    | Written by | What it is                                                    |
+| --------------------------------------- | ---------- | ------------------------------------------------------------- |
+| `.localix/plans/<conversation>/PLAN.md` | The agent  | The working draft the agent edits before presenting.          |
+| `.localix/plans/<conversation>/v2.md`   | Localix    | Version 2 exactly as it was presented — the text you approve. |
 
-`<conversation>` is the conversation's reference, such as `LOCALIX-42`. Only this conversation's own
-plan folder is open in Plan mode: writing another conversation's `PLAN.md` counts as an ordinary
-file change and is refused, and a delegated agent writes no plan file at all. The files belong to
-your project: deleting the conversation does not delete them.
+`<conversation>` is the conversation's reference, such as `LOCALIX-42`. Only Markdown files directly
+inside this conversation's own plan folder receive the Plan-mode file exception: writing another
+conversation's `PLAN.md` counts as an ordinary file change and is refused, and a delegated agent
+writes no plan file at all. The files belong to your project: deleting the conversation does not
+delete them.
+
+The exception covers Markdown files in that directory, not only `PLAN.md`. Version snapshots are
+owned by Localix: the database version is authoritative, and the host rewrites a snapshot from it
+when that version is touched. Editing a snapshot does not change the approved plan.
 
 Each presentation snapshots the draft as the next version. Presenting text identical to the newest
 version does not make a new one: if that version is waiting, nothing changes; if it was set aside,
@@ -183,3 +192,19 @@ A call may also be marked irreversible, or as waiting on a person. A tool that s
 treated as `external`, the widest answer. The same classes are available to your own rules as
 resources — `effect:files`, `effect:external`, `irreversible`, `needs-human` — so "ask before
 anything irreversible" is one rule: `tool:*` over `irreversible` with effect `ask`.
+
+## Related guides
+
+- [Permission rules](permissions.md)
+- [Human-in-the-loop requests](hitl.md)
+- [Agent capabilities](capabilities.md)
+
+## Source of truth
+
+- [Mode vocabulary](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-modes.ts)
+- [Per-run mode rewrite](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
+- [Plan paths and file exception](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/plan-paths.ts)
+- [Plan-file call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/file/file-call-class.ts)
+- [Plan presentation and snapshots](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-present.ts)
+- [Plan approval](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-approve.ts)
+- [Plan lifecycle notices](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/notices.ts)

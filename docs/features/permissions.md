@@ -5,12 +5,12 @@ page to trace which rule decides that call.
 
 ## Terminology
 
-| Term            | Meaning                                                             | Boundary                                                 |
-| --------------- | ------------------------------------------------------------------- | -------------------------------------------------------- |
-| Permission rule | An ordered policy record evaluated for one tool call.               | A rule can match only the facts extracted for that call. |
-| Call facts      | The tool name, mutation class, paths, commands, and workspace root. | Extraction is tool-specific.                             |
-| Session grant   | A process-memory approval for one program, path or folder.          | Dangerous commands and credential paths ignore it.       |
-| Workspace root  | The project or Localix-created session directory.                   | It is a policy boundary, not an OS sandbox.              |
+| Term            | Meaning                                                                        | Boundary                                                 |
+| --------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| Permission rule | An ordered policy record evaluated for one tool call.                          | A rule can match only the facts extracted for that call. |
+| Call facts      | The tool name, mutation class, paths, commands, and workspace root.            | Extraction is tool-specific.                             |
+| Session grant   | A process-memory approval for one program, path, folder, or declared resource. | Dangerous commands and credential paths ignore it.       |
+| Workspace root  | The project or Localix-created session directory.                              | It is a policy boundary, not an OS sandbox.              |
 
 ## Permission contract
 
@@ -34,10 +34,11 @@ extract call facts + the tool's own class of the call (`AgentTool.classify`)
 
 ### The host-root guard
 
-An agent never reads or edits the Localix application itself. It works in `~/.localix` and in the
-session's project folder; the application's own directories are neither. Rules are the user's to
-edit, and a Bypass session stops asking, so this boundary is not a rule: the gate refuses the call
-in code before any rule is evaluated, and no preset, project rule or permission mode lifts it.
+The host-root guard blocks extracted paths into the Localix installation or source tree, unless that
+tree contains the session's own project directory. Agents ordinarily work in `~/.localix` and in the
+session project. Rules are the user's to edit, and a Bypass session stops asking, so this boundary
+is not a rule: the gate refuses the call in code before any rule is evaluated, and no preset,
+project rule or permission mode lifts it.
 
 | Question               | Answer                                                                                                                                                                        |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -156,12 +157,16 @@ A blanket `{*, mutates, ask}` rule is what "confirm every change" means, and it 
 run schedule its file tools sequentially, so the confirmations arrive one at a time.
 
 A conversation's [permission mode](../features/permission-modes.md) never reaches the gate as a
-flag. `capabilities/permission-mode-policy.ts` rewrites the agent's rules once per run: Bypass turns
-each tool `ask` into `allow` in place, Plan and Autonomous only append denials, and every mode keeps
-the agent's rows in order. Skill preapprovals never reorder this policy or override a denial. MCP
-hooks use the same tool policy and call gate; an unattended hook cannot execute a call that requires
-confirmation. A tool that declares no `classify` is classed `external`, so an undeclared tool is
-refused by Plan rather than passing as a read.
+flag. `capabilities/permission-mode-policy.ts` rewrites the agent's rules once per run: Bypass
+removes tool questions about call classes and converts questions about named tools or commands to
+`allow` in place, then adds a catastrophic-call denial. Autonomous uses the same rewrite and adds a
+denial for calls needing a person. Plan appends file, host, and external-effect denials. Each mode
+preserves the relative order of the retained agent rules.
+
+Skill preapprovals never reorder this policy or override a denial. MCP hooks use the same tool
+policy and call gate; an unattended hook cannot execute a call that requires confirmation. A tool
+that declares no `classify` is classed `external`, so an undeclared tool is refused by Plan rather
+than passing as a read.
 
 ## Configuration
 
@@ -186,10 +191,12 @@ explanation.
   do not expose their targets to path matching.
 - A tool's mutation classification is code-defined. An incorrect classifier can send a call down the
   wrong policy branch.
-- A session grant is keyed by program, path or folder, capped in memory, and does not survive an API
-  process restart. A folder level is never offered at or above the home folder.
-- Core `write` and `apply_patch` calls under Localix-owned state receive a narrow host carve-out,
-  and it still requires the rules to allow the call. Read tools do not receive that carve-out.
+- A session grant is scoped to its requester and program, path, folder, or declared resource, capped
+  in memory, and does not survive an API process restart. A folder level is never offered at or
+  above the home folder.
+- Core `write`, `edit`, and `apply_patch` calls under Localix-owned state receive a narrow host
+  carve-out, and it still requires the rules to allow the call. Read tools do not receive that
+  carve-out.
 
 ## Related guides
 
@@ -208,5 +215,7 @@ explanation.
 - [Call-fact extraction](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-facts.ts)
 - [The guards each shipped role carries](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/builtin-agent-presets.ts)
 - [Per-run rule assembly](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
+- [Mode rewriting](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
+- [Permanent-rule insertion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/availability.ts)
 - [Session grants](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/confirm-requester.ts)
 - [Settings surface](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/capabilities/PermissionRulesView.tsx)

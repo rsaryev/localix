@@ -53,9 +53,10 @@ A child session follows verified parent links to its root chat. The request is l
 child title, while the child tool call remains blocked. A parentless automation job has no reachable
 chat, so a permission decision that would ask fails closed.
 
-Web/desktop stores out-of-session requests in a global inbox and shows the newest notification
-first. Opening the waiting session restores its in-session overlay. Dismissing the inbox dialog only
-removes the notification.
+Web/desktop reads cross-session attention from the server-owned list. The dialog ranks blocked
+requests before plans and mentions, then shows the newest eligible item within that rank. Opening
+the waiting session restores its in-session overlay. Dismissing the cross-session dialog snoozes
+that item in the current window; the request stays pending.
 
 ### Ask
 
@@ -178,8 +179,9 @@ would have allowed this very call, and it is written before the rules about dang
 secrets, so it can never silence those.
 
 Session grants live in API-process memory, hold at most 64 scopes per requester, and disappear on
-restart. Reloading a client does not remove them. A dangerous shell command still asks even when its
-program has a session grant, and a folder grant never covers a credential path inside it.
+restart. Reloading a client does not remove them. When policy requires confirmation, a dangerous
+shell command still asks even when its program has a session grant, and a folder grant never covers
+a credential path inside it.
 
 Confirm expires like every other card: five minutes, then denied. It does not wait indefinitely,
 because a run that asked while nobody was at the keyboard would stay blocked until the process
@@ -216,7 +218,7 @@ available for retry; `hitl.resolved` removes the matching request and exposes th
 - Background external CLI runs cannot pause for Localix approval overlays.
 - A session grant matches a program, a path, a folder or one resource — never a whole tool, except
   for a call that names nothing at all. Dangerous shell commands and credential paths are the
-  enforced exceptions and always ask again.
+  enforced exceptions to grant reuse; a policy decision requiring confirmation still asks.
 - A channel plugin may expose only approve and deny, not the session-grant choice available in
   web/desktop.
 - Plugin HITL lifecycle hooks observe requests and resolutions. They cannot answer, modify, or veto
@@ -240,5 +242,8 @@ available for retry; `hitl.resolved` removes the matching request and exposes th
 - [Request routing and queue registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/hitl-registry.ts)
 - [Permission confirmation flow](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/confirm-requester.ts)
 - [Web/desktop request mapping](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/hitlInteraction.ts)
+- [Requester-scoped grant storage](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/session-grants.ts)
+- [Shared five-minute deadline](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/hitl/decision-deadline.ts)
+- [Attention selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/attention/select.ts)
 - [Attention ranking per kind](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/attention/policy.ts)
 - [Cross-session attention dialog](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/attention/AttentionDialog.tsx)

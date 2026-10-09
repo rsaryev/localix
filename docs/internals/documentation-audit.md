@@ -187,6 +187,27 @@ Recent plugin history was checked; all current plugin READMEs now have a content
 These commits are intermediate checkpoints. They do not prove that the remaining public guides,
 skill instructions, obsolete-page inventory, or visual evidence have completed their review.
 
+## Permission modes and human requests
+
+Compared ordered rule evaluation and skill preapprovals, mode rewriting, host-root exemption,
+plan-file classification, snapshot authority, permanent-rule insertion, requester-scoped grants, Ask
+deferral/expiry, the shared five-minute deadline, and attention ranking with current source. Recent
+owner history includes `7d384c8`; current functions determine the documented behavior.
+
+- Corrected Bypass and Autonomous: call-class questions are removed, while named tool/command
+  questions become allows in place. Artifact admission rules are not rewritten.
+- Corrected Plan's file exception: Markdown files directly in the conversation's own plan directory
+  qualify; `PLAN.md` is the working draft, not the only accepted filename. Database versions remain
+  authoritative over snapshot files.
+- Qualified host-root protection by its existing project exemption, grant reuse by the requester,
+  and dangerous-call prompts by the policy decision requiring confirmation. Included `edit` beside
+  `write` and `apply_patch` in the existing allowed-state-write behavior.
+- Replaced the obsolete newest-notification inbox description with server-owned ranked attention and
+  per-window snoozing. Added source owners for the policy, deadline, and grant contracts.
+
+This review establishes these mechanisms. The detailed plan-tab UI lifecycle and the external CLI
+HITL adapter section still need their own source comparison before those guides are fully reviewed.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
