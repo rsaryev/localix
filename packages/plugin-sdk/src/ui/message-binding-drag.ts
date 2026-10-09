@@ -1,57 +1,26 @@
-import {
-  resourceMessageBindingDraft,
-  type MessageBindingDraft,
-  type MessageBindingTargetKind,
-} from './contrib'
+import { resourceMessageBindingDraft, type MessageBindingTargetKind } from './contrib'
 import { setCompactDragImage } from './drag-image'
+import {
+  MESSAGE_BINDING_DRAG_VERSION,
+  WORKSPACE_TAB_DRAG_MIME,
+  MESSAGE_BINDING_MIME,
+  MESSAGE_BINDING_KIND_MIME_PREFIX,
+  type MessageBindingDragPayload,
+} from './message-binding-drag-contracts'
+import { exceedsDragByteCap, normalizeDragEnvelope } from './message-binding-drag-envelope'
+
+export {
+  MESSAGE_BINDING_DRAG_VERSION,
+  MESSAGE_BINDING_DRAG_MAX_BYTES,
+  WORKSPACE_TAB_DRAG_MIME,
+  MESSAGE_BINDING_MIME,
+  MESSAGE_BINDING_KIND_MIME_PREFIX,
+  type MessageBindingDragPayload,
+  type MessageBindingDragKind,
+} from './message-binding-drag-contracts'
+export { composerDropHint, OS_FILES_DRAG_KIND } from './message-binding-drop-hints'
 
 export { setCompactDragImage, setElementDragImage, setNativeWindowDragImage } from './drag-image'
-
-/** Canonical drag transport for linking any resource/context into a message. */
-/** Tabs exclusively reorder or move between workspaces; they are never message links. */
-export const WORKSPACE_TAB_DRAG_MIME = 'application/x-localix-tab'
-
-export const MESSAGE_BINDING_MIME = 'application/x-localix-message-binding'
-
-/**
- * Kind-advertising companion MIME. Drag payload data is protected during
- * dragover, while its type list remains readable for the composer hint.
- */
-export const MESSAGE_BINDING_KIND_MIME_PREFIX = 'application/x-localix-message-binding-kind.'
-
-export type MessageBindingDragPayload = Extract<MessageBindingDraft, { kind: 'context' }>
-export type MessageBindingDragKind = MessageBindingTargetKind
-
-/**
- * Serialized shape version. A desktop window can outlive the update that changed
- * this shape (the renderer is only reloaded when the user reopens it), so a drag
- * written by an older build and read by a newer one is an ordinary event, not a
- * theoretical one. An unrecognized version is dropped rather than coerced.
- */
-export const MESSAGE_BINDING_DRAG_VERSION = 1
-
-/**
- * Largest payload this transport will serialize, in UTF-8 BYTES.
- *
- * The bound has to sit ABOVE the largest payload the composer itself accepts or
- * hardening would silently eat legitimate drags: a `snippet` binding carries its
- * content inline in `target.attributes.content` and is clamped only much later,
- * at `SNIPPET_CONTENT_MAX` (100_000 chars, apps/api/src/features/chat/context-ref-kinds.ts),
- * which is ~300 KB once the text is not ASCII. Everything past that is a corrupt
- * or hostile payload, and rejecting it keeps the synchronous `JSON.parse` in a
- * drop handler off the frame budget. Nothing else bounds these bytes: the
- * server's `bindingsTotalBytes` guard counts only `resolution.contributions`.
- */
-export const MESSAGE_BINDING_DRAG_MAX_BYTES = 512 * 1024
-
-/** UTF-8 spends at least one and at most three bytes per UTF-16 code unit (a
- *  surrogate PAIR costs four, i.e. two per unit), so both bounds settle the
- *  common cases before we pay for an encoded copy. */
-function exceedsDragByteCap(serialized: string): boolean {
-  if (serialized.length > MESSAGE_BINDING_DRAG_MAX_BYTES) return true
-  if (serialized.length * 3 <= MESSAGE_BINDING_DRAG_MAX_BYTES) return false
-  return new TextEncoder().encode(serialized).byteLength > MESSAGE_BINDING_DRAG_MAX_BYTES
-}
 
 const AGENT_LINK_DRAG_ATTRIBUTE = 'data-localix-agent-link-drag'
 let removeAgentLinkDragListeners: (() => void) | null = null
@@ -264,135 +233,6 @@ export function messageBindingDragKind(types: readonly string[]): string | null 
     }
   }
   return types.includes(MESSAGE_BINDING_MIME) ? 'binding' : null
-}
-
-/** Composer dropzone pseudo-kind for native OS file uploads. */
-export const OS_FILES_DRAG_KIND = 'files'
-
-const DROP_HINTS: Record<MessageBindingTargetKind, string> = {
-  file: 'Link file to message',
-  session: 'Link session to message',
-  project: 'Link project to message',
-  message: 'Link message to message',
-  terminal: 'Link terminal to message',
-  call: 'Link tool call to message',
-  resource: 'Link resource to message',
-  snippet: 'Attach snippet to message',
-}
-
-export function composerDropHint(kind: string): string {
-  if (kind === OS_FILES_DRAG_KIND) return 'Drop files to attach'
-  const known = (DROP_HINTS as Record<string, string>)[kind]
-  if (known) return known
-  if (kind !== 'binding' && /^[a-z][a-z-]*$/.test(kind))
-    return `Link ${kind.replace(/-/g, ' ')} to message`
-  return 'Link to message'
-}
-
-/**
- * Limits below mirror `normalizePublishedMessageContext`
- * (packages/plugin-sdk/src/ui/contrib.ts) — the same binding shape arriving over a
- * different transport, so the two must not drift. That helper cannot be called
- * from here: it accepts only the two plugin-publishable target kinds (`resource`,
- * `snippet`), deliberately, so a sandboxed iframe cannot impersonate a host
- * capability — while a drag legitimately carries every core kind from in-process
- * producers.
- */
-const TOKEN_MAX = 4096
-const LABEL_MAX = 512
-const URI_MAX = 4096
-const ATTRIBUTES_MAX = 32
-const ATTRIBUTE_KEY_MAX = 64
-/** The shape the API accepts for `MessageContextBinding.plugin`. */
-const PLUGIN_NAME = /^[a-z0-9][a-z0-9._-]{0,127}$/iu
-
-const BINDING_SOURCES: Readonly<Record<MessageBindingDragPayload['source'], true>> = {
-  drag: true,
-  'active-tab': true,
-  plugin: true,
-}
-
-function isBindingSource(value: unknown): value is MessageBindingDragPayload['source'] {
-  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(BINDING_SOURCES, value)
-}
-
-/** The hint table is already the exhaustive `Record<MessageBindingTargetKind, …>`
- *  of this module, so deriving the accept-set from it means a kind added to the
- *  SDK union cannot slip through unvalidated (or hintless). */
-function isBindingTargetKind(value: unknown): value is MessageBindingTargetKind {
-  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(DROP_HINTS, value)
-}
-
-type BindingAttributes = NonNullable<MessageBindingDragPayload['target']['attributes']>
-
-/** `null` = the bag is malformed and the whole payload must be rejected;
- *  `undefined` = there was no bag to begin with. */
-function normalizeAttributes(value: unknown): BindingAttributes | undefined | null {
-  if (value === undefined) return undefined
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
-  const entries = Object.entries(value)
-  if (entries.length > ATTRIBUTES_MAX) return null
-  const attributes: BindingAttributes = {}
-  for (const [key, attribute] of entries) {
-    // '__proto__' would be swallowed by the object literal's setter rather than
-    // stored, so a binding written with it would read back short a field.
-    if (key.length < 1 || key.length > ATTRIBUTE_KEY_MAX || key === '__proto__') return null
-    if (typeof attribute === 'string' || typeof attribute === 'boolean') attributes[key] = attribute
-    else if (typeof attribute === 'number' && Number.isFinite(attribute))
-      attributes[key] = attribute
-    else return null
-  }
-  return attributes
-}
-
-/**
- * Validate an untrusted transport envelope and REBUILD the draft from known
- * fields, so an unexpected extra field can never ride along into a durable
- * message binding.
- */
-function normalizeDragEnvelope(value: unknown): MessageBindingDragPayload | null {
-  if (typeof value !== 'object' || value === null) return null
-  const envelope = value as Record<string, unknown>
-  if (envelope.version !== MESSAGE_BINDING_DRAG_VERSION || envelope.kind !== 'context') return null
-  if (!isBindingSource(envelope.source)) return null
-  if (typeof envelope.target !== 'object' || envelope.target === null) return null
-  const target = envelope.target as Record<string, unknown>
-  if (!isBindingTargetKind(target.kind)) return null
-  // An EMPTY token is valid: `message` and `snippet` bindings are structural-only
-  // and carry their reference in the attributes, not in a typeable @-token. An
-  // empty label is likewise kept — the producer is in-process host code and an
-  // untitled tab is a real case, so a blank display string is no reason to drop
-  // a link. (This is where the drag path deliberately parts with contrib.ts,
-  // which rejects both because there the producer is an untrusted plugin.)
-  if (typeof target.token !== 'string' || target.token.length > TOKEN_MAX) return null
-  if (typeof target.label !== 'string' || target.label.length > LABEL_MAX) return null
-  const uri = target.uri
-  if (uri !== undefined && (typeof uri !== 'string' || uri.length < 1 || uri.length > URI_MAX))
-    return null
-  if (target.kind === 'resource' && typeof uri !== 'string') return null
-  const attributes = normalizeAttributes(target.attributes)
-  if (attributes === null) return null
-  // A contentless snippet resolves to an empty ref downstream, so it is a broken
-  // payload rather than a link with less information.
-  if (target.kind === 'snippet' && typeof attributes?.content !== 'string') return null
-  // The owning plugin of a dragged tab — what brings its tools to the turn. Kept only when it is
-  // a plugin name; anything else is dropped rather than failing the drop.
-  const plugin =
-    typeof envelope.plugin === 'string' && PLUGIN_NAME.test(envelope.plugin)
-      ? envelope.plugin
-      : undefined
-  return {
-    kind: 'context',
-    source: envelope.source,
-    ...(plugin ? { plugin } : {}),
-    target: {
-      kind: target.kind,
-      token: target.token,
-      label: target.label,
-      ...(typeof uri === 'string' ? { uri } : {}),
-      ...(attributes ? { attributes } : {}),
-    },
-  }
 }
 
 /** Read, bound and structurally validate the canonical binding draft from a drop. */
