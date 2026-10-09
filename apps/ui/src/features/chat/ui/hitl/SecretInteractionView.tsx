@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Lock } from 'lucide-react'
-import { VAULT_ITEM_TYPE_DEFINITIONS } from '@localixai/api/client'
+import { VAULT_ITEM_TYPE_DEFINITIONS } from '@localixai/api/vault-item-types'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Kbd } from '@localixai/kit/kbd'

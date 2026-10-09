@@ -1,10 +1,16 @@
+import {
+  PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS,
+  PROJECT_SETTINGS_MAX_SERIALIZED_CHARS,
+} from './limits'
 import { z } from 'zod'
 import { SNIPPET_CONTENT_MAX } from '../chat/context-ref-kinds'
 import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
 import { modelIdSchema, providerConnectionIdSchema } from '../catalog/model-identity'
 
-export const PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS = 12_000
-export const PROJECT_SETTINGS_MAX_SERIALIZED_CHARS = 256_000
+export {
+  PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS,
+  PROJECT_SETTINGS_MAX_SERIALIZED_CHARS,
+} from './limits'
 
 function isProjectSettingsWithinIngressBudget(value: unknown): boolean {
   try {

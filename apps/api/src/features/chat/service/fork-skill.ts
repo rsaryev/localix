@@ -13,7 +13,7 @@ import { childExecutionContext } from '../runtime/execution-context'
 import { getAgentService } from '../runtime/agent-service-binding'
 import type { createChatRepository, SessionRecord } from '../repository'
 import * as sessionLifecycle from './session-lifecycle'
-import type { SessionLifecycleCtx } from './session-lifecycle'
+import type { SessionLifecycleCtx } from './session-lifecycle-contracts'
 import type { RunAgentFn } from './run-agent'
 import type { createAuxProviderHelpers } from './aux-provider'
 

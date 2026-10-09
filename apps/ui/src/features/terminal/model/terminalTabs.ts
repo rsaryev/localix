@@ -13,13 +13,14 @@
 import { useGridStore, groupOfTab, scopeOf, type WorkItem } from '@/features/workspace-grid/model'
 import { backendClient } from '@/shared/api/client'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
-import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { closeTerminal, createTerminal } from '../api'
+import { createTerminal } from '../api'
 import { decideAutoReveal } from './terminalAutoReveal'
 import { applyTerminalState } from './terminalStates'
-import { closeDeadTerminalTabs, DEAD_TERMINAL_RETENTION_MS } from './deadTerminalTabs'
+import { makeTerminalItem, placeTerminal } from './terminalTabPlacement'
+
+export { restartTerminalTab } from './restartTerminalTab'
 
 // Every terminal belongs to the chat that opened it: its PTY runs in that chat's workspace and
 // its tab lives in that chat's scope. A terminal opened with no chat used to land in the shared
@@ -31,39 +32,6 @@ function terminalsInScope(sessionId: string): WorkItem[] {
   return Object.values(useGridStore.getState().items).filter(
     (i) => i.kind === 'terminal' && scopeOf(i.scope) === scope,
   )
-}
-
-function makeItem(args: {
-  sessionId: string
-  terminalId: string
-  owned: boolean
-  title: string
-  command?: string
-  cwd?: string
-}): WorkItem {
-  return {
-    kind: 'terminal',
-    id: `terminal:${args.terminalId}`,
-    title: args.title,
-    scope: args.sessionId,
-    payload: {
-      sessionId: args.sessionId,
-      terminalId: args.terminalId,
-      owned: args.owned,
-      command: args.command,
-      cwd: args.cwd,
-    },
-  }
-}
-
-/** Open `item` as a terminal tab: reveal it if already open, else dock it into the
- *  terminal role group. `reveal:false` adds it hidden (used to pre-attach a dev
- *  server before the user looks at it). */
-function placeTerminal(item: WorkItem, opts?: { reveal?: boolean }): void {
-  const grid = useGridStore.getState()
-  const already = groupOfTab(grid.root, item.id)
-  const group = already ? already.id : grid.resolveRoleGroup('terminal')
-  grid.openItem(item, { group, activate: opts?.reveal !== false })
 }
 
 /** Create a backend PTY for the session and open it as a new (owned) terminal tab. */
@@ -80,7 +48,7 @@ export async function openNewTerminal(sessionId: string): Promise<boolean> {
   }
   const n = terminalsInScope(sessionId).length
   placeTerminal(
-    makeItem({
+    makeTerminalItem({
       sessionId,
       terminalId: info.id,
       cwd: info.cwd,
@@ -119,7 +87,7 @@ export async function openCommandTerminal(
     return
   }
   placeTerminal(
-    makeItem({
+    makeTerminalItem({
       sessionId,
       terminalId: info.terminalId,
       cwd: info.cwd,
@@ -162,7 +130,7 @@ export function adoptTerminal(args: {
   const retained = grid.items[id] ?? grid.closed.find((entry) => entry.item.id === id)?.item
   placeTerminal(
     retained ??
-      makeItem({
+      makeTerminalItem({
         sessionId: args.sessionId,
         terminalId: args.terminalId,
         owned: false,
@@ -237,89 +205,5 @@ export function routeTerminalState(
 
 /** A user-launched agent pane belongs to its Localix session, including when reopened. */
 export function openOwnedTerminal(sessionId: string, terminalId: string, title: string): void {
-  placeTerminal(makeItem({ sessionId, terminalId, title, owned: true }))
-}
-
-/** Spawn first: a failed restart must leave the original output available. */
-export async function restartTerminalTab(paneId: string): Promise<boolean> {
-  if (workItemTransferState.pending(paneId)) return false
-  const item = useGridStore.getState().items[paneId]
-  const sessionId = item?.payload?.sessionId
-  if (
-    !item ||
-    item.kind !== 'terminal' ||
-    typeof sessionId !== 'string' ||
-    typeof item.payload?.terminalId !== 'string'
-  )
-    return false
-  if (item.payload?.terminalRestarting) return false
-  useGridStore.setState((state) => ({
-    items: {
-      ...state.items,
-      [paneId]: { ...item, payload: { ...item.payload, terminalRestarting: true } },
-    },
-  }))
-  const exit = item.payload?.terminalExit as { command?: string; cwd?: string } | undefined
-  const command = exit?.command ?? item.payload?.command
-  const cwd = exit?.cwd ?? item.payload?.cwd
-  const directory = typeof cwd === 'string' ? { cwd } : {}
-  try {
-    const terminalId =
-      typeof command === 'string'
-        ? (await backendClient.spawnTerminalCommand({ sessionId, command, ...directory }))
-            .terminalId
-        : (await createTerminal({ sessionId, ...directory })).id
-    const grid = useGridStore.getState()
-    if (!grid.items[paneId]) {
-      // The person closed the source tab while spawning; do not leave an orphan.
-      await closeTerminal(terminalId)
-      return false
-    }
-    placeTerminal(
-      makeItem({
-        sessionId,
-        terminalId,
-        owned: true,
-        title: item.title,
-        command: typeof command === 'string' ? command : undefined,
-        cwd: directory.cwd,
-      }),
-    )
-    if (typeof item.payload?.terminalId === 'string') closeDeadTerminalTabs(item.payload.terminalId)
-    return true
-  } catch (err) {
-    toast.error('Could not restart the terminal', {
-      description: errorMessage(err, '') || undefined,
-    })
-    return false
-  } finally {
-    useGridStore.setState((state) => {
-      let changed = false
-      const clearRestart = (current: WorkItem): WorkItem => {
-        if (
-          current.id !== paneId ||
-          current.payload?.terminalId !== item.payload?.terminalId ||
-          !current.payload?.terminalRestarting
-        )
-          return current
-        changed = true
-        return {
-          ...current,
-          payload: {
-            ...current.payload,
-            terminalRestarting: false,
-            terminalExpiresAt: Date.now() + DEAD_TERMINAL_RETENTION_MS,
-          },
-        }
-      }
-      const items = Object.fromEntries(
-        Object.entries(state.items).map(([id, current]) => [id, clearRestart(current)]),
-      )
-      const closed = state.closed.map((entry) => {
-        const current = clearRestart(entry.item)
-        return current === entry.item ? entry : { ...entry, item: current }
-      })
-      return changed ? { items, closed } : state
-    })
-  }
+  placeTerminal(makeTerminalItem({ sessionId, terminalId, title, owned: true }))
 }

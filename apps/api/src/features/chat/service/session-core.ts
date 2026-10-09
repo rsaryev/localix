@@ -12,7 +12,7 @@ import { rootChangeFanout } from './root-change-fanout'
 import type { ChatServiceGraph } from './service-graph'
 import * as sessionDetail from './session-detail'
 import type { SessionDetailContext } from './session-detail'
-import type { SessionLifecycleCtx } from './session-lifecycle'
+import type { SessionLifecycleCtx } from './session-lifecycle-contracts'
 import { createSessionWorkspace } from './session-workspace'
 
 /**

@@ -1,7 +1,7 @@
 import { GripVertical, KeyRound, Plus, Search } from 'lucide-react'
 import type { SetStateAction } from 'react'
 
-import { VAULT_ITEM_TYPE_DEFINITIONS, VAULT_ITEM_TYPES } from '@localixai/api/client'
+import { VAULT_ITEM_TYPE_DEFINITIONS, VAULT_ITEM_TYPES } from '@localixai/api/vault-item-types'
 import type { SecretMeta, VaultVersionMeta } from '@localixai/api/client'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import {

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
-import { isModelRoutingTaskEnabled, type ModelRoutingTaskKey } from '@localixai/api/client'
+import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
+import type { ModelRoutingTaskKey } from '@localixai/api/client'
 import {
   isAgentTarget,
   modelPickDestination,

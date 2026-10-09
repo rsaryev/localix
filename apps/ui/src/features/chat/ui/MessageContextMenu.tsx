@@ -18,7 +18,7 @@
  * a single further click the whole interaction.
  */
 import type { ReactNode } from 'react'
-import { AGENT_REACTIONS } from '@localixai/api/client'
+import { MESSAGE_REACTIONS as AGENT_REACTIONS } from '@localixai/api/message-reactions'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'

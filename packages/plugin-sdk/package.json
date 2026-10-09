@@ -218,6 +218,10 @@
     "./ui/store-snapshot": {
       "types": "./dist/ui/store-snapshot.d.ts",
       "import": "./dist/ui/store-snapshot.js"
+    },
+    "./manifest-label": {
+      "types": "./dist/manifest/label.d.ts",
+      "import": "./dist/manifest/label.js"
     }
   },
   "scripts": {

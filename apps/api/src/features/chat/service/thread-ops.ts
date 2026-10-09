@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { ApiError } from '../../../lib/errors'
 import { sessionAgent, toPersistedMessage } from './message-builders'
 import * as sessionLifecycle from './session-lifecycle'
-import type { SessionLifecycleCtx } from './session-lifecycle'
+import type { SessionLifecycleCtx } from './session-lifecycle-contracts'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type { SessionDetail } from '../contracts'
 

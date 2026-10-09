@@ -1,41 +1,19 @@
 /**
  * A single terminal session: owns one PTY, keeps a bounded scrollback so a
  * reconnecting client can repaint, and fans output out to attached subscribers.
- * Transport-agnostic — `ws.ts` is the only caller and speaks just this surface.
+ * Transport-agnostic — the terminal service and attached clients use this surface.
  */
-import type { PtyBackend, PtyHandle } from './pty-backend'
+import type { PtyHandle } from './pty-backend'
+import type { TerminalSessionInfo, TerminalSessionOptions } from './session-contracts'
+export type { TerminalSessionInfo } from './session-contracts'
 import { createEmulator, type HeadlessEmulator } from './emulator'
 import { createAltScreenTracker } from './alt-screen'
+import { TerminalScrollback } from './session-scrollback'
 import type { ScreenSnapshot } from '../agent-core/tools/terminal/terminal-job'
 import {
   createServedUrlScanner,
   type ServedUrlScanner,
 } from '../agent-core/tools/preview/served-url-detect'
-
-/** Cap on retained scrollback UTF-16 code units — enough to repaint a reconnect, bounded so
- *  a long-lived session can't grow without limit. */
-const SCROLLBACK_LIMIT = 256 * 1024
-
-export interface TerminalSessionInfo {
-  id: string
-  userId: string
-  cwd: string
-  createdAt: number
-  /** The one-shot command this pane runs, when agent-launched (vs an interactive shell). */
-  command?: string
-  /** The chat session this pane is bound to, so it can be reaped when that session is deleted. */
-  chatSessionId?: string | null
-  /** The dev-server URL this job advertised in its output, once detected (content-
-   *  based, never from the command). Lets the UI offer "Open preview" on the job and
-   *  the agent lazily auto-open it. Undefined until/unless a localhost URL is seen. */
-  previewUrl?: string
-  /** True while the PTY sits on the ALTERNATE screen buffer — a full-screen TUI
-   *  app (claude, vim, htop) is running. Lets the UI auto-reveal a tab-less
-   *  terminal that something interactive just took over. */
-  altScreen: boolean
-  /** Epoch ms of the most recent PTY output ('recently active' signals). */
-  lastOutputAt: number
-}
 
 export class TerminalSession {
   readonly id: string
@@ -58,21 +36,7 @@ export class TerminalSession {
   private previewUrl?: string
   private previewUrlListeners = new Set<(url: string) => void>()
   private readonly urlScanner: ServedUrlScanner = createServedUrlScanner()
-  /**
-   * Retained scrollback, held as the CHUNKS it arrived in rather than one string.
-   *
-   * It used to be `scrollback = (scrollback + data).slice(-LIMIT)`, run on every PTY
-   * chunk — so once the buffer was full, each chunk copied the whole 256 KB twice, and
-   * a PTY delivers chunks the size of its read buffer, not the size of the output. On a
-   * measured real trace (`ls -R apps`: 12,942 chunks) that was 74.8 ms of copying for
-   * one command, on the API's event loop, where it blocks every other request. The ring
-   * below is 1.3 ms for the same trace and retains byte-identical content; the join is
-   * paid once, by the reconnect that actually reads it.
-   */
-  private scrollbackChunks: string[] = []
-  private scrollbackBytes = 0
-  /** Memoized join of {@link scrollbackChunks}; invalidated by each new chunk. */
-  private scrollbackJoined: string | null = ''
+  private readonly scrollback = new TerminalScrollback()
   private exited = false
   exitCode: number | null = null
   /**
@@ -98,32 +62,7 @@ export class TerminalSession {
   /** The last parsed grid, captured before teardown rather than reconstructed from clipped replay. */
   private finalSnapshot?: Promise<ScreenSnapshot | null>
 
-  constructor(args: {
-    id: string
-    userId: string
-    cwd: string
-    cols: number
-    rows: number
-    backend: PtyBackend
-    onExit: (id: string, code: number) => void
-    /** One-shot command to run instead of an interactive shell (agent task panes). */
-    command?: string
-    /** Chat session this pane belongs to (reaped on that session's deletion). */
-    chatSessionId?: string | null
-    /** Shell to run (interactive panes) — resolved with shell integration. */
-    shell?: string
-    /** Extra shell argv (e.g. `--rcfile`) from shell integration. */
-    shellArgs?: string[]
-    /** Extra env (e.g. `ZDOTDIR`) from shell integration. */
-    env?: Record<string, string>
-    /** Removes any shell-integration temp files; called on exit + dispose. */
-    cleanup?: () => void
-    /**
-     * Called when `info.altScreen` or `info.previewUrl` changes. Without it the only way to
-     * learn a takeover or a served URL was the client's registry poll, seconds late.
-     */
-    onStateChange?: (id: string) => void
-  }) {
+  constructor(args: TerminalSessionOptions) {
     this.id = args.id
     this.userId = args.userId
     this.cwd = args.cwd
@@ -172,7 +111,7 @@ export class TerminalSession {
       env: args.env,
     })
     this.pty.onData((data) => {
-      this.retainScrollback(data)
+      this.scrollback.append(data)
       this.lastOutputAt = Date.now()
       const wasAlt = this.altTracker.altScreen
       const altFlipped = this.altTracker.push(data) !== wasAlt
@@ -251,48 +190,9 @@ export class TerminalSession {
     else this.previewUrlListeners.add(listener)
   }
 
-  /**
-   * Append one PTY chunk to the retained scrollback, trimming the oldest bytes past the
-   * cap. Trimming is by CODE UNITS, and the oldest surviving chunk is cut mid-string
-   * when it straddles the boundary. A cut through a surrogate pair also drops its
-   * orphaned low surrogate, so reconnect receives a valid Unicode tail.
-   */
-  private retainScrollback(data: string): void {
-    this.scrollbackChunks.push(data)
-    this.scrollbackBytes += data.length
-    const trimmed = this.scrollbackBytes > SCROLLBACK_LIMIT
-    while (this.scrollbackBytes > SCROLLBACK_LIMIT) {
-      const oldest = this.scrollbackChunks[0] as string
-      const excess = this.scrollbackBytes - SCROLLBACK_LIMIT
-      if (oldest.length <= excess) {
-        this.scrollbackChunks.shift()
-        this.scrollbackBytes -= oldest.length
-      } else {
-        this.scrollbackChunks[0] = oldest.slice(excess)
-        this.scrollbackBytes -= excess
-      }
-    }
-    // A code-unit cap can bisect a supplementary character, including across chunks.
-    // Drop the orphaned low surrogate too; the retained tail stays within the cap.
-    const first = this.scrollbackChunks[0]
-    const firstCode = first?.charCodeAt(0)
-    if (trimmed && firstCode !== undefined && firstCode >= 0xdc00 && firstCode <= 0xdfff) {
-      if (first.length === 1) this.scrollbackChunks.shift()
-      else this.scrollbackChunks[0] = first.slice(1)
-      this.scrollbackBytes -= 1
-    }
-    this.scrollbackJoined = null
-  }
-
-  /** The retained scrollback as one string, joined at most once per new chunk. */
-  private get scrollback(): string {
-    this.scrollbackJoined ??= this.scrollbackChunks.join('')
-    return this.scrollbackJoined
-  }
-
   /** Retained output a freshly-attached client should repaint before live data. */
   get replay(): string {
-    return this.scrollback
+    return this.scrollback.replay
   }
 
   /**
@@ -309,13 +209,13 @@ export class TerminalSession {
     if (!this.emulator) {
       this.emulator = createEmulator(this.cols, this.rows)
       // If a full-screen TUI is CURRENTLY on the alternate buffer, prepend the
-      // alt-screen enter: the retained scrollback is a byte-capped slice that may
+      // alt-screen enter: the retained scrollback is a code-unit-capped slice that may
       // have dropped the original DECSET 1049 (a long-running TUI emits far more
       // than the cap), and replaying incremental cursor-moves onto the PRIMARY
       // buffer renders as overlapping garbage. Re-entering is idempotent (last
       // enter/leave wins), so this is safe even when the slice kept the original.
       if (this.altTracker.altScreen) this.emulator.write('\x1b[?1049h')
-      this.emulator.write(this.scrollback)
+      this.emulator.write(this.scrollback.replay)
       if (!this.exited) this.emulatorUnsub = this.subscribe((data) => this.emulator?.write(data))
     }
     const snapshot = this.emulator.screen()

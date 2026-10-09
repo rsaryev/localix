@@ -1,5 +1,5 @@
 import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
-import { isModelRoutingTaskKey } from '@localixai/api/client'
+import { isModelRoutingTaskKey } from '@localixai/api/model-task-catalog'
 import type { UiSettings, AgentSettings } from '@/shared/api/contracts'
 
 /**

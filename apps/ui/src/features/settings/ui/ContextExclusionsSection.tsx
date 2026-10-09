@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { Field } from '@localixai/kit/field'
 import { Textarea } from '@localixai/kit/textarea'
-import { contextExclusionsSchema } from '@/shared/api/contracts'
+import { contextExclusionsSchema } from '@localixai/api/context-exclusions'
 import { useUserSettings } from '../model/useUserSettings'
 import { SettingsSection } from './SettingsScaffold'
 

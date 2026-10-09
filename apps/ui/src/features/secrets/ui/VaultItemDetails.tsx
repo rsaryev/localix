@@ -1,6 +1,6 @@
 import { Check, Copy, History, MoreHorizontal, ShieldCheck, X } from 'lucide-react'
 
-import { VAULT_ITEM_TYPE_DEFINITIONS } from '@localixai/api/client'
+import { VAULT_ITEM_TYPE_DEFINITIONS } from '@localixai/api/vault-item-types'
 import type { SecretMeta, VaultItemSource, VaultVersionMeta } from '@localixai/api/client'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { ActivitySignal } from '@localixai/kit/activity-orb'

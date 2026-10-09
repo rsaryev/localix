@@ -134,5 +134,8 @@
   },
   "./ui/work-item-session": {
     "bytes": 482
+  },
+  "./manifest-label": {
+    "bytes": 719
   }
 }

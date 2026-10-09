@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { isModelRoutingTaskEnabled } from '@localixai/api/client'
+import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { HINT, dismiss, isDismissed } from '@localixai/kit/lib'
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import type { ComposerTip } from '@/shared/api/tips'

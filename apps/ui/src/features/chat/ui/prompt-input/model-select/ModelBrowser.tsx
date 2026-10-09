@@ -33,7 +33,7 @@ import {
 } from './favoriteModels'
 import type { ParticipantRow } from './ModelTaskColumn'
 import { agentTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
-import { MODEL_ROUTING_TASKS } from '@localixai/api/client'
+import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
 import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'

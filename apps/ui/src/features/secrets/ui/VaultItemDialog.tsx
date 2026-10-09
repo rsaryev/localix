@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { Pencil, RefreshCw, TriangleAlert } from 'lucide-react'
 
-import { VAULT_ITEM_TYPE_DEFINITIONS, VAULT_ITEM_TYPES } from '@localixai/api/client'
+import { VAULT_ITEM_TYPE_DEFINITIONS, VAULT_ITEM_TYPES } from '@localixai/api/vault-item-types'
 import type { SecretMeta, VaultItemType } from '@localixai/api/client'
 import type { Problem } from '@localixai/plugin-sdk/ui/problems'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'

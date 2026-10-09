@@ -1,9 +1,6 @@
 import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/plugin-sdk/ui/classes'
-import {
-  MODEL_ROUTING_TASKS,
-  type ModelRoutingTask,
-  type ModelRoutingTaskKey,
-} from '@localixai/api/client'
+import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
+import type { ModelRoutingTask, ModelRoutingTaskKey } from '@localixai/api/client'
 import { agentTarget, type PickerTarget } from './pickerTarget'
 import type { ReasoningEffort } from '../../../model/reasoning'
 

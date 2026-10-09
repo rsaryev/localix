@@ -22,7 +22,7 @@ import type { SessionProvenance } from '../session-provenance'
 import { DEFAULT_TITLE } from './context'
 import { bornParticipants } from './participant-routes'
 import { isDelegationParent } from '../../agent-core/delegation-policy'
-import type { CreateSessionInput, SessionLifecycleCtx } from './session-lifecycle'
+import type { CreateSessionInput, SessionLifecycleCtx } from './session-lifecycle-contracts'
 
 export async function createSession(
   ctx: SessionLifecycleCtx,

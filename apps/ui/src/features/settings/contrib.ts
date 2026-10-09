@@ -9,7 +9,7 @@ import {
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
 import { listUiLocations } from '@/shared/contrib/uiLocations'
-import { pluginLabel } from '@localixai/plugin-sdk/manifest'
+import { pluginLabel } from '@localixai/plugin-sdk/manifest-label'
 
 function settingsChildren(parentUri: string | null): UiAnchorNode[] {
   if (parentUri === null) {

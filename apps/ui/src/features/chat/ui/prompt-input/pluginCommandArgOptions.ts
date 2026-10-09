@@ -1,4 +1,4 @@
-import { pluginOriginLabel } from '@localixai/api/client'
+import { pluginOriginLabel } from '@localixai/api/plugin-presentation'
 import { backendClient } from '@/shared/api/client'
 import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
 import type { SlashArgOption } from './SlashArgSpec'

@@ -1,4 +1,5 @@
-import { USAGE_KIND_LABELS, type UsageKindKey } from '@localixai/api/client'
+import { USAGE_KIND_LABELS } from '@localixai/api/usage-types'
+import type { UsageKindKey } from '@localixai/api/client'
 
 // Keep the stats panel API stable while sharing generic formatters with the rest
 // of the UI layer.

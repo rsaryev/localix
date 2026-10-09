@@ -62,7 +62,7 @@ function setup() {
     kill: { label: 'Stop', execute: () => {} },
     send_input: { label: 'Send', execute: () => {} },
   }
-  registry.registerActions('old', actions)
+  const dispose = registry.registerActions('old', actions)
   const split = () => {
     acc.reset()
     const next = {
@@ -73,10 +73,55 @@ function setup() {
     state.payload = next
     stored.set('second', next)
   }
-  return { registry, state, acc, stored, writes, split, runtime, actions }
+  return { registry, state, acc, stored, writes, split, runtime, actions, env, dispose }
 }
 
 describe('background item row ownership', () => {
+  test('removing actions waits for a pending background write to the same sealed row', async () => {
+    const h = setup()
+    h.split()
+    let started!: () => void
+    let release!: () => void
+    let finished!: () => void
+    const admitted = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const completed = new Promise<void>((resolve) => {
+      finished = resolve
+    })
+    const persist = h.env.persistAndPublish
+    let writes = 0
+    h.env.persistAndPublish = async (...args) => {
+      writes += 1
+      if (writes === 1) {
+        started()
+        await blocked
+      }
+      await persist(...args)
+      if (writes === 2) finished()
+    }
+
+    h.registry.emitBackground('old', 'Finished build', { done: true, exitCode: 0 })
+    try {
+      await admitted
+      h.dispose()
+      await Bun.sleep(0)
+      expect(writes).toBe(1)
+    } finally {
+      release()
+    }
+    await completed
+    expect(h.stored.get('first')?.items?.[0]).toMatchObject({
+      status: 'completed',
+      resultText: 'Finished build',
+      actions: undefined,
+    })
+    expect(h.stored.get('second')?.content).toBe('New work')
+  })
+
   test('a late job result patches its original row and cannot overwrite the continuation', async () => {
     const h = setup()
     h.split()

@@ -9,7 +9,7 @@ import { availabilityChange } from '@/shared/contrib/capabilityRules'
 import { useCapabilityRegistry } from './useCapabilityRegistry'
 import { useRegistryScope } from './useRegistryScope'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
-import { pluginLabel } from '@localixai/plugin-sdk/manifest'
+import { pluginLabel } from '@localixai/plugin-sdk/manifest-label'
 
 export interface PluginsData {
   plugins: PluginRecord[]

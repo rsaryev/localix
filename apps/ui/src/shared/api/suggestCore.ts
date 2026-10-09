@@ -11,11 +11,11 @@
  */
 
 import { createBoundedCache } from '@localixai/kit/lib'
-import {
-  INLINE_COMPLETION_SURFACE_IDS,
-  type CompletionReference,
-  type InlineCompletionResult,
-  type InlineCompletionSurfaceId,
+import { INLINE_COMPLETION_SURFACE_IDS } from '@localixai/api/inline-completion-contracts'
+import type {
+  CompletionReference,
+  InlineCompletionResult,
+  InlineCompletionSurfaceId,
 } from '@localixai/api/client'
 
 export type SuggestSurfaceId = InlineCompletionSurfaceId

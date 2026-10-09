@@ -12,8 +12,8 @@
 import {
   COMPLETION_INLINE_CONTENT_MAX,
   COMPLETION_REFERENCE_LIMIT,
-  type CompletionReference,
-} from '@localixai/api/client'
+} from '@localixai/api/inline-completion-contracts'
+import type { CompletionReference } from '@localixai/api/client'
 
 export interface CompletionWorkingSetOptions {
   /** The requesting editor's own document, already in its prompt whole. */

@@ -25,7 +25,8 @@ import {
   type ContextRefKind,
   type ParsedContextRef,
 } from '@localixai/api/context-refs'
-import { COMPLETION_REFERENCE_LIMIT, type CompletionReference } from '@localixai/api/client'
+import { COMPLETION_REFERENCE_LIMIT } from '@localixai/api/inline-completion-contracts'
+import type { CompletionReference } from '@localixai/api/client'
 import { boundCompletionReference } from '@/shared/api/completionWorkingSet'
 import type { MessageContextBinding } from '@/shared/api/contracts'
 import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'

@@ -1,7 +1,7 @@
 import { cloneElement, lazy, Suspense, useCallback, useId, useMemo, useRef, useState } from 'react'
 
 import { findCatalogModelForConnection } from '@localixai/agent/catalog'
-import { isModelRoutingTaskEnabled } from '@localixai/api/client'
+import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import { acceptAttribute } from '@/shared/lib/attachment-policy'
 import { filesFromDesktopPick } from '@/shared/lib/attachments/file-staging'

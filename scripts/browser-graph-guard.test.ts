@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { parseSync } from 'oxc-parser'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 
@@ -240,7 +241,68 @@ describe('the web graph reaches no node builtin', () => {
   })
 })
 
+/** Parse declarations so a side-effect import cannot absorb a later type-only statement. */
+function hasClientBarrelValueEdge(source: string, filename = 'fixture.ts'): boolean {
+  const parsed = parseSync(filename, source)
+  if (parsed.errors.length > 0) throw new Error(`Cannot inspect imports in ${filename}`)
+  const visit = (value: unknown): boolean => {
+    if (!value || typeof value !== 'object') return false
+    if (Array.isArray(value)) return value.some(visit)
+    const node = value as {
+      type?: string
+      source?: { value?: unknown }
+      importKind?: string
+      exportKind?: string
+      specifiers?: Array<{ importKind?: string; exportKind?: string }>
+    }
+    if (node.source?.value === '@localixai/api/client') {
+      if (node.type === 'ImportExpression') return true
+      if (node.type === 'ImportDeclaration') {
+        if (node.importKind === 'type') return false
+        // Inline type specifiers can leave an empty side-effect import under
+        // verbatimModuleSyntax; require the declaration-level type qualifier.
+        return true
+      }
+      if (node.type === 'ExportAllDeclaration') return node.exportKind !== 'type'
+      if (node.type === 'ExportNamedDeclaration') {
+        return node.exportKind !== 'type'
+      }
+    }
+    return Object.values(value).some(visit)
+  }
+  return visit(parsed.program)
+}
+
 describe('the api client barrel stays type-only', () => {
+  test('UI values use narrow API exports instead of the client barrel', () => {
+    const offenders: string[] = []
+    for (const file of new Bun.Glob('apps/ui/src/**/*.{ts,tsx}').scanSync({ cwd: repoRoot })) {
+      if (/\.(?:dom\.)?test\.tsx?$/u.test(file)) continue
+      const source = readFileSync(resolve(repoRoot, file), 'utf8')
+      if (hasClientBarrelValueEdge(source, file)) offenders.push(file)
+    }
+    expect(offenders).toEqual([])
+  })
+
+  test('runtime edges include mixed imports and re-exports but exclude erased types', () => {
+    const source = [
+      "import './setup'",
+      "import type { Profile } from '@localixai/api/client'",
+      "export type { Profile } from '@localixai/api/client'",
+    ].join('\n')
+    expect(hasClientBarrelValueEdge(source)).toBe(false)
+    for (const statement of [
+      "import { type Profile } from '@localixai/api/client'",
+      "import { type Profile, LIMIT } from '@localixai/api/client'",
+      "export { LIMIT as localLimit } from '@localixai/api/client'",
+      "export * from '@localixai/api/client'",
+      "import '@localixai/api/client'",
+      "const module = import('@localixai/api/client')",
+    ]) {
+      expect(hasClientBarrelValueEdge(statement)).toBe(true)
+    }
+  })
+
   // The barrel is the single easiest way to reintroduce the whole failure: it re-exports
   // from the server's own contracts, so ONE value export there is a bundle away from
   // `node:dns`. Values shared with the browser get their own subpath in the export map.

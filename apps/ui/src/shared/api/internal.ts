@@ -2,7 +2,7 @@ import { hc, type ClientResponse } from 'hono/client'
 import type { ResponseFormat } from 'hono/types'
 import type { SuccessStatusCode } from 'hono/utils/http-status'
 
-import { LOCALIX_CLIENT_HEADER, LOCALIX_CLIENT_HEADER_VALUE } from '@localixai/api/client'
+import { LOCALIX_CLIENT_HEADER, LOCALIX_CLIENT_HEADER_VALUE } from '@localixai/api/client-header'
 import { markResponseTrace } from '@localixai/plugin-sdk/ui/transport'
 import type { App } from './contracts'
 import { getDesktopApiPort } from '@localixai/kit/environment'

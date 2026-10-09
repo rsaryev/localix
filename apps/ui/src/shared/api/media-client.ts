@@ -1,4 +1,4 @@
-import { MAX_REQUEST_BODY_BYTES, formatByteLimit } from '@localixai/api/client'
+import { MAX_REQUEST_BODY_BYTES, formatByteLimit } from '@localixai/api/request-limits'
 import type { InferResponseType } from 'hono/client'
 import { API_BASE_URL, ApiError, apiFailure, apiFetch, type client } from './internal'
 

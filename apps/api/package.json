@@ -55,7 +55,17 @@
     "./ui-token-rules": "./src/contracts/ui-token-rules.ts",
     "./wake-provenance": "./src/features/chat/wake-provenance.ts",
     "./wire-tools": "./src/features/tools/wire-tools.ts",
-    "./ws-frame": "./src/features/ext/ws-frame.ts"
+    "./ws-frame": "./src/features/ext/ws-frame.ts",
+    "./model-task-catalog": "./src/features/chat/model-task-catalog.ts",
+    "./plugin-presentation": "./src/features/plugins/presentation.ts",
+    "./message-reactions": "./src/features/chat/message-reactions.ts",
+    "./vault-item-types": "./src/features/secrets/vault-item-types.ts",
+    "./usage-types": "./src/features/usage/usage-types.ts",
+    "./inline-completion-contracts": "./src/features/inline-completion/contracts.ts",
+    "./settings-limits": "./src/contracts/settings-limits.ts",
+    "./request-limits": "./src/lib/request-limits.ts",
+    "./client-header": "./src/lib/client-header.ts",
+    "./context-exclusions": "./src/features/context-fabric/exclusion-schema.ts"
   },
   "scripts": {
     "dev": "bun ../../scripts/dev-api.mjs",

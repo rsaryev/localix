@@ -1,57 +1,39 @@
 // The editor-grid store: a thin Zustand wrapper over the pure reducers in
-// itemOps.ts. It owns the only impure bits — fresh group-id generation and the
+// itemOps.ts and scopedItemOps.ts. It owns fresh group-id generation and the
 // debounced persistence subscription — so the reducers stay testable.
 import { create } from 'zustand'
 import { arrangePanels as arrangePanelState, hasFixedPanelLayout } from './arrangePanels'
-import type { WorkItem } from './workItem'
-import type { SplitDir } from './tree'
-import {
-  resizeBranch as resizeBranchTree,
-  resizeAdjacentLeaves,
-  leafIds,
-  findLeaf,
-  leaves,
-} from './tree'
+import { resizeBranch as resizeBranchTree, resizeAdjacentLeaves, leafIds, leaves } from './tree'
 import {
   type EditorState,
-  type OpenOptions,
-  openItemState,
-  closeTabState,
-  closeTabsState,
-  reopenClosedTabState,
   resolveRoleGroupState,
-  moveTabState,
-  splitState,
   setActiveGroupState,
-  setActiveTabState,
   reorderTabState,
   maximizeState,
-  closeScopeState,
   setTabTitleState,
   setItemDirtyState,
   setItemAttention,
-  groupOfTab,
 } from './itemOps'
-import {
-  type ScopeId,
-  GLOBAL_SCOPE,
-  resolveOpenScope,
-  scopeOf,
-  tabIdInScope,
-  workspaceScope,
-} from './scope'
-import {
-  type ScopeActiveTab,
-  bumpWarm,
-  dropTabFromScopeActive,
-  pruneScopeActive,
-  recordScopeActive,
-  forgetScope,
-} from './warm'
+import { GLOBAL_SCOPE, resolveOpenScope, tabIdInScope, workspaceScope } from './scope'
 import { emptyEditorState, loadGrid, persistGrid } from './persistence'
 import { isUnavailableContributedKind } from './capabilities'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
+import type { GridStore } from './store-contracts'
+import {
+  openScopedItemState,
+  closeScopedTabState,
+  closeScopedTabsState,
+  reopenScopedTabState,
+  moveScopedTabState,
+  splitScopedGroupState,
+  setActiveScopedTabState,
+  arrangeScopedPanelsState,
+  activateScopeState,
+  closeWorkspaceScopeState,
+} from './scopedItemOps'
+
+export type { GridStore } from './store-contracts'
 
 /**
  * Preview-tab preference, living beside
@@ -129,56 +111,6 @@ export function seedGroupSeq(ids: Iterable<string>): void {
 
 const ROOT_GROUP_ID = 'group-root'
 
-export interface GridStore extends EditorState {
-  openItem: (item: WorkItem, opts?: OpenOptions) => void
-  closeTab: (group: string, id: string) => void
-  /** Re-open a session's chat tab after the user closed it (the session stayed
-   *  active, its files/git/preview still shown). Idempotent — an already-open
-   *  chat is just revealed/focused. */
-  reopenChat: (sessionId: string) => void
-  /** Close a batch of tabs in one pass (Close Others / Close All). The caller
-   *  passes the exact ids — the group collapses only if none remain. */
-  closeTabs: (group: string, ids: string[]) => void
-  /** Reopen the most-recently user-closed tab (⌘⇧T). */
-  reopenClosedTab: () => void
-  moveTab: (id: string, toGroup: string, index?: number) => void
-  /** Resolve (creating/adopting if needed) the group a kind should open into by
-   *  its deterministic placement role. Returns the target group id. */
-  resolveRoleGroup: (kind: WorkItem['kind']) => string
-  /** Split a group, optionally moving a tab into the new sibling group. */
-  splitGroup: (group: string, dir: SplitDir, itemId?: string, sizes?: [number, number]) => string
-  setActiveGroup: (group: string) => void
-  setActiveTab: (group: string, tabId: string) => void
-  reorderTab: (group: string, fromId: string, toId: string | null) => void
-  /** Rename a tab in place (dynamic-content tabs naming themselves once loaded). */
-  setTabTitle: (id: string, title: string) => void
-  /** Set/clear a tab's unsaved-buffer dirty dot (e.g. an editor with edits). */
-  setItemDirty: (id: string, dirty: boolean) => void
-  /** Set/clear a tab's attention dot (e.g. a hidden terminal that emitted output). */
-  setItemAttention: (id: string, attention: boolean) => void
-  resizeBranch: (branchId: string, sizes: number[]) => void
-  /** Repartition the two adjacent regions a resize boundary lies between, located by
-   *  a leaf on each side — robust to the adaptive scope-collapsed view differing
-   *  from the raw tree (a positional `resizeBranch` would silently miss). */
-  resizeAdjacent: (leafA: string, leafB: string, ratioA: number) => void
-  maximizeGroup: (group: string | null) => void
-  resetLayout: () => void
-  /** Restore default panel placement while retaining every open tab. */
-  arrangePanels: () => void
-  /** The focused session scope — only its session-scoped tabs (plus GLOBAL_SCOPE
-   *  tabs) are visible. Switching it swaps the visible tab set in place. */
-  activeScope: ScopeId
-  setActiveScope: (scope: ScopeId) => void
-  /** Free every tab of one scope (a closed/deleted session). */
-  closeScope: (scope: ScopeId) => void
-  /** MRU of recently-focused session scopes kept WARM (bodies mounted-but-hidden
-   *  for instant switch-back); bounded by WARM_LIMIT. */
-  warmScopes: ScopeId[]
-  /** Last-active tab per (scope, group) — the body kept warm for a backgrounded
-   *  session. GridView reads this to mount each warm scope's last tab hidden. */
-  scopeActiveTab: ScopeActiveTab
-}
-
 // The store starts EMPTY and is hydrated later, by `hydrateGrid()`.
 //
 // Reading the persisted layout here would be a silent data-loss bug. `loadGrid` keeps
@@ -213,33 +145,10 @@ export const useGridStore = create<GridStore>((set) => ({
       // One chokepoint for the preview-tab preference: with it off, no open may take another
       // tab's slot, so every caller's `replace`/`ephemeral` hint is dropped here
       // rather than at each of the call sites that pass one.
-      const ns = openItemState(s, stamped, previewOpenOptions(opts))
-      if (ns === s || opts?.activate === false) return ns
-      // Identity resolution may reveal an existing tab whose stable id differs
-      // from the requested id. Record the body that actually became active.
-      const leaf = groupOfTab(ns.root, stamped.id) ?? findLeaf(ns.root, ns.activeGroup)
-      const activeId = leaf?.activeTab
-      return leaf && activeId && ns.items[activeId]
-        ? {
-            ...ns,
-            scopeActiveTab: recordScopeActive(
-              s.scopeActiveTab,
-              scopeOf(ns.items[activeId]?.scope),
-              leaf.id,
-              activeId,
-            ),
-          }
-        : ns
+      return openScopedItemState(s, stamped, previewOpenOptions(opts))
     }),
-  // Pass the active scope so the next-active-tab pick prefers a survivor visible
-  // in this session, never a hidden background-session tab.
   closeTab: (group, id) =>
-    set((s) => {
-      if (workItemTransferState.pending(id)) return s
-      const ns = closeTabState(s, group, id, s.activeScope)
-      // A closed body must not stay warm (or come back as the remembered active).
-      return ns === s ? s : { ...ns, scopeActiveTab: dropTabFromScopeActive(s.scopeActiveTab, id) }
-    }),
+    set((s) => (workItemTransferState.pending(id) ? s : closeScopedTabState(s, group, id))),
   reopenChat: (sessionId) => {
     const s = useGridStore.getState()
     const id = `chat:${sessionId}`
@@ -255,50 +164,15 @@ export const useGridStore = create<GridStore>((set) => ({
     )
   },
   closeTabs: (group, ids) =>
-    set((s) => {
-      const closable = ids.filter((id) => !workItemTransferState.pending(id))
-      const ns = closeTabsState(s, group, closable)
-      if (ns === s) return s
-      let map = s.scopeActiveTab
-      for (const id of closable) map = dropTabFromScopeActive(map, id)
-      return { ...ns, scopeActiveTab: map }
-    }),
-  reopenClosedTab: () =>
-    set((s) => {
-      const tabId = s.closed?.at(-1)?.item.id
-      const ns = reopenClosedTabState(s)
-      if (ns === s || !tabId) return ns
-      const leaf = groupOfTab(ns.root, tabId)
-      if (!leaf || !ns.items[tabId]) return ns
-      return {
-        ...ns,
-        scopeActiveTab: recordScopeActive(
-          dropTabFromScopeActive(s.scopeActiveTab, tabId),
-          scopeOf(ns.items[tabId]?.scope),
-          leaf.id,
-          tabId,
-        ),
-      }
-    }),
-  moveTab: (id, toGroup, index) =>
-    set((s) => {
-      const before = groupOfTab(s.root, id)
-      const ns = moveTabState(s, id, toGroup, index)
-      if (ns === s) return s
-      const after = groupOfTab(ns.root, id)
-      // A same-group reorder does not activate a different body. A cross-group
-      // move does, so relocate its keep-alive history atomically with the tab.
-      if (!after || before?.id === after.id) return ns
-      return {
-        ...ns,
-        scopeActiveTab: recordScopeActive(
-          dropTabFromScopeActive(s.scopeActiveTab, id),
-          scopeOf(ns.items[id]?.scope),
-          after.id,
-          id,
-        ),
-      }
-    }),
+    set((s) =>
+      closeScopedTabsState(
+        s,
+        group,
+        ids.filter((id) => !workItemTransferState.pending(id)),
+      ),
+    ),
+  reopenClosedTab: () => set((s) => reopenScopedTabState(s)),
+  moveTab: (id, toGroup, index) => set((s) => moveScopedTabState(s, id, toGroup, index)),
   resolveRoleGroup: (kind) => {
     const s = useGridStore.getState()
     const r = resolveRoleGroupState(s, kind, () => nextGroupId(leafIds(s.root)))
@@ -310,38 +184,11 @@ export const useGridStore = create<GridStore>((set) => ({
   },
   splitGroup: (group, dir, itemId, sizes) => {
     const newGroupId = nextGroupId(leafIds(useGridStore.getState().root))
-    set((s) => {
-      const ns = splitState(s, group, dir, newGroupId, itemId, sizes)
-      if (ns === s || !itemId || !ns.items[itemId]) return ns
-      const leaf = groupOfTab(ns.root, itemId)
-      if (!leaf || leaf.id !== newGroupId) return ns
-      return {
-        ...ns,
-        scopeActiveTab: recordScopeActive(
-          dropTabFromScopeActive(s.scopeActiveTab, itemId),
-          scopeOf(ns.items[itemId]?.scope),
-          newGroupId,
-          itemId,
-        ),
-      }
-    })
+    set((s) => splitScopedGroupState(s, group, dir, newGroupId, itemId, sizes))
     return newGroupId
   },
   setActiveGroup: (group) => set((s) => setActiveGroupState(s, group)),
-  setActiveTab: (group, tabId) =>
-    set((s) => {
-      const ns = setActiveTabState(s, group, tabId)
-      if (ns === s) return s
-      return {
-        ...ns,
-        scopeActiveTab: recordScopeActive(
-          s.scopeActiveTab,
-          scopeOf(s.items[tabId]?.scope),
-          group,
-          tabId,
-        ),
-      }
-    }),
+  setActiveTab: (group, tabId) => set((s) => setActiveScopedTabState(s, group, tabId)),
   reorderTab: (group, fromId, toId) => set((s) => reorderTabState(s, group, fromId, toId)),
   setTabTitle: (id, title) => set((s) => setTabTitleState(s, id, title)),
   setItemDirty: (id, dirty) => set((s) => setItemDirtyState(s, id, dirty)),
@@ -362,56 +209,10 @@ export const useGridStore = create<GridStore>((set) => ({
             scopeActiveTab: {},
           },
     ),
-  arrangePanels: () =>
-    set((s) => {
-      const next = arrangePanelState(s, () => nextGroupId(leafIds(s.root)))
-      let scopeActiveTab: typeof s.scopeActiveTab = {}
-      for (const leaf of leaves(next.root)) {
-        for (const id of leaf.tabs) {
-          scopeActiveTab = recordScopeActive(
-            scopeActiveTab,
-            scopeOf(s.items[id]?.scope),
-            leaf.id,
-            id,
-          )
-        }
-      }
-      // Replay remembered activations after fallback strip order. Hidden conversations
-      // retain their most recent tab even when several old panels merge into one.
-      for (const [scope, groups] of Object.entries(s.scopeActiveTab)) {
-        const orderedGroups = Object.entries(groups).sort(([a], [b]) =>
-          a === s.activeGroup ? 1 : b === s.activeGroup ? -1 : 0,
-        )
-        for (const [, history] of orderedGroups) {
-          for (const id of [...history].reverse()) {
-            const leaf = groupOfTab(next.root, id)
-            if (leaf) scopeActiveTab = recordScopeActive(scopeActiveTab, scope, leaf.id, id)
-          }
-        }
-      }
-      return { ...next, scopeActiveTab }
-    }),
-  setActiveScope: (requested) =>
-    set((s) => {
-      // A sub-session shows its root's workspace (`workspaceScope`), so stepping into it is no
-      // scope change at all and the workbench does not move.
-      const scope = workspaceScope(requested)
-      if (s.activeScope === scope) return s
-      const warmScopes = bumpWarm(s.warmScopes, scope)
-      // Bound the remembered-tab map to the live scopes (warm + active + GLOBAL);
-      // an evicted scope's entry is never read again (it remounts on return).
-      return {
-        activeScope: scope,
-        warmScopes,
-        scopeActiveTab: pruneScopeActive(s.scopeActiveTab, [...warmScopes, scope, GLOBAL_SCOPE]),
-      }
-    }),
-  closeScope: (scope) =>
-    set((s) => {
-      const ns = closeScopeState(s, scope)
-      const forgotten = forgetScope(s.warmScopes, s.scopeActiveTab, scope)
-      return { ...ns, warmScopes: forgotten.warm, scopeActiveTab: forgotten.map }
-    }),
+  arrangePanels: () => set((s) => arrangeScopedPanelsState(s, () => nextGroupId(leafIds(s.root)))),
+  // A sub-session shows its root's workspace, without rearranging the workbench.
+  setActiveScope: (requested) => set((s) => activateScopeState(s, workspaceScope(requested))),
+  closeScope: (scope) => set((s) => closeWorkspaceScopeState(s, scope)),
 }))
 
 // Persist the restorable slice (debounced inside persistGrid).

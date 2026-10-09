@@ -1,8 +1,5 @@
-import {
-  isWorkbenchPlugin,
-  pluginCapabilityLabels,
-  pluginIssueSummary,
-} from '@localixai/api/client'
+import { isWorkbenchPlugin } from '@localixai/plugin-sdk/manifest'
+import { pluginCapabilityLabels, pluginIssueSummary } from '@localixai/api/plugin-presentation'
 import type { PluginRecord, Project } from '@/shared/api/contracts'
 import { projectScopeLabel } from '@/shared/lib/projectScope'
 import { pluginSettingsAnchor, pluginSettingsUri } from '@/shared/lib/settingsAnchors'
@@ -15,7 +12,7 @@ import {
   SettingRegistryRow,
   type SettingRegistryMetaItem,
 } from '../settingRegistry'
-import { pluginLabel } from '@localixai/plugin-sdk/manifest'
+import { pluginLabel } from '@localixai/plugin-sdk/manifest-label'
 
 /**
  * One installed plugin as a registry row: what it provides, where it came from,

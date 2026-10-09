@@ -105,7 +105,7 @@ export {
   AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
   PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS,
   UI_SETTINGS_MAX_SERIALIZED_CHARS,
-} from '@localixai/api/client'
+} from '@localixai/api/settings-limits'
 
 import type {
   AskToolRequest,
@@ -751,5 +751,3 @@ export type {
   ResourceNode,
   ResourceNodeAction,
 } from '@localixai/api/client'
-
-export { contextExclusionsSchema } from '@localixai/api/client'
