@@ -124,6 +124,44 @@ describe('shared UI location codec', () => {
     ).toBeNull()
   })
 
+  test('clones catalog definitions and rejects duplicate canonical URIs', () => {
+    const snapshot = {
+      version: UI_AGENT_LOCATION_CATALOG_VERSION,
+      revision: 1,
+      locations: [terminal],
+    }
+    const normalized = normalizeUiAgentLocationCatalogSnapshot(snapshot)!
+    const definition = normalized.locations[0]!.params.mode!
+    expect(definition).not.toBe(terminal.params.mode)
+    if (definition.type !== 'string') throw new Error('Expected string definition')
+    const original = terminal.params.mode!
+    if (original.type !== 'string') throw new Error('Expected string definition')
+    expect(definition.values).not.toBe(original.values)
+    expect(normalized.locations[0]!.params).not.toBe(terminal.params)
+    expect(snapshot.locations).toEqual([terminal])
+    expect(
+      normalizeUiAgentLocationCatalogSnapshot({
+        ...snapshot,
+        locations: [terminal, { ...terminal, uri: 'localix://ui/work-item/%74erminal' }],
+      }),
+    ).toBeNull()
+  })
+
+  test('keeps schema order and null-prototype query arguments', () => {
+    const params = {
+      z: { type: 'string-array' as const },
+      a: { type: 'integer' as const },
+    }
+    const parsed = parseUiLocationArgs(params, new URLSearchParams('a=2&z=b&z=c'))!
+    expect(Object.getPrototypeOf(parsed)).toBeNull()
+    expect(Object.keys(parsed)).toEqual(['z', 'a'])
+    expect(buildUiLocationUri({ ...terminal, params }, parsed)).toBe(
+      'localix://ui/work-item/terminal?z=b&z=c&a=2',
+    )
+    expect(parseUiLocationArgs(params, new URLSearchParams('a=2&a=3&z=b'))).toBeNull()
+    expect(parseUiLocationArgs(params, new URLSearchParams('a=2&z=b&unknown=1'))).toBeNull()
+  })
+
   test('uses locale-independent code-point ordering for canonical wire content', () => {
     const normalized = normalizeUiAgentLocationCatalogSnapshot({
       version: UI_AGENT_LOCATION_CATALOG_VERSION,
