@@ -17,7 +17,8 @@ import { correlateOnce } from './live/correlate'
 import { scheduleCorrelationAttempt } from './live/correlation-scheduler'
 import { observeToolCall } from './live/observe'
 import { waitForStates, type WaitRequest, type WaitOutcome } from './live/waiters'
-import { HistoryWatch, hostWatchSlot, watchFiles, type WatchPath } from './live/history-watch'
+import { startWaitPoll } from './live/wait-poll'
+import { HistoryWatch, hostWatchSlot, type WatchPath } from './live/history-watch'
 import { compose, DEFAULT_BUDGET_CHARS, type ComposeResult } from './context/compose'
 import { linkKeyOf, parseLinkKey } from './../shared/identity'
 import {
@@ -34,9 +35,6 @@ import type {
   StateExplain,
   TranscriptSlice,
 } from '../shared/contracts'
-
-/** How often a wait re-reads the panes it is waiting on. */
-const WAIT_POLL_MS = 2_000
 
 export class AgentSessionsService {
   private readonly log: (message: string) => void
@@ -399,34 +397,20 @@ export class AgentSessionsService {
     const watched = request.keys.filter((key) => this.live.byKey(key))
     if (!this.terminalRead && watched.length === 0) return waitForStates(this.live, request, signal)
 
-    // Slower than a screen redraw and far faster than a human notices: the point is to observe a
-    // transition, not to animate one. Each tick is a VT render of panes already in memory, plus the
-    // tail of each waited log — a screen that says nothing and a file that does must both be read.
-    const timer = setInterval(() => {
-      void Promise.all([
-        ...(this.terminalRead
-          ? request.keys.map((key) => this.readScreen(key, sessionId ?? null).catch(() => null))
-          : []),
-        this.readTurnsFor(request.keys).catch(() => null),
-      ])
-    }, WAIT_POLL_MS)
-    this.timers.add(timer as unknown as ReturnType<typeof setTimeout>)
-    // A log has a change event; the tick alone noticed a finished turn up to WAIT_POLL_MS late.
-    // The screen has none (it is the host's in-memory pane), so the tick stays for it.
-    const logs = new Set(
-      request.keys.flatMap((key) => this.turnSources.get(key)?.ref.sourcePath ?? []),
-    )
-    const unwatch = watchFiles(
-      [...logs],
-      () => void this.readTurnsFor(request.keys).catch(() => null),
-      { watchPath: this.pathWatch.watch },
-    )
+    const stopPolling = startWaitPoll({
+      request,
+      sessionId,
+      hasTerminalRead: () => Boolean(this.terminalRead),
+      readScreen: (key, askingSession) => this.readScreen(key, askingSession),
+      readTurnsFor: (keys) => this.readTurnsFor(keys),
+      timers: () => this.timers,
+      sourcePath: (key) => this.turnSources.get(key)?.ref.sourcePath,
+      watchPath: () => this.pathWatch.watch,
+    })
     try {
       return await waitForStates(this.live, request, signal)
     } finally {
-      unwatch()
-      clearInterval(timer)
-      this.timers.delete(timer as unknown as ReturnType<typeof setTimeout>)
+      stopPolling()
     }
   }
 }
