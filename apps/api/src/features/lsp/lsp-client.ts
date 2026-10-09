@@ -12,10 +12,10 @@ import {
   requestWorkspaceDiagnosticReport,
 } from './lsp-diagnostics-pull'
 import { CLIENT_CAPABILITIES } from './lsp-capabilities'
+import { createDiagnosticsSnapshot } from './lsp-diagnostics-snapshot'
 import { createEditorFeatures } from './lsp-editor-features'
 import {
   configurationValue,
-  dedupeDiagnostics,
   DIAGNOSTICS_PUBLISH_INTERVAL_MS,
   DIAGNOSTICS_WAIT_TIMEOUT_MS,
   FILE_CHANGE_CHANGED,
@@ -25,7 +25,6 @@ import {
   getSyncKind,
   INITIALIZE_TIMEOUT_MS,
   saveIncludesText,
-  normalizeDiagnostic,
   TEXT_DOCUMENT_SYNC_INCREMENTAL,
   type CapabilityRegistration,
   type DiagnosticRequestResult,
@@ -108,20 +107,11 @@ export async function createLspClient(input: {
     for (const l of diagnosticsListeners) l(filePath)
   }
 
-  // Merge the push (publishDiagnostics) and pull (textDocument/diagnostic) maps
-  // into one per-file snapshot, deduping the union for each file.
-  function buildDiagnosticsSnapshot(): Record<string, LspDiagnostic[]> {
-    const snapshot: Record<string, LspDiagnostic[]> = {}
-    for (const file of new Set([...pushDiagnostics.keys(), ...pullDiagnostics.keys()])) {
-      // Normalize `relatedInformation` (uri → local path) here — the single choke
-      // point every diagnostic passes through before reaching the wire / accessor.
-      snapshot[file] = dedupeDiagnostics([
-        ...(pushDiagnostics.get(file) ?? []),
-        ...(pullDiagnostics.get(file) ?? []),
-      ]).map(normalizeDiagnostic)
-    }
-    return snapshot
-  }
+  const { buildDiagnosticsSnapshot, mergePullResults } = createDiagnosticsSnapshot(
+    pushDiagnostics,
+    pullDiagnostics,
+    flushDiagnostics,
+  )
 
   function flushDiagnostics() {
     diagnosticsDebouncer.schedule(() => {
@@ -254,26 +244,6 @@ export async function createLspClient(input: {
   const syncKind = getSyncKind(initialized.capabilities)
   const saveCarriesText = saveIncludesText(initialized.capabilities)
   const hasStaticPullDiagnostics = Boolean(initialized.capabilities?.diagnosticProvider)
-
-  function mergePullResults(filePath: string, results: DiagnosticRequestResult[]) {
-    const handled = results.some((result) => result.handled)
-    const matched = results.some((result) => result.matched)
-    if (!handled) return { handled: false, matched: false }
-
-    const merged = new Map<string, LspDiagnostic[]>()
-    for (const result of results) {
-      for (const [target, items] of result.byFile.entries()) {
-        merged.set(target, [...(merged.get(target) ?? []), ...items])
-      }
-    }
-
-    if (matched && !merged.has(filePath)) merged.set(filePath, [])
-    for (const [target, items] of merged.entries())
-      pullDiagnostics.set(target, dedupeDiagnostics(items))
-    flushDiagnostics()
-
-    return { handled, matched }
-  }
 
   function pullRegistrations(workspaceDiagnostics: boolean) {
     return [...diagnosticRegistrations.values()].filter(
@@ -530,11 +500,7 @@ export async function createLspClient(input: {
     })
   }
 
-  // The editor-intelligence surface (hover/completion/go-to-*/symbols/rename/
-  // format/code actions) is a stateless request-normalize-degrade layer over the
-  // same connection — it shares nothing with the diagnostics machinery above, so
-  // it lives in its own module. `isDisposed` is a thunk: `disposed` is a `let`
-  // read at call time, not captured by value.
+  // Editor requests share the connection and read disposal state at call time.
   const features = createEditorFeatures({
     connection,
     capabilities: initialized.capabilities,
