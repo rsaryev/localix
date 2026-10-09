@@ -24,12 +24,12 @@ stop at 64 characters, and collisions receive a numeric suffix.
 
 ### Scope and server sources
 
-| Source               | Run behavior                                                               | Boundary                                                              |
-| -------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| No project registry  | Reads records whose project id is empty                                    | Project sessions do not inherit these records                         |
-| Project registry     | Reads records for that exact project                                       | It does not merge No project records                                  |
-| Enabled plugin       | Appends the plugin's declared MCP servers to the run                       | Disabling the plugin removes its servers                              |
-| Seeded `grep` record | Migration adds an enabled No project HTTP server at `https://mcp.grep.app` | It becomes a normal editable record; deleting it does not recreate it |
+| Source               | Run behavior                                                      | Boundary                                                           |
+| -------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------ |
+| No project registry  | Reads records whose project id is empty                           | Project sessions do not inherit these records                      |
+| Project registry     | Reads records for that exact project                              | It does not merge No project records                               |
+| Enabled plugin       | Appends the plugin's declared MCP servers to the run              | Disabling the plugin removes its servers                           |
+| Seeded `grep` record | Migration adds a No project HTTP record at `https://mcp.grep.app` | It is a normal editable record; project sessions do not inherit it |
 
 Localix does not scan other applications' MCP files. Import is explicit and accepts an `mcpServers`
 wrapper, a `servers` wrapper, or a bare name-to-config map in Settings.
@@ -71,9 +71,10 @@ prompt instructions.
 
 ### Tools, resources, and output
 
-Every accepted MCP tool is registered directly in the run, so its input schema accompanies every
-model request in that run. One server can contribute at most 256 tools; each accepted input schema
-is at most 128 KiB and each description is at most 600 characters.
+Accepted MCP tools join the runtime registry and the shared tool-loading policy. Deferred tools
+appear in the compact inventory; `activate_tools` adds their full schemas to later model requests.
+Their schemas do not all accompany every request. One server can contribute at most 256 tools; each
+accepted input schema is at most 128 KiB and each description is at most 600 characters.
 
 The [Tool budget](tool-budget.md) owns the count and estimate behavior. It uses the same cached
 names and collision rules as run assembly, and names enabled servers whose tools have not been
@@ -84,21 +85,26 @@ Tool text output defaults to 64,000 characters and at most 128 content parts. A 
 tool's `anthropic/maxResultSizeChars` annotation takes precedence, but cannot raise the host limit
 above 256,000 characters.
 
-Tool-call failures return non-fatal, retryable errors to the model; Localix does not automatically
-repeat the call. Resource listing skips a failed server so another resource-capable server can still
-respond.
+Tool-call failures return non-fatal errors to the model; Localix does not automatically repeat the
+call. Transport failures may be retryable, while a stale lazy descriptor is refused without dispatch
+and can require refreshed discovery. Resource listing skips a failed server so another
+resource-capable server can still respond.
 
 ## Configuration
 
-| Setting                 | Effect                                                            | Default or boundary                                            |
-| ----------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
-| `enabledTools`          | Per-server allowlist, applied before `disabledTools`              | All model-visible tools; an empty list behaves as no allowlist |
-| `disabledTools`         | Per-server denylist                                               | Empty                                                          |
-| `required`              | Makes connection and discovery fail-closed for run startup        | `false`                                                        |
-| `timeout`               | Per-server tool-call deadline                                     | Values below 1,000 ms are ignored                              |
-| `MCP_TOOL_TIMEOUT`      | Tool-call deadline when `timeout` is absent or below the floor    | 30,000 ms                                                      |
-| `MCP_TIMEOUT`           | Connection and capability-discovery deadline                      | 30,000 ms; values below 1,000 ms are ignored                   |
-| `MAX_MCP_OUTPUT_TOKENS` | Changes the default text allowance when no tool annotation exists | Unset                                                          |
+| Setting                 | Effect                                                            | Default or boundary                          |
+| ----------------------- | ----------------------------------------------------------------- | -------------------------------------------- |
+| `required`              | Makes connection and discovery fail-closed for run startup        | `false`                                      |
+| `timeout`               | Per-server tool-call deadline                                     | Values below 1,000 ms are ignored            |
+| `MCP_TOOL_TIMEOUT`      | Tool-call deadline when `timeout` is absent or below the floor    | 30,000 ms                                    |
+| `MCP_TIMEOUT`           | Connection and capability-discovery deadline                      | 30,000 ms; values below 1,000 ms are ignored |
+| `MAX_MCP_OUTPUT_TOKENS` | Changes the default text allowance when no tool annotation exists | Unset                                        |
+
+Per-tool selection is stored as capability rules such as `mcp:<server>/<tool>`, applied when tools
+are gathered without rewriting the connection configuration. JSON import translates a non-empty
+`enabledTools` list into a family denial followed by named allows, then applies `disabledTools`
+denials. An empty allowlist adds no restriction. These legacy import fields are not a separate
+runtime filtering mechanism.
 
 HTTP records may include `headers` and an `oauth` object with `clientId`, `clientSecret`, and
 `scope`. Without pre-registered client details, the SDK performs discovery, dynamic registration,
@@ -114,8 +120,9 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
   it through an enabled plugin.
 - The Settings form does not create WebSocket records. Use JSON or the API for `ws`; the transport
   cannot send configured headers or use the HTTP OAuth flow.
-- The seeded `grep` record is enabled. A primary chat can make an outbound request to `mcp.grep.app`
-  during first discovery unless the record is disabled or removed.
+- The seeded `grep` record belongs to the empty-project registry. Ordinary chats, including Default
+  chats, have a project ID and do not gather that record automatically. A Settings probe or a record
+  imported into an active project can still contact `mcp.grep.app`.
 - MCP does not sandbox a stdio server. Its process runs as the API's OS account, starts in the
   session working directory, and inherits the API process environment.
 - Cached metadata is not dispatch authority. A selected lazy tool still reconnects and checks the
@@ -124,6 +131,8 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
   being built; it can appear on a later run.
 - Imported configuration is copied into the Localix registry. Later changes to an external
   `.mcp.json` or editor setting have no effect until another import.
+- Resource listing rejects a server response that exceeds 100 pages or 10,000 items, or repeats a
+  pagination cursor. Listing other servers can continue; this is an error, not a partial inventory.
 - Tool annotations are advisory. Missing or contradictory mutation hints use the mutating
   classification, but a consistent `readOnlyHint: true` is trusted rather than independently
   verified.
@@ -143,6 +152,9 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
   and
   [scope repository](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/repository.ts)
 - [Import normalization](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/normalize.ts)
+- [Imported tool filters as rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/imported-tool-rules.ts)
+- [Server import and availability](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/service.ts)
+- [Deferred tool assembly](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-assembly.ts)
 - [Transport connection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/mcp-connect.ts)
 - [Connection and metadata lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/client-manager.ts)
 - [Tool projection and timeouts](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mcp/mcp-tools.ts)

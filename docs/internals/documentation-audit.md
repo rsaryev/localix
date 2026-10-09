@@ -254,6 +254,19 @@ instead of replacement. Qualified the WebCrypto keychain claim by initialization
 Clarified the shield's trimmed-length floor, 256-variant per-user cache, and eviction behavior. The
 broader outbound and native-plugin privacy claims still need their full source review.
 
+## MCP runtime inventory and imports
+
+Compared exact registry lookup and the grep seed, transport/environment expansion, optional connect
+budget, tool visibility filtering, import-to-rule translation, output ceilings, persisted inventory
+bounds, discovery retry, and deferred tool assembly with current source. Recent owner history
+includes `9745776` and `22af090`.
+
+Corrected the direct-schema-per-request claim and replaced legacy runtime allow/deny fields with the
+actual capability-rule mechanism. Documented import translation and the seeded record's
+empty-project boundary: ordinary chats, including Default, do not inherit it. Qualified retryability
+for stale lazy descriptors and added resource-list caps. OAuth UI/round-trip and declarative-hook
+behavior remain pending their detailed content audit.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
