@@ -96,10 +96,11 @@ stored, shown, gated:  curl -sf -H "Authorization: Bearer ${secret:MSGR_TOKEN}" 
 executed:              curl -sf -H "Authorization: Bearer $LOCALIX_SECRET_MSGR_TOKEN" …
 ```
 
-The environment, not the resolved string, because a command's arguments are visible to every local
-process through `ps` while a process's environment is readable only by its owner. Nothing that
-Localix stores or displays ever holds the value: not the tool call's persisted input, not the
-trigger row, not the composer strip, not the confirmation card, not the model's context.
+Localix injects the value through an environment variable so the stored command and trigger keep
+only the Vault reference. This does not guarantee secrecy from local process inspection: the shell
+expands `$LOCALIX_SECRET_MSGR_TOKEN` before invoking `curl`, so its header argument can contain the
+value. Access to process arguments and environments depends on the operating system and privileges.
+Monitor events and ending details pass through the exposure shield before reaching Localix surfaces.
 
 | Rule                                                                | Reason                                                                                                                                                                           |
 | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -114,10 +115,10 @@ and resolution happens server-side.
 
 ### Permissions
 
-The wait is an ordinary `bash` call, so the run's permission gate judges the real command:
-dangerous-command confirmation, workspace rules, ask-mode approval and Claude Code permission rules
-all apply. Without a live `jobs` tool `bash` carries no background fields, so no wait can be
-started.
+The wait is an ordinary `bash` call. The run's permission gate evaluates its command and paths
+against the agent rules after the conversation mode rewrite, including host-root protection and any
+matching dangerous-command or outside-workspace rule. Without a live `jobs` tool `bash` carries no
+background fields, so no wait can be started.
 
 ### Plugin monitors are not agent waits
 
@@ -136,19 +137,22 @@ else.
 
 `bash` fields that shape a wait:
 
-| Field         | Required | Default      | Meaning                                                                  |
-| ------------- | -------- | ------------ | ------------------------------------------------------------------------ |
-| `command`     | Yes      | —            | The check; the wait ends when it exits 0                                 |
-| `until`       | Yes      | —            | Poll interval in seconds (minimum 5); its presence makes the call a wait |
-| `description` | No       | the command  | Shown in every wake and in the composer strip                            |
-| `cwd`         | No       | Session root | Working directory for the command                                        |
-| `timeout`     | No       | 300 s        | Deadline in seconds (≥ 60), maximum 3,600 s                              |
+| Field         | Required | Default      | Meaning                                                                                    |
+| ------------- | -------- | ------------ | ------------------------------------------------------------------------------------------ |
+| `command`     | Yes      | —            | The check; the wait ends when it exits 0                                                   |
+| `until`       | Yes      | —            | Requested poll interval (minimum 5 s); clamped so at least four intervals fit the deadline |
+| `description` | No       | the command  | Shown in every wake and in the composer strip                                              |
+| `cwd`         | No       | Session root | Working directory for the command                                                          |
+| `timeout`     | No       | 300 s        | Deadline in seconds (≥ 60), maximum 3,600 s                                                |
 
 Limits the engine enforces: four concurrent monitors per session, 60 events per minute per monitor,
 a 5 s interval floor, and a 2,000-character cap per event line.
 
 ## Limits
 
+- Active monitors cache resolved Vault values for the lifetime of that monitor in the API process.
+  Rotating or deleting a key does not replace the cached value on each poll; stop and restart the
+  monitor to resolve it again. Resume after an API restart also resolves again.
 - A watch's process does not survive an API restart; the restart ends it and wakes its owner once. A
   polled wait resumes.
 - A monitor is not a scheduler. Recurring work belongs to `/loop`; a monitor waits for one thing and
@@ -170,6 +174,7 @@ a 5 s interval floor, and a 2,000-character cap per event line.
 ## Source of truth
 
 - [Monitor contracts and wake text](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/contracts.ts)
+- [Per-monitor credential cache](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/credentials.ts)
 - [Vault reference substitution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/secrets.ts)
 - [Start, stop, caps and resume](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/service.ts)
 - [What a fire does](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/action.ts)

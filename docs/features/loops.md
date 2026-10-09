@@ -27,9 +27,13 @@ with `/loop`. Loops are stored in the database and survive an API restart.
 
 ### When a fire cannot run
 
-A session that is busy with another turn does not take a loop fire on top of it. A fixed loop gives
-that slot up and fires at the next one. A dynamic loop keeps its fire waiting and runs it as soon as
-the session is idle.
+For `target: session`, a conversation busy with another turn does not take a loop fire on top of it.
+A fixed loop gives that slot up and fires at the next one. A dynamic loop keeps its fire waiting and
+runs it as soon as the session is idle.
+
+A fixed `target: subsession` loop starts a fresh child through its own runner. It does not use the
+parent-session busy or quota gate described here; the child still faces ordinary provider and
+runtime limits.
 
 A quota is tracked per provider route — the provider connection and the model on it — not per
 conversation. When a run fails because a provider reports a rate limit, fires addressed to a
@@ -46,12 +50,14 @@ set; the agent sees the error in the loop list.
 
 ### After a restart
 
-A loop whose run was interrupted by a restart fires once when the API comes back if its time has
-passed, then continues from the current time. A long downtime therefore costs one catch-up run, not
-one run per missed slot. A dynamic loop that the agent did not reschedule before the restart fires
-again after its last delay.
+A fixed loop with an overdue stored slot makes at most one catch-up attempt after restart, then
+computes its next slot from the current time. Busy/quota gates still apply; missed slots do not form
+a replay backlog. A dynamic loop resumes its stored due time and continues at its last delay unless
+the agent reschedules it. Failure-backoff streaks are in memory and reset on restart.
 
 ### Cancelling
+
+Run now refuses to overlap a fire already in progress.
 
 Cancelling a loop removes its fire from the queue if it is waiting, or stops that run if it is
 running. Other messages in the queue and sub-agents started by other work keep going.
@@ -60,3 +66,12 @@ running. Other messages in the queue and sub-agents started by other work keep g
 
 - [Wait for something to happen](monitors.md)
 - [Hooks and commands](hooks-and-commands.md)
+
+## Source of truth
+
+- [Loop creation and cancellation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/loops/service.ts)
+- [Target routing and fire gates](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/loops/action.ts)
+- [Fixed schedule and restart policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/kinds/cron.ts)
+- [Dynamic delay and watchdog](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/kinds/delay.ts)
+- [Trigger lifecycle and manual fires](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/engine.ts)
+- [Failure backoff](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/backoff.ts)

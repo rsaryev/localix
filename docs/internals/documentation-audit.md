@@ -229,6 +229,18 @@ Owner history includes `18cd8e0`, `6150d76`, and `9745776`.
   full control protocol, retry selection, and topic-boundary claims still need a separate full
   review; the session-list UI/search details also remain to be checked.
 
+## Scheduled loops and monitor credentials
+
+Compared loop target gates, cancellation/manual fires, cron and delay restart policies, watchdogs,
+and backoff with their owning services. Qualified parent-session busy/quota gating by target,
+documented non-overlapping manual fires, and clarified overdue-slot catch-up and volatile backoff.
+
+Compared monitor limits, bash interval clamping, poll verdicts, command spawning, and the credential
+cache. Removed the claim that environment injection makes the curl header invisible to process
+inspection: shell expansion can place it in argv. Documented cached Vault resolution and rotation,
+and replaced the obsolete multi-policy permission wording with the actual per-run rule gate.
+Background-job lifecycle and the remaining monitor/plugin streaming claims still need review.
+
 ## Remaining work
 
 These items are unresolved; the audit is not complete.
