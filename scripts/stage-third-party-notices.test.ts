@@ -141,4 +141,56 @@ describe('third-party runtime notices', () => {
       'landing-only@1.0.0',
     )
   })
+
+  test('a desktop build adds the Bun runtime and only the crates linked into the shell', () => {
+    const root = fixture()
+    write(
+      join(root, 'apps/desktop-tauri/licenses/bun-LICENSE.txt'),
+      'Bun itself is MIT-licensed.\n',
+    )
+    const crate = (name: string, license: string | null, text?: string) => {
+      const manifestPath = join(root, 'registry', name, 'Cargo.toml')
+      write(manifestPath, `[package]\nname = "${name}"\n`)
+      if (text) write(join(root, 'registry', name, 'LICENSE-MIT'), text)
+      return { id: name, name, version: '1.0.0', license, manifest_path: manifestPath }
+    }
+    const normal = [{ kind: null, target: null }]
+    const metadata = {
+      workspace_members: ['shell'],
+      packages: [
+        crate('shell', 'MIT'),
+        crate('linked', 'MIT OR Apache-2.0', 'linked license\r\n'),
+        crate('transitive', 'Zlib'),
+        crate('build-only', 'MIT'),
+        crate('test-only', 'MIT'),
+      ],
+      resolve: {
+        root: 'shell',
+        nodes: [
+          {
+            id: 'shell',
+            deps: [
+              { pkg: 'linked', dep_kinds: normal },
+              { pkg: 'build-only', dep_kinds: [{ kind: 'build', target: null }] },
+              { pkg: 'test-only', dep_kinds: [{ kind: 'dev', target: null }] },
+            ],
+          },
+          { id: 'linked', deps: [{ pkg: 'transitive', dep_kinds: normal }] },
+          { id: 'transitive', deps: [] },
+        ],
+      },
+    }
+    const destination = join(root, 'out-desktop')
+
+    stageThirdPartyNotices({ repoRoot: root, destination, desktop: { metadata } })
+
+    expect(readdirSync(destination)).toContain('bun-runtime-LICENSE.txt')
+    const rust = readFileSync(join(destination, 'rust-crates-THIRD_PARTY_NOTICES.txt'), 'utf8')
+    expect(rust).toContain('Crates: 2')
+    expect(rust).toContain('linked@1.0.0\nDeclared license: MIT OR Apache-2.0\n--- LICENSE-MIT ---')
+    expect(rust).toContain('linked license\n')
+    expect(rust).not.toContain('\r')
+    expect(rust).toContain('transitive@1.0.0\nDeclared license: Zlib')
+    for (const absent of ['shell@', 'build-only', 'test-only']) expect(rust).not.toContain(absent)
+  })
 })

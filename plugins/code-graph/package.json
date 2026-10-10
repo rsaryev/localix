@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Dependencies for the bundled Code Graph plugin: tree-sitter extraction, the project graph and its workbench view.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test .",

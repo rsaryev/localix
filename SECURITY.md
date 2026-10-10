@@ -41,6 +41,11 @@ origin when it serves the UI. Allowed Host names are loopback names plus the con
 bind host; wildcard binds do not authorize arbitrary Host names. These checks do not authenticate
 local processes. A web page that bypasses the configured browser-access boundary is in scope.
 
+Localix-managed credentials are encrypted at rest with a key kept in `~/.localix/vault/.masterkey`,
+an owner-only file rather than the operating-system keychain. Any process running as the same user
+can read that key and decrypt the vault; see [privacy](docs/getting-started/privacy.md) for every
+stored location.
+
 ## In scope
 
 - A reproducible boundary bypass in Localix code that grants capabilities beyond the active

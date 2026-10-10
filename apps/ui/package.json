@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Localix workspace UI — chat, editor, terminals, source control, task board, and live agent execution.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

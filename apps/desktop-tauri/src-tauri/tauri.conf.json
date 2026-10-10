@@ -31,7 +31,7 @@
     "targets": ["app", "dmg", "nsis", "deb", "appimage"],
     "createUpdaterArtifacts": false,
     "publisher": "Localix",
-    "copyright": "© 2026 Localix",
+    "copyright": "© 2026 LocalixAI",
     "license": "MIT",
     "category": "DeveloperTools",
     "homepage": "https://localix.ai",

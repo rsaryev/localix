@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Native Git workspace UI, conflict resolution, history, and agent context.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test --preload ../../packages/kit/test-preload.ts .",

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Dependencies of the bundled `api` plugin. shell-quote lives HERE (the curl importer tokenizes a pasted command with it) and jsonpath-plus HERE (the agent tool can narrow response context without adding UI); the staging build pre-bundles them into backend/index.bundle.mjs, so shipped plugins stay self-contained.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test .",

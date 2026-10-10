@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Localix backend — agent runtime, tools, permissions, and realtime streaming (Hono + Bun).",
+  "license": "MIT",
   "bin": {
     "localix": "./bin/localix"
   },

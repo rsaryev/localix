@@ -8,6 +8,12 @@ import {
 } from 'node:fs'
 import { dirname, join, parse, relative } from 'node:path'
 
+import {
+  RUST_NOTICES_FILE,
+  buildRustNotices,
+  readDesktopCargoMetadata,
+} from './rust-third-party-notices.mjs'
+
 const NOTICE_FILES = [
   ['vendor/monaco-editor-runtime/LICENSE', 'monaco-editor-LICENSE.txt'],
   ['vendor/monaco-editor-runtime/ThirdPartyNotices.txt', 'monaco-editor-ThirdPartyNotices.txt'],
@@ -19,6 +25,11 @@ const NOTICE_FILES = [
 ]
 
 const GENERATED_RUNTIME_NOTICES = 'npm-runtime-THIRD_PARTY_NOTICES.txt'
+// The desktop app also ships the Bun sidecar and the Rust shell, which no npm manifest describes.
+const BUN_RUNTIME_NOTICE = [
+  'apps/desktop-tauri/licenses/bun-LICENSE.txt',
+  'bun-runtime-LICENSE.txt',
+]
 const PRODUCT_RUNTIME_ROOTS = ['apps/api', 'apps/ui']
 const LANDING_RUNTIME_ROOTS = ['apps/landing']
 const NOTICE_BASENAME_RE = /^(?:licen[cs]e|unlicense|copying|copyright|notice)(?:[._-].*)?$/iu
@@ -196,8 +207,12 @@ export function buildRuntimeNotices({ repoRoot, target = 'product' }) {
   return `${output.join('\n').trimEnd()}\n`
 }
 
-/** Stage the notices for vendored code that is compiled into distributable artifacts. */
-export function stageThirdPartyNotices({ repoRoot, destination, target = 'product' }) {
+/**
+ * Stage the notices for vendored code that is compiled into distributable artifacts. `desktop`
+ * adds the Bun runtime and the Rust crates of the native shell, resolved for `targetTriple` (or
+ * from a supplied `metadata`).
+ */
+export function stageThirdPartyNotices({ repoRoot, destination, target = 'product', desktop }) {
   mkdirSync(destination, { recursive: true })
   if (target === 'product') {
     for (const [source, filename] of NOTICE_FILES) {
@@ -208,9 +223,20 @@ export function stageThirdPartyNotices({ repoRoot, destination, target = 'produc
     join(destination, GENERATED_RUNTIME_NOTICES),
     buildRuntimeNotices({ repoRoot, target }),
   )
+  if (!desktop) return
+  copyFileSync(join(repoRoot, BUN_RUNTIME_NOTICE[0]), join(destination, BUN_RUNTIME_NOTICE[1]))
+  const metadata =
+    desktop.metadata ?? readDesktopCargoMetadata({ repoRoot, targetTriple: desktop.targetTriple })
+  writeFileSync(join(destination, RUST_NOTICES_FILE), buildRustNotices(metadata))
 }
 
 export const STAGED_THIRD_PARTY_NOTICE_FILES = [
   ...NOTICE_FILES.map(([, filename]) => filename),
   GENERATED_RUNTIME_NOTICES,
+]
+
+export const STAGED_DESKTOP_NOTICE_FILES = [
+  ...STAGED_THIRD_PARTY_NOTICE_FILES,
+  BUN_RUNTIME_NOTICE[1],
+  RUST_NOTICES_FILE,
 ]

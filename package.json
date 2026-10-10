@@ -2,6 +2,7 @@
   "name": "localix",
   "private": true,
   "description": "Open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.",
+  "license": "MIT",
   "workspaces": [
     "apps/*",
     "packages/*",

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Localix desktop shell — Tauri host, API sidecar, updater, and platform packaging.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "//": "Scripts are namespaced (tauri:*) on purpose: a bare `build`/`dev`/`lint` task",

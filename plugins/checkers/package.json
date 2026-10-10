@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Dependencies for the bundled Checkers plugin: a board whose moves wake the agent in the open chat.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test .",

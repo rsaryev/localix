@@ -32,6 +32,10 @@ hook checks without changing or staging files. Checked files must match their st
 resolve any staged/unstaged differences before committing. Full tests, type checks, builds and
 audits run in CI; do not repeat them manually just to create a commit.
 
+One development dependency is not OSI-licensed: `oxlint-plugin-react-doctor`, used only by the
+optional `bun run lint:react-doctor`, ships under a modified MIT license that restricts some uses of
+its own source. It is never bundled into Localix artifacts.
+
 Maintainers can opt into the additional vendored `vendor/pi` synchronization and model catalog
 refresh through `LOCALIX_MAINTAINER=1`.
 

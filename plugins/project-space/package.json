@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Dependencies for the bundled Project Space plugin: one spatial board per project.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test .",

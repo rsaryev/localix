@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Explicit-only local reading workspace with agent context and native links.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test .",

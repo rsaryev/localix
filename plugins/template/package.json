@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "System Overview plugin and reference template with a native Bun backend.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "prepare:sdk": "bunx turbo build --filter=@localixai/plugin-sdk --output-logs=errors-only",

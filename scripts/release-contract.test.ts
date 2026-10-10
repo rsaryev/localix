@@ -325,8 +325,11 @@ describe('release workflow contract', () => {
       "copyFileSync(join(repo, 'LICENSE'), join(resources, 'LICENSE'))",
     )
     expect(prepareSidecar).toContain("existsSync(join(resources, 'LICENSE'))")
-    expect(prepareSidecar).toContain('STAGED_THIRD_PARTY_NOTICE_FILES.every')
+    expect(prepareSidecar).toContain('STAGED_DESKTOP_NOTICE_FILES.every')
     expect(prepareSidecar).toContain("destination: join(resources, 'THIRD_PARTY_NOTICES')")
+    // The shipped binary also carries the Bun sidecar and the Rust shell's crates.
+    expect(prepareSidecar).toContain('desktop: { targetTriple: hostTriple() }')
+    expect(prepareSidecar).toContain("join(desktop, 'src-tauri', 'Cargo.lock')")
     // Resources hold the ONE copy; the embedded frontend writing them too shipped every notice
     // twice, the second compiled into the executable.
     expect(read('apps/ui/vite.config.ts')).not.toContain('stageThirdPartyNotices(')

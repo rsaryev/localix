@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Dependencies for the bundled Trading Workspace. The registered surface exposes public market research and chart controls; ccxt stays self-contained here.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test .",

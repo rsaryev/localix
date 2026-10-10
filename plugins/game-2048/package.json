@@ -2,6 +2,7 @@
   "name": "@localix-plugin/game-2048",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "bun test .",

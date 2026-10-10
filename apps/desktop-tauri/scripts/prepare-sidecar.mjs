@@ -27,7 +27,12 @@ import { createHash } from 'node:crypto'
 import { basename, join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { stageSidecarBun, binariesDir, resourcesDir as resources } from './tauri-staging.mjs'
+import {
+  stageSidecarBun,
+  binariesDir,
+  hostTriple,
+  resourcesDir as resources,
+} from './tauri-staging.mjs'
 import {
   STAGED_DROPINS_MARKER,
   stageDropins,
@@ -40,7 +45,7 @@ import {
   buildNativeBrowserProbe,
 } from '../../../scripts/build-visual-feedback-probe.mjs'
 import {
-  STAGED_THIRD_PARTY_NOTICE_FILES,
+  STAGED_DESKTOP_NOTICE_FILES,
   stageThirdPartyNotices,
 } from '../../../scripts/stage-third-party-notices.mjs'
 import {
@@ -117,6 +122,9 @@ const runtimeKey = fingerprint([
   // Everything the plugin kit is made from — the same list the dev watcher re-stages on.
   ...PLUGIN_KIT_INPUTS.map((input) => join(repo, input)),
   join(repo, 'scripts', 'stage-third-party-notices.mjs'),
+  join(repo, 'scripts', 'rust-third-party-notices.mjs'),
+  join(desktop, 'licenses'),
+  join(desktop, 'src-tauri', 'Cargo.lock'),
   join(repo, 'vendor', 'pi', 'LICENSE'),
   join(repo, 'vendor', 'monaco-editor-runtime'),
   join(repo, 'bun.lock'),
@@ -138,7 +146,7 @@ const runtimeReady =
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
   existsSync(join(resources, 'cli', 'package.json')) &&
   existsSync(join(resources, 'LICENSE')) &&
-  STAGED_THIRD_PARTY_NOTICE_FILES.every((filename) =>
+  STAGED_DESKTOP_NOTICE_FILES.every((filename) =>
     existsSync(join(resources, 'THIRD_PARTY_NOTICES', filename)),
   ) &&
   existsSync(stageSidecarBun().path)
@@ -152,6 +160,7 @@ if (!runtimeReady) {
   stageThirdPartyNotices({
     repoRoot: repo,
     destination: join(resources, 'THIRD_PARTY_NOTICES'),
+    desktop: { targetTriple: hostTriple() },
   })
 
   // ── 1. bundle the API to resources/server.js (plugins stay on disk). Use --outdir (not --outfile) so bun can also emit the native
