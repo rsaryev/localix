@@ -8,6 +8,34 @@ function documentFor(html: string): Document {
 }
 
 describe('MOBI/KF8 link rewriting', () => {
+  test('a rejected destination does not block the next link', async () => {
+    const source = documentFor(
+      '<a href="filepos:bad" data-reader-chapter="99">Broken</a><a href="filepos:good">Next</a>',
+    )
+    const target = documentFor('<p id="destination">Destination</p>')
+    const calls: string[] = []
+    await rewriteMobiDocumentLinks(
+      [
+        { sourceIndex: 0, document: source },
+        { sourceIndex: 4, document: target },
+      ],
+      {
+        isExternal: () => false,
+        async resolveHref(href) {
+          calls.push(href)
+          if (href === 'filepos:bad') throw new Error('Unresolvable position')
+          return { index: 4, anchor: (document) => document.querySelector('p') }
+        },
+      },
+    )
+    expect(calls).toEqual(['filepos:bad', 'filepos:good'])
+    const [broken, next] = Array.from(source.querySelectorAll('a'))
+    expect(broken?.hasAttribute('href')).toBe(false)
+    expect(broken?.hasAttribute('data-reader-chapter')).toBe(false)
+    expect(next?.getAttribute('href')).toBe('#destination')
+    expect(next?.getAttribute('data-reader-chapter')).toBe('1')
+  })
+
   test('maps file positions to Reader chapter fragments and keeps safe external links', async () => {
     const first = documentFor(
       '<a filepos="120">Next chapter</a><a href="https://example.com/source" data-reader-chapter="99">Source</a><a href="tel:+35799123456">Call</a>',

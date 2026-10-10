@@ -2,7 +2,15 @@ import { parseHTML } from 'linkedom'
 import { parse as parseHtml } from 'node-html-parser'
 
 import type { ReaderFormat } from '../shared/contracts'
-import { readerExternalLink, readerHasControlCharacters } from '../shared/link'
+import type {
+  FoliateBook,
+  FoliateSection,
+  FoliateTocItem,
+  SerializableDocument,
+} from './mobi-contracts'
+import { rewriteMobiDocumentLinks } from './mobi-links'
+
+export { rewriteMobiDocumentLinks } from './mobi-links'
 
 const MAX_MOBI_TEXT_BYTES = 160 * 1024 * 1024
 const MAX_MOBI_RECORDS = 65_535
@@ -16,44 +24,6 @@ export interface ExtractedMobi {
   language?: string
   cover?: string
   sections: Array<{ id: string; title: string; html: string }>
-}
-
-/**
- * Foliate builds its section documents with the linkedom DOM installed by
- * `acquireServerDom`, and a linkedom node's `toString()` is a real HTML serializer.
- * `lib.dom`'s `Document` only inherits Object's, so the serializer is stated here
- * rather than assumed at the one call site that reads the markup back out.
- */
-type SerializableDocument = Document & { toString(): string }
-
-interface FoliateSection {
-  id?: string | number
-  linear?: string
-  createDocument?: () => Promise<SerializableDocument> | SerializableDocument
-}
-
-interface FoliateTocItem {
-  label?: string
-  href?: string
-  subitems?: FoliateTocItem[]
-}
-
-interface FoliateBook {
-  metadata?: Record<string, unknown>
-  sections: FoliateSection[]
-  toc?: FoliateTocItem[]
-  splitTOCHref?: (href: string) => unknown[] | Promise<unknown[]>
-  resolveHref?: (
-    href: string,
-  ) =>
-    | { index: number; anchor?: (document: Document) => Element | null }
-    | undefined
-    | Promise<{ index: number; anchor?: (document: Document) => Element | null } | undefined>
-  isExternal?: (href: string) => boolean
-  getCover?: () => Promise<Blob | undefined>
-  mobi?: { loadResource(index: number): Promise<ArrayBuffer> }
-  loadResourceBlob?: (uri: string) => Promise<[Blob]>
-  destroy?: () => void
 }
 
 interface PreparedMobiSection {
@@ -223,66 +193,6 @@ async function tocTitles(book: FoliateBook): Promise<Map<number, string>> {
   }
   await visit(book.toc ?? [])
   return titles
-}
-
-/**
- * Convert format-owned MOBI/KF8 destinations into Reader's chapter/fragment contract before the
- * shared sanitizer runs. Foliate remains the only layer that understands filepos/kindle positions;
- * the rendered UI receives only bounded fragment ids plus a numeric chapter identity.
- */
-export async function rewriteMobiDocumentLinks(
-  sections: ReadonlyArray<{ sourceIndex: number; document: Document }>,
-  resolver: Pick<FoliateBook, 'resolveHref' | 'isExternal'>,
-): Promise<void> {
-  const bySourceIndex = new Map(
-    sections.map((section, index) => [section.sourceIndex, { ...section, index }]),
-  )
-  let generatedFragment = 0
-
-  for (const section of sections) {
-    const anchors = Array.from(section.document.querySelectorAll<HTMLAnchorElement>('a'))
-    for (const anchor of anchors) {
-      // Reader navigation metadata is derived from the MOBI resolver, never from book markup.
-      anchor.removeAttribute('data-reader-chapter')
-      anchor.removeAttribute('data-reader-fragment')
-      const filePosition = anchor.getAttribute('filepos')?.trim()
-      const href =
-        anchor.getAttribute('href')?.trim() || (filePosition ? `filepos:${filePosition}` : '')
-      if (!href) continue
-      if (href.startsWith('#')) continue
-
-      const safeExternal = readerExternalLink(href)
-      const external = resolver.isExternal?.(href) ?? safeExternal !== null
-      if (external) {
-        if (safeExternal) anchor.setAttribute('href', safeExternal.href)
-        else anchor.removeAttribute('href')
-        continue
-      }
-
-      try {
-        const resolved = await resolver.resolveHref?.(href)
-        const destination = resolved ? bySourceIndex.get(resolved.index) : undefined
-        if (!resolved || !destination) {
-          anchor.removeAttribute('href')
-          continue
-        }
-        const target = resolved.anchor?.(destination.document) as HTMLElement | null | undefined
-        let fragment = target?.id?.trim() ?? ''
-        if (fragment.length > 256 || readerHasControlCharacters(fragment)) fragment = ''
-        if (target && !fragment) {
-          generatedFragment += 1
-          fragment = `reader-mobi-${destination.index + 1}-${generatedFragment}`
-          target.id = fragment
-        }
-        anchor.setAttribute('href', fragment ? `#${fragment}` : '#')
-        anchor.setAttribute('data-reader-chapter', String(destination.index))
-        if (fragment) anchor.setAttribute('data-reader-fragment', fragment)
-        else anchor.removeAttribute('data-reader-fragment')
-      } catch {
-        anchor.removeAttribute('href')
-      }
-    }
-  }
 }
 
 export async function extractMobi(
