@@ -7,22 +7,26 @@ import { mediaTypeForPath } from '@localixai/plugin-sdk/backend'
 import { strFromU8, unzipSync } from 'fflate'
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 
-import type { ReaderChapter, ReaderDocument, ReaderFormat } from '../shared/contracts'
+import type { ReaderChapter, ReaderFormat } from '../shared/contracts'
 import { READER_FORMAT_SUMMARY, readerFormatFor as formatFor } from '../shared/formats'
 import { readerExternalLink, readerHasControlCharacters } from '../shared/link'
 import { extractMobi } from './mobi'
 import { extractPdf } from './pdf'
+import {
+  MAX_CHAPTERS,
+  chapter,
+  documentFromChapters,
+  cleanText,
+  escapeHtml,
+  titleFromPath,
+  type ParsedReaderDocument,
+} from './chapters'
 
 /** Virtual root every archive-internal entry name is resolved inside. */
 const ARCHIVE_ROOT = '/__archive__'
 const MAX_SOURCE_BYTES = 64 * 1024 * 1024
 const MAX_EPUB_ENTRIES = 3_000
 const MAX_EPUB_UNCOMPRESSED_BYTES = 160 * 1024 * 1024
-const MAX_CHAPTERS = 400
-const MAX_CHAPTER_TEXT = 500_000
-// Markup may legitimately contain bounded, inlined EPUB illustrations. Keep a
-// separate ceiling so an image data URI is never sliced into invalid HTML.
-const MAX_CHAPTER_MARKUP = 6 * 1024 * 1024
 const MAX_CBZ_IMAGE_BYTES = 4 * 1024 * 1024
 
 /** Names the offending file and what Reader does open — a bare "Unsupported reader
@@ -30,37 +34,6 @@ const MAX_CBZ_IMAGE_BYTES = 4 * 1024 * 1024
 function unsupportedFormatMessage(path: string): string {
   const extension = extname(path).slice(1).toLowerCase()
   return `${basename(path)} is not a reading format${extension ? ` (.${extension})` : ''}. Reader opens ${READER_FORMAT_SUMMARY}.`
-}
-
-interface ParsedReaderDocument {
-  document: ReaderDocument
-  chapters: ReaderChapter[]
-  cover?: string
-}
-
-function titleFromPath(path: string): string {
-  return basename(path, extname(path)).replaceAll(/[_-]+/g, ' ').trim() || basename(path)
-}
-
-function wordCount(text: string): number {
-  return text.trim() ? text.trim().split(/\s+/u).length : 0
-}
-
-function cleanText(value: string): string {
-  return value
-    .replaceAll('\u00a0', ' ')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n[ \t]+/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
 }
 
 function markdownText(value: string): string {
@@ -74,67 +47,6 @@ function markdownText(value: string): string {
       .replace(/^\s*[-*+]\s+/gm, '')
       .replace(/[*_~>#]/g, ''),
   )
-}
-
-function safeChapterContent(value: string, limit = MAX_CHAPTER_TEXT): string {
-  return value.length <= limit ? value : `${value.slice(0, limit)}\n\n… [chapter truncated]`
-}
-
-function safeChapterMarkup(value: string): string {
-  if (value.length <= MAX_CHAPTER_MARKUP) return value
-  // Never cut through an element or a data URI. An exceptionally large chapter
-  // falls back to readable text while preserving the bounded transport contract.
-  const root = parseHtml(value, { lowerCaseTagName: true, comment: false })
-  return `<p>${escapeHtml(safeChapterContent(cleanText(root.structuredText)))}</p>`
-}
-
-function chapter(
-  index: number,
-  title: string,
-  kind: ReaderChapter['kind'],
-  content: string,
-  text: string,
-  id = `chapter-${index + 1}`,
-): ReaderChapter {
-  const cleaned = cleanText(text)
-  return {
-    id,
-    index,
-    title: title.trim() || `Chapter ${index + 1}`,
-    kind,
-    content:
-      kind === 'html' ? safeChapterMarkup(content.trim()) : safeChapterContent(content.trim()),
-    text: safeChapterContent(cleaned),
-    wordCount: wordCount(cleaned),
-  }
-}
-
-function documentFromChapters(
-  path: string,
-  format: ReaderFormat,
-  title: string,
-  chapters: ReaderChapter[],
-  metadata: { author?: string; language?: string } = {},
-): ParsedReaderDocument {
-  const normalized = chapters.length
-    ? chapters.slice(0, MAX_CHAPTERS).map((item, index) => ({ ...item, index }))
-    : [chapter(0, title, 'text', '', 'No readable text was found.')]
-  return {
-    document: {
-      path,
-      title: title.trim() || titleFromPath(path),
-      format,
-      ...metadata,
-      wordCount: normalized.reduce((sum, item) => sum + item.wordCount, 0),
-      chapters: normalized.map(({ id, index, title: chapterTitle, wordCount: count }) => ({
-        id,
-        index,
-        title: chapterTitle,
-        wordCount: count,
-      })),
-    },
-    chapters: normalized,
-  }
 }
 
 function splitMarkdown(path: string, source: string): ParsedReaderDocument {
@@ -763,4 +675,4 @@ export async function parseReaderDocument(root: string, requested: string) {
   return parseReaderBytes(requested, bytes)
 }
 
-export type { ParsedReaderDocument }
+export type { ParsedReaderDocument } from './chapters'
