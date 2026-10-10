@@ -83,7 +83,7 @@
   "plugins/api/ui/ui/ResponsePane.tsx": 419,
   "plugins/database/backend/drivers/clickhouse.ts": 508,
   "plugins/database/backend/drivers/mssql-introspect.ts": 694,
-  "plugins/database/backend/drivers/postgres-introspect.ts": 543,
+  "plugins/database/backend/drivers/postgres-introspect.ts": 404,
   "plugins/database/backend/drivers/postgres-table-queries.ts": 978,
   "plugins/database/backend/resource-provider.ts": 545,
   "plugins/database/backend/service.ts": 416,
