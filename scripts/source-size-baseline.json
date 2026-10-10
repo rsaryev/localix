@@ -104,7 +104,6 @@
   "plugins/database/backend/service.ts": 416,
   "plugins/database/ui/model/useSqlConsole.ts": 324,
   "plugins/git-workspace/backend/completion-context.ts": 540,
-  "plugins/git-workspace/backend/source-control/git/rebase.ts": 413,
   "plugins/git-workspace/backend/source-control/resource-provider.ts": 575,
   "plugins/git-workspace/backend/source-control/routes.ts": 379,
   "plugins/git-workspace/backend/source-control/service.ts": 608,
