@@ -214,4 +214,3 @@ export function createResumeService(workspace: string) {
   }
 }
 export type ResumeService = ReturnType<typeof createResumeService>
-export const getResumeService = createResumeService

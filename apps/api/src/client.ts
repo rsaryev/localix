@@ -266,7 +266,6 @@ export type {
   RotateSecretRequest,
   SecretBinding,
   SecretMeta,
-  SetSecretRequest,
   UpdateSecretMetadataRequest,
   VaultAuditEntry,
   VaultItemSource,

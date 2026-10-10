@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { setSecretRequestSchema, secretKeySchema } from './contracts'
+import { createSecretRequestSchema, secretKeySchema } from './contracts'
 import { SECRET_KEY_MAX_LENGTH, SECRET_KEY_PATTERN, SECRET_VALUE_MAX_LENGTH } from './limits'
 
 /**
@@ -16,11 +16,11 @@ describe('secret limits own the schema', () => {
   })
 
   test('a value at the cap is accepted; one character over is rejected', () => {
-    const at = setSecretRequestSchema.safeParse({
+    const at = createSecretRequestSchema.safeParse({
       key: 'K',
       value: 'v'.repeat(SECRET_VALUE_MAX_LENGTH),
     })
-    const over = setSecretRequestSchema.safeParse({
+    const over = createSecretRequestSchema.safeParse({
       key: 'K',
       value: 'v'.repeat(SECRET_VALUE_MAX_LENGTH + 1),
     })

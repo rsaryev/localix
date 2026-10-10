@@ -127,10 +127,6 @@ export interface VaultAuditEntry {
   createdAt: number
 }
 
-/** Compatibility name for older imports; POST semantics are now create-only. */
-export const setSecretRequestSchema = createSecretRequestSchema
-export type SetSecretRequest = CreateSecretRequest
-
 /** Client-facing metadata — NEVER carries the value. */
 export interface SecretMeta {
   id: string

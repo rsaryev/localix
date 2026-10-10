@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreWorkspaces": ["vendor/**"],
+  "ignoreWorkspaces": ["vendor/**", "plugins/motion"],
   "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {
@@ -9,9 +9,10 @@
         "plugins/*/hooks/**/*.mjs",
         "plugins/*/arg-sources/**/*.ts",
         "scripts/*.mjs",
-        "scripts/*.ts"
+        "scripts/*.ts",
+        "scripts/screenshots/*.mjs"
       ],
-      "project": ["plugins/**/*.{ts,mjs}", "scripts/*.{mjs,ts}"]
+      "project": ["plugins/**/*.{ts,mjs}", "scripts/**/*.{mjs,ts}"]
     },
     "apps/api": {
       "entry": [

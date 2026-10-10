@@ -17,6 +17,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@tiptap/react": "3.31.4",
     "@types/react": "^19.2.17",
     "react-dom": "^19.2.7",
     "vite": "^8.1.4"

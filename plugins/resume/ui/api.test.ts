@@ -5,13 +5,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
 import { createResumeRoutes } from '../backend/routes'
-import { getResumeService } from '../backend/service'
+import { createResumeService } from '../backend/service'
 import { emptyDocument } from '../shared/schema'
 import { resumeApi } from './api'
 
 test('opens an empty library and creates a resume through the actual mounted root route', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'resume-route-'))
-  const app = new Hono().route('/rpc/resume', createResumeRoutes(getResumeService))
+  const app = new Hono().route('/rpc/resume', createResumeRoutes(createResumeService))
   const requests: string[] = []
   const unbind = bindPluginUiTransport({
     url: (path) => path,
