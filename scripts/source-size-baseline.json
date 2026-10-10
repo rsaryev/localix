@@ -22,7 +22,6 @@
   "apps/api/src/features/provider-connections/service.ts": 642,
   "apps/api/src/features/realtime/ws-commands.ts": 456,
   "apps/api/src/features/realtime/ws.ts": 790,
-  "apps/api/src/features/secrets/agent-tool.ts": 375,
   "apps/api/src/features/secrets/store-internals.ts": 427,
   "apps/api/src/features/secrets/store.ts": 432,
   "apps/api/src/features/skills-curator/service.ts": 314,
