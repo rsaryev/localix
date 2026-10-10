@@ -53,9 +53,6 @@ adapter, and backend structure when copying, then replace its domain code. Its
 Contributor references:
 
 - [Database architecture](database/ARCHITECTURE.md) defines driver and workbench ownership.
-- [Resume product purpose](resume/PRODUCT.md) records the plugin's durable scope.
-- [Resume reference contract](resume/REFERENCE.md) defines the adapted workflow.
-- [Resume implementation record](resume/IMPLEMENTATION.md) separates dated checks from pending work.
 
 A plugin is a directory with a `plugin.json` manifest. Depending on that manifest, it can
 contribute:

@@ -125,8 +125,8 @@ immutable, and startup backs up a persisted database before applying new migrati
 
 Core's resource scheduler and mutation observer delegate to the plugin SDK. Plugins use the same
 invalidation and authoritative-read rules through scoped file/store feeds; their domain operations
-and draft merges retain ownership. See the [authoring contract](../extending/plugin-sync.md) and
-[all bundled plugins review](plugin-sync.md) for source coverage and justified fallback timers.
+and draft merges retain ownership. See the [authoring contract](../extending/plugin-sync.md) for
+source coverage and justified fallback timers.
 
 ## Extending the model
 

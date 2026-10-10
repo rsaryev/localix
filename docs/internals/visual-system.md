@@ -307,7 +307,6 @@ change behaviour rather than paint:
 
 ## Related guides
 
-- [Question interaction](question-interaction.md) — the accepted pattern for agent questions.
 - [SDK](sdk.md) — how a plugin reaches these primitives.
 - [Architecture](architecture.md) — where the UI layers sit.
 

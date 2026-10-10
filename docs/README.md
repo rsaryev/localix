@@ -164,8 +164,7 @@ ownership and contracts for work on a particular subsystem.
   and updates.
 - [Workspace scope](internals/single-scope-sidebar.md) ·
   [Client/server sync](internals/client-server-sync.md) — routed state and restoration.
-- [UI virtualization](internals/ui-virtualization.md) ·
-  [Question interaction](internals/question-interaction.md) — rendering and queued questions.
+- [UI virtualization](internals/ui-virtualization.md) — bounded row windows for long lists.
 - [Visual system](internals/visual-system.md) — repository UI components and tokens.
 - [Documentation standards](internals/doc-standards.md) — page structure, evidence, links, and
   captures.

@@ -244,14 +244,10 @@ export const retainedShots = {
 }
 // Historical comparisons, theme demonstrations and transient boot states are not feature evidence.
 export const archiveOnly = [
-  'landing/home',
-  'landing/showcase',
   'workspace/workbench-before',
   'workspace/workbench-after',
   'workspace/workbench-light',
   'workspace/service-starting',
   'workspace/service-error',
   'workspace/board-shortcuts',
-  'resume/editor-light',
-  'plugin-template/system-overview',
 ]

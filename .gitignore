@@ -51,8 +51,11 @@ tmp/
 !.claude/skills/
 .localix/
 
-# Local skill-manager state (not part of the product)
+# Local skill-manager state and third-party agent skills (not part of the product)
 skills-lock.json
+.agents/
+.claude/skills/animate
+.claude/skills/emil-design-eng
 
 # Written into the cwd by a bash read-only test that runs `touch`
 probe-mutation.txt
