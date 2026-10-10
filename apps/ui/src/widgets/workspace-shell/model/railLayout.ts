@@ -151,16 +151,10 @@ export function moveWithinBar(
   id: string,
   delta: number,
 ): RailLayoutState {
-  const { bar } = resolveRailAreas(defs, state)
-  const from = bar.indexOf(id)
-  if (from < 0) return state ?? emptyRailLayout()
-  const to = Math.max(0, Math.min(from + delta, bar.length - 1))
-  // `moveRailItem` measures the index in the list AFTER removal; for a
-  // within-list move the clamped absolute position maps to it directly.
-  return moveRailItem(defs, state, id, 'bar', to)
+  return moveWithinRailArea(defs, state, id, 'bar', delta)
 }
 
-/** Nudge an entry within either visible rail area. */
+/** Nudge an entry within a visible rail area. */
 export function moveWithinRailArea(
   defs: RailItemDef[],
   state: RailLayoutState | null,
@@ -172,6 +166,8 @@ export function moveWithinRailArea(
   const from = ids.indexOf(id)
   if (from < 0) return state ?? emptyRailLayout()
   const to = Math.max(0, Math.min(from + delta, ids.length - 1))
+  // `moveRailItem` measures the index after removal; the clamped absolute
+  // position of a within-area move maps to that index directly.
   return moveRailItem(defs, state, id, area, to)
 }
 
