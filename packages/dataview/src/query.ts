@@ -40,6 +40,10 @@ export interface PagedRows {
   limit: number
 }
 
+function numericValue(value: TableCellValue): number {
+  return typeof value === 'number' ? value : Number(value)
+}
+
 /**
  * Whether a cell holds no value to rank: null/undefined, or — in a numeric column —
  * something that is not a number at all.
@@ -51,14 +55,14 @@ export interface PagedRows {
  */
 function isBlank(value: TableCellValue, numeric: boolean): boolean {
   if (value === null || value === undefined) return true
-  return numeric && Number.isNaN(typeof value === 'number' ? value : Number(value))
+  return numeric && Number.isNaN(numericValue(value))
 }
 
 /** Order two NON-blank cells. Blanks never reach here — see {@link isBlank}. */
 function compareValues(a: TableCellValue, b: TableCellValue, numeric: boolean): number {
   if (numeric) {
-    const an = typeof a === 'number' ? a : Number(a)
-    const bn = typeof b === 'number' ? b : Number(b)
+    const an = numericValue(a)
+    const bn = numericValue(b)
     return an - bn
   }
   return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' })
@@ -98,11 +102,12 @@ export function sortRows(
 export function filterRows(rows: TableRow[], filter: FilterSpec | undefined): TableRow[] {
   if (!filter?.query.trim()) return rows
   const q = filter.query.trim().toLowerCase()
+  const matches = (value: unknown) => formatCell(value).toLowerCase().includes(q)
   if (filter.columnId) {
     const id = filter.columnId
-    return rows.filter((r) => formatCell(r[id]).toLowerCase().includes(q))
+    return rows.filter((r) => matches(r[id]))
   }
-  return rows.filter((r) => Object.values(r).some((v) => formatCell(v).toLowerCase().includes(q)))
+  return rows.filter((r) => Object.values(r).some(matches))
 }
 
 export function queryRows(rows: TableRow[], spec: QuerySpec, columns: TableColumn[]): TableRow[] {
