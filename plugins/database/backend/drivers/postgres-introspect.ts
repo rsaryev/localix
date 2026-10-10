@@ -5,9 +5,7 @@ import type {
   DbCheckConstraint,
   DbExclusionConstraint,
   DbKeyConstraint,
-  DbPostgresPolicy,
   DbPostgresExtendedStatistic,
-  DbPostgresPrivilegeGrant,
   DbSchemas,
   DbTableSchema,
 } from './port'
@@ -21,11 +19,8 @@ import {
 import { recordArray } from '../../shared/safe-record'
 import { postgresRelationScripts } from './postgres-relation-scripts'
 import { postgresColumnSchema } from './postgres-column-schema'
-import {
-  postgresGrantFromRow,
-  postgresOptions,
-  postgresTablePrivileges,
-} from './postgres-catalog-rows'
+import { postgresOptions } from './postgres-catalog-rows'
+import { postgresAccessSchema, postgresRowSecuritySchema } from './postgres-security-schema'
 import type { PgPartitionColumnRow } from './postgres-catalog-rows'
 import { readPgTableCatalog } from './postgres-table-queries'
 export async function pgSchemas(rows: RowsExecutor): Promise<DbSchemas> {
@@ -210,37 +205,7 @@ export async function pgTableSchema(
         ...(foreignTableOptions.length ? { options: foreignTableOptions } : {}),
       }
     : undefined
-  const policies: DbPostgresPolicy[] = policyRows.flatMap((policy) => {
-    const command =
-      policy.command_kind === 'ALL' ||
-      policy.command_kind === 'SELECT' ||
-      policy.command_kind === 'INSERT' ||
-      policy.command_kind === 'UPDATE' ||
-      policy.command_kind === 'DELETE'
-        ? policy.command_kind
-        : undefined
-    if (!command) return []
-    const usingExpression = policy.using_expression?.trim()
-    const checkExpression = policy.check_expression?.trim()
-    return [
-      {
-        name: policy.policy_name,
-        command,
-        permissive: policy.permissive ?? true,
-        roles: policy.roles?.length ? policy.roles : ['PUBLIC'],
-        ...(usingExpression ? { using: usingExpression } : {}),
-        ...(checkExpression ? { withCheck: checkExpression } : {}),
-      },
-    ]
-  })
-  const postgresRowSecurity =
-    relationRow?.row_security || relationRow?.force_row_security || policies.length
-      ? {
-          enabled: Boolean(relationRow?.row_security),
-          forced: Boolean(relationRow?.force_row_security),
-          policies,
-        }
-      : undefined
+  const postgresRowSecurity = postgresRowSecuritySchema(policyRows, relationRow)
   const postgresReplicaIdentity =
     relationRow?.replica_identity === 'n'
       ? ({ mode: 'NOTHING' } as const)
@@ -252,41 +217,7 @@ export async function pgTableSchema(
             ? ({ mode: 'NOTHING' } as const)
             : undefined
   const postgresClusteredIndex = relationRow?.clustered_index?.trim() || undefined
-  const postgresAccess =
-    relationRow?.owner_name && privilegeRows !== undefined
-      ? {
-          owner: relationRow.owner_name,
-          ...(relationRow.acl_explicit
-            ? {
-                tableGrants: privilegeRows.flatMap((row) => {
-                  if (row.column_name !== null) return []
-                  const grant = postgresGrantFromRow(row, postgresTablePrivileges)
-                  return grant ? [grant] : []
-                }),
-              }
-            : {}),
-          ...(() => {
-            const columnGrants = new Map<string, DbPostgresPrivilegeGrant[]>()
-            for (const row of privilegeRows) {
-              if (row.column_name === null) continue
-              const grants = columnGrants.get(row.column_name) ?? []
-              const grant = postgresGrantFromRow(row, postgresTablePrivileges)
-              if (grant) grants.push(grant)
-              columnGrants.set(row.column_name, grants)
-            }
-            return columnGrants.size
-              ? {
-                  columnGrants: [...columnGrants].map(([column, grants]) => ({
-                    column,
-                    grants,
-                  })),
-                }
-              : {}
-          })(),
-        }
-      : relationRow?.owner_name
-        ? { owner: relationRow.owner_name }
-        : undefined
+  const postgresAccess = postgresAccessSchema(privilegeRows, relationRow)
   const postgresExtendedStatistics: DbPostgresExtendedStatistic[] =
     extendedStatisticRows?.flatMap((statistic) => {
       const createScript = statistic.create_script.trim()
