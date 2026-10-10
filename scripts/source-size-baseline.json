@@ -11,7 +11,7 @@
   "apps/api/src/features/context-fabric/manager.ts": 585,
   "apps/api/src/features/context-fabric/plugin-contract-kit.ts": 399,
   "apps/api/src/features/external-agents/backend/service.ts": 416,
-  "apps/api/src/features/mcp/client-manager.ts": 991,
+  "apps/api/src/features/mcp/client-manager.ts": 935,
   "apps/api/src/features/plugins/loader.ts": 402,
   "apps/api/src/features/plugins/marketplace-registry.ts": 332,
   "apps/api/src/features/plugins/service.ts": 701,
