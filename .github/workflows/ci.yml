@@ -226,10 +226,37 @@ jobs:
       - name: Check Rust
         run: bun run check:rust
 
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          # The whole history is published, so the whole history is scanned.
+          fetch-depth: 0
+
+      # A checksummed release binary instead of the gitleaks action, which needs a licence key
+      # for organisation repositories.
+      - name: Install pinned gitleaks
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+
+      - name: Scan history for secrets
+        run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --config .gitleaks.toml .'
+
   ci:
     name: Repository validation
     if: always()
-    needs: [changes, static, rust]
+    needs: [changes, static, rust, secrets]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

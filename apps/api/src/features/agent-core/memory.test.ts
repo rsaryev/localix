@@ -108,7 +108,7 @@ describe('memory tool', () => {
     const global = createMemoryTool(repo, 'user_1') // no project → global
 
     await projA.execute('t1', { action: 'set', key: 'deploy', value: 'A-deploy' })
-    await global.execute('t2', { action: 'set', key: 'name', value: 'Rustam' })
+    await global.execute('t2', { action: 'set', key: 'name', value: 'Ada' })
 
     // Project A sees its own memory; project B does not.
     expect((await projA.execute('t3', { action: 'get', key: 'deploy' })).content).toBe('A-deploy')
@@ -117,8 +117,8 @@ describe('memory tool', () => {
     )
 
     // Both projects see the global memory.
-    expect((await projA.execute('t5', { action: 'get', key: 'name' })).content).toBe('Rustam')
-    expect((await projB.execute('t6', { action: 'get', key: 'name' })).content).toBe('Rustam')
+    expect((await projA.execute('t5', { action: 'get', key: 'name' })).content).toBe('Ada')
+    expect((await projB.execute('t6', { action: 'get', key: 'name' })).content).toBe('Ada')
 
     // Same key can hold different values in different projects.
     await projB.execute('t7', { action: 'set', key: 'deploy', value: 'B-deploy' })

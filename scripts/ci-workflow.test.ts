@@ -92,11 +92,14 @@ describe('CI minute budget contract', () => {
     ).toContain('Missing required gate after build: test')
   })
 
-  test('keeps JavaScript and Rust required by the aggregate status', () => {
-    expect(ci.jobs.ci.needs).toEqual(['changes', 'static', 'rust'])
+  test('keeps JavaScript, Rust, and the secret scan required by the aggregate status', () => {
+    expect(ci.jobs.ci.needs).toEqual(['changes', 'static', 'rust', 'secrets'])
     expect(ci.jobs.ci.if).toBe('always()')
     expect(ci.jobs.rust.if).toBe("needs.changes.outputs.rust == 'true'")
     expect(ci.jobs.rust.steps.some((step) => step.run === 'bun run check:rust')).toBe(true)
+    expect(ci.jobs.secrets.if).toBeUndefined()
+    expect(ci.jobs.secrets.steps[0]?.with?.['fetch-depth']).toBe(0)
+    expect(ci.jobs.secrets.steps.at(-1)?.run).toContain('--config .gitleaks.toml')
   })
 
   test('cancels superseded pushes without cancelling a manual run', () => {

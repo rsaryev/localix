@@ -172,35 +172,79 @@ for (const file of publicReferenceFiles) {
   if (!/\.(?:html|json|md|mjs|ts|tsx|ya?ml)$/u.test(file)) continue
   const content = await readFile(join(root, file), 'utf8')
   content.split(/\r?\n/u).forEach((line, index) => {
-    for (const match of line.matchAll(/https:\/\/github\.com\/localixai\/([A-Za-z0-9._-]+)/gu)) {
+    for (const match of line.matchAll(
+      /https:\/\/github\.com\/(localixai|rsaryev)\/([A-Za-z0-9._-]+)/gu,
+    )) {
       // `repository.url` clones carry a `.git` suffix; it names the same repository.
-      const repository = match[1].replace(/\.git$/u, '')
+      const repository = match[2].replace(/\.git$/u, '')
       if (repository === CANONICAL_REPOSITORY) continue
-      stalePublicRepositoryReferences.push(`${file}:${index + 1} -> ${repository}`)
+      stalePublicRepositoryReferences.push(`${file}:${index + 1} -> ${match[1]}/${repository}`)
     }
   })
 }
 assert.deepEqual(
   stalePublicRepositoryReferences,
   [],
-  `Public-facing files link to a repository other than localixai/${CANONICAL_REPOSITORY}:\n${stalePublicRepositoryReferences.join('\n')}`,
+  `Public-facing files link to a repository other than ${CANONICAL_REPOSITORY}:\n${stalePublicRepositoryReferences.join('\n')}`,
 )
 
-const genericFixtureUsers = new Set(['dev', 'me', 'nobody', 'someone', 'x'])
+const genericFixtureUsers = new Set([
+  'ada',
+  'build',
+  'dev',
+  'foo',
+  'linuxbrew',
+  'me',
+  'meg',
+  'nobody',
+  'path',
+  'runner',
+  'runneradmin',
+  'someone',
+  'u',
+  'user',
+  'x',
+  'zoë',
+])
+const homePathPatterns = [
+  /\/Users\/([A-Za-z0-9._-]+)\//gu,
+  /\/home\/([A-Za-z0-9._-]+)\//gu,
+  /C:(?:\\+|\/)Users(?:\\+|\/)([\p{L}\p{N}._-]+)/giu,
+]
+// Third-party code keeps its upstream author credits; first-party files never carry a personal
+// mailbox, which would publish a contributor's private address with the source.
+const personalMailbox =
+  /[A-Za-z0-9._%+-]+@(?:gmail|googlemail|yahoo|outlook|hotmail|live|icloud|me|proton|protonmail|yandex|mail)\.(?:com|ru|me|ch)\b/giu
 const personalHomePaths = []
+const personalMailboxes = []
 for (const file of repositoryFiles) {
   if (!/\.(?:c|cjs|css|html|js|json|jsx|md|mjs|rs|sh|toml|ts|tsx|txt|ya?ml|zsh)$/u.test(file)) {
     continue
   }
   const content = await readFile(join(root, file), 'utf8')
-  for (const match of content.matchAll(/\/Users\/([A-Za-z0-9._-]+)\//gu)) {
-    if (!genericFixtureUsers.has(match[1])) personalHomePaths.push(`${file}: /Users/${match[1]}/`)
+  // Vendored upstream sources keep their own illustrative Linux and Windows paths.
+  for (const pattern of file.startsWith('vendor/')
+    ? homePathPatterns.slice(0, 1)
+    : homePathPatterns) {
+    for (const match of content.matchAll(pattern)) {
+      const user = match[1].toLowerCase()
+      if (user.startsWith('.') || genericFixtureUsers.has(user)) continue
+      personalHomePaths.push(`${file}: ${match[0]}`)
+    }
   }
+  if (file.startsWith('vendor/')) continue
+  for (const match of content.matchAll(personalMailbox))
+    personalMailboxes.push(`${file}: ${match[0]}`)
 }
 assert.deepEqual(
   personalHomePaths,
   [],
   `Public source must use synthetic home paths instead of contributor metadata:\n${personalHomePaths.join('\n')}`,
+)
+assert.deepEqual(
+  personalMailboxes,
+  [],
+  `Public source must not carry personal email addresses:\n${personalMailboxes.join('\n')}`,
 )
 
 const forbiddenRepositoryPatterns = [
@@ -213,9 +257,11 @@ const forbiddenRepositoryPatterns = [
   },
   { pattern: /\.(?:log|sqlite|sqlite-shm|sqlite-wal|tgz)$/u, reason: 'runtime or packed output' },
   {
-    pattern: /\.(?:pem|p12|pfx|key)$/u,
+    pattern: /\.(?:pem|p12|p8|pfx|key|cer|jks|keystore|mobileprovision)$/u,
     reason: 'private key or certificate container',
   },
+  { pattern: /(^|\/)id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?$/u, reason: 'SSH key' },
+  { pattern: /(^|\/)\.(?:npmrc|netrc|envrc)$/u, reason: 'credential configuration' },
 ]
 
 const forbiddenRepositoryFiles = []

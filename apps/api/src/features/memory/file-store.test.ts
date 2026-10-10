@@ -238,7 +238,7 @@ describe('file-backed repository migration', () => {
           user_id: 'local-user',
           project_id: '',
           key: 'name',
-          value: 'Rustam',
+          value: 'Ada',
           created_at: now,
           updated_at: now,
         },
@@ -259,7 +259,7 @@ describe('file-backed repository migration', () => {
     const notes = await repo.list('local-user', ['', 'proj-1'], 'key')
     expect(notes).toEqual([
       { key: 'deploy', value: 'fly.io', projectId: 'proj-1' },
-      { key: 'name', value: 'Rustam', projectId: '' },
+      { key: 'name', value: 'Ada', projectId: '' },
     ])
 
     expect(await readFile(path.join(baseDir, 'MEMORY.md'), 'utf8')).toContain('## name')

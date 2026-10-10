@@ -25,7 +25,28 @@ pnpm-debug.log*
 
 .env
 .env.*
+.envrc
+*.local.*
 .turbo
+target/
+logs/
+
+# Signing material and credential files never belong in the repository; release keys arrive
+# through CI secrets.
+*.pem
+*.p12
+*.p8
+*.pfx
+*.cer
+*.jks
+*.keystore
+*.mobileprovision
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+.npmrc
+.netrc
 # Local Vercel link and pulled settings (apps/landing deploys from CI; nothing here is source).
 .vercel
 benchmarks/
