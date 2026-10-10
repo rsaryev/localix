@@ -1,8 +1,8 @@
 /**
- * Parsing + column-type inference. Dependency-free RFC-4180-ish CSV/TSV parser
- * (handles quoted fields, "" escapes, CRLF/LF) plus JSON ingest.
+ * Table import and column-type inference for delimited text and JSON.
  */
 
+import { parseDelimited } from './delimited-text'
 import { inferColumns, inferColumnsFromObjects } from './column-inference'
 import { coerceCell, type TableCellValue, type TableColumn, type TableRow } from './model'
 
@@ -13,103 +13,12 @@ export interface ParsedTable {
 
 export type TableFormat = 'csv' | 'tsv' | 'json'
 
-/**
- * A genuinely BLANK line: one field, and that field empty.
- *
- * This filter used to be `!r.some((c) => c !== '')` — drop the row when EVERY cell is empty — which
- * silently ate real data: a row of `,` is two empty cells, not a blank line, and it round-tripped
- * from `toCsv` to zero rows. Measured before changing: a two-column table whose only row was
- * `{a:'', b:''}` exported and re-parsed as 0 rows.
- *
- * The line/all-empty distinction is exactly Papa Parse's (MIT) `testEmptyLine`:
- *
- *   skipEmptyLines === 'greedy' ? s.join('').trim() === '' : s.length === 1 && s[0].length === 0
- *
- * i.e. "all cells blank" is its opt-in `'greedy'` mode, while the plain default — and what a reader
- * of exported data wants — is the single-empty-field test used here. A trailing newline still
- * produces no row, because that line has exactly one empty field.
- */
+/** Skip single empty fields; a row of delimiters represents real empty cells. */
 function isBlankLine(cells: string[]): boolean {
   return cells.length === 1 && cells[0] === ''
 }
 
-/** Split delimited text into a matrix of string cells. */
-export function parseDelimited(text: string, delimiter = ','): string[][] {
-  const rows: string[][] = []
-  let field = ''
-  let row: string[] = []
-  let inQuotes = false
-  // A field can be present and still be EMPTY — `""` is a field, the absence of one
-  // is not. Length alone cannot tell them apart, so remember that a field was opened.
-  // Without this, a one-column file ending in `""` (no trailing newline) lost its
-  // last row entirely: at EOF both `field` and `row` were empty, exactly as they are
-  // after a normal trailing terminator.
-  let fieldOpened = false
-  let i = 0
-  const n = text.length
-  if (n > 0 && text.charCodeAt(0) === 0xfeff) i = 1 // strip BOM
-
-  while (i < n) {
-    const ch = text[i]
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          field += '"'
-          i += 2
-          continue
-        }
-        inQuotes = false
-        i++
-        continue
-      }
-      field += ch
-      i++
-      continue
-    }
-    if (ch === '"') {
-      inQuotes = true
-      fieldOpened = true
-      i++
-      continue
-    }
-    if (ch === delimiter) {
-      row.push(field)
-      field = ''
-      fieldOpened = false
-      i++
-      continue
-    }
-    if (ch === '\r') {
-      row.push(field)
-      field = ''
-      fieldOpened = false
-      rows.push(row)
-      row = []
-      if (text[i + 1] === '\n') i += 2
-      else i++
-      continue
-    }
-    if (ch === '\n') {
-      row.push(field)
-      field = ''
-      fieldOpened = false
-      rows.push(row)
-      row = []
-      i++
-      continue
-    }
-    field += ch
-    i++
-  }
-  // A trailing terminator ENDS the last record rather than starting another, so an
-  // empty tail is normally nothing. `fieldOpened` is what distinguishes that from a
-  // real, explicitly-quoted empty final field.
-  if (field.length > 0 || row.length > 0 || fieldOpened) {
-    row.push(field)
-    rows.push(row)
-  }
-  return rows
-}
+export { parseDelimited } from './delimited-text'
 
 export { inferType, inferColumns, inferColumnsFromObjects } from './column-inference'
 

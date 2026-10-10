@@ -58,6 +58,16 @@ describe('parseDelimited', () => {
   test('a BOM is stripped and CR / CRLF / LF all terminate a record', () => {
     expect(parseDelimited('﻿a\r\n1\n2\r3')).toEqual([['a'], ['1'], ['2'], ['3']])
   })
+
+  test('mixed record separators preserve quoted CRLF and reset empty fields between rows', () => {
+    expect(parseDelimited('a,b\r\n"line\r\ninside",x\ry,z\n,\r\n"",last')).toEqual([
+      ['a', 'b'],
+      ['line\r\ninside', 'x'],
+      ['y', 'z'],
+      ['', ''],
+      ['', 'last'],
+    ])
+  })
 })
 
 describe('CSV survives its own round trip', () => {
