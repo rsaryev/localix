@@ -342,6 +342,31 @@ describe('UI location catalog frontend sync', () => {
     stop()
   })
 
+  test('ignores a publication completing after teardown and drains no queued follow-up', async () => {
+    let complete!: (value: { catalogId: string }) => void
+    const pending = new Promise<{ catalogId: string }>((resolve) => {
+      complete = resolve
+    })
+    const publish = mock(async () => pending)
+    const h = harness(publish)
+    const stop = createUiLocationCatalogSync('project-7', h.ports)
+    try {
+      h.queued.shift()!()
+      h.update(snapshot(2, 'New terminal'))
+      stop()
+      complete({ catalogId: 'ui1_retired' })
+      while (h.queued.length > 0) h.queued.shift()!()
+      await tick()
+
+      expect(publish).toHaveBeenCalledTimes(1)
+      expect(h.published).toEqual([])
+      expect(h.retries).toEqual([])
+      expect(h.unsubscribed).toEqual(['locations', 'reconnect'])
+    } finally {
+      complete({ catalogId: 'ui1_retired' })
+    }
+  })
+
   test('force-publishes unchanged content after a transport reconnect', async () => {
     const publish = mock(
       async (_projectId: string | null, _snapshot: UiAgentLocationCatalogSnapshot) => ({
