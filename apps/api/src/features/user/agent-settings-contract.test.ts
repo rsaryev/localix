@@ -139,12 +139,17 @@ describe('agentSettingsSchema — only executable settings are advertised', () =
   test('rejects partial assignments and reasoning without a model', () => {
     expect(() =>
       agentSettingsSchema.parse({
-        modelRouting: { compression: { providerConnectionId: 'conn' } },
+        modelRouting: { session: { providerConnectionId: 'conn' } },
       }),
     ).toThrow()
     expect(() =>
       agentSettingsSchema.parse({
-        modelRouting: { compression: { reasoningEffort: 'low' } },
+        modelRouting: { session: { modelId: 'model' } },
+      }),
+    ).toThrow()
+    expect(() =>
+      agentSettingsSchema.parse({
+        modelRouting: { session: { reasoningEffort: 'low' } },
       }),
     ).toThrow()
   })

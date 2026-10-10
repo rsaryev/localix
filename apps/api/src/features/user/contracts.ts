@@ -2,18 +2,15 @@ import { z } from 'zod'
 import { MAX_MAX_TURNS } from '../chat/turn-budget'
 import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
 import { REASONING_EFFORTS } from '../../db/types'
-import {
-  isModelRoutingTaskKey,
-  MODEL_ROUTING_TASKS,
-  type ModelRoutingTaskKey,
-} from '../chat/model-task-catalog'
+import { isModelRoutingTaskKey } from '../chat/model-task-catalog'
 import {
   AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
   UI_SETTINGS_MAX_SERIALIZED_CHARS,
   isAgentSettingsWithinIngressBudget,
   isUiSettingsWithinIngressBudget,
 } from './profile-limits'
-import { modelIdSchema, providerConnectionIdSchema } from '../catalog/model-identity'
+import { modelIdSchema } from '../catalog/model-identity'
+import { modelRoutingSchema } from './model-routing-schema'
 
 type NullablePatchShape<T extends z.ZodRawShape> = {
   [K in keyof T]: z.ZodOptional<z.ZodNullable<T[K]>>
@@ -64,64 +61,11 @@ export const uiSettingsPatchSchema = z
     message: `UI settings patch must serialize to at most ${UI_SETTINGS_MAX_SERIALIZED_CHARS} characters`,
   })
 
-const modelRoutingTaskKeys = MODEL_ROUTING_TASKS.map((task) => task.key) as [
-  ModelRoutingTaskKey,
-  ...ModelRoutingTaskKey[],
-]
-const modelRoutingTaskKeySchema = z.enum(modelRoutingTaskKeys)
-const modelReasoningPreferenceSchema = z.object({
-  providerId: z.string().min(1),
-  modelId: modelIdSchema,
-  effort: z.enum(REASONING_EFFORTS),
-})
-const modelReasoningPreferencesSchema = z
-  .array(modelReasoningPreferenceSchema)
-  .max(50)
-  .superRefine((preferences, ctx) => {
-    const pairs = new Set<string>()
-    for (const [index, preference] of preferences.entries()) {
-      const pair = `${preference.providerId}\u0000${preference.modelId}`
-      if (pairs.has(pair)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: [index],
-          message: 'reasoning preference provider/model pairs must be unique',
-        })
-      }
-      pairs.add(pair)
-    }
-  })
-const modelRouteSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    providerConnectionId: providerConnectionIdSchema.optional(),
-    modelId: modelIdSchema.optional(),
-    reasoningEffort: z.enum(REASONING_EFFORTS).optional(),
-    /** Per-workload memory keyed by the durable provider/model pair. */
-    reasoningPreferences: modelReasoningPreferencesSchema.optional(),
-  })
-  .superRefine((route, ctx) => {
-    const hasProvider = route.providerConnectionId !== undefined
-    const hasModel = route.modelId !== undefined
-    if (hasProvider !== hasModel) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'providerConnectionId and modelId must be set together',
-      })
-    }
-    if (route.reasoningEffort !== undefined && !hasModel) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'reasoningEffort requires a provider/model assignment',
-      })
-    }
-  })
 const agentSettingsShape = {
   /** Settings-envelope revision for the current canonical schema. */
   schemaVersion: z.literal(1).optional(),
   /** User-wide Context Fabric exclusions, relative to each session workspace. */
   contextExclusions: contextExclusionsSchema.optional(),
-  /** Tool names disabled for sessions that are not attached to a project. */
   /**
    * Max agent turns (tool batches) per run before the loop hard-stops. Absent → a
    * high default (1000) that effectively never stops a productive run; lower it to
@@ -138,13 +82,12 @@ const agentSettingsShape = {
    * `agent-core/tool-gc.ts`.
    */
   toolBudgetWarn: z.number().int().positive().optional(),
-  /** Permission rules for sessions that are not attached to a project. */
   /**
    * Canonical per-workload route. Availability, exact provider/model assignment,
    * and reasoning live together; switching a workload off preserves the rest of
    * its record. Missing assignment fields mean the catalog fallback.
    */
-  modelRouting: z.partialRecord(modelRoutingTaskKeySchema, modelRouteSchema).optional(),
+  modelRouting: modelRoutingSchema.optional(),
   /** Parameters remembered separately for every agent/provider/model, across chats. */
   agentModelSettings: z
     .array(
