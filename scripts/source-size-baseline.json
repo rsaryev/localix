@@ -95,7 +95,7 @@
   "plugins/reader/ui/ReaderLibraryDialogs.tsx": 480,
   "plugins/reader/ui/ReaderLibraryPane.tsx": 906,
   "plugins/reader/ui/ReaderReadingPane.tsx": 2432,
-  "plugins/reader/ui/model.ts": 558,
+  "plugins/reader/ui/model.ts": 510,
   "plugins/reader/ui/reader.css": 576,
   "plugins/reader/ui/readerParts.tsx": 316,
   "plugins/reader/ui/useReaderTextSelection.ts": 325,
