@@ -97,6 +97,9 @@ describe('CI minute budget contract', () => {
     expect(ci.jobs.ci.if).toBe('always()')
     expect(ci.jobs.rust.if).toBe("needs.changes.outputs.rust == 'true'")
     expect(ci.jobs.rust.steps.some((step) => step.run === 'bun run check:rust')).toBe(true)
+    expect(
+      ci.jobs.rust.steps.some((step) => step.run?.includes('cargo-deny" --locked check')),
+    ).toBe(true)
     expect(ci.jobs.secrets.if).toBeUndefined()
     expect(ci.jobs.secrets.steps[0]?.with?.['fetch-depth']).toBe(0)
     expect(ci.jobs.secrets.steps.at(-1)?.run).toContain('--config .gitleaks.toml')

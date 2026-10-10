@@ -1,0 +1,5 @@
+[toolchain]
+# The version CI and the release workflow pin (RUST_TOOLCHAIN); rustup installs it on first use.
+channel = "1.96.1"
+components = ["clippy", "rustfmt"]
+profile = "minimal"
