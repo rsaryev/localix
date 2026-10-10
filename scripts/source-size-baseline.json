@@ -105,7 +105,7 @@
   "plugins/git-workspace/backend/source-control/service.ts": 608,
   "plugins/learning/backend/course-bundle.ts": 533,
   "plugins/learning/backend/service.ts": 307,
-  "plugins/reader/backend/library.ts": 478,
+  "plugins/reader/backend/library.ts": 396,
   "plugins/reader/backend/mobi.ts": 344,
   "plugins/reader/backend/routes.ts": 341,
   "plugins/reader/backend/service.ts": 578,
