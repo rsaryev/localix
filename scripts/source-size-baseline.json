@@ -93,7 +93,6 @@
   "plugins/api/ui/ui/EnvironmentEditor.tsx": 498,
   "plugins/api/ui/ui/PairEditor.tsx": 383,
   "plugins/api/ui/ui/ResponsePane.tsx": 419,
-  "plugins/database/backend/db-schema.ts": 394,
   "plugins/database/backend/drivers/clickhouse.ts": 508,
   "plugins/database/backend/drivers/mssql-introspect.ts": 694,
   "plugins/database/backend/drivers/mysql-introspect.ts": 315,
