@@ -69,7 +69,6 @@
   "apps/ui/src/shared/contrib/uiLocationCatalogSync.ts": 305,
   "apps/ui/src/shared/contrib/uiLocations.ts": 487,
   "apps/ui/src/shared/hooks/useAutoScroll.ts": 636,
-  "apps/ui/src/shared/lib/keybindings/catalog.ts": 372,
   "apps/ui/src/shared/ui/MarkdownRendererImpl.tsx": 561,
   "apps/ui/src/shared/ui/code-editor/CodeEditor.tsx": 749,
   "apps/ui/src/shared/ui/code-editor/monaco/editPrediction.ts": 355,
