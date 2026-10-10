@@ -9,19 +9,18 @@ details, use the [plugin authoring guide](../docs/extending/plugins.md).
 
 ## Workbenches
 
-| Plugin                          | Product surface                                                    |
-| ------------------------------- | ------------------------------------------------------------------ |
-| [Code Graph](code-graph/)       | Project files, symbols, imports, calls, and graph queries.         |
-| [Database](database/)           | SQL and data-source connections, schemas, and queries.             |
-| [DevOps](devops/)               | Docker and Kubernetes inspection and operations.                   |
-| [Documents](documents/)         | Extraction, generation, viewers, tables, and charts.               |
-| [Learning Studio](learning/)    | File-authored courses, lessons, assessment, and progress.          |
-| [Motion Studio](motion/)        | Motion templates, scene editing, agent authoring and video export. |
-| [Project Space](project-space/) | Shared notes and live file cards on a canvas.                      |
-| [Reader](reader/)               | Local books and documents with annotations and agent context.      |
-| [Resumes](resume/)              | Resume fields, templates, preview, and document export.            |
-| [System Overview](template/)    | OS, CPU, memory, and process inspection; the workbench scaffold.   |
-| [Trading](trading/)             | Public market data; no order placement.                            |
+| Plugin                          | Product surface                                                  |
+| ------------------------------- | ---------------------------------------------------------------- |
+| [Code Graph](code-graph/)       | Project files, symbols, imports, calls, and graph queries.       |
+| [Database](database/)           | SQL and data-source connections, schemas, and queries.           |
+| [DevOps](devops/)               | Docker and Kubernetes inspection and operations.                 |
+| [Documents](documents/)         | Extraction, generation, viewers, tables, and charts.             |
+| [Learning Studio](learning/)    | File-authored courses, lessons, assessment, and progress.        |
+| [Project Space](project-space/) | Shared notes and live file cards on a canvas.                    |
+| [Reader](reader/)               | Local books and documents with annotations and agent context.    |
+| [Resumes](resume/)              | Resume fields, templates, preview, and document export.          |
+| [System Overview](template/)    | OS, CPU, memory, and process inspection; the workbench scaffold. |
+| [Trading](trading/)             | Public market data; no order placement.                          |
 
 ## Workflow and integration plugins
 

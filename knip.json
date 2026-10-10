@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreWorkspaces": ["vendor/**", "plugins/motion"],
+  "ignoreWorkspaces": ["vendor/**"],
   "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {

@@ -1,30 +1,5 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
-  'motion/empty-library': {
-    guide: 'features/motion-studio.md',
-    purpose: 'An empty motion library with one centered creation action',
-    scenario: 'motion-empty',
-  },
-  'motion/templates': {
-    guide: 'features/motion-studio.md',
-    purpose: 'Eleven playable motion directions, each a complete sample film',
-    scenario: 'motion-library',
-  },
-  'motion/template-preview': {
-    guide: 'features/motion-studio.md',
-    purpose: 'Watch a direction large before Use direction forks it into the workspace',
-    scenario: 'motion-template-preview',
-  },
-  'motion/projects': {
-    guide: 'features/motion-studio.md',
-    purpose: 'A quiet film list with one creation action',
-    scenario: 'motion-projects',
-  },
-  'motion/film': {
-    guide: 'features/motion-studio.md',
-    purpose: 'A forked film playing as the hero, with its sample-copy reminder',
-    scenario: 'motion-film',
-  },
   'task-board/board': {
     guide: 'features/task-board.md',
     purpose: 'Four seeded cards with a real keyboard move persisted from Backlog to Ready',

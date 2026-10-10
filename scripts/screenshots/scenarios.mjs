@@ -46,16 +46,6 @@ async function editor(page) {
 }
 
 export async function compose(page, scenario) {
-  if (
-    [
-      'motion-empty',
-      'motion-library',
-      'motion-template-preview',
-      'motion-projects',
-      'motion-film',
-    ].includes(scenario)
-  )
-    return (await import('./motion-workbench.mjs')).composeMotion(page, scenario)
   if (['kanban-board', 'kanban-conversation'].includes(scenario))
     return (await import('./kanban-workbenches.mjs')).composeKanban(page, scenario)
   if (scenario === 'session-window-drag')
