@@ -97,7 +97,6 @@
   "plugins/database/backend/drivers/mssql-introspect.ts": 694,
   "plugins/database/backend/drivers/postgres-introspect.ts": 605,
   "plugins/database/backend/drivers/postgres-table-queries.ts": 978,
-  "plugins/database/backend/drivers/sqlite.ts": 347,
   "plugins/database/backend/resource-provider.ts": 545,
   "plugins/database/backend/service.ts": 416,
   "plugins/database/ui/model/useSqlConsole.ts": 324,
