@@ -11,7 +11,8 @@ import {
   type PluginProvides,
 } from './contracts'
 import { mapCcTools, parseAgentFile, parseCommandFile } from './discovery-cc-files'
-import { findManifestPath, type DiscoveredPlugin } from './discovery'
+import { findManifestPath } from './discovery'
+import type { DiscoveredPlugin } from './discovery-types'
 import { resolveEntrypoints } from './discovery-entrypoints'
 import { parseManifestFile } from './discovery-manifest-recovery'
 import { agentContributionSchema } from '../agents/contribution'

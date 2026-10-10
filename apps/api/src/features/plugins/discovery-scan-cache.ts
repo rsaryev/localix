@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { DiscoveredPlugin } from './discovery'
+import type { DiscoveredPlugin } from './discovery-types'
 
 export const SCAN_CACHE_VERSION = 1
 export const SCAN_CACHE_FILE = 'plugin-scan-cache-v1.json'

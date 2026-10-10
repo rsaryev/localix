@@ -5,19 +5,10 @@ import { normalizeCcToolName } from '../ext/cc-tool-names'
 import { resolveBundledRoot } from '../../lib/bundled-root'
 import { envString } from '../../lib/env'
 
-import type { PluginAgent, PluginCommand, PluginManifest, PluginProvides } from './contracts'
-import type { ResolvedEntrypoints } from './discovery-entrypoints'
+import type { DiscoveredPlugin } from './discovery-types'
 import { syncBundledPlugins } from './bundled-install'
 
-import {
-  SCAN_CACHE_VERSION,
-  SCAN_CACHE_FILE,
-  fingerprintPath,
-  buildScanFingerprint,
-  fingerprintMatches,
-  readScanCache,
-  writeScanCache,
-} from './discovery-scan-cache'
+import { scanDirsCached } from './discovery-cached-scan'
 
 import { scanDirs } from './discovery-directory-scan'
 export { findManifestPath } from './discovery-directory-scan'
@@ -41,12 +32,6 @@ export { resolveEntrypoints, type ResolvedEntrypoints } from './discovery-entryp
 
 const PLUGIN_SUBDIRS = ['.localix/plugins']
 const BUNDLED_STAGING_MARKER = '.localix-staged.json'
-const SCAN_CACHE_REVALIDATE_MS = 3_000
-
-const scanCacheRevalidations = new Map<string, Promise<void>>()
-// A boot's backend host, cache warm and first snapshots may request the same scope
-// together. Share only in-flight scans; a later call must still check the filesystem.
-const scansInFlight = new Map<string, Promise<DiscoveredPlugin[]>>()
 
 /**
  * Repo/packaged first-party plugin SOURCE root. Normal runtime discovery never
@@ -83,42 +68,7 @@ export async function bundledPluginsSyncRoot(): Promise<string | null> {
   return null
 }
 
-export interface DiscoveredPlugin {
-  manifest: PluginManifest
-  /**
-   * The raw parsed manifest object (pre-zod), kept so the validator can inspect
-   * Claude Code spec fields our schema strips (lspServers, monitors, hooks-as-path…)
-   * and flag cross-spec compatibility issues. Undefined on read/parse failure.
-   */
-  rawManifest?: Record<string, unknown>
-  /** Absolute plugin directory. */
-  dir: string
-  scope: 'global' | 'project'
-  /** '' for global; the active project id for project-scoped plugins. */
-  projectId: string
-  entrypoints: ResolvedEntrypoints
-  /** Static capabilities (everything except native tool names, which need a load). */
-  provides: PluginProvides
-  /** Resolved slash-commands: inline manifest objects + Claude Code flat `.md` files. */
-  commands: PluginCommand[]
-  /** Resolved worker roles: inline manifest objects + Claude Code `agents/*.md` files. */
-  agents: PluginAgent[]
-  /** True for a managed first-party copy synchronized into the global Localix root. */
-  bundled: boolean
-  /** Manifest parse/validation error — the plugin still surfaces in the UI. */
-  error?: string
-  /**
-   * True when the manifest had parse issues that were gracefully recovered (e.g.
-   * unsupported config-option types were stripped). The plugin is NOT skipped by
-   * the loader — `error` contains the non-fatal warning for the UI/validation report.
-   */
-  manifestRecovered?: boolean
-  /**
-   * Compatibility flag for an explicitly installed Claude-format plugin. Derived
-   * from its `.claude-plugin/plugin.json` layout inside a Localix discovery root.
-   */
-  ccOrigin?: boolean
-}
+export type { DiscoveredPlugin } from './discovery-types'
 
 /** Return true if the path exists and is accessible, false otherwise. */
 export const pathExists = _pathExists
@@ -132,89 +82,6 @@ export { normalizeCcToolName }
 // loader, and the discovery/validate tests. (parseInlineCommands/readSkillNames
 // are loadManifest internals — not re-exported, no external consumer.)
 export { loadManifest } from './manifest-load'
-
-async function scanDirsCached(
-  baseDir: string,
-  subdirs: string[],
-  scope: 'project' | 'global',
-  projectId: string,
-  opts?: {
-    bundledNames?: ReadonlySet<string>
-  },
-): Promise<DiscoveredPlugin[]> {
-  const roots = subdirs.map((sub) => (sub ? join(baseDir, sub) : baseDir))
-  const cacheFile = join(baseDir, '.localix', 'cache', SCAN_CACHE_FILE)
-  const bundledNames = [...(opts?.bundledNames ?? [])].sort()
-  const scanKey = JSON.stringify({
-    version: SCAN_CACHE_VERSION,
-    roots,
-    scope,
-    projectId,
-    bundledNames,
-  })
-  const inFlightKey = JSON.stringify([cacheFile, scanKey])
-  const existing = scansInFlight.get(inFlightKey)
-  if (existing) return existing
-  const pending = (async () => {
-    const cached = await readScanCache(cacheFile)
-
-    if (
-      cached?.scanKey === scanKey &&
-      cached.fingerprint.length > 0 &&
-      (await fingerprintMatches(cached.fingerprint))
-    ) {
-      /**
-       * Return the mtime/version-keyed cache immediately, then throttle a real scan off
-       * the critical path.
-       * Keep one validator per cache file; if reality differs it atomically replaces
-       * the cache, so the next read cannot keep winning with stale data.
-       */
-      if (!scanCacheRevalidations.has(cacheFile)) {
-        const validation = new Promise<void>((resolveDelay) => {
-          const timer = setTimeout(resolveDelay, SCAN_CACHE_REVALIDATE_MS)
-          timer.unref?.()
-        })
-          .then(async () => {
-            // Test fixtures and deleted workspaces can disappear before the deferred pass.
-            if (!(await fingerprintPath(baseDir))) return
-            const actual = await scanDirs(baseDir, subdirs, scope, projectId, opts)
-            const fingerprint = await buildScanFingerprint(roots)
-            if (
-              JSON.stringify(actual) !== JSON.stringify(cached.plugins) ||
-              JSON.stringify(fingerprint) !== JSON.stringify(cached.fingerprint)
-            ) {
-              await writeScanCache(cacheFile, {
-                version: SCAN_CACHE_VERSION,
-                scanKey,
-                fingerprint,
-                plugins: actual,
-              })
-            }
-          })
-          .finally(() => scanCacheRevalidations.delete(cacheFile))
-        scanCacheRevalidations.set(cacheFile, validation)
-      }
-      return cached.plugins
-    }
-
-    // Any version/key/mtime mismatch takes the full-scan path; stale cache data is
-    // never returned after a fingerprint mismatch.
-    const plugins = await scanDirs(baseDir, subdirs, scope, projectId, opts)
-    await writeScanCache(cacheFile, {
-      version: SCAN_CACHE_VERSION,
-      scanKey,
-      fingerprint: await buildScanFingerprint(roots),
-      plugins,
-    })
-    return plugins
-  })()
-  scansInFlight.set(inFlightKey, pending)
-  try {
-    return await pending
-  } finally {
-    if (scansInFlight.get(inFlightKey) === pending) scansInFlight.delete(inFlightKey)
-  }
-}
 
 /**
  * Discover plugins visible to a scope. Explicit or staged first-party artifacts

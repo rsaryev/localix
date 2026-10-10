@@ -3,7 +3,7 @@ import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { isExtensionPublicationArtifact } from '../ext/publish-tree'
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
-import type { DiscoveredPlugin } from './discovery'
+import type { DiscoveredPlugin } from './discovery-types'
 
 /**
  * Locate a plugin's manifest. We support BOTH our native layout (`plugin.json` at
