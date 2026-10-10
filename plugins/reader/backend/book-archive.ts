@@ -91,3 +91,11 @@ export function unzipBounded(bytes: Uint8Array, label: string): Record<string, U
   }
   return files
 }
+
+export function xmlText(document: Document, names: string[]): string | undefined {
+  for (const name of names) {
+    const value = document.getElementsByTagName(name)[0]?.textContent?.trim()
+    if (value) return value
+  }
+  return undefined
+}
