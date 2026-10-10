@@ -8,7 +8,7 @@ import { localixHome } from '../../lib/env'
 import { createAesCipher, type SecretCipher } from './cipher'
 import { loadOrCreateMasterKey } from './master-key'
 import type { VaultItemType } from './contracts'
-import type { SecretsStore, VaultItemMetadata } from './store'
+import type { SecretsStore, VaultItemMetadata } from './store-contracts'
 
 /** Read-only source used by the typed-vault upgrade. */
 export function defaultLegacySecretsDir(): string {

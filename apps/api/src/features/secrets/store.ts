@@ -5,15 +5,8 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { localixHome } from '../../lib/env'
-import type {
-  CreateSecretRequest,
-  SecretMeta,
-  UpdateSecretMetadataRequest,
-  VaultAuditEntry,
-  VaultItemSource,
-  VaultItemType,
-  VaultVersionMeta,
-} from './contracts'
+import type { SecretsStore } from './store-contracts'
+import { createSecretsQueries } from './store-queries'
 import { createAesCipher, type SecretCipher } from './cipher'
 import { loadOrCreateMasterKey } from './master-key'
 import {
@@ -22,7 +15,6 @@ import {
   insertAudit,
   metadataFor,
   rotateItem,
-  toMeta,
   updateItemMetadata,
   VaultPayloadError,
 } from './store-internals'
@@ -30,90 +22,15 @@ import {
 export { defaultLegacySecretsDir, migrateLegacySecrets } from './legacy-migration'
 export { VaultPayloadError } from './store-internals'
 
-export interface VaultItemMetadata {
-  label?: string
-  description?: string
-  type?: VaultItemType
-  source?: VaultItemSource
-  tags?: string[]
-  backend?: string
-  audit?: VaultUseContext
-}
-
-export type VaultResolution =
-  | { status: 'ok'; value: string; itemId: string; version: number }
-  | { status: 'missing' }
-  | { status: 'corrupt'; itemId: string }
-  | { status: 'unavailable'; itemId: string; backend: string }
-
-export type VaultMutationResult =
-  | { status: 'updated'; item: SecretMeta }
-  | { status: 'missing' }
-  | { status: 'conflict'; currentVersion: number }
-
-export interface VaultBinding {
-  consumerType: string
-  consumerId: string
-  field: string
-  label: string
-}
-
-export type VaultDeleteResult =
-  | { status: 'deleted' }
-  | { status: 'missing' }
-  | { status: 'conflict'; currentVersion: number }
-  | { status: 'in_use'; bindings: VaultBinding[] }
-
-export interface VaultUseContext {
-  actorType?: 'user' | 'agent' | 'plugin' | 'system'
-  actorId?: string
-  consumerType?: string
-  consumerId?: string
-}
-
-export interface SecretsStore {
-  list(userId: string): Promise<SecretMeta[]>
-  listVersions(userId: string, key: string): Promise<VaultVersionMeta[]>
-  listAudit(userId: string, limit?: number): Promise<VaultAuditEntry[]>
-  create(userId: string, request: CreateSecretRequest): Promise<SecretMeta | null>
-  rotate(
-    userId: string,
-    key: string,
-    value: string,
-    expectedVersion: number,
-    audit?: VaultUseContext,
-  ): Promise<VaultMutationResult>
-  updateMetadata(
-    userId: string,
-    key: string,
-    request: UpdateSecretMetadataRequest,
-    audit?: VaultUseContext,
-  ): Promise<VaultMutationResult>
-  /**
-   * Trusted managed-item upsert used by provider adapters. Public UI writes use
-   * create/rotate so an existing credential is never replaced accidentally.
-   */
-  set(userId: string, key: string, value: string, metadata?: VaultItemMetadata): Promise<SecretMeta>
-  setIfAbsent(
-    userId: string,
-    key: string,
-    value: string,
-    metadata?: VaultItemMetadata,
-  ): Promise<boolean>
-  remove(
-    userId: string,
-    key: string,
-    options?: { expectedVersion?: number; force?: boolean; audit?: VaultUseContext },
-  ): Promise<VaultDeleteResult>
-  /** Trusted lifecycle delete (provider connection removal). */
-  delete(userId: string, key: string): Promise<boolean>
-  has(userId: string, key: string): Promise<boolean>
-  resolveDetailed(userId: string, key: string, use?: VaultUseContext): Promise<VaultResolution>
-  /** SERVER-INTERNAL. Never expose the returned value through routes/tools/events. */
-  resolve(userId: string, key: string, use?: VaultUseContext): Promise<string | null>
-  listBindings(userId: string, key: string): Promise<VaultBinding[]>
-  bind(userId: string, key: string, binding: VaultBinding): Promise<boolean>
-}
+export type {
+  VaultItemMetadata,
+  VaultResolution,
+  VaultMutationResult,
+  VaultBinding,
+  VaultDeleteResult,
+  VaultUseContext,
+  SecretsStore,
+} from './store-contracts'
 
 /** Key material remains outside the application database for backend portability. */
 export function defaultSecretsDir(): string {
@@ -140,87 +57,7 @@ export function createSecretsStore(options: {
   }
 
   return {
-    async list(userId) {
-      const rows = await db
-        .selectFrom('vault_items as item')
-        .leftJoin('vault_aliases as alias', (join) =>
-          join.onRef('alias.item_id', '=', 'item.id').on('alias.user_id', '=', userId),
-        )
-        .select([
-          'item.id',
-          'item.kind',
-          'item.name',
-          'item.description',
-          'item.source',
-          'item.backend',
-          'item.current_version',
-          'item.tags_json',
-          'item.created_at',
-          'item.updated_at',
-          'alias.alias',
-        ])
-        .where('item.user_id', '=', userId)
-        .where('item.deleted_at', 'is', null)
-        .orderBy('item.updated_at', 'desc')
-        .execute()
-      return rows.map(toMeta)
-    },
-
-    async listVersions(userId, key) {
-      const item = await metadataFor(db, userId, key)
-      if (!item) return []
-      const rows = await db
-        .selectFrom('vault_item_versions')
-        .select(['version', 'reason', 'created_at', 'redacted_at'])
-        .where('item_id', '=', item.id)
-        .orderBy('version', 'desc')
-        .execute()
-      return rows.map((row) => ({
-        version: row.version,
-        reason: row.reason,
-        createdAt: Date.parse(row.created_at),
-        redactedAt: row.redacted_at ? Date.parse(row.redacted_at) : undefined,
-      }))
-    },
-
-    async listAudit(userId, limit = 100) {
-      const rows = await db
-        .selectFrom('vault_audit as audit')
-        .leftJoin('vault_items as item', 'item.id', 'audit.item_id')
-        .leftJoin('vault_aliases as alias', (join) =>
-          join.onRef('alias.item_id', '=', 'audit.item_id').on('alias.user_id', '=', userId),
-        )
-        .select([
-          'audit.id',
-          'audit.item_id',
-          'audit.actor_type',
-          'audit.actor_id',
-          'audit.consumer_type',
-          'audit.consumer_id',
-          'audit.operation',
-          'audit.result',
-          'audit.created_at',
-          'item.name',
-          'alias.alias',
-        ])
-        .where('audit.user_id', '=', userId)
-        .orderBy('audit.id', 'desc')
-        .limit(Math.max(1, Math.min(limit, 200)))
-        .execute()
-      return rows.map((row) => ({
-        id: row.id,
-        itemId: row.item_id,
-        key: row.alias,
-        label: row.name,
-        actorType: row.actor_type,
-        actorId: row.actor_id,
-        consumerType: row.consumer_type || undefined,
-        consumerId: row.consumer_id || undefined,
-        operation: row.operation,
-        result: row.result,
-        createdAt: Date.parse(row.created_at),
-      }))
-    },
+    ...createSecretsQueries(db),
 
     create(userId, request) {
       return createItem(db, getCipher, now, id, userId, request.key, request.value, {

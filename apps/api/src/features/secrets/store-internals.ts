@@ -2,7 +2,7 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import type { SecretCipher } from './cipher'
 import type { SecretMeta, UpdateSecretMetadataRequest } from './contracts'
-import type { VaultItemMetadata, VaultMutationResult, VaultUseContext } from './store'
+import type { VaultItemMetadata, VaultMutationResult, VaultUseContext } from './store-contracts'
 import { insertAudit, metadataFor, toMeta } from './store-metadata'
 import { payloadContext, VaultPayloadError, type EncryptedPayloadV1 } from './store-payload'
 
