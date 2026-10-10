@@ -19,6 +19,7 @@ import {
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 import { registerResourceRefIcons } from './iconContributions'
 import { checkContribution } from './uiLocationValidation'
+import { rankUiLocations } from './uiLocationSearch'
 import {
   locationDescriptor,
   storeLocationContribution,
@@ -59,11 +60,6 @@ export function pluginLocationId(prefix: string, fullName: string): string {
     .replace(/[^a-z0-9:._-]+/g, '-')
     .replace(/^-+|-+$/g, '')
   return `${prefix}.${normalized || 'unnamed'}`.slice(0, 128)
-}
-
-function compareLocationOrder(left: UiLocationDescriptor, right: UiLocationDescriptor): number {
-  if (left.title !== right.title) return left.title < right.title ? -1 : 1
-  return left.uri < right.uri ? -1 : left.uri > right.uri ? 1 : 0
 }
 
 function parseRegisteredUri(
@@ -236,28 +232,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
     search(query, options) {
       const needle = query.trim().toLowerCase()
       const limit = Math.max(1, Math.min(options?.limit ?? 8, 20))
-      const rows = this.list({ exposure: options?.exposure }).map((entry) => {
-        const text =
-          `${entry.title} ${entry.description ?? ''} ${entry.id} ${entry.keywords.join(' ')}`.toLowerCase()
-        const title = entry.title.toLowerCase()
-        const score =
-          !needle || title === needle
-            ? 3
-            : title.startsWith(needle)
-              ? 2
-              : text.includes(needle)
-                ? 1
-                : 0
-        return { entry, score }
-      })
-      return rows
-        .filter((row) => row.score > 0)
-        .sort(
-          (left, right) =>
-            right.score - left.score || compareLocationOrder(left.entry, right.entry),
-        )
-        .slice(0, limit)
-        .map((row) => row.entry)
+      return rankUiLocations(this.list({ exposure: options?.exposure }), needle, limit)
     },
     revision: () => currentRevision,
     batch(update) {
