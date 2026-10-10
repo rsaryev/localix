@@ -136,7 +136,6 @@
   "plugins/trading/backend/stream.ts": 378,
   "plugins/trading/ui/TechnicalsTab.tsx": 526,
   "plugins/trading/ui/TradingChartTab.tsx": 365,
-  "plugins/trading/ui/model/indicator-bands.ts": 309,
   "plugins/trading/ui/model/indicator-oscillators.ts": 347,
   "plugins/trading/ui/model/indicatorSpecs.ts": 613,
   "plugins/trading/ui/model/useOhlcv.ts": 306,
