@@ -1,11 +1,9 @@
 import type { TableCellType, TableCellValue, TableColumn, TableRow } from './model'
 
+const COLUMN_INFERENCE_SAMPLE_SIZE = 200
+
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/
 const BOOL_RE = /^(true|false|yes|no)$/i
-
-function isIsoDateLike(s: string): boolean {
-  return ISO_DATE_RE.test(s)
-}
 
 /** Infer a column type from a sample of raw string values. */
 export function inferType(values: Array<string | null | undefined>): TableCellType {
@@ -29,7 +27,7 @@ export function inferType(values: Array<string | null | undefined>): TableCellTy
     } else if (!Number.isInteger(num)) {
       allInt = false
     }
-    if (allDate && !isIsoDateLike(s)) allDate = false
+    if (allDate && !ISO_DATE_RE.test(s)) allDate = false
   }
   if (allInt) return 'int'
   if (allNum) return 'float'
@@ -65,7 +63,7 @@ function makeColumnId(title: string, index: number, used: Set<string>): string {
 /** Infer columns (id + title + type) from CSV headers + a sample of data rows. */
 export function inferColumns(headers: string[], sampleRows: string[][]): TableColumn[] {
   const used = new Set<string>()
-  const sample = sampleRows.slice(0, 200)
+  const sample = sampleRows.slice(0, COLUMN_INFERENCE_SAMPLE_SIZE)
   return headers.map((h, idx) => {
     const title = (h ?? '').trim() || `Column ${idx + 1}`
     const id = makeColumnId(title, idx, used)
@@ -78,7 +76,7 @@ export function inferColumns(headers: string[], sampleRows: string[][]): TableCo
 export function inferColumnsFromObjects(rows: TableRow[]): TableColumn[] {
   const keys: string[] = []
   const seen = new Set<string>()
-  for (const r of rows.slice(0, 200)) {
+  for (const r of rows.slice(0, COLUMN_INFERENCE_SAMPLE_SIZE)) {
     for (const k of Object.keys(r)) {
       if (!seen.has(k)) {
         seen.add(k)
@@ -87,7 +85,7 @@ export function inferColumnsFromObjects(rows: TableRow[]): TableColumn[] {
     }
   }
   return keys.map((k) => {
-    const sample = rows.slice(0, 200).map((r) => r[k])
+    const sample = rows.slice(0, COLUMN_INFERENCE_SAMPLE_SIZE).map((r) => r[k])
     return { id: k, title: k, type: inferTypeFromValues(sample) }
   })
 }
