@@ -1,0 +1,311 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #handoff-root {
+          position: absolute;
+          inset: 0;
+          background: var(--mk-bg);
+          color: var(--mk-text);
+          /* The edge of the sheet as it is laid over the previous page. */
+          box-shadow: calc(var(--u) * -2) 0 calc(var(--u) * 6) rgba(0, 0, 0, 0.16);
+        }
+        #handoff-frame {
+          position: absolute;
+          inset: 0;
+        }
+        .handoff-caps {
+          font-family: var(--mk-sans);
+          font-size: var(--mk-label);
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--mk-muted);
+        }
+        #handoff-head {
+          position: absolute;
+          left: calc(var(--u) * 10);
+          right: calc(var(--u) * 10);
+          top: calc(var(--u) * 7);
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+        }
+        #handoff-kicker {
+          display: flex;
+          flex-direction: column;
+          gap: calc(var(--u) * 1.6);
+        }
+        #handoff-label {
+          color: var(--mk-accent);
+        }
+        #handoff-title {
+          margin: 0;
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          font-size: calc(var(--u) * 6.4);
+          line-height: 1.05;
+          letter-spacing: -0.015em;
+        }
+        /* The tracked route: a dotted line across the desk with three stations. */
+        #handoff-route {
+          position: absolute;
+          left: 14%;
+          right: 14%;
+          top: 76%;
+          height: 0;
+          border-top: 2px dotted color-mix(in srgb, var(--mk-text) 45%, transparent);
+          transform-origin: 0 50%;
+        }
+        #handoff-progress {
+          position: absolute;
+          left: 22%;
+          width: 56%;
+          top: 76%;
+          height: 2px;
+          margin-top: -2px;
+          background: var(--mk-accent);
+          transform-origin: 0 50%;
+        }
+        .handoff-stop {
+          position: absolute;
+          top: 76%;
+          width: 0;
+          height: 0;
+        }
+        .handoff-dot {
+          position: absolute;
+          left: calc(var(--u) * -1);
+          top: calc(var(--u) * -1.1);
+          width: calc(var(--u) * 2);
+          height: calc(var(--u) * 2);
+          box-sizing: border-box;
+          border-radius: 50%;
+          border: 2px solid var(--mk-text);
+          background: var(--mk-bg);
+        }
+        .handoff-fill {
+          position: absolute;
+          inset: 3px;
+          border-radius: 50%;
+          background: var(--mk-accent);
+        }
+        .handoff-meta {
+          position: absolute;
+          top: calc(var(--u) * 2.6);
+          left: calc(var(--u) * -12);
+          width: calc(var(--u) * 24);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: calc(var(--u) * 0.8);
+          text-align: center;
+        }
+        .handoff-time {
+          font-family: var(--mk-mono);
+          font-size: var(--mk-label);
+          font-variant-numeric: tabular-nums;
+          color: var(--mk-muted);
+        }
+        /* The document: a sheet with a title, set lines and a space for the stamp. */
+        #handoff-card {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: calc(var(--u) * 26);
+          height: calc(var(--u) * 34);
+          box-sizing: border-box;
+          padding: calc(var(--u) * 2.4);
+          border-radius: var(--mk-radius);
+          background: var(--mk-surface);
+          box-shadow:
+            0 0 0 1px var(--mk-line),
+            0 calc(var(--u) * 1.6) calc(var(--u) * 4) rgba(0, 0, 0, 0.14);
+          display: flex;
+          flex-direction: column;
+          gap: calc(var(--u) * 1.2);
+        }
+        .handoff-card-head {
+          display: flex;
+          justify-content: space-between;
+          font-family: var(--mk-sans);
+          font-size: calc(var(--u) * 1.5);
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--mk-muted);
+        }
+        .handoff-card-title {
+          font-family: var(--mk-display);
+          font-size: calc(var(--u) * 3);
+          line-height: 1.05;
+          margin-bottom: calc(var(--u) * 0.6);
+        }
+        .handoff-card-line {
+          display: block;
+          height: calc(var(--u) * 0.7);
+          border-radius: 2px;
+          background: color-mix(in srgb, var(--mk-text) 14%, transparent);
+        }
+        #handoff-stamp {
+          position: absolute;
+          right: calc(var(--u) * 2);
+          bottom: calc(var(--u) * 2.2);
+          width: calc(var(--u) * 10);
+          height: calc(var(--u) * 10);
+          box-sizing: border-box;
+          border-radius: 50%;
+          border: 3px solid var(--mk-accent);
+          display: grid;
+          place-items: center;
+          color: var(--mk-accent);
+          font-family: var(--mk-sans);
+          font-size: calc(var(--u) * 1.8);
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          padding-left: 0.2em;
+          text-transform: uppercase;
+          box-shadow:
+            inset 0 0 0 calc(var(--u) * 0.5) var(--mk-surface),
+            inset 0 0 0 calc(var(--u) * 0.5 + 1px) var(--mk-accent);
+        }
+      </style>
+      <div
+        id="handoff-root"
+        class="mk-scene"
+        data-composition-id="handoff"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div id="handoff-frame">
+          <div id="handoff-head">
+            <div id="handoff-kicker">
+              <span id="handoff-label" class="handoff-caps" data-sample>The handoff</span>
+              <h2 id="handoff-title" data-sample>Passed by hand, filed with care.</h2>
+            </div>
+            <span id="handoff-sheet-no" class="handoff-caps" data-sample>Sheet 03 of 12</span>
+          </div>
+          <div id="handoff-route"></div>
+          <div id="handoff-progress"></div>
+          <div class="handoff-stop" style="left: 22%">
+            <div class="handoff-dot"><i class="handoff-fill"></i></div>
+            <div class="handoff-meta">
+              <span class="handoff-caps" data-sample>Drafted</span>
+              <span class="handoff-time" data-sample>09:12</span>
+            </div>
+          </div>
+          <div class="handoff-stop" style="left: 50%">
+            <div class="handoff-dot"><i class="handoff-fill"></i></div>
+            <div class="handoff-meta">
+              <span class="handoff-caps" data-sample>Read</span>
+              <span class="handoff-time" data-sample>11:40</span>
+            </div>
+          </div>
+          <div class="handoff-stop" style="left: 78%">
+            <div class="handoff-dot"><i class="handoff-fill"></i></div>
+            <div class="handoff-meta">
+              <span class="handoff-caps" data-sample>Filed</span>
+              <span class="handoff-time" data-sample>16:05</span>
+            </div>
+          </div>
+          <div id="handoff-card" data-layout-allow-overlap>
+            <div class="handoff-card-head" data-layout-allow-overlap>
+              <span data-sample data-layout-allow-overlap>Sheet 03</span
+              ><span data-sample data-layout-allow-overlap>Oct</span>
+            </div>
+            <div class="handoff-card-title" data-sample data-layout-allow-overlap>
+              On slower mornings
+            </div>
+            <i class="handoff-card-line" style="width: 100%"></i>
+            <i class="handoff-card-line" style="width: 92%"></i>
+            <i class="handoff-card-line" style="width: 97%"></i>
+            <i class="handoff-card-line" style="width: 64%"></i>
+            <i class="handoff-card-line" style="width: 88%"></i>
+            <i class="handoff-card-line" style="width: 40%"></i>
+            <div id="handoff-stamp" data-sample data-layout-allow-overlap>Filed</div>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const frame = document.querySelector('#handoff-frame')
+          const u = parseFloat(MK.knob('--u', '10.8'))
+          // CARD: centred over a station, its bottom 8u above the route. page.html starts from the
+          // same pose over the last station, so keep these numbers in step.
+          const size = MK.withLayout(frame, () => ({ w: frame.offsetWidth, h: frame.offsetHeight }))
+          const pose = (station) => ({
+            x: size.w * station - 13 * u,
+            y: size.h * 0.76 - 8 * u - 34 * u,
+          })
+          const stations = [0.22, 0.5, 0.78]
+          const [a, b, c] = stations.map(pose)
+          const fills = [...document.querySelectorAll('.handoff-fill')]
+          const metas = [...document.querySelectorAll('.handoff-meta')]
+
+          MK.revealLines(tl, '#handoff-title', 0.25, { duration: 1 })
+          tl.fromTo(
+            '#handoff-label, #handoff-sheet-no',
+            { opacity: 0 },
+            { opacity: 1, duration: 0.8, ease: 'power1.out' },
+            0.15,
+          )
+          tl.fromTo(
+            '#handoff-route',
+            { scaleX: 0 },
+            { scaleX: 1, duration: 1.1, ease: MK.ease.move },
+            0.1,
+          )
+          tl.fromTo(
+            '.handoff-stop',
+            { opacity: 0, y: u },
+            { opacity: 1, y: 0, duration: 0.7, ease: MK.ease.soft, stagger: 0.12 },
+            0.4,
+          )
+          // The sheet is set down at the first station.
+          tl.fromTo(
+            '#handoff-card',
+            { x: a.x, y: a.y - 4 * u, rotation: -4, opacity: 0 },
+            { x: a.x, y: a.y, rotation: -1.5, opacity: 1, duration: 0.65, ease: MK.ease.enter },
+            0.75,
+          )
+          // Station by station: the card travels, the route fills green behind it, each stop lights
+          // up and its label comes up to full ink.
+          const arrive = (i, at) => {
+            tl.fromTo(fills[i], { scale: 0 }, { scale: 1, duration: 0.35, ease: MK.ease.soft }, at)
+            tl.fromTo(
+              metas[i],
+              { opacity: 0.4 },
+              { opacity: 1, duration: 0.35, ease: 'power1.out' },
+              at,
+            )
+          }
+          arrive(0, 1.05)
+          tl.to('#handoff-card', { x: b.x, rotation: 1, duration: 0.75, ease: MK.ease.move }, 1.4)
+          tl.fromTo(
+            '#handoff-progress',
+            { scaleX: 0 },
+            { scaleX: 0.5, duration: 0.75, ease: MK.ease.move },
+            1.4,
+          )
+          arrive(1, 2.1)
+          tl.to('#handoff-card', { x: c.x, rotation: 0, duration: 0.75, ease: MK.ease.move }, 2.3)
+          tl.to('#handoff-progress', { scaleX: 1, duration: 0.75, ease: MK.ease.move }, 2.3)
+          arrive(2, 3.0)
+          // Filed: the stamp lands once, firmly.
+          tl.fromTo(
+            '#handoff-stamp',
+            { scale: 1.5, rotation: -22, opacity: 0 },
+            { scale: 1, rotation: -12, opacity: 0.92, duration: 0.35, ease: 'power3.out' },
+            3.05,
+          )
+          window.__timelines['handoff'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

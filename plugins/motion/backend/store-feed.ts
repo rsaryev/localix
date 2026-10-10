@@ -1,5 +1,5 @@
 import { createStoreChangeFeed } from '@localixai/plugin-sdk/backend'
-import { onStoreWrite } from './store'
+import { onStoreWrite } from './writes'
 
 export { STORE_FEED_WINDOW_MS } from '@localixai/plugin-sdk/backend'
 export function createStoreFeed(

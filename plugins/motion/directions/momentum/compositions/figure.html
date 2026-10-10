@@ -1,0 +1,267 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #figure-root {
+          position: absolute;
+          inset: 0;
+          /* Ledger paper: faint rules every 6u. */
+          background-image: repeating-linear-gradient(
+            to bottom,
+            transparent 0 calc(var(--u) * 6 - 1px),
+            var(--mk-line) calc(var(--u) * 6 - 1px) calc(var(--u) * 6)
+          );
+        }
+        .figure-top {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: calc(var(--u) * 5);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: calc(var(--u) * 1.4);
+          border-bottom: 2px solid var(--mk-text);
+          color: var(--mk-text);
+        }
+        #figure-grid {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: calc(var(--u) * 14);
+          bottom: calc(var(--u) * 8);
+          display: grid;
+          grid-template-columns: 1fr auto;
+          align-items: center;
+          column-gap: calc(var(--u) * 8);
+        }
+        #figure-copy {
+          display: flex;
+          flex-direction: column;
+          gap: calc(var(--u) * 2.6);
+        }
+        #figure-label {
+          color: var(--mk-muted);
+        }
+        .figure-mask {
+          display: block;
+          overflow: hidden;
+          padding-bottom: 0.1em;
+        }
+        .figure-line {
+          display: block;
+        }
+        #figure-headline {
+          margin: 0;
+          font-size: calc(var(--u) * 9.6);
+          line-height: 1.02;
+          max-width: none;
+        }
+        #figure-side {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: calc(var(--u) * 2.2);
+          padding-right: calc(var(--u) * 4);
+        }
+        #figure-stat {
+          display: inline-block;
+          font-size: calc(var(--u) * 36);
+          font-weight: 750;
+          letter-spacing: -0.05em;
+          line-height: 1;
+          padding: 0.1em 0.14em 0.04em;
+          color: var(--mk-text);
+        }
+        #figure-num {
+          display: inline-block;
+        }
+        .figure-pct {
+          font-size: 0.5em;
+          letter-spacing: -0.02em;
+          vertical-align: 0.74em;
+          margin-left: 0.04em;
+        }
+        #figure-desc {
+          font-size: calc(var(--u) * 4);
+          color: var(--mk-text);
+          max-width: 24ch;
+          line-height: 1.25;
+        }
+        /* Last year against this year, as two thin bars: the change in one glance. */
+        #figure-compare {
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          align-items: center;
+          column-gap: calc(var(--u) * 2);
+          row-gap: calc(var(--u) * 1.6);
+          margin-top: calc(var(--u) * 3);
+          max-width: calc(var(--u) * 72);
+          font-size: calc(var(--u) * 2.6);
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          color: var(--mk-muted);
+        }
+        .figure-track {
+          position: relative;
+          height: calc(var(--u) * 2.2);
+          border-radius: calc(var(--u) * 0.4);
+          background: color-mix(in srgb, var(--mk-text) 7%, transparent);
+        }
+        .figure-fill {
+          display: block;
+          width: calc(var(--p) * 1%);
+          height: 100%;
+          border-radius: inherit;
+          background: color-mix(in srgb, var(--mk-text) 26%, var(--mk-bg));
+        }
+        .figure-fill.is-now {
+          background: var(--mk-accent);
+        }
+        .figure-now {
+          color: var(--mk-text);
+        }
+        #figure-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: calc(var(--u) * 1);
+          padding: calc(var(--u) * 0.8) calc(var(--u) * 1.8);
+          border-radius: var(--mk-radius);
+          background: color-mix(in srgb, var(--mk-accent) 12%, var(--mk-surface));
+          color: var(--mk-accent);
+          font-size: calc(var(--u) * 2.8);
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+        }
+        #figure-chip svg {
+          width: 0.9em;
+          height: 0.9em;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 3;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+      </style>
+      <div
+        id="figure-root"
+        class="mk-scene"
+        data-composition-id="figure"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div class="figure-top">
+          <span class="mk-label" data-sample>State of shipping · 2025</span>
+          <span class="mk-label">01 / 03</span>
+        </div>
+        <div id="figure-grid">
+          <div id="figure-copy">
+            <div id="figure-label" class="mk-label" data-sample>Team survey · sample data</div>
+            <h1 id="figure-headline" class="mk-hero">
+              <span class="figure-mask"
+                ><span id="figure-line-1" class="figure-line" data-sample
+                  >A small change.</span
+                ></span
+              >
+              <span class="figure-mask"
+                ><span id="figure-line-2" class="figure-line" data-sample
+                  >A <span class="mk-accent">bigger</span> story.</span
+                ></span
+              >
+            </h1>
+            <div id="figure-compare">
+              <span data-sample>2024</span>
+              <span class="figure-track"><i class="figure-fill" style="--p: 41"></i></span>
+              <span data-sample>41%</span>
+              <span class="figure-now" data-sample>2025</span>
+              <span class="figure-track"><i class="figure-fill is-now" style="--p: 72"></i></span>
+              <span class="figure-now" data-sample>72%</span>
+            </div>
+          </div>
+          <div id="figure-side">
+            <div id="figure-stat" class="mk-stat">
+              <span id="figure-num" data-sample>72</span><span class="figure-pct">%</span>
+            </div>
+            <div id="figure-desc" data-sample>of teams now ship every week</div>
+            <div id="figure-chip">
+              <svg viewBox="0 0 24 24"><path d="M4 17 L10 11 L14 15 L20 8 M14 8 H20 V14" /></svg>
+              <span data-sample>up from 41% a year ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const u =
+            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 10.8
+          const tl = gsap.timeline({ paused: true })
+          tl.fromTo(
+            '#figure-root .figure-top',
+            { opacity: 0 },
+            { opacity: 1, duration: MK.dur(0.5), ease: MK.ease.soft },
+            0,
+          )
+          tl.fromTo(
+            '#figure-label',
+            { opacity: 0, y: 1.2 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.6), ease: MK.ease.soft },
+            0.1,
+          )
+          tl.fromTo(
+            ['#figure-line-1', '#figure-line-2'],
+            { yPercent: 125 },
+            { yPercent: 0, duration: MK.dur(0.85), ease: MK.ease.enter, stagger: 0.22 },
+            0.2,
+          )
+          // The headline figure: measure the circle on the final value, then roll up from last year's.
+          const circle = MK.annotate(tl, '#figure-stat', 2.15, {
+            kind: 'circle',
+            width: 6,
+            seed: 11,
+            duration: MK.dur(0.65),
+          })
+          // Hide the stroke's round cap until it starts drawing.
+          tl.fromTo(circle, { opacity: 0 }, { opacity: 1, duration: 0.05, ease: 'none' }, 2.15)
+          tl.fromTo(
+            '#figure-stat',
+            { opacity: 0, y: 4 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.8), ease: MK.ease.enter },
+            0.7,
+          )
+          MK.counter(tl, '#figure-num', 0.75, { from: 41, to: 72, duration: MK.dur(1.4) })
+          MK.revealWords(tl, '#figure-desc', 1.05)
+          tl.fromTo(
+            '#figure-compare > span',
+            { opacity: 0 },
+            { opacity: 1, duration: MK.dur(0.5), ease: MK.ease.soft, stagger: 0.04 },
+            0.95,
+          )
+          tl.fromTo(
+            '#figure-compare .figure-fill',
+            { scaleX: 0 },
+            {
+              scaleX: 1,
+              duration: MK.dur(1.2),
+              ease: MK.ease.enter,
+              stagger: 0.25,
+              transformOrigin: '0% 50%',
+            },
+            1.05,
+          )
+          tl.fromTo(
+            '#figure-chip',
+            { opacity: 0, y: 1.6 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.55), ease: MK.ease.soft },
+            2.35,
+          )
+          MK.pushIn(tl, '#figure-grid', 0, 5, { to: 1.025 })
+          window.__timelines['figure'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

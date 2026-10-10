@@ -2,40 +2,49 @@ import {
   createResourceContextProvider,
   type ResourceRefProvider,
 } from '@localixai/plugin-sdk/backend'
-import { MOTION_ROOT, motionUri, parseMotionUri } from '../shared/resource-uri'
-import type { MotionService } from './service'
+import { MOTION_ROOT, motionUri, parseMotionUri } from '../shared/contract'
+import { projectDirectory } from './files'
+import { listProjects, readProject } from './projects'
 
+/** Films as chat resources: the folder, timing, scenes and open issues — the agent reads files itself. */
 export function createMotionResourceProvider(
-  service: (userId: string, sessionId?: string) => Promise<MotionService | null>,
+  workspaceOf: (userId: string, sessionId?: string) => Promise<string | null>,
 ): ResourceRefProvider {
   return {
     provider: 'motion',
     title: 'Motion Studio',
     async listChildren(userId, parentUri, query, context) {
       if (parentUri !== null && parentUri !== MOTION_ROOT) return []
-      const scope = await service(userId, context?.sessionId)
-      if (!scope) return []
-      return (await scope.list()).projects
-        .filter(
-          (project) => !query || project.document.title.toLowerCase().includes(query.toLowerCase()),
-        )
+      const workspace = await workspaceOf(userId, context?.sessionId)
+      if (!workspace) return []
+      return (await listProjects(workspace))
+        .filter((project) => !query || project.title.toLowerCase().includes(query.toLowerCase()))
         .map((project) => ({
           uri: motionUri(project.id),
-          label: project.document.title,
-          detail: `${project.document.scenes.length} scenes · revision ${project.revision}`,
+          label: project.title,
+          detail: `${project.path} · ${project.scenes} scenes${project.duration ? ` · ${project.duration}s` : ''}`,
           hasChildren: false,
           icon: 'motion',
         }))
     },
     async expand(userId, uri, context) {
       const id = parseMotionUri(uri)
-      if (!id) return { ok: false }
-      const scope = await service(userId, context?.sessionId)
-      if (!scope) return { ok: false }
-      const project = await scope.get(id).catch(() => null)
-      return project
-        ? { ok: true, language: 'json', content: JSON.stringify(project, null, 2) }
-        : { ok: false }
+      const workspace = id ? await workspaceOf(userId, context?.sessionId) : null
+      const folder = workspace && id ? await projectDirectory(workspace, id) : null
+      if (!folder || !id) return { ok: false }
+      const project = await readProject(folder, id)
+      return {
+        ok: true,
+        language: 'json',
+        content: JSON.stringify(
+          {
+            note: 'A HyperFrames film. Edit its files with the file tools; check, snapshot and render with motion_studio.',
+            ...project,
+          },
+          null,
+          2,
+        ),
+      }
     },
   }
 }
@@ -46,7 +55,7 @@ export const createMotionContextProvider = (resourceProvider: ResourceRefProvide
     expander: resourceProvider,
     accepts: (uri) => parseMotionUri(uri) !== null,
     sensitivity: 'project',
-    maxTokens: 8000,
+    maxTokens: 6000,
     destinations: ['chat', 'subagent', 'edit-prediction'],
     revisionPrefix: 'motion',
   })

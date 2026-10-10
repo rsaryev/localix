@@ -1,0 +1,13 @@
+# Storyboard
+
+One row per scene. Times are film seconds; scenes overlap by their transition.
+
+| Scene    | Start | Duration | On screen                                                                                                                                                                                                                               | Motion                                                                                                                                                             | Transition in                                                    |
+| -------- | ----- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| figure   | 0     | 5        | Running header; "A small change. / A bigger story."; 2024 vs 2025 comparison bars; headline figure 72% with a hand-drawn green circle; "of teams now ship every week"; chip "up from 41% a year ago"                                    | Lines rise from masks, the figure counts 41 → 72, the comparison bars grow, the circle draws at 2.15 s, the chip settles; 2.5% push-in                             | —                                                                |
+| bars     | 4.4   | 5.2      | Label, "From 9 to 31 in two years.", a note; a chart with y ticks 0–30, gridlines, 8 quarterly bars (grey before the change, green after), values on the bars, x labels, a dashed "The change" marker and a "3.4× in two years" callout | Gridlines draw, then bars grow 90 ms apart, each value riding its bar while it counts; the marker draws up, then the callout                                       | Wipe up with a green leading edge; the figure scene is pushed up |
+| takeaway | 9     | 5        | Ink panel: "Small changes / compound.", the same data as a green line from 9 to 31 with a filled area, one body line, and the source line "Illustrative figures — replace with verified data"                                           | Lines rise, the line draws with the area behind its tip, the end dot lands, the body words fade up, the source fades in; still from about 2.4 s, then a 2.6 s hold | Wipe up (the change of register), green leading edge             |
+
+Poster: 3.0 s (headline, comparison bars, 72% circled, chip landed).
+
+Review: snapshot 1.2, 3.0, 4.75, 5.4, 6.6, 8.8, 9.35, 10.4 and 13.9.

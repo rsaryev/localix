@@ -1,0 +1,12 @@
+{
+  "name": "motion-film",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.143 preview",
+    "lint": "npx --yes hyperframes@0.8.143 lint",
+    "check": "npx --yes hyperframes@0.8.143 check",
+    "snapshot": "npx --yes hyperframes@0.8.143 snapshot --frames 8",
+    "render": "npx --yes hyperframes@0.8.143 render"
+  }
+}

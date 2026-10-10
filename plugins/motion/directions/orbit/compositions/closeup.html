@@ -1,0 +1,342 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #closeup-root {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            80% 60% at 50% 100%,
+            color-mix(in srgb, var(--mk-accent) 12%, var(--mk-bg)),
+            var(--mk-bg) 70%
+          );
+        }
+        #closeup-head {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: calc(var(--mk-safe) + var(--u) * 1);
+          display: flex;
+          justify-content: center;
+          gap: 0.28em;
+          font-family: var(--mk-display);
+          font-size: calc(var(--u) * 7);
+          font-weight: 600;
+          letter-spacing: var(--mk-display-tracking);
+          line-height: 1.05;
+        }
+        #closeup-l2 {
+          color: var(--mk-accent);
+        }
+        /* Close-up framing: the UI rises from below and stays cropped by the bottom edge. */
+        #closeup-stage {
+          position: absolute;
+          left: 50%;
+          top: 30%;
+          width: calc(var(--u) * 150);
+          margin-left: calc(var(--u) * -75);
+          perspective: calc(var(--u) * 160);
+        }
+        #closeup-browser {
+          height: calc(var(--u) * 84);
+        }
+        #closeup-browser .mk-browser-url {
+          color: color-mix(in srgb, var(--mk-muted) 55%, var(--mk-text));
+        }
+        #closeup-app {
+          --closeup-muted: color-mix(in srgb, var(--mk-muted) 70%, var(--mk-text));
+          display: flex;
+          flex-direction: column;
+          gap: calc(var(--u) * 3);
+          height: 100%;
+          padding: calc(var(--u) * 2.4) calc(var(--u) * 4);
+          box-sizing: border-box;
+          color: var(--mk-text);
+          font-size: calc(var(--u) * 2);
+          text-align: left;
+        }
+        #closeup-nav {
+          display: flex;
+          align-items: center;
+          gap: calc(var(--u) * 3);
+          color: var(--closeup-muted);
+        }
+        #closeup-brand {
+          display: flex;
+          align-items: center;
+          gap: calc(var(--u) * 1);
+          margin-right: auto;
+          color: var(--mk-text);
+          font-weight: 650;
+        }
+        #closeup-brand svg {
+          width: calc(var(--u) * 3.2);
+          height: calc(var(--u) * 3.2);
+        }
+        .closeup-tab.is-on {
+          color: var(--mk-text);
+        }
+        .closeup-avatar {
+          width: calc(var(--u) * 3.4);
+          height: calc(var(--u) * 3.4);
+          border-radius: 50%;
+          background: linear-gradient(
+            140deg,
+            color-mix(in srgb, var(--mk-accent) 50%, var(--mk-surface)),
+            var(--mk-surface)
+          );
+        }
+        #closeup-hello {
+          font-size: calc(var(--u) * 4.4);
+          font-weight: 600;
+          letter-spacing: -0.02em;
+        }
+        #closeup-sub {
+          margin-top: calc(var(--u) * -2);
+          color: var(--closeup-muted);
+        }
+        #closeup-cards {
+          display: grid;
+          grid-template-columns: 1.15fr 1fr 1fr;
+          gap: calc(var(--u) * 2.4);
+        }
+        .closeup-card {
+          display: flex;
+          flex-direction: column;
+          gap: calc(var(--u) * 1.6);
+          min-height: calc(var(--u) * 31);
+          padding: calc(var(--u) * 2.6);
+          border-radius: var(--mk-radius);
+          border: 1px solid var(--mk-line);
+          background: color-mix(in srgb, var(--mk-text) 3%, var(--mk-surface));
+        }
+        .closeup-card-head {
+          font-size: calc(var(--u) * 1.6);
+          font-weight: 600;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--closeup-muted);
+        }
+        .closeup-task {
+          display: flex;
+          align-items: center;
+          gap: calc(var(--u) * 1.2);
+        }
+        .closeup-check {
+          position: relative;
+          flex: none;
+          width: calc(var(--u) * 2.4);
+          height: calc(var(--u) * 2.4);
+          border-radius: 50%;
+          border: 2px solid var(--mk-line);
+          box-sizing: border-box;
+        }
+        .closeup-check.is-done,
+        #closeup-tick {
+          background: var(--mk-accent);
+          border-color: var(--mk-accent);
+        }
+        #closeup-tick {
+          position: absolute;
+          inset: -2px;
+          border-radius: 50%;
+        }
+        #closeup-ringbox {
+          position: relative;
+          display: grid;
+          place-items: center;
+          width: calc(var(--u) * 15);
+          height: calc(var(--u) * 15);
+          margin: 0 auto;
+        }
+        #closeup-ringbox svg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+        }
+        #closeup-ringbox circle {
+          fill: none;
+          stroke-width: 9;
+        }
+        #closeup-track {
+          stroke: var(--mk-line);
+        }
+        #closeup-arc {
+          stroke: var(--mk-accent);
+          stroke-linecap: round;
+        }
+        #closeup-pct {
+          font-size: calc(var(--u) * 4);
+          font-weight: 650;
+          font-variant-numeric: tabular-nums;
+          letter-spacing: -0.03em;
+        }
+        .closeup-note {
+          text-align: center;
+          color: var(--closeup-muted);
+          font-size: calc(var(--u) * 1.7);
+        }
+        #closeup-spaces {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: calc(var(--u) * 1.2);
+        }
+        .closeup-space {
+          padding: calc(var(--u) * 1.4);
+          border-radius: calc(var(--u) * 1.4);
+          background: color-mix(in srgb, var(--mk-text) 6%, transparent);
+          font-size: calc(var(--u) * 1.8);
+        }
+        .closeup-space::before {
+          content: '';
+          display: block;
+          width: calc(var(--u) * 1.4);
+          height: calc(var(--u) * 1.4);
+          margin-bottom: calc(var(--u) * 1);
+          border-radius: 50%;
+          background: color-mix(in srgb, var(--mk-accent) 55%, var(--mk-surface));
+        }
+      </style>
+      <div
+        id="closeup-root"
+        class="mk-scene"
+        data-composition-id="closeup"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div id="closeup-head">
+          <span id="closeup-l1" data-sample>One place.</span
+          ><span id="closeup-l2" data-sample>More possibility.</span>
+        </div>
+        <div id="closeup-stage">
+          <div id="closeup-browser" class="mk-browser">
+            <div class="mk-browser-bar">
+              <i></i><i></i><i></i><span class="mk-browser-url" data-sample>orbit.app/home</span>
+            </div>
+            <div class="mk-browser-body">
+              <!--
+                HTML mock of the product. To use the real UI, replace #closeup-app with
+                  <img src="assets/screenshot.png" alt="" />
+                The tilt, rise and pan keep working; the ring, counter and tick are skipped.
+              -->
+              <div id="closeup-app">
+                <div id="closeup-nav">
+                  <div id="closeup-brand">
+                    <svg viewBox="-100 -100 200 200" aria-hidden="true">
+                      <polygon
+                        points="38,92 92,38 92,-38 38,-92 -38,-92 -92,-38 -92,38 -38,92"
+                        fill="var(--mk-accent)"
+                      />
+                      <polygon
+                        points="23,55 55,23 55,-23 23,-55 -23,-55 -55,-23 -55,23 -23,55"
+                        fill="var(--mk-bg)"
+                        opacity="0.25"
+                      /></svg
+                    ><span data-sample>Orbit</span>
+                  </div>
+                  <span class="closeup-tab is-on" data-sample>Home</span
+                  ><span class="closeup-tab" data-sample>Spaces</span
+                  ><span class="closeup-tab" data-sample>Inbox</span
+                  ><span class="closeup-avatar"></span>
+                </div>
+                <div id="closeup-hello" data-sample>Good morning, Sam</div>
+                <div id="closeup-sub" data-sample>Tuesday · three things in motion</div>
+                <div id="closeup-cards">
+                  <div class="closeup-card">
+                    <div class="closeup-card-head" data-sample>Next up</div>
+                    <div class="closeup-task">
+                      <span class="closeup-check is-done"></span
+                      ><span data-sample>Review launch copy</span>
+                    </div>
+                    <div class="closeup-task">
+                      <span class="closeup-check"><span id="closeup-tick"></span></span
+                      ><span data-sample>Sync with design</span>
+                    </div>
+                    <div class="closeup-task">
+                      <span class="closeup-check"></span><span data-sample>Ship onboarding</span>
+                    </div>
+                  </div>
+                  <div class="closeup-card">
+                    <div class="closeup-card-head" data-sample>Roadmap</div>
+                    <div id="closeup-ringbox">
+                      <svg viewBox="0 0 120 120" aria-hidden="true">
+                        <circle id="closeup-track" cx="60" cy="60" r="50" />
+                        <circle id="closeup-arc" cx="60" cy="60" r="50" />
+                      </svg>
+                      <span id="closeup-pct" data-sample>68%</span>
+                    </div>
+                    <div class="closeup-note" data-sample>Q3 progress (example)</div>
+                  </div>
+                  <div class="closeup-card">
+                    <div class="closeup-card-head" data-sample>Spaces</div>
+                    <div id="closeup-spaces">
+                      <div class="closeup-space" data-sample>Launch</div>
+                      <div class="closeup-space" data-sample>Research</div>
+                      <div class="closeup-space" data-sample>Hiring</div>
+                      <div class="closeup-space" data-sample>Ideas</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const $ = (s) => document.querySelector(s)
+          const u =
+            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 10.8
+          MK.revealWords(tl, '#closeup-l1', 0.35)
+          MK.revealWords(tl, '#closeup-l2', 0.75)
+          // The UI rises from below on a steep tilt and settles flat; then the camera keeps panning.
+          tl.fromTo(
+            '#closeup-browser',
+            { rotationX: 36, y: 46 * u, scale: 0.9, transformOrigin: '50% 0%' },
+            { rotationX: 0, y: 0, scale: 1, duration: 1.7, ease: MK.ease.enter },
+            0.15,
+          )
+          tl.fromTo(
+            '#closeup-stage',
+            { y: 0 },
+            { y: -6 * u, duration: 2.3, ease: MK.ease.drift },
+            1.7,
+          )
+          tl.fromTo(
+            '#closeup-root .closeup-card',
+            { opacity: 0, y: 3 * u },
+            { opacity: 1, y: 0, duration: 0.6, ease: MK.ease.soft, stagger: 0.08 },
+            0.85,
+          )
+          // The detail that proves it: progress fills and counts, a task ticks itself done.
+          if ($('#closeup-arc')) {
+            const C = 2 * Math.PI * 50
+            gsap.set('#closeup-arc', { strokeDasharray: C })
+            tl.fromTo(
+              '#closeup-arc',
+              { strokeDashoffset: C },
+              { strokeDashoffset: C * (1 - 0.68), duration: 1.4, ease: 'power3.out' },
+              1.4,
+            )
+            MK.counter(tl, '#closeup-pct', 1.4, { to: 68, suffix: '%', duration: 1.4 })
+          }
+          if ($('#closeup-tick'))
+            tl.fromTo(
+              '#closeup-tick',
+              { scale: 0, opacity: 0 },
+              { scale: 1, opacity: 1, duration: 0.5, ease: MK.ease.pop },
+              2.4,
+            )
+          window.__timelines['closeup'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

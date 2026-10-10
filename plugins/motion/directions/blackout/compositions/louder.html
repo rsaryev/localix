@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #louder-root {
+          position: absolute;
+          inset: 0;
+        }
+        /* Study furniture, identical in every scene so hard cuts read as one sheet. */
+        .bo-frame {
+          position: absolute;
+          inset: var(--mk-safe);
+        }
+        .bo-cols {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          justify-content: space-between;
+          z-index: 3;
+          pointer-events: none;
+        }
+        .bo-cols i {
+          display: block;
+          width: 1px;
+          height: 100%;
+          background: var(--mk-line);
+        }
+        .bo-top {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
+        .bo-top .mk-label {
+          margin-left: calc(var(--u) * 1);
+          margin-right: calc(var(--u) * 1);
+        }
+        .bo-index {
+          font-family: var(--mk-mono);
+          letter-spacing: 0.08em;
+        }
+        .bo-rule {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(var(--u) * 4.6);
+          height: 1px;
+          background: var(--mk-muted);
+          opacity: 0.5;
+        }
+        .bo-stage {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(var(--u) * 7);
+          bottom: 0;
+        }
+        .bo-hero {
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          letter-spacing: var(--mk-display-tracking);
+          font-size: calc(var(--u) * 16);
+          line-height: 0.9;
+          word-spacing: 0.08em;
+          color: var(--mk-text);
+        }
+        /* Inverted sheet: bone ground, black type. */
+        #louder-root {
+          background: var(--mk-text);
+          color: var(--mk-bg);
+        }
+        #louder-root .bo-cols i {
+          background: color-mix(in srgb, var(--mk-bg) 10%, transparent);
+        }
+        #louder-root .mk-label {
+          color: color-mix(in srgb, var(--mk-bg) 72%, var(--mk-text));
+        }
+        #louder-root .bo-rule {
+          background: var(--mk-bg);
+          opacity: 0.4;
+        }
+        #louder-stack {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+        }
+        #louder-say {
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          letter-spacing: var(--mk-display-tracking);
+          font-size: var(--mk-title);
+          line-height: 1;
+          margin-left: -0.03em;
+          padding-bottom: calc(var(--u) * 0.6);
+        }
+        #louder-say .mk-line {
+          padding-bottom: 0.12em;
+        }
+        #louder-mask {
+          overflow: hidden;
+        }
+        #louder-word {
+          display: block;
+          width: fit-content;
+          white-space: nowrap;
+          color: var(--mk-bg);
+          line-height: 0.8;
+          padding-top: 0.04em;
+        }
+      </style>
+      <div
+        id="louder-root"
+        class="mk-scene"
+        data-composition-id="louder"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div class="bo-frame">
+          <div class="bo-cols">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+            ><i></i>
+          </div>
+          <div class="bo-top">
+            <span class="mk-label" data-sample data-layout-allow-overlap>A typography study</span>
+            <span class="mk-label bo-index" data-sample data-layout-allow-overlap>04 / 05</span>
+          </div>
+          <div class="bo-rule"></div>
+          <div class="bo-stage">
+            <div id="louder-stack">
+              <div id="louder-say" data-sample>Say it</div>
+              <div id="louder-mask">
+                <div id="louder-word" class="bo-hero" data-sample>louder.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          // The last word is fitted to the full grid width, whatever it says.
+          const word = document.querySelector('#louder-word')
+          const height = MK.withLayout(word, () => {
+            const target = document.querySelector('#louder-stack').offsetWidth
+            // Three passes: system fonts change width with optical size.
+            let size = parseFloat(getComputedStyle(word).fontSize)
+            for (let pass = 0; pass < 3; pass++) {
+              size = (size * target) / word.offsetWidth
+              word.style.fontSize = `${size}px`
+            }
+            // Optical alignment: the mask steps left by the glyph's side bearing.
+            word.parentElement.style.marginLeft = `${-0.05 * size}px`
+            return word.offsetHeight
+          })
+          // Three volume steps with hard holds between: small, louder, full width.
+          const steps = [0.2, 0.46, 1]
+          const sayLines = MK.splitLines('#louder-say')
+          tl.fromTo(
+            sayLines,
+            { yPercent: 110 },
+            { yPercent: 0, duration: 0.7, ease: MK.ease.enter },
+            0.08,
+          )
+          tl.fromTo(
+            word,
+            { scale: steps[0], y: height * 0.3, transformOrigin: '0% 100%' },
+            { scale: steps[0], y: 0, duration: 0.7, ease: MK.ease.enter },
+            0.16,
+          )
+          // "Say it" rides on top of the word as it grows.
+          ;[0, 0.95, 1.5].forEach((at, i) => {
+            const from = steps[Math.max(0, i - 1)]
+            const to = steps[i]
+            if (i)
+              tl.fromTo(
+                word,
+                { scale: from },
+                { scale: to, duration: 0.34, ease: 'expo.out', immediateRender: false },
+                at,
+              )
+            tl.fromTo(
+              '#louder-say',
+              { y: height * (1 - from) },
+              {
+                y: height * (1 - to),
+                duration: i ? 0.34 : 0.01,
+                ease: 'expo.out',
+                immediateRender: !i,
+              },
+              at,
+            )
+          })
+          window.__timelines['louder'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

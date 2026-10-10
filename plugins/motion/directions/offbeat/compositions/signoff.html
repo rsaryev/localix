@@ -1,0 +1,228 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #signoff-root {
+          position: absolute;
+          inset: 0;
+        }
+        /* Poster grammar shared by every scene: fitted lines, outlines, cream highlights. */
+        .ob-type {
+          width: fit-content;
+          white-space: nowrap;
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          text-transform: var(--mk-display-case);
+          letter-spacing: var(--mk-display-tracking);
+          font-size: calc(var(--u) * 10);
+          line-height: 0.84;
+        }
+        /* Outline type: the stroke paints under a ground-coloured fill, so overlapping contours
+           inside the glyphs stay hidden and only the outer half of the stroke shows. */
+        .ob-outline {
+          color: var(--mk-text);
+          -webkit-text-fill-color: var(--mk-bg);
+          -webkit-text-stroke: calc(var(--u) * 0.7) var(--mk-text);
+          paint-order: stroke fill;
+        }
+        .ob-labels {
+          display: flex;
+          justify-content: space-between;
+          flex: none;
+          overflow: hidden;
+          font-size: var(--mk-label);
+          font-weight: 800;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          line-height: 1.2;
+        }
+        .ob-labels > * {
+          display: inline-block;
+        }
+        /* The sign-off flips the poster: near-black ground, ember name, cream details. */
+        #signoff-root {
+          background: var(--mk-text);
+          color: var(--mk-accent);
+        }
+        #signoff-frame {
+          position: absolute;
+          inset: var(--mk-safe);
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          gap: calc(var(--u) * 3.6);
+        }
+        /* The festival mark, oversized, bleeding off the top-right corner. */
+        #signoff-mark {
+          position: absolute;
+          right: calc(var(--u) * -22);
+          top: calc(var(--u) * -14);
+          width: calc(var(--u) * 100);
+          height: calc(var(--u) * 100);
+          background: var(--mk-accent);
+        }
+        #signoff-name {
+          color: var(--mk-bg);
+        }
+        #signoff-namebox {
+          overflow: hidden;
+          padding: 0.04em 0;
+        }
+        #signoff-kind {
+          justify-content: space-between;
+          font-size: calc(var(--u) * 3.4);
+          color: var(--mk-accent);
+        }
+        #signoff-rule {
+          height: calc(var(--u) * 0.4);
+          background: var(--mk-accent);
+        }
+        #signoff-info {
+          display: flex;
+          justify-content: space-between;
+          overflow: hidden;
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          text-transform: var(--mk-display-case);
+          font-size: calc(var(--u) * 5.2);
+          line-height: 1.05;
+        }
+        #signoff-info > * {
+          display: inline-block;
+        }
+        #signoff-cta {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: calc(var(--u) * 2.4) calc(var(--u) * 3);
+          background: var(--mk-accent);
+          color: var(--mk-text);
+          font-size: calc(var(--u) * 3.8);
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        #signoff-cta > * {
+          display: inline-block;
+        }
+      </style>
+      <div
+        id="signoff-root"
+        class="mk-scene"
+        data-composition-id="signoff"
+        data-width="1080"
+        data-height="1920"
+      >
+        <div id="signoff-mark" aria-hidden="true" data-layout-allow-overflow></div>
+        <div id="signoff-frame">
+          <div id="signoff-namebox">
+            <div id="signoff-name" class="ob-type" data-sample>Offbeat</div>
+          </div>
+          <div id="signoff-kind" class="ob-labels" data-sample>Festival</div>
+          <div id="signoff-rule"></div>
+          <div id="signoff-info">
+            <span data-sample>12–14 June 2026</span>
+            <span data-sample>Lisbon</span>
+          </div>
+          <div id="signoff-cta">
+            <span data-sample>Tickets</span>
+            <span data-sample>offbeat.example →</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const BEAT = 0.35
+          // Fit a nowrap line to a width. Three passes: system fonts change width with optical size.
+          const fit = (el, width) => {
+            for (let pass = 0; pass < 3; pass++) {
+              const size = parseFloat(getComputedStyle(el).fontSize)
+              el.style.fontSize = `${(size * width) / el.offsetWidth}px`
+            }
+          }
+          const root = document.querySelector('#signoff-root')
+          const name = document.querySelector('#signoff-name')
+          // The mark is a CSS polygon (cheaper to paint than an SVG this size): same starburst.
+          const mark = document.querySelector('#signoff-mark')
+          const corners = []
+          for (let i = 0; i < 48; i++) {
+            const r = i % 2 ? 40 : 50
+            const a = (i / 48) * Math.PI * 2 - Math.PI / 2
+            corners.push(
+              `${(50 + Math.cos(a) * r).toFixed(2)}% ${(50 + Math.sin(a) * r).toFixed(2)}%`,
+            )
+          }
+          mark.style.clipPath = `polygon(${corners.join(', ')})`
+          // The kind label is spread letter by letter across the full width.
+          const kind = document.querySelector('#signoff-kind')
+          const letters = [...kind.textContent.trim()].map((ch) => {
+            const span = document.createElement('span')
+            span.textContent = ch
+            return span
+          })
+          kind.textContent = ''
+          kind.append(...letters)
+          const chars = [...MK.split(name, 'chars').querySelectorAll('.mk-char')]
+          MK.withLayout(root, () => fit(name, document.querySelector('#signoff-frame').offsetWidth))
+          // Hard cut in: the mark spins open (the one overshoot) while the name's letters land from
+          // alternating sides, above and below.
+          tl.fromTo(
+            '#signoff-mark',
+            { scale: 0, rotation: -90 },
+            { scale: 1, rotation: 0, transformOrigin: '50% 50%', duration: 0.7, ease: MK.ease.pop },
+            0,
+          )
+          tl.fromTo(
+            chars,
+            { yPercent: (i) => (i % 2 ? -110 : 110) },
+            { yPercent: 0, duration: 0.45, ease: MK.ease.enter, stagger: 0.035 },
+            0.05,
+          )
+          tl.fromTo(
+            letters,
+            { yPercent: 110 },
+            { yPercent: 0, duration: 0.35, ease: MK.ease.enter, stagger: 0.03 },
+            BEAT,
+          )
+          tl.fromTo(
+            '#signoff-rule',
+            { scaleX: 0 },
+            { scaleX: 1, transformOrigin: '0% 50%', duration: 0.5, ease: MK.ease.enter },
+            2 * BEAT,
+          )
+          const [when, where] = document.querySelectorAll('#signoff-info > *')
+          tl.fromTo(
+            when,
+            { yPercent: 110 },
+            { yPercent: 0, duration: 0.4, ease: MK.ease.enter },
+            2 * BEAT + 0.05,
+          )
+          tl.fromTo(
+            where,
+            { yPercent: -110 },
+            { yPercent: 0, duration: 0.4, ease: MK.ease.enter },
+            2 * BEAT + 0.05,
+          )
+          tl.fromTo(
+            '#signoff-cta',
+            { clipPath: 'inset(0 100% 0 0)' },
+            { clipPath: 'inset(0 0% 0 0)', duration: 0.4, ease: 'power4.out' },
+            3 * BEAT,
+          )
+          tl.fromTo(
+            '#signoff-cta > *',
+            { x: (i) => (i ? 40 : -40), opacity: 0 },
+            { x: 0, opacity: 1, duration: 0.4, ease: MK.ease.enter, stagger: 0.05 },
+            3 * BEAT + 0.08,
+          )
+          window.__timelines['signoff'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

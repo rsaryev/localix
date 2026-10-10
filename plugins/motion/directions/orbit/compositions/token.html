@@ -1,0 +1,272 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #token-root {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            70% 70% at 50% 40%,
+            color-mix(in srgb, var(--mk-accent) 7%, var(--mk-bg)),
+            var(--mk-bg) 72%
+          );
+        }
+        #token-glow {
+          left: 50%;
+          top: 40%;
+          margin: calc(var(--u) * -35) 0 0 calc(var(--u) * -35);
+        }
+        /* The sculpture: an octagonal token in real CSS 3D, shaded per facet from one light. */
+        #token-view {
+          position: absolute;
+          left: 50%;
+          top: 40%;
+          width: 0;
+          height: 0;
+          perspective: calc(var(--u) * 150);
+        }
+        #token-float,
+        #token-body,
+        #token-orbit,
+        #token-spinner {
+          position: absolute;
+          left: 0;
+          top: 0;
+          transform-style: preserve-3d;
+        }
+        .token-face {
+          position: absolute;
+          left: calc(var(--u) * -18.4);
+          top: calc(var(--u) * -18.4);
+          width: calc(var(--u) * 36.8);
+          height: calc(var(--u) * 36.8);
+          backface-visibility: hidden;
+        }
+        .token-face svg {
+          display: block;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+        }
+        .token-face polygon {
+          stroke: color-mix(in srgb, var(--mk-text) 22%, transparent);
+          stroke-width: 0.6;
+          stroke-linejoin: round;
+        }
+        #token-front {
+          transform: translateZ(calc(var(--u) * 3));
+        }
+        #token-back {
+          transform: rotateY(180deg) translateZ(calc(var(--u) * 3));
+        }
+        .token-side {
+          position: absolute;
+          left: calc(var(--u) * -3);
+          top: calc(var(--u) * -7.04);
+          width: calc(var(--u) * 6);
+          height: calc(var(--u) * 14.08);
+          backface-visibility: hidden;
+        }
+        #token-orbit {
+          transform: rotateX(74deg);
+        }
+        #token-ring {
+          position: absolute;
+          left: calc(var(--u) * -36);
+          top: calc(var(--u) * -36);
+          width: calc(var(--u) * 72);
+          height: calc(var(--u) * 72);
+          border-radius: 50%;
+          border: 2px solid color-mix(in srgb, var(--mk-accent) 38%, transparent);
+          box-sizing: border-box;
+        }
+        #token-sat {
+          position: absolute;
+          left: calc(var(--u) * 36 - var(--u) * 1.2);
+          top: calc(var(--u) * -1.2);
+          width: calc(var(--u) * 2.4);
+          height: calc(var(--u) * 2.4);
+          border-radius: 50%;
+          background: radial-gradient(circle at 35% 35%, var(--mk-text), var(--mk-accent) 55%);
+          box-shadow: 0 0 calc(var(--u) * 2.4) var(--mk-accent);
+        }
+        #token-copy {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: 74%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: calc(var(--u) * 1.8);
+          text-align: center;
+        }
+        #token-title {
+          font-size: calc(var(--u) * 7.6);
+          font-weight: 600;
+          max-width: none;
+        }
+      </style>
+      <div
+        id="token-root"
+        class="mk-scene"
+        data-composition-id="token"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div id="token-glow" class="mk-glow"></div>
+        <div id="token-fade">
+          <div id="token-view">
+            <div id="token-float">
+              <div id="token-body">
+                <div id="token-front" class="token-face">
+                  <svg viewBox="-100 -100 200 200" aria-hidden="true"></svg>
+                </div>
+                <div id="token-back" class="token-face">
+                  <svg viewBox="-100 -100 200 200" aria-hidden="true"></svg>
+                </div>
+              </div>
+              <div id="token-orbit">
+                <div id="token-ring"></div>
+                <div id="token-spinner"><div id="token-sat"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="token-copy">
+          <h1 id="token-title" class="mk-hero" data-sample>Room for what's next.</h1>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const $ = (s) => document.querySelector(s)
+          const NS = 'http://www.w3.org/2000/svg'
+          const deg = Math.PI / 180
+          // Geometry: an octagon (circumradius 100 in face units) with a bevelled crown of 8 facets.
+          const ring = (r, k) => [
+            Math.cos((22.5 + 45 * k) * deg) * r,
+            Math.sin((22.5 + 45 * k) * deg) * r,
+          ]
+          const bevel = 38 * deg
+          const shaded = [] // { el, n: [x,y,z], kind }
+          for (const face of ['#token-front', '#token-back']) {
+            const svg = $(face + ' svg')
+            const flip = face === '#token-back' ? -1 : 1 // the back face is turned 180° about Y
+            const add = (pts, n) => {
+              const p = document.createElementNS(NS, 'polygon')
+              p.setAttribute(
+                'points',
+                pts.map((q) => q.map((v) => v.toFixed(2)).join(',')).join(' '),
+              )
+              svg.append(p)
+              shaded.push({ el: p, n: [n[0] * flip, n[1], n[2] * flip], kind: 'face' })
+            }
+            for (let k = 0; k < 8; k++) {
+              const mid = (45 + 45 * k) * deg
+              add(
+                [ring(100, k), ring(100, k + 1), ring(60, k + 1), ring(60, k)],
+                [Math.sin(bevel) * Math.cos(mid), Math.sin(bevel) * Math.sin(mid), Math.cos(bevel)],
+              )
+            }
+            add(
+              [...Array(8)].map((_, k) => ring(60, k)),
+              [0, 0, 1],
+            )
+          }
+          // Edge panels around the rim.
+          const u =
+            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 10.8
+          for (let k = 0; k < 8; k++) {
+            const a = 45 + 45 * k
+            const el = document.createElement('div')
+            el.className = 'token-side'
+            el.style.transform = `rotateZ(${a}deg) translateX(${17 * u}px) rotateY(90deg)`
+            $('#token-body').append(el)
+            shaded.push({ el, n: [Math.cos(a * deg), Math.sin(a * deg), 0], kind: 'side' })
+          }
+          // Light from the upper left, in front. Lambert + a tight specular, mixed from the tokens.
+          const norm = (v) => {
+            const l = Math.hypot(...v)
+            return v.map((x) => x / l)
+          }
+          const L = norm([-0.45, -0.62, 0.64])
+          const Hv = norm([L[0], L[1], L[2] + 1])
+          const R = norm([0.85, 0.15, -0.35]) // a cool rim light from behind on the right
+          const pose = { ry: -400, rx: 26 }
+          const shade = () => {
+            const cy = Math.cos(pose.ry * deg),
+              sy = Math.sin(pose.ry * deg),
+              cx = Math.cos(pose.rx * deg),
+              sx = Math.sin(pose.rx * deg)
+            gsap.set('#token-body', { rotationY: pose.ry, rotationX: pose.rx })
+            for (const f of shaded) {
+              const [x, y, z] = f.n
+              const y1 = y * cx - z * sx,
+                z1 = y * sx + z * cx // rotateX
+              const x2 = x * cy + z1 * sy,
+                z2 = -x * sy + z1 * cy // rotateY
+              const d = Math.max(0, x2 * L[0] + y1 * L[1] + z2 * L[2])
+              const s = Math.pow(Math.max(0, x2 * Hv[0] + y1 * Hv[1] + z2 * Hv[2]), 28)
+              const r = Math.pow(Math.max(0, x2 * R[0] + y1 * R[1] + z2 * R[2]), 2)
+              const base = Math.min(
+                96,
+                (f.kind === 'side' ? 6 + 58 * d : 13 + 78 * Math.pow(d, 1.4)) + 40 * r,
+              )
+              const color = `color-mix(in srgb, var(--mk-text) ${Math.min(80, s * 90).toFixed(1)}%, color-mix(in srgb, var(--mk-accent) ${base.toFixed(1)}%, var(--mk-bg)))`
+              if (f.kind === 'side') f.el.style.background = color
+              else f.el.style.fill = color
+            }
+          }
+          shade()
+          // The spin: fast at first, decelerating into a settled three-quarter pose, then a slow drift.
+          tl.to(pose, { ry: -36, rx: 15, duration: 3.1, ease: 'power3.out', onUpdate: shade }, 0)
+          tl.to(pose, { ry: -27, rx: 13, duration: 1.1, ease: MK.ease.drift, onUpdate: shade }, 3.1)
+          tl.fromTo(
+            '#token-float',
+            { scale: 0.62, rotation: -8, y: 3 * u },
+            { scale: 1, rotation: -8, y: 0, duration: 2.6, ease: MK.ease.enter },
+            0,
+          )
+          tl.fromTo(
+            '#token-fade',
+            { opacity: 0.35 },
+            { opacity: 1, duration: 0.4, ease: MK.ease.soft },
+            0,
+          )
+          tl.fromTo(
+            '#token-glow',
+            { opacity: 0, scale: 0.5 },
+            { opacity: 1, scale: 1, duration: 2.4, ease: MK.ease.move },
+            0.2,
+          )
+          // One satellite on the orbit; it counter-rotates so it always faces the lens.
+          tl.fromTo(
+            '#token-spinner',
+            { rotation: 20 },
+            { rotation: 20 + 300, duration: 4.2, ease: MK.ease.drift },
+            0,
+          )
+          tl.fromTo(
+            '#token-sat',
+            { rotation: -20, rotationX: -74 },
+            { rotation: -320, rotationX: -74, duration: 4.2, ease: MK.ease.drift },
+            0,
+          )
+          tl.fromTo(
+            '#token-ring',
+            { scale: 0.6, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 1.6, ease: MK.ease.enter },
+            0.5,
+          )
+          MK.revealWords(tl, '#token-title', 1.5, { stagger: 0.1 })
+          window.__timelines['token'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

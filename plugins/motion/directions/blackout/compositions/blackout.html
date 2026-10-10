@@ -1,0 +1,187 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #blackout-root {
+          position: absolute;
+          inset: 0;
+        }
+        /* Study furniture, identical in every scene so hard cuts read as one sheet. */
+        .bo-frame {
+          position: absolute;
+          inset: var(--mk-safe);
+        }
+        .bo-cols {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          justify-content: space-between;
+          z-index: 3;
+          pointer-events: none;
+        }
+        .bo-cols i {
+          display: block;
+          width: 1px;
+          height: 100%;
+          background: var(--mk-line);
+        }
+        .bo-top {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
+        .bo-top .mk-label {
+          margin-left: calc(var(--u) * 1);
+          margin-right: calc(var(--u) * 1);
+        }
+        .bo-index {
+          font-family: var(--mk-mono);
+          letter-spacing: 0.08em;
+        }
+        .bo-rule {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(var(--u) * 4.6);
+          height: 1px;
+          background: var(--mk-muted);
+          opacity: 0.5;
+        }
+        .bo-stage {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(var(--u) * 7);
+          bottom: 0;
+        }
+        .bo-hero {
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          letter-spacing: var(--mk-display-tracking);
+          font-size: calc(var(--u) * 16);
+          line-height: 0.9;
+          word-spacing: 0.08em;
+          color: var(--mk-text);
+        }
+        #blackout-block {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 50%;
+          margin-top: calc(var(--u) * -14);
+        }
+        #blackout-mask {
+          overflow: hidden;
+          padding: 0 var(--bo-pad);
+        }
+        #blackout-word,
+        #blackout-ink {
+          display: block;
+          width: fit-content;
+          white-space: nowrap;
+          line-height: 0.82;
+          padding: 0.05em 0 0.07em;
+        }
+        /* The slab: a bone bar wipes over the word and blacks it out. */
+        #blackout-slab {
+          position: absolute;
+          inset: 0;
+          padding: 0 var(--bo-pad);
+          background: var(--mk-text);
+        }
+        #blackout-ink {
+          color: var(--mk-bg);
+        }
+        #blackout-foot {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(100% + var(--u) * 3);
+          display: flex;
+          justify-content: space-between;
+        }
+      </style>
+      <div
+        id="blackout-root"
+        class="mk-scene"
+        data-composition-id="blackout"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div class="bo-frame">
+          <div class="bo-cols">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+            ><i></i>
+          </div>
+          <div class="bo-top">
+            <span class="mk-label" data-sample data-layout-allow-overlap>A typography study</span>
+            <span class="mk-label bo-index" data-sample data-layout-allow-overlap>05 / 05</span>
+          </div>
+          <div class="bo-rule"></div>
+          <div class="bo-stage">
+            <div id="blackout-block">
+              <div id="blackout-mask">
+                <div id="blackout-word" class="bo-hero" data-sample>Blackout.</div>
+              </div>
+              <div id="blackout-slab" aria-hidden="true">
+                <div id="blackout-ink" class="bo-hero" data-layout-allow-overlap></div>
+              </div>
+              <div id="blackout-foot">
+                <span id="blackout-note" class="mk-label" data-sample>Say less. Mean more.</span>
+                <span id="blackout-sign" class="mk-label" data-sample>Studio sample · 2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          // Fit the word to the grid, inside the slab's side padding; the slab copy mirrors it.
+          const word = document.querySelector('#blackout-word')
+          const ink = document.querySelector('#blackout-ink')
+          const block = document.querySelector('#blackout-block')
+          ink.textContent = word.textContent
+          MK.withLayout(word, () => {
+            const pad = block.offsetWidth * 0.018
+            block.style.setProperty('--bo-pad', `${pad}px`)
+            // Three passes: system fonts change width with optical size.
+            for (let pass = 0; pass < 3; pass++) {
+              const size = parseFloat(getComputedStyle(word).fontSize)
+              word.style.fontSize = `${(size * (block.offsetWidth - pad * 2)) / word.offsetWidth}px`
+            }
+            ink.style.fontSize = word.style.fontSize
+          })
+          // The shutter (index.html) drops; the word rises; the slab blacks it out; then stillness.
+          tl.fromTo(
+            word,
+            { yPercent: 105 },
+            { yPercent: 0, duration: 0.9, ease: MK.ease.enter },
+            0.45,
+          )
+          tl.fromTo(
+            '#blackout-slab',
+            { clipPath: 'inset(0 100% 0 0)' },
+            { clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'expo.inOut' },
+            1.45,
+          )
+          tl.fromTo(
+            '#blackout-foot > *',
+            { yPercent: 120, opacity: 0 },
+            { yPercent: 0, opacity: 1, duration: 0.6, ease: MK.ease.enter, stagger: 0.1 },
+            2.0,
+          )
+          window.__timelines['blackout'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

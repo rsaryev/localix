@@ -48,16 +48,11 @@ async function editor(page) {
 export async function compose(page, scenario) {
   if (
     [
-      'motion-editor',
-      'motion-library',
-      'motion-projects',
       'motion-empty',
+      'motion-library',
       'motion-template-preview',
-      'motion-template-return',
-      'motion-dark-hook',
-      'motion-product-reveal',
-      'motion-gather-preview',
-      'motion-portfolio-preview',
+      'motion-projects',
+      'motion-film',
     ].includes(scenario)
   )
     return (await import('./motion-workbench.mjs')).composeMotion(page, scenario)

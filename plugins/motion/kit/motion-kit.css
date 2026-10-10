@@ -1,0 +1,378 @@
+/*
+ * Localix Motion Kit — tokens and static components. Build the END state with these classes;
+ * animate into it with motion-kit.js. Sizes use --u (1% of the shorter frame edge) so a film
+ * survives a change of format. Never add CSS `animation` or `transition`: the timeline owns time.
+ */
+:root {
+  --mk-bg: #050506;
+  --mk-surface: #111114;
+  --mk-line: rgba(255, 255, 255, 0.1);
+  --mk-text: #f5f5f2;
+  --mk-muted: #8d8d93;
+  --mk-accent: #d9ff3f;
+  --mk-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mk-serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --mk-mono: ui-monospace, Menlo, Consolas, monospace;
+  /* Type scale in units of --u: hero 10–12, title 6–7, body 3.6–4.2, label ≥ 2.6. */
+  --mk-hero: calc(var(--u) * 11);
+  --mk-title: calc(var(--u) * 6.5);
+  --mk-body: calc(var(--u) * 3.8);
+  --mk-label: calc(var(--u) * 2.6);
+  /* Title-safe margin: keep text 5% inside every edge. */
+  --mk-safe: calc(var(--u) * 5.5);
+  /* Style knobs: blocks/style.css overrides these (and the motion ones below) per film. */
+  --mk-display: var(--mk-sans);
+  --mk-display-weight: 700;
+  --mk-display-case: none;
+  --mk-display-tracking: -0.035em;
+  --mk-radius: calc(var(--u) * 1.6);
+  --mk-grain: 0.07;
+  --mk-glow: 35%;
+  --mk-vignette: rgba(0, 0, 0, 0.45);
+  --mk-ease-enter: expo.out;
+  --mk-ease-soft: power3.out;
+  --mk-ease-move: power2.inOut;
+  --mk-ease-exit: power3.in;
+  --mk-ease-pop: back.out(1.6);
+  /* Multiplies the helpers' default durations: 0.8 brisk, 1 neutral, 1.3 calm. */
+  --mk-tempo: 1;
+}
+
+.mk-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--mk-bg);
+  color: var(--mk-text);
+  font-family: var(--mk-sans);
+  isolation: isolate;
+}
+.mk-center {
+  position: absolute;
+  inset: var(--mk-safe);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: calc(var(--u) * 2.4);
+}
+.mk-hero {
+  font-family: var(--mk-display);
+  font-size: var(--mk-hero);
+  font-weight: var(--mk-display-weight);
+  text-transform: var(--mk-display-case);
+  line-height: 1.02;
+  letter-spacing: var(--mk-display-tracking);
+  max-width: 16ch;
+}
+.mk-title {
+  font-family: var(--mk-display);
+  font-size: var(--mk-title);
+  font-weight: var(--mk-display-weight);
+  text-transform: var(--mk-display-case);
+  line-height: 1.06;
+  letter-spacing: calc(var(--mk-display-tracking) * 0.7);
+  max-width: 20ch;
+}
+.mk-body {
+  font-size: var(--mk-body);
+  line-height: 1.35;
+  color: var(--mk-muted);
+  max-width: 36ch;
+}
+.mk-label {
+  font-size: var(--mk-label);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mk-muted);
+}
+.mk-accent {
+  color: var(--mk-accent);
+}
+
+/* Split text: lines rise from masks; words and chars move as blocks. */
+.mk-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.mk-spaced {
+  margin-right: 0.26em;
+}
+.mk-line-inner,
+.mk-word,
+.mk-char {
+  display: inline-block;
+  will-change: transform;
+}
+.mk-carousel {
+  position: relative;
+  display: inline-block;
+  height: 1.1em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.mk-carousel-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+
+/* Backgrounds */
+.mk-gridlines {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--mk-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mk-line) 1px, transparent 1px);
+  background-size: calc(var(--u) * 8) calc(var(--u) * 8);
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+.mk-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--mk-line) 1.4px, transparent 1.6px);
+  background-size: calc(var(--u) * 3) calc(var(--u) * 3);
+  mask-image: radial-gradient(ellipse at center, #000 35%, transparent 80%);
+}
+.mk-glow {
+  position: absolute;
+  width: calc(var(--u) * 70);
+  height: calc(var(--u) * 70);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--mk-accent) var(--mk-glow), transparent),
+    transparent 65%
+  );
+  filter: blur(calc(var(--u) * 4));
+}
+.mk-starburst {
+  position: absolute;
+  inset: -50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--mk-accent) 14%, transparent) 0deg 4deg,
+    transparent 4deg 15deg
+  );
+  mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+}
+.mk-light-leak {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(40% 50% at 20% 30%, rgba(255, 140, 60, 0.55), transparent 70%),
+    radial-gradient(35% 45% at 80% 70%, rgba(255, 60, 120, 0.4), transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+/* Finishing overlays: put once above everything, keep subtle. */
+.mk-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, var(--mk-vignette));
+}
+.mk-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: var(--mk-grain);
+  mix-blend-mode: overlay;
+}
+
+/* Product presentation */
+.mk-browser {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--mk-radius);
+  overflow: hidden;
+  background: var(--mk-surface);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 calc(var(--u) * 5) calc(var(--u) * 12) rgba(0, 0, 0, 0.55);
+}
+.mk-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.8);
+  height: calc(var(--u) * 4.4);
+  padding: 0 calc(var(--u) * 1.6);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--mk-line);
+}
+.mk-browser-bar i {
+  width: calc(var(--u) * 1.1);
+  height: calc(var(--u) * 1.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+.mk-browser-url {
+  margin: 0 auto;
+  padding: calc(var(--u) * 0.5) calc(var(--u) * 3);
+  border-radius: calc(var(--u) * 0.8);
+  background: rgba(255, 255, 255, 0.06);
+  color: color-mix(in srgb, var(--mk-text) 72%, transparent);
+  font-size: calc(var(--u) * 1.7);
+}
+.mk-browser-body {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+.mk-browser-body > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+.mk-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--u) * 3.2);
+  height: calc(var(--u) * 3.2);
+  z-index: 10;
+}
+.mk-cursor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+.mk-ripple {
+  position: absolute;
+  left: calc(var(--u) * -4);
+  top: calc(var(--u) * -4);
+  width: calc(var(--u) * 8);
+  height: calc(var(--u) * 8);
+  border-radius: 50%;
+  border: 3px solid var(--mk-accent);
+  opacity: 0;
+}
+.mk-annotated {
+  position: relative;
+  display: inline-block;
+}
+.mk-annotated-text {
+  position: relative;
+  z-index: 1;
+}
+.mk-annotation {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mk-marker {
+  position: absolute;
+  left: -0.12em;
+  right: -0.12em;
+  top: 0.18em;
+  bottom: 0.06em;
+  z-index: 0;
+  transform-origin: 0 50%;
+  opacity: 0.85;
+  border-radius: 0.12em;
+}
+
+/* Data */
+.mk-stat {
+  font-size: calc(var(--u) * 16);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.mk-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--u) * 2);
+  height: calc(var(--u) * 34);
+}
+.mk-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--u) * 1);
+  width: calc(var(--u) * 8);
+  height: 100%;
+  font-size: var(--mk-label);
+  color: var(--mk-muted);
+}
+.mk-bar-fill {
+  display: block;
+  width: 100%;
+  height: calc(var(--v, 0.5) * 100%);
+  border-radius: calc(var(--u) * 0.8) calc(var(--u) * 0.8) 0 0;
+  background: var(--mk-accent);
+}
+
+/* Captions and overlays */
+.mk-caption {
+  display: inline;
+  padding: 0.12em 0.4em;
+  border-radius: 0.3em;
+  background: var(--mk-text);
+  color: var(--mk-bg);
+  font-size: var(--mk-body);
+  font-weight: 700;
+  line-height: 1.5;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.mk-lower-third {
+  position: absolute;
+  left: var(--mk-safe);
+  bottom: var(--mk-safe);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.6);
+  padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4);
+  border-left: calc(var(--u) * 0.5) solid var(--mk-accent);
+  background: rgba(0, 0, 0, 0.55);
+}
+.mk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 1);
+  padding: calc(var(--u) * 0.9) calc(var(--u) * 2.2);
+  border-radius: 999px;
+  border: 1px solid var(--mk-line);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: var(--mk-label);
+  font-weight: 600;
+}
+.mk-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.2);
+  padding: calc(var(--u) * 3);
+  border-radius: calc(var(--mk-radius) * 1.25);
+  border: 1px solid var(--mk-line);
+  background: var(--mk-surface);
+  text-align: left;
+}
+.mk-kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.1em 0.45em;
+  border-radius: 0.3em;
+  border: 1px solid var(--mk-line);
+  border-bottom-width: 3px;
+  font-family: var(--mk-mono);
+  font-size: 0.8em;
+  text-align: center;
+}

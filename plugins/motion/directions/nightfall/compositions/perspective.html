@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #perspective-root {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            to bottom,
+            var(--mk-bg) 0%,
+            var(--mk-bg) 50%,
+            color-mix(in srgb, var(--mk-surface) 80%, var(--mk-bg)) 100%
+          );
+        }
+        /* A receding floor: its lines meet at one ember vanishing point on the horizon. */
+        #perspective-ground {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 62%;
+          bottom: 0;
+          overflow: hidden;
+          perspective: calc(var(--u) * 36);
+          perspective-origin: 50% 0%;
+          mask-image: linear-gradient(to bottom, transparent 0%, #000 55%);
+        }
+        #perspective-floor {
+          position: absolute;
+          left: -250%;
+          width: 600%;
+          bottom: 0;
+          height: 1400%;
+          transform-origin: 50% 100%;
+          background-image:
+            linear-gradient(
+              color-mix(in srgb, var(--mk-text) 22%, transparent) 2px,
+              transparent 2px
+            ),
+            linear-gradient(
+              90deg,
+              color-mix(in srgb, var(--mk-text) 22%, transparent) 2px,
+              transparent 2px
+            );
+          background-size: calc(var(--u) * 9) calc(var(--u) * 9);
+          background-position: 50% 0px;
+        }
+        #perspective-horizon {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 62%;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent 8%,
+            color-mix(in srgb, var(--mk-text) 22%, transparent) 50%,
+            transparent 92%
+          );
+        }
+        #perspective-point {
+          position: absolute;
+          left: 50%;
+          top: 62%;
+          width: calc(var(--u) * 1.3);
+          height: calc(var(--u) * 1.3);
+          margin: calc(var(--u) * -0.65) 0 0 calc(var(--u) * -0.65);
+          border-radius: 50%;
+          background: var(--mk-accent);
+          box-shadow:
+            0 0 calc(var(--u) * 1.5) var(--mk-accent),
+            0 0 calc(var(--u) * 6) color-mix(in srgb, var(--mk-accent) 45%, transparent);
+        }
+        #perspective-haze {
+          position: absolute;
+          left: 50%;
+          top: 62%;
+          width: calc(var(--u) * 90);
+          height: calc(var(--u) * 16);
+          margin: calc(var(--u) * -8) 0 0 calc(var(--u) * -45);
+          border-radius: 50%;
+          background: radial-gradient(
+            closest-side,
+            color-mix(in srgb, var(--mk-accent) 16%, transparent),
+            transparent
+          );
+        }
+        #perspective-type {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: var(--mk-safe);
+          bottom: 38%;
+          padding-bottom: calc(var(--u) * 8);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          text-align: center;
+        }
+        #perspective-a,
+        #perspective-b {
+          margin: 0;
+          font-size: calc(var(--u) * 11);
+          max-width: none;
+        }
+        #perspective-a {
+          color: var(--mk-muted);
+        }
+        #perspective-b {
+          font-style: italic;
+        }
+      </style>
+      <div
+        id="perspective-root"
+        class="mk-scene"
+        data-composition-id="perspective"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div id="perspective-ground" data-layout-allow-overflow>
+          <div id="perspective-floor" data-layout-allow-overflow></div>
+        </div>
+        <div id="perspective-haze"></div>
+        <div id="perspective-horizon"></div>
+        <div id="perspective-point"></div>
+        <div id="perspective-type">
+          <h2 id="perspective-a" class="mk-hero" data-sample>A different</h2>
+          <h2 id="perspective-b" class="mk-hero" data-sample>perspective.</h2>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          // The camera rises over the floor (rotation) while the floor glides toward us: two grid
+          // cells (9u each) of linear travel, so it never stops.
+          const cell = 9 * parseFloat(MK.knob('--u', '10.8'))
+          tl.fromTo(
+            '#perspective-floor',
+            { rotationX: 84, backgroundPosition: '50% 0px' },
+            {
+              rotationX: 79,
+              backgroundPosition: `50% ${cell * 2}px`,
+              duration: 3.6,
+              ease: 'power1.out',
+            },
+            0,
+          )
+          tl.fromTo(
+            '#perspective-ground',
+            { opacity: 0 },
+            { opacity: 1, duration: 1.6, ease: 'power2.out' },
+            0,
+          )
+          tl.fromTo(
+            '#perspective-horizon',
+            { scaleX: 0 },
+            { scaleX: 1, duration: 1.6, ease: MK.ease.enter },
+            0.1,
+          )
+          MK.revealLines(tl, '#perspective-a', 0.3, { duration: 1.25 })
+          MK.revealLines(tl, '#perspective-b', 0.6, { duration: 1.25 })
+          // The ember lands on the vanishing point once the words have settled.
+          tl.fromTo(
+            '#perspective-point',
+            { scale: 0, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 1.1, ease: MK.ease.enter },
+            1.15,
+          )
+          tl.fromTo(
+            '#perspective-haze',
+            { opacity: 0, scaleX: 0.4 },
+            { opacity: 1, scaleX: 1, duration: 1.8, ease: MK.ease.move },
+            1.15,
+          )
+          tl.to(
+            '#perspective-type > *',
+            { opacity: 0, duration: 0.45, ease: MK.ease.exit, stagger: 0.06 },
+            2.75,
+          )
+          MK.pushIn(tl, '#perspective-type', 0, 3.6, { to: 1.025 })
+          window.__timelines['perspective'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

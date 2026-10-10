@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Daylight</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="blocks/motion-kit.css" />
+    <link rel="stylesheet" href="blocks/style.css" />
+    <script src="blocks/motion-kit.js"></script>
+    <style>
+      :root {
+        /* 1% of the shorter frame edge; every block and scene sizes from it. */
+        --u: 10.8px;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--mk-bg);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--mk-bg);
+      }
+      #finish {
+        z-index: 50;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Daylight: three separate thoughts arrive, then gather into one stacked collection.
+      hook (sunrise + three caption boxes) → cards (arrive apart, stack together) → sign-off (sun up, CTA).
+      Scenes overlap by their transition. Retiming a scene: move the next slots and the times below.
+    -->
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="11.5"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div
+        id="hook"
+        data-composition-id="hook"
+        data-composition-src="compositions/hook.html"
+        data-start="0"
+        data-duration="3.8"
+        data-track-index="1"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+      <div
+        id="cards"
+        data-composition-id="cards"
+        data-composition-src="compositions/cards.html"
+        data-start="3.2"
+        data-duration="4.9"
+        data-track-index="2"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+      <div
+        id="signoff"
+        data-composition-id="signoff"
+        data-composition-src="compositions/signoff.html"
+        data-start="7.5"
+        data-duration="4"
+        data-track-index="3"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+      <div
+        id="finish"
+        data-composition-id="finish"
+        data-composition-src="compositions/finish.html"
+        data-start="0"
+        data-duration="11.5"
+        data-track-index="9"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true })
+      // Soft wipe up: the next scene rises like a sheet of paper with rounded leading corners,
+      // while the previous one drifts up behind it.
+      tl.fromTo(
+        '#cards',
+        { clipPath: 'inset(100% 0% 0% 0% round 140px 140px 0px 0px)' },
+        {
+          clipPath: 'inset(0% 0% 0% 0% round 0px 0px 0px 0px)',
+          duration: 0.6,
+          ease: 'power3.inOut',
+        },
+        3.2,
+      )
+      tl.to('#hook', { yPercent: -7, duration: 0.6, ease: 'power3.inOut' }, 3.2)
+      // A feed-style slide (swipe left) into the sign-off.
+      MK.transition(tl, 'slide', '#cards', '#signoff', 7.5, { duration: 0.6 })
+      window.__timelines['main'] = tl
+    </script>
+  </body>
+</html>

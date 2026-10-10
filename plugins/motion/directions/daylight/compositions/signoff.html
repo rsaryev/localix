@@ -1,0 +1,244 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #signoff-root {
+          position: absolute;
+          inset: 0;
+        }
+        #signoff-sky {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            110% 62% at 50% 84%,
+            color-mix(in srgb, var(--mk-accent) 20%, var(--mk-bg)),
+            var(--mk-bg) 72%
+          );
+        }
+        #signoff-horizon {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: calc(var(--u) * 150);
+          overflow: hidden;
+        }
+        #signoff-sun {
+          position: absolute;
+          left: 50%;
+          top: calc(var(--u) * 112);
+          width: calc(var(--u) * 70);
+          height: calc(var(--u) * 70);
+          margin-left: calc(var(--u) * -35);
+          border-radius: 50%;
+          background: radial-gradient(
+            circle at 50% 30%,
+            color-mix(in srgb, var(--mk-accent) 70%, var(--mk-surface)),
+            var(--mk-accent) 72%
+          );
+          box-shadow: 0 0 calc(var(--u) * 16) color-mix(in srgb, var(--mk-accent) 40%, transparent);
+        }
+        #signoff-rays {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+        }
+        #signoff-rays line {
+          stroke: color-mix(in srgb, var(--mk-accent) 70%, transparent);
+          stroke-width: 0.7;
+          stroke-linecap: round;
+        }
+        #signoff-ground {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(var(--u) * 150);
+          bottom: 0;
+          background: color-mix(in srgb, var(--mk-text) 5%, var(--mk-bg));
+          border-top: calc(var(--u) * 0.25) solid
+            color-mix(in srgb, var(--mk-text) 16%, transparent);
+        }
+        #signoff-copy {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: calc(var(--u) * 34);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+        #signoff-label {
+          display: flex;
+          align-items: center;
+          gap: calc(var(--u) * 1.4);
+          color: var(--mk-text);
+          margin-bottom: calc(var(--u) * 3.4);
+        }
+        #signoff-label i {
+          display: block;
+          width: calc(var(--u) * 1.6);
+          height: calc(var(--u) * 1.6);
+          border-radius: 50%;
+          background: var(--mk-accent);
+        }
+        .signoff-mask {
+          display: block;
+          overflow: hidden;
+          padding: 0 0.1em 0.12em;
+          font-size: calc(var(--u) * 12.4);
+          line-height: 1.02;
+        }
+        .signoff-line {
+          display: block;
+        }
+        #signoff-headline {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin: 0;
+        }
+        #signoff-word {
+          display: inline-block;
+        }
+        #signoff-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: calc(var(--u) * 2.2);
+          margin-top: calc(var(--u) * 6);
+          padding: calc(var(--u) * 1.4) calc(var(--u) * 1.4) calc(var(--u) * 1.4)
+            calc(var(--u) * 4.2);
+          border-radius: 999px;
+          background: var(--mk-text);
+          color: var(--mk-bg);
+          font-size: calc(var(--u) * 4.2);
+          font-weight: 700;
+          letter-spacing: -0.01em;
+        }
+        #signoff-arrow {
+          display: grid;
+          place-items: center;
+          width: calc(var(--u) * 7);
+          height: calc(var(--u) * 7);
+          border-radius: 50%;
+          background: var(--mk-accent);
+          color: var(--mk-surface);
+          font-size: calc(var(--u) * 4);
+        }
+        #signoff-url {
+          margin-top: calc(var(--u) * 3);
+        }
+      </style>
+      <div
+        id="signoff-root"
+        class="mk-scene"
+        data-composition-id="signoff"
+        data-width="1080"
+        data-height="1920"
+      >
+        <div id="signoff-sky"></div>
+        <div id="signoff-horizon">
+          <!-- Rays in units of --u (100 × 150), radiating from the sun's centre (50, 147). -->
+          <svg id="signoff-rays" viewBox="0 0 100 150" preserveAspectRatio="none">
+            <line x1="11" y1="134.3" x2="2.45" y2="131.55" />
+            <line x1="16.83" y1="122.9" x2="9.55" y2="117.6" />
+            <line x1="25.9" y1="113.8" x2="20.6" y2="106.55" />
+            <line x1="37.33" y1="108" x2="34.55" y2="99.45" />
+            <line x1="50" y1="106" x2="50" y2="97" />
+            <line x1="62.67" y1="108" x2="65.45" y2="99.45" />
+            <line x1="74.1" y1="113.8" x2="79.4" y2="106.55" />
+            <line x1="83.17" y1="122.9" x2="90.45" y2="117.6" />
+            <line x1="89" y1="134.3" x2="97.55" y2="131.55" />
+          </svg>
+          <div id="signoff-sun" data-layout-allow-overflow></div>
+        </div>
+        <div id="signoff-ground"></div>
+        <div id="signoff-copy">
+          <div id="signoff-label" class="mk-label">
+            <i></i><span data-sample>The sunny edit · Vol. 01</span>
+          </div>
+          <h1 id="signoff-headline" class="mk-hero">
+            <span class="signoff-mask"
+              ><span id="signoff-line-1" class="signoff-line" data-sample>Find your</span></span
+            >
+            <span class="signoff-mask"
+              ><span id="signoff-line-2" class="signoff-line"
+                ><span id="signoff-word" data-sample>sunny side.</span></span
+              ></span
+            >
+          </h1>
+          <div id="signoff-cta">
+            <span data-sample>Explore the collection</span><span id="signoff-arrow">→</span>
+          </div>
+          <div id="signoff-url" class="mk-label" data-sample>example.com/collection</div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const u =
+            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 10.8
+          const tl = gsap.timeline({ paused: true })
+          // Payoff of the hook's sunrise: the sun clears the horizon and the rays draw out.
+          tl.fromTo(
+            '#signoff-sun',
+            { y: 40 * u },
+            { y: 0, duration: MK.dur(1.3), ease: 'power3.out' },
+            0.25,
+          )
+          document.querySelectorAll('#signoff-rays line').forEach((ray, i) => {
+            const length = Math.hypot(
+              ray.x2.baseVal.value - ray.x1.baseVal.value,
+              ray.y2.baseVal.value - ray.y1.baseVal.value,
+            )
+            ray.style.strokeDasharray = `${length} ${length + 2}`
+            // Opacity rides along so the round cap never shows as a dot before the ray draws.
+            tl.fromTo(
+              ray,
+              { strokeDashoffset: length, opacity: 0 },
+              { strokeDashoffset: 0, opacity: 1, duration: MK.dur(0.45), ease: MK.ease.soft },
+              0.8 + Math.abs(i - 4) * 0.04,
+            )
+          })
+          tl.fromTo(
+            '#signoff-label',
+            { opacity: 0, y: 1.5 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.6), ease: MK.ease.soft },
+            0.2,
+          )
+          tl.fromTo(
+            ['#signoff-line-1', '#signoff-line-2'],
+            { yPercent: 135 },
+            { yPercent: 0, duration: MK.dur(0.85), ease: MK.ease.enter, stagger: 0.16 },
+            0.3,
+          )
+          MK.annotate(tl, '#signoff-word', 1.0, {
+            kind: 'underline',
+            width: 7,
+            seed: 5,
+            duration: MK.dur(0.45),
+          })
+          // The scene's one overshoot: the call to action pops into place.
+          tl.fromTo(
+            '#signoff-cta',
+            { scale: 0.7, opacity: 0, y: 2 * u },
+            { scale: 1, opacity: 1, y: 0, duration: MK.dur(0.7), ease: 'back.out(1.5)' },
+            0.6,
+          )
+          tl.fromTo(
+            '#signoff-url',
+            { opacity: 0 },
+            { opacity: 1, duration: MK.dur(0.5), ease: MK.ease.soft },
+            1.0,
+          )
+          // Then the card holds still so the call to action can be read.
+          window.__timelines['signoff'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

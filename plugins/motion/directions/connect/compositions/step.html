@@ -1,0 +1,244 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #step-root {
+          position: absolute;
+          inset: 0;
+        }
+        #step-root .cx-node {
+          position: absolute;
+          width: calc(var(--u) * 36);
+        }
+        #step-n1 {
+          left: 21%;
+          top: 63%;
+        }
+        #step-n2 {
+          left: 50%;
+          top: 47%;
+        }
+        #step-n3 {
+          left: 79%;
+          top: 63%;
+        }
+        #step-root .cx-card {
+          box-sizing: border-box;
+          height: calc(var(--u) * 25);
+          display: flex;
+          flex-direction: column;
+          gap: calc(var(--u) * 1.2);
+          padding: calc(var(--u) * 3);
+          border-radius: calc(var(--mk-radius) * 1.2);
+          background: var(--mk-text);
+          color: var(--mk-bg);
+          text-align: left;
+          box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 5)
+            color-mix(in srgb, var(--mk-bg) 55%, black);
+        }
+        #step-root .cx-card > * {
+          flex: none;
+        }
+        #step-root .cx-num {
+          display: grid;
+          place-items: center;
+          width: calc(var(--u) * 4.4);
+          height: calc(var(--u) * 4.4);
+          border-radius: 50%;
+          background: var(--mk-accent);
+          color: var(--mk-bg);
+          font-size: calc(var(--u) * 2);
+          font-weight: 750;
+        }
+        #step-root .cx-name {
+          font-size: calc(var(--u) * 4.4);
+          font-weight: 750;
+          letter-spacing: -0.02em;
+        }
+        #step-root .cx-text {
+          font-size: calc(var(--u) * 2.6);
+          line-height: 1.3;
+          color: color-mix(in srgb, var(--mk-bg) 78%, var(--mk-text));
+        }
+        #step-wires {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+        }
+        #step-wires path {
+          fill: none;
+          stroke: var(--mk-text);
+          stroke-width: 4;
+          stroke-linecap: round;
+        }
+        #step-next {
+          position: absolute;
+          left: 70%;
+          top: 50%;
+          display: flex;
+          align-items: center;
+          gap: calc(var(--u) * 1.2);
+          padding: calc(var(--u) * 1.4) calc(var(--u) * 2.6);
+          border-radius: 999px;
+          background: var(--mk-accent);
+          color: var(--mk-bg);
+          font-size: calc(var(--u) * 2.8);
+          font-weight: 750;
+          white-space: nowrap;
+          box-shadow: 0 calc(var(--u) * 1.5) calc(var(--u) * 4)
+            color-mix(in srgb, var(--mk-bg) 55%, black);
+        }
+        #step-title {
+          position: absolute;
+          left: var(--mk-safe);
+          top: 50%;
+          translate: 0 -50%;
+          font-size: calc(var(--u) * 9);
+          font-weight: 750;
+          max-width: 8ch;
+          text-align: left;
+        }
+        #step-label {
+          position: absolute;
+          left: var(--mk-safe);
+          top: calc(var(--mk-safe) + var(--u) * 1);
+        }
+      </style>
+      <div
+        id="step-root"
+        class="mk-scene"
+        data-composition-id="step"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div class="mk-dots"></div>
+        <div id="step-label" class="mk-label" data-sample>Connect · a three-step method</div>
+        <h2 id="step-title" class="mk-hero" data-mark="next step." data-sample>
+          Make the next step.
+        </h2>
+        <svg id="step-wires" aria-hidden="true">
+          <path id="step-w1" d="M0 0" />
+          <path id="step-w2" d="M0 0" />
+        </svg>
+        <div id="step-n1" class="cx-node">
+          <div class="cx-card">
+            <span class="cx-num">01</span><span class="cx-name" data-sample>An idea</span
+            ><span class="cx-text" data-sample>What if onboarding took one step?</span>
+          </div>
+        </div>
+        <div id="step-n2" class="cx-node">
+          <div class="cx-card">
+            <span class="cx-num">02</span><span class="cx-name" data-sample>An insight</span
+            ><span class="cx-text" data-sample>Most people stop at step three.</span>
+          </div>
+        </div>
+        <div id="step-n3" class="cx-node">
+          <div class="cx-card">
+            <span class="cx-num">03</span><span class="cx-name" data-sample>A plan</span
+            ><span class="cx-text" data-sample>Ship a one-step trial in May.</span>
+          </div>
+        </div>
+        <div id="step-next" data-sample>Next step → Monday, 9:00</div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const $ = (s) => document.querySelector(s)
+          const root = $('#step-root')
+          const u =
+            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 10.8
+          const ink = getComputedStyle(document.documentElement).getPropertyValue('--mk-bg').trim()
+          gsap.set('#step-root .cx-node', { xPercent: -50, yPercent: -50 })
+          // Start exactly where "join" ended (same grid, wires drawn), so the wipe reads as one board.
+          // Deterministic grid (no layout reads): card 36u × 25u, centres as in the CSS above.
+          const W = +root.dataset.width,
+            H = +root.dataset.height
+          const b = ([fx, fy]) => ({ cx: W * fx, cy: H * fy, w: 36 * u, h: 25 * u })
+          const g = {
+            W,
+            H,
+            n: [
+              [0.21, 0.63],
+              [0.5, 0.47],
+              [0.79, 0.63],
+            ].map(b),
+            next: b([0.7, 0.5]),
+          }
+          const [b1, b2, b3] = g.n
+          const wire = (path, a, z) => {
+            const k = (z.x - a.x) * 0.5
+            $(path).setAttribute(
+              'd',
+              `M ${a.x} ${a.y} C ${a.x + k} ${a.y} ${z.x - k} ${z.y} ${z.x} ${z.y}`,
+            )
+          }
+          wire('#step-w1', { x: b1.cx + b1.w / 2, y: b1.cy }, { x: b2.cx - b2.w / 2, y: b2.cy })
+          wire('#step-w2', { x: b2.cx + b2.w / 2, y: b2.cy }, { x: b3.cx - b3.w / 2, y: b3.cy })
+          // Gather: the connectors retract and the three items stack into one plan on the right.
+          tl.to('#step-wires', { opacity: 0, duration: 0.3, ease: MK.ease.exit }, 0.3)
+          const stack = { x: g.W * 0.7, y: g.H * 0.47 }
+          const poses = [
+            { dx: -2.2, dy: 3.6, r: -6 },
+            { dx: 1.6, dy: 1.8, r: 4 },
+            { dx: 0, dy: 0, r: 0 },
+          ]
+          g.n.forEach((b, i) => {
+            const p = poses[i]
+            tl.fromTo(
+              `#step-n${i + 1}`,
+              { x: 0, y: 0, rotation: 0, scale: 1 },
+              {
+                x: stack.x - b.cx + p.dx * u,
+                y: stack.y - b.cy + p.dy * u,
+                rotation: p.r,
+                scale: 1.12,
+                duration: 0.95,
+                ease: MK.ease.move,
+              },
+              0.4 + i * 0.1,
+            )
+          })
+          // The outcome slides out from under the stack: the one overshoot of the scene.
+          const nextY = stack.y + b3.h * 0.56 + 3.5 * u - g.next.cy
+          tl.fromTo(
+            '#step-next',
+            { xPercent: -50, x: 0, y: nextY - 6 * u, opacity: 0, scale: 0.8 },
+            {
+              xPercent: -50,
+              x: 0,
+              y: nextY,
+              opacity: 1,
+              scale: 1,
+              duration: 0.7,
+              ease: MK.ease.pop,
+            },
+            1.45,
+          )
+          const lines = MK.revealLines(tl, '#step-title', 0.85)
+          const word = $('#step-title').dataset.mark
+          const line = lines.find((l) => word && l.textContent.includes(word))
+          if (line) {
+            line.innerHTML = line.textContent.replace(word, `<span class="cx-hl">${word}</span>`)
+            const hl = line.querySelector('.cx-hl')
+            MK.annotate(tl, hl, 1.7, { kind: 'marker' })
+            tl.to(hl, { color: ink, duration: 0.2 }, 1.8)
+          }
+          tl.fromTo(
+            '#step-label',
+            { opacity: 0, y: u },
+            { opacity: 1, y: 0, duration: 0.6, ease: MK.ease.soft },
+            1.2,
+          )
+          // Everything has landed by ~2.2 s; the frame then holds still.
+          window.__timelines['step'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

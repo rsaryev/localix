@@ -1,0 +1,368 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #bars-root {
+          position: absolute;
+          inset: 0;
+          background-image: repeating-linear-gradient(
+            to bottom,
+            transparent 0 calc(var(--u) * 6 - 1px),
+            var(--mk-line) calc(var(--u) * 6 - 1px) calc(var(--u) * 6)
+          );
+        }
+        .bars-edge {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: calc(var(--u) * 0.7);
+          background: var(--mk-accent);
+          z-index: 5;
+        }
+        .bars-top {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: calc(var(--u) * 5);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: calc(var(--u) * 1.4);
+          border-bottom: 2px solid var(--mk-text);
+          color: var(--mk-text);
+        }
+        #bars-grid {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: calc(var(--u) * 15);
+          bottom: calc(var(--u) * 7);
+          display: grid;
+          grid-template-columns: calc(var(--u) * 50) 1fr;
+          column-gap: calc(var(--u) * 8);
+          align-items: center;
+        }
+        #bars-copy {
+          display: flex;
+          flex-direction: column;
+          gap: calc(var(--u) * 2.4);
+        }
+        #bars-label {
+          color: var(--mk-muted);
+        }
+        #bars-title {
+          margin: 0;
+          font-size: calc(var(--u) * 6.6);
+          max-width: 11ch;
+        }
+        #bars-note {
+          font-size: calc(var(--u) * 2.9);
+          max-width: 30ch;
+        }
+        /* Chart: y ticks | plot, x labels below. Values run 0–35. */
+        #bars-chart {
+          display: grid;
+          grid-template-columns: calc(var(--u) * 6) 1fr;
+          grid-template-rows: calc(var(--u) * 56) auto;
+          column-gap: calc(var(--u) * 1.6);
+          row-gap: calc(var(--u) * 1.4);
+        }
+        #bars-y {
+          position: relative;
+        }
+        .bars-tick {
+          position: absolute;
+          right: 0;
+          bottom: calc(var(--t) / 35 * 100%);
+          transform: translateY(50%);
+          font-size: calc(var(--u) * 2.4);
+          font-weight: 600;
+          color: var(--mk-muted);
+          font-variant-numeric: tabular-nums;
+          line-height: 1;
+        }
+        #bars-plot {
+          position: relative;
+          border-bottom: 2px solid var(--mk-text);
+        }
+        .bars-gridline {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: calc(var(--t) / 35 * 100%);
+          height: 1px;
+          background: color-mix(in srgb, var(--mk-text) 14%, transparent);
+        }
+        #bars-bars {
+          position: absolute;
+          inset: 0 calc(var(--u) * 2);
+          height: auto;
+          justify-content: space-between;
+          gap: 0;
+        }
+        #bars-root .mk-bar {
+          position: relative;
+          display: block;
+          width: calc(var(--u) * 7.4);
+        }
+        #bars-root .mk-bar-fill {
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          height: calc(var(--v) / 35 * 100%);
+          border-radius: calc(var(--u) * 0.6) calc(var(--u) * 0.6) 0 0;
+          background: color-mix(in srgb, var(--mk-text) 24%, var(--mk-bg));
+        }
+        #bars-root .mk-bar.is-after .mk-bar-fill {
+          background: var(--mk-accent);
+        }
+        .bars-value {
+          position: absolute;
+          left: 50%;
+          width: calc(var(--u) * 10);
+          margin-left: calc(var(--u) * -5);
+          bottom: calc(var(--v) / 35 * 100% + var(--u) * 1);
+          text-align: center;
+          font-size: calc(var(--u) * 2.8);
+          font-weight: 700;
+          color: var(--mk-text);
+          font-variant-numeric: tabular-nums;
+          line-height: 1;
+        }
+        .mk-bar.is-last .bars-value {
+          font-size: calc(var(--u) * 3.6);
+          color: var(--mk-accent);
+        }
+        #bars-x {
+          grid-column: 2;
+          display: flex;
+          justify-content: space-between;
+          padding: 0 calc(var(--u) * 2);
+        }
+        #bars-x span {
+          width: calc(var(--u) * 7.4);
+          text-align: center;
+          font-size: calc(var(--u) * 2.3);
+          font-weight: 600;
+          color: var(--mk-muted);
+          white-space: nowrap;
+        }
+        /* The change: a dashed marker between the second and third quarter. */
+        #bars-marker {
+          position: absolute;
+          /* Midway between the 2nd and 3rd bar centres (8 bars, 7.4u wide, 2u inset). */
+          left: calc(var(--u) * 5.7 + (100% - var(--u) * 11.4) * 1.5 / 7);
+          top: calc(var(--u) * 5);
+          bottom: 0;
+          width: 0;
+          border-left: 2px dashed var(--mk-text);
+        }
+        #bars-marker-label {
+          position: absolute;
+          left: calc(var(--u) * 6.9 + (100% - var(--u) * 11.4) * 1.5 / 7);
+          top: calc(var(--u) * 4.2);
+          font-size: calc(var(--u) * 2.4);
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--mk-text);
+          white-space: nowrap;
+        }
+        #bars-callout {
+          position: absolute;
+          left: calc(var(--u) * 6.9 + (100% - var(--u) * 11.4) * 1.5 / 7);
+          top: calc(var(--u) * 9.5);
+          display: inline-flex;
+          align-items: baseline;
+          gap: calc(var(--u) * 1.2);
+          padding: calc(var(--u) * 1) calc(var(--u) * 2);
+          border-radius: var(--mk-radius);
+          background: var(--mk-text);
+          color: var(--mk-surface);
+          white-space: nowrap;
+        }
+        #bars-callout b {
+          font-size: calc(var(--u) * 4.4);
+          font-weight: 750;
+          letter-spacing: -0.03em;
+          font-variant-numeric: tabular-nums;
+        }
+        #bars-callout span {
+          font-size: calc(var(--u) * 2.4);
+          font-weight: 600;
+        }
+      </style>
+      <div
+        id="bars-root"
+        class="mk-scene"
+        data-composition-id="bars"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div class="bars-top">
+          <span class="mk-label" data-sample>State of shipping · 2025</span>
+          <span class="mk-label">02 / 03</span>
+        </div>
+        <div id="bars-grid">
+          <div id="bars-copy">
+            <div id="bars-label" class="mk-label" data-sample>Weekly releases per team</div>
+            <h2 id="bars-title" class="mk-title" data-sample>From 9 to 31 in two years.</h2>
+            <p id="bars-note" class="mk-body" data-sample>
+              Median releases per team, per quarter, after moving to small weekly changes.
+            </p>
+          </div>
+          <div id="bars-chart">
+            <div id="bars-y">
+              <span class="bars-tick" style="--t: 0">0</span>
+              <span class="bars-tick" style="--t: 10">10</span>
+              <span class="bars-tick" style="--t: 20">20</span>
+              <span class="bars-tick" style="--t: 30">30</span>
+            </div>
+            <div id="bars-plot">
+              <i class="bars-gridline" style="--t: 10"></i>
+              <i class="bars-gridline" style="--t: 20"></i>
+              <i class="bars-gridline" style="--t: 30"></i>
+              <div id="bars-bars" class="mk-bars">
+                <div class="mk-bar" style="--v: 9">
+                  <span class="bars-value" data-sample>9</span><i class="mk-bar-fill"></i>
+                </div>
+                <div class="mk-bar" style="--v: 10">
+                  <span class="bars-value" data-sample>10</span><i class="mk-bar-fill"></i>
+                </div>
+                <div class="mk-bar is-after" style="--v: 13">
+                  <span class="bars-value" data-sample>13</span><i class="mk-bar-fill"></i>
+                </div>
+                <div class="mk-bar is-after" style="--v: 16">
+                  <span class="bars-value" data-sample>16</span><i class="mk-bar-fill"></i>
+                </div>
+                <div class="mk-bar is-after" style="--v: 19">
+                  <span class="bars-value" data-sample>19</span><i class="mk-bar-fill"></i>
+                </div>
+                <div class="mk-bar is-after" style="--v: 23">
+                  <span class="bars-value" data-sample>23</span><i class="mk-bar-fill"></i>
+                </div>
+                <div class="mk-bar is-after" style="--v: 27">
+                  <span class="bars-value" data-sample>27</span><i class="mk-bar-fill"></i>
+                </div>
+                <div class="mk-bar is-after is-last" style="--v: 31">
+                  <span class="bars-value" data-sample>31</span><i class="mk-bar-fill"></i>
+                </div>
+              </div>
+              <div id="bars-marker"></div>
+              <div id="bars-marker-label" data-sample>The change</div>
+              <div id="bars-callout">
+                <b data-sample>3.4×</b><span data-sample>in two years</span>
+              </div>
+            </div>
+            <div id="bars-x">
+              <span data-sample>Q1 ’24</span><span data-sample>Q2 ’24</span
+              ><span data-sample>Q3 ’24</span><span data-sample>Q4 ’24</span>
+              <span data-sample>Q1 ’25</span><span data-sample>Q2 ’25</span
+              ><span data-sample>Q3 ’25</span><span data-sample>Q4 ’25</span>
+            </div>
+          </div>
+        </div>
+        <div class="bars-edge"></div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const u =
+            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 10.8
+          const root = document.querySelector('#bars-root')
+          const height = MK.withLayout(root, () => root.offsetHeight) || 100 * u
+          const tl = gsap.timeline({ paused: true })
+          // The green leading edge rides the wipe up (same curve and length as the slot's wipe).
+          tl.fromTo(
+            '#bars-root .bars-edge',
+            { y: height },
+            { y: 0, duration: 0.6, ease: 'power3.inOut' },
+            0,
+          )
+          tl.to('#bars-root .bars-edge', { opacity: 0, duration: 0.3, ease: MK.ease.soft }, 0.6)
+          tl.fromTo(
+            '#bars-label',
+            { opacity: 0, y: 1.2 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.6), ease: MK.ease.soft },
+            0.5,
+          )
+          MK.revealLines(tl, '#bars-title', 0.4)
+          tl.fromTo(
+            '#bars-note',
+            { opacity: 0, y: 1.2 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.6), ease: MK.ease.soft },
+            0.95,
+          )
+          // Axes first, then the data.
+          tl.fromTo(
+            '#bars-root .bars-gridline',
+            { scaleX: 0 },
+            {
+              scaleX: 1,
+              duration: MK.dur(0.7),
+              ease: MK.ease.move,
+              stagger: 0.06,
+              transformOrigin: '0% 50%',
+            },
+            0.2,
+          )
+          tl.fromTo(
+            '#bars-root .bars-tick, #bars-x span',
+            { opacity: 0 },
+            { opacity: 1, duration: MK.dur(0.5), ease: MK.ease.soft, stagger: 0.03 },
+            0.3,
+          )
+          const start = 0.8
+          const step = 0.09
+          MK.bars(tl, '#bars-bars', start, { stagger: step, duration: MK.dur(0.9) })
+          // Each value rides the top of its bar (same curve and length as the bar) while it counts up.
+          const plot = document.querySelector('#bars-plot')
+          const plotHeight = MK.withLayout(plot, () => plot.clientHeight)
+          document.querySelectorAll('#bars-bars .mk-bar').forEach((bar, i) => {
+            const value = bar.querySelector('.bars-value')
+            const v = Number(bar.style.getPropertyValue('--v'))
+            const at = start + i * step
+            tl.fromTo(
+              value,
+              { y: (v / 35) * plotHeight },
+              { y: 0, duration: MK.dur(0.9), ease: MK.ease.enter },
+              at,
+            )
+            tl.fromTo(
+              value,
+              { opacity: 0 },
+              { opacity: 1, duration: 0.25, ease: 'none' },
+              at + 0.05,
+            )
+            MK.counter(tl, value, at, { from: 0, duration: MK.dur(0.9), ease: MK.ease.enter })
+          })
+          // The story: where the change happened, and what it added up to.
+          tl.fromTo(
+            '#bars-marker',
+            { scaleY: 0 },
+            { scaleY: 1, duration: MK.dur(0.6), ease: MK.ease.move, transformOrigin: '50% 100%' },
+            2.0,
+          )
+          tl.fromTo(
+            '#bars-marker-label',
+            { opacity: 0, x: -1.2 * u },
+            { opacity: 1, x: 0, duration: MK.dur(0.5), ease: MK.ease.soft },
+            2.4,
+          )
+          tl.fromTo(
+            '#bars-callout',
+            { opacity: 0, y: 2 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.6), ease: MK.ease.enter },
+            2.55,
+          )
+          MK.pushIn(tl, '#bars-grid', 0, 5.2, { to: 1.02 })
+          window.__timelines['bars'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

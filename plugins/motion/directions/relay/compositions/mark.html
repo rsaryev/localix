@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #mark-root {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            60% 60% at 50% 42%,
+            color-mix(in srgb, var(--mk-accent) 10%, var(--mk-bg)),
+            var(--mk-bg) 70%
+          );
+        }
+        #mark-stage {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: calc(var(--u) * 4.4);
+          perspective: calc(var(--u) * 140);
+        }
+        #mark-glow {
+          left: 50%;
+          top: 42%;
+          margin: calc(var(--u) * -35) 0 0 calc(var(--u) * -35);
+        }
+        /* The isolated mark: the dock icon, alone and sharp. Replace the rings with the real logo. */
+        #mark-tile {
+          position: relative;
+          display: grid;
+          place-items: center;
+          width: calc(var(--u) * 30);
+          height: calc(var(--u) * 30);
+          border-radius: calc(var(--u) * 7.6);
+          overflow: hidden;
+          background: linear-gradient(
+            155deg,
+            color-mix(in srgb, var(--mk-accent) 70%, var(--mk-text)),
+            var(--mk-accent) 45%,
+            color-mix(in srgb, var(--mk-accent) 55%, var(--mk-bg))
+          );
+          box-shadow:
+            inset 0 2px 0 color-mix(in srgb, var(--mk-text) 60%, transparent),
+            0 0 calc(var(--u) * 12) color-mix(in srgb, var(--mk-accent) 40%, transparent),
+            0 calc(var(--u) * 4) calc(var(--u) * 8) rgba(0, 0, 0, 0.6);
+        }
+        #mark-tile svg {
+          width: 50%;
+          height: 50%;
+          fill: none;
+          stroke: var(--mk-bg);
+          stroke-width: 2.6;
+        }
+        #mark-sheen {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            100deg,
+            transparent 30%,
+            color-mix(in srgb, var(--mk-text) 45%, transparent) 50%,
+            transparent 70%
+          );
+        }
+        #mark-verbs {
+          position: relative;
+          display: flex;
+          gap: calc(var(--u) * 8);
+          padding-bottom: calc(var(--u) * 2.8);
+          font-size: calc(var(--u) * 4.6);
+          font-weight: 500;
+          letter-spacing: -0.01em;
+          color: var(--mk-muted);
+        }
+        #mark-track {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 1px;
+          background: var(--mk-line);
+        }
+        #mark-baton {
+          position: absolute;
+          left: 0;
+          bottom: calc(var(--u) * -0.5);
+          width: calc(var(--u) * 1);
+          height: calc(var(--u) * 1);
+          margin-left: calc(var(--u) * -0.5);
+          border-radius: 50%;
+          background: var(--mk-accent);
+          box-shadow: 0 0 calc(var(--u) * 2) var(--mk-accent);
+        }
+      </style>
+      <div
+        id="mark-root"
+        class="mk-scene"
+        data-composition-id="mark"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div id="mark-glow" class="mk-glow"></div>
+        <div id="mark-stage">
+          <div id="mark-tile">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="12" r="5" />
+              <circle cx="15" cy="12" r="5" />
+            </svg>
+            <div id="mark-sheen"></div>
+          </div>
+          <div id="mark-verbs">
+            <span class="mark-verb" data-sample>Collect</span>
+            <span class="mark-verb" data-sample>Connect</span>
+            <span class="mark-verb" data-sample>Create</span>
+            <div id="mark-track"></div>
+            <div id="mark-baton"></div>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const verbs = [...document.querySelectorAll('#mark-root .mark-verb')]
+          const lit = getComputedStyle(document.documentElement)
+            .getPropertyValue('--mk-text')
+            .trim()
+          // Baton stops: under the centre of each verb, measured at build time.
+          const stops = MK.withLayout('#mark-verbs', () =>
+            verbs.map((v) => MK.offsetWithin(v, '#mark-verbs')).map((o) => o.x + o.width / 2),
+          )
+          // Match the dock's dive: the tile starts big and dead centre, where the dock icon was.
+          const lift = MK.withLayout('#mark-stage', () => {
+            const t = MK.offsetWithin('#mark-tile', '#mark-stage')
+            return document.querySelector('#mark-stage').offsetHeight / 2 - (t.y + t.height / 2)
+          })
+          // The camera is still flying in from the dock: the tile arrives turned and settles flat.
+          tl.fromTo(
+            '#mark-tile',
+            { scale: 2.4, rotationY: -10, rotationX: 6, y: lift },
+            { scale: 1, rotationY: 0, rotationX: 0, y: 0, duration: 1.4, ease: MK.ease.enter },
+            0,
+          )
+          tl.fromTo(
+            '#mark-glow',
+            { opacity: 0, scale: 0.6 },
+            { opacity: 0.9, scale: 1, duration: 1.6, ease: MK.ease.move },
+            0,
+          )
+          tl.fromTo(
+            '#mark-sheen',
+            { xPercent: -100 },
+            { xPercent: 100, duration: 1.1, ease: MK.ease.move },
+            0.75,
+          )
+          tl.fromTo(
+            verbs,
+            { opacity: 0, y: 14 },
+            { opacity: 1, y: 0, duration: 0.6, ease: MK.ease.soft, stagger: 0.12 },
+            0.45,
+          )
+          tl.fromTo(
+            '#mark-track',
+            { scaleX: 0, transformOrigin: '0 50%' },
+            { scaleX: 1, duration: 0.9, ease: MK.ease.move },
+            0.5,
+          )
+          // The relay: a baton passes from verb to verb, each one lighting as it is handed on.
+          tl.fromTo(
+            '#mark-baton',
+            { x: stops[0], opacity: 0 },
+            { x: stops[0], opacity: 1, duration: 0.25 },
+            0.8,
+          )
+          tl.to(verbs[0], { color: lit, duration: 0.25 }, 0.85)
+          stops.slice(1).forEach((x, i) => {
+            tl.to('#mark-baton', { x, duration: 0.4, ease: MK.ease.move }, 1.05 + i * 0.45)
+            tl.to(verbs[i + 1], { color: lit, duration: 0.25 }, 1.35 + i * 0.45)
+          })
+          MK.pushIn(tl, '#mark-stage', 0, 2.8, { to: 1.04 })
+          window.__timelines['mark'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

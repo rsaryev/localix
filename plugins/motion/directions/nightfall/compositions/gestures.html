@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #gestures-root {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            ellipse 65% 60% at 50% 55%,
+            color-mix(in srgb, var(--mk-surface) 80%, var(--mk-bg)),
+            var(--mk-bg) 75%
+          );
+        }
+        #gestures-frame {
+          position: absolute;
+          inset: 0;
+        }
+        #gestures-stage {
+          gap: calc(var(--u) * 0.6);
+        }
+        #gestures-a,
+        #gestures-b {
+          margin: 0;
+          font-size: calc(var(--u) * 9);
+          max-width: none;
+        }
+        #gestures-b {
+          font-style: italic;
+          color: var(--mk-text);
+        }
+        #gestures-a {
+          color: var(--mk-muted);
+        }
+        /* The slot the ember lands in: it becomes the full stop. */
+        #gestures-stop {
+          display: inline-block;
+          width: 0.3em;
+          height: 0.3em;
+        }
+        #gestures-trail {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+        }
+        #gestures-trail path {
+          fill: none;
+          stroke: color-mix(in srgb, var(--mk-accent) 55%, transparent);
+          stroke-width: 1.5;
+          stroke-linecap: round;
+        }
+        #gestures-ember {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: calc(var(--u) * 1.5);
+          height: calc(var(--u) * 1.5);
+          margin: calc(var(--u) * -0.75) 0 0 calc(var(--u) * -0.75);
+          border-radius: 50%;
+          background: var(--mk-accent);
+          box-shadow:
+            0 0 calc(var(--u) * 1.2) var(--mk-accent),
+            0 0 calc(var(--u) * 5) color-mix(in srgb, var(--mk-accent) 50%, transparent);
+        }
+        #gestures-bloom {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: calc(var(--u) * 16);
+          height: calc(var(--u) * 16);
+          margin: calc(var(--u) * -8) 0 0 calc(var(--u) * -8);
+          border-radius: 50%;
+          background: radial-gradient(
+            closest-side,
+            color-mix(in srgb, var(--mk-accent) 40%, transparent),
+            transparent
+          );
+        }
+      </style>
+      <div
+        id="gestures-root"
+        class="mk-scene"
+        data-composition-id="gestures"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div id="gestures-frame">
+          <svg id="gestures-trail" aria-hidden="true"><path id="gestures-path" d="M0 0" /></svg>
+          <div id="gestures-bloom"></div>
+          <div id="gestures-stage" class="mk-center">
+            <h2 id="gestures-a" class="mk-hero" data-sample>Small gestures.</h2>
+            <h2 id="gestures-b" class="mk-hero">
+              <span id="gestures-b-text" data-sample>A lasting feeling</span
+              ><span id="gestures-stop"></span>
+            </h2>
+          </div>
+          <div id="gestures-ember"></div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const root = document.querySelector('#gestures-frame')
+          // Build-time layout: where the full stop sits, and a slow arc from the lower left to it.
+          const end = MK.withLayout(root, () => {
+            const stop = MK.offsetWithin('#gestures-stop', root)
+            return { x: stop.x + stop.width * 0.45, y: stop.y + stop.height * 0.62 }
+          })
+          const w = MK.withLayout(root, () => root.offsetWidth)
+          const h = MK.withLayout(root, () => root.offsetHeight)
+          const p0 = { x: w * 0.16, y: h * 0.84 }
+          const p1 = { x: w * 0.3, y: h * 0.1 }
+          const p2 = { x: end.x + w * 0.1, y: end.y - h * 0.42 }
+          const p3 = end
+          document
+            .querySelector('#gestures-path')
+            .setAttribute(
+              'd',
+              `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y} ${p2.x} ${p2.y} ${p3.x} ${p3.y}`,
+            )
+          const bez = (k, a, b, c, d) =>
+            (1 - k) ** 3 * a + 3 * (1 - k) ** 2 * k * b + 3 * (1 - k) * k * k * c + k ** 3 * d
+          const ember = document.querySelector('#gestures-ember')
+          const place = (k) =>
+            gsap.set(ember, {
+              x: bez(k, p0.x, p1.x, p2.x, p3.x),
+              y: bez(k, p0.y, p1.y, p2.y, p3.y),
+            })
+          gsap.set('#gestures-bloom', { x: end.x, y: end.y })
+
+          MK.revealLines(tl, '#gestures-a', 0.25, { duration: 1.2 })
+          MK.revealWords(tl, '#gestures-b-text', 0.8, { duration: 1.1, stagger: 0.12 })
+          // The gesture: an ember appears, travels one slow arc and settles as the full stop.
+          tl.set(ember, { x: p0.x, y: p0.y }, 0)
+          tl.fromTo(
+            ember,
+            { opacity: 0, scale: 0.4 },
+            { opacity: 1, scale: 1, duration: 0.6, ease: MK.ease.soft },
+            0.45,
+          )
+          const travel = { k: 0 }
+          tl.fromTo(
+            travel,
+            { k: 0 },
+            { k: 1, duration: 1.45, ease: 'power2.inOut', onUpdate: () => place(travel.k) },
+            0.7,
+          )
+          tl.set(ember, { x: p3.x, y: p3.y }, 2.15)
+          MK.drawPath(tl, '#gestures-path', 0.7, 1.45)
+          tl.fromTo(
+            '#gestures-trail',
+            { opacity: 1 },
+            { opacity: 0, duration: 1.0, ease: 'power2.out' },
+            2.05,
+          )
+          tl.fromTo(
+            '#gestures-bloom',
+            { opacity: 0, scale: 0.3 },
+            { opacity: 1, scale: 1, duration: 0.5, ease: MK.ease.soft },
+            2.05,
+          )
+          tl.to(
+            '#gestures-bloom',
+            { opacity: 0.35, scale: 0.7, duration: 1.0, ease: 'power2.out' },
+            2.55,
+          )
+          tl.to('#gestures-stage', { opacity: 0, duration: 0.45, ease: MK.ease.exit }, 2.8)
+          window.__timelines['gestures'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

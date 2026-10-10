@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #hook-root {
+          position: absolute;
+          inset: 0;
+        }
+        /* Warm sky: blush paper that warms toward the sun. */
+        #hook-sky {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            110% 60% at 50% 86%,
+            color-mix(in srgb, var(--mk-accent) 16%, var(--mk-bg)),
+            var(--mk-bg) 72%
+          );
+        }
+        /* Everything above the horizon line; the sun sinks below it. */
+        #hook-horizon {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: calc(var(--u) * 150);
+          overflow: hidden;
+        }
+        #hook-sun {
+          position: absolute;
+          left: 50%;
+          top: calc(var(--u) * 110);
+          width: calc(var(--u) * 78);
+          height: calc(var(--u) * 78);
+          margin-left: calc(var(--u) * -39);
+          border-radius: 50%;
+          background: radial-gradient(
+            circle at 50% 30%,
+            color-mix(in srgb, var(--mk-accent) 70%, var(--mk-surface)),
+            var(--mk-accent) 72%
+          );
+          box-shadow: 0 0 calc(var(--u) * 14) color-mix(in srgb, var(--mk-accent) 35%, transparent);
+        }
+        #hook-ground {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(var(--u) * 150);
+          bottom: 0;
+          background: color-mix(in srgb, var(--mk-text) 5%, var(--mk-bg));
+          border-top: calc(var(--u) * 0.25) solid
+            color-mix(in srgb, var(--mk-text) 16%, transparent);
+        }
+        #hook-copy {
+          position: absolute;
+          left: calc(var(--u) * 8);
+          right: var(--mk-safe);
+          top: calc(var(--u) * 50);
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: calc(var(--u) * 1.4);
+        }
+        #hook-label {
+          display: flex;
+          align-items: center;
+          gap: calc(var(--u) * 1.4);
+          margin-bottom: calc(var(--u) * 2.4);
+          color: var(--mk-text);
+        }
+        #hook-label i {
+          display: block;
+          width: calc(var(--u) * 1.6);
+          height: calc(var(--u) * 1.6);
+          border-radius: 50%;
+          background: var(--mk-accent);
+        }
+        /* Caption boxes: a block version of mk-caption so the box itself can wipe in. */
+        #hook-root .mk-caption {
+          display: inline-block;
+          font-family: var(--mk-display);
+          font-size: calc(var(--u) * 10.4);
+          letter-spacing: var(--mk-display-tracking);
+          line-height: 1.22;
+          padding: 0.04em 0.36em 0.1em;
+          border-radius: 0.24em;
+        }
+        #hook-cap-2 {
+          margin-left: calc(var(--u) * 8);
+        }
+        #hook-cap-3 {
+          margin-left: calc(var(--u) * 3);
+        }
+        #hook-root #hook-cap-3 {
+          background: var(--mk-accent);
+          color: var(--mk-surface);
+        }
+        .hook-cap-text {
+          display: inline-block;
+        }
+      </style>
+      <div
+        id="hook-root"
+        class="mk-scene"
+        data-composition-id="hook"
+        data-width="1080"
+        data-height="1920"
+      >
+        <div id="hook-sky"></div>
+        <div id="hook-horizon"><div id="hook-sun" data-layout-allow-overflow></div></div>
+        <div id="hook-ground"></div>
+        <div id="hook-copy">
+          <div id="hook-label" class="mk-label">
+            <i></i><span data-sample>The sunny edit · Vol. 01</span>
+          </div>
+          <span id="hook-cap-1" class="mk-caption"
+            ><span class="hook-cap-text" data-sample>Good things.</span></span
+          >
+          <span id="hook-cap-2" class="mk-caption"
+            ><span class="hook-cap-text" data-sample>Small details.</span></span
+          >
+          <span id="hook-cap-3" class="mk-caption"
+            ><span class="hook-cap-text" data-sample>Big feeling.</span></span
+          >
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const u =
+            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 10.8
+          const tl = gsap.timeline({ paused: true })
+          // The sun is already peeking on frame one and keeps rising for the whole shot.
+          tl.fromTo('#hook-sun', { y: 30 * u }, { y: 0, duration: 3.8, ease: 'power2.out' }, 0)
+          tl.fromTo(
+            '#hook-label',
+            { opacity: 0, y: 1.5 * u },
+            { opacity: 1, y: 0, duration: MK.dur(0.6), ease: MK.ease.soft },
+            0.1,
+          )
+          // Three separate thoughts: each box wipes in left to right, its words slide in behind it.
+          ;['#hook-cap-1', '#hook-cap-2', '#hook-cap-3'].forEach((cap, index) => {
+            const at = 0.3 + index * 0.38
+            tl.fromTo(
+              cap,
+              { clipPath: 'inset(0% 100% 0% 0% round 0.24em)', y: 1.4 * u },
+              {
+                clipPath: 'inset(0% 0% 0% 0% round 0.24em)',
+                y: 0,
+                duration: MK.dur(0.62),
+                ease: 'power3.out',
+              },
+              at,
+            )
+            tl.fromTo(
+              `${cap} .hook-cap-text`,
+              { x: -3 * u, opacity: 0 },
+              { x: 0, opacity: 1, duration: MK.dur(0.7), ease: MK.ease.enter },
+              at + 0.08,
+            )
+          })
+          // The one gentle overshoot: the feeling lands a touch bigger, then settles.
+          tl.fromTo(
+            '#hook-cap-3',
+            { scale: 0.84, rotation: -3 },
+            {
+              scale: 1,
+              rotation: 0,
+              duration: MK.dur(0.8),
+              ease: 'back.out(1.5)',
+              transformOrigin: '0% 50%',
+            },
+            1.06,
+          )
+          MK.pushIn(tl, '#hook-copy', 0, 3.8, { to: 1.03 })
+          window.__timelines['hook'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

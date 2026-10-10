@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Offbeat</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="blocks/motion-kit.css" />
+    <link rel="stylesheet" href="blocks/style.css" />
+    <script src="blocks/motion-kit.js"></script>
+    <style>
+      :root {
+        /* 1% of the shorter frame edge; every block and scene sizes from it. */
+        --u: 10.8px;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--mk-bg);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--mk-bg);
+      }
+      #finish {
+        z-index: 50;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Offbeat: an event poster that moves, on a 0.35 s beat. Lines slide in alternating directions;
+      the camera whips down from the poster to the date (3 s), then a hard cut lands the sign-off (6.5 s).
+      Retiming a scene: change its data-start/data-duration here and the whip time below.
+    -->
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="10.5"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div
+        id="lines"
+        data-composition-id="lines"
+        data-composition-src="compositions/lines.html"
+        data-start="0"
+        data-duration="3.4"
+        data-track-index="1"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+      <div
+        id="date"
+        data-composition-id="date"
+        data-composition-src="compositions/date.html"
+        data-start="3"
+        data-duration="3.5"
+        data-track-index="2"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+      <div
+        id="signoff"
+        data-composition-id="signoff"
+        data-composition-src="compositions/signoff.html"
+        data-start="6.5"
+        data-duration="4"
+        data-track-index="3"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+      <div
+        id="finish"
+        data-composition-id="finish"
+        data-composition-src="compositions/finish.html"
+        data-start="0"
+        data-duration="10.5"
+        data-track-index="9"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true })
+      // The camera whip: the poster lifts away as the date block rises from below (lines.html adds
+      // the push-in). The sign-off is a hard cut on the beat.
+      tl.fromTo(
+        '#lines',
+        { yPercent: 0 },
+        { yPercent: -40, duration: 0.45, ease: 'power4.inOut' },
+        3,
+      )
+      tl.fromTo(
+        '#date',
+        { yPercent: 100 },
+        { yPercent: 0, duration: 0.45, ease: 'power4.inOut' },
+        3,
+      )
+      window.__timelines['main'] = tl
+    </script>
+  </body>
+</html>

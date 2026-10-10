@@ -11,14 +11,15 @@
     "preview": "bun preview/serve.ts --preview",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "type-check:tests": "tsc --noEmit -p tsconfig.tests.json",
-    "test": "bun test ui backend shared"
+    "test": "bun test ui backend shared",
+    "previews": "bun scripts/previews.ts"
   },
   "dependencies": {
+    "@hyperframes/player": "0.8.143",
     "@localixai/path-containment": "workspace:*",
     "@localixai/plugin-sdk": "workspace:*",
     "hono": "^4.12.30",
     "lucide-react": "^1.24.0",
-    "mediabunny": "1.61.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"

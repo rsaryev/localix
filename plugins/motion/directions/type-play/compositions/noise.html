@@ -1,0 +1,216 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #noise-root {
+          position: absolute;
+          inset: 0;
+        }
+        /* Poster grammar shared by every scene: fitted lines, a hot slab, tracked labels. */
+        .tp-type {
+          width: fit-content;
+          white-space: nowrap;
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          text-transform: var(--mk-display-case);
+          letter-spacing: var(--mk-display-tracking);
+          font-size: calc(var(--u) * 10);
+          line-height: 0.8;
+        }
+        .tp-slab {
+          overflow: hidden;
+          background: var(--mk-accent);
+          color: var(--mk-text);
+        }
+        .tp-slab .tp-type {
+          padding: 0.06em 0;
+        }
+        .tp-labels {
+          display: flex;
+          justify-content: space-between;
+          overflow: hidden;
+          font-size: var(--mk-label);
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          line-height: 1.2;
+          flex: none;
+        }
+        .tp-labels > * {
+          display: inline-block;
+        }
+        /* The ticker band runs edge to edge just inside the top margin. */
+        #noise-band {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: var(--mk-safe);
+          height: calc(var(--u) * 6.4);
+          display: flex;
+          align-items: center;
+          overflow: hidden;
+          background: var(--mk-text);
+          color: var(--mk-bg);
+        }
+        #noise-track {
+          display: flex;
+          align-items: center;
+          gap: calc(var(--u) * 2.4);
+          flex: none;
+          white-space: nowrap;
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          text-transform: var(--mk-display-case);
+          font-size: calc(var(--u) * 2.9);
+          letter-spacing: 0.04em;
+        }
+        #noise-track i {
+          display: block;
+          width: calc(var(--u) * 1.3);
+          height: calc(var(--u) * 1.3);
+          background: var(--mk-accent);
+        }
+        #noise-source {
+          display: none;
+        }
+        #noise-frame {
+          position: absolute;
+          left: var(--mk-safe);
+          right: var(--mk-safe);
+          top: calc(var(--mk-safe) + var(--u) * 6.4);
+          bottom: var(--mk-safe);
+          display: flex;
+          flex-direction: column;
+        }
+        #noise-stack {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: calc(var(--u) * 1.2);
+        }
+        #noise-l1 > span {
+          display: inline-block;
+        }
+      </style>
+      <div
+        id="noise-root"
+        class="mk-scene"
+        data-composition-id="noise"
+        data-width="1920"
+        data-height="1080"
+      >
+        <p id="noise-source" data-sample>Make some noise</p>
+        <div id="noise-band">
+          <div id="noise-track" aria-hidden="true" data-layout-allow-overflow></div>
+        </div>
+        <div id="noise-frame">
+          <div id="noise-stack">
+            <div id="noise-l1" class="tp-type">
+              <span data-sample>Make</span> <span data-sample>some</span>
+            </div>
+            <div id="noise-slab" class="tp-slab">
+              <div id="noise-l2" class="tp-type" data-sample>noise.</div>
+            </div>
+          </div>
+          <div id="noise-labels" class="tp-labels">
+            <span data-sample>Type play — Vol. 01</span>
+            <span data-sample>Side A · 150 BPM</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const BEAT = 0.4
+          const root = document.querySelector('#noise-root')
+          const l1 = document.querySelector('#noise-l1')
+          const l2 = document.querySelector('#noise-l2')
+          const slab = document.querySelector('#noise-slab')
+          const track = document.querySelector('#noise-track')
+          // Fit a nowrap line to a width. Three passes: system fonts change width with optical size.
+          const fit = (el, width) => {
+            for (let pass = 0; pass < 3; pass++) {
+              const size = parseFloat(getComputedStyle(el).fontSize)
+              el.style.fontSize = `${(size * width) / el.offsetWidth}px`
+            }
+          }
+          const travel = 2.4 * 26 * parseFloat(getComputedStyle(root).getPropertyValue('--u'))
+          // Split first, then fit: split letters lose their kerning, so measure them as they render.
+          const chars = [...MK.split(l2, 'chars').querySelectorAll('.mk-char')]
+          // Word gaps as margins, not whitespace nodes, so fitting and sliding never lose them.
+          const spaced = (line) => {
+            ;[...line.childNodes].filter((n) => n.nodeType === 3).forEach((n) => n.remove())
+            ;[...line.children].slice(0, -1).forEach((w) => w.classList.add('mk-spaced'))
+          }
+          spaced(l1)
+          const W = MK.withLayout(root, () => {
+            // Both lines run edge to edge across the safe area, whatever the copy says.
+            const width = document.querySelector('#noise-stack').offsetWidth
+            const pad = width * 0.025
+            slab.style.padding = `0 ${pad}px`
+            fit(l1, width)
+            fit(l2, width - pad * 2)
+            // Fill the ticker past the frame's width plus the distance it travels.
+            const text = document.querySelector('#noise-source').textContent.trim()
+            for (
+              let guard = 0;
+              guard < 40 && track.offsetWidth < root.offsetWidth + travel;
+              guard++
+            ) {
+              const word = document.createElement('span')
+              word.textContent = text
+              track.append(word, document.createElement('i'))
+            }
+            return root.offsetWidth
+          })
+          const [make, some] = l1.querySelectorAll('span')
+          // The ticker never stops; the type lands on the beat: MAKE, SOME, then the slab and NOISE.
+          tl.fromTo(track, { x: 0 }, { x: -travel, duration: 2.4, ease: 'none' }, 0)
+          tl.fromTo(
+            make,
+            { x: -W * 0.45, skewX: 16 },
+            { x: 0, skewX: 0, duration: 0.34, ease: 'expo.out' },
+            0,
+          )
+          tl.fromTo(
+            some,
+            { x: W * 0.7, skewX: -16 },
+            { x: 0, skewX: 0, duration: 0.34, ease: 'expo.out' },
+            BEAT,
+          )
+          tl.fromTo(
+            slab,
+            { clipPath: 'inset(0 100% 0 0)' },
+            { clipPath: 'inset(0 0% 0 0)', duration: 0.24, ease: 'power4.out' },
+            BEAT * 2,
+          )
+          tl.fromTo(
+            chars,
+            { yPercent: 115 },
+            { yPercent: 0, duration: 0.34, ease: 'expo.out', stagger: 0.035 },
+            BEAT * 2 + 0.05,
+          )
+          // The one overshoot: the beat word punches on beat 3.
+          tl.fromTo(
+            slab,
+            { scale: 0.93 },
+            { scale: 1, duration: 0.4, ease: MK.ease.pop, immediateRender: false },
+            BEAT * 3,
+          )
+          tl.fromTo(
+            '#noise-labels > *',
+            { yPercent: 110 },
+            { yPercent: 0, duration: 0.3, ease: 'expo.out', stagger: 0.05 },
+            BEAT * 3,
+          )
+          window.__timelines['noise'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

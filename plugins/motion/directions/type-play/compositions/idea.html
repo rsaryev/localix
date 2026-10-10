@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #idea-root {
+          position: absolute;
+          inset: 0;
+        }
+        /* Poster grammar shared by every scene: fitted lines, a hot slab, tracked labels. */
+        .tp-type {
+          width: fit-content;
+          white-space: nowrap;
+          font-family: var(--mk-display);
+          font-weight: var(--mk-display-weight);
+          text-transform: var(--mk-display-case);
+          letter-spacing: var(--mk-display-tracking);
+          font-size: calc(var(--u) * 10);
+          line-height: 0.8;
+        }
+        .tp-slab {
+          overflow: hidden;
+          background: var(--mk-accent);
+          color: var(--mk-text);
+        }
+        .tp-slab .tp-type {
+          padding: 0.06em 0;
+        }
+        .tp-labels {
+          display: flex;
+          justify-content: space-between;
+          overflow: hidden;
+          font-size: var(--mk-label);
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          line-height: 1.2;
+          flex: none;
+        }
+        .tp-labels > * {
+          display: inline-block;
+        }
+        #idea-frame {
+          position: absolute;
+          inset: var(--mk-safe);
+          display: flex;
+          flex-direction: column;
+        }
+        #idea-stack {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: calc(var(--u) * 1.2);
+        }
+        #idea-l1 > span {
+          display: inline-block;
+        }
+        /* All the words share one grid cell; each is fitted to the slab on its own. */
+        #idea-slot {
+          display: grid;
+          align-items: center;
+          width: auto;
+          padding: 0;
+          overflow: hidden;
+        }
+        #idea-slot > span {
+          grid-area: 1 / 1;
+          width: fit-content;
+          padding: 0.06em 0;
+        }
+      </style>
+      <div
+        id="idea-root"
+        class="mk-scene"
+        data-composition-id="idea"
+        data-width="1920"
+        data-height="1080"
+      >
+        <div id="idea-frame">
+          <div id="idea-top" class="tp-labels">
+            <span data-sample>Type play — Vol. 01</span>
+            <span data-sample>Side B</span>
+          </div>
+          <div id="idea-stack">
+            <div id="idea-l1" class="tp-type">
+              <span data-sample>Your</span> <span data-sample>next</span>
+            </div>
+            <div id="idea-slab" class="tp-slab">
+              <div id="idea-slot" class="tp-type">
+                <span data-sample>Song.</span>
+                <span data-sample>Drop.</span>
+                <span data-sample>Show.</span>
+                <span data-sample>Idea.</span>
+              </div>
+            </div>
+          </div>
+          <div id="idea-foot" class="tp-labels">
+            <span data-sample>Out now</span>
+            <span data-sample>yourstudio.com</span>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.fonts.ready.then(() => {
+          const tl = gsap.timeline({ paused: true })
+          const BEAT = 0.4
+          // Fit a nowrap line to a width. Three passes: system fonts change width with optical size.
+          const fit = (el, width) => {
+            for (let pass = 0; pass < 3; pass++) {
+              const size = parseFloat(getComputedStyle(el).fontSize)
+              el.style.fontSize = `${(size * width) / el.offsetWidth}px`
+            }
+          }
+          const root = document.querySelector('#idea-root')
+          const l1 = document.querySelector('#idea-l1')
+          const slab = document.querySelector('#idea-slab')
+          const slot = document.querySelector('#idea-slot')
+          const words = [...slot.children]
+          // Word gaps as margins, not whitespace nodes, so fitting and sliding never lose them.
+          const spaced = (line) => {
+            ;[...line.childNodes].filter((n) => n.nodeType === 3).forEach((n) => n.remove())
+            ;[...line.children].slice(0, -1).forEach((w) => w.classList.add('mk-spaced'))
+          }
+          spaced(l1)
+          const { W, H } = MK.withLayout(root, () => {
+            const width = document.querySelector('#idea-stack').offsetWidth
+            const pad = width * 0.025
+            slab.style.padding = `0 ${pad}px`
+            fit(l1, width)
+            // Every word in the slot runs edge to edge across the slab.
+            words.forEach((word) => fit(word, width - pad * 2))
+            return { W: root.offsetWidth, H: slot.offsetHeight }
+          })
+          const [your, next] = l1.querySelectorAll('span')
+          // Hard cut in: YOUR and NEXT land a half beat apart.
+          tl.fromTo(
+            your,
+            { x: -W * 0.7, skewX: 16 },
+            { x: 0, skewX: 0, duration: 0.3, ease: 'expo.out' },
+            0,
+          )
+          tl.fromTo(
+            next,
+            { x: W * 0.7, skewX: -16 },
+            { x: 0, skewX: 0, duration: 0.3, ease: 'expo.out' },
+            BEAT / 2,
+          )
+          // Beat 1: the slab opens and the words swap every half beat until the last one sticks.
+          tl.fromTo(
+            slab,
+            { clipPath: 'inset(0 100% 0 0)' },
+            { clipPath: 'inset(0 0% 0 0)', duration: 0.2, ease: 'power4.out' },
+            BEAT,
+          )
+          // A push swap: the next word drives the last one out of the slot, every half beat.
+          words.forEach((word, i) => {
+            const at = BEAT + 0.04 + i * (BEAT / 2)
+            tl.fromTo(word, { y: H }, { y: 0, duration: 0.16, ease: 'power4.out' }, at)
+            if (i < words.length - 1)
+              tl.to(word, { y: -H, duration: 0.16, ease: 'power4.out' }, at + BEAT / 2)
+          })
+          const landed = BEAT + 0.04 + (words.length - 1) * (BEAT / 2)
+          // The one overshoot: the slab punches as the last word lands, then the poster holds.
+          tl.fromTo(
+            slab,
+            { scale: 0.93 },
+            { scale: 1, duration: 0.4, ease: MK.ease.pop, immediateRender: false },
+            landed,
+          )
+          tl.fromTo(
+            '#idea-foot > *',
+            { yPercent: 110 },
+            { yPercent: 0, duration: 0.3, ease: 'expo.out', stagger: 0.05 },
+            landed + BEAT,
+          )
+          window.__timelines['idea'] = tl
+        })
+      </script>
+    </template>
+  </body>
+</html>

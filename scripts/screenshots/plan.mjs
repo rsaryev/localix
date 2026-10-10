@@ -1,54 +1,29 @@
 // A shot is evidence for a user action, never decoration for every document.
 export const capturePlan = {
-  'motion/collecting-ideas': {
-    guide: 'features/motion-studio.md',
-    purpose: 'Editable ideas collect into one dimensional composition in the Connect preview',
-    scenario: 'motion-gather-preview',
-  },
-  'motion/editorial-page': {
-    guide: 'features/motion-studio.md',
-    purpose: 'Field notes tracks an editorial page and resolves its document handoff',
-    scenario: 'motion-portfolio-preview',
-  },
-  'motion/dark-hook': {
-    guide: 'features/motion-studio.md',
-    purpose: 'A playable Blackout hook with oversized type on a measured dark stage',
-    scenario: 'motion-dark-hook',
-  },
-  'motion/product-reveal': {
-    guide: 'features/motion-studio.md',
-    purpose: 'Relay reveals an editable connected product flow after its opening hook',
-    scenario: 'motion-product-reveal',
-  },
-  'motion/editor': {
-    guide: 'features/motion-studio.md',
-    purpose: 'An authored motion scene at a precise frame beside editable settings and export',
-    scenario: 'motion-editor',
-  },
-  'motion/templates': {
-    guide: 'features/motion-studio.md',
-    purpose: 'Eleven motion directions on a dedicated creation page, with rendered previews',
-    scenario: 'motion-library',
-  },
-  'motion/projects': {
-    guide: 'features/motion-studio.md',
-    purpose: 'A quiet project library with one creation action',
-    scenario: 'motion-projects',
-  },
   'motion/empty-library': {
     guide: 'features/motion-studio.md',
     purpose: 'An empty motion library with one centered creation action',
     scenario: 'motion-empty',
   },
+  'motion/templates': {
+    guide: 'features/motion-studio.md',
+    purpose: 'Eleven playable motion directions, each a complete sample film',
+    scenario: 'motion-library',
+  },
   'motion/template-preview': {
     guide: 'features/motion-studio.md',
-    purpose: 'Review a complete motion template before creating an editable video',
+    purpose: 'Watch a direction large before Use direction forks it into the workspace',
     scenario: 'motion-template-preview',
   },
-  'motion/template-return': {
+  'motion/projects': {
     guide: 'features/motion-studio.md',
-    purpose: 'Closing a template preview restores the filtered chooser and selected tile',
-    scenario: 'motion-template-return',
+    purpose: 'A quiet film list with one creation action',
+    scenario: 'motion-projects',
+  },
+  'motion/film': {
+    guide: 'features/motion-studio.md',
+    purpose: 'A forked film playing as the hero, with its sample-copy reminder',
+    scenario: 'motion-film',
   },
   'task-board/board': {
     guide: 'features/task-board.md',

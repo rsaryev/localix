@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Type play</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="blocks/motion-kit.css" />
+    <link rel="stylesheet" href="blocks/style.css" />
+    <script src="blocks/motion-kit.js"></script>
+    <style>
+      :root {
+        /* 1% of the shorter frame edge; every block and scene sizes from it. */
+        --u: 10.8px;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--mk-bg);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--mk-bg);
+      }
+      #finish {
+        z-index: 50;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Type play: poster type on a 0.4 s beat (150 BPM). Every hit, swap and cut lands on a beat or a
+      half beat. Cuts at 2.4 s and 6 s; one push-slide at 3.6 s.
+      Retiming a scene: change its data-start/data-duration here and the slide time below.
+    -->
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="9.8"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div
+        id="noise"
+        data-composition-id="noise"
+        data-composition-src="compositions/noise.html"
+        data-start="0"
+        data-duration="2.4"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="move"
+        data-composition-id="move"
+        data-composition-src="compositions/move.html"
+        data-start="2.4"
+        data-duration="1.6"
+        data-track-index="2"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="pattern"
+        data-composition-id="pattern"
+        data-composition-src="compositions/pattern.html"
+        data-start="3.6"
+        data-duration="2.4"
+        data-track-index="3"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="idea"
+        data-composition-id="idea"
+        data-composition-src="compositions/idea.html"
+        data-start="6"
+        data-duration="3.8"
+        data-track-index="4"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="finish"
+        data-composition-id="finish"
+        data-composition-src="compositions/finish.html"
+        data-start="0"
+        data-duration="9.8"
+        data-track-index="9"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true })
+      // One push-slide on the beat (move → pattern); the other changes are hard cuts.
+      tl.fromTo(
+        '#move',
+        { xPercent: 0 },
+        { xPercent: -100, duration: 0.4, ease: 'expo.inOut' },
+        3.6,
+      )
+      tl.fromTo(
+        '#pattern',
+        { xPercent: 100 },
+        { xPercent: 0, duration: 0.4, ease: 'expo.inOut' },
+        3.6,
+      )
+      window.__timelines['main'] = tl
+    </script>
+  </body>
+</html>
