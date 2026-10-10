@@ -22,7 +22,6 @@
   "apps/api/src/features/realtime/ws.ts": 790,
   "apps/api/src/index.ts": 711,
   "apps/api/src/lib/runtime-endpoint.ts": 577,
-  "apps/api/src/lib/source-lint.ts": 541,
   "apps/ui/src/features/chat/model/agent-runtime.ts": 557,
   "apps/ui/src/features/chat/model/sessionActionsSlice.ts": 491,
   "apps/ui/src/features/chat/model/store.ts": 556,
