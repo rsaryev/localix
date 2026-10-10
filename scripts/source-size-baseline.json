@@ -90,7 +90,7 @@
   "plugins/git-workspace/backend/source-control/resource-provider.ts": 575,
   "plugins/git-workspace/backend/source-control/routes.ts": 379,
   "plugins/git-workspace/backend/source-control/service.ts": 608,
-  "plugins/learning/backend/course-bundle.ts": 533,
+  "plugins/learning/backend/course-bundle.ts": 440,
   "plugins/learning/backend/service.ts": 307,
   "plugins/reader/backend/service.ts": 430,
   "plugins/reader/ui/ReaderLibraryDialogs.tsx": 480,
