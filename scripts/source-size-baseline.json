@@ -22,7 +22,6 @@
   "apps/api/src/features/realtime/ws-commands.ts": 456,
   "apps/api/src/features/realtime/ws.ts": 790,
   "apps/api/src/features/secrets/store.ts": 432,
-  "apps/api/src/features/skills-curator/service.ts": 314,
   "apps/api/src/features/terminal/service.ts": 329,
   "apps/api/src/features/usage/repository.ts": 666,
   "apps/api/src/index.ts": 711,

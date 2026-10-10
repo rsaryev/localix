@@ -4,9 +4,10 @@ import { homedir } from 'node:os'
 import { localixHome } from '../../lib/env'
 import { basename, dirname, join } from 'node:path'
 import { ApiError } from '../../lib/errors'
-import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import type { SkillUsageRepository, SkillScope, SkillUsageRecord } from './repository'
-import type { CuratorReport, CuratorSkillRecord, SkillLifecycleState } from './contracts'
+import type { CuratorReport, CuratorSkillRecord } from './contracts'
+import type { DiscoveredSkill } from '../agent-core/skill-discovery'
+import { toRecord, withSkillDir, type InventoryEntry } from './inventory-record'
 import {
   ARCHIVE_DIR_NAME,
   moveToArchive,
@@ -70,13 +71,6 @@ export interface SkillsCuratorService {
   maybeRunScheduled(userId: string): Promise<CuratorReport | null>
 }
 
-interface InventoryEntry {
-  skill: DiscoveredSkill
-  usage: SkillUsageRecord | null
-  archived: boolean
-  state: SkillLifecycleState
-}
-
 export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): SkillsCuratorService {
   const globalBase = deps.globalBase ?? homedir()
   const stateFile = deps.stateFile ?? join(localixHome(), 'curator-state.json')
@@ -134,32 +128,6 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       entries.push({ skill, usage, archived: true, state: 'archived' })
     }
     return entries.sort((a, b) => a.skill.name.localeCompare(b.skill.name))
-  }
-
-  function toRecord(entry: InventoryEntry): CuratorSkillRecord {
-    return {
-      name: entry.skill.name,
-      description: entry.skill.description,
-      scope: entry.skill.scope,
-      dir: entry.skill.dir,
-      getCount: entry.usage?.getCount ?? 0,
-      lastUsedAt: entry.usage?.lastUsedAt ?? null,
-      pinned: entry.usage?.pinned ?? false,
-      archivedAt: entry.usage?.archivedAt ?? null,
-      state: entry.state,
-    }
-  }
-
-  /**
-   * Repoint an inventory snapshot without evaluating its lazy `content` getter.
-   * Moving the directory first makes that getter's original path stale, while a
-   * spread would eagerly read it and turn a successful archive/restore into ENOENT.
-   * Curator records never expose the body; a later inventory scan creates a fresh
-   * lazy getter rooted at the new path.
-   */
-  function withSkillDir(skill: DiscoveredSkill, dir: string): DiscoveredSkill {
-    const { content: _content, dir: _dir, ...metadata } = Object.getOwnPropertyDescriptors(skill)
-    return Object.defineProperties({ content: '', dir }, metadata) as DiscoveredSkill
   }
 
   async function archiveEntry(
