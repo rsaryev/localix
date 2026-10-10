@@ -63,7 +63,7 @@
   "apps/ui/src/pages/chat/ui/ChatPage.tsx": 667,
   "apps/ui/src/shared/api/client.ts": 616,
   "apps/ui/src/shared/api/contracts.ts": 748,
-  "apps/ui/src/shared/contrib/enabledPlugins.ts": 437,
+  "apps/ui/src/shared/contrib/enabledPlugins.ts": 425,
   "apps/ui/src/shared/contrib/uiLocationCatalogSync.ts": 305,
   "apps/ui/src/shared/contrib/uiLocations.ts": 487,
   "apps/ui/src/shared/hooks/useAutoScroll.ts": 636,

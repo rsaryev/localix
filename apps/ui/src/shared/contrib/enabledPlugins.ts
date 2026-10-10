@@ -1,4 +1,11 @@
 import { backendClient } from '@/shared/api/client'
+import {
+  EMPTY_SNAPSHOT,
+  sameEnabledNames,
+  type PluginContribSnapshot,
+} from './pluginContribSnapshot'
+
+export type { PluginContribSnapshot } from './pluginContribSnapshot'
 import type {
   CapabilitySnapshot,
   CapabilityToolSurface,
@@ -44,45 +51,6 @@ import { rememberShellCapabilities, type ShellCapabilitiesFrame } from '@/shared
  * (fail closed), exactly like the previous local-state shape they read.
  */
 
-export interface PluginContribSnapshot {
-  /**
-   * The server document this store was built from, verbatim — the ONE answer every
-   * capability surface reads. Kept whole (rather than only the fields the workbench
-   * gates on) so a second surface asking for this scope's agents, MCP servers,
-   * skills or themes reads them from here instead of fetching a second document.
-   * `null` before the first complete response, or for a frame restored from the
-   * previous launch, which stores only the gating fields.
-   */
-  document: CapabilitySnapshot | null
-  /** Names of enabled plugins, or null before the first fetch resolves. */
-  enabledNames: Set<string> | null
-  /** Installed plugin records, including disabled plugins and plugins with no UI views. */
-  plugins: PluginRecord[]
-  /** Sandboxed views contributed by enabled plugins — one rail button + tab each. */
-  views: PluginViewSpec[]
-  /**
-   * The scope's tool surface + catalog, or null before the first fetch resolves.
-   * Same document as `plugins` above, so a tool cannot outlive its owning plugin's
-   * enable state by one refresh cycle.
-   */
-  tools: CapabilityToolSurface | null
-  /**
-   * Server capability revision this store is converged to, or -1 when nothing has
-   * loaded. `-1` rather than 0 because 0 is a real server revision ("no capability
-   * mutation since boot") and must not read as "already up to date".
-   */
-  revision: number
-}
-
-const EMPTY_SNAPSHOT: PluginContribSnapshot = {
-  document: null,
-  enabledNames: null,
-  plugins: [],
-  views: [],
-  tools: null,
-  revision: -1,
-}
-
 let snapshot: PluginContribSnapshot = EMPTY_SNAPSHOT
 const listeners = new Set<() => void>()
 let version = 0
@@ -110,14 +78,6 @@ const publishNames = (names: Set<string> | null) => {
 let syncFailing = false
 const syncProblems = (act: (problems: typeof SyncProblems) => void): void =>
   void import('./pluginSyncProblems').then(act, () => {})
-
-function sameEnabledNames(
-  left: ReadonlySet<string> | null,
-  right: ReadonlySet<string> | null,
-): boolean {
-  if (left === null || right === null) return left === right
-  return left.size === right.size && [...right].every((name) => left.has(name))
-}
 
 /**
  * A plugin's UI settled, gave up, or was replaced in place (a dev reload): surfaces keyed on the
@@ -438,24 +398,9 @@ export function pluginContribSnapshot(): PluginContribSnapshot {
 }
 
 /**
- * Monotonic count of PUBLISHES by this client — deliberately not the server's
- * capability revision, which travels on the document as `revision`.
- *
- * The two answer different questions, and conflating them would break both callers:
- *
- *  - the server revision moves only when a capability actually CHANGED, which is what
- *    makes it the right tie-breaker for two answers racing each other (see
- *    `capabilityCache`, which applies by revision rather than by arrival);
- *  - this counter also moves on the events that change nothing about capabilities but
- *    still invalidate what a client holds — a scope switch, a cold-start retry that
- *    finally succeeded — which is what makes it the right STALENESS key for a cache
- *    keyed per scope.
- *
- * It used to serve a third purpose: a reload key for the surfaces that fetched plugin
- * commands, skills and themes from endpoints of their own. Those are fields of the one
- * document now, so the only thing left keying on it besides the cache is the skills
- * curator — pins, usage and archives, which are not capabilities but do go stale when
- * the skill set moves.
+ * Client staleness key, distinct from the server capability revision. Advances when
+ * the revision or enabled set changes, and when a plugin UI change requests a reload.
+ * A redundant snapshot still publishes without advancing this key.
  */
 export function pluginContribVersion(): number {
   return version

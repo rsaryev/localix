@@ -305,6 +305,19 @@ describe('plugin contribution synchronization', () => {
     expect(pluginContribVersion()).toBe(converged + 1)
   })
 
+  test('reordering the same enabled names publishes the new document without advancing the reload key', async () => {
+    await refetchPluginContrib(
+      source({ revision: 7, plugins: [plugin('first'), plugin('second')] }),
+    )
+    const converged = pluginContribVersion()
+    const reordered = snapshot({ revision: 7, plugins: [plugin('second'), plugin('first')] })
+    await refetchPluginContrib({ loadSnapshot: async () => reordered })
+    expect(pluginContribVersion()).toBe(converged)
+    expect(pluginContribSnapshot().document).toBe(reordered)
+    expect(pluginContribSnapshot().plugins).toBe(reordered.plugins)
+    expect([...pluginContribSnapshot().enabledNames!]).toEqual(['second', 'first'])
+  })
+
   test('a plugin set that changed WITHOUT a revision bump still advances the reload key', async () => {
     // A plugin folder dropped straight onto disk changes what discovery returns without
     // going through any service, so nothing bumps the server revision. Keying dependents
