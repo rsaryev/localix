@@ -13,13 +13,13 @@
     "@localixai/plugin-sdk": "workspace:*",
     "hono": "^4.12.30",
     "lucide-react": "^1.24.0",
-    "react": "^19.2.7",
+    "react": "^19.3.0",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tiptap/react": "3.31.4",
-    "@types/react": "^19.2.17",
+    "@types/react": "^19.3.0",
     "react-dom": "^19.2.7",
     "vite": "^8.1.4"
   }

@@ -21,12 +21,12 @@
     "lucide-react": "^1.24.0",
     "node-html-parser": "^6.1.13",
     "pdfjs-dist": "6.2.108",
-    "react": "^19.2.7",
+    "react": "^19.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@localixai/plugin-sdk": "workspace:*",
-    "@types/react": "^19.2.17",
+    "@types/react": "^19.3.0",
     "react-dom": "^19.2.7",
     "vite": "^8.1.4"
   }

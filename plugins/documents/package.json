@@ -18,7 +18,7 @@
     "mammoth": "^1.12.0",
     "officeparser": "^7.8.0",
     "pdfkit": "^0.19.1",
-    "react": "^19.2.7",
+    "react": "^19.3.0",
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",
     "word-extractor": "^1.0.4",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "@localixai/plugin-sdk": "workspace:*",
     "@types/pdfkit": "^0.17.6",
-    "@types/react": "^19.2.17",
+    "@types/react": "^19.3.0",
     "fflate": "^0.8.3",
     "react-dom": "^19.2.7",
     "vite": "^8.1.4"

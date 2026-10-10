@@ -16,7 +16,7 @@
     "hono": "^4.12.30",
     "isomorphic-ws": "^5.0.0",
     "lucide-react": "^1.24.0",
-    "react": "^19.2.7",
+    "react": "^19.3.0",
     "ws": "^8.18.0",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
@@ -24,7 +24,7 @@
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.10.6",
     "@localixai/plugin-sdk": "workspace:*",
-    "@types/react": "^19.2.17",
+    "@types/react": "^19.3.0",
     "radix-ui": "^1.6.2",
     "react-dom": "^19.2.7",
     "vite": "^8.1.4"
