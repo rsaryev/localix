@@ -102,6 +102,42 @@ describe('terminal.state push', () => {
 })
 
 describe('port scan single-flight', () => {
+  test('picks the lowest attributed port and repoints only when that listener disappears', async () => {
+    const { backend } = drivableBackend()
+    let ports: ListeningPort[] = [
+      { port: 8080, pid: 7, cwd: '/workspace' },
+      { port: 3000, pid: 8, cwd: '/workspace/server' },
+      { port: 1000, pid: 9, cwd: '/workspace-other' },
+    ]
+    const events: StateEvent[] = []
+    const service = createTerminalService({
+      backend,
+      resolveCwd: async () => '/workspace',
+      scanListeningPorts: async () => ports,
+      portScanTtlMs: 0,
+      publishState: (_userId, _sessionId, event) => events.push(event),
+    })
+    try {
+      const job = await service.spawnCommand('u1', { sessionId: 'chat-1', command: 'server' })
+      await service.ensurePreviewUrls('u1')
+      expect(job.info.previewUrl).toBe('http://localhost:3000')
+
+      ports = [...ports, { port: 2000, pid: 10, cwd: '/workspace' }]
+      await service.ensurePreviewUrls('u1')
+      expect(job.info.previewUrl).toBe('http://localhost:3000')
+
+      ports = ports.filter((port) => port.port !== 3000)
+      await service.ensurePreviewUrls('u1')
+      expect(job.info.previewUrl).toBe('http://localhost:2000')
+      expect(events.map((event) => event.previewUrl)).toEqual([
+        'http://localhost:3000',
+        'http://localhost:2000',
+      ])
+    } finally {
+      service.disposeAll()
+    }
+  })
+
   test('concurrent callers of a stale cache share one scan', async () => {
     const { backend } = drivableBackend()
     let scans = 0
