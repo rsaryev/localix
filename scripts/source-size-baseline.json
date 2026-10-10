@@ -128,7 +128,6 @@
   "plugins/reader/ui/readerParts.tsx": 316,
   "plugins/reader/ui/useReaderTextSelection.ts": 325,
   "plugins/trading/backend/analysis/pattern-detect.ts": 385,
-  "plugins/trading/backend/ccxt-scoped-reads.ts": 357,
   "plugins/trading/backend/indicator-spec.ts": 787,
   "plugins/trading/backend/manage-chart.ts": 604,
   "plugins/trading/backend/stream.ts": 378,
