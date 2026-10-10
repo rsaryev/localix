@@ -134,6 +134,18 @@ describe('reader DOM text anchors', () => {
     expect(readerNotePreview(root, 'source')?.html).not.toContain('Source note')
   })
 
+  test('a long note uses the bounded text fallback without changing the reading document', () => {
+    const root = document.createElement('article')
+    root.innerHTML = `<aside id="long-note" data-reader-role="doc-footnote"><h2>Long note</h2><p>${'x'.repeat(20_000)}</p></aside>`
+    const original = root.innerHTML
+    const preview = readerNotePreview(root, 'long-note')
+
+    expect(preview?.title).toBe('Long note')
+    expect(preview?.text).toBe('x'.repeat(8_000))
+    expect(preview?.html).toBe(`<p>${'x'.repeat(8_000)}…</p>`)
+    expect(root.innerHTML).toBe(original)
+  })
+
   test('does not mistake dense numeric navigation for footnotes', () => {
     const root = document.createElement('nav')
     root.innerHTML = '<a href="#one">1</a><a href="#two">2</a><a href="#three">3</a>'
