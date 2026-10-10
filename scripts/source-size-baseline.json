@@ -58,7 +58,6 @@
   "apps/ui/src/features/inspector/ui/useVisualFeedback.ts": 312,
   "apps/ui/src/features/secrets/ui/VaultItemDialog.tsx": 337,
   "apps/ui/src/features/terminal/ui/TerminalPane.tsx": 694,
-  "apps/ui/src/features/workspace-grid/model/tree.ts": 302,
   "apps/ui/src/pages/chat/model/useChatPagePalette.ts": 415,
   "apps/ui/src/pages/chat/model/useUrlStoreSync.ts": 352,
   "apps/ui/src/pages/chat/ui/ChatPage.tsx": 667,
