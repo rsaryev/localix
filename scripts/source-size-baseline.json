@@ -131,7 +131,6 @@
   "plugins/trading/backend/ccxt-scoped-reads.ts": 357,
   "plugins/trading/backend/contracts/market.ts": 302,
   "plugins/trading/backend/indicator-spec.ts": 787,
-  "plugins/trading/backend/manage-chart-schema.ts": 322,
   "plugins/trading/backend/manage-chart.ts": 604,
   "plugins/trading/backend/stream.ts": 378,
   "plugins/trading/ui/TechnicalsTab.tsx": 526,
