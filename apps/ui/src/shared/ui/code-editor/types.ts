@@ -6,43 +6,8 @@
  */
 import type { BufferEdit } from '@localixai/api/lsp-edits'
 
-/**
- * A diagnostic in LSP coordinates (0-based line/character), kept deliberately
- * decoupled from the backend `LspDiagnostic` type so this primitive imports
- * nothing from `features`. The feature wrapper converts LSP → this shape.
- */
-export interface EditorDiagnostic {
-  line: number
-  character: number
-  endLine: number
-  endCharacter: number
-  severity: 'error' | 'warning' | 'info' | 'hint'
-  message: string
-  source?: string
-  /** Server rule identifier, e.g. `2304` — rendered as `source(code)` (`ts(2304)`). */
-  code?: string | number
-  /**
-   * How the span itself is drawn, beyond its squiggle: `unnecessary` fades it (an unused
-   * variable, import, parameter, unreachable code), `deprecated` strikes it through.
-   */
-  tags?: EditorDiagnosticTag[]
-}
-
-export type EditorDiagnosticTag = 'unnecessary' | 'deprecated'
-
-/**
- * `source(code)` label for a diagnostic (e.g. `ts(2304)`, `eslint`,
- * or a bare `2304`). Returns `undefined` when neither is present. Shared by the
- * editor lint tooltip and the Problems panel so both read identically.
- */
-export function formatDiagnosticSource(
-  source?: string,
-  code?: string | number,
-): string | undefined {
-  const c = code === undefined || code === null || code === '' ? undefined : String(code)
-  if (source && c) return `${source}(${c})`
-  return source || c
-}
+export { formatDiagnosticSource } from './diagnostics'
+export type { EditorDiagnostic, EditorDiagnosticTag } from './diagnostics'
 
 /** A document position in LSP coordinates (0-based), used by the async sources. */
 export interface EditorPosition {
@@ -314,9 +279,8 @@ export interface EditorSuggestion {
   kind: 'suggestion' | 'comment'
   /**
    * Which subsystem produced this decoration — drives the inline label, the AI
-   * provenance affordance, and the ARIA description. Absent → `'review'` (the durable
-   * an inline edit), so callers can distinguish its source. Edit
-   * Edit prediction is AI-generated and labelled accordingly.
+   * provenance affordance, and the ARIA description. Absent → `'review'` for durable
+   * review suggestions. Edit prediction is AI-generated and labelled accordingly.
    */
   source?: 'review' | 'edit-prediction'
   /** 1-based inclusive start line of the anchor. */

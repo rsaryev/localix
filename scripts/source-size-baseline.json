@@ -76,7 +76,6 @@
   "apps/ui/src/shared/ui/code-editor/monaco/editPrediction.ts": 355,
   "apps/ui/src/shared/ui/code-editor/monaco/providers.ts": 439,
   "apps/ui/src/shared/ui/code-editor/monacoEditor.css": 524,
-  "apps/ui/src/shared/ui/code-editor/types.ts": 314,
   "apps/ui/src/shared/ui/comments/text-comment-layer.tsx": 370,
   "apps/ui/src/widgets/chat-workspace/ui/ChatSurface.tsx": 573,
   "apps/ui/src/widgets/editor-grid/ui/GridView.tsx": 301,
