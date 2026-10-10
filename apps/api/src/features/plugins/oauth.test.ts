@@ -38,6 +38,14 @@ function stubTokenEndpoint(handler: (url: string, init?: RequestInit) => Respons
 }
 
 describe('ctx.oauth', () => {
+  it('refuses a callback listener outside loopback', () => {
+    const oauth = makePluginOAuth('spotify')
+    for (const host of ['0.0.0.0', '192.168.1.20', '::', 'example.com']) {
+      const exposed = { ...spec(PORT), localServer: { host, port: PORT, path: '/callback' } }
+      expect(() => oauth.beginLogin(exposed)).toThrow('localServer.host must be a loopback address')
+    }
+  })
+
   it('beginLogin builds a PKCE authorize URL and completes via the loopback callback', async () => {
     const port = PORT
     let tokenBody = ''

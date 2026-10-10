@@ -30,12 +30,20 @@ const SUCCESS_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Co
 <body><div class="card"><h2>✓ Connected!</h2><p>You can close this tab and return to LocalixAI.</p></div>
 <script>setTimeout(()=>window.close(),2000)</script></body></html>`
 
+// The callback receives an authorization code, so its listener never leaves this machine.
+const LOOPBACK_CALLBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
+
 export function makePluginOAuth(pluginName: string): PluginOAuth {
   return {
     beginLogin(spec, opts) {
       if (spec.callbackMode !== 'local-server' || !spec.localServer) {
         throw new Error(
           `[plugin:${pluginName}] beginLogin requires callbackMode 'local-server' with a localServer {host, port, path}`,
+        )
+      }
+      if (!LOOPBACK_CALLBACK_HOSTS.has(spec.localServer.host)) {
+        throw new Error(
+          `[plugin:${pluginName}] localServer.host must be a loopback address, got "${spec.localServer.host}"`,
         )
       }
       const adapter = createManifestOAuthAdapter(`plugin:${pluginName}`, spec)

@@ -30,8 +30,9 @@ export interface PluginOAuth {
   /**
    * Begin a local-loopback PKCE login. The spec must declare
    * `callbackMode: 'local-server'` + `localServer: { host, port, path }` —
-   * the host generates state/PKCE, starts a ONE-SHOT 127.0.0.1 listener there,
-   * and exchanges the code server-side. Default timeout 5 minutes.
+   * the host generates state/PKCE, starts a ONE-SHOT listener there, and
+   * exchanges the code server-side. `host` must be a loopback address
+   * (`127.0.0.1`, `localhost` or `::1`). Default timeout 5 minutes.
    */
   beginLogin(spec: ManifestOAuthSpec, opts?: { timeoutMs?: number }): PluginOAuthLogin
   /** Refresh an access token via the spec's `refresh` config. */

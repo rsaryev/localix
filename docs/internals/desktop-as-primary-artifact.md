@@ -142,6 +142,23 @@ interfaces use that transport. The header name lives in `apps/api/src/lib/client
 both sides import. A non-browser client that sends a write without a body, such as `curl -X POST`,
 must add `x-localix-client: 1`; the documented webhook call sends JSON and needs nothing extra.
 
+### Webview content security policy
+
+`app.security.csp` in `tauri.conf.json` applies to every shell webview. A `srcdoc` frame inherits
+it, and the frame's own policy can only narrow it, so several sources are wider than the main window
+alone needs.
+
+| Source                                                                  | Why it is allowed                                                                                                                 |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `script-src 'unsafe-inline' blob:` and the four library CDNs            | Sandboxed plugin panels run inline bootstrap code and load libraries from `PANEL_CDN_HOSTS`; their own CSP blocks network access. |
+| `http://localhost:*`, `http://127.0.0.1:*` in script, style and connect | The Vite dev server, its hot reload socket, and the loopback API.                                                                 |
+| `frame-src http: https:`                                                | Browser workbench pages that open in a local frame instead of a native child WebView.                                             |
+| `img-src https:`                                                        | Remote images in Markdown, chat content and plugin panels.                                                                        |
+
+Narrowing a CDN host here silently removes it from plugin panels, so
+`apps/ui/src/features/inspector/ui/pluginPanelSrcDoc.ts` documents the list both files must share.
+`object-src 'none'`, `base-uri 'self'` and `form-action 'self'` stay closed.
+
 ### Runtime lifecycle
 
 The shell flushes pending UI writes before a clean exit and supervises the API after startup.
@@ -294,9 +311,9 @@ production-safe until an equivalent approval boundary is available.
   physical machine.
 - On Windows, a program the runtime starts belongs to its Job Object and closes when Localix quits.
   That includes an app opened from Localix that was not already running, unless it leaves the job.
-- Generated third-party notices inventory the installed npm runtime graph and bundled Monaco/Pi
-  notices. Packages that publish only license metadata are identified but cannot contribute text
-  absent from their package, and Rust crate licensing is not yet emitted as a separate inventory.
+- Generated third-party notices inventory the installed npm runtime graph, bundled Monaco/Pi
+  notices, the Bun runtime, and the Rust crates linked for the host target. Packages and crates that
+  publish only license metadata are identified but cannot contribute text absent from their package.
 
 ## Related guides
 
@@ -314,6 +331,7 @@ production-safe until an equivalent approval boundary is available.
 - [Tauri bundle configuration](../../apps/desktop-tauri/src-tauri/tauri.conf.json)
 - [Release overlay generator](../../apps/desktop-tauri/scripts/build-release-config.mjs)
 - [Sidecar staging](../../apps/desktop-tauri/scripts/prepare-sidecar.mjs)
+- [Rust crate notices](../../scripts/rust-third-party-notices.mjs)
 - [Production sidecar lifecycle](../../apps/desktop-tauri/src-tauri/src/sidecar.rs)
 - [Local API browser boundary](../../apps/api/src/lib/local-origin-guard.ts)
 - [First-party client header](../../apps/api/src/lib/client-header.ts)
