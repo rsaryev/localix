@@ -1,12 +1,10 @@
 import type {
   ResolvedUiLocation,
-  UiAnchorOpenResult,
   UiAgentLocationCatalogSnapshot,
   UiLocationContribution,
   UiLocationDescriptor,
   UiLocationExposure,
   UiLocationParamSchema,
-  UiLocationPresentation,
 } from '@localixai/plugin-sdk/ui'
 import {
   buildUiLocationUri as buildSerializedUiLocationUri,
@@ -21,13 +19,14 @@ import {
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 import { registerResourceRefIcons } from './iconContributions'
 import { checkContribution } from './uiLocationValidation'
+import {
+  locationDescriptor,
+  storeLocationContribution,
+  uiLocationIconId,
+  type ErasedLocation,
+} from './uiLocationRecord'
 
-type NormalizedArgs = Record<string, string | string[] | boolean | number>
-type ErasedLocation = Omit<UiLocationContribution, 'present' | 'resolve'> & {
-  source: object
-  present?(args: NormalizedArgs): UiLocationPresentation
-  resolve(args: NormalizedArgs): UiAnchorOpenResult | null
-}
+export { uiLocationIconId } from './uiLocationRecord'
 
 export { parseUiLocationArgs }
 
@@ -37,10 +36,6 @@ export interface UiLocationAccess {
 }
 
 export type UiLocationAudience = keyof UiLocationExposure | 'agent'
-
-export function uiLocationIconId(id: string): string {
-  return `ui-location:${id}`
-}
 
 /**
  * Build a registry id from plugin-supplied identity that is valid by construction.
@@ -122,28 +117,6 @@ export function createUiLocationRegistry(): UiLocationRegistry {
     listeners.forEach((listener) => listener())
   }
 
-  const descriptor = (entry: ErasedLocation): UiLocationDescriptor => ({
-    id: entry.id,
-    uri: entry.uri,
-    title: entry.title,
-    ...(entry.description ? { description: entry.description } : {}),
-    keywords: [...(entry.keywords ?? [])],
-    ...(entry.group ? { group: entry.group } : {}),
-    ...(entry.Icon ? { icon: uiLocationIconId(entry.id) } : {}),
-    effect: entry.effect,
-    surface: entry.surface,
-    ...(entry.agent ? { agent: { ...entry.agent } } : {}),
-    params: Object.fromEntries(
-      Object.entries(entry.params ?? {}).map(([key, definition]) => [
-        key,
-        definition.type === 'string' && definition.values
-          ? { ...definition, values: [...definition.values] }
-          : { ...definition },
-      ]),
-    ),
-    exposure: { ...entry.exposure },
-  })
-
   return {
     register(contribution) {
       const id = contribution.id.trim()
@@ -166,29 +139,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
         )
         return false
       }
-      const normalizedParams = Object.freeze(
-        Object.fromEntries(
-          Object.entries(schema).map(([key, definition]) => [
-            key,
-            Object.freeze(
-              definition.type === 'string' && definition.values
-                ? { ...definition, values: Object.freeze([...definition.values]) }
-                : { ...definition },
-            ),
-          ]),
-        ),
-      )
-      const stored = Object.freeze({
-        ...contribution,
-        id,
-        uri,
-        title: contribution.title.trim(),
-        keywords: contribution.keywords ? Object.freeze([...contribution.keywords]) : undefined,
-        params: normalizedParams,
-        exposure: Object.freeze({ ...contribution.exposure }),
-        agent: contribution.agent ? Object.freeze({ ...contribution.agent }) : undefined,
-        source: contribution,
-      }) as unknown as ErasedLocation
+      const stored = storeLocationContribution(contribution, id, uri, schema)
       byId.set(id, stored)
       byUri.set(uri, stored)
       if (stored.Icon) {
@@ -241,7 +192,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
                 ...(entry.description ? { description: entry.description } : {}),
               }
         return {
-          descriptor: descriptor(entry),
+          descriptor: locationDescriptor(entry),
           args,
           target,
           presentation,
@@ -278,7 +229,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
         ) {
           continue
         }
-        entries.push(descriptor(entry))
+        entries.push(locationDescriptor(entry))
       }
       return entries
     },
