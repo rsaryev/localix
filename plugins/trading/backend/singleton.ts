@@ -37,17 +37,6 @@ export function bindStoreSecret(storeSecret: StoreSecret): void {
   holder().storeSecret = storeSecret
 }
 
-/**
- * The LATEST bound writer, or undefined when no host ever bound one. Undefined is meaningful and
- * must stay distinguishable from "a writer that always fails": a caller uses it to decide whether
- * vaulting a pasted literal is even possible, and a stub that silently refused would report a
- * key collision the vault never had.
- */
-export function getStoreSecret(): StoreSecret | undefined {
-  const h = holder()
-  return h.storeSecret ? (...args) => h.storeSecret!(...args) : undefined
-}
-
 export function getTradingService(options: {
   dataDir: string
   resolveSecret?: ResolveSecret

@@ -5,7 +5,6 @@ import type { LspPosition, LspRange } from './lsp-response-types'
 import type { LspManager } from './lsp-manager-types'
 import type { LspDocumentService } from './service-contract'
 import type { CodeLocation, CodeReference, WorkspaceSymbol } from './service-result-types'
-export type { CodeLocation, CodeReference, WorkspaceSymbol } from './service-result-types'
 
 const uriToPath = (uri: string): string | null => {
   try {

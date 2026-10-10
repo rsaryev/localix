@@ -12,7 +12,7 @@
  */
 
 import { errorMessage } from '@localixai/plugin-sdk/backend'
-import { defineTypedError, type TypedErrorInfo } from '@localixai/plugin-sdk/backend'
+import { defineTypedError } from '@localixai/plugin-sdk/backend'
 
 export type DocumentErrorCode =
   | 'unsupported_format'
@@ -46,8 +46,6 @@ const kit = defineTypedError<DocumentErrorCode>('DocumentError', FRIENDLY)
 /** A typed document error: `code` is the stable classification, `message` the raw text. */
 export const DocumentError = kit.DomainError
 export type DocumentError = InstanceType<typeof DocumentError>
-
-export type DocumentErrorInfo = TypedErrorInfo<DocumentErrorCode>
 
 /** Wire payload: friendly `message`, with the raw text as `detail` when it adds anything. */
 export const toErrorInfo = kit.toErrorInfo

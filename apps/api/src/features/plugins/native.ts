@@ -7,7 +7,7 @@ import type { DiscoveredPlugin } from './discovery'
 import type { PluginConfigValues } from './config'
 import { capPluginToolDescription, isAcceptableToolName } from './tool-policy'
 import type { PluginToolDescriptor } from './contracts'
-export { makeHelpers, type PluginHelpers } from './native-helpers'
+export { makeHelpers } from './native-helpers'
 import { isPlainObject } from './mcp'
 
 import { makeContext } from './native-context'
@@ -31,14 +31,9 @@ export type {
   PluginContext,
   PluginHostServices,
   PluginProblem,
-  PluginRuntimeInfo,
 } from '@localixai/plugin-sdk/backend'
 
-export {
-  pluginProblemReporter,
-  type PluginProblemReporter,
-  type PluginProblemSink,
-} from './problem-reporter'
+export { type PluginProblemSink } from './problem-reporter'
 
 // Lifecycle-hook + memory-provider type contracts live in hook-contracts.ts; the
 // values + types are re-exported here so the historical './native' import surface
@@ -50,14 +45,7 @@ export {
   MEMORY_TIMEOUT_MS,
 } from './hook-contracts'
 export type {
-  PreToolCallEvent,
-  PreToolCallHookResult,
-  PostToolCallEvent,
-  PostToolCallHookResult,
-  UserMessageEvent,
-  UserMessageHookResult,
   AssistantMessageEvent,
-  AssistantMessageHookResult,
   SubagentStopEvent,
   HitlRequestEvent,
   HitlResolvedEvent,
@@ -79,8 +67,6 @@ export type {
   ChannelRunEvent,
   ChannelInboundMessage,
   ChannelInboundResult,
-  ChannelSessionSummary,
-  ChannelModelOption,
   ChannelWorkspaceApi,
   ChannelContext,
   PluginChannel,

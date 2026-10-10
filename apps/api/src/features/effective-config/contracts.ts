@@ -134,7 +134,6 @@ export type EffectiveConfigQuery = z.infer<typeof effectiveConfigQuerySchema>
 export const compositionQuerySchema = z.object({
   sessionId: z.string().min(1),
 })
-export type CompositionQuery = z.infer<typeof compositionQuerySchema>
 
 /**
  * Two prompt-cache hashes to compare. Both come from a cache snapshot the caller already has
@@ -145,4 +144,3 @@ export const promptDiffQuerySchema = z.object({
   from: z.string().min(1),
   to: z.string().min(1),
 })
-export type PromptDiffQuery = z.infer<typeof promptDiffQuerySchema>

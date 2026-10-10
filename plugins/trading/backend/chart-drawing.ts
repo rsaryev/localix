@@ -9,7 +9,6 @@ export const CHART_DRAW_MODES = ['add', 'remove', 'clear'] as const
 export type ChartDrawMode = (typeof CHART_DRAW_MODES)[number]
 
 export const DRAWING_KINDS = ['hline', 'trendline', 'vline', 'marker', 'zone'] as const
-export type DrawingKind = (typeof DRAWING_KINDS)[number]
 
 /** Which way a trade MARKER points: a buy draws an up arrow below the bar, a sell a down
  *  arrow above it — lightweight-charts' native series markers, the entry/exit vocabulary. */

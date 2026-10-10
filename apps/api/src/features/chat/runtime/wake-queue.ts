@@ -17,7 +17,7 @@ import { createAgentTurnOperations } from './wake-queue/agent-turns'
 import { createSelfWakeBudget } from './wake-queue/self-wake-budget'
 import { createWake } from './wake-queue/wake'
 
-export type { EnqueueParams, WakeOptions, WakeQueueContext } from './wake-queue-contracts'
+export type { WakeQueueContext } from './wake-queue-contracts'
 
 /** Durable event queue, serial within a session and concurrent across sessions. */
 export function createWakeQueue(ctx: WakeQueueContext) {

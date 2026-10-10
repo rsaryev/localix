@@ -4,28 +4,12 @@
  * reaches into backend module paths (mirrors the database plugin's dbClient.ts).
  */
 export type {
-  DocumentConverter,
   DocumentFormat,
-  DocumentInput,
-  DocumentKind,
-  DocumentMetadata,
   ExtractedDocument,
-  ExtractedTableDocument,
-  ExtractedTextDocument,
   ExtractOptions,
-  ExtractRequest,
   ExtractResponse,
 } from '../backend/documents/contracts'
-export type {
-  DocumentGenerator,
-  GeneratedDocument,
-  GenerateFormat,
-  GenerateInput,
-  GenerateRequest,
-  GenerateResponse,
-} from '../backend/documents/generate-contracts'
-export { GENERATE_FORMATS } from '../backend/documents/generate-contracts'
-export type { DocumentErrorCode, DocumentErrorInfo } from '../backend/documents/errors'
+
 export type {
   OpenTargetsResponse,
   OpenTargetView,

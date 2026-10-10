@@ -9,8 +9,6 @@ export {
   pruneFinishedSubSessions,
   compareSessions,
   sortSessions,
-  MAX_FINISHED_SUBSESSIONS_PER_HOST,
-  MAX_RETAINED_SUBSESSIONS,
 } from './sessionRosterPolicy'
 
 // Membership/order are stable across token deltas. Reuse the id→index table for

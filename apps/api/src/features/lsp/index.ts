@@ -22,21 +22,12 @@ export type {
 export {
   createLspDocumentService,
   type LspDocumentService,
-  type LspDiagnosticsPush,
   type CodeLocation,
   type CodeReference,
   type WorkspaceSymbol,
   type RenamePrepare,
   type RenameResult,
 } from './service'
-export {
-  buildInlineDiagnostics,
-  summarizeOpenErrors,
-  type DiagnosticsReport,
-} from './diagnostics-report'
-export { type LspServerDef } from './lsp-servers'
-export {
-  parseLspServersConfig,
-  configuredLspServer,
-  type LspServerConfig,
-} from './lsp-plugin-servers'
+export { summarizeOpenErrors } from './diagnostics-report'
+
+export { parseLspServersConfig, configuredLspServer } from './lsp-plugin-servers'

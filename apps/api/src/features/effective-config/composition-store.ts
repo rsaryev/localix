@@ -24,11 +24,6 @@ const byLastRun = createBoundedCache<string, { report: CompositionReport; at: nu
   maxEntries: MAX_SESSIONS,
 })
 
-export interface CompositionStore {
-  record: (sessionId: string, input: Parameters<typeof describeComposition>[0]) => void
-  get: (sessionId: string) => { report: CompositionReport; at: number } | undefined
-}
-
 /**
  * Record the composition of a finished assembly. Never throws: a diagnostics snapshot must
  * not be able to fail the run it describes.

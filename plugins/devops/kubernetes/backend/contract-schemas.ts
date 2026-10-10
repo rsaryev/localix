@@ -16,50 +16,6 @@ import type {
   ResourceDescribe,
 } from './contract-types'
 
-/**
- * Kubernetes workbench wire schemas — the zod request validators + typed response
- * bodies the routes share with the UI client. Split out of `contracts.ts` (the
- * barrel) unchanged.
- */
-
-const podPhaseSchema = z.enum(['Running', 'Pending', 'Succeeded', 'Failed', 'Unknown'])
-
-export const kubeContextSchema = z.object({
-  name: z.string(),
-  cluster: z.string(),
-  namespace: z.string(),
-  current: z.boolean(),
-}) satisfies z.ZodType<KubeContext>
-
-export const kubePodSchema = z.object({
-  uid: z.string(),
-  resourceVersion: z.string(),
-  name: z.string(),
-  namespace: z.string(),
-  phase: podPhaseSchema,
-  ready: z.string(),
-  readyCount: z.number(),
-  totalCount: z.number(),
-  restarts: z.number(),
-  node: z.string(),
-  podIP: z.string(),
-  createdAt: z.string(),
-  containers: z.array(z.string()),
-  initContainers: z.array(z.string()),
-  containerPorts: z.array(
-    z.object({
-      container: z.string(),
-      name: z.string(),
-      port: z.number(),
-      protocol: z.literal('TCP'),
-      probe: z.enum(['readiness', 'startup', 'liveness']).nullable(),
-    }),
-  ),
-  reason: z.string(),
-  requestedCpuNanos: z.number(),
-  requestedMemoryBytes: z.number(),
-}) satisfies z.ZodType<KubePod>
-
 /** The workload kinds that get a per-resource describe/events tab. */
 export const kubeResourceKindSchema = z.enum(['deployment', 'service'])
 
@@ -166,9 +122,6 @@ export interface PortForwardsResponse {
 }
 export interface PortForwardResponse {
   portForward: PortForward
-}
-export interface KubeActionResponse {
-  ok: true
 }
 export interface PodExecResponse {
   command: string

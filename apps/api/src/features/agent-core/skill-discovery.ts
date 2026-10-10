@@ -28,12 +28,7 @@ import { atomicWriteFile } from './tools/file/file-io'
  * their public surface here, so callers keep one import path.
  */
 export type { DiscoveredSkill } from './skill-frontmatter'
-export {
-  parseMarkdownFrontmatter,
-  scalarField,
-  splitPhraseList,
-  splitTokenList,
-} from './skill-frontmatter'
+export { parseMarkdownFrontmatter, scalarField, splitTokenList } from './skill-frontmatter'
 export { skillRoot, readSkillsFromRoot } from './skill-scan'
 
 /** Minimal warning sink shared with the API's existing feature-level logger contracts. */

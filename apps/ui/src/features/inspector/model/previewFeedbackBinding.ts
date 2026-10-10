@@ -32,8 +32,3 @@ export function previewFeedbackBinding(input: {
     },
   }
 }
-
-/** The composer key this pick's chip is staged under. */
-export function previewFeedbackToken(id: string): string {
-  return `@snippet:preview-${id}`
-}

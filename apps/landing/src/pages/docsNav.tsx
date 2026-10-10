@@ -1,7 +1,5 @@
 import { extractMarkdownHeadings } from '@localixai/markdown'
 
-export { featureCategoryFor, groupByCategory, groupBySection } from './docs/docGroups'
-
 export interface Heading {
   depth: 2 | 3
   text: string

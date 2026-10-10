@@ -9,29 +9,18 @@ import type { ConnectionColor } from './colors'
 
 // The connection color palette lives in the zod-free `colors.ts` leaf (so the UI can
 // value-import it without pulling this schema module); re-exported here for backend callers.
-export { CONNECTION_COLORS } from './colors'
+
 export type { ConnectionColor } from './colors'
 
 export {
   dbConnectionConfigSchema,
-  clickhouseConnectionSchema,
-  esConnectionSchema,
-  mongoConnectionSchema,
-  mssqlConnectionSchema,
-  mysqlConnectionSchema,
-  postgresConnectionSchema,
-  redisConnectionSchema,
-  sqliteConnectionSchema,
   sshTunnelConfigSchema,
-  sslSchema,
   isFileConnectionConfig,
   isNetworkConnectionConfig,
 } from './contracts/connection-config'
 export type {
   DbConnectionConfig,
   DbSslConfig,
-  FileDbConnectionConfig,
-  NetworkDbConnectionConfig,
   SshTunnelConfig,
 } from './contracts/connection-config'
 
@@ -51,7 +40,6 @@ export const probeFileRequestSchema = z.object({
       'A database file path must be absolute.',
     ),
 })
-export type ProbeFileRequest = z.infer<typeof probeFileRequestSchema>
 
 export const connectRequestSchema = z.object({
   /** Optional display name; defaults to a dialect-derived label. */
@@ -64,7 +52,6 @@ export type ConnectRequest = z.infer<typeof connectRequestSchema>
 export const renameRequestSchema = z.object({
   name: z.string().min(1).max(200),
 })
-export type RenameRequest = z.infer<typeof renameRequestSchema>
 
 /** Edit a saved connection's config (and optionally its display name) in place, keeping
  *  its id. Validated like `connect` before it is saved. The dialect can change through
@@ -88,7 +75,6 @@ export const queryRequestSchema = z.object({
   /** Per-query wall-clock cap in ms. Omit for the server default (30s); `0` disables it. */
   timeoutMs: z.number().int().min(0).max(3_600_000).optional(),
 })
-export type QueryRequest = z.infer<typeof queryRequestSchema>
 
 /** Structured, read-only page request used by Database Workspace's data browser. */
 export const browseRequestSchema = z.object({
@@ -111,7 +97,6 @@ export const batchStatementSchema = z.object({
   sql: z.string().min(1),
   params: z.array(z.unknown()).optional(),
 })
-export type BatchStatementRequest = z.infer<typeof batchStatementSchema>
 
 /** An atomic batch of statements (row-editing "Commit"): applied in one transaction. */
 export const batchRequestSchema = z.object({
@@ -175,7 +160,6 @@ export interface QueryResponse {
 export const validateRequestSchema = z.object({
   sql: z.string().min(1).max(200_000),
 })
-export type ValidateRequest = z.infer<typeof validateRequestSchema>
 
 /** One statement's verdict. Offsets are 0-based UTF-16 offsets into the WHOLE submitted text. */
 export interface ValidateStatementResult {

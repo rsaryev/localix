@@ -10,7 +10,6 @@ export {
   bashToolInputSchema,
   classifyBgExit,
   type BashToolInput,
-  type BashJobStatus,
   type BashToolDetails,
   type BashToolOptions,
 } from './bash-types'

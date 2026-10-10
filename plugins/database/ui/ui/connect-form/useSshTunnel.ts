@@ -4,8 +4,6 @@ import type { DbDialect, SshTunnelConfig } from '../../dbClient'
 import { isSecretToken } from '../../model/connectionSecret'
 import { getDatabaseDriverManifest } from '../../../shared/driver-catalog'
 
-export type SshTunnelState = ReturnType<typeof useSshTunnel>
-
 export function sshTunnelIssue(input: {
   enabled: boolean
   supported: boolean

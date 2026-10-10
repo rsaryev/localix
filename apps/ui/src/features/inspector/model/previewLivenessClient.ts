@@ -115,9 +115,3 @@ export function watchPreviewLiveness(url: string, listener: Listener): () => voi
     releaseTransport()
   }
 }
-
-/** Test seam: drop every subscription and detach from the socket. */
-export function resetPreviewLivenessForTests(): void {
-  entries.clear()
-  releaseTransport()
-}

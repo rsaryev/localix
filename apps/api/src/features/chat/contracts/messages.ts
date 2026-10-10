@@ -2,22 +2,10 @@ import { z } from 'zod'
 
 import { clientToolSurfaceSchema } from './session'
 import { MAX_MESSAGE_BINDINGS_TOTAL_BYTES } from './message-binding-bytes'
-import {
-  messageAttachmentSchema,
-  messageBindingSchema,
-  messageBindingsSchema,
-  messageContextBindingSchema,
-  messageInvocationBindingSchema,
-} from './message-bindings-input'
+import { messageBindingsSchema } from './message-bindings-input'
 
 export { MAX_MESSAGE_BINDINGS_TOTAL_BYTES }
-export {
-  messageAttachmentSchema,
-  messageBindingSchema,
-  messageBindingsSchema,
-  messageContextBindingSchema,
-  messageInvocationBindingSchema,
-}
+export { messageBindingsSchema }
 export type {
   MessageAttachment,
   MessageBinding,

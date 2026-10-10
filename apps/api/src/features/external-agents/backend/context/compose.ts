@@ -40,10 +40,7 @@ import { hasOverlap, render } from './compose-render'
 import { sectionOrder, packSections } from './compose-packing'
 import { omissionNote, composeNotes } from './compose-notes'
 
-export { NAMED_OMISSIONS } from './compose-notes'
-
-export type { ComposeSection, ComposeResult } from './compose-types'
-export { MAX_EVENT_CHARS } from './compose-cost'
+export type { ComposeResult } from './compose-types'
 
 /** Default total character budget. Roughly 30k tokens — large enough to be useful, small enough to bound. */
 export const DEFAULT_BUDGET_CHARS = 120_000

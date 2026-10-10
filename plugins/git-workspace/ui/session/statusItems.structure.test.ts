@@ -31,14 +31,12 @@ describe('Git contributes status items, it does not draw them', () => {
     expect(items).not.toContain('chromeAction')
   })
 
-  test('divergence and diff stats are METRICS, not text', () => {
+  test('divergence is METRICS, not text', () => {
     // Folding them into `text` would cost the tone and the `tabular-nums` alignment that stop a
     // live counter from shoving its neighbours sideways as it ticks.
     expect(items).toContain('metrics:')
     expect(items).toContain('ArrowUp')
     expect(items).toContain('ArrowDown')
-    expect(items).toContain("tone: 'success' as const")
-    expect(items).toContain("tone: 'error' as const")
     expect(items).not.toMatch(/text:.*↑/u)
   })
 
@@ -53,13 +51,9 @@ describe('Git contributes status items, it does not draw them', () => {
     expect(items).toContain('disabled: ahead === 0')
   })
 
-  test('neither item renders when there is nothing to say', () => {
+  test('the item does not render when there is nothing to say', () => {
     // An empty control is worse than the absence it stands for: it invites a click that does
     // nothing and it occupies chrome a user cannot reclaim.
     expect(items).toContain('if (!status?.isRepo || !sessionId) return null')
-    // Nor without a chat: the click opens that chat's Git tab, and there is no other one to pick.
-    expect(items).toContain(
-      'if (!sessionId || !status?.isRepo || status.stats.files === 0) return null',
-    )
   })
 })

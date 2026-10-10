@@ -21,7 +21,7 @@ export interface ToolGcSource {
   now?(): string
 }
 
-export { builtinToolManifest, CATEGORY_LABELS, toolManifest, type ToolMeta } from './catalog'
+export { builtinToolManifest, toolManifest, type ToolMeta } from './catalog'
 
 /**
  * The tool routes are the GC report and nothing else.

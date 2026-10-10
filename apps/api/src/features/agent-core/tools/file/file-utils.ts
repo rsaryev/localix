@@ -7,7 +7,6 @@ export * from './file-line-endings'
 export * from './file-mtime'
 export * from './file-path-lock'
 
-export const MAX_FILE_BYTES = 100_000
 // A unified diff stored on a tool result is for UI display only, but it still gets
 // persisted and (defensively) could reach the model. A whole-file rewrite produces
 // a diff as large as the file, so cap it: keep the head and tail, elide the middle.

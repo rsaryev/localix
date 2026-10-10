@@ -12,7 +12,7 @@ import {
 } from '../hitl/decision-deadline'
 import type { ConfigureToolOptions, InspectTarget, ProposalCard } from './configure-contracts'
 
-export type { ConfigureHost, ConfigureToolOptions, ProposalCard } from './configure-contracts'
+export type { ConfigureToolOptions, ProposalCard } from './configure-contracts'
 
 /**
  * `configure` — the agent's window onto its own configuration, and its one way to change it.

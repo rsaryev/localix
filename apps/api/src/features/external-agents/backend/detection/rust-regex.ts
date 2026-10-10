@@ -20,11 +20,6 @@
 
 const LEADING_FLAGS = /^\(\?([imsux]+)\)/
 
-export interface TranslatedRegex {
-  readonly source: string
-  readonly flags: string
-}
-
 export function translateRustRegex(pattern: string): RegExp | null {
   let body = pattern
   const flags = new Set<string>()

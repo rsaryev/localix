@@ -128,12 +128,8 @@ export interface ReaderChapterResponse {
 }
 
 export type {
-  ReaderSearchGroup,
-  ReaderLibrarySearchHit,
   ReaderLibrarySearchResponse,
   ReaderSearchMatch,
-  ReaderSearchMode,
   ReaderSearchOptions,
   ReaderSearchResponse,
-  ReaderSearchScope,
 } from './search'

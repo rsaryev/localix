@@ -60,6 +60,3 @@ export function atTokenLength(rawAfterAt: string): number | null {
 export function mentionLabel(path: string): string {
   return path.endsWith('/') ? `${baseName(path)}/` : baseName(path)
 }
-
-/** The custom drag MIME the file tree sets so the composer can recognise a path drop. */
-export const FILE_DRAG_MIME = 'application/x-localix-file'

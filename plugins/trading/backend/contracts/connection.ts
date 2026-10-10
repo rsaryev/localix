@@ -57,10 +57,6 @@ export type MarketType = z.infer<typeof marketTypeSchema>
 export const tradingEnvironmentSchema = z.enum(['paper', 'live'])
 export type TradingEnvironment = z.infer<typeof tradingEnvironmentSchema>
 
-/** Who initiated an order. Persisted on every journal record and enforced by the risk gate. */
-export const orderOriginSchema = z.enum(['user', 'agent'])
-export type OrderOrigin = z.infer<typeof orderOriginSchema>
-
 /**
  * How much autonomy the AGENT has on this connection. `readonly` is the coarse gate (nobody
  * trades); this is the fine one (the human may trade while the agent may not).

@@ -64,8 +64,3 @@ export function useElapsedMs(startMs?: number): number {
 
   return elapsedMs
 }
-
-/** Live 1Hz elapsed-seconds ticker from a start time (defaults to mount). */
-export function useElapsedSeconds(startMs?: number): number {
-  return Math.floor(useElapsedMs(startMs) / 1000)
-}

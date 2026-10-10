@@ -26,7 +26,6 @@ import { canonicalPathWithin, collectSkillFiles, type SkillFileCandidate } from 
 import { makeLazySkill } from './skill-lazy'
 
 export {
-  MAX_SKILL_ENTRIES_PER_ROOT,
   MAX_SKILL_SCAN_DEPTH,
   type SkillScanScope,
   type SkillScanLogger,

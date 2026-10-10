@@ -34,7 +34,3 @@ const BY_ID = new Map(PROVIDER_ADAPTERS.map((a) => [a.id, a]))
 export function adapterFor(provider: string): ProviderAdapter | undefined {
   return BY_ID.get(provider)
 }
-
-export function providerIds(): readonly string[] {
-  return PROVIDER_ADAPTERS.map((a) => a.id)
-}

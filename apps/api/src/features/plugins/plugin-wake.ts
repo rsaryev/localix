@@ -122,5 +122,3 @@ export function createPluginWakes(deps: PluginWakesDeps) {
     },
   }
 }
-
-export type PluginWakes = ReturnType<typeof createPluginWakes>

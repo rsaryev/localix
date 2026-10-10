@@ -8,7 +8,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import { useGridStore } from './store'
-import { activeTabLink, activeTabLinks, type ActiveTabLink } from './activeTabLink'
+import { activeTabLinks, type ActiveTabLink } from './activeTabLink'
 import {
   liveTabMessageContextRevision,
   subscribeLiveTabMessageContext,
@@ -29,17 +29,4 @@ export function useActiveTabRefs(): ActiveTabLink[] {
     liveTabMessageContextRevision,
   )
   return activeTabLinks(useGridStore.getState())
-}
-
-export function useActiveTabRef(): ActiveTabLink | null {
-  useGridStore((s) => {
-    const link = activeTabLink(s)
-    return link ? JSON.stringify(link) : ''
-  })
-  useSyncExternalStore(
-    subscribeLiveTabMessageContext,
-    liveTabMessageContextRevision,
-    liveTabMessageContextRevision,
-  )
-  return activeTabLink(useGridStore.getState())
 }

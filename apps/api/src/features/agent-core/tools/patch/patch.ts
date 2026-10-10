@@ -40,20 +40,11 @@ export const patchToolInputSchema = z.object({
   cwd: z.string().optional().describe('Base for relative paths (defaults to the session root).'),
 })
 
-export type { PatchFileChange, PatchToolDetails } from './patch-report'
+export type { PatchToolDetails } from './patch-report'
 
 // Re-export the tolerant matching helpers (the apply_patch matcher) so the
 // historical `./patch` import surface stays stable for every existing importer.
-export {
-  findMatch,
-  findUniqueMatch,
-  reindentNewLines,
-  buildNotFoundHint,
-  describeStrategy,
-  closestLineHint,
-  unescapeLiteral,
-} from './patch-match'
-export type { PatchMatch, MatchStrategy, UniqueMatchResult } from './patch-match'
+export { buildNotFoundHint, closestLineHint } from './patch-match'
 
 // Re-export the header-path scan helpers so the historical `./patch` import
 // surface stays stable for the permission engine and tools routes.

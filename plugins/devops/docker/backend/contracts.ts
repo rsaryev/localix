@@ -137,28 +137,6 @@ export interface PruneResult {
   output: string
 }
 
-const containerStateSchema = z.enum(CONTAINER_STATES)
-
-export const dockerContainerSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  image: z.string(),
-  state: containerStateSchema,
-  status: z.string(),
-  ports: z.string(),
-  createdAt: z.string(),
-  project: z.string().optional(),
-  service: z.string().optional(),
-}) satisfies z.ZodType<DockerContainer>
-
-export const dockerImageSchema = z.object({
-  id: z.string(),
-  repository: z.string(),
-  tag: z.string(),
-  size: z.string(),
-  createdAt: z.string(),
-}) satisfies z.ZodType<DockerImage>
-
 export const pruneTargetSchema = z.enum(['containers', 'images', 'volumes', 'networks'])
 
 export const removeQuerySchema = z.object({
@@ -187,9 +165,6 @@ export interface VolumesResponse {
 }
 export interface NetworksResponse {
   networks: DockerNetwork[]
-}
-export interface ActionResponse {
-  ok: true
 }
 /** Whether the `docker compose` CLI plugin is available (drives the project Up action). */
 export interface ComposeAvailableResponse {

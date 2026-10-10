@@ -47,22 +47,8 @@ const MCP_RESOURCE_LIST_MAX_ITEMS = 10_000
 
 // Re-export the MCP wire surface (helpers + types) so the historical
 // `./client-manager` import path stays stable for service.ts and the tests.
-export {
-  buildToolForServer,
-  connectClient,
-  disambiguate,
-  filterToolDefs,
-  mapCallResult,
-  MCP_DESCRIPTION_MAX_CHARS,
-  withConnectBudget,
-} from './mcp-wire'
-export type {
-  McpClientLike,
-  McpContentPart,
-  McpGatherResult,
-  McpToolAnnotations,
-  McpToolDef,
-} from './mcp-wire'
+export { filterToolDefs, mapCallResult, MCP_DESCRIPTION_MAX_CHARS } from './mcp-wire'
+export type { McpClientLike, McpGatherResult, McpToolDef } from './mcp-wire'
 
 interface ClientConnection {
   client: McpClientLike

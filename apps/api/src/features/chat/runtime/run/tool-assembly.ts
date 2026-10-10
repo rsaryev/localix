@@ -83,7 +83,6 @@ export interface AssembledRunTools {
 }
 
 export { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
-export type { ClaimedToolSet } from './tool-namespace'
 
 export async function assembleRunTools(
   options: AssembleRunToolsOptions,

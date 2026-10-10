@@ -7,7 +7,6 @@ export {
 export {
   normalizeTextEdits,
   normalizeWorkspaceEdit,
-  normalizeCodeAction,
   normalizeCodeActions,
   normalizePrepareRename,
 } from './lsp-normalize-edits'

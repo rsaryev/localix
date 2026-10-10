@@ -23,69 +23,28 @@ import { pluginConfigFieldSchema } from './contracts-config'
  *   - `./contracts-agents`        — custom sub-agent role schema
  */
 
+export { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE, PLUGIN_API_VERSION } from './contracts-base'
+
+export { pluginConfigOptionSchema } from './contracts-config'
+export type { PluginConfigType, PluginConfigOption, PluginConfigField } from './contracts-config'
 export {
-  PLUGIN_NAME_RE,
-  PLUGIN_QUALIFIED_NAME_RE,
-  PLUGIN_API_VERSION,
-  pluginManifestCoreSchema,
-} from './contracts-base'
-export type { PluginManifestCore, PluginManifestCoreInput } from './contracts-base'
-export {
-  PLUGIN_SURFACE_AGENT,
-  PLUGIN_SURFACE_WORKBENCH,
-  normalizePluginSurfaces,
-  isWorkbenchPlugin,
-} from './contracts-base'
-export {
-  PLUGIN_CONFIG_TYPES,
-  pluginConfigOptionSchema,
-  pluginConfigFieldSchema,
-} from './contracts-config'
-export type {
-  PluginConfigType,
-  PluginConfigOption,
-  PluginConfigOptionInput,
-  PluginConfigField,
-} from './contracts-config'
-export {
-  VIEWS_MAX_PER_PLUGIN,
   PLUGIN_VIEW_HTML_CAP_BYTES,
-  PLUGIN_VIEW_ICON_RE,
-  pluginViewSchema,
   pluginViewSpecSchema,
-  listPluginViewsResponseSchema,
   pluginViewHtmlResponseSchema,
-  pluginUiActionNameSchema,
   invokePluginUiActionRequestSchema,
   invokePluginUiActionResponseSchema,
-  PROMPT_SECTIONS_MAX_PER_PLUGIN,
-  PROMPT_SECTION_CONTENT_MAX_CHARS,
-  pluginPromptSectionSchema,
 } from './contracts-contributions'
 export type { PluginViewSpec, InvokePluginUiActionRequest } from './contracts-contributions'
-export {
-  pluginCommandArgSchema,
-  pluginCommandArgSpecSchema,
-  pluginCommandSchema,
-  pluginCommandSpecSchema,
-  listPluginCommandsResponseSchema,
-} from './contracts-commands'
+export { pluginCommandSchema, pluginCommandSpecSchema } from './contracts-commands'
 export type {
   PluginCommandArg,
-  PluginCommandArgSpec,
   PluginCommand,
   PluginCommandSpec,
   ListPluginCommandsResponse,
 } from './contracts-commands'
 export { AGENTS_MAX_PER_PLUGIN, pluginAgentSchema } from './contracts-agents'
 export type { PluginAgent } from './contracts-agents'
-export {
-  MONITORS_MAX_PER_PLUGIN,
-  pluginMonitorSchema,
-  parseMonitors,
-  isAlwaysMonitor,
-  monitorSkillTrigger,
-} from './contracts-monitors'
+
 export type { PluginMonitor } from './contracts-monitors'
 
 /** Structured validation outcome for a plugin (or one of its skills). */

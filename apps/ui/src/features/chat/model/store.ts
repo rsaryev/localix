@@ -571,8 +571,6 @@ export const selectActiveSession = (state: ChatStore): UiSession | null =>
   state.allSessions.find((session) => session.id === state.activeSessionId) ??
   null
 
-export const useActiveSession = () => useChatStore(selectActiveSession)
-
 /** Resolve any session by id (working list → roster). Re-renders on its own stream
  *  tokens only — used by a ChatSurface bound to a specific session, not the active one. */
 export const useSessionById = (sessionId: string | null) =>

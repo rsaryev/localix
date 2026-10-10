@@ -33,6 +33,7 @@ interface ModelPickerDrawerProps {
 /**
  * Interaction-only model picker boundary. The parent deliberately owns the
  * always-visible trigger so importing Vaul cannot pull it into the startup graph.
+ * @public
  */
 export function ModelPickerDrawer({
   open,

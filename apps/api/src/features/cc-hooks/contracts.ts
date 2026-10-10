@@ -92,8 +92,6 @@ export function isAgentHookEvent(event: CcHookEvent): boolean {
 }
 /** Default timeout (seconds) for a `type:"agent"` handler when it omits `timeout` (CC: 60 s). */
 export const CC_AGENT_HOOK_DEFAULT_TIMEOUT_SEC = 60
-/** Hard cap on an `agent` verifier's turn count when it omits `maxTurns` (CC: 50). */
-export const CC_AGENT_HOOK_DEFAULT_MAX_TURNS = 50
 
 /**
  * The event on which an `http` handler is NOT supported. CC's matrix allows
@@ -225,18 +223,4 @@ export interface CcHookGroup {
 /** The merged, normalized registry: event → ordered matcher groups (all sources fused). */
 export type CcHookRegistry = Partial<Record<CcHookEvent, CcHookGroup[]>>
 
-export type {
-  CcHookInputBase,
-  CcSessionStartInput,
-  CcUserPromptSubmitInput,
-  CcPreToolUseInput,
-  CcPostToolUseInput,
-  CcStopInput,
-  CcSessionEndInput,
-  CcSubagentStartInput,
-  CcSubagentStopInput,
-  CcPreCompactInput,
-  CcNotificationInput,
-  CcHookInput,
-  CcHookOutcome,
-} from './protocol-types'
+export type { CcHookInput, CcHookOutcome } from './protocol-types'

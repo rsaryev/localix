@@ -5,8 +5,6 @@ import type { ResultOutcome, ResultTab } from '../resultTabs'
 import type { ParamField } from '../sqlParams'
 import type { SqlRunFailure } from '../sql-diagnostics/run-error'
 
-export { paramKey } from '../sqlParams'
-
 /**
  * Metadata attached to a run so its result lands in the right tab. When `asTable` is set
  * (opening / reopening a browsed table, or clearing its filters), the tab is keyed by the

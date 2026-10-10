@@ -16,7 +16,7 @@ import type { PreviewAction, PreviewCommand } from '../preview/preview-control'
 import { rewriteBrowserArguments } from './browser-lift'
 
 import { ACTIONS, STEP_ACTIONS, TAKE_SCREENSHOT, type BrowserAction } from './browser-actions'
-export { ACTIONS, type BrowserAction, OBSERVING_ACTIONS, TAKE_SCREENSHOT } from './browser-actions'
+export { type BrowserAction, TAKE_SCREENSHOT } from './browser-actions'
 
 /**
  * Normalize a ref to the bare `eN` handle the probe expects. The snapshot tree

@@ -10,4 +10,3 @@
  * `frame`).
  */
 export { parseFrame } from '@localixai/api/ws-frame'
-export type { ParsedFrame } from '@localixai/api/ws-frame'

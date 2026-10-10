@@ -26,7 +26,7 @@ import {
   type VaultWireInput,
 } from './vault-tool-schema'
 
-export { vaultActionSchema, vaultInputSchema, type VaultToolInput } from './vault-tool-schema'
+export { vaultActionSchema, vaultInputSchema } from './vault-tool-schema'
 
 interface ApprovalPayload {
   toolCallId: string

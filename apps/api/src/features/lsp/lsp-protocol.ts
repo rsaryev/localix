@@ -56,7 +56,6 @@ export type {
   DocumentDiagnosticReport,
   WorkspaceDiagnosticReport,
   DiagnosticRequestResult,
-  DiagnosticsListener,
 } from './lsp-client-contract'
 
 export const INITIALIZE_TIMEOUT_MS = 30_000

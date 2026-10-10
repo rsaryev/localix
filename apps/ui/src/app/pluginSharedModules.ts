@@ -98,6 +98,7 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
  * Every non-kit specifier the host shares. Staging reads it (`scripts/stage-plugin-kit.mjs`) to
  * record each module's export names in the plugin kit, so a plugin build anywhere shims exactly
  * what this registry provides.
+ * @public
  */
 export const HOST_SHARED_SPECIFIERS: readonly string[] = [
   ...Object.keys(CORE),

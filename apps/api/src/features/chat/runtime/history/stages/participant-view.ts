@@ -44,7 +44,6 @@ import {
   type ParticipantAudience,
 } from './participant-audience'
 
-export { speakerLine } from './participant-audience'
 export type { ParticipantAudience } from './participant-audience'
 
 /**

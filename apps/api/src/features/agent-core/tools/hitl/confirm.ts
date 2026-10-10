@@ -7,5 +7,4 @@ export type {
   ConfirmToolPayload,
   ConfirmToolRequest,
   ConfirmToolResponse,
-  ConfirmToolResponsePayload,
 } from '@localixai/plugin-sdk/backend'

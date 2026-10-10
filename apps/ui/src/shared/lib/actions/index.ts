@@ -1,5 +1,3 @@
 export { ActionRegistryProvider } from './ActionRegistryProvider'
-export { actionContextFromTarget, evaluateActionWhen } from './context'
-export type { ActionContext } from './context'
-export { clearActionHandlers, executeAction, registerActionHandler } from './registry'
-export type { ActionHandler } from './registry'
+
+export { registerActionHandler } from './registry'

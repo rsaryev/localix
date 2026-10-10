@@ -304,11 +304,9 @@ export interface SourceControlMutation {
  */
 export type {
   BlameLine,
-  DiffLineKind,
   FileDiff,
   FileDiffInput,
   FileDiffLines,
-  FileHunks,
   LineStageMode,
   RangeDiff,
   RepoDiffLine,

@@ -78,7 +78,7 @@ export interface SendResult {
 
 const MAX_REDIRECTS = 10
 
-export { RequestTimeoutError, SendError } from './send-errors'
+export { RequestTimeoutError } from './send-errors'
 
 /**
  * Guard a url: the scheme first, then the address.

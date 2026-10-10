@@ -8,12 +8,9 @@ export type {
   AutomaticContextRequest,
   ContextContribution,
   ContextDestination,
-  ContextEstimate,
   ContextProviderContribution,
   ContextReference,
-  ContextReferenceAttributes,
   ContextResolver,
-  ContextScope,
   ContextSensitivity,
   ResolveContext,
 } from '@localixai/plugin-sdk/backend'

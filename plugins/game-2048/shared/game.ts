@@ -61,7 +61,6 @@ export const turnSchema = z.object({
   from: z.array(tileSchema).length(CELLS),
   steps: z.array(stepSchema).min(1).max(MAX_MOVES),
 })
-export type Turn = z.infer<typeof turnSchema>
 
 export const gameSchema = z.object({
   id: z.string().min(1),

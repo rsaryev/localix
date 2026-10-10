@@ -11,14 +11,13 @@ import { MAX_OUTPUT_ENTRIES, type OutputEntry } from './result-tabs/outputLog'
  */
 
 export {
-  MAX_OUTPUT_ENTRIES,
   formatDurationMs,
   formatOutputLogText,
   formatSqlTimestamp,
   outputEntryResultLine,
   outputResultText,
 } from './result-tabs/outputLog'
-export type { OutputEntry, OutputKind } from './result-tabs/outputLog'
+export type { OutputEntry } from './result-tabs/outputLog'
 
 /** Stable id of the singleton Output log tab. */
 export const OUTPUT_TAB_ID = '__output__'

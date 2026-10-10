@@ -19,7 +19,7 @@ import type { LspHealthObserver } from '../notifications/conditions/lsp'
 export type { LspManager, LspServerState, LspServerStatus } from './lsp-manager-types'
 
 export const LSP_IDLE_TIMEOUT_MS = 5 * 60_000
-export { SILENT_STRIKES, SILENT_COOLDOWN_MS } from './lsp-diagnostics-wait'
+
 interface LspManagerOptions {
   idleTimeoutMs?: number
   /** Test seam for the silent-project cooldown; production keeps SILENT_COOLDOWN_MS. */

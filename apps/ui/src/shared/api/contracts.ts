@@ -2,11 +2,6 @@ import type {
   App,
   AgentStreamEvent,
   PreviewCommand,
-  PreviewCommandResult,
-  PreviewConsoleEntry,
-  PreviewSnapshot,
-  PreviewImage,
-  PreviewSendOutcome,
   FileContentResponse,
   FileWriteResponse,
   FileEntryResponse,
@@ -34,21 +29,16 @@ import type {
   PersistedMessage,
   MessageToolDetails,
   ProviderConnection,
-  ProviderConnectionKey,
-  SessionBranchNode,
   SessionBranchTree,
   SessionDetail,
   SessionModelView,
   SessionSourceRuntime,
   SessionSummary,
   SessionTiming,
-  LastMessagePreview,
   MessageTiming,
   MessageProviderMeta,
-  ToolTiming,
   LspServerState,
   LspDiagnostic,
-  LspRelatedInformation,
   LspPosition,
   LspRange,
   LspCodeAction,
@@ -66,12 +56,9 @@ import type {
   RenamePrepare,
   RenameResult,
   Project,
-  CreateProjectRequest,
   ResolveProjectByPathResponse,
   UpdateProjectRequest,
-  ProjectSettings,
   ProjectSettingsPatch,
-  PermissionRule,
   ContextRef,
   ContextRefExpansion,
   ExpandRefsRequest,
@@ -82,15 +69,11 @@ import type {
   UiSettingsPatch,
   AgentSettings,
   AgentSettingsPatch,
-  ToolMeta,
   MessageMutationResponse,
   MessageAttachment,
   MessageBinding,
   MessageContextBinding,
-  MessageInvocationBinding,
   UsageStatRow,
-  UsageSummary,
-  UsageTrendPoint,
   UsageOverview,
   UsageLogRow,
   UsageLogsPage,
@@ -101,21 +84,13 @@ import type {
   VaultItemType,
 } from '@localixai/api/client'
 
-export {
-  AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
-  PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS,
-  UI_SETTINGS_MAX_SERIALIZED_CHARS,
-} from '@localixai/api/settings-limits'
+export { PROJECT_CUSTOM_SYSTEM_PROMPT_MAX_CHARS } from '@localixai/api/settings-limits'
 
 import type {
   AskToolRequest,
   ConfigChangeRequest,
   ConfirmToolRequest,
   PluginRecord,
-  PluginProvides,
-  PluginConfigField,
-  PluginConfigType,
-  PluginValidation,
   PluginCommandSpec,
   MarketplaceListing,
   AgentRecord,
@@ -128,14 +103,11 @@ import type {
   McpTransport,
   McpStdioConfig,
   McpHttpConfig,
-  McpOAuthConfig,
   CapabilitySnapshot,
   CapabilityRuleChange,
   CapabilityToolSurface,
   ToolSurfaceDenial,
-  ToolCounts,
   ToolGcReport,
-  ToolGcSuggestion,
 } from '@localixai/api/client'
 import type {
   ChatCacheDiagnosticsPayload,
@@ -436,11 +408,6 @@ export type {
   App,
   AgentStreamEvent,
   PreviewCommand,
-  PreviewCommandResult,
-  PreviewConsoleEntry,
-  PreviewSnapshot,
-  PreviewImage,
-  PreviewSendOutcome,
   FileContentResponse,
   FileWriteResponse,
   FileEntryResponse,
@@ -457,8 +424,6 @@ export type {
   CatalogResponse,
   EnvDetectedProvider,
   ProviderConnection,
-  ProviderConnectionKey,
-  SessionBranchNode,
   SessionBranchTree,
   SessionDetail,
   SessionModelView,
@@ -473,16 +438,13 @@ export type {
   SessionSourceRuntime,
   SessionSummary,
   SessionTiming,
-  LastMessagePreview,
   MessageTiming,
   MessageProviderMeta,
-  ToolTiming,
   PendingHitlInteraction,
   PersistedMessage,
   MessageToolDetails,
   LspServerState,
   LspDiagnostic,
-  LspRelatedInformation,
   LspPosition,
   LspRange,
   LspCodeAction,
@@ -500,12 +462,9 @@ export type {
   RenamePrepare,
   RenameResult,
   Project,
-  CreateProjectRequest,
   ResolveProjectByPathResponse,
   UpdateProjectRequest,
-  ProjectSettings,
   ProjectSettingsPatch,
-  PermissionRule,
   ContextRef,
   ContextRefExpansion,
   ExpandRefsRequest,
@@ -516,15 +475,11 @@ export type {
   UiSettingsPatch,
   AgentSettings,
   AgentSettingsPatch,
-  ToolMeta,
   MessageMutationResponse,
   MessageAttachment,
   MessageBinding,
   MessageContextBinding,
-  MessageInvocationBinding,
   UsageStatRow,
-  UsageSummary,
-  UsageTrendPoint,
   UsageOverview,
   UsageLogRow,
   UsageLogsPage,
@@ -579,7 +534,7 @@ export type {
   McpTransport,
   McpStdioConfig,
   McpHttpConfig,
-  McpOAuthConfig,
+
   /** The SAVE payload. Its `config` is the owner's strict `stdio | http` union. */
   McpServerInput,
 }
@@ -621,10 +576,6 @@ export type McpImportResult = ImportMcpServersResponse
  */
 export type {
   PluginRecord,
-  PluginProvides,
-  PluginConfigField,
-  PluginConfigType,
-  PluginValidation,
   PluginCommandSpec,
   MarketplaceListing,
   AgentRecord,
@@ -665,7 +616,7 @@ export type { CapabilitySnapshot, CapabilityRuleChange, CapabilityToolSurface, T
  * whole point of the feature is that the count the pill shows and the count the run sends are the
  * same number, and a second declaration of its shape is the first step to them differing.
  */
-export type { ToolCounts, ToolGcReport, ToolGcSuggestion }
+export type { ToolGcReport }
 
 /**
  * Single heuristic for "render this config field as a model picker": a key ending
@@ -745,9 +696,4 @@ export type { UiSession } from './ui-session'
 
 export { sessionRef } from '@localixai/api/session-ref'
 export type {} from '@localixai/api/client'
-export type {
-  ResourceBrowseGroup,
-  ResourceBrowseResult,
-  ResourceNode,
-  ResourceNodeAction,
-} from '@localixai/api/client'
+export type { ResourceBrowseResult, ResourceNode, ResourceNodeAction } from '@localixai/api/client'

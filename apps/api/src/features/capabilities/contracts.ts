@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { capabilityRuleSchema } from './rule-schema'
-export { capabilityRuleSchema } from './rule-schema'
 
 import { toolSurfaceSchema } from '../effective-config/contracts'
 import { agentSummarySchema } from '../agents/contracts'
@@ -96,14 +95,8 @@ export type CapabilityToolSurface = z.infer<typeof capabilityToolSurfaceSchema>
  * import. A tip is composed FROM this document; it is not part of describing what a
  * scope can do, and the two change for different reasons.
  */
-export {
-  TIP_SIGNALS,
-  tipSignalSchema,
-  composerTipGateSchema,
-  composerTipActionSchema,
-  composerTipSchema,
-} from './tip-contracts'
-export type { TipSignal, ComposerTipGate, ComposerTipAction, ComposerTip } from './tip-contracts'
+export { TIP_SIGNALS } from './tip-contracts'
+export type { ComposerTipAction, ComposerTip } from './tip-contracts'
 
 export const capabilitySnapshotSchema = z.object({
   /**

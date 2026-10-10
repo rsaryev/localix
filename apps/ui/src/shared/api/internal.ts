@@ -252,15 +252,6 @@ export async function assertOk(response: Response): Promise<void> {
   throw await responseError(response)
 }
 
-/** POST a JSON body to an API path (relative to API_BASE_URL). Pair with `unwrap`/`assertOk`. */
-export function postJson(path: string, body: unknown): Promise<Response> {
-  return apiFetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
-
 export function cleanQuery(
   opts?: Record<string, string | number | null | undefined>,
 ): Record<string, string> {

@@ -1,6 +1,6 @@
 import { VAULT_ITEM_TYPES, type VaultItemType } from './vault-item-types'
 export { VAULT_ITEM_TYPES, VAULT_ITEM_TYPE_DEFINITIONS } from './vault-item-types'
-export type { VaultItemType, VaultItemGroup, VaultItemTypeDefinition } from './vault-item-types'
+export type { VaultItemType } from './vault-item-types'
 import { z } from 'zod'
 
 import {

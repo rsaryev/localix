@@ -50,7 +50,7 @@
 import { stripAnsi } from '../bash/output-filters/sanitize-ansi'
 import { classifyHost, hostKindScore, isUnspecifiedHost, type HostKind } from './served-url-hosts'
 
-export { classifyHost, isUnspecifiedHost, type HostKind } from './served-url-hosts'
+export { classifyHost, isUnspecifiedHost } from './served-url-hosts'
 
 // ── ANSI / control strippers ────────────────────────────────────────────────
 // PTY output is raw bytes; this mirrors a terminal normalizer. The escape grammar itself is the

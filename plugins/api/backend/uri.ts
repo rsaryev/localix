@@ -41,9 +41,6 @@ export type RestUriNode =
       name: string
     }
 
-/** The one saved-request node. Kept as its own name because most callers only handle this kind. */
-export type RequestUriNode = Extract<RestUriNode, { kind: 'request' }>
-
 /** `localix://resource/api` — every saved request, as one referenceable collection. */
 export function buildCollectionUri(): string {
   return localixResourceUri(API_PROVIDER)

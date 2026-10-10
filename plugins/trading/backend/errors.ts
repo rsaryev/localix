@@ -19,11 +19,7 @@
  * an EMPTY `message` instead of falling back to the friendly sentence.
  */
 
-import {
-  defineTypedError,
-  type TypedDomainError,
-  type TypedErrorInfo,
-} from '@localixai/plugin-sdk/backend'
+import { defineTypedError, type TypedDomainError } from '@localixai/plugin-sdk/backend'
 
 export type TradingErrorCode =
   | 'not_connected'
@@ -70,8 +66,6 @@ const kit = defineTypedError<TradingErrorCode>('TradingError', FRIENDLY)
  *  venue text so the operator sees exactly what the exchange said. */
 export const TradingError = kit.DomainError
 export type TradingError = TypedDomainError<TradingErrorCode>
-
-export type TradingErrorInfo = TypedErrorInfo<TradingErrorCode>
 
 export const toErrorInfo = kit.toErrorInfo
 

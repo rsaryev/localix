@@ -67,7 +67,6 @@ export const pluginViewSpecSchema = z.object({
 })
 export type PluginViewSpec = z.infer<typeof pluginViewSpecSchema>
 
-export const listPluginViewsResponseSchema = z.object({ views: z.array(pluginViewSpecSchema) })
 export const pluginViewHtmlResponseSchema = z.object({ html: z.string() })
 
 /** Stable identifier shape for a plugin-owned UI → backend operation. */

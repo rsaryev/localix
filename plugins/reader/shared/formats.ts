@@ -1,4 +1,4 @@
-import { READER_FORMATS, type ReaderFormat, type ReaderSource } from './contracts'
+import type { ReaderFormat, ReaderSource } from './contracts'
 
 /**
  * The ONE answer to "can the reader open this?".
@@ -65,4 +65,4 @@ export function readerUnsupportedReason(source: ReaderSource): string | null {
     : `Reader opens ${READER_FORMAT_SUMMARY}.`
 }
 
-export { READER_FORMATS, type ReaderFormat }
+export { type ReaderFormat }

@@ -12,8 +12,6 @@ import type { CrushResult } from './types'
 
 import { carriesMarker } from '../compression-markers'
 
-export { crushJsonArray } from './json'
-export { crushLog } from './log'
 export type { CrushResult } from './types'
 
 /** Idempotency marker: content already carrying it is never re-crushed. */

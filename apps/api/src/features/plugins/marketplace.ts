@@ -206,4 +206,4 @@ export function validateMarketplace(raw: unknown): PluginValidation {
 
 // The bundled-catalog generator lives in its own module; re-exported so existing
 // importers (tests, apps/api/scripts/generate-bundled-marketplace.ts) keep this surface.
-export { buildMarketplaceManifest, type MarketplacePluginInput } from './marketplace-build'
+export { buildMarketplaceManifest } from './marketplace-build'

@@ -9,6 +9,5 @@ export { createWsFrameConnection, createWsFrameRegistry } from '@localixai/plugi
 export type {
   WsFrameConnection,
   WsFrameContribution,
-  WsFrameRegistration,
   WsFrameRegistry,
 } from '@localixai/plugin-sdk/backend'

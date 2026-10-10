@@ -16,7 +16,6 @@ import { SIDES, applyPlay, legalMoves, openingBoard, other, type Play, type Side
 export { SIDES, type Side } from './rules'
 
 export const PLAYERS = ['you', 'agent'] as const
-export type Player = (typeof PLAYERS)[number]
 
 /**
  * Russian draughts ends in a draw after fifteen moves each with no capture and no man moved — only

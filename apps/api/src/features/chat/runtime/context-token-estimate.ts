@@ -83,40 +83,6 @@ export function estimateHistoryTokens(messages: PersistedMessage[]): number {
 }
 
 /**
- * Hybrid context-size estimate: a proven provider measurement covers its prefix,
- * and only trailing messages use the UTF-8-byte heuristic. Without an applicable
- * anchor, estimate the full history and add the system-prompt/tool-schema floor.
- *
- * A matching full identity proves that floor is already measured. A legacy anchor
- * proves only provider/model, so it conservatively adds the current floor again.
- */
-export function estimateContextTokens(
-  messages: PersistedMessage[],
-  lastUsage?: ContextUsageAnchor,
-  fixedOverheadTokens = 0,
-  currentIdentity?: ContextAnchorIdentity,
-): number {
-  return estimateContextTokenDetails(messages, lastUsage, fixedOverheadTokens, currentIdentity)
-    .tokens
-}
-
-/** Detailed form used by context policy and diagnostics. */
-export function estimateContextTokenDetails(
-  messages: readonly PersistedMessage[],
-  lastUsage?: ContextUsageAnchor,
-  fixedOverheadTokens = 0,
-  currentIdentity?: ContextAnchorIdentity,
-): ContextTokenEstimate {
-  return estimateContextFromMessages(
-    messages,
-    estimateMessageTokens,
-    lastUsage,
-    fixedOverheadTokens,
-    currentIdentity,
-  )
-}
-
-/**
  * The same anchored rule applied after model-facing attachment materialization.
  *
  * Prefix transformations (image downscale, attachment spill, VBC) only make the

@@ -12,11 +12,8 @@ import type { SlashCommand } from './SlashCommandMenu'
 // behaviour can never drift. This module keeps only the React hook.
 export {
   parseCommandArgs,
-  INTERVAL_TOKEN_RE,
   type SlashArgSpec,
   type SlashArgOption,
-  type ArgCondition,
-  type ParsedArgChip,
   type ParsedCommandArgs,
 } from '@localixai/api/slash-catalog'
 

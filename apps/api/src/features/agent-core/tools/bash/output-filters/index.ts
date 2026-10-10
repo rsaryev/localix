@@ -11,7 +11,6 @@ import { eslintFilter } from './runners/eslint'
 import { installFilter } from './runners/install'
 import { buildFilter } from './runners/build'
 
-export type { OutputFilter } from './types'
 // Unconditional pre-stage (ANSI strip + secret redaction) — wired in
 // bash-output.ts BEFORE this registry, not registered here; see sanitize.ts.
 export { sanitizeModelOutput } from './sanitize'

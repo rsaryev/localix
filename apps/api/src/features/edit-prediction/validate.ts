@@ -92,16 +92,6 @@ export function checkEdit(
   return { ok: true, edit: { startLine, endLine, original, replacement: text }, stripped }
 }
 
-export function makeEdit(
-  fileLines: string[],
-  startLine: number,
-  endLine: number,
-  replacement: string,
-): EditPrediction | null {
-  const checked = checkEdit(fileLines, startLine, endLine, replacement)
-  return checked.ok ? checked.edit : null
-}
-
 /**
  * Order survivors for the Tab cascade and drop conflicts: sort by `startLine` with
  * OVERLAPPING ranges dropped (first-listed wins — the model leads with its

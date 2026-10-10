@@ -115,9 +115,6 @@ export interface SecretsStore {
   bind(userId: string, key: string, binding: VaultBinding): Promise<boolean>
 }
 
-/** Narrow value-use capability for trusted adapters. */
-export type SecretsResolver = Pick<SecretsStore, 'resolve' | 'has'>
-
 /** Key material remains outside the application database for backend portability. */
 export function defaultSecretsDir(): string {
   return path.join(localixHome(), 'vault')

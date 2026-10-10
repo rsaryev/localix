@@ -1,9 +1,4 @@
-import type {
-  ReaderBookSummary,
-  ReaderChapter,
-  ReaderDailyStat,
-  ReaderSource,
-} from '../shared/contracts'
+import type { ReaderBookSummary, ReaderDailyStat, ReaderSource } from '../shared/contracts'
 import { readerExternalLink, readerHasControlCharacters } from '../shared/link'
 
 export interface ReaderPreferences {
@@ -813,8 +808,4 @@ export function readerNotePreview(
     html,
     text,
   }
-}
-
-export function chapterLabel(chapter: ReaderChapter | null): string {
-  return chapter ? `${chapter.index + 1}. ${chapter.title}` : 'No chapter'
 }

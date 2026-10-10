@@ -21,7 +21,7 @@ import {
   type PredictNextEditPayload,
 } from './ws-commands'
 import type { EditPrediction, NextEditResult } from '../edit-prediction/contracts'
-export { parseRealtimeCommand, type RealtimeCommand } from './ws-commands'
+export { parseRealtimeCommand } from './ws-commands'
 import {
   createWsFrameConnection,
   type WsFrameConnection,

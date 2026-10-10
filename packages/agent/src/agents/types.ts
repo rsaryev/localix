@@ -29,7 +29,6 @@ export type {
   AgentTool,
   AgentToolPresentation,
   AgentToolCategory,
-  AgentToolBehaviorHints,
   ToolSurface,
   ToolAvailability,
 } from './tool-definition'

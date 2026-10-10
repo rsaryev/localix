@@ -9,7 +9,6 @@ import { eventSocket } from '@/shared/api/eventSocket'
 import type {
   AgentStreamEvent,
   PendingAskInteraction,
-  PendingConfirmInteraction,
   PendingRequestSecretInteraction,
   UiPendingHitlInteraction as PendingHitlInteraction,
 } from '@/shared/api/contracts'
@@ -49,7 +48,7 @@ export interface AgentOptions {
 
 // Pending-interaction types are owned by shared/api/contracts (the UI shape of
 // the API HITL contract); re-exported here to keep existing call sites stable.
-export type { PendingAskInteraction, PendingConfirmInteraction, PendingRequestSecretInteraction }
+export type { PendingAskInteraction, PendingRequestSecretInteraction }
 export type { PendingHitlInteraction }
 
 /** Read one session's `isRunning` from the store (working list → roster). */

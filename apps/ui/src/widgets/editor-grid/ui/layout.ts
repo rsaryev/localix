@@ -10,8 +10,6 @@ import {
 // truth, also consumed by the placement column budget) and re-exported here so the
 // renderer's existing importers keep resolving them from './layout'.
 import {
-  MIN_GROUP_W,
-  MIN_GROUP_H,
   BASE_DIMS,
   scaleDims,
   minWidthOf,
@@ -19,7 +17,7 @@ import {
   type GridDims,
 } from '@/features/workspace-grid/model'
 
-export { MIN_GROUP_W, MIN_GROUP_H, BASE_DIMS, scaleDims, minWidthOf, minHeightOf, type GridDims }
+export { BASE_DIMS, scaleDims, minWidthOf, minHeightOf, type GridDims }
 
 /** A box in percent (0–100) of the grid container. */
 export interface Rect {

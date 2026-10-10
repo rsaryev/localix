@@ -11,17 +11,14 @@ export {
   TIMED_OUT,
   withConnectBudget,
   connectClient,
-  McpAuthenticationRequiredError,
   isMcpAuthenticationRequiredError,
 } from './mcp-connect'
 
-export { type McpContentPart, mapCallResult } from './mcp-result'
+export { mapCallResult } from './mcp-result'
 
 export {
-  DEFAULT_TIMEOUT_MS,
   MCP_DESCRIPTION_MAX_CHARS,
   resolveConnectTimeoutMs,
-  resolveToolTimeoutMs,
   filterToolDefs,
   modelVisibleToolDefs,
   readMaxResultChars,
@@ -29,7 +26,6 @@ export {
   namespacedName,
   buildToolForServer,
   type McpGatherResult,
-  type McpToolAnnotations,
   type McpToolDef,
   type McpClientLike,
   type McpResourceDef,

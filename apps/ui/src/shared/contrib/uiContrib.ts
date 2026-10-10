@@ -25,7 +25,6 @@ export type {
   RailSectionContribution,
   RailViewletContribution,
   WorkItemKindContribution,
-  WorkItemLike,
 } from '@localixai/plugin-sdk/ui'
 
 interface Registry<T> {

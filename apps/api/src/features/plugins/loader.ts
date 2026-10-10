@@ -32,12 +32,7 @@ import {
   appendPluginRuntimeDeclarations,
 } from './loader-runtime-declarations'
 
-export type {
-  LoadedPluginAgent,
-  LoadedPluginHook,
-  LoadedPluginMonitor,
-  LoadedPlugins,
-} from './loader-contract'
+export type { LoadedPluginHook, LoadedPluginMonitor, LoadedPlugins } from './loader-contract'
 
 /**
  * Plugin loader — turns enabled, discovered plugins into things the agent runtime

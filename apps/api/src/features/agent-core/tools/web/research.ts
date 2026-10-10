@@ -9,7 +9,6 @@ import {
   RESEARCH_BACKENDS,
   ResearchBackendCooldownError,
   type ResearchBackend,
-  type ResearchSearchHit,
   type ResearchSourceType,
 } from './research-backends'
 import {
@@ -20,7 +19,7 @@ import {
   type ResearchObservation,
 } from './research-ranking'
 
-export { type ResearchBackend, type ResearchSearchHit, type ResearchSourceType }
+export { type ResearchBackend, type ResearchSourceType }
 
 const boundedQuery = z.string().trim().min(1).max(500)
 const boundedDomain = z.string().trim().min(1).max(253)

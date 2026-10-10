@@ -8,8 +8,6 @@
 import { globToRegExpSource } from '../../cc-settings/permission-rules'
 import { isSkillDisabled, type SkillOverrides } from '../../agent-core/skill-overrides'
 
-export type { SkillOverride } from '../../agent-core/skill-overrides'
-
 /** Minimal shape of a skill entry needed to build its listing line. */
 export interface SkillListingEntry {
   name: string

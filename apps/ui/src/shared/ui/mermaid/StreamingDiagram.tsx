@@ -1,7 +1,6 @@
 import { createContext, useContext } from 'react'
 import { DiagramPending, MermaidDiagram } from './MermaidDiagram'
 import { isGrowingFence } from '@localixai/markdown/markdown-stream'
-export { isGrowingFence } from '@localixai/markdown/markdown-stream'
 
 /**
  * The body of the fence a streaming message currently ends inside (`openFenceBody`), or null.

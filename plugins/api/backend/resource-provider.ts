@@ -40,10 +40,6 @@ export interface ResourceRequestPort {
   get(userId: string, name: string, scope?: ResourceRefScope): Promise<CollectionRequest | null>
 }
 
-export function requestPort(store: CollectionStore): ResourceRequestPort {
-  return { list: () => store.list(), get: (_userId, name) => store.get(name) }
-}
-
 /** Session-aware port used by the process-global backend providers. */
 export function scopedRequestPort(
   resolve: (userId: string, sessionId?: string) => Promise<CollectionStore | null>,

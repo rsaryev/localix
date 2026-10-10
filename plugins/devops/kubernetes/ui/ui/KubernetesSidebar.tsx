@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { clusterPulse } from '../model/clusterPulse'
 import type { KubeIssue } from '../model/kubernetesState'
-import { useKubernetes, type KubernetesWorkbenchModel } from '../model/useKubernetes'
+import type { KubernetesWorkbenchModel } from '../model/useKubernetes'
 import { useKubernetesSidebarActions } from '../model/useKubernetesSidebarActions'
 import { useKubernetesSidebarView } from '../model/useKubernetesSidebarView'
 import { useUsageMetrics } from '../model/useUsageMetrics'
@@ -10,15 +10,6 @@ import { DevOpsProblem } from '../../../ui/DevOpsProblem'
 import { KubernetesSidebarDialogs } from './KubernetesSidebarDialogs'
 import { KubernetesSidebarHeader } from './KubernetesSidebarHeader'
 import { KubernetesSidebarInventory } from './KubernetesSidebarInventory'
-
-/**
- * Kubernetes provider view: scope controls, a compact health pulse, one selected
- * inventory, and action dialogs. Persistence, mutations, chrome, and inventory
- * rendering are isolated behind focused hooks/components.
- */
-export function KubernetesSidebar() {
-  return <KubernetesSidebarView kubernetes={useKubernetes()} />
-}
 
 /** Provider view with its data lifecycle injected by the DevOps Workspace shell. */
 export function KubernetesSidebarView({

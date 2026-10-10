@@ -81,7 +81,7 @@ export type {
   DbRule,
   DbPostgresExtendedStatistic,
 } from './schema-object-contracts'
-export type { DbObjectType, DbTableSchema, DbSchemaItem, DbSchemas } from './schema-table-contracts'
+export type { DbTableSchema, DbSchemaItem, DbSchemas } from './schema-table-contracts'
 
 export interface DbResultColumn {
   name: string

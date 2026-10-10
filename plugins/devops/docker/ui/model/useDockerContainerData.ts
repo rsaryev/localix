@@ -237,5 +237,3 @@ export function useDockerContainerData({
     setLogPlayback,
   }
 }
-
-export type DockerContainerData = ReturnType<typeof useDockerContainerData>

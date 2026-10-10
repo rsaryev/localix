@@ -1,12 +1,8 @@
 import { z } from 'zod'
 import { PLUGIN_CONFIG_TYPES } from '@localixai/plugin-sdk/manifest'
 
-export { PLUGIN_CONFIG_TYPES, pluginConfigOptionSchema } from '@localixai/plugin-sdk/manifest'
-export type {
-  PluginConfigType,
-  PluginConfigOption,
-  PluginConfigOptionInput,
-} from '@localixai/plugin-sdk/manifest'
+export { pluginConfigOptionSchema } from '@localixai/plugin-sdk/manifest'
+export type { PluginConfigType, PluginConfigOption } from '@localixai/plugin-sdk/manifest'
 
 /** A declared config field plus its current value, masked for secrets. */
 export const pluginConfigFieldSchema = z.object({

@@ -26,8 +26,6 @@ function emit(event: ChromeEvent): void {
 export const openProjectSwitcher = (): void => emit('project-switcher')
 /** Open the full session switcher modal (Search all…). */
 export const openSessionSwitcher = (): void => emit('session-switcher')
-/** Start a new chat in the active scope. */
-export const requestNewChat = (): void => emit('new-chat')
 
 /** Subscribe to chat-chrome requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeChatChrome(listener: ChromeListener): () => void {

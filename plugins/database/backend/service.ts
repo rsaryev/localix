@@ -29,19 +29,11 @@ import type { ConnectionStore, SavedConnection } from './store'
 import { createEstablish, type SecretsResolver } from './service/establish'
 import { closeLive, configKey, defaultName, infoFrom, probeDriver } from './service/live-entry'
 import { createLiveRegistry } from './service/live-registry'
-import {
-  runBatch,
-  runBrowse,
-  runMetadata,
-  runQuery,
-  DEFAULT_QUERY_TIMEOUT_MS,
-  type QueryOptions,
-} from './service/run-query'
+import { runBatch, runBrowse, runMetadata, runQuery } from './service/run-query'
 import { runValidate } from './service/run-validate'
 import type { DatabaseService } from './service/types'
 
-export { DEFAULT_QUERY_TIMEOUT_MS }
-export type { DatabaseService, QueryOptions, SecretsResolver }
+export type { DatabaseService, SecretsResolver }
 
 export function createDatabaseService(deps: {
   store: ConnectionStore

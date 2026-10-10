@@ -8,8 +8,4 @@ export {
   createResourceContextProvider,
   namespacedResourceKind,
 } from '@localixai/plugin-sdk/backend'
-export type {
-  ResourceContextExpander,
-  ResourceContextKind,
-  ResourceContextProviderSpec,
-} from '@localixai/plugin-sdk/backend'
+export type { ResourceContextExpander } from '@localixai/plugin-sdk/backend'

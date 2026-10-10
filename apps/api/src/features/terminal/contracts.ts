@@ -35,7 +35,6 @@ export const spawnTerminalRequestSchema = z.object({
   cols: z.number().int().positive().max(1000).optional(),
   rows: z.number().int().positive().max(1000).optional(),
 })
-export type SpawnTerminalRequest = z.infer<typeof spawnTerminalRequestSchema>
 
 /** A live terminal session descriptor returned to the client. */
 export interface TerminalInfo {

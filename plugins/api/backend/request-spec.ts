@@ -131,8 +131,6 @@ export function applyPathParams(url: string, params: readonly Pair[] | undefined
 }
 
 export {
-  CREDENTIAL_HEADERS,
-  CREDENTIAL_QUERY_PARAMS,
   credentialQueryPairs,
   credentialUrlParams,
   redactUrlCredentials,
@@ -186,7 +184,7 @@ export function buildUrl(spec: Pick<RequestSpec, 'url' | 'query' | 'pathParamete
   return url
 }
 
-export { isHttpUrl, urlProblem, type UrlProblem } from './request-url-policy'
+export { isHttpUrl, urlProblem } from './request-url-policy'
 
 /**
  * The `:name` placeholders in `url` that WOULD BE SENT LITERALLY — no value, or an empty one.

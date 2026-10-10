@@ -11,21 +11,12 @@
 export * from './contracts'
 export {
   buildCcHookRegistry,
-  parseHooksBlock,
   parseScopedHooks,
   mergeCcHookRegistries,
   type PluginHookConfig,
-  type SkippedHandler,
 } from './config'
 export { createCcHooksRuntime, type CcHooksRuntime } from './run'
-export { wrapToolsWithCcHooks, CcHookBlockedError } from './wrap-tools'
-export {
-  parsePromptHookResult,
-  mapPromptOutcome,
-  type PromptHookResult,
-  type PromptHookEvaluator,
-} from './prompt-hook'
-export { type AgentHookEvaluator } from './agent-hook'
-export { interpolateEnv, executeHttpHook } from './http'
-export { runMcpToolHook, type CcMcpToolCaller, type CcMcpToolResult } from './mcp-tool-hook'
-export { foldHookOutput } from './output-parse'
+export { wrapToolsWithCcHooks } from './wrap-tools'
+export { parsePromptHookResult, type PromptHookResult } from './prompt-hook'
+
+export { type CcMcpToolResult } from './mcp-tool-hook'

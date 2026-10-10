@@ -19,7 +19,7 @@ import {
   declaredInputTokenBudget,
 } from './prompt'
 import { askCompletionModel, completionCache, completionFingerprint } from './model-call'
-export { buildInlineCompletionPrompt, declaredInputTokenBudget } from './prompt'
+
 import { coreInlineCompletionSurface, type InlineCompletionSurfaceSpec } from './surfaces'
 import { gatherSurfaceContext, type SurfaceContextDeps } from './surface-context'
 import { startCompletionOperation } from './operation'

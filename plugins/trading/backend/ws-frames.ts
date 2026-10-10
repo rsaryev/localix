@@ -16,8 +16,6 @@ import type { WsFrameContribution } from '@localixai/plugin-sdk/backend'
 import type { StreamChannel, StreamParams } from './backend'
 import { type TradingStreamRegistry, streamKeyOf } from './stream'
 
-export type { StreamStatus, TradingStreamFrame } from './stream'
-
 /** The PUBLIC market-data channels only. The private account set (orders / positions /
  *  balance / myTrades) is deliberately NOT accepted here — this plugin's surface streams no
  *  account state (see `index.ts`); the private channels return when the account surface

@@ -21,12 +21,11 @@
  * belongs to in order to name it. A barrel earns its keep when it is the module's public identity
  * rather than an extra hop, and "the indicator catalogue" is exactly that.
  */
-export type { IndicatorPoint, IndicatorSeriesSpec, IndicatorSpec } from './indicator-contracts'
+export type { IndicatorSpec } from './indicator-contracts'
 
 export { alma, dema, dpo, ema, hma, lsma, momentum, trix, vwma } from './indicator-averages'
 
 export {
-  MACD_HIST_DOWN,
   MACD_HIST_UP,
   SUPERTREND_DOWN,
   SUPERTREND_UP,
@@ -40,8 +39,6 @@ export {
 } from './indicator-trend'
 
 export {
-  AO_DOWN,
-  AO_UP,
   ao,
   bullBearPower,
   cci,

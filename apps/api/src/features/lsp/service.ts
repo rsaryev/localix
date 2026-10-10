@@ -9,9 +9,7 @@ export type {
   CodeLocation,
   CodeReference,
   WorkspaceSymbol,
-  LspDiagnosticsPush,
   RenamePrepare,
-  FormatResult,
   RenameResult,
 } from './service-result-types'
 

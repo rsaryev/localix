@@ -28,5 +28,4 @@ export const graphCameraReportSchema = z.object({
   missing: z.array(z.string().max(500)).max(30).optional(),
 })
 
-export type GraphCamera = z.infer<typeof graphCameraSchema>
 export type GraphCameraReport = z.infer<typeof graphCameraReportSchema>

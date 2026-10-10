@@ -10,8 +10,6 @@ import { applyProfileRead } from './settingsProfileRead'
 import { currentAgentSettings, loadLocalSettings, saveLocalSettings } from './userSettings'
 import type { UserSettings } from './userSettings'
 
-export type { UserSettings } from './userSettings'
-
 /**
  * THE PROFILE SYNC STATE MACHINE — when settings are read, when they are written, and what
  * happens to a write that fails.

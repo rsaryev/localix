@@ -61,11 +61,6 @@ export interface RepoFileHunk {
   newLines: string[]
 }
 
-export interface FileHunks {
-  path: string
-  hunks: RepoFileHunk[]
-}
-
 /** What a single rendered diff line is — a hunk header or a body line. VCS-neutral. */
 export type DiffLineKind = 'hunk' | 'context' | 'add' | 'del'
 

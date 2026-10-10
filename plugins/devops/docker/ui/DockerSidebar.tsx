@@ -1,19 +1,11 @@
 import type { DockerResourceView } from './model/dockerView'
-import { useDocker, type DockerWorkbenchModel } from './model/useDocker'
+import type { DockerWorkbenchModel } from './model/useDocker'
 import { useDockerSidebarActions } from './model/useDockerSidebarActions'
 import { useDockerSidebarView } from './model/useDockerSidebarView'
 import { DevOpsProblem } from '../../ui/DevOpsProblem'
 import { DockerSidebarDialog } from './ui/DockerSidebarDialog'
 import { DockerSidebarHeader } from './ui/DockerSidebarHeader'
 import { DockerSidebarInventory } from './ui/DockerSidebarInventory'
-
-/**
- * Docker provider view: persisted inventory selection, resource actions, and
- * independently recoverable collection lists over one injected daemon model.
- */
-export function DockerSidebar() {
-  return <DockerSidebarView docker={useDocker()} />
-}
 
 /** Provider view with its data lifecycle injected by the DevOps Workspace shell. */
 export function DockerSidebarView({

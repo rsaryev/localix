@@ -1,5 +1,5 @@
 import { diffWordsWithSpace } from 'diff'
-import type { DiffHunk, DiffLine } from './parseUnifiedDiff'
+import type { DiffHunk } from './parseUnifiedDiff'
 
 /** One run of a changed line's text, flagged as intra-line changed or unchanged. */
 export interface IntralineSegment {
@@ -91,4 +91,4 @@ export function annotateIntralineChanges(hunks: DiffHunk[]): (IntralineSegment[]
   )
 }
 
-export type { DiffLine, DiffHunk }
+export type { DiffHunk }

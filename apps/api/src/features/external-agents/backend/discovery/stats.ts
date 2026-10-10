@@ -11,21 +11,15 @@
 
 import { DEFAULT_STATS_DAYS, MAX_STATS_DAYS } from '../../shared/contracts'
 import { sessionUsedModel } from '../../shared/contracts'
-import type {
-  ExternalAgentStats,
-  SessionSummary,
-  StatBucket,
-  StatsQuery,
-} from '../../shared/contracts'
+import type { ExternalAgentStats, SessionSummary, StatsQuery } from '../../shared/contracts'
 import { addUsage, emptyUsage } from '../adapters/usage'
 import { fold, foldModels, usageInWindow, type WindowUsage } from './stats-usage'
 import { heaviestSessions, mostDelegating, providersOutsideWindow } from './stats-rankings'
 import { DAY_MS, dayKey, buildTrend } from './stats-trend'
 
 export { STATS_SESSION_LIMIT } from './stats-rankings'
-export { bucketDaysFor } from './stats-trend'
 
-export type { ExternalAgentStats, StatBucket, StatsQuery }
+export type { ExternalAgentStats, StatsQuery }
 export { DEFAULT_STATS_DAYS, MAX_STATS_DAYS }
 
 /**

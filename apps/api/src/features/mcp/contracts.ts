@@ -81,10 +81,6 @@ export const mcpHttpConfigSchema = z.object({
 })
 export type McpHttpConfig = z.infer<typeof mcpHttpConfigSchema>
 
-export type McpConfig =
-  | ({ transport: 'stdio' } & McpStdioConfig)
-  | ({ transport: 'http' } & McpHttpConfig)
-
 /** A fully materialized server record returned to the UI. */
 export const mcpServerSchema = z.object({
   id: z.string(),
@@ -143,17 +139,6 @@ export const mcpServerInputSchema = z
   })
 export type McpServerInput = z.infer<typeof mcpServerInputSchema>
 
-export const listMcpServersResponseSchema = z.object({ servers: z.array(mcpServerSchema) })
-export type ListMcpServersResponse = z.infer<typeof listMcpServersResponseSchema>
-
-/** Partial update — currently just the enable toggle (e.g. turning on an inert import). */
-export const updateMcpServerRequestSchema = z.object({ enabled: z.boolean() })
-export type UpdateMcpServerRequest = z.infer<typeof updateMcpServerRequestSchema>
-
-/** Toggle one advertised MCP tool without replacing the server's remaining config. */
-export const updateMcpToolRequestSchema = z.object({ enabled: z.boolean() })
-export type UpdateMcpToolRequest = z.infer<typeof updateMcpToolRequestSchema>
-
 /**
  * Bulk import in the ecosystem-standard `{ "mcpServers": { name: {…} } }` shape
  * (Claude Desktop / `.mcp.json` / VS Code). Each entry is a raw, loosely-typed
@@ -178,7 +163,6 @@ export const importMcpServersRequestSchema = z
     message: 'missing "mcpServers"',
     path: ['mcpServers'],
   })
-export type ImportMcpServersRequest = z.infer<typeof importMcpServersRequestSchema>
 
 /** Per-import outcome: which servers landed and which entries failed (and why). */
 export const importMcpServersResponseSchema = z.object({
@@ -196,7 +180,6 @@ export const startMcpOAuthResponseSchema = z.object({
   /** OAuth state correlating this flow to its loopback callback. */
   state: z.string().optional(),
 })
-export type StartMcpOAuthResponse = z.infer<typeof startMcpOAuthResponseSchema>
 
 /** Result of a live connection probe — surfaced in the UI as a "Test" button. */
 export const mcpServerStatusSchema = z.object({

@@ -20,11 +20,7 @@
  * an EMPTY `message` instead of falling back to the friendly sentence.
  */
 
-import {
-  defineTypedError,
-  type TypedDomainError,
-  type TypedErrorInfo,
-} from '@localixai/plugin-sdk/backend'
+import { defineTypedError, type TypedDomainError } from '@localixai/plugin-sdk/backend'
 
 export type DbErrorCode =
   | 'timeout'
@@ -76,9 +72,6 @@ const kit = defineTypedError<DbErrorCode>('DbError', FRIENDLY)
  */
 export const DbError = kit.DomainError
 export type DbError = TypedDomainError<DbErrorCode>
-
-/** The `{ code, message }` payload surfaced to clients (message = friendly text). */
-export type DbErrorInfo = TypedErrorInfo<DbErrorCode>
 
 export const toErrorInfo = kit.toErrorInfo
 

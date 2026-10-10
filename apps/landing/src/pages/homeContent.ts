@@ -1,7 +1,7 @@
 import type { SectionItem } from '@/components/SectionNav'
 import type { FeatureRow } from './homeContentTypes'
 
-export type { FeatureRow, PluginShowcase } from './homeContentTypes'
+export type { FeatureRow } from './homeContentTypes'
 export * from './homeBundledPlugins'
 export * from './homeContentPlatform'
 export * from './homeContentExternal'

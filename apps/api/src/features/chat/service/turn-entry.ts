@@ -24,12 +24,7 @@ import {
 import type { TurnEntryContext, RunJobTaskOptions } from './turn-entry-contracts'
 
 export type { TurnEntryContext, RunJobTaskOptions } from './turn-entry-contracts'
-export {
-  wakeSession,
-  wakeSessionAndWait,
-  type WakeMiss,
-  type WakeDelivery,
-} from './turn-entry-wake'
+export { wakeSession, wakeSessionAndWait, type WakeDelivery } from './turn-entry-wake'
 
 /**
  * The user typed something. Four gates run before a turn ever starts, in order:

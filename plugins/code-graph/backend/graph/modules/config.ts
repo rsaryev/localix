@@ -37,8 +37,6 @@ export interface ProjectConfig {
   goModules: GoModule[]
 }
 
-export const EMPTY_CONFIG: ProjectConfig = { tsconfigs: [], packages: [], goModules: [] }
-
 export async function readProjectConfig(root: string, paths: string[]): Promise<ProjectConfig> {
   const config: ProjectConfig = { tsconfigs: [], packages: [], goModules: [] }
   for (const path of paths) {

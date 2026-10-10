@@ -8,8 +8,6 @@
  */
 import { z } from 'zod'
 import type { CredentialField, MarketType } from './connection'
-// `PublicTrade.side` reuses the order-side vocabulary — a tape print is a buy or a sell.
-import type { OrderSide } from './account'
 
 // ── Market data ────────────────────────────────────────────────────────────────
 
@@ -220,13 +218,6 @@ export interface ExchangeCatalogEntry {
   requiredCredentials: CredentialField[]
 }
 
-/** The verdict of "Test connection": reachable, and — when credentials were given — usable. */
-export interface TestResult {
-  exchange: ExchangeInfo
-  /** `false` when no credentials were supplied, or the venue offers no private read to check them. */
-  credentialsChecked: boolean
-}
-
 export interface Ticker {
   symbol: string
   /** Unix ms. ABSENT when the venue did not stamp the quote — Hyperliquid stamps `0`, which the
@@ -276,27 +267,4 @@ export interface PublicTrade {
   price: number
   amount: number
   side: 'buy' | 'sell'
-}
-
-/**
- * One of the ACCOUNT's OWN executed trades (a "fill") — where money actually changed hands, as
- * opposed to a `PublicTrade` (the venue-wide tape) or an `Order` (an intent that may never fill).
- * An order says where you asked to trade; a fill says where you did, at what fee, and as maker
- * or taker. It is the only record that answers "what did this position really cost me".
- */
-export interface MyTrade {
-  id: string
-  /** The order this fill came from, when the venue reports it — one order may fill many times. */
-  orderId?: string
-  symbol: string
-  side: OrderSide
-  price: number
-  amount: number
-  /** Quote-currency value, `price * amount`, when the venue reports it. */
-  cost?: number
-  /** Unix MILLISECONDS. ABSENT when the venue did not stamp the fill — `0` would date it to the
-   *  epoch, which every renderer would then print as a trade made on 1 Jan 1970. */
-  timestamp?: number
-  takerOrMaker?: 'taker' | 'maker'
-  fee?: { cost: number; currency?: string }
 }

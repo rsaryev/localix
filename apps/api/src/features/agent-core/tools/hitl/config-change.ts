@@ -8,6 +8,4 @@ export type {
   ConfigChangePayload,
   ConfigChangeRequest,
   ConfigChangeResponse,
-  ConfigChangeResponsePayload,
-  ConfigReloadClass,
 } from '@localixai/plugin-sdk/backend'

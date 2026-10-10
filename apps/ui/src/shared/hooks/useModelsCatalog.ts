@@ -4,7 +4,7 @@ import type { CatalogModel, CatalogProvider } from '@localixai/agent/catalog'
 import { backendClient } from '@/shared/api/client'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 
-export type { CatalogModel, CatalogProvider }
+export type { CatalogModel }
 
 export function useModelsCatalog() {
   const workItemVisible = useWorkItemVisible()

@@ -107,7 +107,5 @@ export function describeRule(rule: PermissionRule): string {
 export {
   createPermissionGate,
   type ConfirmOutcome,
-  type PermissionGateFn,
-  type PermissionGateOptions,
   type RequestConfirmArgs,
 } from './permission-gate'

@@ -25,11 +25,6 @@ import { isReadOnlyRedisCommand } from './redis'
 import { isReadOnlyStatement } from './sql'
 import { isSideEffectFreeStatement } from './sql-calls'
 
-export { isReadOnlyStatement } from './sql'
-export { isReadOnlyEsCommand } from './es'
-export { isReadOnlyMongoCommand } from './mongo'
-export { isReadOnlyRedisCommand } from './redis'
-
 /** One classifier per engine family. */
 const CLASSIFIERS: Record<EngineKind, (input: string) => boolean> = {
   sql: isReadOnlyStatement,

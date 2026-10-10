@@ -15,7 +15,6 @@ import type {
 } from './task-delegation-contracts'
 
 export type {
-  ChildRuntimeStatus,
   DelegationBrief,
   TaskDelegationDetails,
   TaskDelegationOptions,

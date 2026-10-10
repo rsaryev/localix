@@ -17,7 +17,6 @@ export {
   identifiersForLspLookup,
   baseNameNoExt,
   parseImportBasenames,
-  type CursorIdentifier,
 } from './predict-context-signals'
 
 /** One related-context window fed to the ranker. `recencyIndex` 0 = newest. */

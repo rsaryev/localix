@@ -1,7 +1,6 @@
 import {
   DEFAULT_REASONING_EFFORT,
   REASONING_EFFORT_OPTIONS,
-  isReasoningEffort,
   type ReasoningEffort,
 } from '@localixai/agent'
 
@@ -86,13 +85,4 @@ export function carriedReasoningEffort(
 ): ReasoningEffort {
   if (sessionEffort && sessionEffort !== OFF) return sessionEffort
   return remembered ?? DEFAULT_REASONING_EFFORT
-}
-
-/** Narrow an unknown stored value and clamp it in one step (persisted settings, wire payloads). */
-export function readModelReasoning(
-  value: string | null | undefined,
-  efforts: readonly string[] | undefined,
-): ReasoningEffort | undefined {
-  if (value === undefined || !isReasoningEffort(value)) return undefined
-  return clampModelReasoning(value, efforts)
 }

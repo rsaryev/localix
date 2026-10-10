@@ -20,7 +20,7 @@ import {
  * `ctx.helpers.readJson/writeJson`) — the host doesn't take custody of
  * third-party credentials beyond the declared `config` secrets.
  */
-export type { PluginOAuth, PluginOAuthLogin } from '@localixai/plugin-sdk/backend'
+export type { PluginOAuth } from '@localixai/plugin-sdk/backend'
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000
 

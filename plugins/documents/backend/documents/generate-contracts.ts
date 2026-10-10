@@ -70,7 +70,6 @@ export const generateRequestSchema = z.object({
   filename: z.string().min(1).max(200).optional(),
   layout: documentLayoutSchema.optional(),
 })
-export type GenerateRequest = z.infer<typeof generateRequestSchema>
 
 /** Response of `POST /rpc/documents/generate`: where the bytes landed + how to name them. */
 export interface GenerateResponse {

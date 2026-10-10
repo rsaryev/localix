@@ -65,7 +65,7 @@ import { toConfigFields, type PluginService, type PluginServiceDeps } from './se
 
 // Repo-clone + tree-copy install primitives live in ./install-helpers; re-exported
 // here so existing importers of `./service` keep their import surface unchanged.
-export { cloneRepo, copyPluginTree } from './install-helpers'
+export { copyPluginTree } from './install-helpers'
 // Service interface + deps live in ./service-types; re-exported
 // here so the historical `./service` import surface stays unchanged.
 export type { PluginService, PluginServiceDeps } from './service-types'

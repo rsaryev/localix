@@ -28,7 +28,7 @@ import {
   type PreviewMaps,
 } from './preview'
 
-export type { PreviewEntry, PreviewBySession, PreviewsBySession } from './preview'
+export type { PreviewEntry } from './preview'
 
 // v2: per-session strips. The v1 single shared strip is not migrated — its tabs carry no
 // reliable owner, and guessing one would hand a page to the wrong chat.

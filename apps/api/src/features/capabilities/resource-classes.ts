@@ -194,9 +194,6 @@ export const RESOURCE_CLASSES = [
   },
 ] as const satisfies readonly ResourceClass[]
 
-/** Every class name, as a type — so a consumer cannot invent one the matcher never heard of. */
-export type ResourceClassName = (typeof RESOURCE_CLASSES)[number]['value']
-
 const BY_VALUE = new Map<string, ResourceClass>(
   RESOURCE_CLASSES.map((entry) => [entry.value, entry]),
 )

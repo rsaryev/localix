@@ -9,11 +9,4 @@
  *
  * See the package for the full contract, the three traps, and the `ContainedPath` brand.
  */
-export {
-  isPathWithin,
-  isPathBelow,
-  resolveWithin,
-  isAtOrUnder,
-  isStrictlyUnder,
-  type ContainedPath,
-} from '@localixai/path-containment'
+export { isPathWithin, isPathBelow, resolveWithin, isAtOrUnder } from '@localixai/path-containment'

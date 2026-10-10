@@ -37,16 +37,6 @@ export class TradingApiError extends Error {
   }
 }
 
-/**
- * True when the failure is the ROUTE not being mounted — a bare 404 with no trading-error
- * `code`. A served route's own 404 (`connection_not_found`, `order_not_found`) always carries
- * a code, so it never matches. The account surface renders this as a quiet unavailable state:
- * the backend build simply doesn't serve accounts yet.
- */
-export function isRouteMissing(err: unknown): boolean {
-  return err instanceof TradingApiError && err.status === 404 && err.code === undefined
-}
-
 async function readOr<T>(res: Response): Promise<T> {
   const json = (await res.json().catch(() => null)) as
     | (T & { error?: string; code?: TradingErrorCode; detail?: string })

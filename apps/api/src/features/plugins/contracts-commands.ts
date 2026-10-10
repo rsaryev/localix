@@ -114,7 +114,6 @@ export const pluginCommandArgSpecSchema = z.object({
   dynamic: z.boolean().optional(),
   when: pluginCommandArgConditionSchema.optional(),
 })
-export type PluginCommandArgSpec = z.infer<typeof pluginCommandArgSpecSchema>
 
 export const pluginCommandSpecSchema = z.object({
   pluginName: z.string(),

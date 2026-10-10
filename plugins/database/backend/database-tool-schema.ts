@@ -31,7 +31,6 @@ export const DATABASE_ACTIONS = [
   'disconnect',
   'remove',
 ] as const
-export type DatabaseAction = (typeof DATABASE_ACTIONS)[number]
 
 const ENGINES = DATABASE_DRIVERS.map((driver) => driver.id) as [string, ...string[]]
 

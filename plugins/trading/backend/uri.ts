@@ -43,7 +43,6 @@ import { localixResourceUri, parseLocalixUri } from '@localixai/plugin-sdk/navig
 
 /** Top-level folders under a venue. `markets` is the only one — there is no account to fold. */
 export const TRADE_CATEGORIES = ['markets'] as const
-export type TradeCategory = (typeof TRADE_CATEGORIES)[number]
 
 /** The leaves under a single market. `trades` is the venue-wide tape; `funding` is the
  *  instrument's public carry (rate + open interest, contract markets only). */

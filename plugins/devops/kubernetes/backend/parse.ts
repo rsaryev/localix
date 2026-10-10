@@ -8,7 +8,7 @@
  * (contexts/namespaces/nodes) in `parse-cluster.ts`, and the workload parsers
  * (deployments/services/events) in `parse-workloads.ts`.
  */
-export { parsePod, parsePodItem, parsePods } from './parse-pods'
+export { parsePod, parsePods } from './parse-pods'
 export { parseContexts, parseNamespaces, parseNodes } from './parse-cluster'
 export {
   buildLabelSelector,

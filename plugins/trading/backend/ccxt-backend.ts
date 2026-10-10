@@ -37,11 +37,6 @@ import { createCcxtReadMethods } from './ccxt-read-methods'
 
 // The offline-testable guard helpers moved to `ccxt-driver-guards.ts`; re-exported so
 // `./ccxt-backend` stays the one entry point their importers and tests use.
-export {
-  attemptPublicReachRead,
-  requiresSinceError,
-  type PublicReachExchange,
-} from './ccxt-driver-guards'
 
 /** Optional wiring for {@link createCcxtBackend}. Kept as an options object (not a factory-signature
  *  change) so a test that injects its own `ExchangeBackendFactory` is unaffected — the disk cache is

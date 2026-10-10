@@ -53,19 +53,3 @@ export function Section({
     </section>
   )
 }
-
-/** Observed once as a container; its direct children cascade in on delays. */
-export function Stagger({
-  className,
-  children,
-}: {
-  className?: string
-  children: React.ReactNode
-}) {
-  const ref = useReveal<HTMLDivElement>()
-  return (
-    <div ref={ref} className={cn('reveal-stagger', className)}>
-      {children}
-    </div>
-  )
-}

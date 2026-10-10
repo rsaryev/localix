@@ -8,7 +8,7 @@ import { flush, triggerHarness } from '../triggers/test-harness'
 import type { WakeOutcome, WakeShape } from '../triggers/delivery'
 import type { WorkRecord } from '../work/contracts'
 import { createMonitors, type MonitorsDeps } from './compose'
-import type { MonitorEndReason, MonitorEvent, MonitorSpec } from './contracts'
+import type { MonitorEndReason, MonitorSpec } from './contracts'
 import type { MonitorHooks } from './report'
 import type { CheckRun, MonitorSource, MonitorSourceExit } from './sources'
 
@@ -153,9 +153,6 @@ export async function monitorHarness(
     },
   }
 }
-
-export const events = (...texts: string[]): MonitorEvent[] =>
-  texts.map((text, index) => ({ at: index, text }))
 
 /** Let the batcher's 0 ms window and the fire cycle run. */
 export const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 5))

@@ -479,10 +479,6 @@ export const buildUiLocationUri = (
 export const listUiLocations = (options?: {
   exposure?: UiLocationAudience
 }): UiLocationDescriptor[] => registry.list(options)
-export const searchUiLocations = (
-  query: string,
-  options?: { exposure?: UiLocationAudience; limit?: number },
-): UiLocationDescriptor[] => registry.search(query, options)
 export const uiLocationRevision = (): number => registry.revision()
 export const uiAgentLocationCatalogSnapshot = (): UiAgentLocationCatalogSnapshot => ({
   version: UI_AGENT_LOCATION_CATALOG_VERSION,

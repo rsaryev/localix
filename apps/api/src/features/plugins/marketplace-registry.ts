@@ -25,13 +25,10 @@ import {
 export {
   LOCALIX_MARKETPLACE,
   readKnownMarketplaces,
-  findMarketplaceManifest,
-  readMarketplace,
   listMarketplaces,
   marketplaceDependencyAllowList,
   findMarketplacesWithPlugin,
   type KnownMarketplace,
-  type MarketplaceListingPlugin,
   type MarketplaceListing,
 } from './marketplace-catalog'
 

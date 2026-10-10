@@ -29,14 +29,7 @@ import { EMPTY_RUNTIME, joinContext, contextFrom, blockedFrom } from './runtime-
 import { createHookSelector, type SelectOptions } from './runtime-selection'
 import { createHookHandlerRunner } from './runtime-handler'
 
-export type {
-  PreToolUseResult,
-  PromptSubmitResult,
-  StopResult,
-  PreCompactResult,
-  CcHooksRuntime,
-  CreateCcHooksRuntimeOptions,
-} from './runtime-contracts'
+export type { CcHooksRuntime, CreateCcHooksRuntimeOptions } from './runtime-contracts'
 
 export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooksRuntime {
   const {

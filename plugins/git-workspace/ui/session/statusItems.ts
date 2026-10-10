@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ClipboardCopy, GitBranch, Minus, Plus, RefreshCw } from 'lucide-react'
+import { ArrowDown, ArrowUp, ClipboardCopy, GitBranch, RefreshCw } from 'lucide-react'
 import type { StatusItemState, MenuEntry } from '@localixai/plugin-sdk/ui'
 import { pluginWorkspace, runPluginAction, statusMenuList } from '@localixai/plugin-sdk/ui'
 import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
@@ -144,46 +144,5 @@ export function useGitBranchStatusItem(sessionId: string | null): StatusItemStat
     onClick: () =>
       active && focusedId ? pluginWorkspace.closeWorkItems(focusedId) : openGitWorkspace(sessionId),
     menu,
-  }
-}
-
-/**
- * Composer: what is uncommitted right now, as a pill above the input.
- *
- * The `+n −m` pair used to be `GitDiffStat`, a component this plugin drew itself. Expressing it as
- * metrics is what stops that from being a second implementation of the host's own idea — and it is
- * the independent proof that `metrics` is a host concept rather than a field shaped around git.
- */
-export function useGitChangesStatusItem(sessionId: string | null): StatusItemState | null {
-  const status = useSessionGitField(sessionId, 'status')
-  if (!sessionId || !status?.isRepo || status.stats.files === 0) return null
-
-  const { files, insertions, deletions } = status.stats
-  return {
-    label: `${files} changed file${files === 1 ? '' : 's'}`,
-    text: `${files} file${files === 1 ? '' : 's'}`,
-    metrics: [
-      ...(insertions > 0
-        ? [
-            {
-              icon: Plus,
-              value: String(insertions),
-              label: `${insertions} added`,
-              tone: 'success' as const,
-            },
-          ]
-        : []),
-      ...(deletions > 0
-        ? [
-            {
-              icon: Minus,
-              value: String(deletions),
-              label: `${deletions} removed`,
-              tone: 'error' as const,
-            },
-          ]
-        : []),
-    ],
-    onClick: () => openGitWorkspace(sessionId),
   }
 }

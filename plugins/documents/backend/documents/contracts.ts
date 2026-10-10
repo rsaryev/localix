@@ -2,20 +2,6 @@ import { z } from 'zod'
 import type { TableColumn, TableRow } from '@localixai/dataview'
 
 /**
- * Agnostic document-extraction contracts. The documents service turns an office /
- * PDF / text document into a model-friendly shape: TEXT-bearing formats (docx,
- * pptx, odt, pdf, md) emit Markdown; a SPREADSHEET (xlsx, csv) emits a
- * {@link TableColumn}/{@link TableRow} table compatible with `@localixai/dataview`.
- *
- * The service knows nothing about chat, the agent loop, or the UI — bytes in, an
- * {@link ExtractedDocument} out. Both the extraction capability (via a
- * narrow injected port) and the HTTP routes (for the UI) consume the SAME service.
- */
-
-/** What kind of extracted payload a document produces. */
-export type DocumentKind = 'text' | 'table' | 'slides'
-
-/**
  * Source file formats the registry can route to a driver. `text`-producing formats
  * (docx/odt/md) → `text`; `pptx` → `slides`; `xlsx`/`csv` → `table`; `pdf` → `text`
  * (extracted-text fallback; a PDF may also be sent to the model natively).
@@ -113,7 +99,6 @@ export const extractOptionsSchema = z.object({
   offset: z.number().int().min(0).optional(),
   limit: z.number().int().min(1).max(100_000).optional(),
 })
-export type ExtractOptionsInput = z.infer<typeof extractOptionsSchema>
 
 /**
  * Extract request: point the service at bytes via EITHER an absolute file `path`

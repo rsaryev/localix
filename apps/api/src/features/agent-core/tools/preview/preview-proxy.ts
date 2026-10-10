@@ -19,7 +19,6 @@ export {
   PREVIEW_WS_MAX_BUFFERED_BYTES,
   previewWsMessageBytes,
   sendOrQueuePreviewWsMessage,
-  type WsRelay,
 } from './preview-websocket-relay'
 
 /** One proxy server per upstream origin, reused across calls (like the static server). */

@@ -4,7 +4,7 @@
  */
 
 import type { ContextContribution, PredictNextEditRequest } from '../contracts'
-import { buildEditPredictionPrompt, numberFileForPrompt } from './build'
+import { buildEditPredictionPrompt } from './build'
 
 export interface EditPredictionPrompt {
   /** Stable prompt identity for telemetry/cache namespacing. */
@@ -19,5 +19,3 @@ export const EDIT_PREDICTION_PROMPT: EditPredictionPrompt = {
   id: 'edit-prediction',
   build: buildEditPredictionPrompt,
 }
-
-export { numberFileForPrompt }

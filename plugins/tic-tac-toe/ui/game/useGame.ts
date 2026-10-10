@@ -52,5 +52,3 @@ export function useGame(active: boolean) {
     remind: () => act('remind', {}),
   }
 }
-
-export type GameState = ReturnType<typeof useGame>

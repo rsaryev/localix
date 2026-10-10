@@ -43,10 +43,3 @@ export const availabilityChange = (
   resource: '*',
   effect: on ? 'allow' : 'deny',
 })
-
-/** Forget the decision entirely, sending the item back to its own default. */
-export const clearAvailability = (kind: CapabilityKind, name: string): CapabilityRuleChange => ({
-  action: capabilityAction(kind, name),
-  resource: '*',
-  effect: 'default',
-})

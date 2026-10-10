@@ -13,7 +13,6 @@
 import {
   defineTypedError,
   type TypedDomainError,
-  type TypedErrorInfo,
   // The narrow entrypoint, matching the Kubernetes side. Docker's UI imports `DockerErrorCode`
   // from here as a TYPE today, so the barrel was erased at build time and nothing detonated —
   // but that is one non-type import away from the same failure, and the two providers should
@@ -79,7 +78,6 @@ const kit = defineTypedError<DockerErrorCode>('DockerError', FRIENDLY)
 
 export const DockerError = kit.DomainError
 export type DockerError = TypedDomainError<DockerErrorCode>
-export type DockerErrorInfo = TypedErrorInfo<DockerErrorCode>
 export const toErrorInfo = kit.toErrorInfo
 const rawOf = kit.rawOf
 

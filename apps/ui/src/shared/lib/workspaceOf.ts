@@ -25,9 +25,6 @@ export function workspaceOf(sessionId: string): string {
   return rootOf(sessionId) || sessionId
 }
 
-/** Whether a session is a sub-session: it has a root other than itself. */
-export const isSubSession = (sessionId: string): boolean => workspaceOf(sessionId) !== sessionId
-
 /** Whether two sessions work in one workspace. */
 export const sameWorkspace = (a: string | null, b: string | null): boolean =>
   !!a && !!b && workspaceOf(a) === workspaceOf(b)

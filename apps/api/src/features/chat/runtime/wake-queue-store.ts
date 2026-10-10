@@ -3,11 +3,7 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../../db/types'
 import { mapQueueRows, TURN_KINDS, type WakeQueueStore } from './wake-queue-store-contracts'
 
-export type {
-  DurableQueueItem,
-  DurableQueueKind,
-  WakeQueueStore,
-} from './wake-queue-store-contracts'
+export type { DurableQueueItem, WakeQueueStore } from './wake-queue-store-contracts'
 
 /** Deterministic transcript ids close the insert→ack crash gap: after restart,
  * retrying the same delivery key addresses the same rows instead of duplicating

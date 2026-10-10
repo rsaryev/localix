@@ -19,8 +19,7 @@ import { describeParams, type ParamField } from './sqlParams'
 import { DATABASE_DATA } from './topics'
 import { withLiveConnection } from './withLiveConnection'
 
-export { paramKey } from './sql-console/types'
-export type { RunMeta, SqlConsoleState, UseSqlConsoleOptions } from './sql-console/types'
+export type { SqlConsoleState, UseSqlConsoleOptions } from './sql-console/types'
 
 interface PendingParameterRun {
   sql: string

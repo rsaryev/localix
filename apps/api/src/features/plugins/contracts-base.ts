@@ -10,17 +10,7 @@ export {
   PLUGIN_QUALIFIED_NAME_RE,
   PLUGIN_SURFACE_AGENT,
   PLUGIN_SURFACE_WORKBENCH,
-  PLUGIN_FILE_ASSOCIATION_RANKS,
-  PLUGIN_FILE_ASSOCIATION_ROLES,
   isWorkbenchPlugin,
-  normalizeFileAssociationExt,
   normalizePluginSurfaces,
-  pluginFileAssociationSchema,
   pluginManifestCoreSchema,
-} from '@localixai/plugin-sdk/manifest'
-export type {
-  PluginFileAssociation,
-  PluginFileAssociationInput,
-  PluginManifestCore,
-  PluginManifestCoreInput,
 } from '@localixai/plugin-sdk/manifest'

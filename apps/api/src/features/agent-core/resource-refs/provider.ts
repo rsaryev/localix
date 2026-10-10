@@ -7,7 +7,6 @@ export {
   buildResourceUri,
   createResourceProviderRegistry,
   decodeResourceSegment,
-  encodeResourceSegment,
   linkAction,
   noticeNode,
   parseResourceUri,

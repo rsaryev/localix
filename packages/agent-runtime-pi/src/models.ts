@@ -20,7 +20,6 @@ import { resolveCatalogMetadata, type PiCatalogOptions } from './catalog-metadat
 import { providerApiKeyEnvVars } from './provider-env'
 
 export type {
-  CatalogFetch,
   CatalogMetadataSnapshot,
   CatalogMetadataStore,
   PiCatalogOptions,

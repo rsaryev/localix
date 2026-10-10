@@ -19,11 +19,7 @@ import { resolveCommandSpec, suggestCommands } from '../slash-catalog'
 
 // Re-export the handler-context surface so existing importers of
 // './command-handlers' (the sibling handler modules + service.ts) are unchanged.
-export {
-  BUSY_STOP_FIRST,
-  type CommandHandlerContext,
-  type DirectReply,
-} from './command-handlers-context'
+export { type CommandHandlerContext, type DirectReply } from './command-handlers-context'
 
 export { handlePluginCommand } from './command-handlers-plugin-command'
 export { handleSkillCommand } from './command-handlers-skill'

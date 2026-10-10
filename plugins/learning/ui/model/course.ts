@@ -1,11 +1,5 @@
 import type { CourseModule, LearningCourse, Lesson, LessonStep } from '../../shared/contracts'
-export {
-  lessonUnlocked,
-  stepCompleted,
-  stepUnlocked,
-  stepStage,
-  stepTitle,
-} from '../../shared/progression'
+export { stepStage } from '../../shared/progression'
 
 export interface LessonLocation {
   module: CourseModule
@@ -32,10 +26,6 @@ export function activeLesson(course: LearningCourse): LessonLocation | null {
 
 export function activeStep(course: LearningCourse, lesson: Lesson): LessonStep | null {
   return lesson.steps.find((step) => step.id === course.activeStepId) ?? lesson.steps[0] ?? null
-}
-
-export function lessonNumber(course: LearningCourse, lessonId: string): number {
-  return courseLessons(course).findIndex((entry) => entry.lesson.id === lessonId) + 1
 }
 
 export function nextLesson(course: LearningCourse, lessonId: string): LessonLocation | null {

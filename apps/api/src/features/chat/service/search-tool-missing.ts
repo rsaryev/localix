@@ -2,9 +2,6 @@ import { isMissingExecutable } from '@localixai/plugin-sdk/prerequisite'
 
 import { ApiError } from '../../../lib/errors'
 
-/** Where ripgrep is installed from — named in the answer so the UI can offer it. */
-export const RIPGREP_INSTALL_URL = 'https://github.com/BurntSushi/ripgrep#installation'
-
 /**
  * A content search that could not run because `rg` is not on this machine.
  *

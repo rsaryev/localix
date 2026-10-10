@@ -34,7 +34,6 @@ import type { PendingFileSave } from './fileSaveTask'
 const PROBLEM_SCOPE = 'editor'
 
 /** Quiet time before a buffer edit is sent to the language server (see `flushLspSync`). */
-export { LSP_SYNC_DELAY_MS } from './useFileEditorLsp'
 
 /**
  * The inspector file panel's load + edit-buffer state machine, extracted from

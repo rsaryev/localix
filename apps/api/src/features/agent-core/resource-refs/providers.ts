@@ -5,5 +5,3 @@ export const RESOURCE_PROVIDERS = {
   git: 'git',
   vault: 'vault',
 } as const
-
-export type ResourceProviderId = (typeof RESOURCE_PROVIDERS)[keyof typeof RESOURCE_PROVIDERS]

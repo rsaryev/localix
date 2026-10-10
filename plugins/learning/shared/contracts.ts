@@ -105,11 +105,6 @@ export interface CourseOutlineDraft {
   modules: CourseOutlineModuleDraft[]
 }
 
-export interface LessonContentDraft {
-  objectives: LearningObjective[]
-  steps: LessonStep[]
-}
-
 export type LessonStatus = 'not-started' | 'in-progress' | 'completed'
 
 export interface LessonProgress {

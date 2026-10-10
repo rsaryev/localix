@@ -28,14 +28,7 @@ import type { AgentTurnFilter } from '../wake-queue/agent-turns'
 import type { ExecutionAddress } from '../../../agent-core/execution-address'
 import type { SubagentSteeringAddress } from '../wake-queue/steering'
 
-export type {
-  RunChain,
-  RunIdentity,
-  RunParams,
-  RunScope,
-  RunTurn,
-  ScopedCcHooks,
-} from '../run-contract'
+export type { RunChain, RunParams, RunScope, RunTurn } from '../run-contract'
 
 /** The catalog shape returned by the catalog service (kept as a derived type). */
 export type RunCatalog = Awaited<ReturnType<RunnerDeps['catalogService']['getCatalog']>>

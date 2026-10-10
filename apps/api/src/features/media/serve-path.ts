@@ -5,8 +5,3 @@
  * mount (`/rpc/media` in app.ts) and every consumer can't drift apart.
  */
 export const MEDIA_SERVE_PREFIX = '/rpc/media'
-
-/** Relative serve path for a stored media id (e.g. `/rpc/media/<sha>.png`). */
-export function mediaServePath(mediaId: string): string {
-  return `${MEDIA_SERVE_PREFIX}/${mediaId}`
-}

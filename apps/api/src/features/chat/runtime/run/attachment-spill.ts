@@ -34,7 +34,6 @@ import { materializePathAttachment } from './attachment-path'
 import { attachmentsDirRel, isFileHandoff, planAttachmentSpill } from './attachment-spill-plan'
 export {
   MAX_INLINE_LINES,
-  MAX_INLINE_BYTES,
   attachmentsDirRel,
   sessionAttachmentsDirRel,
 } from './attachment-spill-plan'

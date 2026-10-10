@@ -7,8 +7,3 @@ export const uiLocationCatalogPublishSchema = z
     catalog: z.unknown(),
   })
   .strict()
-
-export interface UiLocationCatalogPublishResponse {
-  catalogId: string
-  accepted: boolean
-}
