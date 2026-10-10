@@ -8,19 +8,18 @@ import type {
   ExpandRefsRequest,
   ExpandRefsResponse,
   Project,
-  ProjectSettings,
-  ProjectSettingsPatch,
   UpdateProjectRequest,
 } from './contracts'
-import { normalizeProjectSettings, projectSettingsSchema } from './contracts'
 import { refKindSpec } from '../chat/context-ref-kinds'
 import type { ResourceExpansionResult } from './expand-refs'
 import { createUserRefExpander } from './user-ref-expander'
 import { createProjectsRepository, type ProjectRecord } from './repository'
-import { safeJsonParse } from '../../lib/json'
 import { openDirectory, pickDirectory, pickFiles } from './native-dialogs'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
-import { assertProjectDeletable, isDefaultProject, resolveDefaultProject } from './default-project'
+import { toDto, applyProjectSettingsPatch } from './project-record'
+import { assertProjectDeletable, resolveDefaultProject } from './default-project'
+
+export { applyProjectSettingsPatch } from './project-record'
 
 export interface ProjectsServiceDeps {
   db: Kysely<AppDatabase>
@@ -68,48 +67,15 @@ const normalizeDir = (p: string): string => {
   return n
 }
 
-const toDto = (record: ProjectRecord): Project => ({
-  id: record.id,
-  userId: record.userId,
-  name: record.name,
-  workingDir: record.workingDir,
-  settings: normalizeProjectSettings(safeJsonParse<unknown>(record.settings)),
-  createdAt: record.createdAt,
-  updatedAt: record.updatedAt,
-  // The DIRECTORY decides, exactly as `resolveDefaultProject` matches it — never the name,
-  // which the user may change without changing which project this is.
-  isDefault: isDefaultProject(record),
-})
-
-export function applyProjectSettingsPatch(
-  current: ProjectSettings | null,
-  patch: ProjectSettingsPatch,
-): ProjectSettings {
-  const next: Record<string, unknown> = { ...current }
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === null) delete next[key]
-    else if (value !== undefined) next[key] = value
-  }
-  return projectSettingsSchema.parse(next)
-}
-
 export function createProjectsService(deps: ProjectsServiceDeps) {
   const repo = createProjectsRepository(deps.db)
   const now = deps.now ?? (() => new Date().toISOString())
   const serializeUpdate = createKeyedSerializer()
 
-  // Single-flight for the find-or-create in `resolveProjectByPath`, keyed by
-  // (userId, resolved workingDir). The check-then-create is not atomic and there
-  // is no unique index on working_dir, so two concurrent `localix .` opens of the
-  // SAME new directory could both miss and both create. Today that is tolerated
-  // only BY ACCIDENT (bun:sqlite runs the create chain as microtasks that drain
-  // inside the `stat()` macrotask boundary) and backstopped by the `PRJ-<seq>`
-  // primary key (a genuine interleave collides on insert rather than duplicating).
-  // Making it explicit collapses concurrent opens onto ONE create — a clean shared
-  // result instead of a fail-fast collision, and robust if the DB ever goes truly
-  // async. Bounded: an entry lives only while its create is in flight (deleted in
-  // `finally`). `filePath`/`created` are per-CALL, re-derived by each caller, so
-  // sharing the promise never leaks one call's file-open into another.
+  // Share find-or-create per user and normalized directory: without a unique working_dir
+  // index, independent opens could both miss and race to insert. Keep the promise only
+  // while creation is in flight. File-opening results remain per caller; followers reuse
+  // the project with created: false.
   const resolveInFlight = new Map<string, Promise<{ project: Project; created: boolean }>>()
 
   const requireProject = async (userId: string, id: string): Promise<ProjectRecord> => {
