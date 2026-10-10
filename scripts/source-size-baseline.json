@@ -23,7 +23,7 @@
   "apps/api/src/features/realtime/ws.ts": 790,
   "apps/api/src/features/secrets/store.ts": 432,
   "apps/api/src/features/terminal/service.ts": 329,
-  "apps/api/src/features/usage/repository.ts": 666,
+  "apps/api/src/features/usage/repository.ts": 618,
   "apps/api/src/index.ts": 711,
   "apps/api/src/lib/runtime-endpoint.ts": 577,
   "apps/api/src/lib/source-lint.ts": 541,

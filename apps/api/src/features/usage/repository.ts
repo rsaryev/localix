@@ -2,6 +2,7 @@ import { sql, type ExpressionBuilder, type Kysely, type RawBuilder } from 'kysel
 
 import type { AppDatabase } from '../../db'
 import { toSqliteDateTime } from '../../lib/sqlite-time'
+import { recoveredUsage } from './recovered-usage'
 import {
   USAGE_AUXILIARY_KINDS,
   type UsageEventInput,
@@ -40,25 +41,6 @@ import type { UsageGroupBy } from './usage-types'
 
 const AUXILIARY_FINISH_REASONS = new Set<string>(USAGE_AUXILIARY_KINDS)
 
-type JsonObject = Record<string, unknown>
-
-function jsonObject(value: unknown): JsonObject | null {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? (value as JsonObject)
-    : null
-}
-
-function optionalFiniteNonnegative(object: JsonObject, key: string): number | null | undefined {
-  const value = object[key]
-  if (value === undefined) return undefined
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
-}
-
-function optionalString(object: JsonObject | null, key: string): string | undefined {
-  const value = object?.[key]
-  return typeof value === 'string' && value.length > 0 ? value : undefined
-}
-
 /** CASE is lazy in SQLite, so malformed legacy JSON never reaches json_extract. */
 function safeMessageJsonValue<T>(path: string): RawBuilder<T | null> {
   return sql<T | null>`case when json_valid(message.payload_json) then json_extract(message.payload_json, ${path}) else null end`
@@ -74,56 +56,6 @@ function sqliteCreatedAt(value: string): string | undefined {
   if (!value.includes('T')) return value
   const date = new Date(value)
   return Number.isFinite(date.getTime()) ? toSqliteDateTime(date) : undefined
-}
-
-function recoveredUsage(payloadJson: string) {
-  try {
-    const payload = jsonObject(JSON.parse(payloadJson))
-    const usage = jsonObject(payload?.usage)
-    if (!payload || !usage) return null
-    const numericKeys = [
-      'inputTokens',
-      'outputTokens',
-      'cachedInputTokens',
-      'cacheWriteTokens',
-      'cacheWrite1hTokens',
-      'reasoningTokens',
-      'totalTokens',
-      'totalCost',
-    ] as const
-    const values = Object.fromEntries(
-      numericKeys.map((key) => [key, optionalFiniteNonnegative(usage, key)]),
-    ) as Record<(typeof numericKeys)[number], number | null | undefined>
-    // Never turn malformed persisted accounting into a plausible zero row.
-    if (Object.values(values).some((value) => value === null)) return null
-    const costSourceValue = usage.costSource
-    if (
-      costSourceValue !== undefined &&
-      costSourceValue !== 'actual' &&
-      costSourceValue !== 'estimated' &&
-      costSourceValue !== 'subscription'
-    ) {
-      return null
-    }
-    const providerMeta = jsonObject(payload.providerMeta)
-    // The message's own author, which is the one attribution a repair can trust: the session's
-    // party may have been re-ordered, or the member removed, since the row was written.
-    const from = jsonObject(payload.from)
-    const timing = jsonObject(payload.timing)
-    const modelMs = timing ? optionalFiniteNonnegative(timing, 'modelMs') : undefined
-    return {
-      ...values,
-      costSource: costSourceValue as UsageEventInput['costSource'],
-      providerId: optionalString(providerMeta, 'providerId'),
-      modelId: optionalString(providerMeta, 'modelId'),
-      keyLabel: optionalString(providerMeta, 'keyLabel'),
-      keyMasked: optionalString(providerMeta, 'keyMasked'),
-      agentId: optionalString(from, 'agentId'),
-      modelMs: modelMs === null ? undefined : modelMs,
-    }
-  } catch {
-    return null
-  }
 }
 
 /**
