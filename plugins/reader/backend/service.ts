@@ -9,12 +9,11 @@ import type {
 } from '@localixai/plugin-sdk/backend'
 
 import { BookCache, estimateParsedBytes } from './book-cache'
-import { bookFromMedia, bookFromPath, bookFromStorage } from './book-record'
+import { collectionName } from './presentation-fields'
+import { bookFromMedia, bookFromPath, bookFromStorage, patchBookMetadata } from './book-record'
 import {
   MAX_COLLECTIONS,
   MAX_COLLECTIONS_PER_BOOK,
-  MAX_COLLECTION_NAME_LENGTH,
-  MAX_METADATA_FIELD_LENGTH,
   isLibraryState,
   type StoredReaderLibrary,
 } from './library-state'
@@ -46,12 +45,6 @@ interface ReaderPersistence {
 interface ReaderReadOptions {
   /** Only explicit opens may add/re-add a book to the library. */
   remember?: boolean
-}
-
-function cleanPresentationField(value: unknown, limit: number): string | undefined {
-  if (typeof value !== 'string') return undefined
-  const clean = value.replace(/\s+/gu, ' ').trim()
-  return clean ? clean.slice(0, limit) : undefined
 }
 
 export class ReaderService {
@@ -193,29 +186,7 @@ export class ReaderService {
     const current = this.opened.get(key)
     if (!current) throw new Error('Book is not in the Reader library')
 
-    const overrides = { ...current.overrides }
-    if (patch.title !== undefined) {
-      if (patch.title === null) delete overrides.title
-      else overrides.title = this.metadataField(patch.title, 'Title')
-    }
-    if (patch.author !== undefined) {
-      if (patch.author === null) delete overrides.author
-      else overrides.author = this.metadataField(patch.author, 'Author', true)
-    }
-    const sourceTitle = current.sourceTitle ?? current.title
-    const sourceAuthor =
-      current.sourceAuthor ?? (current.overrides?.author === undefined ? current.author : undefined)
-    const next: ReaderBookSummary = {
-      ...current,
-      title: overrides.title ?? sourceTitle,
-      ...((overrides.author ?? sourceAuthor)
-        ? { author: overrides.author ?? sourceAuthor }
-        : { author: undefined }),
-      sourceTitle,
-      ...(sourceAuthor ? { sourceAuthor } : {}),
-      ...(Object.keys(overrides).length > 0 ? { overrides } : { overrides: undefined }),
-      updatedAt: new Date().toISOString(),
-    }
+    const next = patchBookMetadata(current, patch)
     this.opened.set(key, next)
     await this.persist()
     return next
@@ -226,7 +197,7 @@ export class ReaderService {
     if (this.collections.size >= MAX_COLLECTIONS) {
       throw new Error(`Reader supports at most ${MAX_COLLECTIONS} collections`)
     }
-    const clean = this.collectionName(name)
+    const clean = collectionName(name)
     this.assertUniqueCollectionName(clean)
     const now = new Date().toISOString()
     const collection = { id: randomUUID(), name: clean, createdAt: now, updatedAt: now }
@@ -239,7 +210,7 @@ export class ReaderService {
     await this.ensureLoaded()
     const current = this.collections.get(id)
     if (!current) throw new Error('Reader collection was not found')
-    const clean = this.collectionName(name)
+    const clean = collectionName(name)
     this.assertUniqueCollectionName(clean, id)
     const next = { ...current, name: clean, updatedAt: new Date().toISOString() }
     this.collections.set(id, next)
@@ -447,27 +418,6 @@ export class ReaderService {
       }),
     )
     return [...new Set(keys)]
-  }
-
-  private metadataField(value: string, label: string, allowEmpty = false): string {
-    const clean = cleanPresentationField(value, MAX_METADATA_FIELD_LENGTH + 1)
-    if (!clean) {
-      if (allowEmpty) return ''
-      throw new Error(`${label} cannot be empty`)
-    }
-    if (clean.length > MAX_METADATA_FIELD_LENGTH) {
-      throw new Error(`${label} must be ${MAX_METADATA_FIELD_LENGTH} characters or fewer`)
-    }
-    return clean
-  }
-
-  private collectionName(value: string): string {
-    const clean = cleanPresentationField(value, MAX_COLLECTION_NAME_LENGTH + 1)
-    if (!clean) throw new Error('Collection name cannot be empty')
-    if (clean.length > MAX_COLLECTION_NAME_LENGTH) {
-      throw new Error(`Collection name must be ${MAX_COLLECTION_NAME_LENGTH} characters or fewer`)
-    }
-    return clean
   }
 
   private assertUniqueCollectionName(name: string, exceptId?: string): void {

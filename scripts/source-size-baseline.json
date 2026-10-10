@@ -106,7 +106,7 @@
   "plugins/learning/backend/course-bundle.ts": 533,
   "plugins/learning/backend/service.ts": 307,
   "plugins/reader/backend/routes.ts": 341,
-  "plugins/reader/backend/service.ts": 480,
+  "plugins/reader/backend/service.ts": 430,
   "plugins/reader/ui/ReaderLibraryDialogs.tsx": 480,
   "plugins/reader/ui/ReaderLibraryPane.tsx": 906,
   "plugins/reader/ui/ReaderReadingPane.tsx": 2432,

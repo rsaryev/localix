@@ -1,5 +1,6 @@
-import type { ReaderBookSummary } from '../shared/contracts'
+import type { ReaderBookMetadataPatch, ReaderBookSummary } from '../shared/contracts'
 import type { ParsedReaderDocument } from './chapters'
+import { metadataField } from './presentation-fields'
 
 function newestTimestamp(left: string | undefined, right: string): string {
   return left && left.localeCompare(right) > 0 ? left : right
@@ -75,5 +76,34 @@ export function bookFromStorage(
     collectionIds: [...new Set(stored.collectionIds ?? [])].filter((id) =>
       validCollectionIds.has(id),
     ),
+  }
+}
+
+export function patchBookMetadata(
+  current: ReaderBookSummary,
+  patch: ReaderBookMetadataPatch,
+): ReaderBookSummary {
+  const overrides = { ...current.overrides }
+  if (patch.title !== undefined) {
+    if (patch.title === null) delete overrides.title
+    else overrides.title = metadataField(patch.title, 'Title')
+  }
+  if (patch.author !== undefined) {
+    if (patch.author === null) delete overrides.author
+    else overrides.author = metadataField(patch.author, 'Author', true)
+  }
+  const sourceTitle = current.sourceTitle ?? current.title
+  const sourceAuthor =
+    current.sourceAuthor ?? (current.overrides?.author === undefined ? current.author : undefined)
+  return {
+    ...current,
+    title: overrides.title ?? sourceTitle,
+    ...((overrides.author ?? sourceAuthor)
+      ? { author: overrides.author ?? sourceAuthor }
+      : { author: undefined }),
+    sourceTitle,
+    ...(sourceAuthor ? { sourceAuthor } : {}),
+    ...(Object.keys(overrides).length > 0 ? { overrides } : { overrides: undefined }),
+    updatedAt: new Date().toISOString(),
   }
 }
