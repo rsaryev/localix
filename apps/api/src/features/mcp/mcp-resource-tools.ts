@@ -8,7 +8,11 @@ import {
 import { TOOL } from '../agent-core/tool-names'
 
 import type { McpServerRecord } from './repository'
-import type { McpResourceContent, McpResourceDef, McpResourceTemplateDef } from './mcp-tools'
+import type {
+  McpResourceContent,
+  McpResourceDef,
+  McpResourceTemplateDef,
+} from './mcp-client-contracts'
 import { mapCallResult, mcpAgentSource, type McpContentPart } from './mcp-result'
 
 /**

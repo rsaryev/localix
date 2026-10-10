@@ -4,7 +4,8 @@
 //
 //   mcp-connect.ts — transport build + connect (+ connect budget timeout)
 //   mcp-result.ts  — MCP multimodal content → AgentToolResult mapping
-//   mcp-tools.ts   — tool naming/filtering + buildToolForServer + gather types
+//   mcp-tools.ts   — tool naming/filtering + buildToolForServer
+//   mcp-client-contracts.ts — client ports and discovery metadata
 
 export {
   DEFAULT_CONNECT_BUDGET_MS,
@@ -25,10 +26,13 @@ export {
   disambiguate,
   namespacedName,
   buildToolForServer,
-  type McpGatherResult,
-  type McpToolDef,
-  type McpClientLike,
-  type McpResourceDef,
-  type McpResourceTemplateDef,
-  type McpResourceContent,
 } from './mcp-tools'
+
+export type {
+  McpGatherResult,
+  McpToolDef,
+  McpClientLike,
+  McpResourceDef,
+  McpResourceTemplateDef,
+  McpResourceContent,
+} from './mcp-client-contracts'
