@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { errorMessage } from '../../lib/errors'
 import { localixHome } from '../../lib/env'
@@ -38,7 +37,7 @@ import {
 } from './mcp-tool-metadata-cache'
 import { collectResourcePages } from './mcp-resource-pages'
 import { listToolDefs, withDiscoveryRetry } from './mcp-tool-discovery'
-import { expandServerConfig } from './expand'
+import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import { capMcpErrorMessage, resolveMcpResultMaxChars } from './mcp-result'
 import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 
@@ -230,29 +229,6 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
       toolMetadata.delete(oldest)
     }
     persistToolMetadata(logger)
-  }
-
-  function keyFor(server: McpServerRecord, cwd: string): string {
-    const config = expandServerConfig(server.config, {
-      extraEnv: { CLAUDE_PROJECT_DIR: cwd },
-    })
-    return createHash('sha256')
-      .update(
-        stableStringify({
-          id: server.id,
-          userId: server.userId,
-          projectId: server.projectId,
-          name: server.name,
-          transport: server.transport,
-          config,
-          // cwd changes stdio process behavior even when the config itself has
-          // no CLAUDE_PROJECT_DIR token. Remote transports are cwd-independent
-          // after expansion, so a global HTTP probe can warm every session that
-          // uses the same record.
-          ...(server.transport === 'stdio' ? { cwd } : {}),
-        }),
-      )
-      .digest('hex')
   }
 
   function isAlive(entry: CacheEntry): boolean {
