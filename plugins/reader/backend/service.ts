@@ -9,6 +9,7 @@ import type {
 } from '@localixai/plugin-sdk/backend'
 
 import { BookCache, estimateParsedBytes } from './book-cache'
+import { bookFromMedia, bookFromPath, bookFromStorage } from './book-record'
 import {
   MAX_COLLECTIONS,
   MAX_COLLECTIONS_PER_BOOK,
@@ -51,10 +52,6 @@ function cleanPresentationField(value: unknown, limit: number): string | undefin
   if (typeof value !== 'string') return undefined
   const clean = value.replace(/\s+/gu, ' ').trim()
   return clean ? clean.slice(0, limit) : undefined
-}
-
-function newestTimestamp(left: string | undefined, right: string): string {
-  return left && left.localeCompare(right) > 0 ? left : right
 }
 
 export class ReaderService {
@@ -365,22 +362,7 @@ export class ReaderService {
   ): Promise<void> {
     const key = `path:${path}`
     const previous = this.opened.get(key)
-    const sourceTitle = parsed.document.title
-    const sourceAuthor = parsed.document.author
-    const overrides = previous?.overrides
-    this.opened.set(key, {
-      path,
-      ...(parsed.cover ? { cover: parsed.cover } : {}),
-      title: overrides?.title ?? sourceTitle,
-      ...((overrides?.author ?? sourceAuthor) ? { author: overrides?.author ?? sourceAuthor } : {}),
-      sourceTitle,
-      ...(sourceAuthor ? { sourceAuthor } : {}),
-      ...(overrides ? { overrides } : {}),
-      ...(previous?.collectionIds ? { collectionIds: previous.collectionIds } : {}),
-      format: parsed.document.format,
-      size,
-      updatedAt: newestTimestamp(previous?.updatedAt, updatedAt),
-    })
+    this.opened.set(key, bookFromPath(path, parsed, previous, size, updatedAt))
     await this.persist()
   }
 
@@ -392,23 +374,7 @@ export class ReaderService {
   ): Promise<void> {
     const key = `media:${mediaId}`
     const previous = this.opened.get(key)
-    const sourceTitle = parsed.document.title
-    const sourceAuthor = parsed.document.author
-    const overrides = previous?.overrides
-    this.opened.set(key, {
-      path: name?.trim() || mediaId,
-      mediaId,
-      ...(parsed.cover ? { cover: parsed.cover } : {}),
-      title: overrides?.title ?? sourceTitle,
-      ...((overrides?.author ?? sourceAuthor) ? { author: overrides?.author ?? sourceAuthor } : {}),
-      sourceTitle,
-      ...(sourceAuthor ? { sourceAuthor } : {}),
-      ...(overrides ? { overrides } : {}),
-      ...(previous?.collectionIds ? { collectionIds: previous.collectionIds } : {}),
-      format: parsed.document.format,
-      size,
-      updatedAt: new Date().toISOString(),
-    })
+    this.opened.set(key, bookFromMedia(mediaId, name, parsed, previous, size))
     await this.persist()
   }
 
@@ -445,22 +411,7 @@ export class ReaderService {
         }
         const validCollectionIds = new Set(this.collections.keys())
         for (const stored of state.books) {
-          const overrides = stored.overrides
-          const sourceTitle = stored.sourceTitle ?? stored.title
-          const sourceAuthor =
-            stored.sourceAuthor ?? (overrides?.author === undefined ? stored.author : undefined)
-          const book: ReaderBookSummary = {
-            ...stored,
-            title: overrides?.title ?? stored.title,
-            ...((overrides?.author ?? stored.author)
-              ? { author: overrides?.author ?? stored.author }
-              : { author: undefined }),
-            sourceTitle,
-            ...(sourceAuthor ? { sourceAuthor } : {}),
-            collectionIds: [...new Set(stored.collectionIds ?? [])].filter((id) =>
-              validCollectionIds.has(id),
-            ),
-          }
+          const book = bookFromStorage(stored, validCollectionIds)
           this.opened.set(book.mediaId ? `media:${book.mediaId}` : `path:${book.path}`, book)
         }
       })
