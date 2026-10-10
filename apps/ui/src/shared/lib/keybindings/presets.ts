@@ -16,11 +16,12 @@
 
 import { CMD, SHORTCUT_CATALOG, isConfigurable } from './catalog'
 import { canonicalizeChord } from '@localixai/kit/keybindings'
-import type { BindingOverrides, Chord } from '@localixai/kit/keybindings'
+import type { BindingOverrides } from '@localixai/kit/keybindings'
 
 import { OS_FAMILY, type OsFamily } from '@localixai/kit/environment'
 import { KEYMAP_PLATFORMS, KEYMAP_PRESETS, type KeymapPreset } from './presetDefinitions'
 import { findConflicts, resolveBindings } from './resolve'
+import { sameOverrides } from './override-comparison'
 
 export { KEYMAP_PRESETS }
 export type { KeymapPreset }
@@ -39,30 +40,6 @@ export function presetOverrides(id: string, platform: OsFamily = OS_FAMILY): Bin
   return { ...preset?.overrides, ...preset?.platformOverrides?.[target] }
 }
 
-/** Canonicalize an override map for order-independent comparison. */
-function normalize(overrides: BindingOverrides | undefined): Record<string, Chord> {
-  const out: Record<string, Chord> = {}
-  if (!overrides) return out
-  for (const key of Object.keys(overrides)) {
-    out[key] = canonicalizeChord(overrides[key])
-  }
-  return out
-}
-
-function sameOverrides(a: BindingOverrides | undefined, b: BindingOverrides | undefined): boolean {
-  const na = normalize(a)
-  const nb = normalize(b)
-  const ka = Object.keys(na)
-  const kb = Object.keys(nb)
-  if (ka.length !== kb.length) return false
-  return ka.every((k) => Object.prototype.hasOwnProperty.call(nb, k) && na[k] === nb[k])
-}
-
-/**
- * Which preset the current override map corresponds to, or `CUSTOM_PRESET_ID`
- * when it matches none (e.g. after a hand-edit). Compared canonically and
- * order-independently, so `presetOverrides(id)` preserves the chosen editor id. Pure.
- */
 const LEGACY_OVERRIDES: Record<string, BindingOverrides> = {
   jetbrains: {
     [CMD.commandPalette]: 'mod+shift+a',
@@ -88,6 +65,11 @@ function matchesPreset(
   )
 }
 
+/**
+ * Which preset the current override map corresponds to, or `CUSTOM_PRESET_ID`
+ * when it matches none (e.g. after a hand-edit). Compared canonically and
+ * order-independently, so `presetOverrides(id)` preserves the chosen editor id. Pure.
+ */
 /** Keep the selected editor's name when several editors share the same supported bindings. */
 export function detectActivePreset(
   overrides: BindingOverrides | undefined,
