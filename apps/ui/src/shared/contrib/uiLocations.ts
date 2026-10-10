@@ -11,15 +11,13 @@ import {
   parseUiLocationArgs,
   UI_AGENT_LOCATION_CATALOG_VERSION,
 } from '@localixai/plugin-sdk/ui'
-import {
-  localixUiUri,
-  parseLocalixUri,
-  type LocalixUiPrimitive,
-} from '@localixai/plugin-sdk/navigation'
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 import { registerResourceRefIcons } from './iconContributions'
 import { checkContribution } from './uiLocationValidation'
 import { rankUiLocations } from './uiLocationSearch'
+import { parseRegisteredUri } from './uiLocationIdentity'
+
+export { pluginLocationId } from './uiLocationIdentity'
 import {
   locationDescriptor,
   storeLocationContribution,
@@ -37,42 +35,6 @@ export interface UiLocationAccess {
 }
 
 export type UiLocationAudience = keyof UiLocationExposure | 'agent'
-
-/**
- * Build a registry id from plugin-supplied identity that is valid by construction.
- *
- * A location id must match `/^[a-z0-9][a-z0-9:._-]{0,127}$/`, but a plugin's view or
- * panel name is declared as a bare string and camelCase is ordinary in JS. Synthesizing
- * `plugin-view.open.${fullName}` from `example:sqlConsole` therefore produced an invalid
- * id — and since views and panels register as ONE atomic batch, that single rejection
- * withdrew EVERY plugin destination from the catalog and from the agent's synchronized
- * copy of it.
- *
- * The id is our own registry key, not the plugin's identity: the addressable identity is
- * the URI, which percent-encodes `fullName` and is unaffected. So the host normalizes the
- * key rather than requiring manifests to be lowercase. Two names that normalize alike
- * collide, which the registry already reports and which costs one destination instead of
- * all of them.
- */
-export function pluginLocationId(prefix: string, fullName: string): string {
-  const normalized = fullName
-    .toLowerCase()
-    .replace(/[^a-z0-9:._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return `${prefix}.${normalized || 'unnamed'}`.slice(0, 128)
-}
-
-function parseRegisteredUri(
-  value: string,
-): { baseUri: string; searchParams: URLSearchParams } | null {
-  const parsed = parseLocalixUri(value)
-  if (parsed?.primitive !== 'ui') return null
-  const [surface, ...segments] = parsed.breadcrumbs
-  return {
-    baseUri: localixUiUri(surface as LocalixUiPrimitive, segments),
-    searchParams: parsed.query,
-  }
-}
 
 export interface UiLocationRegistry {
   register<const TParams extends UiLocationParamSchema>(
