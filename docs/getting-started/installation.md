@@ -61,7 +61,7 @@ of the release instead of holding it back; the other two must build.
 | ------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------- |
 | macOS        | arm64        | `.app` and `.dmg`      | Tested. The leg requires signing and notarization credentials and fails without them. |
 | macOS        | x64          | `.app` and `.dmg`      | Experimental; signed and notarized like arm64.                                        |
-| Ubuntu 22.04 | x64          | `.AppImage` and `.deb` | Not run by hand yet; the release waits for this leg.                                  |
+| Ubuntu 22.04 | x64          | `.AppImage` and `.deb` | Experimental; its AppImage packaging currently fails, so it may be absent.            |
 | Ubuntu 22.04 | arm64        | `.AppImage` and `.deb` | Experimental; built on a native arm64 runner.                                         |
 
 There is no Windows release leg yet; run Windows from source.

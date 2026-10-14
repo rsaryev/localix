@@ -120,13 +120,13 @@ describe('release workflow contract', () => {
 
   test('ships only the platforms its matrix builds, and the manifest asks for exactly those', () => {
     const platforms = workflowValues(release, 'RELEASE_PLATFORMS')[0]
-    expect(platforms).toBe('darwin-aarch64,linux-x86_64,linux-x86_64-deb')
+    expect(platforms).toBe('darwin-aarch64')
     expect(workflowValues(release, 'RELEASE_EXPERIMENTAL_PLATFORMS')[0]).toBe(
-      'darwin-x86_64,linux-aarch64,linux-aarch64-deb',
+      'darwin-x86_64,linux-x86_64,linux-x86_64-deb,linux-aarch64,linux-aarch64-deb',
     )
     for (const leg of [
       '{"os":"macos-15","name":"macos-arm64"}',
-      '{"os":"ubuntu-22.04","name":"linux-x64"}',
+      '{"os":"ubuntu-22.04","name":"linux-x64","experimental":true}',
       '{"os":"macos-15-intel","name":"macos-x64","experimental":true}',
       '{"os":"ubuntu-22.04-arm","name":"linux-arm64","experimental":true}',
     ]) {
