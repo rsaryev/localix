@@ -75,7 +75,7 @@ describe('buildAgentSystemPrompt', () => {
     })
     expect(multi.split(full)).toHaveLength(2)
     expect(multi).not.toContain(SOLO_TURN_CONTROL)
-    expect(multi).toContain('hand off to one ready owner at a time')
+    expect(multi).toContain('@mention one ready owner at a time')
     // The roster is volatile: it renders after the cache boundary, the protocol before it.
     expect(multi.indexOf('# Conversation participants')).toBeGreaterThan(
       multi.indexOf('# Runtime context'),

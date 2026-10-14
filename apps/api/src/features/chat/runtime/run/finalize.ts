@@ -9,7 +9,7 @@
 import { stopNotice } from './stop-notice'
 import { announceEmptyReply, announceRunStopped } from './finalize-notices'
 import { settleConversationRow } from './finalize-conversation-turn'
-import { isSilentConversationTurn } from './conversation-silence'
+import { isPass, isSilentConversationTurn } from './conversation-silence'
 import { GENERAL_PURPOSE_AGENT } from '../../../ext/cc-agent-selection'
 
 import type { SessionRecord } from '../../repository'
@@ -183,7 +183,7 @@ export async function finalizeSuccessfulRun(args: {
   const reply = silentInConversation ? '' : publishedText(state.currentPayload)
   await routeConversationReply(env, params, {
     content: reply,
-    handoffs: reply.trim() ? state.handoffs : [],
+    passed: silentInConversation && isPass(state.currentPayload),
   })
   if (reply.trim()) {
     await env.boostReferencedAgentTurns(userId, session, params.scope.speakerAgentId, reply)

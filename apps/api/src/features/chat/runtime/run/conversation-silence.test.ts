@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { AgentItem, ToolCallItem } from '@localixai/agent/agents'
 import type { StoredMessagePayload } from '../../../../db'
 import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
-import { isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
+import { isPass, isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
 
 const CONVERSATION = sessionFixture({
   agents: [...routedParticipants({ handle: 'localix' }), ...routedParticipants({ handle: 'lead' })],
@@ -170,4 +170,11 @@ describe('isSilentConversationTurn — text wins over the tool', () => {
       ['u', 's', { type: 'message.removed', sessionId: 's', messageId: 'reply' }],
     ])
   })
+})
+
+test('a pass is a silent turn that completed skip_answer, not one that only tried it', () => {
+  const item = (status: string) => ({ id: 'c', name: 'skip_answer', status }) as never
+  expect(isPass({ items: [item('completed')] })).toBe(true)
+  expect(isPass({ items: [item('failed')] })).toBe(false)
+  expect(isPass({ items: [] })).toBe(false)
 })

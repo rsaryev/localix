@@ -25,6 +25,8 @@ import { buildPlanOptions } from './plan-options'
 import type { RuntimeToolWiringContext } from './runtime-tools'
 import type { buildRunToolRegistry } from './runtime-tools'
 import { createContextStoreRepository } from '../../../context-store/repository'
+import { createSkipAnswerTool } from '../../../agent-core/tools/skip-answer'
+import { isMultiParticipant } from '../../session-route'
 
 type RegistryParams = Parameters<typeof buildRunToolRegistry>[1]
 
@@ -92,7 +94,11 @@ export function buildOptionalToolPorts(
       ? createContextBudgetTool(params.readContextBudget)
       : undefined,
     set_topic: params.setTopic,
-    handoff: params.handoff,
+    // Only a colleague can name this participant without asking it anything.
+    skip_answer:
+      session.sessionKind === 'chat' && isMultiParticipant(session)
+        ? createSkipAnswerTool()
+        : undefined,
     ...buildDirectToolInstances({
       agentProfile,
       disabledTools,

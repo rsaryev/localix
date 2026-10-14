@@ -34,27 +34,25 @@ a specialist automatically.
 
 Everyone in the conversation reads every reply: you and each participant. Nobody sees another
 participant's reasoning or tool calls, so an agent writes its reply once, for all readers. The reply
-is also how it hands the floor on: the agent calls the `handoff` tool with the handles that must act
-now, and each of them answers once, in the order given, reading that reply as its assignment.
+is also how it hands the floor on: each participant it addresses with `@handle` answers once, in the
+order addressed, and reads that reply as its assignment.
 
 ```text
-handoff({ "to": ["design", "frontend"] })
-Design: draft the checkout mockup at 390 px. Frontend: build it after I approve.
+@design, draft the checkout mockup at 390 px; @frontend, build it after I approve.
 ```
 
-- An `@handle` of a participant who is already here is a link, never an assignment, so an agent can
-  refer to a colleague, or say it is not assigning one, without waking it. Tagging an available
-  agent who is not in the conversation invites it and gives it the floor. Your own `@handle` in a
-  message you send still asks that participant to respond.
-- `handoff` accepts present participants and, in an open chat, available agents, which it invites.
-  An unknown handle is returned to the agent with the list of valid ones.
-- An agent never hands the floor to itself, and handing it to an agent who is already queued folds
-  into that turn instead of queuing a second one.
-- A reply without a handoff returns the floor. After an assignment it goes back to the colleague who
-  asked, as a report, so finished work always reaches the one who gave it. After a report, or on a
-  turn you started, it ends with you. `@user` hands the floor to you explicitly.
-- Handing off to the colleague who assigned the current turn is a report too, so two agents do not
-  keep passing the floor back and forth.
+- A handle inside code, a fenced block, a block quote or a link target is a reference, not an
+  address. An agent refers to a colleague by name without `@` when it does not need them to act.
+- An agent never addresses itself, and addressing an agent who is already queued folds into that
+  turn instead of queuing a second one.
+- A reply that addresses nobody returns the floor. After an assignment it goes back to the colleague
+  who asked, as a report, so finished work always reaches the one who gave it. After a report, or on
+  a turn you started, it ends with you. `@user` hands the floor to you explicitly.
+- Addressing the colleague who assigned the current turn is a report too, so two agents do not keep
+  passing the floor back and forth.
+- A participant that is named but asked nothing, or whose part is already reported, passes with
+  `skip_answer`: its turn ends at once without a message, and nothing is routed back, so a colleague
+  named in passing does not restart the exchange.
 - Every hop between agents counts toward the handoff limit; past it, the conversation returns to you
   with a notice.
 

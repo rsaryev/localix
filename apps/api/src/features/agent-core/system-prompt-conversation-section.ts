@@ -1,5 +1,6 @@
 import {
   CONVERSATION_TURN_CONTROL,
+  SKIP_ANSWER_CONTROL,
   SOLO_TURN_CONTROL,
   TEAM_CONVERSATION,
   TEAM_LEADERSHIP,
@@ -39,6 +40,8 @@ export function buildTurnControlSection(input: {
   multi: boolean
   isLeader?: boolean
   canChangeTopic?: boolean
+  /** The run holds `skip_answer`. */
+  canSkip?: boolean
   /** A tag can bring an agent in: an open chat, not a fixed roster or a delegated team. */
   canInvite?: boolean
 }): string | null {
@@ -52,6 +55,7 @@ export function buildTurnControlSection(input: {
   return [
     '# Conversation turn control',
     CONVERSATION_TURN_CONTROL,
+    ...(input.canSkip ? [SKIP_ANSWER_CONTROL] : []),
     ...topic,
     'Only the user removes participants; keep colleagues after their work is done.',
     TEAM_CONVERSATION,
@@ -74,7 +78,7 @@ export function buildParticipantsSection(input: {
   if (others.length === 0) return null
   return [
     '# Conversation participants',
-    `You are ${input.self}. Other participants (give the floor with handoff):`,
+    `You are ${input.self}. Other participants, addressed with @:`,
     ...others.map(
       (participant) =>
         `- @${participant.handle}${participant.description ? `: ${participant.description}` : ''}`,

@@ -31,7 +31,6 @@ const registries = {
       // withholds it — which is what makes the withhold remediable.
       loops: { userId: 'u', sessionId: 'sess', agentId: 'lead' },
       set_topic: { save: async () => {} },
-      handoff: { hand: async () => ({ handed: [], unknown: [], available: [] }) },
       configure: {
         sessionId: 'sess',
         host: { changeSchema: z.object({ kind: z.literal('noop') }) } as never,

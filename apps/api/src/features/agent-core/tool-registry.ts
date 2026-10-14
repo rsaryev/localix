@@ -8,7 +8,6 @@ import type { DiagnosticsReporter, EditorBufferProbe } from './tools/file/file-u
 import type { OutlineProvider } from './tools/file/outline'
 import type { ForkToolPort } from './tools/fork'
 import type { AgentsToolPort } from './tools/agents'
-import type { HandoffPort } from './tools/handoff'
 import type { LoopsToolOptions } from './tools/loops'
 import type { PluginBuildToolOptions } from './tools/plugin-build'
 import type { ConfigureToolOptions } from './tools/configure/configure'
@@ -135,8 +134,8 @@ export interface OptionalToolPorts {
   browser?: BrowserToolDeps
   /** The chat's topic boundary, built for the leader or sole participant of a chat. */
   set_topic?: SetTopicPort
-  /** Gives colleagues the floor; built for a chat with a colleague to hand it to. */
-  handoff?: HandoffPort
+  /** The participant's pass, built for a chat with more than one participant. */
+  skip_answer?: AgentTool
   /** Inspect the ledger and propose configuration changes through a HITL request. */
   configure?: ConfigureToolOptions
   /** The conversation's plan — present / read / complete, stored by the host's plans. */

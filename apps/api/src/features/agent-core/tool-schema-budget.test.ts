@@ -25,8 +25,7 @@ import { richRegistry } from './testing/prompt-harness'
 // 7.55k: the new catalog-only `agents` schema adds 341 tokens (measured total 7,517).
 // It authors standing behavior; child run management still belongs exclusively to `fork`.
 // Team batching and explicit priority add 90 tokens (measured total 7,607).
-// `handoff` (the explicit floor hand-off that replaced `@handle` parsing) adds 47 (measured 7,697).
-const WIRE_BUDGET_TOKENS = 7_700
+const WIRE_BUDGET_TOKENS = 7_650
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
 
@@ -65,7 +64,10 @@ describe('default wire schema budget', () => {
       TOOL.tool_output,
     ])
       expect(names.has(name)).toBe(true)
-    const stubs = rows.filter((row) => row.tokens < 60).map((row) => row.name)
+    // `skip_answer` is the production tool, and argument-free by design: small is its real size.
+    const stubs = rows
+      .filter((row) => row.tokens < 60 && row.name !== TOOL.skip_answer)
+      .map((row) => row.name)
     expect(stubs).toEqual([])
     // bash carries its PTY fields only when a terminal host is wired, as a chat's is.
     const bash = wire.find((tool) => tool.name === TOOL.bash)

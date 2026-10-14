@@ -27,7 +27,6 @@ import type { ToolSurface } from '@localixai/agent/agents'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { ToolDenial } from '../../../capabilities/resolve'
 import type { SetTopicPort } from '../../../agent-core/tools/set-topic'
-import type { HandoffPort } from '../../../agent-core/tools/handoff'
 import type { MemoryScope } from '../../../memory/scope-policy'
 
 export interface RuntimeToolWiringContext {
@@ -54,8 +53,6 @@ export function buildRunToolRegistry(
     userId: string
     /** Present for the leader or sole participant of a chat. */
     setTopic?: SetTopicPort
-    /** Present in a chat: how this speaker gives a colleague the floor. */
-    handoff?: HandoffPort
     /** The run's live assistant row (a steering split re-points it). */
     currentMessageId?: () => string
     session: SessionRecord

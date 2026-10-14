@@ -10,6 +10,7 @@ const childProfile = (tools: string[]) =>
   resolveRunProfile({ sessionKind: 'subagent' }, tools.length ? { tools } : null)
 /** An unattended job run. */
 const automationProfile = () => resolveRunProfile({ sessionKind: 'job' })
+import { createSkipAnswerTool } from './tools/skip-answer'
 import { zodToJsonSchema } from '@localixai/agent'
 
 function inertTool(name: string): AgentTool {
@@ -48,7 +49,7 @@ const maximalRegistryOptions = {
     loops: {} as never,
     plugin_build: { run: async () => ({ text: '', ok: true }) },
     set_topic: { save: async () => {} },
-    handoff: { hand: async () => ({ handed: [], unknown: [], available: [] }) },
+    skip_answer: createSkipAnswerTool(),
     configure: {
       sessionId: 'sess',
       host: { changeSchema: z.object({ kind: z.literal('noop') }) } as never,
@@ -163,8 +164,8 @@ describe('createRuntimeToolRegistry', () => {
       ...maximalRegistryOptions,
       policy: { ...maximalRegistryOptions.policy, disabledTools: BUILTIN_TOOL_NAMES },
     })
-    expect([...registry.toolNames].sort()).toEqual(['handoff', 'set_topic'])
-    expect(registry.tools.map((tool) => tool.name).sort()).toEqual(['handoff', 'set_topic'])
+    expect([...registry.toolNames].sort()).toEqual(['set_topic', 'skip_answer'])
+    expect(registry.tools.map((tool) => tool.name).sort()).toEqual(['set_topic', 'skip_answer'])
   })
 
   test('background bash is offered only when its `jobs` manager survives', () => {

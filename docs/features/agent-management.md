@@ -2,8 +2,7 @@
 
 Agents are persistent definitions in a registry. A participant is an agent added to one chat, and a
 run is one piece of work. Creating a definition or inviting a participant does not start a model
-run. Give the participant a task with `@handle` in your message, or let a colleague hand it the
-floor.
+run. Give the participant a task with `@handle`, from your message or from a colleague's reply.
 
 ## Create from a conversation
 
@@ -29,11 +28,10 @@ Manual creation through the form or explicit slash-command fields retains the ex
 built-in Localix policy. Copying an existing agent copies that agent's definition, policy and
 enabled choice.
 
-After creating a specialist, the assistant calls `handoff` with its handle and writes a concrete
-assignment in the reply: the call invites it into the conversation and gives it the floor. A
-fixed-membership conversation cannot invite a new colleague. Child and automation runs do not
-receive the catalog-authoring tool. Parallel copies of the same agent remain the responsibility of
-[fork](delegation.md).
+After creating a specialist, the assistant tags its handle in the reply with a concrete assignment:
+the tag invites it into the conversation and gives it the floor. A fixed-membership conversation
+cannot invite a new colleague. Child and automation runs do not receive the catalog-authoring tool.
+Parallel copies of the same agent remain the responsibility of [fork](delegation.md).
 
 The elected leader receives team-building instructions even while alone in the chat. It handles
 small tasks directly; when distinct specialties are useful, it reuses existing definitions and

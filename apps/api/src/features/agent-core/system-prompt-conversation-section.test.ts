@@ -42,10 +42,10 @@ describe('the conversation roster', () => {
 })
 
 describe('the turn protocol', () => {
-  test('a solo run in an open chat learns only how a handoff brings help in', () => {
+  test('a solo run in an open chat learns only how a tag brings help in', () => {
     const solo = buildTurnControlSection({ multi: false, canInvite: true })!
     expect(solo).toContain(SOLO_TURN_CONTROL)
-    expect(solo).toContain('call handoff with an available agent')
+    expect(solo).toContain('@mention an available agent')
     // The full contract binds turns only once colleagues are present.
     expect(solo).not.toContain('Everyone here')
     expect(solo).not.toContain(TEAM_CONVERSATION)
@@ -57,9 +57,8 @@ describe('the turn protocol', () => {
     const multi = buildTurnControlSection({ multi: true })!
     expect(multi).toContain('Everyone here — the user and every participant — reads your reply')
     expect(multi).toContain('nobody sees your reasoning or tool calls')
-    expect(multi).toContain('call handoff with their handles')
-    expect(multi).toContain('An @handle of someone already here is a link that assigns nothing')
-    expect(multi).toContain('A reply without a handoff returns the floor')
+    expect(multi).toContain('Each participant you @mention answers once, in the order mentioned')
+    expect(multi).toContain('A reply that mentions nobody returns the floor')
     expect(multi).toContain('Never end silently')
     expect(multi).not.toContain('conversation_control')
     expect(multi).not.toContain('handoff note')

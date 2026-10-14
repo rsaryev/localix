@@ -3,7 +3,6 @@ import { createForkTool } from './tools/fork'
 import { createAgentsTool } from './tools/agents'
 import { createLoopsTool } from './tools/loops'
 import { createPluginBuildTool } from './tools/plugin-build'
-import { createHandoffTool } from './tools/handoff'
 import { createSetTopicTool } from './tools/set-topic'
 import { createConfigureTool } from './tools/configure/configure'
 import { createPlanTool } from './tools/plan/plan'
@@ -90,9 +89,9 @@ export function buildNamedOptionals(
     })
   }
 
-  // The floor passed to a colleague, in a chat that has one to pass it to.
-  if (optional.handoff) {
-    namedOptionals.push({ tool: createHandoffTool(optional.handoff) })
+  // A participant's pass, in a conversation that has colleagues to name it.
+  if (optional.skip_answer) {
+    namedOptionals.push({ tool: optional.skip_answer })
   }
 
   // A new session topic for the leader or sole participant of a chat.

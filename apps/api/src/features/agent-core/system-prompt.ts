@@ -138,6 +138,7 @@ export function buildAgentSystemPromptParts(
       multi: isMultiAgentConversation(params.conversation),
       isLeader: params.conversation.isLeader ?? false,
       canChangeTopic: (params.canChangeTopic ?? false) && hasTool(TOOL.set_topic),
+      canSkip: hasTool(TOOL.skip_answer),
       canInvite: !params.conversation.rosterLocked,
     })
     if (turnControl) sections.push(turnControl)

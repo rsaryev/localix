@@ -17,7 +17,6 @@ import { recordToolRoster } from '../../../../tools/usage-recorder'
 import { executionToolSurface } from '../../execution-context'
 import { checkpointAtTokens } from '../../model-view/checkpoint-policy'
 import { resolveExecutionProfile } from '../../run-profile'
-import { createHandoffPort } from '../handoff-port'
 import { createSetTopicPort } from '../set-topic-port'
 import { buildRunToolRegistry } from '../runtime-tools'
 import { resolveRunDisabledTools } from '../run-tool-policy'
@@ -68,7 +67,6 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       session,
       agentId: inputs.agent.id,
       setTopic: canChangeTopic ? createSetTopicPort(env, params) : undefined,
-      handoff: session.sessionKind === 'chat' ? createHandoffPort(env, params, state) : undefined,
       currentMessageId: () => currentAssistantMessageId(frame),
       env: inputs.env,
       defaultCwd,

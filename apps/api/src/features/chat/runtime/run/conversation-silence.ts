@@ -1,6 +1,7 @@
 /** Silence hides an empty turn, never the work recorded in its items. */
 import { isMultiParticipant } from '../../session-route'
 import { isTranscriptItemHidden } from '../../item-format'
+import { TOOL } from '../../../agent-core/tool-names'
 import type { AgentStreamEvent } from '../../contracts'
 import type { StoredMessagePayload } from '../../../../db'
 import type { SessionRecord } from '../../repository'
@@ -31,6 +32,15 @@ export function isSilentConversationTurn(
   if (payload.items?.some((item) => item.status === 'completed' && isTranscriptItemHidden(item)))
     return true
   return silenceAllowed || isMultiParticipant(session)
+}
+
+/** The silent turn was the participant's explicit pass (`skip_answer`), not tool-only work. */
+export function isPass(payload: Pick<StoredMessagePayload, 'items'>): boolean {
+  return (
+    payload.items?.some(
+      (item) => 'name' in item && item.name === TOOL.skip_answer && item.status === 'completed',
+    ) ?? false
+  )
 }
 
 export interface ConversationSilenceIo {

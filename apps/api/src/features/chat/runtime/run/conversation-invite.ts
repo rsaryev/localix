@@ -24,49 +24,14 @@ export async function inviteAddressedAgents(
   session: SessionRecord,
   text: string,
 ): Promise<SessionRecord> {
-  if (!text.includes('@')) return session
-  return inviteHandles(env, userId, session, (known) => addressedHandles(text, known))
-}
-
-/**
- * The available agents `text` tags who are not in the conversation yet.
- *
- * Membership is the signal, not the wording: tagging someone who is absent can only mean bringing
- * them in, while tagging a participant who is already here is a reference (`handoff` gives the
- * floor). Empty for a fixed room or a delegated team.
- */
-export async function taggedNewcomers(
-  env: InviteEnv,
-  userId: string,
-  session: SessionRecord,
-  text: string,
-): Promise<string[]> {
-  if (session.sessionKind !== 'chat' || session.rosterLocked || !text.includes('@')) return []
+  if (session.sessionKind !== 'chat' || session.rosterLocked || !text.includes('@')) return session
   const available =
     (await env.deps.listInvocableRegistryAgents?.(userId, 'chat', session.projectId)) ?? []
   const present = new Set(session.agents.map((member) => member.agentId))
-  return addressedHandles(
+  const newcomers = addressedHandles(
     text,
     available.filter((agent) => !present.has(agent.agentId)).map((agent) => agent.name),
   )
-}
-
-/** The session after inviting those of `handles` that are available agents not yet here. */
-export async function inviteHandles(
-  env: InviteEnv,
-  userId: string,
-  session: SessionRecord,
-  pick: string[] | ((known: string[]) => string[]),
-): Promise<SessionRecord> {
-  if (session.sessionKind !== 'chat' || session.rosterLocked) return session
-  if (Array.isArray(pick) && pick.length === 0) return session
-  const available =
-    (await env.deps.listInvocableRegistryAgents?.(userId, 'chat', session.projectId)) ?? []
-  const present = new Set(session.agents.map((member) => member.agentId))
-  const known = available.filter((agent) => !present.has(agent.agentId)).map((agent) => agent.name)
-  const newcomers = Array.isArray(pick)
-    ? pick.filter((handle) => known.includes(handle))
-    : pick(known)
   if (newcomers.length === 0) return session
   const change = await updateConversationMembership(env, {
     userId,

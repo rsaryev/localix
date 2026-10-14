@@ -25,6 +25,7 @@ import { createHistorySearchTool } from '../tools/history/history-search'
 import { createToolOutputTool } from '../tools/context-search/context-search'
 import { createJobsTool } from '../tools/bash/jobs'
 import { createContextBudgetTool } from '../tools/context-budget'
+import { createSkipAnswerTool } from '../tools/skip-answer'
 
 /** A collaborator no factory touches at construction; calling into it would be a harness bug. */
 const inert = <T>(): T =>
@@ -54,7 +55,7 @@ export function productionOptionalPorts(
     plugin_build: { run: async () => ({ text: '', ok: true }) },
     browser: inert(),
     set_topic: setTopic,
-    handoff: { hand: async () => ({ handed: [], unknown: [], available: [] }) },
+    skip_answer: createSkipAnswerTool(),
     configure: {
       sessionId: 'session-1',
       // The change union IS schema; the rest of the host is only called by a proposal.

@@ -21,8 +21,8 @@ describe('group chats replayed through the queue', () => {
     await Promise.all(queues.splice(0).map((queue) => queue.close()))
   })
 
-  type Line = string | { content: string; handoffs: string[] }
-  function room(handles: string[], script: (handle: string, turn: number) => Line) {
+  /** `null` is the participant's pass (`skip_answer`). */
+  function room(handles: string[], script: (handle: string, turn: number) => string | null) {
     const party = handles.map(
       (handle) => routedParticipants({ agentId: `native:global:${handle}`, handle })[0]!,
     )
@@ -62,8 +62,7 @@ describe('group chats replayed through the queue', () => {
       run: async (params: RunParams) => {
         const handle = session.agents.find((m) => m.agentId === params.scope.speakerAgentId)!.handle
         const line = script(handle, turns.length)
-        const content = typeof line === 'string' ? line : line.content
-        const handoffs = typeof line === 'string' ? [] : line.handoffs
+        const content = line ?? ''
         turns.push({
           handle,
           report: params.scope.turnTrigger?.report === true,
@@ -86,7 +85,7 @@ describe('group chats replayed through the queue', () => {
         await routeConversationReply(
           { repo, deps, enqueueRun: queue.enqueueRun } as never,
           { ...params, historyMessages: [...messages] },
-          { content, handoffs },
+          { content, passed: line === null },
         )
         return { status: 'completed' as const }
       },
@@ -104,13 +103,13 @@ describe('group chats replayed through the queue', () => {
   test('LOCALIX-131: an assignment is reported back, and the leader’s summary ends with the person', async () => {
     const r = room(['localix', 'design', 'frontend'], (handle, turn) =>
       handle === 'localix' && turn === 0
-        ? {
-            content: 'Design: draft the landing mockup at 390 px and 1440 px.',
-            handoffs: ['design'],
-          }
+        ? '@design, draft the landing mockup at 390 px and 1440 px.'
         : handle === 'design'
           ? 'Mockup ready: preview.html, checked at 390 px and 1440 px.'
-          : 'The mockup is ready for your review; approve it and @frontend builds it after.',
+          : 'The mockup is ready for your review; approve it and @frontend builds it after.'.replace(
+              '@frontend',
+              'frontend',
+            ),
     )
     await r.queue.wake({
       userId: r.session.userId,
@@ -129,7 +128,7 @@ describe('group chats replayed through the queue', () => {
     const order = ['localix', 'qa', 'design']
     const r = room(order, (handle) => {
       const next = order[(order.indexOf(handle) + 1) % order.length]
-      return { content: `Kazan — next letter N. @${next}, your move.`, handoffs: [next!] }
+      return `Kazan — next letter N. @${next}, your move.`
     })
     await r.queue.wake({
       userId: r.session.userId,
@@ -148,13 +147,14 @@ describe('group chats replayed through the queue', () => {
     expect(r.notices).toHaveLength(1)
   })
 
-  test('LOCALIX-185: naming the specialist while concluding does not wake it again', async () => {
+  test('LOCALIX-185: a specialist named in passing skips, and the round ends with the person', async () => {
     const r = room(['localix', 'gamer'], (handle, turn) => {
-      if (handle === 'localix' && turn === 0)
-        return { content: 'Gamer, play 2048 to the end.', handoffs: ['gamer'] }
-      if (handle === 'gamer') return 'Game over: 3652 points. Play again?'
-      // The leader refers to @gamer but assigns nothing: the floor goes to the person.
-      return 'Confirmed: 3652 points. I will pass your choice to @gamer once you make it.'
+      if (handle === 'localix' && turn === 0) return '@gamer, play 2048 to the end.'
+      if (handle === 'gamer' && turn === 1) return 'Game over: 3652 points. Play again?'
+      if (handle === 'localix')
+        return 'Confirmed: 3652 points. Pick a game and I will pass it to @gamer.'
+      // Named, asked nothing: the pass.
+      return null
     })
     await r.queue.wake({
       userId: r.session.userId,
@@ -162,8 +162,8 @@ describe('group chats replayed through the queue', () => {
       content: 'Let the gamer play 2048.',
       internal: false,
     })
-    await r.settle(3)
-    expect(r.turns.map((turn) => turn.handle)).toEqual(['localix', 'gamer', 'localix'])
+    await r.settle(4)
+    expect(r.turns.map((turn) => turn.handle)).toEqual(['localix', 'gamer', 'localix', 'gamer'])
     expect(r.notices).toHaveLength(0)
   })
 })

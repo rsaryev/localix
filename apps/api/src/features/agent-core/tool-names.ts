@@ -198,10 +198,10 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'automation',
     exposure: CHAT_DEFAULT,
   },
-  handoff: {
-    name: 'handoff',
-    label: 'Handoff',
-    description: 'Give a colleague in the conversation the floor after this turn.',
+  skip_answer: {
+    name: 'skip_answer',
+    label: 'Skip answer',
+    description: 'Stay silent this turn when a colleague named you but asks nothing of you.',
     category: 'ui',
     exposure: { chat: 'default', subagent: 'never', automation: 'never' },
     protocol: true,
