@@ -113,9 +113,10 @@ readable and cannot invite replacement agents; continue its work in a new chat.
 Agents [fork themselves](delegation.md) for parallel copies, or invite authored colleagues into the
 conversation. A specialist definition is persistent; it is not a child run.
 
-Handing the floor between participants needs no tool: the host routes each reply by its `@handle`
-addresses (see [Conversations](conversations.md)). `set_topic` is a protocol tool for the leader or
-sole agent; its exposure and execution agree even if an old permission list denies it.
+Handing the floor between participants uses the `handoff` protocol tool: the host routes each reply
+by the handles it named, and an `@handle` in prose assigns nothing (see
+[Conversations](conversations.md)). `set_topic` is a protocol tool for the leader or sole agent;
+both are exposed and executed even if an old permission list denies them.
 
 See [Forks](delegation.md), [Capabilities](capabilities.md) and
 [Permission modes](permission-modes.md) for the execution and policy contracts.

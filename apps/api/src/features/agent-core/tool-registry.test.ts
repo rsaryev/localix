@@ -48,6 +48,7 @@ const maximalRegistryOptions = {
     loops: {} as never,
     plugin_build: { run: async () => ({ text: '', ok: true }) },
     set_topic: { save: async () => {} },
+    handoff: { hand: async () => ({ handed: [], unknown: [], available: [] }) },
     configure: {
       sessionId: 'sess',
       host: { changeSchema: z.object({ kind: z.literal('noop') }) } as never,
@@ -157,13 +158,13 @@ describe('createRuntimeToolRegistry', () => {
     }
   })
 
-  test('disabling the canonical inventory retains the protocol topic boundary', () => {
+  test('disabling the canonical inventory retains the protocol tools', () => {
     const registry = createRuntimeToolRegistry({
       ...maximalRegistryOptions,
       policy: { ...maximalRegistryOptions.policy, disabledTools: BUILTIN_TOOL_NAMES },
     })
-    expect(registry.toolNames).toEqual(['set_topic'])
-    expect(registry.tools.map((tool) => tool.name)).toEqual(['set_topic'])
+    expect([...registry.toolNames].sort()).toEqual(['handoff', 'set_topic'])
+    expect(registry.tools.map((tool) => tool.name).sort()).toEqual(['handoff', 'set_topic'])
   })
 
   test('background bash is offered only when its `jobs` manager survives', () => {

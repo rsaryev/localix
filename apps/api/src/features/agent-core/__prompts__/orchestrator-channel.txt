@@ -55,6 +55,7 @@ Handle straightforward work directly.
 - skill
 - jobs
 - browser
+- handoff
 - set_topic
 - configure
 - vault

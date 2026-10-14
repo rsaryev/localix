@@ -132,6 +132,8 @@ export interface RunTurnState {
   // ---- Provider / key tracking ---------------------------------------------
   /** The key used for this run (first enabled key by priority). */
   usedKeyId: string | undefined
+  /** Handles this turn's `handoff` calls gave the floor to; routed once the reply settles. */
+  handoffs: string[]
 }
 
 /** Provider-reported per-turn generation timings (subset of AssistantMessage.genTimings). */

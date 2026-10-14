@@ -74,7 +74,7 @@ export function buildParticipantsSection(input: {
   if (others.length === 0) return null
   return [
     '# Conversation participants',
-    `You are ${input.self}. Other participants, addressed with @:`,
+    `You are ${input.self}. Other participants (give the floor with handoff):`,
     ...others.map(
       (participant) =>
         `- @${participant.handle}${participant.description ? `: ${participant.description}` : ''}`,

@@ -92,6 +92,7 @@ export function buildOptionalToolPorts(
       ? createContextBudgetTool(params.readContextBudget)
       : undefined,
     set_topic: params.setTopic,
+    handoff: params.handoff,
     ...buildDirectToolInstances({
       agentProfile,
       disabledTools,

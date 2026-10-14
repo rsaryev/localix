@@ -1,16 +1,17 @@
 /**
  * THE FLOOR AFTER A PARTICIPANT'S REPLY — decided by the host from what the reply says.
  *
- * A reply hands the floor by addressing colleagues with `@handle` (`conversation-addressing.ts`):
- * each addressed participant answers once, in order, reading the reply itself as its brief. An
- * available agent who is addressed but not here yet is invited first (`conversation-invite.ts`).
+ * A turn hands the floor by calling `handoff` (`agent-core/tools/handoff.ts`): each named
+ * participant answers once, in order, reading the reply itself as its brief. An available agent who
+ * is named, or tagged with `@handle`, but not here yet is invited first and given the floor
+ * (`conversation-invite.ts`). An `@handle` of someone already here is only a link: it never routes.
  *
  * Assignments and reports are told apart so the floor cannot ping-pong:
  *
- *   - addressing the colleague who handed you this turn is a REPORT to them;
- *   - a reply to an ASSIGNMENT that addresses nobody is a report too: the floor goes back to the
+ *   - handing off to the colleague who handed you this turn is a REPORT to them;
+ *   - a reply to an ASSIGNMENT with no handoff is a report too: the floor goes back to the
  *     colleague who asked, so finished work always reaches the one who gave it;
- *   - a reply to a REPORT that addresses nobody ends with the person.
+ *   - a reply to a REPORT with no handoff ends with the person.
  *
  * Addressing `@user` hands the floor back to the person as well. Every colleague hop counts
  * against `MAX_HANDOFF_CHAIN`.
@@ -20,7 +21,6 @@ import { createHash } from 'node:crypto'
 import { participantAgentId } from '../../../../db/participant'
 import type { StoredMessagePayload } from '../../../../db'
 import { mentionsUser } from '../../agent-mentions'
-import { addressedHandles } from '../../conversation-addressing'
 import type { SessionRecord } from '../../repository'
 import { MAX_HANDOFF_CHAIN } from '../../turn-budget'
 import type { ConversationRecipient } from '../conversation-strategy'
@@ -28,7 +28,7 @@ import { rosterLeadership } from '../conversation-strategy'
 import { enqueueTurnTickets, resolveTurnRecipients } from '../conversation-dispatch'
 import { sessionExecutionContext } from '../execution-context'
 import { insertUiNote } from '../message-persistence'
-import { inviteAddressedAgents } from './conversation-invite'
+import { inviteHandles, taggedNewcomers } from './conversation-invite'
 import type { RunEnv, RunParams } from './types'
 
 type RoutingEnv = Pick<RunEnv, 'repo' | 'enqueueRun' | 'deps'> & Partial<Pick<RunEnv, 'state'>>
@@ -54,13 +54,12 @@ export function planHandoff(
   session: Pick<SessionRecord, 'agents'>,
   speakerAgentId: string,
   text: string,
+  handoffs: readonly string[],
   from: { requesters: readonly string[]; report: boolean },
 ): { reports: string[]; assignments: string[] } {
   const colleagues = session.agents.filter((member) => member.agentId !== speakerAgentId)
-  const addressed = addressedHandles(
-    text,
-    colleagues.map((member) => member.handle),
-  )
+  const handles = new Set(colleagues.map((member) => member.handle))
+  const addressed = handoffs.filter((handle) => handles.has(handle))
   const requesterHandles = colleagues
     .filter((member) => from.requesters.includes(member.agentId))
     .map((member) => member.handle)
@@ -79,28 +78,30 @@ export function planHandoff(
 export async function routeConversationReply(
   env: RoutingEnv,
   params: RunParams,
-  payload: Pick<StoredMessagePayload, 'content' | 'isInternal'>,
+  payload: Pick<StoredMessagePayload, 'content' | 'isInternal'> & { handoffs?: readonly string[] },
 ): Promise<void> {
   try {
     const text = payload.isInternal ? '' : (payload.content ?? '')
-    // A lone agent hands the floor to nobody unless its reply tags someone to invite.
-    if (params.session.agents.length <= 1 && !text.includes('@')) return
+    // A lone agent hands the floor to nobody unless it called `handoff` or tagged someone to invite.
+    if (params.session.agents.length <= 1 && !payload.handoffs?.length && !text.includes('@'))
+      return
     const current = await env.repo.getSession(params.userId, params.session.id)
     if (!current) return
-    const session = await inviteAddressedAgents(
-      {
-        repo: env.repo,
-        deps: env.deps,
-        ...(env.state
-          ? { activeAgentId: (id: string) => env.state!.activeRunSessions.get(id)?.agentId }
-          : {}),
-      },
-      params.userId,
-      current,
-      text,
-    )
+    const inviteEnv = {
+      repo: env.repo,
+      deps: env.deps,
+      ...(env.state
+        ? { activeAgentId: (id: string) => env.state!.activeRunSessions.get(id)?.agentId }
+        : {}),
+    }
+    // Tagging an agent who is not here brings it in with the floor, as it always did.
+    const tagged = await taggedNewcomers(inviteEnv, params.userId, current, text)
+    const handoffs = payload.isInternal
+      ? []
+      : [...new Set([...(payload.handoffs ?? []), ...tagged])]
+    const session = await inviteHandles(inviteEnv, params.userId, current, handoffs)
     const speaker = params.scope.speakerAgentId
-    const plan = planHandoff(session, speaker, text, trigger(params))
+    const plan = planHandoff(session, speaker, text, handoffs, trigger(params))
     if (plan.reports.length + plan.assignments.length === 0) return
 
     const assistantMessageId = params.assistantMessageId

@@ -181,7 +181,10 @@ export async function finalizeSuccessfulRun(args: {
   // the turn said counts, not only its last model call: an address written before a tool call is
   // still an address (`spoken-text.ts`).
   const reply = silentInConversation ? '' : publishedText(state.currentPayload)
-  await routeConversationReply(env, params, { content: reply })
+  await routeConversationReply(env, params, {
+    content: reply,
+    handoffs: reply.trim() ? state.handoffs : [],
+  })
   if (reply.trim()) {
     await env.boostReferencedAgentTurns(userId, session, params.scope.speakerAgentId, reply)
   }

@@ -241,6 +241,8 @@ export const CORE_CALL_CASES: readonly CallCase[] = [
     SESSION,
   ),
 
+  row('handoff', 'give the floor', { to: ['qa'] }, SESSION),
+
   row('agents', 'list', { action: 'list' }, READ),
   row(
     'agents',

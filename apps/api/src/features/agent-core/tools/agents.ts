@@ -50,13 +50,20 @@ const authoredAgentWire = z.strictObject({
   ),
 })
 
-export const agentsToolInputSchema = z.discriminatedUnion('action', [
-  z.strictObject({ action: z.literal('list') }),
-  z.strictObject({
-    action: z.literal('create'),
-    agents: z.array(authoredAgentWire).min(1).max(8),
-  }),
-])
+// One flat object, not a union: providers flatten `oneOf` badly and models then send wrong shapes.
+// A batch sent as a JSON string is parsed by the runtime's argument coercion, which needs a plain
+// object schema (`vendor/pi` delta); a union defeated it.
+export const agentsToolInputSchema = z.strictObject({
+  action: z.enum(['list', 'create']),
+  agents: z
+    .array(authoredAgentWire)
+    .min(1)
+    .max(8)
+    .optional()
+    .describe(
+      'Only for action "create": 1–8 specialists, each {handle, description, instructions, leadership_priority}.',
+    ),
+})
 type AgentsInput = z.infer<typeof agentsToolInputSchema>
 
 /** The wire batch as the registry's blueprints, validated as one team before anything is saved. */
@@ -86,7 +93,7 @@ export function createAgentsTool(port: AgentsToolPort) {
     activeVerb: 'Managing agents',
     description:
       'List the specialists in this chat’s registry, or create a reusable specialist when none fits. ' +
-      'Create supplies agents: an array of 1–8 specialists, each with handle, description, standing instructions and leadership_priority. The host copies your saved permission policy without temporary grants. ' +
+      'Create supplies agents: an array of 1–8 specialists, each with handle, description, instructions and leadership_priority. The host copies your saved permission policy without temporary grants. ' +
       'Creation saves a permanent agent; it does not invite or start it. To work together, @mention its handle in your reply with a concrete assignment: it joins and answers. ' +
       'Reuse existing specialists. Keep task-specific details and private chat data out of standing instructions. Parallel copies of yourself belong to fork.',
     inputSchema: agentsToolInputSchema,
@@ -100,6 +107,11 @@ export function createAgentsTool(port: AgentsToolPort) {
       // Validate direct host invocations too; no unchecked fields may reach the authoring port.
       const input = agentsToolInputSchema.parse(raw)
       if (input.action === 'list') return { content: JSON.stringify({ agents: await port.list() }) }
+      if (!input.agents) {
+        throw new Error(
+          'create requires "agents": [{handle, description, instructions, leadership_priority}]',
+        )
+      }
       const result = await port.create(toolCallId, authoredBlueprints(input.agents))
       return {
         content: JSON.stringify({

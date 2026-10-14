@@ -8,7 +8,7 @@ import { routeConversationReply } from './conversation-routing'
 import { dispatchParams } from '../run-params'
 import { sessionExecutionContext } from '../execution-context'
 
-test('host binds creation to the speaker and registry, then a tag invites and schedules it', async () => {
+test('host binds creation to the speaker and registry, then a handoff invites and schedules it', async () => {
   const actor = {
     agentId: 'builtin:localix',
     handle: 'localix',
@@ -81,7 +81,7 @@ test('host binds creation to the speaker and registry, then a tag invites and sc
   expect(session.agents).toHaveLength(1)
   expect(queued).toEqual([])
 
-  // The creator tags the new agent in its reply: the host invites it and hands it the floor.
+  // The creator hands the new agent the floor: the host invites it and hands it the floor.
   await routeConversationReply(
     {
       repo: {
@@ -107,7 +107,10 @@ test('host binds creation to the speaker and registry, then a tag invites and sc
       { userId: session.userId, session, assistantMessageId: 'reply-1', historyMessages: [] },
       { speakerAgentId: actor.agentId, executionContext: sessionExecutionContext(session) },
     ),
-    { content: `@${created.record.handle}, review the migration and report compatibility issues.` },
+    {
+      content: `Review the migration and report compatibility issues.`,
+      handoffs: [created.record.handle],
+    },
   )
   expect(session.agents).toHaveLength(2)
   expect(queued).toEqual([created.record.id])

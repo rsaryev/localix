@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { z } from 'zod'
 import { agentAuthoredBlueprintSchema } from '@localixai/agent/agents'
 import { createAgentsTool, classifyAgentsCall, type CatalogAgent } from './agents'
 import { evaluate } from '../permission-engine'
@@ -94,6 +95,26 @@ describe('agent catalog tool', () => {
     expect(writes).toBe(0)
     for (const handle of ['user', 'all', '../escape'])
       expect(agentAuthoredBlueprintSchema.safeParse({ ...blueprint, handle }).success).toBe(false)
+  })
+
+  test('rejects create without agents and any field outside the schema', async () => {
+    const calls: unknown[] = []
+    const tool = createAgentsTool({
+      list: async () => [agent],
+      create: async (...args) => {
+        calls.push(args)
+        return { created: [agent], errors: [] }
+      },
+    })
+    expect(calls).toEqual([])
+    expect(JSON.stringify(z.toJSONSchema(tool.inputSchema))).not.toContain('oneOf')
+    await expect(tool.execute('call', { action: 'create' })).rejects.toThrow('requires "agents"')
+    expect(
+      tool.inputSchema.safeParse({
+        action: 'create',
+        agents: [{ ...wire, standing_instructions: 'x' }],
+      }).success,
+    ).toBe(false)
   })
 
   test('failed batches are errors; successful IDs retain availability and priority', async () => {

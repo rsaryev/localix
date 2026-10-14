@@ -221,6 +221,14 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     stackable: false,
     readOnly: true,
   },
+  handoff: {
+    label: 'Floor handed',
+    noun: 'handoffs',
+    verb: 'Handing off',
+    icon: MessageSquareDashed,
+    stackable: false,
+    readOnly: true,
+  },
   set_topic: {
     label: 'Topic changed',
     noun: 'topic changes',

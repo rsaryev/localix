@@ -101,6 +101,7 @@ export function createRunTurnState(init: {
       reasoningItemId: '',
     },
     usedKeyId: undefined,
+    handoffs: [],
   }
 }
 

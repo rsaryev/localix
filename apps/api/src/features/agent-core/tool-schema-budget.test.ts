@@ -25,7 +25,8 @@ import { richRegistry } from './testing/prompt-harness'
 // 7.55k: the new catalog-only `agents` schema adds 341 tokens (measured total 7,517).
 // It authors standing behavior; child run management still belongs exclusively to `fork`.
 // Team batching and explicit priority add 90 tokens (measured total 7,607).
-const WIRE_BUDGET_TOKENS = 7_650
+// `handoff` (the explicit floor hand-off that replaced `@handle` parsing) adds 47 (measured 7,697).
+const WIRE_BUDGET_TOKENS = 7_700
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
 

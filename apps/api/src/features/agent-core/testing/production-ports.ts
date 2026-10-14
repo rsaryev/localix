@@ -54,6 +54,7 @@ export function productionOptionalPorts(
     plugin_build: { run: async () => ({ text: '', ok: true }) },
     browser: inert(),
     set_topic: setTopic,
+    handoff: { hand: async () => ({ handed: [], unknown: [], available: [] }) },
     configure: {
       sessionId: 'session-1',
       // The change union IS schema; the rest of the host is only called by a proposal.

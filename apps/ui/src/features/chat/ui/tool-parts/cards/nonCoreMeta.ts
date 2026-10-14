@@ -44,7 +44,7 @@ export const NON_CORE_META = {
   },
   conversation_control: {
     absentBecause:
-      'HISTORICAL: group turns hand the floor through `@handle` addresses in the reply now and `set_topic` changes the topic, but saved sessions still hold `conversation_control` items, which keep their label.',
+      'HISTORICAL: group turns hand the floor through `handoff` now and `set_topic` changes the topic, but saved sessions still hold `conversation_control` items, which keep their label.',
     label: 'Conversation updated',
     noun: 'conversation updates',
     verb: 'Updating conversation',

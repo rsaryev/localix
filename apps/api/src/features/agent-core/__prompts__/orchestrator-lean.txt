@@ -48,6 +48,7 @@ Handle straightforward work directly.
 - plugin_build
 - context_budget
 - tool_output
+- handoff
 - set_topic
 - configure
 - external_agent_sessions

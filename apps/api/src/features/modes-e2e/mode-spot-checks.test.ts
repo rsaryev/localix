@@ -65,6 +65,7 @@ const ROWS: Row[] = [
   ['browser', { action: 'snapshot' }, [A, A, A, A]],
   ['browser', { action: 'evaluate', expression: '1' }, [A, D, A, A]],
   ['set_topic', { title: 'T', goal: 'G', previousTopicSummary: 'None.' }, [A, A, A, A]],
+  ['handoff', { to: ['qa'] }, [A, A, A, A]],
   ['agents', { action: 'list' }, [A, A, A, A]],
   [
     'agents',

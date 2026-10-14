@@ -198,6 +198,14 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'automation',
     exposure: CHAT_DEFAULT,
   },
+  handoff: {
+    name: 'handoff',
+    label: 'Handoff',
+    description: 'Give a colleague in the conversation the floor after this turn.',
+    category: 'ui',
+    exposure: { chat: 'default', subagent: 'never', automation: 'never' },
+    protocol: true,
+  },
   set_topic: {
     name: 'set_topic',
     label: 'Session topic',
