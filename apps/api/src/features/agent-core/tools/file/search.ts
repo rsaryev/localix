@@ -34,6 +34,8 @@ export { FILE_LIST_LIMIT } from './search-file-listing'
 // stable `./search` surface.
 export { hasUnescapedRegexMeta } from './search-output'
 
+const SEARCH_CONTEXT_MAX = 10
+
 export const searchToolInputSchema = z.object({
   query: z
     .string()
@@ -50,10 +52,31 @@ export const searchToolInputSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(10)
+    .max(SEARCH_CONTEXT_MAX)
     .optional()
     .describe('Lines around each hit (2-5 often saves a `read`).'),
 })
+
+/**
+ * The runtime's pre-validation hook: it never runs the zod `preprocess`, so a bare `queries`
+ * string becomes its one-element list here. A `context` above the cap is read as the cap
+ * (LOCALIX-34 asked for 17 lines and lost the whole search).
+ */
+export function prepareSearchArguments(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
+  const input = raw as Record<string, unknown>
+  const queries = input.queries === undefined ? undefined : stringToArray(input.queries)
+  const context =
+    typeof input.context === 'number' && input.context > SEARCH_CONTEXT_MAX
+      ? SEARCH_CONTEXT_MAX
+      : input.context
+  if (queries === input.queries && context === input.context) return raw
+  return {
+    ...input,
+    ...(queries !== undefined ? { queries } : {}),
+    ...(context !== undefined ? { context } : {}),
+  }
+}
 
 import type { SearchToolDetails } from './search-contracts'
 type SearchInput = z.infer<typeof searchToolInputSchema>
@@ -76,6 +99,7 @@ export function createSearchTool(
       'A truncated result means narrow the next search; an empty one was already widened, so "no matches" is final.',
     ].join('\n'),
     inputSchema: searchToolInputSchema,
+    prepareArguments: prepareSearchArguments,
     mutates: false,
     // Read-only ripgrep search — safe to run concurrently with other reads/searches.
     executionMode: 'parallel',

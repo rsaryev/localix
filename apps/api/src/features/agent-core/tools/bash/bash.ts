@@ -19,6 +19,7 @@ import { withCommandShims } from './bash-shims'
 import { classifyBashCall } from './bash-call-class'
 import {
   bashInputSchemaFor,
+  prepareBashArguments,
   type BashToolDetails,
   type BashToolInput,
   type BashToolOptions,
@@ -86,6 +87,7 @@ export function createBashTool(
         : []),
     ].join('\n'),
     inputSchema,
+    prepareArguments: prepareBashArguments,
     executionMode: 'sequential',
     // Statically a writer (most commands are); `classifyBashCall` answers per call, so a
     // read-only command still runs in a session that refuses writes.

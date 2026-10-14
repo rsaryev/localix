@@ -60,6 +60,31 @@ export const askToolInputSchema = z.object({
 })
 
 export type AskToolInput = z.infer<typeof askToolInputSchema>
+
+const QUESTION_KEYS = ['id', 'question', 'options', 'multi', 'recommended'] as const
+
+/**
+ * The runtime's pre-validation hook: it never runs the zod `preprocess`, so a bare
+ * `loading_messages` string becomes its list here. One question written at the top level,
+ * without the `questions` list around it, has one reading too: LOCALIX-189 lost a turn to it.
+ */
+export function prepareAskArguments(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
+  let input = raw as Record<string, unknown>
+  if (input.loading_messages !== undefined) {
+    const messages = stringToArray(input.loading_messages)
+    if (messages !== input.loading_messages) input = { ...input, loading_messages: messages }
+  }
+  if (input.questions !== undefined || input.from !== undefined || input.question === undefined)
+    return input
+  const question: Record<string, unknown> = {}
+  const rest: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(input)) {
+    if ((QUESTION_KEYS as readonly string[]).includes(key)) question[key] = value
+    else rest[key] = value
+  }
+  return { ...rest, questions: [question] }
+}
 export type AskToolQuestion = z.infer<typeof askToolQuestionSchema>
 export type AskToolOption = z.infer<typeof askToolOptionSchema>
 
@@ -212,6 +237,7 @@ export function createAskTool(queue?: AskQueuePort): AgentTool<AskToolInput, Ask
     description:
       'Ask the user to decide when requirements are unclear, paths diverge, or confirmation is needed. They can always type an answer.',
     inputSchema: askToolInputSchema,
+    prepareArguments: prepareAskArguments,
     executionMode: 'sequential',
     // A queued question persists in this conversation (`wait: false`), so the tool can write.
     mutates: true,

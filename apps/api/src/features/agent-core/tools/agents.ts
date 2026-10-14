@@ -66,6 +66,35 @@ export const agentsToolInputSchema = z.strictObject({
 })
 type AgentsInput = z.infer<typeof agentsToolInputSchema>
 
+/**
+ * The runtime's pre-validation hook. `standing_instructions` is the name the description once
+ * used for `instructions`, and LOCALIX-184 sent it three times in a row; with `instructions`
+ * absent it has one reading. The batch is parsed here when it arrives as a JSON string (as it
+ * did then), since the runtime's own coercion of that string only runs after this hook.
+ */
+export function prepareAgentsArguments(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
+  const input = raw as { agents?: unknown }
+  let list = input.agents
+  if (typeof list === 'string') {
+    try {
+      list = JSON.parse(list)
+    } catch {
+      return raw
+    }
+  }
+  if (!Array.isArray(list)) return raw
+  let changed = list !== input.agents
+  const agents = list.map((agent: unknown) => {
+    if (!agent || typeof agent !== 'object') return agent
+    const { standing_instructions, ...rest } = agent as Record<string, unknown>
+    if (standing_instructions === undefined || rest.instructions !== undefined) return agent
+    changed = true
+    return { ...rest, instructions: standing_instructions }
+  })
+  return changed ? { ...input, agents } : raw
+}
+
 /** The wire batch as the registry's blueprints, validated as one team before anything is saved. */
 export function authoredBlueprints(
   agents: readonly z.infer<typeof authoredAgentWire>[],
@@ -97,6 +126,7 @@ export function createAgentsTool(port: AgentsToolPort) {
       'Creation saves a permanent agent; it does not invite or start it. To work together, @mention its handle in your reply with a concrete assignment: it joins and answers. ' +
       'Reuse existing specialists. Keep task-specific details and private chat data out of standing instructions. Parallel copies of yourself belong to fork.',
     inputSchema: agentsToolInputSchema,
+    prepareArguments: prepareAgentsArguments,
     mutates: true,
     classify: classifyAgentsCall,
     permissionResources: (input) => [agentsToolInputSchema.parse(input).action],

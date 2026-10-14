@@ -6,6 +6,7 @@ import {
   createSearchTool,
   FILE_LIST_LIMIT,
   hasUnescapedRegexMeta,
+  prepareSearchArguments,
   SEARCH_TIMEOUT_SECONDS,
 } from './search'
 import { localEnvironment } from '../environments/local'
@@ -469,5 +470,18 @@ describe('every ripgrep invocation carries a wall-clock ceiling', () => {
   test('the file-LISTING path passes it too — the one that can walk a whole disk', async () => {
     await createSearchTool(recordingEnv, '/w').execute('t', { glob: '**/*.ts' })
     expect(seenExec).toEqual([SEARCH_TIMEOUT_SECONDS])
+  })
+})
+
+describe('prepareSearchArguments', () => {
+  test('a bare queries string becomes its one-element list on the dispatch path', () => {
+    expect(prepareSearchArguments({ queries: 'foo' })).toEqual({ queries: ['foo'] })
+    expect(prepareSearchArguments({ queries: '["a","b"]' })).toEqual({ queries: ['a', 'b'] })
+  })
+
+  test('LOCALIX-34: context above the cap is read as the cap', () => {
+    expect(prepareSearchArguments({ query: 'x', context: 17 })).toEqual({ query: 'x', context: 10 })
+    const fine = { query: 'x', context: 3 }
+    expect(prepareSearchArguments(fine)).toBe(fine)
   })
 })

@@ -127,3 +127,20 @@ test('an empty `parameters` wrapper the schema does not declare is dropped befor
     parameters: {},
   })
 })
+
+// LOCALIX-164: the whole call inside the wrapper, `{action, parameters: {preview_id, steps}}`.
+test('a `parameters` wrapper holding only declared fields is lifted into the call', () => {
+  const tool: AgentTool = {
+    name: 'probe',
+    activeVerb: 'Probing',
+    description: 'test',
+    inputSchema: z.object({ a: z.number(), b: z.number().optional() }),
+    execute: async () => ({ content: '' }),
+  }
+  const prepare = toPiTool(tool, undefined, new Map()).prepareArguments!
+  expect(prepare({ parameters: { a: 1, b: 2 } })).toEqual({ a: 1, b: 2 })
+  expect(prepare({ a: 1, parameters: { a: 1, b: 2 } })).toEqual({ a: 1, b: 2 })
+  expect(prepare({ a: 1, parameters: null })).toEqual({ a: 1 })
+  // A conflicting value has two readings: the schema judges it.
+  expect(prepare({ a: 1, parameters: { a: 3 } })).toEqual({ a: 1, parameters: { a: 3 } })
+})

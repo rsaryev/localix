@@ -107,6 +107,32 @@ export function bashInputSchemaFor(opts: {
   return opts.terminal ? base : base.omit(TERMINAL_ACTION_KEYS)
 }
 
+const MAX_TIMEOUT_SECONDS = 600
+
+/**
+ * The runtime's pre-validation hook. `timeout` is seconds while `wait_timeout_ms` beside it is
+ * milliseconds, and models carry the millisecond habit over: LOCALIX-170 sent `timeout: 120000`
+ * for two minutes and was refused. A whole number of seconds written in milliseconds that fits
+ * the cap has one reading; anything else is left for the schema to refuse.
+ *
+ * A string `description` is Claude Code's Bash label, which models trained on it still send
+ * (twelve recorded calls). It carries nothing the command needs, so it is dropped rather than
+ * failing the call on a field the schema no longer shows.
+ */
+export function prepareBashArguments(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
+  let input = raw as Record<string, unknown>
+  if (typeof input.description === 'string') {
+    const { description: _label, ...rest } = input
+    input = rest
+  }
+  const timeout = input.timeout
+  if (typeof timeout !== 'number' || timeout <= MAX_TIMEOUT_SECONDS || timeout % 1000 !== 0)
+    return input
+  const seconds = timeout / 1000
+  return seconds >= 1 && seconds <= MAX_TIMEOUT_SECONDS ? { ...input, timeout: seconds } : input
+}
+
 export type BashJobStatus = 'running' | 'completed' | 'failed' | 'killed' | 'timeout'
 
 /**

@@ -25,7 +25,7 @@ import { isExtractableDocument, readDocument } from './read-document'
 import { hasImageExtension } from './read-image-sniff'
 import { MAX_IMAGE_FILE_BYTES, prepareImage, readImageBytes, sniffImageFile } from './read-image'
 import { isNotebookPath, renderNotebook } from './read-notebook'
-import { readToolInputSchema, withLineLimit } from './read-input'
+import { prepareReadArguments, readToolInputSchema, withLineLimit } from './read-input'
 import { tryListDirectory } from './read-directory'
 import { createReadResponder, type ReadItemResult } from './read-results'
 import { readItems, readScopePaths, type ReadItemInput } from './read-items'
@@ -65,6 +65,7 @@ export function createReadTool(
       description:
         'Read a file (or several via `reads`): text as UTF-8, an image (PNG, JPEG, GIF, WebP) as a picture you can see, PDF/office documents as extracted text (`pages`, `sheet` narrow them), a Jupyter notebook as its cells and outputs, and a directory as its entries.',
       inputSchema: readToolInputSchema,
+      prepareArguments: prepareReadArguments,
       forModel: (modelInput) => make(modelInput.includes('image')),
       mutates: false,
       // Read-only: runs concurrently with other calls in the same batch. A sequential call

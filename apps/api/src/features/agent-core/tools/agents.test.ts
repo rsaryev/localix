@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { agentAuthoredBlueprintSchema } from '@localixai/agent/agents'
-import { createAgentsTool, classifyAgentsCall, type CatalogAgent } from './agents'
+import {
+  createAgentsTool,
+  classifyAgentsCall,
+  prepareAgentsArguments,
+  type CatalogAgent,
+} from './agents'
 import { evaluate } from '../permission-engine'
 import { extractCallFacts } from '../permission-facts'
 
@@ -164,4 +169,18 @@ describe('agent catalog tool', () => {
       agents: [agent],
     })
   })
+})
+
+test('LOCALIX-184: standing_instructions in a stringified batch reads as instructions', () => {
+  const { instructions, ...rest } = wire
+  const prepared = prepareAgentsArguments({
+    action: 'create',
+    agents: JSON.stringify([{ ...rest, standing_instructions: instructions }]),
+  })
+  expect(prepared).toEqual({ action: 'create', agents: [wire] })
+  const canonical = { action: 'create', agents: [wire] }
+  expect(prepareAgentsArguments(canonical)).toBe(canonical)
+  // Both names at once have two readings: left for the schema.
+  const both = { action: 'create', agents: [{ ...wire, standing_instructions: 'x' }] }
+  expect(prepareAgentsArguments(both)).toBe(both)
 })

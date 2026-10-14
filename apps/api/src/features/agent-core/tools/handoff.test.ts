@@ -37,15 +37,16 @@ describe('handoff tool', () => {
     expect(String(result.content)).toContain('Unknown handles: @ghost')
   })
 
-  test('the schema is strict: handles only, one to four', () => {
+  test('the schema is strict: handles only, one to eight (LOCALIX-190 named five)', () => {
     const { tool: handoff } = tool({ handed: [], unknown: [], available: [] })
     for (const input of [
       {},
       { to: [] },
-      { to: ['a', 'b', 'c', 'd', 'e'] },
+      { to: Array.from({ length: 9 }, (_, i) => `a${i}`) },
       { to: ['qa'], brief: 'x' },
     ])
       expect(handoff.inputSchema.safeParse(input).success).toBe(false)
     expect(handoff.inputSchema.safeParse({ to: ['qa'] }).success).toBe(true)
+    expect(handoff.inputSchema.safeParse({ to: ['a', 'b', 'c', 'd', 'e'] }).success).toBe(true)
   })
 })

@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import { createHumanInLoopController } from '@localixai/agent/agents'
-import { classifyAsk, createAskTool, normalizeAskAnswers, type AskToolResponse } from './ask'
+import {
+  askToolInputSchema,
+  classifyAsk,
+  createAskTool,
+  normalizeAskAnswers,
+  prepareAskArguments,
+  type AskToolResponse,
+} from './ask'
 import type { AskQueuePort } from './ask-queue'
 import { HITL_DECISION_MS } from './decision-deadline'
 
@@ -178,5 +185,34 @@ describe('normalizeAskAnswers', () => {
       ],
     )
     expect(answers).toEqual([{ id: 'db', question: 'DB?', selectedOptions: ['Postgres'] }])
+  })
+})
+
+describe('prepareAskArguments', () => {
+  test('LOCALIX-189: one question written at the top level is wrapped in questions', () => {
+    const options = [{ label: 'Yes' }, { label: 'No' }]
+    const prepared = prepareAskArguments({
+      id: 'mode',
+      question: 'Continue?',
+      options,
+      recommended: 0,
+      wait: true,
+    })
+    expect(prepared).toEqual({
+      wait: true,
+      questions: [{ id: 'mode', question: 'Continue?', options, recommended: 0 }],
+    })
+    expect(askToolInputSchema.safeParse(prepared).success).toBe(true)
+  })
+
+  test('the canonical shape, a re-ask and a bare loading message', () => {
+    const canonical = { questions: [{ id: 'a', question: 'Q', options: [{ label: 'x' }] }] }
+    expect(prepareAskArguments(canonical)).toBe(canonical)
+    const reask = { from: 'q-1', question: 'ignored' }
+    expect(prepareAskArguments(reask)).toBe(reask)
+    expect(prepareAskArguments({ ...canonical, loading_messages: 'Thinking' })).toEqual({
+      ...canonical,
+      loading_messages: ['Thinking'],
+    })
   })
 })

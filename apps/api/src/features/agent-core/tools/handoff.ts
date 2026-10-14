@@ -24,7 +24,7 @@ const handoffInputSchema = z.strictObject({
   to: z
     .array(z.string().min(1).max(64))
     .min(1)
-    .max(4)
+    .max(8)
     .describe('Handles of the participants who must act now, in the order they answer.'),
 })
 type HandoffInput = z.infer<typeof handoffInputSchema>

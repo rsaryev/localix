@@ -73,3 +73,34 @@ export const readToolInputSchema = z.object({
     .describe('PDF pages or PPTX slides to extract, 1-based: "3", "1-5" or "10-".'),
   sheet: z.string().optional().describe('Spreadsheet sheet to extract, by name.'),
 })
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+
+/**
+ * The runtime's pre-validation hook. It validates the JSON schema and never runs the zod
+ * `preprocess` above, so `toReadItems` has to run here as well to reach a real call.
+ *
+ * One more shape has a single reading: every item of a batch naming the same `cwd`, which the
+ * schema keeps at the call level (LOCALIX-175 refused a three-file read for it).
+ */
+export function prepareReadArguments(raw: unknown): unknown {
+  if (!isRecord(raw)) return raw
+  // An empty `path` with nothing else to read names the base directory itself (LOCALIX-157, -171).
+  if (raw.path === '' && raw.reads === undefined) return { ...raw, path: '.' }
+  if (raw.reads === undefined) return raw
+  const reads = toReadItems(raw.reads)
+  if (!Array.isArray(reads)) return { ...raw, reads }
+  const cwds = new Set(reads.map((item) => (isRecord(item) ? item.cwd : undefined)))
+  const [cwd] = cwds
+  if (cwds.size !== 1 || typeof cwd !== 'string' || (raw.cwd !== undefined && raw.cwd !== cwd))
+    return { ...raw, reads }
+  return {
+    ...raw,
+    cwd,
+    reads: reads.map((item) => {
+      const { cwd: _cwd, ...rest } = item as Record<string, unknown>
+      return rest
+    }),
+  }
+}

@@ -21,25 +21,29 @@ import { toPiPart, type PiContent } from './message-codec'
 export { applyAfterToolCall, applyBeforeToolCall } from './tool-call-hooks'
 
 /**
- * Drop an empty `parameters: {}` the schema does not declare.
+ * Undo a `parameters` wrapper the schema does not declare.
  *
- * A GPT-family model now and then emits it beside the real arguments, and the strict schema
- * refuses the whole call for it ("parameters: schema is false"), costing a round trip for a
- * key that carries nothing. Only the empty, undeclared form has one reading; a non-empty
- * wrapper or a declared field is left for the schema to judge.
+ * A GPT-family model now and then emits it: empty beside the real arguments, or holding them
+ * (LOCALIX-164: `{action: "steps", parameters: {preview_id, steps}}`, refused twice). The strict
+ * schema refused the whole call either way. Two forms have one reading: an empty wrapper, which
+ * is dropped, and one whose every key is a declared field that the call does not already set
+ * differently, which is lifted. Anything else is left for the schema to judge.
  */
-function dropEmptyParametersWrapper(args: unknown, schema: unknown): unknown {
+function unwrapParameters(args: unknown, schema: unknown): unknown {
   if (!args || typeof args !== 'object' || Array.isArray(args)) return args
-  const { parameters, ...rest } = args as Record<string, unknown>
   if (!('parameters' in args)) return args
+  const { parameters, ...rest } = args as Record<string, unknown>
   const declared = (schema as { properties?: Record<string, unknown> }).properties ?? {}
   if ('parameters' in declared) return args
-  const empty =
-    parameters === null ||
-    (typeof parameters === 'object' &&
-      !Array.isArray(parameters) &&
-      !Object.keys(parameters).length)
-  return empty ? rest : args
+  if (parameters === null) return rest
+  if (typeof parameters !== 'object' || Array.isArray(parameters)) return args
+  const inner = Object.entries(parameters as Record<string, unknown>)
+  const liftable = inner.every(
+    ([key, value]) =>
+      key in declared &&
+      (rest[key] === undefined || JSON.stringify(rest[key]) === JSON.stringify(value)),
+  )
+  return liftable ? { ...rest, ...Object.fromEntries(inner) } : args
 }
 
 export function toPiTool(
@@ -64,7 +68,7 @@ export function toPiTool(
     parameters: Type.Unsafe<Record<string, unknown>>(jsonSchema as never),
     // Pi runs this before its schema validation; see `AgentTool.prepareArguments`.
     prepareArguments: (args: unknown) => {
-      const cleaned = dropEmptyParametersWrapper(args, fullSchema)
+      const cleaned = unwrapParameters(args, fullSchema)
       return (tool.prepareArguments ? tool.prepareArguments(cleaned) : cleaned) as Record<
         string,
         unknown

@@ -71,7 +71,7 @@ export function createJobsTool(deps: JobsToolDeps, options: { terminalInput?: bo
     activeVerb: 'Managing jobs',
     // The wait rule (`bash until`, never a poll loop) lives on bash's `until` field only.
     description: [
-      'Manage background work: list before launching duplicates; read returns logs/events; stop requests termination; send_input writes raw stdin. Manage listed sub-agents through agents.',
+      'Manage background work: list before launching duplicates; read returns logs/events; stop requests termination; send_input writes raw stdin.',
       ...(options.terminalInput
         ? [
             'Interactive PTYs: bash type/keys with terminal_id sends named keys AND returns the current screen. read is accumulated logs.',
