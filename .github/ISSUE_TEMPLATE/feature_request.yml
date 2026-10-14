@@ -1,0 +1,66 @@
+name: Feature request
+description: Propose a focused improvement to Localix.
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the user problem and desired outcome. For large architecture or extension-point changes, please keep the proposal narrow enough to evaluate before implementation.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow is difficult today, and for whom?
+      placeholder: When I…, I cannot… because…
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the observable result without assuming one implementation.
+      placeholder: A user should be able to…
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+      description: Optional sketches, interaction details, API shape, or examples.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing workflows, workarounds, or smaller changes that may solve the problem.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Agent or model runtime
+        - Delegation and sub-agents
+        - Desktop or browser workspace
+        - Editor, terminal, preview, or source control
+        - Plugin or integration
+        - CLI launcher
+        - Documentation or website
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for the same outcome.
+          required: true
+        - label: I described the user problem separately from the proposed implementation.
+          required: true

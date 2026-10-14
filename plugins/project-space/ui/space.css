@@ -1,0 +1,376 @@
+/*
+  The board's look, in one place.
+
+  Only RAW theme variables (`--card`, `--status-warning`): the host declares its Tailwind theme
+  `@theme inline`, so `--color-*` names do not exist as custom properties. An orange shape came
+  out solid black — its fill resolved to nothing, and an SVG's default fill is black.
+
+  The file stores colour NAMES (`yellow`); each resolves here, per theme.
+*/
+
+/* Shared floating material blurs overlapping content instead of exposing sharp text beneath. */
+.space-board {
+  container-type: inline-size;
+  --space-surface: var(--popover);
+  --space-line: var(--control-border);
+  --space-ink: var(--foreground);
+  --space-selection: var(--status-info);
+}
+.space-surface {
+  border-color: var(--space-line);
+}
+
+/* ── Tones: the accent of a shape, a connector, a frame ─────────────────────── */
+.space-tone-gray {
+  --space-tone: var(--text-faint);
+}
+.space-tone-red {
+  --space-tone: var(--chart-8);
+}
+.space-tone-orange {
+  --space-tone: var(--status-warning);
+}
+.space-tone-yellow {
+  --space-tone: var(--chart-5);
+}
+.space-tone-green {
+  --space-tone: var(--chart-4);
+}
+.space-tone-blue {
+  --space-tone: var(--chart-7);
+}
+.space-tone-purple {
+  --space-tone: var(--chart-1);
+}
+.space-tone-pink {
+  --space-tone: var(--chart-6);
+}
+.space-ink {
+  color: var(--space-tone);
+}
+
+/* Notes and filled shapes tint the host's glass material; text keeps its full contrast. */
+.space-note {
+  background: linear-gradient(
+    155deg,
+    color-mix(in oklab, var(--space-tone) 14%, var(--popover-solid)),
+    color-mix(in oklab, var(--space-tone) 24%, var(--popover-solid))
+  );
+  border-color: color-mix(in oklab, var(--space-tone) 18%, var(--control-border));
+  color: var(--foreground);
+  box-shadow: var(--shadow-popover);
+}
+
+/* ── Shapes: SVG, coloured where `var()` resolves ─────────────────────────── */
+.space-shape {
+  fill: none;
+  stroke: color-mix(in oklab, var(--space-tone) 65%, var(--control-border));
+}
+.space-shape-none {
+  --space-tint: transparent;
+}
+.space-shape-tint {
+  --space-tint: color-mix(in oklab, var(--space-tone) 8%, transparent);
+}
+.space-shape-solid {
+  --space-tint: color-mix(in oklab, var(--space-tone) 22%, transparent);
+}
+.space-shape-material {
+  background-image: linear-gradient(var(--space-tint), var(--space-tint));
+}
+.space-swatch {
+  background: color-mix(in oklab, var(--space-tone, var(--text-faint)) 24%, var(--popover-solid));
+  border: 1px solid
+    color-mix(in oklab, var(--space-tone, var(--text-faint)) 55%, var(--control-border));
+  color: var(--foreground);
+}
+
+/* ── Sequence diagrams: every paint named here, over the board's tokens ───── */
+.space-seq-lifeline {
+  stroke: var(--space-line);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+.space-seq-name {
+  fill: var(--space-ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+.space-seq-line {
+  fill: none;
+  stroke: color-mix(in oklab, var(--space-ink) 72%, transparent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.space-seq-return {
+  stroke: color-mix(in oklab, var(--space-ink) 48%, transparent);
+  stroke-dasharray: 5 4;
+}
+.space-seq-tip {
+  fill: color-mix(in oklab, var(--space-ink) 72%, transparent);
+}
+/* A label crosses lifelines: a halo of the card's own surface keeps it legible over them. */
+.space-seq-label {
+  fill: var(--text-soft);
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--popover-solid);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.space-seq-index {
+  fill: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.space-seq-glyph {
+  fill: none;
+  stroke: var(--space-tone);
+  stroke-width: 1.3;
+}
+
+/* ── Frames: a titled area, the ground showing through ────────────────────── */
+.space-frame {
+  background: color-mix(in oklab, var(--space-tone, var(--text-faint)) 5%, transparent);
+  border-color: color-mix(in oklab, var(--space-tone, var(--text-faint)) 35%, transparent);
+}
+/* A frame's title keeps a readable screen size when zoomed out: 1× at 100 %, up to 3.5× far away. */
+.space-frame-title {
+  transform: scale(clamp(1, calc(1 / var(--space-zoom, 1)), 3.5));
+}
+.space-frame-chip {
+  color: var(--space-ink);
+}
+
+/* ── Selection chrome: one accent, a crisp ring, theme-aware square handles ──
+   Chrome is drawn at a fixed SCREEN size: it lives inside the zoomed viewport, so every length
+   is divided by `--space-zoom` (set on the board by `ZoomVar`). Scaled with the board, a zoomed-in
+   ring grew into a band as thick as a shape's own outline and read as a double border.
+
+   ONE line frames a selection, exactly on the element's edge, the resize handles centred on it.
+   An offset ring put a second outline beside the handles' edge, and the library's own selection
+   box drew a third; each was a frame of the same selection. */
+.space-board {
+  --space-px: calc(1px / var(--space-zoom, 1));
+}
+.space-selected {
+  inset: 0;
+  box-shadow: 0 0 0 var(--space-px) var(--space-selection);
+}
+/* A selected card's border IS its selection line: recoloured, one screen pixel wider. */
+.space-board .space-card-selected {
+  border-color: var(--space-selection);
+  box-shadow:
+    0 0 0 calc(var(--space-px) * 0.5) var(--space-selection),
+    var(--shadow-soft);
+}
+/* An invisible selection rectangle used to sit ABOVE every selected card and catch clicks meant
+   for its widgets. The cards already mark the selection and drag all selected nodes together;
+   let their content receive the pointer even while several cards are selected. */
+.space-board .react-flow__nodesselection-rect {
+  pointer-events: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.space-board .react-flow__resize-control.handle {
+  width: calc(var(--space-px) * 8);
+  height: calc(var(--space-px) * 8);
+  border-radius: calc(var(--space-px) * 2);
+  background: var(--popover-solid);
+  border: calc(var(--space-px) * 1.5) solid var(--space-selection);
+}
+.space-board .react-flow__resize-control.line {
+  border-color: transparent;
+}
+
+/* Connection dots: visible on hover, blue, 10px — the "drag me to connect" affordance. */
+.space-board .space-dot {
+  width: calc(var(--space-px) * 10);
+  height: calc(var(--space-px) * 10);
+  min-width: 0;
+  min-height: 0;
+  border-radius: 999px;
+  border: calc(var(--space-px) * 2) solid var(--popover-solid);
+  background: var(--space-selection);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+/* Quick create's "+" on each side: 20 screen px, 10 clear of the selection ring. */
+.space-grow {
+  width: calc(var(--space-px) * 20);
+  height: calc(var(--space-px) * 20);
+  border-width: var(--space-px);
+}
+.space-grow svg {
+  width: calc(var(--space-px) * 12);
+  height: calc(var(--space-px) * 12);
+}
+.space-grow[data-side='top'],
+.space-grow[data-side='bottom'] {
+  left: 50%;
+  translate: -50% 0;
+}
+.space-grow[data-side='left'],
+.space-grow[data-side='right'] {
+  top: 50%;
+  translate: 0 -50%;
+}
+.space-grow[data-side='top'] {
+  top: calc(var(--space-px) * -34);
+}
+.space-grow[data-side='bottom'] {
+  bottom: calc(var(--space-px) * -34);
+}
+.space-grow[data-side='left'] {
+  left: calc(var(--space-px) * -34);
+}
+.space-grow[data-side='right'] {
+  right: calc(var(--space-px) * -34);
+}
+
+.space-board .react-flow__node:hover .space-dot,
+.space-board .react-flow__node.selected .space-dot {
+  opacity: 1;
+}
+
+/* A locked element is scenery: the pointer passes through to the ground (the library writes
+   `pointer-events` inline, hence the weight), and only its unlock badge takes a click. */
+.space-board .react-flow__node.space-locked {
+  pointer-events: none !important;
+}
+.space-board .react-flow__node.space-locked .space-unlock {
+  pointer-events: auto;
+  opacity: 0.55;
+}
+.space-board .react-flow__node.space-locked .space-unlock:hover {
+  opacity: 1;
+}
+
+/* Smart guides and group outlines, drawn in board coordinates above the nodes. The strokes are
+   divided by the zoom, so a guide is one screen pixel at any camera. */
+.space-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1001;
+}
+.space-guide {
+  stroke: var(--status-error);
+}
+.space-group-outline {
+  fill: none;
+  stroke: var(--space-selection);
+}
+.space-group-outline[data-entered] {
+  opacity: 0.45;
+}
+
+/* Use the element's own material and silhouette; only its content is muted. The caption stays
+   at one screen size and outside the element, so it cannot obscure a shape or a small note. */
+.space-ghost {
+  position: absolute;
+  z-index: 1002;
+  pointer-events: none;
+  animation: space-ghost-in 140ms ease-out;
+}
+.space-ghost-content {
+  opacity: 0.55;
+}
+.space-pen-live .space-ghost-content {
+  opacity: 1;
+}
+.space-mindmap-node {
+  fill: color-mix(in oklab, var(--space-tone) 12%, var(--popover-solid));
+  stroke: color-mix(in oklab, var(--space-tone) 55%, var(--control-border));
+  stroke-width: 1;
+}
+.space-mindmap-edge {
+  stroke: color-mix(in oklab, var(--space-tone) 65%, var(--text-faint));
+  stroke-width: 1.5;
+}
+
+.space-mindmap-node-selected {
+  stroke: var(--ring);
+  stroke-width: 2;
+}
+.space-ghost-hint {
+  position: absolute;
+  top: calc(100% + var(--space-px) * 10);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: calc(var(--space-px) * 4) calc(var(--space-px) * 8);
+  font-size: calc(var(--space-px) * 10.5);
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+@keyframes space-ghost-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .space-ghost {
+    animation: none;
+  }
+}
+/* A freshly placed element arrives with a short settle, so the eye finds where it landed. */
+.space-board .react-flow__node.space-arrived > * {
+  animation: space-arrive 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes space-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .space-board .react-flow__node.space-arrived > * {
+    animation: none;
+  }
+}
+
+/* Spotlight: what the camera came to show — the element the agent points at, a change it made,
+   the next one on the follow chip — glows around its edge, twice, then lets go
+   (`camera/useCameraDirector.ts` adds the class). */
+.space-board .react-flow__node.space-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--space-px) * -6);
+  border-radius: calc(var(--space-px) * 14);
+  pointer-events: none;
+  box-shadow:
+    0 0 0 calc(var(--space-px) * 2) var(--space-selection),
+    0 0 calc(var(--space-px) * 22) calc(var(--space-px) * 4)
+      color-mix(in oklab, var(--space-selection) 45%, transparent);
+  opacity: 0;
+  animation: space-spotlight 1.6s ease-out;
+}
+@keyframes space-spotlight {
+  12% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 0.45;
+  }
+  56% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .space-board .react-flow__node.space-spotlight::after {
+    animation: none;
+    opacity: 1;
+    transition: opacity 1.6s;
+  }
+}
+
+/* A tool is armed: the ground takes a crosshair until the element is placed. */
+.space-board[data-tool]:not([data-tool='select']):not([data-tool='hand']) .react-flow__pane {
+  cursor: crosshair;
+}

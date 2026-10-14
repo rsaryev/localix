@@ -1,0 +1,731 @@
+name: Desktop Release
+
+# One release pipeline for the desktop app — one distributable product whose
+# bundle contains UI + API + CLI. Platform installers and updater bundles are
+# published as GitHub Release assets.
+#
+#   • desktop apps → native installers per platform (.dmg / .AppImage /
+#                    .deb), uploaded with signed updater bundles.
+# There is no standalone npm release: the CLI, API, UI, and internal runtime
+# packages ship inside the desktop bundle.
+#
+# Trigger: dispatch this reviewed workflow from `main` with a semver tag input.
+# Tags do not auto-run release code because a tag can point at an unmerged commit.
+#
+# Release flow: a DRAFT release is created first → the per-platform matrix builds
+# upload their assets → the draft is published only at the end, and the published release is ALWAYS
+# the latest one, a `-beta.N` version included: the updater reads `releases/latest/download/latest.json`,
+# and GitHub's `latest` skips anything marked a prerelease. The version's label only changes the notes.
+#
+# Required secrets:
+#   Releases are published to this same repository with the workflow's own token
+#   (`contents: write` on the three jobs that mutate the release). Create the tag
+#   on the commit being released first; the verifier rejects a missing tag or a tag
+#   that resolves elsewhere.
+# Required for public macOS releases — Developer ID signing + notarization.
+# `tauri:release` fails before building when any notarization value is absent:
+#   APPLE_CERTIFICATE           — base64 of the "Developer ID Application" .p12
+#   APPLE_CERTIFICATE_PASSWORD  — the .p12 export password
+#   APPLE_SIGNING_IDENTITY      — "Developer ID Application: NAME (TEAMID)"
+#   APPLE_API_KEY               — App Store Connect API key id
+#   APPLE_API_ISSUER            — the API key issuer uuid
+#   APPLE_API_KEY_B64           — base64-encoded App Store Connect .p8 file
+#   APPLE_API_KEY_PATH is derived from APPLE_API_KEY_B64 at runtime (base64 .p8)
+# Required — updater signing. Verification fails before publication if signatures are absent:
+#   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+# Configure the `release` GitHub Environment for main-only deployments with
+# required reviewers and keep every release/signing secret scoped only there.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.2.3)'
+        required: true
+      legs:
+        description:
+          'Only build these legs, comma-separated (e.g. linux-x64,macos-arm64); empty builds all'
+        required: false
+        default: ''
+
+env:
+  RELEASE_REPO: rsaryev/localix
+  # Shown quietly in the release title; empty for a stable release.
+  RELEASE_CHANNEL: beta
+  # Platforms this release ships; the updater manifest must hold a signed artifact for each.
+  RELEASE_PLATFORMS: darwin-aarch64,linux-x86_64,linux-x86_64-deb
+  # Built by the same pipeline but never run by hand yet: a leg that fails is reported and left out
+  # of the release instead of blocking it, and its updater entry exists only when its artifact does.
+  RELEASE_EXPERIMENTAL_PLATFORMS: darwin-x86_64,linux-aarch64,linux-aarch64-deb
+  RUST_TOOLCHAIN: 1.96.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  # ── prepare: validate the tag and pin it to one source commit ─────────────────
+  prepare:
+    name: Prepare release
+    runs-on: [self-hosted, Linux, X64, localix-linux]
+    timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+      is_prerelease: ${{ steps.tag.outputs.is_prerelease }}
+      commit: ${{ steps.tag.outputs.commit }}
+      matrix: ${{ steps.legs.outputs.matrix }}
+    steps:
+      - name: Require the protected main workflow
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
+            echo 'Dispatch the release workflow from the protected main branch' >&2
+            exit 1
+          fi
+
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          install: 'false'
+
+      # Event inputs are untrusted strings. Pass them as data through the
+      # environment, validate strict semver, and resolve the tag to one commit.
+      - name: Resolve tagged source
+        id: tag
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.tag }}
+          RELEASE_TAG_REF: ${{ github.ref_name }}
+        run: bun scripts/resolve-release-ref.mjs >> "$GITHUB_OUTPUT"
+
+      # Which native legs to build. Empty builds both. Naming legs rebuilds only those: the
+      # assets the other legs already uploaded to the draft stay, and the updater manifest is still
+      # assembled from the whole release, so a leg that flaked can be redone without redoing the
+      # rest. Every requested name must exist, so a typo fails here instead of building nothing.
+      - name: Select the build legs
+        id: legs
+        env:
+          LEGS: ${{ inputs.legs }}
+        run: |
+          all='[{"os":"macos-15","name":"macos-arm64"},{"os":"ubuntu-22.04","name":"linux-x64"},{"os":"macos-15-intel","name":"macos-x64","experimental":true},{"os":"ubuntu-22.04-arm","name":"linux-arm64","experimental":true}]'
+          if [ -z "${LEGS//[[:space:]]/}" ]; then
+            matrix="$all"
+          else
+            matrix=$(jq -c --arg legs "$LEGS" '
+              ($legs | split(",") | map(gsub("\\s"; "")) | map(select(length > 0))) as $want
+              | ($want - map(.name)) as $unknown
+              | if ($unknown | length) > 0 then error("Unknown build leg: " + ($unknown | join(", ")))
+                elif ($want | length) == 0 then error("No build legs requested")
+                else map(select(.name as $n | $want | index($n))) end
+            ' <<<"$all")
+          fi
+          echo "Building: $(jq -r 'map(.name) | join(", ")' <<<"$matrix")"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  # ── verify: rerun repository validation against the exact tagged source ─────
+  verify:
+    name: Validate source and signing
+    environment: release
+    needs: prepare
+    runs-on: [self-hosted, Linux, X64, localix-linux]
+    timeout-minutes: 90
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      # Retried like CI's: a mirror hiccup is the usual reason for a red apt or install step, and a
+      # release should not have to be dispatched again for it.
+      - name: Install test tools
+        if: runner.environment != 'self-hosted'
+        run: |
+          for attempt in 1 2 3; do
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
+            [ "$attempt" = 3 ] && exit 1
+            sleep 10
+          done
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      # Reuse CI's content-addressed task results for the tagged source. Turbo re-runs any task
+      # whose inputs changed; the release still executes every verification gate below.
+      - name: Restore Turbo cache
+        id: turbo-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
+          restore-keys: |
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-js-${{ runner.os }}-
+
+      - name: Build app
+        run: bun run build
+
+      - name: Test release tooling
+        run: bun run check:release
+
+      - name: Check source types
+        run: bun run type-check
+
+      - name: Check test types
+        run: bun run check:tests
+
+      - name: Run tests
+        run: bun run test
+
+      - name: Setup desktop
+        uses: ./.github/actions/setup-desktop
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Check and test Rust
+        run: bun run check:rust
+
+      # The same value the release build embeds: `updater.release.json`, through the script that
+      # writes the build's overlay, so the key checked here cannot differ from the key shipped.
+      - name: Read committed updater public key
+        shell: bash
+        run: |
+          UPDATER_PUBLIC_KEY="$(bun apps/desktop-tauri/scripts/build-release-config.mjs --pubkey)"
+          echo "TAURI_UPDATER_PUBLIC_KEY=$UPDATER_PUBLIC_KEY" >> "$GITHUB_ENV"
+
+      # The private key is exposed only to the official Tauri signer invocation.
+      - name: Sign updater probe
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          printf '%s\n' 'Localix updater signing probe' > "$RUNNER_TEMP/updater-signing-probe"
+          ./node_modules/.bin/tauri signer sign "$RUNNER_TEMP/updater-signing-probe"
+
+      # The verifier is an example of the Tauri crate, so cargo runs the crate's build script first,
+      # and that script requires the staged sidecar and resources marker (`check:rust` stages the
+      # same two things for the same reason). Without them this job failed before verifying.
+      - name: Stage the Tauri build preconditions
+        run: |
+          bun -e '
+            import { stageSidecarBun, stageGateResourcesMarker } from "./apps/desktop-tauri/scripts/tauri-staging.mjs"
+            stageSidecarBun()
+            stageGateResourcesMarker()
+          '
+
+      - name: Verify probe with shipped public key
+        run: |
+          cargo run --quiet --locked \
+            --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml \
+            --example verify_updater_signature -- \
+            "$RUNNER_TEMP/updater-signing-probe" \
+            "$RUNNER_TEMP/updater-signing-probe.sig"
+
+      - name: Save Turbo cache
+        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
+
+  draft-release:
+    name: Create draft
+    needs: [prepare, verify]
+    runs-on: [self-hosted, Linux, X64, localix-linux]
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          install: 'false'
+
+      - name: Verify release tag and existing draft
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: bun scripts/verify-release-target.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Create draft release
+        if: steps.target.outputs.release_exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: |
+          gh release create "$TAG" --repo "$RELEASE_REPO" --draft --verify-tag \
+            --title "Localix $TAG${RELEASE_CHANNEL:+ ($RELEASE_CHANNEL)}" \
+            --notes "Localix $TAG. The release notes are written when the release is published."
+
+  # ── build-desktop: one NATIVE build per platform → upload installers ─────────
+  # Native runners per arch (no cross-compile) so the bundled API sidecar (a real
+  # Bun binary staged by prepare-sidecar.mjs, named by the host triple) always
+  # matches the target arch.
+  build-desktop:
+    name: Build ${{ matrix.name }}
+    needs: [prepare, verify, draft-release]
+    # Preserve the hosted macOS leg and route Linux packaging to Ubuntu 22.04.
+    runs-on: >-
+      ${{ matrix.name == 'linux-x64' && fromJSON('["self-hosted","Linux","X64","localix-linux"]') ||
+      matrix.os }}
+    timeout-minutes: 50
+    environment: release
+    # An experimental leg may fail without holding the release back (see RELEASE_EXPERIMENTAL_PLATFORMS).
+    continue-on-error: ${{ matrix.experimental == true }}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # The legs come from `prepare` (see "Select the build legs"): both unless the dispatch
+        # named some. The first beta ships both, but only macOS has been exercised by hand; the
+        # release notes say so. A leg that fails keeps the whole release in draft
+        # (`publish-desktop` needs every selected leg), so redo just that leg with the `legs` input.
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          ignore-scripts: 'true'
+
+      - name: Setup desktop
+        uses: ./.github/actions/setup-desktop
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          cache-key: desktop-build
+
+      - name: Restore Turbo cache
+        id: turbo-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
+          restore-keys: |
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-js-${{ runner.os }}-
+
+      # `scripts/stamp-version.mjs` owns which files carry the version (tauri.conf.json, Cargo.toml
+      # and the crate's Cargo.lock entry) and refuses anything that is not a semantic version.
+      - name: Stamp version into the desktop app
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: bun scripts/stamp-version.mjs "$RELEASE_VERSION"
+
+      # Prebuild the workspace dependencies and API dist the UI build resolves.
+      # prepare-sidecar (tauri beforeBuildCommand) then builds the UI + API sidecar.
+      - name: Build workspace packages
+        run: bunx turbo build --filter=@localixai/api
+
+      # Saved here, not after the signing steps: a later failure should not cost the next attempt.
+      - name: Save Turbo cache
+        if: steps.turbo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key:
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
+            }}
+
+      - name: Decode Apple API key
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_API_KEY_B64: ${{ secrets.APPLE_API_KEY_B64 }}
+        run: |
+          if [ -z "$APPLE_API_KEY_B64" ]; then
+            echo "APPLE_API_KEY_B64 is required for a macOS release" >&2
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$APPLE_API_KEY_B64" | base64 --decode > "$RUNNER_TEMP/apple-api-key.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/apple-api-key.p8" >> "$GITHUB_ENV"
+
+      # prepare-sidecar signs nested native resources from Tauri's beforeBuildCommand.
+      # Tauri imports APPLE_CERTIFICATE later, during bundling, so the identity must
+      # already exist before the command starts on a clean runner.
+      - name: Import Apple signing certificate before sidecar staging
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$APPLE_CERTIFICATE" ] || [ -z "$APPLE_CERTIFICATE_PASSWORD" ] || [ -z "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD and APPLE_SIGNING_IDENTITY are required" >&2
+            exit 1
+          fi
+          umask 077
+          CERTIFICATE_PATH="$RUNNER_TEMP/localix-signing.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/localix-signing.keychain-db"
+          KEYCHAIN_LIST_PATH="$RUNNER_TEMP/localix-keychain-search-list.txt"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          security list-keychains -d user | tr -d '"' | sed 's/^[[:space:]]*//' > "$KEYCHAIN_LIST_PATH"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | \
+            grep -F -- "$APPLE_SIGNING_IDENTITY"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" \
+            $(security list-keychains -d user | tr -d '"')
+
+      # linuxdeploy (the AppImage packager) runs `ldd` on every ELF it finds in the AppDir and
+      # aborts when `ldd` exits non-zero. The Bun sidecar is a statically linked executable, for
+      # which `ldd` prints "not a dynamic executable" and exits 1, so the AppImage step died with
+      # "Failed to run ldd". It calls `/usr/bin/ldd` by absolute path (a shim on PATH was ignored),
+      # so the real one moves aside and a wrapper takes its place: it answers "no dynamic
+      # dependencies" for exactly that case and passes every other result through untouched.
+      - name: Let the AppImage packager accept static executables
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo mv /usr/bin/ldd /usr/bin/ldd.real
+          sudo tee /usr/bin/ldd >/dev/null <<'SH'
+          #!/bin/sh
+          out=$(/usr/bin/ldd.real "$@" 2>&1); code=$?
+          if [ "$code" -ne 0 ] && printf '%s' "$out" | grep -q 'not a dynamic executable'; then
+            exit 0
+          fi
+          printf '%s\n' "$out"
+          exit "$code"
+          SH
+          sudo chmod +x /usr/bin/ldd
+
+      # `hdiutil detach` of the DMG's scratch volume times out when Spotlight is still indexing
+      # it. Indexing is of no use on a throwaway runner.
+      - name: Stop Spotlight indexing so the disk image can detach
+        if: runner.os == 'macOS'
+        run: sudo mdutil -a -i off || true
+
+      - name: Build desktop release and signed updater artifacts
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # The sidecar Bun is the baseline build (no AVX2 needed) on x64, not whichever Bun setup-bun
+          # chose for this runner's CPU; arm64 has none and keeps the build's Bun. See sidecar-bun.mjs.
+          LOCALIX_SIDECAR_BASELINE: '1'
+          # linuxdeploy (the AppImage packager) runs as an AppImage itself and ships an old
+          # `strip`: extract-and-run avoids needing FUSE on the runner, and NO_STRIP skips a strip
+          # pass that rejects binaries built by a current Rust toolchain. Both are no-ops elsewhere.
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+          NO_STRIP: 'true'
+        # --verbose: Tauri otherwise hides the packager's own output, which is all that says why a
+        # Linux leg failed. macOS gets a second attempt: the disk image twice failed
+        # to detach the disk image ("DiskArbitration expired") right after a successful
+        # notarization, and the rerun reuses the compiled app, so a retry costs minutes, not a leg.
+        shell: bash
+        run: |
+          cd apps/desktop-tauri
+          attempts=1
+          [ "$RUNNER_OS" = macOS ] && attempts=2
+          for attempt in $(seq 1 "$attempts"); do
+            bun run tauri:release --verbose && exit 0
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "::warning::tauri:release failed on attempt $attempt of $attempts; retrying"
+            fi
+          done
+          exit 1
+
+      - name: Remove temporary Apple signing material
+        if: always() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/localix-signing.keychain-db"
+          KEYCHAIN_LIST_PATH="$RUNNER_TEMP/localix-keychain-search-list.txt"
+          if [ -s "$KEYCHAIN_LIST_PATH" ]; then
+            ORIGINAL_KEYCHAINS=()
+            while IFS= read -r keychain; do
+              ORIGINAL_KEYCHAINS+=("$keychain")
+            done < "$KEYCHAIN_LIST_PATH"
+            security list-keychains -d user -s "${ORIGINAL_KEYCHAINS[@]}" || true
+          fi
+          security delete-keychain "$KEYCHAIN_PATH" || true
+          rm -f \
+            "$RUNNER_TEMP/localix-signing.p12" \
+            "$RUNNER_TEMP/apple-api-key.p8" \
+            "$KEYCHAIN_LIST_PATH"
+
+      # Runs the API out of the app that was just packaged, before anything is uploaded: the same
+      # `server.js`, migrations and sidecar Bun a user gets, started the way the shell starts them,
+      # then asked for /health and shut down. A bundle that cannot start fails this leg instead of
+      # reaching the draft signed and notarized. The Linux leg checks both the AppImage and the .deb.
+      - name: Smoke the packaged bundle
+        shell: bash
+        run: |
+          BUNDLE="$PWD/apps/desktop-tauri/src-tauri/target/release/bundle"
+          SMOKE=(bun apps/desktop-tauri/scripts/smoke-bundle.mjs)
+          case "$RUNNER_OS" in
+            macOS)
+              "${SMOKE[@]}" --root "$BUNDLE/macos/Localix.app"
+              ;;
+            Linux)
+              work="$RUNNER_TEMP/bundle-smoke"
+              rm -rf "$work"
+              mkdir -p "$work/appimage" "$work/deb"
+              appimage=$(compgen -G "$BUNDLE/appimage/*.AppImage" | head -n 1)
+              deb=$(compgen -G "$BUNDLE/deb/*.deb" | head -n 1)
+              [ -n "$appimage" ] && [ -n "$deb" ] || { echo "AppImage or .deb missing under $BUNDLE" >&2; exit 1; }
+              (cd "$work/appimage" && "$appimage" --appimage-extract >/dev/null)
+              dpkg-deb -x "$deb" "$work/deb"
+              "${SMOKE[@]}" --root "$work/appimage/squashfs-root"
+              "${SMOKE[@]}" --root "$work/deb"
+              ;;
+          esac
+
+      - name: Collect release assets
+        id: collect
+        shell: bash
+        run: |
+          BUNDLE="apps/desktop-tauri/src-tauri/target/release/bundle"
+          mkdir -p dist-assets
+          # Copy every configured installer and signed updater artifact (a Linux arm64 AppImage is
+          # named `*_aarch64.AppImage`, its .deb `*_arm64.deb`).
+          find "$BUNDLE" -type f \
+            \( -name '*.dmg' \
+               -o -name '*.AppImage' -o -name '*.deb' \
+               -o -name '*.app.tar.gz' -o -name '*.sig' \) \
+            -exec cp {} dist-assets/ \; || true
+          # Tauri names the macOS updater tarball WITHOUT an arch tag
+          # ("Localix.app.tar.gz"), so the two mac legs would clobber each
+          # other's upload and latest.json would key the survivor to the wrong
+          # platform. Rename to embed the arch (matches the *aarch64*/*x86_64*
+          # cases in the latest.json step). DMGs already carry the arch.
+          if [[ "${{ matrix.name }}" == macos-* ]]; then
+            ARCH=$([[ "${{ matrix.name }}" == "macos-arm64" ]] && echo aarch64 || echo x86_64)
+            shopt -s nullglob
+            for f in dist-assets/*.app.tar.gz dist-assets/*.app.tar.gz.sig; do
+              base="${f##*/}"
+              mv "$f" "dist-assets/${base/.app.tar.gz/_${ARCH}.app.tar.gz}"
+            done
+          fi
+          require_match() {
+            compgen -G "$1" >/dev/null || {
+              echo "Missing required release artifact for ${{ matrix.name }}: $1" >&2
+              exit 1
+            }
+          }
+          case "${{ matrix.name }}" in
+            macos-*)
+              require_match 'dist-assets/*.dmg'
+              require_match 'dist-assets/*.app.tar.gz'
+              require_match 'dist-assets/*.app.tar.gz.sig'
+              ;;
+            linux-*)
+              require_match 'dist-assets/*.AppImage'
+              require_match 'dist-assets/*.AppImage.sig'
+              # A .deb install updates from its own signed package (`linux-<arch>-deb`
+              # in latest.json); without the signature it would be stranded on the
+              # AppImage fallback, which the deb installer rejects.
+              require_match 'dist-assets/*.deb'
+              require_match 'dist-assets/*.deb.sig'
+              ;;
+          esac
+          # Stable-name copies of the installer people download. Tauri puts the version in the
+          # installer's name, so a link to it changes with every release; the landing page links to
+          # `releases/latest/download/<stable name>` instead, which GitHub resolves to the newest
+          # published release. These names are mirrored by `STABLE_INSTALLER_NAMES` in
+          # apps/landing/src/components/downloadOptions.ts, and a landing test keeps them in step.
+          # The versioned installers stay: the updater manifest is built from those.
+          stable_copy() {
+            local source
+            source=$(compgen -G "$1" | head -n 1)
+            [ -n "$source" ] || { echo "No installer matching $1 to copy as $2" >&2; exit 1; }
+            cp "$source" "dist-assets/$2"
+          }
+          case "${{ matrix.name }}" in
+            macos-arm64) stable_copy 'dist-assets/*.dmg' Localix-macos-arm64.dmg ;;
+            macos-x64) stable_copy 'dist-assets/*.dmg' Localix-macos-x64.dmg ;;
+            linux-x64) stable_copy 'dist-assets/*.AppImage' Localix-linux-x64.AppImage ;;
+            linux-arm64) stable_copy 'dist-assets/*.AppImage' Localix-linux-arm64.AppImage ;;
+          esac
+          echo "Collected:"; ls -la dist-assets || true
+
+      # Signed statements of which commit and workflow built each file, checkable with
+      # `gh attestation verify`. Attestations need a public repository (or GitHub Enterprise).
+      - name: Attest build provenance
+        if: github.event.repository.private == false
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist-assets/*
+            !dist-assets/*.sig
+
+      - name: Upload release assets to draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          MATRIX_NAME: ${{ matrix.name }}
+        run: |
+          shopt -s nullglob
+          FILES=(dist-assets/*)
+          if [ ${#FILES[@]} -eq 0 ]; then
+            echo "No release assets produced for $MATRIX_NAME" >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" \
+            "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
+
+  # ── publish-desktop: flip the draft to the public "latest" release ───────────
+  publish-desktop:
+    name: Publish release
+    needs: [prepare, build-desktop]
+    runs-on: [self-hosted, Linux, X64, localix-linux]
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          install: 'false'
+
+      - name: Reverify release tag and draft provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: bun scripts/verify-release-target.mjs
+
+      # Assemble the updater manifest ONCE, after every platform leg has uploaded
+      # its signed artifacts, so parallel matrix uploads can't clobber it. Each
+      # `<artifact>.sig` on the release is a detached minisign signature (produced
+      # by `createUpdaterArtifacts`); we pair it with its download URL and emit the
+      # `latest.json` the `plugins.updater.endpoints` URL resolves to. Requires the
+      # signing key (TAURI_SIGNING_PRIVATE_KEY) to have been set on the build legs.
+      # Missing signatures are a failed release, never a silently broken updater.
+      - name: Generate updater latest.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_SIGNATURE_DIR: ${{ github.workspace }}/updater/signatures
+          RELEASE_ASSET_LIST: ${{ github.workspace }}/updater/assets.txt
+          RELEASE_OUTPUT: ${{ github.workspace }}/updater/latest.json
+        run: |
+          set -euo pipefail
+          mkdir -p "$RELEASE_SIGNATURE_DIR"
+          gh release download "$RELEASE_TAG" --repo "$RELEASE_REPO" \
+            --pattern '*.sig' --dir "$RELEASE_SIGNATURE_DIR"
+          gh release view "$RELEASE_TAG" --repo "$RELEASE_REPO" \
+            --json assets --jq '.assets[].name' > "$RELEASE_ASSET_LIST"
+          RELEASE_PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export RELEASE_PUBLISHED_AT
+          bun scripts/build-updater-manifest.mjs
+          gh release upload "$RELEASE_TAG" "$RELEASE_OUTPUT" \
+            --clobber --repo "$RELEASE_REPO"
+
+      # Checksums over every installer and updater bundle that actually reached the release, so a
+      # leg that failed is simply absent. The notes are written now, from the same asset list, so
+      # their download table never offers a file the release does not have.
+      - name: Write checksums and release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+          RELEASE_ASSET_LIST: ${{ github.workspace }}/updater/published-assets.txt
+          RELEASE_CHANGELOG: ${{ github.workspace }}/CHANGELOG.md
+          RELEASE_GENERATED_NOTES: ${{ github.workspace }}/updater/generated-notes.md
+        run: |
+          set -euo pipefail
+          sums="$RUNNER_TEMP/checksums"
+          rm -rf "$sums" && mkdir -p "$sums"
+          gh release download "$RELEASE_TAG" --repo "$RELEASE_REPO" --dir "$sums" \
+            --pattern '*.dmg' --pattern '*.AppImage' --pattern '*.deb' --pattern '*.app.tar.gz'
+          (cd "$sums" && sha256sum * > "$RUNNER_TEMP/SHA256SUMS.txt")
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/SHA256SUMS.txt" \
+            --clobber --repo "$RELEASE_REPO"
+
+          # Grouped by the labels in .github/release.yml; empty when there is no earlier release.
+          previous="$(gh api "repos/$RELEASE_REPO/releases/latest" --jq .tag_name 2>/dev/null || true)"
+          args=(-f "tag_name=$RELEASE_TAG" -f "target_commitish=$SOURCE_COMMIT")
+          [ -n "$previous" ] && args+=(-f "previous_tag_name=$previous")
+          gh api -X POST "repos/$RELEASE_REPO/releases/generate-notes" "${args[@]}" \
+            --jq .body > "$RELEASE_GENERATED_NOTES" || : > "$RELEASE_GENERATED_NOTES"
+
+          gh release view "$RELEASE_TAG" --repo "$RELEASE_REPO" \
+            --json assets --jq '.assets[].name' > "$RELEASE_ASSET_LIST"
+          bun scripts/build-release-notes.mjs > "$RUNNER_TEMP/release-notes.md"
+          tail -n +3 "$RUNNER_TEMP/release-notes.md" > "$RUNNER_TEMP/release-body.md"
+          gh release edit "$RELEASE_TAG" --repo "$RELEASE_REPO" \
+            --title "$(head -n 1 "$RUNNER_TEMP/release-notes.md")" \
+            --notes-file "$RUNNER_TEMP/release-body.md"
+
+      # One line of releases, and the one just published is the latest: `latest.json` resolves through
+      # `releases/latest`, so a release that is not latest is a release no installed app can update to.
+      # Publishing a version that is not newer than the current latest would move users backwards (or
+      # strand them: the updater never installs an older version), so that is refused first.
+      - name: Publish release as latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: |
+          bun scripts/verify-release-target.mjs
+          CURRENT_LATEST_TAG="$(gh api "repos/$RELEASE_REPO/releases/latest" --jq .tag_name 2>/dev/null || true)" \
+            bun scripts/assert-newest-release.mjs
+          gh release edit "$TAG" --repo "$RELEASE_REPO" --verify-tag \
+            --draft=false --prerelease=false --latest
+
+      # A release published with the workflow token does not trigger `release: published`
+      # workflows, so the landing would keep its "coming soon" buttons. Dispatch it explicitly,
+      # The landing resolves the newest published release on its own.
+      - name: Refresh the landing download buttons
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run landing.yml --repo "$RELEASE_REPO" --ref main -f production=true

@@ -1,0 +1,31 @@
+# Localix
+
+> Localix is an open source Agentic Development Environment: one workspace where you and a team of
+> agents share the editor, terminals, preview, and databases. It is one desktop application made of
+> a React workspace, a local Bun/Hono API, and an agent runtime.
+
+## Reaching Localix from a program
+
+Localix serves its own HTTP API locally. It binds 127.0.0.1:5051 by default (HOST, PORT) and mounts
+its routes under /rpc/*. CORS headers are returned only to localhost origins.
+
+- GET /health — liveness, plus the running instance id and API protocol version.
+- GET /rpc/ws — the multiplexed WebSocket carrying live server-to-client events.
+- POST /rpc/webhook/messages — post external text into an existing chat session. No authentication,
+  signature check, or replay protection: https://localix.ai/docs/features--webhook
+- localix / localix run "<prompt>" / localix open <path> — CLI over the same runtime:
+  https://localix.ai/docs/features--cli
+
+There is no OpenAPI or other machine-readable description of these routes; they are documented in
+prose and in source: https://localix.ai/docs/internals--architecture
+
+## MCP
+
+Localix is an MCP client. It connects to MCP servers you configure, and /rpc/mcp is the management
+API for those records; Localix exposes no MCP server of its own: https://localix.ai/docs/features--mcp
+
+## Getting it
+
+No desktop build is published yet; Localix runs from a source checkout with Bun.
+Install: https://localix.ai/docs/getting-started--installation
+Docs: https://localix.ai/docs — Source: https://github.com/rsaryev/localix

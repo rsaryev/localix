@@ -1,0 +1,209 @@
+/* The hero bird loops while it is visible. `HeroBird` sets `data-paused` when the hero is scrolled
+   away or the tab is hidden; pausing keeps the position, so it resumes mid-flight, not from zero. */
+.hero-layout {
+  --bird-slot-width: 7rem;
+  --bird-slot-height: 10rem;
+  --bird-size: 5rem;
+  --copy-bird-gap: 1rem;
+  --lede-gap: 1.25rem;
+  --action-gap: 2rem;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--bird-slot-width);
+  grid-template-areas: 'badge badge' 'heading heading' 'description bird' 'action action';
+  column-gap: var(--copy-bird-gap);
+  align-items: center;
+}
+.hero-copy {
+  display: contents;
+}
+.hero-copy > h1,
+.hero-copy > .lede,
+.hero-actions {
+  position: relative;
+  z-index: var(--z-raised);
+}
+.hero-copy > h1 {
+  grid-area: heading;
+  margin-bottom: var(--lede-gap);
+}
+#intro .hero-copy > .lede {
+  grid-area: description;
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+.hero-actions {
+  grid-area: action;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: var(--action-gap);
+}
+.hero-badge {
+  grid-area: badge;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--foreground) 3%, transparent);
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+  transition:
+    border-color var(--dur-fast) var(--ease-soft),
+    color var(--dur-fast) var(--ease-soft);
+}
+.hero-badge:hover {
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+/* Words rise out of their own clipped boxes on the first paint. Transform only, so the heading
+   still counts as painted content; `html.reveal-ready` is set before paint (see index.html). */
+.reveal-word {
+  display: inline-block;
+  overflow: clip;
+  overflow-clip-margin: 0.2em;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+  vertical-align: top;
+}
+.reveal-word > span {
+  display: inline-block;
+}
+.reveal-ready .reveal-word > span {
+  animation: word-rise 700ms var(--ease-soft) both;
+  animation-delay: var(--word-delay, 0ms);
+}
+@keyframes word-rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+.reveal-ready .hero-rise {
+  animation: hero-rise 600ms var(--ease-soft) both;
+  animation-delay: 200ms;
+}
+.reveal-ready .hero-actions.hero-rise {
+  animation-delay: 260ms;
+}
+.reveal-ready .hero-badge {
+  animation: hero-rise 600ms var(--ease-soft) both;
+}
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-word > span,
+  .hero-rise,
+  .hero-badge {
+    animation: none !important;
+  }
+}
+.hero-bird-slot {
+  grid-area: bird;
+  height: var(--bird-slot-height);
+  overflow: visible;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-bird-logo {
+  width: var(--bird-size);
+  height: var(--bird-size);
+}
+@media (max-width: 350px) {
+  .hero-layout {
+    --bird-slot-width: 6rem;
+    --bird-size: 4rem;
+  }
+}
+@media (min-width: 64rem) {
+  .hero-layout {
+    --bird-size: 9rem;
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas: 'copy bird';
+    column-gap: 3.5rem;
+  }
+  .hero-copy {
+    display: block;
+    grid-area: copy;
+    position: relative;
+    z-index: var(--z-raised);
+  }
+  .hero-copy > h1 {
+    margin-bottom: 0;
+  }
+  .hero-badge {
+    display: inline-flex;
+  }
+  #intro .hero-copy > .lede {
+    margin-top: 1.5rem;
+  }
+  .hero-bird-slot {
+    --hero-bird-height: 24rem;
+    height: var(--hero-bird-height);
+  }
+}
+@media (min-width: 80rem) {
+  .hero-bird-slot {
+    --hero-bird-height: 30rem;
+  }
+}
+.hero-bird {
+  --bird-wind-duration-scale: 2.5;
+  --bird-drift-duration: 10s;
+}
+
+/* Seeded delays are shorter than the scaled durations and can bunch every line offscreen.
+   A shared mobile period with evenly spaced phases guarantees a continuous train of lines.
+   Keep the shared 600px path, free overflow and all desktop timings unchanged. */
+@media (max-width: 1023px) {
+  .hero-bird-wind {
+    --hero-wind-period: 6s;
+  }
+  .hero-bird-wind > div {
+    animation-duration: var(--hero-wind-period) !important;
+    animation-delay: calc(var(--hero-wind-period) * var(--hero-wind-phase)) !important;
+  }
+  .hero-bird-wind > div:nth-child(1) {
+    --hero-wind-phase: 0;
+  }
+  .hero-bird-wind > div:nth-child(2) {
+    --hero-wind-phase: -0.125;
+  }
+  .hero-bird-wind > div:nth-child(3) {
+    --hero-wind-phase: -0.25;
+  }
+  .hero-bird-wind > div:nth-child(4) {
+    --hero-wind-phase: -0.375;
+  }
+  .hero-bird-wind > div:nth-child(5) {
+    --hero-wind-phase: -0.5;
+  }
+  .hero-bird-wind > div:nth-child(6) {
+    --hero-wind-phase: -0.625;
+  }
+  .hero-bird-wind > div:nth-child(7) {
+    --hero-wind-phase: -0.75;
+  }
+  .hero-bird-wind > div:nth-child(8) {
+    --hero-wind-phase: -0.875;
+  }
+}
+
+.hero-bird[data-paused='true'] * {
+  animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-bird * {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "linkset": [
+    {
+      "anchor": "http://127.0.0.1:5051/rpc",
+      "service-doc": [
+        {
+          "href": "https://localix.ai/docs/internals--architecture",
+          "type": "text/html",
+          "title": "Architecture — which module owns each route, transport, and stored record"
+        },
+        {
+          "href": "https://localix.ai/docs/features--webhook",
+          "type": "text/html",
+          "title": "Inbound webhook — POST /rpc/webhook/messages, its fields and trust boundary"
+        },
+        {
+          "href": "https://localix.ai/docs/features--mcp",
+          "type": "text/html",
+          "title": "MCP client — /rpc/mcp manages the servers Localix connects to"
+        },
+        {
+          "href": "https://localix.ai/docs/features--cli",
+          "type": "text/html",
+          "title": "CLI — the localix binary over the same local runtime"
+        }
+      ],
+      "status-desc": [
+        {
+          "href": "http://127.0.0.1:5051/health",
+          "type": "application/json",
+          "title": "Liveness probe of the running instance"
+        }
+      ]
+    }
+  ]
+}

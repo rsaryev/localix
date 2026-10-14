@@ -1,0 +1,228 @@
+/* Git, Code Graph, and Kanban: the choreography. */
+@keyframes sc-g-del {
+  0%,
+  5% {
+    background: transparent;
+  }
+  11%,
+  91% {
+    background: color-mix(in oklch, var(--status-error) 10%, transparent);
+  }
+  96%,
+  100% {
+    background: transparent;
+  }
+}
+@keyframes sc-g-word-del {
+  0%,
+  8% {
+    background: transparent;
+  }
+  12% {
+    background: color-mix(in oklch, var(--status-error) 45%, transparent);
+  }
+  16%,
+  91% {
+    background: color-mix(in oklch, var(--status-error) 32%, transparent);
+  }
+  96%,
+  100% {
+    background: transparent;
+  }
+}
+@keyframes sc-g-ins {
+  0%,
+  16% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 1;
+  }
+  30%,
+  91% {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  96%,
+  100% {
+    clip-path: inset(0);
+    opacity: 0;
+  }
+}
+@keyframes sc-g-word-ins {
+  0%,
+  29% {
+    background: transparent;
+  }
+  33% {
+    background: color-mix(in oklch, var(--status-success) 50%, transparent);
+  }
+  38%,
+  91% {
+    background: color-mix(in oklch, var(--status-success) 32%, transparent);
+  }
+  96%,
+  100% {
+    background: transparent;
+  }
+}
+@keyframes sc-g-placeholder {
+  0%,
+  38%,
+  98%,
+  100% {
+    opacity: 1;
+  }
+  40%,
+  96% {
+    opacity: 0;
+  }
+}
+@keyframes sc-g-type {
+  0%,
+  40% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 1;
+  }
+  54%,
+  91% {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  96%,
+  100% {
+    clip-path: inset(0);
+    opacity: 0;
+  }
+}
+@keyframes sc-g-commit {
+  0%,
+  57%,
+  96%,
+  100% {
+    background: var(--foreground);
+    color: var(--background);
+    transform: none;
+  }
+  59% {
+    transform: scale(0.92);
+  }
+  63%,
+  91% {
+    background: var(--k-ok-soft);
+    color: var(--k-ok);
+    transform: none;
+  }
+}
+@keyframes sc-g-label-out {
+  0%,
+  60%,
+  97%,
+  100% {
+    opacity: 1;
+  }
+  62%,
+  95% {
+    opacity: 0;
+  }
+}
+@keyframes sc-g-label-in {
+  0%,
+  61%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  63%,
+  93% {
+    opacity: 1;
+  }
+}
+@keyframes sc-r-edge-a {
+  0%,
+  8% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  26%,
+  91% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes sc-r-edge-b {
+  0%,
+  26% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  44%,
+  91% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes sc-r-node-top {
+  0%,
+  25%,
+  96%,
+  100% {
+    border-color: var(--k-line);
+    color: var(--text-soft);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  28% {
+    border-color: var(--k-accent-line);
+    box-shadow: 0 0 0 4px var(--k-accent-soft);
+  }
+  33%,
+  91% {
+    border-color: var(--k-accent-line);
+    color: var(--foreground);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+@keyframes sc-r-node-bottom {
+  0%,
+  43%,
+  96%,
+  100% {
+    border-color: var(--k-line);
+    color: var(--text-soft);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  46% {
+    border-color: var(--k-accent-line);
+    box-shadow: 0 0 0 4px var(--k-accent-soft);
+  }
+  51%,
+  91% {
+    border-color: var(--k-accent-line);
+    color: var(--foreground);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+@keyframes sc-r-share {
+  0%,
+  58% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.9);
+  }
+  64%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}

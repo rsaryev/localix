@@ -1,0 +1,25 @@
+/* The kit's design system, one file per layer: tokens, themes, window material, base, materials,
+   motion, effects, prose, chrome geometry, utilities and accessibility overrides.
+
+   ORDER IS THE CASCADE: each import is inlined where it stands, so this list is the order the
+   rules ship in. Several layers depend on it — the macOS window-material block must precede
+   `@layer base` (an unlayered token beats a layered one), and the contrast/forced-colors overrides
+   must come after every rule they override. Move a rule between files freely; reorder this list
+   only on purpose.
+
+   A consumer imports this file after `tailwindcss` (the layers use its `@theme`, `@utility` and
+   `@custom-variant`) and before its own rules: the app in `apps/ui/src/app/index.css`, a plugin
+   through `@reference` in its artifact build. */
+@import './theme-dark.css';
+@import './theme-light.css';
+@import './tailwind-theme.css';
+@import './window-material.css';
+@import './base.css';
+@import './materials.css';
+@import './motion.css';
+@import './effects.css';
+@import './markdown.css';
+@import './markdown-forms.css';
+@import './chrome.css';
+@import './utilities.css';
+@import './accessibility.css';

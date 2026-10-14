@@ -1,0 +1,49 @@
+# cargo-deny policy for the desktop shell, checked in CI by `cargo deny check`.
+# Every crate linked into the shipped binary must carry a license compatible with MIT
+# redistribution, come from crates.io (or the reviewed vendored patch), and have no
+# unaddressed RustSec advisory.
+
+[graph]
+all-features = false
+
+[licenses]
+confidence-threshold = 0.9
+allow = [
+  "0BSD",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  # webpki-root-certs: the Mozilla CA bundle used by the updater's TLS verifier.
+  "CDLA-Permissive-2.0",
+  "ISC",
+  "MIT",
+  "MIT-0",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Unlicense",
+  "Zlib",
+]
+
+[advisories]
+# Unmaintained-only notices with no maintained release in the Tauri 2 / GTK 0.18 graph; none is a
+# known vulnerability. Revisit when Tauri moves to GTK 4 bindings or a newer urlpattern.
+ignore = [
+  { id = "RUSTSEC-2024-0370", reason = "proc-macro-error: compile-time macro of glib-macros 0.18 (Linux GTK stack)" },
+  { id = "RUSTSEC-2025-0075", reason = "unic-char-range: via urlpattern 0.3 in tauri-utils" },
+  { id = "RUSTSEC-2025-0080", reason = "unic-common: via urlpattern 0.3 in tauri-utils" },
+  { id = "RUSTSEC-2025-0081", reason = "unic-char-property: via urlpattern 0.3 in tauri-utils" },
+  { id = "RUSTSEC-2025-0098", reason = "unic-ucd-version: via urlpattern 0.3 in tauri-utils" },
+  { id = "RUSTSEC-2025-0100", reason = "unic-ucd-ident: via urlpattern 0.3 in tauri-utils" },
+]
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

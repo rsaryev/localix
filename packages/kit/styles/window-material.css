@@ -1,0 +1,211 @@
+/* The synthetic backdrop supplies glass in browsers and other desktops. On macOS
+   desktop it would cover NSVisualEffectView's wallpaper sampling (as documented by
+   tauri-apps/window-vibrancy), so keep the same coats over a transparent root there.
+   Unlayered to override the theme's base tokens. */
+.app-shell-ground {
+  background-color: var(--background);
+}
+
+@supports (background: color-mix(in oklch, black 50%, transparent)) and
+  ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-theme='dark'] {
+    --window-backdrop:
+      radial-gradient(ellipse at 10% 50%, oklch(0.3 0.065 265 / 0.2), transparent 90%),
+      radial-gradient(ellipse at 90% 50%, oklch(0.28 0.055 255 / 0.15), transparent 90%),
+      linear-gradient(110deg, oklch(0.26 0.055 265), oklch(0.25 0.05 255));
+    --work-density: 85%;
+    --sidebar-density: 70%;
+    --hover-density: 7%;
+    --active-density: 11%;
+    --selection-density: 13%;
+    --quiet-density: 6%;
+    --border-density: 14%;
+    --sidebar-border-density: 12%;
+    --control-density: 18%;
+    --control-hover-density: 28%;
+    --control-focus-density: 44%;
+    --popover-solid: oklch(0.13 0 0);
+    --popover: color-mix(in oklch, var(--popover-solid) 45%, transparent);
+    --card: color-mix(in oklch, oklch(0.155 0 0) 88%, transparent);
+    --surface-sunken: oklch(0.02 0 0 / 0.45);
+  }
+
+  :root[data-theme='light'] {
+    --window-backdrop:
+      radial-gradient(ellipse at 10% 50%, oklch(0.88 0.04 285 / 0.25), transparent 90%),
+      radial-gradient(ellipse at 90% 50%, oklch(0.9 0.03 245 / 0.2), transparent 90%),
+      linear-gradient(110deg, oklch(0.94 0.02 280), oklch(0.92 0.018 250));
+    --work-density: 92%;
+    --sidebar-density: 78%;
+    --hover-density: 8%;
+    --active-density: 13%;
+    --selection-density: 14%;
+    --quiet-density: 7%;
+    --border-density: 16%;
+    --sidebar-border-density: 14%;
+    --control-density: 26%;
+    --control-hover-density: 40%;
+    --control-focus-density: 58%;
+    --popover-solid: oklch(1 0 0);
+    --popover: color-mix(in oklch, var(--popover-solid) 82%, transparent);
+    --card: color-mix(in oklch, oklch(1 0 0) 92%, transparent);
+    --surface-sunken: color-mix(in oklch, var(--foreground) 6%, transparent);
+  }
+
+  :root:is([data-theme='dark'], [data-theme='light']) {
+    background: var(--window-backdrop) fixed;
+    --background: color-mix(in oklch, var(--window-ground) var(--work-density), transparent);
+    --sidebar: color-mix(
+      in oklch,
+      var(--window-ground-sidebar) var(--sidebar-density),
+      transparent
+    );
+    --surface-raised: color-mix(
+      in oklch,
+      var(--window-ground-raised) var(--work-density),
+      transparent
+    );
+    --background-solid: var(--window-ground);
+    --surface-hover: color-mix(in oklch, var(--foreground) var(--hover-density), transparent);
+    --surface-active: color-mix(in oklch, var(--foreground) var(--active-density), transparent);
+    --sidebar-accent: color-mix(in oklch, var(--foreground) var(--selection-density), transparent);
+    --secondary: color-mix(in oklch, var(--foreground) var(--quiet-density), transparent);
+    --muted: var(--secondary);
+    --accent: var(--secondary);
+    --border: color-mix(in oklch, var(--foreground) var(--border-density), transparent);
+    --sidebar-border: color-mix(
+      in oklch,
+      var(--foreground) var(--sidebar-border-density),
+      transparent
+    );
+    --input: color-mix(in oklch, var(--foreground) var(--control-density), transparent);
+    --control-border: var(--input);
+    --control-border-hover: color-mix(
+      in oklch,
+      var(--foreground) var(--control-hover-density),
+      transparent
+    );
+    --control-border-focus: color-mix(
+      in oklch,
+      var(--foreground) var(--control-focus-density),
+      transparent
+    );
+    /* Tailwind's mirrors resolve where declared; update them alongside semantic tokens. */
+    --color-background: var(--background);
+    --color-sidebar: var(--sidebar);
+    --color-surface-raised: var(--surface-raised);
+    --color-surface-hover: var(--surface-hover);
+    --color-surface-active: var(--surface-active);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-surface-sunken: var(--surface-sunken);
+    --color-secondary: var(--secondary);
+    --color-muted: var(--muted);
+    --color-accent: var(--accent);
+    --color-border: var(--border);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-input: var(--input);
+    --color-control-border: var(--control-border);
+    --color-control-border-hover: var(--control-border-hover);
+    --color-control-border-focus: var(--control-border-focus);
+    --color-popover: var(--popover);
+    --color-card: var(--card);
+  }
+
+  :root:is([data-theme='dark'], [data-theme='light']) :is(body, #root, .app-shell-ground) {
+    background: transparent;
+  }
+
+  :root[data-desktop='true'][data-os='mac']:is([data-theme='dark'], [data-theme='light']) {
+    background: transparent;
+  }
+
+  /* A broad, muted wallpaper wash gives web glass the diffuse variation of native
+     macOS sampling, with black above and below rather than illuminated corners. Linux and
+     Windows desktop windows have no native material either, so they take the same wash;
+     the saturated default above showed through their translucent regions as a blue cast. */
+  :root:not([data-desktop='true'][data-os='mac'])[data-theme='dark'] {
+    --window-backdrop:
+      radial-gradient(ellipse 120% 28% at 10% 46%, oklch(0.32 0.018 260 / 0.65), transparent 80%),
+      radial-gradient(ellipse 80% 36% at 92% 58%, oklch(0.24 0.008 260 / 0.3), transparent 85%),
+      oklch(0 0 0);
+  }
+
+  /* Nearly opaque coats over a near-black backdrop looked solid in the browser. A visible
+     stationary backdrop and thinner regions provide the variation that native glass samples
+     from the wallpaper, without altering the native macOS coat or text colours. */
+  :root:not([data-desktop='true'][data-os='mac'])[data-theme='dark'] {
+    --work-density: 65%;
+    --sidebar-density: 45%;
+  }
+
+  :root:not([data-desktop='true'][data-os='mac'])[data-theme='light'] {
+    --work-density: 78%;
+    --sidebar-density: 60%;
+  }
+
+  /* Paint a region's ground once, not once per nested container. */
+  :root:is([data-theme='dark'], [data-theme='light'])
+    :is(.bg-background, .bg-sidebar)
+    :is(.bg-background, .bg-sidebar) {
+    background-color: transparent;
+  }
+
+  :root:is([data-theme='dark'], [data-theme='light']) :is(.bg-popover, .lx-floating-surface) {
+    background-color: var(--popover);
+    -webkit-backdrop-filter: blur(24px) saturate(1.1);
+    backdrop-filter: blur(24px) saturate(1.1);
+  }
+
+  :root:is([data-theme='dark'], [data-theme='light']) .lx-modal-surface {
+    background-color: color-mix(in oklch, var(--window-ground) 55%, transparent);
+    -webkit-backdrop-filter: blur(24px) saturate(1.1);
+    backdrop-filter: blur(24px) saturate(1.1);
+  }
+
+  /* WebKitGTK blurs a backdrop only with GPU compositing, which many Linux machines lack, and it
+     still reports `backdrop-filter` as supported. Without the blur a 45% popover shows the page
+     through its text, so Linux desktop floating surfaces are opaque. */
+  :root[data-desktop='true'][data-os='linux']:is([data-theme='dark'], [data-theme='light']) {
+    --popover: var(--popover-solid);
+  }
+
+  :root[data-desktop='true'][data-os='linux']:is([data-theme='dark'], [data-theme='light'])
+    :is(.bg-popover, .lx-floating-surface) {
+    background-color: var(--popover);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  :root[data-desktop='true'][data-os='linux']:is([data-theme='dark'], [data-theme='light'])
+    .lx-modal-surface {
+    background-color: var(--window-ground-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+    :root[data-desktop='true'][data-os='mac']:is([data-theme='dark'], [data-theme='light']) {
+      background: var(--window-ground);
+    }
+
+    :root:is([data-theme='dark'], [data-theme='light']) {
+      background: var(--window-ground);
+      --background: var(--window-ground);
+      --sidebar: var(--window-ground-sidebar);
+      --surface-raised: var(--window-ground-raised);
+      --popover: var(--popover-solid);
+    }
+
+    :root:is([data-theme='dark'], [data-theme='light']) :is(.bg-popover, .lx-floating-surface) {
+      background-color: var(--popover);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    :root:is([data-theme='dark'], [data-theme='light']) .lx-modal-surface {
+      background-color: var(--surface-raised);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+}

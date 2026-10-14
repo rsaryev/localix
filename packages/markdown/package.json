@@ -1,0 +1,55 @@
+{
+  "name": "@localixai/markdown",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared Markdown grammar, safe parsing, math and portable React rendering for Localix.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.tsx",
+    "./dialect": "./src/dialect.ts",
+    "./*": "./src/*.ts",
+    "./MarkdownBlockquote": "./src/MarkdownBlockquote.tsx",
+    "./AnswerVariants": "./src/AnswerVariants.tsx",
+    "./FileTree": "./src/FileTree.tsx"
+  },
+  "scripts": {
+    "test": "bun test src",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@localixai/kit": "workspace:*",
+    "@localixai/plugin-sdk": "workspace:*",
+    "hast-util-from-html-isomorphic": "^2.0.0",
+    "highlight.js": "^11.12.0",
+    "katex": "^0.17.0",
+    "lucide-react": "^1.57.0",
+    "mdast-util-to-string": "^4.0.0",
+    "mermaid": "^11.17.2",
+    "react-markdown": "^10.1.0",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "20.11.2",
+    "@types/bun": "1.3.14",
+    "@types/hast": "^3.0.5",
+    "@types/mdast": "^4.0.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

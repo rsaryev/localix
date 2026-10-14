@@ -1,0 +1,29 @@
+{
+  "name": "database",
+  "category": "data",
+  "displayName": "Database",
+  "version": "1.0.0",
+  "license": "MIT",
+  "apiVersion": 1,
+  "defaultEnabled": true,
+  "description": "Browse schemas, run queries, inspect data, and attach database context across supported engines.",
+  "surfaces": ["agent", "workbench"],
+  "author": "Localix",
+  "tools": "./backend/index.ts",
+  "fileAssociations": [
+    {
+      "ext": ["db", "sqlite", "sqlite3", "db3", "s3db", "sl3"],
+      "name": "SQLite Database",
+      "description": "SQLite database file",
+      "mimeType": "application/vnd.sqlite3",
+      "role": "Editor"
+    },
+    {
+      "ext": ["sql"],
+      "name": "SQL Script",
+      "description": "SQL script",
+      "mimeType": "application/sql",
+      "role": "Editor"
+    }
+  ]
+}

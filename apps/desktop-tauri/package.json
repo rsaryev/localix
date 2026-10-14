@@ -1,0 +1,29 @@
+{
+  "name": "@localixai/desktop-tauri",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Localix desktop shell — Tauri host, API sidecar, updater, and platform packaging.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "//": "Scripts are namespaced (tauri:*) on purpose: a bare `build`/`dev`/`lint` task",
+    "//2": "would be picked up by `turbo build`/`turbo dev`/`turbo lint` across the workspace",
+    "//3": "and fail on machines without Rust. Run these directly from this folder.",
+    "//4": "`tauri:check` is the exception that IS safe to wire into a dedicated turbo task:",
+    "//5": "it stages its own sidecar precondition and skips (exit 0) without a Rust toolchain.",
+    "//6": "`test` IS a bare turbo task, and safe to be one: the suite is pure JS over",
+    "//7": "tauri.conf.json + the plugin manifests — it touches no Rust and no toolchain.",
+    "test": "bun test scripts",
+    "sync:file-associations": "bun scripts/file-associations.mjs --write",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "bun scripts/run-tauri.mjs build",
+    "tauri:release": "bun scripts/run-tauri.mjs --release --notarize-dmg build",
+    "tauri:check": "bun scripts/check-rust.mjs",
+    "tauri:resilience": "bun scripts/check-resilience.mjs",
+    "tauri:tabs": "bun scripts/check-native-tabs.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

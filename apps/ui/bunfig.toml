@@ -1,0 +1,2 @@
+[test]
+preload = ["../../scripts/test-deadline.ts", "../../packages/kit/test-preload.ts"]

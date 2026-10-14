@@ -1,0 +1,24 @@
+{
+  "name": "@localix-plugin/chess",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependencies for the bundled Chess plugin: a board whose moves wake the agent in its chat.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "hono": "^4.12.30",
+    "lucide-react": "^1.57.0",
+    "react": "^19.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@localixai/plugin-sdk": "workspace:*",
+    "@types/react": "^19.3.0",
+    "react-dom": "^19.3.1"
+  }
+}

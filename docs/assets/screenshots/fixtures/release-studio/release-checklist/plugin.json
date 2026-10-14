@@ -1,0 +1,10 @@
+{
+  "name": "release-checklist",
+  "displayName": "Release Checklist",
+  "description": "A demonstration plugin for reviewing a release checklist.",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "category": "utilities",
+  "license": "MIT",
+  "surfaces": ["workbench"]
+}

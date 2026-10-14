@@ -1,0 +1,181 @@
+/* Kanban: the choreography. */
+@keyframes sc-k-move {
+  0% {
+    opacity: 0;
+    transform: translate(calc(var(--col) * -2), 0);
+  }
+  4%,
+  9% {
+    opacity: 1;
+    box-shadow: none;
+    transform: translate(calc(var(--col) * -2), 0);
+  }
+  12% {
+    box-shadow: var(--k-lift);
+    transform: translate(calc(var(--col) * -2), 0) translateY(-3px) rotate(-2deg) scale(1.04);
+  }
+  27% {
+    box-shadow: var(--k-lift);
+    transform: translate(calc(var(--col) * -1), calc(var(--row) * -1)) translateY(-3px)
+      rotate(-2deg) scale(1.04);
+    animation-timing-function: var(--ease-spring);
+  }
+  32%,
+  45% {
+    box-shadow: none;
+    transform: translate(calc(var(--col) * -1), calc(var(--row) * -1));
+  }
+  48% {
+    box-shadow: var(--k-lift);
+    transform: translate(calc(var(--col) * -1), calc(var(--row) * -1)) translateY(-3px) rotate(2deg)
+      scale(1.04);
+  }
+  63% {
+    box-shadow: var(--k-lift);
+    transform: translateY(-3px) rotate(2deg) scale(1.04);
+    animation-timing-function: var(--ease-spring);
+  }
+  68%,
+  91% {
+    opacity: 1;
+    box-shadow: none;
+    transform: none;
+  }
+  96% {
+    opacity: 0;
+    transform: none;
+  }
+  97%,
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--col) * -2), 0);
+  }
+}
+@keyframes sc-k-target-doing {
+  0%,
+  18%,
+  32%,
+  100% {
+    border-color: var(--k-line);
+    background: color-mix(in oklch, var(--foreground) 2%, transparent);
+  }
+  22%,
+  28% {
+    border-color: var(--k-accent-line);
+    background: var(--k-accent-soft);
+  }
+}
+@keyframes sc-k-target-done {
+  0%,
+  54%,
+  68%,
+  100% {
+    border-color: var(--k-line);
+    background: color-mix(in oklch, var(--foreground) 2%, transparent);
+  }
+  58%,
+  64% {
+    border-color: var(--k-accent-line);
+    background: var(--k-accent-soft);
+  }
+}
+@keyframes sc-k-progress {
+  0%,
+  64%,
+  97%,
+  100% {
+    transform: scaleX(0.5);
+  }
+  72%,
+  95% {
+    transform: none;
+  }
+}
+@keyframes sc-k-c-ready-out {
+  0%,
+  11%,
+  97%,
+  100% {
+    opacity: 1;
+  }
+  13%,
+  95% {
+    opacity: 0;
+  }
+}
+@keyframes sc-k-c-ready-in {
+  0%,
+  12%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  14%,
+  93% {
+    opacity: 1;
+  }
+}
+@keyframes sc-k-c-doing-out {
+  0%,
+  29%,
+  49%,
+  100% {
+    opacity: 1;
+  }
+  31%,
+  47% {
+    opacity: 0;
+  }
+}
+@keyframes sc-k-c-doing-in {
+  0%,
+  30%,
+  48%,
+  100% {
+    opacity: 0;
+  }
+  32%,
+  46% {
+    opacity: 1;
+  }
+}
+@keyframes sc-k-c-done-out {
+  0%,
+  66%,
+  97%,
+  100% {
+    opacity: 1;
+  }
+  68%,
+  95% {
+    opacity: 0;
+  }
+}
+@keyframes sc-k-c-done-in {
+  0%,
+  67%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  69%,
+  93% {
+    opacity: 1;
+  }
+}
+/* The card's status dot takes the colour of the column it lands in. */
+@keyframes sc-k-dot {
+  0%,
+  28%,
+  100% {
+    color: var(--status-info);
+  }
+  31%,
+  64% {
+    color: var(--status-warning);
+  }
+  67%,
+  96% {
+    color: var(--status-success);
+  }
+}

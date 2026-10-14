@@ -1,0 +1,88 @@
+import { describe, expect, it } from 'bun:test'
+import { z } from 'zod'
+import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
+
+import { CcHookBlockedError, wrapToolsWithCcHooks } from './wrap-tools'
+import type { CcHooksRuntime } from './run'
+
+/** A runtime with only the two tool hooks the wrapper calls; the rest is never reached. */
+function runtime(over: Partial<CcHooksRuntime>): CcHooksRuntime {
+  return {
+    active: true,
+    runPreToolUse: () => Promise.resolve({ decision: 'proceed' as const }),
+    runPostToolUse: () => Promise.resolve({}),
+    ...over,
+  } as CcHooksRuntime
+}
+
+const logger = { warn: () => {}, info: () => {} }
+
+function throwingTool(): AgentTool {
+  return defineAgentTool({
+    name: 'boom',
+    description: 'always fails',
+    activeVerb: 'Booming',
+    inputSchema: z.object({}),
+    execute() {
+      return Promise.reject(new Error('disk on fire'))
+    },
+  }) as AgentTool
+}
+
+describe('wrapToolsWithCcHooks', () => {
+  it('runs PostToolUse on a THROWN tool error, and returns the converted result', async () => {
+    const seen: string[] = []
+    const [tool] = wrapToolsWithCcHooks(
+      [throwingTool()],
+      runtime({
+        runPostToolUse: (_name, _input, result) => {
+          seen.push(result.content)
+          return Promise.resolve({ additionalContext: 'noted' })
+        },
+      }),
+      logger,
+    )
+    const result = await tool.execute('tc1', {})
+    expect(seen).toEqual(['disk on fire'])
+    expect(result.isError).toBe(true)
+    expect(result.error?.kind).toBe('execution')
+    expect(result.content).toContain('disk on fire')
+    expect(result.content).toContain('[hook] noted')
+  })
+
+  it('a PreToolUse deny still throws, so the failure guard can stamp kind:blocked', async () => {
+    const posts: string[] = []
+    const [tool] = wrapToolsWithCcHooks(
+      [throwingTool()],
+      runtime({
+        // `didRewrite` is required and means "the hooks replaced the input" — a deny rewrote
+        // nothing, so it is false rather than absent.
+        runPreToolUse: () =>
+          Promise.resolve({ decision: 'deny' as const, reason: 'nope', didRewrite: false }),
+        runPostToolUse: (_n, _i, r) => {
+          posts.push(r.content)
+          return Promise.resolve({})
+        },
+      }),
+      logger,
+    )
+    await expect(tool.execute('tc1', {})).rejects.toBeInstanceOf(CcHookBlockedError)
+    expect(posts).toEqual([])
+  })
+
+  it('a block thrown by the wrapper INSIDE (a plugin pre hook) is not converted', async () => {
+    const blocked = defineAgentTool({
+      name: 'inner',
+      description: 'blocked by a plugin',
+      activeVerb: 'Blocking',
+      inputSchema: z.object({}),
+      execute() {
+        const err = new Error('Tool call blocked by plugin "guard": nope')
+        err.name = 'ToolCallBlockedError'
+        return Promise.reject(err)
+      },
+    }) as AgentTool
+    const [tool] = wrapToolsWithCcHooks([blocked], runtime({}), logger)
+    await expect(tool.execute('tc1', {})).rejects.toThrow('blocked by plugin')
+  })
+})

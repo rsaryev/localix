@@ -1,0 +1,58 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".nvmrc",
+    "plugins/*/backend/**",
+    "plugins/*/*/backend/**",
+    "plugins/*/ui/**"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build", "docs:gen"],
+      "env": ["LOCALIX_BUILD_STAMP"],
+      "outputs": [
+        "dist/**",
+        "!dist/.cache/**",
+        "public/**",
+        "server/**",
+        "build/**",
+        "src/views/main/**",
+        "src/resources/**",
+        "src/generated/**"
+      ]
+    },
+    "docs:gen": {
+      "dependsOn": ["^build"],
+      "outputs": ["src/generated/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["HOST", "PORT", "NODE_ENV", "LOCALIX_*", "VITE_*"],
+      "cache": false,
+      "persistent": true
+    },
+    "dev:prepare": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "type-check": {
+      "dependsOn": ["^build", "docs:gen"],
+      "outputs": []
+    },
+    "type-check:tests": {
+      "dependsOn": ["^build", "docs:gen"],
+      "outputs": []
+    },
+    "tauri:check": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

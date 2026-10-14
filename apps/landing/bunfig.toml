@@ -1,0 +1,3 @@
+[test]
+# Package-local tests must warm Radix just like the root runner does.
+preload = ["../../scripts/test-deadline.ts", "../../packages/kit/test-preload.ts"]

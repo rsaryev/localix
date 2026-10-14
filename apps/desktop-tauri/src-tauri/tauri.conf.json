@@ -1,0 +1,325 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Localix",
+  "version": "0.0.1",
+  "identifier": "ai.localix.tauri",
+  "build": {
+    "devUrl": "http://localhost:5050",
+    "frontendDist": "../../ui/dist",
+    "beforeDevCommand": "bun scripts/dev-servers.mjs",
+    "beforeBuildCommand": "bun scripts/prepare-sidecar.mjs --ui",
+    "removeUnusedCommands": true
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "capabilities": ["default"],
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' blob: http://localhost:* http://127.0.0.1:* https://cdnjs.cloudflare.com https://esm.sh https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' http://localhost:* http://127.0.0.1:* https://fonts.googleapis.com https://cdnjs.cloudflare.com https://esm.sh https://cdn.jsdelivr.net https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https: http://localhost:* http://127.0.0.1:*; media-src 'self' data: blob: http://localhost:* http://127.0.0.1:*; connect-src 'self' ipc: http://ipc.localhost http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; frame-src 'self' http: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "macOSPrivateApi": true
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["localix"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg", "nsis", "deb", "appimage"],
+    "createUpdaterArtifacts": false,
+    "publisher": "Localix",
+    "copyright": "© 2026 LocalixAI",
+    "license": "MIT",
+    "category": "DeveloperTools",
+    "homepage": "https://localix.ai",
+    "shortDescription": "Open source Agentic Development Environment",
+    "longDescription": "Localix is an open source Agentic Development Environment (ADE): one workspace for you and a team of agents. Several agents work in one conversation, in the editor, terminals, browser preview, databases, and shared project board built into one app, with context you can see and rules for every tool call. Describe a plugin and an agent builds its interface and tools.",
+    "externalBin": ["binaries/bun"],
+    "resources": ["resources/**/*"],
+    "fileAssociations": [
+      {
+        "ext": [
+          "txt",
+          "md",
+          "markdown",
+          "mdx",
+          "log",
+          "tsv",
+          "js",
+          "jsx",
+          "mjs",
+          "cjs",
+          "ts",
+          "tsx",
+          "json",
+          "jsonc",
+          "html",
+          "htm",
+          "css",
+          "scss",
+          "sass",
+          "less",
+          "vue",
+          "svelte",
+          "astro",
+          "xml",
+          "svg",
+          "py",
+          "rb",
+          "go",
+          "rs",
+          "java",
+          "kt",
+          "kts",
+          "c",
+          "h",
+          "cpp",
+          "cc",
+          "hpp",
+          "cs",
+          "php",
+          "swift",
+          "scala",
+          "lua",
+          "dart",
+          "r",
+          "pl",
+          "sh",
+          "bash",
+          "zsh",
+          "fish",
+          "ps1",
+          "bat",
+          "cmd",
+          "yaml",
+          "yml",
+          "toml",
+          "ini",
+          "cfg",
+          "conf",
+          "env",
+          "properties",
+          "gradle",
+          "graphql",
+          "gql",
+          "proto",
+          "dockerfile",
+          "makefile",
+          "gitignore",
+          "editorconfig"
+        ],
+        "contentTypes": ["public.plain-text", "public.source-code"],
+        "name": "Localix Source File",
+        "description": "Text or source code file",
+        "mimeType": "text/plain",
+        "role": "Editor"
+      },
+      {
+        "ext": ["png"],
+        "contentTypes": ["public.png"],
+        "name": "PNG Image",
+        "description": "Portable Network Graphics image",
+        "mimeType": "image/png",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["jpg", "jpeg"],
+        "contentTypes": ["public.jpeg"],
+        "name": "JPEG Image",
+        "description": "JPEG image",
+        "mimeType": "image/jpeg",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["gif"],
+        "contentTypes": ["com.compuserve.gif"],
+        "name": "GIF Image",
+        "description": "Graphics Interchange Format image",
+        "mimeType": "image/gif",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["webp"],
+        "contentTypes": ["org.webmproject.webp"],
+        "name": "WebP Image",
+        "description": "WebP image",
+        "mimeType": "image/webp",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["avif"],
+        "contentTypes": ["public.avif"],
+        "name": "AVIF Image",
+        "description": "AV1 Image File Format image",
+        "mimeType": "image/avif",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["bmp"],
+        "contentTypes": ["com.microsoft.bmp"],
+        "name": "Bitmap Image",
+        "description": "Windows bitmap image",
+        "mimeType": "image/bmp",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["ico"],
+        "contentTypes": ["com.microsoft.ico"],
+        "name": "Icon Image",
+        "description": "Windows icon image",
+        "mimeType": "image/x-icon",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["request.json"],
+        "name": "Localix API Request",
+        "description": "File-native Localix HTTP request",
+        "mimeType": "application/vnd.localix.request+json",
+        "role": "Editor",
+        "rank": "Owner"
+      },
+      {
+        "ext": ["db", "sqlite", "sqlite3", "db3", "s3db", "sl3"],
+        "name": "SQLite Database",
+        "description": "SQLite database file",
+        "mimeType": "application/vnd.sqlite3",
+        "role": "Editor"
+      },
+      {
+        "ext": ["sql"],
+        "name": "SQL Script",
+        "description": "SQL script",
+        "mimeType": "application/sql",
+        "role": "Editor"
+      },
+      {
+        "ext": ["pdf"],
+        "name": "PDF Document",
+        "description": "Portable Document Format",
+        "mimeType": "application/pdf",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["docx"],
+        "name": "Word Document",
+        "description": "Microsoft Word document",
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["doc"],
+        "name": "Word 97-2004 Document",
+        "description": "Legacy Microsoft Word document",
+        "mimeType": "application/msword",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["odt"],
+        "name": "OpenDocument Text",
+        "description": "OpenDocument text document",
+        "mimeType": "application/vnd.oasis.opendocument.text",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["pptx"],
+        "name": "PowerPoint Presentation",
+        "description": "Microsoft PowerPoint presentation",
+        "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["xlsx"],
+        "name": "Excel Workbook",
+        "description": "Microsoft Excel workbook",
+        "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["xls"],
+        "name": "Excel 97-2004 Workbook",
+        "description": "Legacy Microsoft Excel workbook",
+        "mimeType": "application/vnd.ms-excel",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["xlsm"],
+        "name": "Excel Macro-Enabled Workbook",
+        "description": "Microsoft Excel macro-enabled workbook",
+        "mimeType": "application/vnd.ms-excel.sheet.macroEnabled.12",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["xlsb"],
+        "name": "Excel Binary Workbook",
+        "description": "Microsoft Excel binary workbook",
+        "mimeType": "application/vnd.ms-excel.sheet.binary.macroEnabled.12",
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["csv"],
+        "name": "CSV Document",
+        "description": "Comma-separated values",
+        "mimeType": "text/csv",
+        "role": "Editor"
+      },
+      {
+        "ext": ["epub"],
+        "name": "EPUB Book",
+        "description": "Electronic publication",
+        "mimeType": "application/epub+zip",
+        "role": "Viewer",
+        "rank": "Owner"
+      },
+      {
+        "ext": ["mobi", "azw3"],
+        "name": "Kindle Book",
+        "description": "Mobipocket or Kindle Format 8 ebook",
+        "mimeType": "application/x-mobipocket-ebook",
+        "role": "Viewer",
+        "rank": "Owner"
+      },
+      {
+        "ext": ["fb2"],
+        "name": "FictionBook",
+        "description": "FictionBook ebook",
+        "mimeType": "application/x-fictionbook+xml",
+        "role": "Viewer",
+        "rank": "Owner"
+      },
+      {
+        "ext": ["cbz"],
+        "name": "Comic Book Archive",
+        "description": "ZIP-based comic book",
+        "mimeType": "application/vnd.comicbook+zip",
+        "role": "Viewer",
+        "rank": "Owner"
+      }
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

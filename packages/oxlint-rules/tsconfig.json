@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    // This package runs in the linter's Node process, not a browser: no DOM, and ES2021 for
+    // `String.replaceAll`, which the repository-wide ES2020 target does not declare.
+    "lib": ["ES2021"],
+    "noEmit": true,
+    // oxlint loads this plugin through Node's ESM resolver, which does not guess extensions, so
+    // every relative import here is written with its `.ts` suffix and TypeScript must accept that.
+    "allowImportingTsExtensions": true,
+    "types": ["bun"]
+  },
+  "include": ["src/**/*"]
+}

@@ -1,0 +1,123 @@
+{
+  "$comment": "What a copy of this plugin is made of. Read by the API's plugin authoring (apps/api/src/features/plugins/authoring: the scaffold, the agent instruction and the check) and by staging (scripts/stage-plugin-kit.mjs ships the template minus authoringOnly). The template owns its own domain, so the host names no plugin identity. Placeholders: {name} lower-kebab, {snake} lower_snake, {displayName}.",
+  "summary": "System Overview reference plugin (live OS, CPU, memory and process data, plus marks the user and the agent save)",
+  "domainName": "System Overview",
+  "entry": [
+    "plugin.json",
+    "ui/register.tsx",
+    "ui/Workspace.tsx",
+    "backend/index.ts",
+    "backend/routes.ts"
+  ],
+  "domain": [
+    "shared/system.ts",
+    "shared/processes.ts",
+    "shared/system-marks.ts",
+    "backend/system.ts",
+    "backend/system.test.ts",
+    "backend/processes.ts",
+    "backend/processes.test.ts",
+    "backend/system-marks.ts",
+    "backend/system-marks.test.ts",
+    "backend/context.ts",
+    "ui/system/",
+    "skills/inspect-system/"
+  ],
+  "patterns": [
+    {
+      "use": "a tool that acts on stored state (input, mutates, sequential)",
+      "file": "backend/index.ts",
+      "anchor": "system_mark"
+    },
+    {
+      "use": "routes that change state and answer with the new state",
+      "file": "backend/routes.ts",
+      "anchor": "/marks"
+    },
+    {
+      "use": "state the user creates, kept under ctx.dataDir",
+      "file": "backend/system-marks.ts",
+      "anchor": "openJsonStore"
+    },
+    {
+      "use": "a form and a list driven by send(), with kit Input, Button and IconButton",
+      "file": "ui/system/SystemMarks.tsx",
+      "anchor": "marks.send"
+    },
+    {
+      "use": "the store feed that nudges an open view after any store write (a per-chat store resolves ctx.sessionStorage)",
+      "file": "backend/index.ts",
+      "anchor": "createStoreFeed"
+    },
+    {
+      "use": "a list the agent's tool also changes, re-read on the store feed's nudge instead of polled",
+      "file": "ui/system/SystemMarks.tsx",
+      "anchor": "useStoreSnapshot"
+    },
+    {
+      "use": "a failed read reported through the host's ProblemLine, never a hand-made alert",
+      "file": "ui/system/useSystemProblem.ts",
+      "anchor": "useProblemReport"
+    },
+    {
+      "use": "a value derived from a timestamp against useNow()",
+      "file": "ui/system/SystemOverview.tsx",
+      "anchor": "useNow"
+    },
+    {
+      "use": "the resource the open tab attaches to a message, and the provider that reads it",
+      "file": "backend/context.ts",
+      "anchor": "expand"
+    },
+    {
+      "use": "tests of stored state, routes and the acting tool",
+      "file": "backend/system-marks.test.ts",
+      "anchor": "register(ctx)"
+    }
+  ],
+  "authoringOnly": [
+    "package.json",
+    "bunfig.toml",
+    "tsconfig.json",
+    "tsconfig.tests.json",
+    "vite.config.ts",
+    "index.html",
+    "preview/",
+    "ui/register.test.tsx",
+    "ui/Workspace.dom.test.tsx",
+    "ui/usePolledSnapshot.dom.test.tsx",
+    "ui/useStoreSnapshot.dom.test.tsx",
+    "backend/store-feed.test.ts"
+  ],
+  "domainNamedPaths": ["system", "process"],
+  "domainTokens": [
+    "SYSTEM_URI",
+    "SystemOverview",
+    "SystemSnapshot",
+    "systemSnapshotSchema",
+    "formatSystemSnapshot",
+    "createSystemReader",
+    "SystemReader",
+    "ProcessSnapshot",
+    "processSnapshotSchema",
+    "formatProcessSnapshot",
+    "createProcessService",
+    "ProcessService",
+    "useSystem",
+    "systemMarksSchema",
+    "createSystemMarks",
+    "SystemMarksService",
+    "formatSystemMarks"
+  ],
+  "renames": [
+    { "pattern": "\\bsystem_overview", "replacement": "{snake}_overview" },
+    { "pattern": "\\bsystem_processes", "replacement": "{snake}_processes" },
+    { "pattern": "\\bsystem_mark\\b", "replacement": "{snake}_mark" },
+    { "pattern": "\\binspect-system\\b", "replacement": "inspect-{name}" },
+    { "pattern": "System Overview", "replacement": "{displayName}" },
+    { "pattern": "System overview", "replacement": "{displayName}" }
+  ],
+  "directoryRenames": [{ "from": "skills/inspect-system", "to": "skills/inspect-{name}" }],
+  "tools": ["{snake}_overview", "{snake}_processes", "{snake}_mark"],
+  "skill": "inspect-{name}"
+}

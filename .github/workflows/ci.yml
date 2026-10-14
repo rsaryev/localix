@@ -1,0 +1,161 @@
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Fork pull requests stay on GitHub-hosted runners; trusted events use the isolated Linux runner.
+permissions:
+  contents: read
+
+env:
+  RUST_TOOLCHAIN: 1.96.1
+
+# Check the newest tree for each ref; superseded pushes and pull requests stop consuming minutes.
+# A manual run remains independent and is never cancelled by a push.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+# JavaScript gates share one install, build and Turbo cache. Rust runs separately.
+# Both jobs must pass; fork pull requests continue to use GitHub-hosted runners.
+jobs:
+  app:
+    name: App (build, types, tests)
+    runs-on: >-
+      ${{ fromJSON(github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-latest"' ||
+      '["self-hosted","Linux","X64","localix-linux"]') }}
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # A checksummed release binary instead of the gitleaks action, which needs a licence key
+      # for organisation repositories.
+      - name: Install pinned gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+
+      - name: Scan history for secrets
+        run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --config .gitleaks.toml .'
+
+      - name: Install test tools
+        if: runner.environment != 'self-hosted'
+        run: |
+          for attempt in 1 2 3; do
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
+            [ "$attempt" = 3 ] && exit 1
+            sleep 10
+          done
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
+      # this key only picks which archive to start from. Saved with `always()`: a failing run still
+      # leaves the tasks that passed warm for the next push.
+      - name: Restore Turbo cache
+        id: turbo-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-js-${{ runner.os }}-
+
+      # Type checking reads workspace declarations from the build output.
+      - name: Build app
+        run: bun run build
+
+      - name: Test release tooling
+        run: bun run check:release
+
+      - name: Check source types
+        run: bun run type-check
+
+      - name: Check test types
+        run: bun run check:tests
+
+      - name: Run tests
+        run: bun run test
+
+      # Stages the desktop bundle and starts its API from a copy outside the checkout, the way the
+      # packaged app does. A missing resource or an unresolved vendored module shows up here on the
+      # pull request instead of in a release leg that has already been signed and notarized.
+      - name: Setup desktop bundle tools
+        uses: ./.github/actions/setup-desktop
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          build-native: 'false'
+
+      - name: Test desktop bundle
+        run: bun run check:bundle
+
+      - name: Save Turbo cache
+        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+
+  desktop:
+    name: Desktop (Rust)
+    runs-on: >-
+      ${{ fromJSON(github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-22.04"' ||
+      '["self-hosted","Linux","X64","localix-linux"]') }}
+    timeout-minutes: 45
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      # Only a pull request may skip the Rust gate, and only when nothing it reads changed: the
+      # shell under apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun,
+      # and shared CI setup. Pushes to main and manual runs always run it.
+      - name: Detect desktop changes
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          rust=true
+          if [ "$EVENT" = pull_request ] && git rev-parse --verify --quiet 'HEAD^2' >/dev/null; then
+            changed=$(git diff --name-only 'HEAD^1' HEAD)
+            if ! printf '%s\n' "$changed" |
+              grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.nvmrc$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
+              rust=false
+            fi
+          fi
+          echo "rust=$rust" >> "$GITHUB_OUTPUT"
+          echo "Rust gate: $rust"
+
+      - name: Setup workspace
+        if: steps.filter.outputs.rust == 'true'
+        uses: ./.github/actions/setup-workspace
+
+      - name: Setup desktop
+        if: steps.filter.outputs.rust == 'true'
+        uses: ./.github/actions/setup-desktop
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Check and test Rust
+        if: steps.filter.outputs.rust == 'true'
+        run: bun run check:rust

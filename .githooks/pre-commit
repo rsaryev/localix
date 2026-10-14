@@ -1,0 +1,55 @@
+#!/bin/sh
+# Every commit runs staged-file and affected-package checks; full suites belong to CI.
+# The remaining steps are opt-in maintainer tasks.
+# Keep the vendored pi fork and its model catalog from going stale, on every maintainer commit.
+#
+# OPT-IN. Both steps need the network and one of them can stop a commit, which is the wrong default
+# for someone sending a one-line fix. They run only when LOCALIX_MAINTAINER=1 is set, so a
+# contributor's commit is never blocked by upstream moving. Maintainers export it once:
+#     export LOCALIX_MAINTAINER=1
+#
+# TWO steps, and they fail differently on purpose.
+#
+# 1. DETECT, never merge. `vendor/pi` is a fork carrying the Localix deltas in
+#    vendor/pi/UPSTREAM.md, and falling behind upstream is how a fork becomes a rewrite — so the
+#    commit stops when upstream has moved, with the one command that fixes it:
+#        bun run vendor:sync          (a real git merge, committed on its own)
+#    The sync itself is NOT done here: a merge folded into someone's feature commit mixes two
+#    changes a reader must tell apart, and a conflict inside a hook has no good place to live.
+#    Offline is not a failure — an unreachable upstream warns and gets out of the way — and the
+#    commit that concludes a merge (the sync's own included) is never stopped.
+#
+# 2. The model catalog under vendor/pi/packages/ai/src/providers/ is CHECKED IN so the build never
+#    fetches mutable external APIs, so it is refreshed here (at most hourly) and rides along with
+#    the commit. This step never blocks: models.dev and the provider APIs are third-party.
+#
+# Both are thin: the logic and its tests live in scripts/vendor-pi/ and scripts/refresh-model-catalog.ts.
+#
+# Escape hatches, for an emergency and not for a habit:
+#   LOCALIX_SKIP_VENDOR_PI_SYNC=1  skips the upstream check
+#   LOCALIX_SKIP_MODEL_CATALOG=1   skips the catalog refresh
+
+set -e
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+bun scripts/pre-commit.mjs
+
+# Upstream synchronization and catalog refresh remain maintainer-only.
+if [ "$LOCALIX_MAINTAINER" != "1" ]; then
+	exit 0
+fi
+
+if [ -f scripts/vendor-pi/cli.ts ] && ! bun scripts/vendor-pi/cli.ts detect; then
+	echo "" >&2
+	echo "pre-commit: vendor/pi is behind upstream, so this commit is stopped." >&2
+	echo "  Sync it first, as its own commit:  bun run vendor:sync" >&2
+	echo "  (conflicts are ordinary git conflicts; vendor/pi/UPSTREAM.md says what each delta is for)" >&2
+	echo "  Emergency only: LOCALIX_SKIP_VENDOR_PI_SYNC=1 git commit ..." >&2
+	exit 1
+fi
+
+if [ "$LOCALIX_SKIP_MODEL_CATALOG" != "1" ] && [ -f scripts/refresh-model-catalog.ts ]; then
+	bun scripts/refresh-model-catalog.ts
+fi

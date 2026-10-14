@@ -1,0 +1,185 @@
+name: Website Deploy
+
+# Builds the landing site and deploys it to Vercel, the same way the desktop release is built: in
+# GitHub Actions, then published as a prebuilt artifact. Vercel's own Git integration is not used,
+# so a deploy only ever happens from a build this workflow verified.
+#
+#   • pull request           → a preview deployment (same-repository pull requests only)
+#   • push to main           → the production site, when the landing's inputs changed
+#   • a published release    → the production site again, so the download buttons go live
+#   • manual dispatch        → either, on demand
+#
+# Production is switched on with the repository variable LANDING_PRODUCTION=true. Until it is
+# set, every run deploys a preview and the live site is left alone.
+#
+# Needs: secret VERCEL_TOKEN; variables VERCEL_ORG_ID and VERCEL_PROJECT_ID.
+
+on:
+  pull_request:
+    paths:
+      - 'apps/landing/**'
+      - 'apps/ui/**'
+      - 'packages/kit/**'
+      - 'packages/markdown/**'
+      - 'docs/**'
+      - 'package.json'
+      - 'bun.lock'
+      - '.github/workflows/landing.yml'
+      - '.github/actions/setup-workspace/**'
+      - '.nvmrc'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/landing/**'
+      - 'apps/ui/**'
+      - 'packages/kit/**'
+      - 'packages/markdown/**'
+      - 'docs/**'
+      - 'package.json'
+      - 'bun.lock'
+      - '.github/workflows/landing.yml'
+      - '.github/actions/setup-workspace/**'
+      - '.nvmrc'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      production:
+        description: 'Deploy to production (needs LANDING_PRODUCTION=true as well)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Keep only the newest automatic deployment for each ref. Manual and release deployments
+# have separate groups, so a push cannot cancel an explicitly requested deployment.
+concurrency:
+  group: landing-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+env:
+  VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+  VERCEL_CLI_VERSION: 62.2.0
+
+jobs:
+  deploy:
+    name: Deploy website
+    runs-on: [self-hosted, Linux, X64, localix-linux]
+    timeout-minutes: 20
+    # A pull request from a fork has no access to secrets, so it cannot deploy.
+    if:
+      github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
+      github.repository
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Check the deployment credentials
+        run: |
+          test -n "$VERCEL_TOKEN" || { echo "VERCEL_TOKEN is not set" >&2; exit 1; }
+          test -n "$VERCEL_ORG_ID" || { echo "VERCEL_ORG_ID is not set" >&2; exit 1; }
+          test -n "$VERCEL_PROJECT_ID" || { echo "VERCEL_PROJECT_ID is not set" >&2; exit 1; }
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      # The target decides which Vercel environment is pulled and whether the deploy is public.
+      - name: Decide the target
+        id: target
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          PRODUCTION_ENABLED: ${{ vars.LANDING_PRODUCTION }}
+          DISPATCH_PRODUCTION: ${{ inputs.production }}
+        run: |
+          want_production=false
+          case "$EVENT" in
+            push) [ "$REF" = "refs/heads/main" ] && want_production=true ;;
+            release) want_production=true ;;
+            workflow_dispatch) [ "$DISPATCH_PRODUCTION" = "true" ] && want_production=true ;;
+          esac
+          if [ "$want_production" = "true" ] && [ "$PRODUCTION_ENABLED" = "true" ]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
+            echo "flag=--prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=preview" >> "$GITHUB_OUTPUT"
+            echo "flag=" >> "$GITHUB_OUTPUT"
+            [ "$want_production" = "true" ] && echo "::notice::Production deploys are off (set the repository variable LANDING_PRODUCTION=true); deploying a preview instead."
+          fi
+
+      # The installer links answer 404 until a release exists, so the download buttons only go live
+      # in a build made after one is published. This asks for the newest published release (the one
+      # `latest` points to) and hands the page its tag and asset names, so it links exactly the
+      # installers that exist.
+      - name: Find the newest published release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/releases?per_page=20" \
+            --jq '[.[] | select(.draft | not)] | .[0] // empty' > release.json
+          if [ -s release.json ]; then
+            tag=$(jq -r .tag_name release.json)
+            assets=$(jq -r '[.assets[].name] | join(",")' release.json)
+            {
+              echo "live=true"
+              echo "tag=$tag"
+              echo "assets=$assets"
+            } >> "$GITHUB_OUTPUT"
+            echo "Newest published release: $tag ($assets)"
+          else
+            echo "live=false" >> "$GITHUB_OUTPUT"
+            echo "No published release yet; installers stay marked coming soon."
+          fi
+
+      - name: Install the pinned Vercel CLI
+        run: |
+          npm install --global --prefix "$RUNNER_TEMP/npm-global" "vercel@$VERCEL_CLI_VERSION"
+          echo "$RUNNER_TEMP/npm-global/bin" >> "$GITHUB_PATH"
+
+      - name: Pull the Vercel configuration
+        run:
+          vercel pull --yes --environment=${{ steps.target.outputs.environment }} --token
+          "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build website
+        run: vercel build ${{ steps.target.outputs.flag }} --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VITE_RELEASE_LIVE: ${{ steps.release.outputs.live }}
+          VITE_RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          VITE_RELEASE_ASSETS: ${{ steps.release.outputs.assets }}
+
+      - name: Deploy website
+        id: deploy
+        run: |
+          # The CLI prints plain text here and JSON when it detects an agent, so the address is
+          # read with a pattern that works for both, and readiness is asked of the API instead.
+          vercel deploy --prebuilt ${{ steps.target.outputs.flag }} --token "$VERCEL_TOKEN" > deploy.out
+          url=$(grep -Eo 'https://[A-Za-z0-9.-]+\.vercel\.app' deploy.out | tail -n 1)
+          test -n "$url" || { cat deploy.out >&2; echo "No deployment address in the CLI output" >&2; exit 1; }
+          host="${url#https://}"
+          state=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v13/deployments/$host?teamId=$VERCEL_ORG_ID" | jq -r '.readyState')
+          test "$state" = "READY" || { echo "Deployment $host is $state, not READY" >&2; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Summary
+        run: |
+          {
+            echo "### Landing deployed"
+            echo ""
+            echo "- Target: \`${{ steps.target.outputs.environment }}\`"
+            echo "- Release linked: \`${{ steps.release.outputs.tag || 'none' }}\`"
+            echo "- Deployment: ${{ steps.deploy.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

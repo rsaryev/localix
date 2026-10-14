@@ -1,0 +1,167 @@
+/* A vacant tile previews X on hover and keyboard focus, without implying a move was made. */
+.tic-tac-toe-preview {
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-soft);
+}
+
+@media (hover: hover) {
+  .tic-tac-toe-cell:hover .tic-tac-toe-preview {
+    opacity: 0.18;
+  }
+}
+
+.tic-tac-toe-cell:focus-visible .tic-tac-toe-preview {
+  opacity: 0.22;
+}
+
+/* ── A move arriving ────────────────────────────────────────────────────────────────────────
+   A new mark is DRAWN, not dropped in: every stroke carries `pathLength="100"`, so one keyframe
+   runs any shape from nothing to whole. `--tic-tac-toe-delay` staggers marks that arrived in one
+   look — the agent answered, and the board saw both moves at once — so they read as two moves. */
+.tic-tac-toe-stroke {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: tic-tac-toe-draw var(--dur-moderate) var(--ease-soft) forwards;
+  animation-delay: var(--tic-tac-toe-delay, 0ms);
+}
+
+/* The second stroke of an X follows the first. */
+.tic-tac-toe-stroke-second {
+  animation-delay: calc(var(--tic-tac-toe-delay, 0ms) + var(--dur-fast));
+}
+
+/* A soft ring spreads once from a mark that just landed, so a glance finds the move. */
+.tic-tac-toe-ripple {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tic-tac-toe-ripple var(--dur-slow) var(--ease-soft) forwards;
+  animation-delay: var(--tic-tac-toe-delay, 0ms);
+}
+
+/* ── A game ending ──────────────────────────────────────────────────────────────────────────
+   The line is drawn across once the last mark is in; the three marks on it lift; everything
+   else steps back, so the end reads at a glance. A draw has no line: the whole board settles. */
+.tic-tac-toe-win-line {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 6px currentColor);
+  animation: tic-tac-toe-draw var(--dur-slow) var(--ease-emphasized) forwards;
+  animation-delay: var(--dur-moderate);
+}
+
+.tic-tac-toe-winner {
+  animation: tic-tac-toe-lift var(--dur-slow) var(--ease-soft) both;
+  animation-delay: calc(var(--dur-slow) + var(--tic-tac-toe-order, 0) * var(--dur-instant));
+}
+
+.tic-tac-toe-bystander {
+  opacity: 0.28;
+  transition: opacity var(--dur-slow) var(--ease-soft);
+  transition-delay: var(--dur-moderate);
+}
+
+.tic-tac-toe-settle {
+  animation: tic-tac-toe-settle var(--dur-slow) var(--ease-soft) both;
+  animation-delay: var(--dur-moderate);
+}
+
+.tic-tac-toe-draw-mark {
+  opacity: 0.5;
+  transition: opacity var(--dur-slow) var(--ease-soft);
+  transition-delay: var(--dur-moderate);
+}
+
+/* A win you made: a small burst from the middle of the line. Each spark flies to its own
+   `--dx`/`--dy` and fades; the rest is the host's motion tokens. */
+.tic-tac-toe-spark {
+  opacity: 0;
+  animation: tic-tac-toe-spark calc(var(--dur-slow) * 1.8) var(--ease-soft) forwards;
+  animation-delay: calc(var(--dur-slow) + var(--dur-instant));
+}
+
+/* The result card rises once the line is drawn, not before: the end is seen, then read. */
+.tic-tac-toe-over {
+  animation: tic-tac-toe-rise var(--dur-moderate) var(--ease-emphasized) both;
+  animation-delay: calc(var(--dur-slow) * 2);
+}
+
+@keyframes tic-tac-toe-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes tic-tac-toe-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes tic-tac-toe-ripple {
+  0% {
+    opacity: 0.32;
+    transform: scale(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+@keyframes tic-tac-toe-lift {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.16);
+  }
+}
+
+@keyframes tic-tac-toe-settle {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.965);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes tic-tac-toe-spark {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4) rotate(160deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tic-tac-toe-stroke,
+  .tic-tac-toe-stroke-second,
+  .tic-tac-toe-win-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .tic-tac-toe-ripple,
+  .tic-tac-toe-spark {
+    display: none;
+  }
+  .tic-tac-toe-winner,
+  .tic-tac-toe-settle,
+  .tic-tac-toe-over {
+    animation: none;
+  }
+  .tic-tac-toe-bystander,
+  .tic-tac-toe-draw-mark,
+  .tic-tac-toe-preview {
+    transition: none;
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "//": "Plugin-owned compile project for backend, UI, tests, editors, and type-aware lint. `vite/client` is required, not optional: this plugin's UI reaches the host through the kit (`@localixai/kit/*`), whose modules pull Vite-only imports (`?worker` suffixes, side-effect `.css`), so without it the project fails on HOST files it merely references. `declaration` stays off for the same reason devops keeps it off — emitting would force every inferred type crossing the kit boundary to be nameable from here.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["bun", "vite/client"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    // The kit is the plugin's only view of the host: `@localixai/kit/<id>` is a door of the
+    // package (`packages/kit/src/entries`) or a module the host lends (`apps/ui/src/app/kit`).
+    // `@/*` is here solely so the compiler can follow a lent module's own imports; plugin code
+    // never names it (the artifact build and `plugin-boundary-contract.test.ts` both refuse it).
+    "paths": {
+      "@localixai/kit/*": ["../../packages/kit/src/entries/*", "../../apps/ui/src/app/kit/*"],
+      "@/*": ["../../apps/ui/src/*"]
+    }
+  }
+}

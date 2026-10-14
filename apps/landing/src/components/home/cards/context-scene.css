@@ -1,0 +1,193 @@
+/* Context you can see: the selection sweeps line 12, the line flies into the right-hand composer,
+   the diff and the card join it, and the card is removed before sending. */
+.sc-code {
+  display: grid;
+  align-content: start;
+  padding: 0.625rem 0;
+  font-size: 0.625rem;
+  line-height: 1.95;
+}
+.sc-code > span {
+  position: relative;
+  padding-right: 0.625rem;
+  overflow: hidden;
+  color: var(--text-soft);
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+.sc-selected {
+  isolation: isolate;
+  color: var(--foreground);
+}
+.sc-selection {
+  position: absolute;
+  inset: 0 0.375rem 0 1.875rem;
+  z-index: -1;
+  border-left: 2px solid var(--k-accent);
+  border-radius: 0.125rem;
+  background: var(--k-accent-soft);
+  transform-origin: left;
+  animation: sc-c-select var(--loop) var(--k-move) var(--phase) infinite both;
+}
+.sc-context .k-composer {
+  margin-top: auto;
+}
+.sc-ctx-slot {
+  max-width: 7rem;
+  animation: sc-c-slot var(--loop) var(--k-move) var(--phase) infinite both;
+}
+/* A short drop: across quickly, down with a little gravity. */
+.sc-ctx-slot .sc-fly-x {
+  animation: sc-c-fly-x var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-ctx-slot .sc-fly-y {
+  animation: sc-c-fly-y var(--loop) var(--k-move) var(--phase) infinite both;
+}
+.sc-ctx-slot .sc-fly-chip {
+  animation: sc-c-chip var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-ctx-chip {
+  animation: sc-c-join var(--loop) var(--k-out) calc(var(--phase) + var(--i) * 90ms) infinite both;
+}
+.sc-ctx-drop {
+  overflow: hidden;
+  max-width: 4.25rem;
+  animation:
+    sc-c-join var(--loop) var(--k-out) calc(var(--phase) + 90ms) infinite both,
+    sc-c-drop var(--loop) var(--k-in) var(--phase) infinite both;
+}
+.sc-ctx-x {
+  margin-left: 0.125rem;
+  opacity: 0.55;
+  animation: sc-c-x var(--loop) var(--k-out) var(--phase) infinite both;
+}
+
+@keyframes sc-c-select {
+  0%,
+  4% {
+    opacity: 1;
+    transform: scaleX(0);
+  }
+  18%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+@keyframes sc-c-slot {
+  0%,
+  30% {
+    max-width: 0;
+  }
+  42%,
+  96% {
+    max-width: 7rem;
+  }
+  97%,
+  100% {
+    max-width: 0;
+  }
+}
+@keyframes sc-c-fly-x {
+  0%,
+  24% {
+    transform: translateX(var(--fly-x, 0));
+  }
+  40%,
+  100% {
+    transform: none;
+  }
+}
+@keyframes sc-c-fly-y {
+  0%,
+  24% {
+    transform: translateY(var(--fly-y, 0));
+  }
+  42%,
+  100% {
+    transform: none;
+  }
+}
+@keyframes sc-c-chip {
+  0%,
+  23% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  26% {
+    opacity: 1;
+  }
+  33% {
+    transform: scale(1.06);
+    box-shadow: var(--k-lift);
+  }
+  42%,
+  91% {
+    opacity: 1;
+    transform: none;
+    box-shadow: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-c-join {
+  0%,
+  48% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  54%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-c-x {
+  0%,
+  64%,
+  100% {
+    opacity: 0.55;
+    transform: none;
+  }
+  67%,
+  70% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+@keyframes sc-c-drop {
+  0%,
+  70% {
+    max-width: 4.25rem;
+    padding-inline: 0.4375rem;
+    border-width: 1px;
+    filter: none;
+  }
+  74% {
+    filter: opacity(0);
+  }
+  78%,
+  97% {
+    max-width: 0;
+    padding-inline: 0;
+    border-width: 0;
+    filter: opacity(0);
+  }
+  100% {
+    max-width: 4.25rem;
+    padding-inline: 0.4375rem;
+    border-width: 1px;
+    filter: opacity(0);
+  }
+}
