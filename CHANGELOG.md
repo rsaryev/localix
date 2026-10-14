@@ -6,26 +6,32 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
-## v0.1.0-beta.2 — 2026-10-11
+## v0.1.0-beta.3 — draft prepared 2026-10-15
 
-The first published beta: the signed and notarized desktop app for macOS on Apple silicon, with the
-signed updater archive and `latest.json`. Linux and Windows installers are not included; the Linux
-AppImage was withheld after a Bun sidecar problem in its packaging check. Download it from
-[GitHub Releases](https://github.com/rsaryev/localix/releases).
+The first beta published after the repository history was reset. Earlier beta tags and their
+installers were removed; this release replaces them.
 
 ### Added
 
-- Desktop application for macOS on Apple silicon; the release pipeline requires signing and
-  notarization.
-- Experimental, untested Linux (x64, `.AppImage` and `.deb`) builds from the same release pipeline.
-- Building from source is documented in
-  [Run Localix from source](docs/getting-started/installation.md).
+- Desktop application for macOS on Apple silicon, signed and notarized; it has been run by hand
+  there and nowhere else.
+- Experimental installers for macOS on Intel and Linux x64 (`.AppImage` and `.deb`), built by the
+  same pipeline and not yet run by hand.
 - Multi-agent conversations, connected context, Project Space, the agent-driven preview with Visual
   Feedback, plugins the agent can build, loops and monitors, and the bundled workbenches.
+- Native browser pages on Linux, hosted in a GTK page layer.
+- Building from source is documented in
+  [Run Localix from source](docs/getting-started/installation.md).
 
-## v0.1.0-beta.1 — not published
+### Changed
 
-The first beta was prepared but never published; `v0.1.0-beta.2` replaced it.
+- Providers connect only through credentials stored in the encrypted vault; API keys are never read
+  from environment variables.
+- Updated dependencies, the pi runtime (v1.2.0) and Monaco (0.57.0).
+
+### Removed
+
+- The agent island and its quick chat window.
 
 ## How entries get added
 
