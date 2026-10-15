@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 
-import type { ChatStore } from '@/features/chat/model/store'
+import { useChatStore, type ChatStore } from '@/features/chat/model/store'
+import { useGridStore } from '@/features/workspace-grid/model'
 import type { RoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { subscribeChatChrome } from '@/shared/lib/chatChromeBus'
 import { toast } from '@/shared/lib/notify'
@@ -68,8 +69,14 @@ export function useNewChatAction(options: NewChatActionOptions) {
       setCreatingChat(true)
       void createSession(undefined, strategy)
         .then((session) => {
-          if (session) nav.goToSession(session.id, { project: session.projectId })
-          else
+          if (session) {
+            // The store reuses an untouched draft, so "new chat" can land on the session that
+            // is already selected — with its tab closed (launch keeps the layout it restored).
+            // The route does not change then, so open the tab here, as re-clicking a chat does.
+            if (session.id === useChatStore.getState().activeSessionId)
+              useGridStore.getState().reopenChat(session.id)
+            nav.goToSession(session.id, { project: session.projectId })
+          } else
             toast.error('Could not start a new conversation', {
               description: 'No conversation came back from the server. Try again.',
             })

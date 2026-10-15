@@ -4,7 +4,7 @@ Choose a **Base keymap** in **Settings → Shortcuts**. Presets adapt existing L
 commands to familiar editor conventions. The selector includes 17 choices, counting Default. Search
 settings by an editor name to find it.
 
-![Finding split commands and their keyboard shortcuts in the command palette](../assets/screenshots/workspace/command-palette--2026-10-08.png)
+![Searching commands and their keyboard shortcuts in the command palette](../assets/screenshots/workspace/command-palette--2026-10-08.png)
 
 ## Change one shortcut
 

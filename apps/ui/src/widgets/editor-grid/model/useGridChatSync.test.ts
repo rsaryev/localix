@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { makeLeaf, type WorkItem } from '@/features/workspace-grid/model'
 import { syncGridChatSelection } from './useGridChatSync'
+import {
+  cancelLaunchChatHold,
+  resetLaunchChatHoldForTest,
+  takeLaunchChatHold,
+} from './launchChatHold'
 
 function bridge() {
   const events: string[] = []
@@ -77,5 +82,55 @@ describe('syncGridChatSelection', () => {
 
     expect(syncGridChatSelection(grid, null, null, 'session-a')).toBeNull()
     expect(events).toEqual(['scope:@global'])
+  })
+
+  test('the launch selection opens no chat tab the layout did not restore', () => {
+    const { grid, events } = bridge()
+
+    expect(syncGridChatSelection(grid, 'draft', 'New Chat', null, true)).toBe('draft')
+    // The session is selected (its scope shows the empty group); no tab is opened for it.
+    expect(events).toEqual(['scope:draft'])
+    // A re-render of the same session does not reopen it either.
+    events.length = 0
+    syncGridChatSelection(grid, 'draft', 'New Chat', 'draft')
+    expect(events).toEqual(['scope:draft'])
+  })
+
+  test('the launch selection still shows a chat tab the layout restored', () => {
+    const { grid, events } = bridge()
+    grid.items['chat:kept'] = {
+      kind: 'chat',
+      id: 'chat:kept',
+      title: 'Kept',
+      scope: 'kept',
+      payload: { sessionId: 'kept' },
+    }
+
+    syncGridChatSelection(grid, 'kept', 'Kept', null, true)
+    expect(events).toEqual(['scope:kept'])
+    expect(grid.items['chat:kept']).toBeDefined()
+  })
+
+  test('a later selection opens its chat tab as usual', () => {
+    const { grid, events } = bridge()
+    syncGridChatSelection(grid, 'draft', 'New Chat', null, true)
+    events.length = 0
+
+    syncGridChatSelection(grid, 'other', 'Other', 'draft')
+    expect(events).toEqual(['open:chat:other', 'scope:other'])
+  })
+})
+
+describe('launch chat hold', () => {
+  test('holds exactly once per window', () => {
+    resetLaunchChatHoldForTest()
+    expect(takeLaunchChatHold()).toBe(true)
+    expect(takeLaunchChatHold()).toBe(false)
+  })
+
+  test('a prompt deep link cancels it', () => {
+    resetLaunchChatHoldForTest()
+    cancelLaunchChatHold()
+    expect(takeLaunchChatHold()).toBe(false)
   })
 })

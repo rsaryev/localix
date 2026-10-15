@@ -1,0 +1,179 @@
+/* Add participant → Frontend joins → "@frontend …" hands it the turn. */
+.wt-team {
+  --loop: 8s;
+  position: absolute;
+  inset: 0;
+}
+.wt-tm-composer {
+  left: 6%;
+  right: 6%;
+  bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem 1.25rem;
+  background: var(--card);
+}
+.wt-tm-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.wt-tm-party {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--text-soft);
+}
+.wt-tm-joined {
+  max-width: 0;
+  opacity: 0;
+  animation: wt-tm-join var(--loop) var(--ease-emphasized) infinite both;
+}
+.wt-tm-add {
+  display: grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.3125rem;
+  color: var(--text-soft);
+  animation: wt-tm-press var(--loop) var(--ease-soft) infinite both;
+}
+.wt-tm-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 1rem;
+  font-size: 0.6875rem;
+  color: var(--foreground);
+  white-space: pre;
+}
+.wt-tm-ph {
+  position: absolute;
+  left: 0;
+  color: var(--text-faint);
+  animation: wt-tm-ph var(--loop) steps(1, end) infinite both;
+}
+.wt-tm-letter {
+  display: inline-block;
+  overflow: hidden;
+  max-width: 0;
+  animation: wt-tm-letter var(--loop) steps(1, end) infinite both;
+  animation-delay: calc(var(--i) * 55ms);
+}
+.wt-tm-caret {
+  width: 1px;
+  height: 0.8125rem;
+  margin-left: 1px;
+  background: var(--foreground);
+  animation: wt-tm-blink 1s steps(1) infinite;
+}
+.wt-tm-menu {
+  z-index: 1;
+  left: calc(6% + 4.25rem);
+  /* As in the app: the list drops under the button, over the input line. */
+  bottom: 2.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  width: 7.5rem;
+  padding: 0.1875rem;
+  border-radius: 0.4375rem;
+  background: var(--tip-popover);
+  color: var(--foreground);
+  transform-origin: top left;
+  animation: wt-tm-menu var(--loop) var(--ease-soft) infinite both;
+}
+.wt-tm-menu .wt-row {
+  position: relative;
+  z-index: 1;
+  height: 1.25rem;
+}
+.wt-tm-hover {
+  position: absolute;
+  left: 0.1875rem;
+  right: 0.1875rem;
+  top: 0.1875rem;
+  height: 1.25rem;
+  border-radius: 0.3125rem;
+  background: var(--tip-veil-strong);
+}
+
+@keyframes wt-tm-press {
+  0%,
+  10%,
+  16%,
+  100% {
+    background: transparent;
+    transform: none;
+  }
+  13% {
+    background: var(--tip-veil-strong);
+    transform: scale(0.92);
+  }
+}
+@keyframes wt-tm-menu {
+  0%,
+  13% {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.97);
+  }
+  18%,
+  32% {
+    opacity: 1;
+    transform: none;
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.97);
+  }
+}
+@keyframes wt-tm-join {
+  0%,
+  34% {
+    max-width: 0;
+    opacity: 0;
+  }
+  42%,
+  92% {
+    max-width: 6rem;
+    opacity: 1;
+  }
+  97%,
+  100% {
+    max-width: 0;
+    opacity: 0;
+  }
+}
+@keyframes wt-tm-ph {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wt-tm-letter {
+  0%,
+  45% {
+    max-width: 0;
+  }
+  46%,
+  94% {
+    max-width: 1em;
+  }
+  95%,
+  100% {
+    max-width: 0;
+  }
+}
+@keyframes wt-tm-blink {
+  50% {
+    opacity: 0;
+  }
+}

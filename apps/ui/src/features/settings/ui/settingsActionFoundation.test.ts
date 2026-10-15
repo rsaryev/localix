@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
 describe('settings action foundation', () => {
-  test.each(['./PermissionEditor.tsx', './SetupSection.tsx', './keyboard/ChordRecorder.tsx'])(
+  test.each(['./PermissionEditor.tsx', './keyboard/ChordRecorder.tsx'])(
     '%s delegates ordinary actions to Button or IconButton',
     (path) => {
       const source = read(path)

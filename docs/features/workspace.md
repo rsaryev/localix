@@ -26,6 +26,15 @@ content), **Tools** (utilities, Usage & Spend, Vault, and uncategorized plugins)
 or two pinned tools in a group keep their individual buttons; three or more share a category menu.
 Only pinned tools count toward this grouping. A category highlights when one of its views is active.
 
+At launch the workspace reopens the tabs you left. If no chat tab was open, or on a first run, no
+chat opens on its own.
+
+A new chat with no model selected, and any editor group with nothing open, shows a carousel of
+workspace tips, most important first: connecting a model, approvals and permission modes, project
+folders, `@` references, base keymaps, the command palette, agents in one chat, and appearance. Each
+tip animates the real surface; four carry the control itself. The carousel never takes focus and
+remembers the last tip you viewed on this device.
+
 Open **All tools** (**…**) to browse the complete catalog and toggle the pin beside each tool. Pin
 changes keep the menu open and persist on this device. Right-click an individual button to unpin or
 move it. Pinned tools do not also appear in the recent-tools list; recently opened, unpinned tools

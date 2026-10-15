@@ -22,7 +22,6 @@ the linked feature guides.
 | [Message bindings](message-bindings.md)                                           | Durable message-to-resource links and runtime projection                           |
 | [Notifications](notifications.md)                                                 | Notification policy, delivery channels, and interruption state                     |
 | [Notification problems](notification-problems.md)                                 | Standing conditions, request traces, duplicate suppression, and plugin attribution |
-| [Onboarding](onboarding.md)                                                       | First-run state, step progression, and completion                                  |
 | [Agent preview control](preview-control.md)                                       | Preview lifecycle, probe connection, capture, and actions                          |
 | [Research context](research-context.md)                                           | Research-result persistence and context injection                                  |
 | [Source control](source-control.md)                                               | Repository state, diffs, staging, commits, and branch operations                   |

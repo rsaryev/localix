@@ -46,9 +46,9 @@ describe('searchSettings', () => {
 
   it('ranks a title match above a description-only match', () => {
     const hits = searchSettings(SETTINGS_INDEX, 'model')
-    // Resolved diagnostics has a title match; setup mentions models in its description.
+    // Resolved diagnostics has a title match; MCP servers mention models only in their description.
     const ids = hits.map((hit) => hit.entry.id)
-    expect(ids.indexOf('diag.models')).toBeLessThan(ids.indexOf('system.setup'))
+    expect(ids.indexOf('diag.models')).toBeLessThan(ids.indexOf('cap.mcp'))
   })
 
   it('applies AND semantics across terms', () => {

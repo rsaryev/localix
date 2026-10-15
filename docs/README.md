@@ -23,7 +23,7 @@ Read [Privacy](getting-started/privacy.md) to understand data storage and outbou
 | Work with several agents             | [Conversations](features/conversations.md) · [Forks](features/delegation.md)                                               |
 | Control what enters the next request | [Workspace context](features/workspace.md#explicit-and-automatic-context) · [Checkpoints](features/context-checkpoints.md) |
 | Review actions before they run       | [Permission modes](features/permission-modes.md) · [Permission rules](features/permissions.md)                             |
-| Choose a provider or model           | [Providers](features/providers.md) · [Onboarding](features/onboarding.md)                                                  |
+| Choose a provider or model           | [Providers](features/providers.md)                                                                                         |
 | Track a larger goal                  | [Kanban](features/task-board.md) · [Session tasks recipe](recipes/turn-a-vague-goal-into-a-pipeline.md)                    |
 | Wait for CI or repeat a prompt       | [Monitors](features/monitors.md) · [Loops](features/loops.md)                                                              |
 | Add a tool or workbench              | [Build with the agent](extending/build-with-the-agent.md) · [Plugin authoring](extending/plugins.md)                       |
@@ -62,7 +62,6 @@ Each recipe walks through one task from setup to a visible result.
 | [Let an agent interact with a terminal](features/interactive-terminals.md)    | Let an agent send input to a terminal and inspect its screen.          |
 | [Wait for something to happen](features/monitors.md)                          | Wait for a command or plugin event to wake a session.                  |
 | [Repeat work on a schedule](features/loops.md)                                | Repeat prompts while the Localix runtime is running.                   |
-| [Set up a provider and model](features/onboarding.md)                         | Connect a provider and select the default chat model.                  |
 
 ### Workspace
 

@@ -87,10 +87,6 @@ const OUTERMOST_PAINTERS = new Map<string, string>([
     'A crash screen renders when the shell may not exist; it cannot inherit a pane.',
   ],
   [
-    'apps/ui/src/features/onboarding/ui/OnboardingWizard.tsx',
-    'Standalone full-window route, mounted outside the workspace shell.',
-  ],
-  [
     'apps/ui/src/pages/grid-preview/ui/GridPreviewPage.tsx',
     'Standalone preview route, mounted outside the workspace shell.',
   ],

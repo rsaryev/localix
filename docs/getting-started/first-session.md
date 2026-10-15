@@ -22,7 +22,7 @@ successful model request or provider setup._
 
 | Action                | Mechanism                                                                                   | Boundary                                                                       |
 | --------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Connect a model       | The setup wizard stores a provider connection and model selection.                          | **Ready** confirms saved configuration, not a live model response.             |
+| Connect a model       | The composer's model picker stores a provider connection and model selection.               | A saved connection is not proof of a live model response.                      |
 | Open a folder         | **Add project folder** creates or selects a project whose working directory is that folder. | Project selection does not copy or isolate the folder.                         |
 | Start work            | Your first message creates or reuses a session for the selected project.                    | A model request needs a usable provider connection and model.                  |
 | Inspect a change      | The transcript shows tool activity; Source Control opens repository changes.                | Source Control appears only when the working directory is a Git repository.    |
@@ -31,15 +31,14 @@ successful model request or provider setup._
 ## How it works
 
 1. [Install and launch Localix](installation.md) with your chosen desktop or source workflow.
-2. Complete `/setup`: choose a provider connection and model, then finish the wizard. The
-   [onboarding guide](../features/onboarding.md) owns the complete setup and replay flow.
+2. Open the model picker under the chat composer, connect a provider with an API key or sign-in, and
+   choose a model. The [providers guide](../features/providers.md) covers connections.
 3. Select **Add project folder** and choose a disposable repository or confirm that `git status` is
    clean before using a mutating example. Selecting a previously added directory switches to its
    existing project.
-4. Check the model selector for the new conversation. Setup saves its Chat pair on the default
-   project (or first loaded project when no default exists); opening another folder does not copy
-   those settings. Select a usable connection and model if the conversation has no resolved pair.
-   Agent or session choices can take priority over project defaults.
+4. Check the model selector for the new conversation. Select a usable connection and model if the
+   conversation has no resolved pair. Agent or session choices can take priority over project
+   defaults.
 5. Send a request with a small, visible outcome. For example: _“Add one sentence to the installation
    section in `README.md`, then show me the diff.”_
 6. Read the transcript as tools run. Open Source Control to inspect the resulting Git diff; use the
@@ -66,8 +65,7 @@ answers.
 
 ## Limits
 
-- You can skip provider setup. A skipped or structurally complete wizard does not prove that a model
-  request will succeed.
+- A saved provider connection does not prove that a model request will succeed.
 - A project records a working directory. Sessions using the same project can act on the same files
   by default.
 - Queued text is delivered only at a safe runtime boundary. Pending human input, attachments, and
@@ -79,7 +77,6 @@ answers.
 
 ## Related guides
 
-- [Onboarding](../features/onboarding.md)
 - [Workspace](../features/workspace.md)
 - [Providers](../features/providers.md)
 - [Capabilities](../features/capabilities.md)
@@ -87,7 +84,6 @@ answers.
 
 ## Source of truth
 
-- [Onboarding steps](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/onboarding/model/steps.ts)
 - [Project-folder selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/useAddProjectFolder.ts)
 - [Session lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
 - [Turn entry and durable queueing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/turn-entry.ts)

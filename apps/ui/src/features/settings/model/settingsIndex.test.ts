@@ -35,7 +35,6 @@ const CONTROL_FILES = [
   'typography/TypographySection.tsx',
   'ContextExclusionsSection.tsx',
   'capabilities/ResearchSection.tsx',
-  'SetupSection.tsx',
   'NotificationsSection.tsx',
 ] as const
 const normalizeTitle = (title: string) =>

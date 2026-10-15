@@ -1,0 +1,345 @@
+/* Choose model → picker drawer → provider → key → Add Connection → model → composer. */
+.wt-model {
+  --loop: 9s;
+  position: absolute;
+  inset: 0;
+}
+.wt-composer {
+  left: 6%;
+  right: 6%;
+  bottom: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem 0.5rem;
+  border-radius: 0.875rem;
+  background: var(--card);
+  /* The drawer is opaque in the app; the composer is simply covered while it is up. */
+  animation: wt-m-covered var(--loop) var(--ease-soft) infinite both;
+}
+.wt-composer-party {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5625rem;
+  color: var(--text-soft);
+}
+.wt-avatar {
+  display: grid;
+  place-items: center;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--status-success) 28%, var(--card));
+  color: color-mix(in oklch, var(--status-success) 80%, var(--foreground));
+  font-size: 0.375rem;
+  font-weight: 600;
+}
+.wt-composer-text {
+  color: var(--text-faint);
+}
+.wt-choose {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  align-self: flex-start;
+  height: 1.25rem;
+  margin-left: 1rem;
+  padding: 0 0.375rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  color: var(--foreground);
+  animation: wt-m-press var(--loop) var(--ease-soft) infinite both;
+}
+.wt-ph-a {
+  animation: wt-m-swap-out var(--loop) var(--ease-soft) infinite both;
+}
+.wt-ph-b {
+  animation: wt-m-swap-in var(--loop) var(--ease-soft) infinite both;
+}
+
+.wt-drawer {
+  z-index: 1;
+  left: 3%;
+  right: 3%;
+  top: 1.25rem;
+  bottom: -1px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: var(--tip-popover);
+  animation: wt-m-drawer var(--loop) var(--ease-emphasized) infinite both;
+}
+.wt-grip {
+  display: block;
+  width: 1.75rem;
+  height: 0.1875rem;
+  margin: 0.375rem auto 0;
+  border-radius: 999px;
+  background: var(--tip-ink);
+}
+.wt-cols {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 1.5fr;
+  height: 100%;
+}
+.wt-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  min-width: 0;
+  padding: 0.5rem;
+  border-right: 1px solid var(--tip-line);
+}
+.wt-col:last-child {
+  border-right: 0;
+}
+.wt-col > .wt-label:first-child {
+  margin-bottom: 0.25rem;
+}
+.wt-sub {
+  margin-top: 0.125rem;
+  font-size: 0.4375rem;
+}
+.wt-selected {
+  background: var(--tip-veil-strong);
+  color: var(--foreground);
+}
+.wt-field {
+  border: 1px solid var(--tip-line);
+  background: var(--tip-veil);
+  color: var(--text-faint);
+}
+.wt-row[data-pick] {
+  animation: wt-m-pick var(--loop) var(--ease-soft) infinite both;
+}
+.wt-connect,
+.wt-models {
+  position: absolute;
+  inset: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+.wt-connect {
+  animation: wt-m-connect var(--loop) var(--ease-soft) infinite both;
+}
+.wt-models {
+  gap: 0.1875rem;
+  animation: wt-m-models var(--loop) var(--ease-soft) infinite both;
+}
+.wt-oauth {
+  display: grid;
+  place-items: center;
+  height: 1.375rem;
+  border-radius: 0.375rem;
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 500;
+}
+.wt-or {
+  align-self: center;
+  font-size: 0.4375rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.wt-key {
+  overflow: hidden;
+  max-width: 0;
+  color: var(--text-strong);
+  letter-spacing: 0.05em;
+  animation: wt-m-type var(--loop) steps(14, end) infinite both;
+}
+.wt-key::before {
+  content: '••••••••••••••••••••••••';
+}
+.wt-caret {
+  width: 1px;
+  height: 0.625rem;
+  background: var(--foreground);
+  animation: wt-m-blink 1s steps(1) infinite;
+}
+.wt-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 1.375rem;
+  border-radius: 0.375rem;
+  background: var(--tip-ink);
+  color: var(--foreground);
+  font-weight: 500;
+  animation: wt-m-add var(--loop) var(--ease-soft) infinite both;
+}
+.wt-models .wt-row {
+  color: var(--text-soft);
+}
+.wt-models .wt-row[data-first] {
+  animation: wt-m-model var(--loop) var(--ease-soft) infinite both;
+}
+
+/* One clock for the whole story (percent of --loop). */
+@keyframes wt-m-press {
+  0%,
+  9%,
+  15%,
+  100% {
+    background: transparent;
+    transform: none;
+  }
+  11% {
+    background: var(--tip-veil-strong);
+    transform: scale(0.95);
+  }
+}
+@keyframes wt-m-drawer {
+  0%,
+  13% {
+    transform: translateY(105%);
+  }
+  22%,
+  68% {
+    transform: none;
+  }
+  76%,
+  100% {
+    transform: translateY(105%);
+  }
+}
+@keyframes wt-m-pick {
+  0%,
+  25% {
+    background: transparent;
+    color: inherit;
+  }
+  28%,
+  100% {
+    background: var(--tip-veil-strong);
+    color: var(--foreground);
+  }
+}
+@keyframes wt-m-type {
+  0%,
+  31% {
+    max-width: 0;
+  }
+  44%,
+  100% {
+    max-width: 5rem;
+  }
+}
+@keyframes wt-m-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes wt-m-add {
+  0%,
+  44% {
+    opacity: 0.4;
+    transform: none;
+  }
+  47%,
+  49% {
+    opacity: 1;
+    transform: none;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(0.96);
+  }
+  52%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wt-m-connect {
+  0%,
+  52% {
+    opacity: 1;
+    transform: none;
+  }
+  56%,
+  100% {
+    opacity: 0;
+    transform: translateX(-0.5rem);
+  }
+}
+@keyframes wt-m-models {
+  0%,
+  53% {
+    opacity: 0;
+    transform: translateX(0.5rem);
+  }
+  58%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wt-m-model {
+  0%,
+  60% {
+    background: transparent;
+    color: var(--text-soft);
+    transform: none;
+  }
+  63% {
+    background: var(--tip-veil-strong);
+    color: var(--foreground);
+    transform: scale(0.98);
+  }
+  65%,
+  100% {
+    background: var(--tip-veil-strong);
+    color: var(--foreground);
+    transform: none;
+  }
+}
+@keyframes wt-m-swap-out {
+  0%,
+  70% {
+    opacity: 1;
+    transform: none;
+  }
+  72%,
+  97% {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wt-m-swap-in {
+  0%,
+  72% {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+  75%,
+  94% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+@keyframes wt-m-covered {
+  0%,
+  15%,
+  72%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  66% {
+    opacity: 0;
+  }
+}

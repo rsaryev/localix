@@ -55,7 +55,7 @@ preference is already synchronized.
 | Unsaved file bodies                                                       | File draft/editor owner                   | Keep separate from chat drafts; require file conflict semantics               |
 | Preview/browser history, plugin view state, folder expansion              | Inspector/plugin owners                   | Keep scoped to the owning view; plugins retain their typed data APIs          |
 | Prompt history, recent model menu ordering, palette/project MRU           | Local convenience history                 | Does not decide executable routes; review cross-device history separately     |
-| Onboarding progress and tip counters                                      | Local progress caches                     | Candidate for explicit profile fields; not conversation state                 |
+| Last workspace tip and tip counters                                       | Local progress caches                     | Candidate for explicit profile fields; not conversation state                 |
 | Notification preferences and spend threshold                              | Local preference modules                  | Remaining candidates for profile migration                                    |
 | Notification journal/outbox and delivery receipts                         | Existing notification subsystem           | Preserve existing deduplication                                               |
 | Editor wrap, whitespace, autosave and inlay preferences                   | Local editor preferences                  | Candidate for typed profile settings; do not mix with caret/geometry          |

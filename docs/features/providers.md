@@ -153,8 +153,8 @@ their provider identity.
 | Worker route           | Delegated-agent setting is saved; current child creation uses parent participant routes |
 | Reasoning preference   | Stored for the workload plus provider/model pair when supported                         |
 
-The onboarding provider step embeds the same model browser used by the workspace. It can create an
-API-key or OAuth connection, and remember the selected connection and model for the first session.
+There is no separate setup flow: the model picker under a chat composer creates API-key or OAuth
+connections and selects the conversation's model.
 
 ## Limits
 
@@ -196,7 +196,6 @@ API-key or OAuth connection, and remember the selected connection and model for 
 
 ## Related guides
 
-- [Onboarding](onboarding.md)
 - [Secrets](secrets.md)
 - [Privacy](../getting-started/privacy.md)
 

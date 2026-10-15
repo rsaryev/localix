@@ -5,13 +5,12 @@ import { startWorkspaceResourceSync } from './workspaceResourceSync'
 import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
 import { usePreviewHosts } from '@/features/inspector/model/previewHosts'
 import { shouldMountBrowserHost } from '@/features/inspector/model/browserHostPolicy'
-import { Outlet, useLocation, useNavigate } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import { ActionConfirm } from '@/shared/ui/ActionConfirm'
 import { useFontFamily } from '@/features/settings/model/useFontFamily'
 import { useSettingsStore } from '@/features/settings/model/settingsStore'
 import { startSettingsBootstrap } from '@/features/settings/model/settingsBootstrap'
 import { useSyncKeybindings } from '@/features/settings/model/useKeybindings'
-import { setupPath } from '@/shared/routing/routes'
 import { setActiveEventRoute } from '@/shared/lib/notifications/context'
 import { installWhenIdle } from '@/shared/lib/runWhenIdle'
 import { startRpcEventTracing } from '@/shared/lib/notifications/rpcInstrumentation'
@@ -48,9 +47,6 @@ export function RootLayout() {
   const hasPreviewHosts = usePreviewHosts((s) => Object.keys(s.live).length > 0)
   useSyncKeybindings() // mirror persisted keybinding overrides into the shared read-store
   const loadFromBackend = useSettingsStore((s) => s.loadFromBackend)
-  const synced = useSettingsStore((s) => s.synced)
-  const onboardingCompletedAt = useSettingsStore((s) => s.settings.uiSettings.onboardingCompletedAt)
-  const navigate = useNavigate()
   const { pathname } = useLocation()
 
   useLayoutEffect(() => {
@@ -107,14 +103,6 @@ export function RootLayout() {
   // best-effort commands that raise no fallback notification either way. The gap
   // costs at most a diagnostic breadcrumb for a failed boot invoke.
   useEffect(() => installWhenIdle(startDesktopEventTracing), [])
-
-  // First run: once settings sync, send the user to the dedicated /setup page if
-  // onboarding isn't complete. A returning user (completedAt set) is never
-  // redirected, and we never bounce off /setup itself (so replay/back works).
-  useEffect(() => {
-    if (!synced || onboardingCompletedAt || pathname === setupPath()) return
-    void navigate(setupPath(), { replace: true })
-  }, [synced, onboardingCompletedAt, pathname, navigate])
 
   return (
     <>

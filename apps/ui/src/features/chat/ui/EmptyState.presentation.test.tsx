@@ -15,9 +15,3 @@ test('empty chat shows only the flying Localix bird', () => {
   expect(html).not.toContain('fade-up')
   expect(html).not.toContain('text-3xl')
 })
-
-test('without a connection, points to the model menu instead of reading the environment', () => {
-  const html = renderToStaticMarkup(<EmptyState hasConnection={false} />)
-
-  expect(html).toContain('Pick a provider from the model menu below.')
-})

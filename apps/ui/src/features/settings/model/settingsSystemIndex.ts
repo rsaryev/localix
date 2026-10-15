@@ -96,15 +96,6 @@ export const SYSTEM_SETTINGS_INDEX: SettingsIndexEntry[] = [
   },
 
   {
-    id: 'system.setup',
-    tab: 'system',
-    tabLabel: 'System',
-    title: 'Run setup again',
-    description: 'Reconnect a provider and choose the default model.',
-    keywords: ['onboarding', 'wizard', 'provider', 'model', 'replay setup'],
-    anchor: 'system-setup',
-  },
-  {
     id: 'system.research-private',
     tab: 'context',
     tabLabel: 'System · Access & context',

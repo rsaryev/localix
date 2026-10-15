@@ -56,7 +56,6 @@ export type SettingsTabId = (typeof SETTINGS_STRING_TABS)[number] | { kind: 'pro
 
 export const ROUTE_PATTERNS = {
   index: '/',
-  setup: 'setup',
   // Hierarchical scope→session addressing: the project scope is part of the
   // path, so a link identifies WHERE a chat lives, not just its id.
   projectChat: 'project/:projectId/:sessionId?/:section?',
@@ -101,11 +100,6 @@ export function resolveNavScope(
   current: string | null,
 ): string | null {
   return explicit !== undefined ? explicit : current
-}
-
-/** First-run / "Replay setup" wizard — its own full page, not an app overlay. */
-export function setupPath(): string {
-  return '/setup'
 }
 
 export function isSectionId(value: string | undefined): value is SectionId {

@@ -85,8 +85,7 @@ export const NAVIGATION_SHORTCUTS: ShortcutCommand[] = [
   {
     id: CMD.pickTheme,
     label: 'Color theme',
-    description:
-      'Open the color-theme quick pick to preview and switch color mode and plugin presets.',
+    description: 'Cycle the appearance: dark, light, then system.',
     category: 'navigation',
     defaultChord: 'mod+alt+t',
   },

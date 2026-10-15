@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import { useGridStore, GLOBAL_SCOPE, groupOfTab, scopeOf } from '@/features/workspace-grid/model'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { shownTab } from './workspaceChats'
+import { takeLaunchChatHold } from './launchChatHold'
 
 export interface GridChatSyncOpts {
   /** The session the URL/store currently considers active (the focused chat). */
@@ -36,6 +37,8 @@ export function syncGridChatSelection(
   activeSessionId: string | null,
   sessionTitle: string | null,
   seededFor: string | null,
+  /** Leave a chat tab the layout did not restore closed (the launch, `launchChatHold.ts`). */
+  holdChat = false,
 ): string | null {
   if (!activeSessionId) {
     grid.setActiveScope(GLOBAL_SCOPE)
@@ -61,7 +64,7 @@ export function syncGridChatSelection(
     const shown = leaf ? shownTab(leaf, grid, workspace) : null
     if (leaf && shown && shown !== id && grid.items[shown]?.kind === 'chat')
       grid.setActiveTab(leaf.id, id)
-  } else if (seededFor !== activeSessionId || grid.items[id]) {
+  } else if (!holdChat && (seededFor !== activeSessionId || grid.items[id])) {
     grid.openItem(
       {
         kind: 'chat' as const,
@@ -110,11 +113,13 @@ export function useGridChatSync({ activeSessionId, sessionTitle }: GridChatSyncO
   // state can briefly hide/disable the new session's model picker.
   useLayoutEffect(() => {
     const grid = useGridStore.getState()
+    const holdChat = activeSessionId !== null && takeLaunchChatHold()
     seededFor.current = syncGridChatSelection(
       grid,
       activeSessionId,
       sessionTitle,
       seededFor.current,
+      holdChat,
     )
   }, [activeSessionId, sessionTitle])
 }

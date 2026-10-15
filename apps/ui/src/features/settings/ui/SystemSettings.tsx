@@ -5,7 +5,6 @@ import { SettingsPage, SettingsRows, SettingsSection } from './SettingsScaffold'
 import { TabBar } from '@localixai/kit/tabs'
 import { ContextSettings } from './ContextSettings'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
-import { SetupSection } from './SetupSection'
 
 export type SystemSettingsTab = 'system' | 'context' | 'diagnostics'
 
@@ -50,7 +49,6 @@ export function SystemSettings({
             </SettingsRows>
           </SettingsSection>
           <StorageSection />
-          <SetupSection />
         </div>
       )}
     </SettingsPage>
