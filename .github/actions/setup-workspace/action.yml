@@ -24,6 +24,18 @@ runs:
         # Hosted executable archives contain absolute paths from a different runner home.
         no-cache: ${{ runner.environment == 'self-hosted' }}
 
+    # A self-hosted runner keeps one Turbo cache on its own disk instead of a GitHub cache
+    # archive: restoring that archive cost minutes per job once it had grown to gigabytes. Entries
+    # are content-addressed, so a stale one is never replayed; the prune only bounds the disk.
+    - name: Use the runner's local Turbo cache
+      if: runner.environment == 'self-hosted'
+      shell: bash
+      run: |
+        dir="$HOME/.cache/localix-turbo"
+        mkdir -p "$dir"
+        find "$dir" -type f -mtime +7 -delete 2>/dev/null || true
+        echo "TURBO_CACHE_DIR=$dir" >> "$GITHUB_ENV"
+
     - name: Cache dependencies
       if: inputs.install == 'true'
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4

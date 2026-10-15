@@ -168,6 +168,7 @@ jobs:
       # whose inputs changed; the release still executes every verification gate below.
       - name: Restore Turbo cache
         id: turbo-cache
+        if: runner.environment != 'self-hosted'
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
@@ -239,7 +240,9 @@ jobs:
             "$RUNNER_TEMP/updater-signing-probe.sig"
 
       - name: Save Turbo cache
-        if: always() && steps.turbo-cache.outputs.cache-hit != 'true'
+        if: >-
+          always() && runner.environment != 'self-hosted' && steps.turbo-cache.outputs.cache-hit !=
+          'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
@@ -333,6 +336,7 @@ jobs:
 
       - name: Restore Turbo cache
         id: turbo-cache
+        if: runner.environment != 'self-hosted'
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
@@ -358,7 +362,7 @@ jobs:
 
       # Saved here, not after the signing steps: a later failure should not cost the next attempt.
       - name: Save Turbo cache
-        if: steps.turbo-cache.outputs.cache-hit != 'true'
+        if: runner.environment != 'self-hosted' && steps.turbo-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
