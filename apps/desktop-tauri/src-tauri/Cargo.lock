@@ -749,7 +749,7 @@ version = "0.0.1"
 dependencies = [
  "base64 0.22.1",
  "block2",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "gtk",
  "mac-usernotifications",
  "minisign-verify",

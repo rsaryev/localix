@@ -75,7 +75,7 @@ objc2-web-kit = { version = "0.3", default-features = false, features = [
 # CGRect for that rectangle; already in the tree as a transitive objc2 dependency.
 objc2-core-foundation = "0.3"
 # The WebCrypto master key (`webcrypto_key.rs`) is 16 random bytes; already in the tree via tauri.
-getrandom = "0.3"
+getrandom = "0.4"
 block2 = "0.6"
 objc2-app-kit = { version = "0.3", features = [
   "NSPasteboard",
