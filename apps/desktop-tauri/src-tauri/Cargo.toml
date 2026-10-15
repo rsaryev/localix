@@ -94,7 +94,7 @@ objc2-quartz-core = { version = "0.3", default-features = false, features = [
 # NSVisualEffectView, attached after the window exists. Used directly rather than through tauri's
 # own `.effects(...)` because that path DISCARDS `apply_vibrancy`'s Result, and the shell has to know
 # whether the material actually took before it tells the page anything.
-window-vibrancy = "0.6"
+window-vibrancy = "0.8"
 mac-usernotifications = "0.3.1"
 
 # Windows: the Job Object that ends the API child's whole process tree with the shell
