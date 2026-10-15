@@ -4,7 +4,7 @@ import { findCatalogModel } from '@localixai/agent/catalog'
 import { firstEnabledKey } from './provider-keys'
 import type { RunnerDeps } from './agent-runner-types'
 import type { createUserProfileRepository } from '../../user/repository'
-import type { ReasoningEffort } from '@localixai/agent'
+import { DEFAULT_REASONING_EFFORT, type ReasoningEffort } from '@localixai/agent'
 
 type Catalog = Awaited<ReturnType<RunnerDeps['catalogService']['getCatalog']>>
 
@@ -256,8 +256,6 @@ export async function resolveAuxiliaryModel(params: {
     | null
     | undefined
   catalog: Catalog
-  /** Workload routes without an explicit effort inherit the owning session. */
-  inheritedReasoningEffort?: ReasoningEffort
 }) {
   if (!params.slot?.providerConnectionId || !params.slot.modelId) return null
   const resolved = await resolveLanguageModel({
@@ -280,6 +278,7 @@ export async function resolveAuxiliaryModel(params: {
     providerConnectionId: resolved.providerConnectionId,
     contextLength: catalogModel?.contextLength,
     outputLimit: catalogModel?.outputLimit,
-    reasoningEffort: params.slot.reasoningEffort ?? params.inheritedReasoningEffort,
+    // A workload holds its own level; it never follows the conversation's.
+    reasoningEffort: params.slot.reasoningEffort ?? DEFAULT_REASONING_EFFORT,
   }
 }

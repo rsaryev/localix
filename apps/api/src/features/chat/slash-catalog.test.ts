@@ -9,9 +9,7 @@ import {
   suggestCommands,
   describeCommand,
   parseCommandArgs,
-  filterArgOptions,
 } from './slash-catalog'
-import { REASONING_EFFORT_OPTIONS } from '@localixai/agent'
 
 // The catalog is the single source of truth for slash commands across the web
 // composer and the /command handlers. These guard against the drift
@@ -78,20 +76,19 @@ describe('command grouping + usage', () => {
   })
 
   test('hidden commands are excluded by default, included on request', () => {
-    const hiddenNames = SLASH_COMMANDS.filter((c) => c.hidden).map((c) => c.name)
-    // LOAD-BEARING. The catalog carries exactly ONE `hidden: true` command, so without this the
-    // two loops below are one edit from iterating over nothing and asserting nothing — dropping
-    // that flag would leave hidden-command support entirely unverified while the /help menu
-    // quietly starts leaking power-user commands. A loop over an empty list is not a guard.
-    expect(hiddenNames.length).toBeGreaterThan(0)
-    const visible = groupCommandsByCategory()
+    // The catalog ships no hidden command now, so a synthetic one keeps the support verified.
+    const catalog = [
+      ...SLASH_COMMANDS,
+      { ...SLASH_COMMANDS[0]!, name: 'secret-power', hidden: true },
+    ]
+    const visible = groupCommandsByCategory(catalog)
       .flatMap((g) => g.commands)
       .map((c) => c.name)
-    for (const n of hiddenNames) expect(visible).not.toContain(n)
-    const all = groupCommandsByCategory(SLASH_COMMANDS, { includeHidden: true })
+    expect(visible).not.toContain('secret-power')
+    const all = groupCommandsByCategory(catalog, { includeHidden: true })
       .flatMap((g) => g.commands)
       .map((c) => c.name)
-    for (const n of hiddenNames) expect(all).toContain(n)
+    expect(all).toContain('secret-power')
   })
 
   test('commandUsage renders the command token and its arg signature', () => {
@@ -119,8 +116,6 @@ describe('/help <command> detail helpers', () => {
     // `costs` is closest to the `cost` alias of `usage`.
     expect(alias).toContain('usage')
     expect(suggestCommands('zzzzzqqqq')).toEqual([])
-    // Hidden power-user commands are never suggested.
-    expect(suggestCommands('reasoning').every((c) => !c.hidden)).toBe(true)
   })
 
   test('describeCommand surfaces usage, category, aliases, and per-arg options', () => {
@@ -182,61 +177,5 @@ describe('/plugin argument routing', () => {
       expect(arg.placeholder ?? '').not.toContain('<owner/repo>· <name>')
       expect(arg.placeholder ?? '').not.toBe('<src> · <name> · <owner/repo>')
     }
-  })
-})
-
-/**
- * `/reasoning` took its effort as free text: the composer offered no levels and a typo came back
- * only as a usage line. It is a pick now, from the agent package's one scale, and every form the
- * handler accepted before still parses.
- */
-describe('/reasoning effort is a pick', () => {
-  const reasoningArgs = SLASH_COMMANDS.find((c) => c.name === 'reasoning')!.args!
-  const parse = (text: string) => parseCommandArgs(text, reasoningArgs)
-  const committed = (text: string) =>
-    Object.fromEntries(parse(text).chips.map((chip) => [chip.spec.name, chip.option.value]))
-
-  test('offers every level, with the labels and descriptions the model picker shows', () => {
-    const effort = parse('').activeSpec
-    expect(effort?.name).toBe('effort')
-    expect(effort?.type === 'choice' && effort.options).toEqual(
-      REASONING_EFFORT_OPTIONS.map(({ value, label, description }) => ({
-        value,
-        label,
-        description,
-      })),
-    )
-    expect(effort?.type === 'choice' && filterArgOptions(effort, 'hi').map((o) => o.value)).toEqual(
-      ['high', 'xhigh'],
-    )
-  })
-
-  test('the bare and the tasked forms still parse', () => {
-    expect(committed('high ')).toEqual({ effort: 'high' })
-    // Case-insensitive, as the free-text form was.
-    expect(committed('Low ')).toEqual({ effort: 'low' })
-    const tasked = parse('max refactor the parser')
-    expect(committed('max refactor the parser')).toEqual({ effort: 'max' })
-    expect(tasked.activeSpec?.name).toBe('task')
-    expect(tasked.activeText).toBe('refactor the parser')
-  })
-
-  test('an addressee before the effort is still accepted, and only once it is complete', () => {
-    expect(committed('@qa high ')).toEqual({ participant: '@qa', effort: 'high' })
-    // A half-typed handle is still being typed: it stays with the active effort pick rather than
-    // being committed (or eaten) as something it is not yet.
-    const partial = parse('@q')
-    expect(partial.chips).toEqual([])
-    expect(partial.activeSpec?.name).toBe('effort')
-    expect(partial.activeText).toBe('@q')
-    // A word that is not a handle is never mistaken for one.
-    expect(committed('medium ')).toEqual({ effort: 'medium' })
-  })
-
-  test('usage shows the optional addressee and the level set', () => {
-    const reasoning = SLASH_COMMANDS.find((c) => c.name === 'reasoning')!
-    expect(commandUsage(reasoning)).toBe(
-      '/reasoning [participant] <off|minimal|low|medium|high|xhigh|…> [task]',
-    )
   })
 })

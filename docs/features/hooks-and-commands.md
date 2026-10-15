@@ -47,7 +47,7 @@ grants do not govern that preprocessing.
 | Category          | Core commands                                |
 | ----------------- | -------------------------------------------- |
 | Autonomous        | `/loop`                                      |
-| Configuration     | `/model` (`/models`), hidden `/reasoning`    |
+| Configuration     | `/model` (`/models`)                         |
 | Context           | client-scoped `/fork`, client-scoped `/open` |
 | Information       | `/help`, `/usage` (`/cost`)                  |
 | Memory and skills | `/memory`, `/skills` (`/skill`)              |
@@ -226,8 +226,8 @@ hook that exits any other way, or is lost to an API restart, wakes nobody.
   forwarded server command list.
 - A plugin or skill macro sent while a run is active waits in the queue as a whole command — its
   badge, model override, tool grants and hooks — and runs as its own turn.
-- `/model` and `/reasoning` act on one participant: the one named first (`/model @qa sonnet`),
-  otherwise the participant your unaddressed message would go to.
+- `/model` acts on one participant: the one named first (`/model @qa sonnet`), otherwise the
+  participant your unaddressed message would go to.
 
 ## Related guides
 

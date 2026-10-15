@@ -1,9 +1,8 @@
 import { withRoute } from '../session-route'
 import { commandTarget } from './command-participant'
-import { REASONING_EFFORTS, type ReasoningEffort } from '../../../db/types'
 import { findCatalogModel } from '@localixai/agent/catalog'
 import { formatModelList } from './model-list'
-import { commandRemainder, splitCommandArg } from './slash-commands'
+import { commandRemainder } from './slash-commands'
 import type { ModelRoute, SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
@@ -38,7 +37,7 @@ export function uniqueCatalogModelProvider(
 /**
  * Persist a route a slash command chose, as the point write it is.
  *
- * `/model` and `/reasoning` re-route ONE participant, so they say exactly that. Handing the
+ * `/model` re-routes ONE participant, so it says exactly that. Handing the
  * whole record to `updateSession` instead would state the whole party, and the record these
  * handlers hold was read with its routes already resolved — the other members' inherited models
  * would be written back as choices made here (see `writeMembership`).
@@ -54,37 +53,6 @@ async function persistRoute(
   await ctx.repo.updateSessionAgentRoute(userId, sessionId, agentId, route)
   await ctx.repo.updateSession(userId, sessionId, { updatedAt: updated.updatedAt })
   ctx.publishSession(updated)
-}
-
-/**
- * Shared tail of the session-setting commands: persist the chosen route, publish
- * `session.updated`, then either run a trailing task immediately (when one followed the
- * command) or reply with the confirmation note.
- */
-async function persistSettingAndContinue(
-  ctx: SettingCommandContext,
-  userId: string,
-  sessionId: string,
-  updated: SessionRecord,
-  agentId: string,
-  route: Partial<ModelRoute>,
-  allMessages: ExistingMessages,
-  rest: string,
-  ts: string,
-  notice: Parameters<SettingCommandContext['insertSystemNotice']>[2],
-  command: string,
-  label: string,
-): Promise<MessageMutationResponse> {
-  const { runAgent, insertSystemNotice } = ctx
-  await persistRoute(ctx, userId, sessionId, updated, agentId, route)
-  if (!rest) return insertSystemNotice(userId, sessionId, notice, ts, true)
-
-  // The notice lands immediately before the real task row. It has no synthetic
-  // run envelope here: the following agent run owns the optimistic lifecycle.
-  await insertSystemNotice(userId, sessionId, notice, ts, false)
-  return runAgent(userId, sessionId, updated, allMessages, rest, ts, undefined, {
-    commandOrigin: { command, label },
-  })
 }
 
 /**
@@ -170,58 +138,5 @@ export async function handleModelCommand(
     },
     ts,
     true,
-  )
-}
-
-/**
- * Handles `/reasoning [@handle] <effort> [task]`: sets ONE participant's reasoning effort — the
- * one named, or the one the person's unaddressed words go to — and, if a task follows, runs it.
- */
-export async function handleReasoningCommand(
-  ctx: SettingCommandContext,
-  userId: string,
-  sessionId: string,
-  session: SessionRecord,
-  allMessages: ExistingMessages,
-  prompt: string,
-  ts: string,
-  directReply: DirectReply,
-): Promise<MessageMutationResponse> {
-  const target = await commandTarget(
-    session,
-    allMessages,
-    prompt.trim().replace(/^\/\S+\s*/, ''),
-    ctx.runner.leadership(userId, session.projectId),
-  )
-  if (!target) return directReply('Choose an agent before changing its reasoning effort.')
-  const { participant } = target
-  const { value, rest } = splitCommandArg(`/reasoning ${target.rest}`)
-  if (!value || !(REASONING_EFFORTS as readonly string[]).includes(value)) {
-    return directReply(
-      `Usage: \`/reasoning [@handle] off|minimal|low|medium|high|max [task]\`. Current effort for @${participant.handle}: **${participant.reasoningEffort}**.`,
-    )
-  }
-  const updated: SessionRecord = {
-    ...withRoute(session, { reasoningEffort: value as ReasoningEffort }, participant.agentId),
-    updatedAt: ts,
-  }
-  return persistSettingAndContinue(
-    ctx,
-    userId,
-    sessionId,
-    updated,
-    participant.agentId,
-    { reasoningEffort: value as ReasoningEffort },
-    allMessages,
-    rest,
-    ts,
-    {
-      kind: 'reasoning_change',
-      tone: 'neutral',
-      participant: participant.handle,
-      text: `${participant.handle} reasoning effort set to ${value}.`,
-    },
-    '/reasoning',
-    value,
   )
 }

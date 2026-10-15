@@ -20,16 +20,16 @@ need a catalog entry, and sign-in appears only when that runtime reports an OAut
 | Inspect model fit         | Compare capabilities, modalities, limits, wire protocol, and pricing including tiers | Catalog records can be partial or change with the active runtime     |
 | Narrow the model list     | Search models, or filter by tools, reasoning, vision, priced caching, or free        | A facet appears only when some model in the list matches it          |
 | Find a provider           | Search the provider column; it filters connections and providers to add              | It never narrows the model list                                      |
-| Choose reasoning effort   | Pick a level in the model details panel's Settings, stored per provider/model pair   | A model that publishes none offers only "off"                        |
+| Choose reasoning effort   | Pick a level in the model details panel's Settings, remembered per agent and model   | A model that publishes none offers only "off"                        |
 | Route auxiliary work      | Select model slots for session titles, inline completion, and delegated agents       | Each unset route uses its documented fallback                        |
 
 ## How it works
 
-The composer and model details share the same reasoning preferences. The active participant's
-session level takes precedence when reselecting its current model; a different model uses its saved
-preference or inherits that participant's level, limited to the levels it supports. Switching
-sessions resets the picker to the newly opened conversation. “Follow the conversation” clears a
-preview model's explicit preference.
+Each participant's seat stores its model, connection, and reasoning effort explicitly; nothing is
+inherited after the seat exists. The details panel shows the running model's stored level. For any
+other model it shows the level that model would start at: the level last chosen for that agent on
+that model, otherwise the default, limited to the levels the model supports. Every level change,
+from the picker or the composer, is remembered for that agent and model.
 
 The runtime adapter projects its provider definitions, text models, image models, authentication
 methods, limits, modalities, and pricing into engine-neutral catalog records. The API caches that
@@ -57,38 +57,25 @@ if that one no longer works. It never crosses to a different provider or model.
 
 ### Which model a participant runs on
 
-A participant with no model of its own is answered in this order, every time the conversation is
-read:
+A new seat's route is decided once, when the participant joins, and then stored. Its model comes
+from the first source that names one:
 
-| Order | Level                               | Set from                      |
+| Order | Source                              | Set from                      |
 | ----- | ----------------------------------- | ----------------------------- |
-| 1     | This conversation                   | The model picker, or `/model` |
+| 1     | An explicit choice                  | The model picker, or `/model` |
 | 2     | Your last choice **for this agent** | Learned from the picker       |
 | 3     | The agent's default                 | **Settings → Agents**         |
 | 4     | The project                         | **Settings → Project**        |
 | 5     | The conversation's main model       | Its first participant         |
 
-The picker learns a preference for that exact agent without modifying its definition. Every new
-conversation starts with the last model explicitly selected for that agent. The agent's default is
-used until the first selection and can be changed only in **Settings → Agents**. Preferences are per
-agent, so one agent never inherits the model last selected for another. The main model is only the
-final room fallback: it prevents an otherwise unconfigured participant from failing while the
-conversation already has a working model. The picker labels this source as **main model**.
+Its **reasoning effort** is the explicit choice, otherwise the level last chosen for that agent on
+that model, otherwise the agent's default, otherwise **medium**. It never copies another
+participant's level or another model's level, and it is never capped.
 
-Because the chain is applied on READ, nothing is frozen at birth: a model you set on the project
-today can reach the conversations you started yesterday when no higher-priority choice wins. Default
-lookups are cached for up to five seconds. A participant seated later joins with no model of its own
-and is answered the same way. A delegated child snapshots its assigned participant's effective route
-from the parent, falling back to the parent's main model. This inherited route does not become that
-agent's cross-session “last used” preference.
-
-**Reasoning effort** is saved when a conversation starts. An explicit participant or conversation
-value wins; otherwise a new top-level conversation consults recent effort for that agent, its
-default, and the project, then uses **medium**. Recent effort comes from the most recently updated
-session containing that agent, rather than the model-selection timestamp. Later changes to defaults
-do not alter the saved conversation effort. A participant added to an existing conversation starts
-with its main participant's current effort. Children inherit parent effort unless their creation
-supplies an explicit override.
+Later changes to defaults reach new seats only. Conversations created before this rule may hold a
+seat with no model; it is filled once by the same rule on first read and stored. A delegated child
+snapshots its assigned participant's route from the parent. Filled-in defaults never count as your
+last choice for an agent.
 
 A model that cannot reason receives no reasoning request. For models that support it, the runtime
 clamps the requested effort to a supported level; that runtime adjustment does not rewrite the
@@ -98,12 +85,12 @@ The model browser offers these optional workload settings:
 
 | Workload          | Current runtime behavior                                                                                                                                                                                              |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort inherits the session effort.                                                                   |
+| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort uses **medium**, never the session effort.                                                     |
 | Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary.                                   |
 | Delegated agents  | The setting is persisted and displayed, but current delegated-session creation does not apply it. Children snapshot their assigned participants' effective parent routes. Tool availability follows capability rules. |
 
-Reasoning preferences in the picker are keyed by workload, provider, and model. The runtime behavior
-above determines whether each workload uses a saved effort.
+Each workload stores its own effort; picking a model for it starts at the level last chosen for that
+workload and model, otherwise the default.
 
 The board has no route of its own. A worker's model is its agent's — **Settings → Agents** — so it
 applies on every dispatch path rather than only on a card; a card that names no model inherits the

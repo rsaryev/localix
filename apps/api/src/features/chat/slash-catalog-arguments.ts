@@ -1,4 +1,3 @@
-import { REASONING_EFFORT_OPTIONS } from '@localixai/agent'
 import type { SlashArgSpec } from './slash-args'
 
 export const LOOP_ARGS: SlashArgSpec[] = [
@@ -7,28 +6,6 @@ export const LOOP_ARGS: SlashArgSpec[] = [
     type: 'text',
     placeholder: 'What to do — state the cadence in the text, or omit it to self-pace…',
   },
-]
-
-/**
- * `/reasoning [@handle] <effort> [task]`. The effort was free text, so the composer offered no
- * levels and a typo reached the handler only to come back as a usage line. The levels, their
- * labels and descriptions are the agent package's one list — the same rows the model picker's
- * reasoning menu draws — so the two surfaces cannot name the scale differently.
- */
-export const REASONING_ARGS: SlashArgSpec[] = [
-  // The addressee stays optional, as the handler always accepted it (`commandTarget`).
-  { name: 'participant', type: 'token', pattern: /^@\S+$/ },
-  {
-    name: 'effort',
-    type: 'choice',
-    placeholder: 'Pick a reasoning effort…',
-    options: REASONING_EFFORT_OPTIONS.map(({ value, label, description }) => ({
-      value,
-      label,
-      description,
-    })),
-  },
-  { name: 'task', type: 'text', placeholder: 'Optional task to run at this effort…' },
 ]
 
 export const PLUGIN_ARGS: SlashArgSpec[] = [

@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
 import {
-  carriedReasoningEffort,
   clampModelReasoning,
+  defaultModelReasoning,
+  initialModelReasoning,
   modelReasoningOptions,
 } from './modelReasoning'
 
@@ -56,20 +57,25 @@ describe('clampModelReasoning', () => {
   })
 })
 
-describe('carriedReasoningEffort', () => {
-  test("the session's own level is what a new model inherits", () => {
-    expect(carriedReasoningEffort('high', 'low')).toBe('high')
+describe('initialModelReasoning', () => {
+  const reasoner = { supportsReasoning: true, reasoningEfforts: ['low', 'medium', 'high'] }
+
+  test('a picked model starts at the level last chosen for it', () => {
+    expect(initialModelReasoning(reasoner, 'high')).toBe('high')
   })
 
-  test('an `off` session does NOT turn every other model off', () => {
-    // The bug this pins: one pick of a model that cannot reason put `off` on the session, every
-    // row in the picker then read "Off", and each model picked from there had `off` written
-    // into its own memory — permanently, and invisibly.
-    expect(carriedReasoningEffort('off', 'high')).toBe('high')
+  test('with nothing chosen it starts at its default, not at the previous model level', () => {
+    expect(initialModelReasoning(reasoner, undefined)).toBe(
+      defaultModelReasoning(true, reasoner.reasoningEfforts),
+    )
+    expect(defaultModelReasoning(true, undefined)).toBe(DEFAULT_REASONING_EFFORT)
   })
 
-  test('with nothing remembered it falls to the default, never to off', () => {
-    expect(carriedReasoningEffort('off', null)).toBe(DEFAULT_REASONING_EFFORT)
-    expect(carriedReasoningEffort(undefined, null)).toBe(DEFAULT_REASONING_EFFORT)
+  test('a saved level the model cannot serve lands on one it offers', () => {
+    expect(initialModelReasoning(reasoner, 'max')).toBe('high')
+  })
+
+  test('a model that does not reason is off whatever was saved', () => {
+    expect(initialModelReasoning({ supportsReasoning: false }, 'high')).toBe('off')
   })
 })

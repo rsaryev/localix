@@ -1,5 +1,5 @@
 import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
-import type { ReasoningEffort } from '../../../db/types'
+import type { SeatRouteFor } from './session-route-defaults'
 import type { SessionAgentRoute, ModelRoute } from '../repository-types'
 import { sessionRoute } from '../session-route'
 import {
@@ -26,7 +26,8 @@ export async function bornParticipants(args: {
   /** Only a conversation seats conversational participants; an engine's worker omits it. */
   host?: string
   resolve?: ResolveSessionAgent
-  ask?: (userId: string, projectId: string, agentId: string) => Promise<ReasoningEffort>
+  /** Decides each top-level seat's complete route (`agent-route-resolution.ts`). */
+  seat?: SeatRouteFor
 }): Promise<SessionAgentRoute[]> {
   const participants = await resolveSessionParticipants({
     userId: args.userId,
@@ -35,19 +36,59 @@ export async function bornParticipants(args: {
     resolve: args.resolve,
     ...(args.host ? { host: args.host } : {}),
   })
-  const efforts = await participantEfforts({
-    userId: args.userId,
-    projectId: args.projectId,
-    participants,
-    parent: args.parent,
-    ask: args.ask,
-  })
-  return seedParticipants({
-    requested: participants,
-    explicit: args.explicit ?? {},
-    effortFor: (agentId) => efforts.get(agentId),
-    parent: args.parent ?? null,
-  })
+  const explicit = args.explicit ?? {}
+  // A child is an executable slice of its parent and snapshots the parent's route.
+  if (args.parent || !args.seat) {
+    return seedParticipants({ requested: participants, explicit, parent: args.parent ?? null })
+  }
+  const seated: SessionAgentRoute[] = []
+  for (const agent of participants) {
+    seated.push(
+      await seatNewcomer(args.seat, args.userId, args.projectId, agent, {
+        chosen: chosenRoute(agent, explicit),
+        primary: seated[0] ?? null,
+      }),
+    )
+  }
+  return seated
+}
+
+/** What the caller explicitly asked for one participant: its own pick, else the session-wide one. */
+function chosenRoute(
+  agent: Partial<ModelRoute>,
+  explicit: Partial<ModelRoute>,
+): Partial<ModelRoute> {
+  const effort = agent.reasoningEffort ?? explicit.reasoningEffort
+  const model = agent.modelId
+    ? { modelId: agent.modelId, providerConnectionId: agent.providerConnectionId ?? null }
+    : explicit.modelId
+      ? { modelId: explicit.modelId, providerConnectionId: explicit.providerConnectionId ?? null }
+      : {}
+  return { ...model, ...(effort ? { reasoningEffort: effort } : {}) }
+}
+
+/** One new seat, its route decided once and stored explicitly. */
+export async function seatNewcomer(
+  seat: SeatRouteFor,
+  userId: string,
+  projectId: string | null,
+  agent: ResolvedSessionAgent,
+  given: { chosen?: Partial<ModelRoute> | null; primary?: Partial<ModelRoute> | null },
+): Promise<SessionAgentRoute> {
+  const {
+    providerConnectionId: _connection,
+    modelId: _model,
+    reasoningEffort: _effort,
+    ...identity
+  } = agent as ResolvedSessionAgent & Partial<ModelRoute>
+  const route = await seat(userId, projectId, agent.agentId, given)
+  return {
+    ...identity,
+    providerConnectionId: route.providerConnectionId,
+    modelId: route.modelId,
+    reasoningEffort: route.reasoningEffort,
+    modelOrigin: route.modelOrigin,
+  }
 }
 
 /**
@@ -71,54 +112,38 @@ export async function bornParticipants(args: {
  * either — which is exactly what would happen if the patch's entries were taken as written,
  * because a caller adding one participant states the whole list and knows nobody else's model.
  *
- * A newcomer arrives with NO model of its own, so the chain answers for it exactly as it does
- * for a fresh conversation — its card, or what you last ran it on. It used to be seeded from the
- * first participant's route, which handed it a model chosen for somebody else and, worse,
- * recorded that as a decision. What it does inherit is the conversation's EFFORT: how hard to
- * think is a property of the conversation in progress, and a participant joining a `high`
- * discussion joins it at `high`.
+ * A newcomer's route is decided once, by the same `seatRoute` a new conversation uses — its
+ * own last model, its card, the project, else the room's primary — and its effort is the level
+ * remembered for that model, never the conversation's or another participant's.
  */
-export function reseatParticipants(
-  session: { agents: SessionAgentRoute[] },
+export async function reseatParticipants(
+  session: { agents: SessionAgentRoute[]; projectId?: string | null; userId?: string },
   next: readonly ResolvedSessionAgent[],
-): SessionAgentRoute[] {
+  seat?: SeatRouteFor,
+): Promise<SessionAgentRoute[]> {
   const seated = new Map(session.agents.map((member) => [member.agentId, member]))
-  const seed: ModelRoute = {
-    providerConnectionId: null,
-    modelId: '',
-    reasoningEffort: sessionRoute(session).reasoningEffort,
+  const out: SessionAgentRoute[] = []
+  for (const member of next) {
+    const existing = seated.get(member.agentId)
+    if (existing) {
+      out.push({ ...existing, ...member, handle: member.handle })
+    } else if (seat && session.userId) {
+      out.push(
+        await seatNewcomer(seat, session.userId, session.projectId ?? null, member, {
+          primary: out[0] ?? session.agents[0] ?? null,
+        }),
+      )
+    } else {
+      out.push({
+        providerConnectionId: null,
+        modelId: '',
+        reasoningEffort: DEFAULT_REASONING_EFFORT,
+        ...member,
+        handle: member.handle,
+      })
+    }
   }
-  return next.map((member) => ({
-    ...seed,
-    ...seated.get(member.agentId),
-    ...member,
-    handle: member.handle,
-  }))
-}
-
-/**
- * The level each new participant is born on, asked once per participant.
- *
- * A CHILD never asks: it takes its parent's dial (see {@link seedParticipants}), and a lookup
- * whose answer would be discarded is a lookup not worth making on a spawn path — `delegate`
- * creates one of these per sub-agent.
- */
-export async function participantEfforts(args: {
-  userId: string
-  projectId: string
-  participants: readonly ResolvedSessionAgent[]
-  parent?: unknown
-  ask?: (userId: string, projectId: string, agentId: string) => Promise<ReasoningEffort>
-}): Promise<Map<string, ReasoningEffort>> {
-  const efforts = new Map<string, ReasoningEffort>()
-  if (args.parent || !args.ask) return efforts
-  await Promise.all(
-    args.participants.map(async (member) => {
-      const effort = await args.ask!(args.userId, args.projectId, member.agentId).catch(() => null)
-      if (effort) efforts.set(member.agentId, effort)
-    }),
-  )
-  return efforts
+  return out
 }
 
 /**
@@ -136,8 +161,6 @@ export function seedParticipants(args: {
   requested: readonly ResolvedSessionAgent[]
   /** The caller's explicit choice, if it made one. */
   explicit: Partial<ModelRoute>
-  /** What the model chain says this agent's effort should start at. */
-  effortFor?: (agentId: string) => ReasoningEffort | undefined
   parent?: { agents: SessionAgentRoute[] } | null
 }): SessionAgentRoute[] {
   const { requested, explicit: input, parent } = args
@@ -185,11 +208,7 @@ export function seedParticipants(args: {
           : (inheritedModel?.modelId ?? ''),
       ...(inheritedModel ? { modelOrigin: 'primary' as const } : {}),
       reasoningEffort:
-        agentEffort ??
-        input.reasoningEffort ??
-        parentEffort ??
-        args.effortFor?.(agent.agentId) ??
-        DEFAULT_REASONING_EFFORT,
+        agentEffort ?? input.reasoningEffort ?? parentEffort ?? DEFAULT_REASONING_EFFORT,
       ...identity,
     }
   })

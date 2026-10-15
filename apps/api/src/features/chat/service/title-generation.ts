@@ -1,6 +1,6 @@
-import type { Usage } from '@localixai/agent'
+import { DEFAULT_REASONING_EFFORT, type Usage } from '@localixai/agent'
 import type { MessageAttachment } from '@localixai/agent'
-import type { createChatRepository, SessionAgentRoute, SessionRecord } from '../repository'
+import type { createChatRepository, SessionRecord } from '../repository'
 import type { createAuxProviderHelpers } from './aux-provider'
 import { DEFAULT_TITLE } from './context'
 import {
@@ -93,8 +93,6 @@ export function createTitleGenerator(deps: TitleGeneratorDeps) {
     fallbackTitle: string,
     promptText: string | undefined,
     attachments?: MessageAttachment[],
-    /** The workload route inherits this when it has no explicit effort. */
-    sessionReasoningEffort?: SessionAgentRoute['reasoningEffort'],
     /** Compare against the initial objective so a late model reply cannot replace a topic. */
     expectedGoal: string | null = null,
   ): void {
@@ -126,9 +124,8 @@ export function createTitleGenerator(deps: TitleGeneratorDeps) {
             const message = await built.model.complete({
               systemPrompt: request.system,
               messages: [{ role: 'user', content: request.input, timestamp: Date.now() }],
-              ...((slot.reasoningEffort ?? sessionReasoningEffort)
-                ? { reasoningEffort: slot.reasoningEffort ?? sessionReasoningEffort }
-                : {}),
+              // The workload's own level, never the conversation's.
+              reasoningEffort: slot.reasoningEffort ?? DEFAULT_REASONING_EFFORT,
               signal,
             })
             return { output: message, usage: message.usage }

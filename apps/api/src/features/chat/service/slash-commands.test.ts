@@ -81,7 +81,8 @@ describe('parseControlCommand', () => {
     expect(parseControlCommand('/MCP')).toBe('mcp')
     expect(parseControlCommand('/plugin list')).toBe('plugins')
     expect(parseControlCommand('/loop 5m check the deploy')).toBe('loop')
-    expect(parseControlCommand('/reasoning high')).toBe('reasoning')
+    // `/reasoning` is gone: the level is set in the model picker.
+    expect(parseControlCommand('/reasoning high')).toBeNull()
     // `/economy` is gone with the setting; it falls through as ordinary chat text.
     expect(parseControlCommand('/economy on')).toBeNull()
     expect(parseControlCommand('/economy')).toBeNull()

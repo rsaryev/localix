@@ -36,10 +36,11 @@ const model: CatalogModel = {
 const connections = [{ id: 'conn-openai', providerId: 'openai' }]
 
 describe('useModelTaskRouting direct picks', () => {
-  test('following the session removes a workload override from the persisted route', async () => {
+  test('changing a workload level writes its slot and remembers it for that model', async () => {
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { useModelTaskRouting } = await import('./useModelTaskRouting')
+    const reasoningModel = { ...model, supportsReasoning: true }
     settingsState.settings.agentSettings = {
       modelRouting: {
         titleGeneration: {
@@ -55,7 +56,7 @@ describe('useModelTaskRouting direct picks', () => {
     const root = createRoot(host)
     function Harness() {
       const routing = useModelTaskRouting({
-        models: [model],
+        models: [reasoningModel],
         connections: connections as never,
         orderedConnections: connections as never,
         taskKey: 'titleGeneration',
@@ -67,14 +68,16 @@ describe('useModelTaskRouting direct picks', () => {
       return (
         <button
           type="button"
-          onClick={() => routing.changeModelReasoning('openai', model.id, undefined, true)}
+          onClick={() => routing.changeModelReasoning(reasoningModel, 'minimal', true)}
         >
-          Follow
+          {routing.reasoningFor(reasoningModel, true)}
         </button>
       )
     }
     try {
       await act(async () => root.render(<Harness />))
+      // The workload's own level — never the conversation's `low`.
+      expect(host.textContent).toBe('high')
       await act(async () => host.querySelector('button')!.click())
       expect(updateSettings.mock.calls.at(-1)?.[0]).toEqual({
         agentSettings: {
@@ -82,6 +85,7 @@ describe('useModelTaskRouting direct picks', () => {
             titleGeneration: {
               providerConnectionId: 'conn-openai',
               modelId: model.id,
+              reasoningEffort: 'minimal',
               enabled: true,
             },
           },
@@ -92,6 +96,69 @@ describe('useModelTaskRouting direct picks', () => {
       host.remove()
       settingsState.settings.agentSettings = {}
       updateSettings.mockClear()
+    }
+  })
+
+  test('another model starts at its own remembered level, else its default', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { DEFAULT_REASONING_EFFORT } = await import('@localixai/agent')
+    const { useModelTaskRouting } = await import('./useModelTaskRouting')
+    const picked = mock(() => {})
+    const running = { ...model, supportsReasoning: true }
+    const remembered = { ...running, id: 'openai/remembered', name: 'Remembered' }
+    const fresh = { ...running, id: 'openai/fresh', name: 'Fresh' }
+    settingsState.settings.agentSettings = {
+      modelRouting: {
+        session: {
+          reasoningPreferences: [
+            { providerId: 'openai', modelId: remembered.id, effort: 'minimal' },
+          ],
+        },
+      },
+    }
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    function Harness() {
+      const routing = useModelTaskRouting({
+        models: [running, remembered, fresh],
+        connections: connections as never,
+        orderedConnections: connections as never,
+        taskKey: 'session',
+        sessionModelId: running.id,
+        sessionConnectionId: 'conn-openai',
+        reasoningEffort: 'max',
+        onPickSessionModel: picked,
+      })
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => void routing.pickModel('conn-openai', remembered.id)}
+          >
+            remembered
+          </button>
+          <button type="button" onClick={() => void routing.pickModel('conn-openai', fresh.id)}>
+            fresh
+          </button>
+        </>
+      )
+    }
+    try {
+      await act(async () => root.render(<Harness />))
+      const [first, second] = host.querySelectorAll('button')
+      await act(async () => first!.click())
+      await act(async () => second!.click())
+      // The running model's `max` carries to neither.
+      expect(picked.mock.calls).toEqual([
+        ['conn-openai', remembered.id, 'minimal', undefined],
+        ['conn-openai', fresh.id, DEFAULT_REASONING_EFFORT, undefined],
+      ] as never)
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+      settingsState.settings.agentSettings = {}
     }
   })
 

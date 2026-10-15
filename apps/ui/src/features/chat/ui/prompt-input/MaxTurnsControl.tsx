@@ -1,5 +1,4 @@
 import { ChevronDown } from 'lucide-react'
-import { Button } from '@localixai/kit/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +11,7 @@ import {
   MAX_MAX_TURNS,
   MAX_TURNS_STEPS,
 } from '@localixai/api/turn-budget'
+import { SETTING_TRIGGER_CLASS } from './model-select/settingTrigger'
 
 export function maxTurnsLabel(value: number): string {
   const turns = clampMaxTurns(value)
@@ -40,18 +40,15 @@ export function MaxTurnsControl({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           disabled={disabled}
           aria-label={`Turns per message: ${maxTurnsLabel(current)}`}
-          className="text-text-soft"
+          className={SETTING_TRIGGER_CLASS}
         >
-          <span>
-            {value === undefined ? `Default · ${maxTurnsLabel(current)}` : maxTurnsLabel(current)}
-          </span>
-          <ChevronDown />
-        </Button>
+          <span className="min-w-0 truncate">{maxTurnsLabel(current)}</span>
+          <ChevronDown className="size-3 shrink-0 opacity-50" />
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <MenuEntries

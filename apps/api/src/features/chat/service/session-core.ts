@@ -159,8 +159,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
       ),
     // Only the effort is decided at birth; the model is left blank so the chain answers for it
     // on every read. Same chain, same cache — see `session-route-defaults.ts`.
-    seatEffort: (userId, projectId, agentId) =>
-      routeDefaults.seatEffort(userId, projectId, agentId),
+    seatRoute: routeDefaults.seatRoute,
     requireSession,
     getSessionDetail,
     publishSession,

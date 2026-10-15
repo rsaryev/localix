@@ -7,27 +7,14 @@ export type ModelRoutingSlot = {
   reasoningEffort?: ReasoningEffort
 } | null
 
+/** A workload always holds an explicit level: it never follows the conversation's. */
 export function assignTaskModel(
   _slot: ModelRoutingSlot | undefined,
   providerConnectionId: string,
   modelId: string,
-  reasoningEffort?: ReasoningEffort,
+  reasoningEffort: ReasoningEffort,
 ): ModelRoutingSlot {
-  return {
-    providerConnectionId,
-    modelId,
-    ...(reasoningEffort ? { reasoningEffort } : {}),
-  }
-}
-
-export function assignTaskReasoning(
-  slot: ModelRoutingSlot,
-  effort: ReasoningEffort | undefined,
-): ModelRoutingSlot {
-  if (!slot) return null
-  const next = { ...slot, reasoningEffort: effort }
-  if (effort === undefined) delete next.reasoningEffort
-  return next
+  return { providerConnectionId, modelId, reasoningEffort }
 }
 
 /**

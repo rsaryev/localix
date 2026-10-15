@@ -5,7 +5,6 @@ import type { ReasoningEffort } from '../../../model/reasoning'
 import {
   normalizeModelReasoningPreferences,
   setModelReasoningInList,
-  removeModelReasoningFromList,
 } from '../../../model/modelReasoningPreferences'
 
 export interface ModelReasoningMemoryIo {
@@ -22,7 +21,7 @@ export interface ModelReasoningMemoryIo {
 export function rememberModelReasoning(
   io: ModelReasoningMemoryIo,
   bucket: ModelRoutingTaskKey,
-  entry: { providerId: string; modelId: string; effort: ReasoningEffort | undefined },
+  entry: { providerId: string; modelId: string; effort: ReasoningEffort },
 ): void {
   const base = io.read() ?? {}
   const route = base.modelRouting?.[bucket] ?? {}
@@ -32,17 +31,10 @@ export function rememberModelReasoning(
       ...base.modelRouting,
       [bucket]: {
         ...route,
-        reasoningPreferences:
-          entry.effort === undefined
-            ? removeModelReasoningFromList(
-                normalizeModelReasoningPreferences(route.reasoningPreferences),
-                entry.providerId,
-                entry.modelId,
-              )
-            : setModelReasoningInList(
-                normalizeModelReasoningPreferences(route.reasoningPreferences),
-                { ...entry, effort: entry.effort },
-              ),
+        reasoningPreferences: setModelReasoningInList(
+          normalizeModelReasoningPreferences(route.reasoningPreferences),
+          entry,
+        ),
       },
     },
   })

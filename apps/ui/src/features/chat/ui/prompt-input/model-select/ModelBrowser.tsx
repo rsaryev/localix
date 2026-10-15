@@ -19,7 +19,7 @@ import { useModelTaskRouting } from './useModelTaskRouting'
 import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'
 import { ResetRouteRow, WorkloadOffOverlay } from './ModelBrowserParts'
-import { isDetailCurrent, workloadLabelFor } from './modelBrowserLabels'
+import { workloadLabelFor } from './modelBrowserLabels'
 import { ModelBrowserMainPanel } from './ModelBrowserMainPanel'
 import { ModelBrowserSearchToolbar } from './ModelBrowserSearchToolbar'
 import { useAgentModelTurns } from './useAgentModelTurns'
@@ -93,8 +93,8 @@ export function ModelBrowser({
     modelLabelFor,
     currentSlot,
     currentLiveSlot,
-    resolveRowReasoning,
-    inheritedRowReasoning,
+    isCurrentModel,
+    reasoningFor,
     changeModelReasoning,
     pickModel,
   } = // Each participant answers for itself. The party arrives already resolved by the server
@@ -138,7 +138,6 @@ export function ModelBrowser({
     detailsPinned,
     setDetailsPinned,
     detailModel,
-    detailConnectionId,
     detailProviderDoc,
     showDetails,
     scheduleHideHover,
@@ -249,7 +248,6 @@ export function ModelBrowser({
     setSearch(value)
     resetPaging()
   }
-  const detailIsCurrent = isDetailCurrent(detailModel?.id, detailConnectionId, currentSlot)
   const activeParticipant = participants.find((member) => member.agentId === targetAgentId(taskKey))
   const modelTurns = useAgentModelTurns(
     targetAgentId(taskKey),
@@ -261,10 +259,9 @@ export function ModelBrowser({
     detailModel && (detailModel.supportsReasoning || activeParticipant) ? (
       <ModelDetailSettings
         model={detailModel}
-        current={detailIsCurrent}
+        current={isCurrentModel(detailModel)}
         minimumReasoning={taskKey === 'inlineCompletion'}
-        resolveRowReasoning={resolveRowReasoning}
-        inheritedRowReasoning={inheritedRowReasoning}
+        reasoningFor={reasoningFor}
         changeModelReasoning={changeModelReasoning}
         turns={activeParticipant ? modelTurns : undefined}
       />

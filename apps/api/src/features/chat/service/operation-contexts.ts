@@ -201,8 +201,7 @@ export function createOperationContexts(
     resolveDefaultProjectId: async (owner) =>
       (await resolveDefaultProject(projectsRepo, owner, now)).id,
     resolveSessionAgent: deps.resolveSessionAgent,
-    seatEffort: (userId, projectId, agentId) =>
-      routeDefaults.seatEffort(userId, projectId, agentId),
+    seatRoute: routeDefaults.seatRoute,
   }
 
   const threadOpsCtx: ThreadOpsContext = {

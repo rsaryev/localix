@@ -193,6 +193,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
       id: string,
       agentId: string,
       route: Partial<ModelRoute>,
+      opts?: { seeded?: boolean },
     ): Promise<void> {
       // Ownership is checked here rather than inside the participant writer: `conversation_participants` has no
       // user column of its own — it is owned through its session, and this is the seam that
@@ -204,7 +205,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         .where('id', '=', id)
         .executeTakeFirst()
       if (!owned) return
-      await writeAgentRoute(db, id, agentId, route)
+      await writeAgentRoute(db, id, agentId, route, opts)
     },
 
     /**

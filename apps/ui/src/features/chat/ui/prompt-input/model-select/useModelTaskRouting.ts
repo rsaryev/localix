@@ -12,20 +12,9 @@ import {
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import type { useConnections } from '../useConnections'
-import {
-  assignTaskModel,
-  assignTaskReasoning,
-  resolveLiveTaskModel,
-  type ModelRoutingSlot,
-} from './taskReasoning'
-import {
-  modelReasoningFor,
-  normalizeModelReasoningPreferences,
-  setModelReasoningInList,
-} from '../../../model/modelReasoningPreferences'
+import { assignTaskModel, resolveLiveTaskModel, type ModelRoutingSlot } from './taskReasoning'
 import { getRecentModels, recordRecentModel } from './recentModels'
 import { useRowReasoning } from './useRowReasoning'
-import { clampModelReasoning } from '../../../model/modelReasoning'
 
 type Connections = ReturnType<typeof useConnections>['connections']
 
@@ -114,27 +103,14 @@ export function useModelTaskRouting({
   )
 
   const setRouteReasoningEffort = useCallback(
-    (key: Exclude<ModelRoutingTaskKey, 'session'>, effort: ReasoningEffort | undefined) => {
+    (key: Exclude<ModelRoutingTaskKey, 'session'>, effort: ReasoningEffort) => {
       const base = useUserSettings.getState().settings.agentSettings ?? {}
       const current = base.modelRouting?.[key]
       if (!current?.providerConnectionId || !current.modelId) return
-      const nextSlot = assignTaskReasoning(
-        {
-          providerConnectionId: current.providerConnectionId,
-          modelId: current.modelId,
-          ...(current.reasoningEffort ? { reasoningEffort: current.reasoningEffort } : {}),
-        },
-        effort,
-      )
-      if (!nextSlot) return
-      const { reasoningEffort: _previousEffort, ...routeMetadata } = current
       update({
         agentSettings: {
           ...base,
-          modelRouting: {
-            ...base.modelRouting,
-            [key]: { ...routeMetadata, ...nextSlot },
-          },
+          modelRouting: { ...base.modelRouting, [key]: { ...current, reasoningEffort: effort } },
         },
       })
     },
@@ -208,15 +184,9 @@ export function useModelTaskRouting({
 
   const currentSlot = slotForTask(taskKey)
   const currentLiveSlot = liveSlotFor(currentSlot)
-  // Everything the rows SAY and WRITE about reasoning — one hook, so a row's level, what it
-  // inherits and where a change lands cannot be three different opinions.
-  const {
-    preferences: reasoningPreferences,
-    carried: carriedEffort,
-    resolveRowReasoning,
-    inheritedRowReasoning,
-    changeModelReasoning,
-  } = useRowReasoning({
+  // Everything the rows SAY and WRITE about reasoning — one hook, so what a model shows and
+  // where a change lands cannot be two different opinions.
+  const { reasoningFor, changeModelReasoning } = useRowReasoning({
     taskKey,
     currentSlot,
     reasoningEffort,
@@ -235,87 +205,43 @@ export function useModelTaskRouting({
     setRouteReasoningEffort,
   })
 
+  /** Whether a model is the one this target runs on — by provider and model, not connection. */
+  const isCurrentModel = useCallback(
+    (model: Pick<CatalogModel, 'id' | 'providerId'>) =>
+      currentLiveSlot?.model.id === model.id &&
+      currentLiveSlot.model.providerId === model.providerId,
+    [currentLiveSlot],
+  )
+
   const pickModel = useCallback(
     async (connectionId: string, modelId: string) => {
-      const connection = connectionById.get(connectionId)
       const nextModel = findCatalogModelForConnection(models, connections, connectionId, modelId)
-      if (!connection || !nextModel) return
-      const savedEffort = modelReasoningFor(reasoningPreferences, connection.providerId, modelId)
+      if (!connectionById.has(connectionId) || !nextModel) return
+      // Re-picking the running model keeps its level; any other model starts at the level last
+      // chosen for it, else its default. The previous model's level never carries over.
+      const nextEffort = reasoningFor(nextModel, isCurrentModel(nextModel))
       const destination = modelPickDestination(taskKey)
       if (destination.kind === 'conversation') {
-        // `off` for a model that cannot reason is honest about THAT model. What it is not is a
-        // level to carry: `carriedEffort` is what a model with no memory of its own inherits,
-        // and it deliberately looks past an `off` the previous model put there.
-        // Re-selecting the current model must preserve this seat's level, even if another
-        // conversation has since changed the shared per-model preference.
-        const isCurrent =
-          currentLiveSlot?.connection.id === connectionId &&
-          currentLiveSlot.model.id === nextModel.id
-        const currentEffort = currentSlot?.reasoningEffort ?? reasoningEffort
-        const nextEffort = nextModel.supportsReasoning
-          ? clampModelReasoning(
-              (isCurrent ? currentEffort : savedEffort) ?? carriedEffort,
-              nextModel.reasoningEfforts,
-            )
-          : 'off'
-        // Nothing is remembered here. The carried level is what this model RUNS at now, not a
-        // level anyone chose for it — writing it into the model's memory turned an inheritance
-        // into a permanent choice on first use, so the model kept whatever the session happened
-        // to be on and stopped following it afterwards. The memory is written where a level is
-        // actually chosen: `changeModelReasoning`.
-        // `session` is the direct-pick target used by onboarding and the agent editor. It has no
-        // participant id, while an open conversation names the exact participant being routed.
-        // Treating `session` like a workload made `workloadKey('session')` return null below and
-        // silently discarded the pick in both direct-pick surfaces.
         await onPickSessionModel(connectionId, modelId, nextEffort, destination.agentId)
       } else {
-        const workload = destination.key
-        const existing = slotForTask(taskKey)
-        const nextEffort = nextModel.supportsReasoning
-          ? clampModelReasoning(savedEffort, nextModel.reasoningEfforts)
-          : 'off'
-        if (nextEffort) {
-          const base = useUserSettings.getState().settings.agentSettings ?? {}
-          const route = base.modelRouting?.[workload] ?? {}
-          update({
-            agentSettings: {
-              ...base,
-              modelRouting: {
-                ...base.modelRouting,
-                [taskKey]: {
-                  ...route,
-                  reasoningPreferences: setModelReasoningInList(
-                    normalizeModelReasoningPreferences(route.reasoningPreferences),
-                    {
-                      providerId: connection.providerId,
-                      modelId,
-                      effort: nextEffort,
-                    },
-                  ),
-                },
-              },
-            },
-          })
-        }
-        setRouteSlot(workload, assignTaskModel(existing, connectionId, modelId, nextEffort))
+        setRouteSlot(
+          destination.key,
+          assignTaskModel(slotForTask(taskKey), connectionId, modelId, nextEffort),
+        )
       }
       recordRecentModel({ connectionId, modelId })
       setRecent(getRecentModels())
     },
     [
-      carriedEffort,
       connectionById,
       connections,
-      currentLiveSlot,
-      currentSlot,
+      isCurrentModel,
       models,
       onPickSessionModel,
-      reasoningPreferences,
-      reasoningEffort,
+      reasoningFor,
       setRouteSlot,
       slotForTask,
       taskKey,
-      update,
     ],
   )
 
@@ -330,8 +256,8 @@ export function useModelTaskRouting({
     modelLabelFor,
     currentSlot,
     currentLiveSlot,
-    resolveRowReasoning,
-    inheritedRowReasoning,
+    isCurrentModel,
+    reasoningFor,
     changeModelReasoning,
     pickModel,
   }

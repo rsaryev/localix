@@ -56,16 +56,6 @@ export function setModelReasoningInList(
   ].slice(0, MAX_PREFERENCES)
 }
 
-export function removeModelReasoningFromList(
-  preferences: readonly ModelReasoningPreference[],
-  providerId: string,
-  modelId: string,
-): ModelReasoningPreference[] {
-  return preferences.filter(
-    (preference) => preference.providerId !== providerId || preference.modelId !== modelId,
-  )
-}
-
 /** Validate the preferences read from the canonical server settings envelope. */
 export function normalizeModelReasoningPreferences(raw: unknown): ModelReasoningPreference[] {
   if (!Array.isArray(raw)) return []

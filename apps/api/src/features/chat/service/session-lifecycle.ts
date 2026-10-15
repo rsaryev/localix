@@ -102,7 +102,7 @@ export async function updateSession(
         : {}),
       decide: async (current) =>
         reseatParticipants(
-          current,
+          { ...current, userId, projectId: patch.projectId ?? current.projectId },
           await resolveSessionParticipants({
             userId,
             projectId: patch.projectId ?? current.projectId,
@@ -111,6 +111,7 @@ export async function updateSession(
             resolve: ctx.resolveSessionAgent,
             ...(current.sessionKind === 'chat' ? { host: 'chat' } : {}),
           }),
+          ctx.seatRoute,
         ),
     })
     afterMembership = change.after

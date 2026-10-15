@@ -109,7 +109,6 @@ export async function persistReboundConnection(
   const speaker = agentRoute(session, agentId)
   if (!speaker)
     throw new AgentRunError('AGENT_UNAVAILABLE', `Agent is no longer in the session: ${agentId}`)
-  if (speaker.modelOrigin !== 'session') return
   await repo.updateSessionAgentRoute(userId, session.id, speaker.agentId, { providerConnectionId })
 }
 

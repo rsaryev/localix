@@ -36,8 +36,7 @@ const EDIT_TOOLS = ['write', 'edit'] as const
  * A name here that the catalog does not have produces no tip and is therefore dead
  * weight, so `tips.test.ts` fails on one rather than letting it sit.
  *
- * Absent on purpose: `/help` (meta), `/reasoning` (hidden; the composer's effort
- * picker is the way in), and `/skills`, `/mcp`, `/plugin`, whose subject is already
+ * Absent on purpose: `/help` (meta), and `/skills`, `/mcp`, `/plugin`, whose subject is already
  * covered by tips generated from those catalogs — and covered better, because those
  * name the user's own skills and plugins instead of a list command.
  */

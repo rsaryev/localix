@@ -1,4 +1,3 @@
-import { agentRoute } from '../session-route'
 import { randomUUID } from 'node:crypto'
 import { ApiError } from '../../../lib/errors'
 
@@ -230,7 +229,6 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
         updatedSession.title,
         prompt,
         bindings?.filter((binding) => binding.kind !== 'context' && binding.kind !== 'invocation'),
-        agentRoute(updatedSession, firstSlot!)!.reasoningEffort,
         updatedSession.goal ?? null,
       )
     // Channel turns await the full run (the caller needs the final reply);

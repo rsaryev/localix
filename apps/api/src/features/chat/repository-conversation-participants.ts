@@ -81,15 +81,15 @@ const participantRows = (sessionId: string, participants: readonly SessionAgentR
     position,
     provider_connection_id: route.providerConnectionId,
     model_id: route.modelId,
-    // An inherited child fallback is executable state, not a model the user selected for this
-    // agent. Do not teach the cross-session "last used" preference from it.
+    // Only an explicit choice teaches "your last model for this agent". A route filled from a
+    // default (card, project, primary, last model) is stored but is nobody's new decision.
     model_selected_at:
-      route.modelId && route.modelOrigin !== 'primary'
+      route.modelId && (route.modelOrigin ?? 'session') === 'session'
         ? sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`
         : null,
     reasoning_effort: route.reasoningEffort,
     reasoning_selected_at:
-      route.modelId && route.modelOrigin !== 'primary'
+      route.modelId && (route.modelOrigin ?? 'session') === 'session'
         ? sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`
         : null,
   }))
@@ -182,7 +182,10 @@ export async function writeAgentRoute(
   sessionId: string,
   agentId: string,
   route: Partial<ModelRoute>,
+  /** A default filled in, not a choice: it must not teach "your last model" anything. */
+  opts?: { seeded?: boolean },
 ): Promise<void> {
+  const stamp = !opts?.seeded
   const patch = {
     ...(route.providerConnectionId !== undefined
       ? { provider_connection_id: route.providerConnectionId }
@@ -193,15 +196,21 @@ export async function writeAgentRoute(
           // A model without an explicit connection must bind afresh. Keeping the previous
           // model's connection makes the read model claim a pair nobody selected.
           ...(route.providerConnectionId === undefined ? { provider_connection_id: null } : {}),
-          model_selected_at: route.modelId
-            ? sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`
-            : null,
+          ...(stamp
+            ? {
+                model_selected_at: route.modelId
+                  ? sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`
+                  : null,
+              }
+            : {}),
         }
       : {}),
     ...(route.reasoningEffort !== undefined
       ? {
           reasoning_effort: route.reasoningEffort,
-          reasoning_selected_at: sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`,
+          ...(stamp
+            ? { reasoning_selected_at: sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` }
+            : {}),
         }
       : {}),
   }

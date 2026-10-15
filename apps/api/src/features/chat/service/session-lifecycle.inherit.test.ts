@@ -1,3 +1,4 @@
+import { birthRoute } from '../agent-route-resolution'
 import { describe, expect, it } from 'bun:test'
 
 import { DEFAULT_REASONING_EFFORT, type ReasoningEffort } from '@localixai/agent'
@@ -71,9 +72,9 @@ function makeCtx(
       forgetSession: () => {},
     },
     now: () => '2026-02-02 12:00:00',
-    seatEffort: async () => {
+    seatRoute: async (_userId: string, _projectId: string | null, _agentId: string, given = {}) => {
       effortLookups += 1
-      return chainEffort ?? DEFAULT_REASONING_EFFORT
+      return birthRoute({ ...given, agent: chainEffort ? { reasoningEffort: chainEffort } : null })
     },
     requireSession: async () => {
       if (!parent) throw new Error('no parent')
@@ -140,10 +141,8 @@ describe('createSession — what a child inherits', () => {
     expect(getInserted().provenance).toEqual({ kind: 'root' })
   })
 
-  it("a root chat is born on the level the chain gives it — the agent's own, or its last", async () => {
-    // The effort is the one field settled AT BIRTH (`agent-route-resolution.ts` says why): a
-    // dial that moved under a running conversation whenever a level below it changed would be
-    // a different promise than the one the user set.
+  it('a root chat is born on the level its seat decision gives it', async () => {
+    // Settled once at birth (`agent-route-resolution.ts`) and stored explicitly.
     const { ctx, getInserted } = makeCtx(null, [], 'high')
     await createSession(ctx, 'u1', { projectId: 'PRJ-1' })
     expect(sessionRoute(getInserted()).reasoningEffort).toBe('high')
@@ -161,9 +160,7 @@ describe('createSession — what a child inherits', () => {
   })
 
   it('stores no model when the caller chose none', async () => {
-    // Creation records CHOICES only. The project, the agent's card and the last-used route are
-    // applied when the session is read (`session-route-defaults.ts`), which is what lets a
-    // participant keep following a level instead of being frozen to its value at birth.
+    // With no source naming a model the seat stays undecided; it is filled once on first read.
     const { ctx, getInserted } = makeCtx(null)
     await createSession(ctx, 'u1', { projectId: 'PRJ-1' })
     expect(sessionRoute(getInserted()).modelId).toBe('')

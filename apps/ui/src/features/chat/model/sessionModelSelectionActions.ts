@@ -2,6 +2,8 @@ import type { UiSession } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { agentRoute, sessionRoute, withRoute } from '@/shared/api/contracts'
 import { systemNotices } from './systemNotices'
+import { rememberSeatEffort, seatProviderId } from './seatEffortMemory'
+import type { ReasoningEffort } from './reasoning'
 import { patchSessionById } from './sessionListHelpers'
 import { findSessionInState } from './findSession'
 import type { ChatStore, CustomSet } from './store'
@@ -19,6 +21,16 @@ export function createModelSelectionActions({
   // quick A→B selections reach the backend in that same order and a late A
   // response can never paint over B.
   const modelSelectionWriteTail = new Map<string, Promise<UiSession>>()
+
+  const recordEffort = (
+    agentId: string,
+    connectionId: string | null,
+    modelId: string,
+    effort: ReasoningEffort,
+  ) => {
+    const providerId = seatProviderId(get().connections, connectionId, modelId)
+    if (providerId) rememberSeatEffort({ agentId, providerId, modelId, effort })
+  }
 
   const setModelSelection: SessionActions['setModelSelection'] = async (
     sessionId,
@@ -96,6 +108,9 @@ export function createModelSelectionActions({
       }
     }
 
+    // Every level a seat gets is the level remembered for that agent on that model.
+    if (target && modelId && reasoningEffort)
+      recordEffort(target, connectionId, modelId, reasoningEffort)
     // A newer choice may change only effort on the same model/connection. Pair equality
     // cannot detect that, so only the last write is allowed to replace the session snapshot.
     if (!latest) return
@@ -148,7 +163,19 @@ export function createModelSelectionActions({
     const target = findSessionInState(get(), sessionId)
     const agentId = forAgentId ?? (target ? sessionRoute(target).agentId : undefined)
     const route = target && agentId ? agentRoute(target, agentId) : undefined
-    if (!route?.providerConnectionId || !route.modelId) return
+    if (!route?.modelId || !agentId) return
+    if (!route.providerConnectionId) {
+      // A seat whose model names no connection yet (the run binds one) still takes the level:
+      // write the effort alone instead of dropping the choice.
+      customSet((state) =>
+        patchSessionById(state, sessionId, (session) =>
+          withRoute(session, { reasoningEffort }, agentId),
+        ),
+      )
+      await backendClient.updateSession(sessionId, { route: { agentId, reasoningEffort } })
+      recordEffort(agentId, null, route.modelId, reasoningEffort)
+      return
+    }
     // A separate reasoning PATCH could overtake a model pick and replace its optimistic
     // route with an older response. Use the same ordered lane and rollback for both controls.
     await setModelSelection(

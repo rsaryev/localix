@@ -19,6 +19,7 @@ import { createCapabilitySourceRepository } from '../../capabilities/source-repo
  */
 import { createChatRepository } from '../repository'
 import { createRouteDefaults, withResolvedRoutes } from './session-route-defaults'
+import { readAgentSettings } from './agent-settings'
 import { normalizeProjectSettings } from '../../projects/contracts'
 import { safeJsonParse } from '../../../lib/json'
 import { createUsageRepository } from '../../usage/repository'
@@ -42,10 +43,8 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
   const usageRepo = createUsageRepository(deps.db)
   const memoryRepo = createMemoryRepository(deps.db)
   const projectsRepo = createProjectsRepository(deps.db)
-  // Every session leaves the repository with its participants' models already decided —
-  // session, then your last choice for that agent, then project, then its card.
-  // Wrapping the reader is what keeps that order in ONE place; see session-route-defaults.ts
-  // for why it is not applied at each of the sixty-eight consumers instead.
+  // A seat stores its route explicitly. The wrapper only fills a legacy blank seat once and
+  // writes it back; new seats are decided at birth by `routeDefaults.seatRoute`.
   const baseRepo = createChatRepository(deps.db)
   const routeDefaults = createRouteDefaults({
     loadProjectModelDefaults: async (userId, projectId) => {
@@ -61,6 +60,8 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
     },
     ...(deps.loadAgentModelDefaults ? { loadAgentModelDefaults: deps.loadAgentModelDefaults } : {}),
     loadRecentRoutes: (userId) => baseRepo.listRecentRoutes(userId),
+    loadAgentModelSettings: async (userId) =>
+      (await readAgentSettings(deps.db, userId))?.agentModelSettings ?? [],
   })
   const repo = withResolvedRoutes(baseRepo, routeDefaults)
   const mcpRepo = createMcpRepository(deps.db)

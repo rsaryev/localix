@@ -86,26 +86,11 @@ export function isMultiParticipant(session: { agents?: readonly unknown[] | null
 }
 
 /**
- * The part of a route that was actually CHOSEN here — what a copy of a conversation may carry.
- *
- * A record handed out by the repository carries a route the chain has already resolved: the
- * model may have come from the project, from what you last ran this agent on, or from its card
- * (`agent-route-resolution.ts`). A fork or a thread that copies that verbatim writes an
- * inheritance into its own seats as a decision, and from then on it follows nothing — the
- * project default changed next week reaches the original and not its branch.
- *
- * Blanking it costs nothing in what the copy RUNS on: same project, same agents, same history,
- * so the chain answers the branch exactly as it answers its source. What it preserves is the
- * difference between "this conversation is on Opus because I said so" and "because everything
- * here is".
- *
- * The EFFORT is always carried: it is settled when a seat is created and belongs to the
- * conversation from then on, so a branch of a `high` discussion is a `high` discussion.
+ * The route a copy of a conversation (a fork, a thread) carries: the seat as stored. Every seat
+ * holds an explicit route, so a copy runs on exactly what its source runs on.
  */
 export function chosenRoute<T extends SessionAgentRoute>(route: T): T {
-  return route.modelOrigin && route.modelOrigin !== 'session'
-    ? { ...route, providerConnectionId: null, modelId: '' }
-    : { ...route }
+  return { ...route }
 }
 
 /**

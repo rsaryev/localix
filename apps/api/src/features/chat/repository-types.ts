@@ -73,7 +73,6 @@ export interface ModelRoute {
  */
 export interface RecentRoutes {
   byAgent: Map<string, { providerConnectionId: string | null; modelId: string }>
-  effortByAgent: Map<string, ReasoningEffort>
 }
 
 /**

@@ -17,7 +17,6 @@ const CONTROL_COMMANDS = [
   'skills',
   'mcp',
   'plugins',
-  'reasoning',
   'loop',
   'agents',
 ] as const

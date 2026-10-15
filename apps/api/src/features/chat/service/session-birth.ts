@@ -76,7 +76,7 @@ export async function createSession(
     explicit: input,
     parent,
     resolve: ctx.resolveSessionAgent,
-    ask: ctx.seatEffort,
+    seat: ctx.seatRoute,
     // Only a conversation seats conversational participants. An engine's own worker session is
     // created for an agent whose chat invocation is often denied on purpose, and that is fine:
     // it is not being asked to chat.
@@ -129,17 +129,6 @@ export async function createSession(
   }
 
   await ctx.repo.insertSession(session)
-  // An explicit birth-time level is a choice; inherited and resolved defaults are not.
-  if (!parent && sessionKind === 'chat')
-    for (const agent of agents) {
-      const effort =
-        input.agents?.find((member) => member.agentId === agent.agentId)?.reasoningEffort ??
-        input.reasoningEffort
-      if (effort !== undefined)
-        await ctx.repo.updateSessionAgentRoute(userId, session.id, agent.agentId, {
-          reasoningEffort: effort,
-        })
-    }
   const detail = await ctx.getSessionDetail(userId, session.id)
   const resolved = {
     ...session,

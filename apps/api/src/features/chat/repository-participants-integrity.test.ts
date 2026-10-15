@@ -385,7 +385,8 @@ describe('session membership persistence', () => {
     const recent = await repo.listRecentRoutes('user-1')
     expect(recent.byAgent.get('lead')?.modelId).toBe('lead/new')
     expect(recent.byAgent.get('qa')?.modelId).toBe('qa/new')
-    expect(recent.effortByAgent.get('qa')).toBe('max')
+    // The level is not learned from seats: it is remembered per agent and model.
+    expect('effortByAgent' in recent).toBe(false)
   })
 
   test('a child model inherited from the room does not become an agent preference', async () => {

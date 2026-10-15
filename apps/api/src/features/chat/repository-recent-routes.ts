@@ -16,11 +16,9 @@ import type { RecentRoutes } from './repository-types'
  */
 
 /**
- * Every eligible seat, newest first, once for the model and once for the level.
- *
- * TWO orderings because the two fields are chosen independently: a later chat where only the
- * level was touched would otherwise hide the model chosen before it. The reducer below takes the
- * first row per agent. This avoids relying on SQLite's bare-column behavior beside `MAX()` and
+ * Every eligible seat, newest first. The reasoning level is NOT learned here: it is remembered
+ * per agent and model (`agentModelSettings`), never as "the last level used for anything".
+ * The reducer below takes the first row per agent. This avoids relying on SQLite's bare-column behavior beside `MAX()` and
  * makes ties deterministic.
  *
  * Every participant of a room counts, not only the one at position 0: a model chosen for the
@@ -49,26 +47,9 @@ export function createRecentRouteQueries(db: Kysely<AppDatabase>) {
       .orderBy('route.position', 'desc')
       .execute()
 
-  const effortsNewestFirst = (userId: string) => {
-    const query = db
-      .selectFrom('agent_sessions')
-      .innerJoin('conversation_participants as route', 'route.session_id', 'agent_sessions.id')
-      .select(['route.agent_id', 'route.reasoning_effort'])
-      .where('agent_sessions.user_id', '=', userId)
-      .where('route.reasoning_selected_at', 'is not', null)
-      .where('route.reasoning_effort', '!=', 'off')
-      .orderBy('route.reasoning_selected_at', 'desc')
-      .orderBy('route.session_id', 'desc')
-      .orderBy('route.position', 'desc')
-    return query.execute()
-  }
-
   return {
     async listRecentRoutes(userId: string): Promise<RecentRoutes> {
-      const [models, efforts] = await Promise.all([
-        modelsNewestFirst(userId),
-        effortsNewestFirst(userId),
-      ])
+      const models = await modelsNewestFirst(userId)
       const byAgent = new Map<string, { providerConnectionId: string | null; modelId: string }>()
       for (const row of models) {
         if (!row.chosen_at) continue
@@ -78,16 +59,7 @@ export function createRecentRouteQueries(db: Kysely<AppDatabase>) {
         }
         if (!byAgent.has(row.agent_id)) byAgent.set(row.agent_id, route)
       }
-      const effortByAgent = new Map<string, (typeof efforts)[number]['reasoning_effort']>()
-      for (const row of efforts) {
-        if (!effortByAgent.has(row.agent_id)) {
-          effortByAgent.set(row.agent_id, row.reasoning_effort)
-        }
-      }
-      return {
-        byAgent,
-        effortByAgent,
-      }
+      return { byAgent }
     },
   }
 }

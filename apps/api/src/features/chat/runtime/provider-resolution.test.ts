@@ -52,7 +52,6 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
           },
         ],
       } as never,
-      inheritedReasoningEffort: 'high',
     })
     expect(resolved).toMatchObject({
       model: runtimeModel,
@@ -60,11 +59,12 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
       providerConnectionId: 'conn-1',
       contextLength: 16_000,
       outputLimit: 2_000,
-      reasoningEffort: 'high',
+      // No level on the slot: the default, never the session's.
+      reasoningEffort: 'medium',
     })
   })
 
-  test('an explicit workload effort wins over the inherited session effort', async () => {
+  test('an explicit workload effort is used as stored', async () => {
     const runtimeModel = { ref: { providerId: 'p', modelId: 'aux-model' } }
     const resolved = await resolveAuxiliaryModel({
       deps: {
@@ -86,7 +86,6 @@ describe('resolveAuxiliaryModel — graceful fallbacks', () => {
         providers: [{ id: 'p' }],
         models: [{ id: 'p/aux-model', providerId: 'p', outputModalities: ['text'] }],
       } as never,
-      inheritedReasoningEffort: 'high',
     })
 
     expect(resolved?.reasoningEffort).toBe('low')

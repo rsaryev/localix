@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { rememberModelReasoning } from './rememberModelReasoning'
 
-test('following a session clears only that model preference and preserves workload metadata', () => {
+test('a chosen level moves that model to the front and preserves workload metadata', () => {
   const base = {
     modelRouting: {
       session: {
@@ -22,16 +22,15 @@ test('following a session clears only that model preference and preserves worklo
       },
     },
     'session',
-    {
-      providerId: 'openai',
-      modelId: 'first',
-      effort: undefined,
-    },
+    { providerId: 'openai', modelId: 'second', effort: 'max' },
   )
   expect(written).toEqual({
     modelRouting: {
       session: {
-        reasoningPreferences: [{ providerId: 'openai', modelId: 'second', effort: 'low' }],
+        reasoningPreferences: [
+          { providerId: 'openai', modelId: 'second', effort: 'max' },
+          { providerId: 'openai', modelId: 'first', effort: 'high' },
+        ],
       },
       titleGeneration: { enabled: false },
     },

@@ -7,7 +7,7 @@ import {
   handleSkillsControlCommand,
   handleMcpControlCommand,
 } from './command-handlers-listings'
-import { handleModelCommand, handleReasoningCommand } from './command-handlers-settings'
+import { handleModelCommand } from './command-handlers-settings'
 import { handlePluginsControlCommand } from './command-handlers-plugins'
 import { handleAgentsControlCommand } from './command-handlers-agents'
 import type { SessionRecord } from '../repository'
@@ -25,7 +25,7 @@ export { handleSkillCommand } from './command-handlers-skill'
 
 /**
  * Handles the built-in control slash commands (/help, /usage, /model,
- * /reasoning, /memory, /skills, /mcp, /plugin, /provider, /init, /commit,
+ * /memory, /skills, /mcp, /plugin, /provider, /init, /commit,
  * /review, /clear). Returns null when the prompt isn't a control
  * command — the caller falls through to the next dispatch stage.
  */
@@ -66,19 +66,6 @@ export async function handleControlCommand(
 
   if (control === 'model') {
     return handleModelCommand(
-      ctx,
-      userId,
-      sessionId,
-      session,
-      existingMessages,
-      prompt,
-      ts,
-      directReply,
-    )
-  }
-
-  if (control === 'reasoning') {
-    return handleReasoningCommand(
       ctx,
       userId,
       sessionId,

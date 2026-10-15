@@ -131,14 +131,8 @@ export function createAgentRunner(deps: RunnerDeps) {
     agentRuns,
     state,
     now,
-    resolveAuxiliaryModel: (userId, slot, catalog, inheritedReasoningEffort) =>
-      resolveAuxiliarySlotModel({
-        deps,
-        userId,
-        slot,
-        catalog,
-        inheritedReasoningEffort,
-      }),
+    resolveAuxiliaryModel: (userId, slot, catalog) =>
+      resolveAuxiliarySlotModel({ deps, userId, slot, catalog }),
     publishChildSummary,
     markRuntimeSessionStatus,
     persistAndPublish,

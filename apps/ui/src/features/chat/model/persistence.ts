@@ -4,7 +4,6 @@ import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 // null read or a no-op write so the store never throws on a flaky storage.
 
 import { loadJSON, loadString, saveJSON, saveString } from '@localixai/plugin-sdk/ui/storage'
-import { isReasoningEffort, REASONING_OPTIONS, type ReasoningEffort } from './reasoning'
 
 /**
  * NO SERVER-OWNED IDENTIFIER IS KEPT HERE.
@@ -24,16 +23,13 @@ import { isReasoningEffort, REASONING_OPTIONS, type ReasoningEffort } from './re
  * first and survives the data it describes.
  *
  * What stays is what the browser genuinely owns: where you were (scope and chat), your composer
- * history. Reasoning carry now comes from server-side participant selection history.
- * The legacy reasoning helpers below are retained for old cache compatibility only; live
- * creation and picker flows do not consult them.
+ * history.
  * A stale scope or chat id is already handled: the launch restore verifies the pair and
  * `forgetLastWorkspace` drops it when it is confirmed dead.
  */
 const ACTIVE_SESSION_KEY = workspaceStorageKey('localix_active_session_id')
 const ACTIVE_PROJECT_KEY = workspaceStorageKey('localix_active_project_id')
 const LAST_WORKSPACE_KEY = workspaceStorageKey('localix_last_workspace')
-const LAST_REASONING_KEY = 'localix_last_reasoning'
 const PROMPT_HISTORY_KEY = 'localix_prompt_history'
 const PROMPT_HISTORY_LIMIT = 150
 
@@ -65,39 +61,6 @@ export function forgetSessionLocation(projectId: string | null, sessionId: strin
 
 export function loadRememberedActiveSession(projectId?: string | null): string | null {
   return loadString(activeSessionKey(projectId))
-}
-
-/**
- * The highest effort that CARRIES to the next session.
- *
- * Model and mode stick unconditionally, and reasoning mostly should too — but the top two rungs
- * are different in kind: they are what you reach for on one hard problem, and remembering them
- * turns a single deliberate choice into a permanent, invisible multiplier on every new chat's
- * cost. The session you set them on keeps them (this only governs what a NEW session inherits),
- * and the picker still shows the real value, so nothing is hidden — it just stops compounding.
- */
-const MAX_REMEMBERED_REASONING: ReasoningEffort = 'high'
-
-export function rememberLastReasoning(reasoningEffort: ReasoningEffort) {
-  // `off` is never remembered. It is what a model that cannot reason resolves to, not a level
-  // the person chose for the next chat — and remembering it seeded every new session with no
-  // thinking at all, which is how one pick of a non-reasoning model turned the whole picker
-  // off. An explicit Off still applies to the session it was chosen in.
-  if (reasoningEffort === 'off') return
-  // Otherwise stored verbatim. Clamping on write too was the obvious symmetry and is dead
-  // weight — falsified: removing it leaves every test green, because the read side has to clamp
-  // anyway (values written before this rule are already in localStorage) and one clamp cannot
-  // disagree with itself.
-  saveString(LAST_REASONING_KEY, reasoningEffort)
-}
-
-export function loadLastReasoning(): ReasoningEffort | null {
-  const v = loadString(LAST_REASONING_KEY)
-  if (!isReasoningEffort(v)) return null
-  // Also clamp on READ: a value stored before this rule existed is still sitting in localStorage,
-  // and the whole point is that an old `max` stops seeding new sessions.
-  const rank = (effort: ReasoningEffort) => REASONING_OPTIONS.findIndex((o) => o.value === effort)
-  return rank(v) > rank(MAX_REMEMBERED_REASONING) ? MAX_REMEMBERED_REASONING : v
 }
 
 /** Global, cross-session composer history — newest first, capped. */

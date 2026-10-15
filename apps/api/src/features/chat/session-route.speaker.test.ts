@@ -44,13 +44,10 @@ describe('chosenRoute — what a copy of a conversation may carry', () => {
     expect(chosen.providerConnectionId).toBe('conn-qa')
   })
 
-  test('a model it was merely inheriting does not', () => {
-    // A fork or a thread that copied the resolved value would write an inheritance into its own
-    // seat as a decision, and from then on follow nothing — the project default changed next
-    // week would reach the original and not its branch.
+  test('a copy carries the stored seat as it is', () => {
+    // Every seat holds an explicit route; a fork runs on exactly what its source runs on.
     const chosen = chosenRoute({ ...participant('qa', 'fast'), modelOrigin: 'project' })
-    expect(chosen.modelId).toBe('')
-    expect(chosen.providerConnectionId).toBeNull()
+    expect(chosen.modelId).toBe('fast')
   })
 
   test('the level always travels, whatever the model did', () => {

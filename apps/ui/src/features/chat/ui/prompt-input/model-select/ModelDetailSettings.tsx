@@ -16,22 +16,9 @@ interface ModelDetailSettingsProps {
   current: boolean
   /** Inline completion always runs at the lowest level, so it offers no choice. */
   minimumReasoning: boolean
-  resolveRowReasoning: (
-    providerId: string,
-    modelId: string,
-    selected: boolean,
-  ) => ReasoningEffort | undefined
-  inheritedRowReasoning: (
-    providerId: string,
-    modelId: string,
-    selected: boolean,
-  ) => ReasoningEffort | undefined
-  changeModelReasoning: (
-    providerId: string,
-    modelId: string,
-    effort: ReasoningEffort | undefined,
-    selected: boolean,
-  ) => void
+  /** The level this model holds for the target: its live level if current, else its start. */
+  reasoningFor: (model: CatalogModel, current: boolean) => ReasoningEffort
+  changeModelReasoning: (model: CatalogModel, effort: ReasoningEffort, current: boolean) => void
 }
 
 /**
@@ -42,8 +29,8 @@ interface ModelDetailSettingsProps {
 function SettingRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-h-(--chrome-control-lg) items-center justify-between gap-3">
-      <span className="shrink-0 text-xs text-text-soft">{label}</span>
-      <span className="flex min-w-0 justify-end">{children}</span>
+      <span className="min-w-0 truncate text-xs text-text-soft">{label}</span>
+      <span className="flex shrink-0 justify-end">{children}</span>
     </div>
   )
 }
@@ -59,8 +46,7 @@ export function ModelDetailSettings({
   turns,
   current,
   minimumReasoning,
-  resolveRowReasoning,
-  inheritedRowReasoning,
+  reasoningFor,
   changeModelReasoning,
 }: ModelDetailSettingsProps) {
   return (
@@ -78,11 +64,8 @@ export function ModelDetailSettings({
             <ModelReasoningMenu
               modelLabel={model.name}
               reasoningEfforts={model.reasoningEfforts}
-              value={resolveRowReasoning(model.providerId, model.id, current)}
-              inheritedEffort={inheritedRowReasoning(model.providerId, model.id, current)}
-              onChange={(effort) =>
-                changeModelReasoning(model.providerId, model.id, effort, current)
-              }
+              value={reasoningFor(model, current)}
+              onChange={(effort) => changeModelReasoning(model, effort, current)}
             />
           )}
         </SettingRow>

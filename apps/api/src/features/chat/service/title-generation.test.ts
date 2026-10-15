@@ -122,7 +122,6 @@ describe('cleanGeneratedTitle', () => {
       'Check parser',
       'Check @resource:localix://resource/git/project/status',
       undefined,
-      'high',
       'Check parser',
     )
     await flush()
@@ -135,7 +134,8 @@ describe('cleanGeneratedTitle', () => {
       systemPrompt: expect.stringContaining('You name chat sessions'),
       messages: [expect.objectContaining({ role: 'user' })],
       signal: expect.any(AbortSignal),
-      reasoningEffort: 'high',
+      // The workload's own level (none stored here → the default), never the chat's.
+      reasoningEffort: 'medium',
     })
     expect(calls.request).not.toHaveProperty('model')
   })

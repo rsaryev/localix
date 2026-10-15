@@ -2,6 +2,7 @@ import type { AgentSessionKind, ReasoningEffort } from '../../../db/types'
 import type { PermissionMode } from '../../capabilities/permission-modes'
 import type { LastMessagePreview, ModelRoute } from '../repository-types'
 import type { SessionDeletionContext } from './session-deletion'
+import type { SeatRouteFor } from './session-route-defaults'
 import type { SessionRecord } from '../repository'
 import type { AgentStreamEvent, PersistedMessage, SessionDetail } from '../contracts'
 import type { SessionProvenance } from '../session-provenance'
@@ -51,7 +52,8 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
    * a seat's model is left blank so the chain answers for it on every read
    * (`session-route-defaults.ts`). Absent — an isolated host — means the flat default.
    */
-  seatEffort?: (userId: string, projectId: string, agentId: string) => Promise<ReasoningEffort>
+  /** The one decision of a new seat's route — see `agent-route-resolution.ts`. */
+  seatRoute?: SeatRouteFor
   /**
    * The project a session with no explicit one belongs to (see `projects/default-project.ts`).
    *

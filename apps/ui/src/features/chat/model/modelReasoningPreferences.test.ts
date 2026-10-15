@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import {
   modelReasoningFor,
   normalizeModelReasoningPreferences,
-  removeModelReasoningFromList,
   setModelReasoningInList,
   type ModelReasoningPreference,
 } from './modelReasoningPreferences'
@@ -37,12 +36,6 @@ describe('model reasoning preferences', () => {
         modelId: 'claude-opus',
         effort: 'low',
       },
-    ])
-  })
-
-  test('can remove one provider/model memory without touching another', () => {
-    expect(removeModelReasoningFromList(initial, 'anthropic', 'claude-opus')).toEqual([
-      { providerId: 'openrouter', modelId: 'claude-opus', effort: 'low' },
     ])
   })
 

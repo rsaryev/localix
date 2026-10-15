@@ -13,11 +13,11 @@ afterAll(async () => {
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
 
-async function mount(props: { value: 'low' | 'high' | undefined; inheritedEffort?: 'medium' }) {
+async function mount(props: { value: 'low' | 'high' }) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { ModelReasoningMenu } = await import('./ModelReasoningMenu')
-  const changes: Array<string | undefined> = []
+  const changes: string[] = []
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -81,28 +81,15 @@ describe('ModelReasoningMenu', () => {
     }
   })
 
-  test('following the conversation is its own selected choice, and the way back to it', async () => {
-    const following = await mount({ value: undefined, inheritedEffort: 'medium' })
+  test('there is no inherited choice: the menu marks exactly the level the request carries', async () => {
+    const ui = await mount({ value: 'low' })
     try {
-      expect(following.trigger.textContent).toContain('Session · Medium')
-      await following.open()
-      const follow = following.item('Follow the conversation')
-      expect(follow?.getAttribute('aria-checked')).toBe('true')
-      // Its hint is the level it resolves to, in the same words the chip's menu uses.
-      expect(follow?.textContent).toContain('Medium')
-      // While it follows, no level claims the check: the choice is "none of my own".
-      expect(following.item('Medium')?.getAttribute('aria-checked')).toBe('false')
+      expect(ui.trigger.textContent).toBe('Low')
+      await ui.open()
+      expect(ui.item('Follow the conversation')).toBeUndefined()
+      expect(ui.item('Low')?.getAttribute('aria-checked')).toBe('true')
     } finally {
-      await following.unmount()
-    }
-
-    const own = await mount({ value: 'high', inheritedEffort: 'medium' })
-    try {
-      await own.open()
-      await own.pick(own.item('Follow the conversation'))
-      expect(own.changes).toEqual([undefined])
-    } finally {
-      await own.unmount()
+      await ui.unmount()
     }
   })
 })

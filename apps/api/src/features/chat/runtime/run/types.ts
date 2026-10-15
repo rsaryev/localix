@@ -62,7 +62,6 @@ export interface RunEnv {
       | null
       | undefined,
     catalog: RunCatalog,
-    inheritedReasoningEffort?: ReasoningEffort,
   ) => ReturnType<typeof resolveAuxiliaryModel>
   publishChildSummary: (parentSessionId: string, child: SessionRecord) => void
   markRuntimeSessionStatus: (

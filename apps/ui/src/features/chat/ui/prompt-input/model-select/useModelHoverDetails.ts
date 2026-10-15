@@ -8,6 +8,9 @@ import {
 } from '@localixai/agent/catalog'
 import { modelRefFromCmdkValue } from './cmdkHighlight'
 
+/** How long the pointer must rest on a row before the details panel follows it. */
+const HOVER_INTENT_MS = 150
+
 interface ModelRef {
   connectionId: string
   modelId: string
@@ -64,25 +67,40 @@ export function useModelHoverDetails(
   // Debounce timer so moving cursor from model row → detail panel doesn't flicker.
   const hoverLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const scheduleHideHover = useCallback(() => {
-    hoverLeaveTimer.current = setTimeout(() => setHoveredModel(null), 120)
-  }, [])
-  const cancelHideHover = useCallback(() => {
+  // Hover INTENT: a row takes the panel only once the pointer rests on it. Crossing rows on the
+  // way to the panel's controls must not swap the model under the control being reached for.
+  const hoverEnterTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const clearTimers = useCallback(() => {
     if (hoverLeaveTimer.current) clearTimeout(hoverLeaveTimer.current)
+    if (hoverEnterTimer.current) clearTimeout(hoverEnterTimer.current)
   }, [])
 
-  const handleModelMouseEnter = useCallback((connectionId: string, modelId: string) => {
-    if (hoverLeaveTimer.current) clearTimeout(hoverLeaveTimer.current)
-    kbdArmedRef.current = false
-    setKbdModel(null)
-    setHoveredModel({ connectionId, modelId })
-  }, [])
+  const scheduleHideHover = useCallback(() => {
+    clearTimers()
+    // While the panel is pinned it keeps the last model shown: leaving the list toward the
+    // panel must not snap it back to the current model.
+    if (detailsPinned) return
+    hoverLeaveTimer.current = setTimeout(() => setHoveredModel(null), 120)
+  }, [clearTimers, detailsPinned])
+  const cancelHideHover = clearTimers
+
+  const handleModelMouseEnter = useCallback(
+    (connectionId: string, modelId: string) => {
+      clearTimers()
+      hoverEnterTimer.current = setTimeout(() => {
+        kbdArmedRef.current = false
+        setKbdModel(null)
+        setHoveredModel({ connectionId, modelId })
+      }, HOVER_INTENT_MS)
+    },
+    [clearTimers],
+  )
 
   const armKeyboardNav = useCallback(() => {
     kbdArmedRef.current = true
-    if (hoverLeaveTimer.current) clearTimeout(hoverLeaveTimer.current)
+    clearTimers()
     setHoveredModel(null)
-  }, [])
+  }, [clearTimers])
 
   const reportHighlight = useCallback(
     (cmdkValue: string | undefined) => {
@@ -96,10 +114,10 @@ export function useModelHoverDetails(
 
   const clearFollow = useCallback(() => {
     kbdArmedRef.current = false
-    if (hoverLeaveTimer.current) clearTimeout(hoverLeaveTimer.current)
+    clearTimers()
     setHoveredModel(null)
     setKbdModel(null)
-  }, [])
+  }, [clearTimers])
 
   const detailRef =
     hoveredModel ??
@@ -125,12 +143,7 @@ export function useModelHoverDetails(
 
   const showDetails = detailsPinned || hoveredModel !== null || kbdModel !== null
 
-  useEffect(
-    () => () => {
-      if (hoverLeaveTimer.current) clearTimeout(hoverLeaveTimer.current)
-    },
-    [],
-  )
+  useEffect(() => clearTimers, [clearTimers])
 
   return {
     detailsPinned,

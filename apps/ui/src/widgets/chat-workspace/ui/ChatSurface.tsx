@@ -1,3 +1,4 @@
+import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ArrowDown } from 'lucide-react'
@@ -180,7 +181,8 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
   // for a member's route by handle instead; this surface drives a private chat.
   const activeRoute = activeSession ? sessionRoute(activeSession) : null
   const model = activeRoute?.modelId ?? ''
-  const reasoningEffort = activeRoute?.reasoningEffort ?? 'low'
+  // The seat always stores a level; the default stands in only before a chat exists.
+  const reasoningEffort = activeRoute?.reasoningEffort ?? DEFAULT_REASONING_EFFORT
   // Stable identities: the model picker is memoized, and this surface re-renders on
   // every composer keystroke (the draft lives here) — inline arrows here would hand
   // it fresh props each stroke and its `memo()` would never bail.

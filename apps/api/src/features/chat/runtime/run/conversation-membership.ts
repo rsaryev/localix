@@ -1,3 +1,4 @@
+import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
 import type { SessionAgentRoute, SessionRecord } from '../../repository-types'
 import { toSessionSummary } from '../../repository'
 import { changeParticipants } from '../conversation-participants'
@@ -144,15 +145,16 @@ async function decideMembership(
   }
 
   const removed = current.agents.filter((member) => removeIds.has(member.agentId))
-  const effort = current.agents[0]?.reasoningEffort ?? 'medium'
   const agents: SessionAgentRoute[] = [
     ...current.agents.filter((member) => !removeIds.has(member.agentId)),
     ...invited.map((agent) => ({
       agentId: agent.agentId,
       handle: agent.name,
+      // Undecided: the seat's whole route — model AND effort — is decided once on first read
+      // (`session-route-defaults.ts`), never copied from another participant.
       providerConnectionId: null,
       modelId: '',
-      reasoningEffort: effort,
+      reasoningEffort: DEFAULT_REASONING_EFFORT,
     })),
   ]
   if (agents.length === 0) throw new Error('A conversation must keep at least one participant.')

@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  assignTaskModel,
-  assignTaskReasoning,
-  resolveLiveTaskModel,
-  selectedTaskModelId,
-} from './taskReasoning'
+import { assignTaskModel, resolveLiveTaskModel, selectedTaskModelId } from './taskReasoning'
 
 describe('task-aware reasoning settings', () => {
   test('changing a model restores the effort belonging to the new provider/model pair', () => {
@@ -16,26 +11,6 @@ describe('task-aware reasoning settings', () => {
         'low',
       ),
     ).toEqual({ providerConnectionId: 'new', modelId: 'new-model', reasoningEffort: 'low' })
-  })
-
-  test('a model without a saved effort inherits from the session', () => {
-    expect(
-      assignTaskModel(
-        { providerConnectionId: 'old', modelId: 'old-model', reasoningEffort: 'high' },
-        'new',
-        'new-model',
-      ),
-    ).toEqual({ providerConnectionId: 'new', modelId: 'new-model' })
-  })
-
-  test('setting and inheriting effort preserve model assignment', () => {
-    const slot = { providerConnectionId: 'connection', modelId: 'model' } as const
-    expect(assignTaskReasoning(slot, 'max')).toEqual({ ...slot, reasoningEffort: 'max' })
-    expect(assignTaskReasoning({ ...slot, reasoningEffort: 'max' }, undefined)).toEqual(slot)
-  })
-
-  test('reset slots remain reset', () => {
-    expect(assignTaskReasoning(null, 'high')).toBeNull()
   })
 
   test('rebinds a stale connection through the namespaced model provider', () => {

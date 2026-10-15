@@ -59,7 +59,7 @@ describe('MaxTurnsControl', () => {
     const ui = await render(undefined)
     const React = await import('react')
     try {
-      expect(ui.host.textContent).toContain('Default · No limit')
+      expect(ui.host.textContent).toContain('No limit')
       expect(ui.button.getAttribute('aria-label')).toBe('Turns per message: No limit')
       await ui.click()
       const choice = Array.from(
@@ -75,7 +75,7 @@ describe('MaxTurnsControl', () => {
       ).find((item) => item.textContent?.includes('Use default')) as HTMLElement
       await React.act(async () => reset.click())
       expect(ui.changes).toEqual([20, undefined])
-      expect(ui.host.textContent).toContain('Default · No limit')
+      expect(ui.host.textContent).toContain('No limit')
     } finally {
       await ui.cleanup()
     }

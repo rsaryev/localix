@@ -11,7 +11,7 @@
 // Browser-safe catalog: argument definitions, the arg-spec core and pure edit distance
 // keep consumers independent of server code.
 
-import { LOOP_ARGS, REASONING_ARGS, PLUGIN_ARGS } from './slash-catalog-arguments'
+import { LOOP_ARGS, PLUGIN_ARGS } from './slash-catalog-arguments'
 import type { SlashArgSpec } from './slash-args'
 import { AGENTS_ARGS } from './slash-catalog-agents'
 
@@ -79,15 +79,6 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     description: 'List models or switch the active model — /model <name>',
     scope: 'server',
     category: 'config',
-  },
-  {
-    name: 'reasoning',
-    title: 'Reasoning',
-    description: 'Set reasoning effort — /reasoning [@handle] <effort> [task]',
-    scope: 'server',
-    category: 'config',
-    hidden: true,
-    args: REASONING_ARGS,
   },
   // Context management
   {

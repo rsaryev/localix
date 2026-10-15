@@ -60,31 +60,48 @@ describe('session agent assignment', () => {
       requested: [{ agentId: 'deleted', handle: 'forged-name' }],
       resolve,
     })
-    expect(reseatParticipants({ agents: existing }, next)).toEqual(existing)
+    expect(await reseatParticipants({ agents: existing }, next)).toEqual(existing)
   })
 
-  test('a newcomer inherits nobody’s model — only the room’s effort', () => {
-    // Neither the agent it replaces by handle nor the member sitting first: a seat born holding
-    // someone else's model is both wrong and unrecoverable, because a stored model reads as a
-    // choice and stops the chain from ever answering for that participant again.
-    const first = routedParticipants({ agentId: 'first', handle: 'first', modelId: 'seed' })[0]
+  test('a newcomer inherits nobody’s route — its seat is decided once, for itself', async () => {
+    // Neither the agent it replaces by handle nor the member sitting first.
+    const first = routedParticipants({
+      agentId: 'first',
+      handle: 'first',
+      modelId: 'seed',
+      reasoningEffort: 'max',
+    })[0]
     const old = routedParticipants({
       agentId: 'old',
       handle: 'reviewer',
       modelId: 'private-model',
       reasoningEffort: 'high',
     })[0]
-    expect(
-      reseatParticipants({ agents: [first, old] }, [{ agentId: 'new', handle: 'reviewer' }]),
-    ).toEqual([
+    const asked: unknown[] = []
+    const seated = await reseatParticipants(
+      { agents: [first, old], userId: 'u', projectId: 'p' },
+      [{ agentId: 'new', handle: 'reviewer' }],
+      async (_userId, _projectId, agentId, given) => {
+        asked.push({ agentId, given })
+        return {
+          providerConnectionId: 'conn',
+          modelId: 'card/model',
+          reasoningEffort: 'low',
+          modelOrigin: 'agent',
+        }
+      },
+    )
+    expect(seated).toEqual([
       {
         agentId: 'new',
         handle: 'reviewer',
-        providerConnectionId: null,
-        modelId: '',
-        reasoningEffort: first.reasoningEffort,
+        providerConnectionId: 'conn',
+        modelId: 'card/model',
+        reasoningEffort: 'low',
+        modelOrigin: 'agent',
       },
     ])
+    expect(asked).toEqual([{ agentId: 'new', given: { primary: first } }])
   })
 
   test('an empty draft is allowed while duplicate participants are refused', async () => {

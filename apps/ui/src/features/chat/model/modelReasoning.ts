@@ -70,19 +70,28 @@ export function clampModelReasoning(
 }
 
 /**
- * The level a model with no memory of its own inherits.
- *
- * `off` is where a model that cannot reason lands, not a level anyone chose to carry. Treating
- * it as one is what painted the whole picker "Off": pick a non-reasoning model once, and the
- * session's `off` became the inherited level for every other row — and was written into each
- * model's memory as it was picked, permanently. pi draws the same line at the same seam
- * (`_getThinkingLevelForModelSwitch`): when the current model does not think, carry the
- * default, not the current level.
+ * The level a model runs at when nothing was chosen for it: the default, landed on a level this
+ * model offers. `off` for a model that does not reason.
  */
-export function carriedReasoningEffort(
-  sessionEffort: ReasoningEffort | undefined,
-  remembered: ReasoningEffort | null,
+export function defaultModelReasoning(
+  supportsReasoning: boolean,
+  efforts: readonly string[] | undefined,
 ): ReasoningEffort {
-  if (sessionEffort && sessionEffort !== OFF) return sessionEffort
-  return remembered ?? DEFAULT_REASONING_EFFORT
+  if (!supportsReasoning) return OFF
+  return clampModelReasoning(DEFAULT_REASONING_EFFORT, efforts) ?? OFF
+}
+
+/**
+ * The level a model starts at when it is picked: what was last chosen for it, else its default.
+ * Never the previous model's level — a pick must not depend on what was picked before it.
+ */
+export function initialModelReasoning(
+  model: { supportsReasoning: boolean; reasoningEfforts?: readonly string[] },
+  saved: ReasoningEffort | undefined,
+): ReasoningEffort {
+  if (!model.supportsReasoning) return OFF
+  return (
+    clampModelReasoning(saved, model.reasoningEfforts) ??
+    defaultModelReasoning(true, model.reasoningEfforts)
+  )
 }

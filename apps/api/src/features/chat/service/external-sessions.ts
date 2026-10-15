@@ -1,5 +1,5 @@
 import { ApiError } from '../../../lib/errors'
-import type { ReasoningEffort } from '../../../db/types'
+import type { SeatRouteFor } from './session-route-defaults'
 import { assetBindings, type MessageAttachment } from '@localixai/agent'
 import type { ResolveSessionAgent } from './session-agent-selection'
 import { bornParticipants } from './participant-routes'
@@ -76,7 +76,7 @@ export interface ExternalSessionsContext {
   resolveDefaultProjectId: (userId: string) => Promise<string>
   /** How a participant is resolved and what effort it is born with — the birth path's ports. */
   resolveSessionAgent?: ResolveSessionAgent
-  seatEffort?: (userId: string, projectId: string, agentId: string) => Promise<ReasoningEffort>
+  seatRoute?: SeatRouteFor
 }
 
 /**
@@ -104,7 +104,7 @@ export async function resolveExternalSession(
     projectId,
     host: 'chat',
     resolve: ctx.resolveSessionAgent,
-    ask: ctx.seatEffort,
+    seat: ctx.seatRoute,
   })
   const created = await ctx.repo.getOrCreateExternalSession(userId, input.key, ({ seq, id }) => ({
     id,
