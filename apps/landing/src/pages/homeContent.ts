@@ -64,9 +64,9 @@ export const CONVERSATION_FEATURES: FeatureRow[] = [
   {
     kicker: 'You stay in charge',
     title: 'See who is answering, and stop it',
-    body: 'The strip shows who is answering and who is next in line. Approvals are asked of you and a denial stays denied in every mode. Lock the participants before the first message, or stop the run at any moment.',
+    body: 'The strip shows who is answering and who is next in line. Approvals are asked of you and a denial stays denied in every mode. Add or remove participants at any point, or stop the run at any moment.',
     slug: 'features--conversations',
-    anchor: 'fixing-the-participants',
+    anchor: 'interruptions',
   },
 ]
 
