@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import {
   agentTarget,
+  initialPickerTarget,
   isAgentTarget,
   modelPickDestination,
   reasoningMemoryKey,
@@ -46,5 +47,19 @@ describe('picker targets', () => {
       kind: 'workload',
       key: 'titleGeneration',
     })
+  })
+})
+
+describe('initialPickerTarget', () => {
+  const party = [{ agentId: 'builtin:localix' }, { agentId: 'builtin:qa' }]
+
+  test('opens on the participant the composer shows', () => {
+    expect(initialPickerTarget(party, 'builtin:qa')).toBe(agentTarget('builtin:qa'))
+  })
+
+  test('falls back to the first seat, then to the conversation', () => {
+    expect(initialPickerTarget(party, 'builtin:gone')).toBe(agentTarget('builtin:localix'))
+    expect(initialPickerTarget(party)).toBe(agentTarget('builtin:localix'))
+    expect(initialPickerTarget([], 'builtin:qa')).toBe('session')
   })
 })

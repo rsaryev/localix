@@ -4,9 +4,9 @@ A Localix session keeps a conversation, agent configuration, and access to a wor
 walkthrough connects a model, opens a project, runs one bounded request, and shows you where to
 inspect it.
 
-![A release review with Team Lead, Frontend and QA participants](../assets/screenshots/conversations/participants--2026-10-09.png)
+![A release review with Team Lead, Frontend and QA participants](../assets/screenshots/conversations/participants--2026-10-15.png)
 
-_Demo workspace captured on 9 October 2026. The conversation is seeded; it does not demonstrate a
+_Demo workspace captured on 15 October 2026. The conversation is seeded; it does not demonstrate a
 successful model request or provider setup._
 
 ## Terminology

@@ -28,7 +28,8 @@ export const capturePlan = {
   },
   'conversations/participants': {
     guide: 'features/conversations.md',
-    purpose: 'Three seeded participants with individual usage and the accumulated session total',
+    purpose:
+      'Three seeded participants, the selected one driving the composer model, and the per-participant usage in the session total',
     scenario: 'participants',
   },
   'workspace/session-window-drag': {

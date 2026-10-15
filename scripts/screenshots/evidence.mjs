@@ -35,12 +35,12 @@ export async function verifyEvidence(page, scenario) {
     const roster = page.getByRole('group', { name: 'Conversation participants', exact: true })
     await expect(roster.locator('[data-slot="participant-chip"]')).toHaveCount(3)
     for (const handle of ['localix', 'frontend', 'qa'])
-      await expect(roster.getByTitle(`Mention @${handle}`, { exact: true })).toBeVisible()
+      await expect(roster.getByTitle(`Show @${handle}'s model`, { exact: true })).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Release checklist', exact: true }),
     ).toBeVisible()
     await expect(page.getByText(/Both release states pass the checks/)).toBeVisible()
-    await expect(roster.getByRole('button', { name: /^Usage for / })).toHaveCount(3)
+    await expect(roster.getByRole('button', { name: /^Usage for / })).toHaveCount(0)
     const total = page
       .getByRole('group', { name: 'Conversation actions', exact: true })
       .getByRole('button', { name: 'Total session usage', exact: true })
@@ -55,15 +55,21 @@ export async function verifyEvidence(page, scenario) {
     const mode = page.getByRole('button', { name: /^Permission mode:/ })
     await expect(mode).toHaveAttribute('data-slot', 'composer-chip')
     await expect(mode.locator('.lucide-chevron-down')).toBeVisible()
-    const agentUsage = roster.getByRole('button', { name: 'Usage for Frontend', exact: true })
-    await agentUsage.hover()
-    await expect(page.getByText('Frontend · Session usage', { exact: true })).toBeVisible()
-    await expect(page.getByText('50%', { exact: true })).toBeVisible()
-    await expect(page.getByText('6,000', { exact: true })).toBeVisible()
-    await expect(page.getByText('3,300', { exact: true })).toBeVisible()
+    // The first seat is selected by default; clicking another selects it without a mention.
+    const localixChip = roster.getByTitle("Show @localix's model", { exact: true })
+    const frontendChip = roster.getByTitle("Show @frontend's model", { exact: true })
+    await expect(localixChip).toHaveAttribute('aria-pressed', 'true')
+    await frontendChip.click()
+    await expect(frontendChip).toHaveAttribute('aria-pressed', 'true')
+    await expect(localixChip).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('textarea').first()).not.toHaveValue(/@frontend/)
     await total.hover()
     await expect(page.getByText('Session total', { exact: true })).toBeVisible()
     await expect(page.getByText('9,900', { exact: true })).toBeVisible()
+    await expect(page.getByText('By participant', { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('progressbar', { name: 'Frontend context usage', exact: true }),
+    ).toBeVisible()
     await page.getByRole('heading', { name: 'Release checklist', exact: true }).hover()
     await expect(page.getByText('Session total', { exact: true })).toHaveCount(0)
     await expect(page.getByRole('menu')).toHaveCount(0)

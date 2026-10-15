@@ -71,3 +71,16 @@ export function modelPickDestination(target: PickerTarget): ModelPickDestination
   if (!key) throw new Error(`Picker target has no persistence strategy: ${target}`)
   return { kind: 'workload', key }
 }
+
+/**
+ * The row the picker opens on: the participant the composer shows, else the first seat, else the
+ * conversation itself. A pick that has left the roster falls back rather than opening on nobody.
+ */
+export function initialPickerTarget(
+  participants: readonly { agentId: string }[],
+  initialAgentId?: string | null,
+): PickerTarget {
+  const initial =
+    participants.find((member) => member.agentId === initialAgentId) ?? participants[0]
+  return initial ? agentTarget(initial.agentId) : 'session'
+}

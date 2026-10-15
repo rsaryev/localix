@@ -5,9 +5,9 @@ participants: one agent uses direct conversation behavior, while two or more age
 multi-participant strategy. Adding or removing an agent does not create another session or rewrite
 its history.
 
-![Team Lead, Frontend and QA sharing a release review in one conversation](../assets/screenshots/conversations/participants--2026-10-09.png)
+![Team Lead, Frontend and QA sharing a release review in one conversation](../assets/screenshots/conversations/participants--2026-10-15.png)
 
-_Demo workspace captured on 9 October 2026 with a seeded conversation. It shows the participant
+_Demo workspace captured on 15 October 2026 with a seeded conversation. It shows the participant
 controls, not a recorded model run._
 
 ## Addressing
@@ -237,20 +237,21 @@ layers.
 
 ### Participant usage
 
-An answering participant shows elapsed time. Idle and waiting participants show a usage icon; hover
-or focus it to inspect that agent's current context percentage, request limit and accumulated tokens
-and cost in this session. Context measurements belong to that author's latest attempt; estimates and
-failed attempts are labeled. Clicking opens Usage & Spend. Agents with no recorded usage show an
-empty state instead of an invented number.
+An answering participant shows elapsed time. Participant chips carry no usage controls of their own:
+the usage icon in the conversation header shows total session tokens and cost on hover, including
+participants you removed and auxiliary session services. In a group the same card lists each
+participant with their latest context percentage and accumulated cost; context measurements belong
+to that author's latest attempt. Clicking the icon opens Usage & Spend. The composer footer has no
+usage indicator. Subscription costs remain estimated API-equivalent values rather than billed
+subscription spend.
 
-The usage icon in the conversation header shows total session tokens and cost on hover, including
-participants you removed and auxiliary session services. The composer footer has no usage indicator.
-Subscription costs remain estimated API-equivalent values rather than billed subscription spend.
-
-The model selector stays inside the composer. In a group it rotates through participant model names
-with a provider icon, and opens settings for each participant. Reasoning and turns per message are
-saved per agent, provider and model; changing one participant does not change another. Authored
-agent and host limits still apply. Permission mode has its own pill above the input.
+The model selector sits in the composer's action row and shows only the model name. In a group,
+clicking a participant chip selects that participant without inserting a mention: the selector, the
+context gauge and the model picker's starting row follow the selected participant, and picking
+another participant inside the picker selects it in the composer too. The first participant is
+selected by default. Reasoning and turns per message are saved per agent, provider and model;
+changing one participant does not change another. Authored agent and host limits still apply.
+Permission mode has its own pill above the input.
 
 ## Interruptions
 

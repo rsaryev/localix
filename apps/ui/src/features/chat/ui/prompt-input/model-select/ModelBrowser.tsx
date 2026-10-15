@@ -13,7 +13,7 @@ import { useModelShortlists } from './useModelShortlists'
 import { useModelListPaging } from './useModelListPaging'
 import { initialModelSelection } from './initialModelSelection'
 import type { ParticipantRow } from './ModelTaskColumn'
-import { agentTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
+import { initialPickerTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
 import { participantSlot } from './participantSlot'
@@ -62,11 +62,9 @@ export function ModelBrowser({
   // Below lg the details (and the model's settings) open in place of the list.
   const [detailsView, setDetailsView] = useState(false)
   const [renameLabel, setRenameLabel] = useState('')
-  const [taskKey, setTaskKey] = useState<PickerTarget>(() => {
-    const initial =
-      participants.find((member) => member.agentId === initialAgentId) ?? participants[0]
-    return initial ? agentTarget(initial.agentId) : 'session'
-  })
+  const [taskKey, setTaskKey] = useState<PickerTarget>(() =>
+    initialPickerTarget(participants, initialAgentId),
+  )
   const participantRoute = useCallback(
     (agentId: string) => participantSlot(participants, agentId, sessionConnectionId),
     [participants, sessionConnectionId],

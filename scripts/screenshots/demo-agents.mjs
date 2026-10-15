@@ -30,6 +30,16 @@ export async function ensureDemoAgents(projectId) {
         projectId,
       }))
     ids[handle] = agent.record.id
+    // A fresh workspace seeds a starter team with these handles switched off and barred from
+    // chat; a session refuses such a participant, so the fixture opens the ones it seats.
+    if (existing)
+      await api('/capabilities/rules/apply', {
+        agentId: agent.record.id,
+        changes: [
+          { action: `agent:${agent.record.id}`, resource: '*', effect: 'allow' },
+          { action: 'invocation:chat', resource: agent.record.id, effect: 'allow' },
+        ],
+      })
   }
   return ids
 }
