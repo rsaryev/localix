@@ -82,20 +82,12 @@ describe('release workflow contract', () => {
     const releaseRust = workflowValues(release, 'RUST_TOOLCHAIN')
     expect(ciRust).toHaveLength(1)
     expect(releaseRust).toEqual(ciRust)
-    expect(release).toContain('run: bun run check:rust')
+    expect(release).toContain('run: bun scripts/require-green-ci.mjs')
     expect(release).toContain('needs: [prepare, verify]')
   })
 
   test('builds workspace declarations before checking source and test types', () => {
     expect(ci.indexOf('run: bun run type-check')).toBeGreaterThan(ci.indexOf('run: bun run build'))
-
-    const verifyStart = release.indexOf('  verify:')
-    const verifyEnd = release.indexOf('\n  draft-release:', verifyStart)
-    const verifyJob = release.slice(verifyStart, verifyEnd)
-    expect(verifyJob.indexOf('bun run build')).toBeGreaterThan(-1)
-    expect(verifyJob.indexOf('bun run type-check')).toBeGreaterThan(
-      verifyJob.indexOf('bun run build'),
-    )
   })
 
   test('publishes to this repository with the workflow token, scoped per job', () => {
@@ -321,13 +313,13 @@ describe('release workflow contract', () => {
       }
     ).jobs
     const verify = jobs.verify.steps
-    const rust = verify.findIndex((step) => step.run === 'bun run check:rust')
+    const green = verify.findIndex((step) => step.run === 'bun scripts/require-green-ci.mjs')
     const native = verify.findIndex((step) => step.uses === './.github/actions/setup-desktop')
     const sign = verify.findIndex((step) => step.name === 'Sign updater probe')
     const key = verify.findIndex((step) => step.name === 'Verify probe with shipped public key')
-    expect(native).toBeGreaterThan(-1)
-    expect(rust).toBeGreaterThan(native)
-    expect(sign).toBeGreaterThan(rust)
+    expect(green).toBe(verify.findIndex((step) => step.run !== undefined))
+    expect(native).toBeGreaterThan(green)
+    expect(sign).toBeGreaterThan(native)
     expect(key).toBeGreaterThan(sign)
     expect(jobs.verify.permissions?.contents).not.toBe('write')
     expect(jobs['draft-release'].needs).toEqual(['prepare', 'verify'])

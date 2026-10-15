@@ -202,10 +202,12 @@ finds or creates one project by normalized working directory.
 
 ### Release assembly
 
-The release workflow verifies one semver tag commit before creating a draft. Two native runners
-build macOS arm64 and Linux x64 artifacts; publication waits for every matrix leg and the signed
-updater manifest. The current matrix has no Windows or Intel Mac leg; use source builds on those
-platforms. Check published release assets separately from this configuration.
+The release workflow verifies one semver tag commit before creating a draft: it requires the
+commit's push CI run on main to have succeeded rather than repeating those gates, then checks the
+release tooling and updater signing. Two native runners build macOS arm64 and Linux x64 artifacts;
+publication waits for every matrix leg and the signed updater manifest. The current matrix has no
+Windows or Intel Mac leg; use source builds on those platforms. Check published release assets
+separately from this configuration.
 
 | Platform | Requested bundle targets | Additional package policy                                |
 | -------- | ------------------------ | -------------------------------------------------------- |

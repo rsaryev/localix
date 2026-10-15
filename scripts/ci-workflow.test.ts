@@ -149,25 +149,17 @@ describe('CI minute budget contract', () => {
     expect(builds).toHaveLength(1)
   })
 
-  test('release verification runs every gate CI runs, so the two cannot drift apart', () => {
-    const verify = release.jobs.verify.steps.map((step) => step.run ?? '').join('\n')
-    // `check:bundle` stages and starts the desktop bundle; the release legs smoke the packaged app
-    // itself, which is the stronger check, so verification does not repeat it.
-    for (const gate of gates.filter((gate) => gate !== 'check:bundle')) {
-      expect(verify, `release verify is missing ${gate}`).toMatch(
-        new RegExp(`^\\s*bun run ${gate.replace(':', ':')}$`, 'mu'),
-      )
+  test('release verification requires green CI instead of repeating its gates', () => {
+    const steps = release.jobs.verify.steps
+    const verify = steps.map((step) => step.run ?? '').join('\n')
+    expect(verify).toContain('bun scripts/require-green-ci.mjs')
+    expect(verify.match(/^\s*bun run .+$/gmu)?.map((line) => line.trim())).toEqual([
+      'bun run check:release',
+    ])
+    // CI must keep running every gate on push to main, since the release relies on that run.
+    for (const gate of gates) {
+      expect(ci.jobs.app.steps.some((step) => step.run === `bun run ${gate}`)).toBe(true)
     }
-    expect(
-      verify
-        .match(/^\s*bun run .+$/gmu)
-        ?.map((line) => line.trim())
-        .filter((line) => line !== 'bun run check:rust'),
-    ).toEqual(
-      ['build', ...gates.filter((gate) => gate !== 'check:bundle')].map(
-        (gate) => `bun run ${gate}`,
-      ),
-    )
   })
 
   test('rejects a repeated build, missing test gate or optional test gate', () => {
@@ -215,8 +207,8 @@ describe('CI minute budget contract', () => {
     )
   })
 
-  test('release verification reuses the CI cache before building', () => {
-    for (const job of [ci.jobs.app, release.jobs.verify]) {
+  test('CI reuses the Turbo cache before building', () => {
+    for (const job of [ci.jobs.app]) {
       const restore = job.steps.findIndex((step) => step.name === 'Restore Turbo cache')
       const build = job.steps.findIndex((step) => step.run === 'bun run build')
       expect(restore).toBeGreaterThan(-1)
@@ -228,6 +220,5 @@ describe('CI minute budget contract', () => {
       expect(save?.with?.key).toBe(job.steps[restore]?.with?.key)
       expect(save?.if).toContain('always()')
     }
-    expect(release.jobs.verify.steps.some((step) => step.run === 'bun run test')).toBe(true)
   })
 })

@@ -136,13 +136,16 @@ jobs:
           echo "Building: $(jq -r 'map(.name) | join(", ")' <<<"$matrix")"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
-  # ── verify: rerun repository validation against the exact tagged source ─────
+  # ── verify: require green CI for the tagged source, then check release signing ─
   verify:
     name: Validate source and signing
     environment: release
     needs: prepare
     runs-on: [self-hosted, Linux, X64, localix-linux]
-    timeout-minutes: 90
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -150,57 +153,25 @@ jobs:
           ref: ${{ needs.prepare.outputs.commit }}
           persist-credentials: false
 
-      # Retried like CI's: a mirror hiccup is the usual reason for a red apt or install step, and a
-      # release should not have to be dispatched again for it.
-      - name: Install test tools
-        if: runner.environment != 'self-hosted'
-        run: |
-          for attempt in 1 2 3; do
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
-            [ "$attempt" = 3 ] && exit 1
-            sleep 10
-          done
-
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
 
-      # Reuse CI's content-addressed task results for the tagged source. Turbo re-runs any task
-      # whose inputs changed; the release still executes every verification gate below.
-      - name: Restore Turbo cache
-        id: turbo-cache
-        if: runner.environment != 'self-hosted'
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key:
-            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
-            }}
-          restore-keys: |
-            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-js-${{ runner.os }}-
-
-      - name: Build app
-        run: bun run build
+      # CI already built, type-checked and tested this exact commit on push to main; repeating the
+      # whole suite here only doubled release time. Verification instead requires that CI run to
+      # have succeeded, and keeps the checks CI does not do: release tooling and updater signing.
+      - name: Require green CI for the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: bun scripts/require-green-ci.mjs
 
       - name: Test release tooling
         run: bun run check:release
-
-      - name: Check source types
-        run: bun run type-check
-
-      - name: Check test types
-        run: bun run check:tests
-
-      - name: Run tests
-        run: bun run test
 
       - name: Setup desktop
         uses: ./.github/actions/setup-desktop
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
-
-      - name: Check and test Rust
-        run: bun run check:rust
 
       # The same value the release build embeds: `updater.release.json`, through the script that
       # writes the build's overlay, so the key checked here cannot differ from the key shipped.
@@ -238,17 +209,6 @@ jobs:
             --example verify_updater_signature -- \
             "$RUNNER_TEMP/updater-signing-probe" \
             "$RUNNER_TEMP/updater-signing-probe.sig"
-
-      - name: Save Turbo cache
-        if: >-
-          always() && runner.environment != 'self-hosted' && steps.turbo-cache.outputs.cache-hit !=
-          'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: .turbo/cache
-          key:
-            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
-            }}
 
   draft-release:
     name: Create draft
