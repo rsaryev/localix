@@ -22,8 +22,8 @@ describe('QueuePanel server semantics', () => {
     expect(html).toContain('data-slot="workbench-list-row"')
     expect(html).toContain('role="listitem"')
     expect(html).toContain('aria-label="Queued item 1 actions"')
-    expect(html).toContain('data-size="icon"')
-    expect(html).toContain('data-slot="workbench-list-row-meta"')
+    expect(html).toContain('data-size="icon-sm"')
+    expect(html).toContain('data-slot="workbench-list-row-action-fallback"')
     expect(html).not.toContain('sm:opacity-0')
   })
 
@@ -35,7 +35,8 @@ describe('QueuePanel server semantics', () => {
       delivery: 'next-turn',
     })
 
-    expect(html).toContain('Next turn')
+    // Waiting its turn is what every row does: only steering earns a word.
+    expect(html).not.toContain('Next turn')
     expect(html).toContain('Delete')
     expect(html).not.toContain('Send now')
     expect(html).not.toContain('>Return<')

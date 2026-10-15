@@ -48,6 +48,10 @@ import { useHistoryKeyDown } from './usePromptHistory'
 import { usePromptSend } from './usePromptSend'
 import { usePromptSessionView } from './usePromptSessionView'
 import { useSkillCommands } from './useSkillCommands'
+
+const ComposerQueuePanel = lazy(() =>
+  import('./ComposerQueuePanel').then((module) => ({ default: module.ComposerQueuePanel })),
+)
 import { useSlashArgOptions } from './useSlashArgOptions'
 
 export type { PromptInputProps } from './promptInputProps'
@@ -318,6 +322,14 @@ export function PromptInput(props: PromptInputProps) {
     />
   )
   const { contextBar } = props
+  // The queue docks beside send/stop: a pill in a toolbar that is always there, so it can come
+  // and go without moving the composer. Loaded the first time a session has something queued.
+  const queueDock =
+    serverQueue && serverQueue.length > 0 ? (
+      <Suspense fallback={null}>
+        <ComposerQueuePanel serverQueue={serverQueue} activeSessionId={activeSessionId} />
+      </Suspense>
+    ) : null
   const contextControls = (
     <>
       <SessionPermissionModeChip sessionId={activeSessionId} disabled={isGenerating || readOnly} />
@@ -389,7 +401,6 @@ export function PromptInput(props: PromptInputProps) {
           isGenerating={isGenerating}
           sessionUsage={props.sessionUsage}
           loops={props.loops}
-          serverQueue={serverQueue}
           participants={rosterParticipants}
           participantUsage={sessionView.participantUsage}
           conversationFloor={sessionView.conversationFloor}
@@ -458,7 +469,16 @@ export function PromptInput(props: PromptInputProps) {
             )}
             <ActionButtons
               showAttach
-              accessory={props.accessory}
+              accessory={
+                queueDock ? (
+                  <>
+                    {queueDock}
+                    {props.accessory}
+                  </>
+                ) : (
+                  props.accessory
+                )
+              }
               hasPrompt={hasContent}
               canSend={canSend}
               isGenerating={isGenerating}

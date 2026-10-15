@@ -14,18 +14,13 @@ import {
   type StripParticipantRef,
 } from './ParticipantsStrip'
 import type { SessionLoopSummary } from '@/shared/api/contracts'
-import type { SessionQueueItem } from '@/shared/api/contracts'
 import type { useStreamTip } from '../../model/streamTips'
 
 /**
- * The queue and schedules strips render only when a session HAS queued messages or loops, which
- * a fresh launch rarely does — yet both were in the startup bundle (~21 KB before minification),
- * paid before first paint by every launch. They load the first time one has something to show;
- * the condition is checked here, so an empty session never fetches them at all.
+ * The schedules strip renders only when a session HAS loops, which a fresh launch rarely does, so
+ * it loads the first time it has something to show. (The queue lives in the context row above the
+ * composer now: `ComposerQueuePanel`.)
  */
-const ComposerQueuePanel = lazy(() =>
-  import('./ComposerQueuePanel').then((module) => ({ default: module.ComposerQueuePanel })),
-)
 const SchedulesPanel = lazy(() =>
   import('./SchedulesPanel').then((module) => ({ default: module.SchedulesPanel })),
 )
@@ -39,7 +34,6 @@ interface ComposerHeaderStripsProps {
   isGenerating: boolean
   sessionUsage?: ChatUsagePayload
   loops?: SessionLoopSummary[]
-  serverQueue?: SessionQueueItem[]
   /** The conversation's participants, shown as the roster. */
   participants?: readonly StripParticipantRef[]
   participantUsage?: Record<string, ChatUsagePayload>
@@ -69,7 +63,6 @@ export function ComposerHeaderStrips({
   isGenerating,
   sessionUsage,
   loops,
-  serverQueue,
   participants,
   participantUsage,
   conversationFloor,
@@ -131,11 +124,6 @@ export function ComposerHeaderStrips({
       )}
       {/* Metered spend crossed the user's budget (Preferences → Spend alert). */}
       <SpendAlertStrip sessionId={activeSessionId} sessionUsage={sessionUsage} />
-      {serverQueue && serverQueue.length > 0 && (
-        <Suspense fallback={null}>
-          <ComposerQueuePanel serverQueue={serverQueue} activeSessionId={activeSessionId} />
-        </Suspense>
-      )}
     </div>
   )
 }

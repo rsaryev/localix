@@ -11,7 +11,7 @@ beforeAll(() => {
 afterAll(() => teardown())
 
 describe('QueuePanel accessibility', () => {
-  test('removes collapsed controls from keyboard navigation and labels item actions', async () => {
+  test("names the list, the queue actions and each item's actions", async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
@@ -36,43 +36,29 @@ describe('QueuePanel accessibility', () => {
       )
     })
 
-    const toggle = host.querySelector<HTMLButtonElement>('button[aria-expanded]')!
-    const listId = toggle.getAttribute('aria-controls')!
-    const list = host.querySelector<HTMLElement>(`#${CSS.escape(listId)}`)!
+    const list = host.querySelector<HTMLElement>('[role="list"]')!
     const clear = host.querySelector<HTMLButtonElement>('button[aria-label="Clear queue"]')!
     const itemActions = host.querySelector<HTMLElement>('[data-slot="workbench-list-row-actions"]')!
-    expect(list.getAttribute('role')).toBe('list')
     expect(list.getAttribute('aria-label')).toBe('Queued messages')
     expect(list.querySelectorAll('[role="listitem"]')).toHaveLength(1)
-    expect(toggle.contains(clear)).toBe(false)
-    expect(clear.closest('[data-slot="collapsible-strip-actions"]')).not.toBeNull()
+    expect(clear.closest('[role="group"]')?.getAttribute('aria-label')).toBe('Queue actions')
+    expect(list.contains(clear)).toBe(false)
     expect(itemActions.getAttribute('role')).toBe('group')
     expect(itemActions.getAttribute('aria-label')).toBe('Queued item 1 actions')
     expect(host.querySelector('button[aria-label^="Send now queued item 1:"]')).not.toBeNull()
-    const delivery = host.querySelector('[data-slot="workbench-list-row-meta"]')!
-    expect(delivery.textContent).toBe('')
-    expect(delivery.className).toContain('h-6 items-center')
-    expect(delivery.querySelector('[role="img"][aria-label="Next tool"]')).not.toBeNull()
-    expect(delivery.querySelector('svg')?.getAttribute('class')).toContain('size-3.5')
+    // Steering is named in the slot the actions take on hover, so the row never widens.
+    const delivery = host.querySelector('[data-slot="workbench-list-row-action-fallback"]')!
+    expect(delivery.textContent).toBe('Next tool')
     const send = host.querySelector<HTMLButtonElement>(
       'button[aria-label^="Send now queued item 1:"]',
     )!
     expect(send.className).toContain('size-[var(--chrome-control-sm)]')
-    expect(send.querySelector('svg')?.getAttribute('class')).toContain('size-3.5')
-    expect(host.querySelector('button[aria-label="Next tool"]')).toBeNull()
     for (const action of Array.from(
-      host.querySelectorAll<HTMLButtonElement>('button[data-size="icon"]'),
+      host.querySelectorAll<HTMLButtonElement>('button[data-size="icon-sm"]'),
     )) {
       expect(action.textContent).toBe('')
-      expect(action.getAttribute('title')).toBeNull()
       expect(action.getAttribute('data-tooltip-trigger')).toBe('true')
     }
-
-    await act(async () => toggle.click())
-    expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    expect(list.getAttribute('aria-hidden')).toBe('true')
-    expect(list.hasAttribute('inert')).toBe(true)
-    expect(host.querySelector('[aria-label="Clear queue"]')).toBeNull()
 
     await act(async () => root.unmount())
   })
@@ -105,8 +91,6 @@ describe('QueuePanel accessibility', () => {
     const send = host.querySelector<HTMLButtonElement>(
       'button[aria-label^="Send now queued item"]',
     )!
-    expect(host.querySelector('[role="img"][aria-label="Next turn"]')).not.toBeNull()
-    expect(host.querySelector('button[aria-label="Next turn"]')).toBeNull()
     await act(async () => {
       send.click()
       send.click()
@@ -235,6 +219,53 @@ describe('QueuePanel accessibility', () => {
     )
     expect(clears).toBe(1)
 
+    await act(async () => root.unmount())
+  })
+
+  test("a participant's turn shows who answers and cancels in one click; other wakes arm first", async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const { QueuePanel } = await import('./QueuePanel')
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    const removed: string[] = []
+    await act(async () => {
+      root.render(
+        React.createElement(QueuePanel, {
+          queue: [
+            {
+              id: 'turn-1',
+              text: 'Gamer — waiting to answer',
+              queueKind: 'wake',
+              delivery: 'next-turn',
+              agent: { handle: 'gamer', name: 'Gamer' },
+            },
+            { id: 'loop-1', text: 'Nightly check', queueKind: 'wake', delivery: 'next-turn' },
+          ],
+          onRemove: (item: { id: string }) => {
+            removed.push(item.id)
+          },
+          onClear: () => {},
+        }),
+      )
+    })
+    expect(host.textContent).toContain('Gamer')
+    expect(host.textContent).not.toContain('Turn for')
+    const cancel = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Cancel Gamer\'s queued turn"]',
+    )!
+    await act(async () => cancel.click())
+    expect(removed).toEqual(['turn-1'])
+
+    const del = host.querySelector<HTMLButtonElement>('button[aria-label^="Delete queued item 2"]')!
+    await act(async () => del.click())
+    // Armed, not sent: the button now reads as a confirmation and shows it.
+    expect(removed).toEqual(['turn-1'])
+    expect(del.getAttribute('aria-pressed')).toBe('true')
+    expect(del.querySelector('.lucide-check')).not.toBeNull()
+    await act(async () => del.click())
+    expect(removed).toEqual(['turn-1', 'loop-1'])
     await act(async () => root.unmount())
   })
 })

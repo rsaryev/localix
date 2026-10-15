@@ -282,3 +282,22 @@
     transform: translateY(-0.2rem);
   }
 }
+
+/*
+ * THE COMPOSER'S QUEUE DOCK. When something joins the queue the pill lifts and settles once, so a
+ * new item is felt even while the list is closed.
+ */
+.lx-queue-dock-bump {
+  animation: lx-queue-dock-bump var(--dur-slow) var(--ease-soft);
+}
+@keyframes lx-queue-dock-bump {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-0.2rem) scale(1.04);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
