@@ -15,20 +15,19 @@
  * rest recede. All of it on the names already here: the queue is a fact about these participants,
  * and a second list of the same names in a different order is two things to reconcile.
  *
- * The strip also DRAWS them in that order: a sideways-scrolling roster kept in roster order left
- * the speaker at or past the right edge, so the speaker leads, the queue follows, and the rest
- * keep the places they had (`model/participantOrder`).
+ * The names STAY WHERE THEY ARE. Moving the speaker to the front made every chip jump at each
+ * change of speaker; the row keeps roster order, the standing is drawn on each name, and a row
+ * scrolled sideways brings the speaker into view instead of moving it.
  *
  * User addressing and the addresses in agents' replies feed the same durable queue, so
  * this strip renders scheduler state instead of owning another ordering rule.
  */
 import type { ChatUsagePayload } from '@localixai/agent'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { motionSafeScrollBehavior } from '@localixai/kit/environment'
 
-import { useFlipReorder } from '@/shared/hooks/useFlipReorder'
 import { answerClock } from '../../model/answerClock'
-import { floorIsRunning, liveParticipantOrder, sameOrder } from '../../model/participantOrder'
+import { floorIsRunning } from '../../model/participantOrder'
 import { ParticipantChip, type Standing, type StripParticipantRef } from './ParticipantChip'
 
 // The roster's element type, re-exported so the composer types its props from the strip it renders.
@@ -96,30 +95,6 @@ function standingOf(agentId: string, floor: ConversationFloor | null | undefined
   return place >= 0 ? { kind: 'waiting', place: place + 1 } : { kind: 'idle' }
 }
 
-/**
- * The roster in its LIVE order (`model/participantOrder`), remembering the order last drawn.
- *
- * The previous order is what keeps the row still: without it every render would re-derive from
- * roster order, and the end of a round would move every chip back. It is kept per session — another
- * conversation's order says nothing about this one — and held in state rather than a ref, updated
- * during render only when the derived order differs (React's "adjust state on prop change"), so the
- * first paint of a new floor already has the new order.
- */
-function useLiveOrder(
-  participants: readonly StripParticipantRef[],
-  floor: ConversationFloor | null | undefined,
-  sessionId: string | null | undefined,
-): StripParticipantRef[] {
-  const scope = sessionId ?? null
-  const [memo, setMemo] = useState<{ scope: string | null; order: string[] } | null>(null)
-  const previous = memo?.scope === scope ? memo.order : null
-  const roster = participants.map((participant) => participant.agentId)
-  const order = liveParticipantOrder(roster, floor, previous)
-  if (!previous || !sameOrder(previous, order)) setMemo({ scope, order })
-  const byId = new Map(participants.map((participant) => [participant.agentId, participant]))
-  return order.flatMap((id) => byId.get(id) ?? [])
-}
-
 export function ParticipantsStrip({
   participants,
   participantUsage,
@@ -133,23 +108,25 @@ export function ParticipantsStrip({
 }: ParticipantsStripProps) {
   const running = floorIsRunning(floor)
   const remove = locked ? undefined : onRemove
-  const ordered = useLiveOrder(participants, floor, sessionId)
   const scrollerRef = useRef<HTMLDivElement>(null)
-  useFlipReorder(
-    scrollerRef,
-    ordered.map((participant) => participant.agentId),
-    sessionId,
-  )
   const speaking = floor?.speaking ?? null
   useEffect(() => {
     if (sessionId && (!isGenerating || !speaking)) answerClock.end(sessionId)
   }, [sessionId, isGenerating, speaking])
-  // The speaker is now first, but a row scrolled sideways would still hide it: bring the start
-  // back into view when the floor changes hands. Smooth, unless the person asked for less motion.
+  // A row scrolled sideways can hide the speaker: when the floor changes hands, CENTRE the one
+  // answering, so the participants on either side (who spoke, who is next) stay in view. Only
+  // the scroll moves, never a chip. Smooth, unless the person asked for less motion.
   useEffect(() => {
     const scroller = scrollerRef.current
-    if (!speaking || !scroller || scroller.scrollLeft <= 0) return
-    scroller.scrollTo({ left: 0, behavior: motionSafeScrollBehavior('smooth') })
+    if (!speaking || !scroller) return
+    const chip = scroller.querySelector<HTMLElement>(`[data-participant="${CSS.escape(speaking)}"]`)
+    if (!chip) return
+    const box = chip.getBoundingClientRect()
+    const start = box.left - scroller.getBoundingClientRect().left + scroller.scrollLeft
+    const max = Math.max(0, scroller.scrollWidth - scroller.clientWidth)
+    const left = Math.min(max, Math.max(0, start - (scroller.clientWidth - box.width) / 2))
+    if (Math.abs(left - scroller.scrollLeft) < 1) return
+    scroller.scrollTo({ left, behavior: motionSafeScrollBehavior('smooth') })
   }, [speaking])
   return (
     // ONE ROW, ALWAYS. Six participants with long display names wrapped onto a second line and
@@ -174,21 +151,16 @@ export function ParticipantsStrip({
         content, the controls follow the last participant; with too many names it still shrinks
         and scrolls, and the controls stay in view instead of scrolling off with them.
       */}
-      {/*
-        SPEAKER FIRST, WITHOUT A JUMP. The DOM order is the visual order (no CSS `order`, so focus
-        and screen readers follow what is seen); a reorder is played as motion by
-        `useFlipReorder` on the `data-flip-key` wrappers, so each chip slides to its new place.
-      */}
       <div
         ref={scrollerRef}
         className="scrollbar-none -mx-1 flex min-w-0 shrink items-center gap-1.5 overflow-x-auto px-1 py-1.5"
       >
-        {ordered.map((participant) => {
+        {participants.map((participant) => {
           const standing = standingOf(participant.agentId, floor)
           return (
             <div
               key={participant.agentId}
-              data-flip-key={participant.agentId}
+              data-participant={participant.agentId}
               className="flex shrink-0"
             >
               <ParticipantChip

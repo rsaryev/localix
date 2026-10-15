@@ -30,7 +30,8 @@ function AnswerDuration({ sessionId, agentId }: { sessionId: string; agentId: st
   }, [])
 
   return (
-    <span aria-hidden="true" className="ml-1 text-3xs tabular-nums text-text-faint">
+    // A fixed width: "9sec" → "10sec" → "1m5sec" must not push the chips beside it.
+    <span aria-hidden="true" className="ml-1 w-10 shrink-0 text-3xs tabular-nums text-text-faint">
       {formatAnswerDuration(now - startedAt)}
     </span>
   )
@@ -107,7 +108,21 @@ export function ParticipantChip({
         })
       }}
     >
-      <MonogramAvatar identity={identity.handle} label={identity.name} size={18} />
+      {/* The place in line sits ON the avatar, so being queued never changes the chip's width and
+          the row beside it stays still. */}
+      <span className="relative inline-flex shrink-0">
+        <MonogramAvatar identity={identity.handle} label={identity.name} size={18} />
+        {standing.kind === 'waiting' ? (
+          // The place in line, not a generic "queued" mark: with three participants waiting,
+          // which one is next is the only part of the queue the person can act on.
+          <span
+            aria-hidden
+            className="absolute -right-1 -bottom-1 inline-flex min-w-3 justify-center rounded-full bg-surface-active px-0.5 text-3xs leading-3 text-text-soft tabular-nums"
+          >
+            {standing.place}
+          </span>
+        ) : null}
+      </span>
       <span
         className={
           standing.kind === 'speaking'
@@ -119,16 +134,6 @@ export function ParticipantChip({
       </span>
       {showDuration && sessionId ? (
         <AnswerDuration key={sessionId} sessionId={sessionId} agentId={participant.agentId} />
-      ) : null}
-      {standing.kind === 'waiting' ? (
-        // The place in line, not a generic "queued" mark: with three participants waiting,
-        // which one is next is the only part of the queue the person can act on.
-        <span
-          aria-hidden
-          className="ml-0.5 inline-flex min-w-3.5 justify-center rounded-full bg-field-fill px-1 text-3xs leading-4 text-text-faint tabular-nums"
-        >
-          {standing.place}
-        </span>
       ) : null}
     </Button>
   )

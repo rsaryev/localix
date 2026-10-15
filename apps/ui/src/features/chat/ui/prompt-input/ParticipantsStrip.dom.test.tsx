@@ -344,86 +344,61 @@ describe('ParticipantsStrip — a fixed roster', () => {
   })
 })
 
-describe('ParticipantsStrip — the speaker leads the row', () => {
-  // A roster kept in roster order scrolls sideways, so the participant the minutes were going to
-  // could sit at the right edge or past it. The DOM order IS the drawn order (no CSS `order`).
+describe('ParticipantsStrip — the row stays still', () => {
   const order = (host: HTMLElement) =>
-    [...host.querySelectorAll('[data-flip-key]')].map((node) => node.getAttribute('data-flip-key'))
+    [...host.querySelectorAll('[data-participant]')].map((node) =>
+      node.getAttribute('data-participant'),
+    )
+  const ROSTER = ['builtin:localix', 'builtin:frontend', 'builtin:qa']
 
-  test('while a round runs the speaker is first and the waiting follow by place', async () => {
+  test('roster order holds while speakers change and rounds end', async () => {
+    const { host, rerender, cleanup } = await render(
+      { speaking: 'builtin:qa', waiting: ['builtin:frontend'] },
+      { sessionId: 'order-still' },
+    )
+    try {
+      expect(order(host)).toEqual(ROSTER)
+      await rerender({ speaking: 'builtin:frontend', waiting: [] }, { sessionId: 'order-still' })
+      expect(order(host)).toEqual(ROSTER)
+      await rerender(null, { sessionId: 'order-still' })
+      expect(order(host)).toEqual(ROSTER)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  test('the place in line rides on the avatar, not beside the name', async () => {
     const { host, cleanup } = await render(
       { speaking: 'builtin:qa', waiting: ['builtin:frontend'] },
-      { sessionId: 'order-running' },
+      { sessionId: 'order-badge' },
     )
     try {
-      expect(order(host)).toEqual(['builtin:qa', 'builtin:frontend', 'builtin:localix'])
-      // Each wrapper holds exactly its own chip, so a FLIP move carries the whole chip.
-      const first = host.querySelector('[data-flip-key]')!
-      expect(first.querySelector('[data-slot="participant-chip"]')?.textContent).toContain('Qa')
+      const chip = host.querySelector('[data-participant="builtin:frontend"]')!
+      const badge = [...chip.querySelectorAll('span.absolute')].find((n) => n.textContent === '1')
+      expect(badge).toBeDefined()
     } finally {
       await cleanup()
     }
   })
 
-  test('the order is kept when the round ends, and a new speaker moves to the front', async () => {
-    const { host, rerender, cleanup } = await render(null, { sessionId: 'order-kept' })
-    try {
-      expect(order(host)).toEqual(['builtin:localix', 'builtin:frontend', 'builtin:qa'])
-      await rerender({ speaking: 'builtin:qa', waiting: [] }, { sessionId: 'order-kept' })
-      expect(order(host)).toEqual(['builtin:qa', 'builtin:localix', 'builtin:frontend'])
-      // Snapping back to roster order would move every chip a second time for no new fact.
-      await rerender(null, { sessionId: 'order-kept' })
-      expect(order(host)).toEqual(['builtin:qa', 'builtin:localix', 'builtin:frontend'])
-      await rerender({ speaking: 'builtin:frontend', waiting: [] }, { sessionId: 'order-kept' })
-      expect(order(host)).toEqual(['builtin:frontend', 'builtin:qa', 'builtin:localix'])
-    } finally {
-      await cleanup()
-    }
-  })
-
-  test('another session starts from its own roster order', async () => {
-    const { host, rerender, cleanup } = await render(
-      { speaking: 'builtin:qa', waiting: [] },
-      { sessionId: 'order-a' },
-    )
-    try {
-      await rerender(null, { sessionId: 'order-b' })
-      expect(order(host)).toEqual(['builtin:localix', 'builtin:frontend', 'builtin:qa'])
-    } finally {
-      await cleanup()
-    }
-  })
-
-  test('a change of speaker scrolls a scrolled row back to its start', async () => {
-    const originalMatchMedia = window.matchMedia
-    let reduced = false
-    window.matchMedia = ((query: string) =>
-      ({
-        media: query,
-        matches: reduced,
-        addEventListener() {},
-        removeEventListener() {},
-      }) as unknown as MediaQueryList) as typeof window.matchMedia
+  test('the speaker is centred in a scrolled row, without moving any chip', async () => {
     const { host, rerender, cleanup } = await render(null, { sessionId: 'order-scroll' })
     try {
-      const scroller = host.querySelector('[data-flip-key]')!.parentElement!
+      const scroller = host.querySelector('[data-participant]')!.parentElement!
       const scrolls: ScrollToOptions[] = []
-      Object.defineProperty(scroller, 'scrollLeft', { value: 80, configurable: true })
       scroller.scrollTo = ((options: ScrollToOptions) =>
         scrolls.push(options)) as typeof scroller.scrollTo
+      const qa = host.querySelector<HTMLElement>('[data-participant="builtin:qa"]')!
+      qa.getBoundingClientRect = () => ({ left: 300, width: 80 }) as DOMRect
+      scroller.getBoundingClientRect = () => ({ left: 0, width: 200 }) as DOMRect
+      Object.defineProperty(scroller, 'clientWidth', { value: 200, configurable: true })
+      Object.defineProperty(scroller, 'scrollWidth', { value: 600, configurable: true })
       await rerender({ speaking: 'builtin:qa', waiting: [] }, { sessionId: 'order-scroll' })
-      expect(scrolls).toEqual([{ left: 0, behavior: 'smooth' }])
-      // The same speaker again is not a change; a new one under reduced motion jumps.
-      await rerender(
-        { speaking: 'builtin:qa', waiting: ['builtin:localix'] },
-        { sessionId: 'order-scroll' },
-      )
       expect(scrolls).toHaveLength(1)
-      reduced = true
-      await rerender({ speaking: 'builtin:localix', waiting: [] }, { sessionId: 'order-scroll' })
-      expect(scrolls[1]).toEqual({ left: 0, behavior: 'auto' })
+      // Chip at 300–380 in a 200px view: centred means its middle (340) at the view's middle.
+      expect(scrolls[0]!.left).toBe(240)
+      expect(order(host)).toEqual(ROSTER)
     } finally {
-      window.matchMedia = originalMatchMedia
       await cleanup()
     }
   })
@@ -437,7 +412,7 @@ test('the active participant has a timer while idle and waiting participants sho
   try {
     expect(host.querySelector('[aria-label="Usage for Frontend"]')).toBeNull()
     expect(host.querySelector('[aria-label="Usage for Qa"]')).not.toBeNull()
-    expect(host.querySelector('[data-flip-key="builtin:frontend"]')?.textContent).toMatch(/\d/)
+    expect(host.querySelector('[data-participant="builtin:frontend"]')?.textContent).toMatch(/\d/)
     await rerender(null, { sessionId: 'usage-roster', isGenerating: false })
     expect(host.querySelectorAll('[aria-label^="Usage for"]')).toHaveLength(3)
   } finally {
@@ -453,7 +428,7 @@ test('the roster contains participants without a session-wide usage control', as
   try {
     const group = host.querySelector('[aria-label="Conversation participants"]')!
     expect(group.querySelector('[aria-label="Total session usage"]')).toBeNull()
-    expect(group.querySelector('[data-slot="participant-chip"]')?.textContent).toContain('Qa')
+    expect(group.querySelectorAll('[data-slot="participant-chip"]')).toHaveLength(3)
   } finally {
     await cleanup()
   }
