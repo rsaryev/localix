@@ -1,4 +1,4 @@
-import { shotsBy, type PlayerView, type Record, type Shot } from './game'
+import { shotsBy, type PlayerView, type GameRecord, type Shot } from './game'
 import { SIZE, cellName, knownCells, neighbours, shipAt, type Ship } from './rules'
 
 /**
@@ -69,7 +69,7 @@ export function sinceLastTurn(view: PlayerView): string[] {
  * The running score at this table, from the agent's side — so a woken turn knows the history of
  * this chat's games without reading them back from a transcript that checkpoints may have folded.
  */
-export function recordLine(record: Record): string | null {
+export function recordLine(record: GameRecord): string | null {
   if (record.won + record.lost === 0) return null
   return `Score at this table: you ${record.lost}, the user ${record.won}.`
 }

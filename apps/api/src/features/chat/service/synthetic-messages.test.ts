@@ -122,6 +122,19 @@ describe('insertDirectReply', () => {
     expect(success.inserted[0].payload.commandOutput?.tone).toBe('success')
     expect(failure.inserted[0].payload.commandOutput?.tone).toBe('error')
   })
+
+  test('a tone the handler states wins over the text heuristic', async () => {
+    const h = harness()
+    await h.svc.insertDirectReply(
+      'u',
+      's',
+      '/frobnicate',
+      'Unknown slash command `/frobnicate`.',
+      '2026-01-02',
+      'error',
+    )
+    expect(h.inserted[0].payload.commandOutput?.tone).toBe('error')
+  })
 })
 
 describe('insertSystemNotice', () => {

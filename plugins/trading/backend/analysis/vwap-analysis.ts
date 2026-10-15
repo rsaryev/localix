@@ -6,6 +6,7 @@
  * are, so the three agree. Pure; null-honest when the current day has no volume to weight by.
  */
 import type { Candle } from '../contracts'
+import { toolNumber } from '../tool-number'
 
 export interface SessionVwap {
   vwap: number
@@ -55,10 +56,6 @@ export function sessionVwap(candles: Candle[], minBars = 3): SessionVwap | null 
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The session VWAP as one report line, or nothing when it could not be computed. */
 export function renderSessionVwap(v: SessionVwap | null): string[] {
   if (!v) return []
@@ -69,6 +66,6 @@ export function renderSessionVwap(v: SessionVwap | null): string[] {
         ? 'below (intraday-bearish location)'
         : 'right at'
   return [
-    `- session VWAP (UTC day): ${num(v.vwap)} — price ${v.distancePct >= 0 ? '+' : ''}${num(v.distancePct)}% ${side}; ±1σ band ${num(v.lower)}–${num(v.upper)} (the mean-reversion stretch).`,
+    `- session VWAP (UTC day): ${toolNumber(v.vwap)} — price ${v.distancePct >= 0 ? '+' : ''}${toolNumber(v.distancePct)}% ${side}; ±1σ band ${toolNumber(v.lower)}–${toolNumber(v.upper)} (the mean-reversion stretch).`,
   ]
 }

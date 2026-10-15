@@ -18,8 +18,7 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
         group.hidden = true;
         let labels: Vec<_> = group.tabs.iter().map(|tab| tab.label.clone()).collect();
         {
-            let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
-            if !state.0.lock().unwrap().reserve_hide(&labels) {
+            if !crate::workspace_windows::workspaces(&app).reserve_hide(&labels) {
                 return;
             }
         }
@@ -29,8 +28,7 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
             crate::macos_tabs::defer(move || {
                 let selected = &group.tabs[group.selected].label;
                 let should_hide = {
-                    let state = handle.state::<crate::workspace_windows::WorkspaceWindows>();
-                    let mut data = state.0.lock().unwrap();
+                    let mut data = crate::workspace_windows::workspaces(&handle);
                     let pending = data.entries.get(selected).is_some_and(|entry| entry.hiding);
                     if pending {
                         data.hidden_groups.push(group.clone());
@@ -51,8 +49,7 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
                             let _ = window.hide();
                         }
                     }
-                    let state = handle.state::<crate::workspace_windows::WorkspaceWindows>();
-                    let mut data = state.0.lock().unwrap();
+                    let mut data = crate::workspace_windows::workspaces(&handle);
                     for label in &labels {
                         if let Some(entry) = data.entries.get_mut(label) {
                             entry.hiding = false;
@@ -62,7 +59,7 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
                     data.active = Some(selected.clone());
                     drop(data);
                     let handle = handle.clone();
-                    std::thread::spawn(move || crate::workspace_session::save(&handle));
+                    crate::workspace_session::save_in_background(&handle);
                 }
             });
         });
@@ -123,8 +120,7 @@ pub(crate) fn reopen_for_label<R: tauri::Runtime>(app: &AppHandle<R>, label: &st
     let label = label.to_string();
     crate::macos_tabs::defer(move || {
         let hidden = {
-            let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
-            let mut data = state.0.lock().unwrap();
+            let mut data = crate::workspace_windows::workspaces(&app);
             if let Some(entry) = data.entries.get_mut(&label) {
                 entry.hiding = false;
             }
@@ -176,8 +172,7 @@ pub(crate) fn reopen_for_label<R: tauri::Runtime>(app: &AppHandle<R>, label: &st
             #[allow(deprecated)]
             objc2_app_kit::NSApplication::sharedApplication(mtm).activateIgnoringOtherApps(true);
         }
-        let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
-        state.0.lock().unwrap().active = Some(window.label().into());
-        std::thread::spawn(move || crate::workspace_session::save(&app));
+        crate::workspace_windows::workspaces(&app).active = Some(window.label().into());
+        crate::workspace_session::save_in_background(&app);
     });
 }

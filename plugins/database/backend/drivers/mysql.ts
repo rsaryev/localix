@@ -4,6 +4,9 @@
  * lives in ./mysql-introspect. A MySQL connection is scoped to one database, so the
  * schema tree groups under it.
  */
+import { CONNECT_TIMEOUT_MS } from './connect-timeout'
+import { makeManualTransaction } from './manual-transaction'
+import { MYSQL_COLUMN_CATALOG_SQL, readColumnCatalog } from './column-catalog'
 import mysql from 'mysql2/promise'
 import { driverFlags } from './port'
 import { buildSqlBrowseQuery } from './sql-browse'
@@ -101,6 +104,7 @@ export function buildMysqlPoolOptions(options: MysqlDriverOptions): mysql.PoolOp
     // mysql2 otherwise converts BIGINT to Number even when it cannot be represented.
     // With this flag it keeps safe values as numbers and returns unsafe values as strings.
     supportBigNumbers: true,
+    connectTimeout: CONNECT_TIMEOUT_MS,
   }
 }
 
@@ -195,31 +199,12 @@ export function createMysqlDriver(options: MysqlDriverOptions): DbDriver {
       conn.release()
       throw err
     }
-    let done = false
-    return {
+    return makeManualTransaction({
       query: pinnedRunner(conn),
-      async commit() {
-        if (done) return
-        done = true
-        try {
-          await conn.commit()
-        } catch (err) {
-          await conn.rollback().catch(() => {})
-          throw err
-        } finally {
-          conn.release()
-        }
-      },
-      async rollback() {
-        if (done) return
-        done = true
-        try {
-          await conn.rollback().catch(() => {})
-        } finally {
-          conn.release()
-        }
-      },
-    }
+      commit: () => conn.commit(),
+      rollback: () => conn.rollback(),
+      release: () => conn.release(),
+    })
   }
 
   /** One statement on a pinned connection whose abort KILLs the query, never the connection. */
@@ -276,6 +261,8 @@ export function createMysqlDriver(options: MysqlDriverOptions): DbDriver {
 
   const schemas = (): Promise<DbSchemas> => mysqlSchemas(objectRows)
 
+  const columnCatalog = () => readColumnCatalog(objectRows, MYSQL_COLUMN_CATALOG_SQL)
+
   const tableSchema = (schema: string | undefined, table: string): Promise<DbTableSchema> =>
     mysqlTableSchema(objectRows, schema, table)
 
@@ -292,6 +279,7 @@ export function createMysqlDriver(options: MysqlDriverOptions): DbDriver {
     beginTransaction,
     browse,
     schemas,
+    columnCatalog,
     tableSchema,
     close,
   }

@@ -99,39 +99,58 @@ export function register(ctx) {
         // What was found but not delivered. One line per reply, not one per file:
         // the fix is the same for all of them.
         const skipped = []
-        for (const raw of candidates) {
-          if (bindings.length >= maxFiles) break
-          const filePath = raw.startsWith('~') ? path.join(homedir(), raw.slice(1)) : raw
-          const meta = MEDIA_TYPES[path.extname(filePath).slice(1).toLowerCase()]
-          if (!meta) continue
-          try {
-            const stat = await fs.stat(filePath)
-            if (!stat.isFile()) continue
-            if (stat.size > maxBytes) {
-              ctx.log(`skipped ${filePath} (${stat.size} bytes > cap)`)
+        const skip = (filePath, err) => {
+          // A path the reply merely talked about is the common case, so a missing file is
+          // silent; anything else (permissions, a bad read) is a real deliverable being dropped
+          // and worth a line in the log.
+          if (err?.code === 'ENOENT') return
+          ctx.log(`skipped ${filePath}: ${err?.message ?? err}`)
+          skipped.push(`${path.basename(filePath)} — ${err?.message ?? err}`)
+        }
+        // Every candidate is stat'ed at once — this runs before the reply is shown, so N paths
+        // must not cost N sequential round trips. Order is kept: the first files named win.
+        const inspected = await Promise.all(
+          candidates.map(async (raw) => {
+            const filePath = raw.startsWith('~') ? path.join(homedir(), raw.slice(1)) : raw
+            const meta = MEDIA_TYPES[path.extname(filePath).slice(1).toLowerCase()]
+            if (!meta) return null
+            try {
+              const stat = await fs.stat(filePath)
+              return stat.isFile() ? { raw, filePath, meta, size: stat.size } : null
+            } catch (err) {
+              return { raw, filePath, error: err }
+            }
+          }),
+        )
+        // Walk the candidates in order, reading as many at once as can still be attached; a
+        // failed read lets the next candidate take its place, and nothing past the cap is judged.
+        let next = 0
+        while (bindings.length < maxFiles && next < inspected.length) {
+          const batch = []
+          while (next < inspected.length && bindings.length + batch.length < maxFiles) {
+            const entry = inspected[next++]
+            if (!entry) continue
+            if (entry.error) skip(entry.filePath, entry.error)
+            else if (entry.size > maxBytes) {
+              ctx.log(`skipped ${entry.filePath} (${entry.size} bytes > cap)`)
               skipped.push(
-                `${path.basename(filePath)} — ${stat.size} bytes, over the MAX_FILE_MB cap (${maxBytes})`,
+                `${path.basename(entry.filePath)} — ${entry.size} bytes, over the MAX_FILE_MB cap (${maxBytes})`,
               )
-              continue
-            }
-            const data = (await fs.readFile(filePath)).toString('base64')
-            bindings.push({
-              kind: meta.kind,
-              mediaType: meta.mediaType,
-              data,
-              name: path.basename(filePath),
-              size: stat.size,
-            })
-            attached.push(raw)
-          } catch (err) {
-            // A path the reply merely talked about is the common case, so a missing
-            // file is silent; anything else (permissions, a bad read) is a real
-            // deliverable being dropped and worth a line in the log.
-            if (err?.code !== 'ENOENT') {
-              ctx.log(`skipped ${filePath}: ${err?.message ?? err}`)
-              skipped.push(`${path.basename(filePath)} — ${err?.message ?? err}`)
-            }
+            } else batch.push(entry)
           }
+          const reads = await Promise.allSettled(batch.map((entry) => fs.readFile(entry.filePath)))
+          reads.forEach((read, index) => {
+            const entry = batch[index]
+            if (read.status === 'rejected') return skip(entry.filePath, read.reason)
+            bindings.push({
+              kind: entry.meta.kind,
+              mediaType: entry.meta.mediaType,
+              data: read.value.toString('base64'),
+              name: path.basename(entry.filePath),
+              size: entry.size,
+            })
+            attached.push(entry.raw)
+          })
         }
         if (skipped.length > 0) {
           ctx.reportProblem?.({

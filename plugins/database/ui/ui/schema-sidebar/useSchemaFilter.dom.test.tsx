@@ -40,6 +40,8 @@ function fakeSchema(schemas: DbSchemas, ensured: Array<unknown[]>): SchemaState 
     loadTable() {},
     reloadTable() {},
     ensureColumns: (wanted) => ensured.push(wanted),
+    columnSources: {},
+    getColumnSource: () => undefined,
     model: { tables: [], columnsByTable: {}, foreignKeys: [] },
   }
 }

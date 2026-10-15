@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
 import { MARKER_FILE } from './managed-copy'
+import { isRecord } from '../../lib/record'
 
 /**
  * What a staged plugins root says about itself, and whether that can be believed.
@@ -25,9 +26,6 @@ export interface StagedMarker {
   unavailable: Record<string, string>
   writtenAtNs: bigint
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
 export async function readStagedMarker(root: string): Promise<StagedMarker | null> {
   try {

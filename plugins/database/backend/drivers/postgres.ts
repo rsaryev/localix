@@ -3,6 +3,9 @@
  * validates with a `SELECT 1` at connect time). Introspection via `information_schema`
  * lives in ./postgres-introspect, mapped onto the dialect-agnostic schema shape.
  */
+import { CONNECT_TIMEOUT_MS } from './connect-timeout'
+import { makeManualTransaction } from './manual-transaction'
+import { PG_COLUMN_CATALOG_SQL, readColumnCatalog } from './column-catalog'
 import postgres from 'postgres'
 import { isSingleReadStatementForDialect } from '../read-only/sql'
 import { driverFlags } from './port'
@@ -33,6 +36,7 @@ export function buildPostgresOptions(
 ): postgres.Options<Record<string, postgres.PostgresType>> {
   return {
     max: 1,
+    connect_timeout: CONNECT_TIMEOUT_MS / 1000,
     onnotice: () => {},
     ...(options.ssl !== undefined ? { ssl: options.ssl } : {}),
     ...(!options.url
@@ -74,10 +78,6 @@ export function shapePgValuesResult(
   return { columns: [], rows: [], rowsAffected: (res as { count?: number }).count ?? 0, durationMs }
 }
 
-/**
- * Run one statement text on `executor` holding at most the row cap (`postgres-rows.ts` says how
- * each shape stops or drains). `.cancel()` stays on the pending query for the abort signal.
- */
 /** What `runCapped` needs of the pool, a `begin` transaction or a reserved connection. */
 interface PgExecutor {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,6 +85,9 @@ interface PgExecutor {
 }
 
 /**
+ * Run one statement text on `executor` holding at most the row cap (`postgres-rows.ts` says how
+ * each shape stops or drains). `.cancel()` stays on the pending query for the abort signal.
+ *
  * `close` is the pool's `sql.CLOSE` — one module-level sentinel, which a `begin` transaction's
  * handle carries at runtime but not in its typings, so it is passed rather than read off `tx`.
  */
@@ -190,37 +193,16 @@ export function createPostgresDriver(options: PostgresDriverOptions): DbDriver {
       reserved.release()
       throw err
     }
-    let done = false
-    return {
-      async query(
-        text: string,
-        params: unknown[] = [],
-        signal?: AbortSignal,
-      ): Promise<DbResultSet> {
-        return runCapped(reserved, sql.CLOSE, text, params, signal)
+    return makeManualTransaction({
+      query: (text, params = [], signal) => runCapped(reserved, sql.CLOSE, text, params, signal),
+      commit: async () => {
+        await reserved.unsafe('COMMIT')
       },
-      async commit() {
-        if (done) return
-        done = true
-        try {
-          await reserved.unsafe('COMMIT')
-        } catch (err) {
-          await reserved.unsafe('ROLLBACK').catch(() => {})
-          throw err
-        } finally {
-          reserved.release()
-        }
+      rollback: async () => {
+        await reserved.unsafe('ROLLBACK')
       },
-      async rollback() {
-        if (done) return
-        done = true
-        try {
-          await reserved.unsafe('ROLLBACK').catch(() => {})
-        } finally {
-          reserved.release()
-        }
-      },
-    }
+      release: () => reserved.release(),
+    })
   }
 
   async function rows<T>(text: string, params: unknown[] = []): Promise<T[]> {
@@ -229,6 +211,8 @@ export function createPostgresDriver(options: PostgresDriverOptions): DbDriver {
   }
 
   const schemas = (): Promise<DbSchemas> => pgSchemas(rows)
+
+  const columnCatalog = () => readColumnCatalog(rows, PG_COLUMN_CATALOG_SQL)
 
   const tableSchema = (schema: string | undefined, table: string): Promise<DbTableSchema> =>
     pgTableSchema(rows, schema ?? flags.defaultSchema, table)
@@ -246,6 +230,7 @@ export function createPostgresDriver(options: PostgresDriverOptions): DbDriver {
     beginTransaction,
     browse,
     schemas,
+    columnCatalog,
     tableSchema,
     close,
   }

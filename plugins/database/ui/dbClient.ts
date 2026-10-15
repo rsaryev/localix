@@ -30,6 +30,8 @@ export type {
   DbColumn,
   DbIndex,
   DbTableSchema,
+  DbCatalogColumn,
+  DbColumnCatalog,
   DbSchemaItem,
   DbSchemas,
   DbResultSet,

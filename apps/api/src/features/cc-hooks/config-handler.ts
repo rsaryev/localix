@@ -15,6 +15,7 @@ import {
   type CcHookSource,
 } from './contracts'
 import { ccPluginMcpToolToEngine, pluginServerRefToEngineMcpTool } from './mcp-names'
+import { isRecord } from '../../lib/record'
 
 /** A skipped handler (unsupported type), surfaced so the caller can debug-log it. */
 export interface SkippedHandler {
@@ -95,10 +96,6 @@ function clampTimeoutMs(rawSeconds: unknown, defaultSec = CC_HOOK_DEFAULT_TIMEOU
       ? Math.min(rawSeconds, CC_HOOK_MAX_TIMEOUT_SEC)
       : defaultSec
   return Math.round(sec * 1000)
-}
-
-export function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
 /** Common `if` / `once` fields shared by every handler type. */

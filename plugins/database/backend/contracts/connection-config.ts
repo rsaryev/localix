@@ -134,11 +134,7 @@ const networkConnectionFields = {
   ...baseConnectionFields,
 }
 
-/**
- * Connection configs, discriminated by dialect. SQLite ships first (zero deps via
- * bun:sqlite); postgres/mysql are declared for forward-compat and rejected at the
- * driver factory until their driver packages land.
- */
+/** Connection configs, discriminated by dialect — one schema per engine in the driver catalog. */
 export const sqliteConnectionSchema = z.object({
   dialect: z.literal('sqlite'),
   /** Absolute path to the .db/.sqlite file, or ':memory:'. */

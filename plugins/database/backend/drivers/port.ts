@@ -7,6 +7,7 @@
  * there is no `connect()` method here, and the port assumes only an asynchronous `query`.
  */
 
+import type { DbColumnCatalog } from './column-catalog'
 import {
   getDatabaseDriverManifest,
   type DbDialect,
@@ -82,6 +83,7 @@ export type {
   DbPostgresExtendedStatistic,
 } from './schema-object-contracts'
 export type { DbTableSchema, DbSchemaItem, DbSchemas } from './schema-table-contracts'
+export type { DbCatalogColumn, DbCatalogTable, DbColumnCatalog } from './column-catalog'
 
 export interface DbResultColumn {
   name: string
@@ -200,6 +202,11 @@ export interface DbDriver {
   browse(request: DbBrowseRequest, signal?: AbortSignal): Promise<DbResultSet>
   /** Enumerate schemas → tables/views. */
   schemas(): Promise<DbSchemas>
+  /**
+   * Every table's column names in one catalog read (see `column-catalog.ts`). OPTIONAL: a driver
+   * that omits it leaves the UI to read columns table by table.
+   */
+  columnCatalog?(): Promise<DbColumnCatalog>
   /** Full structure of one object (columns, PK, FKs, create-script). */
   tableSchema(schema: string | undefined, table: string): Promise<DbTableSchema>
   /** Release underlying resources. Idempotent. */

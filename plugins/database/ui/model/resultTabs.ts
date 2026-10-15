@@ -1,6 +1,7 @@
 import type { SortSpec } from '@localixai/dataview'
 import type { AdaptedResult } from './resultAdapter'
 import { MAX_OUTPUT_ENTRIES, type OutputEntry } from './result-tabs/outputLog'
+import { maskSqlNonCode, REDACTION_SQL_GRAMMAR, scanSqlRegions } from '../../shared/sql-regions'
 
 /**
  * Pure state model for the SQL console's result tabs. Each executed
@@ -71,10 +72,45 @@ export function emptyResultTabsState(): ResultTabsState {
   return { tabs: [], activeId: null, nextSeq: 1 }
 }
 
-/** Trim + collapse internal whitespace + lowercase + drop a trailing `;` — the
- *  identity of an ad-hoc query, so re-running the same SQL reuses its tab. */
+/** Collapse whitespace and lowercase CODE only; literals, quoted names and comments stay as typed. */
+function normalizeCode(code: string): string {
+  return code.replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * Trim + collapse whitespace + lowercase + drop a trailing `;` — the identity of an ad-hoc query,
+ * so re-running the same SQL reuses its tab. Only code is folded: `WHERE name = 'Bob'` and
+ * `'bob'` (or `"User"` and `"user"`) are different queries and must not share a tab. The
+ * string-greedy redaction grammar is used because the dialect is unknown here.
+ */
 export function normalizeSql(sql: string): string {
-  return sql.trim().replace(/;\s*$/, '').replace(/\s+/g, ' ').trim().toLowerCase()
+  const text = sql.trim().replace(/;\s*$/, '')
+  let out = ''
+  let at = 0
+  for (const region of scanSqlRegions(text, REDACTION_SQL_GRAMMAR)) {
+    out += normalizeCode(text.slice(at, region.start)) + text.slice(region.start, region.end)
+    at = region.end
+  }
+  return (out + normalizeCode(text.slice(at))).trim()
+}
+
+/** The first `FROM` outside literals, comments and parentheses (a select-list subquery). */
+function topLevelFrom(one: string): RegExpExecArray | null {
+  const code = maskSqlNonCode(one, REDACTION_SQL_GRAMMAR)
+  let depth = 0
+  for (let index = 0; index < code.length; index++) {
+    const ch = code[index]
+    if (ch === '(') depth++
+    else if (ch === ')') depth = Math.max(0, depth - 1)
+    else if (
+      depth === 0 &&
+      /^from\b/i.test(code.slice(index, index + 5)) &&
+      !/\w/.test(code[index - 1] ?? '')
+    ) {
+      return /^from\s+([`"[\]\w.]+)/i.exec(one.slice(index))
+    }
+  }
+  return null
 }
 
 /** Identity key for a browsed-table tab (schema-qualified). */
@@ -93,7 +129,7 @@ export function sqlKey(sql: string): string {
  */
 export function deriveSqlLabel(sql: string): string {
   const one = sql.trim().replace(/\s+/g, ' ')
-  const from = one.match(/\bfrom\s+([`"[\]\w.]+)/i)
+  const from = topLevelFrom(one)
   if (/^select\b/i.test(one) && from) {
     const table = from[1].replace(/[`"[\]]/g, '')
     return `SELECT ${table}…`

@@ -54,3 +54,49 @@ describe('PATH_RE — no catastrophic backtracking', () => {
     expect(ms).toBeLessThan(250)
   })
 })
+
+describe('onAssistantMessage — attaches files in the order named, up to the cap', () => {
+  const setup = async (config) => {
+    const { mkdtemp, writeFile } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+    const { register } = await import('./index.mjs')
+    const dir = await mkdtemp(join(tmpdir(), 'deliverable-'))
+    const problems = []
+    const { hooks } = register({
+      config,
+      helpers: {
+        configNumber: (value, fallback) => (value === undefined ? fallback : Number(value)),
+        configBoolean: (value, fallback) => value ?? fallback,
+      },
+      log: () => {},
+      reportProblem: (problem) => problems.push(problem),
+    })
+    const hook = (event) => hooks.onAssistantMessage(event)
+    const file = async (name, bytes) => {
+      await writeFile(join(dir, name), Buffer.alloc(bytes, 1))
+      return join(dir, name)
+    }
+    return { hook, file, problems, dir }
+  }
+
+  test('skips missing and oversize files, keeps order, and judges nothing past the cap', async () => {
+    const { hook, file, problems, dir } = await setup({ MAX_FILES: 2, MAX_FILE_MB: 0.001 })
+    const big = await file('big.png', 4096)
+    const a = await file('a.png', 10)
+    const b = await file('b.csv', 20)
+    const late = await file('late.png', 4096)
+    const result = await hook({
+      content: `${dir}/missing.png ${big} ${a} ${b} ${late}`,
+      sessionId: 's',
+    })
+    expect(result.bindings.map((binding) => [binding.name, binding.size])).toEqual([
+      ['a.png', 10],
+      ['b.csv', 20],
+    ])
+    // Only the oversize file before the cap is reported; the missing one is silent.
+    expect(problems).toHaveLength(1)
+    expect(problems[0].detail).toContain('big.png')
+    expect(problems[0].detail).not.toContain('late.png')
+  })
+})

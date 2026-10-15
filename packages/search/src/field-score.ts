@@ -1,4 +1,5 @@
 import type { PreparedField, SearchField, ScoreSearchOptions } from './contracts'
+import { coverageFactor } from './full-text'
 import { normalizeSearchText, words } from './normalize'
 
 function compact(value: string): string {
@@ -100,7 +101,7 @@ export function adapterFieldScore(
     adapterTotal += best
   }
   const coverage = matched / queryTerms.length
-  const adapterScore = (adapterTotal / queryTerms.length) * (0.7 + coverage * 0.3)
+  const adapterScore = (adapterTotal / queryTerms.length) * coverageFactor(coverage)
   if (options.requireAllTerms && fullText === 0 && coverage < 1) return 0
   let score = Math.max(phrase, fullText, adapterScore)
   // Retain the positional quality of a single-term phrase match: an entire

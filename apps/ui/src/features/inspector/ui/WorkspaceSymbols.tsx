@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Braces, Box, Variable, Hash, Type, Circle } from 'lucide-react'
 import { backendClient } from '@/shared/api/client'
+import { useDebouncedQuery } from '@/shared/hooks/useDebouncedQuery'
 import { Spinner } from '@localixai/kit/spinner'
 import type { WorkspaceSymbol } from '@/shared/api/contracts'
 import { MatchedText } from '@localixai/kit/matched-text'
@@ -73,7 +74,6 @@ export function WorkspaceSymbols({ sessionId, open, onOpenChange }: WorkspaceSym
   const [symbols, setSymbols] = useState<WorkspaceSymbol[]>([])
   const [loading, setLoading] = useState(false)
   const [resultKey, setResultKey] = useState<string | null>(null)
-  const reqSeq = useRef(0)
   const requestedQuery = useRef<string | null>(null)
 
   // ⌘T is explicit cross-file navigation intent. Warm the editor graph while the
@@ -107,40 +107,26 @@ export function WorkspaceSymbols({ sessionId, open, onOpenChange }: WorkspaceSym
   }, [open])
 
   // workspace/symbol is server-side filtering — re-query (debounced) as the user types.
-  useEffect(() => {
-    const q = query.trim()
-    const seq = ++reqSeq.current
-    let cancelled = false
-    if (!open || !sessionId || !q) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear inactive ownership
+  const trimmedQuery = query.trim()
+  const symbolKey = JSON.stringify([sessionId, trimmedQuery])
+  useDebouncedQuery([open, sessionId, query], 200, {
+    run:
+      open && sessionId && trimmedQuery
+        ? () => backendClient.lspWorkspaceSymbols(sessionId, trimmedQuery)
+        : null,
+    onIdle: () => {
       setSymbols([])
       setResultKey(null)
       setLoading(false)
-      return
-    }
-    const key = JSON.stringify([sessionId, q])
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- spinner while the debounced query round-trips
-    setLoading(true)
-    const id = setTimeout(() => {
-      void backendClient
-        .lspWorkspaceSymbols(sessionId, q)
-        .then((res) => {
-          if (cancelled || seq !== reqSeq.current) return
-          setSymbols(res)
-          setResultKey(key)
-        })
-        .catch(() => {
-          if (!cancelled && seq === reqSeq.current) setSymbols([])
-        })
-        .finally(() => {
-          if (!cancelled && seq === reqSeq.current) setLoading(false)
-        })
-    }, 200)
-    return () => {
-      cancelled = true
-      clearTimeout(id)
-    }
-  }, [open, sessionId, query])
+    },
+    onStart: () => setLoading(true),
+    onResult: (res) => {
+      setSymbols(res)
+      setResultKey(symbolKey)
+    },
+    onError: () => setSymbols([]),
+    onSettled: () => setLoading(false),
+  })
 
   const pick = (s: WorkspaceSymbol) => {
     if (sessionId)

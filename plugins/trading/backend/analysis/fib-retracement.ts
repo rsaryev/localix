@@ -8,6 +8,7 @@
 import type { Candle } from '../contracts'
 import type { ChartCommandPayload } from '../chart-command'
 import type { ChartDrawingSpec } from '../chart-drawing'
+import { toolNumber } from '../tool-number'
 
 /** The retracement ratios reported — the standard set, the middle three doing the real work. */
 export const FIB_RATIOS = [0.236, 0.382, 0.5, 0.618, 0.786] as const
@@ -51,22 +52,20 @@ export function fibRetracement(
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The retracement as a report line naming the swing, the key levels, and what they are. */
 export function renderFibRetracement(fib: FibRetracement): string[] {
   const keyLevels: string[] = []
   for (const level of fib.levels) {
     if (level.ratio === 0.382 || level.ratio === 0.5 || level.ratio === 0.618) {
-      keyLevels.push(`${(level.ratio * 100).toFixed(1)}% ${num(level.price)}`)
+      keyLevels.push(`${(level.ratio * 100).toFixed(1)}% ${toolNumber(level.price)}`)
     }
   }
   const key = keyLevels.join(', ')
   const role =
     fib.direction === 'up' ? 'pullback support in the up-leg' : 'bounce resistance in the down-leg'
-  return [`- fib retracement (swing ${num(fib.swingLow)}→${num(fib.swingHigh)}): ${key} — ${role}`]
+  return [
+    `- fib retracement (swing ${toolNumber(fib.swingLow)}→${toolNumber(fib.swingHigh)}): ${key} — ${role}`,
+  ]
 }
 
 /**

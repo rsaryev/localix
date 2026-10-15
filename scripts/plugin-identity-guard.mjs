@@ -27,7 +27,12 @@ function exactIdentityReference(source, values, owners) {
 }
 
 export function createPluginIdentityGuard(catalog) {
-  const toolPattern = new RegExp(`\\b(?:${regexAlternation(catalog.toolNames)})\\b`, 'u')
+  // A compound tool name (`plugin_tool`) is never prose, so any mention counts. A one-word name
+  // (`notes`) is also an ordinary word and enum value — only a tool-shaped reference
+  // (`toolName: 'notes'`, `tool === 'notes'`) names the tool.
+  const compoundTools = [...catalog.toolNames].filter((name) => /[_-]/u.test(name))
+  const wordTools = [...catalog.toolNames].filter((name) => !/[_-]/u.test(name))
+  const toolPattern = new RegExp(`\\b(?:${regexAlternation(compoundTools)})\\b`, 'u')
   const slashCommandPattern = new RegExp(
     `(["'\`])/(?:${regexAlternation(catalog.commandNames)})\\1`,
     'u',
@@ -63,7 +68,9 @@ export function createPluginIdentityGuard(catalog) {
 
   function inspect(path, source) {
     const findings = []
-    const concreteTool = source.match(toolPattern)?.[0]
+    const concreteTool =
+      source.match(toolPattern)?.[0] ??
+      exactIdentityReference(source, wordTools, ['tool', 'toolName', 'toolId'])
     if (concreteTool) {
       findings.push(
         `${path}: production core names concrete plugin tool "${concreteTool}"; ` +

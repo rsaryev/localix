@@ -10,6 +10,7 @@
  */
 import type { Candle } from '../contracts'
 import { atr } from '../../ui/model/indicators'
+import { toolNumber } from '../tool-number'
 
 export interface VolatilityReadout {
   /** ATR(period) — the average true range in price terms. */
@@ -26,10 +27,6 @@ export interface VolatilityReadout {
 const TREND_EPS = 0.05
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The volatility readout, or null when there are too few bars for a full ATR + its lookback. */
 export function volatilityReadout(candles: Candle[], period = 14): VolatilityReadout | null {
   const line = atr(candles, period)
@@ -61,7 +58,7 @@ export function volatilityReadout(candles: Candle[], period = 14): VolatilityRea
 /** The readout as a report line — the figure, its percent, the trend, and the stop references. */
 export function renderVolatility(v: VolatilityReadout): string[] {
   return [
-    `- volatility: ATR(14) ${num(v.atr)} (${v.atrPct.toFixed(2)}% of price), ${v.trend}; ` +
-      `stop-distance reference 0.5×ATR ${num(v.halfAtr)} / 1×ATR ${num(v.oneAtr)} beyond the structure level`,
+    `- volatility: ATR(14) ${toolNumber(v.atr)} (${v.atrPct.toFixed(2)}% of price), ${v.trend}; ` +
+      `stop-distance reference 0.5×ATR ${toolNumber(v.halfAtr)} / 1×ATR ${toolNumber(v.oneAtr)} beyond the structure level`,
   ]
 }

@@ -21,12 +21,13 @@ import type {
   PublicTrade,
   Ticker,
 } from './market'
+import { DEFAULT_TIMEFRAME } from '../timeframes'
 
 // ── Route payload schemas ──────────────────────────────────────────────────────
 
 export const ohlcvQuerySchema = z.object({
   symbol: z.string().min(1),
-  timeframe: z.string().min(1).default('1h'),
+  timeframe: z.string().min(1).default(DEFAULT_TIMEFRAME),
   limit: z.coerce.number().int().min(1).max(1000).optional(),
   /** Unix ms lower bound. */
   since: z.coerce.number().int().nonnegative().optional(),

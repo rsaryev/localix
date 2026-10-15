@@ -23,6 +23,7 @@ export function createSyntheticMessages(deps: SyntheticMessageDeps) {
   const { repo, streamRegistry } = deps
 
   const commandName = (prompt: string): string => prompt.trim().match(/^\/[\w:-]+/)?.[0] ?? '/'
+  /** Fallback for replies whose handler did not state a tone: read it off the first line. */
   const commandTone = (text: string): StoredCommandOutput['tone'] => {
     const firstLine = text.trimStart().split('\n', 1)[0] ?? ''
     if (/^(?:error\b|failed\b|could not\b|no (?:plugin|provider)\b|.*\bfailed:)/i.test(firstLine))
@@ -86,10 +87,11 @@ export function createSyntheticMessages(deps: SyntheticMessageDeps) {
     userPrompt: string,
     replyText: string,
     timestamp: string,
+    tone?: StoredCommandOutput['tone'],
   ): Promise<MessageMutationResponse> => {
     const messageId = await insertAssistantReply(userId, sessionId, replyText, timestamp, {
       command: commandName(userPrompt),
-      tone: commandTone(replyText),
+      tone: tone ?? commandTone(replyText),
     })
 
     return { sessionId, messageId }

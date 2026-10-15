@@ -100,7 +100,7 @@ function fail(err) {
 // routes it (see src/args.ts: a path-like first token → `open`, and `open` is
 // also the default). There is no server-launch branch here by design.
 
-const isBun = typeof Bun !== 'undefined' || /bun/i.test(process.execPath ?? '')
+const isBun = typeof process.versions.bun === 'string'
 const argv = process.argv.slice(2)
 
 if (isBun) {

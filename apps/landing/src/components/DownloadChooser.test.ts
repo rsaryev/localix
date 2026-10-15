@@ -55,3 +55,9 @@ test('recognizes an ARM64 Linux machine from its user agent', () => {
     certain: true,
   })
 })
+
+test('a Darwin platform string is a Mac, not Windows', () => {
+  expect(detectDownload({ platform: 'Darwin', userAgent: 'Macintosh; Intel Mac OS X' }).id).toBe(
+    'mac-arm64',
+  )
+})

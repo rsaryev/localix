@@ -11,7 +11,13 @@
  * The `unref`'d timeout matters for the same reason `features/sleep` unrefs its timer: a
  * pending watch must never be the reason the process refuses to exit.
  */
-import { createEventBatcher, type BatchTimerHandle, type EventBatcher } from './batch'
+import {
+  createEventBatcher,
+  defaultClearTimer,
+  defaultSetTimer,
+  type BatchTimerHandle,
+  type EventBatcher,
+} from './batch'
 import type { MonitorEndReason, MonitorEvent } from './contracts'
 import type { MonitorSource } from './sources'
 
@@ -40,12 +46,6 @@ export interface MonitorRunDeps {
   batchWindowMs?: number
   rateWindowMs?: number
   maxPerWindow?: number
-}
-
-const defaultSetTimer = (fn: () => void, ms: number): BatchTimerHandle =>
-  setTimeout(fn, ms) as unknown as BatchTimerHandle
-const defaultClearTimer = (handle: BatchTimerHandle): void => {
-  clearTimeout(handle as unknown as Parameters<typeof clearTimeout>[0])
 }
 
 export function startMonitorRun(deps: MonitorRunDeps): MonitorRun {

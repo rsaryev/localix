@@ -76,6 +76,11 @@
 
 use tauri::{Manager, RunEvent};
 
+/// The public site, opened by Help > Website.
+pub(crate) const SITE_URL: &str = "https://localix.ai";
+/// The public source repository; Help links to its docs, issues and releases.
+pub(crate) const REPOSITORY_URL: &str = "https://github.com/rsaryev/localix";
+
 mod commands;
 mod deeplink;
 mod frontend_flush;
@@ -101,6 +106,7 @@ mod native_titlebar_backdrop;
 mod prefs;
 mod process_tree;
 mod quit;
+mod round_trip;
 mod runtime_contract;
 mod sidecar;
 mod supervisor;
@@ -244,10 +250,7 @@ pub fn run() {
             }
             // Settings… → drive the UI's inspector settings panel (no URL route).
             if event.id().as_ref() == "open_settings" {
-                if let Some(w) = crate::workspace_windows::active_view(app) {
-                    let _ =
-                        w.eval("window.__localixOpenSettings && window.__localixOpenSettings()");
-                }
+                crate::workspace_windows::open_settings_in_active_view(app);
                 return;
             }
             // Window ▸ Close Window uses Cmd+Shift+W. Cmd+W is intentionally a
@@ -284,10 +287,10 @@ pub fn run() {
             // UI destinations (shortcuts/diagnostics) fall through to the shared
             // menu bridge below.
             let help_url = match event.id().as_ref() {
-                "help_docs" => Some("https://github.com/rsaryev/localix/tree/main/docs"),
-                "help_report_issue" => Some("https://github.com/rsaryev/localix/issues/new"),
-                "help_releases" => Some("https://github.com/rsaryev/localix/releases/latest"),
-                "help_website" => Some("https://localix.ai"),
+                "help_docs" => Some(format!("{REPOSITORY_URL}/tree/main/docs")),
+                "help_report_issue" => Some(format!("{REPOSITORY_URL}/issues/new")),
+                "help_releases" => Some(format!("{REPOSITORY_URL}/releases/latest")),
+                "help_website" => Some(SITE_URL.to_string()),
                 _ => None,
             };
             if let Some(url) = help_url {
@@ -467,19 +470,14 @@ pub fn run() {
             if saved_session.groups.iter().any(|group| {
                 group.hidden && group.tabs.iter().any(|tab| tab.label == startup_label)
             }) {
-                app.state::<crate::workspace_windows::WorkspaceWindows>()
-                    .0
-                    .lock()
-                    .unwrap()
-                    .entries
-                    .insert(
-                        startup_label.into(),
-                        crate::workspace_windows::Workspace {
-                            route: initial_route.map(str::to_string),
-                            hidden: true,
-                            ..Default::default()
-                        },
-                    );
+                crate::workspace_windows::workspaces(app).entries.insert(
+                    startup_label.into(),
+                    crate::workspace_windows::Workspace {
+                        route: initial_route.map(str::to_string),
+                        hidden: true,
+                        ..Default::default()
+                    },
+                );
             }
             let main_window = crate::workspace_builder::build(
                 app.handle(),
@@ -490,11 +488,7 @@ pub fn run() {
             crate::workspace_windows::register(&main_window);
             // The window opens on its saved route; record it before the page reports one, so a
             // save in between (a window event at launch) cannot write the route back as empty.
-            if let Some(entry) = app
-                .state::<crate::workspace_windows::WorkspaceWindows>()
-                .0
-                .lock()
-                .unwrap()
+            if let Some(entry) = crate::workspace_windows::workspaces(app)
                 .entries
                 .get_mut(startup_label)
             {

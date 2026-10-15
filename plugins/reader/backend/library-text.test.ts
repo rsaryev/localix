@@ -7,18 +7,18 @@ test('plain text normalizes CRLF and recognizes English and Russian chapter head
   const parsed = await parseReaderBytes(
     'field_notes.txt',
     bytes(
-      'Introduction.\r\n\r\nChapter I: Start\r\nFirst part.\r\n\r\nГлава 2 — Далее\r\nВторая часть.',
+      'Introduction.\r\n\r\nChapter I: Start\r\nFirst part.\r\n\r\n\u0413\u043b\u0430\u0432\u0430 2 — \u0414\u0430\u043b\u0435\u0435\r\n\u0412\u0442\u043e\u0440\u0430\u044f \u0447\u0430\u0441\u0442\u044c.',
     ),
   )
   expect(parsed.chapters.map((item) => item.title)).toEqual([
     'field notes',
     'Chapter I: Start',
-    'Глава 2 — Далее',
+    '\u0413\u043b\u0430\u0432\u0430 2 — \u0414\u0430\u043b\u0435\u0435',
   ])
   expect(parsed.chapters.map((item) => item.text)).toEqual([
     'Introduction.',
     'First part.',
-    'Вторая часть.',
+    '\u0412\u0442\u043e\u0440\u0430\u044f \u0447\u0430\u0441\u0442\u044c.',
   ])
 })
 

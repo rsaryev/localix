@@ -103,8 +103,13 @@ describe('workbench foundation contracts', () => {
   })
 
   test('keeps the tab row on the token ladder, with one seam it never delegates', () => {
-    const tabs = readKit('layout/tabs/tabs.tsx')
-    const tabBar = tabs.slice(tabs.indexOf('export function TabBar'))
+    const tabBarSource = readKit('layout/tabs/tab-bar.tsx')
+    const tabBar = tabBarSource.slice(tabBarSource.indexOf('export function TabBar'))
+    const tabs = [
+      tabBarSource,
+      readKit('layout/tabs/tab-strip.tsx'),
+      readKit('layout/tabs/tab-types.ts'),
+    ].join('\n')
 
     // ONE row measure, taken from the scale — not a `pt-1`/`pb-2.5` pair that
     // happened to add up to ~34px, which is what made every control beside it
@@ -293,7 +298,9 @@ describe('workbench foundation contracts', () => {
   })
 
   test('associates editor tabs with mounted panels and names every shared tablist', () => {
-    const tabs = readKit('layout/tabs/tabs.tsx')
+    const tabs = ['tab-types.ts', 'tab-strip-tab.tsx', 'tab-panel.tsx']
+      .map((file) => readKit(`layout/tabs/${file}`))
+      .join('\n')
     expect(tabs).toContain("'aria-label': string")
     expect(tabs).toContain('aria-controls={item.panelId}')
     expect(tabs).toContain('role="tabpanel"')
@@ -336,7 +343,7 @@ describe('workbench foundation contracts', () => {
       'features/inspector/ui/LiveFileChangeTab.tsx',
       'features/inspector/ui/BrowserToolbar.tsx',
       'features/inspector/ui/ProblemsTab.tsx',
-      'features/inspector/ui/FileTreeSidebar.tsx',
+      'features/inspector/ui/FileTreeSearchBar.tsx',
       'features/inspector/ui/PeekDefinitionPanel.tsx',
       'features/inspector/ui/search/ContentSearchView.tsx',
       'features/secrets/ui/VaultItemsView.tsx',
@@ -355,7 +362,7 @@ describe('workbench foundation contracts', () => {
       'features/inspector/ui/MessageReplayTab.tsx',
       'features/inspector/ui/LiveFileChangeTab.tsx',
       'features/inspector/ui/BrowserToolbar.tsx',
-      'features/inspector/ui/FileTreeSidebar.tsx',
+      'features/inspector/ui/FileTreeSearchBar.tsx',
       'features/inspector/ui/PeekDefinitionPanel.tsx',
       'features/inspector/ui/search/ContentSearchView.tsx',
       'shared/ui/diff/DiffToolbar.tsx',

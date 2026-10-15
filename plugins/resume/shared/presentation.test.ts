@@ -63,7 +63,11 @@ test('Lanjut interchange imports formatting, context, numeric years and presenta
     template: 'tebal',
     font: 'inter',
     bodyScale: 1.1,
-    header: { firstName: 'Алексей', lastName: 'Иванов', city: 'Москва' },
+    header: {
+      firstName: '\u0410\u043b\u0435\u043a\u0441\u0435\u0439',
+      lastName: '\u0418\u0432\u0430\u043d\u043e\u0432',
+      city: '\u041c\u043e\u0441\u043a\u0432\u0430',
+    },
     sections: [
       {
         type: 'experience',
@@ -87,7 +91,9 @@ test('Lanjut interchange imports formatting, context, numeric years and presenta
     ],
   }
   const doc = parseResumeFile(JSON.stringify(input), 'resume.json')
-  expect(doc.header.name).toBe('Алексей Иванов')
+  expect(doc.header.name).toBe(
+    '\u0410\u043b\u0435\u043a\u0441\u0435\u0439 \u0418\u0432\u0430\u043d\u043e\u0432',
+  )
   expect(doc.presentation.bodyScale).toBe(1.1)
   expect(doc.sections[0]!.entries[0]!.context).toBe('B2B software')
   expect(doc.sections[0]!.entries[0]!.current).toBe(true)

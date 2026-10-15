@@ -1,6 +1,6 @@
 import type { DbSchemas } from '../dbClient'
 import { databaseApi } from '../api/databaseApi'
-import { schemaTableKey } from './schemaKey'
+import { catalogRecord, schemaTableKey } from './schemaKey'
 import {
   clearTableError,
   commit,
@@ -59,7 +59,7 @@ function fetchSchemas(connectionId: string, e: Entry): void {
       e.errorDetail = null
       e.loading = false
       commit(e)
-      prefetch(connectionId, s)
+      loadColumnCatalog(connectionId, e, s, revision)
     })
     .catch((err) => {
       if (e.schemaRevision !== revision) return
@@ -67,6 +67,30 @@ function fetchSchemas(connectionId: string, e: Entry): void {
       e.errorDetail = detailOf(err)
       e.loading = false
       commit(e)
+    })
+}
+
+/**
+ * Read every table's columns in one request when the engine can, and fall back to the per-table
+ * {@link prefetch} when it cannot (or the catalog read fails). Before this, the prefetch was the
+ * only path: up to {@link PREFETCH_CAP} full structure reads, ~20 catalog queries each on Postgres.
+ */
+function loadColumnCatalog(
+  connectionId: string,
+  e: Entry,
+  schemas: DbSchemas,
+  revision: number,
+): void {
+  databaseApi
+    .columnCatalog(connectionId)
+    .then((catalog) => {
+      if (e.schemaRevision !== revision) return
+      if (!catalog) return prefetch(connectionId, schemas)
+      e.columnCatalog = catalogRecord(schemas, catalog)
+      commit(e)
+    })
+    .catch(() => {
+      if (e.schemaRevision === revision) prefetch(connectionId, schemas)
     })
 }
 
@@ -177,7 +201,8 @@ export function ensureColumns(
   const e = getEntry(connectionId)
   for (const w of wanted) {
     const key = schemaTableKey(w.name, w.schema)
-    if (e.requested.has(key) || e.queuedKeys.has(key)) continue
+    if (e.requested.has(key) || e.queuedKeys.has(key) || Object.hasOwn(e.columnCatalog, key))
+      continue
     e.queuedKeys.add(key)
     e.columnQueue.push(w)
   }

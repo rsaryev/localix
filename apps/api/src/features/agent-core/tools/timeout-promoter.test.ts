@@ -167,17 +167,17 @@ describe('a call that outruns its budget', () => {
       activeVerb: 'Researching',
       promoteAfterMs: 10_000,
       inputSchema: z.object({ q: z.string() }),
-      execute: (_id, _input, signal) => {
+      execute: async (_id, _input, signal) => {
         observed = signal
-        return Promise.resolve({ content: 'fast' })
+        expect(signal?.aborted).toBe(false)
+        caller.abort()
+        return { content: 'fast' }
       },
     })
     const caller = new AbortController()
     const [wrapped] = wrapToolsWithTimeoutPromoter([tool])
 
     await run(wrapped!, fakeRegistry().registry, caller.signal)
-    expect(observed?.aborted).toBe(false)
-    caller.abort()
     expect(observed?.aborted).toBe(true)
   })
 })
@@ -224,5 +224,28 @@ describe('when promotion is not the right answer', () => {
       ),
     ])
     expect((await run(tool!, undefined)).content).toBe('no host')
+  })
+})
+
+describe('the run signal relay', () => {
+  test('is detached once the call settles', async () => {
+    const { registry } = fakeRegistry()
+    const controller = new AbortController()
+    const live = new Set<unknown>()
+    const signal = controller.signal
+    const add = signal.addEventListener.bind(signal)
+    const remove = signal.removeEventListener.bind(signal)
+    signal.addEventListener = ((type: string, listener: unknown, options?: unknown) => {
+      live.add(listener)
+      add(type as 'abort', listener as never, options as never)
+    }) as typeof signal.addEventListener
+    signal.removeEventListener = ((type: string, listener: unknown) => {
+      live.delete(listener)
+      remove(type as 'abort', listener as never)
+    }) as typeof signal.removeEventListener
+    const [tool] = wrapToolsWithTimeoutPromoter([slowTool(Promise.resolve({ content: 'ok' }))])
+
+    expect((await run(tool!, registry, signal)).content).toBe('ok')
+    expect(live.size).toBe(0)
   })
 })

@@ -74,19 +74,16 @@ export function parseJson(text: string): { columns?: TableColumn[]; rows: TableR
 
 export function tableFromJson(text: string): ParsedTable {
   const parsed = parseJson(text)
-  const columns =
-    parsed.columns && parsed.columns.length > 0
-      ? parsed.columns
-      : inferColumnsFromObjects(parsed.rows)
-  const rows = parsed.rows.map((r) => {
-    const out: TableRow = {}
-    for (const col of columns) {
-      const v = r[col.id]
-      out[col.id] = v === undefined ? null : v
-    }
-    return out
-  })
-  return { columns, rows }
+  const explicit = parsed.columns && parsed.columns.length > 0
+  const columns = explicit ? parsed.columns! : inferColumnsFromObjects(parsed.rows)
+  // `parseJson` already produced fresh row objects, so normalize them in place instead of
+  // copying every row a second time: fill missing columns, drop keys outside the schema.
+  const ids = new Set(columns.map((col) => col.id))
+  for (const row of parsed.rows) {
+    for (const col of columns) if (row[col.id] === undefined) row[col.id] = null
+    for (const key of Object.keys(row)) if (!ids.has(key)) delete row[key]
+  }
+  return { columns, rows: parsed.rows }
 }
 
 export function formatFromExtension(path: string): TableFormat | undefined {

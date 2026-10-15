@@ -223,7 +223,7 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
         // website/comments/license render in the Tauri-drawn About dialog on
         // Windows/Linux (macOS's native panel shows only name/version/copyright).
         website: cfg.bundle.homepage.clone(),
-        website_label: Some("localix.ai".into()),
+        website_label: Some(crate::SITE_URL.trim_start_matches("https://").into()),
         comments: Some("Open-source Agentic Development Environment".into()),
         license: Some("MIT".into()),
         ..Default::default()
@@ -262,13 +262,6 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
     // bridge instead. Native window close remains available as Cmd+Shift+W.
     let close_tab_item =
         MenuItem::with_id(handle, "close_tab", "Close Tab", true, Some("CmdOrCtrl+W"))?;
-    let close_window_item = MenuItem::with_id(
-        handle,
-        "close_window",
-        "Close Window",
-        true,
-        Some("CmdOrCtrl+Shift+W"),
-    )?;
     // File ▸ Open Recent — populated from the UI via the set_recent_sessions command.
     let open_recent = build_open_recent(handle, recents)?;
 
@@ -345,6 +338,22 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
     let project_menu = build_project_menu(handle, &data.projects, &data.active_project)?;
     items.push(&project_menu);
 
+    let view_menu = build_view_menu(handle)?;
+    items.push(&view_menu);
+    let terminal_menu = build_terminal_menu(handle)?;
+    items.push(&terminal_menu);
+    let window_menu = build_window_menu(handle)?;
+    items.push(&window_menu);
+    let help_menu = build_help_menu(handle, &about)?;
+    items.push(&help_menu);
+
+    Menu::with_items(handle, &items)
+}
+
+fn build_view_menu<R: tauri::Runtime>(
+    handle: &tauri::AppHandle<R>,
+) -> tauri::Result<tauri::menu::Submenu<R>> {
+    use tauri::menu::{MenuItem, PredefinedMenuItem, Submenu};
     // View ▸ Command palette + panel openers + layout toggles (routed through the
     // menu bridge to the same actions the rail buttons / palette run), then zoom
     // (all platforms) + fullscreen (macOS). Accelerators mirror the in-app default
@@ -413,8 +422,13 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
             &fullscreen_toggle,
         ],
     )?;
-    items.push(&view_menu);
+    Ok(view_menu)
+}
 
+fn build_terminal_menu<R: tauri::Runtime>(
+    handle: &tauri::AppHandle<R>,
+) -> tauri::Result<tauri::menu::Submenu<R>> {
+    use tauri::menu::{MenuItem, Submenu};
     // Terminal is a first-class workspace surface, so expose it as a native
     // top-level menu instead of burying its only action under View. "New" always
     // creates a fresh PTY; "Show" reveals the most recent one (or creates the
@@ -430,8 +444,21 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
     )?;
     let terminal_menu =
         Submenu::with_items(handle, "Terminal", true, &[&new_terminal, &show_terminal])?;
-    items.push(&terminal_menu);
+    Ok(terminal_menu)
+}
 
+fn build_window_menu<R: tauri::Runtime>(
+    handle: &tauri::AppHandle<R>,
+) -> tauri::Result<tauri::menu::Submenu<R>> {
+    use tauri::menu::{MenuItem, PredefinedMenuItem, Submenu};
+    // Window ▸ Close Window keeps Cmd+Shift+W; Cmd+W closes the active tab (File menu).
+    let close_window_item = MenuItem::with_id(
+        handle,
+        "close_window",
+        "Close Window",
+        true,
+        Some("CmdOrCtrl+Shift+W"),
+    )?;
     #[cfg(target_os = "macos")]
     let native_items = crate::workspace_menu::items(handle)?;
     let window_menu = Submenu::with_items(
@@ -454,8 +481,16 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
     // list + "Bring All to Front" and enables native window cycling (best-effort).
     #[cfg(target_os = "macos")]
     let _ = window_menu.set_as_windows_menu_for_nsapp();
-    items.push(&window_menu);
+    Ok(window_menu)
+}
 
+fn build_help_menu<R: tauri::Runtime>(
+    handle: &tauri::AppHandle<R>,
+    about: &tauri::menu::AboutMetadata,
+) -> tauri::Result<tauri::menu::Submenu<R>> {
+    use tauri::menu::{MenuItem, PredefinedMenuItem, Submenu};
+    #[cfg(target_os = "macos")]
+    let _ = about;
     // Product-specific Help menu. In-app destinations go through the menu bridge;
     // web destinations open in the system browser. About repeats here on
     // Windows/Linux (on macOS it already lives in the app menu).
@@ -522,9 +557,7 @@ pub(crate) fn build_app_menu<R: tauri::Runtime>(
     // field at the top (best-effort).
     #[cfg(target_os = "macos")]
     let _ = help_menu.set_as_help_menu_for_nsapp();
-    items.push(&help_menu);
-
-    Menu::with_items(handle, &items)
+    Ok(help_menu)
 }
 
 /// The tray (macOS menu-bar extra) menu, ordered by the Human Interface Guidelines: the quick

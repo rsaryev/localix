@@ -729,6 +729,41 @@ describe('useFileEditor save ownership', () => {
     }
   })
 
+  test('only the server conflict code opens the reconcile banner, not matching prose', async () => {
+    setSaveCleanupPrefs({ trimTrailingWhitespace: false, ensureFinalNewline: false })
+    const backend = mockEditorBackend()
+    const write = spyOn(backendClient, 'writeFileContent')
+    const editor = await mountEditor()
+
+    try {
+      await editor.act(async () => editor.current.setBuffer('mine'))
+      write.mockRejectedValueOnce(new Error('disk full: file changed on disk?'))
+      await editor.act(async () => {
+        expect(await editor.current.save()).toBe(false)
+      })
+      expect(editor.current.conflict).toBeNull()
+
+      backend.get.mockResolvedValueOnce({
+        path: '/workspace/shared.ts',
+        content: 'theirs',
+        bytes: 6,
+        truncated: false,
+        hash: 'hash-theirs',
+      })
+      write.mockRejectedValueOnce(new ApiError('Reload before saving.', 409, 'file_conflict'))
+      await editor.act(async () => {
+        expect(await editor.current.save()).toBe(false)
+      })
+      expect(editor.current.conflict).toEqual({ diskContent: 'theirs', diskHash: 'hash-theirs' })
+      expect(editor.current.buffer).toBe('mine')
+    } finally {
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      write.mockRestore()
+      backend.restore()
+    }
+  })
+
   test('adopts the exact cleanup-transformed bytes that were written', async () => {
     setSaveCleanupPrefs({ trimTrailingWhitespace: true, ensureFinalNewline: true })
     const backend = mockEditorBackend()

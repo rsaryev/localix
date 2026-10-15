@@ -9,6 +9,9 @@ use tauri::{AppHandle, Manager};
 
 use crate::log::logln;
 
+/// Download progress is emitted at most twice a second; the UI only needs a moving percent.
+const PROGRESS_INTERVAL: Duration = Duration::from_millis(500);
+
 /// The `Update` handle produced by the most recent successful `updater_check`,
 /// kept so `updater_install` can consume it directly instead of re-running the
 /// network check. Re-checking on install is both a wasted round-trip and a race:
@@ -170,7 +173,7 @@ pub(crate) async fn updater_install(app: AppHandle) -> Result<(), String> {
             |chunk, total| {
                 let d = downloaded.fetch_add(chunk as u64, Ordering::Relaxed) + chunk as u64;
                 // Throttle to ~2 events/s; the UI only needs a moving percent.
-                if last_emit.is_none_or(|t| t.elapsed() >= Duration::from_millis(500)) {
+                if last_emit.is_none_or(|t| t.elapsed() >= PROGRESS_INTERVAL) {
                     last_emit = Some(Instant::now());
                     let _ = app.emit(
                         "updater:progress",

@@ -64,6 +64,21 @@ describe('isReadOnlyStatement', () => {
     expect(isReadOnlyStatement('EXPLAIN INSERT INTO t VALUES (1)')).toBe(false)
   })
 
+  it('reads replace()/copy()/load columns as calls and qualified columns, not writes', () => {
+    expect(isReadOnlyStatement("SELECT replace(name, 'a', 'b') FROM t")).toBe(true)
+    expect(isReadOnlyStatement('SELECT REPLACE (name, x, y) FROM t')).toBe(true)
+    expect(isReadOnlyStatement('SELECT m.load, m.copy, m.import FROM metrics m')).toBe(true)
+    // The write forms of the same words stay blocked, in every position.
+    expect(isReadOnlyStatement('REPLACE t VALUES (1)')).toBe(false)
+    expect(isReadOnlyStatement('EXPLAIN REPLACE t VALUES (1)')).toBe(false)
+    expect(isReadOnlyStatement('EXPLAIN REPLACE INTO t (a) VALUES (1)')).toBe(false)
+    expect(isReadOnlyStatement("SELECT replace(a, 'x', 'y') FROM t; DELETE FROM t")).toBe(false)
+    expect(isReadOnlyStatement("SELECT 1; COPY t FROM '/tmp/x'")).toBe(false)
+    expect(isReadOnlyStatement("SELECT 1; LOAD DATA INFILE 'x' INTO TABLE t")).toBe(false)
+    expect(isReadOnlyStatement('SELECT load FROM metrics')).toBe(false)
+    expect(isReadOnlyStatement("SELECT load_extension('/tmp/x.so')")).toBe(false)
+  })
+
   it('distinguishes PRAGMA read from PRAGMA write forms', () => {
     expect(isReadOnlyStatement('PRAGMA table_info(users)')).toBe(true)
     expect(isReadOnlyStatement('PRAGMA journal_mode')).toBe(true)

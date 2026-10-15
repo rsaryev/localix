@@ -1,13 +1,13 @@
 //! Per-workspace first paint and bounded close; the last window remains reopenable.
-use crate::workspace_windows::WorkspaceWindows;
 use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
+
+/// A workspace that never reports first paint (a crashed page, a stuck load) is revealed anyway
+/// after this long, so a window is never left invisible.
+const FIRST_PAINT_FALLBACK: std::time::Duration = std::time::Duration::from_secs(4);
 pub(crate) fn register(window: &WebviewWindow) {
     let app = window.app_handle().clone();
     let label = window.label().to_string();
-    app.state::<WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
+    crate::workspace_windows::workspaces(&app)
         .entries
         .entry(label.clone())
         .or_default();
@@ -15,15 +15,14 @@ pub(crate) fn register(window: &WebviewWindow) {
     crate::macos_tabs::install_new_tab_action(&app, &window.as_ref().window());
     window.on_window_event(move |event| match event {
         WindowEvent::Focused(true) => {
-            app.state::<WorkspaceWindows>().0.lock().unwrap().active = Some(label.clone());
+            crate::workspace_windows::workspaces(&app).active = Some(label.clone());
             crate::menu::activate_workspace(&app, &label);
             #[cfg(target_os = "macos")]
             crate::native_header::refresh_after_focus(&app, &label);
             #[cfg(target_os = "macos")]
             {
                 let restore_hidden = {
-                    let state = app.state::<WorkspaceWindows>();
-                    let data = state.0.lock().unwrap();
+                    let data = crate::workspace_windows::workspaces(&app);
                     data.entries.get(&label).is_some_and(|entry| !entry.hiding)
                         && data
                             .hidden_groups
@@ -63,11 +62,7 @@ pub(crate) fn register(window: &WebviewWindow) {
             crate::workspace_drag::cancel_owner(&app, &label);
             app.state::<crate::native_browser_lifecycle::NativeBrowserLifecycle>()
                 .forget_owner(&label);
-            let _removed = app
-                .state::<WorkspaceWindows>()
-                .0
-                .lock()
-                .unwrap()
+            let _removed = crate::workspace_windows::workspaces(&app)
                 .entries
                 .remove(&label);
             #[cfg(target_os = "macos")]
@@ -75,7 +70,7 @@ pub(crate) fn register(window: &WebviewWindow) {
                 && !app.state::<crate::quit::QuitState>().is_exiting()
             {
                 let handle = app.clone();
-                std::thread::spawn(move || {
+                tauri::async_runtime::spawn_blocking(move || {
                     if !handle.state::<crate::quit::QuitState>().is_exiting() {
                         crate::workspace_session::save(&handle);
                     }
@@ -92,12 +87,8 @@ pub(crate) fn register(window: &WebviewWindow) {
     let app = window.app_handle().clone();
     let label = window.label().to_string();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_secs(4));
-        let ready = app
-            .state::<WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
+        std::thread::sleep(FIRST_PAINT_FALLBACK);
+        let ready = crate::workspace_windows::workspaces(&app)
             .entries
             .get(&label)
             .is_none_or(|entry| entry.ready || entry.provisional);
@@ -109,8 +100,7 @@ pub(crate) fn register(window: &WebviewWindow) {
 
 pub(crate) fn reveal(app: &AppHandle, label: &str) {
     let pending = {
-        let state = app.state::<WorkspaceWindows>();
-        let mut data = state.0.lock().unwrap();
+        let mut data = crate::workspace_windows::workspaces(app);
         let Some(entry) = data.entries.get_mut(label) else {
             return;
         };
@@ -166,8 +156,7 @@ pub(crate) fn close(app: &AppHandle, label: &str) {
     #[cfg(target_os = "macos")]
     crate::workspace_drag::cancel_owner(app, label);
     let last = {
-        let state = app.state::<WorkspaceWindows>();
-        let mut data = state.0.lock().unwrap();
+        let mut data = crate::workspace_windows::workspaces(app);
         let Some(last) = data.reserve_close(label) else {
             return;
         };
@@ -186,11 +175,7 @@ pub(crate) fn close(app: &AppHandle, label: &str) {
             if last {
                 if cfg!(target_os = "macos") || crate::tray::tray_available() {
                     let _ = window.hide();
-                    if let Some(entry) = handle
-                        .state::<WorkspaceWindows>()
-                        .0
-                        .lock()
-                        .unwrap()
+                    if let Some(entry) = crate::workspace_windows::workspaces(&handle)
                         .entries
                         .get_mut(&label)
                     {
@@ -198,10 +183,7 @@ pub(crate) fn close(app: &AppHandle, label: &str) {
                         entry.hidden = true;
                     }
                     #[cfg(target_os = "macos")]
-                    {
-                        let handle = handle.clone();
-                        std::thread::spawn(move || crate::workspace_session::save(&handle));
-                    }
+                    crate::workspace_session::save_in_background(&handle);
                 } else {
                     handle.exit(0);
                 }

@@ -140,3 +140,36 @@ export const replaceContentRequestSchema = z.object({
   /** Replace inside files a parent repo's .gitignore hides, matching search. */
   includeIgnored: z.boolean().optional(),
 })
+
+// Inline request shapes formerly declared next to their handlers in routes.ts.
+
+export const historySearchQuerySchema = z.object({
+  q: z.string(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
+})
+
+export const skillScopeQuerySchema = z.object({ projectId: z.string().optional() })
+
+export const sessionSkillsRequestSchema = z.object({ skills: z.array(z.string()) })
+
+export const sessionQuerySchema = z.object({
+  // Thin clients load only the newest N messages; messageCount in the
+  // response carries the full total so "load earlier" knows more exist.
+  messageLimit: z.coerce.number().int().positive().max(5000).optional(),
+  toolDetails: z.literal('deferred').optional(),
+})
+
+export const reactionRequestSchema = z.object({ emoji: z.string().min(1).max(16) })
+
+export const pinRequestSchema = z.object({ pinned: z.boolean() })
+
+export const messageTaskRequestSchema = z.object({
+  key: z.string().min(1).max(200),
+  checked: z.boolean(),
+})
+
+export const stopMonitorRequestSchema = z.object({ monitorId: z.string().min(1) })
+
+export const loopIdRequestSchema = z.object({ id: z.string().min(1) })
+
+export const queueItemRequestSchema = z.object({ itemId: z.string().min(1) })

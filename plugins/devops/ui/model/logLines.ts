@@ -77,7 +77,7 @@ function tokenKind(value: string, json: boolean, isKey = false): LogTokenKind {
   const normalized = value.toLowerCase()
   if (['fatal', 'panic', 'error', 'err'].includes(normalized)) return 'error'
   if (normalized === 'warn' || normalized === 'warning') return 'warning'
-  if (normalized === 'info') return 'info'
+  if (normalized === 'info' || normalized === 'notice') return 'info'
   if (normalized === 'debug' || normalized === 'trace') return 'debug'
   if (/^(get|post|put|patch|delete|head|options)$/i.test(value)) return 'method'
   if (/^[1-5]\d{2}$/.test(value)) {
@@ -133,18 +133,28 @@ function severityFromLevel(level: string): LogSeverity {
     return 'error'
   }
   if (normalized === 'warn' || normalized === 'warning') return 'warning'
-  if (normalized === 'info') return 'info'
+  if (normalized === 'info' || normalized === 'notice') return 'info'
   return 'debug'
 }
 
+/** `level=warn` / `severity="error"` — logfmt and key=value loggers. */
+const KEYED_LEVEL =
+  /\b(?:level|lvl|severity)=["']?(fatal|panic|error|err|warn|warning|info|notice|debug|trace|verbose)\b/i
+/**
+ * A level token in the line's level slot: first, optionally after a timestamp, optionally
+ * bracketed (`ERROR …`, `[warn] …`, `2026/07/24 10:20:30 [error] …`, `panic: …`). A level word
+ * anywhere else is message text — "0 errors", "retry failed, will retry" — and is not a level.
+ */
+const LEADING_LEVEL =
+  /^[\d\-/:.,TZ+ ]*[[(<]?(fatal|panic|error|err|warn|warning|info|notice|debug|trace|verbose)\b[\])>]?(?=[:\s]|$)/i
+
+/** The line's declared level — structured field, key=value or leading token — never its prose. */
 export function detectLogSeverity(message: string): LogSeverity {
-  const structured = STRUCTURED_LEVEL.exec(message)
-  if (structured?.[1]) return severityFromLevel(structured[1])
-  if (/\b(fatal|panic|error|exception|failed|failure)\b/i.test(message)) return 'error'
-  if (/\b(warn|warning|deprecated)\b/i.test(message)) return 'warning'
-  if (/\b(info|notice|started|ready|listening)\b/i.test(message)) return 'info'
-  if (/\b(debug|trace|verbose)\b/i.test(message)) return 'debug'
-  return 'plain'
+  const level =
+    STRUCTURED_LEVEL.exec(message)?.[1] ??
+    KEYED_LEVEL.exec(message)?.[1] ??
+    LEADING_LEVEL.exec(message)?.[1]
+  return level ? severityFromLevel(level) : 'plain'
 }
 
 /** Parse the bounded runtime tail without changing its copyable message text. */

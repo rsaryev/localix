@@ -22,15 +22,13 @@ import { detectHarmonicPattern, renderHarmonicPattern } from './analysis/harmoni
 import { detectStructureBreak } from './analysis/structure-breaks'
 import { sessionVwap } from './analysis/vwap-analysis'
 import { valueAreaPosition, volumeProfile } from './analysis/volume-profile'
+import { toolNumber } from './tool-number'
+import { DEFAULT_TIMEFRAME, TECHNICALS_TIMEFRAMES } from './timeframes'
 
 /** Enough bars to warm the 200-period moving averages the rating votes on. */
 const TECHNICALS_BARS = 260
 
 /** Four significant figures without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The house lenses (regime / structure / VWAP / value area) — the reads beyond the classic
  *  tables, computed from the same candles by the same functions the `detect` tool uses. */
 function houseLenses(candles: Candle[], timeframe: string): string[] {
@@ -47,12 +45,12 @@ function houseLenses(candles: Candle[], timeframe: string): string[] {
   const vwap = sessionVwap(candles)
   if (vwap) {
     lines.push(
-      `- session VWAP: ${num(vwap.vwap)} (price ${vwap.distancePct >= 0 ? '+' : ''}${vwap.distancePct.toFixed(2)}%)`,
+      `- session VWAP: ${toolNumber(vwap.vwap)} (price ${vwap.distancePct >= 0 ? '+' : ''}${vwap.distancePct.toFixed(2)}%)`,
     )
   }
   const vp = volumeProfile(candles)
   if (vp && price !== undefined) {
-    lines.push(`- value area: ${valueAreaPosition(vp, price)} (POC ${num(vp.poc)})`)
+    lines.push(`- value area: ${valueAreaPosition(vp, price)} (POC ${toolNumber(vp.poc)})`)
   }
   const hv = hvPercentile(candles, timeframe)
   if (hv) lines.push(...renderHvPercentile(hv))
@@ -70,7 +68,7 @@ function houseLenses(candles: Candle[], timeframe: string): string[] {
  *  parallel; the base timeframe REUSES the candles the headline rating was computed from (the
  *  service ohlcv read only coalesces CONCURRENT calls — it is not a TTL cache, and a re-fetch
  *  could even disagree with the headline if a bar rolled between the two reads). */
-const LADDER = ['5m', '15m', '1h', '4h', '1d'] as const
+const LADDER = TECHNICALS_TIMEFRAMES
 
 async function timeframeLadderLine(
   service: ResourceTradingService,
@@ -106,7 +104,7 @@ export async function expandTechnicals(
   userId: string,
   id: string,
   symbol: string,
-  timeframe = '1h',
+  timeframe = DEFAULT_TIMEFRAME,
 ): Promise<ResourceExpansion> {
   const market = await findMarket(service, userId, id, symbol).catch(() => null)
   let candles: Candle[]
@@ -128,7 +126,7 @@ export async function expandTechnicals(
   const price = candles.at(-1)?.close
   const header = [
     `Technical rating for ${market?.symbol ?? symbol} on connection ${id}${
-      price !== undefined ? ` — last ${num(price)}` : ''
+      price !== undefined ? ` — last ${toolNumber(price)}` : ''
     }.`,
   ]
   const lenses = houseLenses(candles, timeframe)

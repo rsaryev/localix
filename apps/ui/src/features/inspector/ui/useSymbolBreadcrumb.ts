@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
+import { useDebouncedQuery } from '@/shared/hooks/useDebouncedQuery'
 import type { LspDocumentSymbol } from '@/shared/api/contracts'
 import type { EditorHandle } from '@/shared/ui/code-editor/CodeEditor'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
@@ -32,32 +33,19 @@ export function useSymbolBreadcrumb(
   const [cursorLine, setCursorLine] = useState(0)
   const editorApiRef = useRef<EditorHandle | null>(null)
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear the outline when no file is open in the editor
-    if (!sessionId || !editPath) {
-      setDocSymbols([])
-      return
-    }
-    if (!workItemVisible) return
-    let cancelled = false
-    // useFileEditor sends didChange after 150ms. Let that sync enter the backend
-    // queue first so unsaved edits cannot leave breadcrumb destinations on old lines.
-    const timer = setTimeout(() => {
-      void backendClient
-        .lspDocumentSymbols(sessionId, editPath)
-        .then((syms) => {
-          if (!cancelled) setDocSymbols(syms)
-        })
-        .catch(() => {
-          if (!cancelled) setDocSymbols([])
-        })
-    }, 400)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-    // reloadKey changes on each successful save → re-derive symbols against the saved file.
-  }, [workItemVisible, sessionId, editPath, reloadKey, buffer])
+  // useFileEditor sends didChange after 150ms. Let that sync enter the backend queue first so
+  // unsaved edits cannot leave breadcrumb destinations on old lines. reloadKey changes on each
+  // successful save → re-derive symbols against the saved file. A hidden tab keeps its outline.
+  const hasFile = !!sessionId && !!editPath
+  useDebouncedQuery([workItemVisible, sessionId, editPath, reloadKey, buffer], 400, {
+    run:
+      hasFile && workItemVisible
+        ? () => backendClient.lspDocumentSymbols(sessionId, editPath)
+        : null,
+    onIdle: hasFile ? undefined : () => setDocSymbols([]),
+    onResult: setDocSymbols,
+    onError: () => setDocSymbols([]),
+  })
 
   const symbolPath = useMemo(() => {
     if (docSymbols.length === 0) return []

@@ -89,15 +89,15 @@ describe('the template frame in bundled plugins', () => {
       recursive: true,
       filter: (src) => !src.includes('node_modules'),
     })
-    const store = readFileSync(join(template, 'backend', 'store.ts'), 'utf8')
+    const useNow = readFileSync(join(template, 'ui', 'useNow.ts'), 'utf8')
     const write = (plugin: string, file: string, text: string) => {
       cpSync(templateCopy, join(plugins, plugin), { recursive: true })
       writeFileSync(join(plugins, plugin, file), text)
     }
 
     test('positive control: a copy that drifted is reported', () => {
-      write('drifted', 'backend/store.ts', store.replace('atomicWriteFile(path', 'writeFile(path'))
-      expect(driftedCopies(plugins, templateCopy)).toContain('drifted/backend/store.ts')
+      write('drifted', 'ui/useNow.ts', useNow.replace('setTimeout(tick, 0)', 'setTimeout(tick, 1)'))
+      expect(driftedCopies(plugins, templateCopy)).toContain('drifted/ui/useNow.ts')
     })
 
     test('a plugin’s own module at a frame path is not a copy', () => {

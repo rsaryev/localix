@@ -1,5 +1,5 @@
 import { builtinAgentId, type AgentDefinition } from '@localixai/agent/agents'
-import { builtinAgentPreset, legacyAgentPreset10 } from './builtin-agent-presets'
+import { builtinAgentPreset } from './builtin-agent-presets'
 import type { VersionedCapabilityRuleRepository } from './rule-repository'
 import { ApiError } from '../../lib/errors'
 import type { CapabilitySourceRepository } from './source-repository'
@@ -77,11 +77,7 @@ export async function seedAgentPresets(
         ? rules
         : upgradeAgentPreset(
             existing.rules,
-            parsedBase.success
-              ? parsedBase.data
-              : stored === '10'
-                ? legacyAgentPreset10(agent.handle)
-                : undefined,
+            parsedBase.success ? parsedBase.data : undefined,
             rules,
             agent.id,
           )

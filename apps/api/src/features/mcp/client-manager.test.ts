@@ -8,7 +8,8 @@ import {
   type McpClientLike,
 } from './client-manager'
 import { McpAuthenticationRequiredError } from './mcp-connect'
-import { classifyMcpTool } from './mcp-tools'
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
+import { classifyMcpTool, isTransportError } from './mcp-tools'
 import type { McpServerRecord } from './repository'
 
 function makeServer(overrides: Partial<McpServerRecord> = {}): McpServerRecord {
@@ -30,7 +31,7 @@ interface FakeClient extends McpClientLike {
   listToolsCalls: number
   callToolCalls: number
   closed: boolean
-  failNextCallWith?: string
+  failNextCallWith?: string | Error
 }
 
 function makeFakeClient(toolNames: string[] = ['echo']): FakeClient {
@@ -54,7 +55,7 @@ function makeFakeClient(toolNames: string[] = ['echo']): FakeClient {
       if (client.failNextCallWith) {
         const message = client.failNextCallWith
         client.failNextCallWith = undefined
-        throw new Error(message)
+        throw typeof message === 'string' ? new Error(message) : message
       }
       return { content: [{ type: 'text', text: 'ok' }], isError: false }
     },
@@ -301,9 +302,12 @@ describe('createMcpClientManager', () => {
     const server = makeServer()
 
     const first = await manager.gather([server], GATHER_OPTS)
-    // The transport signature can occur after the bounded preview. Classification
-    // must inspect the raw error before the model/UI copy is truncated.
-    tracker.created[0].failNextCallWith = `${'x'.repeat(100_000)} Connection closed`
+    // Classified by the SDK's error code, not its text, and independent of the
+    // bounded preview the model/UI copy is truncated to.
+    tracker.created[0].failNextCallWith = new McpError(
+      ErrorCode.ConnectionClosed,
+      `${'x'.repeat(100_000)} Connection closed`,
+    )
     const toolResult = await first.tools[0].execute('call-1', {})
     expect(toolResult.isError).toBe(true)
     expect(toolResult.content).toContain('MCP error truncated')
@@ -1218,5 +1222,21 @@ describe('resources/templates/list enumeration', () => {
 
     expect(badCalls).toBe(2)
     expect(templates).toEqual([{ server: 'good', uriTemplate: 'good://{id}', name: 'Good' }])
+  })
+})
+
+describe('isTransportError', () => {
+  test('recognises the SDK connection-closed code and socket errnos in the cause chain', () => {
+    expect(isTransportError(new McpError(ErrorCode.ConnectionClosed, 'Connection closed'))).toBe(
+      true,
+    )
+    const refused = Object.assign(new Error('connect failed'), { code: 'ECONNREFUSED' })
+    expect(isTransportError(new TypeError('fetch failed', { cause: refused }))).toBe(true)
+    expect(isTransportError(new Error('Not connected'))).toBe(true)
+  })
+
+  test('a tool failure that merely mentions a connection keeps the client', () => {
+    expect(isTransportError(new Error('postgres: connection refused (ECONNREFUSED)'))).toBe(false)
+    expect(isTransportError(new McpError(ErrorCode.InvalidParams, 'socket hang up'))).toBe(false)
   })
 })

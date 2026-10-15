@@ -12,6 +12,7 @@
  * REPORTED as a detail but does not gate, matching the mined engine. Pure — no I/O.
  */
 import type { Candle } from '../contracts'
+import { toolNumber } from '../tool-number'
 
 export interface IchimokuSignal {
   /** 'long' / 'short' = a GATED cross (all filters passed); 'stand_aside' = a cross whose
@@ -117,10 +118,6 @@ export function ichimokuSignal(candles: Candle[]): IchimokuSignal | null {
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The signal as report lines — the gate verdict first, every filter named with its state. */
 export function renderIchimokuSignal(s: IchimokuSignal): string[] {
   const when = s.barsAgo === 0 ? 'on the newest bar' : `${s.barsAgo} bars ago`
@@ -130,6 +127,6 @@ export function renderIchimokuSignal(s: IchimokuSignal): string[] {
       : `- ichimoku: gated ${s.verdict.toUpperCase()} — ${s.cross} TK cross ${when} with price ${s.priceVsCloud} a ${s.cloudBullish ? 'bullish' : 'bearish'} cloud`
   return [
     head +
-      ` (tenkan ${num(s.tenkan)} vs kijun ${num(s.kijun)}; chikou ${s.chikouConfirms ? 'confirms' : 'does NOT confirm'})`,
+      ` (tenkan ${toolNumber(s.tenkan)} vs kijun ${toolNumber(s.kijun)}; chikou ${s.chikouConfirms ? 'confirms' : 'does NOT confirm'})`,
   ]
 }

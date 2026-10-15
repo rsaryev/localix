@@ -42,6 +42,10 @@ describe('message display text', () => {
     }
     expect(messageDisplayText(tokens.join(' '))).toBe(tokens.join(' '))
   })
+  test('apostrophes are not quotations', () => {
+    expect(messageDisplayText(`don't ${tokens[3]} isn't`, bindings)).toBe("don't  isn't")
+    expect(messageDisplayText(`'${tokens[3]}'`, bindings)).toBe(`'${tokens[3]}'`)
+  })
   test('image-only sends have no placeholder text', () => {
     expect(
       messageDisplayText('', [

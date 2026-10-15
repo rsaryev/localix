@@ -18,6 +18,7 @@
  * The two renderings still differ, and that difference is now a decision a reader can SEE
  * (each caller composes the pieces it wants) rather than an accident hiding in a copy.
  */
+import { sqlStringLiteral, stripStatementTerminator } from '../shared/sql-text'
 import type { DbDialect, DbTableSchema } from './drivers/port'
 import { quoteIdent } from './sql-ident'
 import {
@@ -144,7 +145,7 @@ export function reconstructCreate(table: DbTableSchema, dialect: DbDialect): str
         `${postgresCreateSequencePrefix(table, sequence)} ${sequenceName} ${postgresSequenceOptions(sequence, qualify, false)};`,
       )
       createdSequences.add(sequenceName)
-      defaultExpression = `nextval('${sequenceName.replaceAll("'", "''")}'::regclass)`
+      defaultExpression = `nextval(${sqlStringLiteral(sequenceName)}::regclass)`
       afterCreate.push(`ALTER SEQUENCE ${sequenceName} OWNED BY ${target}.${q(c.name)};`)
     }
     if (deferNotNull)
@@ -179,7 +180,7 @@ export function reconstructCreate(table: DbTableSchema, dialect: DbDialect): str
         )
         createdSequences.add(sequenceName)
       }
-      defaultValue = `nextval('${sequenceName.replaceAll("'", "''")}'::regclass)`
+      defaultValue = `nextval(${sqlStringLiteral(sequenceName)}::regclass)`
     }
     const action = defaultValue ? `SET DEFAULT ${defaultValue}` : 'DROP DEFAULT'
     afterCreate.push(`${alterTable} ONLY ${target} ALTER COLUMN ${q(override.column)} ${action};`)
@@ -264,7 +265,7 @@ export function reconstructCreate(table: DbTableSchema, dialect: DbDialect): str
     : ''
   const postgresPartitionBy =
     dialect === 'postgres' && table.postgresPartitionBy?.trim()
-      ? `\nPARTITION BY ${table.postgresPartitionBy.trim().replace(/;+\s*$/u, '')}`
+      ? `\nPARTITION BY ${stripStatementTerminator(table.postgresPartitionBy)}`
       : ''
   const postgresPhysical = dialect === 'postgres' ? postgresRelationClauses(table, q) : ''
   const postgresForeign = dialect === 'postgres' ? postgresForeignClauses(table, q) : ''

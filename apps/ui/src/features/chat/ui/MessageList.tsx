@@ -9,20 +9,16 @@ import {
   type RefObject,
 } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
-import { isToolBackedItem } from '@localixai/agent/agents/items'
 import type { Message } from '../model/types'
 import { MessageCard } from './MessageCard'
 import { AddressableMessageRow } from './AddressableMessageRow'
-import { eventFocusMessageId, messageTargetUri, visibleEventFocusRequest } from './messageTargetUri'
+import { messageTargetUri } from './messageTargetUri'
+import { useReplayFocusTracking } from './useReplayFocusTracking'
+import { useTranscriptJumps } from './useTranscriptJumps'
+import { useVirtualGeometryPersistence } from './useVirtualGeometryPersistence'
 import { SystemNoticeLine } from './SystemNoticeLine'
 import { CommandOutputLine } from './CommandOutputLine'
 import { LabelDivider } from '@localixai/kit/label-divider'
-import { useMessageFocusStore } from '@/shared/lib/messageFocusBus'
-import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
-import { useTranscriptNavStore } from '@/shared/lib/transcriptNavBus'
-import { nextPromptIndex } from '@/shared/lib/transcriptNav'
-import { createTrailingThrottle } from '@/shared/lib/throttle'
 import { createTranscriptProjectionSelector } from './transcriptProjection'
 import { systemMessageLabel } from './coalesceSystemMessages'
 import { ToolChain } from './tool-parts/ToolChain'
@@ -37,15 +33,8 @@ import {
   ESTIMATED_CHAT_ROW_HEIGHT,
   openedTranscriptBottomOffset,
 } from './messageListScroll'
-import {
-  chatMeasurementsForWidth,
-  getChatScrollSnapshot,
-  measurementsUsableAtWidth,
-  saveChatVirtualMeasurements,
-} from '@/shared/hooks/chatScrollState'
+import { chatMeasurementsForWidth, getChatScrollSnapshot } from '@/shared/hooks/chatScrollState'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
-import { registerUiTargetMaterializer } from '@/shared/lib/uiTargetRegistry'
-import { useEventFocusStore } from '@/shared/lib/eventFocusBus'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 import { deriveWakeProvenance, wakeSourceLabel } from '@localixai/api/wake-provenance'
 
@@ -182,34 +171,13 @@ function MessageListImpl({
     initialMeasurementsCache: cachedMeasurements ?? [],
   })
 
-  // The width above is 0 on the first render (the parent attaches its scroll ref
-  // after this child's layout effects), so the cache can be seeded before it can
-  // be judged. Judge it on the first commit that HAS a width and drop it there —
-  // `measure()` clears the size cache, so rows re-measure from the estimate
-  // instead of replaying heights from another pane width.
-  const widthCheckedRef = useRef(false)
-  useLayoutEffect(() => {
-    if (widthCheckedRef.current || !scrollEl) return
-    const width = scrollEl.clientWidth
-    if (width <= 0) return
-    widthCheckedRef.current = true
-    if (!cachedMeasurements) {
-      if (cachedVirtualState?.measurements) virtualizer.measure()
-      return
-    }
-    if (measurementsUsableAtWidth(cachedVirtualState?.measurementWidth, width)) return
-    virtualizer.measure()
-  }, [scrollEl, cachedVirtualState, cachedMeasurements, virtualizer])
-
-  // A warm body keeps this virtualizer instance. If the grid eventually evicts
-  // it, persist the measured geometry too; scrollTop alone cannot round-trip a
-  // dynamically measured transcript without estimate→actual layout drift.
-  useEffect(
-    () => () => {
-      if (!sessionId) return
-      saveChatVirtualMeasurements(sessionId, virtualizer.takeSnapshot(), measuredWidthRef.current)
-    },
-    [sessionId, virtualizer],
+  useVirtualGeometryPersistence(
+    sessionId,
+    scrollEl,
+    virtualizer,
+    cachedVirtualState,
+    cachedMeasurements,
+    measuredWidthRef,
   )
 
   const totalSize = virtualizer.getTotalSize()
@@ -235,120 +203,19 @@ function MessageListImpl({
     virtualizer.scrollToEnd()
   }, [sessionId, scrollEl, virtualizer, hasRows, workItemVisible])
 
-  // Snapshot replay: while the inspector's Snapshot tab is open, track the
-  // topmost tool-bearing message in view and point the tab at it. Gated on
-  // `active` so this listener costs nothing when the tab isn't mounted.
-  const replayActive = useMessageFocusStore((s) => s.active)
-  const setReplayFocus = useMessageFocusStore((s) => s.setFocus)
-  const visibleRef = useRef(visible)
-  visibleRef.current = visible
   const rowsRef = useRef(rows)
   rowsRef.current = rows
-  const rowByIdRef = useRef(rowById)
-  rowByIdRef.current = rowById
-  const sessionIdRef = useRef(sessionId)
-  sessionIdRef.current = sessionId
-
-  const eventFocusSequence = useEventFocusStore((state) => state.sequence)
-  useEffect(() => {
-    const focusState = useEventFocusStore.getState()
-    const request = visibleEventFocusRequest(focusState.pending, sessionId, workItemVisible)
-    // Warm transcripts stay mounted under display:none. They must not claim the
-    // request until their session is actually visible: a disabled virtualizer
-    // cannot perform an observable scroll/reveal, and consuming here used to
-    // make cross-session Event Center jumps silently lose their highlight.
-    if (!request) return
-    const messageId = eventFocusMessageId(visibleRef.current, request)
-    if (!messageId) return
-    const index = rowByIdRef.current.get(messageId) ?? -1
-    if (index < 0) return
-    virtualizer.scrollToIndex(index, { align: 'center' })
-    focusState.consume(request.token)
-  }, [eventFocusSequence, sessionId, visible.length, virtualizer, workItemVisible])
-  useEffect(() => {
-    if (!replayActive || !scrollEl || !sessionId) return
-    const push = createTrailingThrottle((messageId: string) => {
-      const sid = sessionIdRef.current
-      if (sid) setReplayFocus(sid, messageId)
-    }, 150)
-    const onScroll = () => {
-      // Pinned: the tab is frozen on a chosen message — don't chase the scroll.
-      if (useMessageFocusStore.getState().pinned) return
-      const top = scrollEl.scrollTop
-      for (const vi of virtualizer.getVirtualItems()) {
-        // Skip rows scrolled fully above the fold; first remaining row with tool
-        // activity wins (so plain-text rows don't blank the panel).
-        if (vi.start + vi.size <= top + 12) continue
-        const m = rowsRef.current[vi.index]?.segments.find((segment) =>
-          (segment.items ?? []).some(isToolBackedItem),
-        )
-        if (m) {
-          push.call(m.id)
-          break
-        }
-      }
-    }
-    onScroll()
-    scrollEl.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      scrollEl.removeEventListener('scroll', onScroll)
-      push.cancel()
-    }
-  }, [replayActive, scrollEl, sessionId, virtualizer, setReplayFocus])
-
-  // Snapshot reverse-link: the tab's "jump to message" bumps `revealSignal`;
-  // scroll the currently focused message into view via the same virtualizer path
-  // the search bar uses. A counter (not an id) so a repeat jump re-fires.
-  const revealSignal = useMessageFocusStore((s) => s.revealSignal)
-  const seenRevealRef = useRef(revealSignal)
-  useEffect(() => {
-    if (revealSignal === seenRevealRef.current) return
-    seenRevealRef.current = revealSignal
-    const focus = useMessageFocusStore.getState()
-    if (focus.sessionId !== sessionId) return
-    const idx = focus.messageId ? (rowByIdRef.current.get(focus.messageId) ?? -1) : -1
-    if (idx >= 0) virtualizer.scrollToIndex(idx, { align: 'center' })
-  }, [revealSignal, sessionId, virtualizer])
-
-  // In-conversation search: scroll the active match into view. Reads `visible`
-  // through its ref so a streaming message update doesn't re-trigger the scroll.
-  const searchActiveId = useMessageSearchStore((s) => s.activeId)
-  useEffect(() => {
-    if (!searchActiveId) return
-    const idx = rowByIdRef.current.get(searchActiveId) ?? -1
-    if (idx >= 0) virtualizer.scrollToIndex(idx, { align: 'center' })
-  }, [searchActiveId, virtualizer])
-
-  // Previous/next user-prompt navigation. Only the focused surface reacts. The
-  // anchor is the row currently at the top of the viewport (read live from the
-  // virtualizer), so jumps are relative to what you're looking at — matching how
-  // "next change" works in an editor — and never desync from a stored cursor.
-  // Subscribe to the raw signal (shared across surfaces) and gate on focus INSIDE
-  // the effect — so toggling which surface is focused never itself triggers a jump.
-  const navSignal = useTranscriptNavStore((s) => s.signal)
-  const seenNavSignalRef = useRef(navSignal)
-  useEffect(() => {
-    const prev = seenNavSignalRef.current
-    seenNavSignalRef.current = navSignal
-    if (!navActive || !scrollEl || navSignal === prev) return
-    const dir = useTranscriptNavStore.getState().dir
-    const userIndices: number[] = []
-    for (let i = 0; i < rows.length; i += 1) {
-      const m = rows[i]!.segments[0]!
-      if (m.role === 'user' && !m.isInternal && !m.uiOnly) userIndices.push(i)
-    }
-    // Topmost row in view: first virtual item whose bottom is below the fold.
-    const top = scrollEl.scrollTop
-    let anchor = rows.length - 1
-    for (const vi of virtualizer.getVirtualItems()) {
-      if (vi.start + vi.size > top + 1) {
-        anchor = vi.index
-        break
-      }
-    }
-    const target = nextPromptIndex(userIndices, anchor, dir)
-    if (target != null) virtualizer.scrollToIndex(target, { align: 'start' })
-  }, [navSignal, navActive, scrollEl, virtualizer, rows])
+  useReplayFocusTracking(scrollEl, sessionId, virtualizer, rowsRef)
+  useTranscriptJumps({
+    sessionId,
+    scrollEl,
+    virtualizer,
+    rows,
+    rowById,
+    visible,
+    workItemVisible,
+    navActive,
+  })
 
   // Minimap feed: tick offsets come from the virtualizer (a virtualized
   // transcript has no per-message DOM to measure for off-screen rows). The
@@ -374,27 +241,6 @@ function MessageListImpl({
   )
 
   const items = virtualizer.getVirtualItems()
-
-  useEffect(() => {
-    if (!sessionId) return
-    const prefix = localixResourceUri('chat', ['message', sessionId])
-    return registerUiTargetMaterializer({
-      id: `chat-message-list:${sessionId}`,
-      supports: (uri) => uri.startsWith(`${prefix}/`),
-      materialize: (uri) => {
-        const target = uri.slice(`${prefix}/`.length).split(/[?#]/, 1)[0]
-        if (!target) return
-        let messageId = target
-        try {
-          messageId = decodeURIComponent(target)
-        } catch {
-          // Preserve the raw id: malformed external URIs simply will not match.
-        }
-        const index = rowByIdRef.current.get(messageId) ?? -1
-        if (index >= 0) virtualizer.scrollToIndex(index, { align: 'center' })
-      },
-    })
-  }, [sessionId, virtualizer])
 
   return (
     <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>

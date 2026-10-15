@@ -8,6 +8,7 @@
  * There is no in-process Redis to integration-test against here, so the tricky logic lives
  * in the tested kernel and this wrapper stays deliberately thin.
  */
+import { CONNECT_TIMEOUT_MS } from './connect-timeout'
 import { RedisClient, type RedisOptions } from 'bun'
 import {
   driverFlags,
@@ -59,7 +60,7 @@ function buildRedisUrl(options: RedisDriverOptions): string {
 /** Build Bun Redis options; TLS is valid alongside both a URL and discrete fields. */
 export function buildRedisClientOptions(options: RedisDriverOptions): RedisOptions {
   return {
-    connectionTimeout: 8000,
+    connectionTimeout: CONNECT_TIMEOUT_MS,
     autoReconnect: false,
     maxRetries: 0,
     ...(options.ssl ? { tls: options.ssl } : {}),

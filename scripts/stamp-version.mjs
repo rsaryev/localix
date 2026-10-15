@@ -9,8 +9,9 @@
 // on a build that is not `--locked`. Stamping all three keeps the release build `--locked`-clean.
 // Edits are targeted replacements, so formatting and key order stay exactly as committed.
 import { readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { repoRoot } from './lib/paths.mjs'
 
 const SRC_TAURI = ['apps', 'desktop-tauri', 'src-tauri']
 const CRATE = 'desktop-tauri'
@@ -38,7 +39,7 @@ const SITES = [
   },
 ]
 
-export const repoRootFromHere = () => resolve(fileURLToPath(new URL('..', import.meta.url)))
+export const repoRootFromHere = repoRoot
 
 const pathOf = (repoRoot, file) => join(repoRoot, ...SRC_TAURI, file)
 

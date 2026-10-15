@@ -12,6 +12,8 @@
  * case-insensitive at the call site, so every keyword is emitted lower-case.
  */
 
+import { escapeRegExp } from '../../lib/regexp'
+
 /**
  * Words that carry no topic. Deliberately short: this list exists to stop a pattern
  * from matching every message ("the", "with"), not to do linguistics. A word that
@@ -73,11 +75,6 @@ const MIN_KEYWORD_LENGTH = 4
 /** A pattern past this many alternatives matches almost any message. */
 const MAX_KEYWORDS = 8
 
-/** Escape the characters a manifest word may legally contain that a regexp reads. */
-function escape(word: string): string {
-  return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 /**
  * Drop a plural 's' so the pattern matches the form the USER typed.
  *
@@ -109,5 +106,5 @@ export function tipKeywordPattern(...parts: readonly string[]): string | undefin
     if (words.size >= MAX_KEYWORDS) break
   }
   if (words.size === 0) return undefined
-  return `\\b(${[...words].map(escape).join('|')})\\w*`
+  return `\\b(${[...words].map(escapeRegExp).join('|')})\\w*`
 }

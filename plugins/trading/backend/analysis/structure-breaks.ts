@@ -14,6 +14,8 @@ import type { Candle } from '../contracts'
 import type { ChartCommandPayload } from '../chart-command'
 import type { ChartDrawingSpec } from '../chart-drawing'
 import { pivots, type Pivot } from './pattern-detect'
+import { toolNumber } from '../tool-number'
+import { BEARISH_COLOR, BULLISH_COLOR } from './draw-colors'
 
 export interface StructureBreak {
   type: 'BOS' | 'ChoCH'
@@ -103,8 +105,6 @@ export function detectStructureBreak(
 
 /** A bullish break flips a former high to support (green); a bearish break flips a low to
  *  resistance (pink) — the detect-report palette. */
-const BULLISH_COLOR = '#4dd0a1'
-const BEARISH_COLOR = '#f472b6'
 
 /**
  * The break as a single `draw` command: a dashed line at the broken swing level — now a flip
@@ -129,10 +129,6 @@ export function structureBreakDrawPayloads(
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The break as one report line, or nothing when structure is intact. */
 export function renderStructureBreak(brk: StructureBreak | null): string[] {
   if (!brk) return []
@@ -141,6 +137,6 @@ export function renderStructureBreak(brk: StructureBreak | null): string[] {
       ? `continuation of the ${brk.direction === 'bullish' ? 'up' : 'down'}-structure`
       : `character change — the ${brk.direction === 'bullish' ? 'down' : 'up'}-structure is at risk`
   return [
-    `- structure: ${brk.direction} ${brk.type} — a close broke the swing ${brk.direction === 'bullish' ? 'high' : 'low'} ${num(brk.level)} (${meaning}).`,
+    `- structure: ${brk.direction} ${brk.type} — a close broke the swing ${brk.direction === 'bullish' ? 'high' : 'low'} ${toolNumber(brk.level)} (${meaning}).`,
   ]
 }

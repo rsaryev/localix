@@ -2,7 +2,8 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import type { DbSchemas, DbTableSchema } from '../dbClient'
 import type { SqlForeignKey, SqlSchemaModel } from './sqlCompletion'
-import { getCachedTable, getCachedTableError } from './schemaKey'
+import { getCachedTable, getCachedTableError, mergeColumnSources } from './schemaKey'
+import type { ColumnSource } from './schemaEntry'
 import { schemaStore } from './schemaStore'
 import { defineRecordValue, ownRecordValue } from '../../shared/safe-record'
 
@@ -16,6 +17,12 @@ export interface SchemaState {
   /** Lazily-fetched structures. Use getTable for schema-safe lookup. */
   tables: Record<string, DbTableSchema>
   getTable: (table: string, schema?: string) => DbTableSchema | undefined
+  /**
+   * Column vocabulary for every table known so far — full structures plus the one-query catalog.
+   * For autocomplete, search and diagnostics; a structure view reads {@link getTable}.
+   */
+  columnSources: Record<string, ColumnSource>
+  getColumnSource: (table: string, schema?: string) => ColumnSource | undefined
   /**
    * Why this object's structure could not be read, when it could not. A consumer that
    * renders a spinner for a missing table MUST check this first — an absent table with
@@ -64,6 +71,14 @@ export function useSchema(connectionId: string): SchemaState {
     (table: string, schema?: string) => getCachedTable(snap.tables, table, schema),
     [snap.tables],
   )
+  const columnSources = useMemo(
+    () => mergeColumnSources<ColumnSource>(snap.columnCatalog, snap.tables),
+    [snap.columnCatalog, snap.tables],
+  )
+  const getColumnSource = useCallback(
+    (table: string, schema?: string) => getCachedTable(columnSources, table, schema),
+    [columnSources],
+  )
   const getTableError = useCallback(
     (table: string, schema?: string) => getCachedTableError(snap.tableErrors, table, schema),
     [snap.tableErrors],
@@ -93,16 +108,18 @@ export function useSchema(connectionId: string): SchemaState {
     const columnsByTable: Record<string, string[]> = {}
     const columnMeta: Record<string, Record<string, { type?: string; pk?: boolean }>> = {}
     const foreignKeys: SqlForeignKey[] = []
-    for (const t of Object.values(snap.tables)) {
-      const names = t.schema ? [`${t.schema}.${t.name}`, t.name] : [t.name]
-      const columns = t.columns.map((c) => c.name)
+    for (const source of Object.values(columnSources)) {
+      const names = source.schema ? [`${source.schema}.${source.name}`, source.name] : [source.name]
+      const columns = source.columns.map((c) => c.name)
       const meta = Object.fromEntries(
-        t.columns.map((c) => [c.name, { type: c.dataType, pk: c.pk }]),
+        source.columns.map((c) => [c.name, { type: c.dataType, pk: c.pk }]),
       )
       for (const name of names) {
         if (!ownRecordValue(columnsByTable, name)) defineRecordValue(columnsByTable, name, columns)
         if (!ownRecordValue(columnMeta, name)) defineRecordValue(columnMeta, name, meta)
       }
+    }
+    for (const t of Object.values(snap.tables)) {
       for (const fk of t.foreignKeys) {
         foreignKeys.push({
           table: t.schema ? `${t.schema}.${t.name}` : t.name,
@@ -113,7 +130,7 @@ export function useSchema(connectionId: string): SchemaState {
       }
     }
     return { tables: tableNames, columnsByTable, columnMeta, foreignKeys }
-  }, [snap.schemas, snap.tables])
+  }, [snap.schemas, snap.tables, columnSources])
 
   return {
     schemas: snap.schemas,
@@ -123,6 +140,8 @@ export function useSchema(connectionId: string): SchemaState {
     reload,
     tables: snap.tables,
     getTable,
+    columnSources,
+    getColumnSource,
     getTableError,
     getTableErrorDetail,
     loadTable,

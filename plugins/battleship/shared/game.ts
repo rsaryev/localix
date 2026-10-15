@@ -1,3 +1,4 @@
+import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
 import { z } from 'zod'
 
 import {
@@ -38,13 +39,7 @@ const fleetSchema = z.array(shipSchema).refine(isLegalFleet, 'Not a legal fleet'
  * While the agent owes a shot: when it was asked, and whether it can answer. Everything that
  * counts ("thinking for 12s") is derived from `since` against a clock, never counted in state.
  */
-export const agentWaitSchema = z.object({
-  since: z.string(),
-  /** thinking — the chat was woken; unreachable — the wake did not land. */
-  status: z.enum(['thinking', 'unreachable']),
-  reason: z.string().optional(),
-})
-export type AgentWait = z.infer<typeof agentWaitSchema>
+export { agentWaitSchema, type AgentWait }
 
 export const shotSchema = z.object({
   by: z.enum(PLAYERS),
@@ -59,8 +54,8 @@ export const recordSchema = z.object({
   won: z.number().int().min(0),
   lost: z.number().int().min(0),
 })
-export type Record = z.infer<typeof recordSchema>
-export const EMPTY_RECORD: Record = { won: 0, lost: 0 }
+export type GameRecord = z.infer<typeof recordSchema>
+export const EMPTY_RECORD: GameRecord = { won: 0, lost: 0 }
 
 /** The whole game, server-side only. */
 export const gameSchema = z.object({
@@ -90,7 +85,7 @@ export function newGame(input: {
   first: Player
   fleets: { you: Ship[]; agent: Ship[] }
   now: string
-  record?: Record
+  record?: GameRecord
 }): Game {
   return {
     id: input.id,

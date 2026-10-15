@@ -70,9 +70,14 @@ export function wrapToolsWithTimeoutPromoter(
         // honours cancellation therefore actually stops; one that ignores its signal does
         // not, which is why `jobs action="stop"` reports a stop as REQUESTED, not confirmed.
         const controller = new AbortController()
+        const relayAbort = () => controller.abort()
         if (signal?.aborted) controller.abort()
-        else signal?.addEventListener('abort', () => controller.abort(), { once: true })
-        const inflight = tool.execute(toolCallId, input, controller.signal, onUpdate, context)
+        else signal?.addEventListener('abort', relayAbort, { once: true })
+        // The run's signal outlives every call on it: detach the relay once this call settles,
+        // or a long run accumulates one listener (and one controller) per promotable call.
+        const inflight = Promise.resolve()
+          .then(() => tool.execute(toolCallId, input, controller.signal, onUpdate, context))
+          .finally(() => signal?.removeEventListener('abort', relayAbort))
         // No registry means nothing can carry a job — a non-hosted context, or a tool run
         // outside a session. Waiting is then the only honest option.
         if (!registry) return inflight

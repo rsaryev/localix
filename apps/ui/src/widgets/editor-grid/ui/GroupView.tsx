@@ -277,7 +277,7 @@ export const GroupView = memo(function GroupView({
             onItemDragEnd={(id, event, cancelled) => {
               void finishOutsideTabDrag(id, event, cancelled)
             }}
-            variant="subtle"
+            variant="compact"
             edgeFade
             aria-label="Group tabs"
             actionsLabel="Panel actions"

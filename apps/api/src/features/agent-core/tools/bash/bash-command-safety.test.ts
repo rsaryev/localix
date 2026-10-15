@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'bun:test'
-import { isDangerous } from './bash-command-safety'
+import { isCatastrophic, isDangerous } from './bash-command-safety'
 import { isReadOnlyCommand } from './bash-readonly-classify'
 
 describe('isDangerous', () => {
+  it('quoting or escaping a command word does not hide it', () => {
+    for (const command of [`"rm" -rf build`, `r''m -rf build`, `su\\do ls`, `'sudo' ls`]) {
+      expect(isDangerous(command)).toBe(true)
+    }
+    expect(isCatastrophic(`"rm" -rf /`)).toBe(true)
+    expect(isCatastrophic(`'mkfs'.ext4 /dev/sdb1`)).toBe(true)
+    expect(isDangerous(`echo "hello world"`)).toBe(false)
+  })
+
   it('flags rm with BOTH recursive and force, in any form/order', () => {
     for (const cmd of [
       'rm -rf /',

@@ -1,10 +1,14 @@
 // In-memory replay survives grid keep-alive eviction without persisting terminal output to disk.
-const output = new Map<string, { chunks: string[]; size: number }>()
+// `head` is the first live chunk: dropping the oldest output advances it instead of shifting the
+// array, which re-indexed every retained chunk on each write once the buffer was full of small
+// PTY writes. The dead prefix is compacted away once it outgrows the live part.
+const output = new Map<string, { chunks: string[]; head: number; size: number }>()
 const MAX_TERMINALS = 16
 const MAX_CHARS = 256 * 1024
 
 export function terminalOutput(id: string): string | undefined {
-  return output.get(id)?.chunks.join('')
+  const entry = output.get(id)
+  return entry?.chunks.slice(entry.head).join('')
 }
 
 export function resetTerminalOutput(id: string): void {
@@ -12,14 +16,18 @@ export function resetTerminalOutput(id: string): void {
 }
 
 export function retainTerminalOutput(id: string, data: string): void {
-  const entry = output.get(id) ?? { chunks: [], size: 0 }
+  const entry = output.get(id) ?? { chunks: [], head: 0, size: 0 }
   entry.chunks.push(data)
   entry.size += data.length
-  while (entry.size > MAX_CHARS && entry.chunks.length > 1)
-    entry.size -= entry.chunks.shift()!.length
+  while (entry.size > MAX_CHARS && entry.chunks.length - entry.head > 1)
+    entry.size -= entry.chunks[entry.head++]!.length
   if (entry.size > MAX_CHARS) {
-    entry.chunks[0] = entry.chunks[0]!.slice(-MAX_CHARS)
+    entry.chunks[entry.head] = entry.chunks[entry.head]!.slice(-MAX_CHARS)
     entry.size = MAX_CHARS
+  }
+  if (entry.head > entry.chunks.length - entry.head) {
+    entry.chunks = entry.chunks.slice(entry.head)
+    entry.head = 0
   }
   output.delete(id)
   output.set(id, entry)

@@ -15,6 +15,7 @@ import { detectOrderBlocks, type OrderBlock } from './order-blocks'
 import { detectStructureBreak, type StructureBreak } from './structure-breaks'
 import { volumeProfile, type VolumeProfile } from './volume-profile'
 import { sessionVwap, type SessionVwap } from './vwap-analysis'
+import { toolNumber } from '../tool-number'
 
 export interface SourcedLevel {
   price: number
@@ -174,10 +175,6 @@ export function confluenceFromCandles(
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** Within this percent of a confluence zone, price is effectively AT it — a live decision point. */
 const AT_ZONE_PCT = 0.15
 
@@ -196,13 +193,13 @@ export function renderConfluence(zones: ConfluenceZone[]): string[] {
   const lines: string[] = []
   if (at) {
     lines.push(
-      `- AT a confluence zone NOW (${num(at.price)}: ${at.sources.join(' + ')}) — expect a reaction (bounce or break); this is the decision point.`,
+      `- AT a confluence zone NOW (${toolNumber(at.price)}: ${at.sources.join(' + ')}) — expect a reaction (bounce or break); this is the decision point.`,
     )
   }
   lines.push('- confluence (levels where multiple methods agree — the strongest references):')
   for (const z of zones) {
     lines.push(
-      `    · ${num(z.price)} (${z.distancePct >= 0 ? '+' : ''}${num(z.distancePct)}%): ${z.sources.join(' + ')}`,
+      `    · ${toolNumber(z.price)} (${z.distancePct >= 0 ? '+' : ''}${toolNumber(z.distancePct)}%): ${z.sources.join(' + ')}`,
     )
   }
   return lines

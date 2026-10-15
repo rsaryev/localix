@@ -2,6 +2,7 @@ import { envInt } from '../../lib/env'
 import { errorMessage } from '../../lib/errors'
 
 import { type AgentTool, type CallClass, mcpInputSchema } from '@localixai/agent/agents'
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 
 import type { McpClientLike, McpToolDef, McpToolAnnotations } from './mcp-client-contracts'
 export type {
@@ -131,11 +132,24 @@ export function disambiguate(name: string, used: Set<string>): string {
   }
 }
 
-/** Errors that mean "the connection is gone", as opposed to a tool-level failure. */
-function isTransportError(message: string): boolean {
-  return /connection closed|not connected|connection refused|transport (is )?clos|ECONNREFUSED|ECONNRESET|EPIPE|socket hang up|fetch failed/i.test(
-    message,
-  )
+/** Socket-level errno codes that mean the transport itself is gone. */
+const TRANSPORT_ERRNO = new Set(['ECONNREFUSED', 'ECONNRESET', 'ECONNABORTED', 'EPIPE', 'ENOTCONN'])
+
+/**
+ * Errors that mean "the connection is gone", as opposed to a tool-level failure. Judged by
+ * structure — the SDK's `ConnectionClosed` code or a socket errno anywhere in the cause chain —
+ * so a tool whose own failure text mentions "connection refused" (a database tool, say) does not
+ * tear down a healthy client. The SDK's one untyped signal is its bare `Error('Not connected')`.
+ */
+export function isTransportError(err: unknown): boolean {
+  if (err instanceof McpError) return err.code === ErrorCode.ConnectionClosed
+  let current: unknown = err
+  for (let depth = 0; depth < 5 && current && typeof current === 'object'; depth++) {
+    const code = (current as { code?: unknown }).code
+    if (typeof code === 'string' && TRANSPORT_ERRNO.has(code)) return true
+    current = (current as { cause?: unknown }).cause
+  }
+  return err instanceof Error && err.message === 'Not connected'
 }
 
 /**
@@ -207,10 +221,7 @@ export function buildToolForServer(
       } catch (err) {
         const rawMessage = errorMessage(err)
         // A dead transport means the cached client must be reconnected next turn.
-        // Classify BEFORE truncation: a transport signature near the tail must
-        // still invalidate the cached client even when the user-facing preview
-        // keeps only the bounded head.
-        if (isTransportError(rawMessage)) onTransportError?.()
+        if (isTransportError(err)) onTransportError?.()
         const message = capMcpErrorMessage(rawMessage, maxResultChars)
         return {
           content: `MCP tool "${def.name}" failed: ${message}`,

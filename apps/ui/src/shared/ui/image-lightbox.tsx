@@ -1,10 +1,11 @@
-import { useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, Copy, Download, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@localixai/kit/dialog'
 import { MediaOverlayButton, mediaOverlayPillClasses } from '@localixai/kit/media-overlay-button'
 import { copyImageToClipboard } from '@/shared/lib/copyImage'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { COPIED_FEEDBACK_LONG_MS } from '@/shared/lib/timings'
+import { useCopiedFlag } from '@/shared/hooks/useCopiedFlag'
 
 /**
  * Fullscreen image viewer — reuses the shared Dialog (Esc / overlay-click to close)
@@ -36,7 +37,7 @@ export function ImageLightbox({
 }) {
   // BEFORE the `!image` early return: a hook may not sit behind a conditional,
   // and this component is rendered permanently with `image = null` while closed.
-  const [copied, setCopied] = useState(false)
+  const { copied, flash } = useCopiedFlag(COPIED_FEEDBACK_LONG_MS)
   const src = image?.src ?? null
   const copy = async () => {
     if (!src) return
@@ -47,8 +48,7 @@ export function ImageLightbox({
         })
         return
       }
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
+      flash()
     } catch (cause) {
       toast.error('Could not copy this image', {
         description: errorMessage(cause, 'The image could not be read.'),

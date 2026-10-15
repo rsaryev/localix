@@ -17,6 +17,7 @@
  */
 import type { Candle } from '../contracts'
 import { pivots, type Pivot } from './pattern-detect'
+import { toolNumber } from '../tool-number'
 
 export interface HarmonicPattern {
   pattern: 'gartley' | 'bat' | 'butterfly' | 'crab'
@@ -130,17 +131,13 @@ export function detectHarmonicPattern(candles: Candle[], span = 3): HarmonicPatt
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The pattern as a report line — name, direction, the PRZ and the measured ratios. */
 export function renderHarmonicPattern(h: HarmonicPattern): string[] {
   return [
-    `- harmonic: ${h.direction} ${h.pattern.toUpperCase()} completed at D ${num(h.d)} ` +
-      `(${h.distancePct >= 0 ? '+' : ''}${num(h.distancePct)}% from price) — a Potential Reversal Zone; ` +
-      `B retraced ${num(h.bRatio)} of XA, D ${num(h.dRatio)} ` +
-      `(X ${num(h.x)} / A ${num(h.a)} / B ${num(h.b)} / C ${num(h.c)}). ` +
+    `- harmonic: ${h.direction} ${h.pattern.toUpperCase()} completed at D ${toolNumber(h.d)} ` +
+      `(${h.distancePct >= 0 ? '+' : ''}${toolNumber(h.distancePct)}% from price) — a Potential Reversal Zone; ` +
+      `B retraced ${toolNumber(h.bRatio)} of XA, D ${toolNumber(h.dRatio)} ` +
+      `(X ${toolNumber(h.x)} / A ${toolNumber(h.a)} / B ${toolNumber(h.b)} / C ${toolNumber(h.c)}). ` +
       'Geometry, not a guarantee — demand a reaction at the zone before acting.',
   ]
 }

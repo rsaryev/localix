@@ -6,6 +6,7 @@
  * geometry, so they complement the pivot/fib/round levels the rest of the scan reads. Pure counting.
  */
 import type { Candle } from '../contracts'
+import { toolNumber } from '../tool-number'
 
 export interface VolumeProfile {
   /** Point of Control — the price (bin center) with the most traded volume. */
@@ -69,10 +70,6 @@ export function volumeProfile(candles: Candle[], bins = 24, minBars = 10): Volum
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** Where `price` sits relative to a value area: premium (above VAH — richly priced), discount
  *  (below VAL — cheap), or fair (inside). */
 export function valueAreaPosition(
@@ -96,6 +93,6 @@ export function renderVolumeProfile(vp: VolumeProfile | null, price?: number): s
         })()
       : ''
   return [
-    `- volume profile: POC ${num(vp.poc)} (most-traded price — a magnet), value area ${num(vp.val)}–${num(vp.vah)} (${Math.round(vp.valueAreaPct * 100)}% of volume — its edges are volume-based S/R).${where}`,
+    `- volume profile: POC ${toolNumber(vp.poc)} (most-traded price — a magnet), value area ${toolNumber(vp.val)}–${toolNumber(vp.vah)} (${Math.round(vp.valueAreaPct * 100)}% of volume — its edges are volume-based S/R).${where}`,
   ]
 }

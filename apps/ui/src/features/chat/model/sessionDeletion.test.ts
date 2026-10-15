@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 
 import { usePreviewStore } from '@/features/inspector/model/previewStore'
 import { backendClient } from '@/shared/api/client'
+import { ApiError } from '@/shared/api/failure'
 import type { UiSession } from '@/shared/api/contracts'
 import { registerInspectorHandler, type InspectorRequest } from '@/shared/lib/inspectorBus'
 import { useChatStore } from './store'
@@ -120,5 +121,19 @@ describe('session deletion teardown', () => {
       if (hadWindow) delete (host.window as { __TAURI__?: unknown }).__TAURI__
       else delete host.window
     }
+  })
+
+  test('a chat the server no longer has is forgotten; any other failure surfaces', async () => {
+    const remove = spyOn(backendClient, 'deleteSession').mockRejectedValueOnce(
+      new ApiError('Session not found', 404, 'session_not_found'),
+    )
+    restoreDelete = () => remove.mockRestore()
+    await useChatStore.getState().deleteSession('session-a')
+
+    // A message that merely mentions the phrase is not the server's not-found answer.
+    remove.mockRejectedValueOnce(new ApiError('Session not found in cache', 500, 'internal'))
+    await expect(useChatStore.getState().deleteSession('session-b')).rejects.toThrow(
+      'Session not found in cache',
+    )
   })
 })

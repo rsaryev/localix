@@ -63,9 +63,10 @@ export interface EventBatcher {
   dispose(): void
 }
 
-const defaultSetTimer = (fn: () => void, ms: number): BatchTimerHandle =>
+/** Real timers behind the injectable `setTimer`/`clearTimer` seams. */
+export const defaultSetTimer = (fn: () => void, ms: number): BatchTimerHandle =>
   setTimeout(fn, ms) as unknown as BatchTimerHandle
-const defaultClearTimer = (handle: BatchTimerHandle): void => {
+export const defaultClearTimer = (handle: BatchTimerHandle): void => {
   clearTimeout(handle as unknown as Parameters<typeof clearTimeout>[0])
 }
 

@@ -17,6 +17,7 @@
 import type { Candle } from './contracts'
 import { INDICATOR_FORMS, indicatorId, indicatorLabel, parseIndicatorId } from './indicator-spec'
 import { indicatorSpecFor } from '../ui/model/indicatorSpecs'
+import { toolNumber } from './tool-number'
 
 /** One indicator's latest computed values, in the snapshot's vocabulary. */
 export interface IndicatorReading {
@@ -83,12 +84,6 @@ export function computeIndicatorReadings(
   return { readings, unknown }
 }
 
-/** Four significant digits without exponent noise — RSI's 63.2 and a BTC price both read.
- *  (Same rule the snapshot read-back uses for the chart's own values.) */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /**
  * The indicator block for a `market_data` symbol read — computed over the SAME candles the tool
  * just printed, and it says so (the window IS the lookback; there is no hidden longer history).
@@ -110,8 +105,8 @@ export function indicatorLines(
         plots.length === 0
           ? `  (insufficient bars for a full lookback window — request more \`candles\`)`
           : plots.length === 1
-            ? ` = ${num(plots[0]![1])}`
-            : `: ${plots.map(([key, v]) => `${key}=${num(v)}`).join(', ')}`
+            ? ` = ${toolNumber(plots[0]![1])}`
+            : `: ${plots.map(([key, v]) => `${key}=${toolNumber(v)}`).join(', ')}`
       lines.push(`    - ${r.label} (${r.id})${reading}`)
     }
   }

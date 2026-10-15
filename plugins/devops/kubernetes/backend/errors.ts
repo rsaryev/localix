@@ -94,6 +94,9 @@ export function mapKubeError(err: unknown): KubeError {
       : typeof apiError?.body === 'string'
         ? apiError.body
         : undefined
+  const structural = structuralCode(err, body)
+  if (structural)
+    return new KubeError(structural, apiMessage ?? (rawOf(err) || undefined), { cause: err })
   if (statusCode === 401) {
     return new KubeError('authentication_failed', apiMessage, { cause: err })
   }
@@ -200,4 +203,51 @@ export function mapKubeError(err: unknown): KubeError {
     return new KubeError('not_found', raw || undefined, { cause: err })
   }
   return new KubeError('kube_error', raw || undefined, { cause: err })
+}
+
+/** `metav1.Status.reason` values that name the failure without reading its message. */
+const STATUS_REASONS: Record<string, KubeErrorCode> = {
+  Unauthorized: 'authentication_failed',
+  Forbidden: 'permission_denied',
+  NotFound: 'not_found',
+  Timeout: 'command_timeout',
+}
+
+/** Node's system/TLS error codes for a cluster that never answered. */
+const SYSTEM_CODES: Record<string, KubeErrorCode> = {
+  ECONNREFUSED: 'context_unreachable',
+  ENOTFOUND: 'context_unreachable',
+  EAI_AGAIN: 'context_unreachable',
+  ECONNRESET: 'context_unreachable',
+  EHOSTUNREACH: 'context_unreachable',
+  ENETUNREACH: 'context_unreachable',
+  ETIMEDOUT: 'context_unreachable',
+  DEPTH_ZERO_SELF_SIGNED_CERT: 'certificate_error',
+  SELF_SIGNED_CERT_IN_CHAIN: 'certificate_error',
+  CERT_HAS_EXPIRED: 'certificate_error',
+  UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'certificate_error',
+  UNABLE_TO_GET_ISSUER_CERT_LOCALLY: 'certificate_error',
+  ERR_TLS_CERT_ALTNAME_INVALID: 'certificate_error',
+}
+
+/**
+ * The typed signals a failure already carries — the API server's `Status.reason`, or the system
+ * error code on the error or its cause — checked before any message wording. Kubectl and
+ * credential-plugin output has no such fields, so the text rules remain the fallback for it.
+ */
+function structuralCode(
+  err: unknown,
+  body: Record<string, unknown> | undefined,
+): KubeErrorCode | undefined {
+  if (body?.kind === 'Status' && typeof body.reason === 'string') {
+    const byReason = STATUS_REASONS[body.reason]
+    if (byReason) return byReason
+  }
+  for (let current = err, depth = 0; current && depth < 3; depth++) {
+    if (typeof current !== 'object') break
+    const code = (current as { code?: unknown }).code
+    if (typeof code === 'string' && SYSTEM_CODES[code]) return SYSTEM_CODES[code]
+    current = (current as { cause?: unknown }).cause
+  }
+  return undefined
 }

@@ -23,21 +23,27 @@ afterAll(async () => {
  * dev those frames are long enough to see.
  */
 const editorSource = readFileSync(join(import.meta.dir, '../CodeEditor.tsx'), 'utf8')
+const mountSource = readFileSync(join(import.meta.dir, 'mountEditor.ts'), 'utf8')
+const optionsSource = readFileSync(join(import.meta.dir, 'editorOptions.ts'), 'utf8')
 
 /** The options object literal passed to the single `monaco.editor.create(...)` call. */
 function createOptions(): string {
-  const start = editorSource.indexOf('monaco.editor.create(')
+  expect(mountSource).toContain(
+    'monaco.editor.create(host, createEditorOptions(monaco, model, initial))',
+  )
+  const start = optionsSource.indexOf('export function createEditorOptions(')
   expect(start).toBeGreaterThan(-1)
-  return editorSource.slice(start, start + 1200)
+  return optionsSource.slice(start, start + 1200)
 }
 
 describe('editors are born with the app theme', () => {
   test('compact editors can disable pinned rows at creation and on later prop changes', () => {
-    expect(editorSource).toContain('enabled: latestPropsRef.current.stickyScrollEnabled ?? true')
+    expect(optionsSource).toContain('enabled: props.stickyScrollEnabled ?? true')
     expect(editorSource).toContain(
       'stickyScroll: { enabled: stickyScrollEnabled, maxLineCount: 5 }',
     )
     expect(editorSource).not.toContain('stickyScroll: { enabled: true')
+    expect(optionsSource).not.toContain('stickyScroll: { enabled: true')
   })
 
   test('the create call passes a theme, so the first painted frame is already themed', () => {

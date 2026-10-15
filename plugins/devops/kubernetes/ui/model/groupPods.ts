@@ -1,4 +1,5 @@
 import type { KubePod, PodPhase } from '../../backend/contracts'
+import { podReasonKind } from './podReason'
 
 /** A pod's health bucket for sidebar grouping. */
 export type PodHealth = 'healthy' | 'pending' | 'failed' | 'succeeded'
@@ -20,7 +21,8 @@ const GROUP_LABELS: Record<PodHealth, string> = {
 /** A pod counts as unhealthy when it is failing OR has a bad container reason
  *  (CrashLoopBackOff, ImagePullBackOff…) even while nominally "Running". */
 export function podHealth(pod: KubePod): PodHealth {
-  const badReason = /crashloop|imagepull|errimage|createcontainer|error|oomkilled/i.test(pod.reason)
+  const kind = podReasonKind(pod.reason)
+  const badReason = kind === 'backoff' || kind === 'failed'
   if (pod.phase === 'Failed' || badReason) return 'failed'
   if (pod.phase === 'Pending' || pod.phase === 'Unknown') return 'pending'
   if (pod.phase === 'Succeeded') return 'succeeded'

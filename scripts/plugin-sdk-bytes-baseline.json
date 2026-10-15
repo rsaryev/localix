@@ -1,6 +1,9 @@
 {
+  "./agent-wait": {
+    "bytes": 365
+  },
   "./backend": {
-    "bytes": 41796,
+    "bytes": 44834,
     "shake": {
       "export": "ASSISTANT_BINDINGS_MAX",
       "bytes": 31
@@ -10,7 +13,7 @@
     "bytes": 2546
   },
   "./manifest": {
-    "bytes": 2787
+    "bytes": 2807
   },
   "./manifest-label": {
     "bytes": 719
@@ -22,13 +25,20 @@
     "bytes": 4073
   },
   "./prerequisite": {
-    "bytes": 1974
+    "bytes": 1994
   },
   "./resource-refs": {
-    "bytes": 12111
+    "bytes": 12292
   },
   "./rich-text": {
     "bytes": 3611
+  },
+  "./secret-shapes": {
+    "bytes": 347,
+    "shake": {
+      "export": "hasSecretShape",
+      "bytes": 116
+    }
   },
   "./session-resource": {
     "bytes": 2250
@@ -40,7 +50,7 @@
     "bytes": 911
   },
   "./ui": {
-    "bytes": 64203,
+    "bytes": 64275,
     "shake": {
       "export": "CSV_CONTENT_TYPE",
       "bytes": 40
@@ -94,7 +104,7 @@
     "bytes": 1326
   },
   "./ui/prerequisite-recovery": {
-    "bytes": 2535
+    "bytes": 2542
   },
   "./ui/problems": {
     "bytes": 1529
@@ -115,10 +125,10 @@
     "bytes": 5343
   },
   "./ui/runtime": {
-    "bytes": 4130
+    "bytes": 4137
   },
   "./ui/runtime-hooks": {
-    "bytes": 3051
+    "bytes": 3119
   },
   "./ui/segmented-control": {
     "bytes": 3583
@@ -151,7 +161,7 @@
     "bytes": 3265
   },
   "./ui/transport": {
-    "bytes": 3583
+    "bytes": 3586
   },
   "./ui/use-problem-report": {
     "bytes": 1725
@@ -160,7 +170,7 @@
     "bytes": 3639
   },
   "./ui/visibility": {
-    "bytes": 2112
+    "bytes": 2198
   },
   "./ui/work-item-session": {
     "bytes": 482

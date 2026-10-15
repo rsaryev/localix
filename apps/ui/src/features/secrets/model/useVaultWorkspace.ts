@@ -14,6 +14,7 @@ import { useVaultCollections } from './useVaultCollections'
 import { useVaultDeletion } from './useVaultDeletion'
 import { VAULT_PROBLEM_SCOPE, vaultFailure } from './vaultProblem'
 import type { SourceFilter, TypeFilter, VaultSection } from './vaultSections'
+import { COPIED_FEEDBACK_MS } from '@/shared/lib/timings'
 
 /**
  * THE VAULT LIST — its load, its filters, its selection, and the ONE problem report the Vault's
@@ -140,7 +141,7 @@ export function useVaultWorkspace(requestedKey?: string) {
         throw new Error('Clipboard unavailable')
       }
       setCopied(`${item.key}:${template ? 'template' : 'handle'}`)
-      window.setTimeout(() => setCopied(null), 1_500)
+      window.setTimeout(() => setCopied(null), COPIED_FEEDBACK_MS)
     } catch {
       setError({ severity: 'error', message: 'The clipboard is not available in this window.' })
     }

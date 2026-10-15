@@ -1,5 +1,5 @@
 import { lineName } from '../../shared/describe'
-import { cellName, type Game, type Move, type Record } from '../../shared/game'
+import { cellName, type Game, type Move, type GameRecord } from '../../shared/game'
 
 /**
  * The game in the PERSON's words — the view's headline and what a screen reader announces.
@@ -39,7 +39,7 @@ export const nextOpener = (game: Game): string =>
   game.first === 'O' ? 'you start' : 'the agent starts'
 
 /** " · Score 2–1, 3 draws" — the table's running score, empty before the first game ends. */
-export function scoreLine(record: Record): string {
+export function scoreLine(record: GameRecord): string {
   if (record.won + record.lost + record.draw === 0) return ''
   const draws = record.draw === 1 ? '1 draw' : `${record.draw} draws`
   return ` · Score ${record.won}–${record.lost}, ${draws}`

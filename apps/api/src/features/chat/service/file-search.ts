@@ -2,21 +2,19 @@ import { shellQuote, interpretRipgrep } from '../../agent-core/tools/environment
 import { includeIgnoredRgFlags, loadProjectFileIndex } from '../../agent-core/project-file-index'
 import { withPathLocks, workspaceLockPaths } from '../../agent-core/tools/file/file-utils'
 import { ApiError, errorMessage } from '../../../lib/errors'
+import { commitReplacePlans, type ReplaceContentResult, type ReplacePlan } from './replace-commit'
+import { mapLimit } from '../../../lib/map-limit'
 import { searchToolMissing } from './search-tool-missing'
 import { getProjectFileList, type IndexedFiles } from './file-list-cache'
 import { applyReplace, buildReplaceRegExp } from './search-replace'
 import { parseRipgrepMatches } from './ripgrep-parse'
 import { writeResolvedFileUnderLock } from './file-content'
-import {
-  openSessionEnv,
-  resolveAgainst,
-  contentHash,
-  type FileOpsContext,
-} from './file-ops-context'
+import { openSessionEnv, resolveAgainst, type FileOpsContext } from './file-ops-context'
 import type { FileContentSearchResult, FileSearchResult } from '../contracts'
 
 import { searchPaths, type FindFilesOptions } from './file-path-search'
 export { deriveFolders, searchPaths, type FindFilesOptions } from './file-path-search'
+export { commitReplacePlans, type ReplaceContentResult } from './replace-commit'
 
 /**
  * Project SEARCH over a session's working tree: file-name search (⌘P quick-open,
@@ -189,63 +187,6 @@ export async function searchContent(
   return { root, matches, count: matches.length, truncated: truncated || cutShort }
 }
 
-/** Outcome of a {@link replaceContent} run. */
-export interface ReplaceContentResult {
-  /** Number of files whose contents changed. */
-  filesChanged: number
-  /** Total number of replacements written. */
-  replacements: number
-}
-
-interface ReplacePlan {
-  path: string
-  before: string
-  after: string
-  replacements: number
-}
-
-type ReplaceWriter = (path: string, content: string, baseHash: string) => Promise<unknown>
-
-/**
- * Commit a prepared multi-file replacement. On a later conflict/write failure,
- * restore every file already committed (only when it still contains our exact
- * replacement bytes). This gives Replace all all-or-nothing behaviour for ordinary
- * failures without ever overwriting an external edit that raced the rollback.
- */
-export async function commitReplacePlans(
-  plans: readonly ReplacePlan[],
-  write: ReplaceWriter,
-): Promise<ReplaceContentResult> {
-  const committed: ReplacePlan[] = []
-  try {
-    for (const plan of plans) {
-      await write(plan.path, plan.after, contentHash(plan.before))
-      committed.push(plan)
-    }
-  } catch (err) {
-    const rollbackFailures: string[] = []
-    for (const plan of committed.reverse()) {
-      try {
-        await write(plan.path, plan.before, contentHash(plan.after))
-      } catch {
-        rollbackFailures.push(plan.path)
-      }
-    }
-    if (rollbackFailures.length > 0) {
-      throw new ApiError(
-        409,
-        'replace_partial',
-        `Replace failed and ${rollbackFailures.length} file${rollbackFailures.length === 1 ? '' : 's'} could not be safely restored: ${rollbackFailures.join(', ')}`,
-      )
-    }
-    throw err
-  }
-  return {
-    filesChanged: committed.length,
-    replacements: committed.reduce((sum, plan) => sum + plan.replacements, 0),
-  }
-}
-
 /**
  * Search-and-replace across the project (backs the Search view's "Replace all").
  * Finds the matching files via {@link searchContent} (same flags), then rewrites
@@ -254,6 +195,8 @@ export async function commitReplacePlans(
  * pure, unit-tested {@link applyReplace} (JS RegExp built from the same options),
  * so regex capture references (`$1`) work and a literal `$` stays literal.
  */
+const REPLACE_READ_CONCURRENCY = 8
+
 export async function replaceContent(
   ctx: FileOpsContext,
   userId: string,
@@ -280,18 +223,20 @@ export async function replaceContent(
   // rolling back. The shared locks serialize this operation against editor saves,
   // agent write/edit, LSP edits, and other Replace-all requests.
   return withPathLocks(workspaceLockPaths(root, paths), async () => {
-    const plans: ReplacePlan[] = []
-    for (const abs of paths) {
+    // Reads overlap (bounded): every target is already locked, so their order cannot matter,
+    // and a remote environment pays one round trip per file.
+    const planned = await mapLimit(paths, REPLACE_READ_CONCURRENCY, async (abs) => {
       let content: string
       try {
         content = await env.readFile(abs)
       } catch {
-        continue
+        return undefined
       }
       const { text, count } = applyReplace(content, re, replacement, !opts.regex)
-      if (count === 0 || text === content) continue
-      plans.push({ path: abs, before: content, after: text, replacements: count })
-    }
+      if (count === 0 || text === content) return undefined
+      return { path: abs, before: content, after: text, replacements: count }
+    })
+    const plans: ReplacePlan[] = planned.filter((plan) => plan !== undefined)
     return commitReplacePlans(plans, (path, content, baseHash) =>
       writeResolvedFileUnderLock(env, path, content, baseHash),
     )

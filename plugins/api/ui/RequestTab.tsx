@@ -25,60 +25,36 @@
  * through them without adding a second permanent toolbar to the compact response header.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, CornerDownRight, Save, Send, Square } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { ApiProblem, useApiProblem } from './problems'
-import { Chip } from '@localixai/kit/chip'
 import { WorkbenchSash } from '@localixai/kit/button'
-import { IconButton } from '@localixai/kit/icon-button'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
-import { Input } from '@localixai/kit/input'
 import { Select } from '@localixai/kit/select'
 import { TabBar } from '@localixai/kit/tabs'
-import { Switch } from '@localixai/kit/switch'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { usePaneResize } from '@localixai/kit/pane-resize'
-import { cn, FIELD_SURFACE } from '@localixai/plugin-sdk/ui/classes'
-import type {
-  EnvVariable,
-  HistoryEntryInfo,
-  HistorySource,
-  RequestInfo,
-  ResolvedPreview,
-  SendResponse,
-} from '../backend/contracts'
-import { methodTone } from './model/presentation'
-import { RestApiError, restApi } from './restApi'
+import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { EnvVariable, RequestInfo, ResolvedPreview } from '../backend/contracts'
 import { useRequest } from './model/useRequest'
 import { useRequestEdit } from './model/useRequestEdit'
 import { useEnvironments } from './model/useEnvironments'
+import { useRequestSend, type RequestSendState } from './model/useRequestSend'
 import { PairEditor } from './ui/PairEditor'
 import { ParamsEditor } from './ui/ParamsEditor'
-import { BodyEditor } from './ui/BodyEditor'
 import { AuthEditor } from './ui/AuthEditor'
-import { FormRow } from './ui/FormRow'
 import { ResponsePane } from './ui/ResponsePane'
-import { queryDraftFromUrl, urlWithQuery } from './model/querySync'
+import { ResolvedLine } from './ui/ResolvedLine'
+import { RequestUrlBar } from './ui/RequestUrlBar'
+import { RequestBodyPane } from './ui/RequestBodyPane'
+import { RequestSettings } from './ui/RequestSettings'
 import { syncPathParameters } from './model/pathSync'
-import { subscribeApiWorkspaceCommands } from './model/collectionEvents'
-import { acknowledgeInline, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { buildRequestMessageContext } from './model/requestMessageContext'
 import {
   FORM_URLENCODED,
   MULTIPART_FORM,
-  HTTP_METHODS,
   methodAllowsBody,
   type HttpMethod,
 } from '../backend/request-spec'
-
-/** Static map — a template-built `text-status-…` class would never reach the Tailwind build. */
-const TONE_TEXT: Record<string, string> = {
-  success: 'text-status-success',
-  warning: 'text-status-warning',
-  error: 'text-status-error',
-  info: 'text-status-info',
-}
 
 export function RequestTab({
   sessionId,
@@ -90,147 +66,10 @@ export function RequestTab({
   name: string
   publishMessageContext?: PublishMessageContext
 }) {
-  const workItemVisible = useWorkItemVisible()
   const { request, resolved, loading, error, reload } = useRequest(sessionId, name)
   // The active environment's variables feed the body editor's `{{variable}}` autocomplete.
   const { active } = useEnvironments(sessionId)
-  // The response being READ: the latest send, or a history entry the dropdown picked.
-  const [response, setResponse] = useState<SendResponse | null>(null)
-  const [history, setHistory] = useState<HistoryEntryInfo[]>([])
-  const [historyId, setHistoryId] = useState<number | null>(null)
-  const [responseSource, setResponseSource] = useState<HistorySource | null>(null)
-  const [sending, setSending] = useState(false)
-  const [agentSending, setAgentSending] = useState(false)
-  const [sendError, setSendError] = useState<{ message: string; detail?: string } | null>(null)
-  const sendController = useRef<AbortController | null>(null)
-
-  useEffect(() => {
-    if (!publishMessageContext) return
-    // The active request is useful context BEFORE the first send. The inspected response becomes
-    // a second facet. Both are native bindings captured with this work item's session scope.
-    publishMessageContext(buildRequestMessageContext(name, response))
-  }, [name, publishMessageContext, response])
-
-  const loadHistory = useCallback(
-    (isCurrent: () => boolean = () => true, selectLatest = false) => {
-      void restApi
-        .history(sessionId, name)
-        .then((entries) => {
-          if (!isCurrent()) return
-          setHistory(entries)
-          // First open of a tab with past sends: show the most recent one instead of an empty
-          // pane — the request was used, and what it last returned is the context you came for.
-          setResponse((current) =>
-            selectLatest
-              ? (entries[0]?.response ?? current)
-              : (current ?? entries[0]?.response ?? null),
-          )
-          setResponseSource((current) =>
-            selectLatest
-              ? (entries[0]?.source ?? current)
-              : (current ?? entries[0]?.source ?? null),
-          )
-          if (selectLatest && entries.length > 0) setHistoryId(null)
-        })
-        .catch(() => {
-          // History is a convenience; a failed fetch leaves the pane usable.
-        })
-    },
-    [sessionId, name],
-  )
-  useEffect(() => {
-    if (!workItemVisible) return
-    let cancelled = false
-    loadHistory(() => !cancelled)
-    return () => {
-      cancelled = true
-    }
-  }, [loadHistory, workItemVisible])
-
-  useEffect(
-    () =>
-      subscribeApiWorkspaceCommands((command, commandSession) => {
-        // Another chat's agent sending a request of the same name is not this tab's send.
-        if (command.type !== 'request_send' || command.name !== name) return
-        if (commandSession !== sessionId) return
-        if (command.phase === 'started') {
-          setAgentSending(true)
-          setSendError(null)
-          return
-        }
-        setAgentSending(false)
-        if (command.phase === 'failed') {
-          setSendError({
-            message:
-              'The agent request did not complete. Its tool result in the conversation has the details.',
-          })
-          return
-        }
-        // `completed` is emitted only after the redacted response entered the shared history ring.
-        loadHistory(() => true, true)
-      }),
-    [loadHistory, name, sessionId],
-  )
-
-  // `void`-returning: click callbacks — a promise handed to one is a floating rejection nobody
-  // awaits. The state updates ARE the result.
-  const send = () => {
-    if (sendController.current) return
-    const controller = new AbortController()
-    sendController.current = controller
-    setSending(true)
-    setSendError(null)
-    void restApi
-      .send(sessionId, name, controller.signal)
-      .then((res) => {
-        setResponse(res)
-        setResponseSource('user')
-        setHistoryId(null)
-        loadHistory()
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted) return
-        acknowledgeInline(err)
-        // Keep the last good response on screen — a failure is read AGAINST what last worked, so
-        // blanking the pane throws away the context. The error rides above it as a strip.
-        // `message` is the classified sentence the route sent; `detail` is what the upstream (or
-        // the socket) actually said, which can be a whole response body.
-        setSendError({
-          message: err instanceof Error ? err.message : 'The request could not be sent.',
-          ...(err instanceof RestApiError && err.detail ? { detail: err.detail } : {}),
-        })
-      })
-      .finally(() => {
-        if (sendController.current === controller) {
-          sendController.current = null
-          setSending(false)
-        }
-      })
-  }
-
-  const cancelSend = () => sendController.current?.abort()
-
-  useEffect(
-    () => () => {
-      sendController.current?.abort()
-      sendController.current = null
-    },
-    [name],
-  )
-
-  // Drop this request's response log. The currently-shown response stays put — you cleared the
-  // history, not the view you are reading.
-  const clearHistory = () => {
-    void restApi
-      .clearHistory(sessionId, name)
-      .then(() => {
-        setHistory([])
-        setHistoryId(null)
-      })
-      .catch(() => {
-        // A failed clear leaves the log as it was — nothing to recover.
-      })
-  }
+  const send = useRequestSend(sessionId, name, publishMessageContext)
 
   // Owned above the returns: the branch that draws it disappears the moment the request loads,
   // and an owner that disappears never settles the row it published.
@@ -251,65 +90,11 @@ export function RequestTab({
       sessionId={sessionId}
       request={request}
       resolved={resolved}
-      response={response}
-      responseSource={responseSource}
-      history={history}
-      historyId={historyId}
-      onPickHistory={(id) => {
-        const entry = history.find((e) => e.id === id)
-        if (!entry) return
-        setHistoryId(id)
-        setResponse(entry.response)
-        setResponseSource(entry.source)
-        setSendError(null)
-      }}
       variables={active?.variables ?? []}
-      sending={sending}
-      agentSending={agentSending}
-      sendError={sendError}
-      onSend={send}
-      onCancelSend={cancelSend}
-      onClearHistory={clearHistory}
+      send={send}
       // Fire-and-forget refresh; a promise handed to a callback prop is a floating rejection.
       onSaved={() => void reload()}
     />
-  )
-}
-
-/**
- * What a templated url actually resolves to, under the environment that is active right now.
- * The url bar shows the TEMPLATE (that is what is saved and portable); a person about to press
- * Send needs the destination too. The gap between the two IS environments, so both are shown.
- */
-function ResolvedLine({ resolved }: { resolved: ResolvedPreview }) {
-  if (resolved.missing.length > 0) {
-    return (
-      <div className="flex items-center gap-2 border-b border-border-soft px-3 py-1.5 text-2xs">
-        <AlertTriangle className="size-3.5 shrink-0 text-status-warning" />
-        <span className="min-w-0 flex-1">
-          {resolved.environment
-            ? `“${resolved.environment}” does not define `
-            : 'No environment is active, so nothing defines '}
-          {resolved.missing.map((m) => `{{${m}}}`).join(', ')} — this request will not send.
-        </span>
-      </div>
-    )
-  }
-  return (
-    <div className="flex items-center gap-2 border-b border-border-soft px-3 py-1.5">
-      <CornerDownRight className="size-3.5 shrink-0 text-text-faint" />
-      <span
-        className="min-w-0 flex-1 truncate font-mono text-2xs text-text-faint"
-        title={resolved.url}
-      >
-        {resolved.url}
-      </span>
-      {resolved.environment && (
-        <Chip tone="neutral" className="shrink-0">
-          {resolved.environment}
-        </Chip>
-      )}
-    </div>
   )
 }
 
@@ -329,37 +114,19 @@ function Loaded({
   sessionId,
   request,
   resolved,
-  response,
-  responseSource,
-  history,
-  historyId,
-  onPickHistory,
-  onClearHistory,
   variables,
-  sending,
-  agentSending,
-  sendError,
-  onSend,
-  onCancelSend,
+  send,
   onSaved,
 }: {
   sessionId: string
   request: RequestInfo
   resolved?: ResolvedPreview
-  response: SendResponse | null
-  responseSource: HistorySource | null
-  history: HistoryEntryInfo[]
-  historyId: number | null
-  onPickHistory: (id: number) => void
-  onClearHistory: () => void
   variables: ReadonlyArray<EnvVariable>
-  sending: boolean
-  agentSending: boolean
-  sendError: { message: string; detail?: string } | null
-  onSend: () => void
-  onCancelSend: () => void
+  send: RequestSendState
   onSaved: () => void
 }) {
+  const { response, responseSource, history, historyId, sending, agentSending, sendError } = send
+  const onSend = send.send
   const requestBusy = sending || agentSending
   const saved = useCallback(() => onSaved(), [onSaved])
   const {
@@ -412,8 +179,6 @@ function Loaded({
   const paramsCount = activeCount(draft.query) + activeCount(draft.pathParameters)
   const headersCount = activeCount(draft.headers)
   const hasBody = Boolean(draft.body?.text?.trim() || draft.body?.form?.length)
-  // The whole `followRedirects` fallback is `true` — the plugin default when the request sets none.
-  const followRedirects = draft.followRedirects ?? true
   const hasSettings =
     draft.followRedirects === false || draft.timeoutMs != null || draft.maxRedirects != null
 
@@ -428,7 +193,6 @@ function Loaded({
       patch({ body: { mimeType, text: draft.body?.text ?? '' } })
     }
   }
-  const displayUrl = urlWithQuery(draft.url, draft.query)
   const canSendBody = methodAllowsBody(draft.method as HttpMethod)
 
   return (
@@ -451,83 +215,17 @@ function Loaded({
       {/* One request command bar. The actions stay mounted so dirty
           state never makes the URL field jump sideways. */}
       <WorkbenchToolbar aria-label="Request controls" className="gap-1.5 px-2">
-        <div
-          className={cn(
-            FIELD_SURFACE,
-            'flex min-w-0 flex-1 items-center overflow-hidden transition-colors duration-(--dur-fast) focus-within:border-control-border-hover',
-          )}
-        >
-          <Select
-            aria-label="Method"
-            size="lg"
-            className={cn(
-              'w-20 shrink-0 rounded-none border-0 border-r border-border-soft bg-transparent font-mono font-semibold shadow-none focus-ring',
-              TONE_TEXT[methodTone(draft.method as HttpMethod)],
-            )}
-            value={draft.method}
-            options={HTTP_METHODS.map((m) => ({ value: m, label: m }))}
-            onValueChange={(method) => patch({ method })}
-          />
-          <Input
-            size="lg"
-            className="min-w-0 flex-1 rounded-none border-0 bg-transparent font-mono text-xs shadow-none focus-ring"
-            value={displayUrl}
-            placeholder="https://api.example.dev/things or {{base_url}}/things"
-            onChange={(e) => {
-              const next = queryDraftFromUrl(e.target.value, draft.query)
-              patch({
-                ...next,
-                pathParameters: syncPathParameters(next.url, draft.pathParameters),
-              })
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                sendNow()
-              }
-            }}
-            aria-label="URL"
-            spellCheck={false}
-          />
-          <IconButton
-            size="lg"
-            className={cn(
-              'shrink-0 rounded-none border-l border-border-soft',
-              dirty && 'text-status-warning',
-            )}
-            aria-label={saving ? 'Saving request' : 'Save request'}
-            tooltip={dirty ? 'Save request (Ctrl/Cmd+S)' : 'Request is saved'}
-            onClick={() => void save()}
-            disabled={!dirty || saving || requestBusy}
-          >
-            <Save className={cn('size-3.5', saving && 'animate-pulse')} />
-          </IconButton>
-          <IconButton
-            size="lg"
-            className={cn(
-              'shrink-0 rounded-none border-l border-border-soft',
-              !requestBusy && 'text-status-info',
-            )}
-            aria-label={
-              sending ? 'Cancel request' : agentSending ? 'Agent is sending request' : 'Send'
-            }
-            tooltip={
-              sending
-                ? 'Cancel request'
-                : agentSending
-                  ? 'Agent is sending this request'
-                  : 'Send (⌘↵)'
-            }
-            onClick={sending ? onCancelSend : sendNow}
-            disabled={saving || agentSending}
-          >
-            {sending ? (
-              <Square className="size-3.5 fill-current" />
-            ) : (
-              <Send className={cn('size-3.5', agentSending && 'animate-pulse')} />
-            )}
-          </IconButton>
-        </div>
+        <RequestUrlBar
+          draft={draft}
+          patch={patch}
+          dirty={dirty}
+          saving={saving}
+          sending={sending}
+          agentSending={agentSending}
+          onSave={() => void save()}
+          onSend={sendNow}
+          onCancelSend={send.cancelSend}
+        />
       </WorkbenchToolbar>
 
       <ApiProblem subject={request.name} message={saveError} />
@@ -593,41 +291,14 @@ function Loaded({
               />
             )}
             {reqTab === 'body' && (
-              <div
-                className={cn(
-                  'flex h-full min-h-0 flex-col',
-                  draft.body?.form ? 'scrollbar-thin overflow-auto' : 'overflow-hidden',
-                )}
-              >
-                {!canSendBody ? (
-                  <div className="px-3 py-2 text-2xs text-text-faint">
-                    {draft.method} does not send a body.
-                    {draft.body ? ' The configured body is preserved for another method.' : ''}
-                  </div>
-                ) : draft.body ? (
-                  draft.body.form ? (
-                    <PairEditor
-                      label="Form fields"
-                      pairs={draft.body.form}
-                      onChange={(form) => patch({ body: { ...draft.body, form } })}
-                      variables={variables}
-                    />
-                  ) : (
-                    <BodyEditor
-                      value={draft.body.text ?? ''}
-                      mimeType={draft.body.mimeType}
-                      variables={variables}
-                      onChange={(text) => patch({ body: { ...draft.body, text } })}
-                      onSave={() => void save()}
-                      onSubmit={sendNow}
-                    />
-                  )
-                ) : (
-                  <EmptyHint className="flex-1">
-                    This request sends no body. Pick a type above to add one.
-                  </EmptyHint>
-                )}
-              </div>
+              <RequestBodyPane
+                draft={draft}
+                canSendBody={canSendBody}
+                variables={variables}
+                patch={patch}
+                onSave={() => void save()}
+                onSubmit={sendNow}
+              />
             )}
             {reqTab === 'auth' && (
               <AuthEditor sessionId={sessionId} name={request.name} auth={auth} onSaved={onSaved} />
@@ -642,55 +313,7 @@ function Loaded({
                 variables={variables}
               />
             )}
-            {reqTab === 'settings' && (
-              <div>
-                <div className="border-b border-border-soft">
-                  <FormRow label="Follow redirects" hint="Follow 3xx responses to their target.">
-                    <Switch
-                      aria-label="Follow redirects"
-                      checked={followRedirects}
-                      onChange={() => patch({ followRedirects: !followRedirects })}
-                    />
-                  </FormRow>
-                  <FormRow label="Timeout">
-                    <span className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        size="md"
-                        className="w-40 font-mono text-xs"
-                        value={draft.timeoutMs ?? ''}
-                        placeholder="Default"
-                        onChange={(e) =>
-                          patch({
-                            timeoutMs: e.target.value === '' ? undefined : Number(e.target.value),
-                          })
-                        }
-                      />
-                      <span className="shrink-0 text-2xs text-text-faint">ms</span>
-                    </span>
-                  </FormRow>
-                  <FormRow label="Max redirects">
-                    <Input
-                      type="number"
-                      min={1}
-                      size="md"
-                      className="w-40 font-mono text-xs"
-                      value={draft.maxRedirects ?? ''}
-                      placeholder="Default"
-                      onChange={(e) =>
-                        patch({
-                          maxRedirects: e.target.value === '' ? undefined : Number(e.target.value),
-                        })
-                      }
-                    />
-                  </FormRow>
-                </div>
-                <p className="px-3 py-2 text-2xs text-text-faint">
-                  Leave a field blank to use the plugin default. Saved with the request.
-                </p>
-              </div>
-            )}
+            {reqTab === 'settings' && <RequestSettings draft={draft} patch={patch} />}
           </div>
         </div>
 
@@ -715,8 +338,8 @@ function Loaded({
             responseSource={responseSource}
             history={history}
             historyId={historyId}
-            onPickHistory={onPickHistory}
-            onClearHistory={onClearHistory}
+            onPickHistory={send.pickHistory}
+            onClearHistory={send.clearHistory}
             sending={requestBusy}
             sendingLabel={agentSending ? 'Agent is calling…' : 'Sending…'}
             sendError={sendError}

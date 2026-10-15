@@ -8,10 +8,10 @@ import { hasMathSyntax, loadMathPlugins, extractMarkdownHeadings } from '@locali
 import { renderDocsShell } from './render-docs.tsx'
 import { makeMdComponents } from '../src/pages/docs/markdownComponents.tsx'
 import { docPages, loadDocContent } from '../src/generated/docs.ts'
+import { SITE_ORIGIN } from '../src/lib/site.ts'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const defaultDistDir = path.resolve(__dirname, '../dist')
-const SITE_ORIGIN = 'https://localix.ai'
 
 function escapeHtml(value) {
   return String(value)

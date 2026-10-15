@@ -56,7 +56,7 @@ describe('one page frame', () => {
 describe('one seam, no hand-nudged alignment', () => {
   test('the row draws no seam of its own — TabBar owns the only one', () => {
     const tabs = readFileSync(
-      new URL('../../../../../../packages/kit/src/layout/tabs/tabs.tsx', import.meta.url),
+      new URL('../../../../../../packages/kit/src/layout/tabs/tab-bar.tsx', import.meta.url),
       'utf8',
     )
     // TabBar's own row, not the editor TabStrip above it — they are different rows.

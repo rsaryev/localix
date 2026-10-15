@@ -38,8 +38,12 @@ afterAll(() => {
   globalThis.fetch = realFetch
 })
 
-async function load(config: Record<string, string | number> = {}): Promise<PluginHooks> {
+async function load(
+  config: Record<string, string | number> = {},
+  extra: Partial<PluginContext> = {},
+): Promise<PluginHooks> {
   const ctx = {
+    ...extra,
     pluginName: 'webhook-notifier',
     pluginDir: PLUGIN_DIR,
     cwd: process.cwd(),
@@ -154,6 +158,38 @@ describe('webhook-notifier plugin', () => {
     await hooks.onSessionEnd!({ sessionId: 's1' })
     await settle(() => logs.some((l) => l.includes('delivery failed')))
     expect(logs.some((l) => l.includes('delivery failed'))).toBe(true)
+  })
+
+  it('reports a broken endpoint once per session, and forgets the session once it ends', async () => {
+    fetchImpl = async () => {
+      throw new Error('connection refused')
+    }
+    const problems: string[] = []
+    const reportProblem = ((problem: { sessionId: string }) => {
+      problems.push(problem.sessionId)
+    }) as PluginContext['reportProblem']
+    const hooks = await load({}, { reportProblem })
+    await hooks.onUserMessage!({ sessionId: 's1', messageId: 'm1', text: 'a' } as never)
+    await hooks.onUserMessage!({ sessionId: 's1', messageId: 'm2', text: 'b' } as never)
+    await settle(() => logs.filter((l) => l.includes('delivery failed')).length >= 2)
+    expect(problems).toEqual(['s1'])
+
+    await hooks.onSessionEnd!({ sessionId: 's1' })
+    await settle(() => logs.filter((l) => l.includes('delivery failed')).length >= 3)
+    await new Promise((r) => setTimeout(r, 0))
+    // Forgotten after its end: the same id speaks again instead of being remembered forever.
+    await hooks.onUserMessage!({ sessionId: 's1', messageId: 'm3', text: 'c' } as never)
+    await settle(() => problems.length >= 2)
+    expect(problems).toEqual(['s1', 's1'])
+  })
+
+  it('the manifest names exactly the events the module delivers', async () => {
+    const { ALL_EVENTS } = await import(join(PLUGIN_DIR, 'hooks', 'index.mjs'))
+    const manifest = await Bun.file(join(PLUGIN_DIR, 'plugin.json')).json()
+    const description = JSON.stringify(manifest)
+      .match(/Comma-separated filter: ([a-z_, ]+)\./)?.[1]
+      ?.split(', ')
+    expect(description).toEqual(ALL_EVENTS)
   })
 })
 

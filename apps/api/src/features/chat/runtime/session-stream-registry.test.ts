@@ -307,6 +307,32 @@ describe('createSessionStreamRegistry', () => {
     unsubscribe()
   })
 
+  test('encodes an event at most once, and not at all when nobody reads it', () => {
+    const registry = createSessionStreamRegistry()
+    let encodes = 0
+    const event = (text: string) =>
+      ({
+        type: 'message.delta',
+        sessionId: 'a',
+        messageId: 'm',
+        textAppend: text,
+        toJSON() {
+          encodes += 1
+          return { type: 'message.delta', textAppend: text }
+        },
+      }) as never
+    registry.publish(userId, 'a', event('unwatched'))
+    expect(encodes).toBe(0)
+
+    const frames: string[] = []
+    registry.subscribe('a', (envelope) => frames.push(envelope.data))
+    registry.subscribeAll(userId, (envelope) => frames.push(envelope.data))
+    registry.publish(userId, 'a', event('watched'))
+    expect(encodes).toBe(1)
+    expect(frames).toHaveLength(2)
+    expect(frames[0]).toBe(frames[1])
+  })
+
   test('non-replayable events reach the firehose live but never replay', () => {
     const registry = createSessionStreamRegistry()
     const live: string[] = []

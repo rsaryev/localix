@@ -554,12 +554,12 @@ pub(crate) async fn browser_navigation_state(
             });
         })
         .map_err(|error| error.to_string())?;
-        tauri::async_runtime::spawn_blocking(move || {
-            rx.recv_timeout(Duration::from_secs(2))
-                .map_err(|_| "Browser navigation state timed out".to_string())
-        })
+        crate::round_trip::await_reply(
+            rx,
+            NAVIGATION_STATE_TIMEOUT,
+            "Browser navigation state timed out",
+        )
         .await
-        .map_err(|error| error.to_string())?
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -713,6 +713,18 @@ enum Capture {
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 const REGION_MAX_EDGE: f64 = 1600.0;
 
+/// A WebKit snapshot of a full or regional page. Large pages render offscreen first, so this is
+/// the longest browser wait; it stays under the agent tool's own deadline.
+const SNAPSHOT_TIMEOUT: Duration = Duration::from_secs(12);
+/// The overlay placeholder is taken without waiting for a screen update and must not stall the
+/// overlay that asked for it.
+const PLACEHOLDER_TIMEOUT: Duration = Duration::from_secs(2);
+/// Reading back/forward/loading flags is a synchronous WebKit property read on the main thread.
+#[cfg(target_os = "macos")]
+const NAVIGATION_STATE_TIMEOUT: Duration = Duration::from_secs(2);
+/// A bounded DOM observation or action from `browser_eval`.
+const EVAL_TIMEOUT: Duration = Duration::from_secs(10);
+
 /// Capture a rectangle of the calling main view — a plugin panel the agent asked to see.
 #[tauri::command]
 pub(crate) async fn workbench_snapshot(
@@ -737,7 +749,7 @@ pub(crate) async fn workbench_snapshot(
             width,
             height,
         },
-        Duration::from_secs(12),
+        SNAPSHOT_TIMEOUT,
     )
     .await
 }
@@ -754,7 +766,7 @@ pub(crate) async fn browser_snapshot(
     capture(
         page(&app, &caller, &tab_id)?,
         Capture::Exact,
-        Duration::from_secs(12),
+        SNAPSHOT_TIMEOUT,
     )
     .await
 }
@@ -770,7 +782,7 @@ pub(crate) async fn browser_placeholder(
     capture(
         page(&app, &caller, &tab_id)?,
         Capture::Placeholder,
-        Duration::from_secs(2),
+        PLACEHOLDER_TIMEOUT,
     )
     .await
 }
@@ -865,12 +877,7 @@ async fn capture(view: Webview, kind: Capture, timeout: Duration) -> Result<Brow
         };
     })
     .map_err(|error| error.to_string())?;
-    tauri::async_runtime::spawn_blocking(move || {
-        rx.recv_timeout(timeout)
-            .map_err(|_| "Browser snapshot timed out".to_string())?
-    })
-    .await
-    .map_err(|error| error.to_string())?
+    crate::round_trip::await_reply(rx, timeout, "Browser snapshot timed out").await?
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -949,12 +956,7 @@ pub(crate) async fn browser_eval(
             }
         })
         .map_err(|error| error.to_string())?;
-        tauri::async_runtime::spawn_blocking(move || {
-            rx.recv_timeout(Duration::from_secs(10))
-                .map_err(|_| "Browser page did not answer".to_string())?
-        })
-        .await
-        .map_err(|error| error.to_string())?
+        crate::round_trip::await_reply(rx, EVAL_TIMEOUT, "Browser page did not answer").await?
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -964,12 +966,7 @@ pub(crate) async fn browser_eval(
             let _ = tx.send(result);
         })
         .map_err(|error| error.to_string())?;
-        tauri::async_runtime::spawn_blocking(move || {
-            rx.recv_timeout(Duration::from_secs(10))
-                .map_err(|_| "Browser page did not answer".to_string())
-        })
-        .await
-        .map_err(|error| error.to_string())?
+        crate::round_trip::await_reply(rx, EVAL_TIMEOUT, "Browser page did not answer").await
     }
 }
 

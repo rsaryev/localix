@@ -39,10 +39,6 @@ export function builtinAgentPreset(handle: string): Rule[] {
   return agentPreset(handle)
 }
 
-export function legacyAgentPreset10(handle: string): Rule[] {
-  return agentPreset(handle)
-}
-
 function agentPreset(handle: string): Rule[] {
   if (handle !== DEFAULT_AGENT_HANDLE) return []
   const id = builtinAgentId(handle)

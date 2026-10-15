@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
-import { createRoot } from 'react-dom/client'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useTreeDnd } from './useTreeDnd'
 
@@ -22,6 +21,7 @@ test('tree drops omit illegal parents, refuse recursive moves, and clear cues on
   }
   const host = document.createElement('div')
   document.body.append(host)
+  const { createRoot } = await import('react-dom/client')
   const root = createRoot(host)
   const values = new Map<string, string>()
   const event = {

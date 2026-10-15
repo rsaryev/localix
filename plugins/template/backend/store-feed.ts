@@ -1,9 +1,5 @@
-import { createStoreChangeFeed } from '@localixai/plugin-sdk/backend'
-import { onStoreWrite } from './store'
-
-export { STORE_FEED_WINDOW_MS } from '@localixai/plugin-sdk/backend'
-export function createStoreFeed(
-  options: Omit<Parameters<typeof createStoreChangeFeed>[0], 'subscribeWrites'>,
-) {
-  return createStoreChangeFeed({ ...options, subscribeWrites: onStoreWrite })
-}
+/** The frame's store feed: a committed `openJsonStore` write nudges the views of its folder. */
+export {
+  createJsonStoreFeed as createStoreFeed,
+  STORE_FEED_WINDOW_MS,
+} from '@localixai/plugin-sdk/backend'

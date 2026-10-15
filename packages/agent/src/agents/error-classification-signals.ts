@@ -117,6 +117,8 @@ export function isTransientNetworkError(error: unknown): boolean {
   return false
 }
 
+const PROVIDER_STATUS_IN_MESSAGE = /^[^\n]*?(?:^|\s)([1-5]\d{2}):(?:\s|$)/
+
 /**
  * Extract an HTTP status code from a provider error. FetchError messages look like
  * "provider 429: ...". Returns 0 when no status can be parsed. Exported so the
@@ -136,8 +138,10 @@ export function extractProviderStatus(error: unknown): number {
     const nestedCode = nested?.error?.code
     if (typeof nestedCode === 'number' && nestedCode >= 100 && nestedCode < 600) return nestedCode
   }
+  // Only the `providerHttpErrorMessage` shape counts: a status standing right before the
+  // label's colon. Any other 3-digit number ("got 404 rows") is prose, not a status.
   const message = error instanceof Error ? error.message : String(error)
-  const match = message.match(/\b([1-5]\d{2})\b/)
+  const match = message.match(PROVIDER_STATUS_IN_MESSAGE)
   return match ? Number.parseInt(match[1], 10) : 0
 }
 

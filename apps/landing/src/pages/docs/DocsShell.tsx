@@ -8,6 +8,7 @@ import { DocsReadingTools, type ReadingSize } from './DocsReadingTools'
 import { featureCategoryFor } from './docGroups'
 import type { DocHeading } from './docBootstrap'
 import { Skeleton } from '@localixai/kit/skeleton'
+import { REPOSITORY_URL } from '@/lib/site'
 
 /** The same geometry surrounds static content, pending content and the interactive article. */
 export function DocsShell({
@@ -54,7 +55,7 @@ export function DocsShell({
             next={index >= 0 && index < docPages.length - 1 ? docPages[index + 1] : null}
             editLink={
               <a
-                href={`https://github.com/rsaryev/localix/blob/main/${active.sourcePath}`}
+                href={`${REPOSITORY_URL}/blob/main/${active.sourcePath}`}
                 target="_blank"
                 rel="noreferrer"
                 className="docs-edit-link focus-ring text-xs text-text-faint hover:text-foreground"

@@ -55,6 +55,8 @@ interface BirdStageProps {
    * (its last keyframe, held) and the bird at rest (its last keyframe is its resting pose).
    */
   cycles?: number
+  /** Render the bird at rest: no intro, drift or wind. */
+  still?: boolean
   className?: string
 }
 
@@ -77,9 +79,13 @@ export function BirdStage({
   spread = 220,
   maskUrl = '/logo-dark.svg',
   cycles = 3,
+  still = false,
   className,
 }: BirdStageProps) {
-  const windLines = useMemo(() => buildWindLines(lineCount, spread), [lineCount, spread])
+  const windLines = useMemo(
+    () => buildWindLines(still ? 0 : lineCount, spread),
+    [still, lineCount, spread],
+  )
   const repeat = Number.isFinite(cycles) ? String(cycles) : 'infinite'
 
   return (
@@ -89,7 +95,9 @@ export function BirdStage({
         stageClassName,
         className,
       )}
-      style={{ animation: 'bird-intro var(--dur-slow) var(--ease-emphasized) both' }}
+      style={
+        still ? undefined : { animation: 'bird-intro var(--dur-slow) var(--ease-emphasized) both' }
+      }
       aria-hidden
     >
       {/* Wind lines */}
@@ -126,9 +134,13 @@ export function BirdStage({
       {/* A monochrome mask lets every theme paint the bird with its own semantic foreground. */}
       <div
         className="relative z-(--z-raised)"
-        style={{
-          animation: `bird-drift var(--bird-drift-duration, 6s) var(--ease-standard) ${repeat}`,
-        }}
+        style={
+          still
+            ? undefined
+            : {
+                animation: `bird-drift var(--bird-drift-duration, 6s) var(--ease-standard) ${repeat}`,
+              }
+        }
       >
         <div
           className={cn('aspect-square object-contain', birdClassName)}

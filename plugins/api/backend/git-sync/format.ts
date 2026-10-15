@@ -24,7 +24,8 @@ import {
   credentialQueryPairs,
   credentialUrlParams,
 } from '../request-credentials'
-import type { RequestAuth, RequestSpec } from '../request-spec'
+import type { RequestSpec } from '../request-spec'
+import { authSecret } from '../secrets'
 
 /** Bumped only when an older file would be read WRONG, never for an additive field. */
 export const REQUEST_FILE_VERSION = 1
@@ -54,14 +55,6 @@ export function parseRequestFile(text: string): RequestFile | null {
   if (typeof file.name !== 'string' || !file.spec || typeof file.spec !== 'object') return null
   if (typeof file.spec.url !== 'string' || typeof file.spec.method !== 'string') return null
   return file as RequestFile
-}
-
-/** The auth field that would carry a secret, per variant. */
-const SECRET_FIELD: Record<RequestAuth['type'], string | null> = {
-  none: null,
-  basic: 'password',
-  bearer: 'token',
-  apikey: 'value',
 }
 
 /**
@@ -110,9 +103,7 @@ export function gitSafetyProblem(name: string, spec: RequestSpec): string | null
     )
   }
 
-  const field = SECRET_FIELD[spec.auth.type]
-  if (!field) return null
-  const value = (spec.auth as unknown as Record<string, unknown>)[field]
+  const value = authSecret(spec.auth)?.value
   if (typeof value !== 'string' || value === '') return null
   if (hasSecretTokens(value)) return null // a pointer, not a secret
 

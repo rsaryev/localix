@@ -22,6 +22,7 @@ import {
   retainPreviousHashedFiles,
 } from './ui-retained-files'
 import { buildPluginStylesheet } from './ui-styles'
+import { escapeRegExp } from '../../../lib/regexp'
 
 /**
  * Build one plugin's workbench UI into a self-contained ES module ARTIFACT: an entry,
@@ -82,7 +83,7 @@ function kitBundledModules(kit: PluginKit): Record<string, string> {
 
 /** A filter matching exactly `specifiers`, and nothing that merely starts like one. */
 function exactly(specifiers: readonly string[]): RegExp {
-  const escaped = specifiers.map((specifier) => specifier.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+  const escaped = specifiers.map(escapeRegExp)
   return new RegExp(`^(?:${escaped.join('|')})$`, 'u')
 }
 

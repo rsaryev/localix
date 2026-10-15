@@ -1,5 +1,6 @@
 import { which, spawnServer } from './lsp-bin-resolve'
 import type { LspServerDef } from './lsp-servers'
+import { isRecord } from '../../lib/record'
 
 /**
  * Claude Code `lspServers` config → a runtime {@link LspServerDef}.
@@ -29,10 +30,6 @@ export interface LspServerConfig {
   env?: Record<string, string>
   /** Parsed (CC field) but not yet applied — the startup wait is fixed today. */
   startupTimeout?: number
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
 /** Normalize a CC extension key to the `.ext` (leading-dot, lowercase) form the manager matches on. */

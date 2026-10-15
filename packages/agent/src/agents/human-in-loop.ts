@@ -110,6 +110,10 @@ export class HumanInLoopDismissedError extends HumanInLoopError {
   }
 }
 
+function reportStoreFailure(error: unknown): void {
+  console.warn('[human-in-loop] record store write failed', error)
+}
+
 export function createHumanInLoopController(
   options: CreateHumanInLoopControllerOptions = {},
 ): HumanInLoopController {
@@ -137,7 +141,13 @@ export function createHumanInLoopController(
         records.delete(oldest)
       }
     }
-    void options.store?.[mode](record)
+    // A failing store must not surface as an unhandled rejection: the in-memory record
+    // stays authoritative for the live request.
+    try {
+      if (options.store) Promise.resolve(options.store[mode](record)).catch(reportStoreFailure)
+    } catch (error) {
+      reportStoreFailure(error)
+    }
   }
 
   const cleanup = (requestId: string, signal?: AbortSignal, onAbort?: () => void) => {
@@ -225,8 +235,21 @@ export function createHumanInLoopController(
         },
       }
 
+      if (normalizedRequest.expiresAt && normalizedRequest.expiresAt <= now()) {
+        // Already expired at request time. Persist the record first so it lands in
+        // the store as put→expired, exactly like the async-timer path — otherwise
+        // settleRejected (which reads an existing record) would no-op and the store
+        // would never see this request at all. Settled before the abort listener is
+        // attached: a later abort must not rewrite the record or reject a deferred
+        // nobody awaits.
+        const error = new HumanInLoopTimeoutError()
+        writeRecord(record as HumanInLoopRecord, 'put')
+        settleRejected(normalizedRequest.id, 'expired', error)
+        return Promise.reject(error)
+      }
+
       signal?.addEventListener('abort', onAbort, { once: true })
-      if (normalizedRequest.expiresAt && normalizedRequest.expiresAt > now()) {
+      if (normalizedRequest.expiresAt) {
         timers.set(
           normalizedRequest.id,
           setTimeout(() => {
@@ -236,15 +259,6 @@ export function createHumanInLoopController(
             deferred.reject(error)
           }, normalizedRequest.expiresAt - now()),
         )
-      } else if (normalizedRequest.expiresAt && normalizedRequest.expiresAt <= now()) {
-        // Already expired at request time. Persist the record first so it lands in
-        // the store as put→expired, exactly like the async-timer path — otherwise
-        // settleRejected (which reads an existing record) would no-op and the store
-        // would never see this request at all.
-        const error = new HumanInLoopTimeoutError()
-        writeRecord(record as HumanInLoopRecord, 'put')
-        settleRejected(normalizedRequest.id, 'expired', error)
-        return Promise.reject(error)
       }
 
       pending.set(request.id, entry as HumanInLoopPendingRequest)

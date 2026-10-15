@@ -1,14 +1,13 @@
 import { Play, RotateCcw, Undo2 } from 'lucide-react'
 
 import type { KanbanStatus, KanbanTask } from '../../shared/contracts'
-import { canTransition } from '../../shared/rules'
-import { USER_STATUSES } from './constants'
+import { canTransition, USER_TARGET_STATUSES } from '../../shared/rules'
 
 /**
  * The keyboard-move track — the user-droppable columns in board (left→right) order. Alt+Arrow on
  * a focused card walks it along this track, the exact set of moves a mouse drag can make.
  */
-const KEYBOARD_MOVE_TRACK: readonly KanbanStatus[] = USER_STATUSES
+const KEYBOARD_MOVE_TRACK: readonly KanbanStatus[] = USER_TARGET_STATUSES
 
 /**
  * Target column for an Alt+Arrow move of a card in `status`, stepping `dir` (−1 left / +1 right)
@@ -55,7 +54,7 @@ export function quickAction(
  * `cancelled`, and no epic into `in_progress`.
  */
 export function userMoveTargets(task: KanbanTask): KanbanStatus[] {
-  return USER_STATUSES.filter(
+  return USER_TARGET_STATUSES.filter(
     (status) => status !== task.status && canTransition('user', task.kind, task.status, status).ok,
   )
 }

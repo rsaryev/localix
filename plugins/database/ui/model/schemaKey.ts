@@ -1,5 +1,6 @@
-import type { DbTableSchema } from '../dbClient'
-import { ownRecordValue } from '../../shared/safe-record'
+import type { DbColumnCatalog, DbSchemas, DbTableSchema } from '../dbClient'
+import type { ColumnSource } from './schemaEntry'
+import { defineRecordValue, ownRecordValue } from '../../shared/safe-record'
 
 /** Stable cache identity for an object. A bare name remains backwards-compatible
  * for engines/connections that expose only one namespace. */
@@ -8,11 +9,11 @@ export function schemaTableKey(table: string, schema?: string): string {
 }
 
 /** Resolve a table without letting equal object names from different schemas collide. */
-export function getCachedTable(
-  tables: Record<string, DbTableSchema>,
+export function getCachedTable<T = DbTableSchema>(
+  tables: Record<string, T>,
   table: string,
   schema?: string,
-): DbTableSchema | undefined {
+): T | undefined {
   return ownRecordValue(tables, schemaTableKey(table, schema)) ?? ownRecordValue(tables, table)
 }
 
@@ -31,4 +32,36 @@ export function getCachedTableError(
   return (
     ownRecordValue(tableErrors, schemaTableKey(table, schema)) ?? ownRecordValue(tableErrors, table)
   )
+}
+
+/**
+ * One column vocabulary from both sources: a full structure wins over the catalog's thin entry for
+ * the same key, because it was read later and on purpose.
+ */
+export function mergeColumnSources<T extends { columns: readonly unknown[] }>(
+  catalog: Record<string, T>,
+  tables: Record<string, T>,
+): Record<string, T> {
+  if (Object.keys(catalog).length === 0) return tables
+  const out: Record<string, T> = {}
+  for (const [key, value] of Object.entries(catalog)) defineRecordValue(out, key, value)
+  for (const [key, value] of Object.entries(tables)) defineRecordValue(out, key, value)
+  return out
+}
+
+/** Key catalog tables exactly like `tables`: a single-namespace tree uses bare names. */
+export function catalogRecord(
+  schemas: DbSchemas,
+  catalog: DbColumnCatalog,
+): Record<string, ColumnSource> {
+  const single = Object.keys(schemas).length <= 1
+  const out: Record<string, ColumnSource> = {}
+  for (const t of catalog) {
+    defineRecordValue(out, schemaTableKey(t.table, single ? undefined : t.schema), {
+      schema: t.schema,
+      name: t.table,
+      columns: t.columns,
+    })
+  }
+  return out
 }

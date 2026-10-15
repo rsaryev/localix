@@ -50,7 +50,8 @@ function macFromSignals({ architecture, renderer }: PlatformSignals): PlatformId
 
 export function detectDownload(signals: PlatformSignals): DownloadGuess {
   const value = `${signals.platform ?? ''} ${signals.userAgent ?? ''}`.toLowerCase()
-  if (value.includes('win')) return { id: 'windows', certain: true }
+  // `\bwin` so a Darwin platform string is not mistaken for Windows.
+  if (/\bwin/u.test(value)) return { id: 'windows', certain: true }
   if (value.includes('linux') && !value.includes('android')) {
     return { id: /aarch64|arm64/u.test(value) ? 'linux-arm64' : 'linux', certain: true }
   }

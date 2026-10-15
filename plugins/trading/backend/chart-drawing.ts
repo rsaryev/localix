@@ -4,6 +4,7 @@
  * rules: pure types + structural guards + formatting only, importable from both the backend tool
  * and the UI (the UI's reducers/persistence live in `ui/model/chartDrawings.ts`).
  */
+import { isoFromUnixSeconds } from './tool-number'
 
 export const CHART_DRAW_MODES = ['add', 'remove', 'clear'] as const
 export type ChartDrawMode = (typeof CHART_DRAW_MODES)[number]
@@ -107,8 +108,6 @@ export function parseChartDrawingSpec(data: unknown): ChartDrawingSpec | null {
   }
 }
 
-const iso = (unixSeconds: number) => new Date(unixSeconds * 1000).toISOString()
-
 /** One drawing in a result's words — used by the tool narration AND the snapshot read-back. */
 export function describeChartDrawing(d: ChartDrawingSpec): string {
   const extras = [
@@ -121,11 +120,11 @@ export function describeChartDrawing(d: ChartDrawingSpec): string {
     case 'hline':
       return `horizontal line @ ${d.price}${suffix}`
     case 'trendline':
-      return `trendline ${iso(d.time1)} @ ${d.price1} → ${iso(d.time2)} @ ${d.price2}${suffix}`
+      return `trendline ${isoFromUnixSeconds(d.time1)} @ ${d.price1} → ${isoFromUnixSeconds(d.time2)} @ ${d.price2}${suffix}`
     case 'vline':
-      return `vertical line @ ${iso(d.time)}${suffix}`
+      return `vertical line @ ${isoFromUnixSeconds(d.time)}${suffix}`
     case 'marker':
-      return `${d.side} marker @ ${iso(d.time)}${d.price !== undefined ? ` @ ${d.price}` : ''}${suffix}`
+      return `${d.side} marker @ ${isoFromUnixSeconds(d.time)}${d.price !== undefined ? ` @ ${d.price}` : ''}${suffix}`
     case 'zone':
       return `zone ${Math.min(d.price1, d.price2)}–${Math.max(d.price1, d.price2)}${suffix}`
   }

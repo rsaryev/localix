@@ -1,3 +1,4 @@
+import { sqlStringLiteral, stripStatementTerminator } from '../shared/sql-text'
 import type {
   DbColumn,
   DbPostgresOption,
@@ -98,7 +99,7 @@ export function renderPostgresForeignOptions(
 ): string {
   if (!options?.length) return ''
   return `OPTIONS (${options
-    .map((option) => `${q(option.name)} '${option.value.replaceAll("'", "''")}'`)
+    .map((option) => `${q(option.name)} ${sqlStringLiteral(option.value)}`)
     .join(', ')})`
 }
 
@@ -108,7 +109,7 @@ export function renderPostgresAlterForeignOptions(
 ): string {
   if (!options?.length) return ''
   return `OPTIONS (${options
-    .map((option) => `ADD ${q(option.name)} '${option.value.replaceAll("'", "''")}'`)
+    .map((option) => `ADD ${q(option.name)} ${sqlStringLiteral(option.value)}`)
     .join(', ')})`
 }
 
@@ -181,7 +182,7 @@ export function mssqlColumnDefinition(column: DbColumn, composite: boolean): str
   const collation = column.collation ? ` COLLATE ${column.collation}` : ''
   const sparse = column.sparse ? ' SPARSE' : ''
   const mask = column.sqlServerMaskingFunction
-    ? ` MASKED WITH (FUNCTION = '${column.sqlServerMaskingFunction.replaceAll("'", "''")}')`
+    ? ` MASKED WITH (FUNCTION = ${sqlStringLiteral(column.sqlServerMaskingFunction)})`
     : ''
   const constraint = column.defaultConstraintName
     ? `CONSTRAINT ${q(column.defaultConstraintName)} `
@@ -206,7 +207,7 @@ export function reconstructPostgresPartition(
   const partition = table.postgresPartition!
   const target = postgresRelationTarget(table, q, qualify)
   const parent = qualify(partition.parentSchema, partition.parentTable)
-  const bound = partition.bound.trim().replace(/;+\s*$/u, '')
+  const bound = stripStatementTerminator(partition.bound)
   const partitionBy = table.postgresPartitionBy?.trim().replace(/;+\s*$/u, '')
   const create = `${postgresCreateTablePrefix(table)} ${target} PARTITION OF ${parent}\n${bound}${partitionBy ? `\nPARTITION BY ${partitionBy}` : ''}${postgresRelationClauses(table, q)}${postgresForeignClauses(table, q)};`
   const beforeCreate: string[] = []
@@ -233,7 +234,7 @@ export function reconstructPostgresPartition(
         )
         createdSequences.add(sequenceName)
       }
-      defaultValue = `nextval('${sequenceName.replaceAll("'", "''")}'::regclass)`
+      defaultValue = `nextval(${sqlStringLiteral(sequenceName)}::regclass)`
     }
     const action = defaultValue ? `SET DEFAULT ${defaultValue}` : 'DROP DEFAULT'
     afterCreate.push(`${alterTable} ONLY ${target} ALTER COLUMN ${q(override.column)} ${action};`)

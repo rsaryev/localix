@@ -9,6 +9,7 @@ import type {
   PruneResult,
   PruneTarget,
 } from './contracts'
+import { DOCKER_ACTION_TIMEOUT_MS, DOCKER_REQUEST_TIMEOUT_MS } from './api-transport'
 import { DockerError, mapDockerError } from './errors'
 import { detectInstalledEngine, type InstalledEngine } from './installed-engine'
 import { readProcessOutputWithTimeout, toolEnv } from '@localixai/plugin-sdk/backend'
@@ -64,15 +65,15 @@ interface DockerExecOptions {
 }
 
 /** Default exec — spawns the `docker` CLI via Bun. Injectable for tests. */
-export const DOCKER_COMMAND_TIMEOUT_MS = 10_000
+export const DOCKER_COMMAND_TIMEOUT_MS = DOCKER_REQUEST_TIMEOUT_MS
 
 /**
  * Calls that wait on the daemon doing real work. One 10s cap on every CLI call killed them while
  * they were still working: `docker stop` waits out the container's own 10s grace period, so it
  * raced the cap and reported "timed out" on a container that was still stopping, and a prune of a
- * large store routinely runs longer. The Engine API path already gave these 30s.
+ * large store routinely runs longer. Same budget as the Engine API path, from one constant.
  */
-export const DOCKER_CLI_ACTION_TIMEOUT_MS = 30_000
+export const DOCKER_CLI_ACTION_TIMEOUT_MS = DOCKER_ACTION_TIMEOUT_MS
 
 /** `compose up -d` may pull and build images first — minutes, not seconds. */
 export const DOCKER_COMPOSE_UP_TIMEOUT_MS = 10 * 60_000

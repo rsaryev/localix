@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createTypeaheadBuffer } from '../../lib/typeahead'
 
 /**
  * Typeahead for tree sidebars: typing printable characters while
@@ -32,43 +33,25 @@ export interface Typeahead {
 }
 
 /**
- * Pure typeahead state machine. `now` is injectable so tests never touch
- * `Date.now`. Matching rules (the ARIA listbox pattern):
- * - characters typed within `timeoutMs` of each other accumulate into a prefix;
- * - a buffer of the SAME character repeated collapses to that single character,
- *   so pressing e.g. `s` `s` `s` cycles through the `s…` rows;
- * - the search starts at the row AFTER the current one and wraps; for a
- *   multi-character prefix the current row is the LAST candidate (so a still-
- *   matching row keeps focus while you extend the prefix), for a single
- *   character it is excluded entirely (so repeats always advance).
+ * Typeahead over tree rows, keyed by path. `now` is injectable so tests never touch `Date.now`;
+ * the matching rules are the shared kit buffer's (`lib/typeahead`).
  */
 export function createTypeahead(opts: { timeoutMs?: number; now?: () => number } = {}): Typeahead {
-  const timeoutMs = opts.timeoutMs ?? TYPEAHEAD_TIMEOUT_MS
-  const now = opts.now ?? Date.now
-  let buffer = ''
-  let lastAt = -Infinity
-
+  const buffer = createTypeaheadBuffer({
+    timeoutMs: opts.timeoutMs ?? TYPEAHEAD_TIMEOUT_MS,
+    now: opts.now,
+  })
   return {
     handleChar(char, rows, currentPath) {
-      const t = now()
-      if (t - lastAt > timeoutMs) buffer = ''
-      lastAt = t
-      buffer += char.toLowerCase()
-      if (rows.length === 0) return null
-      const repeated = buffer.length > 1 && buffer.split('').every((c) => c === buffer[0])
-      const prefix = repeated ? buffer[0]! : buffer
-      const currentIndex = currentPath === null ? -1 : rows.findIndex((r) => r.path === currentPath)
-      // Candidate order: the row after the current one first, wrapping around.
-      const ordered = rows.map((_, i) => rows[(currentIndex + 1 + i) % rows.length]!)
-      const candidates =
-        prefix.length === 1 ? ordered.filter((r) => r.path !== currentPath) : ordered
-      const match = candidates.find((r) => r.name.toLowerCase().startsWith(prefix))
-      return match ? match.path : null
+      const current = currentPath === null ? -1 : rows.findIndex((r) => r.path === currentPath)
+      const match = buffer.handleChar(
+        char,
+        rows.map((r) => r.name),
+        current,
+      )
+      return match < 0 ? null : rows[match]!.path
     },
-    reset() {
-      buffer = ''
-      lastAt = -Infinity
-    },
+    reset: buffer.reset,
   }
 }
 

@@ -54,6 +54,18 @@ describe('isFrameBlocked (iframeable vs "can\'t embed" card)', () => {
     ).toBe(true)
   })
 
+  test('a host that merely contains "localhost" does not admit us', () => {
+    for (const source of ['https://localhost.evil.com', 'https://*.localhost.example.org']) {
+      const csp = `default-src 'self'; frame-ancestors ${source}`
+      expect(isFrameBlocked(headers({ 'content-security-policy': csp }))).toBe(true)
+    }
+    expect(
+      isFrameBlocked(
+        headers({ 'content-security-policy': "frame-ancestors 'self' http://localhost:5173" }),
+      ),
+    ).toBe(false)
+  })
+
   test('CSP frame-ancestors allowing wildcard/localhost does not block', () => {
     expect(isFrameBlocked(headers({ 'content-security-policy': 'frame-ancestors *' }))).toBe(false)
     expect(

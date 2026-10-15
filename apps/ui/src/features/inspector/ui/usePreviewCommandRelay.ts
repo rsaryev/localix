@@ -102,6 +102,7 @@ export function usePreviewCommandRelay(options: PreviewCommandRelayOptions): voi
             return
           }
           setViewport(command.viewport)
+          // A one-shot rAF/timeout race, not a polling loop, so it stays outside pollAttempts.
           // A background WebView may throttle animation frames. The timer still lets
           // React commit; measurement below forces layout and verifies the actual result.
           await new Promise<void>((resolve) => {

@@ -1,5 +1,6 @@
 import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
 import type { StorageReader } from '@localixai/plugin-sdk/ui/storage'
+import { DEFAULT_TIMEFRAME } from '../../backend/timeframes'
 
 /**
  * The timeframe a chart opens on — remembered per connection, not reset to a default on every
@@ -37,7 +38,7 @@ export function pickTimeframe(
   preferred: readonly string[] = PREFERRED_TIMEFRAMES,
 ): string {
   if (saved && offered.includes(saved)) return saved
-  return preferred.find((t) => offered.includes(t)) ?? offered[0] ?? '1h'
+  return preferred.find((t) => offered.includes(t)) ?? offered[0] ?? DEFAULT_TIMEFRAME
 }
 
 /** The connection's remembered timeframe, or `null` when none / malformed. */

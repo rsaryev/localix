@@ -876,14 +876,13 @@ assert(nativeInspections.length > 0, 'bundled native-plugin inspection must not 
 assert(auxiliaryCoreFiles.length > 0, 'auxiliary core source inspection must not be empty')
 assert(concretePluginToolNames.size > 0, 'bundled tool identity catalog must not be empty')
 assert(pluginCommandNames.length > 0, 'bundled command identity catalog must not be empty')
-assert(pluginAgentNames.length > 0, 'bundled agent identity catalog must not be empty')
 assert(routeMounts.length > 0, 'bundled route identity catalog must not be empty')
 assert(resourceProviders.length > 0, 'bundled resource identity catalog must not be empty')
 assert(contextProviders.length > 0, 'bundled context-provider identity catalog must not be empty')
 assert(wsCommands.length > 0, 'bundled websocket identity catalog must not be empty')
-// Channels are the one capability no bundled plugin has to declare — the host keeps the port open
-// for an outside-messenger bridge, and none ships today. So the catalog is allowed to be empty and
-// its positive control is skipped rather than fabricated from an undefined name.
+// Channels and agents are the capabilities no bundled plugin has to declare — the host keeps the port open
+// for an outside-messenger bridge, and agents come from the core presets today. So those catalogs
+// may be empty, and their positive controls are skipped rather than fabricated from undefined names.
 assert(pluginUiContributionIds.size > 0, 'bundled UI contribution catalog must not be empty')
 const pluginIdentityGuard = createPluginIdentityGuard({
   toolNames: concretePluginToolNames,
@@ -902,7 +901,7 @@ const pluginIdentityGuard = createPluginIdentityGuard({
 const identityPositiveControls = [
   `toolName: '${[...concretePluginToolNames][0]}'`,
   `composer.insert('/${pluginCommandNames[0]}')`,
-  `agentName: '${pluginAgentNames[0]}'`,
+  ...(pluginAgentNames.length > 0 ? [`agentName: '${pluginAgentNames[0]}'`] : []),
   `backendId: '${backendSubsystems[0]}'`,
   `${routeMounts[0]}/health`,
   `localix://resource/${resourceProviders[0]}/item`,
@@ -1038,8 +1037,12 @@ for (const file of files) {
   const path = projectPath(file)
   assert(path)
   const source = await readFile(file, 'utf8')
+  // The opt-in screenshot suite is test tooling: it seeds deterministic plugin fixtures the way a
+  // test does, and never ships in the host.
   const testSource =
-    /(?:^|\/)__tests__\//u.test(path) || /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(path)
+    /(?:^|\/)__tests__\//u.test(path) ||
+    /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(path) ||
+    path.startsWith('scripts/screenshots/')
   const sourceWithoutComments = source
     .replace(/\/\*[\s\S]*?\*\//gu, '')
     .replace(/(^|[^:])\/\/.*$/gmu, '$1')

@@ -1,11 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  normalizeResourceSort,
-  sortableByteSize,
-  sortableTimestamp,
-  sortResources,
-} from './resourceSort'
+import { normalizeResourceSort, sortableTimestamp, sortResources } from './resourceSort'
 
 describe('resource list sorting', () => {
   test('normalizes persisted keys and directions independently', () => {
@@ -39,10 +34,7 @@ describe('resource list sorting', () => {
     ).toEqual([2, 1, null])
   })
 
-  test('turns sizes and timestamps into sortable values without guessing junk', () => {
-    expect(sortableByteSize('1.5 GiB')).toBe(1.5 * 1024 ** 3)
-    expect(sortableByteSize('900MB')).toBe(900 * 1000 ** 2)
-    expect(sortableByteSize('unknown')).toBeNull()
+  test('turns timestamps into sortable values without guessing junk', () => {
     expect(sortableTimestamp('2026-07-23T10:00:00Z')).toBe(1784800800000)
     expect(sortableTimestamp('not-a-date')).toBeNull()
   })

@@ -530,7 +530,7 @@ describe('chat service', () => {
     expect(messages.map((message) => message.payload.role)).toEqual(['assistant'])
     expect(messages[0]?.payload).toMatchObject({
       uiOnly: true,
-      commandOutput: { command: '/usgae', tone: 'neutral' },
+      commandOutput: { command: '/usgae', tone: 'error' },
     })
     expect(messages[0]?.payload.content).toContain('Unknown slash command `/usgae`')
     expect(messages[0]?.payload.content).toContain('Did you mean `/usage`')

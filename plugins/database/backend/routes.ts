@@ -216,6 +216,15 @@ export function createDatabaseRoutes(service: DatabaseService) {
         return c.json(dbErrorBody(err), 400)
       }
     })
+    .get('/:id/columns', async (c) => {
+      try {
+        const res = await service.columnCatalog(uid(c), c.req.param('id'))
+        if (!res) return connectionNotFound(c)
+        return c.json(res)
+      } catch (err) {
+        return c.json(dbErrorBody(err), 400)
+      }
+    })
     .get('/:id/table/:table', async (c) => {
       const schema = c.req.query('schema')
       try {

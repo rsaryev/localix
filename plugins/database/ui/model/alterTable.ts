@@ -1,4 +1,5 @@
 import { DATABASE_DRIVER_CATALOG, getDatabaseDriverManifest } from '../../shared/driver-catalog'
+import { sqlStringLiteral } from '../../shared/sql-text'
 import type { DbDialect, DbTableSchema } from '../dbClient'
 import { validateDefaultSqlExpression } from './defaultSql'
 import { quoteIdent } from './sqlIdent'
@@ -29,8 +30,6 @@ export interface AlterTablePlan {
    */
   manualOnly?: boolean
 }
-
-const sqlString = (value: string) => `'${value.replaceAll("'", "''")}'`
 
 export function createAlterColumnDrafts(table: DbTableSchema): AlterColumnDraft[] {
   return table.columns.map((column) => ({
@@ -191,7 +190,7 @@ export function buildAlterTablePlan(
         .map((part) => quoteIdent(part, 'mssql'))
         .join('.')
       statements.push(
-        `EXEC sp_rename N${sqlString(objectName)}, N${sqlString(nextName)}, 'COLUMN';`,
+        `EXEC sp_rename N${sqlStringLiteral(objectName)}, N${sqlStringLiteral(nextName)}, 'COLUMN';`,
       )
     } else if (delta.name) {
       statements.push(

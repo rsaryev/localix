@@ -12,6 +12,8 @@
 import type { Candle } from '../contracts'
 import type { ChartCommandPayload } from '../chart-command'
 import type { ChartDrawingSpec } from '../chart-drawing'
+import { toolNumber } from '../tool-number'
+import { BEARISH_COLOR, BULLISH_COLOR } from './draw-colors'
 
 export interface FairValueGap {
   direction: 'bullish' | 'bearish'
@@ -84,8 +86,6 @@ export function detectFairValueGaps(candles: Candle[], maxGaps = 4): FairValueGa
 }
 
 /** Bullish gaps read as demand (green), bearish as supply (pink) — the detect-report palette. */
-const BULLISH_COLOR = '#4dd0a1'
-const BEARISH_COLOR = '#f472b6'
 
 /**
  * The nearest unfilled gaps as `zone` draw commands — shaded price bands, stable `fvg-*` ids so a
@@ -116,10 +116,6 @@ export function fvgDrawPayloads(
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /**
  * The unfilled gaps as report lines — the imbalance zones price is drawn back to, or nothing. A gap
  * price is sitting INSIDE is flagged first: it is the live decision point (the fill is happening
@@ -131,7 +127,7 @@ export function renderFairValueGaps(gaps: FairValueGap[]): string[] {
   const inside = gaps.find((g) => g.distancePct === 0)
   if (inside) {
     lines.push(
-      `- INSIDE a ${inside.direction} fair value gap NOW (${num(inside.bottom)}–${num(inside.top)}) — the imbalance is filling here; expect a reaction.`,
+      `- INSIDE a ${inside.direction} fair value gap NOW (${toolNumber(inside.bottom)}–${toolNumber(inside.top)}) — the imbalance is filling here; expect a reaction.`,
     )
   }
   lines.push(
@@ -139,8 +135,8 @@ export function renderFairValueGaps(gaps: FairValueGap[]): string[] {
   )
   for (const g of gaps) {
     const where =
-      g.distancePct === 0 ? 'here' : `${g.distancePct >= 0 ? '+' : ''}${num(g.distancePct)}%`
-    lines.push(`    · ${g.direction} ${num(g.bottom)}–${num(g.top)} (${where})`)
+      g.distancePct === 0 ? 'here' : `${g.distancePct >= 0 ? '+' : ''}${toolNumber(g.distancePct)}%`
+    lines.push(`    · ${g.direction} ${toolNumber(g.bottom)}–${toolNumber(g.top)} (${where})`)
   }
   return lines
 }

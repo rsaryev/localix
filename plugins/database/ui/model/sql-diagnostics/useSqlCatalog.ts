@@ -8,14 +8,17 @@ import type { SchemaState } from '../useSchema'
 import { createSqlCatalog, type SqlCatalog } from './catalog'
 
 export function useSqlCatalog(
-  schema: Pick<SchemaState, 'schemas' | 'getTable' | 'ensureColumns'>,
+  schema: Pick<SchemaState, 'schemas' | 'getColumnSource' | 'ensureColumns'>,
 ): {
   catalog: SqlCatalog | null
   onWantColumns: (tables: Array<{ name: string; schema: string }>) => void
 } {
-  const { schemas, getTable, ensureColumns } = schema
-  // `getTable` changes identity when a structure arrives, which is what re-runs the check.
-  const catalog = useMemo(() => createSqlCatalog(schemas, getTable), [schemas, getTable])
+  const { schemas, getColumnSource, ensureColumns } = schema
+  // `getColumnSource` changes identity when columns arrive, which is what re-runs the check.
+  const catalog = useMemo(
+    () => createSqlCatalog(schemas, getColumnSource),
+    [schemas, getColumnSource],
+  )
   const onWantColumns = useCallback(
     (tables: Array<{ name: string; schema: string }>) =>
       ensureColumns(

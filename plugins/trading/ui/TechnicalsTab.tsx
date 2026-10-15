@@ -22,6 +22,7 @@ import { RatingGauge } from './ui/RatingGauge'
 import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
 import { SegmentedRadioGroup } from '@localixai/plugin-sdk/ui/segmented-control'
 import { buildTradeUri } from '../backend/uri'
+import { DEFAULT_TIMEFRAME, TECHNICALS_TIMEFRAMES } from '../backend/timeframes'
 
 /**
  * The TECHNICALS tab — a full technical-rating page for one market, opened from
@@ -35,7 +36,7 @@ import { buildTradeUri } from '../backend/uri'
  * indicator passes over a bounded window).
  */
 
-const TIMEFRAMES = ['5m', '15m', '1h', '4h', '1d'] as const
+const TIMEFRAMES = TECHNICALS_TIMEFRAMES
 
 /** Persisted table-order preference (global — the habit carries across markets). */
 const SORT_KEY = 'trading.technicals.sort'
@@ -51,7 +52,7 @@ export function TechnicalsTab({
   active?: boolean
   publishMessageContext?: PublishMessageContext
 }) {
-  const [timeframe, setTimeframe] = useState<string>('1h')
+  const [timeframe, setTimeframe] = useState<string>(DEFAULT_TIMEFRAME)
   // Paused while warm-hidden (the grid keeps recent tab bodies mounted); repaints on re-show.
   const [tabRootRef, tabVisible] = useElementVisible<HTMLDivElement>()
   const dataActive = active && tabVisible

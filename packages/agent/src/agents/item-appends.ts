@@ -42,6 +42,25 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 /**
+ * Whether two narrative items carry the same metadata. Fields are compared by identity first —
+ * an unchanged field is usually the same value — and only a field that differs by reference is
+ * serialized, so a streaming tick does not stringify every item's metadata.
+ */
+function sameMeta(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  const keys = Object.keys(a)
+  if (keys.length !== Object.keys(b).length) return false
+  for (const key of keys) {
+    if (!(key in b)) return false
+    const av = a[key]
+    const bv = b[key]
+    if (av === bv) continue
+    if (typeof av !== 'object' || typeof bv !== 'object' || av === null || bv === null) return false
+    if (JSON.stringify(av) !== JSON.stringify(bv)) return false
+  }
+  return true
+}
+
+/**
  * Fold the growth between two records into appends. Every difference must be a
  * string that grew by suffix (or a string key that newly appeared — streamed
  * JSON args materialize keys as the parser reaches them); anything else is
@@ -131,8 +150,7 @@ export function diffItemsForAppends(
     if ((a.type === 'text' || a.type === 'reasoning') && b.type === a.type) {
       const { text: oldText, ...oldMeta } = a
       const { text: newText, ...newMeta } = b
-      if (JSON.stringify(oldMeta) !== JSON.stringify(newMeta) || !newText.startsWith(oldText))
-        return null
+      if (!sameMeta(oldMeta, newMeta) || !newText.startsWith(oldText)) return null
       if (newText.length > oldText.length) {
         out.push({ itemId: b.id, slot: 'text', append: newText.slice(oldText.length) })
       }

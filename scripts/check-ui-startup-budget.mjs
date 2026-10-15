@@ -15,11 +15,11 @@
  * the `startup-icons` group in `apps/ui/vite.config.ts`). Read a regression here
  * against `measureUiStartup().assets`, not by assuming new work was added.
  */
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { readFileSync, statSync } from 'node:fs'
+import { repoRoot as getRepoRoot } from './lib/paths.mjs'
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = getRepoRoot()
 
 export const UI_STARTUP_BUDGET = Object.freeze({
   maxFiles: 269,

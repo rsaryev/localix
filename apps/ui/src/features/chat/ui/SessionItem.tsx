@@ -1,11 +1,7 @@
-import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { toast } from '@/shared/lib/notify'
+import { memo, useState, useCallback, useRef } from 'react'
 import type { UiSession } from '@/shared/api/contracts'
 import { sessionTitle } from './sessionTitle'
 import { MessagesSquare, ChevronRight, GitFork, Bot } from 'lucide-react'
-import { backendClient } from '@/shared/api/client'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { sessionToMarkdown, exportFileName, downloadTextFile } from '@/shared/lib/chatExport'
 import { useChatStore } from '../model/store'
 import {
   createMessageBindingDraft,
@@ -14,6 +10,7 @@ import {
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { isRowSelectClick, type PointerPoint } from '@localixai/plugin-sdk/ui/utilities'
 import { SessionItemActions } from './SessionItemActions'
+import { useSessionRowActions } from './useSessionRowActions'
 import {
   SessionRowMeta,
   SESSION_ROW_HEIGHT_CLASS,
@@ -76,7 +73,6 @@ export const SessionItem = memo(function SessionItem({
   onToggleExpand,
 }: SessionItemProps) {
   const title = sessionTitle(session)
-  const renameSession = useChatStore((s) => s.renameSession)
   const toggleUnreadSession = useChatStore((s) => s.toggleUnreadSession)
   const toggleArchiveSession = useChatStore((s) => s.toggleArchiveSession)
 
@@ -88,67 +84,17 @@ export const SessionItem = memo(function SessionItem({
     (session.sourceToolCallId?.startsWith('message-thread:') ?? false)
   const isWorker = session.sessionKind === 'subagent' || session.sessionKind === 'job'
 
-  const [isRenaming, setIsRenaming] = useState(false)
-  const [renameValue, setRenameValue] = useState(title)
+  const {
+    isRenaming,
+    setIsRenaming,
+    renameValue,
+    setRenameValue,
+    handleExport,
+    handleSaveRename,
+    handleCancelRename,
+  } = useSessionRowActions(session, title)
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuBoundary, setMenuBoundary] = useState<HTMLElement | null>(null)
-  // A sidebar row acts on ITS conversation, which is often not the one on screen: the row names
-  // it so the Event Center links back to the right chat rather than the open one.
-  const origin = useMemo(
-    () => ({
-      kind: 'session' as const,
-      sessionId: session.id,
-      projectId: session.projectId ?? null,
-    }),
-    [session.id, session.projectId],
-  )
-
-  // Export the full conversation to a Markdown file. Fetches the session fresh so
-  // an unopened sidebar row (whose messages aren't in the store) exports completely.
-  // `redacted` = the privacy-safe variant (payloads → typed placeholders).
-  const handleExport = useCallback(
-    async (redacted = false) => {
-      try {
-        const full = await backendClient.getSession(session.id)
-        const md = sessionToMarkdown(full, { redacted })
-        if (!md.includes('## ')) {
-          toast.info('Nothing to export yet', {
-            description: 'This conversation has no messages to write out.',
-            origin,
-          })
-          return
-        }
-        downloadTextFile(exportFileName(full.title, redacted ? 'redacted' : undefined), md)
-      } catch (e) {
-        toast.error('Could not export this conversation', {
-          description: errorMessage(e, '') || undefined,
-          origin,
-        })
-      }
-    },
-    [session.id, origin],
-  )
-
-  useEffect(() => {
-    setRenameValue(title)
-  }, [title])
-
-  const handleSaveRename = () => {
-    if (renameValue.trim() && renameValue.trim() !== title) {
-      renameSession(session.id, renameValue.trim()).catch((e) => {
-        toast.error('Could not rename this conversation', {
-          description: errorMessage(e, '') || undefined,
-          origin,
-        })
-      })
-    }
-    setIsRenaming(false)
-  }
-
-  const handleCancelRename = () => {
-    setRenameValue(title)
-    setIsRenaming(false)
-  }
 
   // Indent via padding (not margin) so the row highlight still spans full width
   // like a tree row. The effective depth is capped so a long linear fork

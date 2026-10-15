@@ -1,29 +1,24 @@
 import { cloneElement, lazy, Suspense, useCallback, useId, useMemo, useRef, useState } from 'react'
 
-import { resolveLiveCatalogModel, findCatalogModelForConnection } from '@localixai/agent/catalog'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import { acceptAttribute } from '@/shared/lib/attachment-policy'
 import { filesFromDesktopPick } from '@/shared/lib/attachments/file-staging'
 import { desktopPickFiles } from '@/shared/lib/desktopDialogs'
 import { composerShellClassName } from './composerShell'
-import { Link2 } from 'lucide-react'
 import { LocalixBorderBeam } from '@localixai/kit/localix-border-beam'
 
-import { loadPromptHistory } from '../../model/persistence'
 import { reasoningBeamIntensity } from '../../model/reasoning'
 import { refFromToken } from '../../model/sendRefs'
-import { useStreamTip } from '../../model/streamTips'
-import type { TipContext } from '../../model/tipSelection'
-import { useTipSignals } from '../../model/tipSignals'
-import { useComposerTips } from '../../model/useComposerTips'
-import { useInlineCompletionTip } from '../../model/useInlineCompletionTip'
+import { composerAccessory } from './ComposerAccessory'
+import { ComposerDropHint } from './ComposerDropHint'
+import { composerPlaceholder } from './composerPlaceholder'
+import { useComposerModels } from './useComposerModels'
+import { useComposerStreamTip } from './useComposerStreamTip'
 import { DraftSyncNotice } from './DraftSyncNotice'
 import { ActionButtons } from './ActionButtons'
-import { AddParticipantMenu } from './AddParticipantMenu'
-import { RosterLockButton } from './RosterLockButton'
 import { nextCaretInText, type CaretInText } from './caretInText'
-import { ComposerHeaderStrips } from './ComposerHeaderStrips'
+import { ComposerSessionStrips } from './ComposerSessionStrips'
 import { ComposerTextField } from './ComposerTextField'
 import { ComposerContextManifest } from './ContextRefChips'
 import { EditingBanner } from './EditingBanner'
@@ -49,9 +44,6 @@ import { usePromptSend } from './usePromptSend'
 import { usePromptSessionView } from './usePromptSessionView'
 import { useSkillCommands } from './useSkillCommands'
 
-const ComposerQueuePanel = lazy(() =>
-  import('./ComposerQueuePanel').then((module) => ({ default: module.ComposerQueuePanel })),
-)
 import { useSlashArgOptions } from './useSlashArgOptions'
 
 export type { PromptInputProps } from './promptInputProps'
@@ -91,14 +83,6 @@ export function PromptInput(props: PromptInputProps) {
     () => mergeDynamicSlashCommands(pluginCommands, skillCommands),
     [skillCommands, pluginCommands],
   )
-  // Gates the one-shot inline-completion hint so it lands after a first exchange, not in a
-  // brand-new user's face. Read once.
-  const hasSentBefore = useMemo(() => loadPromptHistory().length > 0, [])
-  const scopeTips = useComposerTips(activeSessionId, isFocused)
-  const composerTips = useInlineCompletionTip(
-    scopeTips,
-    hasSentBefore && prompt.trim().length === 0 && !readOnlyReason && !isEditing,
-  )
   const sessionView = usePromptSessionView(activeSessionId, serverQueue)
   const { activeProjectId, participants } = sessionView
   const loadDynamicOptions = useSlashArgOptions(activeSessionId, activeProjectId)
@@ -116,29 +100,12 @@ export function PromptInput(props: PromptInputProps) {
     openCommandActive ? (slash.detected?.text ?? '') : '',
     setPrompt,
   )
-  // Memoized so the linear catalog scan doesn't re-run on every keystroke.
-  const selectedModel = useMemo(
-    () =>
-      findCatalogModelForConnection(
-        models,
-        connectionsState.connections,
-        activeConnectionId,
-        model,
-      ),
-    [activeConnectionId, connectionsState.connections, model, models],
-  )
-  const rosterParticipants = useMemo(
-    () =>
-      participants.map((participant) => ({
-        ...participant,
-        contextWindow: resolveLiveCatalogModel(
-          models,
-          connectionsState.connections,
-          participant.modelId,
-          participant.providerConnectionId,
-        )?.model.contextLength,
-      })),
-    [participants, models, connectionsState.connections],
+  const { selectedModel, rosterParticipants } = useComposerModels(
+    models,
+    connectionsState.connections,
+    activeConnectionId,
+    model,
+    participants,
   )
   const contextWindow = selectedModel?.contextLength
   const ctxRefs = useComposerContextRefs(
@@ -147,28 +114,16 @@ export function PromptInput(props: PromptInputProps) {
     props.activeTabLinks,
     contextWindow,
   )
-  // The client answers the vocabulary the server's tip gates are written in, measured against
-  // the SELECTED model's window.
-  const tipSignals = useTipSignals({
-    sessionId: activeSessionId,
+  const { tip: streamTip, dismiss: dismissTip } = useComposerStreamTip({
+    activeSessionId,
+    isFocused,
+    running: isGenerating && isFocused && !sessionView.awaitingAnswer,
+    idleDraft: prompt.trim().length === 0 && !readOnlyReason && !isEditing,
     usage: props.usage,
     contextDiagnostics: props.contextDiagnostics,
     contextWindow,
+    tipContext: props.tipContext,
   })
-  const { tipContext } = props
-  const fullTipContext = useMemo<TipContext>(
-    () => ({
-      userText: tipContext?.userText ?? '',
-      activeToolName: tipContext?.activeToolName ?? null,
-      signals: tipSignals,
-    }),
-    [tipContext, tipSignals],
-  )
-  const { tip: streamTip, dismiss: dismissTip } = useStreamTip(
-    isGenerating && isFocused && !sessionView.awaitingAnswer,
-    fullTipContext,
-    composerTips,
-  )
   // A COMPLETED @-menu link becomes a structured pinned ref (a chip inside the composer frame),
   // so a link has ONE representation; token shapes the pinned channel cannot parse fall back to
   // a text insert (returns false).
@@ -302,15 +257,12 @@ export function PromptInput(props: PromptInputProps) {
   // Mention pills in each member's colour, and the ghost suggestion after the caret.
   const composerHighlight = useComposerMirror({ prompt, suggestionGhost, participants })
 
-  const placeholder = !hasConnection
-    ? 'Connect a provider in the app to start…'
-    : !model
-      ? 'Select a model to start…'
-      : readOnlyReason
-        ? readOnlyReason
-        : isGenerating
-          ? 'Type a message to queue…'
-          : 'Describe the outcome you want…'
+  const placeholder = composerPlaceholder({
+    hasConnection,
+    hasModel: Boolean(model),
+    readOnlyReason,
+    isGenerating,
+  })
   const beamIntensity = reasoningBeamIntensity(reasoningEffort)
 
   const contextManifest = (
@@ -322,14 +274,6 @@ export function PromptInput(props: PromptInputProps) {
     />
   )
   const { contextBar } = props
-  // The queue docks beside send/stop: a pill in a toolbar that is always there, so it can come
-  // and go without moving the composer. Loaded the first time a session has something queued.
-  const queueDock =
-    serverQueue && serverQueue.length > 0 ? (
-      <Suspense fallback={null}>
-        <ComposerQueuePanel serverQueue={serverQueue} activeSessionId={activeSessionId} />
-      </Suspense>
-    ) : null
   const contextControls = (
     <>
       <SessionPermissionModeChip sessionId={activeSessionId} disabled={isGenerating || readOnly} />
@@ -365,14 +309,7 @@ export function PromptInput(props: PromptInputProps) {
         onDragLeave={props.dropzone ? undefined : dropzone.handleDragLeave}
         onDrop={props.dropzone ? undefined : dropzone.handleDrop}
       >
-        <div
-          data-agent-link-drop-hint
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-(--z-drag-overlay) flex items-center justify-center gap-2 rounded-[inherit] bg-surface-raised/95 px-4 text-xs font-medium text-foreground opacity-0"
-        >
-          <Link2 className="size-4" />
-          Drop here to add context to the message
-        </div>
+        <ComposerDropHint />
         {props.draftState && <DraftSyncNotice state={props.draftState} />}
         <LocalixBorderBeam
           active={focused || isGenerating || beamIntensity > 0}
@@ -392,7 +329,8 @@ export function PromptInput(props: PromptInputProps) {
             e.target.value = ''
           }}
         />
-        <ComposerHeaderStrips
+        <ComposerSessionStrips
+          sessionView={sessionView}
           tip={streamTip}
           onDismissTip={dismissTip}
           runtimePanel={props.runtimePanel}
@@ -402,24 +340,6 @@ export function PromptInput(props: PromptInputProps) {
           sessionUsage={props.sessionUsage}
           loops={props.loops}
           participants={rosterParticipants}
-          participantUsage={sessionView.participantUsage}
-          conversationFloor={sessionView.conversationFloor}
-          addParticipantControl={
-            <AddParticipantMenu
-              seatedAgentIds={participants.map((participant) => participant.agentId)}
-              projectId={activeProjectId ?? ''}
-              onAdd={sessionView.participantsEditing.addParticipant}
-            />
-          }
-          onRemoveParticipant={sessionView.participantsEditing.removeParticipant}
-          participantsLocked={sessionView.rosterLocked}
-          participantsLockControl={
-            <RosterLockButton
-              locked={sessionView.rosterLocked}
-              settled={sessionView.rosterLockSettled}
-              onChange={sessionView.participantsEditing.setRosterLocked}
-            />
-          }
         />
         {hasInteraction ? (
           props.interactionOverlay
@@ -469,16 +389,7 @@ export function PromptInput(props: PromptInputProps) {
             )}
             <ActionButtons
               showAttach
-              accessory={
-                queueDock ? (
-                  <>
-                    {queueDock}
-                    {props.accessory}
-                  </>
-                ) : (
-                  props.accessory
-                )
-              }
+              accessory={composerAccessory(serverQueue, activeSessionId, props.accessory)}
               hasPrompt={hasContent}
               canSend={canSend}
               isGenerating={isGenerating}

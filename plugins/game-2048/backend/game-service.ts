@@ -10,7 +10,7 @@ import {
 } from '../shared/game'
 import { applyMove, playMoves, type Plan, type Played } from '../shared/play'
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
-import { openJsonStore } from './store'
+import { openJsonStore } from '@localixai/plugin-sdk/backend'
 
 /**
  * THE BOARD AT EACH CHAT, and every way it changes.

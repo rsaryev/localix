@@ -13,6 +13,7 @@ import {
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
+import { COPIED_FEEDBACK_SHORT_MS } from '@/shared/lib/timings'
 
 /**
  * Floating actions covered code and caught clicks intended for the editor. This row
@@ -62,7 +63,7 @@ export function FileEditorToolbar({
   copyText: string
   children?: ReactNode
 }) {
-  const { copied, copy } = useCopied(1200)
+  const { copied, copy } = useCopied(COPIED_FEEDBACK_SHORT_MS)
   return (
     <WorkbenchToolbar aria-label="File editor actions" density="slim" className="pl-0">
       <div className="min-w-0 flex-1">{children}</div>

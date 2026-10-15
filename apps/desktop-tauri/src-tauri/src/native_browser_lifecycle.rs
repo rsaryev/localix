@@ -120,23 +120,22 @@ pub(crate) fn validate_lease(lease: Option<&str>) -> Result<(), String> {
     }
 }
 
+/// Upper bound for one native browser create, bounds or retire hop on the main thread.
+#[cfg(target_os = "macos")]
+const UI_OPERATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
 /// Serialize AppKit creation, bounds and retirement outside Tao's non-reentrant callbacks.
 pub(crate) async fn on_ui<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
     #[cfg(target_os = "macos")]
     {
-        let (sender, receiver) = std::sync::mpsc::channel();
-        crate::macos_tabs::defer(move || {
-            let _ = sender.send(work());
-        });
-        tauri::async_runtime::spawn_blocking(move || {
-            receiver
-                .recv_timeout(std::time::Duration::from_secs(10))
-                .map_err(|_| "Browser lifecycle operation timed out".to_string())?
-        })
-        .await
-        .map_err(|error| error.to_string())?
+        crate::round_trip::run_on_main(
+            UI_OPERATION_TIMEOUT,
+            "Browser lifecycle operation timed out",
+            work,
+        )
+        .await?
     }
     #[cfg(not(target_os = "macos"))]
     {

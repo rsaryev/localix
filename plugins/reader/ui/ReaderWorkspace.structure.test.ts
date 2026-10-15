@@ -15,7 +15,18 @@ const read = (name: string) => readFileSync(new URL(`./${name}`, import.meta.url
 const workspace = [
   'ReaderWorkspace.tsx',
   'ReaderReadingPane.tsx',
+  'ReaderReadingSurface.tsx',
+  'ReaderPanelBody.tsx',
+  'ReaderPaneToolMenus.tsx',
+  'ReaderPaneToolbar.tsx',
+  'ReaderBookPanel.tsx',
+  'ReaderBookPanelLists.tsx',
+  'ReaderSpeedReadingOverlay.tsx',
+  'ReaderPaneStatusBar.tsx',
   'ReaderLibraryPane.tsx',
+  'ReaderLibraryToolbars.tsx',
+  'ReaderLibraryGallery.tsx',
+  'ReaderLibraryPanels.tsx',
   'readerParts.tsx',
   'ReaderStats.tsx',
 ]

@@ -1,20 +1,18 @@
 import { backendClient } from '@/shared/api/client'
+import { ApiError } from '@/shared/api/failure'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { composerDrafts } from '@/shared/lib/composerDrafts'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { usePreviewStore } from '@/features/inspector/model/previewStore'
 import { closeNativePages } from '@/features/inspector/model/nativePages'
 import type { UiSession } from '@/shared/api/contracts'
-import type { Message } from './types'
 import type { ReasoningEffort } from './reasoning'
-import { systemNotices } from './systemNotices'
 import { patchSessionById, sessionBelongsToScope, sortSessions } from './sessionListHelpers'
+import { activateSessionBody, logCurrentChatMessages } from './sessionBodyActivation'
+import { createModelSelectionActions } from './sessionModelSelectionActions'
 import { findSessionInState } from './findSession'
-import { mergeSessionBody } from './mergeSessionBody'
 import { WarmSessionBodyCache } from './sessionBodyCache'
 import { forgetSessionLocation } from './persistence'
 import type { ChatStore, CustomSet } from './store'
-import { agentRoute, sessionRoute, withRoute } from '@/shared/api/contracts'
 import { isAgentUnavailable } from './newChatAgent'
 import { createNewChatDrafts } from './newChatDrafts'
 import {
@@ -24,57 +22,7 @@ import {
   type ConversationStartStrategy,
 } from './conversationStartStrategy'
 
-export function logCurrentChatMessages(sessionId: string, messages: Message[]): void {
-  // Dev-only and deliberately shallow: dumping the raw message array (full
-  // content/reasoning/tool parts) makes DevTools retain every opened dialog's
-  // messages forever and made switching to heavy sessions noticeably slow.
-  if (!import.meta.env.DEV) return
-  console.info(`[Localix chat] opened session ${sessionId}: ${messages.length} messages`)
-}
-
-function activateSessionBody(
-  state: ChatStore,
-  id: string,
-  detail: UiSession,
-  sessionBodyCache: WarmSessionBodyCache,
-): Partial<ChatStore> {
-  // Whole-body replace: merge over the stored copy so an open-during-send switch
-  // (or SWR reconcile) doesn't wipe optimistic rows / live stream pointers.
-  const prev = findSessionInState(state, id)
-  const incoming = { ...mergeSessionBody(prev, detail), isUnread: false }
-  return {
-    activeSessionId: id,
-    sessions: sortSessions(
-      // A session created after the workspace snapshot may not be in the working
-      // list yet. Insert it before replacement so the active id always resolves.
-      (state.sessions.some((session) => session.id === id)
-        ? state.sessions
-        : [...state.sessions, incoming]
-      ).map((session) => {
-        if (session.id === id) return incoming
-        // Running sessions retain their bodies for background streaming. Idle
-        // bodies move to the bounded LRU; preserve client-only notices in-store.
-        if (session.messages.length > 0 && !session.isRunning) {
-          if (session.messages.some((message) => message.role !== 'system')) {
-            sessionBodyCache.put(session)
-          }
-          const notices = session.messages.filter((message) => message.role === 'system')
-          return notices.length === session.messages.length
-            ? session
-            : {
-                ...session,
-                messages: notices,
-                // The full body now lives only in the warm cache. Mark this
-                // shell unloaded so it cannot flash the genuine empty greeting
-                // before the route effect restores the cached transcript.
-                bodyLoaded: false,
-              }
-        }
-        return session
-      }),
-    ),
-  }
-}
+export { logCurrentChatMessages } from './sessionBodyActivation'
 
 export interface SessionActionsDeps {
   customSet: CustomSet
@@ -122,10 +70,6 @@ export function createSessionActions({
   autoCreateInFlight,
   sessionBodyCache = new WarmSessionBodyCache(),
 }: SessionActionsDeps): SessionActions {
-  // One ordered persistence lane per chat. The picker remains optimistic, but
-  // quick A→B selections reach the backend in that same order and a late A
-  // response can never paint over B.
-  const modelSelectionWriteTail = new Map<string, Promise<UiSession>>()
   // Uncached session details can resolve out of order. Only the newest selection
   // request may activate its body; stale results still warm the bounded cache.
   let selectionRequestVersion = 0
@@ -292,10 +236,8 @@ export function createSessionActions({
       try {
         await backendClient.deleteSession(id)
       } catch (error) {
-        const message = errorMessage(error, '')
-        if (!message.includes('Session not found')) {
-          throw error
-        }
+        // Already gone is the outcome the user asked for; anything else is a real failure.
+        if (!(error instanceof ApiError && error.code === 'session_not_found')) throw error
       }
 
       actions._forgetSessions([id])
@@ -363,135 +305,7 @@ export function createSessionActions({
       )
     },
 
-    setModelSelection: async (sessionId, connectionId, modelId, reasoningEffort, agentId) => {
-      const previous = findSessionInState(get(), sessionId)
-      // Whom the choice is for. Resolved once, here, so the optimistic paint, the rollback and
-      // the request all name the same participant even if the party changes mid-flight.
-      const target = agentId ?? (previous ? sessionRoute(previous).agentId : undefined)
-      const previousRoute = previous && target ? agentRoute(previous, target) : undefined
-      // Model selection is interaction state: paint it synchronously. Waiting for
-      // the PATCH response left a newly-created cross-scope chat displaying its
-      // previous/null connection, even though the backend had already persisted
-      // the choice. Roll back only if this exact optimistic pair is still current.
-      customSet((state) =>
-        patchSessionById(state, sessionId, (session) =>
-          withRoute(
-            session,
-            {
-              providerConnectionId: connectionId,
-              modelId,
-              ...(reasoningEffort ? { reasoningEffort } : {}),
-            },
-            target,
-          ),
-        ),
-      )
-
-      const persist = () =>
-        backendClient.updateSession(sessionId, {
-          route: {
-            ...(target ? { agentId: target } : {}),
-            providerConnectionId: connectionId,
-            modelId,
-            ...(reasoningEffort ? { reasoningEffort } : {}),
-          },
-        })
-      const previousWrite = modelSelectionWriteTail.get(sessionId)
-      const write = previousWrite ? previousWrite.then(persist, persist) : persist()
-      modelSelectionWriteTail.set(sessionId, write)
-
-      let session: UiSession
-      let latest = false
-      try {
-        session = await write
-        latest = modelSelectionWriteTail.get(sessionId) === write
-      } catch (error) {
-        if (previousRoute && target && modelSelectionWriteTail.get(sessionId) === write) {
-          customSet((state) =>
-            patchSessionById(state, sessionId, (current) => {
-              const now = agentRoute(current, target)
-              if (!now || now.providerConnectionId !== connectionId || now.modelId !== modelId)
-                return current
-              return withRoute(
-                current,
-                {
-                  providerConnectionId: previousRoute.providerConnectionId,
-                  modelId: previousRoute.modelId,
-                  ...(reasoningEffort && now.reasoningEffort === reasoningEffort
-                    ? { reasoningEffort: previousRoute.reasoningEffort }
-                    : {}),
-                },
-                target,
-              )
-            }),
-          )
-        }
-        throw error
-      } finally {
-        if (modelSelectionWriteTail.get(sessionId) === write) {
-          modelSelectionWriteTail.delete(sessionId)
-        }
-      }
-
-      // A newer choice may change only effort on the same model/connection. Pair equality
-      // cannot detect that, so only the last write is allowed to replace the session snapshot.
-      if (!latest) return
-      const current = findSessionInState(get(), sessionId)
-      const currentRoute = current && target ? agentRoute(current, target) : undefined
-      if (
-        currentRoute &&
-        target &&
-        currentRoute.providerConnectionId === connectionId &&
-        currentRoute.modelId === modelId
-      ) {
-        // A reasoning change can race the model PATCH. Keep that newer effort
-        // instead of allowing this response to repaint an older snapshot.
-        get()._replaceSession(
-          currentRoute.reasoningEffort !== reasoningEffort && reasoningEffort !== undefined
-            ? withRoute(session, { reasoningEffort: currentRoute.reasoningEffort }, target)
-            : session,
-        )
-        // The choice is not copied into the browser. Writing it to the seat IS the record —
-        // the server reads the freshest non-blank seat back as the `recent` level of the model
-        // chain (`repository-recent-routes.ts`), so a second copy here could only disagree
-        // with it, and would outlive the database that holds the original.
-        // The model line is the server's too, for the same reason as the effort's: it names the
-        // participant and the agents read it. The CONNECTION line stays here — which credentials
-        // a model is reached through is an account fact the conversation cannot act on, so it is
-        // shown to the person and to nobody else.
-        if (previousRoute?.providerConnectionId !== connectionId) {
-          get()._addSystemNotice(
-            sessionId,
-            systemNotices.connectionChange(
-              get().connections.find((connection) => connection.id === connectionId)?.label ??
-                'connection',
-            ),
-          )
-        }
-      }
-    },
-
-    setReasoningEffort: async (sessionId, reasoningEffort, forAgentId) => {
-      // No notice is drawn here. The server writes the line — naming the participant, and as a
-      // row the AGENTS read too (`session-notice.ts`); a second, client-only copy would print
-      // the same event twice and disagree with it about who it was about.
-      // Effort travels with the model, so it re-routes a participant rather than the session.
-      // WHOSE effort is the caller's to say — the picker configures one named member, the
-      // compact control beside the composer speaks for the conversation and so for its first one.
-      const target = findSessionInState(get(), sessionId)
-      const agentId = forAgentId ?? (target ? sessionRoute(target).agentId : undefined)
-      const route = target && agentId ? agentRoute(target, agentId) : undefined
-      if (!route?.providerConnectionId || !route.modelId) return
-      // A separate reasoning PATCH could overtake a model pick and replace its optimistic
-      // route with an older response. Use the same ordered lane and rollback for both controls.
-      await actions.setModelSelection(
-        sessionId,
-        route.providerConnectionId,
-        route.modelId,
-        reasoningEffort,
-        agentId,
-      )
-    },
+    ...createModelSelectionActions({ customSet, get }),
   }
   return actions
 }

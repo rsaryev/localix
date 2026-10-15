@@ -10,11 +10,12 @@
 // `check:generated` compares it with a fresh render, with no git involved, so it also catches an
 // uncommitted edit on either side.
 import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import * as protocol from '../apps/api/src/lib/runtime-protocol.ts'
+import { repoRoot } from './lib/paths.mjs'
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const root = repoRoot()
 export const RUST_CONTRACT_FILE = join(
   root,
   'apps',

@@ -115,11 +115,7 @@ pub(crate) fn install(
 pub(crate) fn accepts(app: &AppHandle, key: &Key, destination: &str) -> bool {
     app.state::<WorkspaceDrags>()
         .accepts_snapshot(key, destination)
-        && app
-            .state::<crate::workspace_windows::WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
+        && crate::workspace_windows::workspaces(app)
             .entries
             .get(destination)
             .is_some_and(|entry| !entry.transfer_presented && !entry.closing && !entry.hidden)

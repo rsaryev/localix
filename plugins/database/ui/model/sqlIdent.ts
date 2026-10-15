@@ -16,8 +16,3 @@ export function selectTableSql(
   if (target.dialect === 'mssql') return `SELECT TOP ${limit} * FROM ${ident};`
   return `SELECT * FROM ${ident} LIMIT ${limit};`
 }
-
-/** Backward-compatible unqualified table helper. */
-export function selectAllSql(table: string, dialect: DbDialect, limit = 200): string {
-  return selectTableSql({ table, dialect }, limit)
-}

@@ -86,8 +86,7 @@
     "ui/register.test.tsx",
     "ui/Workspace.dom.test.tsx",
     "ui/usePolledSnapshot.dom.test.tsx",
-    "ui/useStoreSnapshot.dom.test.tsx",
-    "backend/store-feed.test.ts"
+    "ui/useStoreSnapshot.dom.test.tsx"
   ],
   "domainNamedPaths": ["system", "process"],
   "domainTokens": [

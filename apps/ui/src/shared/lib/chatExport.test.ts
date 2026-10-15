@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { sessionToMarkdown, exportFileName } from './chatExport'
+import { exportableTurns, exportFileName, sessionToMarkdown } from './chatExport'
 import type { Message } from '@/shared/api/contracts'
 
 const msg = (m: Partial<Message>): Message => ({ id: 'x', role: 'user', ...m }) as Message
@@ -190,5 +190,17 @@ describe('exportFileName', () => {
     expect(exportFileName('')).toBe('conversation.md')
     expect(exportFileName('!!!')).toBe('conversation.md')
     expect(exportFileName(null)).toBe('conversation.md')
+  })
+})
+
+describe('exportableTurns', () => {
+  test('a title that looks like a heading does not make an empty chat exportable', () => {
+    // The sidebar used to sniff the Markdown for "## ", which a title like this one contains.
+    const session = { title: 'C## notes', messages: [msg({ role: 'system', content: 'x' })] }
+    expect(sessionToMarkdown(session)).toContain('## ')
+    expect(exportableTurns(session.messages)).toEqual([])
+    expect(exportableTurns([msg({ role: 'user', content: ' hi ' })])).toEqual([
+      { role: 'user', body: 'hi' },
+    ])
   })
 })

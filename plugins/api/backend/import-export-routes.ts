@@ -97,7 +97,7 @@ export function registerImportRoute<TSchema extends Schema>(
         // the action's own crafted problem text rather than restating the list of formats.
         if (!action.ok) {
           return c.json(
-            { error: 'Import failed.', code: 'bad_request' as const, detail: action.problem },
+            { error: 'Import failed.', code: 'bad_request' as const, detail: action.message },
             400,
           )
         }
@@ -123,7 +123,7 @@ export function registerImportRoute<TSchema extends Schema>(
           requests,
           collisions,
           saved: save === true,
-          message: action.content,
+          message: action.message,
         }
         return c.json(body)
       })

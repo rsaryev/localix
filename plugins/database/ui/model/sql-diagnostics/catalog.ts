@@ -7,7 +7,7 @@
  * catalog answers `undefined` ("not loaded") separately from `[]`, and the checks stand down on
  * `undefined` while `wantColumns` asks for them.
  */
-import type { DbSchemas, DbTableSchema } from '../../dbClient'
+import type { DbSchemas } from '../../dbClient'
 
 export interface SqlCatalog {
   /** Resolve a relation's parts to the tables it may mean; `null` = cannot judge this name. */
@@ -34,7 +34,10 @@ const SYSTEM_RELATION = /^(?:pg_|sqlite_|information_schema$|dual$|sys$|system$)
 
 export function createSqlCatalog(
   schemas: DbSchemas | null,
-  getTable: (table: string, schema?: string) => DbTableSchema | undefined,
+  getTable: (
+    table: string,
+    schema?: string,
+  ) => { columns: readonly { name: string }[] } | undefined,
 ): SqlCatalog | null {
   if (!schemas) return null
   const bySchema = new Map<string, Map<string, { schema: string; name: string }>>()

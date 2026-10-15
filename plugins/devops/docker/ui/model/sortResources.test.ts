@@ -20,18 +20,24 @@ describe('Docker inventory sorting', () => {
     ).toEqual(['live', 'old'])
   })
 
-  test('sorts human image sizes numerically', () => {
-    const image = (id: string, size: string): DockerImage => ({
+  test('sorts images by the byte count the backend reported, unknown sizes last', () => {
+    const image = (id: string, size: string, sizeBytes?: number): DockerImage => ({
       id,
       repository: id,
       tag: 'latest',
       size,
+      ...(sizeBytes === undefined ? {} : { sizeBytes }),
       createdAt: '2026-07-23T10:00:00Z',
     })
-    const rows = [image('large', '1.2GB'), image('small', '900MB')]
+    const rows = [
+      image('large', '1.2GB', 1_200_000_000),
+      image('unknown', '--'),
+      image('small', '900MB', 900_000_000),
+    ]
     expect(sortDockerImages(rows, { key: 'size', direction: 'asc' }).map((row) => row.id)).toEqual([
       'small',
       'large',
+      'unknown',
     ])
   })
 })

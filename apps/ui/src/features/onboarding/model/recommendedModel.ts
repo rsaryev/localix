@@ -16,8 +16,14 @@ import type { CatalogModel } from '@/shared/hooks/useModelsCatalog'
  * rather than the priciest flagship.
  */
 
-/** Modalities/ids that are never a chat model, however capable they look. */
-const NON_CHAT_PATTERN = /embed|rerank|moderation|whisper|tts|speech|transcrib|guard|ocr/i
+/**
+ * Modalities/ids that are never a chat model, however capable they look. Long stems match
+ * anywhere; short or common words must stand as their own id segment, so `llama-guard-3` and
+ * `mistral-ocr` are excluded while a name merely containing the letters (`vanguard`,
+ * `procrustes`) is not.
+ */
+const NON_CHAT_PATTERN =
+  /embed|rerank|moderation|whisper|transcrib|(?:^|[-_ ./:])(?:tts|speech|guard|ocr)(?:[-_ ./:\d]|$)/i
 
 function isChatCandidate(model: CatalogModel): boolean {
   if (NON_CHAT_PATTERN.test(model.id) || NON_CHAT_PATTERN.test(model.name)) return false
@@ -62,15 +68,22 @@ function contextScore(contextLength: number | undefined): number {
  */
 const TRIMMED_VARIANT = /(^|[-_ .])(mini|nano|lite|small|tiny|instant|flash-?8b)([-_ .]|$)/i
 
+/** Capability points: tool calling dominates because it is what makes a model an agent. */
+const CAPABILITY_WEIGHT = { tools: 8, reasoning: 2, attachment: 1 } as const
+/** Penalty for a reduced-capability sibling (`TRIMMED_VARIANT`). */
+const TRIMMED_VARIANT_PENALTY = -3
+
 function score(model: CatalogModel): number {
   return (
-    (model.supportsTools ? 8 : 0) +
-    (model.supportsReasoning ? 2 : 0) +
-    (model.supportsAttachment ? 1 : 0) +
+    (model.supportsTools ? CAPABILITY_WEIGHT.tools : 0) +
+    (model.supportsReasoning ? CAPABILITY_WEIGHT.reasoning : 0) +
+    (model.supportsAttachment ? CAPABILITY_WEIGHT.attachment : 0) +
     recencyScore(model.releaseDate) +
     contextScore(model.contextLength) +
     costScore(model) +
-    (TRIMMED_VARIANT.test(model.id) || TRIMMED_VARIANT.test(model.name) ? -3 : 0)
+    (TRIMMED_VARIANT.test(model.id) || TRIMMED_VARIANT.test(model.name)
+      ? TRIMMED_VARIANT_PENALTY
+      : 0)
   )
 }
 

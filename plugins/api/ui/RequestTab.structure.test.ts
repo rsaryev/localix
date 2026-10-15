@@ -33,9 +33,11 @@ describe('request workbench geometry', () => {
     // Each tab wrote its own row (10rem vs 8.5rem labels, a dead spacer span) inside a
     // `max-w-3xl` / `max-w-2xl` box that stopped the fields short of the URL bar above them.
     const auth = readFileSync(new URL('./ui/AuthEditor.tsx', import.meta.url), 'utf8')
-    expect(source).toContain("from './ui/FormRow'")
+    const settings = readFileSync(new URL('./ui/RequestSettings.tsx', import.meta.url), 'utf8')
+    expect(source).toContain("from './ui/RequestSettings'")
+    expect(settings).toContain("from './FormRow'")
     expect(auth).toContain("from './FormRow'")
-    for (const file of [source, auth]) expect(file).not.toMatch(/max-w-(?:sm|2xl|3xl)/)
-    expect(source).not.toContain('<span />')
+    for (const file of [source, settings, auth]) expect(file).not.toMatch(/max-w-(?:sm|2xl|3xl)/)
+    expect(settings).not.toContain('<span />')
   })
 })

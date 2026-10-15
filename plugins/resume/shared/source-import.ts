@@ -7,16 +7,36 @@ import {
 } from './schema'
 import { sectionLabels } from './presentation'
 import { sourceEntries } from './source-entries'
+// Russian headings are written as escapes: project text stays ASCII (scripts/check-architecture.mjs).
 const aliases: Partial<Record<SectionType, string[]>> = {
-  summary: ['profile', 'about me', 'objective', 'профиль', 'о себе'],
-  experience: ['work experience', 'employment history', 'опыт работы'],
-  internship: ['internships', 'магang', 'стажировки'],
-  projects: ['portfolio', 'проекты'],
-  education: ['academic background', 'образование'],
-  organizations: ['volunteering', 'организации'],
-  certifications: ['certification', 'сертификаты'],
-  skills: ['technical skills', 'навыки'],
-  languages: ['языки'],
+  summary: [
+    'profile',
+    'about me',
+    'objective',
+    '\u043f\u0440\u043e\u0444\u0438\u043b\u044c',
+    '\u043e \u0441\u0435\u0431\u0435',
+  ],
+  experience: [
+    'work experience',
+    'employment history',
+    '\u043e\u043f\u044b\u0442 \u0440\u0430\u0431\u043e\u0442\u044b',
+  ],
+  internship: ['internships', '\u0441\u0442\u0430\u0436\u0438\u0440\u043e\u0432\u043a\u0438'],
+  projects: ['portfolio', '\u043f\u0440\u043e\u0435\u043a\u0442\u044b'],
+  education: [
+    'academic background',
+    '\u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435',
+  ],
+  organizations: [
+    'volunteering',
+    '\u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438',
+  ],
+  certifications: [
+    'certification',
+    '\u0441\u0435\u0440\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u044b',
+  ],
+  skills: ['technical skills', '\u043d\u0430\u0432\u044b\u043a\u0438'],
+  languages: ['\u044f\u0437\u044b\u043a\u0438'],
 }
 /** Conservative source import: infer headings, retain the source's prose, and expose uncertain text. */
 export function importSourceText(

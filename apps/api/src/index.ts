@@ -1,11 +1,10 @@
 import type pino from 'pino'
 import { once } from 'node:events'
-import { spawn } from 'node:child_process'
-import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { readFileSync, unlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { bootstrap } from './bootstrap'
+import { endpointPort, isOwnDescriptor, spawnDetachedDaemon, stopRuntime } from './runtime-daemon'
 import { randomUUID } from 'node:crypto'
 import { disposePreviewServers } from './features/agent-core/tools/preview/preview-probe'
 import {
@@ -14,7 +13,6 @@ import {
   clearRuntimeEndpoint,
   discoverRuntimeEndpoint,
   dialableRuntimeBaseUrl,
-  isRuntimeEndpointLive,
   legacyRuntimeEndpointFile,
   publishRuntimeEndpoint,
   readRuntimeEndpoint,
@@ -440,97 +438,6 @@ const ENSURE_DAEMON_ARG = '--ensure-daemon'
 const DAEMON_CHILD_ARG = '--runtime-daemon-child'
 const WATCH_DAEMON_ARG = '--watch-daemon'
 
-async function spawnDetachedDaemon(watch: boolean, host: string, port: number): Promise<void> {
-  const entry = fileURLToPath(import.meta.url)
-  const logFile = runtimeLogFile()
-  mkdirSync(dirname(logFile), { recursive: true })
-  const logFd = openSync(logFile, 'a', 0o600)
-  try {
-    const child = spawn(
-      process.execPath,
-      [...(watch ? ['--watch'] : []), entry, DAEMON_CHILD_ARG],
-      {
-        detached: true,
-        // A detached console-subsystem child (Bun) gets a NEW console on Windows, which
-        // flashed a terminal window on every `localix` CLI start of the daemon.
-        windowsHide: true,
-        stdio: ['ignore', logFd, logFd],
-        env: {
-          ...process.env,
-          PORT: String(port),
-          HOST: host,
-          NODE_ENV: envString('NODE_ENV') || 'production',
-          LOCALIX_RUNTIME_WATCH: watch ? '1' : '0',
-        },
-      },
-    )
-    await new Promise<void>((resolveSpawn, rejectSpawn) => {
-      child.once('spawn', resolveSpawn)
-      child.once('error', rejectSpawn)
-    })
-    child.unref()
-  } finally {
-    closeSync(logFd)
-  }
-}
-
-function processIsAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code !== 'ESRCH'
-  }
-}
-
-function endpointPort(endpoint: RuntimeEndpoint | null): number | undefined {
-  if (!endpoint) return undefined
-  const port = Number(new URL(endpoint.baseUrl).port)
-  return Number.isInteger(port) && port > 0 ? port : undefined
-}
-
-/**
- * How long a runtime we asked to stop gets before it is killed outright.
- *
- * This used to be fifteen seconds with no escalation, and that number does not fit
- * anywhere: the desktop shell gives a whole start attempt twelve, so a predecessor
- * taking its full grace guaranteed the successor was killed for being slow — while the
- * predecessor was merely being patient with. Five seconds, then SIGKILL, keeps the whole
- * handover inside one start attempt.
- */
-const STOP_RUNTIME_GRACE_MS = 5_000
-const STOP_RUNTIME_KILL_GRACE_MS = 500
-
-async function awaitPidGone(pid: number, graceMs: number): Promise<boolean> {
-  const deadline = Date.now() + graceMs
-  while (Date.now() < deadline) {
-    if (!processIsAlive(pid)) return true
-    await Bun.sleep(50)
-  }
-  return !processIsAlive(pid)
-}
-
-async function stopRuntime(endpoint: RuntimeEndpoint): Promise<void> {
-  if (!(await isRuntimeEndpointLive(endpoint))) return
-  startupDiag(`stopping the incompatible runtime at ${endpoint.baseUrl} (pid ${endpoint.pid})`)
-  try {
-    process.kill(endpoint.pid, 'SIGTERM')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
-    throw error
-  }
-  if (await awaitPidGone(endpoint.pid, STOP_RUNTIME_GRACE_MS)) return
-  startupDiag(`pid ${endpoint.pid} ignored SIGTERM; killing it`)
-  try {
-    process.kill(endpoint.pid, 'SIGKILL')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
-    throw error
-  }
-  if (await awaitPidGone(endpoint.pid, STOP_RUNTIME_KILL_GRACE_MS)) return
-  throw new Error(`Localix API pid ${endpoint.pid} survived SIGKILL.`)
-}
-
 export interface ConnectedServer extends EmbeddedServer {
   /** False when this process attached to an already-running compatible runtime. */
   owned: boolean
@@ -564,25 +471,6 @@ function endpointCanAttach(
     isSameBuild(endpoint) &&
     (!options.attachHost || runtimeBaseUrlMatchesHost(endpoint.baseUrl, options.attachHost))
   )
-}
-
-/**
- * A descriptor bearing OUR pid is this process's own past, never a runtime to attach to or stop.
- *
- * `bun --watch` re-evaluates the entry inside the SAME process. The reloaded module then finds a
- * pid that is alive — us — and a `/health` that still answers for a beat, because the outgoing
- * server has not finished closing. It attached to that endpoint (`owned: false`, `stop()` a no-op),
- * started no server of its own, and moments later the outgoing one was gone: process up, port
- * empty, nothing logged, only a full restart recovering it. That is the reported dev symptom.
- *
- * `stopRuntime` on the same descriptor is the other half — it SIGTERMs us and then waits fifteen
- * seconds for ourselves to die.
- *
- * Asked HERE rather than inside `discoverRuntimeEndpoint`, because that helper also answers "wait
- * until the runtime is up" for callers legitimately waiting on their own process.
- */
-function isOwnDescriptor(endpoint: RuntimeEndpoint | null): boolean {
-  return endpoint?.pid === process.pid
 }
 
 /**
@@ -703,11 +591,18 @@ async function runDesktopRuntime(): Promise<void> {
   }
 }
 
+/** How long `--ensure-daemon` waits for a ready runtime before giving up. */
+const ENSURE_DAEMON_TIMEOUT_MS = 40_000
+/** Minimum gap between two spawn attempts while the first one is still starting. */
+const ENSURE_DAEMON_RESPAWN_MS = 1_000
+/** How often the descriptor is re-read while waiting. */
+const ENSURE_DAEMON_POLL_MS = 100
+
 export async function ensureDaemon(options: { watch?: boolean; host?: string } = {}) {
   const watch = options.watch === true
   const requestedHost = options.host?.trim()
   const host = requestedHost || '127.0.0.1'
-  const deadline = Date.now() + 40_000
+  const deadline = Date.now() + ENSURE_DAEMON_TIMEOUT_MS
   let nextSpawnAt = 0
   const identity = await resolveRuntimeIdentity()
   let preferredPort = endpointPort(await readRuntimeEndpoint(identity.endpointFile)) ?? 0
@@ -727,14 +622,22 @@ export async function ensureDaemon(options: { watch?: boolean; host?: string } =
 
     const now = Date.now()
     if (now >= nextSpawnAt && !(await runtimeOwnershipIsHeld())) {
-      await spawnDetachedDaemon(watch, host, preferredPort)
+      await spawnDetachedDaemon(
+        fileURLToPath(import.meta.url),
+        DAEMON_CHILD_ARG,
+        watch,
+        host,
+        preferredPort,
+      )
       preferredPort = 0
-      nextSpawnAt = now + 1_000
+      nextSpawnAt = now + ENSURE_DAEMON_RESPAWN_MS
     }
-    await Bun.sleep(100)
+    await Bun.sleep(ENSURE_DAEMON_POLL_MS)
   } while (Date.now() < deadline)
 
-  throw new Error('Timed out after 40000ms waiting for the Localix API daemon to become ready.')
+  throw new Error(
+    `Timed out after ${ENSURE_DAEMON_TIMEOUT_MS}ms waiting for the Localix API daemon to become ready.`,
+  )
 }
 
 if (import.meta.main) {

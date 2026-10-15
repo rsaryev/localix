@@ -49,6 +49,8 @@ export class RootErrorBoundary extends Component<Props, State> {
     const { error } = this.state
     if (!error) return this.props.children
 
+    // Inline styles with literal fallbacks on purpose: this screen must render when the crash
+    // took the stylesheet or the token layer down with it, so it cannot depend on either.
     return (
       <div
         style={{

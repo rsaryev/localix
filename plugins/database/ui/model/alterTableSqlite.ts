@@ -1,3 +1,4 @@
+import { stripStatementTerminator } from '../../shared/sql-text'
 import type { DbTableSchema } from '../dbClient'
 import type { AlterColumnDraft, AlterTablePlan } from './alterTable'
 import { changed, qualifiedTable } from './alterTableColumns'
@@ -127,7 +128,7 @@ export function buildSqliteRebuildPlan(
     if (index.primary || index.name.startsWith('sqlite_autoindex_')) continue
     if (index.createScriptOnly) {
       if (!rewritesExistingColumns && index.createScript) {
-        statements.push(`${index.createScript.trim().replace(/;+\s*$/u, '')};`)
+        statements.push(`${stripStatementTerminator(index.createScript)};`)
       } else {
         warnings.push(
           `Index ${index.name} is omitted because its native expression or predicate cannot be safely rewritten after a column rename/drop.`,
@@ -152,7 +153,7 @@ export function buildSqliteRebuildPlan(
         trigger.createScript,
         ...(trigger.postCreateScripts ?? []),
       ]) {
-        const normalized = script.trim().replace(/;+\s*$/u, '')
+        const normalized = stripStatementTerminator(script)
         if (normalized) statements.push(`${normalized};`)
       }
     } else {

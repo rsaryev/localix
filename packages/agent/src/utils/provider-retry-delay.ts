@@ -15,23 +15,17 @@ import { providerResponseOf, RATE_LIMIT_HEADER_NAMES } from './provider-response
  */
 export const MAX_TRUSTED_RETRY_DELAY_MS = 60 * 60_000
 
+const GO_DURATION_UNIT_MS = { ms: 1, s: 1000, m: 60_000, h: 3_600_000 } as const
+
 /** `1s`, `6m0s`, `1h30m` — the Go duration form OpenAI uses for `x-ratelimit-reset-*`. */
 function parseGoDurationMs(raw: string): number | undefined {
-  const parts = raw
-    .trim()
-    .toLowerCase()
-    .match(/^(\d+(?:\.\d+)?(?:ms|s|m|h))+$/)
-  if (!parts) return undefined
+  const text = raw.trim().toLowerCase()
+  if (!/^(\d+(?:\.\d+)?(?:ms|s|m|h))+$/.test(text)) return undefined
   let total = 0
-  for (const [, value, unit] of raw
-    .trim()
-    .toLowerCase()
-    .matchAll(/(\d+(?:\.\d+)?)(ms|s|m|h)/g)) {
-    const n = Number(value)
-    if (!Number.isFinite(n)) return undefined
-    total += n * (unit === 'ms' ? 1 : unit === 's' ? 1000 : unit === 'm' ? 60_000 : 3_600_000)
+  for (const [, value, unit] of text.matchAll(/(\d+(?:\.\d+)?)(ms|s|m|h)/g)) {
+    total += Number(value) * GO_DURATION_UNIT_MS[unit as keyof typeof GO_DURATION_UNIT_MS]
   }
-  return total
+  return Number.isFinite(total) ? total : undefined
 }
 
 /** Digits only, optionally fractional — what a delta-seconds / millisecond header may be.

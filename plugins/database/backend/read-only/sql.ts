@@ -80,9 +80,33 @@ const WRITE_KEYWORDS = [
   'COPY',
   'LOAD',
   'IMPORT',
+  'LOAD_EXTENSION', // SQLite `load_extension(...)` loads native code
 ]
 
-const WRITE_KEYWORD_RE = new RegExp(`\\b(?:${WRITE_KEYWORDS.join('|')})\\b`)
+const WRITE_KEYWORD_RE = new RegExp(`\\b(?:${WRITE_KEYWORDS.join('|')})\\b`, 'g')
+
+/**
+ * Write keywords that are ALSO ordinary function or column names inside a read: `replace(s, a, b)`
+ * exists in every supported engine, and `load`/`copy` are common column names. As writes, each is
+ * only ever a statement STARTER (`REPLACE [INTO] tbl`, `COPY tbl`, `LOAD DATA`, `IMPORT TABLE`) —
+ * none of them is written `KEYWORD(` and none is reached through a `.` qualifier, so those two
+ * spellings are a call and a qualified column. A bare `load` column stays blocked: T-SQL runs
+ * statements without separators, so a bare word is not provably not a starter.
+ */
+const CALLABLE_WRITE_KEYWORDS = new Set(['REPLACE', 'COPY', 'LOAD', 'IMPORT'])
+
+function hidesWrite(upper: string): boolean {
+  for (const match of upper.matchAll(WRITE_KEYWORD_RE)) {
+    const keyword = match[0]
+    if (CALLABLE_WRITE_KEYWORDS.has(keyword)) {
+      const before = upper.slice(0, match.index).trimEnd()
+      const after = upper.slice(match.index + keyword.length).trimStart()
+      if (after.startsWith('(') || before.endsWith('.')) continue
+    }
+    return true
+  }
+  return false
+}
 
 /**
  * The DISTINCT literal grammars across the SQL engines this workbench supports. The
@@ -187,17 +211,21 @@ function isReadOnlySingle(stmt: string): boolean {
   if (!first || !READ_STARTERS.has(first)) return false
   if (first === 'PRAGMA') return isReadOnlyPragma(trimmed)
   // A read starter can still hide a write further along the statement.
-  if (WRITE_KEYWORD_RE.test(upper)) return false
+  if (hidesWrite(upper)) return false
   return true
 }
 
-function everyStatementReads(sql: string, grammar: SqlLiteralGrammar): boolean {
-  const statements = maskSqlNonCode(sql, grammar)
+/** Mask literals/comments once and split into non-empty statements. */
+function maskedStatements(sql: string, grammar: SqlLiteralGrammar): string[] {
+  return maskSqlNonCode(sql, grammar)
     .split(';')
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
-  if (statements.length === 0) return false
-  return statements.every(isReadOnlySingle)
+}
+
+function everyStatementReads(sql: string, grammar: SqlLiteralGrammar): boolean {
+  const statements = maskedStatements(sql, grammar)
+  return statements.length > 0 && statements.every(isReadOnlySingle)
 }
 
 /**
@@ -250,8 +278,6 @@ export function isReadOnlyStatementForDialect(sql: string, dialect: DbDialect): 
  * row cap may stop a query early only when this holds.
  */
 export function isSingleReadStatementForDialect(sql: string, dialect: DbDialect): boolean {
-  const statements = maskSqlNonCode(sql, sqlGrammarForDialect(dialect))
-    .split(';')
-    .filter((statement) => statement.trim().length > 0)
-  return statements.length === 1 && isReadOnlyStatementForDialect(sql, dialect)
+  const statements = maskedStatements(sql, sqlGrammarForDialect(dialect))
+  return statements.length === 1 && isReadOnlySingle(statements[0]!)
 }

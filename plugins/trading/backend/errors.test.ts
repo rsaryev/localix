@@ -133,6 +133,18 @@ describe('toErrorInfo', () => {
     )
   })
 
+  test('a specific typed class wins over wording that merely mentions an account', () => {
+    class OrderNotFound extends Error {}
+    class InsufficientFunds extends Error {}
+    expect(
+      mapTradingError(new OrderNotFound('order 9 for account 0xabc does not exist')).code,
+    ).toBe('order_not_found')
+    expect(
+      mapTradingError(new InsufficientFunds('account 0xabc: permission denied, margin too low'))
+        .code,
+    ).toBe('insufficient_funds')
+  })
+
   test('a genuinely invalid order keeps its own code', () => {
     class InvalidOrder extends Error {}
     expect(mapTradingError(new InvalidOrder('Order must have minimum value of $10')).code).toBe(

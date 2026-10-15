@@ -9,7 +9,7 @@
  * told — keeping that rule in one small file is what makes it checkable.
  */
 
-import type { DbSchemas, DbTableSchema } from '../dbClient'
+import type { DbCatalogColumn, DbSchemas, DbTableSchema } from '../dbClient'
 import { DbApiError } from '../api/databaseApi'
 import { defineRecordValue } from '../../shared/safe-record'
 
@@ -32,6 +32,19 @@ export interface SchemaSnapshot {
   tableErrors: Record<string, string>
   /** Raw driver text per failed object, keyed exactly like {@link tableErrors}. */
   tableErrorDetails: Record<string, string>
+  /**
+   * Column names for every table from ONE catalog read, keyed exactly like {@link tables}. Feeds
+   * autocomplete, column search and diagnostics only — never a structure view, which needs the
+   * full per-table read. Empty when the engine has no catalog read.
+   */
+  columnCatalog: Record<string, ColumnSource>
+}
+
+/** The part of a structure the vocabulary consumers read. */
+export interface ColumnSource {
+  schema?: string
+  name: string
+  columns: readonly Pick<DbCatalogColumn, 'name' | 'dataType' | 'pk'>[]
 }
 
 export interface Entry extends SchemaSnapshot {
@@ -68,6 +81,7 @@ export const EMPTY: SchemaSnapshot = {
   tables: {},
   tableErrors: {},
   tableErrorDetails: {},
+  columnCatalog: {},
 }
 export const entries = new Map<string, Entry>()
 
@@ -82,6 +96,7 @@ export function getEntry(connectionId: string): Entry {
       tables: {},
       tableErrors: {},
       tableErrorDetails: {},
+      columnCatalog: {},
       requested: new Set(),
       tableRevisions: new Map(),
       schemaRevision: 0,
@@ -101,6 +116,7 @@ export function getEntry(connectionId: string): Entry {
         tables: {},
         tableErrors: {},
         tableErrorDetails: {},
+        columnCatalog: {},
       },
     }
     entries.set(connectionId, e)
@@ -118,6 +134,7 @@ export function commit(e: Entry): void {
     tables: e.tables,
     tableErrors: e.tableErrors,
     tableErrorDetails: e.tableErrorDetails,
+    columnCatalog: e.columnCatalog,
   }
   for (const l of e.listeners) l()
 }
@@ -195,6 +212,7 @@ export function resetEntry(e: Entry): void {
   e.tables = {}
   e.tableErrors = {}
   e.tableErrorDetails = {}
+  e.columnCatalog = {}
   e.requested.clear()
   e.tableRevisions.clear()
   e.columnQueue = []

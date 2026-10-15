@@ -105,11 +105,7 @@ pub(crate) fn start(
             unsafe { timer.as_ref().invalidate() };
             return;
         };
-        let labels: Vec<_> = app
-            .state::<crate::workspace_windows::WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
+        let labels: Vec<_> = crate::workspace_windows::workspaces(&app)
             .entries
             .iter()
             .filter(|(label, entry)| {
@@ -133,11 +129,7 @@ pub(crate) fn start(
             *previous.borrow(),
         );
         *previous.borrow_mut() = next;
-        let ready = app
-            .state::<crate::workspace_windows::WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
+        let ready = crate::workspace_windows::workspaces(&app)
             .entries
             .get(&destination)
             .is_some_and(|entry| entry.ready && entry.transfer_presented);

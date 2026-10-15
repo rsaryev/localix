@@ -9,6 +9,7 @@ import type { ChartTypeToken, ScaleModeToken } from './chart-command'
 import { CHART_TYPES, SCALE_MODES } from './chart-command'
 import { describeChartDrawing, parseChartDrawingSpec, type ChartDrawing } from './chart-drawing'
 import { indicatorLabel, parseIndicatorId } from './indicator-spec'
+import { isoFromUnixSeconds, toolNumber } from './tool-number'
 
 export interface ChartSnapshotResult {
   /** False = the tab is not on screen; the rest is last-known/preference state, not live. */
@@ -114,13 +115,7 @@ export function parseChartSnapshotResult(data: unknown): ChartSnapshotResult | n
   return p as unknown as ChartSnapshotResult
 }
 
-const iso = (unixSeconds: number) => new Date(unixSeconds * 1000).toISOString()
-
 /** Four significant digits, without exponent noise — RSI's 63.2 and a BTC price both read. */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /**
  * One indicator's line: its label, its canonical id (the token to command it with), its computed
  * value(s) when the chart has any, and whether it is hidden. A single-plot indicator reads
@@ -140,8 +135,8 @@ function describeIndicator(
       ? // A mounted chart with no value = the indicator has no full lookback window yet.
         ''
       : plots.length === 1
-        ? ` = ${num(plots[0]![1])}`
-        : `: ${plots.map(([key, v]) => `${key}=${num(v)}`).join(', ')}`
+        ? ` = ${toolNumber(plots[0]![1])}`
+        : `: ${plots.map(([key, v]) => `${key}=${toolNumber(v)}`).join(', ')}`
   return `  - ${label} (${id})${reading}${hidden ? ' — hidden' : ''}`
 }
 
@@ -173,10 +168,14 @@ export function describeChartSnapshot(snap: ChartSnapshotResult, venueName: stri
     lines.push(`- drawings: ${snap.drawings.map((d) => describeChartDrawing(d)).join('; ')}`)
   }
   if (snap.visibleRange) {
-    lines.push(`- visible range: ${iso(snap.visibleRange.from)} → ${iso(snap.visibleRange.to)}`)
+    lines.push(
+      `- visible range: ${isoFromUnixSeconds(snap.visibleRange.from)} → ${isoFromUnixSeconds(snap.visibleRange.to)}`,
+    )
   }
   if (snap.lastCandle) {
-    lines.push(`- last candle: ${iso(snap.lastCandle.time)} close ${snap.lastCandle.close}`)
+    lines.push(
+      `- last candle: ${isoFromUnixSeconds(snap.lastCandle.time)} close ${snap.lastCandle.close}`,
+    )
   }
   return lines.join('\n')
 }

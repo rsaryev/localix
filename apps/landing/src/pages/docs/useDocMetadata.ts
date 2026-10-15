@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import type { DocPage } from '@/generated/docs'
+import { SITE_ORIGIN } from '@/lib/site'
 
 const HOME_TITLE = 'Localix — One workspace for you and a team of agents'
 const HOME_DESCRIPTION =
   'Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.'
-const HOME_URL = 'https://localix.ai/'
+const HOME_URL = `${SITE_ORIGIN}/`
 const HOME_STRUCTURED_DATA = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -65,7 +66,7 @@ export function useDocMetadata(active: DocPage | undefined) {
     if (!active) return
     const tags = metaTargets()
     const title = `${active.title} · Localix Docs`
-    const url = `https://localix.ai/docs/${encodeURIComponent(active.slug)}`
+    const url = `${SITE_ORIGIN}/docs/${encodeURIComponent(active.slug)}`
 
     apply(tags, {
       title,

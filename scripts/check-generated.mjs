@@ -17,21 +17,11 @@
  * So the check is not "did you run the generator" but "does the generator still produce what is
  * committed": run it, then look for a dirty tree.
  */
-import { spawnSync } from 'node:child_process'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { checkRuntimeContract } from './runtime-contract.mjs'
-
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+import { run } from './lib/run.mjs'
 
 /** Committed files a generator owns. Anything dirty here after a run is drift. */
 const GENERATED_PATHS = ['apps/landing/public/sitemap.xml']
-
-function run(command, args, options = {}) {
-  const result = spawnSync(command, args, { cwd: root, encoding: 'utf8', ...options })
-  if (result.error) throw result.error
-  return result
-}
 
 const generated = run('bun', ['run', '--cwd', 'apps/landing', 'docs:gen'], { stdio: 'inherit' })
 if (generated.status !== 0) {

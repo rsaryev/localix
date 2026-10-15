@@ -75,7 +75,7 @@ export function createResumeRegistry(deps: ResumeRegistryDeps) {
         source: 'resume',
         // One wake per point while it waits in the queue: a double click is the same request.
         // No receipt — after that wake ran, a later Continue (after another stop) is a new one.
-        deliveryKey: `resume:${key}`,
+        deliveryKey: `resume-point:${key}`,
       })
       return { wake: outcome.status, points: await list(owner) }
     },

@@ -647,29 +647,34 @@ describe('the indicator catalog', () => {
 
 describe('the chart wires the indicator engine from this catalog (source lint)', () => {
   const canvas = readCode(new URL('../ui/ChartCanvas.tsx', import.meta.url))
+  const indicatorHooks = readCode(new URL('../ui/useChartIndicators.ts', import.meta.url))
+  const dataFeed = readCode(new URL('../ui/useChartDataFeed.ts', import.meta.url))
   const seriesAdapter = readCode(new URL('../ui/chartIndicatorSeries.ts', import.meta.url))
 
   test('the selection persists and toggles through the v2 prefs, keyed per tab', () => {
-    // The save carries the tab key (controlKeyRef) — a keyless write would silently
+    // The save carries the tab key (the runtime's controlKey) — a keyless write would silently
     // demote every chart back to one global indicator set.
-    mustFind(canvas, /saveIndicatorPrefsV2\(\s*\{/)
-    mustFind(canvas, /controlKeyRef\.current,\s*\)\s*\n\s*\}, \[indicatorItems, scaleMode\]\)/)
-    mustFind(canvas, /loadIndicatorPrefsV2\(controlKey\)/)
+    mustFind(indicatorHooks, /saveIndicatorPrefsV2\(\s*\{/)
+    mustFind(
+      indicatorHooks,
+      /rt\.props\.current\.controlKey,\s*\)\s*\n\s*\}, \[rt, items, scaleMode\]\)/,
+    )
+    mustFind(indicatorHooks, /loadIndicatorPrefsV2\(controlKey\)/)
     mustFind(canvas, /toggleIndicatorV2\(prev, id\)/)
   })
 
   test('the series are (re)built from the RESOLVED active specs after the old ones are torn down', () => {
     const cleared = mustFind(seriesAdapter, /seriesById\.clear\(\)/)
     expect(mustFind(seriesAdapter, /for \(const spec of specs\)/)).toBeGreaterThan(cleared)
-    mustFind(canvas, /rebuildIndicatorSeries\(\{\s*chart,\s*specs: activeSpecs,/)
+    mustFind(indicatorHooks, /rebuildIndicatorSeries\(\{\s*chart,\s*specs: activeSpecs,/)
     // The resolution itself must be the parameterized one (any `ema:200`, not just the presets).
-    mustFind(canvas, /resolveIndicators\(activeIndicators\)/)
+    mustFind(indicatorHooks, /resolveIndicators\(active\)/)
   })
 
   /**
    * THE LOOP THIS LINT USED TO MISS.
    *
-   * `for (const spec of INDICATORS)` appears TWICE in ChartCanvas — once to REBUILD the series when
+   * `for (const spec of INDICATORS)` appeared TWICE in ChartCanvas — once to REBUILD the series when
    * the selection changes, once to FEED them on every data push. A whole-file `toContain` for that
    * token is therefore satisfied by the rebuild loop, and says nothing about the feed loop. Verified:
    * commenting the feed loop out left this file at 15 pass / 0 fail, with the chart no longer
@@ -682,11 +687,11 @@ describe('the chart wires the indicator engine from this catalog (source lint)',
    */
   test('every enabled indicator is FED on a data push, and only while some are enabled', () => {
     const feed = namedBody(
-      canvas,
-      /if \(change\.kind !== 'none' && activeSpecsRef\.current\.length > 0\)/,
+      dataFeed,
+      /if \(change\.kind !== 'none' && rt\.activeSpecs\.current\.length > 0\)/,
       'the gated per-tick indicator feed',
     )
-    mustFind(feed, /for \(const spec of activeSpecsRef\.current\)/)
+    mustFind(feed, /for \(const spec of rt\.activeSpecs\.current\)/)
     mustFind(feed, /feedIndicator\(spec, owned, candles,/)
   })
 })

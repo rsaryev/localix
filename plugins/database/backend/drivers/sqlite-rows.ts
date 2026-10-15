@@ -42,18 +42,19 @@ export function readSqliteRows(
   /** The statement's real names, in order, from a wrapped probe — `null` when it cannot be wrapped. */
   probeNames: () => string[] | null,
 ): { rows: unknown[][]; truncated: boolean; columns: string[] } {
+  const reads = isReadOnlyStatementForDialect(sql, 'sqlite')
   const readAll = () => {
     const capped = capRows(stmt.values(...(params as never[])) as unknown[][])
     const width = stmt.declaredTypes.length
     if (width === columnNames.length) return { ...capped, columns: columnNames }
-    const real = isReadOnlyStatementForDialect(sql, 'sqlite') ? probeNames() : null
+    const real = reads ? probeNames() : null
     const columns =
       real?.length === width
         ? unsuffixRepeatedNames(real)
         : Array.from({ length: width }, (_, i) => `column ${i + 1}`)
     return { ...capped, columns }
   }
-  if (!isReadOnlyStatementForDialect(sql, 'sqlite')) return readAll()
+  if (!reads) return readAll()
   const collector = createRowCollector()
   let checked = false
   for (const record of stmt.iterate(...(params as never[])) as Iterable<Record<string, unknown>>) {

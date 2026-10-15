@@ -57,11 +57,11 @@ memory scope.
 | `ui/`                     | The board, the turn line and the result card.                 |
 | `skills/`                 | How the agent plays and talks about a game.                   |
 
-`backend/store.ts`, `backend/store-feed.ts`, `shared/store-feed.ts`, `ui/usePolledSnapshot.ts`,
-`ui/useStoreSnapshot.ts`, and `ui/useNow.ts` delegate to the shared reference frame. A store write
-announces a change over the realtime feed, and a visible board re-reads its snapshot. A healthy feed
-has no periodic read; when unavailable, the board polls every 800 ms during agent activity or 4
-seconds while idle. Showing the pane or reconnecting reconciles its state.
+State is kept with `openJsonStore` and announced by `createJsonStoreFeed`, both from
+`@localixai/plugin-sdk/backend`; `ui/useStoreSnapshot.ts` re-exports the SDK snapshot hook. A store
+write announces a change over the realtime feed, and a visible board re-reads its snapshot. A
+healthy feed has no periodic read; when unavailable, the board polls every 800 ms during agent
+activity or 4 seconds while idle. Showing the pane or reconnecting reconciles its state.
 
 See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
 

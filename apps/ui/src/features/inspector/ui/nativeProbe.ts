@@ -1,4 +1,5 @@
 import { API_BASE_URL, apiFetch } from '@/shared/api/client'
+import { pollAttempts } from '@/shared/lib/pollAttempts'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import type { PreviewEntry } from '../model/preview'
 import { nativeProbeUrl } from '../model/nativeProbeUrl'
@@ -80,7 +81,7 @@ export async function ensureNativeProbe(tab: PreviewEntry): Promise<void> {
   await invoke('browser_open', { tabId, url: tab.url })
   const script = await probeSource()
   let lastState = 'No response from the page'
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  const initialized = await pollAttempts(60, 100, async (attempt) => {
     const loading = await invoke('browser_navigation_state', { tabId }).then(
       (state) => (state as { loading?: boolean }).loading === true,
       () => false,
@@ -103,7 +104,7 @@ export async function ensureNativeProbe(tab: PreviewEntry): Promise<void> {
         throw new Error(`Browser WebView returned no JavaScript value (${lastState})`)
     }
     const ready = documentReady(loading, state)
-    if (ready && state?.bridge) return
+    if (ready && state?.bridge) return true
     if (ready) {
       const injected = decodeEvalResult(
         await invoke('browser_eval', {
@@ -112,10 +113,11 @@ export async function ensureNativeProbe(tab: PreviewEntry): Promise<void> {
         }),
       ) as { bridge?: boolean; error?: string } | null
       if (injected?.error) throw new Error(`Browser bridge script failed: ${injected.error}`)
-      if (injected?.bridge) return
+      if (injected?.bridge) return true
       lastState = JSON.stringify(injected)
     }
-    await new Promise((resolve) => setTimeout(resolve, 100))
-  }
+    return false
+  })
+  if (initialized) return
   throw new Error(`Browser page did not initialize its agent bridge (${lastState})`)
 }

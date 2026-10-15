@@ -3,6 +3,7 @@
  * Introspection via PRAGMA + `sqlite_schema`. Row-returning statements come back as
  * `values()` (row-major arrays) so large result sets stay compact on the wire.
  */
+import { makeManualTransaction } from './manual-transaction'
 import { Database, type Statement } from 'bun:sqlite'
 import { driverFlags } from './port'
 import { readSqliteRows } from './sqlite-rows'
@@ -149,37 +150,16 @@ export function createSqliteDriver(options: SqliteDriverOptions): DbDriver {
       release()
       throw err
     }
-    let done = false
-    return {
+    return makeManualTransaction({
       query: queryUnlocked,
-      async commit() {
-        if (done) return
-        done = true
-        try {
-          db.exec('COMMIT')
-        } catch (err) {
-          try {
-            db.exec('ROLLBACK')
-          } catch {
-            /* rollback best-effort */
-          }
-          throw err
-        } finally {
-          release()
-        }
+      commit: () => {
+        db.exec('COMMIT')
       },
-      async rollback() {
-        if (done) return
-        done = true
-        try {
-          db.exec('ROLLBACK')
-        } catch {
-          /* rollback best-effort */
-        } finally {
-          release()
-        }
+      rollback: () => {
+        db.exec('ROLLBACK')
       },
-    }
+      release,
+    })
   }
 
   const { schemasUnlocked, tableSchemaUnlocked } = createSqliteIntrospection(db)

@@ -420,6 +420,13 @@ export function createDatabaseService(deps: {
       return { schemas: await runMetadata(live, () => live.driver.schemas()) }
     },
 
+    async columnCatalog(userId, id) {
+      const live = registry.liveOf(userId, id)
+      if (!live) return null
+      const read = live.driver.columnCatalog?.bind(live.driver)
+      return { catalog: read ? await runMetadata(live, read) : null }
+    },
+
     async tableSchema(userId, id, schema, table) {
       const live = registry.liveOf(userId, id)
       if (!live) return null

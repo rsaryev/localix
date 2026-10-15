@@ -20,17 +20,12 @@
  * resets whenever the ref disappears from the prompt).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { backendClient } from '@/shared/api/client'
-import type { ContextRefExpansion } from '@/shared/api/contracts'
+import type { ContextRefExpansion, MessageContextBinding } from '@/shared/api/contracts'
 import {
-  classifyExpansionBudget,
   parseContextRefs,
-  toWireRef,
   totalExpansionChars,
-  type ExpansionBudget,
   type ParsedContextRef,
 } from '@localixai/api/context-refs'
-import type { MessageContextBinding } from '@/shared/api/contracts'
 import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
 import {
   droppedRefCount,
@@ -41,104 +36,26 @@ import {
   refsFromContextBindingDrafts,
   resolveSendRefs,
 } from './sendRefs'
+import { inlineExpansion, summarizeRefBudget } from './contextRefBudget'
+import { useRefExpansionCache, type RefExpansionScope } from './useRefExpansionCache'
+import {
+  NO_AUTOS,
+  dismissAllAutoRefs,
+  type AutoRefInput,
+  type ContextRefChip,
+  type UseContextRefsResult,
+} from './contextRefTypes'
 
-/** Local chip expansion for a pinned (inline-content) ref — its content IS the ref,
- *  so the size is known without a server round-trip. */
-function inlineExpansion(ref: ParsedContextRef): ContextRefExpansion {
-  const content = ref.content ?? ''
-  return {
-    raw: ref.raw,
-    ok: true,
-    content,
-    chars: content.length,
-    ...(ref.language ? { language: ref.language } : {}),
-  }
-}
+export {
+  dismissAllAutoRefs,
+  type AutoRefInput,
+  type ContextRefChip,
+  type UseContextRefsResult,
+} from './contextRefTypes'
 
 const FETCH_DEBOUNCE_MS = 400
 
-export interface ContextRefChip {
-  ref: ParsedContextRef
-  expansion: ContextRefExpansion | null
-  /** True while the expansion is being fetched. */
-  pending: boolean
-  /** True for a structured (pinned, token-less) ref — the chip row renders ONLY
-   *  these; a typed text token's representation is its inline highlight pill. */
-  pinned: boolean
-  /** True for an AMBIENT auto-link chip — derived from an open editor tab, re-arms
-   *  after send; × dismisses auto-linking for that tab. */
-  auto?: boolean
-}
-
-/** One ambient (tab-derived) auto-link: the ref + how to dismiss its source tab. */
-export interface AutoRefInput {
-  ref: ParsedContextRef
-  /** Dismiss auto-linking for the source tab (the chip's ×). */
-  dismiss: () => void
-}
-
-const NO_AUTOS: readonly AutoRefInput[] = []
-
-/** Dismiss raw ambient sources one by one; duplicate ref keys can belong to
- * different tabs, so this must never deduplicate before invoking callbacks. */
-export function dismissAllAutoRefs(autos: readonly AutoRefInput[]): void {
-  for (const auto of autos) auto.dismiss()
-}
-
-export interface UseContextRefsResult {
-  /** Included (non-removed) refs with their expansion state — drives the chip row. */
-  chips: ContextRefChip[]
-  /** Total expanded chars across included refs (known so far). */
-  totalChars: number
-  budget: ExpansionBudget
-  /** Human message for the warn/block chip. */
-  budgetMessage: string | null
-  /** How many refs the 20-per-message wire cap will drop at send (0 = none). */
-  droppedCount: number
-  /** The pinned (token-less, drag-added) refs — lets the composer treat a
-   *  snippet-only draft as sendable and derive a fallback message text. */
-  pinnedRefs: ParsedContextRef[]
-  /** The chips the user linked, as references grounding the composer's Tab suggestion. */
-  completionRefs: ReturnType<typeof inlineCompletionReferences>
-  /** Exclude a text ref from expansion / remove a pinned ref (chip × button). */
-  removeRef: (key: string) => void
-  /**
-   * Remove every context contribution from this draft in one action. Prompt
-   * text stays intact; parsed @-tokens are excluded from the send, structured
-   * pins are dropped, and every ambient source tab is dismissed.
-   */
-  clearAllRefs: () => void
-  /**
-   * Add a STRUCTURED (token-less) ref — e.g. a `snippet` dragged from the SQL Output
-   * log. It carries its own inline content, so it rides the send without a prompt
-   * token. Re-adding the same key REPLACES it (refreshes the captured content).
-   */
-  addPinnedRef: (ref: ParsedContextRef) => void
-  /** Drop all pinned refs, or only the keys owned by one submitted draft. */
-  clearPinnedRefs: (keys?: readonly string[]) => void
-  /**
-   * Budget preflight for a send: fetches sizes for any not-yet-expanded TEXT refs
-   * (dry run — the server re-expands fresh at send time), unions the pinned
-   * (inline-content) refs, and returns the wire refs to attach. Returns null when
-   * the budget blocks the send; an empty array when there are no refs at all.
-   */
-  refsForSend: (text: string) => Promise<MessageContextBinding[] | null>
-  /** Budget and materialize an explicit plugin action's context without staging chips/text. */
-  bindingsForSend: (
-    bindings: readonly MessageContextBindingDraft[],
-  ) => Promise<MessageContextBinding[] | null>
-}
-
-interface Scope {
-  /** For a composer with no session yet — the project whose directory refs resolve in. */
-  projectId: string | null
-  /**
-   * The sending session. The SERVER resolves the directory its refs expand in (ownership
-   * check, then the session-cwd rule) and scopes `@call:` lookups to its transcript. The
-   * client never sends a root id: computing the root here could disagree with the runtime's.
-   */
-  sessionId: string | null
-}
+type Scope = RefExpansionScope
 
 export function useContextRefs(
   prompt: string,
@@ -165,19 +82,8 @@ export function useContextRefs(
   // content, and are sized locally (no server fetch). Cleared after send by the owner.
   const [pinnedRefs, setPinnedRefs] = useState<ParsedContextRef[]>(() => [])
 
-  const scopeKey = `${scope.projectId ?? ''}|${scope.sessionId ?? ''}`
-  const hasScope = Boolean(scope.sessionId || scope.projectId)
-
-  // Expansion cache + in-flight set held in state so render reads them without
-  // touching refs. Keys are scope-namespaced (`scopeKey\0refKey`) so a working-dir
-  // change naturally invalidates lookups — no reset effect, stale entries stay inert.
-  const [cache, setCache] = useState<Map<string, ContextRefExpansion>>(() => new Map())
-  const [pendingKeys, setPendingKeys] = useState<Set<string>>(() => new Set())
-  const scoped = useCallback((refKey: string) => `${scopeKey}\x00${refKey}`, [scopeKey])
-  const expansionFor = useCallback(
-    (refKey: string) => cache.get(`${scopeKey}\x00${refKey}`) ?? null,
-    [cache, scopeKey],
-  )
+  const { cache, pendingKeys, scoped, expansionFor, fetchRefs, hasScope } =
+    useRefExpansionCache(scope)
 
   // Drop exclusions for refs that left the prompt — adjusting state during render
   // (the sanctioned alternative to a setState-in-effect; runs only when `refs` change).
@@ -234,76 +140,6 @@ export function useContextRefs(
     [autoFetchable, pinnedFetchable],
   )
 
-  // Fetch + cache the given refs; resolves with the freshly-fetched entries
-  // (scope-namespaced keys) so callers can read results without a stale closure.
-  const fetchRefs = useCallback(
-    async (toFetch: ParsedContextRef[]): Promise<Map<string, ContextRefExpansion>> => {
-      const fetched = new Map<string, ContextRefExpansion>()
-      if (toFetch.length === 0 || !hasScope) return fetched
-      const keys = toFetch.map((r) => scoped(r.key))
-      setPendingKeys((prev) => {
-        const next = new Set(prev)
-        for (const k of keys) next.add(k)
-        return next
-      })
-      try {
-        const response = await backendClient.expandContextRefs({
-          projectId: scope.projectId ?? undefined,
-          sessionId: scope.sessionId ?? undefined,
-          // Use the shared wire mapper (same as the send path) so EVERY registry
-          // field rides along — a hand-built subset silently drops new fields like
-          // `uri`, which made every @resource: chip preview as ok:false / FAILED.
-          refs: toFetch.map(toWireRef),
-          // Link-time preflight: a CHEAP size estimate only (chip label + budget
-          // gate). The one authoritative, full, fresh expansion happens at send.
-          sizeOnly: true,
-        })
-        const byRaw = new Map(response.expansions.map((e) => [e.raw, e]))
-        for (const ref of toFetch) {
-          fetched.set(
-            scoped(ref.key),
-            byRaw.get(ref.raw) ?? {
-              raw: ref.raw,
-              ok: false,
-              chars: 0,
-              error: 'Reference preview returned no result',
-            },
-          )
-        }
-      } catch (error) {
-        // A failed preflight is still a terminal preview result for this
-        // scope+ref. Leaving it uncached makes the effect below retry every
-        // FETCH_DEBOUNCE_MS forever (notably on a deterministic 400), flooding
-        // the local API and keeping the startup UI in a render/request loop.
-        // Send-time expansion remains authoritative and retries independently.
-        const message = error instanceof Error ? error.message : 'Reference preview failed'
-        for (const ref of toFetch) {
-          fetched.set(scoped(ref.key), {
-            raw: ref.raw,
-            ok: false,
-            chars: 0,
-            error: message,
-          })
-        }
-      } finally {
-        if (fetched.size > 0) {
-          setCache((prev) => {
-            const next = new Map(prev)
-            for (const [k, v] of fetched) next.set(k, v)
-            return next
-          })
-        }
-        setPendingKeys((prev) => {
-          const next = new Set(prev)
-          for (const k of keys) next.delete(k)
-          return next
-        })
-      }
-      return fetched
-    },
-    [hasScope, scope.projectId, scope.sessionId, scoped],
-  )
-
   // Debounced pre-fetch of uncached server-sized refs — text refs AND pinned
   // non-inline refs (sizes feed the budget gate + chips). Only inline-content
   // pins (snippets) never fetch.
@@ -358,19 +194,12 @@ export function useContextRefs(
   const ambientChars = totalExpansionChars(autoFetchable, cache, scoped) + inlineRefChars(autoRefs)
   const totalChars = manualChars + ambientChars
   const hasAnyRef = textIncluded.length > 0 || pinnedRefs.length > 0 || autoRefs.length > 0
-  const manualBudget = hasAnyRef ? classifyExpansionBudget(manualChars, contextTokens) : 'ok'
-  const combinedBudget = hasAnyRef ? classifyExpansionBudget(totalChars, contextTokens) : 'ok'
-  // An ambient overflow becomes a warning because send-time admission sheds those
-  // refs. Only deliberate refs may hard-block the send button.
-  const budget = manualBudget === 'block' ? 'block' : combinedBudget === 'ok' ? 'ok' : 'warn'
-  const budgetMessage =
-    manualBudget === 'block'
-      ? `Manual references expand to ~${Math.round(manualChars / 1000)}k chars — over half the model's context window. Remove some references or narrow line ranges.`
-      : combinedBudget === 'block'
-        ? `References expand to ~${Math.round(totalChars / 1000)}k chars — oversized ambient tabs will be omitted automatically.`
-        : combinedBudget === 'warn'
-          ? `References expand to ~${Math.round(totalChars / 1000)}k chars (>25% of the context window).`
-          : null
+  const { budget, budgetMessage } = summarizeRefBudget({
+    manualChars,
+    totalChars,
+    hasAnyRef,
+    contextTokens,
+  })
 
   const removeRef = useCallback(
     (key: string) => {

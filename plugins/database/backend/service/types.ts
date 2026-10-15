@@ -6,6 +6,7 @@ import type {
   DbConnectionInfo,
   QueryResponse,
   BrowseResponse,
+  ColumnCatalogResponse,
   SchemasResponse,
   TableSchemaResponse,
   ValidateResponse,
@@ -93,6 +94,7 @@ export interface DatabaseService {
    *  and dropped (so it reads as disconnected). Returns false if not live or unhealthy. */
   ping(userId: string, id: string): Promise<boolean>
   schemas(userId: string, id: string): Promise<SchemasResponse | null>
+  columnCatalog(userId: string, id: string): Promise<ColumnCatalogResponse | null>
   tableSchema(
     userId: string,
     id: string,

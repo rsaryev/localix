@@ -360,15 +360,7 @@ export function createContextManager(
       await Promise.all(
         providers.map(async (entry) => {
           const result = await providerCall(
-            (providerSignal) =>
-              (
-                entry.provider as {
-                  provide: (
-                    req: AutomaticContextRequest,
-                    s: AbortSignal,
-                  ) => Promise<ContextContribution[]>
-                }
-              ).provide(request, providerSignal),
+            (providerSignal) => entry.provider.provide(request, providerSignal),
             entry.timeoutMs,
             signal,
             request.deadlineAtMs,
@@ -415,6 +407,18 @@ export function createContextManager(
       const collected: ContextContribution[] = []
       const providerDropped: ContextPackResult['dropped'] = []
       const referenceOutcomes: ExplicitReferenceOutcome[] = []
+      const resolvers = registry.resolvers(request.destination)
+      /** A reference that never reached a provider: nothing collected, nothing dropped. */
+      const skipped = (
+        referenceId: string,
+        status: ExplicitReferenceOutcome['status'],
+        providerOutcome?: ContextCollectionResult['providerOutcomes'][number],
+      ) => ({
+        contributions: [],
+        dropped: [],
+        ...(providerOutcome ? { providerOutcome } : {}),
+        referenceOutcome: { referenceId, status, contributionIds: [] },
+      })
       const attempts = await mapLimit(
         [...references],
         EXPLICIT_RESOLVE_CONCURRENCY,
@@ -429,61 +433,24 @@ export function createContextManager(
           const deadlineExpired =
             request.deadlineAtMs !== undefined && Date.now() >= request.deadlineAtMs
           if (signal.aborted || deadlineExpired) {
-            return {
-              contributions: [],
-              dropped: [],
-              referenceOutcome: {
-                referenceId: reference.id,
-                status: deadlineExpired ? 'deadline_exceeded' : 'aborted',
-                contributionIds: [],
-              },
-            }
+            return skipped(reference.id, deadlineExpired ? 'deadline_exceeded' : 'aborted')
           }
           if (!referenceIsInScope(reference, request)) {
-            return {
-              contributions: [],
-              dropped: [],
-              providerOutcome: {
-                providerId: `reference:${reference.id}`,
-                status: 'reference_out_of_scope',
-                contributionCount: 0,
-              },
-              referenceOutcome: {
-                referenceId: reference.id,
-                status: 'out_of_scope',
-                contributionIds: [],
-              },
-            }
+            return skipped(reference.id, 'out_of_scope', {
+              providerId: `reference:${reference.id}`,
+              status: 'reference_out_of_scope',
+              contributionCount: 0,
+            })
           }
-          const entry = registry.resolvers(request.destination).find((candidate) =>
-            (
-              candidate.provider as {
-                supports: (ref: ContextReference, destination: ContextDestination) => boolean
-              }
-            ).supports(reference, request.destination),
+          const entry = resolvers.find((candidate) =>
+            candidate.provider.supports(reference, request.destination),
           )
           if (!entry) {
-            return {
-              contributions: [],
-              dropped: [],
-              providerOutcome: {
-                providerId: `reference:${reference.id}`,
-                status: 'resolver_not_found',
-                contributionCount: 0,
-              },
-              referenceOutcome: {
-                referenceId: reference.id,
-                status: 'unsupported',
-                contributionIds: [],
-              },
-            }
-          }
-          const resolver = entry.provider as {
-            resolve: (
-              ref: ContextReference,
-              ctx: ResolveContext,
-              s: AbortSignal,
-            ) => Promise<ContextContribution[]>
+            return skipped(reference.id, 'unsupported', {
+              providerId: `reference:${reference.id}`,
+              status: 'resolver_not_found',
+              contributionCount: 0,
+            })
           }
           // ONE read per reference. This deliberately does NOT pre-size the reference via
           // `estimate` first: a resource-backed resolver has no cheap way to size a
@@ -498,7 +465,7 @@ export function createContextManager(
           // declared budget against real output rather than a provider's self-reported
           // estimate is also the stricter of the two.
           const result = await providerCall(
-            (providerSignal) => resolver.resolve(reference, request, providerSignal),
+            (providerSignal) => entry.provider.resolve(reference, request, providerSignal),
             entry.timeoutMs,
             signal,
             request.deadlineAtMs,
@@ -532,20 +499,11 @@ export function createContextManager(
               },
             }
           }
-          return {
-            contributions: [],
-            dropped: [],
-            providerOutcome: {
-              providerId: entry.provider.id,
-              status: result.status,
-              contributionCount: 0,
-            },
-            referenceOutcome: {
-              referenceId: reference.id,
-              status: result.status,
-              contributionIds: [],
-            },
-          }
+          return skipped(reference.id, result.status, {
+            providerId: entry.provider.id,
+            status: result.status,
+            contributionCount: 0,
+          })
         },
       )
       // `mapLimit` preserves reference order, so capture provenance and diagnostics

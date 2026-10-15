@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { createTypeaheadBuffer } from '../lib/typeahead'
 import { Popover, PopoverAnchor, PopoverContent } from './popover'
 import { MENU_CONTENT, MENU_DANGER_ITEM, MENU_ITEM, MENU_SEPARATOR } from './popover-surface'
 import type { MenuItemTone } from './popover-surface'
@@ -61,16 +62,8 @@ function CoordinateMenu({
   className?: string
   children: React.ReactNode
 }) {
-  const typeahead = React.useRef('')
-  const typeaheadReset = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [typeahead] = React.useState(() => createTypeaheadBuffer({ timeoutMs: 500 }))
   const contentRef = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(
-    () => () => {
-      if (typeaheadReset.current) clearTimeout(typeaheadReset.current)
-    },
-    [],
-  )
 
   const close = React.useCallback(() => onClose(), [onClose])
   const contextValue = React.useMemo(() => ({ close }), [close])
@@ -127,15 +120,15 @@ function CoordinateMenu({
             ) {
               return
             }
-            typeahead.current += event.key.toLocaleLowerCase()
-            if (typeaheadReset.current) clearTimeout(typeaheadReset.current)
-            typeaheadReset.current = setTimeout(() => {
-              typeahead.current = ''
-            }, 500)
             const items = enabledItems(event.currentTarget)
-            const match = items.find((item) =>
-              item.textContent?.trim().toLocaleLowerCase().startsWith(typeahead.current),
-            )
+            const match =
+              items[
+                typeahead.handleChar(
+                  event.key,
+                  items.map((item) => item.textContent?.trim() ?? ''),
+                  items.indexOf(document.activeElement as HTMLButtonElement),
+                )
+              ]
             if (match) {
               event.preventDefault()
               match.focus({ preventScroll: true })

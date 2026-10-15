@@ -14,6 +14,11 @@ use crate::deeplink::is_external_url;
 use crate::log::logln;
 use crate::prefs::save_theme;
 
+/// The drag pasteboard is read while a drag hovers the window, so a slow main thread answers with
+/// no paths rather than delaying the drop UI.
+#[cfg(target_os = "macos")]
+const PASTEBOARD_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
+
 /// Return to the application after a user-initiated provider sign-in completes.
 #[tauri::command]
 pub(crate) fn focus_app(app: AppHandle) {
@@ -432,18 +437,9 @@ pub(crate) struct DraggedPath {
 pub(crate) async fn dragged_paths(app: AppHandle) -> Vec<DraggedPath> {
     #[cfg(target_os = "macos")]
     {
-        let (tx, rx) = std::sync::mpsc::channel();
-        if app
-            .run_on_main_thread(move || {
-                let _ = tx.send(read_drag_pasteboard_paths());
-            })
-            .is_ok()
-        {
-            if let Ok(paths) = rx.recv_timeout(std::time::Duration::from_millis(500)) {
-                return paths;
-            }
-        }
-        Vec::new()
+        let _ = app;
+        crate::round_trip::run_on_main_sync(PASTEBOARD_READ_TIMEOUT, read_drag_pasteboard_paths)
+            .unwrap_or_default()
     }
     #[cfg(not(target_os = "macos"))]
     {

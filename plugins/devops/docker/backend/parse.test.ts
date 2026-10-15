@@ -279,6 +279,7 @@ describe('parseImages', () => {
       repository: 'postgres',
       tag: '16',
       size: '142MB',
+      sizeBytes: 142_000_000,
     })
   })
 })

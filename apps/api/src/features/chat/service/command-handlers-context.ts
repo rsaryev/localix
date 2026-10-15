@@ -23,7 +23,7 @@ import type { ToolSurface } from '@localixai/agent/agents'
 import type { PluginCatalog } from '../../plugins/catalog'
 import type { SkillOverrides } from '../../agent-core/skill-overrides'
 import type { ToolRequirement } from '../../agent-core/required-tools'
-import type { StoredSystemNotice } from '../../../db'
+import type { StoredCommandOutput, StoredSystemNotice } from '../../../db'
 import type { ExistingMessages, RunAgentOptions } from './run-agent'
 import type { SpawnForkSkillFn } from './fork-skill'
 import type { ConversationMembershipChange } from '../runtime/run/conversation-membership'
@@ -67,6 +67,8 @@ export interface CommandHandlerContext {
     userPrompt: string,
     replyText: string,
     timestamp: string,
+    /** The reply's tone when the handler knows it; otherwise read from the text. */
+    tone?: StoredCommandOutput['tone'],
   ) => Promise<MessageMutationResponse>
   insertSystemNotice: (
     userId: string,

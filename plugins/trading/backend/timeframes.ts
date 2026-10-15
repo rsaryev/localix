@@ -6,6 +6,12 @@
  * alone, and the reason nothing here lower-cases a timeframe. A month is approximated at 30 days:
  * this figure only positions a `since` cursor, and the venue answers with the bars it actually has.
  */
+/** The timeframe every read and chart opens on when nothing else is asked for. */
+export const DEFAULT_TIMEFRAME = '1h'
+
+/** The Technicals page's timeframe strip — the same rungs for the human page and the agent line. */
+export const TECHNICALS_TIMEFRAMES = ['5m', '15m', '1h', '4h', '1d'] as const
+
 const UNIT_MS: Record<string, number> = {
   m: 60_000,
   h: 3_600_000,

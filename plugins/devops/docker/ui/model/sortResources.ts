@@ -5,7 +5,6 @@ import type {
   DockerVolume,
 } from '../../backend/contracts'
 import {
-  sortableByteSize,
   sortableTimestamp,
   sortResources,
   type ResourceSortValue,
@@ -39,7 +38,7 @@ export function sortDockerImages(
   sort: DockerSortState['images'],
 ): DockerImage[] {
   return sortResources(images, sort, (image, key): ResourceSortValue => {
-    if (key === 'size') return sortableByteSize(image.size)
+    if (key === 'size') return image.sizeBytes ?? null
     if (key === 'created') return sortableTimestamp(image.createdAt)
     const tag = image.tag && image.tag !== '<none>' ? `:${image.tag}` : ''
     return `${image.repository}${tag}`

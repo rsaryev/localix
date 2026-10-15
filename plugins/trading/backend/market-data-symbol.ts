@@ -29,6 +29,7 @@ import {
   type MarketDataInput,
   type MarketDataResult,
 } from './market-data-schema'
+import { DEFAULT_TIMEFRAME } from './timeframes'
 
 /** Mode 3: one market in depth — quote, constraints, carry, candles, book, slippage. */
 export async function quoteSymbol(
@@ -37,7 +38,7 @@ export async function quoteSymbol(
   symbol: string,
   input: MarketDataInput,
 ): Promise<MarketDataResult> {
-  const timeframe = input.timeframe ?? '1h'
+  const timeframe = input.timeframe ?? DEFAULT_TIMEFRAME
   const barCount = input.candles ?? DEFAULT_CANDLES
   const depth = input.depth ?? 10
 

@@ -4,6 +4,7 @@ import { GitHubMark } from './GitHubMark'
 import { preloadDocsArticle } from '../pages/docs/loadDocsArticle'
 import { docPages, loadDocContent } from '../generated/docs'
 import { DocsSearch } from '../pages/docs/DocsSearch'
+import { REPOSITORY_URL } from '@/lib/site'
 
 function warmDocs() {
   void preloadDocsArticle().catch(() => {})
@@ -27,7 +28,7 @@ export function SiteHeader() {
             Docs
           </Link>
           <a
-            href="https://github.com/rsaryev/localix"
+            href={REPOSITORY_URL}
             target="_blank"
             rel="noreferrer"
             aria-label="Localix on GitHub"

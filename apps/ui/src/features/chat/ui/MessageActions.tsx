@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
+import { COPIED_FEEDBACK_LONG_MS } from '@/shared/lib/timings'
 
 interface MessageActionsProps {
   role: 'user' | 'assistant'
@@ -80,7 +81,7 @@ export function MessageActions({
   linkTargets,
   sources,
 }: MessageActionsProps) {
-  const { copied, copy } = useCopied(1800)
+  const { copied, copy } = useCopied(COPIED_FEEDBACK_LONG_MS)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const { speaking, toggle: handleSpeak } = useReadAloud(text)
 

@@ -4,6 +4,13 @@ const COLUMN_INFERENCE_SAMPLE_SIZE = 200
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/
 const BOOL_RE = /^(true|false|yes|no)$/i
+/**
+ * Plain decimal numerals only. `Number()` also accepts hex (`0x10`), binary, `Infinity` and
+ * whitespace, and turns a zero-padded code (`007`, a ZIP code) into 7 — so a column of
+ * identifiers would be inferred numeric and lose its leading zeros on coercion.
+ */
+const INT_RE = /^[+-]?(?:0|[1-9]\d*)$/
+const FLOAT_RE = /^[+-]?(?:(?:0|[1-9]\d*)(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$/
 
 /** Infer a column type from a sample of raw string values. */
 export function inferType(values: Array<string | null | undefined>): TableCellType {
@@ -20,13 +27,8 @@ export function inferType(values: Array<string | null | undefined>): TableCellTy
   let allDate = true
   for (const s of nonEmpty) {
     if (allBool && !BOOL_RE.test(s)) allBool = false
-    const num = Number(s)
-    if (Number.isNaN(num)) {
-      allNum = false
-      allInt = false
-    } else if (!Number.isInteger(num)) {
-      allInt = false
-    }
+    if (allInt && !INT_RE.test(s)) allInt = false
+    if (allNum && !FLOAT_RE.test(s)) allNum = false
     if (allDate && !ISO_DATE_RE.test(s)) allDate = false
   }
   if (allInt) return 'int'

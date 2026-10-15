@@ -58,15 +58,8 @@ function isBlank(value: TableCellValue, numeric: boolean): boolean {
   return numeric && Number.isNaN(numericValue(value))
 }
 
-/** Order two NON-blank cells. Blanks never reach here — see {@link isBlank}. */
-function compareValues(a: TableCellValue, b: TableCellValue, numeric: boolean): number {
-  if (numeric) {
-    const an = numericValue(a)
-    const bn = numericValue(b)
-    return an - bn
-  }
-  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' })
-}
+/** One collator for every comparison — `localeCompare` with options builds one per call. */
+const TEXT_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
 export function sortRows(
   rows: TableRow[],
@@ -78,36 +71,55 @@ export function sortRows(
   if (!col) return rows
   const numeric = isNumericType(col.type)
   const dir = sort.dir === 'desc' ? -1 : 1
-  // Stable: decorate with original index, restore on ties.
-  return rows
-    .map((row, i) => [row, i] as const)
-    .sort((x, y) => {
-      const a = x[0][sort.columnId]
-      const b = y[0][sort.columnId]
-      // A blank is not a value, so it has no place in the ordering OF values: it
-      // sinks whichever way the ordering runs. Deliberately outside the `dir`
-      // multiplication below — that is the whole point.
-      const aBlank = isBlank(a, numeric)
-      const bBlank = isBlank(b, numeric)
-      if (aBlank || bBlank) {
-        if (aBlank && bBlank) return x[1] - y[1]
-        return aBlank ? 1 : -1
-      }
-      const c = compareValues(a, b, numeric) * dir
-      return c !== 0 ? c : x[1] - y[1]
-    })
-    .map(([row]) => row)
+  // A blank is not a value, so it has no place in the ordering OF values: it sinks whichever
+  // way the ordering runs, in its original order. Blanks are split off before sorting, which
+  // keeps them outside the `dir` multiplication — that is the whole point.
+  const ranked: Array<{ row: TableRow; key: number | string; index: number }> = []
+  const blanks: TableRow[] = []
+  rows.forEach((row, index) => {
+    const value = row[sort.columnId]
+    if (isBlank(value, numeric)) blanks.push(row)
+    else ranked.push({ row, key: numeric ? numericValue(value) : String(value), index })
+  })
+  // Stable: keys are computed once per row, ties restore the original order.
+  ranked.sort((x, y) => {
+    const c = numeric
+      ? (x.key as number) - (y.key as number)
+      : TEXT_COLLATOR.compare(x.key as string, y.key as string)
+    return c * dir || x.index - y.index
+  })
+  return [...ranked.map((entry) => entry.row), ...blanks]
+}
+
+/**
+ * Lowercased display text per row, computed once per row object and reused across keystrokes.
+ * Rows are treated as immutable: a data change produces new row objects (new cache entries),
+ * and dropped rows are released with their WeakMap keys.
+ */
+const LOWER_TEXT = new WeakMap<TableRow, Map<string, string>>()
+
+function lowerCellText(row: TableRow, id: string): string {
+  let cells = LOWER_TEXT.get(row)
+  if (!cells) {
+    cells = new Map()
+    LOWER_TEXT.set(row, cells)
+  }
+  let text = cells.get(id)
+  if (text === undefined) {
+    text = formatCell(row[id]).toLowerCase()
+    cells.set(id, text)
+  }
+  return text
 }
 
 export function filterRows(rows: TableRow[], filter: FilterSpec | undefined): TableRow[] {
   if (!filter?.query.trim()) return rows
   const q = filter.query.trim().toLowerCase()
-  const matches = (value: unknown) => formatCell(value).toLowerCase().includes(q)
   if (filter.columnId) {
     const id = filter.columnId
-    return rows.filter((r) => matches(r[id]))
+    return rows.filter((r) => lowerCellText(r, id).includes(q))
   }
-  return rows.filter((r) => Object.values(r).some(matches))
+  return rows.filter((r) => Object.keys(r).some((id) => lowerCellText(r, id).includes(q)))
 }
 
 export function queryRows(rows: TableRow[], spec: QuerySpec, columns: TableColumn[]): TableRow[] {

@@ -1,3 +1,4 @@
+import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
 import { z } from 'zod'
 
 /**
@@ -23,13 +24,7 @@ const cellIndex = z.number().int().min(0).max(8)
  * While the agent owes a move: when it was asked, and whether it can answer. Everything that counts
  * ("thinking for 12s") is derived from `since` against a clock, never counted in state.
  */
-export const agentWaitSchema = z.object({
-  since: z.string(),
-  /** thinking — the chat was woken; unreachable — the wake did not land. */
-  status: z.enum(['thinking', 'unreachable']),
-  reason: z.string().optional(),
-})
-export type AgentWait = z.infer<typeof agentWaitSchema>
+export { agentWaitSchema, type AgentWait }
 
 export const moveSchema = z.object({
   cell: cellIndex,
@@ -45,8 +40,8 @@ export const recordSchema = z.object({
   lost: z.number().int().min(0),
   draw: z.number().int().min(0),
 })
-export type Record = z.infer<typeof recordSchema>
-export const EMPTY_RECORD: Record = { won: 0, lost: 0, draw: 0 }
+export type GameRecord = z.infer<typeof recordSchema>
+export const EMPTY_RECORD: GameRecord = { won: 0, lost: 0, draw: 0 }
 
 /** The one game at this table — what the plugin keeps, and what every route answers with. */
 export const gameSchema = z.object({
@@ -108,7 +103,12 @@ export function winnerOf(board: readonly Cell[]): { mark: Mark; line: number[] }
   return null
 }
 
-export function newGame(input: { id: string; first: Mark; now: string; record?: Record }): Game {
+export function newGame(input: {
+  id: string
+  first: Mark
+  now: string
+  record?: GameRecord
+}): Game {
   return {
     id: input.id,
     board: Array.from({ length: 9 }, () => null),
@@ -136,7 +136,7 @@ export const owesAgentMove = (game: Pick<Game, 'status' | 'turn'> | null): boole
   game?.status === 'playing' && game.turn === 'O'
 
 /** The score after a game that ended `status`. */
-export const scored = (record: Record, status: Game['status']): Record =>
+export const scored = (record: GameRecord, status: Game['status']): GameRecord =>
   status === 'playing' ? record : { ...record, [status]: record[status] + 1 }
 
 /** The game after one move, or a {@link MoveRefused} saying why there is none. */

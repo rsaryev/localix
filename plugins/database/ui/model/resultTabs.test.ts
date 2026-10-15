@@ -56,7 +56,24 @@ describe('normalizeSql', () => {
   })
 })
 
+describe('normalizeSql keeps literals and quoted names as typed', () => {
+  it('does not merge queries that differ only inside a literal or quoted identifier', () => {
+    expect(normalizeSql("SELECT * FROM t WHERE name = 'Bob'")).not.toBe(
+      normalizeSql("select * from t where name = 'bob'"),
+    )
+    expect(normalizeSql('SELECT * FROM "User"')).not.toBe(normalizeSql('SELECT * FROM "user"'))
+    expect(normalizeSql("SELECT 'a  b'")).toBe("select 'a  b'")
+    expect(normalizeSql("  SELECT  *  FROM t WHERE n = 'X' ; ")).toBe(
+      "select * from t where n = 'X'",
+    )
+  })
+})
+
 describe('deriveSqlLabel', () => {
+  it('labels by the top-level FROM, not one inside a literal or select-list subquery', () => {
+    expect(deriveSqlLabel("SELECT 'from x' AS s, (SELECT max(id) FROM a) FROM b")).toBe('SELECT b…')
+  })
+
   it('labels a SELECT by its FROM table', () => {
     expect(deriveSqlLabel('select id, name from user where x = 1')).toBe('SELECT user…')
   })

@@ -11,7 +11,7 @@ import {
 } from '../shared/game'
 import { other } from '../shared/position'
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
-import { openJsonStore } from './store'
+import { openJsonStore } from '@localixai/plugin-sdk/backend'
 
 /**
  * THE GAME AT EACH CHAT'S TABLE, and every way it changes.

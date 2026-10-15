@@ -180,6 +180,7 @@ describe('imagesFromApi', () => {
         repository: 'postgres',
         tag: '16',
         size: '142MB',
+        sizeBytes: 142_000_000,
         createdAt: '2026-07-28T08:50:28.000Z',
       },
       {
@@ -187,6 +188,7 @@ describe('imagesFromApi', () => {
         repository: 'registry.local:5000/team/api',
         tag: 'dev',
         size: '142MB',
+        sizeBytes: 142_000_000,
         createdAt: '2026-07-28T08:50:28.000Z',
       },
     ])

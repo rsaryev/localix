@@ -1,5 +1,6 @@
 /** Pure construction, wire projection and model-facing formatting of context-ref payloads. */
 import type { ContextRef, ContextRefExpansion } from '../projects/contracts'
+import { DEFAULT_CONTEXT_WINDOW } from './runtime/agent-runner-constants'
 import { refKindSpec, SNIPPET_CONTENT_MAX, type ContextRefKind } from './context-ref-kinds'
 
 export interface ParsedContextRef extends ContextRef {
@@ -195,8 +196,6 @@ export function totalExpansionChars(
   return total
 }
 
-/** Default model window (tokens) when the catalog doesn't report one. */
-const FALLBACK_CONTEXT_TOKENS = 128_000
 /** chars/4 token heuristic. */
 const CHARS_PER_TOKEN = 4
 const WARN_FRACTION = 0.25
@@ -209,7 +208,7 @@ export function classifyExpansionBudget(
   totalChars: number,
   contextTokens: number | undefined,
 ): ExpansionBudget {
-  const windowChars = (contextTokens || FALLBACK_CONTEXT_TOKENS) * CHARS_PER_TOKEN
+  const windowChars = (contextTokens || DEFAULT_CONTEXT_WINDOW) * CHARS_PER_TOKEN
   // Documented as warn ≥25% / block ≥50% — inclusive on the boundary.
   if (totalChars >= windowChars * BLOCK_FRACTION) return 'block'
   if (totalChars >= windowChars * WARN_FRACTION) return 'warn'

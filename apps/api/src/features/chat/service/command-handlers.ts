@@ -152,5 +152,6 @@ export async function handleUnresolvedSlashCommand(
             : ' Run `/help` to see available commands.'
           return `Unknown slash command \`/${invocation.name}\`.${hint}`
         })()
-  return ctx.insertDirectReply(userId, sessionId, prompt, reply, ctx.now())
+  const tone = spec?.scope === 'client' ? 'warning' : 'error'
+  return ctx.insertDirectReply(userId, sessionId, prompt, reply, ctx.now(), tone)
 }

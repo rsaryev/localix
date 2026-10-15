@@ -1,4 +1,4 @@
-import { parseDockerBytePair } from './bytes'
+import { parseDockerBytePair, parseDockerBytes } from './bytes'
 import type {
   ContainerState,
   ContainerStats,
@@ -135,13 +135,17 @@ export function parseContainers(stdout: string): DockerContainer[] {
 
 /** Parse `docker images --format '{{json .}}'`. */
 export function parseImages(stdout: string): DockerImage[] {
-  return eachJsonLine(stdout).map((r) => ({
-    id: str(r.ID),
-    repository: str(r.Repository),
-    tag: str(r.Tag),
-    size: str(r.Size),
-    createdAt: str(r.CreatedAt),
-  }))
+  return eachJsonLine(stdout).map((r) => {
+    const sizeBytes = parseDockerBytes(r.Size)
+    return {
+      id: str(r.ID),
+      repository: str(r.Repository),
+      tag: str(r.Tag),
+      size: str(r.Size),
+      ...(sizeBytes === null ? {} : { sizeBytes }),
+      createdAt: str(r.CreatedAt),
+    }
+  })
 }
 
 /** Parse a `docker stats`-style percent field (`"0.15%"` → `0.15`; junk → `0`). */

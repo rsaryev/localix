@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
+import { useDebouncedQuery } from '@/shared/hooks/useDebouncedQuery'
 import type { FileContentMatch } from '@/shared/api/contracts'
 import { toggleInSet } from '@/shared/lib/toggleInSet'
 import { buildSearchTree, collectNodePaths, type SearchTreeNode } from './searchTree'
@@ -99,7 +100,6 @@ export function useContentSearch({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [refreshKey, setRefreshKey] = useState(0)
   const [resultKey, setResultKey] = useState<string | null>(null)
-  const reqSeq = useRef(0)
   const ownerRef = useRef({ active: false })
 
   const trimmed = query.trim()
@@ -126,80 +126,74 @@ export function useContentSearch({
     }
   }, [sessionId])
 
-  useEffect(() => {
-    // Invalidate a request that already left the debounce timer before clearing or
-    // superseding it. Clearing only the timer cannot stop a promise already in flight.
-    const seq = ++reqSeq.current
-    let cancelled = false
-    if (!sessionId || !active) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear when disabled/empty
-      setMatches([])
-      setTruncated(false)
-      setRoot(null)
-      setFailure(null)
-      setLoading(false)
-      setResultKey(null)
-      setConfirmReplace(false)
-      return
-    }
-    setLoading(true)
-    setConfirmReplace(false)
-    const id = setTimeout(() => {
-      void backendClient
-        .searchContent(sessionId, trimmed, {
-          limit: 1000,
-          regex,
-          caseSensitive,
-          wholeWord,
-          glob: includeGlob.trim() || undefined,
-          excludeGlob: excludeGlob.trim() || undefined,
-          contextLines: contextLines || undefined,
-          // When on, searches nested repos hidden by a parent repo's .gitignore
-          // (container-of-clones); toggled from the search bar. Global search stays default.
-          includeIgnored,
-        })
-        .then((res) => {
-          if (cancelled || seq !== reqSeq.current) return
-          setMatches(res.matches)
-          setTruncated(res.truncated)
-          setRoot(res.root)
-          setFailure(null)
-          setResultKey(searchKey)
-        })
-        .catch((err: unknown) => {
-          if (cancelled || seq !== reqSeq.current) return
-          // A failed search is NOT "no results". In a code search, emptiness is the
-          // answer being sought — "No results." is how the user concludes a symbol is
-          // unused and deletes it. Keep clearing the stale hits (they belong to the old
-          // query), but say WHY the list is empty instead of letting it read as a fact
-          // about the project.
-          setMatches([])
-          setTruncated(false)
-          setFailure(searchFailureOf(err, regex))
-          setResultKey(null)
-        })
-        .finally(() => {
-          if (!cancelled && seq === reqSeq.current) setLoading(false)
-        })
-    }, 300)
-    return () => {
-      cancelled = true
-      clearTimeout(id)
-    }
-  }, [
-    sessionId,
-    active,
-    trimmed,
-    regex,
-    caseSensitive,
-    wholeWord,
-    includeGlob,
-    excludeGlob,
-    contextLines,
-    includeIgnored,
-    refreshKey,
-    searchKey,
-  ])
+  // Debounced search; the hook invalidates a request that already left the debounce timer
+  // before clearing or superseding it (clearing only the timer cannot stop it in flight).
+  const supersedeSearch = useDebouncedQuery(
+    [
+      sessionId,
+      active,
+      trimmed,
+      regex,
+      caseSensitive,
+      wholeWord,
+      includeGlob,
+      excludeGlob,
+      contextLines,
+      includeIgnored,
+      refreshKey,
+    ],
+    300,
+    {
+      run:
+        sessionId && active
+          ? () =>
+              backendClient.searchContent(sessionId, trimmed, {
+                limit: 1000,
+                regex,
+                caseSensitive,
+                wholeWord,
+                glob: includeGlob.trim() || undefined,
+                excludeGlob: excludeGlob.trim() || undefined,
+                contextLines: contextLines || undefined,
+                // When on, searches nested repos hidden by a parent repo's .gitignore
+                // (container-of-clones); toggled from the search bar. Global search stays default.
+                includeIgnored,
+              })
+          : null,
+      onIdle: () => {
+        setMatches([])
+        setTruncated(false)
+        setRoot(null)
+        setFailure(null)
+        setLoading(false)
+        setResultKey(null)
+        setConfirmReplace(false)
+      },
+      onStart: () => {
+        setLoading(true)
+        setConfirmReplace(false)
+      },
+      onResult: (res) => {
+        setMatches(res.matches)
+        setTruncated(res.truncated)
+        setRoot(res.root)
+        setFailure(null)
+        setResultKey(searchKey)
+      },
+      onError: (err) => {
+        // A failed search is NOT "no results". In a code search, emptiness is the
+        // answer being sought — "No results." is how the user concludes a symbol is
+        // unused and deletes it. Keep clearing the stale hits (they belong to the old
+        // query), but say WHY the list is empty instead of letting it read as a fact
+        // about the project.
+        setMatches([])
+        setTruncated(false)
+        setFailure(searchFailureOf(err, regex))
+        setResultKey(null)
+      },
+      onSettled: () => setLoading(false),
+    },
+  )
 
   const tree = useMemo(() => buildSearchTree(matches), [matches])
   const fileCount = useMemo(() => new Set(matches.map((m) => m.path)).size, [matches])
@@ -250,9 +244,9 @@ export function useContentSearch({
   // Supersede any search that observed the pre-replacement filesystem before scheduling the
   // refresh that will observe the rewritten files.
   const onReplaced = useCallback(() => {
-    reqSeq.current++
+    supersedeSearch()
     setRefreshKey((k) => k + 1)
-  }, [])
+  }, [supersedeSearch])
   // The visible hits may intentionally remain while a newer search is loading; only hits of the
   // current criteria (`hasResults`) may authorize the rewrite.
   const {

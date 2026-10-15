@@ -1,5 +1,6 @@
 import { Apple, type LucideIcon } from 'lucide-react'
 import type { DownloadId } from './downloadPlatform'
+import { REPOSITORY_URL } from '@/lib/site'
 
 export interface DownloadOption {
   id: DownloadId
@@ -14,8 +15,7 @@ export interface DownloadOption {
 }
 
 const cleanUrl = (value: string | undefined) => value?.trim() || undefined
-export const githubUrl =
-  cleanUrl(import.meta.env.VITE_GITHUB_URL) ?? 'https://github.com/rsaryev/localix'
+export const githubUrl = cleanUrl(import.meta.env.VITE_GITHUB_URL) ?? REPOSITORY_URL
 
 /** Every platform's installer, each with the URL a release provides (none before the first). */
 export function resolveDownloads(

@@ -9,9 +9,10 @@
  *      of a dead end. An error that misses the branch by one character is a plain `fatal`:
  *      the turn dies where it would have recovered.
  *
- *   2. MESSAGE SHAPE. `extractProviderStatus` scrapes the status back out with a
- *      `\b[1-5]\d{2}\b` regex because runtime adapters can expose HTTP-like failures
- *      without leaking their concrete transport classes into the host. The structural
+ *   2. MESSAGE SHAPE. `extractProviderStatus` scrapes the status back out of the
+ *      `<label> <status>:` position (never any other number in the text) because runtime
+ *      adapters can expose HTTP-like failures without leaking their concrete transport
+ *      classes into the host. The structural
  *      `"<provider> <status>: <body>"` shape is the adapter-neutral boundary.
  */
 

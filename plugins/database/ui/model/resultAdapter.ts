@@ -65,12 +65,30 @@ function uniqueId(name: string, index: number, seen: Set<string>): string {
   return id
 }
 
-/** Best-effort cell type from the first non-null value in a column. */
-function inferType(sample: unknown): TableCellType {
-  if (typeof sample === 'number') return Number.isInteger(sample) ? 'int' : 'float'
-  if (typeof sample === 'bigint') return 'int'
-  if (typeof sample === 'boolean') return 'bool'
+function valueType(value: unknown): TableCellType {
+  if (typeof value === 'number') return Number.isInteger(value) ? 'int' : 'float'
+  if (typeof value === 'bigint') return 'int'
+  if (typeof value === 'boolean') return 'bool'
   return 'text'
+}
+
+/**
+ * Cell type from EVERY non-null value in a column, not the first: SQLite columns are dynamically
+ * typed and a JSON column can mix shapes, so `1` then `'n/a'` is a text column, and `1` then `1.5`
+ * is a float column. Only SQL engines without declared result types reach here.
+ */
+function inferType(rows: readonly unknown[][], index: number): TableCellType {
+  let type: TableCellType | undefined
+  for (const row of rows) {
+    const value = row[index]
+    if (value === null || value === undefined) continue
+    const next = valueType(value)
+    if (type === undefined || type === next) type = next
+    else if ((type === 'int' && next === 'float') || (type === 'float' && next === 'int'))
+      type = 'float'
+    else return 'text'
+  }
+  return type ?? 'text'
 }
 
 /** Coerce an arbitrary SQL cell into a dataview-renderable primitive. Values arrive
@@ -113,8 +131,7 @@ export function adaptResult(result: DbResultSet): AdaptedResult {
   const ids = result.columns.map((c, i) => uniqueId(c.name, i, seen))
 
   const columns: TableColumn[] = result.columns.map((c, i) => {
-    const sample = result.rows.find((r) => r[i] !== null && r[i] !== undefined)?.[i]
-    return { id: ids[i], title: c.name || ids[i], type: inferType(sample) }
+    return { id: ids[i], title: c.name || ids[i], type: inferType(result.rows, i) }
   })
 
   const rawValues = new WeakMap<TableRow, Readonly<Record<string, unknown>>>()

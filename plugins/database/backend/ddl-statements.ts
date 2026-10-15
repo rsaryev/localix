@@ -1,3 +1,4 @@
+import { stripStatementTerminator } from '../shared/sql-text'
 import type { DbDialect, DbSequenceDefinition, DbTableSchema } from './drivers/port'
 import { quoteIdent } from './sql-ident'
 import {
@@ -92,7 +93,7 @@ export function buildIndexStatements(table: DbTableSchema, dialect: DbDialect): 
       ? []
       : [
           idx.createScript?.trim()
-            ? `${idx.createScript.trim().replace(/;+\s*$/, '')};`
+            ? `${stripStatementTerminator(idx.createScript)};`
             : `CREATE ${idx.unique ? 'UNIQUE ' : ''}${dialect === 'mssql' && idx.clustered ? 'CLUSTERED ' : ''}INDEX ${q(idx.name)} ON ${target} (${renderIndexKeys(idx.columns, dialect, idx.orders, idx.prefixLengths)})${idx.includeColumns?.length ? ` INCLUDE (${idx.includeColumns.map(q).join(', ')})` : ''}${idx.predicate ? ` WHERE ${idx.predicate}` : ''};`,
         ],
   )
@@ -160,7 +161,7 @@ export function buildPostgresExtendedStatisticsStatements(
     return []
   const q = (name: string) => quoteIdent(name, 'postgres')
   return (table.postgresExtendedStatistics ?? []).flatMap((statistic) => {
-    const createScript = statistic.createScript.trim().replace(/;+\s*$/u, '')
+    const createScript = stripStatementTerminator(statistic.createScript)
     if (!createScript) return []
     const target =
       table.postgresRelation?.persistence === 'TEMPORARY'
@@ -184,7 +185,7 @@ export function buildRuleStatements(table: DbTableSchema): string[] {
   if (table.type === 'view' && !table.createScript?.trim()) return []
   return (table.rules ?? []).flatMap((rule) =>
     [rule.createScript, ...(rule.postCreateScripts ?? [])].flatMap((script) => {
-      const normalized = script.trim().replace(/;+\s*$/u, '')
+      const normalized = stripStatementTerminator(script)
       return normalized ? [`${normalized};`] : []
     }),
   )
@@ -199,7 +200,7 @@ export function buildTriggerStatements(table: DbTableSchema): string[] {
       trigger.createScript,
       ...(trigger.postCreateScripts ?? []),
     ].flatMap((script) => {
-      const normalized = script.trim().replace(/;+\s*$/u, '')
+      const normalized = stripStatementTerminator(script)
       return normalized ? [`${normalized};`] : []
     }),
   )

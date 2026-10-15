@@ -61,7 +61,7 @@ export function tableFromMatrix(
   if (matrix.length === 0) return { columns: [], rows: [], total: 0 }
 
   const rawHeader = header ? matrix[0] : matrix[0].map((_, i) => `Column ${i + 1}`)
-  const headerRow = rawHeader.map((h) => cellToString(h) || `Column ${rawHeader.indexOf(h) + 1}`)
+  const headerRow = rawHeader.map((h, i) => cellToString(h) || `Column ${i + 1}`)
   const width = headerRow.length
 
   const dataMatrix = (header ? matrix.slice(1) : matrix).filter((r) =>

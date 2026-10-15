@@ -6,6 +6,7 @@ import {
   type SecretConsumer,
 } from '@localixai/plugin-sdk/backend'
 import type { EnvironmentVariable } from './collection/environments'
+import { RestError } from './errors'
 import type { ResolveSecret } from './secrets'
 import type { StoreSecret } from './vault-auth'
 import type { BindSecret } from './vault-bindings'
@@ -99,7 +100,8 @@ export async function vaultEnvironmentVariables(
     variable.secret = true
     if (variable.value !== '' && !hasSecretTokens(variable.value)) {
       if (!storeSecret) {
-        throw new Error(
+        throw new RestError(
+          'secret_unavailable',
           `Variable "${variable.name}" is marked secret, but the native vault is unavailable. Nothing was saved.`,
         )
       }
@@ -113,7 +115,8 @@ export async function vaultEnvironmentVariables(
         }
       }
       if (!key) {
-        throw new Error(
+        throw new RestError(
+          'secret_unavailable',
           `Variable "${variable.name}" could not be moved into the native vault. Nothing was saved.`,
         )
       }

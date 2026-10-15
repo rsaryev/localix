@@ -137,19 +137,27 @@ function looksLikeAuthFailure(text: string): boolean {
   return text.includes('does not exist') && AUTH_SUBJECTS.some((s) => text.includes(s))
 }
 
+/**
+ * Classes a venue reaches for when it has no better word — the only ones an auth phrase may
+ * override. A specific class (OrderNotFound, InsufficientFunds, BadSymbol, …) is the venue's own
+ * typed verdict and wins over wording that merely mentions an account.
+ */
+const OVERRIDABLE: ReadonlySet<TradingErrorCode> = new Set(['invalid_order', 'exchange_error'])
+
 export function mapTradingError(err: unknown): TradingError {
   if (err instanceof TradingError) return err
   const raw = err instanceof Error ? err.message : String(err)
 
-  // An auth failure dressed up as something else is worse than an unclassified error: it sends the
-  // caller (and the agent) to fix the order instead of the credentials.
-  if (looksLikeAuthFailure(raw.toLowerCase()))
-    return new TradingError('auth_failed', raw, { cause: err })
-
+  let typed: TradingErrorCode | undefined
   for (const name of errorNames(err)) {
-    const code = BY_NAME[name]
-    if (code) return new TradingError(code, raw, { cause: err })
+    typed = BY_NAME[name]
+    if (typed) break
   }
+  // An auth failure dressed up as a generic order/exchange error is worse than an unclassified
+  // one: it sends the caller (and the agent) to fix the order instead of the credentials.
+  if ((!typed || OVERRIDABLE.has(typed)) && looksLikeAuthFailure(raw.toLowerCase()))
+    return new TradingError('auth_failed', raw, { cause: err })
+  if (typed) return new TradingError(typed, raw, { cause: err })
 
   // Fallback: a driver that throws plain Errors (or a fetch failure that never reached
   // ccxt's classifier) still lands in a sensible bucket.

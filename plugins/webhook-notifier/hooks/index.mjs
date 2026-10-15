@@ -17,7 +17,8 @@
  */
 import { createHmac } from 'node:crypto'
 
-const ALL_EVENTS = [
+/** Every deliverable event; plugin.json's EVENTS description is checked against it. */
+export const ALL_EVENTS = [
   'session_end',
   'user_message',
   'assistant_message',
@@ -37,7 +38,9 @@ const trim = (v) =>
 export function register(ctx) {
   const { helpers, config, log } = ctx
   // Sessions already told about a broken endpoint. Cleared on the next success, so a
-  // URL that starts working again can go quiet and then speak up if it breaks twice.
+  // URL that starts working again can go quiet and then speak up if it breaks twice, and
+  // once the session's end has been delivered (or failed) — an ended chat is never asked
+  // about again, so keeping it would grow the set for the life of the process.
   const reported = new Set()
 
   const reportOnce = (sessionId, message, detail) => {
@@ -106,7 +109,10 @@ export function register(ctx) {
           `${event}: ${raw} (${endpoint})`,
         )
       })
-      .finally(() => t.dispose())
+      .finally(() => {
+        t.dispose()
+        if (event === 'session_end') reported.delete(sessionId)
+      })
   }
 
   return {

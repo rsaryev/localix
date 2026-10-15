@@ -11,6 +11,7 @@ import {
   type RuntimeReadyFrame,
 } from './runtime-protocol'
 import { startupDiag } from './startup-diagnostics'
+import { awaitPidGone, processIsAlive } from './process-liveness'
 
 export { dialableRuntimeBaseUrl } from './runtime-address'
 
@@ -51,15 +52,6 @@ export class RuntimeOwnershipHeldError extends Error {
         : `Localix API runtime ownership is held by pid ${ownerPid}`,
     )
     this.name = 'RuntimeOwnershipHeldError'
-  }
-}
-
-function processIsAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code !== 'ESRCH'
   }
 }
 
@@ -239,15 +231,6 @@ const RECLAIM_TERM_GRACE_MS = 4_500
 
 /** How long the kernel gets to reap a SIGKILLed holder before we call the reclaim failed. */
 const RECLAIM_KILL_GRACE_MS = 500
-
-async function awaitPidGone(pid: number, graceMs: number): Promise<boolean> {
-  const deadline = Date.now() + graceMs
-  while (Date.now() < deadline) {
-    if (!processIsAlive(pid)) return true
-    await Bun.sleep(25)
-  }
-  return !processIsAlive(pid)
-}
 
 /**
  * Take the lease from a holder that is alive but no longer SERVING.

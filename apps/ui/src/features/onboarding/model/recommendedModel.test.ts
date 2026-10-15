@@ -68,6 +68,15 @@ describe('recommendChatModel', () => {
     expect(picked?.id).toBe('chat')
   })
 
+  test('excludes short non-chat words only as their own id segment', () => {
+    for (const id of ['llama-guard-3-8b', 'mistral-ocr-latest', 'gpt-4o-mini-tts', 'speech-02']) {
+      expect(recommendChatModel([model({ id })], 'acme')).toBeNull()
+    }
+    for (const id of ['vanguard-chat', 'procrustes-large', 'bootstrap-70b']) {
+      expect(recommendChatModel([model({ id })], 'acme')?.id).toBe(id)
+    }
+  })
+
   test('prefers the newer release among otherwise equal models', () => {
     const picked = recommendChatModel(
       [

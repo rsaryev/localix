@@ -10,20 +10,19 @@ export function messageDisplayText(text: string, bindings?: readonly MessageBind
     .filter(Boolean)
     .sort((a, b) => b.length - a.length)
   if (!tokens.length) return text
-  // Quoted examples, inline code and fenced code are user prose, not reference chips.
-  const protectedParts =
-    /(```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`+[^`\n]*`+|"[^"\n]*"|'[^'\n]*')/g
+  const escaped = tokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  // Longest first (sorted above), so a token never loses to its own prefix.
+  const tokenPattern = new RegExp(`(^|\\s)(?:${escaped.join('|')})(?=\\s|$)`, 'g')
   return text
-    .split(protectedParts)
-    .map((part, index) => {
-      if (index % 2) return part
-      let result = part
-      for (const token of tokens) {
-        const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        result = result.replace(new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, 'g'), '$1')
-      }
-      return result
-    })
+    .split(PROTECTED_PARTS)
+    .map((part, index) => (index % 2 ? part : part.replace(tokenPattern, '$1')))
     .join('')
     .trim()
 }
+
+/**
+ * Quoted examples, inline code and fenced code are user prose, not reference chips. A single
+ * quote only opens a quotation outside a word, so apostrophes ("don't", "isn't") never do.
+ */
+const PROTECTED_PARTS =
+  /(```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`+[^`\n]*`+|"[^"\n]*"|(?<!\w)'[^'\n]*'(?!\w))/g

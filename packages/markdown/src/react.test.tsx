@@ -70,8 +70,16 @@ describe('portable Markdown', () => {
   })
 
   test('supports Unicode heading links and ignores headings inside code spans', () => {
-    expect(extractMarkdownHeadings('## Пример\n\n## **Code** `value`\n\n    ## hidden')).toEqual([
-      { depth: 2, text: 'Пример', id: 'пример' },
+    expect(
+      extractMarkdownHeadings(
+        '## \u041f\u0440\u0438\u043c\u0435\u0440\n\n## **Code** `value`\n\n    ## hidden',
+      ),
+    ).toEqual([
+      {
+        depth: 2,
+        text: '\u041f\u0440\u0438\u043c\u0435\u0440',
+        id: '\u043f\u0440\u0438\u043c\u0435\u0440',
+      },
       { depth: 2, text: 'Code value', id: 'code-value' },
     ])
   })

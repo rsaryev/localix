@@ -37,6 +37,8 @@ function fakeSchema(schemas: DbSchemas, overrides: Partial<SchemaState> = {}): S
     reloadTable() {},
     ensureColumns() {},
     model: { tables: [], columnsByTable: {}, foreignKeys: [] },
+    columnSources: overrides.tables ?? {},
+    getColumnSource: () => undefined,
     ...overrides,
   }
 }

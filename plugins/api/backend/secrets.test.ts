@@ -12,7 +12,13 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { authNeedsVault, resolveAuthSecrets, type ResolveSecret } from './secrets'
+import {
+  authNeedsVault,
+  authSecret,
+  resolveAuthSecrets,
+  withAuthSecret,
+  type ResolveSecret,
+} from './secrets'
 import type { RequestAuth } from './request-spec'
 
 /** A vault holding exactly what it is given. */
@@ -151,5 +157,28 @@ describe('only AUTH is resolved — headers and bodies are deliberately not scan
     // The signature IS the guarantee: there is no path from a header into this function.
     const auth = await resolveAuthSecrets('u', { type: 'none' }, vault({ GH: 'ghp_real' }))
     expect(auth).toEqual({ type: 'none' })
+  })
+})
+
+describe('authSecret / withAuthSecret — one table for every variant', () => {
+  test('each variant names its one secret field, and a write keeps the rest of the variant', () => {
+    const variants: RequestAuth[] = [
+      { type: 'none' },
+      { type: 'basic', username: 'u', password: 'p' },
+      { type: 'bearer', token: 't', prefix: 'Token' },
+      { type: 'apikey', key: 'X-Key', value: 'v', addTo: 'query' },
+    ]
+    expect(variants.map((auth) => authSecret(auth)?.field ?? null)).toEqual([
+      null,
+      'password',
+      'token',
+      'value',
+    ])
+    expect(variants.map((auth) => withAuthSecret(auth, 'S'))).toEqual([
+      { type: 'none' },
+      { type: 'basic', username: 'u', password: 'S' },
+      { type: 'bearer', token: 'S', prefix: 'Token' },
+      { type: 'apikey', key: 'X-Key', value: 'S', addTo: 'query' },
+    ])
   })
 })

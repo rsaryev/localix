@@ -5,6 +5,8 @@
  * params are rewritten to namespaced `@__localix_pN` parameters (the console rarely uses params, but
  * validation/DML may). Pool-config building lives in ./mssql-config.
  */
+import { makeManualTransaction } from './manual-transaction'
+import { MSSQL_COLUMN_CATALOG_SQL, readColumnCatalog } from './column-catalog'
 import sql from 'mssql'
 import { driverFlags } from './port'
 import { buildSqlBrowseQuery } from './sql-browse'
@@ -161,8 +163,7 @@ export function createMssqlDriver(options: MssqlDriverOptions): DbDriver {
     const p = await getPool()
     const tx = new sql.Transaction(p)
     await tx.begin()
-    let done = false
-    return {
+    return makeManualTransaction({
       async query(
         text: string,
         params: unknown[] = [],
@@ -183,22 +184,9 @@ export function createMssqlDriver(options: MssqlDriverOptions): DbDriver {
           signal?.removeEventListener('abort', onAbort)
         }
       },
-      async commit() {
-        if (done) return
-        done = true
-        try {
-          await tx.commit()
-        } catch (err) {
-          await tx.rollback().catch(() => {})
-          throw err
-        }
-      },
-      async rollback() {
-        if (done) return
-        done = true
-        await tx.rollback().catch(() => {})
-      },
-    }
+      commit: () => tx.commit(),
+      rollback: () => tx.rollback(),
+    })
   }
 
   /** Compile-only check through the describe DMF (see mssql-validate.ts). */
@@ -233,6 +221,8 @@ export function createMssqlDriver(options: MssqlDriverOptions): DbDriver {
 
   const schemas = (): Promise<DbSchemas> => mssqlSchemas(objectRows)
 
+  const columnCatalog = () => readColumnCatalog(objectRows, MSSQL_COLUMN_CATALOG_SQL)
+
   const tableSchema = (schema: string | undefined, table: string): Promise<DbTableSchema> =>
     mssqlTableSchema(objectRows, schema ?? flags.defaultSchema, table)
 
@@ -252,6 +242,7 @@ export function createMssqlDriver(options: MssqlDriverOptions): DbDriver {
     beginTransaction,
     browse,
     schemas,
+    columnCatalog,
     tableSchema,
     close,
   }

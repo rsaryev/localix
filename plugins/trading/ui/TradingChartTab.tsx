@@ -28,6 +28,7 @@ import {
 } from './model/timeframePref'
 import { acknowledgeInline, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
 import { chartMessageContext } from './model/chartMessageContext'
+import { DEFAULT_TIMEFRAME } from '../backend/timeframes'
 
 /** Global (not per-market) preference: is the right-hand order-book / ticket column collapsed. */
 const SIDE_PANEL_COLLAPSED_KEY = 'localix.trading.sidePanelCollapsed'
@@ -93,7 +94,7 @@ export function TradingChartTab({
   // the right horizon — waiting for `describe` to pick it re-fetched the whole seed window whenever
   // the remembered timeframe was not the default. `describe` then only VALIDATES it (below): a
   // remembered timeframe the venue no longer offers is replaced, which is the rare case.
-  const [timeframe, setTimeframe] = useState(() => loadTimeframe(connectionId) ?? '1h')
+  const [timeframe, setTimeframe] = useState(() => loadTimeframe(connectionId) ?? DEFAULT_TIMEFRAME)
 
   // A timeframe change is a preference, not a transient: it is what this connection's charts open
   // on next time, here and in every other market. Persisted eagerly so a reload cannot lose it.

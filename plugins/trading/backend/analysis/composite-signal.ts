@@ -13,6 +13,7 @@
  */
 import type { Candle } from '../contracts'
 import { adx, ema, macd, obv, rsi } from '../../ui/model/indicators'
+import { toolNumber } from '../tool-number'
 
 export type Vote = 'bull' | 'bear' | 'neutral' | 'n/a'
 
@@ -34,10 +35,6 @@ export interface CompositeSignal {
 const ADX_TREND_MIN = 20
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 const lastValue = (line: { value: number }[]): number | null => {
   const last = line.at(-1)
   return last && Number.isFinite(last.value) ? last.value : null
@@ -53,7 +50,7 @@ function trendDimension(candles: Candle[]): SignalDimension {
   }
   const direction = fast > slow ? 'bull' : fast < slow ? 'bear' : 'neutral'
   const gated = strength < ADX_TREND_MIN ? 'neutral' : direction
-  const note = `EMA12 ${num(fast)} vs EMA26 ${num(slow)}, ADX ${num(strength)}${
+  const note = `EMA12 ${toolNumber(fast)} vs EMA26 ${toolNumber(slow)}, ADX ${toolNumber(strength)}${
     strength < ADX_TREND_MIN ? ' (weak — no trend vote)' : ''
   }`
   return { name: 'trend', vote: gated, note }
@@ -71,7 +68,7 @@ function momentumDimension(candles: Candle[]): SignalDimension {
   return {
     name: 'momentum',
     vote,
-    note: `MACD hist ${num(hist)}, RSI ${num(strength)}${vote === 'neutral' ? ' (mixed)' : ''}`,
+    note: `MACD hist ${toolNumber(hist)}, RSI ${toolNumber(strength)}${vote === 'neutral' ? ' (mixed)' : ''}`,
   }
 }
 
@@ -87,7 +84,11 @@ function volumeDimension(candles: Candle[]): SignalDimension {
   for (let i = line.length - period; i < line.length; i++) sum += line[i]!.value
   const avg = sum / period
   const vote: Vote = nowValue > avg ? 'bull' : nowValue < avg ? 'bear' : 'neutral'
-  return { name: 'volume', vote, note: `OBV ${num(nowValue)} vs its SMA20 ${num(avg)}` }
+  return {
+    name: 'volume',
+    vote,
+    note: `OBV ${toolNumber(nowValue)} vs its SMA20 ${toolNumber(avg)}`,
+  }
 }
 
 /**

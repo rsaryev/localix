@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { quoteIdent, selectAllSql, selectTableSql } from './sqlIdent'
+import { quoteIdent, selectTableSql } from './sqlIdent'
 
 /**
  * Behavior lock for SQL identifier quoting — an INJECTION-PREVENTION primitive. A table/column
@@ -35,18 +35,26 @@ describe('quoteIdent — per-dialect delimiter + doubling escape', () => {
   })
 })
 
-describe('selectAllSql — dialect row-limit syntax over a quoted table', () => {
+describe('selectTableSql (unqualified) — dialect row-limit syntax over a quoted table', () => {
   test('LIMIT dialects quote the table and append LIMIT', () => {
-    expect(selectAllSql('orders', 'postgres')).toBe('SELECT * FROM "orders" LIMIT 200;')
-    expect(selectAllSql('orders', 'mysql', 50)).toBe('SELECT * FROM `orders` LIMIT 50;')
+    expect(selectTableSql({ table: 'orders', dialect: 'postgres' })).toBe(
+      'SELECT * FROM "orders" LIMIT 200;',
+    )
+    expect(selectTableSql({ table: 'orders', dialect: 'mysql' }, 50)).toBe(
+      'SELECT * FROM `orders` LIMIT 50;',
+    )
   })
 
   test('SQL Server uses TOP instead of LIMIT', () => {
-    expect(selectAllSql('orders', 'mssql', 25)).toBe('SELECT TOP 25 * FROM [orders];')
+    expect(selectTableSql({ table: 'orders', dialect: 'mssql' }, 25)).toBe(
+      'SELECT TOP 25 * FROM [orders];',
+    )
   })
 
   test('the table name is quoted here too (no raw interpolation)', () => {
-    expect(selectAllSql('a"b', 'postgres', 10)).toBe('SELECT * FROM "a""b" LIMIT 10;')
+    expect(selectTableSql({ table: 'a"b', dialect: 'postgres' }, 10)).toBe(
+      'SELECT * FROM "a""b" LIMIT 10;',
+    )
   })
 
   test('qualifies a table when Explorer provides its schema', () => {

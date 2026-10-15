@@ -17,6 +17,7 @@ import type {
   DbConnectionInfo,
   DbErrorCode,
   DbSchemas,
+  DbColumnCatalog,
   DbTableSchema,
   PingResponse,
   QueryResponse,
@@ -189,6 +190,12 @@ export const databaseApi = {
   async schemas(id: string): Promise<DbSchemas> {
     const res = await pluginApiFetch(`/rpc/database/${id}/schemas`, { method: 'GET' })
     return (await readOr<{ schemas: DbSchemas }>(res)).schemas
+  },
+
+  /** One-query column catalog, or null when the engine reads columns table by table. */
+  async columnCatalog(id: string): Promise<DbColumnCatalog | null> {
+    const res = await pluginApiFetch(`/rpc/database/${id}/columns`, { method: 'GET' })
+    return (await readOr<{ catalog: DbColumnCatalog | null }>(res)).catalog
   },
 
   async tableSchema(id: string, table: string, schema?: string): Promise<DbTableSchema> {

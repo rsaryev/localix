@@ -52,3 +52,15 @@ describe('resolveModelAlias', () => {
     expect(bestModelForFamily('fable', CATALOG)).toBeUndefined()
   })
 })
+
+describe('bestModelForFamily date stamps', () => {
+  test('a release date stamp never outranks a newer version number', () => {
+    const ids = ['claude-opus-4-20250514', 'claude-opus-4-5', 'claude-opus-4-1-20250805']
+    expect(bestModelForFamily('opus', ids)).toBe('claude-opus-4-5')
+  })
+
+  test('the date stamp breaks a tie between equal versions', () => {
+    const ids = ['claude-sonnet-4-5', 'claude-sonnet-4-5-20250929']
+    expect(bestModelForFamily('sonnet', ids)).toBe('claude-sonnet-4-5-20250929')
+  })
+})

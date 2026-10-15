@@ -1,4 +1,4 @@
-import { turnOf, type Game, type GameEnding, type Move, type Record } from '../../shared/game'
+import { turnOf, type Game, type GameEnding, type Move, type GameRecord } from '../../shared/game'
 import { other, type Side } from '../../shared/position'
 
 /**
@@ -12,7 +12,7 @@ import { other, type Side } from '../../shared/position'
 export const colour = (side: Side) => (side === 'white' ? 'White' : 'Black')
 
 /** " · Score 2–1, 3 draws" — the table's running score, empty before the first game ends. */
-export function scoreLine(record: Record): string {
+export function scoreLine(record: GameRecord): string {
   if (record.won + record.lost + record.draw === 0) return ''
   const draws = record.draw === 1 ? '1 draw' : `${record.draw} draws`
   return ` · Score ${record.won}–${record.lost}, ${draws}`

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
-import { pluginCommandActivity } from './pluginCommandActivity'
+import { makeOptimisticPair } from './optimisticPair'
 
 import type { applyStreamEventToSession } from '@/shared/api/client'
 import { backendClient, createWorkspaceSnapshot, type WorkspaceSnapshot } from '@/shared/api/client'
@@ -78,6 +78,16 @@ export interface ChatStore {
   _liveSessionRevision: number
   isCreatingProject: boolean
   editingProject: Project | null
+  /**
+   * A message a cross-chat link asked to reveal once its transcript mounts. The target
+   * transcript's MessageList consumes it (rings + scrolls) and clears it, so navigation never
+   * has to guess how long the route change takes.
+   */
+  focusMessageId: string | null
+  /** The session {@link focusMessageId} lives in; only that transcript may consume it. */
+  focusMessageSessionId: string | null
+  requestMessageFocus: (sessionId: string, messageId: string) => void
+  clearMessageFocus: () => void
   hydrateWorkspace: (snapshot: WorkspaceSnapshot) => void
   loadWorkspace: (signal?: AbortSignal) => Promise<void>
   loadProjects: () => Promise<void>
@@ -176,53 +186,6 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
   // minting — JOINS the pending creation instead of spawning a sibling chat.
   const autoCreateInFlight = new Map<string, Promise<UiSession | null>>()
 
-  // Disambiguates placeholder ids minted within the same millisecond.
-  let optimisticSeq = 0
-
-  // One mint for every optimistic paint (plain send AND edit-resend) so the id
-  // scheme and echo-claim contract can never drift between entry points.
-  const makeOptimisticPair = (text: string, bindings?: MessageBinding[], internal?: boolean) => {
-    optimisticSeq += 1
-    const stamp = `${Date.now()}-${optimisticSeq}`
-    const user: Message = {
-      id: `optimistic-user-${stamp}`,
-      role: 'user' as const,
-      content: text,
-      bindings,
-      optimistic: true,
-      // A hidden (machine-composed) send: flag the optimistic row the same way the server's
-      // echo will be flagged, so the transcript filter hides it from the very first frame.
-      ...(internal ? { isInternal: true } : {}),
-      createdAt: new Date().toISOString(),
-    }
-    const commandActivity = internal ? null : pluginCommandActivity(text)
-    const assistant: Message = commandActivity
-      ? {
-          id: `optimistic-assistant-${stamp}`,
-          role: 'system' as const,
-          commandOutput: {
-            command:
-              text
-                .trim()
-                .match(/^\/[\w-]+/)?.[0]
-                .toLowerCase() ?? '/plugin',
-            tone: 'neutral',
-            text: commandActivity.label,
-            activity: commandActivity,
-          },
-          optimistic: true,
-          createdAt: new Date().toISOString(),
-        }
-      : {
-          id: `optimistic-assistant-${stamp}`,
-          role: 'assistant' as const,
-          items: [],
-          optimistic: true,
-          createdAt: new Date().toISOString(),
-        }
-    return { user, assistant }
-  }
-
   const customSet = (
     nextStateOrFn: Partial<ChatStore> | ((state: ChatStore) => Partial<ChatStore>),
     replace?: boolean,
@@ -250,6 +213,11 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
     _liveSessionRevision: 0,
     isCreatingProject: false,
     editingProject: null,
+    focusMessageId: null,
+    focusMessageSessionId: null,
+    requestMessageFocus: (sessionId, messageId) =>
+      set({ focusMessageId: messageId, focusMessageSessionId: sessionId }),
+    clearMessageFocus: () => set({ focusMessageId: null, focusMessageSessionId: null }),
     hydrateWorkspace: (snapshot) => {
       // Token deltas live outside the roster arrays for O(1) streaming updates.
       // Snapshot them BEFORE clearing that side cache: a workspace revalidation

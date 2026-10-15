@@ -21,10 +21,10 @@ import type { IconComponent, MenuEntry } from '@localixai/plugin-sdk/ui'
 import { monogramIcon } from '@localixai/kit/avatar'
 import { StatusDot } from '@localixai/kit/status-dot'
 
-import type { KanbanStatus } from '../../shared/contracts'
+import { KANBAN_ORIGINS, type KanbanStatus } from '../../shared/contracts'
 import { KANBAN_STATUS_DOT } from '../model/kanbanStatus'
 import { PRIORITY_BUCKETS, PRIORITY_PRESENTATION } from '../model/priorityPresentation'
-import { COLUMNS, ORIGIN_FILTERS } from './constants'
+import { COLUMNS } from './constants'
 import type { KanbanFilters } from './useKanbanFilters'
 
 /** The board's own labels list is capped here, as the chip grid capped it. */
@@ -109,7 +109,7 @@ export function filterMenuEntries(filters: KanbanFilters): MenuEntry[] {
     id: 'origin',
     label: 'Origin',
     hint: pickHint([...filters.originFilter].map(capitalize)),
-    items: ORIGIN_FILTERS.map((o) =>
+    items: KANBAN_ORIGINS.map((o) =>
       toggleRow(`origin:${o}`, capitalize(o), filters.originFilter.has(o), () =>
         filters.toggleOrigin(o),
       ),

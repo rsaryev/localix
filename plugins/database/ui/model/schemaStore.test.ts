@@ -1,6 +1,6 @@
 import { afterAll, afterEach, describe, expect, it } from 'bun:test'
 import { databaseApi } from '../api/databaseApi'
-import type { DbSchemas, DbTableSchema } from '../dbClient'
+import type { DbColumnCatalog, DbSchemas, DbTableSchema } from '../dbClient'
 import { getCachedTable } from './schemaKey'
 import { COLUMN_LOAD_CONCURRENCY, schemaStore } from './schemaStore'
 
@@ -11,6 +11,10 @@ const originalSchemas = databaseApi.schemas.bind(databaseApi)
 const originalTableSchema = databaseApi.tableSchema.bind(databaseApi)
 databaseApi.schemas = () => schemasImpl()
 databaseApi.tableSchema = (_connectionId, table, schema) => tableSchemaImpl(table, schema)
+// Default: an engine without a catalog read, so the per-table prefetch runs as before.
+let columnCatalogImpl: () => Promise<DbColumnCatalog | null> = () => Promise.resolve(null)
+const originalColumnCatalog = databaseApi.columnCatalog.bind(databaseApi)
+databaseApi.columnCatalog = () => columnCatalogImpl()
 
 const SCHEMAS: DbSchemas = { main: [{ name: 'users', type: 'table' }] }
 const EMPTY_TABLE_SCHEMA: DbTableSchema = {
@@ -34,11 +38,64 @@ const tick = () => new Promise((r) => setTimeout(r, 0))
 afterEach(() => {
   // No module reset API — use a fresh connection id per test to isolate store entries.
   tableSchemaImpl = () => Promise.resolve(EMPTY_TABLE_SCHEMA)
+  columnCatalogImpl = () => Promise.resolve(null)
 })
 
 afterAll(() => {
   databaseApi.schemas = originalSchemas
   databaseApi.tableSchema = originalTableSchema
+  databaseApi.columnCatalog = originalColumnCatalog
+})
+
+describe('schemaStore column catalog — one read instead of a read per table', () => {
+  const many: DbSchemas = {
+    public: Array.from({ length: 40 }, (_, index) => ({ name: `t${index}`, type: 'table' })),
+    audit: [{ name: 't0', type: 'table' }],
+  }
+
+  it('fills the column vocabulary from the catalog and issues no per-table reads', async () => {
+    const id = 'conn-catalog'
+    let tableReads = 0
+    schemasImpl = () => Promise.resolve(many)
+    tableSchemaImpl = () => {
+      tableReads += 1
+      return Promise.resolve(EMPTY_TABLE_SCHEMA)
+    }
+    columnCatalogImpl = () =>
+      Promise.resolve([
+        { schema: 'public', table: 't0', columns: [{ name: 'id', dataType: 'int4', pk: true }] },
+        { schema: 'audit', table: 't0', columns: [{ name: 'at', dataType: 'text', pk: false }] },
+      ])
+    const { unsub } = watch(id)
+    await tick()
+    await tick()
+    const snap = schemaStore.getSnapshot(id)
+    expect(getCachedTable(snap.columnCatalog, 't0', 'public')?.columns[0]?.name).toBe('id')
+    expect(getCachedTable(snap.columnCatalog, 't0', 'audit')?.columns[0]?.name).toBe('at')
+    // Structures stay a deliberate per-table read: the catalog never poses as one.
+    expect(snap.tables).toEqual({})
+    schemaStore.ensureColumns(id, [{ name: 't0', schema: 'public' }])
+    await tick()
+    expect(tableReads).toBe(0)
+    unsub()
+  })
+
+  it('falls back to the per-table prefetch when the catalog read fails', async () => {
+    const id = 'conn-catalog-fails'
+    let tableReads = 0
+    schemasImpl = () => Promise.resolve(many)
+    tableSchemaImpl = () => {
+      tableReads += 1
+      return Promise.resolve(EMPTY_TABLE_SCHEMA)
+    }
+    columnCatalogImpl = () => Promise.reject(new Error('permission denied'))
+    const { unsub } = watch(id)
+    await tick()
+    await tick()
+    expect(tableReads).toBeGreaterThan(0)
+    expect(schemaStore.getSnapshot(id).columnCatalog).toEqual({})
+    unsub()
+  })
 })
 
 describe('schemaStore.invalidate — reconnect after a dropped driver', () => {
@@ -483,5 +540,16 @@ describe('schemaStore eager prefetch — one shared concurrency budget', () => {
     }
     // PREFETCH_CAP tables, plus the one the user asked for by hand.
     expect(Object.keys(schemaStore.getSnapshot(id).tables)).toHaveLength(151)
+  })
+})
+
+describe('mergeColumnSources', () => {
+  it('lets a full structure win over the catalog entry for the same key', async () => {
+    const { mergeColumnSources } = await import('./schemaKey')
+    const merged = mergeColumnSources<{ columns: string[] }>(
+      { a: { columns: ['thin'] }, b: { columns: ['b'] } },
+      { a: { columns: ['full'] } },
+    )
+    expect(merged).toEqual({ a: { columns: ['full'] }, b: { columns: ['b'] } })
   })
 })

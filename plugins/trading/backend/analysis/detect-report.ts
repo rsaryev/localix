@@ -10,22 +10,16 @@
 import type { ChartCommandPayload } from '../chart-command'
 import type { ChartDrawingSpec } from '../chart-drawing'
 import type { CandleFlag, PatternReport, PriceLevel } from './pattern-detect'
+import { isoFromUnixSeconds, toolNumber } from '../tool-number'
+import { BEARISH_COLOR, BULLISH_COLOR } from './draw-colors'
 
 /** Distinct-on-both-themes accents: support / resistance / trend (from the chart palette). */
-const SUPPORT_COLOR = '#4dd0a1'
-const RESISTANCE_COLOR = '#f472b6'
 const TREND_COLOR = '#6aa8ff'
 
 /** Below this fit quality a drawn trendline would be an invented line — reported, not drawn. */
 const TREND_DRAW_MIN_R2 = 0.3
 
-const iso = (unixSeconds: number) => new Date(unixSeconds * 1000).toISOString()
-
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 const flagLabel: Record<CandleFlag['pattern'], string> = {
   doji: 'doji (indecision)',
   hammer: 'hammer (potential reversal up)',
@@ -62,7 +56,7 @@ export function renderPatternReport(
   const supports = report.levels.filter((l) => l.kind === 'support')
   const resistances = report.levels.filter((l) => l.kind === 'resistance')
   const levelLine = (l: PriceLevel) =>
-    `  - ${l.kind} @ ${num(l.price)} (${l.touches} pivot touch${l.touches === 1 ? '' : 'es'}, last ${iso(l.lastTouch)})`
+    `  - ${l.kind} @ ${toolNumber(l.price)} (${l.touches} pivot touch${l.touches === 1 ? '' : 'es'}, last ${isoFromUnixSeconds(l.lastTouch)})`
   if (supports.length > 0) {
     lines.push('- support levels (strongest first):', ...supports.map(levelLine))
   }
@@ -80,7 +74,7 @@ export function renderPatternReport(
   }
   if (report.flags.length > 0) {
     lines.push(
-      `- candlestick flags on the newest bar(s): ${report.flags.map((f) => `${flagLabel[f.pattern]} @ ${iso(f.time)}`).join('; ')}`,
+      `- candlestick flags on the newest bar(s): ${report.flags.map((f) => `${flagLabel[f.pattern]} @ ${isoFromUnixSeconds(f.time)}`).join('; ')}`,
     )
   }
   return lines.join('\n')
@@ -105,7 +99,7 @@ export function detectDrawPayloads(
       kind: 'hline',
       id,
       price: level.price,
-      color: level.kind === 'support' ? SUPPORT_COLOR : RESISTANCE_COLOR,
+      color: level.kind === 'support' ? BULLISH_COLOR : BEARISH_COLOR,
       lineStyle: 'dashed',
       label: `${level.kind[0]!.toUpperCase()}${level.kind.slice(1)} ×${level.touches}`,
     })

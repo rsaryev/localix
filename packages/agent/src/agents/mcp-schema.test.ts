@@ -45,8 +45,38 @@ describe('mcpInputSchema bridge', () => {
     const schema = mcpInputSchema(raw) as unknown as {
       safeParse(v: unknown): { success: boolean; data?: unknown }
     }
-    expect(schema.safeParse(undefined)).toEqual({ success: true, data: {} })
-    expect(schema.safeParse(null)).toEqual({ success: true, data: {} })
+    const optional = mcpInputSchema({ type: 'object', properties: {} }) as unknown as typeof schema
+    expect(optional.safeParse(undefined)).toEqual({ success: true, data: {} })
+    expect(optional.safeParse(null)).toEqual({ success: true, data: {} })
+    // …and empty args still have to satisfy the server's required fields.
+    expect(schema.safeParse(undefined).success).toBe(false)
+  })
+
+  it('safeParse validates arguments against the server schema, keeping extra keys', () => {
+    const schema = mcpInputSchema(raw) as unknown as {
+      safeParse(v: unknown): {
+        success: boolean
+        data?: unknown
+        error?: { issues: Array<{ path: PropertyKey[] }> }
+      }
+    }
+    const wrongType = schema.safeParse({ path: '/tmp/x', depth: 'deep' })
+    expect(wrongType.success).toBe(false)
+    expect(wrongType.error?.issues[0]?.path).toEqual(['depth'])
+    expect(schema.safeParse({ depth: 1 }).success).toBe(false)
+    expect(schema.safeParse({ path: '/x', extra: true })).toEqual({
+      success: true,
+      data: { path: '/x', extra: true },
+    })
+  })
+
+  it('a schema zod cannot read degrades to the object-shape check', () => {
+    const schema = mcpInputSchema({
+      type: 'object',
+      properties: { r: { $ref: '#/definitions/Missing' } },
+    }) as unknown as { safeParse(v: unknown): { success: boolean } }
+    expect(schema.safeParse({ r: 1 }).success).toBe(true)
+    expect(schema.safeParse('x').success).toBe(false)
   })
 
   it('safeParse rejects non-object payloads with issues', () => {

@@ -78,6 +78,24 @@ export interface ScopedSubscribeOptions {
  * publish site at once. Swallowed silently — matching each subscriber's own close-socket
  * `catch {}` — so this hottest-in-the-system path never emits per-frame log spam.
  */
+/**
+ * The wire text is encoded on first read. Most streaming deltas reach no subscriber (a session
+ * nobody watches), and a buffered snapshot is often compacted away before any reconnect replays
+ * it — neither should pay for the encode.
+ */
+function createEnvelope(id: string, sessionId: string, event: AgentStreamEvent): StreamEnvelope {
+  let data: string | undefined
+  return {
+    id,
+    sessionId,
+    event,
+    get data() {
+      data ??= JSON.stringify(event)
+      return data
+    },
+  }
+}
+
 function deliver(subscriber: Subscriber, envelope: StreamEnvelope): void {
   try {
     subscriber(envelope)
@@ -285,14 +303,9 @@ export function createSessionStreamRegistry() {
     },
 
     publish(userId: string, sessionId: string, event: AgentStreamEvent) {
-      const envelope: StreamEnvelope = {
-        id: makeEventId(),
-        sessionId,
-        event,
-        // Serialize exactly once — the SSE route used to JSON.stringify per
-        // subscriber per event, which is O(payload × subscribers) on hot streams.
-        data: JSON.stringify(event),
-      }
+      // Serialized at most once and shared by every subscriber — the SSE route used to
+      // JSON.stringify per subscriber per event, O(payload × subscribers) on hot streams.
+      const envelope = createEnvelope(makeEventId(), sessionId, event)
 
       // Live-only events skip the replay buffer entirely (see NON_REPLAYABLE_EVENTS):
       // fan out to current subscribers and return, so a high-frequency stream never

@@ -10,6 +10,7 @@ import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbe
 import { CODE_VIEWER_HIGHLIGHT } from './sugarHighTheme'
 import { highlightCode } from './highlightCode'
 import { createBoundedCache } from '@localixai/kit/lib'
+import { COPIED_FEEDBACK_LONG_MS } from '@/shared/lib/timings'
 
 interface CodeBlockProps {
   code: string
@@ -84,7 +85,7 @@ export const CodeBlock = memo(function CodeBlock({
   caret,
   actions,
 }: CodeBlockProps) {
-  const { copied: isCopied, copy } = useCopied(1800)
+  const { copied: isCopied, copy } = useCopied(COPIED_FEEDBACK_LONG_MS)
   const normalizedCode = useMemo(() => normalizeCode(code), [code])
   // Highlighting a large, still-growing block is O(code) per render. Defer it so
   // the work runs at low priority: while the block streams, React keeps the prior

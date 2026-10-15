@@ -24,11 +24,12 @@ describe('agent run preflight', () => {
   })
 
   test('all workbench entry points cross the centralized policy owner', () => {
-    const source = readFileSync(resolve(import.meta.dir, 'client.ts'), 'utf8')
+    const messages = readFileSync(resolve(import.meta.dir, 'client/messages.ts'), 'utf8')
+    const runs = readFileSync(resolve(import.meta.dir, 'client/runs.ts'), 'utf8')
     // Three entry points start an agent run from the workbench. It was four while the mode
     // picker could carry a plan-approval continuation; that endpoint is gone with agent modes.
-    expect(source.match(/await readyAgentRunToolSurface\(/g)).toHaveLength(3)
-    expect(source).toMatch(
+    expect(messages.match(/await readyAgentRunToolSurface\(/g)).toHaveLength(3)
+    expect(runs).toMatch(
       /async runSessionLoop[\s\S]*?const policy = agentRunPreflight\(undefined\)[\s\S]*?if \(policy\) await policy/,
     )
   })

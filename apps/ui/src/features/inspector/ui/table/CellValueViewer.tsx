@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import { copyText } from '@localixai/plugin-sdk/ui/interactions'
 import { Copy, Check } from 'lucide-react'
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@localixai/kit/dialog'
 import { Button } from '@localixai/kit/button'
 import { JsonTree } from '@localixai/kit/json-tree'
+import { COPIED_FEEDBACK_SHORT_MS } from '@/shared/lib/timings'
+import { useCopiedFlag } from '@/shared/hooks/useCopiedFlag'
 
 /** The cell a viewer is opened for: the column title + the already-formatted string. */
 export interface CellView {
@@ -28,7 +29,7 @@ function parseJson(text: string): unknown {
  * Reuses the shared Dialog primitive (no bespoke overlay).
  */
 export function CellValueViewer({ cell, onClose }: { cell: CellView | null; onClose: () => void }) {
-  const [copied, setCopied] = useState(false)
+  const { copied, flash } = useCopiedFlag(COPIED_FEEDBACK_SHORT_MS)
   const json = cell ? parseJson(cell.text) : null
   const text = cell?.text ?? ''
 
@@ -38,8 +39,7 @@ export function CellValueViewer({ cell, onClose }: { cell: CellView | null; onCl
     // tick never appeared and no reason was given.
     void copyText(cell?.text ?? '', 'Cell value').then((ok) => {
       if (!ok) return
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1200)
+      flash()
     })
   }
 

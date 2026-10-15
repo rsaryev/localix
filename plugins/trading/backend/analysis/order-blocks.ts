@@ -16,6 +16,8 @@ import type { Candle } from '../contracts'
 import type { ChartCommandPayload } from '../chart-command'
 import type { ChartDrawingSpec } from '../chart-drawing'
 import { atr } from '../../ui/model/indicators'
+import { toolNumber } from '../tool-number'
+import { BEARISH_COLOR, BULLISH_COLOR } from './draw-colors'
 
 export interface OrderBlock {
   direction: 'bullish' | 'bearish'
@@ -106,8 +108,6 @@ export function detectOrderBlocks(candles: Candle[], maxBlocks = 3): OrderBlock[
 }
 
 /** Same demand/supply palette as the FVG zones — one SMC visual language. */
-const BULLISH_COLOR = '#4dd0a1'
-const BEARISH_COLOR = '#f472b6'
 
 /** The nearest unmitigated blocks as `zone` draw commands, stable `ob-*` ids (refresh, not stack). */
 export function orderBlockDrawPayloads(
@@ -134,10 +134,6 @@ export function orderBlockDrawPayloads(
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The blocks as report lines — INSIDE flagged first (the retest is happening now). */
 export function renderOrderBlocks(blocks: OrderBlock[]): string[] {
   if (blocks.length === 0) return []
@@ -145,7 +141,7 @@ export function renderOrderBlocks(blocks: OrderBlock[]): string[] {
   const inside = blocks.find((b) => b.distancePct === 0)
   if (inside) {
     lines.push(
-      `- INSIDE a ${inside.direction} order block NOW (${num(inside.bottom)}–${num(inside.top)}) — the retest is happening; expect a reaction.`,
+      `- INSIDE a ${inside.direction} order block NOW (${toolNumber(inside.bottom)}–${toolNumber(inside.top)}) — the retest is happening; expect a reaction.`,
     )
   }
   lines.push(
@@ -153,9 +149,9 @@ export function renderOrderBlocks(blocks: OrderBlock[]): string[] {
   )
   for (const b of blocks) {
     const where =
-      b.distancePct === 0 ? 'here' : `${b.distancePct >= 0 ? '+' : ''}${num(b.distancePct)}%`
+      b.distancePct === 0 ? 'here' : `${b.distancePct >= 0 ? '+' : ''}${toolNumber(b.distancePct)}%`
     lines.push(
-      `    · ${b.direction} ${b.direction === 'bullish' ? 'demand' : 'supply'} ${num(b.bottom)}–${num(b.top)} (${where})`,
+      `    · ${b.direction} ${b.direction === 'bullish' ? 'demand' : 'supply'} ${toolNumber(b.bottom)}–${toolNumber(b.top)} (${where})`,
     )
   }
   return lines

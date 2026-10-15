@@ -1,4 +1,4 @@
-import type { PlayerView, Record, Shot } from '../../shared/game'
+import type { PlayerView, GameRecord, Shot } from '../../shared/game'
 import { cellName } from '../../shared/rules'
 
 /**
@@ -35,7 +35,7 @@ export const nextOpener = (view: PlayerView) =>
   view.first === 'agent' ? 'you fire first' : 'the agent fires first'
 
 /** " · Score 2–1" — the table's running score, empty before the first game ends. */
-export const scoreLine = (record: Record) =>
+export const scoreLine = (record: GameRecord) =>
   record.won + record.lost === 0 ? '' : ` · Score ${record.won}–${record.lost}`
 
 /** "12s", "1m 05s" — how long the agent has been thinking. */

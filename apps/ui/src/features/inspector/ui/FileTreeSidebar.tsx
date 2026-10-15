@@ -1,25 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { toast } from '@/shared/lib/notify'
-import {
-  ChevronsDownUp,
-  RefreshCw,
-  FilePlus,
-  FolderPlus,
-  ClipboardPaste,
-  Search as SearchIcon,
-  Filter,
-  Text,
-  X,
-  MoreHorizontal,
-} from 'lucide-react'
 import { PanelHeader } from '@localixai/kit/panel-header'
-import { IconButton } from '@localixai/kit/icon-button'
-import { SearchInput } from '@localixai/kit/search-input'
-import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
 import { subscribeNewFile } from '@/shared/lib/explorerBus'
 import { ContentSearchView } from './search/ContentSearchView'
-import { Toggle as ModeToggle } from './search/SearchTreeView'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { useKeybindingMatcher } from '@/shared/lib/keybindings'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
@@ -27,69 +11,25 @@ import { MenuEntries } from '@localixai/kit/menu-entries'
 import { useChatStore } from '@/features/chat/model/store'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { createTypeahead } from '@localixai/kit/tree-navigation'
-import { useFileTree, type PendingDelete } from './useFileTree'
-import { revealScrollIndex } from './fileTreeReveal'
+import { useFileTree } from './useFileTree'
 import { fileTreeRootMenu } from './fileTreeRootMenu'
 import { useFileTreeDecorations, useFileTreeScopeKey } from '@/shared/contrib/fileTreeDecorations'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-} from '@localixai/kit/dropdown-menu'
-import { fileTreeOptionsEntries } from './fileTreeOptionsMenu'
 import { selectedComparePathForSession, useCompareSelection } from '../model/compareSelection'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { ProblemLine } from '@/shared/ui/problem-report'
-import { Spinner } from '@localixai/kit/spinner'
 import { useTreeSearch } from './useTreeSearch'
 import { useTreeDnd } from './useTreeDnd'
 import type { TreeRowOps } from './treeRowOps'
 import { FileTreeEntries } from './FileTreeEntries'
-import {
-  fileTreeEntryRows,
-  fileTreeNavigation,
-  flattenFileTreeRows,
-  type FileTreeNavigationKey,
-} from './fileTreeRows'
-import type { VisibleRow } from './fileTreePaths'
+import { FileTreeHeaderActions } from './FileTreeHeaderActions'
+import { FileTreeSearchBar } from './FileTreeSearchBar'
+import { describeDeletion } from './fileTreeDeletion'
+import { useFileTreeFocus } from './useFileTreeFocus'
+import { useFileTreeLayout } from './useFileTreeLayout'
 import { DROP_TARGET_INSET_ACTIVE, DROP_TARGET_TRANSITION } from '@localixai/kit/drop-target'
 import { copyText } from '@localixai/plugin-sdk/ui/interactions'
 
 const copy = (text: string, label: string) => void copyText(text, label)
-
-/** Confirm-dialog copy for a pending single- or multi-row delete. `permanent`
- *  distinguishes the reversible move-to-trash (default) from a Shift+Delete that
- *  removes the entry for good. (Remote sessions have no local trash and
- *  always delete permanently — noted here so the copy never over-promises undo.) */
-function describeDeletion(
-  targets: PendingDelete[],
-  permanent: boolean,
-): { title?: string; description?: string } {
-  if (targets.length === 0) return {}
-  const tail = permanent ? 'This cannot be undone.' : 'It will move to Trash — you can undo this.'
-  if (targets.length === 1) {
-    const t = targets[0]
-    return {
-      title:
-        t.type === 'dir'
-          ? permanent
-            ? 'Delete folder permanently?'
-            : 'Delete folder?'
-          : permanent
-            ? 'Delete file permanently?'
-            : 'Delete file?',
-      description: `“${t.name}”${t.type === 'dir' ? ' and its contents' : ''} will be ${permanent ? 'permanently deleted' : 'moved to Trash'}. ${tail}`,
-    }
-  }
-  const hasDir = targets.some((t) => t.type === 'dir')
-  return {
-    title: permanent
-      ? `Delete ${targets.length} items permanently?`
-      : `Delete ${targets.length} items?`,
-    description: `${targets.length} items${hasDir ? ' (including folder contents)' : ''} will be ${permanent ? 'permanently deleted' : 'moved to Trash'}. ${tail}`,
-  }
-}
 
 /** Lazy project file tree. Directories load their children on first expand; files open in the inspector panel. */
 export function FileTreeSidebar() {
@@ -259,42 +199,16 @@ function SessionFileTreeSidebar({ sessionId }: { sessionId: string | null }) {
     copyText: copy,
   })
 
-  // One flat layout is authoritative for render order and every interaction that
-  // used to query all mounted DOM rows. That is what makes bounded rendering safe:
-  // rows outside the viewport remain navigable, revealable, and range-selectable.
-  const rows = useMemo(
-    () =>
-      root
-        ? flattenFileTreeRows({
-            root,
-            childrenByPath,
-            truncatedByPath,
-            expanded,
-            loading,
-            edit,
-            filter,
-            compactEnabled,
-          })
-        : [],
-    [root, childrenByPath, truncatedByPath, expanded, loading, edit, filter, compactEnabled],
-  )
-  const entryRows = useMemo(() => fileTreeEntryRows(rows), [rows])
-  const rootIsEmpty =
-    rows.length === 1 &&
-    rows[0]?.kind === 'status' &&
-    rows[0].status === 'empty' &&
-    rows[0].depth === 0
-  const entryOrder = useMemo<VisibleRow[]>(
-    () => entryRows.map(({ path, name, type }) => ({ path, name, type })),
-    [entryRows],
-  )
-  const layoutIndexByPath = useMemo(() => {
-    const indexes = new Map<string, number>()
-    rows.forEach((row, index) => {
-      if (row.kind === 'entry') indexes.set(row.path, index)
-    })
-    return indexes
-  }, [rows])
+  const { rows, entryRows, entryOrder, layoutIndexByPath, rootIsEmpty } = useFileTreeLayout({
+    root,
+    childrenByPath,
+    truncatedByPath,
+    expanded,
+    loading,
+    edit,
+    filter,
+    compactEnabled,
+  })
 
   // Roving focus still makes the tree one Tab stop. Unlike the shared DOM-based
   // helper, its validity comes from the complete model and the active row is
@@ -332,251 +246,52 @@ function SessionFileTreeSidebar({ sessionId }: { sessionId: string | null }) {
     enabled: !contentMode,
   })
 
-  const pendingFocusRef = useRef<string | null>(null)
-  const focusPath = useCallback(
-    (path: string) => {
-      const index = layoutIndexByPath.get(path)
-      if (index === undefined) return
-      pendingFocusRef.current = path
-      setRememberedRovingPath(path)
-      virtualizer.scrollToIndex(index, { align: 'auto' })
-    },
-    [layoutIndexByPath, virtualizer],
-  )
-
-  useLayoutEffect(() => {
-    const pending = pendingFocusRef.current
-    if (!pending || pending !== rovingPath || !scrollEl) return
-    // `scrollToIndex` may have to widen the virtual range before the row exists in
-    // the DOM, and that lands a frame later — without the retry a jump to a far-off
-    // row (End, PageDown, a typeahead match) scrolled but left focus behind, so the
-    // NEXT arrow key navigated from the old row.
-    let frame = 0
-    const tryFocus = () => {
-      const path = pendingFocusRef.current
-      if (!path) return
-      const target = scrollEl.querySelector<HTMLElement>(`[data-tree-path="${CSS.escape(path)}"]`)
-      if (!target) {
-        frame = requestAnimationFrame(tryFocus)
-        return
-      }
-      pendingFocusRef.current = null
-      target.focus({ preventScroll: true })
-    }
-    tryFocus()
-    return () => {
-      if (frame) cancelAnimationFrame(frame)
-    }
-  }, [rovingPath, rows, scrollEl])
-
-  // Reveal emits a semantic path only after its ancestor loads/expands settle.
-  // Mapping it to a layout index works even when the target had no DOM node.
-  // `revealScrollIndex` owns the once-per-intent rule — see the note there for why
-  // re-serving a completed request is what made the tree jump on every expand.
-  const revealedIntentRef = useRef<number | null>(null)
-  useLayoutEffect(() => {
-    const index = revealScrollIndex(revealRequest, revealedIntentRef.current, (path) =>
-      layoutIndexByPath.get(path),
-    )
-    if (index === null) {
-      if (!revealRequest) revealedIntentRef.current = null
-      return
-    }
-    revealedIntentRef.current = revealRequest?.intent ?? null
-    virtualizer.scrollToIndex(index, { align: 'center' })
-  }, [layoutIndexByPath, revealRequest, virtualizer])
-
-  const [typeahead] = useState(() => createTypeahead())
-  const onTreeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.defaultPrevented) return
-    const target = e.target
-    if (!(target instanceof Element)) return
-    const currentPath = target.closest<HTMLElement>('[data-tree-path]')?.dataset.treePath
-    if (!currentPath) return // inline create/rename input owns its own keys
-    if (
-      e.key === 'ArrowUp' ||
-      e.key === 'ArrowDown' ||
-      e.key === 'ArrowLeft' ||
-      e.key === 'ArrowRight' ||
-      e.key === 'Home' ||
-      e.key === 'End'
-    ) {
-      const navigation = fileTreeNavigation(entryRows, currentPath, e.key as FileTreeNavigationKey)
-      if (!navigation) return
-      e.preventDefault()
-      if (navigation.kind === 'toggle') doToggleDir(navigation.path)
-      else focusPath(navigation.path)
-      return
-    }
-    if (e.key.length !== 1 || e.key === ' ' || e.ctrlKey || e.metaKey || e.altKey) return
-    const match = typeahead.handleChar(e.key, entryRows, currentPath)
-    if (!match) return
-    e.preventDefault()
-    focusPath(match)
-  }
+  const { onTreeKeyDown } = useFileTreeFocus({
+    virtualizer,
+    scrollEl,
+    rows,
+    entryRows,
+    layoutIndexByPath,
+    rovingPath,
+    setRememberedRovingPath,
+    revealRequest,
+    doToggleDir,
+  })
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
         title="Files"
         actions={
-          <>
-            <IconButton
-              size="sm"
-              aria-label={searchVisible ? 'Hide search' : 'Search files'}
-              tooltip={searchVisible ? 'Hide search' : 'Search files'}
-              tooltipSide="bottom"
-              aria-pressed={searchVisible}
-              className={searchVisible ? 'text-foreground' : undefined}
-              onClick={() => (searchVisible ? closeSearch() : openSearch())}
-            >
-              <SearchIcon className="size-3.5" />
-            </IconButton>
-            {contentMode ? (
-              <>
-                <IconButton
-                  size="sm"
-                  aria-label="Collapse all results"
-                  tooltip="Collapse all results"
-                  tooltipSide="bottom"
-                  disabled={!content.hasResults}
-                  onClick={content.collapseAll}
-                >
-                  <ChevronsDownUp className="size-3.5" />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  aria-label="Clear search"
-                  tooltip="Clear search"
-                  tooltipSide="bottom"
-                  onClick={closeSearch}
-                >
-                  <X className="size-3.5" />
-                </IconButton>
-              </>
-            ) : (
-              <>
-                <IconButton
-                  size="sm"
-                  aria-label="New file"
-                  tooltip="New file"
-                  tooltipSide="bottom"
-                  disabled={!root}
-                  onClick={() => root && void startCreate(root, 'file')}
-                >
-                  <FilePlus className="size-3.5" />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  aria-label="New folder"
-                  tooltip="New folder"
-                  tooltipSide="bottom"
-                  disabled={!root}
-                  onClick={() => root && void startCreate(root, 'dir')}
-                >
-                  <FolderPlus className="size-3.5" />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  aria-label="Paste into project root"
-                  tooltip="Paste into project root"
-                  tooltipSide="bottom"
-                  disabled={!root || !clipboard}
-                  onClick={() => root && void pasteInto(root)}
-                >
-                  <ClipboardPaste className="size-3.5" />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  aria-label="Collapse all"
-                  tooltip="Collapse all"
-                  tooltipSide="bottom"
-                  onClick={collapseAll}
-                  disabled={expanded.size === 0}
-                >
-                  <ChevronsDownUp className="size-3.5" />
-                </IconButton>
-                {/* A live tree follows disk by itself; Refresh exists only where it cannot
-                    (an ssh/docker workspace, a watcher that failed). */}
-                {!live && (
-                  <IconButton
-                    size="sm"
-                    aria-label="Refresh"
-                    tooltip="Refresh"
-                    tooltipSide="bottom"
-                    onClick={() => loadRoot()}
-                  >
-                    {refreshing ? (
-                      <Spinner className="size-3.5" />
-                    ) : (
-                      <RefreshCw className="size-3.5" />
-                    )}
-                  </IconButton>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <IconButton
-                      size="sm"
-                      aria-label="File tree options"
-                      tooltip="More options"
-                      tooltipSide="bottom"
-                    >
-                      <MoreHorizontal className="size-3.5" />
-                    </IconButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <MenuEntries
-                      family="dropdown"
-                      entries={fileTreeOptionsEntries({ compactEnabled, toggleCompactEnabled })}
-                    />
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            )}
-          </>
+          <FileTreeHeaderActions
+            searchVisible={searchVisible}
+            openSearch={openSearch}
+            closeSearch={closeSearch}
+            contentMode={contentMode}
+            content={content}
+            root={root}
+            hasClipboard={Boolean(clipboard)}
+            hasExpanded={expanded.size > 0}
+            live={live}
+            refreshing={refreshing}
+            compactEnabled={compactEnabled}
+            toggleCompactEnabled={toggleCompactEnabled}
+            startCreate={startCreate}
+            pasteInto={pasteInto}
+            collapseAll={collapseAll}
+            loadRoot={loadRoot}
+          />
         }
       />
       {searchVisible && (
-        <WorkbenchToolbar
-          ref={searchRowRef}
-          density="compact"
-          tone="sidebar"
-          aria-label="File search controls"
-          className="gap-1 px-2"
-        >
-          <SearchInput
-            value={query}
-            onValueChange={setQuery}
-            inset
-            size="md"
-            autoFocus
-            placeholder={searchMode === 'names' ? 'Filter files by name' : 'Search in files'}
-            aria-label={searchMode === 'names' ? 'Filter files by name' : 'Search in files'}
-            className="min-w-0 flex-1"
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.stopPropagation()
-                closeSearch()
-              }
-            }}
-          />
-          <WorkbenchToolbarSection spacing="compact" aria-label="Search mode">
-            <ModeToggle
-              active={searchMode === 'content'}
-              onClick={() => setSearchMode('content')}
-              title="Search in file contents"
-            >
-              <Text className="size-3" />
-            </ModeToggle>
-            <ModeToggle
-              active={searchMode === 'names'}
-              onClick={() => setSearchMode('names')}
-              title="Filter files by name"
-            >
-              <Filter className="size-3" />
-            </ModeToggle>
-          </WorkbenchToolbarSection>
-        </WorkbenchToolbar>
+        <FileTreeSearchBar
+          rowRef={searchRowRef}
+          mode={searchMode}
+          setMode={setSearchMode}
+          query={query}
+          setQuery={setQuery}
+          onClose={closeSearch}
+        />
       )}
       {contentMode ? (
         <ContentSearchView cs={content} query={query} />

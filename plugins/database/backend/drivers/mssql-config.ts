@@ -1,4 +1,5 @@
 import sql from 'mssql'
+import { CONNECT_TIMEOUT_MS } from './connect-timeout'
 import type { DriverConnInput } from './connection-input'
 
 /** Map our `ssl` shape → tedious TLS options.
@@ -73,6 +74,7 @@ export function buildMssqlPoolConfig(options: DriverConnInput): sql.config | str
       }
     }
     return {
+      connectionTimeout: CONNECT_TIMEOUT_MS,
       server: u.hostname ? dec(u.hostname) : 'localhost',
       ...(u.port ? { port: Number(u.port) } : {}),
       ...(u.username ? { user: dec(u.username) } : {}),
@@ -88,6 +90,7 @@ export function buildMssqlPoolConfig(options: DriverConnInput): sql.config | str
     }
   }
   return {
+    connectionTimeout: CONNECT_TIMEOUT_MS,
     server: options.host ?? 'localhost',
     ...(options.port !== undefined ? { port: options.port } : {}),
     ...(options.user !== undefined ? { user: options.user } : {}),

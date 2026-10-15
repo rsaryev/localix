@@ -33,10 +33,10 @@ import type { ContextRef } from '@/shared/api/contracts'
 import { resolveUiAnchor } from '@/shared/contrib/uiAnchors'
 import { workItemRequestOf } from '@/shared/hooks/useUiNavigation'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
 import { scopePath } from '@/shared/routing/routes'
 import { useChatStore } from '../model/store'
 import { selectRefLabelValues } from './refLabelSelector'
+import { ringMessage } from './messageRing'
 import {
   capabilitySettingsUiUri,
   parseCapabilityResourceUri,
@@ -77,9 +77,6 @@ export interface RefOpenContext {
   navigateUi?: (uri: string) => void
 }
 
-/** How long a call-pill click keeps the target card's search ring lit. */
-const CALL_RING_MS = 1600
-
 /** Scroll the transcript to the message containing `toolCallId` (reuses the
  *  message-search scroll+ring seam; auto-clears the ring after a beat).
  *  Resolved at CLICK time so late-loading messages are still found. */
@@ -91,13 +88,7 @@ function scrollToToolCall(sessionId: string, toolCallId: string): void {
         'toolCallId' in it && (it as { toolCallId?: string }).toolCallId?.startsWith(toolCallId),
     ),
   )
-  if (!hit) return
-  const bus = useMessageSearchStore.getState()
-  bus.setActiveId(hit.id)
-  setTimeout(() => {
-    const cur = useMessageSearchStore.getState()
-    if (cur.activeId === hit.id && !cur.open) cur.setActiveId(null)
-  }, CALL_RING_MS)
+  if (hit) ringMessage(hit.id)
 }
 
 /**
@@ -142,25 +133,22 @@ export const REF_OPEN_ACTIONS: Record<
     return projectId ? () => ctx.navigate(scopePath(projectId, null)) : null
   },
   // Open the linked message: navigate to its host session (resolving the session's
-  // own project from the store), then light the message-search ring on it. When the
-  // pill already lives in that session's transcript we just scroll (no navigation).
+  // own project from the store), then hand the message to the store's focus request — the
+  // target transcript rings it once mounted. When the pill already lives in that session's
+  // transcript we just ring it (no navigation).
   message: (ref, ctx) => {
     const target = ref.sessionId
     const messageId = ref.messageId
     if (!target || !messageId) return null
     return () => {
-      if (target !== ctx.sessionId) {
-        const projectId = useChatStore
-          .getState()
-          .allSessions.find((s) => s.id === target)?.projectId
-        if (projectId) ctx.navigate(scopePath(projectId, target))
+      if (target === ctx.sessionId) {
+        ringMessage(messageId)
+        return
       }
-      const bus = useMessageSearchStore.getState()
-      setTimeout(() => bus.setActiveId(messageId), target !== ctx.sessionId ? 200 : 0)
-      setTimeout(() => {
-        const cur = useMessageSearchStore.getState()
-        if (cur.activeId === messageId && !cur.open) cur.setActiveId(null)
-      }, CALL_RING_MS + 200)
+      const store = useChatStore.getState()
+      const projectId = store.allSessions.find((s) => s.id === target)?.projectId
+      if (projectId) ctx.navigate(scopePath(projectId, target))
+      store.requestMessageFocus(target, messageId)
     }
   },
   terminal: (_ref, ctx) => {

@@ -20,3 +20,13 @@ test('bounds both a single large chunk and the number of retained terminals', ()
   expect(terminalOutput('large')).toBeUndefined()
   for (let n = 0; n < 16; n++) resetTerminalOutput(`cache-${n}`)
 })
+
+test('a full buffer of small writes keeps exactly the newest output, in order', () => {
+  const chunk = (n: number) => `${String(n).padStart(7, '0')}\n`
+  for (let n = 0; n < 100_000; n++) retainTerminalOutput('stream', chunk(n))
+  const kept = terminalOutput('stream')!
+  expect(kept.length).toBe(256 * 1024)
+  expect(kept).toEndWith(chunk(99_999))
+  expect(kept.startsWith(chunk(100_000 - (256 * 1024) / 8))).toBe(true)
+  resetTerminalOutput('stream')
+})

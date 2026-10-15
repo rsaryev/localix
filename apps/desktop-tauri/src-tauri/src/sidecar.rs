@@ -6,7 +6,7 @@
 
 use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 use tauri::Manager;
@@ -76,6 +76,9 @@ fn end_process(managed: ManagedChild) {
 #[derive(Default)]
 pub(crate) struct ApiSidecar {
     child: Mutex<Option<ManagedChild>>,
+    /// Signalled whenever `child` is cleared by an exit, so a stop waits on the exit itself
+    /// instead of polling the slot.
+    child_cleared: Condvar,
     stopping: AtomicBool,
     /// Set while an update is being installed: a runtime that dies then must stay dead, since the
     /// files a respawn would load are the ones being replaced.
@@ -215,25 +218,28 @@ fn timeout_message(app: &tauri::AppHandle) -> String {
     format_timeout_message(last.as_deref())
 }
 
-/// What the runtime prints the moment its code runs (`apps/api/src/index.ts`).
+/// What the runtime prints the moment its code runs (`apps/api/src/index.ts`). The one place the
+/// shell matches runtime output text; keep it in step with that print.
 const CODE_LOADED_PREFIX: &str = "[startup] runtime code loaded";
+/// Where every failure reason points for the full story.
+const API_LOG_PATH: &str = "~/.localix/logs/api.log";
+const TIMEOUT_LEAD: &str = "timed out waiting for the local API";
 
+/// The failure reason for a start that never became ready, chosen from the runtime's last line.
 fn format_timeout_message(last: Option<&str>) -> String {
     match last {
         // Loaded and then went quiet: nothing past that line says why, so point at the log.
         Some(line) if line.starts_with(CODE_LOADED_PREFIX) => {
-            "timed out waiting for the local API: it started but never became ready \
-             (see ~/.localix/logs/api.log)"
-                .to_string()
+            format!("{TIMEOUT_LEAD}: it started but never became ready (see {API_LOG_PATH})")
         }
-        Some(line) => format!("timed out waiting for the local API — last: {line}"),
+        Some(line) => format!("{TIMEOUT_LEAD} — last: {line}"),
         // Not even the first line: the process never got to run its own code. The one cause
         // seen live is macOS holding the read of the app's files behind a folder-access prompt
         // (an app run from Documents, Desktop or Downloads).
-        None => "the local API could not start: it never got to run its code. If macOS asked \
-                 to allow access to a folder, allow it and restart Localix; otherwise see \
-                 ~/.localix/logs/api.log"
-            .to_string(),
+        None => format!(
+            "the local API could not start: it never got to run its code. If macOS asked to allow \
+             access to a folder, allow it and restart Localix; otherwise see {API_LOG_PATH}"
+        ),
     }
 }
 
@@ -434,6 +440,7 @@ fn spawn_runtime(
                     // Dropping the record closes the tree: whatever the runtime left running ends
                     // with it.
                     drop(exited);
+                    sidecar.child_cleared.notify_all();
                     let ready = ready_for_events.load(Ordering::Acquire);
                     let owns_runtime = owns_runtime_for_events.load(Ordering::Acquire);
                     let stopping = sidecar.stopping.load(Ordering::Acquire);
@@ -460,7 +467,7 @@ fn spawn_runtime(
                         report_error(
                             &handle,
                             format!(
-                                "local API exited (code {:?}){} — see ~/.localix/logs/api.log",
+                                "local API exited (code {:?}){} — see {API_LOG_PATH}",
                                 payload.code,
                                 if restart.is_some() {
                                     " and keeps stopping, so it was not started again"
@@ -566,15 +573,16 @@ pub(crate) fn stop_api_blocking(app: &tauri::AppHandle, grace: Duration) {
         }
         None => return,
     }
-    let deadline = Instant::now() + grace;
-    while Instant::now() < deadline {
-        // The event task clears this on `Terminated`, so it going empty IS the child being
-        // gone — no separate liveness probe to disagree with.
-        if sidecar.child.lock().unwrap().is_none() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(50));
+    // The event task clears the slot on `Terminated` and signals `child_cleared`, so it going
+    // empty IS the child being gone — no separate liveness probe to disagree with.
+    let (slot, _) = sidecar
+        .child_cleared
+        .wait_timeout_while(sidecar.child.lock().unwrap(), grace, |slot| slot.is_some())
+        .unwrap();
+    if slot.is_none() {
+        return;
     }
+    drop(slot);
     kill_api_child(app, "did not exit within the shutdown grace");
 }
 

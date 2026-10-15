@@ -32,21 +32,41 @@ export function secretConsumerFor(name: string, field: string): SecretConsumer {
   return { type: SECRET_CONSUMER_TYPE, id: name, field: `auth.${field}`, label: name }
 }
 
-/** The secret-bearing field of each auth variant — everything else is a plain identifier. */
-export const SECRET_FIELDS: Record<RequestAuth['type'], readonly string[]> = {
-  none: [],
-  basic: ['password'],
-  bearer: ['token'],
-  apikey: ['value'],
+/** The one secret-bearing field of an auth variant; everything else is a plain identifier. */
+export type AuthSecretField = 'password' | 'token' | 'value'
+
+/** The auth's secret-bearing field and its value, or null for a variant that carries none. */
+export function authSecret(auth: RequestAuth): { field: AuthSecretField; value: string } | null {
+  switch (auth.type) {
+    case 'basic':
+      return { field: 'password', value: auth.password }
+    case 'bearer':
+      return { field: 'token', value: auth.token }
+    case 'apikey':
+      return { field: 'value', value: auth.value }
+    case 'none':
+      return null
+  }
+}
+
+/** A copy of `auth` with its secret-bearing field set to `value`; the variant is unchanged. */
+export function withAuthSecret(auth: RequestAuth, value: string): RequestAuth {
+  switch (auth.type) {
+    case 'basic':
+      return { ...auth, password: value }
+    case 'bearer':
+      return { ...auth, token: value }
+    case 'apikey':
+      return { ...auth, value }
+    case 'none':
+      return auth
+  }
 }
 
 /** True when `auth` references the vault anywhere — used to decide whether a resolver is needed. */
 export function authNeedsVault(auth: RequestAuth): boolean {
-  const record = auth as unknown as Record<string, unknown>
-  return SECRET_FIELDS[auth.type].some((field) => {
-    const value = record[field]
-    return typeof value === 'string' && hasSecretTokens(value)
-  })
+  const secret = authSecret(auth)
+  return typeof secret?.value === 'string' && hasSecretTokens(secret.value)
 }
 
 /**
@@ -70,18 +90,11 @@ export async function resolveAuthSecrets(
         'Reload the plugin, or replace the ${secret:KEY} reference with a literal value.',
     )
   }
-  const out: Record<string, unknown> = { ...auth }
-  // Every validated auth variant owns at most one secret-bearing field. Keep the
-  // variant table as the source of truth without presenting this as a serial loop.
-  const field = SECRET_FIELDS[auth.type][0]
-  if (field) {
-    const value = out[field]
-    if (typeof value === 'string' && hasSecretTokens(value)) {
-      const consumer = requestName ? secretConsumerFor(requestName, field) : undefined
-      out[field] = await resolveSecretTokens(value, (key) => resolve(userId, key, consumer))
-    }
-  }
-  // Only the secret-bearing fields of a validated variant were rewritten, and each stays a
-  // string — the discriminant `type` is untouched, so the shape is the one we started with.
-  return out as unknown as RequestAuth
+  // `authNeedsVault` passed, so the variant has a secret field holding a reference.
+  const { field, value } = authSecret(auth)!
+  const consumer = requestName ? secretConsumerFor(requestName, field) : undefined
+  return withAuthSecret(
+    auth,
+    await resolveSecretTokens(value, (key) => resolve(userId, key, consumer)),
+  )
 }

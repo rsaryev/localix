@@ -65,8 +65,23 @@ const DANGEROUS_PATTERNS = [
   /\bdocker\b[^|&;\n]*(?<![-\w])\b(?:rmi|rm|prune)\b/i,
 ]
 
+/**
+ * The command as the shell would spell its words once quoting is removed: `"rm" -rf`,
+ * `r''m -rf` and `su\do` all run the same program as their plain spelling. The patterns are
+ * matched against BOTH forms, so dequoting can only add matches — it never hides one the raw
+ * text already had (a `;` inside quotes stays visible in the raw form).
+ */
+function dequoted(command: string): string {
+  return command.replace(/\\(?=\S)|['"]/g, '')
+}
+
+function matchesAny(patterns: readonly RegExp[], command: string): boolean {
+  const plain = dequoted(command)
+  return patterns.some((p) => p.test(command) || (plain !== command && p.test(plain)))
+}
+
 export function isDangerous(command: string): boolean {
-  return DANGEROUS_PATTERNS.some((p) => p.test(command))
+  return matchesAny(DANGEROUS_PATTERNS, command)
 }
 
 /**
@@ -100,5 +115,5 @@ const CATASTROPHIC_PATTERNS = [
 
 /** Is this command irreversible? Always a subset of {@link isDangerous}. */
 export function isCatastrophic(command: string): boolean {
-  return CATASTROPHIC_PATTERNS.some((p) => p.test(command))
+  return matchesAny(CATASTROPHIC_PATTERNS, command)
 }

@@ -21,6 +21,8 @@ import {
 
 import { isMissingExecutable, type Prerequisite } from '@localixai/plugin-sdk/prerequisite'
 
+import { DockerTransportError } from './api-transport'
+
 export type DockerErrorCode = 'engine_unavailable' | 'not_found' | 'action_failed' | 'engine_error'
 
 const FRIENDLY: Record<DockerErrorCode, string> = {
@@ -98,6 +100,13 @@ export function mapDockerError(err: unknown, context: DockerErrorContext = {}): 
       prerequisite: dockerPrerequisite('missing'),
     })
   }
+  // The Engine API path carries the transport's own verdict: status 0 means the daemon never
+  // answered, an HTTP status is the daemon's answer. No wording needs to be guessed.
+  if (err instanceof DockerTransportError) {
+    if (err.status === 0) return stoppedEngine(err, raw, context)
+    if (err.status === 404) return new DockerError('not_found', raw || undefined, { cause: err })
+    return new DockerError('engine_error', raw || undefined, { cause: err })
+  }
   if (
     low.includes('cannot connect to the docker daemon') ||
     // Observed from Docker Desktop on macOS, and previously misread as `not_found` because its
@@ -111,16 +120,11 @@ export function mapDockerError(err: unknown, context: DockerErrorContext = {}): 
     low.includes('docker command timed out') ||
     low.includes('connection refused') ||
     low.includes('docker.sock') ||
-    low.includes('enoent') ||
     // Docker Desktop's proxy socket answers while its VM is stopped or paused.
     low.includes('docker desktop is') ||
     low.includes('is manually paused')
   ) {
-    const command = dockerStartCommand(raw, context.platform ?? currentPlatform())
-    return new DockerError('engine_unavailable', raw || undefined, {
-      cause: err,
-      prerequisite: dockerPrerequisite('stopped', command),
-    })
+    return stoppedEngine(err, raw, context)
   }
   // `no such container|object|volume|network|image|…` — Docker phrases a missing
   // target as "No such <kind>". `engine_unavailable` is tested first above, so a
@@ -129,4 +133,12 @@ export function mapDockerError(err: unknown, context: DockerErrorContext = {}): 
     return new DockerError('not_found', raw || undefined, { cause: err })
   }
   return new DockerError('engine_error', raw || undefined, { cause: err })
+}
+
+function stoppedEngine(err: unknown, raw: string, context: DockerErrorContext): DockerError {
+  const command = dockerStartCommand(raw, context.platform ?? currentPlatform())
+  return new DockerError('engine_unavailable', raw || undefined, {
+    cause: err,
+    prerequisite: dockerPrerequisite('stopped', command),
+  })
 }

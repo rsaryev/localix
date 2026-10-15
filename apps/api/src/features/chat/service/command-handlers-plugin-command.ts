@@ -70,7 +70,7 @@ export async function handlePluginCommand(
     const speakerRoute = speaker ?? sessionRoute(session)
     const parsed = parsePluginCommandArgs(match.command, argString, match.plugin)
     if ('usage' in parsed) {
-      return insertDirectReply(userId, sessionId, prompt, parsed.usage, ts)
+      return insertDirectReply(userId, sessionId, prompt, parsed.usage, ts, 'warning')
     }
     const projectDir = await ctx.resolveSessionWorkingDir(userId, session)
     const instruction = await renderPluginPrompt(match.command.prompt, parsed.values, argString, {

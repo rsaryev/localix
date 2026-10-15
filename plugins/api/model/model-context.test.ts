@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { hasSecretShape } from '@localixai/plugin-sdk/secret-shapes'
 import { formatBodyForModel, redactModelSecrets } from './model-context'
 
 describe('formatBodyForModel', () => {
@@ -38,5 +39,20 @@ describe('formatBodyForModel', () => {
     expect(formatBodyForModel(`Authorization: Bearer ${'a'.repeat(20)}`, 'text/plain')).toBe(
       'Authorization: [redacted]',
     )
+  })
+
+  test('masks every shape the host admission boundary would reject', () => {
+    // One shared list: a shape the host rejects is never left in a body the view sends on.
+    const samples = [
+      `sk-ant-${'a'.repeat(24)}`,
+      `GOCSPX-${'b'.repeat(24)}`,
+      `glpat-${'c'.repeat(24)}`,
+      `AIza${'d'.repeat(35)}`,
+      'AKIAABCDEFGHIJKLMNOP',
+    ]
+    for (const sample of samples) {
+      expect(hasSecretShape(sample)).toBe(true)
+      expect(hasSecretShape(redactModelSecrets(`value ${sample}`))).toBe(false)
+    }
   })
 })

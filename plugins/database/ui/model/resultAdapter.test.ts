@@ -7,7 +7,7 @@ import { adaptResult, adaptedRowsForTextExport, adaptedRowsToRecords } from './r
  * Behavior lock for the SQL-result → dataview grid adapter — the bridge every query result
  * renders through. Pins the parts a regression would silently break: unique column ids when
  * a query yields duplicate/blank labels (a collision would drop columns in the keyed rows),
- * best-effort type inference from the first non-null cell, and the `coerce` special cases
+ * type inference over every non-null cell, and the `coerce` special cases
  * (Buffer/Uint8Array/Date/bigint/object) that keep an odd cell from crashing the grid.
  */
 const rs = (names: string[], rows: unknown[][]): DbResultSet => ({
@@ -59,7 +59,7 @@ describe('adaptResult — column ids', () => {
   })
 })
 
-describe('adaptResult — type inference from the first non-null cell', () => {
+describe('adaptResult — type inference over every non-null cell', () => {
   test('int / float / bool / text', () => {
     const out = adaptResult(
       rs(
@@ -71,6 +71,20 @@ describe('adaptResult — type inference from the first non-null cell', () => {
       ),
     )
     expect(out.columns.map((c) => c.type)).toEqual(['int', 'float', 'bool', 'text'])
+  })
+
+  test('a column whose later cells disagree is not typed by its first', () => {
+    const out = adaptResult(
+      rs(
+        ['mixed', 'widened'],
+        [
+          [1, 1],
+          ['n/a', 1.5],
+          [2, 3],
+        ],
+      ),
+    )
+    expect(out.columns.map((c) => c.type)).toEqual(['text', 'float'])
   })
 
   test('an all-null column falls back to text', () => {

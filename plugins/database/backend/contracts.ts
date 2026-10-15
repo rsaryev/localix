@@ -2,7 +2,13 @@
 // connection-config zod schemas (ssl / ssh / per-dialect union) live in
 // ./contracts/connection-config; this facade re-exports the full public surface.
 import { z } from 'zod'
-import type { DbResultSet, DbSchemas, DbTableSchema, DriverFlags } from './drivers/port'
+import type {
+  DbColumnCatalog,
+  DbResultSet,
+  DbSchemas,
+  DbTableSchema,
+  DriverFlags,
+} from './drivers/port'
 import type { DbErrorCode, DbStatementFailure } from './errors'
 import { dbConnectionConfigSchema, type DbConnectionConfig } from './contracts/connection-config'
 import type { ConnectionColor } from './colors'
@@ -212,6 +218,11 @@ export interface DbErrorResponse {
 
 export interface SchemasResponse {
   schemas: DbSchemas
+}
+
+/** `catalog: null` — this engine has no one-query column catalog; read tables one by one. */
+export interface ColumnCatalogResponse {
+  catalog: DbColumnCatalog | null
 }
 
 export interface TableSchemaResponse {

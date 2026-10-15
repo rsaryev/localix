@@ -207,3 +207,31 @@ describe('closePartialMarkdown', () => {
     expect(closePartialMarkdown(text)).toBe(text)
   })
 })
+
+describe('openFenceBody incremental scan', () => {
+  test('matches a fresh scan while text grows token by token and after unrelated texts', () => {
+    const reply =
+      'Intro\n\n```ts\nconst a = 1\n```\n\nMore\n~~~~\ncode\n~~~ x\n~~~~\nend\n```\nlast'
+    for (let i = 0; i <= reply.length; i += 1) {
+      const text = reply.slice(0, i)
+      openFenceBody('unrelated\n```\nbody') // reset the cached prefix between calls
+      const fresh = openFenceBody(text)
+      for (let j = 0; j <= i; j += 1) openFenceBody(reply.slice(0, j))
+      expect(openFenceBody(text)).toBe(fresh)
+    }
+    expect(openFenceBody(reply)).toBe('last')
+    expect(openFenceBody('```')).toBe('')
+    expect(openFenceBody('```\n```')).toBeNull()
+  })
+
+  test('stays linear on a long streamed reply', () => {
+    const line = 'word '.repeat(20) + '\n'
+    const started = performance.now()
+    let text = '```\n'
+    for (let i = 0; i < 20_000; i += 1) {
+      text += line
+      closePartialMarkdown(text)
+    }
+    expect(performance.now() - started).toBeLessThan(2_000)
+  })
+})

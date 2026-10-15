@@ -2,6 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+import type { RuntimeEndpoint } from './lib/runtime-endpoint'
+import { isOwnDescriptor } from './runtime-daemon'
+
 const INDEX = readFileSync(resolve(import.meta.dir, 'index.ts'), 'utf8')
 
 /**
@@ -37,7 +40,10 @@ describe('a watch reload must not attach to its own outgoing runtime', () => {
   })
 
   test('the guard compares against this process', () => {
-    expect(uses('return endpoint?.pid === process.pid')).toBe(true)
+    const descriptor = (pid: number) => ({ pid }) as RuntimeEndpoint
+    expect(isOwnDescriptor(descriptor(process.pid))).toBe(true)
+    expect(isOwnDescriptor(descriptor(process.pid + 1))).toBe(false)
+    expect(isOwnDescriptor(null)).toBe(false)
   })
 
   test('the patterns match a real occurrence — otherwise the checks above are vacuous', () => {

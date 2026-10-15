@@ -17,7 +17,7 @@ import { useEditorIntegration } from './ui/sql-console/useEditorIntegration'
 import { useSqlEditorModel } from './db-console-tab/useSqlEditorModel'
 import { useSqlCatalog } from './model/sql-diagnostics/useSqlCatalog'
 import { useEngineCheck } from './model/sql-diagnostics/useEngineCheck'
-import { selectAllSql } from './model/sqlIdent'
+import { selectTableSql } from './model/sqlIdent'
 import { sqlPredictionContextReferences } from './model/sqlPredictionContext'
 import { useSqlHistory } from './model/useSqlHistory'
 import { QueryParametersDialog } from './ui/QueryParametersDialog'
@@ -95,7 +95,7 @@ export function SqlFileTab(props: React.ComponentProps<typeof FileTab>) {
   const engineCheck = useEngineCheck(active?.id)
   const openTable = useCallback(
     (table: string) => {
-      if (active) void sqlConsole.runSql(selectAllSql(table, active.dialect))
+      if (active) void sqlConsole.runSql(selectTableSql({ table, dialect: active.dialect }))
     },
     [active, sqlConsole],
   )

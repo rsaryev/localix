@@ -1,15 +1,5 @@
 import { lazy, type ComponentType } from 'react'
-import type {
-  PluginContextBindingIconProps,
-  PluginContextBindingPreviewProps,
-  PluginFileTabProps,
-  PluginInputProps,
-  PluginProblemLineProps,
-  PluginProblemStateProps,
-  PluginTableGridProps,
-  PluginTextareaProps,
-  PluginUiComponents,
-} from '@localixai/plugin-sdk/ui/components'
+import type { PluginFileTabProps, PluginUiComponents } from '@localixai/plugin-sdk/ui/components'
 
 /**
  * The host components lent to plugins, and how they load.
@@ -55,16 +45,14 @@ export function preloadPluginUiComponents(): Promise<unknown> {
 }
 
 export const pluginUiComponents: PluginUiComponents = {
+  // The SDK types editor `extensions` as `unknown[]` so plugins need no Monaco types; the host
+  // component takes Monaco's own. Every other lent component matches its contract as-is.
   FileTab: lazy(loaders.FileTab) as unknown as ComponentType<PluginFileTabProps>,
-  TableGrid: lazy(loaders.TableGrid) as unknown as ComponentType<PluginTableGridProps>,
-  ContextBindingIcon: lazy(
-    loaders.ContextBindingIcon,
-  ) as unknown as ComponentType<PluginContextBindingIconProps>,
-  ContextBindingPreview: lazy(
-    loaders.ContextBindingPreview,
-  ) as unknown as ComponentType<PluginContextBindingPreviewProps>,
-  Input: lazy(loaders.Input) as unknown as ComponentType<PluginInputProps>,
-  Textarea: lazy(loaders.Textarea) as unknown as ComponentType<PluginTextareaProps>,
-  ProblemLine: lazy(loaders.ProblemLine) as unknown as ComponentType<PluginProblemLineProps>,
-  ProblemState: lazy(loaders.ProblemState) as unknown as ComponentType<PluginProblemStateProps>,
+  TableGrid: lazy(loaders.TableGrid),
+  ContextBindingIcon: lazy(loaders.ContextBindingIcon),
+  ContextBindingPreview: lazy(loaders.ContextBindingPreview),
+  Input: lazy(loaders.Input),
+  Textarea: lazy(loaders.Textarea),
+  ProblemLine: lazy(loaders.ProblemLine),
+  ProblemState: lazy(loaders.ProblemState),
 }

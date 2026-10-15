@@ -1,4 +1,4 @@
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+import { askAgentForTurn, type Seat, type Wake } from '@localixai/plugin-sdk/backend'
 
 import { drawBoard, lastMoveLine, recordLine, threatLine } from '../shared/describe'
 import { freeCells, type AgentWait, type Game } from '../shared/game'
@@ -14,17 +14,7 @@ import { freeCells, type AgentWait, type Game } from '../shared/game'
  * asked for.
  */
 
-export type Wake = (request: PluginWakeRequest) => Promise<PluginWakeOutcome>
-
-/**
- * Whose table: the host's user and the chat session the board belongs to. In a route both come
- * from `c.env`, where the host puts a session only after checking the user owns it; in a tool, the
- * session is the run's own (`context.session.id`).
- */
-export interface Seat {
-  userId: string
-  sessionId: string
-}
+export type { Seat, Wake }
 
 /** The one tool a woken turn answers with — the host puts it on the wire before it starts. */
 export const ANSWER_TOOLS = ['tic_tac_toe']
@@ -62,14 +52,6 @@ export async function askAgent(
   game: Game,
   now: string,
 ): Promise<AgentWait> {
-  if (!wake) return { since: now, status: 'unreachable', reason: 'This app cannot wake a chat.' }
-  const outcome = await wake({
-    userId: seat.userId,
-    sessionId: seat.sessionId,
-    message: askForMove(game),
-    tools: ANSWER_TOOLS,
-    key: positionKey(game),
-  })
-  if (outcome.status === 'delivered') return { since: now, status: 'thinking' }
-  return { since: now, status: 'unreachable', reason: outcome.reason }
+  const turn = { message: askForMove(game), tools: ANSWER_TOOLS, key: positionKey(game) }
+  return askAgentForTurn(wake, seat, turn, now)
 }

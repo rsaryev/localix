@@ -96,8 +96,13 @@ describe('throttled markdown preview', () => {
       new URL('../../features/inspector/ui/FileTab.tsx', import.meta.url),
       'utf8',
     )
-    expect(source).not.toContain('<MarkdownRenderer>{buffer}</MarkdownRenderer>')
-    expect(source).toContain('<MarkdownRenderer>{previewText}</MarkdownRenderer>')
+    const body = readFileSync(
+      new URL('../../features/inspector/ui/FileEditorBody.tsx', import.meta.url),
+      'utf8',
+    )
+    expect(body).not.toContain('<MarkdownRenderer>{buffer}</MarkdownRenderer>')
+    expect(body).toContain('<MarkdownRenderer>{previewText}</MarkdownRenderer>')
+    expect(source).toContain('previewText={previewText}')
     expect(source).toContain(
       'const previewText = useStreamingThrottle(buffer, previewMounted, STREAM_MARKDOWN_REPARSE_MS)',
     )

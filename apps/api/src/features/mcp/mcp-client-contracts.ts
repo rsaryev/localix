@@ -3,6 +3,7 @@ import type {
   ResourceContents,
   ResourceTemplate,
   ToolAnnotations,
+  ToolListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { AgentTool, McpJsonSchema } from '@localixai/agent/agents'
 
@@ -73,9 +74,16 @@ export interface McpClientLike {
     params: { name: string; arguments: Record<string, unknown> },
     resultSchema?: undefined,
     options?: { timeout?: number; resetTimeoutOnProgress?: boolean; signal?: AbortSignal },
-  ): Promise<{ content?: unknown; isError?: unknown }>
+  ): Promise<{ content?: unknown; isError?: unknown; [field: string]: unknown }>
   close(): Promise<void>
   onclose?: (() => void) | undefined
+  /** The server's `InitializeResult.instructions` (present on the real SDK client). */
+  getInstructions?(): string | undefined
+  /** Best-effort notification hook, used for `notifications/tools/list_changed`. */
+  setNotificationHandler?(
+    schema: typeof ToolListChangedNotificationSchema,
+    handler: () => void,
+  ): void
   // Optional resource capability (present on the real SDK client) — used by the
   // consolidated mcp_resources tool for servers that advertise it.
   getServerCapabilities?(): { resources?: unknown; prompts?: unknown } | undefined

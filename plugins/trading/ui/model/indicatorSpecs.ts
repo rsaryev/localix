@@ -28,7 +28,6 @@ import {
   donchian,
   dpo,
   easeOfMovement,
-  ema,
   envelopes,
   fisher,
   forceIndex,
@@ -41,14 +40,14 @@ import {
   macd,
   obv,
   pivotSeries,
-  rsi,
   stoch,
   supertrend,
   vwap,
   vwapBands,
   type IndicatorSpec,
 } from './indicators'
-import { movingAverage } from './candleSeries'
+import type { Candle } from '../../backend/contracts'
+import { emaStepper, incrementalLine, rsiStepper, smaStepper } from './indicatorIncremental'
 
 /**
  * The PARAMETERIZED indicator catalog: any `IndicatorParams` (parsed from a canonical id like
@@ -111,13 +110,14 @@ export function indicatorSpecFor(params: IndicatorParams): IndicatorSpec | null 
   const label = indicatorLabel(params)
   switch (params.kind) {
     case 'sma': {
-      const { period } = params
+      // Incremental: a live tick recomputes only the tail (bit-identical to `movingAverage`).
+      const line = incrementalLine(smaStepper(params.period))
       return {
         id,
         label,
         placement: 'overlay',
         series: [{ key: 'line', type: 'line', color: lineColor(id) }],
-        compute: (c) => ({ line: movingAverage(c, period) }),
+        compute: (c) => ({ line: line(c) }),
       }
     }
     case 'ema':
@@ -126,13 +126,17 @@ export function indicatorSpecFor(params: IndicatorParams): IndicatorSpec | null 
     case 'alma':
     case 'lsma': {
       const { kind, period } = params
-      const fn = { ema, hma, dema, alma, lsma }[kind]
+      // EMA carries its state across ticks; the window-composed averages recompute in full.
+      const fn =
+        kind === 'ema'
+          ? incrementalLine(emaStepper(period))
+          : (c: Candle[]) => ({ hma, dema, alma, lsma })[kind](c, period)
       return {
         id,
         label,
         placement: 'overlay',
         series: [{ key: 'line', type: 'line', color: lineColor(id) }],
-        compute: (c) => ({ line: fn(c, period) }),
+        compute: (c) => ({ line: fn(c) }),
       }
     }
     case 'bollinger': {
@@ -187,7 +191,7 @@ export function indicatorSpecFor(params: IndicatorParams): IndicatorSpec | null 
       }
     }
     case 'rsi': {
-      const { period } = params
+      const line = incrementalLine(rsiStepper(params.period))
       return {
         id,
         label,
@@ -195,7 +199,7 @@ export function indicatorSpecFor(params: IndicatorParams): IndicatorSpec | null 
         series: [{ key: 'line', type: 'line', color: '#6aa8ff' }],
         levels: [30, 70],
         defaultRange: { min: 0, max: 100 },
-        compute: (c) => ({ line: rsi(c, period) }),
+        compute: (c) => ({ line: line(c) }),
       }
     }
     case 'vwap':

@@ -5,6 +5,7 @@
  * day to derive today's pivots from). Timeframe-agnostic — the day grouping folds any bar size.
  */
 import type { Candle } from '../contracts'
+import { toolNumber } from '../tool-number'
 
 export interface PivotPoints {
   pp: number
@@ -57,13 +58,9 @@ export function pivotPoints(candles: Candle[]): PivotPoints | null {
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The pivots as one report line — resistances above, PP, supports below. */
 export function renderPivotPoints(p: PivotPoints): string[] {
   return [
-    `- daily pivots (from the prior day): R2 ${num(p.r2)}, R1 ${num(p.r1)}, PP ${num(p.pp)}, S1 ${num(p.s1)}, S2 ${num(p.s2)}`,
+    `- daily pivots (from the prior day): R2 ${toolNumber(p.r2)}, R1 ${toolNumber(p.r1)}, PP ${toolNumber(p.pp)}, S1 ${toolNumber(p.s1)}, S2 ${toolNumber(p.s2)}`,
   ]
 }

@@ -5,6 +5,7 @@
  * different trade from one pinned under resistance. Pure over the levels the scan already found.
  */
 import type { PriceLevel } from './pattern-detect'
+import { toolNumber } from '../tool-number'
 
 export interface StructurePosition {
   /** Nearest level at or below the price (the support in play), or null if none is below. */
@@ -38,10 +39,6 @@ export function structurePosition(levels: PriceLevel[], price: number): Structur
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /**
  * The position as a report line — "1.2% above support X, 2.4% below resistance Y (room R:S ≈ 2.0)".
  * The room ratio is resistance-distance ÷ support-distance: how much a long has to run versus how
@@ -50,15 +47,17 @@ function num(value: number): string {
 export function renderStructurePosition(pos: StructurePosition, price: number): string[] {
   const parts: string[] = []
   if (pos.support && pos.supportPct !== null) {
-    parts.push(`${num(pos.supportPct)}% above support ${num(pos.support.price)}`)
+    parts.push(`${toolNumber(pos.supportPct)}% above support ${toolNumber(pos.support.price)}`)
   }
   if (pos.resistance && pos.resistancePct !== null) {
-    parts.push(`${num(pos.resistancePct)}% below resistance ${num(pos.resistance.price)}`)
+    parts.push(
+      `${toolNumber(pos.resistancePct)}% below resistance ${toolNumber(pos.resistance.price)}`,
+    )
   }
   if (parts.length === 0) return []
   let room = ''
   if (pos.supportPct && pos.resistancePct && pos.supportPct > 0) {
-    room = ` (room to resistance vs support ≈ ${num(pos.resistancePct / pos.supportPct)}:1)`
+    room = ` (room to resistance vs support ≈ ${toolNumber(pos.resistancePct / pos.supportPct)}:1)`
   }
-  return [`- position (last ${num(price)}): ${parts.join(', ')}${room}`]
+  return [`- position (last ${toolNumber(price)}): ${parts.join(', ')}${room}`]
 }

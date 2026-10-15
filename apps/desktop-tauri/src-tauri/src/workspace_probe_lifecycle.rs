@@ -34,8 +34,11 @@ pub(crate) fn run(
     inspect_later(app, action, result, 0);
 }
 
+/// How often a lifecycle probe re-reads window state while AppKit animates.
+const INSPECT_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
+
 fn inspect_later(app: AppHandle, action: String, result: Sender<serde_json::Value>, attempt: u8) {
-    crate::main_queue::after(std::time::Duration::from_millis(100), move || {
+    crate::main_queue::after(INSPECT_INTERVAL, move || {
         let mut state = crate::workspace_probe::snapshot(&app);
         let windows = state["windows"].as_array().unwrap();
         let finished = if action == "minimize_reopen" {

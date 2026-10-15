@@ -1,4 +1,4 @@
-import type { DbSchemas, DbSchemaItem, DbTableSchema } from '../dbClient'
+import type { DbSchemas, DbSchemaItem } from '../dbClient'
 import { scoreSearchFields } from '@localixai/plugin-sdk/ui/utilities'
 import { getCachedTable } from './schemaKey'
 
@@ -69,7 +69,7 @@ export function matchSchemaItem(
  */
 export function searchSchemas(
   schemas: DbSchemas,
-  tables: Record<string, DbTableSchema>,
+  tables: Record<string, { columns: readonly { name: string }[] }>,
   query: string,
 ): SchemaSearchResult | null {
   const q = query.trim()

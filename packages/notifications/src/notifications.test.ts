@@ -560,3 +560,23 @@ describe('application notification envelope', () => {
     expect(applicationNotificationEnvelope('info', 'Title').event.body).toBeUndefined()
   })
 })
+
+describe('agentNotificationEnvelope source', () => {
+  it('names the surface and resource of every trigger kind', () => {
+    const source = (trigger: Parameters<typeof agentNotificationEnvelope>[0]) =>
+      agentNotificationEnvelope(trigger).event.source
+    expect(
+      source({ type: 'user.mentioned', sessionId: 's', messageId: 'm', from: 'ana' }),
+    ).toMatchObject({ kind: 'agent_mention', resource: { kind: 'message', id: 'm' } })
+    expect(source({ type: 'child.stopped', sessionId: 's', runId: 'r' })).toEqual({
+      kind: 'agent_child',
+      resource: undefined,
+      sessionId: 's',
+      projectId: undefined,
+    })
+    expect(source({ type: 'run.failed', sessionId: 's' })).toMatchObject({
+      kind: 'agent_run',
+      resource: undefined,
+    })
+  })
+})

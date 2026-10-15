@@ -4,6 +4,8 @@
  * no-extra-deps stance. `parseArgs` splits the command word from its options.
  */
 
+import { statSync } from 'node:fs'
+
 export interface OpenCommandOptions {
   /**
    * The path argument for the `open` command (`localix .` / `localix <path>`).
@@ -48,21 +50,48 @@ export interface ParsedArgs {
   options: OpenCommandOptions
 }
 
-const BOOL_ALIASES: Record<string, keyof OpenCommandOptions> = {
-  '--new': 'fresh',
-  '-n': 'fresh',
-  '--help': 'help',
-  '-h': 'help',
-  '--version': 'version',
-  '-v': 'version',
+type BoolOption = 'fresh' | 'help' | 'version'
+
+/** A Map, so a path token like `constructor` is never mistaken for an inherited alias. */
+const BOOL_ALIASES: ReadonlyMap<string, BoolOption> = new Map([
+  ['--new', 'fresh'],
+  ['-n', 'fresh'],
+  ['--help', 'help'],
+  ['-h', 'help'],
+  ['--version', 'version'],
+  ['-v', 'version'],
+])
+
+/** True when `token` names an existing directory relative to the cwd. */
+function isExistingDirectory(token: string): boolean {
+  try {
+    return statSync(token).isDirectory()
+  } catch {
+    return false
+  }
 }
 
-export function parseArgs(argv: readonly string[]): ParsedArgs {
+/**
+ * `isDirectory` is injectable for tests. A lone command word that is also an
+ * existing directory (`localix open` with `./open` on disk) opens the directory:
+ * the user typed a bare name that resolves to something real, and the command
+ * word alone would only open the cwd anyway. `localix open open` already routes
+ * the second token to the path argument.
+ */
+export function parseArgs(
+  argv: readonly string[],
+  isDirectory: (token: string) => boolean = isExistingDirectory,
+): ParsedArgs {
   const [first, ...rest] = argv
+  const lonePathCommand =
+    first !== undefined &&
+    KNOWN_COMMANDS.has(first) &&
+    !rest.some((token) => !token.startsWith('-')) &&
+    isDirectory(first)
 
   // A path-like first token (not a flag, not a known command) → the `open` command,
   // with the token captured as its path argument.
-  if (first && looksLikePath(first)) {
+  if (first && (looksLikePath(first) || lonePathCommand)) {
     const options = parseFlags(rest)
     options.pathArg = first
     return { command: 'open', options }
@@ -77,9 +106,10 @@ function parseFlags(tokens: readonly string[]): OpenCommandOptions {
   const options: OpenCommandOptions = {}
   const positional: string[] = []
   for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i]
-    if (token in BOOL_ALIASES) {
-      options[BOOL_ALIASES[token]] = true as never
+    const token = tokens[i]!
+    const alias = BOOL_ALIASES.get(token)
+    if (alias) {
+      options[alias] = true
     } else if (token.startsWith('-') && token !== '-') {
       // Silently ignoring an unknown flag is the worst outcome: the user would
       // believe an option took effect. Fail before anything is opened.

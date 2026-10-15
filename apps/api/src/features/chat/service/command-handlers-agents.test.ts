@@ -247,7 +247,7 @@ describe('/agents management', () => {
       await h.run(prompt)
     expect(h.macros).toEqual([])
     expect(h.writes).toHaveLength(1)
-    await h.run('/agents create Ревьюер')
+    await h.run('/agents create \u0420\u0435\u0432\u044c\u044e\u0435\u0440')
     expect(h.macros).toHaveLength(1)
   })
 })

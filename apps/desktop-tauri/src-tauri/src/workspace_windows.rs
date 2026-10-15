@@ -2,7 +2,7 @@
 //! Use Window + Webview separately: get_webview_window stops finding a workspace
 //! as soon as a native browser child is attached to it.
 use std::collections::BTreeMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use tauri::{AppHandle, Manager, Webview, Window};
 
 #[derive(Clone)]
@@ -104,13 +104,21 @@ impl WorkspaceWindows {
     }
 }
 
-pub(crate) fn is_workspace<R: tauri::Runtime>(app: &AppHandle<R>, label: &str) -> bool {
-    app.state::<WorkspaceWindows>()
+/// Locks the workspace registry. Keep the guard short: never hold it across a main-thread
+/// round trip or a window call that can re-enter a workspace event handler.
+pub(crate) fn workspaces<R: tauri::Runtime, M: Manager<R>>(
+    manager: &M,
+) -> MutexGuard<'_, WindowData> {
+    manager
+        .state::<WorkspaceWindows>()
+        .inner()
         .0
         .lock()
         .unwrap()
-        .entries
-        .contains_key(label)
+}
+
+pub(crate) fn is_workspace<R: tauri::Runtime>(app: &AppHandle<R>, label: &str) -> bool {
+    workspaces(app).entries.contains_key(label)
 }
 
 pub(crate) fn require_workspace(caller: &Webview) -> Result<(), String> {
@@ -124,29 +132,25 @@ pub(crate) fn require_workspace(caller: &Webview) -> Result<(), String> {
 }
 
 pub(crate) fn views<R: tauri::Runtime>(app: &AppHandle<R>) -> Vec<Webview<R>> {
-    let labels: Vec<_> = app
-        .state::<WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
-        .entries
-        .keys()
-        .cloned()
-        .collect();
+    let labels: Vec<_> = workspaces(app).entries.keys().cloned().collect();
     labels
         .iter()
         .filter_map(|label| app.get_webview(label))
         .collect()
 }
 
+/// Settings… (menu and tray) drives the UI's inspector settings panel, which has no URL route.
+pub(crate) fn open_settings_in_active_view<R: tauri::Runtime>(app: &AppHandle<R>) {
+    if let Some(view) = active_view(app) {
+        let _ = view.eval("window.__localixOpenSettings && window.__localixOpenSettings()");
+    }
+}
+
 pub(crate) fn active_view<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<Webview<R>> {
     let views: Vec<_> = views(app)
         .into_iter()
         .filter(|view| {
-            app.state::<WorkspaceWindows>()
-                .0
-                .lock()
-                .unwrap()
+            workspaces(app)
                 .entries
                 .get(view.label())
                 .is_some_and(|entry| !entry.provisional)
@@ -158,13 +162,7 @@ pub(crate) fn active_view<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<Webvi
     {
         return Some(view.clone());
     }
-    let last = app
-        .state::<WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
-        .active
-        .clone();
+    let last = workspaces(app).active.clone();
     views
         .iter()
         .find(|view| Some(view.label()) == last.as_deref())
@@ -176,6 +174,12 @@ pub(crate) fn active_window<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<Win
     active_view(app).map(|view| view.window())
 }
 
+/// How long `workspace_open` waits for the main thread to build a window. Building one loads a
+/// webview, which can take a few seconds on a cold start; ten leaves headroom without hanging the
+/// caller on a wedged main thread.
+#[cfg(target_os = "macos")]
+const OPEN_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
 #[tauri::command]
 pub(crate) async fn workspace_open(
     app: AppHandle,
@@ -186,16 +190,10 @@ pub(crate) async fn workspace_open(
     #[cfg(target_os = "macos")]
     {
         let host = as_tab.then(|| caller.label().to_string());
-        let (tx, rx) = std::sync::mpsc::channel();
-        crate::macos_tabs::defer(move || {
-            let _ = tx.send(open(&app, host, None, None));
-        });
-        tauri::async_runtime::spawn_blocking(move || {
-            rx.recv_timeout(std::time::Duration::from_secs(10))
-                .map_err(|_| "Workspace creation timed out".to_string())?
+        crate::round_trip::run_on_main(OPEN_TIMEOUT, "Workspace creation timed out", move || {
+            open(&app, host, None, None)
         })
-        .await
-        .map_err(|error| error.to_string())?
+        .await?
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -250,69 +248,38 @@ fn open_with_mode(
     provisional: bool,
     hidden: bool,
 ) -> Result<String, String> {
-    if app
-        .state::<WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
-        .entries
-        .len()
-        >= 64
-    {
+    if workspaces(app).entries.len() >= 64 {
         return Err("Close a workspace before opening another (64 workspaces maximum)".into());
     }
     let label = match saved_label {
         Some(label) => label,
         None => new_label()?,
     };
-    let script = app
-        .state::<WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
-        .init_script
-        .clone();
+    let script = workspaces(app).init_script.clone();
     if provisional || hidden {
-        app.state::<WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
-            .entries
-            .insert(
-                label.clone(),
-                Workspace {
-                    route: route.clone(),
-                    provisional,
-                    hidden,
-                    transfer_pending: provisional,
-                    ..Workspace::default()
-                },
-            );
+        workspaces(app).entries.insert(
+            label.clone(),
+            Workspace {
+                route: route.clone(),
+                provisional,
+                hidden,
+                transfer_pending: provisional,
+                ..Workspace::default()
+            },
+        );
     }
     let window = match crate::workspace_builder::build(app, &label, route.as_deref(), &script) {
         Ok(window) => window,
         Err(error) => {
             if provisional || hidden {
-                app.state::<WorkspaceWindows>()
-                    .0
-                    .lock()
-                    .unwrap()
-                    .entries
-                    .remove(&label);
+                workspaces(app).entries.remove(&label);
             }
             return Err(error.to_string());
         }
     };
     // Register before the first-paint IPC can run; a builder caller is on the main thread.
     register(&window);
-    if let Some(entry) = app
-        .state::<WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
-        .entries
-        .get_mut(&label)
-    {
+    if let Some(entry) = workspaces(app).entries.get_mut(&label) {
         entry.route = route;
         entry.host = host;
     }
@@ -331,11 +298,7 @@ pub(crate) fn workspace_location(
     if !crate::workspace_session::valid_route(&route) {
         return Err("Invalid workspace route".into());
     }
-    let changed = app
-        .state::<WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
+    let changed = workspaces(&app)
         .entries
         .get_mut(caller.label())
         .is_some_and(|entry| {

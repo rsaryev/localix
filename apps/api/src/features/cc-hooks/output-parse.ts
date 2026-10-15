@@ -13,10 +13,7 @@
  * Pure module — no chat/UI/Node imports.
  */
 import type { CcHookOutcome } from './contracts'
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
-}
+import { isRecord } from '../../lib/record'
 
 /**
  * Fold a hook's raw text output (stdout / HTTP body / MCP tool text) into an

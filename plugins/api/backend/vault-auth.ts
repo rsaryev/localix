@@ -14,18 +14,10 @@
  */
 
 import type { RequestAuth } from './request-spec'
-import { authNeedsVault } from './secrets'
+import { authNeedsVault, authSecret, withAuthSecret } from './secrets'
 
 /** Create-only vault write: false when the key was taken and nothing was written. */
 export type StoreSecret = (userId: string, key: string, value: string) => Promise<boolean>
-
-/** The secret-bearing field of each auth variant — the one value worth vaulting. */
-const SECRET_FIELD: Record<RequestAuth['type'], string | null> = {
-  none: null,
-  basic: 'password',
-  bearer: 'token',
-  apikey: 'value',
-}
 
 /**
  * A vault key from a request name: `api` scope + the request + the field.
@@ -69,11 +61,9 @@ export async function vaultLiteralAuth(
   auth: RequestAuth,
   storeSecret: StoreSecret | undefined,
 ): Promise<VaultOutcome> {
-  const field = SECRET_FIELD[auth.type]
-  if (!field || !storeSecret) return { auth, key: null }
-
-  const record = auth as unknown as Record<string, unknown>
-  const literal = record[field]
+  const secret = authSecret(auth)
+  if (!secret || !storeSecret) return { auth, key: null }
+  const { field, value: literal } = secret
   // Already a reference (or empty): nothing to move.
   if (typeof literal !== 'string' || literal === '' || authNeedsVault(auth)) {
     return { auth, key: null }
@@ -83,7 +73,7 @@ export async function vaultLiteralAuth(
   for (let n = 1; n <= 20; n++) {
     const key = n === 1 ? base : `${base}_${n}`
     if (await storeSecret(userId, key, literal)) {
-      return { auth: { ...auth, [field]: `\${secret:${key}}` } as RequestAuth, key }
+      return { auth: withAuthSecret(auth, `\${secret:${key}}`), key }
     }
   }
   return { auth, key: null }

@@ -6,21 +6,19 @@
 // namespace settles. `applyPodWatch` reconciles one watch delta into the pod list.
 // Pure + unit-tested so cadence + reconcile logic can't silently drift.
 import type { KubePod, KubeWatchAction } from '../../backend/contracts'
+import { podReasonKind } from './podReason'
 
 /** Poll interval while a pod is in flux — snappy enough to feel live. */
 export const FAST_POLL_MS = 2000
 /** Poll interval once every pod is settled — light on a stable cluster. */
 export const SLOW_POLL_MS = 8000
 
-/** Transitional / unhealthy container reasons that mean "still changing". */
-const TRANSIENT_REASON =
-  /ContainerCreating|Terminating|PodInitializing|CrashLoopBackOff|ImagePullBackOff|ErrImagePull|Init:/i
-
 /** Is this pod mid-transition (worth polling fast for)? A pod that is Pending/Unknown,
  *  shows a transitional/backoff reason, or is Running-but-not-all-containers-ready. */
 export function podInFlux(pod: KubePod): boolean {
   if (pod.phase === 'Pending' || pod.phase === 'Unknown') return true
-  if (pod.reason && TRANSIENT_REASON.test(pod.reason)) return true
+  const kind = podReasonKind(pod.reason)
+  if (kind === 'backoff' || kind === 'transitional') return true
   if (pod.phase === 'Running' && pod.readyCount < pod.totalCount) return true
   return false
 }

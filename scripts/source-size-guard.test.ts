@@ -46,7 +46,16 @@ const limitFor = (path: string): number => (path.endsWith('.css') ? MAX_STYLE_LI
 // `apps/landing/src` was outside this list until it was not: the ratchet never
 // saw the marketing site, so a 555-line docs page and a 660-line stylesheet grew
 // there with nothing to notice. Every app that ships TypeScript belongs here.
-const ROOTS = ['apps/api/src', 'apps/ui/src', 'apps/landing/src', 'packages', 'plugins']
+// The Tauri shell's Rust sources follow the same layering rule; `*_tests.rs` companions are
+// table-driven coverage, measured like `.test.ts` files (not at all).
+const ROOTS = [
+  'apps/api/src',
+  'apps/ui/src',
+  'apps/landing/src',
+  'apps/desktop-tauri/src-tauri/src',
+  'packages',
+  'plugins',
+]
 const SKIP_DIRS = new Set([
   'node_modules',
   'dist',
@@ -63,6 +72,7 @@ const SKIP_DIRS = new Set([
 
 function isSource(name: string): boolean {
   if (name.endsWith('.css')) return true
+  if (name.endsWith('.rs')) return !name.endsWith('_tests.rs')
   if (!name.endsWith('.ts') && !name.endsWith('.tsx')) return false
   // Tests and typings measure differently: a long test file is table-driven
   // coverage, not an architecture smell, and .d.ts is generated shape.

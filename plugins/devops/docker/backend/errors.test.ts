@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { reclassifyMissingCli } from './backend'
+import { DockerTransportError } from './api-transport'
 import { DockerError, dockerStartCommand, mapDockerError, toErrorInfo } from './errors'
 import { detectInstalledEngine } from './installed-engine'
 
@@ -28,6 +29,28 @@ describe('mapDockerError — an absent or stopped engine says which, and what to
     )
     expect(mapped.prerequisite).toMatchObject({ state: 'stopped', command: 'open -a Docker' })
     expect(toErrorInfo(mapped).prerequisite?.command).toBe('open -a Docker')
+  })
+
+  test('an Engine API failure is classified by its status, not its wording', () => {
+    const unreachable = mapDockerError(new DockerTransportError('socket went away', 0), {
+      platform: 'linux',
+    })
+    expect(unreachable.code).toBe('engine_unavailable')
+    expect(unreachable.prerequisite?.state).toBe('stopped')
+    expect(mapDockerError(new DockerTransportError('gone', 404)).code).toBe('not_found')
+    // A daemon answer that merely MENTIONS a socket is still the daemon answering.
+    const answered = mapDockerError(
+      new DockerTransportError('bind mount /var/run/docker.sock: denied', 500),
+    )
+    expect(answered.code).toBe('engine_error')
+  })
+
+  test('an unrelated ENOENT (a missing compose file) is not a stopped engine', () => {
+    const err = Object.assign(new Error("ENOENT: open '/srv/app/compose.yaml'"), {
+      code: 'ENOENT',
+      path: '/srv/app/compose.yaml',
+    })
+    expect(mapDockerError(err).code).toBe('engine_error')
   })
 
   test('anything unclassified is still a plain engine error, with no prerequisite', () => {

@@ -40,10 +40,19 @@ export function languageOf(path: string): LanguageId | null {
  * A minified bundle parses into one enormous line of calls: every identifier becomes an edge to
  * nowhere and the file dwarfs the real code around it. A long first line is the tell.
  */
+const MINIFIED_FIRST_LINE_CHARS = 2000
+/** A file at least this long whose lines average over the limit below is generated, not written. */
+const MINIFIED_MIN_FILE_CHARS = 20_000
+const MINIFIED_AVERAGE_LINE_CHARS = 400
+
 function looksMinified(text: string): boolean {
   const firstBreak = text.indexOf('\n')
   const firstLine = firstBreak < 0 ? text.length : firstBreak
-  return firstLine > 2000 || (text.length > 20_000 && text.length / countLines(text) > 400)
+  return (
+    firstLine > MINIFIED_FIRST_LINE_CHARS ||
+    (text.length > MINIFIED_MIN_FILE_CHARS &&
+      text.length / countLines(text) > MINIFIED_AVERAGE_LINE_CHARS)
+  )
 }
 
 function countLines(text: string): number {

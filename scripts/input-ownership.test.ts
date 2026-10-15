@@ -25,12 +25,12 @@ const NATIVE_INPUT_OWNERS = new Map<string, number>([
   // `[role="menuitem"]`, Enter activates the first match, and IME composition is
   // swallowed so it never reaches the menu's own key handling. SearchInput
   // deliberately omits `ref`, so it cannot own that focus contract.
-  ['packages/kit/src/controls/breadcrumb-select.tsx', 1],
+  ['packages/kit/src/controls/breadcrumb-select-search.tsx', 1],
   ['packages/kit/src/overlays/find-widget.tsx', 1],
   ['packages/kit/src/controls/input.tsx', 1],
   ['packages/kit/src/controls/search-input.tsx', 1],
   ['packages/kit/src/controls/switch.tsx', 1],
-  ['plugins/api/ui/RestApiSidebar.tsx', 1], // hidden file picker behind a Button
+  ['plugins/api/ui/ui/ImportDialog.tsx', 1], // hidden file picker behind a Button
   ['plugins/database/ui/ui/DefaultSqlEditor.tsx', 1],
   ['plugins/database/ui/ui/sql-console/ExportMenu.tsx', 1],
   ['plugins/learning/ui/LearningLibrary.tsx', 1],

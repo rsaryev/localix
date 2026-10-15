@@ -12,6 +12,7 @@
  */
 import type { Candle } from '../contracts'
 import { pivots, type Pivot } from './pattern-detect'
+import { toolNumber } from '../tool-number'
 
 export interface LiquidityPool {
   /** buy-side = stops above equal HIGHS; sell-side = stops below equal LOWS. */
@@ -102,10 +103,6 @@ export function detectLiquidityPools(candles: Candle[], span = 3, maxPerSide = 2
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The pools as report lines — a fresh sweep is the headline (the classic reversal tell). */
 export function renderLiquidityPools(poolsFound: LiquidityPool[]): string[] {
   if (poolsFound.length === 0) return []
@@ -113,7 +110,7 @@ export function renderLiquidityPools(poolsFound: LiquidityPool[]): string[] {
   const sweep = poolsFound.find((p) => p.swept)
   if (sweep) {
     lines.push(
-      `- LIQUIDITY SWEEP just printed: ${sweep.side} pool at ${num(sweep.price)} was wicked through and price closed back — the classic stop-grab; watch for the reversal.`,
+      `- LIQUIDITY SWEEP just printed: ${sweep.side} pool at ${toolNumber(sweep.price)} was wicked through and price closed back — the classic stop-grab; watch for the reversal.`,
     )
   }
   lines.push(
@@ -121,8 +118,8 @@ export function renderLiquidityPools(poolsFound: LiquidityPool[]): string[] {
   )
   for (const p of poolsFound) {
     lines.push(
-      `    · ${p.side} ${num(p.price)} (${p.touches} equal ${p.side === 'buy-side' ? 'highs' : 'lows'}, ` +
-        `${p.distancePct >= 0 ? '+' : ''}${num(p.distancePct)}%${p.swept ? ', JUST SWEPT' : ''})`,
+      `    · ${p.side} ${toolNumber(p.price)} (${p.touches} equal ${p.side === 'buy-side' ? 'highs' : 'lows'}, ` +
+        `${p.distancePct >= 0 ? '+' : ''}${toolNumber(p.distancePct)}%${p.swept ? ', JUST SWEPT' : ''})`,
     )
   }
   return lines

@@ -27,6 +27,7 @@ describe('inspector panel geometry', () => {
       'BrowserToolbar.tsx',
       'PeekDefinitionPanel.tsx',
       'FileTreeSidebar.tsx',
+      'FileTreeSearchBar.tsx',
     ]) {
       const source = readSource(name)
       for (const tag of ['WorkbenchToolbar', 'PanelHeader']) {

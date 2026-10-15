@@ -87,6 +87,23 @@ describe('runImportAction', () => {
     expect(rows()).toHaveLength(0)
   })
 
+  test('the person is told the same report without the tool calls meant for the agent', async () => {
+    const { deps: d } = deps()
+    const preview = await runImportAction(d, 'curl https://api.github.com/users/octocat', false)
+    const saved = await runImportAction(d, 'curl https://api.github.com/users/octocat', true)
+    const failed = await runImportAction(d, 'GET /users HTTP/1.1', false)
+    if (!preview.ok || !saved.ok || failed.ok) throw new Error('unexpected outcome')
+    expect(preview.content).toContain('{"action":"import"')
+    expect(preview.message).toContain('Not saved yet')
+    expect(preview.message).toContain('api-users-octocat')
+    expect(saved.content).toContain('{"action":"send"')
+    expect(saved.message).toContain('Imported 1 request')
+    expect(failed.problem).toContain('{"action":"save"')
+    expect(failed.message).toContain('HAR')
+    for (const message of [preview.message, saved.message, failed.message])
+      expect(message).not.toContain('{"action"')
+  })
+
   test('save: true writes the requests', async () => {
     const { deps: d, rows } = deps()
     const out = await runImportAction(d, 'curl https://api.github.com/users/octocat', true)

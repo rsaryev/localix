@@ -1,6 +1,11 @@
 //! Debug-only evidence for the native smoke check; never part of a release build.
 use tauri::{AppHandle, Manager, Webview};
 
+/// A plain probe action is one main-thread hop.
+const PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+/// A close/hide/minimize-and-reopen probe waits for AppKit animations and a window rebuild.
+const LIFECYCLE_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(12);
+
 #[tauri::command]
 pub(crate) async fn workspace_probe(
     app: AppHandle,
@@ -86,16 +91,12 @@ pub(crate) async fn workspace_probe(
         }
         let _ = tx.send(snapshot(&app));
     });
-    tauri::async_runtime::spawn_blocking(move || {
-        rx.recv_timeout(std::time::Duration::from_secs(if lifecycle {
-            12
-        } else {
-            3
-        }))
-        .map_err(|_| "Native workspace probe timed out".to_string())
-    })
-    .await
-    .map_err(|error| error.to_string())?
+    let timeout = if lifecycle {
+        LIFECYCLE_PROBE_TIMEOUT
+    } else {
+        PROBE_TIMEOUT
+    };
+    crate::round_trip::await_reply(rx, timeout, "Native workspace probe timed out").await
 }
 
 pub(crate) fn snapshot(app: &AppHandle) -> serde_json::Value {

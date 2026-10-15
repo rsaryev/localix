@@ -21,7 +21,8 @@
  * nothing matched — the form a session-end hook runs).
  */
 import { execFileSync } from 'node:child_process'
-import { resolve } from 'node:path'
+
+import { repoRoot as getRepoRoot } from './lib/paths.mjs'
 
 export const TEST_MAX_S = 20 * 60
 export const BROWSER_MAX_S = 20 * 60
@@ -97,11 +98,11 @@ function ancestors(pid, rows) {
 
 async function main() {
   const args = new Set(process.argv.slice(2))
-  const repoRoot = resolve(import.meta.dir, '..')
+  const root = getRepoRoot()
   const rows = parsePs(
     execFileSync('ps', ['-Ao', 'pid=,ppid=,etime=,command='], { encoding: 'utf8' }),
   )
-  const strays = selectStrays(rows, { repoRoot, exclude: ancestors(process.pid, rows) })
+  const strays = selectStrays(rows, { repoRoot: root, exclude: ancestors(process.pid, rows) })
   if (strays.length === 0) {
     if (!args.has('--quiet')) console.log('reap-strays: nothing stray.')
     return

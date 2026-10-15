@@ -1,3 +1,4 @@
+import { sqlStringLiteral } from '../shared/sql-text'
 import type {
   DbCheckConstraint,
   DbColumn,
@@ -127,7 +128,7 @@ export function describeColumnGeneration(column: DbColumn): string {
       ? `GENERATED ALWAYS AS ${column.sqlServerGeneratedAlways}${column.sqlServerHidden ? ' HIDDEN' : ''}`
       : '',
     column.sqlServerMaskingFunction
-      ? `MASKED WITH (FUNCTION = '${column.sqlServerMaskingFunction.replaceAll("'", "''")}')`
+      ? `MASKED WITH (FUNCTION = ${sqlStringLiteral(column.sqlServerMaskingFunction)})`
       : '',
     column.rowGuid ? 'ROWGUIDCOL' : '',
     column.sparse ? 'SPARSE' : '',

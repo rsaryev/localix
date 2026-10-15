@@ -1,6 +1,11 @@
 //! Decide an outside-window tab destination in one AppKit screen-coordinate space.
 use tauri::{AppHandle, Webview};
 
+/// Hit-testing the cursor against workspace windows is one main-thread read; a drag must not
+/// stall on it.
+#[cfg(target_os = "macos")]
+const CURSOR_QUERY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+
 #[cfg(any(target_os = "macos", test))]
 #[derive(Clone, Copy)]
 struct Rect {
@@ -90,11 +95,7 @@ fn query_destination(
         if !crate::workspace_windows::is_workspace(app, window.label()) {
             continue;
         }
-        if app
-            .state::<crate::workspace_windows::WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
+        if crate::workspace_windows::workspaces(app)
             .entries
             .get(window.label())
             .is_some_and(|entry| entry.provisional)
@@ -141,17 +142,12 @@ pub(crate) async fn workspace_tab_drop_destination(
     #[cfg(target_os = "macos")]
     {
         let source = caller.window();
-        let (sender, outcome) = std::sync::mpsc::channel();
-        crate::macos_tabs::defer(move || {
-            let _ = sender.send(query_destination(&app, &source));
-        });
-        tauri::async_runtime::spawn_blocking(move || {
-            outcome
-                .recv_timeout(std::time::Duration::from_secs(2))
-                .map_err(|_| "Workspace cursor query timed out".to_string())?
-        })
-        .await
-        .map_err(|error| error.to_string())?
+        crate::round_trip::run_on_main(
+            CURSOR_QUERY_TIMEOUT,
+            "Workspace cursor query timed out",
+            move || query_destination(&app, &source),
+        )
+        .await?
     }
     #[cfg(not(target_os = "macos"))]
     {

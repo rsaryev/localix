@@ -63,6 +63,8 @@ export interface DockerImage {
   tag: string
   /** Human size, e.g. `142MB`. */
   size: string
+  /** The same size in bytes, for sorting — absent when the engine reported none we can read. */
+  sizeBytes?: number
   createdAt: string
 }
 

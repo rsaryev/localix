@@ -68,34 +68,39 @@ function deepLink(sessionId: string): NotificationAction {
   }
 }
 
+type AgentSource = Extract<NotificationEvent['source'], { sessionId: string }>
+
+/** Which agent surface a trigger came from, and the domain resource it is about. */
+function sourceOf(trigger: AgentNotificationTrigger): Pick<AgentSource, 'kind' | 'resource'> {
+  switch (trigger.type) {
+    case 'hitl.required':
+      return { kind: 'agent_hitl', resource: { kind: 'interaction', id: trigger.requestId } }
+    case 'user.mentioned':
+      return { kind: 'agent_mention', resource: { kind: 'message', id: trigger.messageId } }
+    case 'terminal.finished':
+      return { kind: 'background_terminal', resource: { kind: 'terminal', id: trigger.terminalId } }
+    case 'child.completed':
+    case 'child.failed':
+    case 'child.stopped':
+      return { kind: 'agent_child', resource: undefined }
+    case 'run.completed':
+    case 'run.failed':
+      return {
+        kind: 'agent_run',
+        resource: trigger.runId ? { kind: 'run', id: trigger.runId } : undefined,
+      }
+  }
+}
+
 /** Normalize run/HITL lifecycle facts into the shared domain envelope. */
 export function agentNotificationEnvelope(
   trigger: AgentNotificationTrigger,
   occurredAt = Date.now(),
 ): NotificationEnvelope {
   const source = {
-    kind:
-      trigger.type === 'hitl.required'
-        ? ('agent_hitl' as const)
-        : trigger.type === 'user.mentioned'
-          ? ('agent_mention' as const)
-          : trigger.type.startsWith('child.')
-            ? ('agent_child' as const)
-            : trigger.type === 'terminal.finished'
-              ? ('background_terminal' as const)
-              : ('agent_run' as const),
+    ...sourceOf(trigger),
     sessionId: trigger.sessionId,
     projectId: trigger.projectId,
-    resource:
-      trigger.type === 'hitl.required'
-        ? { kind: 'interaction', id: trigger.requestId }
-        : trigger.type === 'user.mentioned'
-          ? { kind: 'message', id: trigger.messageId }
-          : trigger.type === 'terminal.finished'
-            ? { kind: 'terminal', id: trigger.terminalId }
-            : (trigger.type === 'run.completed' || trigger.type === 'run.failed') && trigger.runId
-              ? { kind: 'run', id: trigger.runId }
-              : undefined,
   }
   let event: NotificationEvent
   if (trigger.type === 'hitl.required') {

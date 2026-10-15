@@ -284,5 +284,9 @@ export type {
 export type { ToolBackedItem } from '@localixai/agent/agents/items'
 
 export { createStoreChangeFeed, STORE_FEED_WINDOW_MS } from './store-change-feed'
+export { createJsonStoreFeed, onStoreWrite, openJsonStore } from './json-store'
+export type { JsonStore } from './json-store'
+export { askAgentForTurn } from './agent-turn'
+export type { Seat, Wake } from './agent-turn'
 
 export { observeMutations } from './observe-mutations'

@@ -11,6 +11,7 @@ import { resolveMermaidLook, type MermaidLook } from '@localixai/markdown/mermai
 import DiagramViewer from './DiagramViewer'
 import { ContributedActions } from '../ContributedActions'
 import { diagramBounds } from './diagramGeometry'
+import { COPIED_FEEDBACK_LONG_MS } from '@/shared/lib/timings'
 
 type DiagramState = { source: string; svg: string } | { source: string; error: string } | null
 
@@ -81,7 +82,7 @@ export function MermaidDiagram({
     opener.current = event.currentTarget
     setExpanded(true)
   }
-  const { copied, copy } = useCopied(1800)
+  const { copied, copy } = useCopied(COPIED_FEEDBACK_LONG_MS)
 
   useEffect(() => {
     if (!look) return

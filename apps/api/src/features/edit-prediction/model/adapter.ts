@@ -76,8 +76,13 @@ export function classifyRetryable(error: unknown): boolean {
   const rawMessage = (error as { message?: unknown } | null | undefined)?.message
   const message =
     typeof rawMessage === 'string' ? rawMessage : typeof error === 'string' ? error : ''
-  return /\b(429|too many requests|rate limit|timed? ?out|timeout|5\d\d|econnreset|network)\b/i.test(
-    message,
+  // Text is the last resort for errors that carry no structure. A bare 3-digit number
+  // is not a status ("500 files", "got 503 rows"): it counts only at the head of the message
+  // or after `status`/`HTTP`, the way providers print a status line.
+  return (
+    /\b(too many requests|rate limit|timed? ?out|timeout|econnreset|network error|fetch failed)\b/i.test(
+      message,
+    ) || /(?:^|\b(?:status|http)\b[\s:/\d.]*?)(?:429|5\d\d)\b/i.test(message.trimStart())
   )
 }
 

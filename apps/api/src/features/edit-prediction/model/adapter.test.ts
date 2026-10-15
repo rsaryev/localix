@@ -81,12 +81,16 @@ describe('classifyRetryable', () => {
     expect(classifyRetryable({ code: 'ETIMEDOUT' })).toBe(true)
     expect(classifyRetryable(new Error('429 Too Many Requests'))).toBe(true)
     expect(classifyRetryable(new Error('gateway timeout'))).toBe(true)
+    expect(classifyRetryable(new Error('HTTP 503 Service Unavailable'))).toBe(true)
+    expect(classifyRetryable(new Error('request failed with status 502'))).toBe(true)
   })
   it('does not retry a client error, an abort, or a parse error', () => {
     expect(classifyRetryable({ status: 400 })).toBe(false)
     expect(classifyRetryable({ status: 404 })).toBe(false)
     expect(classifyRetryable({ name: 'AbortError' })).toBe(false)
     expect(classifyRetryable(new Error('unexpected token in JSON'))).toBe(false)
+    expect(classifyRetryable(new Error('prompt exceeds 500 files'))).toBe(false)
+    expect(classifyRetryable(new Error('network drive path not allowed'))).toBe(false)
   })
 })
 

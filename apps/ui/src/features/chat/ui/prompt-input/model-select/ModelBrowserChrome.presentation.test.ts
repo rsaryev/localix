@@ -54,7 +54,8 @@ describe('model picker geometry', () => {
       expect(readSource(name)).toContain('PICKER_LIST')
     }
     expect(readSource('ModelSelectSidebar.tsx')).toContain('pickerRow(')
-    expect(readSource('ModelBrowser.tsx')).toContain('pickerRow(')
+    expect(readSource('ModelBrowser.tsx')).toContain('<ResetRouteRow')
+    expect(readSource('ModelBrowserParts.tsx')).toContain('pickerRow(')
     const row = readSource('ModelListItem.tsx')
     expect(row).toContain('px-1.5')
     expect(row).toContain('min-h-(--chrome-control-lg)')

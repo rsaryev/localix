@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { createPluginIdentityGuard, pluginUiNamespaceProblems } from './plugin-identity-guard.mjs'
 
-const guard = createPluginIdentityGuard({
-  toolNames: ['plugin_tool'],
+const catalogFor = (toolNames: string[]) => ({
+  toolNames,
   commandNames: ['example-plugin:create'],
   agentNames: ['agent-owner:reviewer'],
   backendSubsystems: ['plugin-backend'],
@@ -15,6 +15,7 @@ const guard = createPluginIdentityGuard({
   pluginNames: ['example-plugin'],
   uiContributionIds: ['example-plugin:workspace'],
 })
+const guard = createPluginIdentityGuard(catalogFor(['plugin_tool']))
 
 describe('plugin identity boundary mutation matrix', () => {
   const mutations = [
@@ -74,6 +75,16 @@ describe('plugin identity boundary mutation matrix', () => {
 
   test('core comments cannot document concrete plugin identities either', () => {
     expect(guard.inspect('apps/core/comment.ts', `// call plugin_tool here`)).not.toEqual([])
+  })
+
+  test('a one-word tool name counts only where it is quoted, not as prose', () => {
+    const wordGuard = createPluginIdentityGuard({ ...catalogFor(['notes']) })
+    expect(wordGuard.inspect('apps/core/a.ts', `// notes for the turn after approval`)).toEqual([])
+    expect(wordGuard.inspect('apps/core/b.ts', `const toolName = 'notes'`)).toEqual([
+      'apps/core/b.ts: production core names concrete plugin tool "notes"; consume descriptor metadata or a generic SDK result contract instead',
+    ])
+    expect(wordGuard.inspect('apps/core/c.ts', `const action = 'notes'`)).toEqual([])
+    expect(wordGuard.inspect('apps/core/d.ts', `if (tool === 'notes') run()`)).not.toEqual([])
   })
 
   test('stays silent for descriptor-driven generic host code', () => {

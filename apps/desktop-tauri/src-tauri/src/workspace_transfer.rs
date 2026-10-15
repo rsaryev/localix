@@ -7,7 +7,16 @@ use tauri::{AppHandle, Manager, Webview};
 
 const MAX_PAYLOAD_BYTES: usize = 8 * 1024 * 1024;
 #[cfg(target_os = "macos")]
+/// How long a source waits for the destination workspace to take a transferred tab.
 const TRANSFER_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
+/// How long a provisional destination waits for its drag to be accepted or dropped.
+///
+/// A pending drag expires after [`crate::workspace_drag_state::TTL`] (90 s), and the expiry is what
+/// answers this wait with a refusal. Waiting a little longer lets that answer arrive; this timeout
+/// only fires when nothing answers at all.
+const ACCEPTANCE_WAIT: std::time::Duration = std::time::Duration::from_secs(95);
+#[cfg(any(target_os = "macos", test))]
+const _: () = assert!(ACCEPTANCE_WAIT.as_secs() > crate::workspace_drag_state::TTL.as_secs());
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -249,13 +258,12 @@ pub(crate) async fn workspace_transfer_ready(
     crate::workspace_windows::require_workspace(&caller)?;
     let outcome = app.state::<WorkspaceTransfers>().ready(caller.label())?;
     if let Some(outcome) = outcome {
-        tauri::async_runtime::spawn_blocking(move || {
-            outcome
-                .recv_timeout(std::time::Duration::from_secs(95))
-                .map_err(|_| "Workspace drag acceptance expired".to_string())?
-        })
-        .await
-        .map_err(|error| error.to_string())?
+        crate::round_trip::await_reply(
+            outcome,
+            ACCEPTANCE_WAIT,
+            "Workspace drag acceptance expired",
+        )
+        .await?
     } else {
         Ok(())
     }

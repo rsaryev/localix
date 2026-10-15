@@ -1,3 +1,4 @@
+import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
 import { z } from 'zod'
 
 /**
@@ -37,13 +38,7 @@ const cellIndex = z
  * While the agent holds the board: when it last acted (or was asked), and whether it can answer.
  * Anything that counts ("playing for 12s") is derived from `since` against a clock.
  */
-export const agentWaitSchema = z.object({
-  since: z.string(),
-  /** thinking — the chat was woken or is playing; unreachable — the wake did not land. */
-  status: z.enum(['thinking', 'unreachable']),
-  reason: z.string().optional(),
-})
-export type AgentWait = z.infer<typeof agentWaitSchema>
+export { agentWaitSchema, type AgentWait }
 
 /** One move as it happened: the direction, and the tile that appeared after it. */
 export const stepSchema = z.object({

@@ -12,10 +12,29 @@ export function isFrameBlocked(h: Headers): boolean {
   const xfo = h.get('x-frame-options')
   if (xfo?.trim()) return true
   const csp = h.get('content-security-policy')
-  const fa = csp?.match(/frame-ancestors([^;]*)/i)?.[1]
-  // frame-ancestors present and NOT allowing us (no wildcard / no localhost) → blocked.
-  if (fa != null && !/\*|localhost|127\.0\.0\.1/i.test(fa)) return true
-  return false
+  const fa = csp
+    ?.split(';')
+    .map((directive) => directive.trim().split(/\s+/))
+    .find(([name]) => name?.toLowerCase() === 'frame-ancestors')
+  // frame-ancestors present and NOT allowing our localhost parent → blocked.
+  return fa != null && !fa.slice(1).some(sourceAllowsLocalhost)
+}
+
+/** Hosts our preview parent can be served from. */
+const LOCAL_PARENT_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+/**
+ * Whether one CSP source expression admits a localhost parent. Judged per source, by its
+ * host: a substring test let `https://localhost.evil.com` or `*.localhost.example` pass.
+ */
+function sourceAllowsLocalhost(source: string): boolean {
+  const s = source.toLowerCase()
+  if (s === '*' || s === 'http:' || s === 'https:') return true
+  const host = s
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//, '')
+    .split('/')[0]!
+    .replace(/:(?:\d+|\*)$/, '')
+  return LOCAL_PARENT_HOSTS.has(host)
 }
 
 /**

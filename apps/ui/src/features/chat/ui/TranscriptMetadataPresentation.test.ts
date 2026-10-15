@@ -7,7 +7,7 @@ test('runtime facts stay flat instead of becoming status pills', () => {
   const runtime = read('./runtimeSessionRowParts.tsx')
   const jobs = read('./prompt-input/WorkStrip.tsx')
   const loops = read('./prompt-input/SchedulesPanel.tsx')
-  const queue = read('./prompt-input/QueuePanel.tsx')
+  const queue = read('./prompt-input/QueueRow.tsx')
   const path = read('./SessionPathSegment.tsx')
 
   for (const source of [runtime, jobs, loops, queue]) {

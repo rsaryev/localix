@@ -153,32 +153,36 @@ export function createContextStoreRepository(db: Kysely<AppDatabase>) {
       const covered: 'full' | 'prefix' = chunks.length >= MAX_CHUNKS ? 'prefix' : 'full'
       if (chunks.length === 0) return { sections: 0, covered: 'full' }
       const createdAt = new Date().toISOString()
-      await sql`
-        DELETE FROM tool_output_chunks
-        WHERE user_id = ${input.userId}
-          AND session_id = ${input.sessionId}
-          AND tool_call_id = ${input.toolCallId}
-      `.execute(db)
-      for (let i = 0; i < chunks.length; i++) {
+      // One transaction: the replace is atomic (a reader never sees the old rows gone and the
+      // new ones half-written) and SQLite commits once instead of once per chunk.
+      await db.transaction().execute(async (trx) => {
         await sql`
-          INSERT INTO tool_output_chunks
-            (content, heading, tool_call_id, tool_name, chunk_index, session_id, user_id, created_at)
-          VALUES
-            (${chunks[i].content}, ${chunks[i].heading}, ${input.toolCallId}, ${input.toolName},
-             ${i}, ${input.sessionId}, ${input.userId}, ${createdAt})
-        `.execute(db)
-      }
-      // Session cap: evict the oldest rows so a long session's index stays bounded.
-      // rowid order ≈ insertion order, which is exactly the eviction we want.
-      await sql`
-        DELETE FROM tool_output_chunks
-        WHERE session_id = ${input.sessionId} AND user_id = ${input.userId}
-          AND rowid NOT IN (
-            SELECT rowid FROM tool_output_chunks
-            WHERE session_id = ${input.sessionId} AND user_id = ${input.userId}
-            ORDER BY rowid DESC LIMIT ${MAX_CHUNKS_PER_SESSION}
-          )
-      `.execute(db)
+          DELETE FROM tool_output_chunks
+          WHERE user_id = ${input.userId}
+            AND session_id = ${input.sessionId}
+            AND tool_call_id = ${input.toolCallId}
+        `.execute(trx)
+        for (let i = 0; i < chunks.length; i++) {
+          await sql`
+            INSERT INTO tool_output_chunks
+              (content, heading, tool_call_id, tool_name, chunk_index, session_id, user_id, created_at)
+            VALUES
+              (${chunks[i].content}, ${chunks[i].heading}, ${input.toolCallId}, ${input.toolName},
+               ${i}, ${input.sessionId}, ${input.userId}, ${createdAt})
+          `.execute(trx)
+        }
+        // Session cap: evict the oldest rows so a long session's index stays bounded.
+        // rowid order ≈ insertion order, which is exactly the eviction we want.
+        await sql`
+          DELETE FROM tool_output_chunks
+          WHERE session_id = ${input.sessionId} AND user_id = ${input.userId}
+            AND rowid NOT IN (
+              SELECT rowid FROM tool_output_chunks
+              WHERE session_id = ${input.sessionId} AND user_id = ${input.userId}
+              ORDER BY rowid DESC LIMIT ${MAX_CHUNKS_PER_SESSION}
+            )
+        `.execute(trx)
+      })
       return { sections: chunks.length, covered }
     },
 

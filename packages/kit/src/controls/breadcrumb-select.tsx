@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ChevronDown, Search } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -8,8 +8,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '../overlays/dropdown-menu'
-import { cn, FIELD_SURFACE } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { BreadcrumbSelectRows } from './breadcrumb-select-rows'
+import { BreadcrumbSelectSearch } from './breadcrumb-select-search'
 
 /** One selectable entry in a {@link BreadcrumbSelect} dropdown. */
 export interface BreadcrumbSelectItem {
@@ -30,6 +31,12 @@ export interface BreadcrumbSelectItem {
   onSelect: () => void
 }
 
+/**
+ * A list this short is scanned at a glance, so a filter field would only push the rows down and
+ * take focus away from them; from this length on, the field is worth its row.
+ */
+const SEARCH_MIN_ITEMS = 8
+
 export interface BreadcrumbSelectProps {
   /** The text shown on the segment trigger (the active level's label). */
   label: string
@@ -39,7 +46,7 @@ export interface BreadcrumbSelectProps {
   /** Optional footer action ("Search all…") that escapes to the full switcher. */
   onSearchAll?: () => void
   searchAllLabel?: string
-  /** Enables local filtering when the picker contains a long sibling list. */
+  /** Enables local filtering once the list has {@link SEARCH_MIN_ITEMS} rows or more. */
   searchPlaceholder?: string
   /** Observes the primitive's open state, e.g. to revalidate a sibling snapshot. */
   onOpenChange?: (open: boolean) => void
@@ -87,7 +94,7 @@ export function BreadcrumbSelect({
   const [query, setQuery] = React.useState('')
   const searchInputRef = React.useRef<HTMLInputElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
-  const searchEnabled = Boolean(searchPlaceholder && items.length > 7)
+  const searchEnabled = Boolean(searchPlaceholder && items.length >= SEARCH_MIN_ITEMS)
   const normalizedQuery = query.trim().toLocaleLowerCase()
   const visibleItems = normalizedQuery
     ? items.filter((item) =>
@@ -149,70 +156,18 @@ export function BreadcrumbSelect({
       }}
     >
       {searchEnabled ? (
-        <div className="relative mb-1 shrink-0 border-b border-border-soft px-1 pb-1.5">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-[calc(50%+0.125rem)] text-text-faint"
-            aria-hidden="true"
-          />
-          <input
-            ref={searchInputRef}
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape' || event.key === 'Tab') return
-              if (event.nativeEvent.isComposing) {
-                event.stopPropagation()
-                return
-              }
-              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                event.preventDefault()
-                event.stopPropagation()
-                const menu = event.currentTarget.closest<HTMLElement>('[role="menu"]')
-                const candidates = Array.from(
-                  menu?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([data-disabled])') ??
-                    [],
-                )
-                const target = event.key === 'ArrowDown' ? candidates[0] : candidates.at(-1)
-                target?.focus({ preventScroll: true })
-                return
-              }
-              if (event.key === 'Enter') {
-                const firstVisibleItem = visibleItems.find((item) => !item.disabled)
-                const target =
-                  normalizedQuery && firstVisibleItem
-                    ? event.currentTarget
-                        .closest<HTMLElement>('[role="menu"]')
-                        ?.querySelector<HTMLElement>('[role="menuitem"]:not([data-disabled])')
-                    : null
-                if (target) {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  target.click()
-                  return
-                }
-              }
-              event.stopPropagation()
-            }}
-            autoComplete="off"
-            spellCheck={false}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            // `focus-ring` alone. This field carried BOTH recipes — an inset outline plus a
-            // `border-ring/60` repaint — so focus drew two edges in two colours on one control.
-            // The shell is the shared field surface; the element stays native because its key
-            // handling hands focus to the menu rows, which SearchInput does not expose.
-            className={cn(
-              FIELD_SURFACE,
-              'h-[var(--chrome-control-md)] w-full pl-7 pr-2 text-xs text-foreground outline-none placeholder:text-text-faint focus-ring',
-            )}
-          />
-          <span role="status" aria-live="polite" className="sr-only">
-            {normalizedQuery
+        <BreadcrumbSelectSearch
+          inputRef={searchInputRef}
+          query={query}
+          onQueryChange={setQuery}
+          placeholder={searchPlaceholder}
+          hasEnabledMatch={visibleItems.some((item) => !item.disabled)}
+          statusText={
+            normalizedQuery
               ? `${visibleItems.length} ${visibleItems.length === 1 ? 'result' : 'results'}`
-              : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
-          </span>
-        </div>
+              : `${items.length} ${items.length === 1 ? 'item' : 'items'}`
+          }
+        />
       ) : null}
       <div
         ref={listRef}

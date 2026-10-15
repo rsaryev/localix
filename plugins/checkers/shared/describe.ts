@@ -1,4 +1,4 @@
-import { movesNow, QUIET_DRAW_PLIES, type Game, type Move, type Record } from './game'
+import { movesNow, QUIET_DRAW_PLIES, type Game, type Move, type GameRecord } from './game'
 import { moveName } from './notation'
 import { countPieces, other } from './rules'
 
@@ -43,7 +43,7 @@ export function statusLine(game: Game): string {
  * The running score at this table, from the agent's side — so a woken turn knows the history of
  * this chat's games without reading them back from a transcript that checkpoints may have folded.
  */
-export function recordLine(record: Record): string | null {
+export function recordLine(record: GameRecord): string | null {
   if (record.won + record.lost + record.draw === 0) return null
   return `Score at this table: you ${record.lost}, the user ${record.won}, draws ${record.draw}.`
 }

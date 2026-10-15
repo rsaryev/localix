@@ -1,16 +1,22 @@
 import { describe, expect, test } from 'bun:test'
 
 const source = await Bun.file(import.meta.dir + '/TerminalPane.tsx').text()
+const statusSource = await Bun.file(import.meta.dir + '/TerminalPaneStatus.tsx').text()
 
 describe('TerminalPane disconnected presentation', () => {
   test('uses the shared state layer and keeps command failures readable', () => {
-    expect(source).toContain('<PaneStateOverlay className="pointer-events-none z-(--z-controls)">')
-    expect(source).toContain(
+    expect(source).toContain('<TerminalConnectionState')
+    expect(statusSource).toContain(
+      '<PaneStateOverlay className="pointer-events-none z-(--z-controls)">',
+    )
+    expect(statusSource).toContain(
       '<PaneStateOverlay material="subtle" className="pointer-events-none z-(--z-controls)">',
     )
-    expect(source).not.toContain('PANE_STATE_OVERLAY')
-    expect(source).not.toContain('TERMINAL_ENDED_OVERLAY')
-    expect(source).not.toContain('@/features/inspector/ui/PreviewIntro')
+    for (const text of [source, statusSource]) {
+      expect(text).not.toContain('PANE_STATE_OVERLAY')
+      expect(text).not.toContain('TERMINAL_ENDED_OVERLAY')
+      expect(text).not.toContain('@/features/inspector/ui/PreviewIntro')
+    }
   })
 })
 

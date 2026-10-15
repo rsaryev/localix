@@ -6,10 +6,15 @@ const readSource = (path: string) => readFileSync(new URL(`./${path}`, import.me
 describe('inspector search chrome', () => {
   test('uses a shared toolbar for explorer filters', () => {
     const explorer = readSource('FileTreeSidebar.tsx')
+    const searchBar = readSource('FileTreeSearchBar.tsx')
 
-    expect(explorer).toContain('aria-label="File search controls"')
-    expect(explorer).toContain('tone="sidebar"')
-    expect(explorer).not.toContain('border-b border-sidebar-border px-2 py-1.5')
+    expect(explorer).toContain('<FileTreeSearchBar')
+    expect(searchBar).toContain('<WorkbenchToolbar')
+    expect(searchBar).toContain('aria-label="File search controls"')
+    expect(searchBar).toContain('tone="sidebar"')
+    for (const source of [explorer, searchBar]) {
+      expect(source).not.toContain('border-b border-sidebar-border px-2 py-1.5')
+    }
   })
 
   test('keeps problem counts and search results on the shared status geometry', () => {

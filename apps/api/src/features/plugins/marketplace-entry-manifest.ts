@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import { findManifestPath } from './discovery'
 import type { MarketplaceEntry } from './marketplace'
+import { isRecord } from '../../lib/record'
 
 /**
  * Marketplace entry → plugin manifest reconciliation (CC marketplace §1.3, strict mode).
@@ -31,10 +32,6 @@ const COMPONENT_FIELDS = [
   'mcpServers',
   'lspServers',
 ] as const
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
-}
 
 /** The inline component/metadata fields present on an entry (raw passthrough values). */
 export function entryComponentOverrides(entry: MarketplaceEntry): Record<string, unknown> {

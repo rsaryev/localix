@@ -95,30 +95,45 @@ function environmentPreview(environments: readonly ImportedEnvironment[]): strin
     .join('\n')
 }
 
+/**
+ * An import's report, twice: `content` for the agent, with the tool call that continues it, and
+ * `message` for the person in the sidebar, who continues it with a button instead. Both are built
+ * from the same paragraphs, so the person's copy is never a string surgery on the agent's.
+ */
+export interface ImportReport {
+  ok: true
+  content: string
+  message: string
+}
+
+function report(paragraphs: ReadonlyArray<string | { agentOnly: string }>): ImportReport {
+  const join = (forAgent: boolean) =>
+    paragraphs
+      .map((p) => (typeof p === 'string' ? p : forAgent ? p.agentOnly : ''))
+      .filter(Boolean)
+      .join('\n\n')
+  return { ok: true, content: join(true), message: join(false) }
+}
+
 /** Report a preview without writing any imported data. */
 export function formatImportPreview(
   outcome: ImportReportSource,
   named: readonly ImportedRequest[],
   plural: string,
-): { ok: true; content: string } {
+): ImportReport {
   const warn = placeholderNote(named)
   const what = [
     named.length > 0 ? `${named.length} ${plural}` : '',
     outcome.environments.length > 0 ? environmentSummary(outcome.environments) : '',
   ].filter(Boolean)
-  return {
-    ok: true,
-    content:
-      `Recognised ${outcome.importer.name}${what.length > 0 ? ` — ${what.join(' and ')}` : ''}. Not saved yet.\n\n` +
-      [named.length > 0 ? preview(named) : '', environmentPreview(outcome.environments)]
-        .filter(Boolean)
-        .join('\n\n') +
-      '\n\nRe-run with {"action":"import","source":…,"save":true} to store these.' +
-      [warn, ...outcome.notes]
-        .filter(Boolean)
-        .map((n) => `\n\n${n}`)
-        .join(''),
-  }
+  return report([
+    `Recognised ${outcome.importer.name}${what.length > 0 ? ` — ${what.join(' and ')}` : ''}. Not saved yet.`,
+    named.length > 0 ? preview(named) : '',
+    environmentPreview(outcome.environments),
+    { agentOnly: 'Re-run with {"action":"import","source":…,"save":true} to store these.' },
+    warn ?? '',
+    ...outcome.notes,
+  ])
 }
 
 /** Describe completed writes and refusals using the records that actually reached storage. */
@@ -132,7 +147,7 @@ export function formatSavedImport({
   refusedEnvs,
   vaulted,
   stranded,
-}: SavedImportReport): { ok: true; content: string } {
+}: SavedImportReport): ImportReport {
   const notes: string[] = []
   // A refusal is the LOUDEST thing an import can produce, so it goes first. Session JSON rejects a
   // literal credential outright; without a vault writer bound there is nowhere safe for that
@@ -193,13 +208,12 @@ export function formatSavedImport({
     named.length > 0 ? `${named.length} ${plural}` : '',
     savedEnvs.length > 0 ? environmentSummary(outcome.environments) : '',
   ].filter(Boolean)
-  return {
-    ok: true,
-    content:
-      `Imported ${what.join(' and ') || 'nothing'} from ${outcome.importer.name}.` +
-      (named.length > 0
-        ? `\n\n${preview(saved)}\n\nSend one with {"action":"send","name":"${named[0].name}"}.`
-        : '') +
-      (notes.length > 0 ? `\n\n${notes.join('\n\n')}` : ''),
-  }
+  return report([
+    `Imported ${what.join(' and ') || 'nothing'} from ${outcome.importer.name}.`,
+    named.length > 0 ? preview(saved) : '',
+    named.length > 0
+      ? { agentOnly: `Send one with {"action":"send","name":"${named[0].name}"}.` }
+      : '',
+    ...notes,
+  ])
 }

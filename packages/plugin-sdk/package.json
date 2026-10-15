@@ -203,6 +203,14 @@
       "types": "./dist/ui/file-resource-sync.d.ts",
       "import": "./dist/ui/file-resource-sync.js"
     },
+    "./agent-wait": {
+      "types": "./dist/agent-wait.d.ts",
+      "import": "./dist/agent-wait.js"
+    },
+    "./secret-shapes": {
+      "types": "./dist/secret-shapes.d.ts",
+      "import": "./dist/secret-shapes.js"
+    },
     "./store-changes": {
       "types": "./dist/store-changes.d.ts",
       "import": "./dist/store-changes.js"
@@ -240,6 +248,7 @@
     "@localixai/dataview": "workspace:*",
     "@localixai/path-containment": "workspace:*",
     "@localixai/search": "workspace:*",
+    "@localixai/visual-feedback": "workspace:*",
     "clsx": "^2.1.1",
     "hono": "^4.12.30",
     "tailwind-merge": "^3.7.0",

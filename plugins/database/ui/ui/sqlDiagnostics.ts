@@ -201,11 +201,7 @@ export function createSqlDiagnostics(input: SqlDiagnosticsInput): {
       }
       renders.add(refresh)
       reveals.add(reveal)
-      const content = model.onDidChangeContent(() => {
-        renderRun()
-        scheduleLive()
-        scheduleEngine()
-      })
+      const content = model.onDidChangeContent(refresh)
       renderLive()
       renderRun()
       scheduleEngine()

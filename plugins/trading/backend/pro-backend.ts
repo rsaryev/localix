@@ -24,6 +24,7 @@ import type { CredentialField, TradingConnectionConfig } from './contracts'
 import { CREDENTIAL_FIELDS } from './contracts'
 import { TradingError, mapTradingError } from './errors'
 import { normalizeCandles, normalizeOrderBook, normalizeTicker, normalizeTrade } from './normalize'
+import { loadCcxt } from './ccxt-exchange'
 
 /** The slice of a ccxt.pro `Exchange` this driver calls. Declared structurally so the
  *  file compiles without importing ccxt's types (the real module arrives at runtime). */
@@ -45,18 +46,6 @@ interface CcxtProExchange {
   watchPositions(symbols?: string[]): Promise<unknown[]>
   watchBalance(): Promise<unknown>
   close(): Promise<unknown>
-}
-
-type CcxtModule = {
-  pro: Record<string, unknown>
-} & Record<string, unknown>
-
-let modulePromise: Promise<CcxtModule> | undefined
-
-/** Load (once) and cache the ccxt module — the same dynamic import the REST driver uses. */
-async function loadCcxt(): Promise<CcxtModule> {
-  modulePromise ??= import('ccxt').then((m) => (m.default ?? m) as unknown as CcxtModule)
-  return modulePromise
 }
 
 /** ccxt method name backing each PUBLIC channel. */

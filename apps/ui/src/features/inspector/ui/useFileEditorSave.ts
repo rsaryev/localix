@@ -1,5 +1,6 @@
 import { useCallback, type RefObject } from 'react'
 import { backendClient } from '@/shared/api/client'
+import { ApiError } from '@/shared/api/failure'
 import { baseName, errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import type { Problem } from '@localixai/plugin-sdk/ui/problems'
 import { composeOnSaveContent, getSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
@@ -104,7 +105,7 @@ export function useFileEditorSave({
         // A concurrency conflict (someone else wrote the file since we loaded it) isn't
         // a dead end: re-read the fresh disk snapshot and surface the reconcile banner
         // so the user can Compare / Overwrite / Reload instead of losing their edits.
-        if (/changed on disk|file_conflict/i.test(raw)) {
+        if (err instanceof ApiError && err.code === 'file_conflict') {
           const stale: Problem = {
             message: 'This file changed on disk while you were editing it.',
             hint: 'Reload to take the disk version, or overwrite it with your edits.',

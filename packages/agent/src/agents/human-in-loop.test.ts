@@ -110,6 +110,45 @@ describe('createHumanInLoopController', () => {
     expect(updates).toEqual(['put:pending', 'update:expired'])
   })
 
+  test('an already-expired request ignores a later abort of its signal', async () => {
+    const controller = createHumanInLoopController({ now: () => 100 })
+    const abort = new AbortController()
+    const promise = controller.request(
+      { id: 'request_1', kind: 'ask', payload: {}, createdAt: 100, expiresAt: 99 },
+      abort.signal,
+    )
+    await expect(promise).rejects.toBeInstanceOf(HumanInLoopTimeoutError)
+    abort.abort()
+    expect(controller.getRecord('request_1')?.status).toBe('expired')
+  })
+
+  test('a rejecting store does not leak an unhandled rejection', async () => {
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const controller = createHumanInLoopController({
+        store: {
+          put: () => Promise.reject(new Error('disk full')),
+          update: () => Promise.reject(new Error('disk full')),
+        },
+      })
+      const promise = controller.request({
+        id: 'request_1',
+        kind: 'ask',
+        payload: {},
+        createdAt: 1,
+      })
+      controller.reject('request_1', new Error('no'))
+      await expect(promise).rejects.toThrow('no')
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      expect(unhandled).toEqual([])
+      expect(controller.getRecord('request_1')?.status).toBe('rejected')
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+
   test('mirrors record writes to an optional store', async () => {
     const updates: string[] = []
     const controller = createHumanInLoopController({

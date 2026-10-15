@@ -126,8 +126,7 @@ pub(crate) async fn workspace_drag_commit(
             let placement = crate::workspace_drag_tracking::stop(&key);
             crate::workspace_drag_tracking::interactive(&handle, &destination, placement);
             {
-                let state = handle.state::<crate::workspace_windows::WorkspaceWindows>();
-                let mut windows = state.0.lock().unwrap();
+                let mut windows = crate::workspace_windows::workspaces(&handle);
                 let entry = windows
                     .entries
                     .get_mut(&destination)
@@ -153,11 +152,7 @@ pub(crate) async fn workspace_drag_commit(
             let handle = app.clone();
             crate::macos_tabs::defer(move || {
                 crate::workspace_drag_image::remove(&destination);
-                if let Some(entry) = handle
-                    .state::<crate::workspace_windows::WorkspaceWindows>()
-                    .0
-                    .lock()
-                    .unwrap()
+                if let Some(entry) = crate::workspace_windows::workspaces(&handle)
                     .entries
                     .get_mut(&destination)
                 {
@@ -248,11 +243,7 @@ pub(crate) async fn workspace_transfer_presented(
     crate::native_browser_lifecycle::on_ui(move || {
         #[cfg(target_os = "macos")]
         crate::workspace_drag_image::remove(caller.label());
-        if let Some(entry) = app
-            .state::<crate::workspace_windows::WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
+        if let Some(entry) = crate::workspace_windows::workspaces(&app)
             .entries
             .get_mut(caller.label())
         {

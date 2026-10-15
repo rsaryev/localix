@@ -1,3 +1,4 @@
+import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
 import { z } from 'zod'
 
 import { findPlay, moveName } from './notation'
@@ -29,13 +30,7 @@ const squareIndex = z.number().int().min(0).max(63)
  * While the agent owes a move: when it was asked, and whether it can answer. Everything that counts
  * ("thinking for 12s") is derived from `since` against a clock, never counted in state.
  */
-export const agentWaitSchema = z.object({
-  since: z.string(),
-  /** thinking — the chat was woken; unreachable — the wake did not land. */
-  status: z.enum(['thinking', 'unreachable']),
-  reason: z.string().optional(),
-})
-export type AgentWait = z.infer<typeof agentWaitSchema>
+export { agentWaitSchema, type AgentWait }
 
 export const pieceSchema = z.object({ side: z.enum(SIDES), king: z.boolean() })
 
@@ -56,11 +51,11 @@ export const recordSchema = z.object({
   lost: z.number().int().min(0),
   draw: z.number().int().min(0),
 })
-export type Record = z.infer<typeof recordSchema>
-export const EMPTY_RECORD: Record = { won: 0, lost: 0, draw: 0 }
+export type GameRecord = z.infer<typeof recordSchema>
+export const EMPTY_RECORD: GameRecord = { won: 0, lost: 0, draw: 0 }
 
 /** The score after a game that ended `status`. */
-export const scored = (record: Record, status: Game['status']): Record =>
+export const scored = (record: GameRecord, status: Game['status']): GameRecord =>
   status === 'playing' ? record : { ...record, [status]: record[status] + 1 }
 
 /** The one game at this table — what the plugin keeps, and what every route answers with. */
@@ -83,7 +78,7 @@ export const gameSchema = z.object({
 })
 export type Game = z.infer<typeof gameSchema>
 
-export function newGame(input: { id: string; you: Side; now: string; record?: Record }): Game {
+export function newGame(input: { id: string; you: Side; now: string; record?: GameRecord }): Game {
   return {
     id: input.id,
     board: openingBoard(),

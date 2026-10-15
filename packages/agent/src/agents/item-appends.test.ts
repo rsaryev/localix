@@ -45,6 +45,36 @@ describe('diffItemsForAppends', () => {
     expect(applyItemAppend(prev[0], append!)).toMatchObject({ text: 'AB' })
   })
 
+  test('narrative metadata: equal copies grow, a changed field is structural', () => {
+    const withMeta = (value: string, meta: Record<string, unknown>) =>
+      ({ ...(text('t', value) as object), ...meta }) as unknown as AgentItem
+    const prev = [withMeta('A', { phase: 'final', refs: [{ id: 1 }] })]
+    expect(
+      diffItemsForAppends(
+        prev,
+        [withMeta('AB', { phase: 'final', refs: [{ id: 1 }] })],
+        NO_PASSTHROUGH,
+      ),
+    ).toEqual([{ itemId: 't', slot: 'text', append: 'B' }])
+    expect(
+      diffItemsForAppends(
+        prev,
+        [withMeta('AB', { phase: 'draft', refs: [{ id: 1 }] })],
+        NO_PASSTHROUGH,
+      ),
+    ).toBeNull()
+    expect(
+      diffItemsForAppends(
+        prev,
+        [withMeta('AB', { phase: 'final', refs: [{ id: 2 }] })],
+        NO_PASSTHROUGH,
+      ),
+    ).toBeNull()
+    expect(
+      diffItemsForAppends(prev, [withMeta('AB', { phase: 'final' })], NO_PASSTHROUGH),
+    ).toBeNull()
+  })
+
   test('missing baseline or length change → structural', () => {
     const items = [command('c1', 'out')]
     expect(diffItemsForAppends(undefined, items, NO_PASSTHROUGH)).toBeNull()

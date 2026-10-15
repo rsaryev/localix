@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { isDesktop } from '@localixai/kit/environment'
+import { pollAttempts } from '@/shared/lib/pollAttempts'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import type { PreviewsBySession } from '../model/preview'
@@ -67,7 +68,7 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
             tabId: tab.previewId,
             script: `window.__localixBrowser.run(${JSON.stringify(event.commandId)}, ${JSON.stringify(command)})`,
           })
-          for (let attempt = 0; attempt < 100; attempt += 1) {
+          const answered = await pollAttempts(100, 100, async () => {
             const raw = await invoke('browser_eval', {
               tabId: tab.previewId,
               script: `JSON.stringify(window.__localixBrowser?.take(${JSON.stringify(event.commandId)}) ?? null)`,
@@ -91,10 +92,11 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
                     ? { action: 'viewport', previewId: tab.previewId, viewport }
                     : { ...outcome.result, previewId: tab.previewId },
               })
-              return
+              return true
             }
-            await new Promise((resolve) => setTimeout(resolve, 100))
-          }
+            return false
+          })
+          if (answered) return
           throw new Error('Browser page did not answer the command')
         } catch (error) {
           await backendClient.previewResult(event.commandId, {

@@ -11,7 +11,7 @@
  * contain the witnesses the caller named. Move the code and the lint goes red, which is the only
  * behaviour that makes the green mean anything.
  */
-import { readdirSync, statSync } from 'node:fs'
+import { readdirSync, statSync, type Dirent } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -37,24 +37,27 @@ export function isSourceFile(file: string): boolean {
  * `sourceTree` below insists the caller prove the tree it cared about was actually there.
  */
 export function walkSources(dir: string): string[] {
-  let entries: string[]
+  let entries: Dirent[]
   try {
-    entries = readdirSync(dir)
+    entries = readdirSync(dir, { withFileTypes: true })
   } catch {
     return []
   }
   const files: string[] = []
   for (const entry of entries) {
-    if (SKIP_DIRS.has(entry)) continue
-    const full = join(dir, entry)
-    let dirent: ReturnType<typeof statSync>
-    try {
-      dirent = statSync(full)
-    } catch {
-      continue // a symlink that dangles mid-walk
+    if (SKIP_DIRS.has(entry.name)) continue
+    const full = join(dir, entry.name)
+    // The entry type comes with the listing; only a symlink needs a stat to see its target.
+    let isDirectory = entry.isDirectory()
+    if (entry.isSymbolicLink()) {
+      try {
+        isDirectory = statSync(full).isDirectory()
+      } catch {
+        continue // a symlink that dangles mid-walk
+      }
     }
-    if (dirent.isDirectory()) files.push(...walkSources(full))
-    else if (isSourceFile(entry)) files.push(full)
+    if (isDirectory) files.push(...walkSources(full))
+    else if (isSourceFile(entry.name)) files.push(full)
   }
   return files
 }

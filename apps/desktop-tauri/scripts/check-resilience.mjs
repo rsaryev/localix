@@ -21,6 +21,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { sleep, waitFor } from '../../../scripts/lib/wait.mjs'
+
 const desktop = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
 function option(args, name) {
@@ -28,19 +30,7 @@ function option(args, name) {
   return at === -1 ? undefined : args[at + 1]
 }
 
-export const sleep = (ms) => new Promise((done) => setTimeout(done, ms))
-
-/** Poll `check` until it returns something truthy, or throw after `timeoutMs`. */
-export async function waitFor(what, check, timeoutMs, stepMs = 200) {
-  const deadline = Date.now() + timeoutMs
-  for (;;) {
-    const value = await check()
-    if (value) return value
-    if (Date.now() > deadline)
-      throw new Error(`timed out after ${timeoutMs} ms waiting for ${what}`)
-    await sleep(stepMs)
-  }
-}
+export { sleep, waitFor }
 
 const isAlive = (pid) => {
   try {

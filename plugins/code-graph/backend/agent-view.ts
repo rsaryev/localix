@@ -25,6 +25,9 @@ let asks = 0
  *  the person has long since moved themselves. */
 export const REQUEST_TTL_MS = 15_000
 
+/** How long a tab's camera report answers {@link readGraphView}. */
+const REPORT_TTL_MS = 10_000
+
 /** What an open tab is told, as it happens (`ws-frames.ts` carries it to the socket). */
 export type AgentViewEvent = { kind: 'agent'; agent: AgentView } | { kind: 'report'; ask: number }
 
@@ -64,7 +67,10 @@ export function subscribeAgentView(
     listener({ kind: 'agent', agent: current })
   return () => {
     listeners.delete(listener)
-    if (!listeners.size) tabs.delete(key)
+    if (listeners.size) return
+    tabs.delete(key)
+    // The camera report answers only an open tab; without one it would stay for the process.
+    reports.delete(key)
   }
 }
 
@@ -90,12 +96,14 @@ export function reportGraphView(root: string, sessionId: string, report: GraphCa
   if (previous && previous.report.revision > report.revision) return
   const at = Date.now()
   reports.set(key, { report, at })
+  // A report older than REPORT_TTL_MS is never read again: drop it, so the map stays bounded.
+  for (const [other, entry] of reports) if (at - entry.at >= REPORT_TTL_MS) reports.delete(other)
   for (const deliver of waiting.get(key) ?? []) deliver(report, at)
 }
 
 export function readGraphView(root: string, sessionId: string): GraphCameraReport | undefined {
   const entry = reports.get(keyOf(root, sessionId))
-  return entry && Date.now() - entry.at < 10_000 ? entry.report : undefined
+  return entry && Date.now() - entry.at < REPORT_TTL_MS ? entry.report : undefined
 }
 
 /** A queued request is not an applied move: only the tab's matching report confirms it. */

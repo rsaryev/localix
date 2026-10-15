@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState, type ComponentPropsWithoutRef } from 'react'
+import { forwardRef, useEffect, useState, type ComponentPropsWithoutRef } from 'react'
 import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import {
@@ -14,6 +14,7 @@ import {
   type ChoiceControlSize,
 } from './choice-trigger'
 import { useFieldControlProps } from './field'
+import { createTypeaheadBuffer } from '../lib/typeahead'
 
 export interface SelectOption {
   value: string
@@ -67,48 +68,23 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   const selected = options.find((option) => option.value === value)
   const SelectedIcon = selected?.icon
   const [open, setOpen] = useState(false)
-  const typeaheadRef = useRef('')
-  const typeaheadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(
-    () => () => {
-      if (typeaheadTimerRef.current) clearTimeout(typeaheadTimerRef.current)
-    },
-    [],
-  )
+  const [typeahead] = useState(() => createTypeaheadBuffer({ timeoutMs: 1_000 }))
 
   useEffect(() => {
-    if (!open) return
-    typeaheadRef.current = ''
-    if (typeaheadTimerRef.current) clearTimeout(typeaheadTimerRef.current)
-    typeaheadTimerRef.current = null
-  }, [open])
+    if (open) typeahead.reset()
+  }, [open, typeahead])
 
   const handleClosedTypeahead = (key: string) => {
     const enabled = options.filter((option) => !option.disabled)
-    if (enabled.length === 0) return
-    const search = `${typeaheadRef.current}${key}`.toLowerCase()
-    const normalizedSearch =
-      search.length > 1 && Array.from(search).every((character) => character === search[0])
-        ? search[0]!
-        : search
-    const selectedIndex = enabled.findIndex((option) => option.value === value)
-    const ordered = enabled.map(
-      (_, index) => enabled[(Math.max(selectedIndex, 0) + index) % enabled.length]!,
-    )
-    const candidates =
-      normalizedSearch.length === 1 ? ordered.filter((option) => option.value !== value) : ordered
-    const match = candidates.find((option) =>
-      option.label.toLowerCase().startsWith(normalizedSearch),
-    )
+    const match =
+      enabled[
+        typeahead.handleChar(
+          key,
+          enabled.map((option) => option.label),
+          enabled.findIndex((option) => option.value === value),
+        )
+      ]
     if (match) onValueChange(match.value)
-
-    typeaheadRef.current = search
-    if (typeaheadTimerRef.current) clearTimeout(typeaheadTimerRef.current)
-    typeaheadTimerRef.current = setTimeout(() => {
-      typeaheadRef.current = ''
-      typeaheadTimerRef.current = null
-    }, 1_000)
   }
 
   return (

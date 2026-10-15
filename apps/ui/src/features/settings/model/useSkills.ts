@@ -69,14 +69,14 @@ export function useSkills(scope: string, agentScope = ''): SkillsData {
   const [mutation, setMutation] = useState<SkillMutation | null>(null)
   const mutationRef = useRef<SkillMutation | null>(null)
 
+  // `registry.refresh` changes only with the scope; an empty list kept the first scope's
+  // refresh, so a retry after switching scopes re-read the wrong one.
+  const registryRefresh = registry.refresh
   const refresh = useCallback(() => {
     setError(null)
-    registry.refresh()
+    registryRefresh()
     setRefreshKey((key) => key + 1)
-    // `registry.refresh` is stable per scope; taking it as a dependency would rebuild
-    // this callback on every document.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [registryRefresh])
 
   // Only the curator half is fetched here — pins, usage and archives describe how a
   // skill has been USED, which is this screen's business and no run's.

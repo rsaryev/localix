@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { access, readFile, readdir } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { repoRoot } from './lib/paths.mjs'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const root = repoRoot()
 const monacoRuntimeRoot = join(root, 'vendor/monaco-editor-runtime')
 
 const readJson = async (path) => JSON.parse(await readFile(join(root, path), 'utf8'))

@@ -20,7 +20,7 @@
 import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
 import type { SecretConsumer } from '@localixai/plugin-sdk/backend'
 import type { RequestAuth } from './request-spec'
-import { SECRET_FIELDS, secretConsumerFor } from './secrets'
+import { authSecret, secretConsumerFor } from './secrets'
 
 export type BindSecret = (userId: string, key: string, consumer: SecretConsumer) => Promise<boolean>
 
@@ -33,15 +33,12 @@ const SECRET_TOKEN_RE = () => /\$\{secret:([^}]+)\}/g
 
 /** Every vault key an auth block references, paired with the field that holds it. */
 export function authSecretReferences(auth: RequestAuth): Array<{ key: string; field: string }> {
-  const record = auth as unknown as Record<string, unknown>
+  const secret = authSecret(auth)
+  if (typeof secret?.value !== 'string' || !hasSecretTokens(secret.value)) return []
   const found: Array<{ key: string; field: string }> = []
-  for (const field of SECRET_FIELDS[auth.type]) {
-    const value = record[field]
-    if (typeof value !== 'string' || !hasSecretTokens(value)) continue
-    for (const match of value.matchAll(SECRET_TOKEN_RE())) {
-      const key = match[1]?.trim()
-      if (key) found.push({ key, field })
-    }
+  for (const match of secret.value.matchAll(SECRET_TOKEN_RE())) {
+    const key = match[1]?.trim()
+    if (key) found.push({ key, field: secret.field })
   }
   return found
 }

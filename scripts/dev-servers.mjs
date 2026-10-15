@@ -1,7 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process'
 import net from 'node:net'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 
 import {
   discoverRuntimeEndpoint,
@@ -9,8 +8,10 @@ import {
   readRuntimeEndpoint,
   resolveRuntimeIdentity,
 } from '../apps/api/src/lib/runtime-endpoint'
+import { repoRoot } from './lib/paths.mjs'
+import { devApiPort, devUiPort } from './lib/ports.mjs'
 
-const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const repo = repoRoot()
 
 /** A persistent development database, separate from the installed app's database. */
 export function resolveDevDatabaseFile(env = process.env, root = repo) {
@@ -49,7 +50,7 @@ export async function assertDevelopmentRuntimeAvailable() {
 }
 
 /** The port `apps/ui`'s dev script passes to Vite. One constant so the check and the log agree. */
-export const FRONTEND_DEV_PORT = Number(process.env.LOCALIX_DEV_UI_PORT || 5050)
+export const FRONTEND_DEV_PORT = devUiPort()
 
 /**
  * The exact page origins the dev API must accept from the Vite UI, as `LOCALIX_UI_ORIGINS`.
@@ -267,7 +268,7 @@ export async function runDevServers(args = process.argv.slice(2)) {
   const workspace = args.includes('--workspace')
   const commands = resolveDevTurboCommands(workspace)
   const host = process.env.LOCALIX_DEV_HOST?.trim() || '127.0.0.1'
-  const port = Number(process.env.LOCALIX_DEV_API_PORT || 5051)
+  const port = devApiPort()
   if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
     throw new Error('LOCALIX_DEV_API_PORT must be a valid TCP port.')
   }

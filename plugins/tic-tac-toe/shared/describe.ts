@@ -1,4 +1,4 @@
-import { LINES, cellName, freeCells, type Game, type Record } from './game'
+import { LINES, cellName, freeCells, type Game, type GameRecord } from './game'
 
 /**
  * The game as TEXT for the agent — tool results, the wake that asks for its move, and the context
@@ -53,7 +53,7 @@ export function lastMoveLine(game: Game): string | null {
  * The running score at this table, from the agent's side — so a woken turn knows the history of
  * this chat's games without reading them back from a transcript that checkpoints may have folded.
  */
-export function recordLine(record: Record): string | null {
+export function recordLine(record: GameRecord): string | null {
   const played = record.won + record.lost + record.draw
   if (played === 0) return null
   return `Score at this table: you ${record.lost}, the user ${record.won}, draws ${record.draw}.`

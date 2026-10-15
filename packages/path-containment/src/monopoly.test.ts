@@ -82,7 +82,7 @@ const EXEMPTIONS: Record<string, string> = {
     'Removes a provider namespace from a MODEL ID before usage aggregation. Not a path.',
   'packages/agent/src/catalog/model-lookup.ts::sep-template':
     'Matches namespaced MODEL IDs against provider ids during catalog lookup. Not a path.',
-  'apps/ui/src/features/chat/ui/MessageList.tsx::sep-template':
+  'apps/ui/src/features/chat/ui/useTranscriptJumps.ts::sep-template':
     'Matches a `localix://resource/chat/message/<session>` URI against the namespace this materializer owns. A URI namespace, not a filesystem path — routing it through the owner would apply path semantics (`..` resolution, separator normalisation) to an opaque identifier.',
   // ── other non-path prefixes ──
   // `permission-engine.ts::sep-prefix` used to sit here — a shell-command prefix match that

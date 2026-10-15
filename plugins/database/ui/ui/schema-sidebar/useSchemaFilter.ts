@@ -1,14 +1,14 @@
 /** Debounced table/column filtering over the schema tree: wraps the unfiltered tree in the uniform
  *  match shape, matches NAMES by default, and matches columns only when asked to. */
 import { useEffect, useMemo, useState } from 'react'
-import type { DbSchemaItem, DbTableSchema } from '../../dbClient'
+import type { DbSchemaItem } from '../../dbClient'
 import { searchSchemas, type SchemaItemMatch } from '../../model/schemaSearch'
 import type { SchemaState } from '../../model/useSchema'
 
 /** Stable empty column list for the unfiltered tree, so wrapping doesn't churn refs. */
 const NO_COLUMNS: string[] = []
 /** Name-only search reads no column cache at all, so column loads don't re-run the match. */
-const NO_TABLES: Record<string, DbTableSchema> = {}
+const NO_TABLES: SchemaState['columnSources'] = {}
 
 /**
  * How many objects a column search introspects. The defect it bounds: the first keystroke in the
@@ -81,7 +81,7 @@ export function useSchemaFilter(schema: SchemaState) {
       ),
     [groups],
   )
-  const columnTables = searchColumns ? schema.tables : NO_TABLES
+  const columnTables = searchColumns ? schema.columnSources : NO_TABLES
   const searchResult = useMemo(
     () => (searchActive ? searchSchemas(schema.schemas ?? {}, columnTables, q) : null),
     [searchActive, schema.schemas, columnTables, q],

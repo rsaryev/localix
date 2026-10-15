@@ -2,6 +2,14 @@
 pub(crate) use crate::workspace_session_model::valid_route;
 #[cfg(target_os = "macos")]
 use crate::workspace_session_model::{SavedGroup, SavedSession, SavedWorkspace};
+
+/// Coalesces a burst of route changes into one session write.
+#[cfg(target_os = "macos")]
+const SAVE_DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(400);
+/// Capturing the session reads every window frame on the main thread; a save gives up rather than
+/// block quit or a later save behind a wedged main thread.
+#[cfg(target_os = "macos")]
+const CAPTURE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 #[cfg(target_os = "macos")]
 fn session_path<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<std::path::PathBuf> {
     use tauri::Manager;
@@ -24,8 +32,7 @@ pub(crate) fn snapshot<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> SavedSes
     use objc2_app_kit::{NSWindow, NSWindowStyleMask};
     use tauri::Manager;
     let (records, hidden) = {
-        let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
-        let data = state.0.lock().unwrap();
+        let data = crate::workspace_windows::workspaces(app);
         (data.entries.clone(), data.hidden_groups.clone())
     };
     let windows: std::collections::HashMap<usize, _> = records
@@ -97,11 +104,7 @@ pub(crate) fn snapshot<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> SavedSes
         }
     }
     if session.active.is_none() {
-        session.active = app
-            .state::<crate::workspace_windows::WorkspaceWindows>()
-            .0
-            .lock()
-            .unwrap()
+        session.active = crate::workspace_windows::workspaces(app)
             .active
             .clone()
             .filter(|label| records.contains_key(label));
@@ -127,7 +130,7 @@ pub(crate) fn save_soon<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     let generation = GENERATION.fetch_add(1, Ordering::AcqRel) + 1;
     let handle = app.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(400));
+        std::thread::sleep(SAVE_DEBOUNCE);
         if GENERATION.load(Ordering::Acquire) != generation
             || handle.state::<crate::quit::QuitState>().is_exiting()
         {
@@ -137,17 +140,23 @@ pub(crate) fn save_soon<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     });
 }
 
+/// Save on the shared blocking pool instead of a thread per call. `save` waits on the main thread,
+/// so it must never run there.
+#[cfg(target_os = "macos")]
+pub(crate) fn save_in_background<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    let handle = app.clone();
+    tauri::async_runtime::spawn_blocking(move || save(&handle));
+}
+
 /// Called off the main thread after every workspace flushed; one bounded main-thread read.
 #[cfg(target_os = "macos")]
 pub(crate) fn save<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     static WRITES: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _write = WRITES.lock().unwrap();
-    let (tx, rx) = std::sync::mpsc::channel();
     let handle = app.clone();
-    crate::macos_tabs::defer(move || {
-        let _ = tx.send(snapshot(&handle));
-    });
-    let Ok(session) = rx.recv_timeout(std::time::Duration::from_secs(2)) else {
+    let Some(session) =
+        crate::round_trip::run_on_main_sync(CAPTURE_TIMEOUT, move || snapshot(&handle))
+    else {
         crate::log::logln("workspace session capture timed out");
         return;
     };
@@ -170,20 +179,12 @@ pub(crate) fn save<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 pub(crate) fn restore(app: &tauri::AppHandle) {
     use tauri::Manager;
     let session = load(app);
-    app.state::<crate::workspace_windows::WorkspaceWindows>()
-        .0
-        .lock()
-        .unwrap()
-        .active = session.active.clone();
+    crate::workspace_windows::workspaces(app).active = session.active.clone();
     for group in session.groups {
         let mut host = None;
         for tab in &group.tabs {
             if app.get_window(&tab.label).is_some() {
-                if let Some(entry) = app
-                    .state::<crate::workspace_windows::WorkspaceWindows>()
-                    .0
-                    .lock()
-                    .unwrap()
+                if let Some(entry) = crate::workspace_windows::workspaces(app)
                     .entries
                     .get_mut(&tab.label)
                 {
@@ -206,8 +207,7 @@ pub(crate) fn restore(app: &tauri::AppHandle) {
                 }
             }
         }
-        let state = app.state::<crate::workspace_windows::WorkspaceWindows>();
-        let mut data = state.0.lock().unwrap();
+        let mut data = crate::workspace_windows::workspaces(app);
         if group.hidden {
             data.hidden_groups.push(group.clone());
         }

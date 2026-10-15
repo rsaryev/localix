@@ -7,7 +7,7 @@
  */
 
 import type { RequestSpec } from './request-spec'
-import { formatImportPreview, formatSavedImport } from './import-report'
+import { formatImportPreview, formatSavedImport, type ImportReport } from './import-report'
 import type { CollectionStore } from './collection/store'
 import { importerNames, runImport } from './import/registry'
 import type { ImportedRequest } from './import/types'
@@ -63,16 +63,19 @@ export async function runImportAction(
   sources: string | readonly string[],
   save: boolean,
   options?: { baseUrl?: string },
-): Promise<{ ok: true; content: string } | { ok: false; problem: string }> {
+): Promise<ImportReport | { ok: false; problem: string; message: string }> {
   const payloads = typeof sources === 'string' ? [sources] : sources
   const outcomes = payloads.map((text) => runImport(text, options)).filter((o) => o !== null)
   if (outcomes.length === 0) {
+    const message =
+      `Could not recognise that as any format we import (${importerNames()}). ` +
+      'Paste a cURL command verbatim, e.g. `curl -H "Accept: application/json" https://api.github.com/users/octocat`, ' +
+      'or a HAR 1.2 archive.'
+    // The person has the sidebar's own editor; only the agent is pointed at the tool call.
     return {
       ok: false,
-      problem:
-        `Could not recognise that as any format we import (${importerNames()}). ` +
-        'Paste a cURL command verbatim, e.g. `curl -H "Accept: application/json" https://api.github.com/users/octocat`, ' +
-        'or a HAR 1.2 archive. To build a request by hand instead, use {"action":"save",…}.',
+      problem: `${message} To build a request by hand instead, use {"action":"save",…}.`,
+      message,
     }
   }
   // One label when every payload was the same format (the normal case: a directory of our files,

@@ -39,15 +39,35 @@ function familyOf(value: string): ModelAliasFamily | undefined {
     : undefined
 }
 
-/** Compare two ids by their numeric groups (then lexically) — larger numbers = newer. */
+/** A numeric group this long is a release DATE stamp (`20250514`), not a version number. */
+const DATE_STAMP_DIGITS = 8
+
+/** Split an id's numeric groups into version numbers and a trailing date stamp. */
+function versionParts(id: string): { version: number[]; date: number } {
+  const groups = id.match(/\d+/g) ?? []
+  const version: number[] = []
+  let date = -1
+  for (const group of groups) {
+    if (group.length >= DATE_STAMP_DIGITS) date = Number(group)
+    else version.push(Number(group))
+  }
+  return { version, date }
+}
+
+/**
+ * Compare two ids by their version numbers, then their release date stamp, then lexically —
+ * larger = newer. A date stamp never competes with a version number: `claude-opus-4-20250514`
+ * is version 4 (dated), older than version 4.5 (`claude-opus-4-5`).
+ */
 function compareVersionish(a: string, b: string): number {
-  const na = a.match(/\d+/g)?.map(Number) ?? []
-  const nb = b.match(/\d+/g)?.map(Number) ?? []
-  const len = Math.max(na.length, nb.length)
+  const pa = versionParts(a)
+  const pb = versionParts(b)
+  const len = Math.max(pa.version.length, pb.version.length)
   for (let i = 0; i < len; i++) {
-    const d = (na[i] ?? -1) - (nb[i] ?? -1)
+    const d = (pa.version[i] ?? -1) - (pb.version[i] ?? -1)
     if (d !== 0) return d
   }
+  if (pa.date !== pb.date) return pa.date - pb.date
   return a.localeCompare(b)
 }
 

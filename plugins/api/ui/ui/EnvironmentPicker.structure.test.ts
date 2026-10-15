@@ -3,13 +3,17 @@ import { readFileSync } from 'node:fs'
 
 const picker = readFileSync(new URL('./EnvironmentPicker.tsx', import.meta.url), 'utf8')
 const sidebar = readFileSync(new URL('../RestApiSidebar.tsx', import.meta.url), 'utf8')
+const headerActions = readFileSync(new URL('./RequestsHeaderActions.tsx', import.meta.url), 'utf8')
 
 describe('environment picker chrome', () => {
   test('keeps the environment action in the header so narrow filters cannot wrap it to a row', () => {
     const headerStart = sidebar.indexOf('<PanelHeader')
     const filterStart = sidebar.indexOf('<WorkbenchToolbar', headerStart)
-    expect(sidebar.slice(headerStart, filterStart)).toContain('<EnvironmentPicker')
-    expect(sidebar.slice(filterStart)).not.toContain('<EnvironmentPicker')
+    // The header's actions live in `RequestsHeaderActions`, which owns the picker.
+    expect(sidebar.slice(headerStart, filterStart)).toContain('<RequestsHeaderActions')
+    expect(sidebar.slice(filterStart)).not.toContain('<RequestsHeaderActions')
+    expect(headerActions).toContain('<EnvironmentPicker')
+    expect(sidebar).not.toContain('<EnvironmentPicker')
     expect(sidebar).not.toContain('<WorkbenchFilterBar')
     expect(sidebar).toContain('density="compact"')
     expect(sidebar).toContain('aria-label="Request filter controls"')

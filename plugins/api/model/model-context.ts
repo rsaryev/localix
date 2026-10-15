@@ -8,6 +8,8 @@
  * This stays readable to a model, avoids false positives, and never weakens the host policy.
  */
 
+import { redactSecrets } from '@localixai/plugin-sdk/secret-shapes'
+
 const REDACTED = '[redacted]'
 
 const SENSITIVE_COMPACT_KEYS = new Set([
@@ -34,31 +36,8 @@ function sensitiveKey(key: string): boolean {
   )
 }
 
-/** Strong credential shapes mirrored from the host admission boundary, but replacement is local. */
-const SECRET_VALUES: RegExp[] = [
-  /sk-ant-[A-Za-z0-9_-]{20,}/g,
-  /\bsk-[A-Za-z0-9][A-Za-z0-9_-]{18,}[A-Za-z0-9]/g,
-  /gh[pousr]_[A-Za-z0-9]{20,}/g,
-  /xox[baprs]-[A-Za-z0-9-]{10,}/g,
-  /AKIA[0-9A-Z]{16}/g,
-  /-----BEGIN[ A-Z]*PRIVATE KEY-----[\s\S]*?-----END[ A-Z]*PRIVATE KEY-----/g,
-  /AIza[0-9A-Za-z_-]{35}/g,
-  /GOCSPX-[0-9A-Za-z_-]{20,}/g,
-  /glpat-[0-9A-Za-z_-]{20,}/g,
-  /\b[rs]k_(?:live|test)_[0-9A-Za-z]{10,}/g,
-  /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g,
-  /\bbearer\s+[A-Za-z0-9._-]{12,}/gi,
-  /\b[a-z0-9_-]*(?:api[_-]?key|secret|token|password|passwd)\b["']?\s*[:=]\s*["']?[A-Za-z0-9._-]{8,}["']?/gi,
-]
-
-export function redactModelSecrets(input: string): string {
-  let output = input
-  for (const pattern of SECRET_VALUES) {
-    pattern.lastIndex = 0
-    output = output.replace(pattern, REDACTED)
-  }
-  return output
-}
+/** Strong credential shapes: the host's shared list, so a plugin view can never drift from it. */
+export const redactModelSecrets = (input: string): string => redactSecrets(input)
 
 const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/
 

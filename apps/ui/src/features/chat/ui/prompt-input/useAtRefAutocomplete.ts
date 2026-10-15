@@ -18,18 +18,20 @@ import type { DirEntry, FileSearchEntry } from '@/shared/api/contracts'
 import { useChatStore } from '../../model/store'
 import { detectToken } from './atRefToken'
 import { useResourceDrill } from './useResourceDrill'
-import { chatUriToNativeToken } from './chatResourceToken'
+import {
+  acceptAtRefSuggestion,
+  atRefEmptyLabel,
+  atRefHighlightQuery,
+  resourceLinkToken,
+  splitRefPathPartial,
+} from './atRefAccept'
+import { useAtRefKeyboard } from './useAtRefKeyboard'
+import { useAtRefTerminals } from './useAtRefTerminals'
 import {
   selectAtRefProjects,
   selectAtRefSessionMessages,
   selectAtRefSessions,
 } from './atRefStoreSelectors'
-import {
-  reduceMentionMenu,
-  refToken,
-  resourceDrillPartial,
-  resourceParentPartial,
-} from '@localixai/api/context-refs'
 import {
   buildCallRows,
   buildProjectRows,
@@ -46,13 +48,6 @@ import { buildAgentRows } from './atRefAgentRows'
 import { useConversationAgentCandidates } from './useConversationAgentCandidates'
 
 export type { AtRefSuggestion } from './atRefSuggestions'
-
-/** The token a container URI links as: a `localix://resource/chat` node maps back to its native
- *  `@project:`/`@session:`/`@message:` token; any other scheme is the generic
- *  `@resource:` token. Shared by the action rows and node linking (no trailing space). */
-function resourceLinkToken(uri: string): string {
-  return chatUriToNativeToken(uri) ?? `@resource:${uri}`
-}
 
 /** The mention-search filter the user can toggle in the menu. */
 export type AtRefFilter = 'all' | 'files' | 'folders' | 'regex'
@@ -103,32 +98,8 @@ export function useAtRefAutocomplete(
   const reqSeq = useRef(0)
 
   // --- terminal mode: the session's live PTYs (fetched on menu entry) ---
-  const [terminals, setTerminals] = useState<
-    Array<{ terminalId: string; command?: string; cwd: string }>
-  >([])
-  const terminalsSessionRef = useRef<string | null>(null)
   const terminalMode = token?.mode === 'terminal'
-  // Re-entering the picker performs a fresh fetch; do not expose the previous visit's rows.
-  if (!terminalMode) terminalsSessionRef.current = null
-  useEffect(() => {
-    if (!terminalMode || !sessionId) return
-    if (terminalsSessionRef.current !== sessionId) setTerminals([])
-    let cancelled = false
-    void backendClient
-      .listSessionTerminals(sessionId)
-      .then((rows) => {
-        if (!cancelled) {
-          terminalsSessionRef.current = sessionId
-          setTerminals(rows)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setTerminals([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [terminalMode, sessionId])
+  const { terminals, terminalsSessionRef } = useAtRefTerminals(terminalMode, sessionId)
 
   // --- resource mode: unified provider drill-down. A localix://resource/chat node
   //     links back to its NATIVE token. The
@@ -168,19 +139,8 @@ export function useAtRefAutocomplete(
     cacheRef.current.clear()
   }, [sessionId])
 
-  // Directory part of a ref-path partial ('' = working dir root).
-  const dirPart =
-    token?.mode === 'ref-path'
-      ? token.partial.includes('/')
-        ? token.partial.slice(0, token.partial.lastIndexOf('/') + 1)
-        : ''
-      : ''
-  const segment =
-    token?.mode === 'ref-path'
-      ? token.partial.includes('/')
-        ? token.partial.slice(token.partial.lastIndexOf('/') + 1)
-        : token.partial
-      : ''
+  // Directory part of a ref-path partial ('' = working dir root) and its trailing segment.
+  const { dirPart, segment } = splitRefPathPartial(token)
 
   // A `@file:`/`@folder:` partial with NO slash is a project-wide ref SEARCH
   // (reuses the same file-search backend as the mention) rather than a single-
@@ -372,180 +332,24 @@ export function useAtRefAutocomplete(
   const accept = useCallback(
     (suggestion: AtRefSuggestion, action: 'default' | 'link' = 'default') => {
       if (!token) return
-      const before = prompt.slice(0, token.start)
-      // Preserve any text after the token — the caret-aware detector can match a
-      // token being edited MID-draft, and the rewrite must not eat the tail.
-      const after = prompt.slice(token.end)
-      const insert = (replacement: string) => setPrompt(`${before}${replacement}${after}`)
-      // A COMPLETED link becomes a structured pinned ref (a chip in the composer
-      // frame) and the typed partial is REMOVED — no raw token text left behind.
-      // Falls back to inserting the token text when the host declines (or for a
-      // token shape the pinned channel can't represent).
-      const link = (tokenText: string) => {
-        if (linkRef?.(tokenText)) {
-          // Remove the typed partial, collapsing the seam so no double space is left.
-          const joined =
-            before.endsWith(' ') && after.startsWith(' ') ? before + after.slice(1) : before + after
-          setPrompt(joined)
-          return
-        }
-        insert(`${tokenText} `)
-      }
-      // ACTION rows (container actions, folder "Link this folder"…) carry a ready-made
-      // token (always LINKS, never drills).
-      if (suggestion.actionInsert !== undefined) {
-        link(suggestion.actionInsert)
-        return
-      }
-      if (suggestion.kind === 'type') {
-        insert(suggestion.id)
-        return
-      }
-      // An agent mention stays TEXT: it is how participants are addressed, and the same
-      // `@handle` is what the conversation strategy reads to let the addressee answer first.
-      if (suggestion.kind === 'agent' && suggestion.handle) {
-        insert(`@${suggestion.handle} `)
-        return
-      }
-      if (suggestion.kind === 'ref-path') {
-        const path = suggestion.path ?? suggestion.id
-        if (action === 'link') {
-          // Link the node regardless of type — a directory links as @folder:, a file
-          // as @file: (independent of which token kind the user started in).
-          link(refToken(suggestion.isDir ? 'folder' : 'file', path))
-          return
-        }
-        if (suggestion.isDir) {
-          // Drill: keep typing into the directory (text stays a partial).
-          insert(`${refToken(token.kind ?? 'file', path)}/`)
-          return
-        }
-        link(refToken(token.kind ?? 'file', path))
-        return
-      }
-      if (suggestion.kind === 'session') {
-        link(refToken('session', suggestion.sessionId ?? suggestion.id))
-        return
-      }
-      if (suggestion.kind === 'project') {
-        link(refToken('project', suggestion.projectId ?? suggestion.id))
-        return
-      }
-      if (suggestion.kind === 'terminal' || suggestion.kind === 'call') {
-        link(suggestion.insertToken ?? suggestion.id)
-        return
-      }
-      if (suggestion.kind === 'resource') {
-        const uri = suggestion.uri ?? suggestion.id
-        // Drill (default action on a node WITH children): keep the menu open with a
-        // trailing `/`, no space. Otherwise LINK the node (leaf, or the `→`/link
-        // gesture on a container): a `localix://resource/chat` node maps back to its NATIVE token
-        // (@project:/@session:/@message:) so the pill/expander match the drag-minted
-        // native refs; any other scheme links as the generic `@resource:` token.
-        if (action === 'default' && suggestion.hasChildren) {
-          insert(`@resource:${resourceDrillPartial(uri)}`)
-          return
-        }
-        // Provider categories are navigation-only and can never become a model ref.
-        if (suggestion.navigationOnly) {
-          insert(`@resource:${resourceDrillPartial(uri)}`)
-          return
-        }
-        link(resourceLinkToken(uri))
-        return
-      }
-      // mention: insert a link-only `@path` token — mentions stay TEXT (only the
-      // path reaches the model, and the inline highlight pill is its representation).
-      // A directory pick stays open (trailing slash, no space).
-      const path = suggestion.path ?? suggestion.id
-      insert(suggestion.isDir ? `@${path}/` : `@${path} `)
+      acceptAtRefSuggestion({ prompt, token, suggestion, action, setPrompt, linkRef })
     },
     [token, prompt, setPrompt, linkRef],
   )
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent): boolean => {
-      if (!isOpen) return false
-      // Escape always closes the menu, even with no hits.
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        setDismissedAt(
-          reduceMentionMenu(
-            { signature: tokenSignature, index: activeIndex, dismissedSignature: dismissedAt },
-            { type: 'dismiss' },
-          ).dismissedSignature,
-        )
-        return true
-      }
-      // Back remains available even when the current resource container is empty
-      // or its fetch failed, so navigation can never strand the picker.
-      if (e.key === 'ArrowLeft' && token?.mode === 'resource' && token.partial) {
-        e.preventDefault()
-        const before = prompt.slice(0, token.start)
-        const after = prompt.slice(token.end)
-        setPrompt(`${before}@resource:${resourceParentPartial(token.partial)}${after}`)
-        return true
-      }
-      if (suggestions.length === 0) return false
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setActiveIndex(
-          (i) =>
-            reduceMentionMenu(
-              { signature: tokenSignature, index: i, dismissedSignature: dismissedAt },
-              { type: 'move', delta: 1, rowCount: suggestions.length },
-            ).index,
-        )
-        return true
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setActiveIndex(
-          (i) =>
-            reduceMentionMenu(
-              { signature: tokenSignature, index: i, dismissedSignature: dismissedAt },
-              { type: 'move', delta: -1, rowCount: suggestions.length },
-            ).index,
-        )
-        return true
-      }
-      // `→` on a drillable node LINKS the container itself (instead of drilling into
-      // it with Enter). Only intercepted for container rows; on a leaf/flat row it
-      // falls through so the arrow key moves the caret normally.
-      if (e.key === 'ArrowRight') {
-        const pick = suggestions[activeIndex] ?? suggestions[0]
-        // `→` LINKS the highlighted row (a container instead of drilling; an action
-        // row runs it). Only intercepted for drillable/action rows; on a leaf/flat
-        // row it falls through so the arrow moves the caret normally.
-        if (pick?.isDir || pick?.isAction) {
-          e.preventDefault()
-          accept(pick, pick.navigationOnly ? 'default' : 'link')
-          return true
-        }
-        return false
-      }
-      if (e.key === 'Tab' || e.key === 'Enter') {
-        const pick = suggestions[activeIndex] ?? suggestions[0]
-        if (pick) {
-          e.preventDefault()
-          accept(pick)
-          return true
-        }
-      }
-      return false
-    },
-    [
-      isOpen,
-      suggestions,
-      activeIndex,
-      accept,
-      tokenSignature,
-      dismissedAt,
-      token,
-      prompt,
-      setPrompt,
-    ],
-  )
+  const handleKeyDown = useAtRefKeyboard({
+    isOpen,
+    suggestions,
+    activeIndex,
+    setActiveIndex,
+    accept,
+    tokenSignature,
+    dismissedAt,
+    setDismissedAt,
+    token,
+    prompt,
+    setPrompt,
+  })
 
   return {
     isOpen,
@@ -567,42 +371,12 @@ export function useAtRefAutocomplete(
       : [],
     // Mode-aware empty-state copy (the menu used to say "No matching files."
     // for sessions/projects/resources too).
-    emptyLabel: (() => {
-      switch (token?.mode) {
-        case 'session':
-          return 'No matching sessions.'
-        case 'project':
-          return 'No matching projects.'
-        case 'terminal':
-          return 'No live terminals.'
-        case 'call':
-          return 'No matching tool calls.'
-        case 'resource':
-          return 'Nothing to link here.'
-        case 'mention':
-        case 'ref-path':
-        case 'type':
-        case undefined:
-          return 'No matching files.'
-      }
-    })(),
+    emptyLabel: atRefEmptyLabel(token?.mode),
     // Filter tabs are only meaningful for the project-wide mention search.
     showFilters: token?.mode === 'mention',
     filter,
     setFilter,
     // The partial the user is typing — used to match-highlight suggestion labels.
-    query: token
-      ? token.mode === 'type' ||
-        token.mode === 'session' ||
-        token.mode === 'project' ||
-        token.mode === 'terminal' ||
-        token.mode === 'call'
-        ? token.partial
-        : token.mode === 'resource'
-          ? resourceSegment
-          : token.mode === 'ref-path'
-            ? segment
-            : token.partial.replace(/^\//, '')
-      : '',
+    query: atRefHighlightQuery(token, resourceSegment, segment),
   }
 }

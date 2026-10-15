@@ -6,7 +6,7 @@ export * from './homeBundledPlugins'
 export * from './homeContentPlatform'
 export * from './homeContentExternal'
 
-export const REPOSITORY_URL = 'https://github.com/rsaryev/localix'
+export { REPOSITORY_URL } from '@/lib/site'
 
 export const SECTIONS: SectionItem[] = [
   { id: 'intro', label: 'Localix' },

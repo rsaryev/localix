@@ -10,40 +10,12 @@
  * stable. It is applied ONLY while streaming; the final text renders verbatim.
  */
 import { isLiteralDollar } from './markdown-dollars'
+import { openFence } from './markdown-fence-scan'
 import { isEscaped } from './markdown-prose'
 
 /** Whether a stabilized fence is the one incomplete body still being written. */
 export function isGrowingFence(growing: string | null, source: string): boolean {
   return growing !== null && growing.trimEnd() === source.trimEnd()
-}
-
-const FENCE_LINE_RE = /^\s{0,3}(`{3,}|~{3,})(.*)$/
-
-/**
- * The fence the text is currently inside — its marker (e.g. "```") and where its body starts —
- * or null when all fenced code blocks are closed. A closing fence must use the same character,
- * be at least as long as the opener, and carry no info string.
- */
-function openFence(text: string): { marker: string; bodyStart: number } | null {
-  let open: { marker: string; bodyStart: number } | null = null
-  let offset = 0
-  for (const line of text.split('\n')) {
-    const lineEnd = offset + line.length + 1
-    const m = FENCE_LINE_RE.exec(line)
-    if (m) {
-      if (open === null) {
-        open = { marker: m[1], bodyStart: Math.min(lineEnd, text.length) }
-      } else if (
-        m[1][0] === open.marker[0] &&
-        m[1].length >= open.marker.length &&
-        m[2].trim() === ''
-      ) {
-        open = null
-      }
-    }
-    offset = lineEnd
-  }
-  return open
 }
 
 /**

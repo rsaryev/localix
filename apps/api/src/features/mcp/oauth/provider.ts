@@ -6,10 +6,11 @@ import type {
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js'
 
+import { PRODUCT_NAME, SITE_URL } from '../../../lib/brand'
 import type { McpOAuthStore } from './store'
 
-const CLIENT_NAME = 'Localix'
-const CLIENT_URI = 'https://localix.ai'
+const CLIENT_NAME = PRODUCT_NAME
+const CLIENT_URI = SITE_URL
 
 export interface McpOAuthProviderOptions {
   store: McpOAuthStore

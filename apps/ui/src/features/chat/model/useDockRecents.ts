@@ -28,6 +28,22 @@ function selectRecents(allSessions: UiSession[]): Array<{ id: string; title: str
   )
 }
 
+let lastSessions: UiSession[] | null = null
+let lastKey = ''
+
+/**
+ * The recents' content key, recomputed only when the session list itself is replaced: the
+ * selector runs on every store tick (each streamed token), and filtering, sorting and
+ * serializing every chat each time bought nothing while the list stood still.
+ */
+export function recentsKey(allSessions: UiSession[]): string {
+  if (allSessions !== lastSessions) {
+    lastSessions = allSessions
+    lastKey = JSON.stringify(selectRecents(allSessions))
+  }
+  return lastKey
+}
+
 /**
  * Feed the desktop shell's File ▸ Open Recent menu with the most-recently-used
  * top-level chats. The Rust side rebuilds the native menu; clicking an entry opens
@@ -39,7 +55,7 @@ function selectRecents(allSessions: UiSession[]): Array<{ id: string; title: str
  * recent list's content actually changes. No-op outside the desktop shell.
  */
 export function useDockRecents(): void {
-  const key = useChatStore((s) => JSON.stringify(selectRecents(s.allSessions)))
+  const key = useChatStore((s) => (isDesktop ? recentsKey(s.allSessions) : ''))
 
   useEffect(() => {
     if (!isDesktop) return

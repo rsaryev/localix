@@ -1,103 +1,33 @@
 import { useState, useMemo, useEffect, useCallback, useDeferredValue, type ReactNode } from 'react'
-import { RotateCcw } from 'lucide-react'
-import { Button } from '@localixai/kit/button'
 import { Command } from '@localixai/kit/command'
-import { EmptyHint } from '@localixai/kit/empty-hint'
-import { PanelHeader } from '@localixai/kit/panel-header'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
-import {
-  sortProvidersOAuthFirst,
-  type CatalogModel,
-  type ProviderEntry,
-} from '@localixai/agent/catalog'
+import { sortProvidersOAuthFirst, type ProviderEntry } from '@localixai/agent/catalog'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
-import { useInfiniteScroll } from '@localixai/plugin-sdk/ui/visibility'
-import type { ReasoningEffort } from '../../../model/reasoning'
-import type { useConnections } from '../useConnections'
+import type { ModelBrowserProps } from './modelBrowserProps'
 import { useModelHoverDetails } from './useModelHoverDetails'
 import { useModelSelectProviders } from './useModelSelectProviders'
-import { filterModels, availableModelFilters, type ModelFilter } from './filterModels'
-import { AddConnectionForm } from './AddConnectionForm'
 import type { SelectedItem } from './ModelSelectSidebar'
-import { ConnectionSettingsPanel } from './ConnectionSettingsPanel'
 import { ModelDetailsSidePanel } from './ModelDetailsSidePanel'
 import { CmdkHighlightWatcher } from './CmdkHighlightWatcher'
-import { ConnectionModelList } from './ConnectionModelList'
-import { CrossConnectionModelList } from './CrossConnectionModelList'
-import { resolveModelEntries, searchModelEntries } from './resolvedModelEntries'
-import {
-  getFavoriteModels,
-  toggleFavorite,
-  isFavoriteModel,
-  type FavoriteModel,
-} from './favoriteModels'
+import { useModelShortlists } from './useModelShortlists'
+import { useModelListPaging } from './useModelListPaging'
+import { initialModelSelection } from './initialModelSelection'
 import type { ParticipantRow } from './ModelTaskColumn'
 import { agentTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
 import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'
+import { ResetRouteRow, WorkloadOffOverlay } from './ModelBrowserParts'
+import { isDetailCurrent, workloadLabelFor } from './modelBrowserLabels'
+import { ModelBrowserMainPanel } from './ModelBrowserMainPanel'
 import { ModelBrowserSearchToolbar } from './ModelBrowserSearchToolbar'
-import { ModelFilterMenu } from './ModelFilterMenu'
 import { useAgentModelTurns } from './useAgentModelTurns'
 import { ModelDetailSettings } from './ModelDetailSettings'
-import { PickerPanelTitle } from './PickerPanelTitle'
 import { pickerColumns } from './pickerColumns'
-import { PICKER_ROW_LEADING, pickerRow } from './pickerRow'
-
-const PAGE_SIZE = 50
 
 /** Stable identity: a fresh literal each render would defeat the memoized subtree. */
 const NO_PARTICIPANTS: readonly ParticipantRow[] = []
-
-interface ModelBrowserProps {
-  /** Catalog models (+ any caller-supplied extras). Live per-connection models are discovered here. */
-  models: CatalogModel[]
-  connectionsState: ReturnType<typeof useConnections>
-  /** Current session model + its connection — drives the checkmark and the task summary. */
-  sessionModelId: string
-  sessionConnectionId: string | null
-  /**
-   * Assign the model. Chat closes the drawer and re-routes the participant `agentId` names;
-   * onboarding and the agent editor have no party, so they ignore it and remember the pair.
-   */
-  onPickSessionModel: (
-    connectionId: string,
-    modelId: string,
-    reasoningEffort?: ReasoningEffort,
-    agentId?: string,
-  ) => void | Promise<void>
-  /** Current session effort; before a session exists, the browser falls back to low. */
-  reasoningEffort?: ReasoningEffort
-  /**
-   * `agentId` names WHOSE effort this is. It used to be absent, so the write always landed on
-   * the conversation's first participant however many rows the column showed — in a room, on
-   * somebody other than the one being configured.
-   */
-  onReasoningEffortChange?: (effort: ReasoningEffort, agentId?: string) => void
-  /** Height utility classes for the Command container. */
-  heightClassName?: string
-  /** Optional activation-only seed supplied by a UI location. */
-  initialQuery?: string
-  /** Prefer a connected or connectable provider when the picker opens. */
-  initialProviderId?: string
-  initialConnectionId?: string
-  /**
-   * Show the "For which task" column. Off when the browser picks a model for something that
-   * is NOT a workload route — an agent definition, say — where a click on another task row
-   * would silently rewrite the user's live routing from inside an unrelated form.
-   */
-  taskColumn?: boolean
-  /**
-   * WHO the open conversation is with, in join order. Each becomes a row in the workload
-   * column, and picking a model there routes that ONE participant.
-   *
-   * Empty where there is no conversation (onboarding, the agent editor). The column then shows
-   * the workload catalog alone — no branch, because a party is a list and this one has nothing
-   * in it.
-   */
-  participants?: readonly ParticipantRow[]
-}
 
 /**
  * Shared by chat and onboarding: target, provider, model list, and details.
@@ -118,30 +48,18 @@ export function ModelBrowser({
   taskColumn = true,
   participants = NO_PARTICIPANTS,
 }: ModelBrowserProps) {
-  const {
-    connections,
-    activeId,
-    addApiKeyConnection,
-    addOAuthConnection,
-    remove,
-    updateLabel,
-    addKey,
-    removeKey,
-    updateKey,
-  } = connectionsState
+  const { connections, activeId, addApiKeyConnection, addOAuthConnection } = connectionsState
   const [search, setSearch] = useState(initialQuery)
   const deferredSearch = useDeferredValue(search)
   // The provider rail filters on its own query. One shared query used to narrow both columns at
   // once, so looking for a model also emptied the add-provider list.
   const [providerSearch, setProviderSearch] = useState('')
   const deferredProviderSearch = useDeferredValue(providerSearch)
-  const [filters, setFilters] = useState<ModelFilter[]>([])
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null)
   const [editMode, setEditMode] = useState(false)
   // Below lg the details (and the model's settings) open in place of the list.
   const [detailsView, setDetailsView] = useState(false)
   const [renameLabel, setRenameLabel] = useState('')
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [taskKey, setTaskKey] = useState<PickerTarget>(
     participants.length > 0 ? agentTarget(participants[0]!.agentId) : 'session',
   )
@@ -149,7 +67,6 @@ export function ModelBrowser({
     (agentId: string) => participantSlot(participants, agentId, sessionConnectionId),
     [participants, sessionConnectionId],
   )
-  const [favorites, setFavorites] = useState<FavoriteModel[]>(() => getFavoriteModels())
 
   const { providers: allProviders, oauthProviderIds, oauthProviders } = useModelsCatalog()
 
@@ -203,31 +120,16 @@ export function ModelBrowser({
   // provider add-form (losing the device code) back to the active connection.
   const [selectionInitialized, setSelectionInitialized] = useState(false)
   if (!selectionInitialized) {
-    const preferredConnection = initialConnectionId
-      ? connections.find((connection) => connection.id === initialConnectionId)
-      : initialProviderId
-        ? connections.find((connection) => connection.providerId === initialProviderId)
-        : undefined
-    const preferredProvider = initialProviderId
-      ? unconnectedProviders.find((provider) => provider.id === initialProviderId)
-      : undefined
-    if (preferredConnection) {
-      setSelectedItem({ type: 'connection', id: preferredConnection.id })
-      setSelectionInitialized(true)
-    } else if (preferredProvider) {
-      setSelectedItem({ type: 'provider', id: preferredProvider.id })
-      setSelectionInitialized(true)
-    } else if (currentLiveSlot) {
-      setSelectedItem({ type: 'connection', id: currentLiveSlot.connection.id })
-      setSelectionInitialized(true)
-    } else if (activeId && connections.some((c) => c.id === activeId)) {
-      setSelectedItem({ type: 'connection', id: activeId })
-      setSelectionInitialized(true)
-    } else if (connections.length > 0) {
-      setSelectedItem({ type: 'connection', id: connections[connections.length - 1].id })
-      setSelectionInitialized(true)
-    } else if (unconnectedProviders.length > 0) {
-      setSelectedItem({ type: 'provider', id: unconnectedProviders[0].id })
+    const initial = initialModelSelection({
+      connections,
+      unconnectedProviders,
+      initialConnectionId,
+      initialProviderId,
+      currentLiveConnectionId: currentLiveSlot?.connection.id,
+      activeId,
+    })
+    if (initial) {
+      setSelectedItem(initial)
       setSelectionInitialized(true)
     }
   }
@@ -254,6 +156,14 @@ export function ModelBrowser({
     allProviders,
   )
 
+  const selectedConn = useMemo(() => {
+    if (selectedItem?.type !== 'connection') return null
+    return connections.find((c) => c.id === selectedItem.id) ?? null
+  }, [selectedItem, connections])
+
+  const paging = useModelListPaging(models, selectedConn?.providerId, deferredSearch)
+  const { setFilters, resetPaging } = paging
+
   // Capability filters are scoped to the previewed connection — clear them when
   // the selection changes so a stale facet can't empty a different provider's list
   // (render-time adjust). The hover/keyboard detail-follow drop stays an effect:
@@ -261,7 +171,7 @@ export function ModelBrowser({
   const [lastSelectedItem, setLastSelectedItem] = useState<SelectedItem>(selectedItem)
   if (lastSelectedItem !== selectedItem) {
     setLastSelectedItem(selectedItem)
-    setVisibleCount(PAGE_SIZE)
+    resetPaging()
     setFilters([])
     setEditMode(false)
     setDetailsView(false)
@@ -270,53 +180,12 @@ export function ModelBrowser({
     clearFollow()
   }, [selectedItem, clearFollow])
 
-  const selectedConn = useMemo(() => {
-    if (selectedItem?.type !== 'connection') return null
-    return connections.find((c) => c.id === selectedItem.id) ?? null
-  }, [selectedItem, connections])
-
   // Seed the rename field from the selected connection (render-time adjust).
   const [lastConn, setLastConn] = useState(selectedConn)
   if (lastConn !== selectedConn) {
     setLastConn(selectedConn)
     if (selectedConn) setRenameLabel(selectedConn.label)
   }
-
-  const filteredModels = useMemo(
-    () => filterModels(models, selectedConn?.providerId, deferredSearch, filters),
-    [models, selectedConn, deferredSearch, filters],
-  )
-
-  // The connection's whole list, before search and filters: what the facets are offered from
-  // and what the header's "4 of 12" counts against.
-  const connectionModels = useMemo(
-    () => filterModels(models, selectedConn?.providerId, ''),
-    [models, selectedConn],
-  )
-  const availableFilters = useMemo(
-    () => availableModelFilters(connectionModels),
-    [connectionModels],
-  )
-
-  const toggleFilter = useCallback((f: ModelFilter) => {
-    setFilters((cur) => (cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f]))
-    setVisibleCount(PAGE_SIZE)
-  }, [])
-  const clearFilters = useCallback(() => {
-    setFilters([])
-    setVisibleCount(PAGE_SIZE)
-  }, [])
-
-  const visibleModels = useMemo(
-    () => filteredModels.slice(0, visibleCount),
-    [filteredModels, visibleCount],
-  )
-
-  const loadMore = useCallback(() => {
-    setVisibleCount((c) => Math.min(c + PAGE_SIZE, filteredModels.length))
-  }, [filteredModels.length])
-
-  const sentinelRef = useInfiniteScroll(loadMore, visibleCount < filteredModels.length)
 
   const showConnectionModels = (connectionId: string) => {
     setSelectedItem({ type: 'connection', id: connectionId })
@@ -361,33 +230,8 @@ export function ModelBrowser({
     [selectedConn, pickModel],
   )
 
-  // Recent and Favorites, resolved against live connections + catalog (stale entries drop),
-  // then narrowed by the model search.
-  const validRecent = useMemo(
-    () => resolveModelEntries(recent, models, connections),
-    [connections, models, recent],
-  )
-  const resolvedRecent = useMemo(
-    () => searchModelEntries(validRecent, deferredSearch),
-    [validRecent, deferredSearch],
-  )
-  const validFavorites = useMemo(
-    () => resolveModelEntries(favorites, models, connections),
-    [connections, favorites, models],
-  )
-  const resolvedFavorites = useMemo(
-    () => searchModelEntries(validFavorites, deferredSearch),
-    [validFavorites, deferredSearch],
-  )
-
-  const isFavorite = useCallback(
-    (connectionId: string, modelId: string) =>
-      isFavoriteModel(favorites, { connectionId, modelId }),
-    [favorites],
-  )
-  const toggleFav = useCallback((connectionId: string, modelId: string) => {
-    setFavorites(toggleFavorite({ connectionId, modelId }))
-  }, [])
+  const shortlists = useModelShortlists(recent, models, connections, deferredSearch)
+  const { recentCount, favoriteCount } = shortlists
 
   const activeTaskMeta = MODEL_ROUTING_TASKS.find((task) => task.key === taskKey)
   const activeTaskEnabled = enabledForTask(taskKey)
@@ -395,32 +239,17 @@ export function ModelBrowser({
   // the conversation's choice is what the row's fallback label already offers.
   const resettableWorkload = workloadKey(taskKey)
   const resetRow = resettableWorkload ? (
-    <button
-      type="button"
-      onClick={() => {
-        setRouteSlot(resettableWorkload, null)
-      }}
-      // A model row's measure, so the reset reads as the list's first entry, not a loose button.
-      className={pickerRow(!currentSlot, 'mb-1')}
-    >
-      <span className={cn(PICKER_ROW_LEADING, 'text-text-faint')}>
-        <RotateCcw className="size-3.5" />
-      </span>
-      <span className="min-w-0 flex-1 truncate">
-        {activeTaskMeta?.fallbackLabel ?? 'Use session model'}
-      </span>
-    </button>
+    <ResetRouteRow
+      selected={!currentSlot}
+      label={activeTaskMeta?.fallbackLabel ?? 'Use session model'}
+      onReset={() => setRouteSlot(resettableWorkload, null)}
+    />
   ) : null
   const handleSearchChange = (value: string) => {
     setSearch(value)
-    setVisibleCount(PAGE_SIZE)
+    resetPaging()
   }
-  // Whether the model the details panel shows is the one this target runs on: its settings
-  // then edit the live route rather than the remembered per-model preference.
-  const detailIsCurrent =
-    detailModel !== null &&
-    currentSlot?.providerConnectionId === detailConnectionId &&
-    currentSlot?.modelId === detailModel.id
+  const detailIsCurrent = isDetailCurrent(detailModel?.id, detailConnectionId, currentSlot)
   const activeParticipant = participants.find((member) => member.agentId === targetAgentId(taskKey))
   const modelTurns = useAgentModelTurns(
     targetAgentId(taskKey),
@@ -444,11 +273,7 @@ export function ModelBrowser({
   const { taskColumnFor, providerColumnFor, nav } = pickerColumns({
     taskColumn,
     allProviders,
-    workloadLabel:
-      activeParticipant?.label ??
-      activeParticipant?.handle ??
-      activeTaskMeta?.label ??
-      'Chat sessions',
+    workloadLabel: workloadLabelFor(activeParticipant, activeTaskMeta?.label),
     task: {
       activeTask: taskKey,
       onSelectTask: selectTask,
@@ -466,8 +291,8 @@ export function ModelBrowser({
       providerCounts,
       filteredUnconnectedProviders,
       oauthIdSet,
-      recentCount: validRecent.length,
-      favoriteCount: validFavorites.length,
+      recentCount,
+      favoriteCount,
       providerSearch,
       onProviderSearchChange: setProviderSearch,
     },
@@ -524,143 +349,37 @@ export function ModelBrowser({
                   onClose={() => setDetailsView(false)}
                 />
               )}
-              {/* Main panel (model list / connection settings / add provider / empty) */}
-              <div
-                data-slot="model-browser-main-panel"
-                className={cn(
-                  'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
-                  detailsView && 'max-lg:hidden',
-                )}
-              >
-                {/* ── Favorite models (cross-connection) ── */}
-                {selectedItem?.type === 'favorite' && (
-                  <CrossConnectionModelList
-                    searchToolbar={searchToolbar()}
-                    nav={nav}
-                    totalCount={validFavorites.length}
-                    title="Favorites"
-                    emptyLabel="No favorite models yet"
-                    items={resolvedFavorites}
-                    selectedConnectionId={currentSlot?.providerConnectionId ?? null}
-                    selectedModelId={currentSlot?.modelId ?? ''}
-                    onSelect={(connectionId, id) => void pickModel(connectionId, id)}
-                    onModelMouseEnter={handleModelMouseEnter}
-                    onModelMouseLeave={scheduleHideHover}
-                    isFavorite={isFavorite}
-                    onToggleFavorite={toggleFav}
-                  />
-                )}
-
-                {/* ── Recent models (cross-connection) ── */}
-                {selectedItem?.type === 'recent' && (
-                  <CrossConnectionModelList
-                    searchToolbar={searchToolbar()}
-                    nav={nav}
-                    totalCount={validRecent.length}
-                    title="Recent"
-                    emptyLabel="No recent models yet"
-                    items={resolvedRecent}
-                    selectedConnectionId={currentSlot?.providerConnectionId ?? null}
-                    selectedModelId={currentSlot?.modelId ?? ''}
-                    onSelect={(connectionId, id) => void pickModel(connectionId, id)}
-                    onModelMouseEnter={handleModelMouseEnter}
-                    onModelMouseLeave={scheduleHideHover}
-                    isFavorite={isFavorite}
-                    onToggleFavorite={toggleFav}
-                  />
-                )}
-
-                {/* ── Model list ── */}
-                {selectedItem?.type === 'connection' && selectedConn?.hasApiKey && !editMode && (
-                  <ConnectionModelList
-                    searchToolbar={searchToolbar(
-                      <ModelFilterMenu
-                        available={availableFilters}
-                        active={filters}
-                        onToggle={toggleFilter}
-                        onClear={clearFilters}
-                      />,
-                    )}
-                    nav={nav}
-                    totalCount={connectionModels.length}
-                    selectedConn={selectedConn}
-                    detailsPinned={detailsPinned}
-                    onToggleDetails={() => setDetailsPinned((v) => !v)}
-                    onOpenDetailsView={() => setDetailsView(true)}
-                    onOpenSettings={() => setEditMode(true)}
-                    filteredModels={filteredModels}
-                    visibleModels={visibleModels}
-                    visibleCount={visibleCount}
-                    sentinelRef={sentinelRef}
-                    selectedValue={selectedValueForList}
-                    prepend={resetRow}
-                    onSelectModel={onSelectModel}
-                    onModelMouseEnter={(id) => handleModelMouseEnter(selectedConn.id, id)}
-                    onModelMouseLeave={scheduleHideHover}
-                    isFavorite={(id) => isFavorite(selectedConn.id, id)}
-                    onToggleFavorite={(id) => toggleFav(selectedConn.id, id)}
-                  />
-                )}
-
-                {/* ── Connection settings ── */}
-                {selectedItem?.type === 'connection' &&
-                  selectedConn &&
-                  (editMode || !selectedConn.hasApiKey) && (
-                    <ConnectionSettingsPanel
-                      nav={nav}
-                      connection={selectedConn}
-                      connections={connections}
-                      allProviders={allProviders}
-                      renameLabel={renameLabel}
-                      setRenameLabel={setRenameLabel}
-                      updateLabel={updateLabel}
-                      addKey={addKey}
-                      removeKey={removeKey}
-                      updateKey={updateKey}
-                      remove={remove}
-                      onExitEdit={() => setEditMode(false)}
-                      setSelectedItem={setSelectedItem}
-                    />
-                  )}
-
-                {/* ── Add provider form ── */}
-                {selectedItem?.type === 'provider' &&
-                  (() => {
-                    const p = allProviders.find((prov) => prov.id === selectedItem.id)
-                    if (!p) return null
-                    return (
-                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                        <AddConnectionForm
-                          nav={nav}
-                          provider={p}
-                          isOAuth={oauthProviderIds.includes(p.id)}
-                          oauthLabel={oauthProviders.find((o) => o.providerId === p.id)?.loginLabel}
-                          oauthDescription={
-                            oauthProviders.find((o) => o.providerId === p.id)?.loginDescription
-                          }
-                          onAdded={() => setEditMode(false)}
-                          onAddApiKey={(label, apiKey, opts) => {
-                            void handleAddApiKey(p, label, apiKey, opts)
-                          }}
-                          onAddOAuth={(label) => handleAddOAuth(p, label)}
-                        />
-                      </div>
-                    )
-                  })()}
-
-                {/* ── Empty state ── */}
-                {!selectedItem && (
-                  <div className="flex min-h-0 flex-1 flex-col">
-                    <PanelHeader
-                      tone="content"
-                      title={<PickerPanelTitle title="Models" nav={nav} />}
-                    />
-                    <EmptyHint className="flex-1 px-6 text-2xs">
-                      Pick a connection, or add a provider.
-                    </EmptyHint>
-                  </div>
-                )}
-              </div>
+              <ModelBrowserMainPanel
+                detailsView={detailsView}
+                setDetailsView={setDetailsView}
+                selectedItem={selectedItem}
+                setSelectedItem={setSelectedItem}
+                selectedConn={selectedConn}
+                editMode={editMode}
+                setEditMode={setEditMode}
+                searchToolbar={searchToolbar}
+                nav={nav}
+                paging={paging}
+                shortlists={shortlists}
+                connectionsState={connectionsState}
+                allProviders={allProviders}
+                oauthProviderIds={oauthProviderIds}
+                oauthProviders={oauthProviders}
+                currentConnectionId={currentSlot?.providerConnectionId ?? null}
+                currentModelId={currentSlot?.modelId ?? ''}
+                selectedValue={selectedValueForList}
+                resetRow={resetRow}
+                detailsPinned={detailsPinned}
+                setDetailsPinned={setDetailsPinned}
+                pickModel={pickModel}
+                onSelectModel={onSelectModel}
+                onModelMouseEnter={handleModelMouseEnter}
+                onModelMouseLeave={scheduleHideHover}
+                renameLabel={renameLabel}
+                setRenameLabel={setRenameLabel}
+                onAddApiKey={handleAddApiKey}
+                onAddOAuth={handleAddOAuth}
+              />
 
               {/* ── Model details side panel (collapsible) ── */}
               <ModelDetailsSidePanel
@@ -678,20 +397,12 @@ export function ModelBrowser({
             </div>
           </div>
           {!activeTaskEnabled && (
-            // The way back on, right where it is needed. Below md the workload switch lives in a
-            // sheet behind this inert area, so a hint pointing at it alone was a dead end.
-            <div className="absolute inset-0 z-(--z-controls) flex flex-col items-center justify-center gap-3 px-8 text-center">
-              <p className="text-xs text-text-faint">{activeTaskMeta?.label} is off</p>
-              {resettableWorkload && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTaskEnabled(resettableWorkload, true)}
-                >
-                  Turn on
-                </Button>
-              )}
-            </div>
+            <WorkloadOffOverlay
+              label={activeTaskMeta?.label}
+              onTurnOn={
+                resettableWorkload ? () => setTaskEnabled(resettableWorkload, true) : undefined
+              }
+            />
           )}
         </div>
       </div>

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Check, Copy, Download, Maximize2 } from 'lucide-react'
 import type { MessageAttachment } from '@/shared/api/contracts'
 import { formatFileSize } from '@localixai/plugin-sdk/ui/utilities'
@@ -8,6 +7,8 @@ import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { mediaSrc } from '@/shared/lib/mediaSrc'
 import { mediaOverlayClasses } from '@localixai/kit/media-overlay-button'
 import { ContributedActions } from '@/shared/ui/ContributedActions'
+import { COPIED_FEEDBACK_MS } from '@/shared/lib/timings'
+import { useCopiedFlag } from '@/shared/hooks/useCopiedFlag'
 
 /**
  * Inline figures for the image and video an assistant turn or a user message
@@ -69,15 +70,14 @@ function ImageActions({
   name: string
   onExpand: () => void
 }) {
-  const [copied, setCopied] = useState(false)
+  const { copied, flash } = useCopiedFlag(COPIED_FEEDBACK_MS)
 
   const handleCopy = async () => {
     // A failed copy must not be indistinguishable from a click that did not register:
     // the helper returns false for a refused write and throws for a decode failure.
     try {
       if (await copyImageToClipboard(src)) {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1500)
+        flash()
         return
       }
       toast.error('Could not copy this image', {

@@ -9,6 +9,8 @@ import {
 import type { Candle } from '../../backend/contracts'
 import type { IndicatorSpec } from '../model/indicators'
 import type { IndicatorPrefRecord } from '../model/indicatorPrefs'
+import type { IndicatorPoint } from '../model/indicator-contracts'
+import { indicatorTailStart } from '../model/indicatorTail'
 import { BandFillPrimitive } from './bandFillPrimitive'
 
 /** Readable default for one oscillator pane without letting it rival the price pane. */
@@ -163,6 +165,22 @@ export function styleIndicatorSeries({
   }
 }
 
+/** The points each mounted series last received — the baseline for a tail-only update. */
+const fedPoints = new WeakMap<IndicatorSeries, readonly IndicatorPoint[]>()
+
+/**
+ * Push recomputed points to one series. A streaming tick usually changes only the last point, so
+ * when the change is confined to the tail the series takes `update()` calls instead of a full
+ * `setData` re-ingest; anything else (a fresh series, a repaint, a reset) reloads it.
+ */
+function pushPoints(series: IndicatorSeries, points: readonly IndicatorPoint[]): void {
+  const previous = fedPoints.get(series)
+  const start = previous ? indicatorTailStart(previous, points) : null
+  if (start === null) series.setData(points as never)
+  else for (let i = start; i < points.length; i++) series.update(points[i] as never)
+  fedPoints.set(series, points)
+}
+
 /** Feed one indicator's parallel series array and return its newest values. */
 export function feedIndicator(
   spec: IndicatorSpec,
@@ -174,7 +192,8 @@ export function feedIndicator(
   const latest: Record<string, number> = {}
   spec.series.forEach((seriesSpec, index) => {
     const points = data[seriesSpec.key] ?? []
-    owned[index]?.setData(points as never)
+    const series = owned[index]
+    if (series) pushPoints(series, points)
     const last = points[points.length - 1]
     if (last && typeof last.value === 'number') latest[seriesSpec.key] = last.value
   })

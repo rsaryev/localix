@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { access, readFile, readdir } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { repoRoot } from './lib/paths.mjs'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const root = repoRoot()
 const requiredFiles = [
   'README.md',
   'LICENSE',

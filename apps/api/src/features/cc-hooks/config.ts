@@ -22,8 +22,9 @@ import type {
   CcHookSource,
 } from './contracts'
 import { isCcHookEvent } from './contracts'
-import { parseHandler, isRecord } from './config-handler'
+import { parseHandler } from './config-handler'
 import type { SubstOpts, SkippedHandler } from './config-handler'
+import { isRecord } from '../../lib/record'
 
 export type { SkippedHandler } from './config-handler'
 

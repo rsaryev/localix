@@ -28,6 +28,7 @@ import type { ActiveEnvironmentStore } from '../collection/active-environment'
 import type { FileEnvironmentStore, StoredEnvironment } from '../collection/environments'
 import type { EnvironmentService } from './service'
 import type { SavedEnvironment } from './store'
+import { RestError } from '../errors'
 
 interface EnvironmentVault {
   resolveSecret?: ResolveSecret
@@ -142,7 +143,10 @@ export function createFileEnvironmentService(
       }
       const nativeVault = currentVault(vault)
       if (!nativeVault.resolveSecret) {
-        throw new Error('This environment references the native vault, but it is unavailable.')
+        throw new RestError(
+          'secret_unavailable',
+          'This environment references the native vault, but it is unavailable.',
+        )
       }
       const values = await Promise.all(
         pairs.map(

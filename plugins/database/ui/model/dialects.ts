@@ -19,8 +19,6 @@ export const DIALECT_LABEL = Object.fromEntries(
   DATABASE_DRIVERS.map((driver) => [driver.id, driver.label]),
 ) as Record<DbDialect, string>
 
-export const DIALECT_ORDER: readonly DbDialect[] = DATABASE_DIALECTS
-
 /** Per-engine picker metadata: a short 2-letter badge + a static (Tailwind-safe) tint pair,
  *  so the connect form can show distinct engine cards without brand-SVG assets or CDN icons. */
 export interface DialectMeta {
@@ -89,7 +87,7 @@ export const DIALECT_META: Record<DbDialect, Omit<DialectMeta, 'id' | 'label'>> 
 }
 
 /** Ordered engine list for the connect form's engine picker (id + label + badge + tint). */
-export const DIALECTS: DialectMeta[] = DIALECT_ORDER.map((id) => ({
+export const DIALECTS: DialectMeta[] = DATABASE_DIALECTS.map((id) => ({
   id,
   label: DIALECT_LABEL[id],
   ...DIALECT_META[id],

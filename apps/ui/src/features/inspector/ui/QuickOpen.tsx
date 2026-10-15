@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
+import { useDebouncedQuery } from '@/shared/hooks/useDebouncedQuery'
 import { fileIcon } from '@/shared/ui/file-icon/fileIcon'
 import { MatchedText } from '@localixai/kit/matched-text'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
@@ -50,8 +51,6 @@ export function QuickOpen({ sessionId, open, onOpenChange }: QuickOpenProps) {
   const searchPart = colon ? colon[1] : trimmed
   const gotoLine = colon ? Number(colon[2]) : undefined
   const searchKey = JSON.stringify([sessionId, searchPart])
-  // Drop responses that resolve after a newer keystroke (last-write-wins).
-  const reqSeq = useRef(0)
   const requestedQuery = useRef<string | null>(null)
 
   // ⌘P is explicit file-open intent. Start the same lazy promise React.lazy consumes
@@ -86,42 +85,28 @@ export function QuickOpen({ sessionId, open, onOpenChange }: QuickOpenProps) {
 
   // Debounced server search — only with a query. The empty state lists recently
   // opened files (below), so no round-trip is needed before the user types.
-  useEffect(() => {
-    // Invalidates both a pending debounce and a request already in flight.
-    const seq = ++reqSeq.current
-    let cancelled = false
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear results when there's no query to search
-    if (!open || !sessionId || !searchPart) {
+  useDebouncedQuery([searchPart, open, sessionId, searchKey], 90, {
+    run:
+      open && sessionId && searchPart
+        ? () => backendClient.searchFiles(sessionId, searchPart, { limit: 40, type: 'files' })
+        : null,
+    onIdle: () => {
       setFiles([])
       setRoot('')
       setResultKey(null)
       setIndexTruncated(0)
       setLoading(false)
-      return
-    }
-    setLoading(true)
-    const id = setTimeout(() => {
-      void backendClient
-        .searchFiles(sessionId, searchPart, { limit: 40, type: 'files' })
-        .then((res) => {
-          if (cancelled || seq !== reqSeq.current) return // superseded
-          setRoot(res.root)
-          setFiles(res.files)
-          setIndexTruncated(res.indexTruncated ?? 0)
-          setResultKey(searchKey)
-        })
-        .catch(() => {
-          if (!cancelled && seq === reqSeq.current) setFiles([])
-        })
-        .finally(() => {
-          if (!cancelled && seq === reqSeq.current) setLoading(false)
-        })
-    }, 90)
-    return () => {
-      cancelled = true
-      clearTimeout(id)
-    }
-  }, [searchPart, open, sessionId, searchKey])
+    },
+    onStart: () => setLoading(true),
+    onResult: (res) => {
+      setRoot(res.root)
+      setFiles(res.files)
+      setIndexTruncated(res.indexTruncated ?? 0)
+      setResultKey(searchKey)
+    },
+    onError: () => setFiles([]),
+    onSettled: () => setLoading(false),
+  })
 
   // Effects clear stale state after a prop/query change; this ownership check also
   // prevents a one-paint window where an old workspace result could still be picked.

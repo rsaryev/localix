@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement, Fragment } from 'react'
 import { TabPanel, TabStrip } from './tabs'
 
-const source = readFileSync(new URL('./tabs.tsx', import.meta.url), 'utf8')
+const source = readFileSync(new URL('./tab-bar.tsx', import.meta.url), 'utf8')
 
 test('tab content and its active underline switch atomically', () => {
   expect(source).not.toContain('transition-[transform,width]')

@@ -106,11 +106,15 @@ pub(crate) fn invalidate(window: &Window) {
     }
 }
 
+/// AppKit can swap the titlebar view just after a tab change; one short beat later the new view
+/// is in place to be invalidated.
+const TITLEBAR_RESETTLE_DELAY: std::time::Duration = std::time::Duration::from_millis(50);
+
 pub(crate) fn refresh_after_focus(app: &tauri::AppHandle, label: &str) {
     let app = app.clone();
     let label = label.to_string();
     // AppKit can replace the native titlebar shortly after selecting/closing a tab.
-    crate::main_queue::after(std::time::Duration::from_millis(50), move || {
+    crate::main_queue::after(TITLEBAR_RESETTLE_DELAY, move || {
         if let Some(window) = app.get_window(&label) {
             invalidate(&window);
         }

@@ -37,13 +37,18 @@ export function isSecretToken(value: string): boolean {
   return SECRET_TOKEN_RE.test(value.trim())
 }
 
-/** Derive a stable, schema-valid secret key directly from a host (field mode — there is no
- *  URL to parse). Mirrors {@link deriveSecretKey}'s output for the same host. */
-export function deriveSecretKeyFromHost(host: string): string {
-  const slug = host
+/** `db.internal:5432` → `DB_INTERNAL_5432`: the host part every derived secret key shares. */
+function hostSlug(host: string): string {
+  return host
     .replace(/[^A-Za-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
     .toUpperCase()
+}
+
+/** Derive a stable, schema-valid secret key directly from a host (field mode — there is no
+ *  URL to parse). Mirrors {@link deriveSecretKey}'s output for the same host. */
+export function deriveSecretKeyFromHost(host: string): string {
+  const slug = hostSlug(host)
   return slug ? `DB_${slug}_PW` : 'DB_PW'
 }
 
@@ -58,19 +63,13 @@ export function deriveSshSecretKey(
   host: string,
   kind: 'pw' | 'private-key' | 'passphrase',
 ): string {
-  const slug = host
-    .replace(/[^A-Za-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toUpperCase()
+  const slug = hostSlug(host)
   const suffix = kind === 'pw' ? 'PW' : kind === 'private-key' ? 'PRIVATE_KEY' : 'PASSPHRASE'
   return slug ? `SSH_${slug}_${suffix}` : `SSH_${suffix}`
 }
 
 /** Stable Vault key for a database TLS client private key. */
 export function deriveTlsSecretKey(host: string): string {
-  const slug = host
-    .replace(/[^A-Za-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toUpperCase()
+  const slug = hostSlug(host)
   return slug ? `DB_${slug}_TLS_PRIVATE_KEY` : 'DB_TLS_PRIVATE_KEY'
 }

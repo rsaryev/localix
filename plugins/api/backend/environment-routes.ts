@@ -5,6 +5,7 @@ import type { EnvironmentInfo } from './contracts'
 import type { RestRouteScope } from './route-scope'
 import type { SavedEnvironment } from './environments/store'
 import { environmentVariablesProblem } from './environment-vault'
+import { RestError } from './errors'
 import { validated, pairSchema } from './route-validation'
 
 type EnvironmentRoutesDeps = Pick<RestRouteScope, 'uid' | 'envs'>
@@ -12,6 +13,23 @@ type EnvironmentRoutesDeps = Pick<RestRouteScope, 'uid' | 'envs'>
 const ENVIRONMENT_NOT_FOUND = {
   error: 'No environment by that name.',
   code: 'request_not_found' as const,
+}
+
+/**
+ * A failed environment write: the vault's own typed failure is a 503 the person can fix by
+ * unlocking it; anything else is the request's problem, with the route's own code and status.
+ */
+function environmentWriteFailure<C extends 'bad_request' | 'invalid_request', S extends 400 | 422>(
+  error: unknown,
+  fallback: string,
+  code: C,
+  status: S,
+) {
+  const message = error instanceof Error ? error.message : fallback
+  if (error instanceof RestError && error.code === 'secret_unavailable') {
+    return { body: { error: message, code: 'secret_unavailable' as const }, status: 503 as const }
+  }
+  return { body: { error: message, code }, status }
 }
 
 /** Reused by the create/edit/import environment routes. Name is the identity. */
@@ -79,16 +97,13 @@ export function registerEnvironmentRoutes<TSchema extends Schema>(
         try {
           env = await envs(c).save(userId, name, input.variables)
         } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'The environment could not be saved.'
-          const vaultFailure = /vault/i.test(message)
-          return c.json(
-            {
-              error: message,
-              code: vaultFailure ? ('secret_unavailable' as const) : ('bad_request' as const),
-            },
-            vaultFailure ? 503 : 400,
+          const failure = environmentWriteFailure(
+            error,
+            'The environment could not be saved.',
+            'bad_request',
+            400,
           )
+          return c.json(failure.body, failure.status)
         }
         return c.json({ environment: toEnvInfo(env) }, 201)
       })
@@ -111,16 +126,13 @@ export function registerEnvironmentRoutes<TSchema extends Schema>(
         try {
           env = await envs(c).save(userId, name, variables)
         } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'The environment could not be saved.'
-          const vaultFailure = /vault/i.test(message)
-          return c.json(
-            {
-              error: message,
-              code: vaultFailure ? ('secret_unavailable' as const) : ('bad_request' as const),
-            },
-            vaultFailure ? 503 : 400,
+          const failure = environmentWriteFailure(
+            error,
+            'The environment could not be saved.',
+            'bad_request',
+            400,
           )
+          return c.json(failure.body, failure.status)
         }
         return c.json({ environment: toEnvInfo(env) })
       })
@@ -181,17 +193,13 @@ export function registerEnvironmentRoutes<TSchema extends Schema>(
           )
           return c.json({ environment: toEnvInfo(copy) }, 201)
         } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'The environment could not be duplicated.'
-          return c.json(
-            {
-              error: message,
-              code: /vault/i.test(message)
-                ? ('secret_unavailable' as const)
-                : ('invalid_request' as const),
-            },
-            /vault/i.test(message) ? 503 : 422,
+          const failure = environmentWriteFailure(
+            error,
+            'The environment could not be duplicated.',
+            'invalid_request',
+            422,
           )
+          return c.json(failure.body, failure.status)
         }
       })
 

@@ -118,6 +118,7 @@ export function imagesFromApi(raw: unknown): DockerImage[] {
       id,
       ...splitImageTag(reference),
       size: formatDecimalSize(finiteNumber(image.Size)),
+      sizeBytes: finiteNumber(image.Size),
       createdAt: createdAt(image.Created),
     }))
   })

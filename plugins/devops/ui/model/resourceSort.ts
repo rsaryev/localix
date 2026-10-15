@@ -60,30 +60,3 @@ export function sortableTimestamp(value: string): number | null {
   const timestamp = Date.parse(value)
   return Number.isFinite(timestamp) ? timestamp : null
 }
-
-/** Docker human sizes (`142MB`, `1.2 GiB`) converted to bytes for numeric sorting. */
-export function sortableByteSize(value: string): number | null {
-  const match = value.trim().match(/^([\d.]+)\s*([kmgtpe]?i?b)?$/i)
-  if (!match) return null
-  const amount = Number.parseFloat(match[1] ?? '')
-  if (!Number.isFinite(amount)) return null
-  const unit = (match[2] ?? 'b').toLowerCase()
-  const powers: Record<string, number> = {
-    b: 0,
-    kb: 1,
-    kib: 1,
-    mb: 2,
-    mib: 2,
-    gb: 3,
-    gib: 3,
-    tb: 4,
-    tib: 4,
-    pb: 5,
-    pib: 5,
-    eb: 6,
-    eib: 6,
-  }
-  const power = powers[unit]
-  const base = unit.includes('i') ? 1024 : 1000
-  return power === undefined ? null : amount * base ** power
-}

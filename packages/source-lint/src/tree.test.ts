@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { afterAll, describe, expect, test } from 'bun:test'
@@ -21,6 +21,22 @@ const seen = () =>
     .sort()
 
 describe('walkSources', () => {
+  test('follows a symlinked directory and skips a dangling link', () => {
+    const root = mkdtempSync(join(tmpdir(), 'source-lint-links-'))
+    try {
+      mkdirSync(join(root, 'real'))
+      writeFileSync(join(root, 'real', 'a.ts'), 'export {}\n')
+      mkdirSync(join(root, 'tree'))
+      symlinkSync(join(root, 'real'), join(root, 'tree', 'linked'))
+      symlinkSync(join(root, 'missing'), join(root, 'tree', 'dangling.ts'))
+      expect(walkSources(join(root, 'tree')).map((f) => relative(root, f))).toEqual([
+        join('tree', 'linked', 'a.ts'),
+      ])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   test('recurses — a wire one folder down is found', () => {
     expect(seen()).toContain(join('providers', 'acme', 'wire', 'sse.mjs'))
   })

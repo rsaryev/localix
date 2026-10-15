@@ -13,6 +13,7 @@
 import type { Candle } from '../contracts'
 import { rsi } from '../../ui/model/indicators'
 import { pivots } from './pattern-detect'
+import { toolNumber } from '../tool-number'
 
 export interface Divergence {
   kind: 'bullish' | 'bearish'
@@ -37,10 +38,6 @@ export interface Divergence {
 const RSI_MARGIN = 1
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /**
  * RSI divergence — REGULAR (reversal) and HIDDEN (continuation) — over the recent swings, or an
  * empty array. The four cases are geometric opposites read on the last two pivots per side:
@@ -80,7 +77,7 @@ export function detectRsiDivergence(candles: Candle[], span = 3, period = 14): D
       time: newer.time,
     }
     const p = (label: string, rsiLabel: string, tail: string) =>
-      `price ${label} ${num(older.price)}→${num(newer.price)} but RSI ${rsiLabel} ${num(rsiOlder)}→${num(rsiNewer)} — ${tail}`
+      `price ${label} ${toolNumber(older.price)}→${toolNumber(newer.price)} but RSI ${rsiLabel} ${toolNumber(rsiOlder)}→${toolNumber(rsiNewer)} — ${tail}`
     if (side === 'low') {
       // Regular bullish: price lower low, RSI higher low → reversal up.
       if (priceDown && rsiUp)

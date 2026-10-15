@@ -16,13 +16,14 @@ import {
   type ResourceTradingService,
 } from './resource-shared'
 import { msStamp, num, stamp } from './resource-expand-quote'
+import { DEFAULT_TIMEFRAME } from './timeframes'
 
 export async function expandCandles(
   service: ResourceTradingService,
   userId: string,
   id: string,
   symbol: string,
-  timeframe = '1h',
+  timeframe = DEFAULT_TIMEFRAME,
 ): Promise<ResourceExpansion> {
   // A venue that could not be read did not report a market without history. Both refuse the
   // expansion, but only one of them is a fact about the market — say which.

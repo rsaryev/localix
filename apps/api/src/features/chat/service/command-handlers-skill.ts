@@ -55,6 +55,7 @@ export async function handleSkillCommand(
         skill.name +
         '` is model-only (`user-invocable: false`) and cannot be run as a slash command.',
       now(),
+      'error',
     )
   }
   // No busy refusal: a skill command sent while the session works waits in the queue whole
@@ -78,6 +79,7 @@ export async function handleSkillCommand(
       prompt,
       `Skill \`/${skill.name}\` could not be loaded: ${errorMessage(error).slice(0, 500)}`,
       now(),
+      'error',
     )
   }
   // CC dynamic context injection: !`cmd` and ```!\n...\n``` blocks are pre-expanded

@@ -7,6 +7,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
 import { extractMarkdownHeadings } from '@localixai/markdown'
+import { SITE_ORIGIN } from '../src/lib/site.ts'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../..')
@@ -298,7 +299,7 @@ export function buildSitemap(pages) {
   const body = urls
     .map(
       ({ path: pathname, priority }) =>
-        `  <url><loc>https://localix.ai${pathname}</loc><priority>${priority}</priority></url>`,
+        `  <url><loc>${SITE_ORIGIN}${pathname}</loc><priority>${priority}</priority></url>`,
     )
     .join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`

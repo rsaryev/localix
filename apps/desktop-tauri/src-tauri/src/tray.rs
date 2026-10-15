@@ -59,10 +59,7 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
                 "tray_show" => show_main_window(app),
                 "tray_settings" => {
                     show_main_window(app);
-                    if let Some(view) = crate::workspace_windows::active_view(app) {
-                        let _ = view
-                            .eval("window.__localixOpenSettings && window.__localixOpenSettings()");
-                    }
+                    crate::workspace_windows::open_settings_in_active_view(app);
                 }
                 "tray_new" => {
                     show_main_window(app);

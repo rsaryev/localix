@@ -17,7 +17,7 @@ const messageActions = readFileSync(
   'utf8',
 )
 const tabs = readFileSync(
-  resolve(import.meta.dir, '../../../../packages/kit/src/layout/tabs/tabs.tsx'),
+  resolve(import.meta.dir, '../../../../packages/kit/src/layout/tabs/tab-strip-tab.tsx'),
   'utf8',
 )
 

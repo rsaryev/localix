@@ -388,6 +388,11 @@ describe('extractProviderStatus', () => {
     expect(extractProviderStatus(new Error('used 700 widgets'))).toBe(0) // 7xx not matched
     expect(extractProviderStatus(new Error('no status here'))).toBe(0)
   })
+  test('reads only the provider-label status, never a number in the prose', () => {
+    expect(extractProviderStatus(new Error('ollama (llama3:8b) 503: busy'))).toBe(503)
+    expect(extractProviderStatus(new Error('provider: got 404 rows back'))).toBe(0)
+    expect(extractProviderStatus(new Error('tool failed after 500 ms'))).toBe(0)
+  })
 })
 
 describe('coerceToolResult', () => {

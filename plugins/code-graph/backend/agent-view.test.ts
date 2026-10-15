@@ -57,8 +57,11 @@ test('a report is asked of the open tab and answered by the next report it sends
   }
   reportGraphView(root, 'chat', report)
   expect(await answer).toEqual(report)
+  expect(readGraphView(root, 'chat')).toEqual(report)
   off()
   expect(requestGraphReport(root, 'chat')).toBe(false)
+  // The last tab closing forgets its camera: nothing per chat outlives the tab that made it.
+  expect(readGraphView(root, 'chat')).toBeUndefined()
 })
 
 test('commands and reports belong to a chat as well as a project', async () => {

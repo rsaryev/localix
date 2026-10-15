@@ -5,6 +5,7 @@
  * targets and stops. Pure; the step is the price's own order of magnitude, so it scales from a
  * $0.02 alt to a $70k coin without a hardcoded table.
  */
+import { toolNumber } from '../tool-number'
 
 export interface RoundLevels {
   below: number
@@ -34,13 +35,9 @@ export function roundLevels(price: number): RoundLevels | null {
 }
 
 /** Four significant digits without exponent noise (the house tool-number rule). */
-function num(value: number): string {
-  return Math.abs(value) >= 1000 ? value.toFixed(1) : String(Number(value.toPrecision(4)))
-}
-
 /** The round levels as one report line, or nothing when the price is unusable. */
 export function renderRoundLevels(r: RoundLevels): string[] {
   return [
-    `- round-number magnets: ${num(r.below)} (−${num(r.belowPct)}%), ${num(r.above)} (+${num(r.abovePct)}%)`,
+    `- round-number magnets: ${toolNumber(r.below)} (−${toolNumber(r.belowPct)}%), ${toolNumber(r.above)} (+${toolNumber(r.abovePct)}%)`,
   ]
 }

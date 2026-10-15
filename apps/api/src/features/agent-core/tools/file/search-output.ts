@@ -31,13 +31,13 @@ export function hasUnescapedRegexMeta(query: string): boolean {
 }
 
 export function truncateOutput(output: string): SearchOutput {
+  // Measure before copying: most searches fit, and those never need a byte buffer.
+  const bytes = Buffer.byteLength(output)
+  if (bytes <= MAX_OUTPUT_BYTES) return { bytes, truncated: false, output }
   const buffer = Buffer.from(output)
-  if (buffer.byteLength <= MAX_OUTPUT_BYTES) {
-    return { bytes: buffer.byteLength, truncated: false, output }
-  }
 
   return {
-    bytes: buffer.byteLength,
+    bytes,
     truncated: true,
     // Back up to a char boundary so the cut never splits a multi-byte char.
     output: `${buffer.subarray(0, alignToCharBoundary(buffer, MAX_OUTPUT_BYTES)).toString('utf8')}\n[…truncated…]`,

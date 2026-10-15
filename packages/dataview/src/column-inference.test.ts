@@ -19,9 +19,14 @@ test('object inference keeps first-seen keys and ignores fields first appearing 
   ])
 })
 
-test('numeric inference retains Number coercion and dates remain syntactic', () => {
-  expect(inferType([' 0x10 ', '01'])).toBe('int')
-  expect(inferType(['Infinity', '-Infinity'])).toBe('float')
+test('numeric inference accepts plain decimals only and dates remain syntactic', () => {
+  expect(inferType([' 42 ', '-7', '0'])).toBe('int')
+  expect(inferType(['1.5', '-.25', '3e8', '2'])).toBe('float')
+  // Hex, Infinity and zero-padded codes are not numbers a table column should coerce.
+  expect(inferType(['0x10', '12'])).toBe('text')
+  expect(inferType(['Infinity', '-Infinity'])).toBe('text')
+  expect(inferType(['007', '012'])).toBe('text')
+  expect(inferType(['1.', '5'])).toBe('text')
   expect(inferType(['2025-99-99'])).toBe('date')
   expect(inferType([null, undefined, ' '])).toBe('text')
 })

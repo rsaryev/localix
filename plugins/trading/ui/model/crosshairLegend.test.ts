@@ -99,18 +99,18 @@ describe('isAwayFromRealtime', () => {
   })
 })
 
-describe('ChartCanvas call-site coupling (source lint)', () => {
+describe('chart pointer call-site coupling (source lint)', () => {
   // A comment cannot enforce that the caller passes the chart's real rightOffset. This does: the
   // predicate is worthless if the call site drops the second argument (it silently uses the default
   // 0), so pin that the "away" subscription reads `scrollPosition()` AND `options().rightOffset`.
   // Same defect class as the `void refresh()` overlap-guard trap: type-checks, tests-pass, feature
   // silently gone.
-  const src = readCode(new URL('../ui/ChartCanvas.tsx', import.meta.url))
+  const src = readCode(new URL('../ui/useChartPointer.ts', import.meta.url))
 
   test('the isAwayFromRealtime call passes the chart-configured rightOffset', () => {
     // Tolerate whitespace/line-wrapping but require both reads inside the single call expression.
     const call = src.match(/isAwayFromRealtime\(([\s\S]*?)\)\)/)
-    expect(call, 'isAwayFromRealtime(...) call not found in ChartCanvas').not.toBeNull()
+    expect(call, 'isAwayFromRealtime(...) call not found in useChartPointer').not.toBeNull()
     const args = call![1]!
     expect(args).toContain('scrollPosition()')
     expect(args).toContain('options().rightOffset')

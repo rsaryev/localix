@@ -14,6 +14,13 @@ import {
  *  contributing source, routing metadata and an enumerated status/reason — never
  *  produced content, a resource URI, a path or an exception string. Safe to surface
  *  in an effective-config / diagnostics view. */
+/** A registered contribution whose provider resolves explicit references. */
+export type ResolverContribution = ContextProviderContribution & { provider: ContextResolver }
+/** A registered contribution whose provider contributes context on its own. */
+export type AutomaticProviderContribution = ContextProviderContribution & {
+  provider: AutomaticContextProvider
+}
+
 export interface ContextProviderDiagnostic {
   providerId: string
   providerVersion: string
@@ -37,8 +44,8 @@ export interface ContextProviderRegistry {
   /** Remove every contribution registered under `source` — hot plugin disable.
    *  Diagnostics keep their history; only the live entries drop. */
   unregisterBySource(sourceId: string): void
-  resolvers(destination: ContextDestination): ContextProviderContribution[]
-  automaticProviders(destination: ContextDestination): ContextProviderContribution[]
+  resolvers(destination: ContextDestination): ResolverContribution[]
+  automaticProviders(destination: ContextDestination): AutomaticProviderContribution[]
   list(): ContextProviderContribution[]
   /** All registration attempts (registered + rejected), in attempt order. */
   diagnostics(): ContextProviderDiagnostic[]
@@ -49,6 +56,12 @@ function isResolver(
 ): provider is ContextResolver {
   return 'resolve' in provider && typeof provider.resolve === 'function'
 }
+
+const hasResolver = (entry: ContextProviderContribution): entry is ResolverContribution =>
+  isResolver(entry.provider)
+const hasAutomaticProvider = (
+  entry: ContextProviderContribution,
+): entry is AutomaticProviderContribution => !isResolver(entry.provider)
 
 export function createContextProviderRegistry(): ContextProviderRegistry {
   const entries = new Map<string, ContextProviderContribution>()
@@ -133,25 +146,25 @@ export function createContextProviderRegistry(): ContextProviderRegistry {
       // Specific before generic: the manager takes the FIRST resolver that supports a reference,
       // and registration order is boot order, so a generic bridge registered by core would
       // otherwise answer every reference a plugin's own resolver was written for.
-      const candidates = [...entries.values()].filter(
-        (entry) =>
-          entry.activation === 'explicit' &&
-          entry.destinations.includes(destination) &&
-          isResolver(entry.provider),
-      )
+      const candidates = [...entries.values()]
+        .filter(hasResolver)
+        .filter(
+          (entry) => entry.activation === 'explicit' && entry.destinations.includes(destination),
+        )
       return [
         ...candidates.filter((entry) => !entry.fallback),
         ...candidates.filter((entry) => entry.fallback),
       ]
     },
     automaticProviders(destination) {
-      return [...entries.values()].filter(
-        (entry) =>
-          entry.activation === 'automatic' &&
-          entry.defaultEnabled &&
-          entry.destinations.includes(destination) &&
-          !isResolver(entry.provider),
-      )
+      return [...entries.values()]
+        .filter(hasAutomaticProvider)
+        .filter(
+          (entry) =>
+            entry.activation === 'automatic' &&
+            entry.defaultEnabled &&
+            entry.destinations.includes(destination),
+        )
     },
     list() {
       return [...entries.values()]

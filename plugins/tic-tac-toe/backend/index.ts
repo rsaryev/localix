@@ -3,7 +3,7 @@ import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/ba
 import { ROUTE_PATH } from '../shared/resource'
 import { createGameService } from './game-service'
 import { createGameRoutes } from './routes'
-import { createStoreFeed } from './store-feed'
+import { createJsonStoreFeed } from '@localixai/plugin-sdk/backend'
 import { createGameTools } from './tools'
 
 /**
@@ -23,7 +23,7 @@ export function register(ctx: PluginContext): PluginRegistration {
   })
   // The open board hears every write to its chat's game — the agent's move included — instead of
   // polling for it. The folder is the host's, resolved with the socket's own user.
-  const feed = createStoreFeed({
+  const feed = createJsonStoreFeed({
     watchPath: ctx.watchPath ?? ctx.host?.watchPath,
     plugin: 'tic-tac-toe',
     resolveDir: async (userId, sessionId) =>

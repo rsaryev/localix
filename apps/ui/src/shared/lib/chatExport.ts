@@ -82,13 +82,24 @@ export function sessionToMarkdown(
 ): string {
   const title = session.title?.trim() || 'Conversation'
   const out: string[] = [`# ${title}`, '']
-  for (const m of session.messages) {
-    if (m.isInternal || m.uiOnly || m.role === 'system') continue
-    const body = options?.redacted ? redactedBody(m) : (m.content ?? '').trim()
-    if (!body) continue
-    out.push(`## ${m.role === 'user' ? 'You' : 'Assistant'}`, '', body, '')
+  for (const { role, body } of exportableTurns(session.messages, options)) {
+    out.push(`## ${role === 'user' ? 'You' : 'Assistant'}`, '', body, '')
   }
   return `${out.join('\n').replace(/\n+$/, '')}\n`
+}
+
+/** The turns an export writes out — empty means there is nothing to export. */
+export function exportableTurns(
+  messages: readonly Message[],
+  options?: ExportOptions,
+): { role: Message['role']; body: string }[] {
+  const turns: { role: Message['role']; body: string }[] = []
+  for (const m of messages) {
+    if (m.isInternal || m.uiOnly || m.role === 'system') continue
+    const body = options?.redacted ? redactedBody(m) : (m.content ?? '').trim()
+    if (body) turns.push({ role: m.role, body })
+  }
+  return turns
 }
 
 /**

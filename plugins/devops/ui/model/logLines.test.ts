@@ -13,7 +13,7 @@ describe('DevOps log lines', () => {
   test('separates runtime timestamps while preserving raw lines for filtering and copy', () => {
     const lines = parseLogLines(
       [
-        '2026-07-24T10:20:30.123456Z server started on :8080',
+        '2026-07-24T10:20:30.123456Z INFO server started on :8080',
         '2026-07-24T10:20:31Z {"level":"error","message":"database unavailable"}',
       ].join('\n'),
     )
@@ -23,7 +23,7 @@ describe('DevOps log lines', () => {
       index: 1,
       timestamp: '2026-07-24T10:20:30.123456Z',
       timeLabel: '10:20:30.123',
-      message: 'server started on :8080',
+      message: 'INFO server started on :8080',
       severity: 'info',
     })
     expect(lines[1]?.severity).toBe('error')
@@ -35,6 +35,14 @@ describe('DevOps log lines', () => {
     expect(detectLogSeverity('WARN retrying request')).toBe('warning')
     expect(detectLogSeverity('panic: runtime error')).toBe('error')
     expect(detectLogSeverity('ordinary access log')).toBe('plain')
+    expect(detectLogSeverity('2026/07/24 10:20:30 [error] upstream closed')).toBe('error')
+    expect(detectLogSeverity('ts=1 lvl=warn msg="slow"')).toBe('warning')
+  })
+
+  test('a level word inside the message prose is not a level', () => {
+    expect(detectLogSeverity('build finished: 0 errors, 0 warnings')).toBe('plain')
+    expect(detectLogSeverity('GET /health 200 - retry failed earlier')).toBe('plain')
+    expect(detectLogSeverity('server started, ready to accept connections')).toBe('plain')
   })
 
   test('filters case-insensitively and leaves the source array untouched', () => {

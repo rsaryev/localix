@@ -1,12 +1,12 @@
 import { readdirSync, rmSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 
 import { kitCacheRoot } from './plugin-kit-cache.mjs'
 import { stageDropins, stagePluginKitBeside } from './stage-dropins.mjs'
 import { watchPluginKitInputs, watchPluginsForRestage } from './dev-plugin-watch.mjs'
+import { repoRoot } from './lib/paths.mjs'
 
-const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const repo = repoRoot()
 const apiDir = join(repo, 'apps', 'api')
 const devStageRoot = join(repo, '.turbo', 'dev-plugins', String(process.pid))
 const stagedPlugins = join(devStageRoot, 'plugins')
@@ -95,9 +95,10 @@ const spawnApi = () =>
 
 let child = spawnApi()
 let stopping = false
-// True only while the supervisor is deliberately swapping the child, so its exit is not read as
-// the API giving up.
-let restarting = false
+// Set only while the supervisor is deliberately swapping the child, so its exit is not read as the
+// API giving up. Settles once the replacement is in `child`.
+/** @type {Promise<void> | undefined} */
+let restarting
 const stop = (signal) => {
   if (stopping) return
   stopping = true
@@ -181,12 +182,15 @@ function superviseApi() {
     console.log(
       `[dev-api] the API stopped answering at ${baseUrl} — a reload most likely failed to evaluate. Restarting it.`,
     )
-    restarting = true
-    const previous = child
-    previous.kill('SIGTERM')
-    await previous.exited.catch(() => {})
-    if (!stopping) child = spawnApi()
-    restarting = false
+    const swap = (async () => {
+      const previous = child
+      previous.kill('SIGTERM')
+      await previous.exited.catch(() => {})
+      if (!stopping) child = spawnApi()
+    })()
+    restarting = swap
+    await swap
+    restarting = undefined
   }
 
   const timer = setInterval(() => void probe(), PROBE_MS)
@@ -201,7 +205,7 @@ async function waitForFinalExit() {
   for (;;) {
     const code = await child.exited
     if (stopping || !restarting) return code
-    while (restarting) await Bun.sleep(10)
+    await restarting
   }
 }
 
