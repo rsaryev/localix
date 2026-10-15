@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@iconify-icons/vscode-icons": "^1.2.30",
-    "@kubernetes/client-node": "^1.4.0",
+    "@kubernetes/client-node": "^2.0.0",
     "@tanstack/react-virtual": "^3.14.19",
     "hono": "^4.12.30",
     "isomorphic-ws": "^5.0.0",
