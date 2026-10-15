@@ -22,6 +22,9 @@ interface ScanState {
 
 let cached: ScanState = { prefix: '', open: null }
 
+/** Complete lines scanned so far; tests read it to prove the scan resumes instead of restarting. */
+export const fenceScanStats = { lines: 0 }
+
 /** The fence state after one line, given the state before it. */
 function step(
   open: OpenFence | null,
@@ -53,6 +56,7 @@ export function openFence(text: string): OpenFence | null {
   while (offset <= lastNewline) {
     const nl = text.indexOf('\n', offset)
     open = step(open, text.slice(offset, nl), nl + 1, text.length)
+    fenceScanStats.lines += 1
     offset = nl + 1
   }
   if (offset !== prefix.length) cached = { prefix: text.slice(0, offset), open }

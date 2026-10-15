@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { fenceScanStats } from './markdown-fence-scan'
 import { closePartialMarkdown, openFenceBody, isGrowingFence } from './markdown-stream'
 
 describe('closePartialMarkdown math', () => {
@@ -225,13 +226,17 @@ describe('openFenceBody incremental scan', () => {
   })
 
   test('stays linear on a long streamed reply', () => {
+    // Counts scanned lines instead of timing: wall-clock budgets flake on shared CI runners.
     const line = 'word '.repeat(20) + '\n'
-    const started = performance.now()
+    const lines = 2_000
+    openFenceBody('reset')
+    const before = fenceScanStats.lines
     let text = '```\n'
-    for (let i = 0; i < 20_000; i += 1) {
+    for (let i = 0; i < lines; i += 1) {
       text += line
       closePartialMarkdown(text)
     }
-    expect(performance.now() - started).toBeLessThan(2_000)
+    // A rescan from the start on every call would scan about lines² / 2.
+    expect(fenceScanStats.lines - before).toBeLessThanOrEqual(lines + 1)
   })
 })

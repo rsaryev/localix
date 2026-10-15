@@ -6,7 +6,9 @@ use crate::workspace_transfer;
 #[cfg(target_os = "macos")]
 use crate::workspace_transfer::WorkspaceTransfers;
 use serde_json::Value;
-use tauri::{AppHandle, Manager, Webview};
+#[cfg(target_os = "macos")]
+use tauri::Manager;
+use tauri::{AppHandle, Webview};
 
 #[tauri::command]
 pub(crate) async fn workspace_drag_prepare(
