@@ -124,16 +124,16 @@ export function useModelHoverDetails(
     kbdModel ??
     (valueConnectionId && value ? { connectionId: valueConnectionId, modelId: value } : null)
   const detailConnectionId = detailRef?.connectionId ?? null
-  const detailModel = useMemo(() => {
-    return detailRef
-      ? (findCatalogModelForConnection(
-          models,
-          connections,
-          detailRef.connectionId,
-          detailRef.modelId,
-        ) ?? null)
-      : null
-  }, [connections, detailRef, models])
+  // Keyed by the ref's values, not its identity: the fallback ref is a fresh object each render.
+  const detailModelId = detailRef?.modelId ?? null
+  const detailModel = useMemo(
+    () =>
+      detailConnectionId && detailModelId
+        ? (findCatalogModelForConnection(models, connections, detailConnectionId, detailModelId) ??
+          null)
+        : null,
+    [connections, detailConnectionId, detailModelId, models],
+  )
 
   const detailProviderDoc = useMemo(
     () =>
