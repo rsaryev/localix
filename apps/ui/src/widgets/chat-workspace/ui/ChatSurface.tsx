@@ -45,6 +45,7 @@ import { findCatalogModelForConnection } from '@localixai/agent/catalog'
 import { sessionRoute } from '@/shared/api/contracts'
 import { activeConversationDraft } from '@/features/chat/model/conversationStartStrategy'
 import type { MessageBinding } from '@/shared/api/contracts'
+import { withoutQueuedUserMessages } from '@/features/chat/model/queuedUserMessages'
 import { useSystemContextManifest } from '../model/useSystemContextManifest'
 
 // The transcript pulls in Markdown, syntax highlighting, virtualization, and all
@@ -135,7 +136,12 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
   )
 
   const sessionMessages = activeSession?.messages
-  const activeMessages = useMemo(() => sessionMessages ?? [], [sessionMessages])
+  const sessionQueue = activeSession?.queuedMessages
+  // The person's queued messages wait in the queue dock, not in the transcript, until their turn.
+  const activeMessages = useMemo(
+    () => withoutQueuedUserMessages(sessionMessages ?? [], sessionQueue),
+    [sessionMessages, sessionQueue],
+  )
   const snapshotSelector = useMemo(() => createChatSurfaceSnapshotSelector(), [])
   const transcriptSnapshot = snapshotSelector(activeMessages)
   const { userText, activeToolName } = transcriptSnapshot
