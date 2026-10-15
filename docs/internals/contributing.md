@@ -98,8 +98,14 @@ Rust source, dependency, and Tauri configuration changes run formatting and Clip
 platform when Cargo is available. Missing Clippy or rustfmt blocks a Rust commit once Cargo is
 available. The hook does not rewrite or stage tracked files, but type checks may generate ignored
 output. Staged files and affected packages must have no unstaged edits; stage or stash them before
-committing. Full suites stay in CI. Run optional architecture, documentation, and audit checks when
-relevant. `bun run check:rust` reproduces native validation, including the full Rust test suite.
+committing.
+
+After the staged-file checks, the hook runs the CI gates `check:release`, `type-check`,
+`check:tests`, and `test` over the whole tree; Turbo replays every unchanged package from its cache.
+`bun run test` runs the package suites and the repository tests in `test:repo` side by side and
+prints the repository output when it finishes. Run optional architecture, documentation, and audit
+checks when relevant. `bun run check:rust` reproduces native validation, including the full Rust
+test suite.
 
 ### Workflows and releases
 
@@ -122,15 +128,33 @@ There is no aggregate validation job.
 Trusted Linux jobs use the two self-hosted runners sharing the `localix-linux` label; fork checks
 use GitHub-hosted runners. The macOS release leg remains on `macos-15`. Local composite actions in
 `.github/actions/` provide Node/Bun setup, frozen installs, native dependencies, and Rust caching.
-Each job installs dependencies once. Pre-commit prints its selected packages, native platform, and
-test count; its success applies to that scope, while CI checks the whole source tree.
+Each job installs dependencies once. Self-hosted runners keep the Bun package cache and the Turbo
+cache on their own disks; only hosted runners restore GitHub cache archives.
+
+The Rust job also lints every workflow with actionlint and zizmor, both downloaded as checksummed
+release binaries. Runner labels for actionlint live in `.github/actionlint.yaml`. Dependabot waits
+seven days after a release before proposing it and groups minor and patch updates per ecosystem.
 
 `check:bundle` starts the staged API outside the checkout during `Checks`. Desktop release builds
 repeat the smoke test against the actual macOS app, Linux AppImage, and `.deb` before uploading
 assets. Release validation checks source and the updater signing key before creating any draft. Only
 draft, build-upload, and publication jobs have release write permissions. The `legs` input can
-select only the platforms that need rebuilding. Release verification uses the same Turbo cache
-namespace as CI; task results are reused only when their inputs match.
+select only the platforms that need rebuilding. Release verification does not rerun the CI gates: it
+requires a successful `Checks` run for the tagged commit.
+
+To cut a release:
+
+1. Wait for `Checks` to pass on the `main` commit being released.
+2. Tag that commit with the next semantic version and push the tag:
+   `git tag v0.1.0-beta.5 && git push origin v0.1.0-beta.5`.
+3. Start the release from `main`: `gh workflow run release.yml --ref main -f tag=v0.1.0-beta.5`.
+4. Approve the `release` environment deployment when GitHub asks.
+5. If one platform leg fails, rerun only that leg with `-f legs=<leg>`; the draft keeps the assets
+   that the other legs already uploaded.
+
+Publication generates `latest.json`, `SHA256SUMS.txt`, and the release notes, refuses a version
+older than the current latest release, and redeploys the website download buttons. Before
+publication, deleting the draft is the rollback. After publication, release a newer version.
 
 The workflow structure follows examples from
 [Cap's shared JavaScript setup](https://github.com/CapSoftware/Cap/blob/main/.github/actions/setup-js/action.yml),

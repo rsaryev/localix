@@ -1,0 +1,4 @@
+# Labels of the self-hosted runners, so actionlint can check `runs-on`.
+self-hosted-runner:
+  labels:
+    - localix-linux

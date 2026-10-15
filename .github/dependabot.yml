@@ -1,25 +1,44 @@
 version: 2
+# A release must be a week old before it is proposed: most compromised package versions are found
+# and pulled within days. Minor and patch updates arrive as one pull request per ecosystem.
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        update-types: [minor, patch]
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
     directory: /apps/landing
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 3
 
   - package-ecosystem: bun
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      bun:
+        update-types: [minor, patch]
     open-pull-requests-limit: 5
 
   - package-ecosystem: cargo
     directory: /apps/desktop-tauri/src-tauri
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      cargo:
+        update-types: [minor, patch]
     open-pull-requests-limit: 5

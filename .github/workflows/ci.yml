@@ -130,6 +130,29 @@ jobs:
           persist-credentials: false
           fetch-depth: 2
 
+      # Workflow syntax and expressions (actionlint) and workflow security (zizmor: injection,
+      # permissions, credential persistence). Checksummed release binaries, like gitleaks; this job
+      # is the short one, so the lint stays off the critical path.
+      - name: Lint workflows
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          ZIZMOR_VERSION: 1.31.0
+          ZIZMOR_SHA256: 95776c59c2d4c0d6e10560647b4830762b8dbcca8d7d9b7469ff227c73a6fee6
+        run: |
+          actionlint="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          zizmor=zizmor-x86_64-unknown-linux-gnu.tar.gz
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$actionlint" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$actionlint"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$zizmor" \
+            "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/$zizmor"
+          printf '%s  %s\n' "$ACTIONLINT_SHA256" "$RUNNER_TEMP/$actionlint" \
+            "$ZIZMOR_SHA256" "$RUNNER_TEMP/$zizmor" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$actionlint" -C "$RUNNER_TEMP" actionlint
+          tar -xzf "$RUNNER_TEMP/$zizmor" -C "$RUNNER_TEMP" zizmor
+          "$RUNNER_TEMP/actionlint" -color
+          "$RUNNER_TEMP/zizmor" --offline --min-severity medium .github
+
       # Only a pull request may skip the Rust gate, and only when nothing it reads changed: the
       # shell under apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun,
       # and shared CI setup. Pushes to main and manual runs always run it.

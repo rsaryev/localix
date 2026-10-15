@@ -193,6 +193,33 @@ describe('CI minute budget contract', () => {
     )
   })
 
+  test('lints every workflow with checksummed actionlint and zizmor binaries', () => {
+    const lint = ci.jobs.desktop.steps.find((step) => step.name === 'Lint workflows')
+    expect(lint?.if).toBeUndefined()
+    expect(lint?.run).toContain('sha256sum -c -')
+    expect(lint?.run).toContain('"$RUNNER_TEMP/actionlint"')
+    expect(lint?.run).toContain('"$RUNNER_TEMP/zizmor" --offline --min-severity medium .github')
+  })
+
+  test('self-hosted runners install from their own disk instead of a GitHub cache archive', () => {
+    const workspace = Bun.YAML.parse(read('.github/actions/setup-workspace/action.yml')) as {
+      runs: { steps: Step[] }
+    }
+    const local = workspace.runs.steps.find((step) => step.name === "Use the runner's local caches")
+    expect(local?.run).toContain('BUN_INSTALL_CACHE_DIR=')
+    expect(local?.run).toContain('TURBO_CACHE_DIR=')
+    const archive = workspace.runs.steps.find((step) => step.name === 'Cache dependencies')
+    expect(archive?.if).toContain("runner.environment != 'self-hosted'")
+  })
+
+  test('runs the package and repository suites side by side', () => {
+    const scripts = JSON.parse(read('package.json')).scripts as Record<string, string>
+    expect(scripts.test).toBe('bun scripts/test-all.mjs')
+    const runner = read('scripts/test-all.mjs')
+    expect(runner).toContain("args: ['turbo', 'test'")
+    expect(runner).toContain("args: ['run', 'test:repo']")
+  })
+
   test('cancels superseded pushes without cancelling a manual run', () => {
     expect(ci.concurrency.group).toBe('ci-${{ github.event_name }}-${{ github.ref }}')
     expect(ci.concurrency['cancel-in-progress']).toBe(
