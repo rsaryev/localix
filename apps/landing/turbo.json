@@ -5,6 +5,11 @@
     "docs:gen": {
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**"],
       "outputs": ["src/generated/**", "public/sitemap.xml"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**"],
+      "outputs": []
     }
   }
 }

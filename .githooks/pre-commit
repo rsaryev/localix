@@ -1,5 +1,5 @@
 #!/bin/sh
-# Every commit runs staged-file and affected-package checks; full suites belong to CI.
+# Every commit runs staged-file checks, then the full CI gates (Turbo-cached).
 # The remaining steps are opt-in maintainer tasks.
 # Keep the vendored pi fork and its model catalog from going stale, on every maintainer commit.
 #
@@ -35,6 +35,7 @@ root=$(git rev-parse --show-toplevel)
 cd "$root"
 
 bun scripts/pre-commit.mjs
+bun scripts/pre-commit-full.mjs
 
 # Upstream synchronization and catalog refresh remain maintainer-only.
 if [ "$LOCALIX_MAINTAINER" != "1" ]; then

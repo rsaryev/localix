@@ -35,7 +35,6 @@
   "apps/ui/src/features/chat/ui/MessageCard.tsx": 327,
   "apps/ui/src/features/chat/ui/MessageList.tsx": 334,
   "apps/ui/src/features/chat/ui/prompt-input/model-select/ModelBrowser.tsx": 411,
-  "apps/ui/src/features/chat/ui/prompt-input/model-select/useModelTaskRouting.ts": 307,
   "apps/ui/src/features/chat/ui/prompt-input/PromptInput.tsx": 412,
   "apps/ui/src/features/chat/ui/prompt-input/useAtRefAutocomplete.ts": 382,
   "apps/ui/src/features/chat/ui/prompt-input/useConnections.ts": 317,
