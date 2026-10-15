@@ -43,7 +43,7 @@ tauri-plugin-notification = "2.3.3"
 tauri-plugin-single-instance = { version = "2.4.2", features = ["deep-link"] }
 tauri-plugin-deep-link = "2.4.9"
 tauri-plugin-dialog = "2.7.1"
-base64 = "0.22.1"
+base64 = "0.23.1"
 minisign-verify = "0.2.5"
 
 # macOS: NSUserDefaults access to disable the press-and-hold accent popup so
