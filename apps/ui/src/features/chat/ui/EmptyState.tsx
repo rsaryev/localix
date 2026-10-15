@@ -1,4 +1,5 @@
 import { BirdStage } from '@/shared/ui/BirdStage'
+import { useBirdStill } from './useBirdStill'
 
 interface EmptyStateProps {
   /**
@@ -10,9 +11,11 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ hasConnection = true }: EmptyStateProps) {
+  const still = useBirdStill()
+
   return (
     <div className="flex flex-1 select-none flex-col items-center justify-center px-4 py-8">
-      <BirdStage still />
+      <BirdStage still={still} cycles={Infinity} lineCount={10} />
 
       {!hasConnection && (
         /* No connection — point to the model menu, where providers are connected. */

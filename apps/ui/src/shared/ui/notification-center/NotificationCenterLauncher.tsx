@@ -115,16 +115,18 @@ export function NotificationCenterLauncher() {
                     data-signal={signal ? '' : undefined}
                     tone="accent"
                     size="counter"
-                    // Pinned to the control's top-right corner rather than sitting beside the glyph
-                    // in the flex row: inline, a two-digit count widened the button and shifted the
-                    // whole titlebar cluster every time an event landed.
+                    // Pinned inside the control's top-right corner (not overhanging it, where the
+                    // window's rounded corner and the titlebar's top edge clipped the badge)
+                    // rather than sitting beside the glyph in the flex row: inline, a two-digit
+                    // count widened the button and shifted the whole titlebar cluster every time
+                    // an event landed.
                     //
                     // The severity fill (solid status bg + contrast text) wins over the accent tone;
                     // counter's leading-4 drops to leading-none so the digits centre in the fixed-
                     // height pill. The 2px ring in the chrome ground cuts the badge away from the
                     // glyph it overlaps, which is what keeps a red dot on a bell readable.
                     className={cn(
-                      'pointer-events-none absolute -top-px -right-px font-semibold leading-none ring-2 ring-sidebar',
+                      'pointer-events-none absolute top-0.5 right-0 font-semibold leading-none ring-2 ring-sidebar',
                       'data-signal:animate-in data-signal:zoom-in-50 data-signal:duration-(--dur-moderate) motion-reduce:animate-none',
                       STATUS_BADGE_CLASS[unreadSeverity],
                     )}

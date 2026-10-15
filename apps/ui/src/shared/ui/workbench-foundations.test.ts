@@ -193,7 +193,7 @@ describe('workbench foundation contracts', () => {
     // The count is a corner badge on the shared Chip counter, not an inline pill: inline, a
     // second digit widened the button and shifted the whole titlebar cluster.
     expect(launcher).toContain('size="counter"')
-    expect(launcher).toContain('absolute -top-px -right-px')
+    expect(launcher).toContain('absolute top-0.5 right-0')
     expect(launcher).toContain('ring-2 ring-sidebar')
     expect(launcher).toContain('STATUS_BADGE_CLASS[unreadSeverity]')
 
