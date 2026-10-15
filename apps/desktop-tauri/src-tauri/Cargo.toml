@@ -28,7 +28,7 @@ tauri-build = { version = "2", features = [] }
 # Keep the native shell deterministic: Cargo.lock currently resolves Tauri to
 # 2.11.5, so pin that API/runtime instead of silently adopting a later v2 shell
 # on a lockfile refresh.
-tauri = { version = "=2.11.5", features = ["tray-icon", "macos-private-api", "unstable"] }
+tauri = { version = "=2.12.1", features = ["tray-icon", "macos-private-api", "unstable"] }
 tauri-plugin-opener = "2"
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
