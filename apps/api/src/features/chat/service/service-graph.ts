@@ -18,7 +18,8 @@ import { createCapabilitySourceRepository } from '../../capabilities/source-repo
  * per-use-case contexts in `operation-contexts.ts`.
  */
 import { createChatRepository } from '../repository'
-import { createRouteDefaults, withResolvedRoutes } from './session-route-defaults'
+import { withResolvedRoutes } from './session-route-backfill'
+import { createRouteDefaults } from './session-route-defaults'
 import { readAgentSettings } from './agent-settings'
 import { normalizeProjectSettings } from '../../projects/contracts'
 import { safeJsonParse } from '../../../lib/json'
