@@ -43,7 +43,7 @@
     "@localixai/os-open": "workspace:*"
   },
   "devDependencies": {
-    "@types/bun": "1.3.14",
+    "@types/bun": "1.4.2",
     "typescript": "^7.0.2"
   },
   "engines": {
