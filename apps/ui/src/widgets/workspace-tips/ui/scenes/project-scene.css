@@ -5,9 +5,9 @@
   inset: 0;
 }
 .wt-project-window {
-  left: 4%;
-  right: 4%;
-  top: 2rem;
+  left: 0;
+  right: 0;
+  top: 1rem;
   bottom: -1px;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
@@ -50,8 +50,8 @@
 }
 .wt-menu {
   z-index: 1;
-  left: calc(4% + 0.25rem);
-  top: 3.625rem;
+  left: 0.25rem;
+  top: 2.625rem;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;

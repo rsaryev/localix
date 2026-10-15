@@ -5,8 +5,8 @@
   inset: 0;
 }
 .wt-mn-composer {
-  left: 6%;
-  right: 6%;
+  left: 0;
+  right: 0;
   bottom: 1.75rem;
   display: flex;
   align-items: center;
@@ -16,7 +16,7 @@
 }
 .wt-mn-chips {
   position: absolute;
-  left: 6%;
+  left: 0;
   bottom: 5rem;
   display: flex;
   gap: 0.3125rem;
@@ -87,8 +87,8 @@
 
 .wt-mn-menu {
   z-index: 1;
-  left: 6%;
-  right: 6%;
+  left: 0;
+  right: 0;
   bottom: 4.625rem;
   height: 6.5rem;
   background: var(--tip-popover);

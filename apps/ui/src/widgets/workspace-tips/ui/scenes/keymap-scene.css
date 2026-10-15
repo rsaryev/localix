@@ -5,9 +5,9 @@
   inset: 0;
 }
 .wt-km-page {
-  left: 8%;
-  right: 8%;
-  top: 1.25rem;
+  left: 0;
+  right: 0;
+  top: 1rem;
   bottom: -1px;
   display: flex;
   flex-direction: column;
@@ -84,8 +84,8 @@
 }
 .wt-km-menu {
   z-index: 1;
-  right: calc(8% + 1rem);
-  top: 5.375rem;
+  right: 1rem;
+  top: 5.125rem;
   display: flex;
   flex-direction: column;
   gap: 0.0625rem;

@@ -5,9 +5,9 @@
   inset: 0;
 }
 .wt-tm-composer {
-  left: 6%;
-  right: 6%;
-  bottom: 2.5rem;
+  left: 0;
+  right: 0;
+  bottom: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
@@ -72,9 +72,9 @@
 }
 .wt-tm-menu {
   z-index: 1;
-  left: calc(6% + 4.25rem);
+  left: 4.25rem;
   /* As in the app: the list drops under the button, over the input line. */
-  bottom: 2.75rem;
+  bottom: 2rem;
   display: flex;
   flex-direction: column;
   gap: 0.0625rem;

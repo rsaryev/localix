@@ -10,7 +10,7 @@ afterAll(async () => {
   await teardown()
 })
 
-test('the tips carousel pages, ends by starting a chat, and remembers the last tip seen', async () => {
+test('the tips carousel pages by buttons and arrows, ends by starting a chat, and remembers the last tip seen', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
@@ -36,7 +36,21 @@ test('the tips carousel pages, ends by starting a chat, and remembers the last t
   await act(async () => root.render(view))
   expect(title()).toBe(WORKSPACE_TIPS[0]!.lead)
 
-  await act(async () => button('Previous').click())
+  // The tour is a line, not a loop: nothing precedes the first tip.
+  expect(button('Previous').disabled).toBe(true)
+  const press = (key: string) =>
+    host
+      .querySelector('.wt-seg[aria-current="true"]')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+  await act(async () => press('ArrowRight'))
+  expect(title()).toBe(WORKSPACE_TIPS[1]!.lead)
+  // Focus follows the page, so the next arrow keeps paging.
+  expect(document.activeElement?.getAttribute('aria-current')).toBe('true')
+  await act(async () => press('ArrowLeft'))
+  expect(title()).toBe(WORKSPACE_TIPS[0]!.lead)
+
+  const segments = host.querySelectorAll<HTMLButtonElement>('.wt-seg')
+  await act(async () => segments[segments.length - 1]!.click())
   expect(title()).toBe(WORKSPACE_TIPS.at(-1)!.lead)
   // The last step ends the tour by starting a chat instead of looping on.
   const { subscribeChatChrome } = await import('@/shared/lib/chatChromeBus')

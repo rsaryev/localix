@@ -9,8 +9,9 @@ import { ProjectAction, ProjectScene } from './scenes/ProjectScene'
 import { TeamScene } from './scenes/TeamScene'
 
 /**
- * One slide: a looping miniature of a real surface, a two-tone sentence (the lead in full
- * ink, the rest faint), and — when the slide asks for a choice — the control that makes it.
+ * One slide: a looping miniature of a real surface and a two-tone sentence (the lead in full
+ * ink, the rest faint). When the slide asks for a choice, the sentence ends in it: `rest`
+ * then leads into `Action`, the current value, which opens the pick.
  */
 export interface WorkspaceTip {
   id: string
@@ -32,7 +33,7 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'model',
     lead: 'Connect a model.',
-    rest: 'Sign in or paste an API key, then pick the model new chats start on.',
+    rest: 'Sign in or paste an API key, then pick what new chats start on —',
     Scene: ModelScene,
     Action: ModelAction,
   },
@@ -45,7 +46,7 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'project',
     lead: 'Open a project folder.',
-    rest: 'The agent works inside the folder you choose — its files, terminal and Git.',
+    rest: 'The agent works inside it, with its files, terminal and Git —',
     Scene: ProjectScene,
     Action: ProjectAction,
   },
@@ -58,7 +59,7 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'keymap',
     lead: 'Keep the keys you know.',
-    rest: 'Pick the keymap of VS Code, Cursor, JetBrains, Zed and more. Every shortcut follows.',
+    rest: 'Every shortcut follows the keymap you pick —',
     Scene: KeymapScene,
     Action: KeymapAction,
   },
@@ -77,7 +78,7 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'appearance',
     lead: 'Make it yours.',
-    rest: 'Follow the system or pick an appearance. Fonts and code style live in Preferences.',
+    rest: 'Fonts and code style live in Preferences; one click sets the theme —',
     Scene: AppearanceScene,
     Action: AppearanceAction,
   },

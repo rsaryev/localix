@@ -5,8 +5,8 @@
   inset: 0;
 }
 .wt-approval-composer {
-  left: 6%;
-  right: 6%;
+  left: 0;
+  right: 0;
   bottom: 1.75rem;
   display: flex;
   align-items: center;
@@ -17,7 +17,7 @@
 }
 .wt-chips {
   position: absolute;
-  left: 6%;
+  left: 0;
   bottom: 5rem;
   display: flex;
   gap: 0.3125rem;
@@ -27,8 +27,8 @@
 }
 
 .wt-confirm {
-  left: 6%;
-  right: 6%;
+  left: 0;
+  right: 0;
   bottom: 6.75rem;
   display: flex;
   flex-direction: column;
@@ -97,7 +97,7 @@
 
 .wt-modes {
   z-index: 1;
-  left: calc(6% + 3.5rem);
+  left: 3.5rem;
   bottom: 6.5rem;
   display: flex;
   flex-direction: column;

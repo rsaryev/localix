@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { ChevronUp, Link2, Search, UserPlus, X } from 'lucide-react'
-import { Button } from '@localixai/kit/button'
 import type { ReasoningEffort } from '@localixai/agent'
 import { useChatStore } from '@/features/chat/model/store'
 import {
@@ -11,6 +10,7 @@ import {
 import { useConnections } from '@/features/chat/ui/prompt-input/useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { providerIcon } from '@/shared/ui/providerPresentation'
+import { TipPickTrigger } from '../TipPick'
 import './model-scene.css'
 
 const ModelPickerDrawer = lazy(() =>
@@ -135,20 +135,15 @@ export function ModelAction() {
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <Button
-        variant="mono"
-        size="lg"
+    <>
+      <TipPickTrigger
+        label="Model for new chats"
+        value={currentName ?? 'choose one'}
         onClick={() => {
           setMounted(true)
           setOpen(true)
         }}
-      >
-        {current ? 'Change model' : 'Choose model'}
-      </Button>
-      {currentName ? (
-        <span className="text-xs text-text-faint">New chats start on {currentName}</span>
-      ) : null}
+      />
       {mounted ? (
         <Suspense fallback={null}>
           <ModelPickerDrawer
@@ -165,6 +160,6 @@ export function ModelAction() {
           />
         </Suspense>
       ) : null}
-    </div>
+    </>
   )
 }

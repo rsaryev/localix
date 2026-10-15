@@ -1,9 +1,6 @@
 import { Check, ChevronDown, Monitor, Moon, Sun } from 'lucide-react'
-import {
-  SegmentedRadioGroup,
-  type SegmentedRadioOption,
-} from '@localixai/plugin-sdk/ui/segmented-control'
 import { useTheme, type ThemeMode } from '@/shared/theme/useTheme'
+import { TipPick } from '../TipPick'
 import './appearance-scene.css'
 
 /** Settings navigation exactly as `settingsNavigation.ts` groups it. */
@@ -84,24 +81,26 @@ export function AppearanceScene() {
   )
 }
 
-const OPTIONS = [
-  { value: 'system', label: <Monitor className="size-3.5" />, 'aria-label': 'System' },
-  { value: 'dark', label: <Moon className="size-3.5" />, 'aria-label': 'Dark' },
-  { value: 'light', label: <Sun className="size-3.5" />, 'aria-label': 'Light' },
-] as const satisfies readonly SegmentedRadioOption<ThemeMode>[]
+const MODES = [
+  { id: 'system', label: 'System', icon: Monitor },
+  { id: 'dark', label: 'Dark', icon: Moon },
+  { id: 'light', label: 'Light', icon: Sun },
+] as const satisfies readonly { id: ThemeMode; label: string; icon: typeof Monitor }[]
 
 /** The same setting as Preferences → Theme, one click away. */
 export function AppearanceAction() {
   const { themeMode, setThemeMode } = useTheme()
   return (
-    <div className="flex items-center gap-3">
-      <SegmentedRadioGroup
-        aria-label="Theme"
-        value={themeMode}
-        onValueChange={(mode) => setThemeMode(mode)}
-        options={OPTIONS}
-      />
-      <span className="text-xs text-text-faint capitalize">{themeMode}</span>
-    </div>
+    <TipPick
+      label="Theme"
+      value={MODES.find((m) => m.id === themeMode)?.label ?? 'System'}
+      entries={MODES.map((m) => ({
+        id: m.id,
+        label: m.label,
+        icon: m.icon,
+        selected: m.id === themeMode,
+        onSelect: () => setThemeMode(m.id),
+      }))}
+    />
   )
 }

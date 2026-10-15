@@ -1,7 +1,8 @@
 import { Check, ChevronDown, Folder, FolderPlus } from 'lucide-react'
-import { Button } from '@localixai/kit/button'
 import { useChatStore } from '@/features/chat/model/store'
 import { useAddProjectFolder } from '@/features/chat/model/useAddProjectFolder'
+import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
+import { TipPick } from '../TipPick'
 import './project-scene.css'
 
 /**
@@ -62,12 +63,34 @@ export function ProjectScene() {
   )
 }
 
+/** The breadcrumb's project menu in short: the folders already open, and Add folder…. */
 export function ProjectAction() {
   const addProjectFolder = useAddProjectFolder()
+  const nav = useRoutedNavigation()
+  const projects = useChatStore((s) => s.projects)
+  const activeId = useChatStore((s) => s.activeProjectId)
+  const folders = projects.filter((p) => !p.isDefault)
+  const active = folders.find((p) => p.id === activeId)
   return (
-    <Button variant="secondary" size="lg" onClick={() => void addProjectFolder()}>
-      <FolderPlus data-icon="inline-start" aria-hidden />
-      Add project folder
-    </Button>
+    <TipPick
+      label="Project"
+      value={active?.name ?? 'choose a folder'}
+      entries={[
+        ...folders.map((p) => ({
+          id: p.id,
+          label: p.name,
+          icon: Folder,
+          selected: p.id === activeId,
+          onSelect: () => nav.switchProject(p.id),
+        })),
+        { separator: true as const },
+        {
+          id: 'add-folder',
+          label: 'Add folder…',
+          icon: FolderPlus,
+          onSelect: () => void addProjectFolder(),
+        },
+      ]}
+    />
   )
 }

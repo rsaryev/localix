@@ -5,9 +5,9 @@
   inset: 0;
 }
 .wt-composer {
-  left: 6%;
-  right: 6%;
-  bottom: 2.25rem;
+  left: 0;
+  right: 0;
+  bottom: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -60,9 +60,9 @@
 
 .wt-drawer {
   z-index: 1;
-  left: 3%;
-  right: 3%;
-  top: 1.25rem;
+  left: 0;
+  right: 0;
+  top: 1rem;
   bottom: -1px;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;

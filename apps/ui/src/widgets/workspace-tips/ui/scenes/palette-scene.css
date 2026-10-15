@@ -7,7 +7,7 @@
 .wt-chord {
   position: absolute;
   top: 0.5rem;
-  left: 50%;
+  left: 0;
   display: flex;
   gap: 0.25rem;
   transform: translateX(-50%);
@@ -27,8 +27,8 @@
   color: var(--text-strong);
 }
 .wt-palette {
-  left: 10%;
-  right: 10%;
+  left: 0;
+  right: 0;
   top: 2.5rem;
   padding: 0.3125rem;
   background: var(--tip-popover);

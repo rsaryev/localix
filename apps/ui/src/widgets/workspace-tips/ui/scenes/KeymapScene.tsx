@@ -1,15 +1,9 @@
 import { useMemo } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
-import { Select, type SelectOption } from '@localixai/kit/select'
 import { chordToTokens } from '@localixai/kit/keybindings'
-import {
-  CMD,
-  CUSTOM_PRESET_ID,
-  KEYMAP_PRESETS,
-  presetOverrides,
-  resolveBindings,
-} from '@/shared/lib/keybindings'
+import { CMD, KEYMAP_PRESETS, presetOverrides, resolveBindings } from '@/shared/lib/keybindings'
 import { useKeybindingsEditor } from '@/features/settings/model/useKeybindings'
+import { TipPick } from '../TipPick'
 import './keymap-scene.css'
 
 /** Rows that visibly change between Default and the JetBrains preset. */
@@ -85,25 +79,22 @@ export function KeymapScene() {
   )
 }
 
-/** The same Base keymap select as Settings → Shortcuts. */
+/** The same choice as Settings → Shortcuts → Base keymap. */
 export function KeymapAction() {
   const { activePreset, applyPreset } = useKeybindingsEditor()
-  const options: SelectOption[] = useMemo(() => {
-    const presets = KEYMAP_PRESETS.map((p) => ({ value: p.id, label: p.label }))
-    return activePreset === CUSTOM_PRESET_ID
-      ? [...presets, { value: CUSTOM_PRESET_ID, label: 'Custom' }]
-      : presets
-  }, [activePreset])
+  const current = KEYMAP_PRESETS.find((p) => p.id === activePreset)?.label ?? 'Custom'
   return (
-    <Select
-      aria-label="Base keymap"
-      size="lg"
-      className="w-56"
-      value={activePreset}
-      onValueChange={(id) => {
-        if (id !== CUSTOM_PRESET_ID) applyPreset(id)
-      }}
-      options={options}
+    <TipPick
+      label="Base keymap"
+      value={current}
+      entries={KEYMAP_PRESETS.map((p) => ({
+        id: p.id,
+        label: p.label,
+        selected: p.id === activePreset,
+        onSelect: () => {
+          if (p.id !== activePreset) applyPreset(p.id)
+        },
+      }))}
     />
   )
 }
