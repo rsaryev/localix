@@ -109,8 +109,6 @@ export const sessionsApi = {
       agentIds?: string[]
       /** The session revision `agentIds` was built from; a newer one refuses the list (409). */
       expectedUpdatedAt?: string
-      /** Fix the participants before the conversation starts; afterwards the server says 409. */
-      rosterLocked?: boolean
       /** The conversation's permission mode; a delegated child refuses it (409). */
       permissionMode?: PermissionMode
       isPinned?: boolean

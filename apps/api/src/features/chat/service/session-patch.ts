@@ -26,8 +26,6 @@ export function sessionFieldsPatch(
     isArchived?: boolean
     projectId?: string
     runtimeStatus?: SessionRecord['runtimeStatus']
-    /** Already cleared by the caller against the conversation having started. */
-    rosterLocked?: boolean
     /** Already cleared by the caller against the session being a delegated child. */
     permissionMode?: PermissionMode
   },
@@ -50,7 +48,6 @@ export function sessionFieldsPatch(
       : {}),
     ...(patch.projectId !== undefined ? { projectId: patch.projectId } : {}),
     ...(patch.runtimeStatus !== undefined ? { runtimeStatus: patch.runtimeStatus } : {}),
-    ...(patch.rosterLocked !== undefined ? { rosterLocked: patch.rosterLocked } : {}),
     ...(patch.permissionMode !== undefined ? { permissionMode: patch.permissionMode } : {}),
   }
   // Correlating or reopening a CLI only records identity; it is not conversation activity.

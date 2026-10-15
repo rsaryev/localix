@@ -71,8 +71,8 @@ export interface BuildAgentSystemPromptParams {
     participants: readonly ConversationParticipant[]
     /** This participant is the elected leader and receives orchestration guidance. */
     isLeader?: boolean
-    /** Nobody can be tagged in: the person fixed the participants, or it is not a chat. */
-    rosterLocked?: boolean
+    /** Nobody can be tagged in: it is not a chat. */
+    membershipClosed?: boolean
   }
   /** Scope-aware agent directory, rendered in the volatile tail so registry edits are immediate. */
   agentDirectory?: readonly {

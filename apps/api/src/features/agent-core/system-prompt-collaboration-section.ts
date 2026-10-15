@@ -27,14 +27,14 @@ export function buildCollaborationSection(
     withColleagues: boolean
     /** A conversation exists for this run (a chat or a delegated team). */
     inConversation?: boolean
-    rosterLocked?: boolean
+    membershipClosed?: boolean
     isLeader?: boolean
   } = { withColleagues: false },
 ): string | null {
   const has = (name: string) => toolNames.includes(name)
   const fork = has(TOOL.fork)
   const inConversation = room.inConversation ?? room.withColleagues
-  const canInvite = inConversation && !room.rosterLocked
+  const canInvite = inConversation && !room.membershipClosed
   if (!fork && !canInvite && !room.withColleagues) return null
   const { withColleagues } = room
   const isLeader = room.isLeader ?? !withColleagues
@@ -53,9 +53,7 @@ export function buildCollaborationSection(
           '- Bring in a suitable agent from the directory when another role is needed: @mention it with a concrete assignment (scope, constraints, acceptance evidence). It joins and starts when your reply ends, not before.',
         ]
       : withColleagues
-        ? [
-            '- The user fixed who is in this conversation: nobody can be brought in or removed, so work only with the participants here.',
-          ]
+        ? ['- Nobody can be brought in or removed here, so work only with the participants here.']
         : []),
     ...(canInvite && has(TOOL.agents)
       ? [

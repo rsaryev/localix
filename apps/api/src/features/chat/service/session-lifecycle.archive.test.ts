@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test'
 
 import { updateSession, type SessionLifecycleCtx } from './session-lifecycle'
 import type { SessionRecord } from '../repository'
-import type { PersistedMessage } from '../contracts'
 import { SESSION_TITLE_MAX_CHARS } from '../session-limits'
 import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
 import { DEFAULT_AGENT_HANDLE } from '../../../db/participant'
@@ -28,7 +27,7 @@ function baseSession(over: Partial<SessionRecord> = {}): SessionRecord {
   })
 }
 
-function makeCtx(session: SessionRecord, messages: PersistedMessage[] = []) {
+function makeCtx(session: SessionRecord) {
   let saved: Partial<SessionRecord> | null = null
   const routeWrites: { agentId: string; route: Record<string, unknown> }[] = []
   const ctx: SessionLifecycleCtx = {
@@ -55,7 +54,6 @@ function makeCtx(session: SessionRecord, messages: PersistedMessage[] = []) {
       // this stub records nothing — it is here because the port is required, and a host that
       // could change the party without a place to say so is the shape the type forbids.
       insertMessage: async () => {},
-      listMessages: async () => messages,
     },
     streamRegistry: { publish: () => {} },
     runner: {
@@ -189,32 +187,5 @@ describe('updateSession — model selection', () => {
     ])
     // A route change names no session field, so the session row is not written at all.
     expect(getSaved()).toBeNull()
-  })
-})
-
-describe('updateSession — fixing the participants', () => {
-  const said = (from: string) => ({ payload: { from } }) as unknown as PersistedMessage
-
-  it('fixes them before the conversation starts, even after a join line was written', async () => {
-    const { ctx, getSaved } = makeCtx(baseSession(), [said('system')])
-    await updateSession(ctx, 'u1', 's1', { rosterLocked: true })
-    expect(getSaved()?.rosterLocked).toBe(true)
-  })
-
-  // An agent that was told mid-conversation it may no longer invite would be reading a history
-  // in which it did: the choice is settled from the first authored message on.
-  it('refuses to change them once somebody has spoken, and writes nothing', async () => {
-    const { ctx, getSaved } = makeCtx(baseSession(), [said('user')])
-    const failure = await updateSession(ctx, 'u1', 's1', {
-      rosterLocked: true,
-      title: 'Renamed',
-    }).catch((error: unknown) => error)
-    expect((failure as { status: number }).status).toBe(409)
-    expect(getSaved()).toBeNull()
-  })
-
-  it('a patch restating the current value is not a change and is not refused', async () => {
-    const { ctx } = makeCtx(baseSession({ rosterLocked: true }), [said('user')])
-    await updateSession(ctx, 'u1', 's1', { rosterLocked: true })
   })
 })

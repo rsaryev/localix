@@ -87,7 +87,7 @@ export function buildAgentSystemPromptParts(
   const collaboration = buildCollaborationSection(toolRegistry.toolNames, {
     withColleagues: isMultiAgentConversation(params.conversation),
     inConversation: params.conversation !== undefined,
-    rosterLocked: params.conversation ? (params.conversation.rosterLocked ?? false) : true,
+    membershipClosed: params.conversation ? (params.conversation.membershipClosed ?? false) : true,
     isLeader: params.conversation?.isLeader,
   })
   if (collaboration) {
@@ -139,7 +139,7 @@ export function buildAgentSystemPromptParts(
       isLeader: params.conversation.isLeader ?? false,
       canChangeTopic: (params.canChangeTopic ?? false) && hasTool(TOOL.set_topic),
       canSkip: hasTool(TOOL.skip_answer),
-      canInvite: !params.conversation.rosterLocked,
+      canInvite: !params.conversation.membershipClosed,
     })
     if (turnControl) sections.push(turnControl)
   }

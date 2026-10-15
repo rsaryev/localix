@@ -47,6 +47,8 @@ export function ModelBrowser({
   initialConnectionId,
   taskColumn = true,
   participants = NO_PARTICIPANTS,
+  initialAgentId,
+  onAgentTargetChange,
 }: ModelBrowserProps) {
   const { connections, activeId, addApiKeyConnection, addOAuthConnection } = connectionsState
   const [search, setSearch] = useState(initialQuery)
@@ -60,9 +62,11 @@ export function ModelBrowser({
   // Below lg the details (and the model's settings) open in place of the list.
   const [detailsView, setDetailsView] = useState(false)
   const [renameLabel, setRenameLabel] = useState('')
-  const [taskKey, setTaskKey] = useState<PickerTarget>(
-    participants.length > 0 ? agentTarget(participants[0]!.agentId) : 'session',
-  )
+  const [taskKey, setTaskKey] = useState<PickerTarget>(() => {
+    const initial =
+      participants.find((member) => member.agentId === initialAgentId) ?? participants[0]
+    return initial ? agentTarget(initial.agentId) : 'session'
+  })
   const participantRoute = useCallback(
     (agentId: string) => participantSlot(participants, agentId, sessionConnectionId),
     [participants, sessionConnectionId],
@@ -209,11 +213,13 @@ export function ModelBrowser({
   const selectTask = useCallback(
     (key: PickerTarget) => {
       setTaskKey(key)
+      const agentId = targetAgentId(key)
+      if (agentId !== null) onAgentTargetChange?.(agentId)
       const slot = slotForTask(key)
       const live = liveSlotFor(slot)
       if (live) setSelectedItem({ type: 'connection', id: live.connection.id })
     },
-    [liveSlotFor, slotForTask],
+    [liveSlotFor, onAgentTargetChange, slotForTask],
   )
 
   // The checkmark belongs to the ACTIVE target. In a room `sessionModelId` is the first

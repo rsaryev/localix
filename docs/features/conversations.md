@@ -63,10 +63,9 @@ Successful topic changes are hidden in the transcript; they do not hide other ac
 message. Only turns with no text, plan or other visible tool activity are hidden as silent.
 
 Tagging an available agent who is not in the conversation yet invites it, from your message or from
-any participant's reply, and the tag then gives it the floor.
-[Fixed participants](#fixing-the-participants) prevent invitations. Agents cannot remove
-participants; use the composer to remove someone yourself. The current registry rides each turn's
-context as the agent directory, so agents do not need a tool call to find one another.
+any participant's reply, and the tag then gives it the floor. Agents cannot remove participants; use
+the composer to remove someone yourself. The current registry rides each turn's context as the agent
+directory, so agents do not need a tool call to find one another.
 
 Creating or assigning tasks and inviting participants are not execution. When you ask for work, the
 agent is instructed to act, address the colleague who owns the next part with the context they need,
@@ -253,21 +252,6 @@ with a provider icon, and opens settings for each participant. Reasoning and tur
 saved per agent, provider and model; changing one participant does not change another. Authored
 agent and host limits still apply. Permission mode has its own pill above the input.
 
-### Fixing the participants
-
-The lock button next to the add-participant button decides whether the list can change. It is open
-by default. Click it to fix the participants and every change stops: the composer shows no add or
-remove controls, and the membership writer refuses invitations and user removals. The participants
-who are not answering are shown in grey.
-
-You can change the setting only before the conversation starts, which means before the first message
-that you or an agent writes. Lines the product writes itself, such as "@qa joined", do not count, so
-you can still arrange the participants first. After that an open conversation shows no lock, and a
-fixed one keeps a closed lock that can no longer be clicked, and a fork inherits the setting from
-its source. The agents are told about it too. A fixed conversation with a single agent can still
-change its topic with `set_topic`. In a fixed group, addresses still hand the floor between the
-participants, but a tag never invites anyone. No agent can remove a participant.
-
 ## Interruptions
 
 A new user message removes pending colleague handoff tickets; tickets still answering your earlier
@@ -308,5 +292,4 @@ Cards on the chat's board keep their status; an assignment alone did not start w
 - [Child-stop cascade](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/stop-cascade.ts)
 - [Queue clearing and leased rows](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue/steering.ts)
 - [Branch-change cancellation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/branching-ops.ts)
-- [Fixed participants](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/roster-lock.ts)
 - [Per-agent history projection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/history/stages/participant-view.ts)

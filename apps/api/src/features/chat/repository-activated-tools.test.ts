@@ -28,7 +28,6 @@ function session(id: string, overrides: Partial<SessionRecord> = {}): SessionRec
     rootSessionId: id,
     sessionKind: 'chat',
     agents: routedParticipants(),
-    rosterLocked: false,
     description: null,
     avatar: null,
     runtimeStatus: 'idle',

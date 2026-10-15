@@ -39,7 +39,6 @@ export function mergeSessionBody(prev: UiSession | undefined, next: UiSession): 
       createdAt: next.createdAt,
       updatedAt: next.updatedAt,
       agents: next.agents,
-      rosterLocked: next.rosterLocked,
       permissionMode: next.permissionMode,
       isRunning: next.isRunning,
       projectId: next.projectId,

@@ -129,12 +129,6 @@ export interface SessionRecord {
    */
   agents: SessionAgentRoute[]
   /**
-   * The participants are FIXED: nobody changes `agents` any more — not the person, not an agent's
-   * tag, not a board assignment. Chosen before the conversation starts and
-   * settled from its first message on (`roster-lock.ts`).
-   */
-  rosterLocked: boolean
-  /**
    * When a delegated child was CLOSED (`fork` action close), or null while it is open. A closed child
    * is terminal history: no wake, no message, no send reaches a run in it again.
    */

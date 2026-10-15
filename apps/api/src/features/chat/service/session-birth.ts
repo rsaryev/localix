@@ -114,9 +114,6 @@ export async function createSession(
     executionBackend: 'local',
     executionTarget: null,
     agents,
-    // Open: every chat starts able to become a group; fixing it is a choice made before the
-    // first message (`roster-lock.ts`).
-    rosterLocked: false,
     // A delegated child is born into its tree's mode (the parent carries it — a mode change is
     // written to the whole tree): a worker delegated from a plan session must not be the one
     // call in that session able to write.

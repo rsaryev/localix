@@ -2,19 +2,13 @@ import type { ComponentProps } from 'react'
 
 import { AddParticipantMenu } from './AddParticipantMenu'
 import { ComposerHeaderStrips } from './ComposerHeaderStrips'
-import { RosterLockButton } from './RosterLockButton'
 import type { usePromptSessionView } from './usePromptSessionView'
 
 type HeaderStripsProps = ComponentProps<typeof ComposerHeaderStrips>
 
 type ComposerSessionStripsProps = Omit<
   HeaderStripsProps,
-  | 'participantUsage'
-  | 'conversationFloor'
-  | 'addParticipantControl'
-  | 'onRemoveParticipant'
-  | 'participantsLocked'
-  | 'participantsLockControl'
+  'conversationFloor' | 'addParticipantControl' | 'onRemoveParticipant'
 > & {
   sessionView: ReturnType<typeof usePromptSessionView>
 }
@@ -25,7 +19,6 @@ export function ComposerSessionStrips({ sessionView, ...strips }: ComposerSessio
   return (
     <ComposerHeaderStrips
       {...strips}
-      participantUsage={sessionView.participantUsage}
       conversationFloor={sessionView.conversationFloor}
       addParticipantControl={
         <AddParticipantMenu
@@ -35,14 +28,6 @@ export function ComposerSessionStrips({ sessionView, ...strips }: ComposerSessio
         />
       }
       onRemoveParticipant={editing.removeParticipant}
-      participantsLocked={sessionView.rosterLocked}
-      participantsLockControl={
-        <RosterLockButton
-          locked={sessionView.rosterLocked}
-          settled={sessionView.rosterLockSettled}
-          onChange={editing.setRosterLocked}
-        />
-      }
     />
   )
 }

@@ -30,7 +30,6 @@ export const sessionStateReducers: StreamReducers<
       isPinned: event.session.isPinned,
       isArchived: event.session.isArchived,
       agents: event.session.agents,
-      rosterLocked: event.session.rosterLocked,
       // An approved plan switches the mode on the server; without this the composer kept
       // showing Plan until the next reload.
       permissionMode: event.session.permissionMode,

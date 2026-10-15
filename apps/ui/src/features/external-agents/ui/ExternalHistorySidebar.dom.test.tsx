@@ -116,7 +116,6 @@ test('Unified history shows owned Localix and external sessions together within 
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       seq: 1,
-      rosterLocked: false,
       closedAt: null,
       permissionMode: 'default',
       description: null,

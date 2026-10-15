@@ -28,6 +28,8 @@ interface ModelPickerDrawerProps {
   participantScope?: string
   reasoningEffort: ReasoningEffort
   onReasoningEffortChange: (effort: ReasoningEffort, agentId?: string) => void
+  initialAgentId?: string | null
+  onAgentTargetChange?: (agentId: string) => void
 }
 
 /**
@@ -48,6 +50,8 @@ export function ModelPickerDrawer({
   onReasoningEffortChange,
   participants,
   participantScope = '',
+  initialAgentId,
+  onAgentTargetChange,
 }: ModelPickerDrawerProps) {
   // Registry names live behind the lazy drawer on purpose: the composer shows a party without
   // them, and a chat that never opens the picker should not pay for a roster fetch.
@@ -101,6 +105,8 @@ export function ModelPickerDrawer({
       initialQuery={seed?.query}
       initialProviderId={seed?.providerId}
       initialConnectionId={seed?.connectionId}
+      initialAgentId={initialAgentId}
+      onAgentTargetChange={onAgentTargetChange}
     />
   )
 }

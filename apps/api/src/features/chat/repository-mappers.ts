@@ -40,7 +40,6 @@ export const mapSession = (row: {
   activated_tools?: string | null
   /** The participants, aggregated to JSON by `participantsJsonColumn`. */
   agents_json?: string | null
-  roster_locked?: number
   closed_at?: string | null
   permission_mode?: string | null
   description?: string | null
@@ -73,7 +72,6 @@ export const mapSession = (row: {
   sourceToolCallId: row.source_tool_call_id ?? null,
   provenance: parseSessionProvenance(row.invocation_json),
   agents: parseParticipants(row.agents_json),
-  rosterLocked: row.roster_locked === 1,
   closedAt: row.closed_at ?? null,
   permissionMode: parsePermissionMode(row.permission_mode),
   description: row.description ?? null,
@@ -128,7 +126,6 @@ export const toSessionSummary = (record: SessionRecord): SessionSummary => ({
   rootSessionId: record.rootSessionId,
   sessionKind: record.sessionKind,
   agents: record.agents,
-  rosterLocked: record.rosterLocked,
   closedAt: record.closedAt ?? null,
   permissionMode: record.permissionMode ?? DEFAULT_PERMISSION_MODE,
   description: record.description,

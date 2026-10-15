@@ -59,7 +59,6 @@ function sessionRow(id: string, overrides: Partial<SessionRecord> = {}): Session
     rootSessionId: id,
     sessionKind: 'chat',
     agents: routedParticipants(),
-    rosterLocked: false,
     description: null,
     avatar: null,
     runtimeStatus: 'idle',

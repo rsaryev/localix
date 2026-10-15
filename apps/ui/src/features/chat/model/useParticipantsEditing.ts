@@ -60,22 +60,5 @@ export function useParticipantsEditing(
     [participants, reseat],
   )
 
-  // Whether anyone may change the list at all. Beside the list edits because it is the same
-  // session state from the same strip; the server refuses it once the conversation has started.
-  const setRosterLocked = useCallback(
-    (rosterLocked: boolean) => {
-      if (!sessionId) return
-      void backendClient
-        .updateSession(sessionId, { rosterLocked })
-        .then((updated) => useChatStore.getState()._replaceSession(updated))
-        .catch((err: unknown) =>
-          toast.error('Could not change who can join', {
-            description: errorMessage(err, '') || undefined,
-          }),
-        )
-    },
-    [sessionId],
-  )
-
-  return { addParticipant, removeParticipant, setRosterLocked }
+  return { addParticipant, removeParticipant }
 }

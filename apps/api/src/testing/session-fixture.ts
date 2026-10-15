@@ -51,7 +51,6 @@ export function sessionFixture(overrides: Partial<SessionRecord> = {}): SessionR
     goal: null,
     previousTopicSummary: null,
     isPinned: false,
-    rosterLocked: false,
     createdAt: FIXTURE_TIMESTAMP,
     updatedAt: FIXTURE_TIMESTAMP,
     lastMessageAt: FIXTURE_TIMESTAMP,

@@ -22,7 +22,6 @@
  * User addressing and the addresses in agents' replies feed the same durable queue, so
  * this strip renders scheduler state instead of owning another ordering rule.
  */
-import type { ChatUsagePayload } from '@localixai/agent'
 import { useEffect, useRef } from 'react'
 import { motionSafeScrollBehavior } from '@localixai/kit/environment'
 
@@ -43,7 +42,6 @@ export interface ConversationFloor {
 
 export interface ParticipantsStripProps {
   participants: readonly StripParticipantRef[]
-  participantUsage?: Record<string, ChatUsagePayload>
   /** Whether this session's answer stream is still active. */
   isGenerating?: boolean
   /**
@@ -65,20 +63,13 @@ export interface ParticipantsStripProps {
   /** Removes one participant. Absent makes the roster read-only. */
   onRemove?: (agentId: string) => void
   /**
-   * The participants are fixed. The roster recedes and loses its add and remove controls —
-   * the server refuses both anyway, and a control that can only fail is a lie on screen.
-   */
-  locked?: boolean
-  /**
-   * The lock that fixes or opens the roster, beside the add control and OUTSIDE the scroller:
-   * with six participants it would otherwise scroll off with the names it is about.
-   */
-  lockControl?: React.ReactNode
-  /**
    * The session whose composer a clicked participant writes into. Passed explicitly so the insert
    * reaches THIS conversation's input rather than whichever composer happens to hold focus.
    */
   sessionId?: string | null
+  /** The participant whose model the composer shows; clicking a participant selects it. */
+  selectedAgentId?: string | null
+  onSelect?: (agentId: string) => void
 }
 
 /**
@@ -97,17 +88,15 @@ function standingOf(agentId: string, floor: ConversationFloor | null | undefined
 
 export function ParticipantsStrip({
   participants,
-  participantUsage,
   floor,
   isGenerating = false,
   addControl,
   onRemove,
   sessionId,
-  locked = false,
-  lockControl,
+  selectedAgentId,
+  onSelect,
 }: ParticipantsStripProps) {
   const running = floorIsRunning(floor)
-  const remove = locked ? undefined : onRemove
   const scrollerRef = useRef<HTMLDivElement>(null)
   const speaking = floor?.speaking ?? null
   useEffect(() => {
@@ -165,25 +154,21 @@ export function ParticipantsStrip({
             >
               <ParticipantChip
                 participant={participant}
-                usage={participantUsage?.[participant.agentId]}
                 standing={standing}
                 showDuration={isGenerating && standing.kind === 'speaking'}
                 dimmed={running && standing.kind === 'idle'}
-                fixed={locked && standing.kind !== 'speaking'}
                 sessionId={sessionId}
+                selected={participants.length > 1 && participant.agentId === selectedAgentId}
+                onSelect={onSelect}
                 // A participant mid-turn is not removable; a pending or idle one can leave at once.
-                onRemove={standing.kind !== 'speaking' ? remove : undefined}
+                onRemove={standing.kind !== 'speaking' ? onRemove : undefined}
               />
             </div>
           )
         })}
       </div>
-      {/* After the last participant: that is where the list ends and where the eye is. Adding
-          and whether anyone may be added are one question, so they sit together. */}
-      <div className="flex shrink-0 items-center gap-1.5">
-        {locked ? null : addControl}
-        {lockControl}
-      </div>
+      {/* After the last participant: that is where the list ends and where the eye is. */}
+      {addControl}
     </div>
   )
 }

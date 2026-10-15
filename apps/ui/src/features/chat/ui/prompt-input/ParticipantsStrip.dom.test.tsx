@@ -72,10 +72,10 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
       expect(chip.className).toContain('bg-transparent')
       expect(chip.className).not.toContain('bg-surface-raised')
       expect(chip.className).not.toContain('shadow-')
-      const mention = chip.querySelector('button')!
-      expect(mention.getAttribute('title')).toBe(`Mention @${handle}`)
-      expect(mention.getAttribute('aria-label')).toContain('Mention in the message')
-      expect(mention.querySelector('.truncate')?.className).toContain('max-w-32')
+      const select = chip.querySelector('button')!
+      expect(select.getAttribute('title')).toBe(`Show @${handle}'s model`)
+      expect(select.getAttribute('aria-label')).toContain('Show model')
+      expect(select.querySelector('.truncate')?.className).toContain('max-w-32')
     } finally {
       await cleanup()
     }
@@ -124,7 +124,7 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
       await rerender(null)
       expect(host.querySelectorAll('[data-slot="participant-chip"]')).toHaveLength(3)
       expect(host.querySelector('button[aria-label^="Remove"]')).toBeNull()
-      expect(host.querySelector('button[title^="Mention"]')?.hasAttribute('disabled')).toBe(true)
+      expect(host.querySelector('button[title^="Show"]')?.hasAttribute('disabled')).toBe(true)
     } finally {
       await cleanup()
     }
@@ -245,20 +245,19 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
     }
   })
 
-  test('clicking a participant stages its handle in this session’s composer', async () => {
-    // Naming someone is what gives them the floor, so the roster is also the control for
-    // addressing it: seeing an idle colleague is exactly when a person wants their handle.
+  test('clicking a participant selects it without staging its handle', async () => {
+    // Switching between participants used to stage `@handle` each time and spam the draft.
     const { composerBus } = await import('@/shared/lib/composerBus')
-    const staged: { text: string; inline?: boolean; sessionId: string }[] = []
+    const staged: string[] = []
     const off = composerBus.subscribe((request) => {
-      staged.push({
-        text: request.text ?? '',
-        inline: request.inline,
-        sessionId: request.sessionId,
-      })
+      staged.push(request.text ?? '')
       return true
     })
-    const { host, cleanup } = await render(null, { sessionId: 'strip-session' })
+    const selected: string[] = []
+    const { host, cleanup } = await render(null, {
+      sessionId: 'strip-session',
+      onSelect: (id: string) => selected.push(id),
+    })
     try {
       const button = [...host.querySelectorAll('button')].find((node) =>
         node.getAttribute('title')?.includes('@qa'),
@@ -267,10 +266,8 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
       await React.act(async () => {
         button.click()
       })
-      // A trailing space and an INLINE seam, because the sentence continues where the person
-      // left off — handles stacked as paragraphs made a column instead of an address line.
-      // Addressed to THIS strip's session: an insert reaches only the composer of the chat it names.
-      expect(staged).toEqual([{ text: '@qa ', inline: true, sessionId: 'strip-session' }])
+      expect(selected).toEqual(['builtin:qa'])
+      expect(staged).toEqual([])
     } finally {
       off()
       await cleanup()
@@ -293,51 +290,6 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
         const chip = beam.parentElement!
         expect(chip.lastElementChild?.className).toContain('size-[var(--chrome-control-xs)]')
       }
-    } finally {
-      await cleanup()
-    }
-  })
-})
-
-describe('ParticipantsStrip — a fixed roster', () => {
-  const React = () => import('react')
-
-  // The server refuses any change to a fixed roster; a control that can only fail is a lie.
-  test('offers neither adding nor removing, and the idle participants recede into grey', async () => {
-    const { createElement } = await React()
-    const { host, cleanup } = await render(
-      { speaking: 'builtin:frontend', waiting: [] },
-      {
-        locked: true,
-        onRemove: () => {},
-        addControl: createElement('button', { 'aria-label': 'Add participant' }),
-        lockControl: createElement('span', { 'data-testid': 'lock' }),
-      },
-    )
-    try {
-      expect(host.querySelector('button[aria-label^="Remove"]')).toBeNull()
-      expect(host.querySelector('button[aria-label="Add participant"]')).toBeNull()
-      expect(host.querySelector('[data-testid="lock"]')).not.toBeNull()
-      const chips = [...host.querySelectorAll('.lx-border-beam')].map((beam) => beam.parentElement!)
-      const speaker = chips.find((chip) => chip.textContent?.includes('Frontend'))!
-      // Live work must never look paused: the speaker keeps its colour.
-      expect(speaker.className).not.toContain('grayscale')
-      expect(chips.filter((chip) => chip.className.includes('grayscale'))).toHaveLength(2)
-    } finally {
-      await cleanup()
-    }
-  })
-
-  test('an open roster keeps its controls and its colour', async () => {
-    const { createElement } = await React()
-    const { host, cleanup } = await render(null, {
-      onRemove: () => {},
-      addControl: createElement('button', { 'aria-label': 'Add participant' }),
-    })
-    try {
-      expect(host.querySelector('button[aria-label="Add participant"]')).not.toBeNull()
-      expect(host.querySelectorAll('button[aria-label^="Remove"]').length).toBeGreaterThan(0)
-      expect(host.querySelector('.grayscale')).toBeNull()
     } finally {
       await cleanup()
     }
@@ -404,17 +356,17 @@ describe('ParticipantsStrip — the row stays still', () => {
   })
 })
 
-test('the active participant has a timer while idle and waiting participants show usage', async () => {
+test('the speaking participant keeps its timer and no chip carries a usage button', async () => {
   const { host, rerender, cleanup } = await render(
     { speaking: 'builtin:frontend', waiting: ['builtin:qa'] },
     { sessionId: 'usage-roster', isGenerating: true },
   )
   try {
-    expect(host.querySelector('[aria-label="Usage for Frontend"]')).toBeNull()
-    expect(host.querySelector('[aria-label="Usage for Qa"]')).not.toBeNull()
+    // Per-participant usage moved to the header's session card.
+    expect(host.querySelector('[aria-label^="Usage for"]')).toBeNull()
     expect(host.querySelector('[data-participant="builtin:frontend"]')?.textContent).toMatch(/\d/)
     await rerender(null, { sessionId: 'usage-roster', isGenerating: false })
-    expect(host.querySelectorAll('[aria-label^="Usage for"]')).toHaveLength(3)
+    expect(host.querySelectorAll('[aria-label^="Usage for"]')).toHaveLength(0)
   } finally {
     await cleanup()
   }

@@ -14,6 +14,8 @@ interface ActionButtonsProps {
   canAttach?: boolean
   onAttachClick?: () => void
   accessory?: ReactNode
+  /** Sits after the attach button: the composer's model picker. */
+  leading?: ReactNode
   onSend: () => void
   onStop: () => void
   canRecord?: boolean
@@ -40,6 +42,7 @@ export function ActionButtons({
   canAttach = false,
   onAttachClick,
   accessory,
+  leading,
   onSend,
   onStop,
   canRecord = false,
@@ -54,25 +57,28 @@ export function ActionButtons({
       aria-label="Composer actions"
       className="flex items-center justify-between px-2.5 pb-[0.55rem] pt-[0.2rem] max-sm:px-2 max-sm:pb-1.5"
     >
-      {/* Left: attach */}
-      <div
-        role={showAttach ? 'group' : undefined}
-        aria-label={showAttach ? 'Attachments' : undefined}
-        className="flex items-center gap-1"
-      >
-        {showAttach && (
-          <IconButton
-            size="lg"
-            tooltip="Attach file"
-            tooltipSide="top"
-            disabled={!canAttach}
-            onClick={onAttachClick}
-            aria-label="Attach file"
-            className={subtleAction}
-          >
-            <PaperclipIcon className="size-4" />
-          </IconButton>
-        )}
+      {/* Left: attach, then the model picker */}
+      <div className="flex min-w-0 flex-1 items-center gap-1">
+        <div
+          role={showAttach ? 'group' : undefined}
+          aria-label={showAttach ? 'Attachments' : undefined}
+          className="flex items-center gap-1"
+        >
+          {showAttach && (
+            <IconButton
+              size="lg"
+              tooltip="Attach file"
+              tooltipSide="top"
+              disabled={!canAttach}
+              onClick={onAttachClick}
+              aria-label="Attach file"
+              className={subtleAction}
+            >
+              <PaperclipIcon className="size-4" />
+            </IconButton>
+          )}
+        </div>
+        {leading}
       </div>
 
       {/* Right: send/stop/mic */}

@@ -107,7 +107,26 @@ export function PromptInput(props: PromptInputProps) {
     model,
     participants,
   )
-  const contextWindow = selectedModel?.contextLength
+  // The roster participant whose model the composer shows. Defaults to the first seat, the
+  // highest-priority one; a pick that has left the roster falls back to it too.
+  const [selectedAgent, setSelectedAgent] = useState<{
+    sessionId: string | null
+    agentId: string
+  }>()
+  const setSelectedAgentId = useCallback(
+    (agentId: string) => setSelectedAgent({ sessionId: activeSessionId, agentId }),
+    [activeSessionId],
+  )
+  const pickedAgentId =
+    selectedAgent?.sessionId === activeSessionId ? selectedAgent.agentId : undefined
+  const shownAgentId =
+    participants.find((member) => member.agentId === pickedAgentId)?.agentId ??
+    participants[0]?.agentId ??
+    null
+  // The context gauge measures against the shown participant's window, not the first seat's.
+  const contextWindow =
+    rosterParticipants.find((member) => member.agentId === shownAgentId)?.contextWindow ??
+    selectedModel?.contextLength
   const ctxRefs = useComposerContextRefs(
     prompt,
     activeSessionId,
@@ -340,26 +359,13 @@ export function PromptInput(props: PromptInputProps) {
           sessionUsage={props.sessionUsage}
           loops={props.loops}
           participants={rosterParticipants}
+          selectedParticipantId={shownAgentId}
+          onSelectParticipant={setSelectedAgentId}
         />
         {hasInteraction ? (
           props.interactionOverlay
         ) : (
           <>
-            <div className="px-2.5 pb-[0.1rem] pt-[0.45rem] max-sm:px-2">
-              <ModelSearchSelect
-                models={models}
-                value={model}
-                onSelectionChange={props.setModel}
-                connectionsState={connectionsState}
-                disabled={isGenerating || readOnly}
-                reasoningEffort={reasoningEffort}
-                onReasoningEffortChange={props.setReasoningEffort}
-                participants={participants}
-                participantScope={activeProjectId ?? ''}
-                sessionId={activeSessionId}
-                focused={isFocused}
-              />
-            </div>
             {/* Applied (pinned) skills — warmed into the session, not run */}
             <PinnedSkillsRow skills={sessionView.pinnedSkills} onChange={sessionView.setSkills} />
             <ComposerTextField
@@ -390,6 +396,23 @@ export function PromptInput(props: PromptInputProps) {
             <ActionButtons
               showAttach
               accessory={composerAccessory(serverQueue, activeSessionId, props.accessory)}
+              leading={
+                <ModelSearchSelect
+                  models={models}
+                  value={model}
+                  onSelectionChange={props.setModel}
+                  connectionsState={connectionsState}
+                  disabled={isGenerating || readOnly}
+                  reasoningEffort={reasoningEffort}
+                  onReasoningEffortChange={props.setReasoningEffort}
+                  participants={participants}
+                  participantScope={activeProjectId ?? ''}
+                  sessionId={activeSessionId}
+                  focused={isFocused}
+                  selectedAgentId={shownAgentId}
+                  onSelectAgent={setSelectedAgentId}
+                />
+              }
               hasPrompt={hasContent}
               canSend={canSend}
               isGenerating={isGenerating}

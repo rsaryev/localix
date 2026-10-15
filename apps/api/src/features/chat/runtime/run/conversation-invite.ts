@@ -2,9 +2,8 @@
  * A TAG BRINGS THE AGENT IN.
  *
  * Addressing an available agent who is not in the conversation yet — by the person or by any
- * participant — invites it, and the address then routes to it like to anyone present. A room the
- * person fixed (`rosterLocked`) and a delegated team never grow this way; an unknown or
- * unavailable handle is just text.
+ * participant — invites it, and the address then routes to it like to anyone present. A delegated
+ * team never grows this way; an unknown or unavailable handle is just text.
  */
 import type { SessionRecord } from '../../repository'
 import { addressedHandles } from '../../conversation-addressing'
@@ -24,7 +23,7 @@ export async function inviteAddressedAgents(
   session: SessionRecord,
   text: string,
 ): Promise<SessionRecord> {
-  if (session.sessionKind !== 'chat' || session.rosterLocked || !text.includes('@')) return session
+  if (session.sessionKind !== 'chat' || !text.includes('@')) return session
   const available =
     (await env.deps.listInvocableRegistryAgents?.(userId, 'chat', session.projectId)) ?? []
   const present = new Set(session.agents.map((member) => member.agentId))

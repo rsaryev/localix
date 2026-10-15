@@ -45,7 +45,6 @@ export function nativeHistoryRows(
             reasoningEffort: 'low',
           },
         ],
-        rosterLocked: false,
         permissionMode: 'default',
         closedAt: null,
         description: null,

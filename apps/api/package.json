@@ -42,7 +42,6 @@
     "./queue-presentation": "./src/features/chat/queue-presentation.ts",
     "./recovery": "./src/features/notifications/recovery.ts",
     "./realtime-resources": "./src/features/realtime/resources.ts",
-    "./roster-lock": "./src/features/chat/roster-lock.ts",
     "./secrets-limits": "./src/features/secrets/limits.ts",
     "./session-ref": "./src/features/chat/session-ref.ts",
     "./session-title": "./src/features/chat/session-title.ts",

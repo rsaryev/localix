@@ -1,5 +1,4 @@
 import { ApiError } from '../../../lib/errors'
-import { hasConversationStarted } from '../roster-lock'
 import { recordSessionChanges } from '../runtime/session-notice'
 import { changeParticipants } from '../runtime/conversation-participants'
 import { sessionFieldsPatch } from './session-patch'
@@ -77,17 +76,6 @@ export async function updateSession(
       'permission_mode_owned_by_root',
       "A delegated session runs under its root conversation's mode; change it there",
     )
-  }
-  // Refused BEFORE anything is written, so a patch that also names a title or a roster cannot
-  // half-apply around a lock it was not allowed to change.
-  if (patch.rosterLocked !== undefined && patch.rosterLocked !== session.rosterLocked) {
-    const messages = await ctx.repo.listMessages(userId, id)
-    if (hasConversationStarted(messages.map((message) => message.payload)))
-      throw new ApiError(
-        409,
-        'conversation_started',
-        'Participants can be fixed or opened only before the conversation starts',
-      )
   }
   // WHO is in the conversation: the one participants writer, which guards the active speaker,
   // refuses a stale list, cancels the leavers' queued turns and announces the change.

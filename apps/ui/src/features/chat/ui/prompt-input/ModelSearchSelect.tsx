@@ -1,7 +1,6 @@
 import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
-import { ChevronDown } from 'lucide-react'
-import { providerIcon } from '@/shared/ui/providerPresentation'
+import { ChevronUp } from 'lucide-react'
 import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
 import type { useConnections } from './useConnections'
 import type { ReasoningEffort } from '../../model/reasoning'
@@ -44,6 +43,10 @@ interface ModelSearchSelectProps {
   onReasoningEffortChange: (effort: ReasoningEffort, agentId?: string) => void
   sessionId: string | null
   focused: boolean
+  /** The participant whose model the trigger shows in a group; absent means the first one. */
+  selectedAgentId?: string | null
+  /** Picking a participant inside the picker selects it in the composer too. */
+  onSelectAgent?: (agentId: string) => void
 }
 
 /**
@@ -69,6 +72,8 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
   participantScope,
   sessionId,
   focused,
+  selectedAgentId,
+  onSelectAgent,
 }: ModelSearchSelectProps) {
   const { activeConnection, activeId } = connectionsState
   const [open, setOpen] = useState(false)
@@ -101,16 +106,12 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
     [disabled, focused, sessionId],
   )
 
-  const [modelIndex, setModelIndex] = useState(0)
   const isGroup = (participants?.length ?? 0) > 1
-  const routeKey = participants?.map((member) => member.agentId).join('|') ?? ''
-  useEffect(() => {
-    setModelIndex(0)
-    if (!isGroup || !focused || open) return
-    const timer = setInterval(() => setModelIndex((index) => index + 1), 4000)
-    return () => clearInterval(timer)
-  }, [routeKey, isGroup, focused, open, sessionId])
-  const shown = isGroup ? participants?.[modelIndex % participants.length] : undefined
+  // In a group the trigger shows ONE participant's model: the one picked on the roster, or the
+  // first (the highest-priority seat) until someone is picked.
+  const shown = isGroup
+    ? (participants?.find((member) => member.agentId === selectedAgentId) ?? participants?.[0])
+    : undefined
   const shownConnection = shown
     ? (connectionsState.connections.find(
         (connection) => connection.id === shown.providerConnectionId,
@@ -133,10 +134,9 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
     models,
     activeConnection: shownConnection,
   })
-  const ProviderIcon = providerIcon(shownConnection?.providerId)
 
   return (
-    <div className="flex h-[var(--chrome-control-lg)] w-full min-w-0 items-center rounded-lg">
+    <div className="flex h-[var(--chrome-control-lg)] min-w-0 max-w-full items-center rounded-lg">
       <Button
         variant="ghost"
         ref={triggerRef}
@@ -159,7 +159,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
               ? `Model: ${modelLabel} · ${activeConnection.label}`
               : 'Choose a model'
         }
-        className="h-[var(--chrome-control-lg)] min-w-0 flex-1 gap-2 rounded-lg px-2.5 text-xs font-normal"
+        className="h-[var(--chrome-control-lg)] min-w-0 max-w-72 gap-2 rounded-lg px-2.5 text-xs font-normal"
         onPointerEnter={() => void loadModelPickerDrawer()}
         onFocus={() => void loadModelPickerDrawer()}
         onClick={() => {
@@ -168,16 +168,8 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
           setOpen(true)
         }}
       >
-        <ProviderIcon className="size-4 shrink-0" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate text-left font-medium text-foreground">
-          {modelLabel}
-        </span>
-        {!isGroup && shownConnection && (
-          <span className="hidden max-w-32 truncate text-2xs text-text-faint md:inline">
-            {shownConnection.label}
-          </span>
-        )}
-        <ChevronDown className="size-3.5 shrink-0 text-text-faint" />
+        <span className="min-w-0 truncate text-left font-medium text-foreground">{modelLabel}</span>
+        <ChevronUp className="size-3.5 shrink-0 text-text-faint" />
       </Button>
 
       {drawerMounted && (
@@ -196,6 +188,8 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
             participantScope={participantScope}
             reasoningEffort={reasoningEffort}
             onReasoningEffortChange={onReasoningEffortChange}
+            initialAgentId={selectedAgentId}
+            onAgentTargetChange={onSelectAgent}
           />
         </Suspense>
       )}

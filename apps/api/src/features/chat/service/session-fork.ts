@@ -67,9 +67,6 @@ export async function forkSession(
     // source was merely inheriting resolves the same way for the fork, and stays inherited
     // instead of being frozen into the branch at the moment it was taken.
     agents: source.agents.map(chosenRoute),
-    // The same people under the same terms: a fork carries its source's history, so it has
-    // already started and the choice is as settled as it was there.
-    rosterLocked: source.rosterLocked,
     description: source.description,
     avatar: source.avatar,
     // A branch inherits the tools its source had already put on the wire; re-activating them would

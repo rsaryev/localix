@@ -50,4 +50,8 @@ export interface ModelBrowserProps {
    * in it.
    */
   participants?: readonly ParticipantRow[]
+  /** The participant the picker opens on — the one the composer shows. Absent means the first. */
+  initialAgentId?: string | null
+  /** Picking a participant row here selects that participant in the composer too. */
+  onAgentTargetChange?: (agentId: string) => void
 }

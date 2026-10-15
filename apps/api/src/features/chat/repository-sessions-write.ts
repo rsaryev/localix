@@ -55,7 +55,6 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         pinned_skills: JSON.stringify(record.pinnedSkills ?? []),
         description: record.description,
         avatar: record.avatar,
-        roster_locked: record.rosterLocked ? 1 : 0,
         ...(record.permissionMode ? { permission_mode: record.permissionMode } : {}),
         activated_tools: record.activatedTools?.length
           ? JSON.stringify(record.activatedTools)

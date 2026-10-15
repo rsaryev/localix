@@ -42,73 +42,60 @@ const connection = (id: string, label: string): ProviderConnection => ({
 })
 
 describe('ModelSearchSelect DOM runtime', () => {
-  test('rotates participant model names and provider marks without showing agent names', async () => {
+  test('shows the selected participant model, defaulting to the first, without a provider mark', async () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { ModelSearchSelect } = await import('./ModelSearchSelect')
-    const originalInterval = globalThis.setInterval
-    const ticks: (() => void)[] = []
-    globalThis.setInterval = ((callback: () => void, delay: number) => {
-      if (delay === 4000) {
-        ticks.push(callback)
-        return 0
-      }
-      return originalInterval(callback, delay)
-    }) as typeof setInterval
     const host = document.createElement('div')
     document.body.append(host)
     const root = createRoot(host)
     const first = connection('one', 'OpenAI')
     const second = { ...connection('two', 'Anthropic'), providerId: 'anthropic' }
-    try {
-      await React.act(async () =>
-        root.render(
-          <ModelSearchSelect
-            models={[
-              ...models,
-              { ...models[0]!, id: 'claude', name: 'Claude', providerId: 'anthropic' },
-            ]}
-            value="gpt-5.6"
-            connectionsState={
-              { connections: [first, second], activeConnection: first, activeId: first.id } as never
-            }
-            participants={[
-              {
-                agentId: 'a',
-                handle: 'first-agent',
-                providerConnectionId: 'one',
-                modelId: 'gpt-5.6',
-                reasoningEffort: 'high',
-              },
-              {
-                agentId: 'b',
-                handle: 'second-agent',
-                providerConnectionId: 'two',
-                modelId: 'claude',
-                reasoningEffort: 'low',
-              },
-            ]}
-            onSelectionChange={() => {}}
-            onReasoningEffortChange={() => {}}
-            reasoningEffort="high"
-            sessionId="group"
-            focused
-          />,
-        ),
+    const render = (selectedAgentId?: string) =>
+      root.render(
+        <ModelSearchSelect
+          models={[
+            ...models,
+            { ...models[0]!, id: 'claude', name: 'Claude', providerId: 'anthropic' },
+          ]}
+          value="gpt-5.6"
+          connectionsState={
+            { connections: [first, second], activeConnection: first, activeId: first.id } as never
+          }
+          participants={[
+            {
+              agentId: 'a',
+              handle: 'first-agent',
+              providerConnectionId: 'one',
+              modelId: 'gpt-5.6',
+              reasoningEffort: 'high',
+            },
+            {
+              agentId: 'b',
+              handle: 'second-agent',
+              providerConnectionId: 'two',
+              modelId: 'claude',
+              reasoningEffort: 'low',
+            },
+          ]}
+          onSelectionChange={() => {}}
+          onReasoningEffortChange={() => {}}
+          reasoningEffort="high"
+          sessionId="group"
+          focused
+          selectedAgentId={selectedAgentId}
+        />,
       )
+    try {
+      await React.act(async () => render())
       const trigger = host.querySelector('button')!
       expect(trigger.textContent).toContain('GPT-5.6 Sol')
-      const firstMark = trigger.querySelector('svg')?.outerHTML
-      expect(ticks).toHaveLength(1)
-      await React.act(async () => ticks[0]!())
+      expect(trigger.querySelectorAll('svg')).toHaveLength(1)
+      await React.act(async () => render('b'))
       expect(trigger.textContent).toBe('Claude')
-      expect(trigger.querySelector('svg')?.outerHTML).not.toBe(firstMark)
-      expect(host.textContent).not.toContain('second-agent')
-      expect(host.querySelector('[aria-label^="Permission mode"]')).toBeNull()
-      await React.act(async () => ticks[0]!())
+      await React.act(async () => render('gone'))
       expect(trigger.textContent).toContain('GPT-5.6 Sol')
     } finally {
-      globalThis.setInterval = originalInterval
       await React.act(async () => root.unmount())
       host.remove()
     }
@@ -160,7 +147,9 @@ describe('ModelSearchSelect DOM runtime', () => {
       const trigger = host.querySelector('button[aria-haspopup="dialog"][aria-label^="Choose"]')!
       expect(trigger.getAttribute('role')).toBeNull()
       expect(trigger.textContent).toContain('GPT-5.6 Sol')
-      expect(trigger.textContent).toContain('OpenAI Codex')
+      // Only the model name is drawn; the connection stays in the accessible label.
+      expect(trigger.textContent).toBe('GPT-5.6 Sol')
+      expect(trigger.getAttribute('aria-label')).toContain('OpenAI Codex')
       expect(trigger.textContent).not.toContain('High')
       expect(trigger.getAttribute('aria-expanded')).toBe('false')
       const reasoningTrigger = host.querySelector(
@@ -173,7 +162,7 @@ describe('ModelSearchSelect DOM runtime', () => {
       const refreshedTrigger = host.querySelector(
         'button[aria-haspopup="dialog"][aria-label^="Choose"]',
       ) as HTMLButtonElement
-      expect(refreshedTrigger.textContent).toContain('Codex refreshed')
+      expect(refreshedTrigger.getAttribute('aria-label')).toContain('Codex refreshed')
       expect(host.querySelector('.min-w-0')).not.toBeNull()
     } finally {
       await act(async () => root.unmount())

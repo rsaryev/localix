@@ -36,16 +36,13 @@ interface ComposerHeaderStripsProps {
   loops?: SessionLoopSummary[]
   /** The conversation's participants, shown as the roster. */
   participants?: readonly StripParticipantRef[]
-  participantUsage?: Record<string, ChatUsagePayload>
   /** Which participant holds the floor and who is queued behind them, live. */
   conversationFloor?: ConversationFloor | null
   /** Rendered after the last participant; see ParticipantsStrip for why it is a node. */
   addParticipantControl?: React.ReactNode
   onRemoveParticipant?: (agentId: string) => void
-  /** The participants are fixed; see ParticipantsStrip. */
-  participantsLocked?: boolean
-  /** The lock that fixes or opens them, beside the add control. */
-  participantsLockControl?: React.ReactNode
+  selectedParticipantId?: string | null
+  onSelectParticipant?: (agentId: string) => void
 }
 
 /**
@@ -64,12 +61,11 @@ export function ComposerHeaderStrips({
   sessionUsage,
   loops,
   participants,
-  participantUsage,
   conversationFloor,
   addParticipantControl,
   onRemoveParticipant,
-  participantsLocked,
-  participantsLockControl,
+  selectedParticipantId,
+  onSelectParticipant,
 }: ComposerHeaderStripsProps) {
   return (
     <div className="overflow-hidden rounded-t-(--radius-composer)">
@@ -82,14 +78,13 @@ export function ComposerHeaderStrips({
       {participants ? (
         <ParticipantsStrip
           participants={participants}
-          participantUsage={participantUsage}
           floor={conversationFloor}
           isGenerating={isGenerating}
           sessionId={activeSessionId}
           addControl={addParticipantControl}
           onRemove={onRemoveParticipant}
-          locked={participantsLocked}
-          lockControl={participantsLockControl}
+          selectedAgentId={selectedParticipantId}
+          onSelect={onSelectParticipant}
         />
       ) : null}
       {runtimePanel}

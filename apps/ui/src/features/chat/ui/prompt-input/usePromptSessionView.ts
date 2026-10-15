@@ -3,7 +3,6 @@ import { useCallback } from 'react'
 import type { SessionAgentRoute, SessionQueueItem } from '@/shared/api/contracts'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { hasConversationStarted } from '@localixai/api/roster-lock'
 
 import { findSessionInState } from '../../model/findSession'
 import { persistPinnedSkills } from '../../model/pinnedSkillMutations'
@@ -43,10 +42,6 @@ export function usePromptSessionView(
   const participants =
     useChatStore((state) => findSessionInState(state, activeSessionId)?.agents) ?? NO_PARTICIPANTS
 
-  const participantUsage = useChatStore(
-    (state) => findSessionInState(state, activeSessionId)?.participantUsage,
-  )
-
   const activeAgentId =
     useChatStore((state) => findSessionInState(state, activeSessionId)?.activeAgentId) ?? null
   const conversationFloor = {
@@ -55,14 +50,6 @@ export function usePromptSessionView(
   }
 
   const participantsEditing = useParticipantsEditing(activeSessionId, participants)
-  const rosterLocked =
-    useChatStore((state) => findSessionInState(state, activeSessionId)?.rosterLocked) ?? false
-  // Open to change only before anyone has spoken — the server's own rule, read through its
-  // leaf. An unloaded body is not evidence of an empty conversation, so it answers "settled".
-  const rosterLockSettled = useChatStore((state) => {
-    const session = findSessionInState(state, activeSessionId)
-    return !session || session.bodyLoaded === false || hasConversationStarted(session.messages)
-  })
 
   const setSkills = useCallback(
     (names: string[]) => {
@@ -83,11 +70,8 @@ export function usePromptSessionView(
     pinnedSkills,
     activeProjectId,
     participants,
-    participantUsage,
     conversationFloor,
     participantsEditing,
-    rosterLocked,
-    rosterLockSettled,
     setSkills,
   }
 }

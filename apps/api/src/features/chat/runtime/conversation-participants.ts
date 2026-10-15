@@ -10,8 +10,7 @@
  *
  * So every membership change comes here, and the steps are fixed:
  *
- *   read the current session → decide the new list → refuse any change to a fixed roster →
- *   refuse removing the active speaker →
+ *   read the current session → decide the new list → refuse removing the active speaker →
  *   write only if unchanged since the read → cancel the removed participants' queued turns →
  *   announce who came and went → publish.
  *
@@ -22,7 +21,6 @@ import { ApiError } from '../../../lib/errors'
 import type { AgentStreamEvent, PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import type { SessionAgentRoute } from '../repository-types'
-import { ROSTER_LOCKED_MESSAGE } from '../roster-lock'
 import { recordSessionChanges } from './session-notice'
 
 export interface ParticipantsIo {
@@ -82,10 +80,6 @@ export async function changeParticipants(
   if (joined.length === 0 && left.length === 0 && sameOrder(before.agents, next)) {
     return { before, after: before, joined, left }
   }
-  // Checked here, after the no-op return, because every door calls this even when it changes
-  // nobody: a reply that tags only present participants, a card assigned to someone already
-  // present. Refusing those would fail an ordinary turn in a fixed conversation.
-  if (before.rosterLocked) throw new ApiError(409, 'roster_locked', ROSTER_LOCKED_MESSAGE)
 
   const active = io.activeAgentId?.(input.sessionId)
   if (active && left.some((member) => member.agentId === active))

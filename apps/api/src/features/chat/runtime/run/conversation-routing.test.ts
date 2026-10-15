@@ -179,13 +179,6 @@ describe('tags bring agents in', () => {
     expect(h.session().agents.map((agent) => agent.handle)).toContain('qa')
     expect(h.queued.map((entry) => entry.speaker)).toEqual(['agent-q'])
   })
-
-  test('a room the person fixed does not grow from a tag', async () => {
-    const h = harness({ session: { ...room, rosterLocked: true } })
-    await h.route('agent-a', '@qa, verify it.')
-    expect(h.session().agents).toHaveLength(3)
-    expect(h.queued).toEqual([])
-  })
 })
 
 test('past the handoff bound nobody is queued and the person is told', async () => {

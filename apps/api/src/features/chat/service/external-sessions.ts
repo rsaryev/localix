@@ -120,7 +120,6 @@ export async function resolveExternalSession(
     // on the other, seated the way every birth seats it. The channel that drove it is
     // provenance, not a participant.
     agents,
-    rosterLocked: false,
     description: null,
     avatar: null,
     runtimeStatus: 'idle',

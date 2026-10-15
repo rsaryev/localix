@@ -52,7 +52,6 @@ function session(activatedTools: string[]): SessionRecord {
     seq: 1,
     title: 'Board work',
     isPinned: false,
-    rosterLocked: false,
     // Skips the MCP gather; plugin tools still take the deferral path under test.
     createdAt: '2026-08-18T00:00:00.000Z',
     updatedAt: '2026-08-18T00:00:00.000Z',

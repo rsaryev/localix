@@ -190,7 +190,6 @@ export interface AgentSessionsTable {
   /** A group's avatar (an opaque ref: media id or emoji). Null = generated from the title. */
   avatar: string | null
   /** 1 = the participants were fixed before the conversation started; see the 20260925 migration. */
-  roster_locked: ColumnType<number, number | undefined, number | undefined>
   /** When a delegated child was closed (`fork` action close): nothing wakes it after. Null = open. */
   closed_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** The session's permission mode (`capabilities/permission-modes.ts`); see the 20261003 migration. */

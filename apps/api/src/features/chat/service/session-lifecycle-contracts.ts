@@ -40,8 +40,6 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
     ) => Promise<void>
     /** For the membership line a party edit writes into the conversation. */
     insertMessage: (message: PersistedMessage) => Promise<void>
-    /** Whether the conversation has started, which settles `rosterLocked`. */
-    listMessages: (userId: string, sessionId: string) => Promise<PersistedMessage[]>
   }
   streamRegistry: {
     publish: (userId: string, sessionId: string, event: AgentStreamEvent) => void
@@ -157,8 +155,6 @@ export interface UpdateSessionPatch {
    * the change (409) instead of erasing whatever changed in between.
    */
   expectedUpdatedAt?: string
-  /** Fix or open the participants; only before the conversation starts (`roster-lock.ts`). */
-  rosterLocked?: boolean
   /** Only a group carries these; a private chat renders its agent instead. The kind itself is
    *  not patchable: it follows the party (see `updateSession`). */
   description?: string | null

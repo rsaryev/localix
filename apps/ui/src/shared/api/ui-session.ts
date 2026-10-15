@@ -109,8 +109,6 @@ export interface UiSession {
    * belongs to an agent inside a conversation, not to the conversation.
    */
   agents: SessionAgentRoute[]
-  /** The participants are fixed: nobody adds or removes anyone (`@localixai/api/roster-lock`). */
-  rosterLocked: boolean
   /** How the agent's rules are rewritten for this conversation (`@localixai/api/permission-modes`). */
   permissionMode: PermissionMode
   /** A delegated child its delegator closed; nothing wakes it, and its composer is read-only. */

@@ -34,7 +34,6 @@ export function uiSessionSummary(session: UiSession): UiSession {
     rootSessionId: session.rootSessionId,
     sessionKind: session.sessionKind,
     agents: session.agents,
-    rosterLocked: session.rosterLocked,
     permissionMode: session.permissionMode,
     closedAt: session.closedAt ?? null,
     description: session.description,

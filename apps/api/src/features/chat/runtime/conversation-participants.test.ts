@@ -86,43 +86,4 @@ describe('the one participants writer', () => {
       ),
     ).rejects.toThrow('Stop the active agent')
   })
-
-  test('a fixed roster refuses every change, from whichever door it comes', async () => {
-    const { repo, session, io, published } = await fixture()
-    await repo.updateSession(session.userId, session.id, { rosterLocked: true })
-    await expect(
-      changeParticipants(io, {
-        userId: session.userId,
-        sessionId: session.id,
-        decide: (current) => [
-          ...current.agents,
-          ...routedParticipants({ agentId: 'design', handle: 'design' }),
-        ],
-      }),
-    ).rejects.toThrow('fixed')
-    await expect(
-      changeParticipants(io, {
-        userId: session.userId,
-        sessionId: session.id,
-        decide: without('qa'),
-      }),
-    ).rejects.toThrow('fixed')
-    const stored = await repo.getSession(session.userId, session.id)
-    expect(stored!.agents.map((member) => member.agentId)).toEqual(['lead', 'qa'])
-    expect(published).toHaveLength(0)
-  })
-
-  // Every turn's `conversation_control` goes through here even with only `next`; refusing the
-  // unchanged list would fail an ordinary turn in a fixed conversation.
-  test('a fixed roster still answers a call that changes nobody', async () => {
-    const { repo, session, io } = await fixture()
-    await repo.updateSession(session.userId, session.id, { rosterLocked: true })
-    const change = await changeParticipants(io, {
-      userId: session.userId,
-      sessionId: session.id,
-      decide: (current) => current.agents,
-    })
-    expect(change.joined).toEqual([])
-    expect(change.left).toEqual([])
-  })
 })

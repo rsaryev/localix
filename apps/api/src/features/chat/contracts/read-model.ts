@@ -65,8 +65,6 @@ export interface SessionSummary {
    * a single field could only ever describe the one-participant case.
    */
   agents: SessionAgentRoute[]
-  /** The participants are fixed: nobody adds or removes anyone (`roster-lock.ts`). */
-  rosterLocked: boolean
   /** A delegated child its delegator closed; null while open. The chat is read-only when set. */
   closedAt: string | null
   /** How the agent's rules are rewritten for this conversation's runs; a child shows its root's. */

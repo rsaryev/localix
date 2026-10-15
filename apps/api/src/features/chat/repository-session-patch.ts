@@ -31,7 +31,6 @@ export function sessionRowPatch(patch: Partial<SessionRecord>) {
       : {}),
     ...(patch.description !== undefined ? { description: patch.description } : {}),
     ...(patch.avatar !== undefined ? { avatar: patch.avatar } : {}),
-    ...(patch.rosterLocked !== undefined ? { roster_locked: patch.rosterLocked ? 1 : 0 } : {}),
     ...(patch.activatedTools !== undefined
       ? {
           activated_tools: patch.activatedTools.length

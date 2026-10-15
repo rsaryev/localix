@@ -54,7 +54,7 @@ describe('# Collaboration follows the room', () => {
     expect(open).toContain('then @mention the created handles')
     expect(open).toContain('even while alone')
     expect(
-      buildCollaborationSection(tools, { withColleagues: false, ...chat, rosterLocked: true }),
+      buildCollaborationSection(tools, { withColleagues: false, ...chat, membershipClosed: true }),
     ).not.toContain('`agents`')
     expect(buildCollaborationSection(all, { withColleagues: false, ...chat })).not.toContain(
       '`agents`',
@@ -77,12 +77,12 @@ describe('# Collaboration follows the room', () => {
     ).not.toContain('build the smallest useful team')
   })
 
-  // A tag cannot grow a fixed room; a bullet teaching one is advice the run can only fail at.
-  test('a room whose participants are fixed is told so instead of taught to bring agents in', () => {
+  // A tag cannot grow a closed room; a bullet teaching one is advice the run can only fail at.
+  test('a room whose membership is closed is told so instead of taught to bring agents in', () => {
     const open = buildCollaborationSection(all, { withColleagues: true })!
-    const fixed = buildCollaborationSection(all, { withColleagues: true, rosterLocked: true })!
+    const fixed = buildCollaborationSection(all, { withColleagues: true, membershipClosed: true })!
     expect(open).toContain('Bring in a suitable agent')
     expect(fixed).not.toContain('Bring in a suitable agent')
-    expect(fixed).toContain('nobody can be brought in or removed')
+    expect(fixed).toContain('Nobody can be brought in or removed')
   })
 })

@@ -235,9 +235,9 @@ export async function buildRunSystemPrompt(
     projectStructure,
     projectInstructions: frozenContext.projectInstructions,
     conversation,
-    // Only where a tag can invite: a fixed roster or a delegated team is all in `conversation`.
+    // Only where a tag can invite: a delegated team is all in `conversation`.
     agentDirectory: (() => {
-      if (session.sessionKind !== 'chat' || session.rosterLocked) return undefined
+      if (session.sessionKind !== 'chat') return undefined
       const available = new Map(
         (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent]),
       )

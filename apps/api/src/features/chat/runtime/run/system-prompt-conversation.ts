@@ -13,8 +13,8 @@ export interface ConversationPromptContext {
   self: string
   participants: readonly { handle: string }[]
   isLeader: boolean
-  /** The participants are fixed: nobody here can be invited or removed. */
-  rosterLocked: boolean
+  /** Nobody here can be invited or removed: it is not a chat. */
+  membershipClosed: boolean
 }
 
 /**
@@ -34,6 +34,6 @@ export function conversationPromptContext(
     self: speaker.handle,
     participants: (session.agents ?? []).map((participant) => ({ handle: participant.handle })),
     isLeader: conversationLeader(session, priorities)?.agentId === speaker.agentId,
-    rosterLocked: session.rosterLocked || session.sessionKind !== 'chat',
+    membershipClosed: session.sessionKind !== 'chat',
   }
 }

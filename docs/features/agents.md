@@ -106,9 +106,8 @@ See [stored context](learning-loop.md#recall-and-courses).
 
 The former shipped specialist roles are no longer preset definitions. Saved conversation history,
 user-created agents and permission decisions are retained. A participant whose definition is no
-longer available remains visible in `/agents members`; in an open roster, add `localix` with
-`/agents add localix` before removing unavailable participants. A fixed historical roster remains
-readable and cannot invite replacement agents; continue its work in a new chat.
+longer available remains visible in `/agents members`; add `localix` with `/agents add localix`
+before removing unavailable participants.
 
 Agents [fork themselves](delegation.md) for parallel copies, or invite authored colleagues into the
 conversation. A specialist definition is persistent; it is not a child run.

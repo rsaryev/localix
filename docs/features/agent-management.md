@@ -137,9 +137,9 @@ the identity that was inspected. System and extension-owned agents cannot be del
 
 ## Availability and retries
 
-Agents with disabled availability or a denied chat invocation cannot join. Fixed rosters cannot
-change, a conversation must keep one participant, and the active speaker must be stopped before
-removal. Removing a participant cancels its queued turns through the existing membership writer.
+Agents with disabled availability or a denied chat invocation cannot join. A conversation must keep
+one participant, and the active speaker must be stopped before removal. Removing a participant
+cancels its queued turns through the existing membership writer.
 
 Repeated delivery of the same creation call returns the saved identity, even after a rename. Reusing
 that operation for different instructions fails. A different creation with an occupied handle fails

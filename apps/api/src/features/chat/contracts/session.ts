@@ -161,11 +161,6 @@ export const updateSessionRequestSchema = z.object({
    * instead of erasing that change.
    */
   expectedUpdatedAt: z.string().min(1).max(64).optional(),
-  /**
-   * Fix the participants (true) or leave them open (false). Accepted only before the
-   * conversation starts; afterwards it is 409 `conversation_started` (`roster-lock.ts`).
-   */
-  rosterLocked: z.boolean().optional(),
   /** The conversation's permission mode; accepted on a root conversation only (children inherit). */
   permissionMode: z.enum(PERMISSION_MODES).optional(),
   isPinned: z.boolean().optional(),
