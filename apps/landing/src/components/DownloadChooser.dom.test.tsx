@@ -32,9 +32,6 @@ async function mountChooser(platform: string, architecture?: string, released = 
     released
       ? {
           'mac-arm64': 'https://example.test/localix.dmg',
-          'mac-x64': 'https://example.test/localix-intel.dmg',
-          linux: 'https://example.test/localix.AppImage',
-          'linux-arm64': 'https://example.test/localix-arm64.AppImage',
         }
       : {},
   )
@@ -55,16 +52,13 @@ async function mountChooser(platform: string, architecture?: string, released = 
   }
 }
 
-test('a recognized platform shows only its own installer without an alternative picker', async () => {
-  const { host, cleanup } = await mountChooser('Linux x86_64')
+test('a recognized Mac shows only its own installer without an alternative picker', async () => {
+  const { host, cleanup } = await mountChooser('macOS', 'arm')
   try {
-    expect(host.textContent).toContain('Download for Linux')
-    expect(host.textContent).not.toContain('Download for Mac')
+    expect(host.textContent).toContain('Download for Mac')
     expect(host.textContent).not.toContain('Also for')
     expect(host.textContent).not.toContain('View on GitHub')
-    expect(host.textContent).not.toContain('Docs')
     expect(host.querySelector('button[aria-controls]')).toBeNull()
-    expect(host.querySelector('a[href="https://example.test/localix.AppImage"]')).not.toBeNull()
     expect(host.querySelectorAll('#downloads a')).toHaveLength(1)
   } finally {
     await cleanup()
@@ -81,33 +75,29 @@ test('Apple silicon detection selects the Mac installer after client hints resol
   }
 })
 
-test('an Intel Mac and an ARM64 Linux machine get their own experimental installer', async () => {
-  const intel = await mountChooser('macOS', 'x86')
-  try {
-    expect(
-      intel.host.querySelector('a[href="https://example.test/localix-intel.dmg"]'),
-    ).not.toBeNull()
-    expect(intel.host.textContent).toContain('Experimental')
-  } finally {
-    await intel.cleanup()
-  }
-  const arm = await mountChooser('Linux aarch64')
-  try {
-    expect(
-      arm.host.querySelector('a[href="https://example.test/localix-arm64.AppImage"]'),
-    ).not.toBeNull()
-  } finally {
-    await arm.cleanup()
+test('an Intel Mac and Linux are sent to the source build', async () => {
+  for (const [platform, architecture] of [
+    ['macOS', 'x86'],
+    ['Linux x86_64', undefined],
+    ['Linux aarch64', undefined],
+  ] as const) {
+    const { host, cleanup } = await mountChooser(platform, architecture)
+    try {
+      expect(host.textContent).toContain('Build from source')
+      expect(host.textContent).not.toContain('Download for')
+    } finally {
+      await cleanup()
+    }
   }
 })
 
 test('unreleased installers remain honestly disabled and marked coming soon', async () => {
-  const { host, cleanup } = await mountChooser('Linux x86_64', undefined, false)
+  const { host, cleanup } = await mountChooser('macOS', 'arm', false)
   try {
-    expect(host.textContent).toContain('Download for Linux')
+    expect(host.textContent).toContain('Download for Mac')
     expect(host.textContent).toContain('Coming soon')
     expect(host.querySelector('button[disabled]')).not.toBeNull()
-    expect(host.querySelector('a[href*="localix.AppImage"]')).toBeNull()
+    expect(host.querySelector('a[href*="localix.dmg"]')).toBeNull()
   } finally {
     await cleanup()
   }

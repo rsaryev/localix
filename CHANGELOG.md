@@ -15,8 +15,7 @@ installers were removed; this release replaces them.
 
 - Desktop application for macOS on Apple silicon, signed and notarized; it has been run by hand
   there and nowhere else.
-- Experimental installers for macOS on Intel and Linux x64 (`.AppImage` and `.deb`), built by the
-  same pipeline and not yet run by hand.
+- Intel Macs, Linux and Windows run Localix from source; they have no installer yet.
 - Multi-agent conversations, connected context, Project Space, the agent-driven preview with Visual
   Feedback, plugins the agent can build, loops and monitors, and the bundled workbenches.
 - Native browser pages on Linux, hosted in a GTK page layer.
@@ -55,9 +54,7 @@ An entry is therefore written when a tag is prepared, not when a commit merges:
   [`.github/release.yml`](.github/release.yml)) becomes **What's changed**, and the download table
   lists only the installers that reached the release. `SHA256SUMS.txt` and build-provenance
   attestations are published with it.
-- Platforms: macOS Apple silicon and Linux x64 must build, or the release stays a draft. macOS Intel
-  and Linux ARM64 are experimental legs (`"experimental": true` in the matrix): a failed one is
-  reported and left out, and its updater entry exists only when its signed artifact does. Only macOS
-  on Apple silicon has been run by hand, and the notes say so. Windows has no leg yet.
+- Platforms: only macOS on Apple silicon is built. The Linux x64, Linux ARM64 and macOS Intel legs
+  are parked in a comment in the workflow's leg list, to be re-enabled once their packaging works.
 - Keep the calm, factual register the rest of the repository uses; see
   [Contributing](CONTRIBUTING.md).

@@ -54,13 +54,15 @@ describe('installer links', () => {
     const release = {
       live: true,
       tag: 'v0.1.0-beta.1',
-      assets: [STABLE_INSTALLER_NAMES['mac-arm64']],
+      assets: ['latest.json'],
     }
-    expect(installerUrl('mac-arm64', release)).toBeDefined()
-    expect(installerUrl('linux', release)).toBeUndefined()
+    expect(installerUrl('mac-arm64', release)).toBeUndefined()
+    expect(
+      installerUrl('mac-arm64', { ...release, assets: [STABLE_INSTALLER_NAMES['mac-arm64']] }),
+    ).toBeDefined()
   })
 
   test('without a tag it falls back to the stable latest link', () => {
-    expect(installerUrl('linux', { live: true })).toBe(stableInstallerUrl('linux'))
+    expect(installerUrl('mac-arm64', { live: true })).toBe(stableInstallerUrl('mac-arm64'))
   })
 })

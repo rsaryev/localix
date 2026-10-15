@@ -124,13 +124,14 @@ describe('release workflow contract', () => {
     expect(workflowValues(release, 'RELEASE_EXPERIMENTAL_PLATFORMS')[0]).toBe(
       'darwin-x86_64,linux-x86_64,linux-x86_64-deb,linux-aarch64,linux-aarch64-deb',
     )
-    for (const leg of [
-      '{"os":"macos-15","name":"macos-arm64"}',
-      '{"os":"ubuntu-22.04","name":"linux-x64","experimental":true}',
-      '{"os":"macos-15-intel","name":"macos-x64","experimental":true}',
-      '{"os":"ubuntu-22.04-arm","name":"linux-arm64","experimental":true}',
+    // Only macOS on Apple silicon ships; the other legs are parked in a comment for later.
+    expect(release).toContain(`all='[{"os":"macos-15","name":"macos-arm64"}]'`)
+    for (const parked of [
+      '#   {"os":"ubuntu-22.04","name":"linux-x64","experimental":true}',
+      '#   {"os":"macos-15-intel","name":"macos-x64","experimental":true}',
+      '#   {"os":"ubuntu-22.04-arm","name":"linux-arm64","experimental":true}',
     ]) {
-      expect(release).toContain(leg)
+      expect(release).toContain(parked)
     }
     // An experimental leg never holds the release back; the proven ones always do.
     expect(release).toContain('continue-on-error: ${{ matrix.experimental == true }}')
@@ -193,7 +194,7 @@ describe('release workflow contract', () => {
       publishJob.indexOf('- name: Publish release as latest'),
     )
     const notes = readFileSync(resolve(root, 'scripts/build-release-notes.mjs'), 'utf8')
-    expect(notes).toContain('tested only on macOS (Apple silicon)')
+    expect(notes).toContain('the only platform it has been tested')
     expect(notes).toContain('docs/getting-started/installation.md')
   })
 

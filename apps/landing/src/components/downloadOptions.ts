@@ -1,4 +1,4 @@
-import { Apple, SquareTerminal, type LucideIcon } from 'lucide-react'
+import { Apple, type LucideIcon } from 'lucide-react'
 import type { DownloadId } from './downloadPlatform'
 
 export interface DownloadOption {
@@ -31,36 +31,6 @@ export function resolveDownloads(
       icon: Apple,
       url: cleanUrl(urls['mac-arm64']),
     },
-    {
-      id: 'mac-x64',
-      title: 'macOS',
-      shortTitle: 'macOS',
-      artifact: 'Intel (.dmg)',
-      action: 'Download for Mac',
-      experimental: true,
-      icon: Apple,
-      url: cleanUrl(urls['mac-x64']),
-    },
-    {
-      id: 'linux',
-      title: 'Linux',
-      shortTitle: 'Linux',
-      artifact: 'AppImage (.AppImage)',
-      action: 'Download for Linux',
-      experimental: true,
-      icon: SquareTerminal,
-      url: cleanUrl(urls.linux),
-    },
-    {
-      id: 'linux-arm64',
-      title: 'Linux',
-      shortTitle: 'Linux',
-      artifact: 'ARM64 AppImage (.AppImage)',
-      action: 'Download for Linux',
-      experimental: true,
-      icon: SquareTerminal,
-      url: cleanUrl(urls['linux-arm64']),
-    },
   ]
 }
 
@@ -72,9 +42,6 @@ export function resolveDownloads(
  */
 export const STABLE_INSTALLER_NAMES = {
   'mac-arm64': 'Localix-macos-arm64.dmg',
-  'mac-x64': 'Localix-macos-x64.dmg',
-  linux: 'Localix-linux-x64.AppImage',
-  'linux-arm64': 'Localix-linux-arm64.AppImage',
 } as const satisfies Record<DownloadId, string>
 
 /** Resolves through GitHub's `latest`, which every published release becomes; it 404s before the first one. */
@@ -126,7 +93,4 @@ const liveUrl = (id: DownloadId) => installerUrl(id, release)
 
 export const DOWNLOADS = resolveDownloads({
   'mac-arm64': cleanUrl(import.meta.env.VITE_DOWNLOAD_MAC_ARM64_URL) ?? liveUrl('mac-arm64'),
-  'mac-x64': cleanUrl(import.meta.env.VITE_DOWNLOAD_MAC_X64_URL) ?? liveUrl('mac-x64'),
-  linux: cleanUrl(import.meta.env.VITE_DOWNLOAD_LINUX_URL) ?? liveUrl('linux'),
-  'linux-arm64': cleanUrl(import.meta.env.VITE_DOWNLOAD_LINUX_ARM64_URL) ?? liveUrl('linux-arm64'),
 })

@@ -41,9 +41,8 @@ describe('release notes', () => {
   test('marks only macOS on Apple silicon as tested and lists published installers only', () => {
     const notes = buildReleaseNotes(base)
     expect(notes).toStartWith('Localix v1.2.0-beta.1 (beta)')
-    expect(notes).toContain('tested only on macOS (Apple silicon)')
+    expect(notes).toContain('the only platform it has been tested on')
     expect(notes).toContain('| macOS, Apple silicon | `Localix-macos-arm64.dmg` | Tested |')
-    expect(notes).toContain('| Linux, x86-64 | `Localix-linux-x64.AppImage` | Experimental |')
     expect(notes).not.toContain('Localix-macos-x64.dmg')
     expect(notes).toContain('## Highlights')
     expect(notes).toContain(`Source commit: ${'a'.repeat(40)}`)

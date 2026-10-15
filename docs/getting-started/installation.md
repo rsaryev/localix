@@ -53,18 +53,9 @@ runtime database unless you override it.
 `bun run build:desktop` first stages the built UI, API, bundled plugins, CLI, and Bun sidecar. Tauri
 then packages those resources with the native shell for the current host.
 
-The release workflow has four native build legs. Only macOS on Apple silicon has been run by hand.
-The macOS x64 and Linux arm64 legs are marked experimental, so a failed one is reported and left out
-of the release instead of holding it back; the other two must build.
-
-| Host         | Architecture | Configured bundle      | Boundary                                                                              |
-| ------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------- |
-| macOS        | arm64        | `.app` and `.dmg`      | Tested. The leg requires signing and notarization credentials and fails without them. |
-| macOS        | x64          | `.app` and `.dmg`      | Experimental; signed and notarized like arm64.                                        |
-| Ubuntu 22.04 | x64          | `.AppImage` and `.deb` | Experimental; its AppImage packaging currently fails, so it may be absent.            |
-| Ubuntu 22.04 | arm64        | `.AppImage` and `.deb` | Experimental; built on a native arm64 runner.                                         |
-
-There is no Windows release leg yet; run Windows from source.
+The release workflow builds one native leg, macOS on Apple silicon, which requires signing and
+notarization credentials and fails without them. Linux and Intel Mac legs are parked until their
+packaging works; on those systems, and on Windows, run Localix from source as described above.
 
 This matrix records repository configuration. Check the Releases page for the installers a given
 release actually published.

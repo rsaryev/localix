@@ -7,9 +7,6 @@ import { parseReleaseTag } from './resolve-release-ref.mjs'
 // and said to be experimental until someone has.
 export const INSTALLERS = [
   { name: 'Localix-macos-arm64.dmg', platform: 'macOS, Apple silicon', tested: true },
-  { name: 'Localix-macos-x64.dmg', platform: 'macOS, Intel', tested: false },
-  { name: 'Localix-linux-x64.AppImage', platform: 'Linux, x86-64', tested: false },
-  { name: 'Localix-linux-arm64.AppImage', platform: 'Linux, ARM64', tested: false },
 ]
 
 /** The body of `## v<version>` in a Keep-a-Changelog file, without its heading or the next one. */
@@ -50,18 +47,14 @@ export function buildReleaseNotes({
 
   if (isPrerelease) {
     sections.push(
-      '> **Beta.** Localix has been tested only on macOS (Apple silicon). The other installers come ' +
-        'from the same pipeline and are experimental: they may not start on your machine. There is ' +
-        'no Windows installer yet; build it from source.',
+      '> **Beta.** Localix ships for macOS on Apple silicon, the only platform it has been tested ' +
+        'on. On an Intel Mac, Linux or Windows, build it from source.',
     )
   }
 
   const table = downloadsTable(assets)
   if (table) {
-    sections.push(
-      `## Download\n\n${table}\n\nOpen the DMG and drag Localix into Applications, or make the ` +
-        'AppImage executable and run it.',
-    )
+    sections.push(`## Download\n\n${table}\n\nOpen the DMG and drag Localix into Applications.`)
   }
 
   const highlights = changelogSection(changelog, version)

@@ -33,18 +33,15 @@
 
 Get an installer from the [latest release](https://github.com/rsaryev/localix/releases/latest).
 
-| Platform             | File                           | Status                          |
-| -------------------- | ------------------------------ | ------------------------------- |
-| macOS, Apple silicon | `Localix-macos-arm64.dmg`      | Tested; signed and notarized    |
-| macOS, Intel         | `Localix-macos-x64.dmg`        | Experimental                    |
-| Linux, x86-64        | `Localix-linux-x64.AppImage`   | Experimental                    |
-| Linux, ARM64         | `Localix-linux-arm64.AppImage` | Experimental                    |
-| Windows              | None yet                       | [Run from source](#quick-start) |
+| Platform             | File                      | Status                          |
+| -------------------- | ------------------------- | ------------------------------- |
+| macOS, Apple silicon | `Localix-macos-arm64.dmg` | Tested; signed and notarized    |
+| macOS, Intel         | None yet                  | [Run from source](#quick-start) |
+| Linux                | None yet                  | [Run from source](#quick-start) |
+| Windows              | None yet                  | [Run from source](#quick-start) |
 
-Localix has been tested only on macOS (Apple silicon). The other installers come from the same
-release pipeline but have not been run by hand yet, so they may not start on your machine; please
-[report what you find](https://github.com/rsaryev/localix/issues/new/choose). Each release lists
-checksums in `SHA256SUMS.txt`.
+Localix ships and has been tested only on macOS on Apple silicon. On other systems, run it from
+source; installers for them will follow. Each release lists checksums in `SHA256SUMS.txt`.
 
 ## What you can do
 

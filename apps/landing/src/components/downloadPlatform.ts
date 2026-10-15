@@ -13,16 +13,16 @@
  *
  * When neither answers, the chip remains uncertain and the chooser offers the source build.
  *
- * macOS (Apple silicon and Intel) and Linux (x64 and ARM64) have an installer; the Intel and ARM64
- * Linux ones are experimental. A Windows visitor is still recognized, so the page can say so and
- * point at the source build instead of offering a file built for another machine.
+ * Only macOS on Apple silicon has an installer. Intel Mac, Linux and Windows visitors are still
+ * recognized, so the page can point them at the source build instead of offering a file built for
+ * another machine.
  */
 
 /** The platforms an installer is published for. */
-export type DownloadId = 'mac-arm64' | 'mac-x64' | 'linux' | 'linux-arm64'
+export type DownloadId = 'mac-arm64'
 
 /** Every platform the page can recognize; only the ones in `DownloadId` have an installer. */
-export type PlatformId = DownloadId | 'windows' | 'unknown'
+export type PlatformId = DownloadId | 'mac-x64' | 'linux' | 'linux-arm64' | 'windows' | 'unknown'
 
 export interface PlatformSignals {
   platform?: string

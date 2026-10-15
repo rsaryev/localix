@@ -116,7 +116,12 @@ jobs:
         env:
           LEGS: ${{ inputs.legs }}
         run: |
-          all='[{"os":"macos-15","name":"macos-arm64"},{"os":"ubuntu-22.04","name":"linux-x64","experimental":true},{"os":"macos-15-intel","name":"macos-x64","experimental":true},{"os":"ubuntu-22.04-arm","name":"linux-arm64","experimental":true}]'
+          # Only macOS on Apple silicon ships for now; Linux and Intel Macs build from source. The
+          # parked legs, to re-enable later by adding them back to `all`:
+          #   {"os":"ubuntu-22.04","name":"linux-x64","experimental":true}
+          #   {"os":"macos-15-intel","name":"macos-x64","experimental":true}
+          #   {"os":"ubuntu-22.04-arm","name":"linux-arm64","experimental":true}
+          all='[{"os":"macos-15","name":"macos-arm64"}]'
           if [ -z "${LEGS//[[:space:]]/}" ]; then
             matrix="$all"
           else
