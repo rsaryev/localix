@@ -37,7 +37,7 @@ events. Test a behavior change in the reducer first.
 
 | Event      | Source                                      | Resting →              | Expanded →                                      |
 | ---------- | ------------------------------------------- | ---------------------- | ----------------------------------------------- |
-| `hover`    | Pointer rests for 260 ms                    | Open, composer focused | No change                                       |
+| `hover`    | Pointer rests for 400 ms                    | Open, composer focused | No change                                       |
 | `activate` | Click on the notch, or a native first click | Open, composer focused | Focus the composer unless a request is shown    |
 | `toggle`   | `Cmd+Shift+J`                               | Open, composer focused | Rest                                            |
 | `select`   | A new request arrives, or **Next request**  | Open on that request   | Show that request                               |

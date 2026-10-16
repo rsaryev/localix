@@ -15,7 +15,7 @@ import { reduceIsland, RESTING_ISLAND } from './island'
 import { ISLAND_OVERLAY_SELECTOR } from './islandOverlays'
 
 /** Intent thresholds. Hover must be deliberate; leaving must survive a diagonal pointer path. */
-export const ISLAND_TIMING = { hoverEnterMs: 260, hoverLeaveMs: 450, idleFoldMs: 15_000 } as const
+export const ISLAND_TIMING = { hoverEnterMs: 400, hoverLeaveMs: 450, idleFoldMs: 15_000 } as const
 
 /** The native silhouette follows the CSS motion and radius tokens instead of its own scale. */
 function materialMotion(reducedMotion: boolean) {
