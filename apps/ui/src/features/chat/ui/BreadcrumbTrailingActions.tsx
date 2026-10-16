@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
-import { Globe2, MoreHorizontal, SquareTerminal } from 'lucide-react'
+import { Download, Globe2, MoreHorizontal, SquareTerminal } from 'lucide-react'
 
 import { StatusItems, useLiveStatusItemCount } from '@/shared/contrib/statusItems'
 import { useChatStore } from '@/features/chat/model/store'
 import { useBreadcrumbDepth } from '@/features/chat/model/useBreadcrumbDepth'
+import { useDesktopUpdate } from '@/shared/hooks/useDesktopUpdate'
+import { restartToUpdate } from '@/features/chat/model/restartToUpdate'
+import { Spinner } from '@localixai/kit/spinner'
 import {
   useGridStore,
   focusedVisibleTabId,
@@ -206,8 +209,36 @@ export function BreadcrumbTrailingActions({
 
         {/* The sole in-app notification surface: unread signal, actions and history. */}
         <NotificationCenterLauncher />
+
+        {/* A signed update is ready: offer it right beside the other always-relevant actions
+            instead of only in the rail or the composer strip. Hidden otherwise. */}
+        <UpdateActionButton />
       </div>
     </div>
+  )
+}
+
+/** The update action, shown only once a signed update is actually available. */
+function UpdateActionButton() {
+  const { state, applyUpdate } = useDesktopUpdate()
+  if (!state?.available) return null
+  const applying = state.installing
+  const label =
+    applying && state.message.startsWith('Downloading')
+      ? state.message
+      : `Update & Restart${state.latestVersion ? ` (v${state.latestVersion})` : ''}`
+  return (
+    <ActionButton
+      label={label}
+      disabled={applying}
+      onClick={() => void restartToUpdate(applyUpdate, () => {})}
+    >
+      {applying ? (
+        <Spinner className="size-3.5" />
+      ) : (
+        <Download className="size-3.5 shrink-0" strokeWidth={1.75} />
+      )}
+    </ActionButton>
   )
 }
 

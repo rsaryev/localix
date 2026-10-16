@@ -3,7 +3,6 @@ import { Menu, Plus } from 'lucide-react'
 import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
 import { CMD } from '@/shared/lib/keybindings'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { DesktopUpdateButton } from './DesktopUpdateButton'
 import { DROP_TARGET_INSET_ACTIVE, DROP_TARGET_TRANSITION } from '@localixai/kit/drop-target'
 import type { UseRailDnd } from '../model/useRailDnd'
 import type { PinnedRailArea } from '../model/railLayout'
@@ -267,7 +266,6 @@ export function WorkspaceRail({
             onUnpin={onUnpinTool}
           />
         ))}
-        <DesktopUpdateButton />
       </div>
     </div>
   )
