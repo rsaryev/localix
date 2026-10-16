@@ -1,8 +1,7 @@
 import { BirdStage } from '@/shared/ui/BirdStage'
 import { useBirdStill } from './useBirdStill'
 
-/** The empty chat once a model is connected: the flying Localix bird and nothing else.
- *  Without a connection the chat surface shows the workspace tips carousel instead. */
+/** The empty chat: the flying Localix bird and nothing else, model connected or not. */
 export function EmptyState() {
   const still = useBirdStill()
 

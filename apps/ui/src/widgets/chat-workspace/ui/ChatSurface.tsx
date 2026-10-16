@@ -13,7 +13,6 @@ import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-sess
 import { useJobTerminal } from '@/features/chat/model/useJobTerminal'
 import { AWAITING_ANSWER_LABEL } from '@/features/chat/model/messageActivity'
 import { EmptyState } from '@/features/chat/ui/EmptyState'
-import { WorkspaceTipsCarousel } from '@/widgets/workspace-tips/ui/WorkspaceTipsCarousel'
 import { PromptInput } from '@/features/chat/ui/prompt-input'
 import { RuntimeSessionsPanel } from '@/features/chat/ui/RuntimeSessionsPanel'
 import { ComposerContextBar } from './ComposerContextBar'
@@ -102,10 +101,6 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
   )
   const activeSession = useSessionById(sessionId)
   const activeSessionId = sessionId
-  // Empty state swaps starters for a connect prompt when no provider is connected.
-  const hasConnection = useChatStore((s) =>
-    s.connections.some((connection) => connection.hasApiKey),
-  )
   // De-globalized run flag: this session's own `isRunning`.
   const isGenerating = activeSession?.isRunning ?? false
   const agentRuntime = useSessionRuntime(sessionId)
@@ -453,9 +448,7 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
                     : undefined
                 }
               >
-                {/* Without a model nothing can be sent, so the empty chat teaches instead of
-                    greeting: the tips carousel opens on connecting a model. */}
-                {hasConnection ? <EmptyState /> : <WorkspaceTipsCarousel />}
+                <EmptyState />
               </div>
             )}
           </div>
