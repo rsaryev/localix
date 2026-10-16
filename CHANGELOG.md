@@ -6,7 +6,25 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
-## v0.1.0-beta.7 — draft prepared 2026-10-15
+## v0.1.0-beta.8 — draft prepared 2026-10-16
+
+### Added
+
+- A per-agent context-window budget share (`contextPercent`, 20-100%, default 70), with a composer
+  control to set it alongside effort and max turns.
+
+### Changed
+
+- Moved Update & Restart from the left rail into the titlebar, beside Terminal, Browser and the
+  Event Center, where it is easier to notice.
+
+### Fixed
+
+- The flying bird now greets every empty chat, model connected or not; the workspace tips carousel
+  is reserved for a truly empty editor group.
+- The command-palette tip scene no longer clips the key-chord badge behind its stage edge.
+
+## v0.1.0-beta.7 — published 2026-10-16
 
 The first beta published after the repository history was reset. Earlier beta tags and their
 installers were removed; this release replaces them.
