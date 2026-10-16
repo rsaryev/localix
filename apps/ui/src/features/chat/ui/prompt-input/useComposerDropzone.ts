@@ -9,6 +9,9 @@ import {
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { acceptedDragKind, createDragDepth } from './dropzoneState'
 
+/** No `dragover` for this long means the drag ended where the window could not hear it. */
+export const STALE_DRAG_MS = 1500
+
 export interface ComposerDropzoneDeps {
   onAddFiles?: (files: File[]) => void
   /**
@@ -50,7 +53,9 @@ export interface ComposerDropzone {
  *   or strand the overlay — see `createDragDepth`);
  * - window-level `dragend` + `drop` listeners (a drag cancelled with Esc or
  *   dropped on ANOTHER target never fires drop/leave on the composer);
- * - a window `dragleave` with no relatedTarget (drag left the window entirely).
+ * - a window `dragleave` with no relatedTarget (drag left the window entirely);
+ * - pointer movement or `STALE_DRAG_MS` without `dragover` (a drag that ended outside
+ *   the window without any event, like the macOS screenshot thumbnail).
  */
 export function useComposerDropzone({
   onAddFiles,
@@ -90,11 +95,24 @@ export function useComposerDropzone({
       )
         clearDrag()
     }
+    // A drag that ends outside the window sends nothing at all — the macOS screenshot
+    // thumbnail is one. A live drag sends `dragover` continuously and suppresses pointer
+    // events, so pointer movement or a silent stretch both mean the drag is over.
+    let staleTimer = setTimeout(clearDrag, STALE_DRAG_MS)
+    const onWindowDragOver = () => {
+      clearTimeout(staleTimer)
+      staleTimer = setTimeout(clearDrag, STALE_DRAG_MS)
+    }
+    window.addEventListener('dragover', onWindowDragOver, true)
+    window.addEventListener('pointermove', clearDrag, true)
     window.addEventListener('dragend', clearDrag, true)
     window.addEventListener('drop', clearDrag, true)
     window.addEventListener('blur', clearDrag)
     window.addEventListener('dragleave', onWindowDragLeave, true)
     return () => {
+      clearTimeout(staleTimer)
+      window.removeEventListener('dragover', onWindowDragOver, true)
+      window.removeEventListener('pointermove', clearDrag, true)
       window.removeEventListener('dragend', clearDrag, true)
       window.removeEventListener('drop', clearDrag, true)
       window.removeEventListener('blur', clearDrag)
