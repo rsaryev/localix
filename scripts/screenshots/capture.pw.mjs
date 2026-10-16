@@ -38,18 +38,27 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     const route = `${uiOrigin}/#/project/${prefix ? fixture[`${prefix}ProjectId`] : fixture.projectId}/${prefix ? fixture[`${prefix}SessionId`] : fixture.sessionId}`
     const errors = []
     page.on('pageerror', (error) => errors.push(error.message))
+    if (spec.viewport) await page.setViewportSize(spec.viewport)
     if (spec.theme)
       await page.addInitScript((theme) => localStorage.setItem('sandbox_theme', theme), spec.theme)
-    await page.goto(route)
-    await expect(page.getByRole('button', { name: 'Add participant', exact: true })).toBeVisible()
+    const island = spec.scenario.startsWith('island-')
+    if (island) {
+      await (await import('./agent-island.mjs')).openIsland(page, uiOrigin, spec.notch)
+    } else {
+      await page.goto(route)
+      await expect(page.getByRole('button', { name: 'Add participant', exact: true })).toBeVisible()
+    }
     await compose(page, spec.scenario)
     await verifyEvidence(page, spec.scenario)
+    if (spec.notch) await (await import('./agent-island.mjs')).verifyNotchLayout(page, spec)
     await page.evaluate(async () => {
       await document.fonts.ready
     })
     if (!spec.preservePointer) await page.mouse.move(10, 10)
     await page.waitForTimeout(650)
     expect(errors).toEqual([])
+    // Validate the state we actually capture after pointer movement and settled transitions.
+    if (island) await verifyEvidence(page, spec.scenario)
     const date = new Intl.DateTimeFormat('en-CA', {
       year: 'numeric',
       month: '2-digit',

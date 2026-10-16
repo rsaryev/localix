@@ -570,6 +570,17 @@ pub(crate) fn build_tray_menu<R: tauri::Runtime>(
 ) -> tauri::Result<tauri::menu::Menu<R>> {
     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
     let menu = Menu::new(app)?;
+    // The island's own name stays out of the menu: what the person wants is a quick chat. A
+    // person who turned the island off in Settings does not see it at all.
+    if crate::prefs::island_enabled(app) {
+        menu.append(&MenuItem::with_id(
+            app,
+            "tray_companion",
+            "Quick Chat",
+            true,
+            Some(crate::companion::SHORTCUT),
+        )?)?;
+    }
     menu.append(&MenuItem::with_id(
         app,
         "tray_new",

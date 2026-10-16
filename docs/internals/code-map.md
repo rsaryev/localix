@@ -36,8 +36,13 @@ a typed Hono RPC client over that API. `apps/desktop-tauri` wraps both as the sh
 (`localix.db`, the vault and `plugins/`); `plugins/` in the repository is source that is staged into
 that home.
 
-Durable draft and surface state lives in API `features/user/view-state-*` and UI
-`shared/lib/view-state`; `useComposerDraft` is shared by every mounted composer.
+The desktop [agent island](agent-island.md) uses a separate UI entry and the existing chat and
+attention pipelines. Its native host lives in `companion.rs` (page commands in
+`companion_commands.rs`), `companion_macos.rs` and `companion_pointer.rs`; quick-chat surfaces live
+under `features/companion/` and render the shared `PromptInput` (`layout="embedded"`) and
+`MessageList`. Island sizes live in `features/companion/model/geometry.ts` and its Rust mirror
+`companion::geometry`. Durable draft and surface state lives in API `features/user/view-state-*` and
+UI `shared/lib/view-state`; `useComposerDraft` is shared by the main composer and island.
 
 ## Boot is phased, and the phases exist because of cycles
 

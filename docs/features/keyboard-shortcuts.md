@@ -4,6 +4,10 @@ Choose a **Base keymap** in **Settings → Shortcuts**. Presets adapt existing L
 commands to familiar editor conventions. The selector includes 17 choices, counting Default. Search
 settings by an editor name to find it.
 
+The desktop [agent island](./agent-companion.md) uses the fixed global **Cmd+Shift+J** shortcut on
+macOS. It works outside Localix when the OS accepts registration and is listed in Settings for
+reference; workspace presets do not rebind it.
+
 ![Searching commands and their keyboard shortcuts in the command palette](../assets/screenshots/workspace/command-palette--2026-10-08.png)
 
 ## Change one shortcut

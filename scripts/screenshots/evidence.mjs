@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
 export async function verifyEvidence(page, scenario) {
+  if (scenario.startsWith('island-'))
+    return (await import('./agent-island.mjs')).verifyIsland(page, scenario)
   if (scenario === 'agent-command')
     return (await import('./agent-command.mjs')).verifyAgentCommand(page)
   if (scenario === 'agent-management')

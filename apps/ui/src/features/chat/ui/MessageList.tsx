@@ -40,6 +40,8 @@ import { deriveWakeProvenance, wakeSourceLabel } from '@localixai/api/wake-prove
 
 interface MessageListProps {
   density?: 'default' | 'lite'
+  /** Small transcript surfaces do not need workspace-sized space above and below messages. */
+  edgePadding?: 'default' | 'none'
   messages: Message[]
   isGenerating: boolean
   /** Id of the assistant message actually receiving the live stream (from the
@@ -70,6 +72,7 @@ interface MessageListProps {
 
 function MessageListImpl({
   density = 'default',
+  edgePadding = 'default',
   messages,
   isGenerating,
   streamingMessageId,
@@ -159,8 +162,8 @@ function MessageListImpl({
     // visibly restart its typing status) ~200ms after Enter.
     getItemKey: (index) =>
       rows[index]?.segments[0]?.renderKey ?? rows[index]?.segments[0]?.id ?? index,
-    paddingStart: compact ? 0 : CHAT_PAD_TOP,
-    paddingEnd: compact ? 0 : CHAT_PAD_BOTTOM,
+    paddingStart: compact || edgePadding === 'none' ? 0 : CHAT_PAD_TOP,
+    paddingEnd: compact || edgePadding === 'none' ? 0 : CHAT_PAD_BOTTOM,
     gap: CHAT_ROW_GAP,
     initialOffset: () =>
       openedTranscriptBottomOffset(

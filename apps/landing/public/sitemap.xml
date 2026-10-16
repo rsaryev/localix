@@ -27,6 +27,7 @@
   <url><loc>https://localix.ai/docs/features--interactive-terminals</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--monitors</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--loops</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--agent-companion</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--workspace</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--native-workspace-tabs</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--external-agents</loc><priority>0.7</priority></url>

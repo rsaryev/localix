@@ -16,7 +16,17 @@ import type { SystemContextControls } from './ContextRefChips'
 import type { useConnections } from './useConnections'
 
 export interface PromptInputProps {
+  /** Embedded surfaces (the agent island) own their gutters and use smaller action controls. */
+  layout?: 'workspace' | 'embedded'
+  /** The island keeps model selection in the workspace. */
+  showModelPicker?: boolean
+  /** Embedded surfaces can place context controls in their own toolbar, or none. */
+  showContextBar?: boolean
+  /** Composer tips belong to the workspace; a small surface has no room for them. */
+  showTips?: boolean
   accessory?: ReactNode
+  /** Shown in place of the voice button while the draft is empty. */
+  idleAction?: ReactNode
   dropzone?: ComposerDropzone
   draftState?: ReturnType<typeof useViewState>
   prompt: string

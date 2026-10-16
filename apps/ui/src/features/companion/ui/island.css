@@ -1,0 +1,251 @@
+/* Geometry comes from model/geometry.ts as custom properties; material, typography and motion
+   belong to the kit. Keep numeric sizes out of this file. */
+html[data-companion='true'],
+html[data-companion='true'] body,
+html[data-companion='true'] #root {
+  background: transparent !important;
+  overflow: clip;
+}
+.lx-agent-island {
+  --island-motion-duration: var(--dur-base);
+  --island-width: min(var(--island-canvas-width), 100vw);
+  --island-height: var(--island-canvas-height);
+  --island-side: max(0px, calc((100% - var(--island-open-width)) / 2));
+  width: var(--island-width);
+  height: var(--island-height);
+  position: relative;
+  margin-inline: auto;
+  color: var(--foreground);
+  isolation: isolate;
+}
+.lx-island-material {
+  position: absolute;
+  inset: 0;
+  background: var(--background);
+  border: 1px solid var(--control-border);
+  border-top: 0;
+  border-radius: calc(var(--radius) * 3);
+  clip-path: inset(
+    0 calc((100% - var(--island-compact-width)) / 2) calc(100% - var(--island-compact-height)) round
+      0 0 var(--radius) var(--radius)
+  );
+  transition:
+    clip-path var(--island-motion-duration) var(--ease-emphasized),
+    opacity var(--dur-fast) var(--ease-soft);
+  pointer-events: none;
+}
+.lx-agent-island[data-expanded='true'] {
+  --island-motion-duration: var(--dur-moderate);
+}
+/* Web and compositor fallbacks use the SAME wallpaper wash as the workspace. CSS blur cannot
+   sample another application behind a transparent webview, so never claim that it does. */
+html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
+  background-image: var(--window-backdrop);
+}
+.lx-agent-island[data-expanded='true'] .lx-island-material {
+  clip-path: inset(
+    0 var(--island-side) calc(100% - var(--island-open-height)) round 0 0 calc(var(--radius) * 3)
+      calc(var(--radius) * 3)
+  );
+}
+/* AppKit is the sole owner of the native glass silhouette and its animation. */
+.lx-agent-island[data-native-material='true'] .lx-island-material {
+  background: var(--background);
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.lx-island-content {
+  flex-shrink: 0;
+  max-height: calc(var(--island-canvas-height) - var(--island-notch-height));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Use the free shoulders of the physical notch for chrome. The centre remains reserved for
+   the camera; removing the toolbar from content flow also brings the conversation up. */
+.lx-agent-island[data-notch='true'] .lx-island-toolbar {
+  position: absolute;
+  top: max(0px, calc((var(--island-notch-height) - var(--chrome-control-sm)) / 2));
+  inset-inline: calc(var(--spacing) * 3);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--island-notch-width) minmax(0, 1fr);
+}
+.lx-agent-island[data-notch='true'] .lx-island-toolbar > button {
+  grid-column: 1;
+  max-width: 100%;
+  justify-self: start;
+}
+.lx-agent-island[data-notch='true'] .lx-island-toolbar-actions {
+  grid-column: 3;
+  justify-self: end;
+}
+.lx-island-resting {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--island-compact-width);
+  height: var(--island-compact-height);
+  background: transparent !important;
+  opacity: 1;
+  transition: opacity var(--dur-fast) var(--ease-soft);
+}
+.lx-island-open {
+  position: absolute;
+  inset: 0 var(--island-side) auto;
+  padding-top: var(--island-notch-height);
+  overflow: hidden;
+  height: var(--island-open-height);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(-3px);
+  transform-origin: top center;
+  visibility: hidden;
+  transition:
+    height var(--island-motion-duration) var(--ease-emphasized),
+    opacity var(--dur-fast) var(--ease-soft),
+    transform var(--island-motion-duration) var(--ease-emphasized),
+    visibility 0s linear var(--dur-fast);
+}
+.lx-agent-island[data-expanded='true'] .lx-island-open {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+/* Quiet and folded: nothing is painted. Hover, a click or the shortcut still opens it, and the
+   resting control keeps its focus ring for a keyboard user. */
+.lx-agent-island[data-quiet='true']:not([data-expanded='true']) .lx-island-material {
+  opacity: 0;
+}
+.lx-agent-island[data-expanded='true'] .lx-island-resting {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-island-material {
+    transition: none;
+  }
+  .lx-island-open {
+    transform: none;
+    transition: opacity var(--dur-instant) var(--ease-soft);
+  }
+}
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .lx-island-material {
+    background: var(--popover-solid);
+    background-image: none;
+  }
+}
+
+/* The shared compositor beam follows the visible perimeter, not the transparent host canvas. */
+.lx-island-outline {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--island-compact-width);
+  height: var(--island-compact-height);
+  border-radius: 0 0 var(--radius) var(--radius);
+  pointer-events: none;
+  transition:
+    width var(--island-motion-duration) var(--ease-emphasized),
+    height var(--island-motion-duration) var(--ease-emphasized),
+    border-radius var(--island-motion-duration) var(--ease-emphasized);
+}
+.lx-agent-island[data-expanded='true'] .lx-island-outline {
+  width: calc(100% - var(--island-side) * 2);
+  height: var(--island-open-height);
+  border-radius: 0 0 calc(var(--radius) * 3) calc(var(--radius) * 3);
+}
+
+/* The notch edge: Localix's accent light flowing around the folded island while agents work. A
+   conic beam spun about the centre of a wide, flat notch points off-screen for half its turn and
+   barely touches the short sides, so this is a continuous gradient instead: one wide layer that
+   flows sideways with `transform` only, clipped to a ring just outside the notch. The open island
+   shows no edge light; the composer inside it keeps its own. */
+@keyframes lx-island-edge-flow {
+  to {
+    transform: translateX(-33.3333%);
+  }
+}
+.lx-island-edge {
+  --edge-gap: 3px;
+  --edge-rim: 2px;
+  --edge-duration: 3.6s;
+  --edge-colors:
+    var(--composer-accent), var(--status-info),
+    color-mix(in oklch, var(--composer-accent), transparent 60%), var(--composer-accent);
+  position: absolute;
+  inset: calc(var(--edge-gap) * -1);
+  border-radius: 0 0 calc(var(--radius) + var(--edge-gap)) calc(var(--radius) + var(--edge-gap));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-moderate) var(--ease-soft);
+}
+.lx-island-edge[data-active='true'] {
+  opacity: 1;
+}
+.lx-island-edge[data-active='true'][data-mode='idle'] {
+  --edge-duration: 12s;
+  --edge-rim: 1px;
+  opacity: 0.22;
+}
+.lx-island-edge[data-mode='idle'] .lx-island-edge-glow {
+  opacity: 0.16;
+}
+.lx-island-edge[data-mode='waiting'] {
+  --edge-duration: 2s;
+  --edge-colors:
+    var(--status-warning), var(--composer-accent),
+    color-mix(in oklch, var(--status-warning), transparent 60%), var(--status-warning);
+}
+.lx-island-edge-rim,
+.lx-island-edge-glow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  padding: var(--edge-rim);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.lx-island-edge-glow {
+  inset: -4px;
+  padding: calc(var(--edge-rim) + 4px);
+  opacity: 0.6;
+  filter: blur(6px);
+}
+.lx-island-edge-rim::before,
+.lx-island-edge-glow::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 300%;
+  content: '';
+  /* Three identical tiles, so shifting by one tile loops without a seam. */
+  background: linear-gradient(90deg, var(--edge-colors)) 0 0 / 33.3333% 100% repeat-x;
+  animation: lx-island-edge-flow var(--edge-duration) linear infinite;
+  animation-play-state: paused;
+}
+.lx-island-edge[data-active='true'] > *::before {
+  animation-play-state: running;
+}
+
+[data-theme='light'] .lx-island-edge-glow {
+  opacity: 0.3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-island-outline {
+    transition: none;
+  }
+  .lx-island-edge[data-active='true'] > *::before {
+    animation-play-state: paused;
+  }
+}

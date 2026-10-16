@@ -44,6 +44,8 @@ tauri-plugin-single-instance = { version = "2.4.2", features = ["deep-link"] }
 tauri-plugin-deep-link = "2.4.9"
 tauri-plugin-dialog = "2.7.1"
 base64 = "0.22.1"
+# The agent island's system-wide shortcut (`companion.rs`).
+tauri-plugin-global-shortcut = "=2.3.2"
 
 # macOS: NSUserDefaults access to disable the press-and-hold accent popup so
 # key repeat works in the terminal/editor, plus NSPasteboard to read the DRAG
@@ -95,6 +97,8 @@ objc2-quartz-core = { version = "0.3", default-features = false, features = [
 # whether the material actually took before it tells the page anything.
 window-vibrancy = "0.6"
 mac-usernotifications = "0.3.1"
+# The agent island is a non-activating NSPanel, so opening it never steals the active app.
+tauri-nspanel = "=2.1.1"
 
 # Windows: the Job Object that ends the API child's whole process tree with the shell
 # (`process_tree.rs`). Already in the lock at this version (tokio, muda, tray-icon, mio), so this

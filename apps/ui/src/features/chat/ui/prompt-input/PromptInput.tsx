@@ -67,6 +67,7 @@ export function PromptInput(props: PromptInputProps) {
   const { hasConnection, model, models, reasoningEffort, serverQueue, attachments } = props
   const { onAddFiles, onRemoveAttachment, attachmentGate, readOnlyReason, onSend } = props
   const { hasInteraction = false, editingOriginalText, onCancelEdit, connectionsState } = props
+  const embedded = props.layout === 'embedded'
   const isEditing = editingOriginalText != null
   const completionMenuId = useId()
   const [focused, setFocused] = useState(false)
@@ -311,13 +312,18 @@ export function PromptInput(props: PromptInputProps) {
   return (
     <div
       data-focus-part="chat"
-      className="shrink-0 px-6 pb-6 pt-3 max-sm:px-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:pt-2"
+      className={
+        embedded
+          ? 'shrink-0'
+          : 'shrink-0 px-6 pb-6 pt-3 max-sm:px-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:pt-2'
+      }
     >
-      {contextBar ? (
-        cloneElement(contextBar, { children: contextControls })
-      ) : (
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5 pb-2">{contextControls}</div>
-      )}
+      {props.showContextBar !== false &&
+        (contextBar ? (
+          cloneElement(contextBar, { children: contextControls })
+        ) : (
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 pb-2">{contextControls}</div>
+        ))}
       {isEditing && onCancelEdit && (
         <EditingBanner originalText={editingOriginalText ?? ''} onCancel={onCancelEdit} />
       )}
@@ -358,7 +364,7 @@ export function PromptInput(props: PromptInputProps) {
         />
         <ComposerSessionStrips
           sessionView={sessionView}
-          tip={streamTip}
+          tip={props.showTips === false ? null : streamTip}
           onDismissTip={dismissTip}
           runtimePanel={props.runtimePanel}
           activeSessionId={activeSessionId}
@@ -402,24 +408,28 @@ export function PromptInput(props: PromptInputProps) {
               </Suspense>
             )}
             <ActionButtons
+              compact={embedded}
+              idleAction={props.idleAction}
               showAttach
               accessory={composerAccessory(serverQueue, activeSessionId, props.accessory)}
               leading={
-                <ModelSearchSelect
-                  models={models}
-                  value={model}
-                  onSelectionChange={props.setModel}
-                  connectionsState={connectionsState}
-                  disabled={isGenerating || readOnly}
-                  reasoningEffort={reasoningEffort}
-                  onReasoningEffortChange={props.setReasoningEffort}
-                  participants={participants}
-                  participantScope={activeProjectId ?? ''}
-                  sessionId={activeSessionId}
-                  focused={isFocused}
-                  selectedAgentId={shownAgentId}
-                  onSelectAgent={setSelectedAgentId}
-                />
+                props.showModelPicker !== false && (
+                  <ModelSearchSelect
+                    models={models}
+                    value={model}
+                    onSelectionChange={props.setModel}
+                    connectionsState={connectionsState}
+                    disabled={isGenerating || readOnly}
+                    reasoningEffort={reasoningEffort}
+                    onReasoningEffortChange={props.setReasoningEffort}
+                    participants={participants}
+                    participantScope={activeProjectId ?? ''}
+                    sessionId={activeSessionId}
+                    focused={isFocused}
+                    selectedAgentId={shownAgentId}
+                    onSelectAgent={setSelectedAgentId}
+                  />
+                )
               }
               hasPrompt={hasContent}
               canSend={canSend}

@@ -22,5 +22,9 @@ test('uses the shared compact dialog header as an eyebrow above the request', ()
 test('renders the interaction in the dialog chrome, not the transcript card chrome', () => {
   // Without this the frame keeps the compact in-chat padding and its own seam weight inside a
   // modal — the "two surfaces stacked" look this dialog is meant not to have.
-  expect(source).toContain('chrome="dialog"')
+  expect(source).toContain("chrome={embedded ? 'compact' : 'dialog'}")
+})
+
+test('the agent island renders the same body without a dialog around it', () => {
+  expect(source).toMatch(/if \(embedded\)\s*return \(\s*<section aria-label=\{sessionTitle\}>/)
 })

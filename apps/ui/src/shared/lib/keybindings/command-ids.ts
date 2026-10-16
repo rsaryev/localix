@@ -5,6 +5,7 @@ export const CMD = {
   newChat: 'nav.new-chat',
   newWorkspaceTab: 'native.new-workspace-tab',
   newWorkspaceWindow: 'native.new-workspace-window',
+  toggleAgentIsland: 'native.toggle-agent-island',
   goToFile: 'nav.go-to-file',
   switchSession: 'nav.switch-session',
   switchProject: 'nav.switch-project',

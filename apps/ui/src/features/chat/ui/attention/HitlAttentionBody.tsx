@@ -32,7 +32,8 @@ export function HitlAttentionBody({
   openChat,
   settle,
   keyboardActive = true,
-}: AttentionBodyProps & { keyboardActive?: boolean }) {
+  embedded = false,
+}: AttentionBodyProps & { keyboardActive?: boolean; embedded?: boolean }) {
   // The item carries the whole `hitl.requested` payload; the request is its `request` field.
   const interaction = useMemo(
     () => fromHitlRequest((item.interaction as { request?: unknown } | undefined)?.request),
@@ -95,9 +96,9 @@ export function HitlAttentionBody({
             interaction={interaction}
             submittingRequestId={submittingId}
             keyboardActive={keyboardActive}
-            // The frame is this dialog's BODY, so it adopts the modal measure and seam rather
-            // than the transcript card's compact padding.
-            chrome="dialog"
+            // In a dialog the frame is its BODY and adopts the modal measure and seam; the island
+            // has no dialog and keeps the compact padding.
+            chrome={embedded ? 'compact' : 'dialog'}
             onAnswer={(requestId, answers) =>
               submit(requestId, () => backendClient.interact(requestId, 'respond', { answers }))
             }
@@ -121,6 +122,20 @@ export function HitlAttentionBody({
       )}
     </>
   )
+  // The agent island has no dialog around it: the same body under a plain header.
+  if (embedded)
+    return (
+      <section aria-label={sessionTitle}>
+        <header className="flex items-center justify-between gap-2 border-b border-border-soft px-3 py-2">
+          <h2 className="truncate text-2xs font-medium text-text-soft">{sessionTitle}</h2>
+          <Button variant="ghost" size="xs" onClick={openChat}>
+            Open chat
+            <ArrowUpRight />
+          </Button>
+        </header>
+        {content}
+      </section>
+    )
   return (
     <DialogContent
       size="md"

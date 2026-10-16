@@ -46,6 +46,8 @@ async function editor(page) {
 }
 
 export async function compose(page, scenario) {
+  if (scenario.startsWith('island-'))
+    return (await import('./agent-island.mjs')).composeIsland(page, scenario)
   if (scenario === 'agent-command')
     return (await import('./agent-command.mjs')).composeAgentCommand(page)
   if (scenario === 'agent-management')

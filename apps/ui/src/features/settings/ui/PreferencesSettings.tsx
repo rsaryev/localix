@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SettingsControlRow, SettingsPage, SettingsSection } from './SettingsScaffold'
 import { NotificationsSection } from './NotificationsSection'
+import { IslandSection } from './IslandSection'
 import { TypographySection } from './typography/TypographySection'
 import { Input } from '@localixai/kit/input'
 import { getSpendThreshold, setSpendThreshold } from '@/shared/lib/spendAlert'
@@ -133,6 +134,8 @@ export function PreferencesSettings() {
       <RailRecentsField />
 
       <NotificationsSection />
+
+      <IslandSection />
 
       <SpendAlertField />
     </SettingsPage>
