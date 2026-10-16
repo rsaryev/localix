@@ -86,11 +86,23 @@ pub(crate) fn refresh(app: &AppHandle) {
     update_pointer(app);
 }
 
+/// The workspace already holds the conversation, so a folded island neither opens on hover nor
+/// takes clicks while a workspace window is focused. An open island, the shortcut and the menu-bar
+/// item still work.
+fn workspace_in_front(app: &AppHandle) -> bool {
+    !app.state::<CompanionState>()
+        .expanded
+        .load(Ordering::Acquire)
+        && crate::workspace_windows::views(app)
+            .iter()
+            .any(|view| view.window().is_focused().unwrap_or(false))
+}
+
 fn update_pointer(app: &AppHandle) {
     let Ok(panel) = app.get_webview_panel(LABEL) else {
         return;
     };
-    let inside = panel.is_visible() && contains_pointer(app);
+    let inside = panel.is_visible() && contains_pointer(app) && !workspace_in_front(app);
     if panel.as_panel().ignoresMouseEvents() == inside {
         panel.set_ignores_mouse_events(!inside);
     }
