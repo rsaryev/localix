@@ -17,6 +17,12 @@ export async function ensureDemoAgents(projectId) {
       'Checks the demo release.',
       'Check release states and report concrete findings and evidence.',
     ],
+    [
+      'lead',
+      'Team Lead',
+      'Owns the demo release notes and docs.',
+      'Write release notes and keep documentation current.',
+    ],
   ]) {
     const existing = agents.find((agent) => agent.record.handle === handle)
     const agent =

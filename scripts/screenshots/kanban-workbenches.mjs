@@ -59,8 +59,6 @@ export async function composeKanban(page, scenario) {
   await expect(page.getByRole('group', { name: /^Ready column/ })).toContainText(
     'Write release notes',
   )
-  for (const title of ['Backlog', 'In progress', 'Blocked', 'Cancelled'])
-    await button(page, `Collapse ${title} column`).click()
   if (scenario === 'kanban-conversation') {
     await button(page, 'Restore layout').click()
     await expect(
