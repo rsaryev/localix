@@ -9,6 +9,7 @@
  */
 import { AgentRunError } from '@localixai/agent/agents'
 import { findCatalogModel } from '@localixai/agent/catalog'
+import { agentModelSettingsFor } from '@localixai/agent'
 
 import { toSessionSummary } from '../../../repository'
 import { agentRoute } from '../../../session-route'
@@ -126,6 +127,14 @@ export async function resolveRunTurn(frame: RunFrame) {
     model,
     catalogModel,
     modelCost: catalogModel?.cost,
+    // The user's share of the context window for this agent/model; the prompt and view stages
+    // budget against the same value so the checkpoint fires at the ceiling the request fits.
+    contextPercent: agentModelSettingsFor(
+      globalAgentSettings?.agentModelSettings,
+      speakerAgentId,
+      model.providerId,
+      catalogModel?.id ?? model.effectiveModelId,
+    )?.contextPercent,
     // What this run's model reads (text, image, …). One fact, two readers: the tool ledger's
     // `model` layer and the history's tool-image replay. Undefined for a model the catalog does
     // not know: the ledger then withholds nothing, and no image is replayed (a provider rejects

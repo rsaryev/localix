@@ -130,7 +130,11 @@ async function materializeGolden(
   tail: string,
 ): Promise<GoldenEntry> {
   const deps = { lspManager: undefined, mediaStore: undefined } as unknown as RunnerDeps
-  const frame = resolveContextBudgetFrame({ contextWindow: window, fixedOverheadTokens: 1_000 })
+  const frame = resolveContextBudgetFrame({
+    contextWindow: window,
+    fixedOverheadTokens: 1_000,
+    contextPercent: 100,
+  })
   const intake = await intakeTurn({
     deps,
     userId: 'u1',

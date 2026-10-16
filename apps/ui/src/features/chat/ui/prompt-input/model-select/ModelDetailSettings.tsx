@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ReasoningEffort } from '../../../model/reasoning'
+import { ContextPercentControl } from '../ContextPercentControl'
 import { MaxTurnsControl } from '../MaxTurnsControl'
 import { ModelReasoningMenu } from './ModelReasoningMenu'
 
@@ -11,6 +12,8 @@ interface ModelDetailSettingsProps {
     inherited: number
     limit?: number
     onChange: (next: number | undefined) => void
+    /** Share of the context window the run budgets against. */
+    context?: { value: number | undefined; onChange: (next: number | undefined) => void }
   }
   /** The model this target runs on: its level writes the live route, not just a preference. */
   current: boolean
@@ -73,6 +76,11 @@ export function ModelDetailSettings({
       {turns ? (
         <SettingRow label="Turns per message">
           <MaxTurnsControl {...turns} />
+        </SettingRow>
+      ) : null}
+      {turns?.context ? (
+        <SettingRow label="Context window">
+          <ContextPercentControl {...turns.context} />
         </SettingRow>
       ) : null}
     </div>

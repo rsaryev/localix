@@ -5,7 +5,6 @@ import {
   scaledReserveTokens,
 } from './context-budget'
 import {
-  CONTEXT_WINDOW_CAP,
   DEFAULT_CONTEXT_WINDOW,
   resolveContextWindow,
   resolveEffectiveContextWindow,
@@ -17,7 +16,7 @@ import { CHECKPOINT_HIGH_WATER } from './model-view/checkpoint-policy'
 
 /** The whole-request ceiling the checkpoint policy and the in-run prune measure against. */
 const ceilingOf = (effectiveWindow: number) =>
-  resolveContextBudgetFrame({ contextWindow: effectiveWindow }).trigger
+  resolveContextBudgetFrame({ contextWindow: effectiveWindow, contextPercent: 100 }).trigger
 
 describe('resolveKeepRecentTokens (H2 — window-scaled keep-recent tail)', () => {
   test('falls back to the flat floor when the window is unknown / non-positive', () => {
@@ -81,16 +80,17 @@ describe('resolveContextWindow — a missing catalog entry is not evidence of pr
 })
 
 /**
- * The BUDGET (what a request must fit under) uses the CAPPED window, so a 1M-context model is
- * not promised 900k of history it is never allowed to reach, and every request stays bounded.
+ * The BUDGET (what a request must fit under) uses the user's share of the window (default 70%),
+ * so a model is never promised history it is not allowed to reach.
  */
 describe('the history budget and the request ceiling', () => {
   const WINDOWS = [8_000, 32_000, 64_000, 128_000, 200_000, 262_144, 400_000, 1_000_000, 2_000_000]
 
-  test('the effective window is the real one, capped', () => {
-    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 })).toBe(CONTEXT_WINDOW_CAP)
-    expect(resolveEffectiveContextWindow({ contextLength: 32_000 })).toBe(32_000)
-    expect(resolveEffectiveContextWindow(undefined)).toBe(DEFAULT_CONTEXT_WINDOW)
+  test('the effective window is the default 70% of the real one', () => {
+    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 })).toBe(700_000)
+    expect(resolveEffectiveContextWindow({ contextLength: 32_000 })).toBe(22_400)
+    expect(resolveEffectiveContextWindow(undefined)).toBe(DEFAULT_CONTEXT_WINDOW * 0.7)
+    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 }, 0, 100)).toBe(1_000_000)
   })
 
   /**
@@ -100,7 +100,7 @@ describe('the history budget and the request ceiling', () => {
   test('the budget never promises more than the request ceiling allows', () => {
     for (const real of WINDOWS) {
       const w = resolveEffectiveContextWindow({ contextLength: real })
-      expect(w).toBeLessThanOrEqual(Math.min(real, CONTEXT_WINDOW_CAP))
+      expect(w).toBeLessThanOrEqual(real)
       for (const overhead of [0, 7_100, 10_000]) {
         const budget = historyBudgetTokens(w, overhead)
         expect(budget).toBeLessThanOrEqual(ceilingOf(w))
@@ -127,11 +127,13 @@ describe('the history budget and the request ceiling', () => {
   })
 
   test('the protected tail scales with the budget the model actually lives in', () => {
-    // Callers pass the EFFECTIVE window, so MODEL_TRIM_KEEP_RECENT_CAP no longer binds:
-    // a 1M model gets 0.15 × 256k = 38400, not the 65536 the raw window produced.
+    // A 200k model at 70% gets 0.15 × 140k = 21000; a 1M model hits the 65536 cap.
+    expect(resolveKeepRecentTokens(resolveEffectiveContextWindow({ contextLength: 200_000 }))).toBe(
+      21_000,
+    )
     expect(
       resolveKeepRecentTokens(resolveEffectiveContextWindow({ contextLength: 1_000_000 })),
-    ).toBe(38_400)
+    ).toBe(MODEL_TRIM_KEEP_RECENT_CAP)
     expect(resolveKeepRecentTokens(resolveEffectiveContextWindow({ contextLength: 32_000 }))).toBe(
       MODEL_TRIM_KEEP_RECENT_TOKENS,
     )

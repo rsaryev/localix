@@ -21,7 +21,8 @@ import { createRequestTransform, type RequestTransformInput } from './request-tr
 import { freshLane, freshView, TEST_IDENTITY } from './test-fixtures'
 
 /** The whole-request ceiling for a window — what the pruner compares a request against. */
-const ceilingOf = (contextWindow: number) => resolveContextBudgetFrame({ contextWindow }).trigger
+const ceilingOf = (contextWindow: number) =>
+  resolveContextBudgetFrame({ contextWindow, contextPercent: 100 }).trigger
 
 const big = (label: string) =>
   Array.from({ length: 200 }, (_, i) => `${label} line ${i}`).join('\n')
@@ -63,7 +64,7 @@ const policy = ({ contextWindow, fixedOverheadTokens, ...over }: PolicyOptions =
   createRequestTransform({
     sessionId: 's1',
     modelId: 'm',
-    frame: resolveContextBudgetFrame({ contextWindow, fixedOverheadTokens }),
+    frame: resolveContextBudgetFrame({ contextWindow, fixedOverheadTokens, contextPercent: 100 }),
     ...(over.initialContextTokens !== undefined
       ? { initialEstimateSource: 'provider_anchor' }
       : {}),

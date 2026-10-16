@@ -41,6 +41,8 @@ export interface ResolveContextBudgetOptions {
   fixedOverheadTokens?: number
   /** The session's delegation depth — a child budgets against a smaller window. 0 if absent. */
   depth?: number
+  /** Share of the real window to budget against (`clampContextPercent`). Default `DEFAULT_CONTEXT_PERCENT`. */
+  contextPercent?: number
 }
 
 const normalizedTokens = (tokens: number | undefined): number =>
@@ -65,7 +67,11 @@ export function resolveContextBudgetFrame(
 ): ContextBudgetFrame {
   const model = { contextLength: options.contextWindow }
   const rawWindow = resolveContextWindow(model)
-  const effectiveWindow = resolveEffectiveContextWindow(model, options.depth)
+  const effectiveWindow = resolveEffectiveContextWindow(
+    model,
+    options.depth,
+    options.contextPercent,
+  )
   const reserve = scaledReserveTokens(effectiveWindow)
   const fixedOverhead = normalizedTokens(options.fixedOverheadTokens)
   const trigger = Math.max(0, effectiveWindow - reserve)

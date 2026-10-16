@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { MAX_MAX_TURNS } from '../chat/turn-budget'
+import { MAX_CONTEXT_PERCENT, MIN_CONTEXT_PERCENT } from '@localixai/agent'
 import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
 import { REASONING_EFFORTS } from '../../db/types'
 import { isModelRoutingTaskKey } from '../chat/model-task-catalog'
@@ -98,6 +99,12 @@ const agentSettingsShape = {
           modelId: modelIdSchema,
           effort: z.enum(REASONING_EFFORTS).optional(),
           maxTurns: z.number().int().min(1).max(MAX_MAX_TURNS).optional(),
+          contextPercent: z
+            .number()
+            .int()
+            .min(MIN_CONTEXT_PERCENT)
+            .max(MAX_CONTEXT_PERCENT)
+            .optional(),
         })
         .strict(),
     )

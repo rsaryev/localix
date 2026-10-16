@@ -10,32 +10,37 @@ export function useAgentModelTurns(
   agentLimit?: number,
 ) {
   const { settings, update } = useUserSettings()
-  const saved =
+  const entry =
     agentId && providerId && modelId
       ? agentModelSettingsFor(
           settings.agentSettings?.agentModelSettings,
           agentId,
           providerId,
           modelId,
-        )?.maxTurns
+        )
       : undefined
+  const remember = (patch: { maxTurns?: number } | { contextPercent?: number }) => {
+    if (!agentId || !providerId || !modelId) return
+    rememberAgentModelSettings(
+      {
+        read: () => useUserSettings.getState().settings.agentSettings,
+        write: (next) => update({ agentSettings: next }),
+      },
+      { agentId, providerId, modelId, ...patch },
+    )
+  }
   const inherited = Math.min(
     settings.agentSettings?.maxTurns ?? DEFAULT_MAX_TURNS,
     agentLimit ?? DEFAULT_MAX_TURNS,
   )
   return {
-    value: saved,
+    value: entry?.maxTurns,
     inherited,
     limit: agentLimit,
-    onChange: (maxTurns: number | undefined) => {
-      if (!agentId || !providerId || !modelId) return
-      rememberAgentModelSettings(
-        {
-          read: () => useUserSettings.getState().settings.agentSettings,
-          write: (next) => update({ agentSettings: next }),
-        },
-        { agentId, providerId, modelId, maxTurns },
-      )
+    onChange: (maxTurns: number | undefined) => remember({ maxTurns }),
+    context: {
+      value: entry?.contextPercent,
+      onChange: (contextPercent: number | undefined) => remember({ contextPercent }),
     },
   }
 }

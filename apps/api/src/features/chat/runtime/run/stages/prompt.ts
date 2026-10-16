@@ -134,6 +134,7 @@ export async function buildRunPrompt(
     contextWindow: turn.catalogModel?.contextLength,
     fixedOverheadTokens: fixedContext.tokens,
     depth: delegationPlace(session.provenance).depth,
+    contextPercent: turn.contextPercent,
   })
   frame.budget.frame = contextBudgetFrame
   // The limits ride the run's first snapshot, so the composer's ring has the right denominator

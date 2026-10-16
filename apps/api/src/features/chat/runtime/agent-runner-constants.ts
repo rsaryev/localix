@@ -1,3 +1,5 @@
+import { clampContextPercent } from '@localixai/agent'
+
 // Model-facing context trim (a checkpoint's planContextCompression call, and the in-run
 // wire prune): the most-recent turns are kept verbatim (the model's active working set);
 // the allocator compresses older, lower-value tool I/O. Bounded by BOTH a message count
@@ -14,10 +16,8 @@ export const MODEL_TRIM_KEEP_RECENT_TOKENS = 16384
 // at 65536, because the tail must stay bounded even on a 1M window. See
 // resolveKeepRecentTokens.
 //
-// NB: callers pass the EFFECTIVE window (`min(real, CONTEXT_WINDOW_CAP)`), so the cap
-// below only binds if that ceiling is ever raised above ~437k. At today's 256k ceiling a
-// huge-window model gets a 38.4k tail — 17% of the budget it actually lives in, rather than
-// 7% of a 900k budget it can never fill. The cap stays as the bound on that arithmetic.
+// NB: callers pass the EFFECTIVE window (`resolveEffectiveContextWindow`), so the cap below
+// binds once that window exceeds ~437k (e.g. a 1M model at the default 70%).
 const MODEL_TRIM_KEEP_RECENT_FRACTION = 0.15
 export const MODEL_TRIM_KEEP_RECENT_CAP = 65_536
 
@@ -66,43 +66,36 @@ export function resolveContextWindow(catalogModel?: { contextLength?: number }):
 }
 
 /**
- * Absolute cap on the context window every budget is computed against, independent of the
- * model's real window. Without it, a huge-window model (gemini/qwen at ~1M) re-sends an
- * ever-growing context every turn — one run climbed to 575k input/turn ($5.14 / 6.18M
- * input for a 2048 app) — because every request re-reads its whole history. Capping keeps
- * per-request input bounded (a checkpoint at ~85% of a ~230k ceiling, on a 200k-class
- * window) with ample working context retained. Model-aware: a small-window model keeps its
- * own smaller budget.
- */
-export const CONTEXT_WINDOW_CAP = 256_000
-
-/**
- * The cap by DELEGATION DEPTH: a conversation 256k, its child 128k, every level below 64k.
+ * The cap by DELEGATION DEPTH: a conversation is bounded only by its percent, its child by 128k,
+ * every level below by 64k.
  *
  * A delegated child has one bounded assignment, and every request it makes re-reads its whole
  * history — so the full conversation window spent on a child is cost without a use, multiplied
- * by every child in the tree. Halving per level keeps the tree's spend shrinking as it deepens,
- * like its fan-out does (`delegation-hierarchy.ts`). The floor is 64k because below it the system
- * prompt and tool schemas (~15–20k) leave too little history for a checkpoint to keep anything.
+ * by every child in the tree. The floor is 64k because below it the system prompt and tool
+ * schemas (~15–20k) leave too little history for a checkpoint to keep anything.
  */
-const CONTEXT_WINDOW_BY_DEPTH = [CONTEXT_WINDOW_CAP, 128_000, 64_000] as const
+const CONTEXT_WINDOW_BY_DEPTH = [Number.POSITIVE_INFINITY, 128_000, 64_000] as const
 
 export function contextWindowCapAt(depth: number): number {
   return CONTEXT_WINDOW_BY_DEPTH[Math.min(Math.max(0, depth), CONTEXT_WINDOW_BY_DEPTH.length - 1)]!
 }
 
 /**
- * The window a request must FIT UNDER: `min(realWindow, cap at this depth)` — the ceiling the
- * checkpoint policy measures against and the budget a checkpoint's `planContextCompression`
- * spends; otherwise a 1M-context model is promised 900k of history it is never allowed to reach.
+ * The window a request must FIT UNDER (the percent is user-tunable per agent/model in
+ * `agentModelSettings[].contextPercent`, default 70): `min(percent × realWindow, cap at this depth)` — the
+ * ceiling the checkpoint policy measures against and the budget a checkpoint's
+ * `planContextCompression` spends.
  *
  * The invariant is pinned in `agent-runner-constants.test.ts`.
  */
 export function resolveEffectiveContextWindow(
   catalogModel?: { contextLength?: number },
   depth = 0,
+  contextPercent?: number,
 ): number {
-  return Math.min(resolveContextWindow(catalogModel), contextWindowCapAt(depth))
+  const percent = clampContextPercent(contextPercent)
+  const scaled = Math.floor((resolveContextWindow(catalogModel) * percent) / 100)
+  return Math.min(scaled, contextWindowCapAt(depth))
 }
 
 // The prompt-cache TTL policy that used to live here is now the ADAPTER's

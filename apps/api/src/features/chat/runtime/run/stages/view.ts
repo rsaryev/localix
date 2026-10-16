@@ -32,6 +32,7 @@ export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promi
       : {}),
     // The same depth the prompt stage budgets with, so a child's checkpoint fires at ITS ceiling.
     depth: delegationPlace(session.provenance).depth,
+    contextPercent: turn.contextPercent,
     ...(forced ? { forced } : {}),
   })
 }

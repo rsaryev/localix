@@ -76,6 +76,7 @@ function measuredPressure(
   hostId: string | undefined,
   contextWindow: number | undefined,
   depth: number | undefined,
+  contextPercent: number | undefined,
 ): ReturnType<typeof checkpointPressure> {
   const from = hostId ? rows.findIndex((row) => row.id === hostId) : 0
   for (let i = rows.length - 1; i >= Math.max(0, from); i--) {
@@ -83,7 +84,10 @@ function measuredPressure(
     if (!isViewerTurn(row, viewer)) continue
     const tokens = row.payload.usage?.contextTokens
     if (typeof tokens !== 'number' || !Number.isFinite(tokens) || tokens <= 0) continue
-    return checkpointPressure(resolveContextBudgetFrame({ contextWindow, depth }), tokens)
+    return checkpointPressure(
+      resolveContextBudgetFrame({ contextWindow, depth, contextPercent }),
+      tokens,
+    )
   }
   return 'clear'
 }
@@ -129,6 +133,8 @@ export async function loadModelView(
     contextWindow?: number
     /** The session's delegation depth — the window it budgets against (`contextWindowCapAt`). */
     depth?: number
+    /** The user's share of the context window (`clampContextPercent`). */
+    contextPercent?: number
     /** A recovery re-entry, or a signal the previous run left, that forces a checkpoint. */
     forced?: CheckpointReason
   },
@@ -163,7 +169,14 @@ export async function loadModelView(
         }
       : undefined
 
-  const pressure = measuredPressure(rows, input.viewer, hostId, input.contextWindow, input.depth)
+  const pressure = measuredPressure(
+    rows,
+    input.viewer,
+    hostId,
+    input.contextWindow,
+    input.depth,
+    input.contextPercent,
+  )
   const due = input.forced ?? (pressure === 'due' ? 'threshold' : undefined)
   return {
     viewer: input.viewer,
