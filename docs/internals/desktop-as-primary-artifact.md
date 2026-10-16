@@ -24,7 +24,7 @@ command installed by the desktop runtime.
 | Exercise release packaging  | Run `bun run release:desktop`.              | Signing and macOS notarization inputs are required where relevant. |
 | Install the shell launcher  | Use **Settings → System → Command line**.   | The installer writes no shell startup file or user `PATH` value.   |
 | Open a project from a shell | Run `localix .` or `localix <directory>`.   | A registered desktop URL handler is required.                      |
-| Open a file from a shell    | Run `localix <file>`.                       | The API opens its parent directory as the project.                 |
+| Open a file from a shell    | Run `localix <file>`.                       | Opens in the current conversation without changing the project.    |
 
 The [CLI guide](../features/cli.md) owns command parsing, flags, and exit statuses.
 
@@ -196,9 +196,11 @@ The CLI resolves `.`, `~`, relative paths, and absolute paths before encoding an
 `localix://open?path=...` URL. The operating system activates the registered scheme; the Tauri
 single-instance layer focuses an existing window or the OS launches the app.
 
-The UI parser rejects non-absolute paths, control characters, and paths over 4096 characters. The
-API stats the path: a file maps to its parent-directory project and an editor tab, while a directory
-finds or creates one project by normalized working directory.
+The UI parser rejects non-absolute paths, control characters, and paths over 4096 characters. The UI
+then asks the API to classify the path (`POST /rpc/projects/inspect-path`), which creates nothing. A
+file opens in the editor column beside the current conversation's chat, without changing the project
+or the layout. Only a directory goes on to find or create one project by normalized working
+directory. A missing path fails at once with a notice.
 
 ### Release assembly
 

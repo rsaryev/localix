@@ -18,6 +18,14 @@ capabilities; the plugin augments `read` through a typed extension port.
 
 ![Release checks opened in the Documents table viewer, with typed columns and their current results](../assets/screenshots/documents/viewer--2026-10-08.png)
 
+## Opening PDFs
+
+PDFs opened from the operating system, a link, or a drop use the bundled PDF viewer when it is
+enabled. A remembered editor choice takes precedence. When another editor also matches, **Open
+with…** above the viewer lets you switch to it, including Reader, and remember the choice. Opening a
+file from the operating system shows it beside the current conversation; it does not create a
+project or switch the current one.
+
 ## Styled document generation
 
 The [Resumes workbench](resumes.md) uses a bounded `DocumentLayout` contract from

@@ -20,11 +20,17 @@ import {
   resolveProjectByPathResponseSchema,
   updateProjectRequestSchema,
 } from './contracts'
+import {
+  type InspectPathResponse,
+  inspectPathRequestSchema,
+  inspectPathResponseSchema,
+} from './inspect-path'
 
 export interface ProjectsRoutesService {
   listProjects(userId: string): Promise<{ projects: Project[] }>
   createProject(userId: string, input: CreateProjectRequest): Promise<Project>
   resolveProjectByPath(userId: string, inputPath: string): Promise<ResolveProjectByPathResponse>
+  inspectPath(userId: string, inputPath: string): Promise<InspectPathResponse>
   getProject(userId: string, id: string): Promise<Project>
   updateProject(userId: string, id: string, patch: UpdateProjectRequest): Promise<Project>
   deleteProject(userId: string, id: string): Promise<void>
@@ -51,6 +57,11 @@ export function createProjectsRoutes(service: ProjectsRoutesService) {
       const { path } = c.req.valid('json')
       const response = await service.resolveProjectByPath(c.get('userId'), path)
       return c.json(resolveProjectByPathResponseSchema.parse(response), 200)
+    })
+    .post('/inspect-path', zValidator('json', inspectPathRequestSchema), async (c) => {
+      const { path } = c.req.valid('json')
+      const response = await service.inspectPath(c.get('userId'), path)
+      return c.json(inspectPathResponseSchema.parse(response), 200)
     })
     .post('/expand-refs', zValidator('json', expandRefsRequestSchema), async (c) => {
       const response = await service.expandRefs(c.get('userId'), c.req.valid('json'))

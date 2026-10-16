@@ -40,6 +40,10 @@ export const TRIPWIRES: ReadonlyArray<{ path: string; delta: string }> = [
   },
   { path: `${VENDOR_DIR}/packages/ai/test/oauth-page.test.ts`, delta: 'Localix OAuth pages' },
   {
+    path: `${VENDOR_DIR}/packages/ai/test/generated-catalog.test.ts`,
+    delta: 'generated-catalog conversion in src/, runtime refresh, dynamic provider overlay',
+  },
+  {
     path: `${VENDOR_DIR}/packages/ai/test/openai-chatgpt-oauth.test.ts`,
     delta: 'host application name for ChatGPT registration',
   },
@@ -57,6 +61,10 @@ export const TRIPWIRES: ReadonlyArray<{ path: string; delta: string }> = [
     delta: 'stringified structured arguments',
   },
   { path: 'packages/agent-runtime-pi/src/tool-scheduling.test.ts', delta: 'mixed tool scheduler' },
+  {
+    path: 'packages/agent-runtime-pi/src/catalog.test.ts',
+    delta: 'catalog refresh through Models.refresh',
+  },
 ]
 
 /** Commit trailers that make a snapshot findable in history, so the merge base is git's own. */

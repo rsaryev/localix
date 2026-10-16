@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { CatalogModel } from '@localixai/agent/catalog'
+import { sortCatalogModelsNewestFirst, type CatalogModel } from '@localixai/agent/catalog'
 import { filterModels, availableModelFilters } from './filterModels'
 
 type M = { id: string; name: string; providerId: string; outputModalities: string[] }
@@ -152,5 +152,44 @@ describe('capability facets that change what a run costs', () => {
     const shallow = model({ id: 'p/other', supportsReasoning: true, reasoningEfforts: ['low'] })
 
     expect(filterModels([deep, shallow], 'p', 'xhigh')).toEqual([deep])
+  })
+})
+
+describe('filterModels keeps the catalog’s newest-first order', () => {
+  // The catalog service sorts once (`sortCatalogModelsNewestFirst`); every list here must keep it.
+  const dated = (id: string, releaseDate?: string) =>
+    ({
+      id: `openai/${id}`,
+      name: `GPT ${id}`,
+      providerId: 'openai',
+      supportsTools: true,
+      supportsReasoning: true,
+      inputModalities: ['text'],
+      outputModalities: ['text'],
+      ...(releaseDate ? { releaseDate } : {}),
+    }) as CatalogModel
+  const served = sortCatalogModelsNewestFirst([
+    dated('undated-a'),
+    dated('old', '2025-01-01'),
+    dated('newest', '2026-09-29'),
+    dated('undated-b'),
+    dated('mid', '2026-03-01'),
+  ])
+  const ids = (models: CatalogModel[]) => models.map((model) => model.id)
+  const order = [
+    'openai/newest',
+    'openai/mid',
+    'openai/old',
+    'openai/undated-a',
+    'openai/undated-b',
+  ]
+
+  test('the per-connection list', () => {
+    expect(ids(filterModels(served, 'openai', ''))).toEqual(order)
+  })
+
+  test('search and capability filters', () => {
+    expect(ids(filterModels(served, 'openai', 'gpt'))).toEqual(order)
+    expect(ids(filterModels(served, 'openai', '', ['tools', 'reasoning']))).toEqual(order)
   })
 })

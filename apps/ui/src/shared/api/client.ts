@@ -58,6 +58,11 @@ export const backendClient = {
     return unwrap(await client.rpc.models.catalog.$get())
   },
 
+  /** Fetch newer model lists now, past the server's freshness window. */
+  async refreshModelCatalog() {
+    return unwrap(await client.rpc.models.catalog.refresh.$post())
+  },
+
   ...providerConnectionsApi,
   ...sessionsApi,
 

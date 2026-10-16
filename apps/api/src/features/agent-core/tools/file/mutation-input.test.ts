@@ -23,6 +23,31 @@ describe('prepareEditArguments', () => {
     })
   })
 
+  test('a stray character glued to a missing entry key is repaired (LOCALIX-158)', () => {
+    const good = { path: 'a.ts', old_string: 'a', new_string: 'b' }
+    expect(
+      prepareEditArguments({
+        edits: [good, { path: 'a.ts', old_string: 'c', '.new_string': 'd' }],
+      }),
+    ).toEqual({ edits: [good, { path: 'a.ts', old_string: 'c', new_string: 'd' }] })
+    expect(prepareWriteArguments({ files: [{ path: 'x.md', ' content': 'x' }] })).toEqual({
+      files: [{ path: 'x.md', content: 'x' }],
+    })
+  })
+
+  test('a real extra field, or one shadowing a present key, is left for validation', () => {
+    const extra = { edits: [{ path: 'a.ts', old_string: 'a', new_string: 'b', note: 'x' }] }
+    expect(prepareEditArguments(extra)).toBe(extra)
+    const both = { edits: [{ path: 'a.ts', old_string: 'a', new_string: 'b', '.new_string': 'c' }] }
+    expect(prepareEditArguments(both)).toBe(both)
+    const twice = {
+      edits: [{ path: 'a.ts', old_string: 'a', '.new_string': 'b', 'new_string.': 'c' }],
+    }
+    expect(prepareEditArguments(twice)).toEqual({
+      edits: [{ path: 'a.ts', old_string: 'a', new_string: 'b', 'new_string.': 'c' }],
+    })
+  })
+
   test("Claude Code's Edit (`file_path`) is lifted the same way", () => {
     expect(
       prepareEditArguments({ file_path: '/w/a.ts', old_string: 'a', new_string: 'b' }),

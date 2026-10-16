@@ -88,3 +88,33 @@ describe('tool arguments a model sent as JSON strings', () => {
     expect(() => check(targetSchema, { target: '{"kind":"nope"}' })).toThrow()
   })
 })
+
+describe('the validation message a model repairs its call from', () => {
+  const steps = z.strictObject({
+    steps: z.array(z.strictObject({ action: z.enum(['click', 'press']), ref: z.string() })),
+  })
+
+  const message = (args: unknown) => {
+    try {
+      check(steps, args)
+    } catch (error) {
+      return (error as Error).message
+    }
+    throw new Error('expected a validation failure')
+  }
+
+  test('an unknown key is named once, as a parameter that is not accepted', () => {
+    // TypeBox said it twice and said neither plainly: `schema is false` on the key and
+    // `must not have additional properties` on its parent (gpt-6-luna repeated
+    // `snapshot_after` per step across calls, LOCALIX-153/157).
+    const text = message({ steps: [{ action: 'click', ref: 'e1', snapshot_after: true }] })
+    expect(text).toContain('steps.0: unknown parameter "snapshot_after" — not accepted here')
+    expect(text).not.toContain('schema is false')
+  })
+
+  test('an enum miss lists the values it allows', () => {
+    expect(message({ steps: [{ action: 'wait', ref: 'e1' }] })).toContain(
+      'steps.0.action: must be one of "click", "press"',
+    )
+  })
+})

@@ -1,4 +1,4 @@
-import type { ThinkingLevel, ThinkingLevelMap } from "../src/types.ts";
+import type { ThinkingLevel, ThinkingLevelMap } from "../types.ts";
 import { getEffortThinkingLevelMap } from "./models-dev-reasoning-options.ts";
 
 export interface OpenRouterReasoningMetadata {

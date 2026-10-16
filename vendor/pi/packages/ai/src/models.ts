@@ -112,6 +112,11 @@ export interface ModelsRefreshOptions {
 export interface ModelsRefreshResult {
 	aborted: boolean;
 	errors: ReadonlyMap<string, Error>;
+	/**
+	 * Ids of the providers whose model list a publication replaced during this refresh, restores from
+	 * the store included. Readers that cache a projection of `getModels()` invalidate it on these.
+	 */
+	updated: readonly string[];
 }
 
 export interface ModelsRequestTransforms {
@@ -191,6 +196,12 @@ export interface Provider<TApi extends Api = Api> {
 	 * shared abort signal for blocking work.
 	 */
 	refreshModels?(context: RefreshModelsContext): Promise<void>;
+
+	/**
+	 * The dynamic model list is public: `Models.refresh()` runs the network phase even when the
+	 * provider has no configured credential, and `context.credential` is then undefined.
+	 */
+	readonly refreshWithoutAuth?: boolean;
 
 	/**
 	 * Optional provider policy for credential-specific model availability.
@@ -542,12 +553,17 @@ class ModelsImpl implements MutableModels {
 		force: boolean | undefined,
 		generation: number,
 		signal: AbortSignal,
+		onUpdated: () => void,
 	): Promise<void> {
 		const stored = await this.modelsStore.read(provider.id, { signal });
 		await provider.refreshModels({
 			credential,
 			stored: stored ? withKnownModelTypes(structuredClone(stored)) : undefined,
-			publish: (publication) => this.publishProviderModels(provider.id, generation, signal, publication),
+			publish: async (publication) => {
+				const published = await this.publishProviderModels(provider.id, generation, signal, publication);
+				if (published && publication.update) onUpdated();
+				return published;
+			},
 			allowNetwork,
 			force: allowNetwork ? force : undefined,
 			signal,
@@ -559,7 +575,8 @@ class ModelsImpl implements MutableModels {
 		const allowNetwork = options.allowNetwork ?? true;
 		const callerSignal = operationSignal(options.signal);
 		const errors = new Map<string, Error>();
-		if (callerSignal.aborted) return { aborted: true, errors };
+		const updated = new Set<string>();
+		if (callerSignal.aborted) return { aborted: true, errors, updated: [] };
 		const selected = options.providers ? new Set(options.providers) : undefined;
 		const refreshable = Array.from(this.providers.values()).filter(
 			(provider): provider is Provider & Required<Pick<Provider, "refreshModels">> =>
@@ -570,6 +587,7 @@ class ModelsImpl implements MutableModels {
 			refreshable.map(async (provider) => {
 				const { generation, controller } = this.beginProviderRefresh(provider.id);
 				const signal = AbortSignal.any([callerSignal, controller.signal]);
+				const onUpdated = () => updated.add(provider.id);
 				const operation = (async () => {
 					let storedCredential: Credential | undefined;
 					let credentialError: unknown;
@@ -580,13 +598,21 @@ class ModelsImpl implements MutableModels {
 					}
 
 					// Restore cached provider state before auth resolution or network access.
-					await this.runProviderRefreshPhase(provider, storedCredential, false, undefined, generation, signal);
+					await this.runProviderRefreshPhase(
+						provider,
+						storedCredential,
+						false,
+						undefined,
+						generation,
+						signal,
+						onUpdated,
+					);
 					if (credentialError !== undefined) throw credentialError;
 					if (!allowNetwork || signal.aborted) return;
 
 					const credential = await this.resolveRefreshCredential(provider, storedCredential, signal);
-					if (!credential) return;
-					await this.runProviderRefreshPhase(provider, credential, true, options.force, generation, signal);
+					if (!credential && !provider.refreshWithoutAuth) return;
+					await this.runProviderRefreshPhase(provider, credential, true, options.force, generation, signal, onUpdated);
 				})();
 
 				try {
@@ -614,7 +640,7 @@ class ModelsImpl implements MutableModels {
 			if (!callerSignal.aborted) throw error;
 		}
 
-		return { aborted: callerSignal.aborted, errors: new Map(errors) };
+		return { aborted: callerSignal.aborted, errors: new Map(errors), updated: [...updated] };
 	}
 
 	private async resolveRefreshCredential(
@@ -1014,9 +1040,11 @@ export interface CreateProviderOptions<TApi extends Api = Api> {
 	models: readonly ProviderModel<TApi>[];
 	/**
 	 * Fetch a dynamic model overlay of every type. createProvider restores and
-	 * publishes it transactionally and drops models of unknown types.
+	 * publishes it transactionally and drops models of unknown types. Resolve
+	 * `undefined` to keep the current list and stored entry unchanged, e.g. when
+	 * the stored catalog is still fresh.
 	 */
-	fetchModels?: (context: RefreshModelsContext) => Promise<readonly ProviderModel<TApi>[]>;
+	fetchModels?: FetchModels<TApi>;
 	/** Credential-specific chat model availability. See `Provider.filterModels`. */
 	filterModels?: (models: readonly Model<TApi>[], credential: Credential | undefined) => readonly Model<TApi>[];
 	/** Credential-specific availability across every model type. See `Provider.filterAllModels`. */
@@ -1044,6 +1072,92 @@ export interface CreateProviderOptions<TApi extends Api = Api> {
  * `model.api` the same way. At least one concrete implementation across
  * `api`/`images`/`classifiers` is required; empty maps are rejected.
  */
+export type FetchModels<TApi extends Api = Api> = (
+	context: RefreshModelsContext,
+) => Promise<readonly ProviderModel<TApi>[] | undefined>;
+
+/**
+ * A static baseline with a dynamic overlay merged over it by type and id. `refreshModels` restores
+ * `context.stored` as the overlay, then fetches and publishes a newer one when the network is allowed;
+ * a failed fetch keeps the previous overlay.
+ */
+function dynamicModelList<TApi extends Api>(
+	providerId: string,
+	baselineModels: readonly ProviderModel<TApi>[],
+	fetchModels: FetchModels<TApi> | undefined,
+): {
+	currentModels: () => readonly ProviderModel<TApi>[];
+	refreshModels: Provider<TApi>["refreshModels"];
+} {
+	let dynamicModels: readonly ProviderModel<TApi>[] = [];
+	const currentModels = (): readonly ProviderModel<TApi>[] => {
+		const merged = [...baselineModels];
+		for (const model of dynamicModels) {
+			const index = merged.findIndex(
+				(entry) => getModelType(entry) === getModelType(model) && entry.id === model.id,
+			);
+			if (index >= 0) merged[index] = model;
+			else merged.push(model);
+		}
+		return merged;
+	};
+	const refreshModels = fetchModels
+		? async (context: RefreshModelsContext) => {
+				if (context.stored) {
+					const restored = context.stored.models
+						.filter((model) => model.provider === providerId)
+						.map((model) => model as ProviderModel<TApi>);
+					if (
+						!(await context.publish({
+							update: () => {
+								dynamicModels = restored;
+							},
+						}))
+					) {
+						return;
+					}
+				}
+				if (!context.allowNetwork || context.signal.aborted) return;
+				const fetched = await fetchModels(context);
+				if (fetched === undefined || context.signal.aborted) return;
+				const refreshed = fetched.filter(hasKnownModelType);
+				await context.publish({
+					persist: { models: refreshed, checkedAt: Date.now() },
+					update: () => {
+						dynamicModels = refreshed;
+					},
+				});
+			}
+		: undefined;
+	return { currentModels, refreshModels };
+}
+
+export interface DynamicModelsOptions<TApi extends Api = Api> {
+	/** See `CreateProviderOptions.fetchModels`. */
+	fetchModels: FetchModels<TApi>;
+	/** See `Provider.refreshWithoutAuth`. */
+	refreshWithoutAuth?: boolean;
+}
+
+/**
+ * Makes a static provider dynamic: its current models become the baseline that fetched models
+ * overlay, with `createProvider({ fetchModels })` semantics. Requests are unchanged.
+ */
+export function withDynamicModels<TApi extends Api>(
+	provider: Provider<TApi>,
+	options: DynamicModelsOptions<TApi>,
+): Provider<TApi> {
+	if (provider.refreshModels) throw new Error(`Provider ${provider.id} already refreshes its models`);
+	const list = dynamicModelList(provider.id, provider.getAllModels?.() ?? provider.getModels(), options.fetchModels);
+	return {
+		...provider,
+		getModels: () => list.currentModels().filter((model): model is Model<TApi> => isModelType(model, "chat")),
+		getAllModels: list.currentModels,
+		refreshModels: list.refreshModels,
+		...(options.refreshWithoutAuth ? { refreshWithoutAuth: true } : {}),
+	};
+}
+
 export function createProvider<TApi extends Api = Api>(input: CreateProviderOptions<TApi>): Provider<TApi> {
 	const single =
 		input.api && typeof (input.api as ProviderStreams).stream === "function"
@@ -1059,20 +1173,7 @@ export function createProvider<TApi extends Api = Api>(input: CreateProviderOpti
 		throw new Error(`Provider ${input.id}: at least one of "api", "images", or "classifiers" is required.`);
 	}
 
-	const baselineModels = input.models;
-	let dynamicModels: readonly ProviderModel<TApi>[] = [];
-	const fetchModels = input.fetchModels;
-	const currentModels = (): readonly ProviderModel<TApi>[] => {
-		const merged = [...baselineModels];
-		for (const model of dynamicModels) {
-			const index = merged.findIndex(
-				(entry) => getModelType(entry) === getModelType(model) && entry.id === model.id,
-			);
-			if (index >= 0) merged[index] = model;
-			else merged.push(model);
-		}
-		return merged;
-	};
+	const { currentModels, refreshModels } = dynamicModelList(input.id, input.models, input.fetchModels);
 	const apiFor = (model: Model<Api>): ProviderStreams | undefined => single ?? byApi?.[model.api];
 
 	const dispatch = (
@@ -1096,34 +1197,7 @@ export function createProvider<TApi extends Api = Api>(input: CreateProviderOpti
 		auth: input.auth,
 		getModels: () => currentModels().filter((model): model is Model<TApi> => isModelType(model, "chat")),
 		getAllModels: currentModels,
-		refreshModels: fetchModels
-			? async (context) => {
-					if (context.stored) {
-						const restored = context.stored.models
-							.filter((model) => model.provider === input.id)
-							.map((model) => model as ProviderModel<TApi>);
-						if (
-							!(await context.publish({
-								update: () => {
-									dynamicModels = restored;
-								},
-							}))
-						) {
-							return;
-						}
-					}
-					if (!context.allowNetwork || context.signal.aborted) return;
-					const fetched = await fetchModels(context);
-					if (context.signal.aborted) return;
-					const refreshed = fetched.filter(hasKnownModelType);
-					await context.publish({
-						persist: { models: refreshed, checkedAt: Date.now() },
-						update: () => {
-							dynamicModels = refreshed;
-						},
-					});
-				}
-			: undefined,
+		refreshModels,
 		filterModels: input.filterModels,
 		filterAllModels: input.filterAllModels,
 		stream: (model, context, options) => dispatch(model, (streams) => streams.stream(model, context, options)),

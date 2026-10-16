@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createForkTool, type ForkToolPort } from './fork'
+import { createForkTool, prepareForkArguments, type ForkToolPort } from './fork'
 import type { DelegatedRunSummary } from './fork-control'
 
 function port(runs: DelegatedRunSummary[], over: Partial<ForkToolPort> = {}) {
@@ -55,6 +55,19 @@ describe('fork', () => {
     const missing = await run(value, { task: 'Verify login' })
     expect(missing.isError).toBe(true)
     expect(calls.fork).toHaveLength(1)
+  })
+
+  test('action "start" is read as the omitted action it names (LOCALIX-195)', async () => {
+    const { value, calls } = port([])
+    const tool = createForkTool(value)
+    const raw = { action: 'start', task: 'Verify login', title: 'Check login' }
+    const prepared = tool.prepareArguments!(raw)
+    expect(prepared).toEqual({ task: 'Verify login', title: 'Check login' })
+    expect(tool.inputSchema.safeParse(prepared).success).toBe(true)
+    expect((await run(value, prepared as Record<string, unknown>)).content).toBe('started')
+    expect(calls.fork).toHaveLength(1)
+    const listed = { action: 'list' }
+    expect(prepareForkArguments(listed)).toBe(listed)
   })
 
   test('list prints this session’s forks with status and spend', async () => {

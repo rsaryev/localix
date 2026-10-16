@@ -8,6 +8,7 @@ import { patchSessionById } from './sessionListHelpers'
 import { findSessionInState } from './findSession'
 import type { ChatStore, CustomSet } from './store'
 import type { SessionActions } from './sessionActionsSlice'
+import { createApplyPartyRoute } from './sessionPartyRoute'
 
 /** The per-session model/effort actions of the chat store, sharing one ordered write lane. */
 export function createModelSelectionActions({
@@ -16,7 +17,7 @@ export function createModelSelectionActions({
 }: {
   customSet: CustomSet
   get: () => ChatStore
-}): Pick<SessionActions, 'setModelSelection' | 'setReasoningEffort'> {
+}): Pick<SessionActions, 'setModelSelection' | 'setReasoningEffort' | 'applyPartyRoute'> {
   // One ordered persistence lane per chat. The picker remains optimistic, but
   // quick A→B selections reach the backend in that same order and a late A
   // response can never paint over B.
@@ -187,5 +188,12 @@ export function createModelSelectionActions({
     )
   }
 
-  return { setModelSelection, setReasoningEffort }
+  // The whole room at once rides the same lane, so it cannot overtake a per-member pick.
+  const applyPartyRoute = createApplyPartyRoute({
+    customSet,
+    get,
+    lane: modelSelectionWriteTail,
+  })
+
+  return { setModelSelection, setReasoningEffort, applyPartyRoute }
 }

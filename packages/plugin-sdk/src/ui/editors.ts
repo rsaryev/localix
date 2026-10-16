@@ -68,6 +68,12 @@ export interface FileEditorContribution extends PluginOwnedContribution {
    * falls back to the host's generic media viewer.
    */
   acceptsMedia?: boolean
+  /**
+   * Open with this editor when other contributions also match, instead of asking first. The
+   * others stay one step away through **Open with…**, and a remembered choice still wins. When
+   * several matching editors claim it, none does and the chooser is shown.
+   */
+  preferred?: boolean
 }
 
 /**

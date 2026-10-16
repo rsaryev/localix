@@ -32,6 +32,18 @@ export const capturePlan = {
       'Three seeded participants, the selected one driving the composer model, and the per-participant usage in the session total',
     scenario: 'participants',
   },
+  'conversations/apply-model-to-all': {
+    guide: 'features/conversations.md',
+    purpose:
+      'A group on two models and two reasoning levels offers one model and level for all agents',
+    scenario: 'party-route',
+  },
+  'conversations/model-command-steps': {
+    guide: 'features/conversations.md',
+    purpose:
+      '/model walks Agents, Provider and Model as composer steps with crumbs back to each step',
+    scenario: 'model-command',
+  },
   'workspace/session-window-drag': {
     guide: 'features/workspace.md',
     purpose:

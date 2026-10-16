@@ -57,6 +57,8 @@ interface AgentItemBase {
   api?: string
   provider?: string
   model?: string
+  /** The provider-native reasoning level the item's response was bound to; see `AssistantMessage`. */
+  providerThinkingLevel?: string
   /** Unix ms; set when the item starts / completes. Drives duration display. */
   startedAt?: number
   completedAt?: number

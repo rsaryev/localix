@@ -51,7 +51,7 @@ const PRESENTATION: Record<string, CommandPresentation> = {
     placeholder: 'list · create · edit · permissions · add · remove…',
   },
   loop: { icon: <LoopIcon />, placeholder: 'Task — e.g. check the deployment every 5 minutes' },
-  model: { icon: <ModelIcon />, placeholder: 'Model name (or empty to list all)' },
+  model: { icon: <ModelIcon />, placeholder: 'Pick an agent, a provider and a model…' },
   compact: { icon: <CompactIcon />, placeholder: 'Press Enter to compact the conversation' },
   clear: { icon: <ClearIcon />, placeholder: 'Press Enter to clear context' },
   fork: { icon: <ForkIcon />, placeholder: 'Press Enter to fork this conversation' },

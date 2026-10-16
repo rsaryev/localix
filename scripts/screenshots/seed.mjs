@@ -12,6 +12,7 @@ import { seedPlatformViews } from './platform-views.mjs'
 import { seedPlatform } from './platform-fixture.mjs'
 import { seedAnswerBoard } from './board-fixture.mjs'
 import { ensureDemoAgents } from './demo-agents.mjs'
+import { seedPartyRoutes } from './party-route.mjs'
 import { emptyEntry } from '../../plugins/resume/shared/schema.ts'
 
 await verifyDemoRuntime()
@@ -45,6 +46,8 @@ if (!fixture || fixture.projectId !== project.id) {
   fixture = { root, projectId: project.id, sessionId: session.id }
 }
 const sessionRoute = (route) => `${route}?sessionId=${fixture.sessionId}`
+// Re-applied on every seed so the room's mixed models stay deterministic.
+await seedPartyRoutes(fixture.sessionId, demoAgents)
 const db = new Database(databaseFile, { strict: true })
 const messages = [
   {

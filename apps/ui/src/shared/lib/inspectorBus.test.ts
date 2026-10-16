@@ -74,12 +74,6 @@ describe('inspector request channel', () => {
     expect(calls[0]).toEqual({ kind: 'file', sessionId: 's1', path: 'src/a.ts', line: 42 })
   })
 
-  test('openFile forwards the solo flag (distraction-free open)', () => {
-    const calls = capture()
-    inspector.openFile({ sessionId: 's1', path: 'src/a.ts', solo: true })
-    expect(calls[0]).toMatchObject({ kind: 'file', path: 'src/a.ts', solo: true })
-  })
-
   test('openFile forwards an exact range (start column + end position)', () => {
     const calls = capture()
     inspector.openFile({

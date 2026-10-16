@@ -39,6 +39,30 @@ describe('file editor selection', () => {
   })
 })
 
+describe('a preferred editor opens without the chooser', () => {
+  const pdf = ['example:pdf', 'other:book']
+  const preferred = ['example:pdf']
+
+  test('the preferred PDF viewer opens directly when Reader also matches', () => {
+    expect(initialFileEditorSelection(pdf, null, false, false, preferred)).toBe('example:pdf')
+  })
+
+  test('a remembered Reader choice still wins over the preferred editor', () => {
+    expect(initialFileEditorSelection(pdf, 'other:book', false, false, preferred)).toBe(
+      'other:book',
+    )
+  })
+
+  test('without a preferred match, or with two, the chooser shows', () => {
+    expect(initialFileEditorSelection(pdf, null, false)).toBeNull()
+    expect(initialFileEditorSelection(pdf, null, false, false, pdf)).toBeNull()
+  })
+
+  test('a meaningful native viewer still asks first', () => {
+    expect(initialFileEditorSelection(['plugin:md'], null, true, false, ['plugin:md'])).toBeNull()
+  })
+})
+
 describe('an open that asks for the code editor', () => {
   test('gets it even when a plugin owns the file type', () => {
     // The case that made a button look dead: a plugin registers an editor for a compound

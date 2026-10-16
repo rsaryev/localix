@@ -143,6 +143,43 @@ describe('applyAssistantDelta', () => {
     ])
   })
 
+  test('keeps the provider-bound reasoning level on stored items, so the next run replays it', () => {
+    const state = createRunTurnState({
+      payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),
+      assistantCreatedAt: '2026-07-22T00:00:00.000Z',
+      baseSessionTiming: emptySessionTiming(),
+    })
+    const acc = createItemAccumulator(() => 'Running')
+    const bound = {
+      api: 'anthropic-messages',
+      provider: 'openrouter',
+      model: 'haiku',
+      providerThinkingLevel: 'low',
+    }
+    applyAssistantDelta(
+      { state, acc },
+      {
+        kind: 'reasoning',
+        phase: 'delta',
+        contentIndex: 0,
+        delta: 'think',
+        origin: bound,
+        thinkingSignature: 'sig',
+      },
+    )
+    applyAssistantDelta(
+      { state, acc },
+      { kind: 'text', phase: 'delta', contentIndex: 1, delta: 'done', origin: bound },
+    )
+
+    const stored = JSON.parse(JSON.stringify(acc.list()))
+    expect(
+      stored.map((item: { providerThinkingLevel?: string }) => item.providerThinkingLevel),
+    ).toEqual(['low', 'low'])
+    const [assistant] = toModelMessages([{ id: 'a1', role: 'assistant', items: stored }])
+    expect(assistant).toMatchObject({ role: 'assistant', providerThinkingLevel: 'low' })
+  })
+
   test('streams a paragraph break between two adjacent text parts that are separate messages', () => {
     const state = createRunTurnState({
       payload: emptyAssistantPayload('a1', DEFAULT_AGENT_PARTICIPANT),

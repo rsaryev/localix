@@ -44,6 +44,11 @@ export function withResolvedRoutes<
       route: Partial<ModelRoute>,
       opts?: { seeded?: boolean },
     ) => Promise<void>
+    updateSessionAgentRoutes?: (
+      userId: string,
+      id: string,
+      routes: readonly ({ agentId: string } & Partial<ModelRoute>)[],
+    ) => Promise<void>
   },
 >(repo: R, defaults: RouteDefaults): R {
   const persist = async (userId: string, sessionId: string, seat: SessionAgentRoute) =>
@@ -137,5 +142,18 @@ export function withResolvedRoutes<
       await repo.updateSessionAgentRoute(userId, id, agentId, route, opts)
       defaults.forget(userId)
     },
+    // The batch write teaches the same "last model for this agent" memory, so it drops the same cache.
+    ...(repo.updateSessionAgentRoutes
+      ? {
+          updateSessionAgentRoutes: async (
+            userId: string,
+            id: string,
+            routes: readonly ({ agentId: string } & Partial<ModelRoute>)[],
+          ) => {
+            await repo.updateSessionAgentRoutes!(userId, id, routes)
+            defaults.forget(userId)
+          },
+        }
+      : {}),
   }
 }

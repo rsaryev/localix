@@ -124,7 +124,7 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 | `anchors`               | Resolves a resource namespace into a semantic navigation target.           | Namespace collisions are rejected.                                      |
 | `locations`             | Adds a strict parameterized UI destination.                                | The [UI anchors page](ui-anchors.md) owns URI, effect, and agent rules. |
 | `resourceRefIcons`      | Maps resource kind hints to icons.                                         | Icons carry no provider or navigation behavior.                         |
-| `fileEditors`           | Selects a specialized editor by file predicate.                            | The editor registry runs before plain file routing.                     |
+| `fileEditors`           | Selects a specialized editor by file predicate.                            | Runs before file routing; one `preferred` match skips the chooser.      |
 | `sessionEvents`         | Handles plugin-specific session stream events.                             | Handlers must be idempotent for each session and event.                 |
 
 ### Module invariants and failure modes

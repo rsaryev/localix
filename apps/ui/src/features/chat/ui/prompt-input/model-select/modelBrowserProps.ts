@@ -2,6 +2,7 @@ import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import type { useConnections } from '../useConnections'
 import type { ParticipantRow } from './ModelTaskColumn'
+import type { PartyRouteChoice } from '../../../model/sessionPartyRoute'
 
 export interface ModelBrowserProps {
   /** Catalog models (+ any caller-supplied extras). Live per-connection models are discovered here. */
@@ -54,4 +55,9 @@ export interface ModelBrowserProps {
   initialAgentId?: string | null
   /** Picking a participant row here selects that participant in the composer too. */
   onAgentTargetChange?: (agentId: string) => void
+  /**
+   * Put every participant on one model and level. Present only where a conversation with a
+   * party can take it; absent, the "All agents" row is never offered.
+   */
+  onApplyPartyRoute?: (choice: PartyRouteChoice) => void | Promise<void>
 }

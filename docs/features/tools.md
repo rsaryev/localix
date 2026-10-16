@@ -49,7 +49,7 @@ card listing every path, and one result.
 | Rule                  | `edit`                                                                                  | `write`                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Within one file       | Edits apply in order; each matches the text the previous edit left.                     | One entry per file; the same file twice in a call is refused before anything is written.  |
-| A failure             | A missing, ambiguous or no-op `old_string` fails the whole file, naming `edits[i]`.     | A stale file, a missing parent with `create_directories: false`, or an I/O error.         |
+| A failure             | A missing or ambiguous `old_string` fails the whole file, naming `edits[i]`.            | A stale file, a missing parent with `create_directories: false`, or an I/O error.         |
 | Other files           | Still applied; the result names each failed file and why, and nothing is written to it. | Same. An unread existing file refuses the whole call first and shows its current content. |
 | Call status           | An error only when no file was applied.                                                 | Same.                                                                                     |
 | Locks and diagnostics | Every path is locked together; language-server diagnostics cover the changed files.     | Same.                                                                                     |
@@ -58,6 +58,11 @@ The single-file shapes still work: a top-level `path` with `old_string`/`new_str
 and Claude Code's `Edit`, `Write` and `MultiEdit` inputs, are lifted into the batch before
 validation, so a PreToolUse hook's `updatedInput` in those shapes is accepted. A hook's
 `Edit(<glob>)` guard matches a batch when any of its paths matches.
+
+An edit whose `new_string` equals its `old_string` changes nothing. In a batch, the tool skips that
+edit, names it in the result and applies the other edits. A file whose every edit is a no-op still
+fails. An entry key with a stray character at either end, such as `.new_string`, is renamed to the
+key it names when that key is missing.
 
 ### Batch reads and searches
 

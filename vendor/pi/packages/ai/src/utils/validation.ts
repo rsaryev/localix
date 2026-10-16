@@ -316,6 +316,24 @@ function formatValidationPath(error: TLocalizedValidationError): string {
 	return path || "root";
 }
 
+// LOCALIX DELTA — see vendor/pi/UPSTREAM.md.
+// The message a model reads to repair its call. TypeBox reports an unknown key twice — `schema is
+// false` on the key and `must not have additional properties` on its parent — and an enum miss
+// without the values it allows; neither says what to send instead. Name the unknown keys once and
+// list the allowed values. Returns undefined for the redundant half of the unknown-key pair.
+function formatValidationMessage(error: TLocalizedValidationError): string | undefined {
+	if (error.keyword === "boolean" && /\/additionalProperties$/.test(error.schemaPath)) return undefined;
+	if (error.keyword === "additionalProperties") {
+		const keys = (error.params as { additionalProperties?: string[] }).additionalProperties;
+		if (keys?.length) return `unknown parameter${keys.length === 1 ? "" : "s"} ${keys.map((key) => `"${key}"`).join(", ")} — not accepted here`;
+	}
+	if (error.keyword === "enum") {
+		const allowed = (error.params as { allowedValues?: unknown[] }).allowedValues;
+		if (allowed?.length) return `must be one of ${allowed.map((value) => JSON.stringify(value)).join(", ")}`;
+	}
+	return error.message;
+}
+
 /**
  * Finds a tool by name and validates the tool call arguments against its TypeBox schema
  * @param tools Array of tool definitions
@@ -365,7 +383,10 @@ export function validateToolArguments(tool: Tool, toolCall: ToolCall): any {
 	const errors =
 		validator
 			.Errors(args)
-			.map((error) => `  - ${formatValidationPath(error)}: ${error.message}`)
+			.flatMap((error) => {
+				const message = formatValidationMessage(error);
+				return message === undefined ? [] : [`  - ${formatValidationPath(error)}: ${message}`];
+			})
 			.join("\n") || "Unknown validation error";
 
 	const errorMessage = `Validation failed for tool "${toolCall.name}":\n${errors}\n\nReceived arguments:\n${JSON.stringify(toolCall.arguments, null, 2)}`;

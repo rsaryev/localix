@@ -6,7 +6,7 @@ import { reseatParticipants } from './participant-routes'
 import { resolveSessionParticipants } from './session-agent-selection'
 import { toSessionSummary } from '../repository'
 import type { SessionDetail, SessionSummary } from '../contracts'
-import { sessionRoute } from '../session-route'
+import { assertRoutePatch, clampRoutePatch, writeRoutePatch } from './session-route-patch'
 import type { SessionLifecycleCtx, UpdateSessionPatch } from './session-lifecycle-contracts'
 
 export { deleteSession } from './session-deletion'
@@ -53,21 +53,7 @@ export async function updateSession(
     )
       throw new ApiError(409, 'agent_already_linked', 'This chat already has a linked agent.')
   }
-  if (patch.route?.providerConnectionId && ctx.connectionExists) {
-    if (!(await ctx.connectionExists(userId, patch.route.providerConnectionId))) {
-      throw new ApiError(
-        404,
-        'provider_connection_not_found',
-        'That provider connection no longer exists. Pick a provider in the model picker.',
-      )
-    }
-  }
-  if (
-    patch.route?.agentId &&
-    !session.agents.some((agent) => agent.agentId === patch.route?.agentId)
-  ) {
-    throw new ApiError(404, 'agent_unavailable', 'Selected agent is no longer a participant')
-  }
+  await assertRoutePatch(ctx, userId, session, patch)
   // A child runs under its root's mode, so a mode set on the child alone would be overwritten by
   // the root's next change and, until then, make one worker in a plan conversation able to write.
   if (patch.permissionMode !== undefined && session.parentSessionId !== null) {
@@ -109,10 +95,13 @@ export async function updateSession(
   if (fields) await ctx.repo.updateSession(userId, id, fields)
   // A re-route is its own statement: nothing above writes what a participant runs on — the
   // records it reads carry routes the chain RESOLVED, not routes anyone chose.
-  if (patch.route) {
-    const target = patch.route.agentId ?? sessionRoute(session).agentId
-    await ctx.repo.updateSessionAgentRoute(userId, id, target, patch.route)
-  }
+  await writeRoutePatch(
+    ctx,
+    userId,
+    id,
+    session,
+    await clampRoutePatch(ctx, userId, session, patch),
+  )
   // Read back what was stored, resolved: a newcomer's route is blank on purpose, and publishing
   // the in-memory record would show it with no model until the next read.
   const persisted = await ctx.requireSession(userId, id)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOpenRouterCatalog, type OpenRouterModelListItem } from "../scripts/openrouter-catalog.ts";
+import { buildOpenRouterCatalog, type OpenRouterModelListItem } from "../src/generated-catalog/openrouter-catalog.ts";
 
 const imageOnly: OpenRouterModelListItem = {
 	id: "example/image-model",

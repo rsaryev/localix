@@ -5,6 +5,7 @@ import { backendClient } from '@/shared/api/client'
 import { loadPluginCommandArgOptions } from './pluginCommandArgOptions'
 import { loadAgentCommandArgOptions } from './agentCommandArgOptions'
 import type { SlashCommand } from './SlashCommandMenu'
+import type { SlashArgOption } from './SlashArgSpec'
 
 /**
  * Dynamic arg options, from one of two sources depending on who owns the command: a plugin
@@ -12,7 +13,16 @@ import type { SlashCommand } from './SlashCommandMenu'
  * state — `/plugin enable` should offer the installed set, not an empty menu under a placeholder
  * telling the user to pick one.
  */
-export function useSlashArgOptions(activeSessionId: string | null, activeProjectId: string | null) {
+export function useSlashArgOptions(
+  activeSessionId: string | null,
+  activeProjectId: string | null,
+  /** `/model`'s steps: the picker's own data (`useModelCommand`). */
+  loadModelOptions?: (
+    argName: string,
+    query: string,
+    committed: Readonly<Record<string, string>>,
+  ) => Promise<SlashArgOption[]>,
+) {
   return useCallback(
     async (
       command: SlashCommand,
@@ -20,6 +30,9 @@ export function useSlashArgOptions(activeSessionId: string | null, activeProject
       query: string,
       committed: Readonly<Record<string, string>>,
     ) => {
+      if (command.id === 'model' && loadModelOptions) {
+        return loadModelOptions(argName, query, committed)
+      }
       if (command.id === 'plugin') {
         return loadPluginCommandArgOptions(argName, committed.action, query)
       }
@@ -40,6 +53,6 @@ export function useSlashArgOptions(activeSessionId: string | null, activeProject
         .catch(() => [])
       return rows.map((r) => ({ value: r.value, label: r.label, description: r.description }))
     },
-    [activeSessionId, activeProjectId],
+    [activeSessionId, activeProjectId, loadModelOptions],
   )
 }

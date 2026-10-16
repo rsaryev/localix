@@ -17,10 +17,11 @@ describe('the pi engine — one adapter, every port', () => {
     expect(typeof engine.languageModels.create).toBe('function')
     expect(typeof engine.createAuth).toBe('function')
     expect(typeof engine.listCatalog).toBe('function')
+    expect(typeof engine.refreshCatalog).toBe('function')
   })
 
   test('the catalog lists providers and models with the OAuth metadata the contract wants', async () => {
-    // No metadata store: release dates fall back, nothing is fetched or persisted.
+    // No catalog store and no refresh: the generated catalog, nothing fetched or persisted.
     const catalog = await createPiEngine().listCatalog()
     expect(catalog.providers.length).toBeGreaterThan(0)
     expect(catalog.models.length).toBeGreaterThan(0)

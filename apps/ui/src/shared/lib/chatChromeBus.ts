@@ -7,10 +7,9 @@ import { createEventChannel } from './eventChannel'
  *
  * The breadcrumb's inline segment dropdowns handle switching themselves; these
  * events cover only the "escape to the full modal" (Search all…) and New-chat
- * affordances, which live at the page. Mirrors {@link workspaceChromeBus}:
- * coordination through `shared` keeps the dependency arrow one-directional
- * (widgets/features → shared ← pages) instead of threading callbacks through the
- * grid registry.
+ * affordances, which live at the page. Coordination through `shared` keeps the
+ * dependency arrow one-directional (widgets/features → shared ← pages) instead of
+ * threading callbacks through the grid registry.
  */
 
 type ChromeEvent = 'project-switcher' | 'session-switcher' | 'new-chat'

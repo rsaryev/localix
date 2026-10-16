@@ -1,7 +1,9 @@
 import { withRoute } from '../session-route'
 import { commandTarget } from './command-participant'
 import { findCatalogModel } from '@localixai/agent/catalog'
-import { formatModelList } from './model-list'
+import { readAgentSettings } from './agent-settings'
+import { effortForModelSwitch } from './model-switch-effort'
+import { rememberedEffort } from './session-route-defaults'
 import { commandRemainder } from './slash-commands'
 import type { ModelRoute, SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
@@ -56,9 +58,10 @@ async function persistRoute(
 }
 
 /**
- * Handles `/model [@handle] [query]`: bare lists models available to the participant (scoped
- * to its provider connection if any); with a query, fuzzy-matches and switches THAT
- * participant — the one named, or the one the person's unaddressed words go to.
+ * Handles `/model [@handle] <query>`: fuzzy-matches a model available to the participant (scoped
+ * to its provider connection if any) and switches THAT participant — the one named, or the one
+ * the person's unaddressed words go to. Bare `/model` lists nothing: the composer offers the
+ * picker's steps, which it completes through the picker's own writes (`useModelCommand`).
  */
 export async function handleModelCommand(
   ctx: SettingCommandContext,
@@ -99,8 +102,12 @@ export async function handleModelCommand(
     // silently cross the durable route that runtime itself now rejects.
     available = providerId ? catalog.models.filter((m) => m.providerId === providerId) : []
   }
+  // `/model` switches; it never prints the catalog. The composer walks the picker's steps
+  // (agent → provider → model → settings); a surface without them names the model.
   if (!arg) {
-    return directReply(formatModelList(available, participant.modelId))
+    return directReply(
+      'Pick the agent, provider and model in the `/model` steps, or name one: `/model <name>`.',
+    )
   }
   const q = arg.toLowerCase()
   const matches = available.filter(
@@ -111,22 +118,38 @@ export async function handleModelCommand(
   if (!matched) {
     const reply =
       matches.length === 0
-        ? `No model matching "${arg}". Type \`/model\` to list available models.`
+        ? `No model matching "${arg}". Pick one in the \`/model\` steps or the model picker.`
         : `Multiple models match "${arg}" — be more specific:\n\n${matches
             .slice(0, 10)
             .map((m) => `- \`${m.name}\``)
             .join('\n')}`
     return directReply(reply)
   }
+  // The level follows the model, as it does in the picker: the previous model's level never
+  // carries over, and the stored level is one this model offers.
+  const settings = await readAgentSettings(deps.db, userId)
+  const reasoningEffort = effortForModelSwitch({
+    previous: participant,
+    next: matched,
+    remembered: rememberedEffort(
+      settings?.agentModelSettings ?? [],
+      participant.agentId,
+      matched.id,
+    ),
+  })
   // `/model` re-routes ONE participant, never the whole conversation.
   const updated: SessionRecord = {
-    ...withRoute(session, { modelId: matched.id }, participant.agentId),
+    ...withRoute(session, { modelId: matched.id, reasoningEffort }, participant.agentId),
     updatedAt: ts,
   }
   await persistRoute(ctx, userId, sessionId, updated, participant.agentId, {
     modelId: matched.id,
+    reasoningEffort,
   })
-  return insertSystemNotice(
+  // The level moved with the model, so the agents hear it too: their context reduces each
+  // participant's notices to the latest, and a stale level line would outlive the switch.
+  const levelChanged = reasoningEffort !== participant.reasoningEffort
+  const modelNotice = await insertSystemNotice(
     userId,
     sessionId,
     {
@@ -135,6 +158,19 @@ export async function handleModelCommand(
       participant: participant.handle,
       text: `${participant.handle} is now on ${shortModelName(matched.id)}.`,
       detail: matched.name,
+    },
+    ts,
+    !levelChanged,
+  )
+  if (!levelChanged) return modelNotice
+  return insertSystemNotice(
+    userId,
+    sessionId,
+    {
+      kind: 'reasoning_change',
+      tone: 'neutral',
+      participant: participant.handle,
+      text: `${participant.handle} reasoning effort set to ${reasoningEffort}.`,
     },
     ts,
     true,

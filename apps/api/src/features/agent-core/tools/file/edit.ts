@@ -126,12 +126,15 @@ export function createEditTool(
     const editorNote = editorBuffer?.(path, raw, 'write') ?? ''
     await env.writeFile(path, bom + restoreLineEndings(applied.text, ending))
     await mtimes.recordNow(path)
-    const { replacements, lines } = applied
+    const { replacements, lines, skipped } = applied
     const editCount = steps.length > 1 ? `${steps.length} edits, ` : ''
     const where = `line${lines.length === 1 ? '' : 's'} ${[...new Set(lines)].join(', ')}`
+    const noOps = skipped.length
+      ? `; skipped ${skipped.map((index) => `edits[${index}]`).join(', ')} (new_string identical to old_string)`
+      : ''
     const result = appliedFile(
       path,
-      `Edited ${path}: ${editCount}${replacements} replacement${replacements === 1 ? '' : 's'} (${where})`,
+      `Edited ${path}: ${editCount}${replacements} replacement${replacements === 1 ? '' : 's'} (${where})${noOps}`,
       { replacements, diff: createTwoFilesPatch(path, path, original, applied.text) },
     )
     return { ...result, editorNote }

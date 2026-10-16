@@ -67,7 +67,14 @@ export function syncAssistantParts(
   message: AssistantMessage,
   parts: AssistantContentScan['parts'],
 ) {
-  const origin = { api: message.api, provider: message.provider, model: message.model }
+  const origin = {
+    api: message.api,
+    provider: message.provider,
+    model: message.model,
+    ...(message.providerThinkingLevel
+      ? { providerThinkingLevel: message.providerThinkingLevel }
+      : {}),
+  }
   for (const part of parts) {
     if (part.type === 'text') {
       acc.text(turnIndex, part.text, part.contentIndex, {

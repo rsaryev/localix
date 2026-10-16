@@ -36,6 +36,10 @@
 			"types": "./dist/utils/*.d.ts",
 			"import": "./dist/utils/*.js"
 		},
+		"./generated-catalog": {
+			"types": "./dist/generated-catalog/index.d.ts",
+			"import": "./dist/generated-catalog/index.js"
+		},
 		"./oauth": {
 			"types": "./dist/oauth.d.ts",
 			"import": "./dist/oauth.js"
@@ -65,7 +69,7 @@
 		"build": "npm run build:offline",
 		"build:offline": "npm run check:model-data && tsc -p tsconfig.build.json && shx rm -rf dist/providers/data && shx cp -r src/providers/data dist/providers/data",
 		"type-check": "tsc --noEmit -p tsconfig.build.json",
-		"test": "vitest --run test/oauth-page.test.ts test/openrouter-oauth.test.ts",
+		"test": "vitest --run test/oauth-page.test.ts test/openrouter-oauth.test.ts test/generated-catalog.test.ts",
 		"test:upstream": "vitest --run",
 		"prepublishOnly": "npm run clean && npm run build"
 	},

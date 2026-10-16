@@ -5,18 +5,11 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import {
-  clampMaxTurns,
-  DEFAULT_MAX_TURNS,
-  MAX_MAX_TURNS,
-  MAX_TURNS_STEPS,
-} from '@localixai/api/turn-budget'
+import { DEFAULT_MAX_TURNS } from '@localixai/api/turn-budget'
 import { SETTING_TRIGGER_CLASS } from './model-select/settingTrigger'
+import { maxTurnsChoices, maxTurnsLabel } from './model-select/modelSettingChoices'
 
-export function maxTurnsLabel(value: number): string {
-  const turns = clampMaxTurns(value)
-  return turns >= MAX_MAX_TURNS ? 'No limit' : String(turns)
-}
+export { maxTurnsLabel }
 
 /** A model setting for the selected participant, with an explicit inherited default. */
 export function MaxTurnsControl({
@@ -32,11 +25,7 @@ export function MaxTurnsControl({
   onChange: (next: number | undefined) => void
   disabled?: boolean
 }) {
-  const ceiling = clampMaxTurns(limit)
-  const current = Math.min(clampMaxTurns(value ?? inherited), ceiling)
-  const options = [...new Set([...MAX_TURNS_STEPS, current, ceiling])]
-    .filter((step) => step <= ceiling)
-    .sort((a, b) => a - b)
+  const { current, options } = maxTurnsChoices(value, inherited, limit)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

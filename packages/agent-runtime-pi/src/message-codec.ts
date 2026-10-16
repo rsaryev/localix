@@ -141,6 +141,12 @@ export function toPiMessage(message: Message): ConversationalPiMessage[] {
     model: message.model,
     responseModel: message.responseModel,
     responseId: message.responseId,
+    // The level Anthropic bound this message's signed thinking to. Without it pi emits no
+    // historical effort marker, the API reads the history at its default level, and every
+    // earlier thinking block generated below `high` is dropped from the request.
+    ...(message.providerThinkingLevel
+      ? { providerThinkingLevel: message.providerThinkingLevel }
+      : {}),
     diagnostics: message.diagnostics?.map((diagnostic) => ({
       type: diagnostic.type,
       timestamp: diagnostic.timestamp ?? message.timestamp,
@@ -214,6 +220,9 @@ export function fromPiAssistant(message: PiAssistantMessage): AssistantMessage {
     model: message.model,
     responseModel: message.responseModel,
     responseId: message.responseId,
+    ...(message.providerThinkingLevel
+      ? { providerThinkingLevel: message.providerThinkingLevel }
+      : {}),
     diagnostics: message.diagnostics?.map((diagnostic) => ({
       ...diagnostic,
       ...(diagnostic.error?.message ? { message: diagnostic.error.message } : {}),

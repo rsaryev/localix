@@ -41,6 +41,16 @@ interface UseModelTaskRoutingOptions {
     reasoningEffort?: ReasoningEffort,
     agentId?: string,
   ) => void | Promise<void>
+  /** The room's shared route for the "All agents" target; null while members differ. */
+  partyRoute?: () => ModelRoutingSlot
+  /** Put every participant on one model at one level (already clamped to that model). */
+  onPickPartyModel?: (
+    connectionId: string,
+    modelId: string,
+    reasoningEffort: ReasoningEffort,
+  ) => void | Promise<void>
+  /** Every participant's level, when they already share a model. */
+  onPartyReasoningChange?: (effort: ReasoningEffort) => void
 }
 
 /**
@@ -60,6 +70,9 @@ export function useModelTaskRouting({
   reasoningEffort,
   onReasoningEffortChange,
   onPickSessionModel,
+  partyRoute,
+  onPickPartyModel,
+  onPartyReasoningChange,
 }: UseModelTaskRoutingOptions) {
   const { settings, update } = useUserSettings()
   const [recent, setRecent] = useState(() => getRecentModels())
@@ -139,16 +152,19 @@ export function useModelTaskRouting({
           ? { providerConnectionId: sessionConnectionId, modelId: sessionModelId }
           : null
       if (agentId !== null) return participantRoute?.(agentId) ?? fallback
+      if (key === 'party') return partyRoute?.() ?? null
       if (key === 'session') return fallback
       return routeSlotFor(key as Exclude<ModelRoutingTaskKey, 'session'>)
     },
-    [participantRoute, routeSlotFor, sessionConnectionId, sessionModelId],
+    [participantRoute, partyRoute, routeSlotFor, sessionConnectionId, sessionModelId],
   )
 
   const enabledForTask = useCallback(
     // A participant is never "off": you cannot disable someone who is in the room.
     (key: PickerTarget) =>
-      isAgentTarget(key) || isModelRoutingTaskEnabled(agentSettings, key as ModelRoutingTaskKey),
+      isAgentTarget(key) ||
+      key === 'party' ||
+      isModelRoutingTaskEnabled(agentSettings, key as ModelRoutingTaskKey),
     [agentSettings],
   )
 
@@ -202,6 +218,7 @@ export function useModelTaskRouting({
       : routes[reasoningMemoryKey(taskKey)]?.reasoningPreferences,
     memoryIo,
     onReasoningEffortChange,
+    onPartyReasoningChange,
     setRouteReasoningEffort,
   })
 
@@ -223,6 +240,8 @@ export function useModelTaskRouting({
       const destination = modelPickDestination(taskKey)
       if (destination.kind === 'conversation') {
         await onPickSessionModel(connectionId, modelId, nextEffort, destination.agentId)
+      } else if (destination.kind === 'party') {
+        await onPickPartyModel?.(connectionId, modelId, nextEffort)
       } else {
         setRouteSlot(
           destination.key,
@@ -237,6 +256,7 @@ export function useModelTaskRouting({
       connections,
       isCurrentModel,
       models,
+      onPickPartyModel,
       onPickSessionModel,
       reasoningFor,
       setRouteSlot,

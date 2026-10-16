@@ -81,6 +81,13 @@ export interface AssistantMessage {
   model: string
   responseModel?: string
   responseId?: string
+  /**
+   * The provider-native reasoning level this response was generated at, exactly as the provider
+   * bound it. Opaque protocol state like a thinking signature: some providers bind signed
+   * reasoning to the level it was produced at, so a replayed message must carry it back verbatim
+   * or its reasoning is rejected (or silently dropped). Absent where the provider does not bind.
+   */
+  providerThinkingLevel?: string
   usage?: Usage
   stopReason?: StopReason
   errorMessage?: string

@@ -25,6 +25,8 @@ import { ModelBrowserSearchToolbar } from './ModelBrowserSearchToolbar'
 import { useAgentModelTurns } from './useAgentModelTurns'
 import { ModelDetailSettings } from './ModelDetailSettings'
 import { pickerColumns } from './pickerColumns'
+import { usePartyRoute } from './usePartyRoute'
+import { PARTY_TARGET } from './partyRoute'
 
 /** Stable identity: a fresh literal each render would defeat the memoized subtree. */
 const NO_PARTICIPANTS: readonly ParticipantRow[] = []
@@ -49,6 +51,7 @@ export function ModelBrowser({
   participants = NO_PARTICIPANTS,
   initialAgentId,
   onAgentTargetChange,
+  onApplyPartyRoute,
 }: ModelBrowserProps) {
   const { connections, activeId, addApiKeyConnection, addOAuthConnection } = connectionsState
   const [search, setSearch] = useState(initialQuery)
@@ -84,6 +87,15 @@ export function ModelBrowser({
     () => sortProvidersOAuthFirst(connections, oauthIdSet, (connection) => connection.providerId),
     [connections, oauthIdSet],
   )
+  // "All agents": one model and level for the whole room, offered when the room disagrees.
+  const party = usePartyRoute({
+    participants,
+    sessionConnectionId,
+    models,
+    connections: orderedConnections,
+    taskKey,
+    onApplyPartyRoute,
+  })
 
   const {
     recent,
@@ -113,6 +125,9 @@ export function ModelBrowser({
       reasoningEffort,
       onReasoningEffortChange,
       onPickSessionModel,
+      partyRoute: party.partyRoute,
+      onPickPartyModel: party.onPickPartyModel,
+      onPartyReasoningChange: party.onPartyReasoningChange,
     })
 
   // Initialize the sidebar selection ONCE per mount (render-time adjust — the
@@ -274,7 +289,10 @@ export function ModelBrowser({
   const { taskColumnFor, providerColumnFor, nav } = pickerColumns({
     taskColumn,
     allProviders,
-    workloadLabel: workloadLabelFor(activeParticipant, activeTaskMeta?.label),
+    workloadLabel:
+      taskKey === PARTY_TARGET
+        ? 'All agents'
+        : workloadLabelFor(activeParticipant, activeTaskMeta?.label),
     task: {
       activeTask: taskKey,
       onSelectTask: selectTask,
@@ -282,6 +300,7 @@ export function ModelBrowser({
       enabledFor: enabledForTask,
       onEnabledChange: setTaskEnabled,
       participants,
+      party: party.column,
     },
     provider: {
       connections: orderedConnections,

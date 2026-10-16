@@ -25,6 +25,7 @@ import { recoverDelegationReports } from '../features/chat/service/recover-deleg
 import { sweepOrphanSessionData } from '../features/plugins/session-storage'
 import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
+import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
 
 export interface OpsTimersPhaseInput
   extends
@@ -207,6 +208,8 @@ export function createOpsTimersPhase({
       })
     setInterval(() => void runCuratorCheck(), 24 * 60 * 60 * 1000).unref?.()
 
+    // Model lists: hourly, refetched past six hours (`features/catalog/refresh-schedule.ts`).
+    const checkModelCatalog = armModelCatalogChecks({ catalogService, signal, logger })
     // Everything above only ARMS a cadence. The first run of each job waits for the idle
     // scheduler (`lib/idle-tasks.ts`, which names the stall this prevents), one job at a time.
     // None of them is read by a first request: owed reports are already 30 s past their live
@@ -247,6 +250,8 @@ export function createOpsTimersPhase({
       },
       { name: 'skills_curator', run: runCuratorCheck },
       { name: 'storage_maintenance', run: (ctx) => maintainStorage(signal, ctx) },
+      // Last: it waits on the network, and the restored catalog is already served.
+      ...(checkModelCatalog ? [{ name: 'model_catalog_check', run: checkModelCatalog }] : []),
     ]
     void runIdleTasks(idleTasks, {
       signal,

@@ -1,15 +1,12 @@
 import { useEffect } from 'react'
 
 import { useChatEventStream } from '@/features/chat/model/agent-runtime'
-import { useChatStore } from '@/features/chat/model/store'
-import { findSessionInState } from '@/features/chat/model/findSession'
 import { usePlanEventFocus } from '@/features/chat/model/planEventFocus'
 import { usePluginViewAgent } from '@/features/inspector/ui/usePluginViewAgent'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 import { subscribeRevealInTree } from '@/shared/lib/explorerBus'
 import { publishPageOpenChat } from '@/shared/lib/pageOpenChat'
 import { subscribeSidebarSection } from '@/shared/lib/sidebarSectionBus'
-import { subscribeWorkspaceChrome } from '@/shared/lib/workspaceChromeBus'
 import { useFollowShownChat, useGridChatSync, useGridInspectorBus } from '@/widgets/editor-grid'
 import { useMenuCommands } from './useMenuCommands'
 import { useTerminalBusWiring } from './useTerminalBusWiring'
@@ -56,14 +53,6 @@ export function useWorkspaceBuses({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [switchSection],
   )
-  // A distraction-free `localix <file>` open collapses the chrome to show just the
-  // editor (paired with the grid maximizing the file's group).
-  useEffect(() => {
-    const unsubscribe = subscribeWorkspaceChrome(() => setSidebarOpen(false))
-    return unsubscribe
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable React state setter
-  }, [])
-
   useDocumentTitle({ sessionTitle: sessionTitle ?? undefined })
 
   // The active session drives the editor grid's scope (its workspace) + seeds its
@@ -112,12 +101,5 @@ export function useMenuTerminalBuses({
   usePlanEventFocus(activeSessionId)
   // The app-installed intents (an OS deep link, an OS file drop) act on the chat this page has
   // open; publishing it here is the one place they learn which that is.
-  const openProjectId = useChatStore((state) => {
-    const session = findSessionInState(state, activeSessionId)
-    return session?.projectId === state.activeProjectId ? (session?.projectId ?? null) : null
-  })
-  useEffect(
-    () => publishPageOpenChat(activeSessionId, openProjectId),
-    [activeSessionId, openProjectId],
-  )
+  useEffect(() => publishPageOpenChat(activeSessionId), [activeSessionId])
 }

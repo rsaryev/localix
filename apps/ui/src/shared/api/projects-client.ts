@@ -34,6 +34,14 @@ export const projectsApi = {
     return unwrap(await client.rpc.projects['resolve-path'].$post({ json: { path } }))
   },
 
+  /**
+   * Classify a filesystem path as a file or a directory without creating anything. An OS open uses
+   * it: a file opens in the chat on screen, only a directory goes on to `resolveProjectByPath`.
+   */
+  async inspectPath(path: string) {
+    return unwrap(await client.rpc.projects['inspect-path'].$post({ json: { path } }))
+  },
+
   async updateProject(id: string, patch: UpdateProjectRequest): Promise<Project> {
     return unwrap(
       await client.rpc.projects[':id'].$patch({

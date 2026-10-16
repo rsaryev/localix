@@ -22,6 +22,8 @@ export function usePromptSend(input: {
   /** The `/open` command owns Enter while it is active. */
   openCommandActive: boolean
   submitOpenResource: () => void
+  /** A command the composer completes itself (`/model`'s steps); true when it handled the send. */
+  submitClientCommand?: () => boolean
 }) {
   const { prompt, ctxRefs, onSend, isEditing, onSubmitEdit } = input
   const [preparingSend, setPreparingSend] = useState(false)
@@ -32,6 +34,7 @@ export function usePromptSend(input: {
       input.submitOpenResource()
       return
     }
+    if (input.submitClientCommand?.()) return
     // Editing a past message: submit UPDATES it (reusing the existing
     // update-message handler) instead of sending a new message. Empty/unchanged
     // is handled by the parent (treated as a cancel — the UI never sends an

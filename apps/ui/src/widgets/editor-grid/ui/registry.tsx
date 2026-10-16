@@ -197,7 +197,8 @@ function WorkItemBodyInner({
         )
       if (contributedEditors.length === 0) return renderBuiltin()
       // One match renders directly unless core also has a meaningful native
-      // image/text surface; two plugins always show the same generic chooser.
+      // image/text surface; two plugins show the generic chooser unless exactly one is
+      // `preferred` (`initialFileEditorSelection`).
       return (
         <ContributedFileBody
           key={tabKey}

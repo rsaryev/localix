@@ -3,10 +3,17 @@ import { Hono, type TypedResponse } from 'hono'
 
 import type { AppContext } from '../../app'
 import { defaultErrorHandler } from '../../lib/http'
-import { catalogResponseSchema, type CatalogResponse } from './contracts'
+import {
+  catalogRefreshResponseSchema,
+  catalogResponseSchema,
+  type CatalogRefreshResponse,
+  type CatalogResponse,
+} from './contracts'
 
 export interface CatalogRoutesService {
   getCatalog(): Promise<CatalogResponse>
+  /** Fetch newer model lists now. Absent: the catalog cannot be refreshed. */
+  check?(options: { force?: boolean }): Promise<CatalogRefreshResponse>
 }
 
 /** One validated, serialized body per catalog BUILD, and the validator that names it. */
@@ -62,7 +69,18 @@ export function createCatalogRoutes(service: CatalogRoutesService) {
     }) as unknown as TypedResponse<CatalogResponse, 200, 'json'>
   })
 
-  routes.onError(defaultErrorHandler)
+  // An explicit request from the person (Settings → System → Model list), so it runs even when the
+  // automatic refresh is switched off, and it skips the freshness window.
+  const withRefresh = routes.post('/refresh', async (c) => {
+    if (!service.check) {
+      return c.json(
+        catalogRefreshResponseSchema.parse({ ok: true, changed: false, failedProviders: [] }),
+      )
+    }
+    return c.json(catalogRefreshResponseSchema.parse(await service.check({ force: true })))
+  })
 
-  return routes
+  withRefresh.onError(defaultErrorHandler)
+
+  return withRefresh
 }

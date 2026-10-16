@@ -253,6 +253,51 @@ selected by default. Reasoning and turns per message are saved per agent, provid
 changing one participant does not change another. Authored agent and host limits still apply.
 Permission mode has its own pill above the input.
 
+### One model for every agent
+
+Each participant keeps its own model and reasoning level, so switching one agent to a stronger model
+leaves the others where they were. When a group's participants use different models or levels, when
+one has no model, or when a model is no longer available, the Agents list in the model picker starts
+with an **All agents** row. Its second line states the current mix, for example
+`Mixed · 2 models · 2 levels · 1 not set`. Screen readers announce the same text with the row.
+
+Select **All agents**, then pick a model as usual. Every participant moves to that model in a single
+write; a participant who left the conversation meanwhile causes the whole change to be refused
+instead of half-applied. The level starts at the model's default, or at a level you set for that
+model in its details first, and is clamped to the levels the model offers. Once the group shares a
+model, changing the reasoning level in the model's details changes it for everyone. The choice is
+remembered per agent and model, as a per-participant pick is. Turns per message remain a per-agent
+setting.
+
+Reasoning **Off** is offered only for models that can actually turn reasoning off; elsewhere the
+request carries the model's lowest level, and the picker shows that level instead of Off. A model
+that does not reason stores Off. The server applies the same rule to every route change, so a level
+a model does not offer is stored as the nearest level it does offer. The agent editor's **Effort**
+field offers the same levels for the agent's pinned model.
+
+### Switch models with `/model`
+
+Type `/model` to choose a model without opening the picker. The composer shows the picker's columns
+as steps, in the same order, each with a list of choices:
+
+1. **Agent** — only in a group. **All agents** comes first, followed by each participant with its
+   current model and level. A private chat skips this step.
+2. **Provider** — your connections, in the picker's order. The participant's current connection is
+   marked.
+3. **Model** — the models of that connection. Type to filter by name, id or reasoning level.
+4. **Settings** — optional. **Reasoning** offers only the levels the chosen model supports and is
+   skipped for a model that does not reason. For one participant, **Turns per message** and
+   **Context window** follow; each offers _Keep_, _Use default_ and the picker's values. **All
+   agents** stops after Reasoning, as the picker does.
+
+Each choice becomes a crumb in the composer. Select a crumb's × to return to that step, or press
+Backspace in an empty step to remove the last crumb. Press Enter on an optional step to apply what
+you have chosen. The result is the same write the picker makes: one participant's route, or one
+batch for **All agents**, with the level starting where the picker would start it.
+
+`/model` never prints a list of models. `/model <name>` still switches the participant you are
+addressing (or `/model @qa <name>`) by matching the name.
+
 ## Interruptions
 
 A new user message removes pending colleague handoff tickets; tickets still answering your earlier

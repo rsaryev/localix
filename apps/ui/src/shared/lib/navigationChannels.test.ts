@@ -14,7 +14,6 @@ import { runMenuCommand, subscribeMenuCommands } from './menuBus'
 import { openModelPicker, subscribeModelPicker } from './modelPickerBus'
 import { openNotificationCenter, subscribeNotificationCenter } from './notificationCenterBus'
 import { openSidebarSection, subscribeSidebarSection } from './sidebarSectionBus'
-import { collapseWorkspaceChrome, subscribeWorkspaceChrome } from './workspaceChromeBus'
 
 type Listener = (...args: unknown[]) => void
 
@@ -72,12 +71,6 @@ const channels: Array<{
     subscribe: subscribeSidebarSection,
     publish: () => openSidebarSection(null),
     args: [null],
-  },
-  {
-    name: 'workspace chrome',
-    subscribe: subscribeWorkspaceChrome,
-    publish: collapseWorkspaceChrome,
-    args: [],
   },
 ]
 

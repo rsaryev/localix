@@ -1,4 +1,4 @@
-import { clampThinkingLevel, type Model as PiModel } from '@earendil-works/pi-ai'
+import type { Model as PiModel } from '@earendil-works/pi-ai'
 import { thinkingBudgetForLevel } from '@earendil-works/pi-ai/api/simple-options'
 
 import type {
@@ -77,14 +77,14 @@ export function normalizeCompletionTemperature(
 
 /**
  * Off cannot disable mandatory reasoning: omitting it leaves the provider's default
- * effort in control. Clamp off against the live model to request its minimum instead.
+ * effort in control. `resolveReasoningEffort` clamps it against the live model to request its
+ * minimum instead — the same rule the agent loop applies.
  */
 export function normalizeCompletionReasoning(
   model: PiModel<string>,
   requested: Parameters<LanguageModel['complete']>[0]['reasoningEffort'],
 ) {
-  const effort = requested === 'off' ? clampThinkingLevel(model, 'off') : requested
-  return resolveReasoningEffort(model, effort).effort
+  return resolveReasoningEffort(model, requested).effort
 }
 
 /** Adapters that already add the thinking budget ON TOP of the caller's `maxTokens`. */

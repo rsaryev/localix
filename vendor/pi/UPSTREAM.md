@@ -62,7 +62,8 @@ originator)` threads the name beside the bound redirect. Localix's auth adapter 
 `Localix`. `packages/ai/test/openai-chatgpt-oauth.test.ts` (including the blank-name case) and
 `packages/agent-runtime-pi/src/auth.test.ts` guard the flow and adapter respectively.
 
-`packages/ai/scripts/generate-models.ts` skips `opencode-go` models that resolve to
+The generator's conversion (`packages/ai/src/generated-catalog/build.ts`, see below) skips
+`opencode-go` models that resolve to
 `google-generative-ai`. The generator reads live models.dev data, which can run ahead of the pinned
 provider code; at `1.2.0` the `opencode-go` provider registers only the Anthropic, Completions and
 Responses transports, so a Gemini entry failed `type-check`. Drop the skip when upstream's
@@ -97,6 +98,13 @@ parses to a type the schema asks for, and never rewrites a value a schema alread
 string. `packages/agent-runtime-pi/src/tool-argument-coercion.test.ts` is the tripwire and drives
 the real bridge. Proposed upstream; drop this when it lands there.
 
+The same file also words the validation failure the model reads to repair its call
+(`formatValidationMessage`). TypeBox reports an unknown key twice — `schema is false` on the key and
+`must not have additional properties` on its parent — and an enum miss without its allowed values.
+The delta names unknown keys once (`unknown parameter "x" — not accepted here`) and lists allowed
+enum values (`must be one of "a", "b"`); every other error keeps TypeBox's message. The same
+tripwire file pins the wording.
+
 The Codex OAuth login carries the official Codex CLI's stale-login recovery behavior: a new
 attempt cancels the previous callback listener, retries the preferred port, and falls back to
 the second registered callback port. Since upstream moved every provider onto one loopback
@@ -106,6 +114,76 @@ server (`packages/ai/src/auth/oauth/callback-server.ts`), the delta is two parts
 authorize URL and code exchange naming the redirect actually bound). Preserve the overlapping
 browser-login regression in `openai-codex-oauth.test.ts` until upstream pi has equivalent
 listener lifecycle handling.
+
+Two catalog-generator deltas, both upstream-shaped and both regenerated into
+`packages/ai/src/providers/`:
+
+- **`Model.releaseDate`** (`src/types.ts`, optional `YYYY-MM-DD`). The conversion (`src/generated-catalog/build.ts`)
+  records models.dev `release_date` for every models.dev entry under its own provider key, and under
+  the pi provider/id at each `recordModelsDevReasoningOptions` site (and the Qwen Token Plan loop),
+  so providers read from a differently named source (`zai` ← `zai-coding-plan`, `fireworks` ←
+  `fireworks-ai`, `cloudflare-ai-gateway`'s rewritten ids, …) get their own dates. Hand-written
+  `openai-codex` models read OpenAI's dates (`RELEASE_DATE_ALIASES`); the Azure copies inherit them
+  by spread. OpenRouter models take OpenRouter's `created` (`src/generated-catalog/openrouter-catalog.ts`) and AI
+  Gateway models its `released`, else `created`. Month-only dates (`2025-10`) become the first of the
+  month; anything else is left unset (`src/generated-catalog/release-dates.ts`). Localix orders its picker
+  newest-first on it.
+- **`off` for thinking-toggle formats** (`applyToggledOffThinkingMetadata`). For chat-completions
+  models whose resolved `thinkingFormat` is `zai`, `qwen`, `qwen-chat-template` or `together`, the
+  request switches thinking off with an explicit flag whenever no level is sent, so an `off: null`
+  derived from an effort list without `"none"` was wrong: `getSupportedThinkingLevels()` hid Off and
+  `clampThinkingLevel()` turned Off into reasoning. The generator drops that null.
+  `packages/agent-runtime-pi/src/catalog-reasoning.test.ts` is the tripwire for both.
+
+### Runtime catalog refresh
+
+Localix refreshes the built-in providers' models at runtime through pi's own `Models.refresh()`,
+with the generator's conversion. Six changes, all in `packages/ai`, all upstream-shaped:
+
+1. **The conversion moved from `scripts/` into `src/generated-catalog/`.** `build.ts` holds what
+   `generate-models.ts` did between fetching and writing — every constant, `process*` function,
+   models.dev / OpenRouter / AI Gateway / NVIDIA / classifier converter and the combine and
+   post-processing pass — as one pure, synchronous `buildGeneratedCatalog(sources, { strict, logger })`
+   returning JSON values. The code is moved, not rewritten: the converters that used to fetch
+   inline (`fetchAiGatewayModels`, `loadModelsDevData`, `loadModelsDevClassifierModels`, the NVIDIA
+   id map) lost their fetch and try/catch, which `convertSource` now applies with the same
+   strict/non-strict policy; the module-level `modelsDevReasoningOptions` / `modelsDevReleaseDates`
+   maps are cleared around each build. The helpers `ai-gateway-pricing.ts`,
+   `models-dev-reasoning-options.ts`, `openrouter-catalog.ts`, `openrouter-reasoning-options.ts` and
+   `release-dates.ts` moved with it, and `assertExactModelIds` moved to `model-ids.ts`
+   (`scripts/model-data.ts` re-exports it). Compiling it under `src/`'s strict `tsc` needed only
+   type-level edits: two `AnthropicMessagesCompat` casts, an index cast for the Copilot overrides,
+   two non-null assertions, and `OpenAICompletionsResolvedCompat` declared as a type (the default
+   compat object lacked `sessionAffinityFormat`/`vllmPriority`) instead of derived from a
+   `satisfies`. `sources.ts` names the source URLs and fetches documents, conditionally when a
+   previous response carried an `ETag`/`Last-Modified`. `scripts/generate-models.ts` now fetches
+   the documents (same order, logs and `--strict` policy), calls `buildGeneratedCatalog`, and keeps
+   its output stage unchanged. Over the same seven live documents the old and new generator wrote
+   byte-identical JSON. One visible difference: every source is fetched before any conversion runs,
+   so `test/generate-models-strict.test.ts`'s fetch mock now answers the other sources too.
+2. **`refresh.ts`**: `GeneratedCatalogRefresher` (one shared build per refresh, in-memory
+   revalidation of documents that carry a validator, a six-hour freshness check on
+   `context.stored.checkedAt`, strict build) and `withGeneratedCatalogRefresh(provider, refresher)`.
+   Exported as the `@earendil-works/pi-ai/generated-catalog` entry point (`package.json` `exports`).
+3. **`models.ts`**: `createProvider`'s restore/fetch/publish overlay is factored into
+   `dynamicModelList`, reused by the new `withDynamicModels(provider, { fetchModels,
+   refreshWithoutAuth })`, which makes an existing static provider dynamic. `fetchModels` may
+   resolve `undefined` to keep the current list and stored entry (a fresh catalog).
+4. **`Provider.refreshWithoutAuth`**: `Models.refresh()` runs the network phase of such a provider
+   without a configured credential (`context.credential` is then undefined). A public catalog needs
+   none, and Localix's credentials are per connection, not per provider.
+5. **`ModelsRefreshResult.updated`**: the provider ids whose list a publication replaced during the
+   refresh, restores included — the signal a reader that caches a projection invalidates on.
+6. **`src/providers/model-entry-schema.ts`**: TypeBox schemas for chat, image and classifier model
+   entries and `ModelsStoreEntry`, composed from `model-schema.ts` and `compat-schema.ts`, and
+   `isModelsStoreEntry()`, which a `ModelsStore` backed by external storage uses to drop bad entries.
+
+`packages/ai/test/generated-catalog.test.ts` is the guard: it runs `generate-models --strict` over
+fixture documents and asserts that its `models.all.json` equals `buildGeneratedCatalog` and the
+runtime refresher's output, and covers the 304 path, the shared build, the freshness check, restore
+without network, failure keeping the previous list, and the schema. On a re-vendor, keep the
+generator a thin caller of `buildGeneratedCatalog`: a change upstream makes to `generate-models.ts`
+between its fetches and its output stage belongs in `src/generated-catalog/build.ts`.
 
 ## Keeping the catalog fresh
 
@@ -117,8 +195,8 @@ is wired up by the root `prepare` script (`git config core.hooksPath .githooks`)
 that fails, and it never blocks a commit: models.dev and the provider APIs are third-party, so an
 offline commit just keeps the catalog it has. `LOCALIX_SKIP_MODEL_CATALOG=1` skips it.
 
-The regular monorepo test graph runs the vendored OAuth page and OpenRouter OAuth tests
-only. Full upstream suites remain available through `test:upstream`; run them with pi's
+The regular monorepo test graph runs the vendored OAuth page, OpenRouter OAuth and generated
+catalog tests only. Full upstream suites remain available through `test:upstream`; run them with pi's
 credential sanitization procedure before updating the snapshot.
 
 The upstream-only `canvas` devDependency is omitted. It is used solely by the manual

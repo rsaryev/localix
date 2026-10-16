@@ -20,7 +20,8 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       `Enable ${spec.requires} with its isolated dependency first.`,
     )
     const fixture = JSON.parse(await fs.readFile(fixtureFile, 'utf8'))
-    if (spec.scenario === 'agent-command')
+    // `/model` needs the same placeholder connection for its Provider step.
+    if (['agent-command', 'model-command'].includes(spec.scenario))
       await (await import('./agent-command.mjs')).seedAgentCommand(fixture)
     if (['kanban-board', 'kanban-conversation'].includes(spec.scenario))
       await (await import('./kanban-workbenches.mjs')).seedKanban(fixture)

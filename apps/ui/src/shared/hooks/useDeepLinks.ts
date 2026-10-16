@@ -23,8 +23,8 @@ declare global {
 export function useDeepLinks(): void {
   useLayoutEffect(() => {
     if (!isDesktopRuntime()) return
-    // A Finder selection can deliver several paths at once. Finish each workspace
-    // handoff before navigating for the next file, so none opens in a retired scope.
+    // A Finder selection can deliver several paths at once. Handle them in order, so
+    // a folder's navigation finishes before the next path is opened.
     let pending = Promise.resolve()
     window.__localixDeepLink = (rawUrl: string) => {
       const intent = parseDeepLink(rawUrl)
@@ -39,8 +39,8 @@ export function useDeepLinks(): void {
         window.location.hash = intent.hash
         return
       }
-      // `localix://open?path=…` — resolve the path to a project (create if new),
-      // navigate there, and for a file input open a lightweight editor tab.
+      // `localix://open?path=…` — a file opens in the chat on screen; a folder
+      // finds or creates its project and navigates there.
       pending = pending.then(() => openDeepLinkPath(intent.path))
     }
     tauriInvoke()?.('deep_link_ready').catch(() => {

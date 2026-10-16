@@ -65,6 +65,8 @@ export interface AgentMessageOrigin {
   api?: string
   provider?: string
   model: string
+  /** See `AssistantMessage.providerThinkingLevel`: replayed verbatim with the part's signatures. */
+  providerThinkingLevel?: string
 }
 
 export type { AgentStopReason, AgentMessageDelta, AgentEvent } from './event-types'

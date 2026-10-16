@@ -18,6 +18,7 @@ import { openDirectory, pickDirectory, pickFiles } from './native-dialogs'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { toDto, applyProjectSettingsPatch } from './project-record'
 import { assertProjectDeletable, resolveDefaultProject } from './default-project'
+import { assertAbsolutePath, inspectPath, normalizeDir } from './inspect-path'
 
 export { applyProjectSettingsPatch } from './project-record'
 
@@ -57,14 +58,6 @@ export interface ProjectsServiceDeps {
    * rule), so this feature never re-derives a sandbox path from an id.
    */
   resolveSessionCwd?: (userId: string, sessionId: string) => Promise<string>
-}
-
-/** Normalize a directory path for equality: collapse `.`/`..`/dup separators and
- *  drop any trailing separator (but keep the root). So `/a/b` and `/a/b/` match. */
-const normalizeDir = (p: string): string => {
-  const n = path.normalize(p.trim())
-  if (n.length > 1 && (n.endsWith(path.sep) || n.endsWith('/'))) return n.slice(0, -1)
-  return n
 }
 
 export function createProjectsService(deps: ProjectsServiceDeps) {
@@ -147,9 +140,7 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
       // path that means something different in every process that reads it. The grammar in
       // `deepLink.ts` rejects it too; this is the layer that has to hold, because the same
       // endpoint serves the trusted CLI and an untrusted URL handler and cannot tell them apart.
-      if (!path.isAbsolute(inputPath.trim())) {
-        throw new ApiError(400, 'project_path_not_absolute', 'Project path must be absolute')
-      }
+      assertAbsolutePath(inputPath)
       // A FILE input resolves the project from its parent dir and is returned as
       // filePath so the UI opens a lightweight editor tab; a DIRECTORY (or a path
       // that doesn't exist / can't be stat'd) resolves the project directly.
@@ -194,6 +185,9 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
         resolveInFlight.delete(key)
       }
     },
+
+    /** Classify a path as a file or a directory without touching any project (`inspect-path.ts`). */
+    inspectPath: (_userId: string, inputPath: string) => inspectPath(inputPath),
 
     async getProject(userId: string, id: string): Promise<Project> {
       const record = await requireProject(userId, id)

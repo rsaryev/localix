@@ -27,12 +27,13 @@ returned neutral ports rather than importing the adapter.
   the iterator applies backpressure.
 - Credential refreshes reach durable storage only when the caller supplies a
   `RuntimeCredentialStore`; otherwise the adapter uses a request-scoped credential snapshot.
-- `listPiCatalog()` starts a background request for OpenRouter metadata (release dates, published
-  reasoning levels) and never waits for it: it answers from the optional metadata store, or from the
-  generated Pi data. A landed answer bumps `piCatalogRevision()` (the engine's `catalogRevision`),
-  which is what a host keys its catalog cache on. Refresh attempts are coalesced and separated by at
-  least five minutes, with a 1.5-second fetch timeout. Each provider's `env` lists the variables its
-  own auth resolver accepts as a plain API key.
+- The engine's catalog projects pi's providers: release dates are pi's `releaseDate`, reasoning
+  levels are pi's `getSupportedThinkingLevels`, and requests clamp with pi's `clampThinkingLevel`.
+  `listCatalog()` makes no network request. `refreshCatalog()` runs pi's `Models.refresh()`: with
+  `allowNetwork: false` it restores the entries in the host's `catalogStore`; with
+  `allowNetwork: true` the static built-ins fetch the generated catalog's sources and publish pi's
+  own conversion of them (`@earendil-works/pi-ai/generated-catalog`). Persisted entries are checked
+  against pi's model schema and tied to the catalog build that wrote them.
 - Model execution is limited to models registered by the Pi collections; adapter errors are
   normalized to the contracts in `@localixai/agent/runtime`.
 
@@ -41,7 +42,7 @@ returned neutral ports rather than importing the adapter.
 - [`package.json`](./package.json) defines the single supported import path.
 - [`src/index.ts`](./src/index.ts) defines the public factories and option types.
 - [Engine composition](src/engine.ts) joins the four adapter ports and shared request tuning.
-- [Catalog metadata](src/catalog-metadata.ts) owns refresh timing, persistence, and revision
-  changes.
 - [`src/runtime.ts`](./src/runtime.ts), [`src/auth.ts`](./src/auth.ts), and
-  [`src/models.ts`](./src/models.ts) own execution, credential, and catalog behavior.
+  [`src/models.ts`](./src/models.ts) own execution and credential behavior;
+  [`src/catalog.ts`](./src/catalog.ts) and [`src/catalog-store.ts`](./src/catalog-store.ts) own the
+  catalog, its refresh, and its persistence.

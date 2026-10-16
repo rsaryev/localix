@@ -160,29 +160,6 @@ describe('runtime catalog facade', () => {
     expect(loads).toBe(1)
   })
 
-  test('a published revision rebuilds the catalog; an unchanged one reuses the build', async () => {
-    // A process-lifetime cache froze the first build (the generated reasoning levels) while the
-    // adapter's refresh corrected the levels the per-request clamp reads.
-    let revision = 0
-    let name = 'Generated'
-    const service = createCatalogService({
-      source: {
-        list: () => ({ ...catalog, models: [{ ...catalog.models[0]!, name }] }),
-        revision: () => revision,
-      },
-    })
-
-    const first = await service.getCatalog()
-    expect(await service.getCatalog()).toBe(first)
-
-    name = 'Published'
-    revision = 1
-    const next = await service.getCatalog()
-    expect(next).not.toBe(first)
-    expect(next.models[0]?.name).toBe('Published')
-    expect(await service.getCatalog()).toBe(next)
-  })
-
   test('a failed warm-up is reported, not left unhandled, and the next read retries', async () => {
     const reported: unknown[] = []
     let fail = true

@@ -63,6 +63,20 @@ describe('reasoning effort', () => {
     expect(resolveReasoningEffort(model(), undefined)).toEqual({ effort: undefined })
   })
 
+  test('"off" follows pi’s clamp: off where the map allows it, the lowest level where not', () => {
+    // Whether a wire format can switch thinking off is pi's data (the generator drops `off: null`
+    // for toggle formats), not a Localix rule.
+    const offNull = { off: null, minimal: null, low: null, medium: null, high: 'high' } as const
+    expect(resolveReasoningEffort(model({ thinkingLevelMap: offNull }), 'off')).toEqual({
+      effort: 'high',
+      clampedFrom: 'off',
+    })
+    const { off: _off, ...offAbsent } = offNull
+    expect(resolveReasoningEffort(model({ thinkingLevelMap: offAbsent }), 'off')).toEqual({
+      effort: undefined,
+    })
+  })
+
   test('the top levels exist only where the model declares them', () => {
     // pi treats `xhigh`/`max` as opt-in: absent means unavailable, not defaulted.
     expect(resolveReasoningEffort(model(), 'max')).toEqual({ effort: 'high', clampedFrom: 'max' })

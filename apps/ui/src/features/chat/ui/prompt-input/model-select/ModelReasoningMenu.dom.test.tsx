@@ -67,7 +67,8 @@ describe('ModelReasoningMenu', () => {
       expect(ui.trigger.getAttribute('aria-label')).toBe('Reasoning for GPT-6 Luna: High')
       expect(ui.trigger.className).not.toContain('border')
       await ui.open()
-      expect(ui.item('Off')).toBeDefined()
+      // This model publishes no `off`: the runtime would send `low`, so Off is not offered.
+      expect(ui.item('Off')).toBeUndefined()
       expect(ui.item('Minimal')).toBeUndefined()
       // One choice among levels: a radio row, its meaning set under the name rather than
       // squeezed into the right-aligned hint.

@@ -123,12 +123,16 @@ function itemsToWireMessages(items: AgentItem[]): WireMessage[] {
       // reasoning: intentionally not re-sent.
     }
     const origin = group.find((item) => item.model)
+    // Protocol state like a signature: a provider that bound this turn's signed reasoning to a
+    // level needs that level back, or it rejects or drops the reasoning on replay.
+    const level = group.find((item) => item.providerThinkingLevel)?.providerThinkingLevel
     if (content.length > 0)
       out.push({
         role: 'assistant',
         api: origin?.api,
         provider: origin?.provider,
         model: origin?.model ?? 'unknown',
+        ...(level ? { providerThinkingLevel: level } : {}),
         timestamp: Date.now(),
         content,
       })

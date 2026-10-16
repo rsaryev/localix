@@ -45,6 +45,7 @@ import { usePromptSessionView } from './usePromptSessionView'
 import { useSkillCommands } from './useSkillCommands'
 
 import { useSlashArgOptions } from './useSlashArgOptions'
+import { useModelCommand } from './model-command/useModelCommand'
 
 export type { PromptInputProps } from './promptInputProps'
 
@@ -85,12 +86,18 @@ export function PromptInput(props: PromptInputProps) {
   )
   const sessionView = usePromptSessionView(activeSessionId, serverQueue)
   const { activeProjectId, participants } = sessionView
-  const loadDynamicOptions = useSlashArgOptions(activeSessionId, activeProjectId)
+  const modelCommand = useModelCommand(activeSessionId, activeProjectId, activeConnectionId)
+  const loadDynamicOptions = useSlashArgOptions(
+    activeSessionId,
+    activeProjectId,
+    modelCommand.loadOptions,
+  )
   const composer = useComposerCommands(
     prompt,
     setPrompt,
     dynamicCommands,
     isFocused ? loadDynamicOptions : undefined,
+    modelCommand.skipArg,
   )
   const { slash, slashArgs } = composer
   const openCommandActive = isFocused && slash.detected?.command.id === 'open'
@@ -230,6 +237,7 @@ export function PromptInput(props: PromptInputProps) {
     onSubmitEdit: props.onSubmitEdit,
     openCommandActive,
     submitOpenResource: openResource.submit,
+    submitClientCommand: () => modelCommand.submit(slash.detected, () => setPrompt('')),
   })
   const hasPrompt = Boolean(prompt.trim())
   const attachmentItems = attachments ?? []

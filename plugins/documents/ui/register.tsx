@@ -144,6 +144,8 @@ export function registerUi(host: PluginUiHost): void {
     match: (key) => PDF_EXTENSIONS.has(fileExtension(key)),
     Component: PdfEditorBody,
     acceptsMedia: true,
+    // A PDF opens here; Reader and other PDF editors stay under Open with….
+    preferred: true,
   })
   host.fileEditors.register({
     id: 'documents:document',

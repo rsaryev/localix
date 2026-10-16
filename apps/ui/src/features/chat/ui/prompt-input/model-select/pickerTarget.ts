@@ -17,7 +17,7 @@ import type { ModelRoutingTaskKey } from '@localixai/api/client'
  * Nothing here knows a particular handle, or whether the conversation has one participant or
  * seven. A private chat is a party of one, not a special case.
  */
-export type PickerTarget = ModelRoutingTaskKey | `agent:${string}`
+export type PickerTarget = ModelRoutingTaskKey | `agent:${string}` | 'party'
 
 const AGENT_PREFIX = 'agent:'
 
@@ -43,17 +43,19 @@ export const isAgentTarget = (target: PickerTarget): boolean => targetAgentId(ta
  * and the routes record has no assignment to store for it.
  */
 export function workloadKey(target: PickerTarget): Exclude<ModelRoutingTaskKey, 'session'> | null {
-  if (isAgentTarget(target) || target === 'session') return null
+  if (isAgentTarget(target) || target === 'session' || target === 'party') return null
   return target as Exclude<ModelRoutingTaskKey, 'session'>
 }
 
 /** Legacy workload bucket; named agents use agentModelSettings instead. */
 export function reasoningMemoryKey(target: PickerTarget): ModelRoutingTaskKey {
-  return isAgentTarget(target) ? 'session' : (target as ModelRoutingTaskKey)
+  return isAgentTarget(target) || target === 'party' ? 'session' : (target as ModelRoutingTaskKey)
 }
 
 export type ModelPickDestination =
   | { kind: 'conversation'; agentId?: string }
+  /** Every participant of the conversation at once (`partyRoute.ts`). */
+  | { kind: 'party' }
   | { kind: 'workload'; key: Exclude<ModelRoutingTaskKey, 'session'> }
 
 /**
@@ -67,6 +69,7 @@ export function modelPickDestination(target: PickerTarget): ModelPickDestination
   const agentId = targetAgentId(target)
   if (agentId !== null) return { kind: 'conversation', agentId }
   if (target === 'session') return { kind: 'conversation' }
+  if (target === 'party') return { kind: 'party' }
   const key = workloadKey(target)
   if (!key) throw new Error(`Picker target has no persistence strategy: ${target}`)
   return { kind: 'workload', key }

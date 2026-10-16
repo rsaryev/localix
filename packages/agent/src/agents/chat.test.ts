@@ -107,6 +107,61 @@ describe('createBrowserCacheSnapshot', () => {
       { type: 'thinking', thinking: '', thinkingSignature: 'thinking-sig', redacted: undefined },
       { type: 'text', text: 'B', textSignature: undefined },
     ])
+    expect('providerThinkingLevel' in assistant).toBe(false)
+  })
+
+  test('replays the level a provider bound signed reasoning to, per turn', () => {
+    // Anthropic's managed-effort models reject (or, under drop_block, silently discard) signed
+    // thinking replayed without the effort it was generated at.
+    const origin = { api: 'anthropic-messages', provider: 'openrouter', model: 'haiku' }
+    const msg: ChatMessage = {
+      id: 'a-levels',
+      role: 'assistant',
+      items: [
+        {
+          id: 'r0',
+          type: 'reasoning',
+          status: 'completed',
+          turnIndex: 0,
+          text: 'x',
+          thinkingSignature: 's0',
+          ...origin,
+          providerThinkingLevel: 'low',
+        },
+        {
+          id: 't0',
+          type: 'text',
+          status: 'completed',
+          turnIndex: 0,
+          text: 'A',
+          ...origin,
+          providerThinkingLevel: 'low',
+        },
+        {
+          id: 'r1',
+          type: 'reasoning',
+          status: 'completed',
+          turnIndex: 1,
+          text: 'y',
+          thinkingSignature: 's1',
+          ...origin,
+          providerThinkingLevel: 'high',
+        },
+        {
+          id: 't1',
+          type: 'text',
+          status: 'completed',
+          turnIndex: 1,
+          text: 'B',
+          ...origin,
+          providerThinkingLevel: 'high',
+        },
+      ],
+    }
+    const levels = toModelMessages([msg]).map(
+      (message) => (message as { providerThinkingLevel?: string }).providerThinkingLevel,
+    )
+    expect(levels).toEqual(['low', 'high'])
   })
 
   test('the same inputs hash deterministically (replay-stable cache diagnostics)', () => {

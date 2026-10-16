@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ModelRoutingTaskKey } from '@localixai/api/client'
-import { clampModelReasoning, initialModelReasoning } from '../../../model/modelReasoning'
+import { reasoningOnModel } from '../../../model/modelReasoning'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import {
   modelReasoningFor,
@@ -32,6 +32,8 @@ interface UseRowReasoningArgs {
   storedPreferences: unknown
   memoryIo: ModelReasoningMemoryIo
   onReasoningEffortChange?: (effort: ReasoningEffort, agentId?: string) => void
+  /** The whole room's level, when the "All agents" row shares one model. */
+  onPartyReasoningChange?: (effort: ReasoningEffort) => void
   /** Write a workload's own level; a participant's goes through `onReasoningEffortChange`. */
   setRouteReasoningEffort: (
     key: Exclude<ModelRoutingTaskKey, 'session'>,
@@ -58,25 +60,29 @@ export function useRowReasoning({
   storedPreferences,
   memoryIo,
   onReasoningEffortChange,
+  onPartyReasoningChange,
   setRouteReasoningEffort,
 }: UseRowReasoningArgs) {
+  const isParty = taskKey === 'party'
+  // The room has no memory of its own: a level set on a model before picking it for everyone is
+  // held here until the pick, which then records it for each member.
+  const [partyDraft, setPartyDraft] = useState<
+    { providerId: string; modelId: string; effort: ReasoningEffort }[]
+  >([])
   const preferences = useMemo(
-    () => normalizeModelReasoningPreferences(storedPreferences),
-    [storedPreferences],
+    () => normalizeModelReasoningPreferences(isParty ? partyDraft : storedPreferences),
+    [isParty, partyDraft, storedPreferences],
   )
 
   /** The level the target holds right now; the flat prop only where no party can answer. */
   const targetEffort =
     (currentSlot?.reasoningEffort as ReasoningEffort | undefined) ??
-    (isAgentTarget(taskKey) && hasParty ? undefined : reasoningEffort)
+    ((isAgentTarget(taskKey) && hasParty) || isParty ? undefined : reasoningEffort)
 
   const reasoningFor = useCallback(
     (model: ReasoningModel, current: boolean): ReasoningEffort => {
       const saved = modelReasoningFor(preferences, model.providerId, model.id)
-      if (current && model.supportsReasoning && targetEffort !== undefined) {
-        return clampModelReasoning(targetEffort, model.reasoningEfforts) ?? targetEffort
-      }
-      return initialModelReasoning(model, saved)
+      return reasoningOnModel(model, current ? targetEffort : undefined, saved)
     },
     [preferences, targetEffort],
   )
@@ -85,6 +91,17 @@ export function useRowReasoning({
     (model: ReasoningModel, effort: ReasoningEffort, current: boolean) => {
       const agentId = targetAgentId(taskKey)
       const entry = { providerId: model.providerId, modelId: model.id, effort }
+      if (isParty) {
+        if (current) onPartyReasoningChange?.(effort)
+        else
+          setPartyDraft((draft) => [
+            ...draft.filter(
+              (row) => row.providerId !== model.providerId || row.modelId !== model.id,
+            ),
+            entry,
+          ])
+        return
+      }
       if (agentId) rememberAgentModelSettings(memoryIo, { agentId, ...entry })
       else rememberModelReasoning(memoryIo, reasoningMemoryKey(taskKey), entry)
       if (!current) return
@@ -92,7 +109,14 @@ export function useRowReasoning({
       else if (taskKey === 'session') onReasoningEffortChange?.(effort)
       else setRouteReasoningEffort(taskKey as Exclude<ModelRoutingTaskKey, 'session'>, effort)
     },
-    [memoryIo, onReasoningEffortChange, setRouteReasoningEffort, taskKey],
+    [
+      isParty,
+      memoryIo,
+      onPartyReasoningChange,
+      onReasoningEffortChange,
+      setRouteReasoningEffort,
+      taskKey,
+    ],
   )
 
   return { reasoningFor, changeModelReasoning }

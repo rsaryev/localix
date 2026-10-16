@@ -6,7 +6,9 @@ import type { useConnections } from './useConnections'
 import { useMemo } from 'react'
 import { useAgents } from '@/features/settings/model/useAgents'
 import type { ParticipantRow } from './model-select/ModelTaskColumn'
+import { participantRows } from './model-select/participantRows'
 import type { SessionAgentRoute } from '@/shared/api/contracts'
+import type { PartyRouteChoice } from '../../model/sessionPartyRoute'
 
 interface ModelPickerDrawerProps {
   open: boolean
@@ -30,6 +32,8 @@ interface ModelPickerDrawerProps {
   onReasoningEffortChange: (effort: ReasoningEffort, agentId?: string) => void
   initialAgentId?: string | null
   onAgentTargetChange?: (agentId: string) => void
+  /** One model and level for the whole room; offered only in a group (`partyRoute.ts`). */
+  onApplyPartyRoute?: (choice: PartyRouteChoice) => void | Promise<void>
 }
 
 /**
@@ -52,37 +56,16 @@ export function ModelPickerDrawer({
   participantScope = '',
   initialAgentId,
   onAgentTargetChange,
+  onApplyPartyRoute,
 }: ModelPickerDrawerProps) {
   // Registry names live behind the lazy drawer on purpose: the composer shows a party without
   // them, and a chat that never opens the picker should not pay for a roster fetch.
   const { agents } = useAgents(participantScope)
   const byId = useMemo(() => new Map(agents.map((agent) => [agent.record.id, agent])), [agents])
-  const named = useMemo<ParticipantRow[]>(() => {
-    return (participants ?? []).map((member) => {
-      const entry = byId.get(member.agentId)
-      const record = entry?.record
-      return {
-        agentId: member.agentId,
-        ...(record?.limits?.maxTurns ? { maxTurnsLimit: record.limits.maxTurns } : {}),
-        handle: member.handle,
-        // A handle the registry cannot resolve still gets a row: the conversation is with
-        // someone, and hiding them would make the picker disagree with the transcript.
-        ...(record?.label ? { label: record.label } : {}),
-        ...(record?.modelPreference?.model
-          ? { inheritedLabel: `Use ${record.modelPreference?.model}` }
-          : {}),
-        // What this member actually runs on, already resolved through the chain by the server —
-        // its level included, so the picker answers for the member it is pointed at instead of
-        // repeating the conversation's.
-        route: {
-          providerConnectionId: member.providerConnectionId,
-          modelId: member.modelId,
-          ...(member.reasoningEffort ? { reasoningEffort: member.reasoningEffort } : {}),
-        },
-        ...(member.modelOrigin ? { modelOrigin: member.modelOrigin } : {}),
-      }
-    })
-  }, [byId, participants])
+  const named = useMemo<ParticipantRow[]>(
+    () => participantRows(participants, (agentId) => byId.get(agentId)?.record),
+    [byId, participants],
+  )
 
   return (
     <ModelPickerShell
@@ -107,6 +90,7 @@ export function ModelPickerDrawer({
       initialConnectionId={seed?.connectionId}
       initialAgentId={initialAgentId}
       onAgentTargetChange={onAgentTargetChange}
+      onApplyPartyRoute={onApplyPartyRoute}
     />
   )
 }

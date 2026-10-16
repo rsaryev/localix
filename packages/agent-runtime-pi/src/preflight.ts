@@ -48,18 +48,24 @@ export interface ResolvedReasoning {
 }
 
 /**
- * The reasoning level this model will actually be asked for.
+ * The reasoning level this model will actually be asked for: pi's `clampThinkingLevel` against the
+ * model's `thinkingLevelMap`, nothing else.
  *
- * Three outcomes: the request passes through, it is clamped to the nearest level the model
- * declares, or it becomes no reasoning at all because the model does none. A level ABSENT from
- * the map is not unsupported — pi falls back to provider defaults there, so it passes through.
+ * `off` is a level like any other. A model whose map says `off: null` cannot switch reasoning
+ * off, and sending no level would leave the PROVIDER's default in charge (`high` on Anthropic's
+ * managed-effort models), so pi clamps it to the least reasoning the model offers. A model that
+ * does not reason is asked for none.
  */
 export function resolveReasoningEffort(
   model: PiModel<PiApi>,
   requested: RequestedEffort,
 ): ResolvedReasoning {
-  if (requested === undefined || requested === 'off') return { effort: undefined }
-  if (!model.reasoning) return { effort: undefined, clampedFrom: requested }
+  if (requested === undefined) return { effort: undefined }
+  if (!model.reasoning) {
+    return requested === 'off'
+      ? { effort: undefined }
+      : { effort: undefined, clampedFrom: requested }
+  }
   const clamped = clampThinkingLevel(model, requested as ModelThinkingLevel)
   const effort: ThinkingLevel | undefined = clamped === 'off' ? undefined : clamped
   if (clamped === requested) return { effort }

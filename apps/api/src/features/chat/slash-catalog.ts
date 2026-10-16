@@ -16,6 +16,7 @@ export type {
   ParsedCommandArgs,
   ParsedArgChip,
   SlashFlagSpec,
+  SkipCommandArg,
 } from './slash-args'
 export { readCommandToken, tokenizeCommandText } from './slash-command-tokens'
 export {
@@ -32,7 +33,16 @@ export function commandUsage(c: SlashCommandSpec): string {
   const parts = (c.args ?? []).map((a) => {
     // A DYNAMIC arg has no static options to print — its list is fetched — so it renders as a
     // placeholder like a text arg does, which is also what it looks like to the person typing.
-    const options = a.type === 'flags' ? a.flags.map((flag) => ({ value: flag.flag, label: flag.flag, description: flag.description })) : a.type === 'choice' || a.type === 'interval' ? (a.options ?? []) : []
+    const options =
+      a.type === 'flags'
+        ? a.flags.map((flag) => ({
+            value: flag.flag,
+            label: flag.flag,
+            description: flag.description,
+          }))
+        : a.type === 'choice' || a.type === 'interval'
+          ? (a.options ?? [])
+          : []
     if (options.length > 0) {
       const opts = options.map((o) => o.value)
       const shown = opts.length > 6 ? `${opts.slice(0, 6).join('|')}|…` : opts.join('|')
@@ -123,10 +133,24 @@ export function describeCommand(c: SlashCommandSpec): CommandDetail {
     argless: c.argless ?? false,
     args: (c.args ?? []).map((a) => {
       // See `commandUsage`: no static options is a live list, not an empty choice.
-      const options = a.type === 'flags' ? a.flags.map((flag) => ({ value: flag.flag, label: flag.flag, description: flag.description })) : a.type === 'choice' || a.type === 'interval' ? (a.options ?? []) : []
+      const options =
+        a.type === 'flags'
+          ? a.flags.map((flag) => ({
+              value: flag.flag,
+              label: flag.flag,
+              description: flag.description,
+            }))
+          : a.type === 'choice' || a.type === 'interval'
+            ? (a.options ?? [])
+            : []
       return {
         name: a.name,
-        signature: a.type === 'flags' ? `[${options.map((o) => o.value).join('|')}]` : options.length ? `<${options.map((o) => o.value).join('|')}>` : `[${a.name}]`,
+        signature:
+          a.type === 'flags'
+            ? `[${options.map((o) => o.value).join('|')}]`
+            : options.length
+              ? `<${options.map((o) => o.value).join('|')}>`
+              : `[${a.name}]`,
         placeholder: a.placeholder,
         options,
         when: a.when,

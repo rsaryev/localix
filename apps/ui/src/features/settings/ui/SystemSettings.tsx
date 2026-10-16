@@ -1,4 +1,5 @@
 import { DesktopUpdateSection } from './DesktopUpdateSection'
+import { ModelCatalogSection } from './ModelCatalogSection'
 import { ShellCommandRow } from './ShellCommandRow'
 import { StorageSection } from './StorageSection'
 import { SettingsPage, SettingsRows, SettingsSection } from './SettingsScaffold'
@@ -38,6 +39,7 @@ export function SystemSettings({
       ) : (
         <div className="space-y-8">
           <DesktopUpdateSection />
+          <ModelCatalogSection />
           <SettingsSection
             anchor="system-cli"
             title="Command line"

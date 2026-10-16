@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getAiGatewayCost } from "../scripts/ai-gateway-pricing.ts";
-import { buildOpenRouterCatalog, type OpenRouterModelListItem } from "../scripts/openrouter-catalog.ts";
+import { getAiGatewayCost } from "../src/generated-catalog/ai-gateway-pricing.ts";
+import { buildOpenRouterCatalog, type OpenRouterModelListItem } from "../src/generated-catalog/openrouter-catalog.ts";
 
 function openRouterChatCost(pricing: OpenRouterModelListItem["pricing"]) {
 	const catalog = buildOpenRouterCatalog(

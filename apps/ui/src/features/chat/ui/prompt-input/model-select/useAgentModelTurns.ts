@@ -1,7 +1,13 @@
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import { agentModelSettingsFor } from '@localixai/agent'
-import { DEFAULT_MAX_TURNS } from '@localixai/api/turn-budget'
-import { rememberAgentModelSettings } from './rememberModelReasoning'
+import { inheritedMaxTurns } from './modelSettingChoices'
+import { rememberAgentModelSettings, type ModelReasoningMemoryIo } from './rememberModelReasoning'
+
+/** The per-agent model settings in user settings, read and written as they are right now. */
+export const agentSettingsIo: ModelReasoningMemoryIo = {
+  read: () => useUserSettings.getState().settings.agentSettings,
+  write: (next) => useUserSettings.getState().update({ agentSettings: next }),
+}
 
 export function useAgentModelTurns(
   agentId: string | null,
@@ -9,7 +15,7 @@ export function useAgentModelTurns(
   modelId?: string,
   agentLimit?: number,
 ) {
-  const { settings, update } = useUserSettings()
+  const { settings } = useUserSettings()
   const entry =
     agentId && providerId && modelId
       ? agentModelSettingsFor(
@@ -21,18 +27,9 @@ export function useAgentModelTurns(
       : undefined
   const remember = (patch: { maxTurns?: number } | { contextPercent?: number }) => {
     if (!agentId || !providerId || !modelId) return
-    rememberAgentModelSettings(
-      {
-        read: () => useUserSettings.getState().settings.agentSettings,
-        write: (next) => update({ agentSettings: next }),
-      },
-      { agentId, providerId, modelId, ...patch },
-    )
+    rememberAgentModelSettings(agentSettingsIo, { agentId, providerId, modelId, ...patch })
   }
-  const inherited = Math.min(
-    settings.agentSettings?.maxTurns ?? DEFAULT_MAX_TURNS,
-    agentLimit ?? DEFAULT_MAX_TURNS,
-  )
+  const inherited = inheritedMaxTurns(settings.agentSettings?.maxTurns, agentLimit)
   return {
     value: entry?.maxTurns,
     inherited,

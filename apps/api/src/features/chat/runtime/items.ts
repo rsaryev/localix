@@ -13,6 +13,9 @@ import type {
 import { buildToolItem, reasoningItem, textItem, type ToolItemSpec } from './item-builders'
 import { mergeToolItemSpec } from './item-tool-spec'
 
+/** Where a streamed part came from, kept on its item so a later run replays it to its origin. */
+type ItemOrigin = Pick<AgentItem, 'api' | 'provider' | 'model' | 'providerThinkingLevel'>
+
 // Re-export the pure item builders so the historical `./items` import surface
 // (callers + tests importing buildToolItem/classifyTool/textItem/reasoningItem/
 // ToolItemSpec) stays stable after the builders moved to ./item-builders.
@@ -106,7 +109,7 @@ export function createItemAccumulator(
     turnIndex: number,
     text: string,
     contentIndex = 0,
-    meta?: { api?: string; provider?: string; model?: string; textSignature?: string },
+    meta?: ItemOrigin & { textSignature?: string },
   ) => {
     textByPart.set(partKey(turnIndex, contentIndex), text)
     const first = firstTextIndex.get(turnIndex) ?? contentIndex
@@ -127,13 +130,7 @@ export function createItemAccumulator(
     turnIndex: number,
     text: string,
     contentIndex = 0,
-    meta?: {
-      api?: string
-      provider?: string
-      model?: string
-      thinkingSignature?: string
-      redacted?: boolean
-    },
+    meta?: ItemOrigin & { thinkingSignature?: string; redacted?: boolean },
   ) => {
     reasoningByPart.set(partKey(turnIndex, contentIndex), text)
     const first = firstReasoningIndex.get(turnIndex) ?? contentIndex
@@ -160,7 +157,7 @@ export function createItemAccumulator(
       turnIndex: number,
       delta: string,
       contentIndex = 0,
-      meta?: { api?: string; provider?: string; model?: string; textSignature?: string },
+      meta?: ItemOrigin & { textSignature?: string },
     ) {
       const key = partKey(turnIndex, contentIndex)
       setText(turnIndex, (textByPart.get(key) ?? '') + delta, contentIndex, meta)
@@ -172,13 +169,7 @@ export function createItemAccumulator(
       turnIndex: number,
       delta: string,
       contentIndex = 0,
-      meta?: {
-        api?: string
-        provider?: string
-        model?: string
-        thinkingSignature?: string
-        redacted?: boolean
-      },
+      meta?: ItemOrigin & { thinkingSignature?: string; redacted?: boolean },
     ) {
       const key = partKey(turnIndex, contentIndex)
       setReasoning(turnIndex, (reasoningByPart.get(key) ?? '') + delta, contentIndex, meta)
@@ -192,10 +183,7 @@ export function createItemAccumulator(
         arguments?: unknown
         contentIndex?: number
         thoughtSignature?: string
-        api?: string
-        provider?: string
-        model?: string
-      },
+      } & ItemOrigin,
     ) {
       const { id: _id, arguments: input, ...metadata } = call
       setTool(call.id, { input, status: 'pending', turnIndex, ...metadata })

@@ -1,3 +1,4 @@
+import type { ReasoningModel } from '@localixai/agent'
 import type { AgentSessionKind, ReasoningEffort } from '../../../db/types'
 import type { PermissionMode } from '../../capabilities/permission-modes'
 import type { LastMessagePreview, ModelRoute } from '../repository-types'
@@ -38,6 +39,15 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
       agentId: string,
       route: Partial<ModelRoute>,
     ) => Promise<void>
+    /**
+     * Several participants re-routed in one transaction (`UpdateSessionPatch.routes`). Required:
+     * a per-member fallback would let a failure halfway leave the room half-moved.
+     */
+    updateSessionAgentRoutes: (
+      userId: string,
+      id: string,
+      routes: readonly ({ agentId: string } & Partial<ModelRoute>)[],
+    ) => Promise<void>
     /** For the membership line a party edit writes into the conversation. */
     insertMessage: (message: PersistedMessage) => Promise<void>
   }
@@ -73,6 +83,15 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
    * reason that is the host's, not the caller's.
    */
   connectionExists?: (userId: string, connectionId: string) => Promise<boolean>
+  /**
+   * The reasoning capability of the model a route names, for clamping a stated level
+   * (`clampRoutePatch`). Null when the catalog cannot resolve it; absent in a narrow host.
+   */
+  reasoningModel?: (
+    userId: string,
+    connectionId: string | null,
+    modelId: string,
+  ) => Promise<ReasoningModel | null>
   requireSession: (userId: string, id: string) => Promise<SessionRecord>
   getSessionDetail: (userId: string, id: string) => Promise<SessionDetail>
   publishSession: (session: SessionRecord) => void
@@ -143,6 +162,8 @@ export interface UpdateSessionPatch {
    * chat, the first in a group.
    */
   route?: { agentId?: string } & Partial<ModelRoute>
+  /** Re-route several named participants at once; all must be seated, or nothing is written. */
+  routes?: Array<{ agentId: string } & Partial<ModelRoute>>
   isPinned?: boolean
   isArchived?: boolean
   /** Move the session to another project. Never null — a session always belongs to one. */

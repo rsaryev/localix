@@ -218,6 +218,38 @@ describe('createEditTool — several edits in one call', () => {
     expect(await readFile(file, 'utf8')).toBe('one\ntwo\n')
   })
 
+  test('a no-op edit in a batch is skipped and named; the real edits beside it still land', async () => {
+    const file = path.join(dir, 'a.ts')
+    await writeFile(file, 'one\ntwo\n')
+    const tool = createEditTool(undefined, dir)
+    const result = await tool.execute(
+      'm-noop',
+      {
+        edits: [
+          { path: 'a.ts', old_string: 'one', new_string: 'ONE' },
+          { path: 'a.ts', old_string: 'two', new_string: 'two' },
+        ],
+      },
+      signal(),
+    )
+    expect(result.isError).toBeFalsy()
+    expect(result.content).toContain('skipped edits[1] (new_string identical to old_string)')
+    expect(await readFile(file, 'utf8')).toBe('ONE\ntwo\n')
+  })
+
+  test('a file whose every edit is a no-op still fails, writing nothing', async () => {
+    const file = path.join(dir, 'a.ts')
+    await writeFile(file, 'one\n')
+    const tool = createEditTool(undefined, dir)
+    const result = await tool.execute(
+      'm-noop-all',
+      { edits: [{ path: 'a.ts', old_string: 'one', new_string: 'one' }] },
+      signal(),
+    )
+    expect(result.isError).toBe(true)
+    expect(result.content).toContain('`new_string` is identical to `old_string`')
+  })
+
   test('an edit whose span an earlier edit consumed says so', async () => {
     await writeFile(path.join(dir, 'a.ts'), 'alpha beta\n')
     const tool = createEditTool(undefined, dir)

@@ -50,8 +50,6 @@ export interface OpenFileRequest extends SessionBound {
   ephemeral?: boolean
   /** Single-click preview — reuse the active preview slot (file-tree click-through). */
   replace?: boolean
-  /** Distraction-free: maximize the file's group and collapse the workspace chrome. */
-  solo?: boolean
   /** Show the built-in code editor even if a plugin registered one for this file type. */
   openWith?: 'builtin'
 }

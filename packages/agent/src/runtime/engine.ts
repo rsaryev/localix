@@ -27,6 +27,35 @@ export interface EngineCatalog {
   oauthProviders: { providerId: string; loginLabel: string; loginDescription: string }[]
 }
 
+/**
+ * Where the adapter persists refreshed provider catalogs between launches: one opaque JSON entry
+ * per provider id. The adapter owns the entry's shape and validates what it reads back.
+ */
+export interface EngineCatalogStore {
+  read(providerId: string): Promise<unknown>
+  write(providerId: string, entry: unknown): Promise<void>
+  delete(providerId: string): Promise<void>
+}
+
+export interface EngineCatalogRefreshOptions {
+  /** False restores persisted catalogs only; true also fetches newer ones. */
+  allowNetwork: boolean
+  /** Fetch even where the persisted catalog is still fresh. */
+  force?: boolean
+  signal?: AbortSignal
+}
+
+export interface EngineCatalogRefreshResult {
+  /**
+   * A provider published a model list (a restore from the store included), so a cached
+   * `listCatalog()` answer may be stale.
+   */
+  changed: boolean
+  aborted: boolean
+  /** Providers whose refresh failed; each keeps its previous list. */
+  errors: { providerId: string; message: string }[]
+}
+
 export interface AgentEngine {
   /** Persisted with every run so stored entries remain decodable after adapter upgrades. */
   readonly id: string
@@ -40,9 +69,8 @@ export interface AgentEngine {
   /** The catalog of providers and models this engine can serve, with the adapter's metadata. */
   listCatalog(): Promise<EngineCatalog>
   /**
-   * Changes whenever `listCatalog()` would answer differently (provider metadata that landed after
-   * the first build). A host that caches the catalog compares this instead of freezing its first
-   * build — a frozen build is how the picker and the per-request clamp came to disagree.
+   * Restore persisted catalogs and, with `allowNetwork`, fetch newer ones. Never rejects for a
+   * provider's failure: it is reported in `errors` and that provider keeps its list.
    */
-  catalogRevision(): number
+  refreshCatalog(options: EngineCatalogRefreshOptions): Promise<EngineCatalogRefreshResult>
 }

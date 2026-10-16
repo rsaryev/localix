@@ -63,11 +63,14 @@ to one request's input size instead of the session total.
 
 ### Price source
 
-Runtime estimates use the `cost` fields in the vendored model catalog. Its generator loads
-models.dev metadata, provider catalogs, and explicit corrections when the catalog is built.
+Runtime estimates use the `cost` fields in the runtime's model catalog. Its generator loads
+models.dev metadata, provider catalogs, and explicit corrections when the catalog is built, and the
+background model-list check rebuilds it from the same sources with the same code (see
+[Providers](providers.md#how-the-model-list-stays-current)).
 
-Localix does not fetch live prices for a run. Its OpenRouter metadata request refreshes release
-dates and published reasoning levels; it does not replace prices or add models.
+Prices, release dates, and reasoning levels all come from that catalog; Localix adds none of its
+own. A price change reaches estimates after the next successful check, and an estimate already
+recorded is not repriced.
 
 ### Cost provenance
 

@@ -5,14 +5,10 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import {
-  CONTEXT_PERCENT_STEPS,
-  clampContextPercent,
-  DEFAULT_CONTEXT_PERCENT,
-} from '@localixai/agent'
 import { SETTING_TRIGGER_CLASS } from './model-select/settingTrigger'
+import { contextPercentChoices, contextPercentLabel } from './model-select/modelSettingChoices'
 
-export const contextPercentLabel = (value: number) => `${clampContextPercent(value)}%`
+export { contextPercentLabel }
 
 /** Share of the model's context window a run may fill before a checkpoint trims its history. */
 export function ContextPercentControl({
@@ -24,8 +20,7 @@ export function ContextPercentControl({
   onChange: (next: number | undefined) => void
   disabled?: boolean
 }) {
-  const current = clampContextPercent(value)
-  const options = [...new Set([...CONTEXT_PERCENT_STEPS, current])].sort((a, b) => a - b)
+  const { current, options, defaultValue } = contextPercentChoices(value)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -46,7 +41,7 @@ export function ContextPercentControl({
             {
               id: 'default',
               label: 'Use default',
-              hint: contextPercentLabel(DEFAULT_CONTEXT_PERCENT),
+              hint: contextPercentLabel(defaultValue),
               selected: value === undefined,
               onSelect: () => onChange(undefined),
             },

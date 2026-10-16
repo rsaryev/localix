@@ -2,9 +2,14 @@
  * The in-memory half of `edit`: one file's edits applied, in order, to its text.
  *
  * Claude Code's MultiEdit semantics: each edit matches against the text the previous edit left,
- * and the first edit that cannot match — missing, ambiguous, or a no-op — fails the WHOLE file.
- * Nothing is written for a failed file, so a half-applied file can never reach disk; the caller
- * owns the I/O and only writes when this returns `ok`.
+ * and the first edit that cannot match — missing or ambiguous — fails the WHOLE file. Nothing is
+ * written for a failed file, so a half-applied file can never reach disk; the caller owns the I/O
+ * and only writes when this returns `ok`.
+ *
+ * A no-op edit (`new_string` equal to `old_string`) is the exception: it is skipped and named.
+ * It changes nothing, so skipping it cannot half-apply anything, and failing on it cost a whole
+ * batch: gpt-6-luna repeated one unchanged span inside 7–8-edit batches eight times, and each
+ * refusal discarded every real edit beside it. A file whose edits are ALL no-ops still fails.
  */
 import { normalizeToLF } from './file-line-endings'
 import type { FileMtimeStore } from './file-utils'
@@ -18,7 +23,7 @@ export interface EditStep {
 }
 
 export type EditApplyResult =
-  | { ok: true; text: string; replacements: number; lines: number[] }
+  | { ok: true; text: string; replacements: number; lines: number[]; skipped: number[] }
   | { ok: false; message: string }
 
 /** 1-based line numbers at which `needle` starts in `haystack`. */
@@ -76,15 +81,23 @@ export function applyEditSteps(
   let text = original
   let replacements = 0
   const lines: number[] = []
+  const skipped: number[] = []
+  const isNoOp = (step: EditStep) =>
+    normalizeToLF(step.old_string) === normalizeToLF(step.new_string)
+  if (steps.every(isNoOp)) {
+    const label = labelled ? `edits[${steps[0]!.index}]: ` : ''
+    return {
+      ok: false,
+      message: `${label}\`new_string\` is identical to \`old_string\` — nothing to change.`,
+    }
+  }
   for (const [position, step] of steps.entries()) {
     const label = labelled ? `edits[${step.index}]: ` : ''
     const oldString = normalizeToLF(step.old_string)
     const newString = normalizeToLF(step.new_string)
-    if (oldString === newString) {
-      return {
-        ok: false,
-        message: `${label}\`new_string\` is identical to \`old_string\` — nothing to change.`,
-      }
+    if (isNoOp(step)) {
+      skipped.push(step.index)
+      continue
     }
     const found = occurrenceLines(text, oldString)
     if (found.length === 0) {
@@ -109,5 +122,5 @@ export function applyEditSteps(
     replacements += found.length
     lines.push(...found)
   }
-  return { ok: true, text, replacements, lines }
+  return { ok: true, text, replacements, lines, skipped }
 }

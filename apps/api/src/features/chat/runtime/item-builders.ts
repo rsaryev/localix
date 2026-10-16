@@ -63,6 +63,7 @@ export interface ToolItemSpec {
   api?: string
   provider?: string
   model?: string
+  providerThinkingLevel?: string
   startedAt?: number
   completedAt?: number
 }
@@ -150,6 +151,7 @@ export function buildToolItem(spec: ToolItemSpec): ToolBackedItem {
     api: spec.api,
     provider: spec.provider,
     model: spec.model,
+    ...(spec.providerThinkingLevel ? { providerThinkingLevel: spec.providerThinkingLevel } : {}),
     startedAt: spec.startedAt,
     completedAt: spec.completedAt,
   }

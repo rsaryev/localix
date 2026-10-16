@@ -10,6 +10,7 @@ export * from './chat-stream-parts'
 export * from './usage-summary'
 export * from './participant-usage'
 export * from './agent-model-settings'
+export * from './reasoning-levels'
 export * from './terminal-lifecycle'
 export { zodToJsonSchema } from './utils/zod-schema'
 export {

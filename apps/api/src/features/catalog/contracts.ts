@@ -63,3 +63,17 @@ export const catalogResponseSchema = z.object({
 })
 
 export type CatalogResponse = z.infer<typeof catalogResponseSchema>
+
+/** The outcome of an on-demand model-list check (`POST /rpc/models/catalog/refresh`). */
+export const catalogRefreshResponseSchema = z.object({
+  /** Every source answered and every provider published. */
+  ok: z.boolean(),
+  /** A provider's model list changed; a client refetches the catalog. */
+  changed: z.boolean(),
+  /** Providers whose check failed; each keeps its previous list. */
+  failedProviders: z.array(z.string()),
+  /** The distinct failure messages, when any. */
+  message: z.string().optional(),
+})
+
+export type CatalogRefreshResponse = z.infer<typeof catalogRefreshResponseSchema>

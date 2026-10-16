@@ -1,14 +1,15 @@
 import {
   createModels,
-  type Api,
   type AuthContext,
   type CreateModelsOptions,
-  type Model,
   type Provider,
   type ProviderHeaders,
-  type ThinkingLevelMap,
 } from '@earendil-works/pi-ai'
 import { registerBunOAuthFlows } from '@earendil-works/pi-ai/bun-oauth'
+import {
+  GeneratedCatalogRefresher,
+  withGeneratedCatalogRefresh,
+} from '@earendil-works/pi-ai/generated-catalog'
 import { builtinProviders, radiusProvider } from '@earendil-works/pi-ai/providers/all'
 
 const OPENROUTER_PROVIDER_ID = 'openrouter'
@@ -53,63 +54,11 @@ function withHeaders<T extends object>(
   return { ...options, headers } as T & { headers: ProviderHeaders }
 }
 
-/**
- * Reasoning levels a provider publishes about ITS OWN models, as the catalog metadata pass last
- * read them (`models.ts`). Empty until that pass has run.
- *
- * Read lazily, per `getModels()` call, and deliberately not baked into the provider definition:
- * definitions are built once and frozen, while this arrives from the network — a value copied in
- * at construction would be the stale generated snapshot forever.
- */
-let publishedThinkingLevels: ReadonlyMap<string, ThinkingLevelMap> = new Map()
-
-/**
- * Publish what the provider says its models support, overriding the generated snapshot.
- *
- * The snapshot in `vendor/pi` is generated FROM this same field and then frozen at sync time, so
- * it goes stale the moment a vendor changes a model's levels — which is visible to the user as a
- * picker offering a level the model does not have, and missing ones it does. Nothing here knows
- * any model or vendor: whatever the provider publishes wins, and when it publishes nothing the
- * generated data stands.
- */
-export function setPublishedThinkingLevels(levels: ReadonlyMap<string, ThinkingLevelMap>): void {
-  publishedThinkingLevels = levels
-  publishedRevision += 1
-}
-
-/**
- * Bumped on every publish, so a derived cache can tell whether it was built from this answer.
- *
- * The catalog projection is memoised and the levels arrive from the network AFTER the first
- * build, so without a revision to key on, the first launch's catalog would carry the generated
- * levels until the process restarted. Same shape as the capability revision in the API: the
- * cheap check is the number, and re-deriving is cheap.
- */
-let publishedRevision = 0
-
-export function publishedThinkingRevision(): number {
-  return publishedRevision
-}
-
-/** A model can reason when some level other than `off` maps to a value the provider accepts. */
-export function mapsAnyThinkingLevel(map: ThinkingLevelMap): boolean {
-  return Object.entries(map).some(([level, value]) => level !== 'off' && value != null)
-}
-
-function withPublishedThinking(model: Model<Api>): Model<Api> {
-  const thinkingLevelMap = publishedThinkingLevels.get(model.id)
-  if (!thinkingLevelMap) return model
-  return { ...model, reasoning: mapsAnyThinkingLevel(thinkingLevelMap), thinkingLevelMap }
-}
-
 export function withOpenRouterMetadata(provider: Provider): Provider {
   if (provider.id !== OPENROUTER_PROVIDER_ID) return provider
   return {
     ...provider,
     headers: openRouterRequestHeaders(provider.headers),
-    // Both the catalog and the per-request clamp read the model through here, so the published
-    // levels reach the picker and the request as ONE answer rather than two that can disagree.
-    getModels: () => provider.getModels().map(withPublishedThinking),
     stream(model, context, options) {
       const headers = openRouterRequestHeaders(
         mergeHeaders(provider.headers, options?.headers),
@@ -153,21 +102,30 @@ function ensureBunOAuthFlows(): void {
   oauthFlowsRegistered = true
 }
 
-function getProviderDefinitions(): ReadonlyMap<string, PiProviderDefinition> {
-  if (providerDefinitions) return providerDefinitions
+/**
+ * pi's built-in providers, each static one refreshing its generated models from `refresher`.
+ *
+ * A generated catalog is public data, so its refreshed list is the same for every tenant: the
+ * shared definitions carry it to every run's collection. Radius's list is account-specific and
+ * stays isolated per collection.
+ */
+function createPiProviderDefinitions(
+  refresher: GeneratedCatalogRefresher,
+): ReadonlyMap<string, PiProviderDefinition> {
   ensureBunOAuthFlows()
-
-  providerDefinitions = new Map(
+  return new Map(
     builtinProviders().map((provider): [string, PiProviderDefinition] => {
       if (provider.refreshModels === undefined) {
-        // Provider definitions contain transport/auth functions and immutable generated
-        // model data, but no credential store. Sharing them avoids reconstructing all
-        // built-ins for every run while Models itself remains request-scoped.
+        // Provider definitions contain transport/auth functions and model data, but no credential
+        // store. Sharing them avoids reconstructing all built-ins for every run while Models itself
+        // remains request-scoped.
         return [
           provider.id,
           {
             kind: 'shared',
-            provider: freezeProviderDefinition(withOpenRouterMetadata(provider)),
+            provider: freezeProviderDefinition(
+              withGeneratedCatalogRefresh(withOpenRouterMetadata(provider), refresher),
+            ),
           },
         ]
       }
@@ -175,9 +133,9 @@ function getProviderDefinitions(): ReadonlyMap<string, PiProviderDefinition> {
         throw new Error(`Unsupported stateful built-in pi provider: ${provider.id}`)
       }
 
-      // Radius owns a mutable, dynamically refreshed model list. Reuse the first
-      // definition built above, then construct an isolated provider for every later
-      // collection so refresh state cannot cross run/tenant boundaries.
+      // Radius owns a mutable, account-specific model list. Reuse the first definition built
+      // above, then construct an isolated provider for every later collection so refresh state
+      // cannot cross run/tenant boundaries.
       let first: Provider | undefined = provider
       return [
         provider.id,
@@ -193,7 +151,20 @@ function getProviderDefinitions(): ReadonlyMap<string, PiProviderDefinition> {
       ]
     }),
   )
+}
+
+function getProviderDefinitions(): ReadonlyMap<string, PiProviderDefinition> {
+  // The process's refresher: one build of the generated catalog serves every provider of a refresh.
+  providerDefinitions ??= createPiProviderDefinitions(new GeneratedCatalogRefresher())
   return providerDefinitions
+}
+
+/**
+ * A separate set of built-ins over its own refresher, sharing no state with `piProviders()`. For
+ * tests that drive a refresh from fixture documents.
+ */
+export function createPiProviders(refresher: GeneratedCatalogRefresher): Provider[] {
+  return [...createPiProviderDefinitions(refresher).values()].map(materializeProvider)
 }
 
 function materializeProvider(definition: PiProviderDefinition): Provider {

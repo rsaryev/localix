@@ -61,16 +61,23 @@ export function hasNativeFileViewer(pathOrName: string): boolean {
  * text of this file" — and the only way to express it. Without it, a plugin owning a file type
  * either wins silently (one match, no native viewer) or forces the chooser (one match plus a
  * native viewer), and neither can be answered with "the code, please".
+ *
+ * `preferredIds` are the matches whose contribution declares `preferred`: exactly one of them opens
+ * without the chooser (the PDF viewer beside Reader). Two preferred matches cancel out.
  */
 export function initialFileEditorSelection(
   matchingIds: string[],
   remembered: string | null,
   offerNativeChoice: boolean,
   requestedBuiltin = false,
+  preferredIds: string[] = [],
 ): string | null {
   if (requestedBuiltin) return BUILTIN_EDITOR_CHOICE
   if (remembered === BUILTIN_EDITOR_CHOICE) return BUILTIN_EDITOR_CHOICE
   if (remembered && matchingIds.includes(remembered)) return remembered
-  if (matchingIds.length === 1 && !offerNativeChoice) return matchingIds[0]!
+  if (offerNativeChoice) return null
+  const preferred = matchingIds.filter((id) => preferredIds.includes(id))
+  if (preferred.length === 1) return preferred[0]!
+  if (matchingIds.length === 1) return matchingIds[0]!
   return null
 }

@@ -9,8 +9,10 @@ import {
 } from '@/shared/contrib/fileEditorChoice'
 import { baseName } from '@localixai/plugin-sdk/ui/utilities'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { Button } from '@localixai/kit/button'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
+import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 
 import { initialFileEditorSelection } from './fileEditorSelection'
@@ -128,6 +130,7 @@ export function ContributedFileBody({
       rememberedFileEditor(fileKey, preferenceKey),
       offerNativeChoice,
       requestedBuiltin,
+      matches.filter((match) => match.preferred).map((match) => match.id),
     ),
   )
 
@@ -147,10 +150,27 @@ export function ContributedFileBody({
   if (chosen) {
     const Tab = chosen.Component
     // A contributed file editor is plugin code on the same footing as a contributed tab body.
-    return (
+    const body = (
       <SurfaceErrorBoundary key={chosen.id} surface={`The ${chosen.id} editor`}>
         <Tab {...editorProps} />
       </SurfaceErrorBoundary>
+    )
+    if (matches.length < 2) return body
+    // Another editor also matches: "Open with…" returns the tab to the chooser — the way to Reader
+    // for a PDF that opened in the preferred PDF viewer.
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <WorkbenchToolbar density="slim" aria-label="Editor choice">
+          <WorkbenchToolbarSection align="end">
+            <Button variant="outline" size="xs" onClick={() => setPicked(null)}>
+              Open with…
+            </Button>
+          </WorkbenchToolbarSection>
+        </WorkbenchToolbar>
+        {/* A flex column, like the pane body the editor fills when it renders alone: editors size
+            themselves as `flex-1` children, so a plain block here collapses them. */}
+        <div className="flex min-h-0 flex-1 flex-col">{body}</div>
+      </div>
     )
   }
   return (

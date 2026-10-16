@@ -83,6 +83,74 @@ ends a run when one call fails the same way four times, when six calls fail with
 or when one call is issued eight times in a row. A tool that declares `idempotentHint: false` is
 compared by its answers as well.
 
+### Reasoning level
+
+The speaker's stored route supplies `reasoningEffort` to `AgentRuntime.run()`; a delegated child
+snapshots its parent's route. The Pi adapter resolves the level with pi's own `clampThinkingLevel`
+before the first request (`preflight.ts`); Localix adds no rule of its own:
+
+| Requested                      | Sent                                                         |
+| ------------------------------ | ------------------------------------------------------------ |
+| A level pi lists for the model | That level.                                                  |
+| A level pi does not list       | The nearest listed level, searching upward first.            |
+| `off`, pi lists `off`          | No reasoning.                                                |
+| `off`, pi does not list `off`  | The model's lowest listed level, not the provider's default. |
+| Any level, non-reasoning model | No reasoning request.                                        |
+
+The list is pi's `getSupportedThinkingLevels`, read from the model's `thinkingLevelMap` — generated,
+or refreshed by the same conversion (below). The catalog publishes the same list as
+`reasoningEfforts`, and the shared clamp in `@localixai/agent` (`reasoning-levels.ts`) applies pi's
+algorithm to it, so the picker, `/model` and the server store the level the request will carry.
+`catalog-reasoning.test.ts` pins both against pi for every generated model and for a catalog
+refreshed from fixture documents. Where pi's data is wrong for a model, the fix belongs in pi's
+generator (see `vendor/pi/UPSTREAM.md`), not in Localix.
+
+Buffered completions such as titles and inline completion use the same rule.
+
+### Model catalog refresh
+
+The model list updates without a release through pi's own `Models.refresh()`. Localix guesses no
+metadata: there is no id pattern, overlay, or fallback of its own, and nothing is synthesized from a
+bare `/v1/models` id list.
+
+| Layer      | Owns                                                                                                                                                                                                                   |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pi         | `src/generated-catalog/`: the generator's conversion (`buildGeneratedCatalog`), its sources, and `GeneratedCatalogRefresher`. `scripts/generate-models.ts` writes the same function's result to `src/providers/data/`. |
+| Pi adapter | `providers.ts` wraps every static built-in with `withGeneratedCatalogRefresh`; `catalog.ts` owns the long-lived collection, its projection, and `refresh()`; `catalog-store.ts` validates persisted entries.           |
+| API        | `features/catalog/`: the file store, the cached ordered catalog, the startup restore, the hourly check, and `POST /rpc/models/catalog/refresh`.                                                                        |
+
+```text
+startup     catalogService.restore() -> engine.refreshCatalog({ allowNetwork: false })
+            -> Models.refresh: each provider restores its stored entry, no request
+idle, hourly catalogService.check() -> engine.refreshCatalog({ allowNetwork: true })
+            -> providers older than 6 h fetch: one shared build from all sources
+            -> publish { persist: { models, checkedAt }, update } per provider
+any refresh  result.updated non-empty -> projection and API cache dropped -> next read rebuilds
+```
+
+| Mechanism       | Behavior                                                                                                                                                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sources         | models.dev (`api.json`, decision models), OpenRouter (chat, image, decision listings), Vercel AI Gateway, NVIDIA NIM — exactly the generator's, minus Radius.                                                                                                |
+| Conversion      | `buildGeneratedCatalog(sources, { strict: true })`, the generator's code moved into `src/`. A refreshed model equals what `generate-models --strict` would write today.                                                                                      |
+| Sharing         | One build serves every provider of a refresh (concurrent callers, or within 60 s). The catalog is public, so providers refresh with `refreshWithoutAuth` and no credential is read.                                                                          |
+| Freshness       | A provider whose stored `checkedAt` is under six hours old is not fetched; `force` (the manual check) skips that.                                                                                                                                            |
+| Conditional GET | A document whose response had an `ETag` or `Last-Modified` (models.dev) is kept in memory and revalidated; all `304`s reuse the previous build. Documents without a validator are not kept.                                                                  |
+| Persistence     | One file per provider under `~/.localix/model-catalog/`, written atomically, wrapped as `{ build, entry }`. A read that fails pi's `ModelsStoreEntrySchema`, or belongs to another catalog build (`getBuiltinModelDataGeneratedAt`), is dropped and deleted. |
+| Failure         | Any source failing fails the build; every provider keeps its previous list (baseline plus last persisted entry) and the error is logged.                                                                                                                     |
+| Merge           | pi's `createProvider` overlay: refreshed models replace the baseline by type and id, new ones are appended, none are removed. Newest-first ordering stays in the API's catalog service.                                                                      |
+| Runs            | The refreshed state lives on the shared provider definitions, so a run's request-scoped collection resolves a refreshed model too. Radius stays isolated per collection and is not refreshed by the host.                                                    |
+
+Persisted entries are not trusted across builds: after an update the shipped baseline wins until the
+next check. ETags are not persisted. A build needs every document's body, and OpenRouter, AI Gateway
+and NVIDIA send no validator, so a `304` after a restart could not avoid the download; the six-hour
+`checkedAt` window is what avoids requests across restarts.
+
+Some providers bind signed reasoning to the level it was generated at. Anthropic's per-turn-effort
+models are one example. The adapter records that level on the assistant message as
+`providerThinkingLevel`, and the host stores it on the turn's items. Both the per-request
+context-policy round trip and a later run's rebuilt history replay it, so pi can send the historical
+effort marker. Without the marker, the provider rejects or drops the earlier thinking blocks.
+
 ### Steering and tool checkpoints
 
 The adapter passes `SteeringBoundary` to `takeSteering`: the completed turn index and, only after a

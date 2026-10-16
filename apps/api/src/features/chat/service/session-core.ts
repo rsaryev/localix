@@ -9,6 +9,7 @@ import { toSessionSummary, type SessionRecord } from '../repository'
 import { discardSessionSandbox, projectWorkingDirPort } from '../session-cwd'
 import type { ChatServiceDeps } from './context'
 import { rootChangeFanout } from './root-change-fanout'
+import { routeReasoningModel } from './route-reasoning-model'
 import type { ChatServiceGraph } from './service-graph'
 import * as sessionDetail from './session-detail'
 import type { SessionDetailContext } from './session-detail'
@@ -157,6 +158,8 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
       (await deps.providerConnectionsService.listConnections(userId)).connections.some(
         (connection) => connection.id === connectionId,
       ),
+    // A stated level lands on what its model offers — the picker's rule, enforced here.
+    reasoningModel: routeReasoningModel(deps),
     // Only the effort is decided at birth; the model is left blank so the chain answers for it
     // on every read. Same chain, same cache — see `session-route-defaults.ts`.
     seatRoute: routeDefaults.seatRoute,

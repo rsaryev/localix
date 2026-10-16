@@ -876,6 +876,11 @@ export interface Model<TApi extends Api> extends BaseModel<TApi> {
 	promptCache?: ModelPromptCache;
 	contextWindow: number;
 	maxTokens: number;
+	/**
+	 * Public release date as `YYYY-MM-DD`, from the upstream catalog the model was generated from
+	 * (models.dev `release_date`, OpenRouter `created`, AI Gateway `released`). Unset when unknown.
+	 */
+	releaseDate?: string;
 	/** Default sampling parameters for this model. See {@link StreamOptions.samplingParams}; per-request keys override these. */
 	samplingParams?: SamplingParams;
 	/** Sampling parameter overrides selected by the effective pi thinking level. */

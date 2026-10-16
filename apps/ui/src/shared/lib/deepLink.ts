@@ -15,11 +15,12 @@
 //                                   the composer via composerBus)
 //   localix://open?path=<abs>     → open a filesystem PATH: a directory becomes a
 //                                   project (created if none exists for it), a file
-//                                   opens a lightweight editor tab. Unlike the routes
-//                                   above this can't map to a static hash — it needs
-//                                   a server round-trip (path → project id) — so it
-//                                   surfaces as an `open` INTENT the app resolves
-//                                   asynchronously. `&new=1` forces a fresh project.
+//                                   opens in the chat on screen without touching the
+//                                   project. Unlike the routes above this can't map to
+//                                   a static hash — it needs a server round-trip (file
+//                                   or directory?) — so it surfaces as an `open` INTENT
+//                                   the app resolves asynchronously. `&new=1` parses
+//                                   as `fresh`, which no handler reads yet.
 // Unrecognized URLs are ignored, never navigated.
 
 /** Session/project ids the UI mints (nanoid/uuid-style) — conservative charset guard. */

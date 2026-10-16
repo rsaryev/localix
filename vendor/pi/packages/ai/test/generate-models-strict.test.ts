@@ -45,14 +45,36 @@ describe("strict model generation", () => {
 			]),
 		);
 		const catalog = { "alibaba-token-plan": { models: sourceModels } };
+		// Every source is fetched before the conversion runs, so the others answer too. The models.dev
+		// conversion is the first to run and the one this test expects to fail.
+		const radiusConfig = {
+			baseUrl: "https://radius.pi.dev/v1",
+			models: [
+				{
+					id: "radius-model",
+					name: "Radius Model",
+					reasoning: false,
+					input: ["text"],
+					contextWindow: 1000,
+					maxTokens: 100,
+					cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+					enabled: true,
+				},
+			],
+		};
 		writeFileSync(
 			preloadPath,
 			`const catalog = ${JSON.stringify(catalog)};\n` +
+				`const radiusConfig = ${JSON.stringify(radiusConfig)};\n` +
 				`globalThis.fetch = async (input) => {\n` +
-				`  if (String(input) === "https://models.dev/api.json") {\n` +
+				`  const url = String(input);\n` +
+				`  if (url === "https://models.dev/api.json") {\n` +
 				`    return new Response(JSON.stringify(catalog), { status: 200 });\n` +
 				`  }\n` +
-				`  throw new Error(\`Unexpected fetch: \${String(input)}\`);\n` +
+				`  if (url === "https://radius.pi.dev/v1/config") {\n` +
+				`    return new Response(JSON.stringify(radiusConfig), { status: 200 });\n` +
+				`  }\n` +
+				`  return new Response(JSON.stringify({ data: [] }), { status: 200 });\n` +
 				`};\n`,
 		);
 

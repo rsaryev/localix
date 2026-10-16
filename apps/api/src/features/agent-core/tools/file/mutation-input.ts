@@ -33,6 +33,37 @@ function withoutKeys(record: Rec, keys: readonly string[]): Rec {
 }
 
 const SINGLE_EDIT_KEYS = ['path', 'file_path', 'old_string', 'new_string', 'replace_all']
+const EDIT_ENTRY_KEYS = ['path', 'old_string', 'new_string', 'replace_all']
+const WRITE_ENTRY_KEYS = ['path', 'content']
+
+/**
+ * A known entry key with a stray character glued to it, restored when the real key is absent.
+ *
+ * gpt-6-luna wrote `.new_string` (LOCALIX-158, LOCALIX-171) inside a 13-edit batch, and one
+ * malformed key refused the whole batch. Only punctuation and whitespace at the ends are
+ * stripped, and only into a key the entry is missing, so a real extra field still fails.
+ */
+function repairEntryKeys(entry: unknown, keys: readonly string[]): unknown {
+  if (!isRecord(entry)) return entry
+  let out: Rec | undefined
+  for (const key of Object.keys(entry)) {
+    if (keys.includes(key)) continue
+    const bare = key.replace(/^[^a-z_]+|[^a-z_]+$/gi, '')
+    // Against the repaired entry: two stray spellings of one key are ambiguous, so the second
+    // stays put and validation refuses it rather than one value silently winning.
+    if (!keys.includes(bare) || bare in (out ?? entry)) continue
+    out ??= { ...entry }
+    out[bare] = out[key]
+    delete out[key]
+  }
+  return out ?? entry
+}
+
+/** The listed entries with their keys repaired, and whether any entry changed. */
+function repairedList(listed: unknown[] | undefined, keys: readonly string[]) {
+  const entries = listed?.map((entry) => repairEntryKeys(entry, keys))
+  return { entries, changed: entries?.some((entry, i) => entry !== listed![i]) ?? false }
+}
 
 /** Lift any recognised edit shape into `{ edits: [{ path, old_string, new_string, replace_all? }] }`. */
 export function prepareEditArguments(raw: unknown): unknown {
@@ -49,10 +80,12 @@ export function prepareEditArguments(raw: unknown): unknown {
           },
         ]
       : []
-  const listed = Array.isArray(raw.edits) ? raw.edits : undefined
+  const repaired = repairedList(Array.isArray(raw.edits) ? raw.edits : undefined, EDIT_ENTRY_KEYS)
+  const listed = repaired.entries
   const needsLift =
     single.length > 0 ||
     shared !== undefined ||
+    repaired.changed ||
     (listed?.some((edit) => isRecord(edit) && edit.path === undefined) ?? false)
   if (!needsLift) return raw
   const edits = [
@@ -70,13 +103,15 @@ export function prepareEditArguments(raw: unknown): unknown {
 export function prepareWriteArguments(raw: unknown): unknown {
   if (!isRecord(raw)) return raw
   const shared = pathOf(raw)
-  const listed = Array.isArray(raw.files) ? raw.files : undefined
+  const repaired = repairedList(Array.isArray(raw.files) ? raw.files : undefined, WRITE_ENTRY_KEYS)
+  const listed = repaired.entries
   const single =
     shared !== undefined && typeof raw.content === 'string'
       ? [{ path: shared, content: raw.content }]
       : []
   const needsLift =
     single.length > 0 ||
+    repaired.changed ||
     (listed?.some((file) => isRecord(file) && file.path === undefined && 'file_path' in file) ??
       false)
   if (!needsLift) return raw

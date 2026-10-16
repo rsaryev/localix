@@ -11,6 +11,15 @@ export const SYSTEM_SETTINGS_INDEX: SettingsIndexEntry[] = [
     anchor: 'system-updates',
   },
   {
+    id: 'system.model-list',
+    tab: 'system',
+    tabLabel: 'System',
+    title: 'Model list',
+    description: 'Check for new models and prices without an app update.',
+    keywords: ['models', 'catalog', 'refresh', 'models.dev', 'openrouter', 'providers', 'prices'],
+    anchor: 'system-model-list',
+  },
+  {
     id: 'system.cli',
     tab: 'system',
     tabLabel: 'System',

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 
@@ -43,6 +43,70 @@ function body(props: { requestedBuiltin: boolean; revealAt: number }) {
     />
   )
 }
+
+/** A PDF: the preferred built-in viewer and Reader both match. */
+const pdfViewer: FileEditorContribution = {
+  id: 'example:pdf',
+  label: 'PDF viewer',
+  match: (path: string) => path.endsWith('.pdf'),
+  Component: () => <div data-testid="pdf-viewer" />,
+  preferred: true,
+}
+const reader: FileEditorContribution = {
+  id: 'other:book',
+  label: 'Reader',
+  match: (path: string) => path.endsWith('.pdf'),
+  Component: () => <div data-testid="reader-book" />,
+}
+
+function pdfBody() {
+  return (
+    <ContributedFileBody
+      matches={[pdfViewer, reader]}
+      fileKey="/Downloads/paper.pdf"
+      fallbackLabel="Code editor"
+      renderFallback={() => <div data-testid="builtin-editor" />}
+      editorProps={{ sessionId: 's1', path: '/Downloads/paper.pdf', revealAt: 1 }}
+    />
+  )
+}
+
+describe('a PDF with the built-in viewer and Reader', () => {
+  // Picking Reader with "remember" on writes a `.pdf` choice to localStorage. Clear it so no test
+  // depends on the order it runs in.
+  beforeEach(() => localStorage.clear())
+
+  test('opens in the built-in PDF viewer without a chooser', async () => {
+    const { root, container } = await mount()
+    await act(async () => root.render(pdfBody()))
+    const viewer = container.querySelector('[data-testid="pdf-viewer"]')
+    expect(viewer).not.toBeNull()
+    expect(container.textContent).not.toContain('Open “paper.pdf” with')
+    // Editors fill the pane as `flex-1` children; a plain block under the toolbar collapsed the
+    // PDF iframe to its intrinsic height.
+    expect(viewer!.parentElement!.className.split(' ')).toEqual(
+      expect.arrayContaining(['flex', 'flex-col', 'flex-1', 'min-h-0']),
+    )
+    await act(async () => root.unmount())
+  })
+
+  test('Reader stays reachable through Open with…', async () => {
+    const { root, container } = await mount()
+    await act(async () => root.render(pdfBody()))
+    const openWith = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Open with…',
+    )
+    expect(openWith).toBeDefined()
+    await act(async () => openWith!.click())
+    const readerChoice = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Reader',
+    )
+    expect(readerChoice).toBeDefined()
+    await act(async () => readerChoice!.click())
+    expect(container.querySelector('[data-testid="reader-book"]')).not.toBeNull()
+    await act(async () => root.unmount())
+  })
+})
 
 /**
  * The editor pick is per-tab STATE: the initializer runs once per mount, so a tab that is

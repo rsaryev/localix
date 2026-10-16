@@ -48,6 +48,9 @@ function makeCtx(session: SessionRecord) {
       updateSessionAgentRoute: async (_u, _id, agentId, route) => {
         routeWrites.push({ agentId, route: route as Record<string, unknown> })
       },
+      updateSessionAgentRoutes: async (_u, _id, routes) => {
+        for (const { agentId, ...route } of routes) routeWrites.push({ agentId, route })
+      },
       deleteSession: async () => {},
       listChildSessionIds: async () => [],
       // A party edit writes a membership line into the conversation. Archiving writes none, so

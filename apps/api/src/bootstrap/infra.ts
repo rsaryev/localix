@@ -6,7 +6,8 @@ import { createDatabase, migrateToLatest } from '../db'
 import { takeInterruptedRuns } from '../db/migrator'
 import { createDigestLoaders } from '../boot/digests'
 import { createCatalogService } from '../features/catalog/service'
-import { createCatalogMetadataStore } from '../features/catalog/metadata-store'
+import { createModelCatalogStore } from '../features/catalog/models-store'
+import { logCatalogRefresh } from '../features/catalog/refresh-schedule'
 import { createChatRepository } from '../features/chat/repository'
 import { createMediaStore } from '../features/media/store'
 import { createProviderConnectionsService } from '../features/provider-connections/service'
@@ -110,15 +111,15 @@ export async function createInfraPhase(
   // streaming is untouched while a stalled one fails in minutes.
   //
   // The ONE place the adapter is named. Swapping engines is this line; every consumer
-  // downstream reads the neutral ports off `engine`. The catalog's provider metadata is
-  // persisted so a launch starts from the last answer instead of the generated one, without
-  // waiting for the live lookup (see `features/catalog/metadata-store.ts`).
+  // downstream reads the neutral ports off `engine`. Refreshed catalogs persist across launches.
   const engine = createPiEngine({
     maxRetries: 2,
     maxRetryDelayMs: 60_000,
     middleware: [streamIdleWatchdog()],
-    catalogMetadataStore: createCatalogMetadataStore(),
     getDeviceId: createDeviceIdGetter(),
+    catalogStore: createModelCatalogStore(),
+    onCatalogEntryDropped: (providerId, reason) =>
+      logger.info({ event: 'catalog.entry_dropped', providerId, reason }),
   })
   const { runtime: agentRuntime, languageModels: languageModelFactory } = engine
   // Forward holder: the terminal service is created below (it depends on
@@ -237,18 +238,18 @@ export async function createInfraPhase(
   // An MCP server that does not connect is a standing Event Center row, not a log line per turn.
   // The same process-lifetime singleton reason as above.
   mcpClientManager.observeConnections(createMcpConditions(notifications))
-  // The catalog's provider metadata comes from a live OpenRouter call that nothing awaits: the
-  // engine serves the persisted (or generated) answer and bumps its revision when the call lands,
-  // which is what this cache is keyed on.
+  // pi's catalog plus its last refresh; the ops timers fetch newer lists (`ops-timers.ts`).
   const catalogService = createCatalogService({
     source: {
       list: (...args) => engine.listCatalog(...args),
-      revision: (...args) => engine.catalogRevision(...args),
+      refresh: (...args) => engine.refreshCatalog(...args),
     },
     onWarmError: (error) => logger.warn({ event: 'catalog.warm_failed', err: error }),
+    onRefresh: logCatalogRefresh(logger),
   })
   const uiLocationCatalogService = createUiLocationCatalogService()
-  // Warm the runtime catalog so the first chat turn does not pay adapter startup.
+  // Restore persisted catalogs (disk, no network; reads wait), then warm for the first turn.
+  void catalogService.restore()
   catalogService.warm()
   // Pre-build the visual-feedback probe IIFE so the first preview HTML serve isn't
   // blocked on a cold Bun.build.

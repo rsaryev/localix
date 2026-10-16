@@ -9,6 +9,7 @@ import type { ReasoningEffort } from './reasoning'
 import { patchSessionById, sessionBelongsToScope, sortSessions } from './sessionListHelpers'
 import { activateSessionBody, logCurrentChatMessages } from './sessionBodyActivation'
 import { createModelSelectionActions } from './sessionModelSelectionActions'
+import type { PartyRouteChoice } from './sessionPartyRoute'
 import { findSessionInState } from './findSession'
 import { WarmSessionBodyCache } from './sessionBodyCache'
 import { forgetSessionLocation } from './persistence'
@@ -62,6 +63,8 @@ export interface SessionActions {
     reasoningEffort: ReasoningEffort,
     agentId?: string,
   ) => Promise<void>
+  /** One model and level for every participant, as one server write (`sessionPartyRoute.ts`). */
+  applyPartyRoute: (sessionId: string, choice: PartyRouteChoice) => Promise<void>
 }
 
 export function createSessionActions({

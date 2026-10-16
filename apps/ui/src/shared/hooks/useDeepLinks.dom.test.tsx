@@ -13,19 +13,13 @@ beforeAll(() => {
 })
 afterAll(() => teardown())
 
-test('the shell handshake retains multiple files in order across project switches', async () => {
+test('the shell handshake opens multiple files in order in the chat on screen, without switching project', async () => {
   const { createElement, act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const resolved: string[] = []
-  const resolver = spyOn(backendClient, 'resolveProjectByPath').mockImplementation(async (path) => {
+  const inspector = spyOn(backendClient, 'inspectPath').mockImplementation(async (path) => {
     resolved.push(path)
-    return {
-      project: { id: path === '/a.json' ? 'project-a' : 'project-b' } as Awaited<
-        ReturnType<typeof backendClient.resolveProjectByPath>
-      >['project'],
-      filePath: path,
-      created: true,
-    }
+    return { kind: 'file', path }
   })
   const shell = window as unknown as {
     __TAURI__?: unknown
@@ -60,23 +54,22 @@ test('the shell handshake retains multiple files in order across project switche
     expect(resolved).toEqual(['/a.json'])
     expect(received).toEqual([])
     withdraw()
-    withdraw = publishPageOpenChat('chat-a', 'project-a')
+    withdraw = publishPageOpenChat('chat-a')
     await act(async () => {})
     expect(resolved).toEqual(['/a.json', '/b.json'])
-    expect(received).toHaveLength(1)
-    withdraw()
-    withdraw = publishPageOpenChat('chat-b', 'project-b')
-    await act(async () => {})
     expect(received).toEqual([
-      { kind: 'file', sessionId: 'chat-a', path: '/a.json', solo: true },
-      { kind: 'file', sessionId: 'chat-b', path: '/b.json', solo: true },
+      { kind: 'file', sessionId: 'chat-a', path: '/a.json' },
+      { kind: 'file', sessionId: 'chat-a', path: '/b.json' },
     ])
+    // Opening a file never navigates to a project, so the hash is untouched by the opens.
+    expect(window.location.hash).toBe(previousHash)
     window.__localixDeepLink?.('localix://session/chat-a')
     expect(window.location.hash).toBe('#/chat/chat-a')
+    withdraw()
   } finally {
     await act(async () => root.unmount())
     container.remove()
-    resolver.mockRestore()
+    inspector.mockRestore()
     unregister()
     withdraw()
     if (oldBridge === undefined) delete shell.__TAURI__

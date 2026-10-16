@@ -17,8 +17,10 @@ const values = (efforts: string[] | undefined) =>
   modelReasoningOptions(efforts).map((option) => option.value)
 
 describe('modelReasoningOptions', () => {
-  test('offers only what the model declares, and always the floor', () => {
-    expect(values(['low', 'high'])).toEqual(['off', 'low', 'high'])
+  test('offers only what the model declares, Off included only where it is real', () => {
+    expect(values(['off', 'low', 'high'])).toEqual(['off', 'low', 'high'])
+    // Claude per-turn effort, gpt-6.x: the runtime sends `low` for Off, so Off is not offered.
+    expect(values(['low', 'high'])).toEqual(['low', 'high'])
   })
 
   test('a model that reasons at no level still offers "off"', () => {
@@ -44,8 +46,13 @@ describe('clampModelReasoning', () => {
 
   test('a supported level is untouched, and so are "off" and absent', () => {
     expect(clampModelReasoning('high', ['low', 'high'])).toBe('high')
-    expect(clampModelReasoning('off', ['low'])).toBe('off')
+    expect(clampModelReasoning('off', ['off', 'low'])).toBe('off')
     expect(clampModelReasoning(undefined, ['low'])).toBeUndefined()
+  })
+
+  test('an Off the model cannot honour shows the level the runtime sends', () => {
+    expect(clampModelReasoning('off', ['low', 'high'])).toBe('low')
+    expect(clampModelReasoning('off', undefined)).toBe('off')
   })
 
   test('a model that reasons at no level answers "off"', () => {

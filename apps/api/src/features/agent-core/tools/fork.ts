@@ -77,6 +77,17 @@ const FORK_CLASSES: Record<ForkAction | 'start', CallClass> = {
   close: { effect: 'session', irreversible: true },
 }
 
+/**
+ * The runtime's pre-validation hook. Starting is the action with no name, and models name it
+ * anyway: Haiku 5.5 sent `action: "start"` in LOCALIX-195 and LOCALIX-197, and the enum refused a
+ * call whose meaning is unambiguous. It is read as the omitted action it means.
+ */
+export function prepareForkArguments(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
+  const { action, ...rest } = raw as { action?: unknown }
+  return action === 'start' ? rest : raw
+}
+
 export function classifyForkCall(input: unknown): CallClass {
   const action = ((input ?? {}) as { action?: unknown }).action ?? 'start'
   return typeof action === 'string' && Object.hasOwn(FORK_CLASSES, action)
@@ -94,6 +105,7 @@ export function createForkTool(port: ForkToolPort) {
       'message amends a fork (a finished one runs again and reports again); prefer it to a new fork for follow-ups. stop ends a current run; close ends a fork for good. list only to recover a missed report, never to poll.',
     ].join(' '),
     inputSchema,
+    prepareArguments: prepareForkArguments,
     mutates: true,
     executionMode: 'sequential',
     classify: classifyForkCall,

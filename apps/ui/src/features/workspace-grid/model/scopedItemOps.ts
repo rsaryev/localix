@@ -160,7 +160,13 @@ export function splitScopedGroupState(
   }
 }
 
-/** Switch visibility and bound the keep-alive history to the scopes that can still be read. */
+/**
+ * Switch visibility and bound the keep-alive history to the scopes that can still be read.
+ *
+ * A maximize belongs to the workspace it was made in. Carried into another one, it waited there
+ * until something opened into the maximized group — the Browser, a terminal, a file link — and
+ * then hid that conversation's chat behind it.
+ */
 export function activateScopeState(s: ScopedEditorState, scope: ScopeId) {
   if (s.activeScope === scope) return s
   const warmScopes = bumpWarm(s.warmScopes, scope)
@@ -168,6 +174,7 @@ export function activateScopeState(s: ScopedEditorState, scope: ScopeId) {
     activeScope: scope,
     warmScopes,
     scopeActiveTab: pruneScopeActive(s.scopeActiveTab, [...warmScopes, scope, GLOBAL_SCOPE]),
+    maximizedGroup: null,
   }
 }
 

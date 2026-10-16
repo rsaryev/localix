@@ -4,7 +4,6 @@ import { findCatalogModel } from '@localixai/agent/catalog'
 import { useChatStore } from '@/features/chat/model/store'
 import { ModelPickerShell } from '@/features/chat/ui/prompt-input/model-select/ModelPickerShell'
 import { useConnections } from '@/features/chat/ui/prompt-input/useConnections'
-import { REASONING_OPTIONS } from '@/features/chat/model/reasoning'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { Button } from '@localixai/kit/button'
 import { Field } from '@localixai/kit/field'
@@ -12,11 +11,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Select } from '@localixai/kit/select'
 import { SettingsFieldGrid } from '../../SettingsFieldGrid'
 import { AGENT_FIELD_IDS } from './agentDraft'
-
-const EFFORT_OPTIONS = [
-  { value: '', label: 'Inherit effort' },
-  ...REASONING_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
-]
+import { agentEffortOptions } from './agentEffortOptions'
 
 interface AgentModelFieldProps {
   provider: string
@@ -77,6 +72,10 @@ export function AgentModelField({
     ? `${catalogModel?.providerName ?? provider ?? ''}${catalogModel || provider ? ' · ' : ''}${catalogModel?.name ?? model}`
     : 'Inherit the session model'
   const supportsReasoning = catalogModel?.supportsReasoning ?? Boolean(model)
+  const effortOptions = useMemo(
+    () => agentEffortOptions(catalogModel, effort),
+    [catalogModel, effort],
+  )
 
   return (
     <div className="min-w-0 space-y-2">
@@ -124,7 +123,7 @@ export function AgentModelField({
             className="w-full"
             value={effort}
             onValueChange={onEffortChange}
-            options={EFFORT_OPTIONS}
+            options={effortOptions}
             disabled={disabled || !supportsReasoning}
             aria-label="Reasoning effort"
           />

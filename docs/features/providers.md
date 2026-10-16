@@ -10,18 +10,19 @@ need a catalog entry, and sign-in appears only when that runtime reports an OAut
 
 ## What you can do
 
-| Capability                | Mechanism                                                                            | Boundary                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| Connect with an API key   | Store a key from the model picker's provider form                                    | A provider must exist in the runtime catalog                         |
-| Sign in through OAuth     | Start the interaction advertised by the runtime adapter                              | Availability and interaction style depend on the provider definition |
-| Keep separate connections | Add and label more than one connection for the same provider                         | A session stores one preferred connection                            |
-| Manage connection keys    | Add, remove, enable, or disable masked keys                                          | Cannot remove the only key or disable the last enabled key           |
-| Choose a session model    | Bind a catalog model and connection from the composer                                | The model must belong to the connection's provider                   |
-| Inspect model fit         | Compare capabilities, modalities, limits, wire protocol, and pricing including tiers | Catalog records can be partial or change with the active runtime     |
-| Narrow the model list     | Search models, or filter by tools, reasoning, vision, priced caching, or free        | A facet appears only when some model in the list matches it          |
-| Find a provider           | Search the provider column; it filters connections and providers to add              | It never narrows the model list                                      |
-| Choose reasoning effort   | Pick a level in the model details panel's Settings, remembered per agent and model   | A model that publishes none offers only "off"                        |
-| Route auxiliary work      | Select model slots for session titles, inline completion, and delegated agents       | Each unset route uses its documented fallback                        |
+| Capability                | Mechanism                                                                                 | Boundary                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Connect with an API key   | Store a key from the model picker's provider form                                         | A provider must exist in the runtime catalog                         |
+| Sign in through OAuth     | Start the interaction advertised by the runtime adapter                                   | Availability and interaction style depend on the provider definition |
+| Keep separate connections | Add and label more than one connection for the same provider                              | A session stores one preferred connection                            |
+| Manage connection keys    | Add, remove, enable, or disable masked keys                                               | Cannot remove the only key or disable the last enabled key           |
+| Choose a session model    | Bind a catalog model and connection from the composer                                     | The model must belong to the connection's provider                   |
+| Inspect model fit         | Compare capabilities, modalities, limits, wire protocol, and pricing including tiers      | Catalog records can be partial or change with the active runtime     |
+| Narrow the model list     | Search models, or filter by tools, reasoning, vision, priced caching, or free             | A facet appears only when some model in the list matches it          |
+| Find a provider           | Search the provider column; it filters connections and providers to add                   | It never narrows the model list                                      |
+| Choose reasoning effort   | Pick a level in the model details panel's Settings, remembered per agent and model        | A model that publishes none offers only "off"                        |
+| Route auxiliary work      | Select model slots for session titles, inline completion, and delegated agents            | Each unset route uses its documented fallback                        |
+| Get new models            | The model list refreshes in the background; **Settings → System → Model list** checks now | Only providers whose models come from the generated catalog          |
 
 ## How it works
 
@@ -79,7 +80,9 @@ last choice for an agent.
 
 A model that cannot reason receives no reasoning request. For models that support it, the runtime
 clamps the requested effort to a supported level; that runtime adjustment does not rewrite the
-conversation's stored preference.
+conversation's stored preference. **Off** follows the same rule: on a model that cannot turn
+reasoning off, it requests the model's lowest level rather than leaving the provider's default in
+charge. On Claude models with per-turn effort, that default is **high**.
 
 The model browser offers these optional workload settings:
 
@@ -102,8 +105,29 @@ enabled key while disabled keys remain can leave the connection with no runnable
 replacement before removing it. OAuth refresh runs through a connection-scoped credential store;
 refresh updates for one key are serialized so concurrent runs do not overwrite rotating tokens.
 
-The catalog adapter can enrich existing OpenRouter model records with public release dates for
-sorting. It never creates a model that is absent from the runtime's built-in catalog.
+Every model list shows the newest models first: the picker's per-connection lists, its search and
+filter results, and the `/model` command's Model step. Release dates come from the runtime's catalog
+(models.dev release dates, OpenRouter and Vercel AI Gateway listing dates); models without a date
+follow in catalog order.
+
+### How the model list stays current
+
+The catalog shipped with the app is a baseline. The server refreshes it from the same public sources
+the runtime's catalog generator reads, and converts them with the same code, so a refreshed model
+has exactly the context window, prices, reasoning levels, and capabilities a new release would have
+shipped. Localix adds no metadata of its own.
+
+| When                                 | What happens                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Startup                              | The last refreshed lists are restored from `~/.localix/model-catalog/` before the first catalog answer. No request is sent.                |
+| Shortly after startup, then hourly   | A provider whose stored list is older than six hours is fetched again, while the app is idle. The rest answer from disk.                   |
+| **Settings → System → Model list**   | **Check for new models** fetches every list now, including when automatic checks are off.                                                  |
+| A source is unreachable or malformed | The whole check fails and every provider keeps its current list; the server logs the cause. The setting row shows it after a manual check. |
+
+A refresh adds models and updates their details; it does not remove a model the shipped baseline
+lists. After an app update, lists stored by the previous version are discarded and the new baseline
+is used until the next check. Radius, whose list depends on the signed-in account, is not refreshed
+this way. See [Privacy](../getting-started/privacy.md) for exactly what is requested.
 
 ### Sign-in lifecycle
 
@@ -138,20 +162,20 @@ retained in `~/.localix/oauth-device-id` across restarts and projects. `OpenAI C
 remains a separate provider using the older ChatGPT backend transport; existing connections keep
 their provider identity.
 
-| Control or value       | Contract                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| Provider source        | Runtime catalog projected by the engine's `listCatalog()`                               |
-| API-key connection     | Requires at least one non-empty key                                                     |
-| OAuth connection       | Uses the runtime-reported browser, loopback-server, or device-code interaction          |
-| Connection label       | User-editable; does not change provider identity                                        |
-| Key display            | Masked to the final four characters                                                     |
-| Key selection          | Enabled keys ordered by ascending numeric priority                                      |
-| Model identity         | Stored as `<providerId>/<modelId>`                                                      |
-| Catalog metadata cache | `~/.localix/catalog-metadata.json`                                                      |
-| Required route         | Chat sessions                                                                           |
-| Context routes         | Session titles, inline completion                                                       |
-| Worker route           | Delegated-agent setting is saved; current child creation uses parent participant routes |
-| Reasoning preference   | Stored for the workload plus provider/model pair when supported                         |
+| Control or value     | Contract                                                                                |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| Provider source      | Runtime catalog projected by the engine's `listCatalog()`                               |
+| Catalog refresh      | `LOCALIX_MODEL_CATALOG_REFRESH=0` turns off the automatic checks; manual checks remain  |
+| API-key connection   | Requires at least one non-empty key                                                     |
+| OAuth connection     | Uses the runtime-reported browser, loopback-server, or device-code interaction          |
+| Connection label     | User-editable; does not change provider identity                                        |
+| Key display          | Masked to the final four characters                                                     |
+| Key selection        | Enabled keys ordered by ascending numeric priority                                      |
+| Model identity       | Stored as `<providerId>/<modelId>`                                                      |
+| Required route       | Chat sessions                                                                           |
+| Context routes       | Session titles, inline completion                                                       |
+| Worker route         | Delegated-agent setting is saved; current child creation uses parent participant routes |
+| Reasoning preference | Stored for the workload plus provider/model pair when supported                         |
 
 There is no separate setup flow: the model picker under a chat composer creates API-key or OAuth
 connections and selects the conversation's model.
@@ -178,13 +202,10 @@ connections and selects the conversation's model.
   model is clamped to the nearest level the new one has — upward first, then down. The runtime
   clamps again before the request, so a level from an older client or an unpublished capability
   degrades instead of failing the run.
-- Release dates and published reasoning levels come from OpenRouter's public model list. Localix
-  starts a background refresh on the first catalog projection in a process, then can refresh on
-  another projection after five minutes. This is demand-driven, not a periodic timer. Each fetch has
-  a 1.5-second timeout. Nothing waits for the answer: the catalog is served from the last saved
-  answer, or from the generated metadata on a first launch or when the network is unreachable. When
-  the answer arrives, the next catalog read uses it and it is saved for the next launch. A failed
-  request is never saved.
+- Release dates and reasoning levels come only from the runtime's catalog, shipped or refreshed. A
+  model, date, or level a provider publishes later appears after the next successful check, not
+  immediately. A source change that the shipped conversion rejects keeps the current list until an
+  app update handles it.
 - The catalog endpoint answers with an `ETag`. A client that already holds the current catalog gets
   `304 Not Modified` instead of the full list.
 - Providers that offer no chat models, such as classifier-only ones, are not offered for connection.
@@ -201,9 +222,11 @@ connections and selects the conversation's model.
 
 ## Source of truth
 
-- [Runtime catalog projection](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/models.ts)
+- [Runtime catalog projection and refresh](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/catalog.ts)
+- [Persisted catalog validation](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/catalog-store.ts)
+- [Catalog refresh schedule](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/catalog/refresh-schedule.ts)
 - [Provider transports and metadata](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/providers.ts)
-- [Background catalog metadata refresh](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/catalog-metadata.ts)
+- [Newest-first catalog order](https://github.com/rsaryev/localix/blob/main/packages/agent/src/catalog/model-order.ts)
 - [Unresolved model reasons](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-resolution-miss.ts)
 - [Runtime authentication bridge](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/auth.ts)
 - [Connection API and DTOs](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/contracts.ts)

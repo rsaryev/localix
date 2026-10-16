@@ -80,6 +80,8 @@ give both equal space. Tabs do not create extra stacked panels when dragged to a
 layouts with additional splits are arranged into the two columns when restored, keeping their tabs.
 **Arrange panels** restores the default column proportions while keeping open tabs and conversation
 context. Maximizing a panel temporarily hides the other column; restoring it brings the layout back.
+A maximize belongs to the conversation it was made in: switching to another conversation restores
+the layout, so a file, terminal or Browser opened there appears beside its chat.
 
 Every group has a small panel button at the right end of its tab strip, level with the tabs. It
 maximizes the group — the whole panel, whatever tab it shows — and restores the layout, the same as

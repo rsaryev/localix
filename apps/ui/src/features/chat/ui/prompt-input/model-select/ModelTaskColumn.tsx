@@ -45,6 +45,8 @@ import { PanelHeader } from '@localixai/kit/panel-header'
 import { SectionLabel } from '@localixai/kit/section-label'
 import { SELECTED_ROW } from '@localixai/kit/selected-row'
 import { Switch } from '@localixai/kit/switch'
+import { PartyRouteRow } from './PartyRouteRow'
+import { PARTY_TARGET } from './partyRoute'
 import {
   pickerColumnFrame,
   PICKER_LIST,
@@ -71,6 +73,8 @@ interface ModelTaskColumnProps {
   participants: readonly ParticipantRow[]
   /** `column` in the wide drawer; `sheet` inside the narrow layout's workload popover. */
   layout?: PickerColumnLayout
+  /** The "All agents" row, when the room disagrees (`partyRoute.ts`); absent hides it. */
+  party?: { status: string; mixed: boolean }
 }
 
 /** One row of the party: who, and what they run on here. */
@@ -118,6 +122,7 @@ export function ModelTaskColumn({
   onEnabledChange,
   participants,
   layout = 'column',
+  party,
 }: ModelTaskColumnProps) {
   // The party replaces the single session row; every other workload keeps its place. Built as
   // one list so the rendering below stays a single loop with no "is this an agent" branch.
@@ -164,6 +169,15 @@ export function ModelTaskColumn({
                 >
                   {t.section}
                 </SectionLabel>
+              )}
+              {/* One gesture for the whole room, first in the Agents group it acts on. */}
+              {index === 0 && party && participants.length > 0 && (
+                <PartyRouteRow
+                  active={activeTask === PARTY_TARGET}
+                  status={party.status}
+                  mixed={party.mixed}
+                  onSelect={() => onSelectTask(PARTY_TARGET)}
+                />
               )}
               <div
                 title={t.hint}

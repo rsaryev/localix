@@ -15,7 +15,7 @@
 import { useCallback } from 'react'
 import type { SlashCommand } from './SlashCommandMenu'
 import { useSlashCommands } from './slashCommands'
-import { useSlashArgs, type LoadDynamicOptions } from './SlashArgSpec'
+import { useSlashArgs, type LoadDynamicOptions, type SkipArgFor } from './SlashArgSpec'
 
 export interface ComposerCommands {
   slash: ReturnType<typeof useSlashCommands>
@@ -38,9 +38,10 @@ export function useComposerCommands(
   setPrompt: (v: string) => void,
   skillCommands: SlashCommand[] = [],
   loadDynamicOptions?: LoadDynamicOptions,
+  skipArg?: SkipArgFor,
 ): ComposerCommands {
   const slash = useSlashCommands(prompt, setPrompt, skillCommands)
-  const slashArgs = useSlashArgs(slash.detected, setPrompt, loadDynamicOptions)
+  const slashArgs = useSlashArgs(slash.detected, setPrompt, loadDynamicOptions, skipArg)
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => slashArgs.handleKeyDown(e) || slash.handleKeyDown(e),

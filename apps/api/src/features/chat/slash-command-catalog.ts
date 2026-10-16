@@ -14,6 +14,7 @@
 import { LOOP_ARGS, PLUGIN_ARGS } from './slash-catalog-arguments'
 import type { SlashArgSpec } from './slash-args'
 import { AGENTS_ARGS } from './slash-catalog-agents'
+import { MODEL_ARGS } from './slash-catalog-model'
 
 /**
  * Ordered category catalog — the single source for grouping commands into
@@ -76,9 +77,10 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     name: 'model',
     aliases: ['models'],
     title: 'Model',
-    description: 'List models or switch the active model — /model <name>',
+    description: 'Switch an agent’s model step by step, as in the picker — or /model <name>',
     scope: 'server',
     category: 'config',
+    args: MODEL_ARGS,
   },
   // Context management
   {

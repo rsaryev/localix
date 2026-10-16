@@ -207,6 +207,26 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
       await writeAgentRoute(db, id, agentId, route, opts)
     },
 
+    /** Re-route several participants in ONE transaction, so no run reads half a room moved. */
+    async updateSessionAgentRoutes(
+      userId: string,
+      id: string,
+      routes: readonly ({ agentId: string } & Partial<ModelRoute>)[],
+    ): Promise<void> {
+      await retrySqliteBusy(() =>
+        db.transaction().execute(async (trx) => {
+          const owned = await trx
+            .selectFrom('agent_sessions')
+            .select('id')
+            .where('user_id', '=', userId)
+            .where('id', '=', id)
+            .executeTakeFirst()
+          if (!owned) return
+          for (const { agentId, ...route } of routes) await writeAgentRoute(trx, id, agentId, route)
+        }),
+      )
+    },
+
     /**
      * Replace the generated fallback title only while it is still current.
      * This is deliberately a single conditional write so a user rename that

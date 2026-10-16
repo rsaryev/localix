@@ -27,7 +27,9 @@ result as `localix://open?path=...`. It passes that URL to `open` on macOS, `xdg
 `rundll32 url.dll,FileProtocolHandler` on Windows (no shell parses the URL).
 
 The CLI does not inspect the target or create a project. The desktop handler resolves that path and
-may activate an existing window or launch the app. `-n` adds `new=1` to request fresh handling.
+may activate an existing window or launch the app. Files open in the current conversation without
+creating a project or switching to the file's parent folder. Opening a directory finds or creates
+its project and navigates there. `-n` adds `new=1` to request fresh handling.
 
 The JavaScript shim re-executes under Bun when Node starts it, because the typed CLI is TypeScript.
 It exits `1` when Bun cannot be located.

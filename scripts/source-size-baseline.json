@@ -15,7 +15,6 @@
   "apps/api/src/features/plugins/loader.ts": 400,
   "apps/api/src/features/plugins/marketplace-registry.ts": 329,
   "apps/api/src/features/plugins/service.ts": 701,
-  "apps/api/src/features/projects/service.ts": 303,
   "apps/api/src/features/provider-connections/service.ts": 642,
   "apps/api/src/features/realtime/ws-commands.ts": 456,
   "apps/api/src/features/realtime/ws.ts": 790,

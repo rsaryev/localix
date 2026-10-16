@@ -9,6 +9,9 @@ function originOf(message: PiAssistantMessage): AgentMessageOrigin {
     api: message.api,
     provider: message.provider,
     model: message.model,
+    ...(message.providerThinkingLevel
+      ? { providerThinkingLevel: message.providerThinkingLevel }
+      : {}),
   }
 }
 

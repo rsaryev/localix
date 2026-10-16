@@ -1,9 +1,12 @@
-import { type OpenRouterModel, openRouterCost } from "../src/providers/openrouter-api.ts";
-import type { ClassifierModel, ImageModel, Model } from "../src/types.ts";
+import { type OpenRouterModel, openRouterCost } from "../providers/openrouter-api.ts";
+import type { ClassifierModel, ImageModel, Model } from "../types.ts";
 import { getOpenRouterThinkingLevelMap, type OpenRouterReasoningMetadata } from "./openrouter-reasoning-options.ts";
+import { releaseDateFromUnixSeconds } from "./release-dates.ts";
 
 export interface OpenRouterModelListItem extends OpenRouterModel {
 	name: string;
+	/** Unix seconds when OpenRouter listed the model. */
+	created?: number;
 	supported_parameters?: string[];
 	architecture?: { modality?: string; input_modalities?: string[]; output_modalities?: string[] };
 	reasoning?: OpenRouterReasoningMetadata;
@@ -45,6 +48,7 @@ export function buildOpenRouterCatalog(
 		}
 
 		const thinkingLevelMap = getOpenRouterThinkingLevelMap(model.reasoning);
+		const releaseDate = releaseDateFromUnixSeconds(model.created);
 		const useAnthropicMessages = /^anthropic\//.test(model.id) && !model.id.endsWith(":batch");
 		chat.push({
 			type: "chat",
@@ -53,6 +57,7 @@ export function buildOpenRouterCatalog(
 			api: useAnthropicMessages ? "anthropic-messages" : "openai-completions",
 			baseUrl: useAnthropicMessages ? "https://openrouter.ai/api" : "https://openrouter.ai/api/v1",
 			provider: "openrouter",
+			...(releaseDate && { releaseDate }),
 			reasoning: model.supported_parameters?.includes("reasoning") || false,
 			...(thinkingLevelMap && { thinkingLevelMap }),
 			input,

@@ -105,6 +105,13 @@ export const sessionsApi = {
         modelId?: string
         reasoningEffort?: ReasoningEffort
       }
+      /** Re-route several participants in one write; each must still be seated, or none moves. */
+      routes?: Array<{
+        agentId: string
+        providerConnectionId?: string | null
+        modelId?: string
+        reasoningEffort?: ReasoningEffort
+      }>
       /** Replace the participants — add or remove. Whole list, never a diff. */
       agentIds?: string[]
       /** The session revision `agentIds` was built from; a newer one refuses the list (409). */

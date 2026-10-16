@@ -116,10 +116,21 @@ export interface ParsedCommandArgs {
 }
 
 /**
+ * A step the SURFACE knows does not apply, from state the pure catalog cannot see — `/model`'s
+ * agent step in a one-agent chat, or its Reasoning step for a model that does not reason. Given
+ * the argument name and the values committed so far; true passes over it without consuming text.
+ */
+export type SkipCommandArg = (name: string, committed: ReadonlyMap<string, string>) => boolean
+
+/**
  * Split the text following a command prefix into committed choice chips plus the
  * argument currently being edited. Pure — exported for reuse + testing.
  */
-export function parseCommandArgs(text: string, specs: readonly SlashArgSpec[]): ParsedCommandArgs {
+export function parseCommandArgs(
+  text: string,
+  specs: readonly SlashArgSpec[],
+  skip?: SkipCommandArg,
+): ParsedCommandArgs {
   const chips: ParsedArgChip[] = []
   const chipValues = new Map<string, string>()
   let i = 0
@@ -127,6 +138,7 @@ export function parseCommandArgs(text: string, specs: readonly SlashArgSpec[]): 
   for (let s = 0; s < specs.length; s++) {
     const spec = specs[s]
     if (spec.when && !argConditionMet(spec.when, chipValues.get(spec.when.arg))) continue
+    if (skip?.(spec.name, chipValues)) continue
     while (i < text.length && /\s/u.test(text[i]!)) i++
     if (spec.type === 'flags') return parseFlagArgs(text, i, spec, s, chips, chipValues)
 
@@ -151,7 +163,11 @@ export function parseCommandArgs(text: string, specs: readonly SlashArgSpec[]): 
       // the request's first word into a chip.
       const hasApplicableLater = specs
         .slice(s + 1)
-        .some((later) => !later.when || argConditionMet(later.when, chipValues.get(later.when.arg)))
+        .some(
+          (later) =>
+            (!later.when || argConditionMet(later.when, chipValues.get(later.when.arg))) &&
+            !skip?.(later.name, chipValues),
+        )
       if (!hasApplicableLater) {
         return { chips, activeSpec: spec, activeIndex: s, activeText: text.slice(i) }
       }

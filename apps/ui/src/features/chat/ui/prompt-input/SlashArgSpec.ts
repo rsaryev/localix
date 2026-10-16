@@ -6,6 +6,7 @@ import {
   type ParsedCommandArgs,
 } from '@localixai/api/slash-catalog'
 import type { SlashCommand } from './SlashCommandMenu'
+import { useChipLabels } from './useChipLabels'
 
 // The arg-spec types + the pure parser live in ONE shared leaf
 // (`@localixai/api/slash-catalog`) consumed by every composer surface, so argument
@@ -43,10 +44,21 @@ export type LoadDynamicOptions = (
   committed: Readonly<Record<string, string>>,
 ) => Promise<SlashArgOption[]>
 
+/**
+ * Steps the surface knows do not apply (see `SkipCommandArg`), per command. `/model` passes over
+ * its agent step in a one-agent chat; every other command has nothing to skip.
+ */
+export type SkipArgFor = (
+  command: SlashCommand,
+  name: string,
+  committed: ReadonlyMap<string, string>,
+) => boolean
+
 export function useSlashArgs(
   detected: DetectedCommand | null,
   setPrompt: (v: string) => void,
   loadDynamicOptions?: LoadDynamicOptions,
+  skipArg?: SkipArgFor,
 ) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [dynamicOptions, setDynamicOptions] = useState<{
@@ -57,9 +69,18 @@ export function useSlashArgs(
   const specs = detected?.command.args
   const prefix = detected ? (detected.command.prefix ?? `/${detected.command.trigger} `) : ''
   const parsed = useMemo<ParsedCommandArgs | null>(
-    () => (specs && detected ? parseCommandArgs(detected.text, specs) : null),
-    [specs, detected],
+    () =>
+      specs && detected
+        ? parseCommandArgs(
+            detected.text,
+            specs,
+            skipArg && ((name, committed) => skipArg(detected.command, name, committed)),
+          )
+        : null,
+    [specs, detected, skipArg],
   )
+  const chipLabels = useChipLabels()
+  const { remember } = chipLabels
 
   const buildPrompt = useCallback(
     (chipValues: string[], tail: string, trailingSpace = false) => {
@@ -106,6 +127,7 @@ export function useSlashArgs(
     const t = setTimeout(() => {
       void loadDynamicOptions(command, activeSpecName, activeText, committed)
         .then((options) => {
+          remember(activeSpecName, options)
           if (reqSeq.current === seq) setDynamicOptions({ key: dynamicOptionsKey, options })
         })
         .catch(() => {
@@ -122,6 +144,7 @@ export function useSlashArgs(
     committed,
     dynamicOptionsKey,
     loadDynamicOptions,
+    remember,
   ])
 
   const options = useMemo(() => {
@@ -169,10 +192,11 @@ export function useSlashArgs(
   const selectOption = useCallback(
     (opt: SlashArgOption) => {
       if (!parsed) return
+      if (parsed.activeSpec) remember(parsed.activeSpec.name, [opt])
       const chipValues = [...parsed.chips.map((c) => c.option.value), opt.value]
       setPrompt(buildPrompt(chipValues, '', true))
     },
-    [parsed, buildPrompt, setPrompt],
+    [parsed, buildPrompt, setPrompt, remember],
   )
 
   /** Remove the chip at `index` and everything after it, reactivating that argument. */
@@ -248,9 +272,11 @@ export function useSlashArgs(
     ],
   )
 
+  const labeledChips = useMemo(() => chipLabels.relabel(parsed?.chips ?? []), [chipLabels, parsed])
+
   return {
     enabled,
-    chips: parsed?.chips ?? [],
+    chips: labeledChips,
     activeSpec,
     activeText: parsed?.activeText ?? '',
     // Every argument filled: say so instead of the command's generic "argument for…" hint.

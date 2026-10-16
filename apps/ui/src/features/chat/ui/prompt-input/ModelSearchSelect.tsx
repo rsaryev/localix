@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ChevronUp } from 'lucide-react'
 import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
@@ -7,6 +7,9 @@ import type { ReasoningEffort } from '../../model/reasoning'
 import type { SessionAgentRoute } from '@/shared/api/contracts'
 import { modelTriggerLabel } from './modelTriggerLabel'
 import { subscribeModelPicker, type ModelPickerRequest } from '@/shared/lib/modelPickerBus'
+import { useChatStore } from '../../model/store'
+import type { PartyRouteChoice } from '../../model/sessionPartyRoute'
+import { notifyPartyRouteFailure } from './model-select/partyRouteFailure'
 
 // The trigger is present in every composer, while Vaul + the model-routing
 // browser are interaction-only. Keep the whole modal graph out of startup and
@@ -107,6 +110,14 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
   )
 
   const isGroup = (participants?.length ?? 0) > 1
+  const applyPartyRoute = useChatStore((state) => state.applyPartyRoute)
+  // The "All agents" row writes the whole room; only an existing group has one to write.
+  const onApplyPartyRoute = useCallback(
+    async (choice: PartyRouteChoice): Promise<void> => {
+      if (sessionId) await applyPartyRoute(sessionId, choice).catch(notifyPartyRouteFailure)
+    },
+    [applyPartyRoute, sessionId],
+  )
   // In a group the trigger shows ONE participant's model: the one picked on the roster, or the
   // first (the highest-priority seat) until someone is picked.
   const shown = isGroup
@@ -190,6 +201,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
             onReasoningEffortChange={onReasoningEffortChange}
             initialAgentId={selectedAgentId}
             onAgentTargetChange={onSelectAgent}
+            onApplyPartyRoute={isGroup && sessionId ? onApplyPartyRoute : undefined}
           />
         </Suspense>
       )}
