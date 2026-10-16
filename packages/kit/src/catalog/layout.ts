@@ -1,0 +1,122 @@
+import type { KitCatalogEntry } from './types'
+
+const k = (id: string) => `@localixai/kit/${id}`
+
+/** The frame a pane is built in: headers, toolbars, tabs, bars, sections. */
+export const LAYOUT: readonly KitCatalogEntry[] = [
+  {
+    specifier: k('panel-header'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['PanelHeader'],
+    summary: 'The 36px title row at the top of a sidebar section or panel.',
+    use: 'The header of every pane and sidebar section, with its actions on the right.',
+    not: 'Not a hand-made `h-9`/`h-11` header row with its own gutter.',
+  },
+  {
+    specifier: k('workbench-toolbar'),
+    category: 'layout',
+    provider: 'kit',
+    exports: [
+      'WorkbenchToolbar',
+      'WorkbenchToolbarSection',
+      'FloatingActionGroup',
+      'FLOATING_SURFACE',
+    ],
+    summary:
+      'The action row of a viewer or editor (inline or stacked), and the floating action group.',
+    use: 'Controls above a document, table, chart or board.',
+  },
+  {
+    specifier: k('workbench-filter-bar'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['WorkbenchFilterBar'],
+    summary: 'A pane-wide filter row that wraps by its own width.',
+    use: 'Search plus scope and sort controls at the top of a list pane.',
+  },
+  {
+    specifier: k('workbench-breadcrumb'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['WorkbenchBreadcrumb'],
+    summary: 'A single-line semantic hierarchy path.',
+    use: 'Where-am-I paths over a viewer (database › table, cluster › pod).',
+  },
+  {
+    specifier: k('workbench-statusbar'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['WorkbenchStatusBar', 'WorkbenchStatusItem', 'WorkbenchStatusButton'],
+    summary: 'The 24px status row of a pane and its items.',
+    use: 'Counts, cursor position, connection state at the bottom of a viewer.',
+    not: 'A plugin contributes to the app status bar through the SDK status items, not by drawing one.',
+  },
+  {
+    specifier: k('tabs'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['TabBar', 'TabStrip', 'TabPanel', 'useTabPanelIds'],
+    summary: 'Tab rows with keyboard, overflow, reorder and reveal behaviour.',
+    use: 'Switching views inside a pane (`TabBar`), or a strip of open items (`TabStrip`, with badges).',
+    not: 'Not a hand-made role="tablist" row of buttons.',
+  },
+  {
+    specifier: k('collapsible-section'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['CollapsibleSection'],
+    summary: 'A titled section with a chevron, a count and hover actions, mounted only while open.',
+    use: 'Groups inside a narrow panel (change groups, connection groups).',
+  },
+  {
+    specifier: k('collapsible-strip'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['CollapsibleStrip'],
+    summary: 'A collapsible header over a capped, scrollable list of rows.',
+    use: 'Strips above the composer and other stacked lists with a toggle bar.',
+  },
+  {
+    specifier: k('section-label'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['SectionLabel'],
+    summary: 'The small uppercase heading over grouped content.',
+    use: 'Labels over filter groups, detail sections, stat groups.',
+  },
+  {
+    specifier: k('label-divider'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['LabelDivider'],
+    summary: 'A rule with a label in its middle.',
+    use: '"Today" between days, "or" between two options.',
+  },
+  {
+    specifier: k('pane-resize'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['usePaneResize', 'startResizeSession'],
+    summary:
+      "Drag and keyboard resizing for a split, drawn with the Button module's WorkbenchSash.",
+    use: 'Any resizable split: sidebar width, console height, table columns.',
+    not: 'Not a hand-made role="separator" div with its own pointer math.',
+  },
+  {
+    specifier: k('scroll-sync'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['createScrollSyncGuard', 'publishScrollPercent', 'observeScrollPercentTarget'],
+    summary: 'Keeps two scroll containers at the same relative position.',
+    use: 'Source and preview side by side.',
+  },
+  {
+    specifier: k('work-item-focus'),
+    category: 'layout',
+    provider: 'kit',
+    exports: ['WorkItemFocusProvider', 'useWorkItemFocused'],
+    summary: 'Whether this tab is the active tab of the focused editor group.',
+    use: 'Keyboard handling or polling that must run only in the focused tab, not every visible one.',
+  },
+]

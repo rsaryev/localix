@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Only trusted workspace application webviews gets plugin IPC. Browser child webviews in the same window inherit no capability. Dialogs, notifications and links are opened through the shell's own Rust commands, which need no plugin permission, so each plugin grant below is only what a plugin's injected page script calls: the opener's click handler for target=_blank links, and the notification shim's permission probe at page load.",
+  "webviews": ["main", "workspace-*"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-badge-count",
+    "opener:allow-open-url",
+    "opener:allow-default-urls",
+    "notification:allow-is-permission-granted"
+  ]
+}

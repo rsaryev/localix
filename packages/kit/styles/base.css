@@ -1,0 +1,197 @@
+/* ═══════════════════════════════════════════════════════════════
+   Base resets
+   ═══════════════════════════════════════════════════════════════ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* Kill the webview's elastic rubber-band overscroll (WKWebView/Chromium bounce
+       past the edge reveals it's a browser). Inner scroll containers keep their
+       own overscroll, so lists still feel native. */
+    overscroll-behavior: none;
+    /* App-like resets for the touch/mobile-web target: no grey tap-flash (the app
+       has its own active states) and don't let mobile browsers auto-inflate text
+       on rotate (would break the fixed overflow-hidden layout). */
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    /* Dense labels need the face's native spacing to distinguish similar glyphs. */
+    letter-spacing: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'calt', 'liga';
+  }
+
+  /* Text selection follows the theme instead of the OS accent blue — a subtle
+     foreground-tinted highlight that reads on both dark and light, keeping the
+     app's monochrome identity. Text color is left untouched for legibility. */
+  ::selection {
+    background: color-mix(in srgb, var(--foreground) 24%, transparent);
+  }
+
+  /* Browser/WebView autofill paints a stock pale-yellow fill with black text —
+     a broken light rectangle in dark theme. The standard inset-box-shadow trick
+     repaints it with the theme's own colors; inert when no autofill occurs. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    -webkit-box-shadow: 0 0 0 1000px var(--background) inset;
+    caret-color: var(--foreground);
+    transition: background-color 9999s ease-out;
+  }
+
+  /* Hide the webview's default number-input spin buttons — a stock-browser
+     artifact inside the app's flat fields. Arrow-key/typed entry still works. */
+  input[type='number'] {
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  /* Root type size — matches FONT_SIZE_MAP.md (useFontFamily.ts) so the first
+     paint is already 14px instead of snapping 16px→14px after React mounts.
+     Standalone `html` rule on purpose: body/#root must keep INHERITING so the
+     JS inline style on <html> cleanly rescales the sm/lg/xl choices. */
+  html {
+    font-size: 14px;
+  }
+
+  /* Headings use DM Sans tightened — large type wants negative tracking to avoid
+     looking loose. Applied to semantic headings + anything opting into the font. */
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-heading {
+    letter-spacing: -0.02em;
+  }
+
+  /* Mono never gets the body tracking — code/ligature alignment depends on the
+     font's native advance widths. */
+  code,
+  pre,
+  kbd,
+  samp,
+  [class*='font-mono'] {
+    letter-spacing: 0;
+  }
+
+  /* Hide global scrollbars — styled per-container */
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Native-app feel (desktop shell only) ─────────────────────────────────
+     Keyed off `data-desktop`/`data-os` (stamped on <html> by applyPlatformDataset).
+     In the packaged app the surface should read like an OS app, not a web page:
+     the default cursor is the arrow (a web page shows the I-beam over text), and
+     images / links aren't draggable the way a browser makes them. Content stays
+     fully interactive + selectable. Broader native passes (native selection model,
+     OS font stacks, per-OS chrome) are tracked in S7 of the desktop-artifact plan. */
+  :root[data-desktop='true'] body {
+    cursor: default;
+  }
+  :root[data-desktop='true'] :is(img, a) {
+    -webkit-user-drag: none;
+  }
+
+  /* Native OS type: in the packaged app, use the platform's own UI font so the
+     surface reads like a native app instead of a web page (the defining native
+     trait). Keyed off data-os (stamped on <html> by applyPlatformDataset). The
+     web build keeps the Inter brand font. Tracking remains native in both builds. */
+  :root[data-desktop='true'] :is(html, body, #root) {
+    letter-spacing: normal;
+  }
+  :root[data-desktop='true'][data-os='mac'] {
+    --font-sans: -apple-system, 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
+    --font-heading: -apple-system, 'SF Pro Display', 'SF Pro', system-ui, sans-serif;
+  }
+  :root[data-desktop='true'][data-os='windows'] {
+    --font-sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    --font-heading: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  }
+  :root[data-desktop='true'][data-os='linux'] {
+    --font-sans: system-ui, 'Inter Variable', 'Cantarell', 'Ubuntu', 'Noto Sans', sans-serif;
+    --font-heading: system-ui, 'Inter Variable', 'Cantarell', 'Ubuntu', sans-serif;
+  }
+
+  /* Soft-touch defaults: interactive elements ease their state changes gently.
+     Almost imperceptible (150ms, soft cubic-bezier) but makes the UI feel alive.
+     Components can still override with their own transition utilities. */
+  button,
+  a,
+  summary,
+  [role='button'],
+  label[for],
+  select,
+  input:not([type='range']),
+  textarea {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: var(--dur-fast, 150ms);
+    transition-timing-function: var(--ease-soft, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+
+  /* Clickable-cursor baseline. Tailwind v4's Preflight dropped the old
+     `button { cursor: pointer }` default, so every bare <button> reverted to
+     the arrow — and a hover-revealed child button (arrow) nested inside a
+     cursor-pointer parent flips the cursor on the exact pixels under the user,
+     reading as a rapid arrow↔finger flicker. Restore the clickable cursor in
+     ONE place so the whole app reads as clickable. This lives in `base`, so
+     any local `cursor-*` utility (text inputs, cursor-grab drag handles,
+     cursor-col-resize splitters, disabled:cursor-default) still wins. */
+  button:not(:disabled),
+  summary,
+  label[for],
+  [role='button']:not([aria-disabled='true']),
+  a[href] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'],
+  [data-disabled] {
+    cursor: default;
+  }
+
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition: none !important;
+  }
+
+  /* Respect the user's reduced-motion preference — kill transitions & animations. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0s !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

@@ -1,0 +1,171 @@
+/* Breadcrumb → project menu → "Add project…" → the breadcrumb names the new folder. */
+.wt-project {
+  --loop: 7s;
+  position: absolute;
+  inset: 0;
+}
+.wt-project-window {
+  left: 0;
+  right: 0;
+  top: 1rem;
+  bottom: -1px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.wt-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.75rem;
+  padding: 0 0.5rem;
+  border-bottom: 1px solid var(--tip-line);
+  color: var(--text-soft);
+}
+.wt-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.25rem;
+  padding: 0 0.3125rem;
+  border-radius: 0.375rem;
+  animation: wt-p-press var(--loop) var(--ease-soft) infinite both;
+}
+.wt-crumb-chat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--foreground);
+  font-weight: 500;
+}
+.wt-project-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem 1.25rem;
+}
+.wt-skel {
+  height: 0.3125rem;
+  border-radius: 999px;
+  background: var(--tip-veil-strong);
+}
+.wt-menu {
+  z-index: 1;
+  left: 0.25rem;
+  top: 2.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 10.5rem;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background: var(--tip-popover);
+  transform-origin: top left;
+  animation: wt-p-menu var(--loop) var(--ease-soft) infinite both;
+}
+.wt-menu .wt-row {
+  position: relative;
+  z-index: 1;
+  color: var(--foreground);
+}
+.wt-current {
+  background: var(--tip-veil);
+}
+.wt-hover {
+  position: absolute;
+  left: 0.25rem;
+  right: 0.25rem;
+  top: 0.25rem;
+  height: 1.375rem;
+  border-radius: 0.375rem;
+  background: var(--tip-veil-strong);
+  animation: wt-p-hover var(--loop) var(--ease-emphasized) infinite both;
+}
+.wt-menu-search {
+  margin-top: 0.125rem;
+  padding: 0.375rem 0.4375rem 0.25rem;
+  border-top: 1px solid var(--tip-line);
+  color: var(--text-faint);
+}
+.wt-p-a {
+  animation: wt-p-swap-out var(--loop) var(--ease-soft) infinite both;
+}
+.wt-p-b {
+  animation: wt-p-swap-in var(--loop) var(--ease-soft) infinite both;
+}
+
+@keyframes wt-p-press {
+  0%,
+  10%,
+  16%,
+  100% {
+    background: transparent;
+    transform: none;
+  }
+  12% {
+    background: var(--tip-veil-strong);
+    transform: scale(0.95);
+  }
+  14% {
+    background: var(--tip-veil-strong);
+  }
+}
+@keyframes wt-p-menu {
+  0%,
+  13% {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.97);
+  }
+  18%,
+  44% {
+    opacity: 1;
+    transform: none;
+  }
+  49%,
+  100% {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.97);
+  }
+}
+/* Rests on the first row ("Add project…"), arriving from below as the pointer travels up. */
+@keyframes wt-p-hover {
+  0%,
+  22% {
+    opacity: 0;
+    transform: translateY(3rem);
+  }
+  26% {
+    opacity: 1;
+    transform: translateY(3rem);
+  }
+  34%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wt-p-swap-out {
+  0%,
+  50%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+  55%,
+  92% {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+@keyframes wt-p-swap-in {
+  0%,
+  50%,
+  100% {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+  55%,
+  92% {
+    opacity: 1;
+    transform: none;
+  }
+}

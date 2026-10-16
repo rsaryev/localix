@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+/* No `@source` for plugins: a plugin is not part of this app. Its artifact ships the
+   utilities its own sources use, compiled against this file's theme
+   (`apps/api/src/features/plugins/authoring/ui-styles.ts`, fed by the plugin kit staging writes),
+   so a plugin edit never touches the host stylesheet. */
+
+/* Self-hosted fonts (Vite bundles the woff2): no render-blocking Google Fonts
+   fetch on startup, and the packaged desktop app keeps its fonts offline.
+   Fontsource variable families register with a " Variable" name suffix
+   (e.g. 'DM Sans Variable'); Fragment Mono is a static 400-only face. */
+@import './fonts.css';
+
+/* The design system is the kit's: its tokens, themes and layers, in cascade order
+   (`packages/kit/styles/index.css` owns the order and says why it matters). */
+@import '@localixai/kit/styles.css';
+
+/* The kit is a source package outside this Vite root, and Tailwind generates only the utilities
+   it finds in scanned sources — without this, every class a kit primitive uses would be missing
+   from the app's stylesheet. */
+@source '../../../../packages/kit/src';
+@source '../../../../packages/markdown/src';
+
+/* Tests contain obsolete style examples and synthetic identifiers (e.g. m-100000) that
+   Tailwind also recognizes as utilities. They are never rendered by the app, so scanning them
+   adds test-only CSS to every startup. Keep all production app and kit sources in the scan. */
+@source not '../**/*.test.{ts,tsx}';
+@source not '../../../../packages/kit/src/**/*.test.{ts,tsx}';
+@source not '../../../../packages/markdown/src/**/*.test.{ts,tsx}';
+@source not '../../../../packages/kit/src/testing';

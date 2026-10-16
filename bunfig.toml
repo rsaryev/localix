@@ -1,0 +1,19 @@
+[test]
+# `test-globals-guard` fails the run when a test leaks a key onto `globalThis`. One process
+# is shared across files and their order is not the order you pass them, so a forgotten
+# cleanup is a failure that appears and disappears on its own — see the guard's header.
+# `test-deadline` FIRST: a wall-clock kill switch and a lower CPU priority for this test
+# process, armed before anything else can hang — see the file's header.
+preload = [
+  "./scripts/test-deadline.ts",
+  "./packages/kit/test-preload.ts",
+  "./scripts/test-globals-guard.ts",
+]
+# `bun test <filter>` matches a path SUBSTRING, and `vendor/pi/packages/*` is a real
+# workspace — so `bun test packages/agent` silently also ran
+# `vendor/pi/packages/agent/test`, whose upstream suites fail in this environment
+# (temp dirs, Buffer surrogate semantics, uuidv7 monotonicity). Those never run in CI:
+# the vendored package declares no `test` script, so `turbo test` skips it. The only
+# thing they produced was a misread of our own suite as red. Vendored code is upstream's
+# to test; ours is what a local run should report on.
+pathIgnorePatterns = ["**/vendor/**"]

@@ -1,0 +1,200 @@
+/* ── The board ────────────────────────────────────────────────────────────────────────────────
+   Squares and pieces are styled HERE, not with utility classes: utilities reach a plugin through
+   the host's de-duplicated sheet, where a rule judged a duplicate of the host's can be dropped, and
+   a board whose squares lost their colour is no board at all. The same board as Checkers: squares
+   mixed from the theme's foreground so it sits in light and dark alike, while the PIECES keep
+   fixed colours, because "white" and "black" are the names of the sides. */
+.chess-board {
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.chess-square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: color-mix(in oklab, var(--foreground) 3%, transparent);
+  cursor: default;
+}
+
+.chess-square[data-dark='true'] {
+  background: color-mix(in oklab, var(--foreground) 15%, transparent);
+}
+
+/* The last move's squares, so a glance finds what just happened. */
+.chess-square[data-trail='true'] {
+  background: color-mix(
+    in oklab,
+    var(--chart-1) 28%,
+    color-mix(in oklab, var(--foreground) 12%, transparent)
+  );
+}
+
+.chess-square[data-selected='true'] {
+  background: color-mix(in oklab, var(--chart-2) 34%, transparent);
+}
+
+/* The king in check glows from under its piece. */
+.chess-square[data-check='true'] {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--status-error) 70%, transparent) 0%,
+    color-mix(in oklab, var(--status-error) 25%, transparent) 55%,
+    transparent 75%
+  );
+}
+
+.chess-square[data-action='true'] {
+  cursor: pointer;
+}
+
+.chess-square:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+@media (hover: hover) {
+  .chess-square[data-action='true']:hover {
+    background: color-mix(
+      in oklab,
+      var(--chart-2) 20%,
+      color-mix(in oklab, var(--foreground) 15%, transparent)
+    );
+  }
+}
+
+/* Where the picked piece can go: a dot on an empty square, a ring around a piece it would take. */
+.chess-target {
+  position: absolute;
+  inset: 36%;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--chart-2) 70%, transparent);
+  pointer-events: none;
+}
+
+.chess-target[data-capture='true'] {
+  inset: 6%;
+  background: transparent;
+  box-shadow: inset 0 0 0 4px color-mix(in oklab, var(--chart-2) 70%, transparent);
+}
+
+/* The coordinates along the board's edge, drawn inside the edge squares. */
+.chess-file,
+.chess-rank {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: color-mix(in oklab, var(--foreground) 45%, transparent);
+  pointer-events: none;
+}
+
+.chess-file {
+  right: 4px;
+  bottom: 3px;
+}
+
+.chess-rank {
+  left: 4px;
+  top: 3px;
+}
+
+/* A piece is a glyph, filled with its side's colour and outlined in the other's, so both read on
+   either square in either theme. `paint-order` draws the outline under the fill. */
+/* Sized from the board's width (the board is an inline-size container): 100cqw / 8 is one square. */
+.chess-piece {
+  font-size: calc(100cqw / 8 * 0.78);
+  line-height: 1;
+  paint-order: stroke fill;
+  -webkit-text-stroke: calc(100cqw / 8 * 0.03) var(--chess-rim);
+  color: var(--chess-fill);
+  text-shadow: 0 1px 2px color-mix(in oklab, black 30%, transparent);
+  pointer-events: none;
+}
+
+.chess-piece-white {
+  --chess-fill: oklch(0.97 0.01 85);
+  --chess-rim: oklch(0.35 0.02 60);
+}
+
+.chess-piece-black {
+  --chess-fill: oklch(0.26 0.012 55);
+  --chess-rim: oklch(0.8 0.02 80);
+}
+
+/* ── A move arriving: the piece that just landed settles into place. ──────────────────────── */
+.chess-arrive {
+  animation: chess-arrive var(--dur-moderate) var(--ease-emphasized) both;
+  animation-delay: var(--chess-delay, 0ms);
+}
+
+/* The promotion choice, over the board. */
+.chess-promote {
+  animation: chess-rise var(--dur-moderate) var(--ease-emphasized) both;
+}
+
+/* Outside the board's container, so sized on their own: the promotion choice, and the glyph in
+   the status line (`100cqw` would otherwise measure the window). */
+.chess-promote .chess-piece {
+  font-size: 2.2rem;
+  -webkit-text-stroke: 1px var(--chess-rim);
+}
+
+.chess-inline .chess-piece {
+  font-size: 16px;
+  -webkit-text-stroke: 0.6px var(--chess-rim);
+  text-shadow: none;
+}
+
+/* A win you made: a small burst from the middle of the board. */
+.chess-spark {
+  opacity: 0;
+  animation: chess-spark calc(var(--dur-slow) * 1.8) var(--ease-soft) forwards;
+  animation-delay: var(--dur-moderate);
+}
+
+/* The result card rises once the last move has landed: the end is seen, then read. */
+.chess-over {
+  animation: chess-rise var(--dur-moderate) var(--ease-emphasized) both;
+  animation-delay: var(--dur-slow);
+}
+
+@keyframes chess-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-10%) scale(1.12);
+  }
+}
+
+@keyframes chess-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes chess-spark {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4) rotate(160deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chess-arrive,
+  .chess-promote,
+  .chess-over {
+    animation: none;
+  }
+  .chess-spark {
+    display: none;
+  }
+}

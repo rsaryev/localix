@@ -1,0 +1,65 @@
+name: Setup desktop
+description: Install native build dependencies and Rust, then restore the desktop compilation cache
+
+inputs:
+  toolchain:
+    description: Reviewed Rust toolchain version
+    required: true
+  cache-key:
+    description: Shared cache for checks or release packaging
+    default: desktop-checks
+  build-native:
+    description: Install native build dependencies, lint components, and compilation caches
+    default: 'true'
+  persistent-target:
+    description:
+      On a self-hosted runner, compile into a target directory kept on its disk instead of restoring
+      a cache archive (checks only; packaging reads the bundle from the checkout)
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Linux build dependencies
+      if:
+        inputs.build-native == 'true' && runner.os == 'Linux' && runner.environment != 'self-hosted'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+          libxdo-dev libssl-dev build-essential file xdg-utils
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: ${{ inputs.build-native == 'true' && 'clippy,rustfmt' || '' }}
+
+    # Cargo reuses the previous build incrementally, including the crate itself, which a cache
+    # archive never holds; cargo locks the directory, so jobs sharing it wait instead of colliding.
+    # Cleared when it outgrows the bound, the way a fresh runner would start.
+    - name: Use the runner's Rust target directory
+      id: target
+      if:
+        inputs.build-native == 'true' && inputs.persistent-target == 'true' && runner.environment ==
+        'self-hosted'
+      shell: bash
+      run: | # zizmor: ignore[github-env] a constant path under the runner's own home
+        dir="$HOME/.cache/localix-cargo-target"
+        mkdir -p "$dir"
+        if [ "$(du -sm "$dir" | cut -f1)" -gt 30000 ]; then
+          echo "Clearing $dir: over 30 GB"
+          rm -rf "$dir" && mkdir -p "$dir"
+        fi
+        echo "CARGO_TARGET_DIR=$dir" >> "$GITHUB_ENV"
+
+    # PRs and tags read the archive main saved; only main writes one, so branches cannot evict it.
+    - name: Cache Rust compilation
+      if: inputs.build-native == 'true' && steps.target.outcome != 'success'
+      uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      with:
+        workspaces: './apps/desktop-tauri/src-tauri -> target'
+        shared-key: ${{ inputs.cache-key }}
+        cache-on-failure: true
+        save-if: ${{ github.ref == 'refs/heads/main' }}

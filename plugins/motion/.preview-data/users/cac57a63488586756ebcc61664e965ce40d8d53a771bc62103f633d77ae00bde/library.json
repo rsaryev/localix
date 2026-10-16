@@ -1,0 +1,83 @@
+{
+  "projects": [
+    {
+      "id": "134c97c3-91f9-4242-a738-7cfedd638d81",
+      "revision": 1,
+      "updatedAt": "2026-10-09T09:30:01.202Z",
+      "document": {
+        "schemaVersion": 1,
+        "title": "Product launch",
+        "brief": "",
+        "template": "launch",
+        "format": "landscape",
+        "fps": 30,
+        "palette": "ink",
+        "soundtrackId": null,
+        "volume": 0.6,
+        "scenes": [
+          {
+            "id": "67be9037-3cf3-44fe-90f2-69d2d14115cb",
+            "layout": "title",
+            "headline": "Make room\nfor what’s next.",
+            "body": "",
+            "label": "Introducing Orbit",
+            "duration": 3.5,
+            "transition": "fade",
+            "items": [],
+            "value": 0,
+            "suffix": "",
+            "imageId": null,
+            "layers": []
+          },
+          {
+            "id": "bbbd1f4e-25f8-471c-9105-24c2e90e0dac",
+            "layout": "product",
+            "headline": "Everything.\nOne place.",
+            "body": "An illustrative product launch. Replace with your own message.",
+            "label": "Orbit",
+            "duration": 5,
+            "transition": "fade",
+            "items": [],
+            "value": 0,
+            "suffix": "",
+            "imageId": null,
+            "layers": []
+          },
+          {
+            "id": "89bbbe44-c00f-49e3-aa55-d4cc773b8fbd",
+            "layout": "cards",
+            "headline": "Less friction.\nMore flow.",
+            "body": "",
+            "label": "",
+            "duration": 5,
+            "transition": "fade",
+            "items": [
+              "Capture an idea",
+              "Shape it together",
+              "Make it happen"
+            ],
+            "value": 0,
+            "suffix": "",
+            "imageId": null,
+            "layers": []
+          },
+          {
+            "id": "d65e9057-d707-4077-9c0d-ceff529a48b4",
+            "layout": "logo",
+            "headline": "Orbit",
+            "body": "Start something good.",
+            "label": "Explore the possibilities",
+            "duration": 3.5,
+            "transition": "fade",
+            "items": [],
+            "value": 0,
+            "suffix": "",
+            "imageId": null,
+            "layers": []
+          }
+        ]
+      }
+    }
+  ],
+  "assets": []
+}

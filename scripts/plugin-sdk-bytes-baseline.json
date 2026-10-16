@@ -1,0 +1,178 @@
+{
+  "./agent-wait": {
+    "bytes": 365
+  },
+  "./backend": {
+    "bytes": 44834,
+    "shake": {
+      "export": "ASSISTANT_BINDINGS_MAX",
+      "bytes": 31
+    }
+  },
+  "./document-layout": {
+    "bytes": 2546
+  },
+  "./manifest": {
+    "bytes": 2807
+  },
+  "./manifest-label": {
+    "bytes": 719
+  },
+  "./manifest-primitives": {
+    "bytes": 841
+  },
+  "./navigation": {
+    "bytes": 4073
+  },
+  "./prerequisite": {
+    "bytes": 1994
+  },
+  "./resource-refs": {
+    "bytes": 12292
+  },
+  "./rich-text": {
+    "bytes": 3611
+  },
+  "./secret-shapes": {
+    "bytes": 347,
+    "shake": {
+      "export": "hasSecretShape",
+      "bytes": 116
+    }
+  },
+  "./session-resource": {
+    "bytes": 2250
+  },
+  "./store-changes": {
+    "bytes": 489
+  },
+  "./typed-error": {
+    "bytes": 911
+  },
+  "./ui": {
+    "bytes": 64275,
+    "shake": {
+      "export": "CSV_CONTENT_TYPE",
+      "bytes": 40
+    }
+  },
+  "./ui-artifact": {
+    "bytes": 976
+  },
+  "./ui/chart-export": {
+    "bytes": 2632
+  },
+  "./ui/charts": {
+    "bytes": 8606
+  },
+  "./ui/classes": {
+    "bytes": 926
+  },
+  "./ui/commands": {
+    "bytes": 760
+  },
+  "./ui/comments": {
+    "bytes": 1085
+  },
+  "./ui/components": {
+    "bytes": 1045
+  },
+  "./ui/file-resource-sync": {
+    "bytes": 6680
+  },
+  "./ui/file-types": {
+    "bytes": 2166,
+    "shake": {
+      "export": "BINARY_SNIFF_LENGTH",
+      "bytes": 34
+    }
+  },
+  "./ui/focus": {
+    "bytes": 3094,
+    "shake": {
+      "export": "DEFAULT_KEY_POLICY",
+      "bytes": 277
+    }
+  },
+  "./ui/interactions": {
+    "bytes": 1754
+  },
+  "./ui/message-binding-drag": {
+    "bytes": 7628
+  },
+  "./ui/path-tree": {
+    "bytes": 1326
+  },
+  "./ui/prerequisite-recovery": {
+    "bytes": 2542
+  },
+  "./ui/problems": {
+    "bytes": 1529
+  },
+  "./ui/realtime-feed": {
+    "bytes": 3087
+  },
+  "./ui/resource-sync": {
+    "bytes": 2340
+  },
+  "./ui/resource-topics": {
+    "bytes": 630
+  },
+  "./ui/result-count-status": {
+    "bytes": 644
+  },
+  "./ui/route-snapshot": {
+    "bytes": 5343
+  },
+  "./ui/runtime": {
+    "bytes": 4137
+  },
+  "./ui/runtime-hooks": {
+    "bytes": 3119
+  },
+  "./ui/segmented-control": {
+    "bytes": 3583
+  },
+  "./ui/session-activity": {
+    "bytes": 1389
+  },
+  "./ui/session-tree": {
+    "bytes": 435
+  },
+  "./ui/shared-resource": {
+    "bytes": 3564
+  },
+  "./ui/stats-charts": {
+    "bytes": 4321
+  },
+  "./ui/storage": {
+    "bytes": 900
+  },
+  "./ui/store-resource": {
+    "bytes": 3834
+  },
+  "./ui/store-snapshot": {
+    "bytes": 9119
+  },
+  "./ui/table": {
+    "bytes": 32
+  },
+  "./ui/testing": {
+    "bytes": 3265
+  },
+  "./ui/transport": {
+    "bytes": 3586
+  },
+  "./ui/use-problem-report": {
+    "bytes": 1725
+  },
+  "./ui/utilities": {
+    "bytes": 3639
+  },
+  "./ui/visibility": {
+    "bytes": 2198
+  },
+  "./ui/work-item-session": {
+    "bytes": 482
+  }
+}

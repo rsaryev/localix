@@ -1,0 +1,21 @@
+/* Single source of truth: pull tokens, @theme, fonts, keyframes and base
+   resets straight from the product UI. The landing never re-defines a color. */
+@import '../../ui/src/app/index.css';
+@import './fonts.css';
+@import './styles/base.css';
+@import './styles/hero.css';
+@import './styles/showcase.css';
+@import './styles/home.css';
+@import './styles/docs-prose.css';
+@import './styles/docs-controls.css';
+@import './styles/navigation.css';
+
+/* Tailwind v4 scans the importing file's neighborhood; make the landing's own
+   sources explicit so utility classes here are generated. */
+@source "./";
+
+/* The product stylesheet above registers `@source "plugins"` so workbench
+   surfaces keep their arbitrary utilities. The landing renders no plugin UI, so
+   inheriting that glob generated 72KB of dead CSS — 44% of this file. Drop it
+   here; the product build keeps it. */
+@source not "../../../plugins";

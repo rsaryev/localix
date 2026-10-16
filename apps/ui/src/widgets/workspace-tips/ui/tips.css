@@ -1,0 +1,262 @@
+/* Workspace tips — layout, slide motion and the shared pieces every scene draws with.
+   Scenes are miniatures of real Localix surfaces: no frame, they rise from the stage's
+   bottom edge and dissolve into the pane, the way the landing draws its panes. */
+.wt-root {
+  --tip-line: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --tip-veil: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --tip-veil-strong: color-mix(in oklab, var(--foreground) 11%, transparent);
+  --tip-ink: color-mix(in oklab, var(--foreground) 16%, transparent);
+  /* Popover tokens can be translucent (glass); a miniature overlay must stay opaque. */
+  --tip-popover:
+    linear-gradient(var(--popover), var(--popover)),
+    linear-gradient(var(--background), var(--background)), Canvas;
+  --tip-shadow: 0 24px 48px -24px color-mix(in oklab, black 70%, transparent);
+}
+
+/* ── Stage ────────────────────────────────────────────────────────── */
+.wt-stage {
+  position: relative;
+  height: 17rem;
+  overflow: hidden;
+  /* Dissolve the scene into the pane instead of boxing it. */
+  mask-image: linear-gradient(to bottom, black 70%, transparent 99%);
+  font-size: 0.625rem;
+  color: var(--text-soft);
+  pointer-events: none;
+  user-select: none;
+  contain: layout paint;
+}
+.wt-stage > * {
+  pointer-events: none;
+}
+
+/* ── Slide motion ─────────────────────────────────────────────────── */
+/* Paging is a crossfade in place: every scene's pane shares the column's edges, so nothing
+   travels sideways. The old scene dissolves quickly through a blur; the new one rises a
+   little from the stage's bottom edge, the way the landing's panes do, and its blur bridges
+   the two so they read as one change. Exits are shorter than entrances; nothing here
+   blocks the next click. */
+.wt-layer {
+  position: absolute;
+  inset: 0;
+}
+.wt-layer[data-layer='in'] {
+  animation: wt-layer-in 460ms var(--ease-soft) both;
+}
+.wt-layer[data-layer='out'] {
+  animation: wt-layer-out var(--dur-fast) var(--ease-exit) both;
+}
+@keyframes wt-layer-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+    filter: blur(6px);
+  }
+}
+@keyframes wt-layer-out {
+  to {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+/* A scene plays one pass when it arrives, then rests until the pointer is back. */
+.wt-stage:not([data-play]) .wt-layer * {
+  animation-play-state: paused;
+}
+
+.wt-slide > .wt-copy {
+  animation: wt-copy-in 380ms var(--ease-soft) 60ms both;
+}
+@keyframes wt-copy-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+/* ── The sentence's own control ───────────────────────────────────── */
+/* The value ends the sentence in its own type: full ink like the lead, a hairline underline
+   that firms up on hover, and a small chevron that turns while its menu is open. */
+.wt-pick {
+  display: inline;
+  color: var(--text-strong);
+  white-space: nowrap;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: var(--tip-ink);
+  transition: text-decoration-color var(--dur-fast) ease;
+}
+.wt-pick:hover,
+.wt-pick[data-state='open'] {
+  text-decoration-color: color-mix(in oklab, var(--foreground) 55%, transparent);
+}
+.wt-pick-value {
+  display: inline-block;
+  animation: wt-copy-in var(--dur-moderate) var(--ease-soft) both;
+}
+.wt-pick-chevron {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  margin-left: 0.2em;
+  vertical-align: 0.08em;
+  color: var(--text-faint);
+  transition: rotate var(--dur-base) var(--ease-soft);
+}
+.wt-pick[data-state='open'] .wt-pick-chevron {
+  rotate: 180deg;
+}
+
+/* ── Progress ─────────────────────────────────────────────────────── */
+.wt-seg {
+  position: relative;
+  height: 1rem;
+  flex: 1;
+  border-radius: 999px;
+  outline: none;
+}
+.wt-seg::before,
+.wt-seg::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 0.1875rem;
+  margin-top: -0.09375rem;
+  border-radius: 999px;
+}
+.wt-seg::before {
+  background: var(--tip-veil-strong);
+  transition: background-color var(--dur-base) var(--ease-soft);
+}
+.wt-seg:hover::before {
+  background: var(--tip-ink);
+}
+.wt-seg:focus-visible::before {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.wt-seg::after {
+  background: var(--foreground);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition:
+    transform var(--dur-moderate) var(--ease-soft),
+    opacity var(--dur-moderate) var(--ease-soft);
+}
+.wt-seg[data-state='done']::after {
+  transform: scaleX(1);
+  opacity: 0.3;
+}
+.wt-seg[data-state='current']::after {
+  transform: scaleX(1);
+}
+
+/* ── Shared miniature parts ───────────────────────────────────────── */
+:where(.wt-pane) {
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid var(--tip-line);
+  border-radius: 0.75rem;
+  background: var(--background);
+  box-shadow: var(--tip-shadow);
+}
+.wt-label {
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.wt-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.375rem;
+  padding: 0 0.4375rem;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+}
+.wt-row > svg {
+  width: 0.6875rem;
+  height: 0.6875rem;
+  flex: none;
+  color: var(--text-faint);
+}
+.wt-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 0.875rem;
+  height: 0.875rem;
+  padding: 0 0.1875rem;
+  border: 1px solid var(--tip-line);
+  border-radius: 0.1875rem;
+  font-size: 0.5rem;
+  color: var(--text-faint);
+}
+.wt-keys {
+  display: inline-flex;
+  gap: 0.125rem;
+  margin-left: auto;
+}
+/* Composer chips above the input (project, permission mode, context). */
+.wt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.25rem;
+  padding: 0 0.4375rem;
+  border: 1px solid var(--tip-line);
+  border-radius: 999px;
+  color: var(--text-soft);
+}
+.wt-chip > svg {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+.wt-count {
+  display: grid;
+  place-items: center;
+  min-width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--tip-veil-strong);
+  font-size: 0.5rem;
+}
+.wt-swap {
+  display: inline-grid;
+}
+.wt-swap > * {
+  grid-area: 1 / 1;
+}
+
+@keyframes wt-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes wt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Scenes show their settled frame; paging keeps only its fade. */
+  .wt-layer *,
+  .wt-layer *::before,
+  .wt-layer *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+  }
+  .wt-layer[data-layer='in'],
+  .wt-slide > .wt-copy,
+  .wt-pick-value {
+    animation-name: wt-fade;
+  }
+  .wt-layer[data-layer='out'] {
+    animation-name: wt-fade-out;
+  }
+}

@@ -1,0 +1,124 @@
+/**
+ * A PLUGIN STARTS A TURN IN A SESSION, AND THE AGENT ANSWERS THROUGH THE PLUGIN'S TOOLS.
+ *
+ * The seam this replaces handed a plugin `wakeSession({ content })` and answered `void`, and every
+ * gap in it broke the first plugin that leaned on it — a game waiting for the agent's move:
+ *   - nothing came back, so the game could not tell a wake that landed from one that went nowhere,
+ *     and waited for a move that was never coming;
+ *   - the woken turn found the game's tools deferred behind `activate_tools`, and spent its first
+ *     call fetching the schema of the tool it had been woken to use;
+ *   - the turn read as "via External", a webhook, and the model got the plugin's words with
+ *     nothing saying the person had not typed them;
+ *   - a double click woke the session twice.
+ *
+ * One request, answered in three steps that each guard the next: CHECK the request (a message, a
+ * well-formed key, and only tools THIS plugin registered — the host knows them from the load) →
+ * FRAME it (where it came from and which tools answer it) → DELIVER it through the one wake
+ * delivery, which activates the tools in the same admission. The shape is an idempotency key, an
+ * outcome instead of a throw, and the host stamping the source, plus the tools the turn answers
+ * with.
+ */
+import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+
+import type { WakeRequest } from '../chat/contracts'
+import type { WakeOutcome } from '../triggers/delivery'
+
+/** A wake is a notice, not a document: past this the agent is being handed a report to read. */
+export const PLUGIN_WAKE_MESSAGE_MAX = 2_000
+/** More than this is a suite rather than an answer, and every tool named stays on the wire. */
+export const PLUGIN_WAKE_TOOLS_MAX = 6
+const KEY_SHAPE = /^[\w.:-]{1,120}$/
+
+type Checked =
+  | { ok: true; message: string; tools: string[]; key?: string }
+  | { ok: false; reason: string }
+
+/** The request against the contract in `PluginWakeRequest`, and the tools this plugin owns. */
+export function checkPluginWake(
+  request: PluginWakeRequest,
+  ownedTools: readonly string[],
+): Checked {
+  if (!request.userId?.trim() || !request.sessionId?.trim())
+    return { ok: false, reason: 'a wake needs the userId and sessionId of the session to wake' }
+  const message = request.message?.trim() ?? ''
+  if (!message) return { ok: false, reason: 'the message is empty' }
+  if (message.length > PLUGIN_WAKE_MESSAGE_MAX)
+    return {
+      ok: false,
+      reason: `the message is ${message.length} characters; a wake carries at most ${PLUGIN_WAKE_MESSAGE_MAX}`,
+    }
+  const tools = [...new Set(request.tools ?? [])]
+  if (tools.length > PLUGIN_WAKE_TOOLS_MAX)
+    return { ok: false, reason: `a wake names at most ${PLUGIN_WAKE_TOOLS_MAX} tools` }
+  const foreign = tools.filter((tool) => !ownedTools.includes(tool))
+  if (foreign.length > 0)
+    return {
+      ok: false,
+      reason: `${foreign.join(', ')} ${foreign.length === 1 ? 'is not a tool' : 'are not tools'} of this plugin (${ownedTools.join(', ') || 'it registers none'})`,
+    }
+  if (request.key !== undefined && !KEY_SHAPE.test(request.key))
+    return { ok: false, reason: 'the key allows letters, digits and .:_- up to 120 characters' }
+  return { ok: true, message, tools, ...(request.key !== undefined ? { key: request.key } : {}) }
+}
+
+/**
+ * The words the woken turn reads. The bracket line is the provenance a model cannot get from the
+ * row's origin tag — it never sees that — so it says who sent it, that the person did not type it,
+ * and what answers it. The same shape as the webhook's `wrapInboundMessage`.
+ */
+export function framePluginWake(
+  pluginName: string,
+  message: string,
+  tools: readonly string[],
+): string {
+  const answer = tools.length > 0 ? ` Answer with its tools: ${tools.join(', ')}.` : ''
+  return `[From the "${pluginName}" plugin — sent by the plugin, not typed by the user.${answer}]\n\n${message}`
+}
+
+export interface PluginWakesDeps {
+  /** The one wake delivery. Read per wake: it is bound after the plugin hosts are built. */
+  deliver: (request: WakeRequest) => Promise<WakeOutcome>
+  logger: { warn: (entry: Record<string, unknown>) => void }
+}
+
+/**
+ * The `wake` host service, one per plugin, checked against what each plugin registered on the
+ * latest load — replaced whole on every load, so a rebuilt plugin's renamed tool is refused at once.
+ */
+export function createPluginWakes(deps: PluginWakesDeps) {
+  let ownedTools = new Map<string, readonly string[]>()
+
+  return {
+    /** Record what a load registered. A plugin loaded in several scopes owns the union. */
+    recordTools(loaded: readonly { name: string; toolNames: readonly string[] }[]): void {
+      const next = new Map<string, string[]>()
+      for (const plugin of loaded)
+        next.set(plugin.name, [...new Set([...(next.get(plugin.name) ?? []), ...plugin.toolNames])])
+      ownedTools = next
+    },
+
+    forPlugin(pluginName: string) {
+      return async (request: PluginWakeRequest): Promise<PluginWakeOutcome> => {
+        const checked = checkPluginWake(request, ownedTools.get(pluginName) ?? [])
+        if (!checked.ok) return { status: 'refused', reason: checked.reason }
+        const outcome = await deps.deliver({
+          userId: request.userId,
+          sessionId: request.sessionId,
+          content: framePluginWake(pluginName, checked.message, checked.tools),
+          source: 'plugin',
+          plugin: pluginName,
+          ...(checked.key ? { deliveryKey: `plugin:${pluginName}:${checked.key}` } : {}),
+        })
+        if (outcome.status !== 'failed') return outcome
+        // The one outcome worth an operator's attention; the plugin is told the same reason.
+        deps.logger.warn({
+          event: 'plugin_wake.failed',
+          plugin: pluginName,
+          sessionId: request.sessionId,
+          err: outcome.detail,
+        })
+        return { status: 'failed', reason: outcome.detail }
+      }
+    },
+  }
+}

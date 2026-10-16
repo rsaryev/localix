@@ -1,0 +1,14 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "type-check": {
+      "dependsOn": ["^build", "docs:gen"],
+      "outputs": []
+    },
+    "type-check:tests": {
+      "dependsOn": ["^build", "docs:gen"],
+      "outputs": []
+    }
+  }
+}

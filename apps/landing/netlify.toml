@@ -1,0 +1,23 @@
+# Netlify deploy for localix.ai. The build emits one static HTML shell per docs
+# slug, so only known docs routes are rewritten and unknown URLs stay 404s.
+[build]
+base = "apps/landing"
+command = "bun run build"
+publish = "dist"
+
+# The RFC 9727 API catalog has no file extension, so the host guesses a type
+# unless it is stated. Say the one the RFC registers.
+[[headers]]
+for = "/.well-known/api-catalog"
+[headers.values]
+Content-Type = "application/linkset+json"
+
+[[redirects]]
+from = "/docs"
+to = "/docs/getting-started--what-is-localix"
+status = 302
+
+[[redirects]]
+from = "/docs/*"
+to = "/docs/:splat.html"
+status = 200

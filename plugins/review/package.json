@@ -1,0 +1,15 @@
+{
+  "name": "@localix-plugin/review",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Type-check and test ownership for the bundled review plugin.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14"
+  }
+}

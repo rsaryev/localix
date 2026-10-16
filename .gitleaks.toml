@@ -1,0 +1,15 @@
+# Secret scanning for the full history (`gitleaks git`), run by CI's "Secret scan" job.
+# Redaction and exposure-shield tests need secret-shaped fixtures; every value under these paths is
+# synthetic. Anything outside them is a finding.
+title = "Localix"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic secret-shaped fixtures and content hashes"
+paths = [
+  '''\.test\.(?:ts|tsx|mjs)$''',
+  '''^apps/api/src/features/context-fabric/plugin-contract-kit\.ts$''',
+  '''^vendor/pi/packages/ai/src/providers/data/\.manifest\.json$''',
+]

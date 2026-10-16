@@ -1,0 +1,124 @@
+import { sessionRoute } from '../session-route'
+import { commandTarget } from './command-participant'
+import { toolOverrideOptions } from './tool-override-options'
+import { parsePluginCommandArgs, renderPluginPrompt } from './plugin-commands'
+import type { MessageBinding } from '@localixai/agent'
+import { resolveMessageBindings } from './message-bindings'
+import type { SessionRecord } from '../repository'
+import { resolveModelAlias } from '../../agent-core/model-alias'
+import type { MessageMutationResponse } from '../contracts'
+import type { CommandHandlerContext } from './command-handlers-context'
+
+/**
+ * Handles namespaced plugin slash commands (`/<plugin>:<command>`). Plugins
+ * declare their own slash-commands in their manifest; a namespaced token is
+ * dispatched generically: parse positional args against the command's declared
+ * `args`, render its `prompt` template, and run it as a macro. Nothing here
+ * knows about any specific plugin. Returns null when the prompt's first token
+ * isn't a namespaced command.
+ *
+ * Context refs attached to the send resolve through the SAME channel every message uses
+ * (`resolveMessageBindings` → Context Fabric → model-only context assets).
+ * Kind-agnostic: any `@session:`/`@project:`/`@message:`/`@snippet`/
+ * `@resource:` (git·db·container·cluster·chat) link reaches the plugin command's model
+ * turn exactly like it would any command invocation.
+ */
+export async function handlePluginCommand(
+  ctx: CommandHandlerContext,
+  userId: string,
+  sessionId: string,
+  session: SessionRecord,
+  prompt: string,
+  /** Context refs the user attached to this send. Expanded into model-only
+   *  instruction attachments so a plugin command over an attached
+   *  `@resource:localix://resource/git/…` can act on the linked node. */
+  bindings?: MessageBinding[],
+): Promise<MessageMutationResponse | null> {
+  const { repo, now, deps, insertDirectReply, runMacroCommand, gatherEnabledPluginCommands } = ctx
+
+  const firstToken = prompt.trim().split(/\s+/)[0] ?? ''
+  // Accept the namespaced `/<plugin>:<command>` form, OR a bare `/<name>` which we
+  // only treat as a plugin command when a plugin named `<name>` has a command also
+  // named `<name>` (the redundant `<plugin>:<plugin>` case — collapsed for nicer UX,
+  // e.g. `/feature-dev` instead of `/feature-dev:feature-dev`). A bare `/<name>` with
+  // no same-name command falls through (return null) so skills/builtins still resolve.
+  // The command part may itself be namespaced (`/<plugin>:<sub>:<cmd>` from a nested
+  // `commands/<sub>/<cmd>.md`), so it captures one-or-more colon-joined segments.
+  const tokenMatch = firstToken.match(/^\/([a-z0-9_-]+)(?::([a-z0-9_-]+(?::[a-z0-9_-]+)*))?$/i)
+  if (!tokenMatch) return null
+  const pluginName = tokenMatch[1].toLowerCase()
+  const commandName = (tokenMatch[2] ?? tokenMatch[1]).toLowerCase()
+
+  const ts = now()
+  const argString = prompt.trim().slice(firstToken.length).trim()
+
+  const available = await gatherEnabledPluginCommands(userId, session)
+  const match = available.find(
+    (c) => c.plugin.toLowerCase() === pluginName && c.command.name.toLowerCase() === commandName,
+  )
+  if (match) {
+    // No busy refusal: a command sent while the session works waits in the queue whole
+    // (`run-macro.ts`). The participant the person is talking to answers it.
+    const speaker = (
+      await commandTarget(
+        session,
+        () => repo.listMessages(userId, sessionId),
+        '',
+        ctx.runner.leadership(userId, session.projectId),
+      )
+    )?.participant
+    const speakerRoute = speaker ?? sessionRoute(session)
+    const parsed = parsePluginCommandArgs(match.command, argString, match.plugin)
+    if ('usage' in parsed) {
+      return insertDirectReply(userId, sessionId, prompt, parsed.usage, ts, 'warning')
+    }
+    const projectDir = await ctx.resolveSessionWorkingDir(userId, session)
+    const instruction = await renderPluginPrompt(match.command.prompt, parsed.values, argString, {
+      sessionId,
+      effort: speakerRoute.reasoningEffort ?? undefined,
+      pluginDir: match.pluginDir,
+      pluginName: match.plugin,
+      projectDir,
+      // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
+      cwd: projectDir,
+    })
+    const resolvedBindings = await resolveMessageBindings(deps, userId, session, bindings)
+    return runMacroCommand(
+      userId,
+      sessionId,
+      session,
+      () => repo.listMessages(userId, sessionId),
+      prompt,
+      instruction,
+      ts,
+      {
+        ...toolOverrideOptions(match.command, projectDir),
+        ...(resolvedBindings?.length ? { bindings: resolvedBindings } : {}),
+        invocation: {
+          source: 'plugin',
+          invocation: {
+            kind: 'plugin-command',
+            name: `${match.plugin}:${match.command.name}`,
+            ...(argString ? { arguments: argString } : {}),
+            lifetime: 'turn',
+          },
+          presentation: { label: `/${match.command.name}`, token: firstToken },
+        },
+        // CC command `model:` frontmatter → best-effort per-run model override.
+        // May be an alias (`sonnet`/`opus`/`inherit`) — resolve it like agent/skill
+        // `model:` values; `inherit`/unresolved falls back to the session model,
+        // which runMacroCommand treats as "no override".
+        ...(match.command.model
+          ? {
+              modelId: resolveModelAlias(match.command.model, speakerRoute.modelId ?? undefined),
+            }
+          : {}),
+      },
+    )
+  }
+  // No matching plugin command — whether bare `/<name>` or the namespaced
+  // `/<plugin>:<command>` form. Fall through (return null) so skills and other
+  // handlers get a chance. The final unresolved-slash gate reports an error if
+  // neither layer claims it, so command-shaped input never silently reaches the model.
+  return null
+}

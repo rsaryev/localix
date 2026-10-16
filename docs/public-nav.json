@@ -1,0 +1,139 @@
+{
+  "sections": [
+    {
+      "id": "getting-started",
+      "title": "Getting started",
+      "pages": [
+        "getting-started/what-is-localix.md",
+        "getting-started/installation.md",
+        "getting-started/first-session.md",
+        "getting-started/privacy.md",
+        "getting-started/troubleshooting.md"
+      ]
+    },
+    {
+      "id": "recipes",
+      "title": "Recipes",
+      "pages": [
+        "recipes/bring-your-own-agent-cli.md",
+        "recipes/drive-interactive-terminal.md",
+        "recipes/fix-a-ui-bug-by-pointing-at-it.md",
+        "recipes/turn-a-vague-goal-into-a-pipeline.md"
+      ]
+    },
+    {
+      "id": "features",
+      "title": "Features",
+      "categories": [
+        {
+          "title": "Core",
+          "pages": [
+            "features/capabilities.md",
+            "features/agents.md",
+            "features/agent-management.md",
+            "features/delegation.md",
+            "features/permission-modes.md",
+            "features/permissions.md",
+            "features/configure.md",
+            "features/sessions-and-projects.md",
+            "features/conversations.md",
+            "features/conversation-history.md",
+            "features/attachments.md",
+            "features/answer-formatting.md",
+            "features/hitl.md",
+            "features/background-work.md",
+            "features/interactive-terminals.md",
+            "features/monitors.md",
+            "features/loops.md"
+          ]
+        },
+        {
+          "title": "Workspace",
+          "pages": [
+            "features/workspace.md",
+            "features/native-workspace-tabs.md",
+            "features/external-agents.md",
+            "features/settings.md",
+            "features/keyboard-shortcuts.md",
+            "features/source-control.md",
+            "features/visual-feedback.md",
+            "features/lsp.md",
+            "features/cost-tracking.md",
+            "features/notifications.md",
+            "features/cli.md"
+          ]
+        },
+        {
+          "title": "Workbenches",
+          "pages": [
+            "features/database.md",
+            "features/code-graph.md",
+            "features/project-space.md",
+            "features/api.md",
+            "features/devops.md",
+            "features/docker.md",
+            "features/kubernetes.md",
+            "features/documents.md",
+            "features/resumes.md",
+            "features/reader.md",
+            "features/trading.md",
+            "features/task-board.md",
+            "features/game-2048.md",
+            "features/games.md"
+          ]
+        },
+        {
+          "title": "Models & context",
+          "pages": [
+            "features/providers.md",
+            "features/context-checkpoints.md",
+            "features/tools.md",
+            "features/tool-budget.md"
+          ]
+        },
+        {
+          "title": "Memory & skills",
+          "pages": ["features/learning-loop.md", "features/skills.md"]
+        },
+        {
+          "title": "Integrations",
+          "pages": [
+            "features/mcp.md",
+            "features/hooks-and-commands.md",
+            "features/execution-environments.md",
+            "features/secrets.md",
+            "features/webhook.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "extending",
+      "title": "Extending",
+      "pages": [
+        "extending/plugins.md",
+        "extending/build-with-the-agent.md",
+        "extending/plugin-ui.md",
+        "extending/sandboxed-views.md",
+        "extending/plugin-sync.md",
+        "extending/keyboard-ownership.md",
+        "extending/plugin-problems.md",
+        "extending/ui-kit.md",
+        "extending/plugin-wakes.md",
+        "extending/plugin-routes.md",
+        "extending/skills-authoring.md",
+        "extending/markdown.md"
+      ]
+    },
+    {
+      "id": "contributors",
+      "title": "Contributors",
+      "pages": [
+        "internals/architecture.md",
+        "internals/environment.md",
+        "internals/contributing.md",
+        "internals/shared-view-state.md"
+      ]
+    }
+  ]
+}

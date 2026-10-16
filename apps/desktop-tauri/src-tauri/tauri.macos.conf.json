@@ -1,0 +1,16 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "macOS": {
+      "minimumSystemVersion": "13.0",
+      "entitlements": "./entitlements.plist",
+      "dmg": {
+        "background": "./dmg/background.png",
+        "windowPosition": { "x": 420, "y": 180 },
+        "windowSize": { "width": 660, "height": 400 },
+        "appPosition": { "x": 165, "y": 200 },
+        "applicationFolderPosition": { "x": 495, "y": 200 }
+      }
+    }
+  }
+}

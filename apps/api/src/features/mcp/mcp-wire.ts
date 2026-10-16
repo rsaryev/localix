@@ -1,0 +1,38 @@
+// Barrel: the MCP "wire" surface is split into focused modules. This file
+// preserves the historical `./mcp-wire` import path so client-manager (and
+// anything it re-exports to) keeps its exact import surface.
+//
+//   mcp-connect.ts — transport build + connect (+ connect budget timeout)
+//   mcp-result.ts  — MCP multimodal content → AgentToolResult mapping
+//   mcp-tools.ts   — tool naming/filtering + buildToolForServer
+//   mcp-client-contracts.ts — client ports and discovery metadata
+
+export {
+  DEFAULT_CONNECT_BUDGET_MS,
+  TIMED_OUT,
+  withConnectBudget,
+  connectClient,
+  isMcpAuthenticationRequiredError,
+} from './mcp-connect'
+
+export { mapCallResult } from './mcp-result'
+
+export {
+  MCP_DESCRIPTION_MAX_CHARS,
+  resolveConnectTimeoutMs,
+  filterToolDefs,
+  modelVisibleToolDefs,
+  readMaxResultChars,
+  disambiguate,
+  namespacedName,
+  buildToolForServer,
+} from './mcp-tools'
+
+export type {
+  McpGatherResult,
+  McpToolDef,
+  McpClientLike,
+  McpResourceDef,
+  McpResourceTemplateDef,
+  McpResourceContent,
+} from './mcp-client-contracts'

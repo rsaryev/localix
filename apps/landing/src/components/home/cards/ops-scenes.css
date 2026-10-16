@@ -1,0 +1,177 @@
+/* Database and API Client panes. Database: lines typed 4–22%, Run at 24%, rows 30–36%.
+   API: Send at 12%, loading 14–32%, status 36%, body lines 40–48%. */
+.sc-db,
+.sc-api {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.sc-sql,
+.sc-json {
+  display: grid;
+  padding: 0.5rem 0;
+  font-size: 0.625rem;
+  line-height: 1.85;
+}
+.sc-sql > span,
+.sc-json > span {
+  overflow: hidden;
+  white-space: pre;
+}
+.sc-sql > span:nth-child(1) {
+  animation: sc-d-line-1 var(--loop) steps(20, end) var(--phase) infinite both;
+}
+.sc-sql > span:nth-child(2) {
+  animation: sc-d-line-2 var(--loop) steps(20, end) var(--phase) infinite both;
+}
+.sc-sql > span:nth-child(3) {
+  animation: sc-d-line-3 var(--loop) steps(14, end) var(--phase) infinite both;
+}
+.sc-db-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 2rem;
+  padding: 0 0.375rem 0 0.625rem;
+  border-block: 1px solid var(--k-line);
+  color: var(--text-faint);
+  font-size: 0.5625rem;
+}
+.sc-db-status {
+  animation: sc-d-status var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-run {
+  animation: sc-d-run var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-grid {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  font-size: 0.625rem;
+}
+.sc-grid-head,
+.sc-grid-row > span {
+  overflow: hidden;
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--k-line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-grid-head {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.sc-grid-head > small {
+  font-weight: 400;
+  opacity: 0.6;
+}
+.sc-grid-row {
+  display: contents;
+}
+.sc-grid-row > span {
+  color: var(--foreground);
+}
+.sc-grid-row > span:first-child {
+  color: var(--text-faint);
+}
+.sc-grid-row:nth-child(4) > span {
+  animation: sc-d-row-1 var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-grid-row:nth-child(5) > span {
+  animation: sc-d-row-2 var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-grid .k-dot[data-tone='ok'] {
+  color: var(--status-success);
+}
+.sc-grid .k-dot[data-tone='info'] {
+  color: var(--status-info);
+}
+
+/* API Client */
+.sc-url {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2rem;
+  margin: 0.625rem;
+  padding: 0 0.25rem 0 0.625rem;
+  overflow: hidden;
+  border: 1px solid var(--k-line);
+  border-radius: 0.5rem;
+  background: var(--card);
+  font-size: 0.625rem;
+}
+.sc-url > b {
+  color: var(--k-accent);
+  font-weight: 600;
+}
+.sc-url > code {
+  flex: 1;
+  overflow: hidden;
+  color: var(--foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-send {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  border-radius: 0.375rem;
+  color: var(--k-accent);
+  animation: sc-a-send var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-loading {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  height: 2px;
+  background: var(--k-accent);
+  opacity: 0;
+  animation: sc-a-loading var(--loop) var(--k-move) var(--phase) infinite both;
+}
+.sc-api-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  height: 1.875rem;
+  padding: 0 0.75rem;
+  border-block: 1px solid var(--k-line);
+  color: var(--text-faint);
+  font-size: 0.625rem;
+}
+.sc-api-tabs > [data-active] {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 -1.5px var(--foreground);
+  color: var(--foreground);
+}
+.sc-api-status {
+  margin-left: auto;
+}
+.sc-api-status > :first-child {
+  animation: sc-a-wait var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-api-status > :last-child {
+  color: var(--status-success);
+  font-weight: 600;
+  animation: sc-a-status var(--loop) var(--ease-spring) var(--phase) infinite both;
+}
+.sc-json > span:nth-child(1) {
+  animation: sc-a-line-1 var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-json > span:nth-child(2) {
+  animation: sc-a-line-2 var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-json > span:nth-child(3) {
+  animation: sc-a-line-3 var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-json > span:nth-child(4) {
+  animation: sc-a-line-4 var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-json > span:nth-child(5) {
+  animation: sc-a-line-5 var(--loop) var(--k-out) var(--phase) infinite both;
+}

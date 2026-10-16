@@ -1,0 +1,218 @@
+/* Preferences → Theme select → Light → the page switches; then back to Dark. */
+.wt-appearance {
+  --loop: 8s;
+  position: absolute;
+  inset: 0;
+}
+.wt-ws-frame {
+  left: 0;
+  right: 0;
+  top: 1rem;
+  bottom: -1px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.wt-ws-light {
+  position: absolute;
+  inset: 0;
+  animation: wt-a-light var(--loop) var(--ease-soft) infinite both;
+}
+.wt-ws {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: var(--ws-bg);
+  color: var(--ws-soft);
+}
+/* Fixed, theme-independent tones: the miniature must show both appearances. */
+.wt-ws[data-tone='dark'] {
+  --ws-bg: color-mix(in oklab, black 97%, white);
+  --ws-card: color-mix(in oklab, black 90%, white);
+  --ws-line: color-mix(in oklab, white 10%, transparent);
+  --ws-ink: color-mix(in oklab, white 12%, transparent);
+  --ws-strong: color-mix(in oklab, white 92%, transparent);
+  --ws-soft: color-mix(in oklab, white 55%, transparent);
+}
+.wt-ws[data-tone='light'] {
+  --ws-bg: color-mix(in oklab, white 97%, black);
+  --ws-card: white;
+  --ws-line: color-mix(in oklab, black 9%, transparent);
+  --ws-ink: color-mix(in oklab, black 8%, transparent);
+  --ws-strong: color-mix(in oklab, black 88%, transparent);
+  --ws-soft: color-mix(in oklab, black 50%, transparent);
+}
+.wt-set-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 6.5rem;
+  padding: 0.75rem 0.5rem;
+  border-right: 1px solid var(--ws-line);
+}
+.wt-set-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+}
+.wt-set-label {
+  padding: 0 0.375rem 0.125rem;
+  font-size: 0.4375rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.wt-set-item {
+  padding: 0.1875rem 0.375rem;
+  border-radius: 0.3125rem;
+  font-size: 0.5625rem;
+}
+.wt-set-item[data-active] {
+  background: var(--ws-ink);
+  color: var(--ws-strong);
+}
+.wt-set-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.875rem 1rem;
+}
+.wt-set-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ws-strong);
+}
+.wt-set-desc {
+  margin-top: 0.125rem;
+  font-size: 0.5625rem;
+}
+.wt-set-section {
+  margin-top: 0.875rem;
+  font-weight: 600;
+  color: var(--ws-strong);
+}
+.wt-set-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--ws-line);
+}
+.wt-set-row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  font-size: 0.5rem;
+}
+.wt-set-row-text b {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  color: var(--ws-strong);
+}
+.wt-set-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  width: 5.5rem;
+  height: 1.375rem;
+  padding: 0 0.4375rem;
+  border: 1px solid var(--ws-line);
+  border-radius: 0.375rem;
+  background: var(--ws-card);
+  color: var(--ws-strong);
+}
+.wt-ws[data-tone='dark'] .wt-set-row:first-of-type .wt-set-select {
+  animation: wt-a-press var(--loop) var(--ease-soft) infinite both;
+}
+/* The select's menu, opened under the Theme select in the dark page. */
+.wt-set-menu {
+  position: absolute;
+  z-index: 1;
+  right: 1rem;
+  top: 6.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  width: 5.5rem;
+  padding: 0.1875rem;
+  border: 1px solid var(--tip-line);
+  border-radius: 0.4375rem;
+  background: var(--tip-popover);
+  color: var(--foreground);
+  box-shadow: var(--tip-shadow);
+  transform-origin: top right;
+  animation: wt-a-menu var(--loop) var(--ease-soft) infinite both;
+}
+.wt-set-menu .wt-row {
+  position: relative;
+  z-index: 1;
+  height: 1.25rem;
+}
+.wt-set-hover {
+  position: absolute;
+  left: 0.1875rem;
+  right: 0.1875rem;
+  top: 0.1875rem;
+  height: 1.25rem;
+  border-radius: 0.3125rem;
+  background: var(--tip-veil-strong);
+  animation: wt-a-hover var(--loop) var(--ease-emphasized) infinite both;
+}
+
+@keyframes wt-a-press {
+  0%,
+  10%,
+  16%,
+  100% {
+    transform: none;
+  }
+  13% {
+    transform: scale(0.96);
+  }
+}
+@keyframes wt-a-menu {
+  0%,
+  13% {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.97);
+  }
+  18%,
+  38% {
+    opacity: 1;
+    transform: none;
+  }
+  42%,
+  100% {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.97);
+  }
+}
+/* From "Dark" (third row) up to "Light" (second row). */
+@keyframes wt-a-hover {
+  0%,
+  22% {
+    transform: translateY(2.625rem);
+  }
+  30%,
+  100% {
+    transform: translateY(1.3125rem);
+  }
+}
+/* The app switches instantly; a brief fade keeps the miniature legible. */
+@keyframes wt-a-light {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  43%,
+  86% {
+    opacity: 1;
+  }
+  89%,
+  100% {
+    opacity: 0;
+  }
+}

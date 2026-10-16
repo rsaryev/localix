@@ -1,0 +1,184 @@
+/* Launch UI's published three-screen hero: each early panel occupies 24px in
+   flow, all share rotate(-24deg) / skewY(12deg), and the front panel is offset
+   32%. Use transforms for the original left offsets so spreading costs no layout.
+   https://www.launchuicomponents.com/docs/sections/hero */
+.product-showcase {
+  position: relative;
+  isolation: isolate;
+}
+
+.showcase-stack,
+.showcase-panel {
+  position: relative;
+}
+
+.showcase-side,
+.showcase-fade,
+.showcase-glow {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .group\/cue:hover .arrow-cue {
+    transform: translateX(2px);
+  }
+}
+
+@media (min-width: 48rem) and (hover: hover) and (pointer: fine) {
+  .product-showcase {
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    padding-block: 6rem 2rem;
+  }
+
+  .showcase-fade {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    inset: 35% 0 -12% 0;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--background) 85%);
+  }
+
+  /* A soft light under the capture once it lies flat; the scroll drives its opacity. */
+  .showcase-glow {
+    display: block;
+    position: absolute;
+    z-index: 0;
+    inset: 10% 10% 0;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      60% 50% at 50% 55%,
+      color-mix(in oklch, var(--foreground) 9%, transparent),
+      transparent 70%
+    );
+  }
+
+  .showcase-stack {
+    max-width: 90rem;
+    margin-inline: auto;
+    padding-inline: 6rem;
+  }
+
+  .showcase-panel {
+    z-index: 1;
+    transform: rotate(-24deg) skewY(12deg);
+    transition: transform 400ms cubic-bezier(0.77, 0, 0.175, 1);
+  }
+
+  .product-showcase[data-motion] .showcase-panel {
+    transition: none;
+    will-change: transform;
+  }
+
+  .showcase-side {
+    display: block;
+    height: 24px;
+  }
+
+  .showcase-left {
+    transform: translateX(-24%) rotate(-24deg) skewY(12deg);
+  }
+
+  .showcase-main {
+    transform: translateX(32%) rotate(-24deg) skewY(12deg);
+  }
+}
+
+/* Without scripted motion the stack still fans out under the pointer. */
+@media (min-width: 48rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .product-showcase:not([data-motion]):hover .showcase-left {
+    transform: translateX(-32%) rotate(-12deg) skewY(6deg);
+  }
+
+  .product-showcase:not([data-motion]):hover .showcase-middle {
+    transform: rotate(-12deg) skewY(6deg);
+  }
+
+  .product-showcase:not([data-motion]):hover .showcase-main {
+    transform: translateX(48%) rotate(-12deg) skewY(6deg);
+  }
+}
+
+/* Where the browser has scroll-driven animations, the first 70vh of page scroll lays the stack
+   flat on the compositor (`ProductShowcase` sets `data-motion="timeline"`). The values mirror the
+   Motion fallback in that component. */
+@supports (animation-timeline: scroll()) {
+  @media (min-width: 48rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .product-showcase[data-motion='timeline'] :is(.showcase-panel, .showcase-fade, .showcase-glow) {
+      animation-duration: 1ms;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
+      animation-range: 0 70vh;
+    }
+    .product-showcase[data-motion='timeline'] .showcase-left {
+      animation-name: showcase-flatten-left;
+    }
+    .product-showcase[data-motion='timeline'] .showcase-middle {
+      animation-name: showcase-flatten-middle;
+    }
+    .product-showcase[data-motion='timeline'] .showcase-main {
+      animation-name: showcase-flatten-main;
+    }
+    .product-showcase[data-motion='timeline'] .showcase-fade {
+      animation-name: showcase-fade-out;
+    }
+    .product-showcase[data-motion='timeline'] .showcase-glow {
+      animation-name: showcase-glow-in;
+    }
+  }
+}
+@keyframes showcase-flatten-left {
+  from {
+    opacity: 1;
+    transform: translateX(-24%) rotate(-24deg) skewY(12deg);
+  }
+  75% {
+    opacity: 0;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-72%) rotate(0deg) skewY(0deg);
+  }
+}
+@keyframes showcase-flatten-middle {
+  from {
+    opacity: 1;
+    transform: translateX(0%) rotate(-24deg) skewY(12deg);
+  }
+  75% {
+    opacity: 0;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-18%) rotate(0deg) skewY(0deg);
+  }
+}
+@keyframes showcase-flatten-main {
+  from {
+    transform: translateX(32%) rotate(-24deg) skewY(12deg);
+  }
+  to {
+    transform: translateX(0%) rotate(0deg) skewY(0deg);
+  }
+}
+@keyframes showcase-fade-out {
+  from {
+    opacity: 1;
+  }
+  80%,
+  to {
+    opacity: 0;
+  }
+}
+@keyframes showcase-glow-in {
+  from,
+  30% {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

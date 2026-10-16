@@ -1,0 +1,7 @@
+/* App-side corrections to xterm's stylesheet (imported right after it in TerminalPane).
+   xterm ships `.xterm-viewport { background-color: #000 }` — a pure-black coat under the whole
+   terminal. The theme already decides the terminal's ground (transparent — the hosting pane
+   paints it; see terminalTheme.ts), so the stylesheet must not paint a second one. */
+.xterm .xterm-viewport {
+  background-color: transparent;
+}

@@ -1,0 +1,210 @@
+/* Chord → palette → type "group" → the list narrows to the matching commands. */
+.wt-palette-scene {
+  --loop: 7.5s;
+  position: absolute;
+  inset: 0;
+}
+.wt-chord {
+  position: absolute;
+  top: 0.5rem;
+  left: 0;
+  display: flex;
+  gap: 0.25rem;
+  transform: translateX(-50%);
+  animation: wt-c-chord var(--loop) var(--ease-soft) infinite both;
+}
+.wt-chord-key {
+  display: grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--tip-line);
+  border-radius: 0.375rem;
+  background: var(--card);
+  box-shadow: 0 2px 0 var(--tip-line);
+  font-size: 0.75rem;
+  color: var(--text-strong);
+}
+.wt-palette {
+  left: 0;
+  right: 0;
+  top: 2.5rem;
+  padding: 0.3125rem;
+  background: var(--tip-popover);
+  animation: wt-c-palette var(--loop) var(--ease-soft) infinite both;
+}
+.wt-palette-input {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.75rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--tip-line);
+  border-radius: 0.5rem;
+  background: var(--tip-veil);
+  color: var(--foreground);
+  font-size: 0.6875rem;
+}
+.wt-q {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.wt-q-empty {
+  position: absolute;
+  left: 0;
+  white-space: nowrap;
+  color: var(--text-faint);
+  animation: wt-c-empty var(--loop) steps(1) infinite both;
+}
+.wt-q-letter {
+  display: inline-block;
+  overflow: hidden;
+  max-width: 0;
+  animation: wt-c-letter var(--loop) steps(1, end) infinite both;
+  animation-delay: calc(var(--i) * 140ms);
+}
+.wt-q-caret {
+  width: 1px;
+  height: 0.75rem;
+  margin-left: 1px;
+  background: var(--foreground);
+  animation: wt-c-blink 1s steps(1) infinite;
+}
+.wt-palette-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0 0.125rem;
+}
+.wt-group,
+.wt-cmd {
+  overflow: hidden;
+}
+.wt-group {
+  height: 1.25rem;
+}
+.wt-cmd {
+  height: 1.375rem;
+}
+.wt-group > .wt-label {
+  display: block;
+  padding: 0.5rem 0.4375rem 0;
+}
+.wt-group[data-drop] {
+  --h: 1.25rem;
+}
+.wt-cmd[data-drop] {
+  --h: 1.375rem;
+}
+.wt-cmd .wt-row {
+  color: var(--foreground);
+}
+.wt-group[data-drop],
+.wt-cmd[data-drop] {
+  animation: wt-c-drop var(--loop) var(--ease-emphasized) infinite both;
+}
+.wt-cmd[data-first] .wt-row {
+  animation: wt-c-first var(--loop) var(--ease-soft) infinite both;
+}
+.wt-palette-foot {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.125rem;
+  padding: 0.375rem 0.4375rem 0.125rem;
+  border-top: 1px solid var(--tip-line);
+  color: var(--text-faint);
+}
+.wt-palette-foot .wt-keys {
+  margin-left: 0;
+}
+
+@keyframes wt-c-chord {
+  0%,
+  2% {
+    opacity: 0;
+    transform: translate(-50%, 0.25rem);
+  }
+  6%,
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  9% {
+    opacity: 1;
+    transform: translate(-50%, 1px) scale(0.97);
+  }
+  18%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -0.25rem);
+  }
+}
+@keyframes wt-c-palette {
+  0%,
+  11% {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+  16%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+}
+@keyframes wt-c-empty {
+  0%,
+  29% {
+    opacity: 1;
+  }
+  30%,
+  100% {
+    opacity: 0;
+  }
+}
+/* Each letter lands at its own time (staggered by --i), so the caret follows the text. */
+@keyframes wt-c-letter {
+  0%,
+  29% {
+    max-width: 0;
+  }
+  30%,
+  100% {
+    max-width: 1em;
+  }
+}
+@keyframes wt-c-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes wt-c-drop {
+  0%,
+  42% {
+    height: var(--h);
+    opacity: 1;
+  }
+  44% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    height: 0;
+    opacity: 0;
+  }
+}
+@keyframes wt-c-first {
+  0%,
+  46% {
+    background: transparent;
+  }
+  52%,
+  100% {
+    background: var(--tip-veil-strong);
+  }
+}

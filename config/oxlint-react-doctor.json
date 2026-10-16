@@ -1,0 +1,26 @@
+{
+  "$schema": "../node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "jsPlugins": [{ "name": "react-doctor", "specifier": "oxlint-plugin-react-doctor" }],
+  "rules": {
+    "react-doctor/js-combine-iterations": "warn",
+    "react-doctor/no-array-index-as-key": "warn",
+    "react-doctor/async-await-in-loop": "warn",
+    "react-doctor/server-sequential-independent-await": "warn",
+    "react-doctor/build-pipeline-secret-boundary": "error",
+    "react-doctor/plugin-update-trust-risk": "error",
+    "react-doctor/artifact-secret-leak": "error",
+    "react-doctor/dangerous-html-sink": "error",
+    "react-doctor/raw-sql-injection-risk": "error"
+  },
+  "ignorePatterns": ["**/node_modules", "**/dist", "**/out", "apps/landing/src/generated"]
+}

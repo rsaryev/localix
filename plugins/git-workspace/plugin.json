@@ -1,0 +1,14 @@
+{
+  "name": "git-workspace",
+  "category": "development",
+  "displayName": "Git",
+  "license": "MIT",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "defaultEnabled": true,
+  "description": "A first-class Git workspace for changes, conflicts, history, branches, review context, and agent-assisted source-control workflows.",
+  "surfaces": ["agent", "workbench"],
+  "tools": "./backend/index.ts",
+  "author": "localix",
+  "homepage": "https://github.com/rsaryev/localix"
+}

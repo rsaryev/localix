@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS HARDENED RUNTIME entitlements (bundle.macOS.entitlements in
+  tauri.macos.conf.json). Every key here is one the hardened runtime actually
+  consults.
+
+  There is deliberately NO `com.apple.security.app-sandbox`. Localix is
+  Developer ID / notarized software, not Mac App Store software, and it cannot
+  be sandboxed even in principle: it runs a Bun sidecar that spawns the user's
+  own toolchain and reads whatever project directory the user opened. The App
+  Store route is closed anyway — `app.macOSPrivateApi` is on for the vibrancy
+  material. Because the sandbox is off, App-Sandbox-only entitlements
+  (`com.apple.security.network.client` / `.network.server`, the
+  `files.user-selected.*` family) are INERT and are not declared: an entitlement
+  that does nothing is a false claim about what this app was granted. Outbound
+  and loopback networking need no entitlement outside the sandbox.
+
+  Resource access (mic) IS a hardened-runtime concern and is declared below;
+  it is paired with NSMicrophoneUsageDescription in Info.plist — TCC kills a
+  process that reaches for the mic without the usage string.
+
+  Keep this list MINIMAL: every relaxation here is a weakening of the runtime
+  protections Apple applies to a notarized binary.
+-->
+<plist version="1.0">
+<dict>
+	<!-- Bun executes JIT-compiled JS; the hardened runtime forbids both by default. -->
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<!-- Let the app spawn + load the sibling Bun binary (sidecar) and the user's own
+	     toolchain, whose signatures differ from the main bundle's. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<!-- The sidecar is launched with DYLD_*/BUN_* environment the runtime would
+	     otherwise strip from a hardened child process. -->
+	<key>com.apple.security.cs.allow-dyld-environment-variables</key>
+	<true/>
+	<!-- Composer voice recorder (getUserMedia). Hardened-runtime resource access,
+	     paired with NSMicrophoneUsageDescription. No camera: nothing requests it. -->
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+</dict>
+</plist>

@@ -1,0 +1,254 @@
+/* Database, API Client, and DevOps: the choreography. */
+@keyframes sc-d-line-1 {
+  0%,
+  4% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 1;
+  }
+  10%,
+  91% {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  96%,
+  100% {
+    clip-path: inset(0);
+    opacity: 0;
+  }
+}
+@keyframes sc-d-line-2 {
+  0%,
+  10% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 1;
+  }
+  16%,
+  91% {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  96%,
+  100% {
+    clip-path: inset(0);
+    opacity: 0;
+  }
+}
+@keyframes sc-d-line-3 {
+  0%,
+  16% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 1;
+  }
+  21%,
+  91% {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  96%,
+  100% {
+    clip-path: inset(0);
+    opacity: 0;
+  }
+}
+@keyframes sc-d-run {
+  0%,
+  23%,
+  27%,
+  100% {
+    transform: none;
+    background: var(--foreground);
+  }
+  25% {
+    transform: scale(0.9);
+    background: var(--k-accent);
+  }
+}
+@keyframes sc-d-status {
+  0%,
+  31% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  35%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-d-row-1 {
+  0%,
+  29% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  34%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-d-row-2 {
+  0%,
+  32% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  37%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-a-send {
+  0%,
+  10%,
+  15%,
+  100% {
+    transform: none;
+    background: transparent;
+  }
+  12% {
+    transform: scale(0.85);
+    background: var(--k-accent-soft);
+  }
+}
+@keyframes sc-a-loading {
+  0%,
+  13% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  14% {
+    opacity: 1;
+    transform: translateX(-100%);
+  }
+  32% {
+    opacity: 1;
+    transform: translateX(250%);
+  }
+  34%,
+  100% {
+    opacity: 0;
+    transform: translateX(250%);
+  }
+}
+@keyframes sc-a-wait {
+  0%,
+  34%,
+  98%,
+  100% {
+    opacity: 1;
+  }
+  36%,
+  96% {
+    opacity: 0;
+  }
+}
+@keyframes sc-a-status {
+  0%,
+  35% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  40%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-a-line-1 {
+  0%,
+  40% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  44%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-a-line-2 {
+  0%,
+  42% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  46%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-a-line-3 {
+  0%,
+  44% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  48%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-a-line-4 {
+  0%,
+  46% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  50%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sc-a-line-5 {
+  0%,
+  48% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  52%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}

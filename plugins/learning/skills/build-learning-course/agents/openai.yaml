@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Build Learning Course'
+  short_description: 'Create adaptive courses with practice loops'
+  default_prompt: 'Use $build-learning-course to turn my learning goal into an adaptive course.'

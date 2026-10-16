@@ -1,0 +1,238 @@
+/* Confirm card → "This session" → Approve; then the shield chip opens the four modes. */
+.wt-approval {
+  --loop: 9s;
+  position: absolute;
+  inset: 0;
+}
+.wt-approval-composer {
+  left: 0;
+  right: 0;
+  bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  height: 2.75rem;
+  padding: 0 0.75rem;
+  background: var(--card);
+  color: var(--text-faint);
+}
+.wt-chips {
+  position: absolute;
+  left: 0;
+  bottom: 5rem;
+  display: flex;
+  gap: 0.3125rem;
+}
+.wt-chip-mode {
+  animation: wt-ap-chip var(--loop) var(--ease-soft) infinite both;
+}
+
+.wt-confirm {
+  left: 0;
+  right: 0;
+  bottom: 6.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--tip-popover);
+  animation: wt-ap-card var(--loop) var(--ease-soft) infinite both;
+}
+.wt-confirm-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.wt-confirm-cmd {
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  background: var(--tip-veil);
+  font-family: var(--font-mono);
+  color: var(--text-strong);
+}
+.wt-confirm-grant {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.125rem;
+  border-radius: 0.4375rem;
+  background: var(--tip-veil);
+}
+.wt-seg-opt {
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.3125rem;
+  color: var(--text-faint);
+}
+.wt-seg-opt:first-child {
+  animation: wt-ap-once var(--loop) var(--ease-soft) infinite both;
+}
+.wt-seg-opt[data-pick] {
+  animation: wt-ap-session var(--loop) var(--ease-soft) infinite both;
+}
+.wt-confirm-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+.wt-btn-ghost,
+.wt-btn-mono {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  height: 1.375rem;
+  padding: 0 0.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+}
+.wt-btn-ghost {
+  color: var(--text-soft);
+}
+.wt-btn-mono {
+  background: var(--foreground);
+  color: var(--background);
+  animation: wt-ap-approve var(--loop) var(--ease-soft) infinite both;
+}
+.wt-kbd-inv {
+  border-color: color-mix(in oklab, var(--background) 30%, transparent);
+  color: color-mix(in oklab, var(--background) 70%, transparent);
+}
+
+.wt-modes {
+  z-index: 1;
+  left: 3.5rem;
+  bottom: 6.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 14rem;
+  padding: 0.25rem;
+  border-radius: 0.625rem;
+  background: var(--tip-popover);
+  transform-origin: bottom left;
+  animation: wt-ap-modes var(--loop) var(--ease-soft) infinite both;
+}
+.wt-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3125rem 0.4375rem;
+  border-radius: 0.375rem;
+}
+.wt-mode:first-child {
+  background: var(--tip-veil-strong);
+}
+.wt-mode-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+  color: var(--text-soft);
+}
+.wt-mode[data-tone='info'] .wt-mode-icon {
+  color: var(--status-info);
+}
+.wt-mode[data-tone='warning'] .wt-mode-icon {
+  color: var(--status-warning);
+}
+.wt-mode[data-tone='error'] .wt-mode-icon {
+  color: var(--status-error);
+}
+.wt-mode-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.5rem;
+  color: var(--text-faint);
+}
+.wt-mode-text b {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+.wt-mode-check {
+  width: 0.625rem;
+  height: 0.625rem;
+  flex: none;
+  color: var(--text-soft);
+}
+
+@keyframes wt-ap-card {
+  0%,
+  4% {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  10%,
+  44% {
+    opacity: 1;
+    transform: none;
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.98);
+  }
+}
+@keyframes wt-ap-once {
+  0%,
+  20% {
+    background: var(--tip-veil-strong);
+    color: var(--foreground);
+  }
+  23%,
+  100% {
+    background: transparent;
+    color: var(--text-faint);
+  }
+}
+@keyframes wt-ap-session {
+  0%,
+  20% {
+    background: transparent;
+    color: var(--text-faint);
+  }
+  23%,
+  100% {
+    background: var(--tip-veil-strong);
+    color: var(--foreground);
+  }
+}
+@keyframes wt-ap-approve {
+  0%,
+  36%,
+  42%,
+  100% {
+    transform: none;
+  }
+  39% {
+    transform: scale(0.95);
+  }
+}
+@keyframes wt-ap-chip {
+  0%,
+  54%,
+  60%,
+  100% {
+    background: transparent;
+    transform: none;
+  }
+  57% {
+    background: var(--tip-veil-strong);
+    transform: scale(0.95);
+  }
+}
+@keyframes wt-ap-modes {
+  0%,
+  58% {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.97);
+  }
+  63%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+  95%,
+  100% {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.97);
+  }
+}

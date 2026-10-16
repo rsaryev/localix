@@ -1,0 +1,572 @@
+@import './monacoPeek.css';
+
+/* Transparent, not `var(--background)`: the pane hosting the editor already paints the ground
+   (GroupView's `bg-background`). On opaque themes a second coat of the same color was invisible;
+   under the macOS glass theme the token carries alpha and the two coats compounded into a
+   near-black slab that broke the window's one-material look. The editor inherits its ground. */
+.localix-monaco-editor,
+.localix-monaco-editor .monaco-editor,
+.localix-monaco-editor .monaco-editor-background,
+.localix-monaco-editor .monaco-editor .margin {
+  background: transparent;
+}
+
+.localix-monaco-editor .monaco-editor,
+.localix-monaco-editor .monaco-editor .inputarea.ime-input {
+  --monaco-monospace-font: var(--font-mono, 'Fragment Mono', ui-monospace, monospace);
+  font-family: var(--font-mono, 'Fragment Mono', ui-monospace, monospace);
+}
+
+.localix-monaco-editor .monaco-editor.focused {
+  outline: none;
+}
+
+/* Native Monaco adds this class only after the definition provider resolves. */
+.localix-monaco-editor .monaco-editor .goto-definition-link {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.localix-monaco-editor .monaco-editor .scrollbar .slider {
+  border-radius: 999px;
+}
+
+/* Monaco mounts these overlays both inside and beside .monaco-editor depending on
+   the widget, hence the doubled selector list. Elevation is the app's popover tier.
+
+   The MATERIAL is here too, not just the elevation. Monaco themes its own floating panels from
+   `editorSuggestWidget.background` and friends, which theme.ts resolves out of `--popover` — and
+   it resolves it THROUGH A CANVAS THAT PRESERVES ALPHA, so under the macOS glass theme Monaco
+   receives a literal 28%-opaque hex and paints it with nothing behind it. Meanwhile index.css
+   hangs the 24px frost off `.bg-popover` / `.lx-floating-surface`, and Monaco's DOM carries
+   neither class. A translucent fill with no blur behind it is not a material, it is a hole — the
+   exact trap the `.localix-monaco-suggestion` docblock below already records for the app's own
+   inline widgets.
+
+   Monaco's right-click menu used to be in this list and is not any more: it is the one panel here
+   the app can simply own instead of re-skin. See `editorContextMenu.ts`.
+
+   The corner is the app's popover corner (`--radius-xl`, i.e. Tailwind's `rounded-xl`, which is
+   what POPOVER_SURFACE uses) rather than a hand-picked 6px: an editor overlay and an app popover
+   opening two pixels apart should not be two different families. */
+.localix-monaco-editor .suggest-widget,
+.localix-monaco-editor .monaco-hover,
+.localix-monaco-editor .rename-box,
+.localix-monaco-editor .monaco-editor .suggest-widget,
+.localix-monaco-editor .monaco-editor .monaco-hover,
+.localix-monaco-editor .monaco-editor .rename-box {
+  /* `overflow: hidden` so the children clip to the corner the container just declared — without
+     it Monaco's square scrollable element pokes through all four rounded edges. */
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-xl);
+  background: var(--popover);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  backdrop-filter: blur(24px) saturate(1.1);
+  box-shadow: var(--shadow-popover);
+}
+
+.localix-monaco-editor .monaco-editor .monaco-list-row {
+  border-radius: 3px;
+}
+
+.localix-monaco-editor .monaco-editor .sticky-widget {
+  border-bottom: 1px solid color-mix(in oklab, var(--control-border) 70%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.localix-monaco-dirty-added,
+.localix-monaco-dirty-modified {
+  box-sizing: border-box;
+  width: 4px !important;
+  margin-left: 4px;
+}
+
+.localix-monaco-dirty-added {
+  border-left: 3px solid var(--status-success, #3fb950);
+}
+
+.localix-monaco-dirty-modified {
+  border-left: 3px solid var(--status-info, #58a6ff);
+}
+
+.localix-monaco-dirty-deleted {
+  width: 0 !important;
+  height: 0 !important;
+  margin-top: -2px;
+  margin-left: 4px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--status-error, #f85149);
+}
+
+/* The provider's SECONDARY change layer — the hollow weight beside the filled primary one. */
+.localix-monaco-dirty-secondary {
+  opacity: 0.58;
+  filter: saturate(0.75);
+}
+
+.localix-monaco-word-diff {
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--status-success, #3fb950) 14%, transparent);
+  box-shadow: inset 0 -1px 0 color-mix(in oklab, var(--status-success, #3fb950) 45%, transparent);
+}
+
+.localix-monaco-commented-line {
+  background: color-mix(in oklab, var(--status-info, #58a6ff) 7%, transparent);
+}
+
+.localix-monaco-comment-glyph::before {
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: 6px auto 0;
+  border: 1px solid color-mix(in oklab, var(--status-info, #58a6ff) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--status-info, #58a6ff) 28%, transparent);
+  content: '';
+}
+
+.localix-monaco-inline-blame {
+  margin-left: 2.5em;
+  color: var(--text-faint);
+  font-style: italic;
+  opacity: 0.78;
+  pointer-events: none;
+  user-select: none;
+  white-space: pre;
+}
+
+.localix-monaco-inline-blame-action {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.localix-monaco-inline-blame-action:hover,
+.localix-monaco-inline-blame-action:focus-visible {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+
+@keyframes localix-monaco-line-flash {
+  0% {
+    background: color-mix(in oklab, var(--status-info, #58a6ff) 30%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.localix-monaco-flash-line {
+  animation: localix-monaco-line-flash 4.2s ease-out;
+}
+
+/* Lines an external write (an agent's edit, a patch) just changed under an open buffer. A
+   reload that silently swapped the text left the person asking "did anything change?"; these
+   stay until they start editing (`externalChanges.ts`). */
+.localix-monaco-external-line {
+  background: color-mix(in oklab, var(--status-success, #3fb950) 9%, transparent);
+}
+
+.localix-monaco-external-gutter {
+  box-sizing: border-box;
+  width: 4px !important;
+  margin-left: 4px;
+  border-left: 3px solid color-mix(in oklab, var(--status-success, #3fb950) 80%, transparent);
+}
+
+.localix-monaco-external-deleted {
+  width: 0 !important;
+  height: 0 !important;
+  margin-top: -2px;
+  margin-left: 4px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid color-mix(in oklab, var(--status-error, #f85149) 80%, transparent);
+}
+
+.localix-monaco-suggestion-line {
+  background: color-mix(in oklab, var(--status-info, #58a6ff) 7%, transparent);
+  box-shadow: inset 2px 0 color-mix(in oklab, var(--status-info, #58a6ff) 64%, transparent);
+}
+
+.localix-monaco-suggestion-line-stale {
+  background: color-mix(in oklab, var(--status-warning, #d29922) 8%, transparent);
+  box-shadow: inset 2px 0 color-mix(in oklab, var(--status-warning, #d29922) 64%, transparent);
+}
+
+/* The app's floating-panel material (`--popover` + frost), not `var(--surface-raised)`: raised
+   mixes from a DARKER ground than the editor pane, so this inline widget read as a black box laid
+   over the code it annotates. The frost is what makes a translucent panel a material rather than
+   a cutout; on the opaque themes `--popover` has no alpha and the blur is a no-op. */
+.localix-monaco-suggestion {
+  box-sizing: border-box;
+  height: calc(100% - 4px);
+  margin: 2px 12px 2px 0;
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--popover);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  backdrop-filter: blur(24px) saturate(1.1);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  box-shadow: var(--shadow-soft);
+}
+
+.localix-monaco-suggestion-header {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 0 10px;
+  border-bottom: 1px solid color-mix(in oklab, var(--control-border) 70%, transparent);
+}
+
+.localix-monaco-suggestion-title {
+  color: var(--text-soft);
+  font-weight: 560;
+}
+
+.localix-monaco-suggestion-badge {
+  padding: 1px 5px;
+  border: 1px solid color-mix(in oklab, var(--status-info) 42%, var(--control-border));
+  border-radius: 999px;
+  color: var(--status-info);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.localix-monaco-suggestion-warning {
+  color: var(--status-warning);
+}
+
+.localix-monaco-suggestion-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.localix-monaco-suggestion-button,
+.localix-monaco-transform-submit {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
+.localix-monaco-suggestion-button:hover,
+.localix-monaco-transform-submit:hover {
+  border-color: var(--control-border-hover);
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+
+.localix-monaco-suggestion-button:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.localix-monaco-suggestion-primary {
+  border-color: color-mix(in oklab, var(--status-info) 55%, var(--control-border));
+  color: var(--foreground);
+}
+
+.localix-monaco-suggestion-note {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--text-soft);
+}
+
+.localix-monaco-suggestion-diff {
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.localix-monaco-suggestion-row {
+  display: flex;
+  min-width: max-content;
+  padding: 0 10px;
+  white-space: pre;
+}
+
+.localix-monaco-suggestion-delete {
+  background: color-mix(in oklab, var(--status-error, #f85149) 12%, transparent);
+}
+
+.localix-monaco-suggestion-add {
+  background: color-mix(in oklab, var(--status-success, #3fb950) 12%, transparent);
+}
+
+.localix-monaco-suggestion-sign {
+  width: 15px;
+  flex: none;
+  color: var(--text-faint);
+  user-select: none;
+}
+
+/* Floating-panel material, not `var(--surface-raised)` — see `.localix-monaco-suggestion` above. */
+.localix-monaco-transform {
+  display: flex;
+  width: min(540px, calc(100vw - 40px));
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--popover);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  backdrop-filter: blur(24px) saturate(1.1);
+  box-shadow: var(--shadow-popover);
+}
+
+/* The `--input` veil every other field in the app uses, not `var(--background)`: `--background` is
+   the pane's own GROUND, so on a field-sized control it read as a black slot under glass. A veil
+   takes whatever it sits on and only adds density. */
+.localix-monaco-transform-input {
+  min-width: 0;
+  height: 26px;
+  flex: 1;
+  padding: 0 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  outline: none;
+  background: color-mix(in oklch, var(--input) 30%, transparent);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.localix-monaco-transform-input:focus {
+  border-color: var(--control-border-focus);
+}
+
+/* Floating-panel material, not `var(--surface-raised)` — see `.localix-monaco-suggestion` above. */
+.localix-monaco-composer,
+.localix-monaco-revert,
+.localix-monaco-references {
+  width: min(560px, calc(100vw - 40px));
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--popover);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  backdrop-filter: blur(24px) saturate(1.1);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  box-shadow: var(--shadow-popover);
+}
+
+.localix-monaco-references {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.localix-monaco-composer {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+}
+
+.localix-monaco-composer-header,
+.localix-monaco-revert-header {
+  font-weight: 600;
+}
+
+/* The `--input` veil, not `var(--background)` — see `.localix-monaco-transform-input` above. */
+.localix-monaco-composer-input {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  outline: none;
+  background: color-mix(in oklch, var(--input) 30%, transparent);
+  color: var(--foreground);
+  font: inherit;
+  line-height: 18px;
+}
+
+.localix-monaco-composer-input:focus {
+  border-color: var(--control-border-focus);
+}
+
+.localix-monaco-composer-actions,
+.localix-monaco-revert-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.localix-monaco-revert-header {
+  min-height: 36px;
+  justify-content: space-between;
+  padding: 0 8px 0 10px;
+  border-bottom: 1px solid var(--control-border);
+}
+
+/* `--surface-sunken`, the code-inset token, not `var(--background)`: `--background` is the WINDOW
+   ground and would paint a second, denser coat inside a panel that is already floating glass.
+   Sunken is a black veil relative to whatever it covers, so the diff stays an inset. */
+.localix-monaco-revert-diff {
+  max-height: 220px;
+  margin: 0;
+  overflow: auto;
+  padding: 8px 10px;
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 18px;
+  white-space: pre-wrap;
+}
+
+.localix-monaco-revert-danger {
+  border-color: color-mix(in oklab, var(--status-error) 55%, var(--control-border));
+  color: var(--status-error);
+}
+
+.localix-monaco-revert-error {
+  color: var(--status-error);
+  padding: 0 10px 8px;
+}
+
+.localix-monaco-references-header {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 10px;
+  border-bottom: 1px solid var(--control-border);
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.localix-monaco-references-header > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.localix-monaco-references-close {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-faint);
+  font: 18px/20px var(--font-sans);
+  cursor: pointer;
+}
+
+.localix-monaco-references-close:hover {
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+
+.localix-monaco-references-list {
+  max-width: 100%;
+  max-height: min(260px, calc(100vh - 120px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+  padding: 4px;
+}
+
+.localix-monaco-reference-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(110px, 0.32fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+}
+
+.localix-monaco-reference-row:hover,
+.localix-monaco-reference-row:focus-visible {
+  outline: none;
+  background: var(--surface-hover);
+}
+
+.localix-monaco-reference-location {
+  overflow: hidden;
+  color: var(--text-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.localix-monaco-reference-preview {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget,
+.localix-monaco-editor .monaco-editor .reference-zone-widget {
+  font-family: var(--font-sans);
+}
+
+.localix-monaco-editor .monaco-editor .reference-zone-widget {
+  border-color: var(--control-border-focus) !important;
+  background: var(--background);
+}
+
+/* A foreground VEIL, not `var(--surface-raised)`: the zone above already paints the pane ground,
+   and raised mixes from a darker one — so the peek header and its file tree read as black bars
+   inside the zone. A veil gives the same relief relative to whatever the zone ended up being. */
+.localix-monaco-editor .monaco-editor .reference-zone-widget .head,
+.localix-monaco-editor .monaco-editor .reference-zone-widget .ref-tree {
+  background: color-mix(in oklch, var(--foreground) 4%, transparent);
+}
+.localix-monaco-editor .monaco-editor .monaco-sql-statement {
+  background: color-mix(in oklch, var(--status-info, #3b82f6) 16%, transparent);
+}
+
+.localix-monaco-editor .monaco-editor .monaco-sql-statement-gutter {
+  border-left: 3px solid var(--status-info, #3b82f6);
+  margin-left: 3px;
+}
+
+.localix-monaco-editor .monaco-editor .monaco-sql-statement-first {
+  border-radius: 3px 3px 0 0;
+}
+
+.localix-monaco-editor .monaco-editor .monaco-sql-statement-last {
+  border-radius: 0 0 3px 3px;
+}
+
+/* A navigable name under the pointer while ⌘/Ctrl is held — the only time it is underlined, so a
+   link never reads like the error squiggle a permanent underline resembles. */
+.localix-monaco-editor .monaco-editor .localix-editor-link-active {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* The editor's own property colour, not an `--accent` mix: in the default themes `--accent` is a
+   near-grey veil, so a column the schema KNOWS rendered dimmer than plain text — it read as
+   disabled or unresolved, the opposite of what the tint means. */
+.localix-monaco-editor .monaco-editor .monaco-sql-column {
+  color: var(--syntax-code-property);
+}

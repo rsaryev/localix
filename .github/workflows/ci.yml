@@ -1,0 +1,213 @@
+name: Checks
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# No job gets more than it asks for; every job below reads the repository and nothing else.
+permissions: {}
+
+env:
+  RUST_TOOLCHAIN: 1.96.1
+
+# Check the newest tree for each ref; superseded pushes and pull requests stop consuming minutes.
+# A manual run remains independent and is never cancelled by a push.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+# Two jobs share the two self-hosted runners and finish at about the same time: `app` builds and
+# tests the JavaScript workspace, `desktop` scans the repository and checks the Rust shell. Fork pull
+# requests run on GitHub-hosted runners. `checks` is the one result branch protection requires.
+jobs:
+  app:
+    name: App (build, types, tests)
+    runs-on: >-
+      ${{ fromJSON(github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-latest"' ||
+      '["self-hosted","Linux","X64","localix-linux"]') }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install test tools
+        if: runner.environment != 'self-hosted'
+        run: |
+          for attempt in 1 2 3; do
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
+            [ "$attempt" = 3 ] && exit 1
+            sleep 10
+          done
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      # Hosted runners only; a self-hosted runner keeps its Turbo cache on disk (setup-workspace).
+      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
+      # this key only picks which archive to start from. Saved with `always()`: a failing run still
+      # leaves the tasks that passed warm for the next push.
+      - name: Restore Turbo cache
+        id: turbo-cache
+        if: runner.environment != 'self-hosted'
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-js-${{ runner.os }}-
+
+      # Type checking reads workspace declarations from the build output.
+      - name: Build app
+        run: bun run build
+
+      - name: Test release tooling
+        run: bun run check:release
+
+      - name: Check source types
+        run: bun run type-check
+
+      - name: Check test types
+        run: bun run check:tests
+
+      # Package suites and repository tests side by side (scripts/test-all.mjs).
+      - name: Run tests
+        run: bun run test
+
+      # Stages the desktop bundle and starts its API from a copy outside the checkout, the way the
+      # packaged app does. A missing resource or an unresolved vendored module shows up here on the
+      # pull request instead of in a release leg that has already been signed and notarized.
+      - name: Setup desktop bundle tools
+        uses: ./.github/actions/setup-desktop
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          build-native: 'false'
+
+      - name: Test desktop bundle
+        run: bun run check:bundle
+
+      - name: Save Turbo cache
+        if: >-
+          always() && runner.environment != 'self-hosted' && steps.turbo-cache.outputs.cache-hit !=
+          'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+
+  desktop:
+    name: Desktop (Rust) and repository scans
+    runs-on: >-
+      ${{ fromJSON(github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-22.04"' ||
+      '["self-hosted","Linux","X64","localix-linux"]') }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      # Full history for the secret scan; the merge commit's parents for change detection.
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # Checksummed release binaries instead of their actions: the gitleaks action needs a licence
+      # key for organisation repositories, and a binary is one download with nothing to trust but
+      # its hash. actionlint checks workflow syntax and expressions; zizmor checks workflow security
+      # (injection, permissions, credential persistence).
+      - name: Install pinned scanners
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          ZIZMOR_VERSION: 1.31.0
+          ZIZMOR_SHA256: 95776c59c2d4c0d6e10560647b4830762b8dbcca8d7d9b7469ff227c73a6fee6
+        run: |
+          fetch() {
+            curl -fsSL --retry 3 -o "$RUNNER_TEMP/$2" "$1/$2"
+            echo "$3  $RUNNER_TEMP/$2" | sha256sum -c -
+            tar -xzf "$RUNNER_TEMP/$2" -C "$RUNNER_TEMP" "$4"
+          }
+          fetch "https://github.com/gitleaks/gitleaks/releases/download/v$GITLEAKS_VERSION" \
+            "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" "$GITLEAKS_SHA256" gitleaks
+          fetch "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION" \
+            "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" "$ACTIONLINT_SHA256" actionlint
+          fetch "https://github.com/zizmorcore/zizmor/releases/download/v$ZIZMOR_VERSION" \
+            zizmor-x86_64-unknown-linux-gnu.tar.gz "$ZIZMOR_SHA256" zizmor
+
+      - name: Scan history for secrets
+        run: '"$RUNNER_TEMP/gitleaks" git --redact --no-banner --config .gitleaks.toml .'
+
+      - name: Lint workflows
+        run: |
+          "$RUNNER_TEMP/actionlint" -color
+          "$RUNNER_TEMP/zizmor" --offline --min-severity medium .github
+
+      # Only a pull request may skip the Rust gate, and only when nothing it reads changed: the
+      # shell under apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun,
+      # and shared CI setup. Pushes to main, merge queue groups and manual runs always run it.
+      - name: Detect desktop changes
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          rust=true
+          if [ "$EVENT" = pull_request ] && git rev-parse --verify --quiet 'HEAD^2' >/dev/null; then
+            changed=$(git diff --name-only 'HEAD^1' HEAD)
+            if ! printf '%s\n' "$changed" |
+              grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.nvmrc$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
+              rust=false
+            fi
+          fi
+          echo "rust=$rust" >> "$GITHUB_OUTPUT"
+          echo "Rust gate: $rust"
+
+      - name: Setup workspace
+        if: steps.filter.outputs.rust == 'true'
+        uses: ./.github/actions/setup-workspace
+
+      - name: Setup desktop
+        if: steps.filter.outputs.rust == 'true'
+        uses: ./.github/actions/setup-desktop
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          persistent-target: 'true'
+
+      - name: Check and test Rust
+        if: steps.filter.outputs.rust == 'true'
+        run: bun run check:rust
+
+  # The single required status: it fails when any job above failed or was cancelled, and passes
+  # when they passed or were skipped on purpose.
+  checks:
+    name: Checks passed
+    if: always()
+    needs: [app, desktop]
+    runs-on: >-
+      ${{ fromJSON(github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-latest"' ||
+      '["self-hosted","Linux","X64","localix-linux"]') }}
+    timeout-minutes: 5
+    steps:
+      - name: Require every check
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success | skipped) ;;
+              *) exit 1 ;;
+            esac
+          done

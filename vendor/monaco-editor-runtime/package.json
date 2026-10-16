@@ -1,0 +1,22 @@
+{
+  "name": "monaco-editor",
+  "version": "0.57.0-localix.0",
+  "private": true,
+  "description": "Vendored Monaco Editor runtime for Localix",
+  "license": "MIT",
+  "typings": "./esm/vs/editor/editor.main.d.ts",
+  "module": "./esm/vs/editor/editor.main.js",
+  "exports": {
+    ".": {
+      "types": "./esm/vs/index.d.ts",
+      "import": "./esm/vs/index.js"
+    },
+    "./*.js": "./esm/vs/*.js",
+    "./*": "./esm/vs/*.js"
+  },
+  "localixSource": {
+    "repository": "https://github.com/microsoft/monaco-editor",
+    "commit": "d61824269f1377111d34306e4a47172327777083",
+    "upstreamVersion": "0.57.0"
+  }
+}

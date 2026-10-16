@@ -1,0 +1,132 @@
+import { errorMessage } from '../../../lib/errors'
+import { recoveryAction } from '../recovery'
+import { createConditions, type ConditionJournal } from './condition'
+
+/**
+ * A PROVIDER CONNECTION THAT CAN NO LONGER SIGN IN, as a standing condition.
+ *
+ * An OAuth connection refreshes its token under the credential store's lock
+ * (`provider-connections/service.ts` `modify`). When the refresh fails — a revoked grant, a rotated
+ * refresh token that was already spent — every run on that connection fails the same way until the
+ * person signs in again, and each failure said so only on its own run. The service reports each
+ * refresh's outcome here.
+ *
+ * Subject `provider:<connectionId>:`. It settles on the next refresh that succeeds, and on a new
+ * sign-in for the connection (`persistOAuthCredential`), which is what fixing it looks like. A
+ * cancelled request (the run was stopped) is not a sign-in failure and is not reported.
+ */
+
+export interface ProviderCredentialEvent {
+  userId: string
+  connectionId: string
+  /** Shown as the row's source: the provider's name when known, else its id. */
+  label: string
+  ok: boolean
+  error?: string
+}
+
+/**
+ * How a run on a connection ended, as far as the CONNECTION is concerned.
+ *
+ * A spent quota or a refused key fails every run on the connection the same way, and each failure
+ * said so only on its own run row — the person learned it once per turn and never as "this
+ * connection is the problem". So a run's end is also a fact about its connection: a rate limit or
+ * a refused credential raises the connection's condition, and any run that COMPLETES on it settles
+ * whatever the connection's row still says (including an expired sign-in: it evidently works).
+ */
+export interface ConnectionRunEnded {
+  userId: string
+  connectionId: string | null
+  outcome: 'completed' | 'failed' | 'stopped'
+  /**
+   * The classifier's flags only. Its message used to ride along into the row's body, which is
+   * how a provider's raw response reached the Event Center under a heading that already said
+   * what was wrong; the body below says it in a sentence this module owns.
+   */
+  failure?: { rateLimited?: boolean; retryable?: boolean; authFailed?: boolean }
+}
+
+export function createProviderConditions(
+  journal: ConditionJournal,
+  /** The connection's display name, when it can be looked up; the id otherwise. */
+  describe?: (userId: string, connectionId: string) => Promise<string | undefined>,
+) {
+  const conditions = createConditions(journal)
+  const labelOf = async (userId: string, connectionId: string) =>
+    (await describe?.(userId, connectionId).catch(() => undefined)) ?? connectionId
+  return {
+    async runEnded(run: ConnectionRunEnded): Promise<void> {
+      if (!run.connectionId) return
+      const subject = ['provider', run.connectionId]
+      if (run.outcome === 'completed') return conditions.clear(run.userId, subject)
+      const failure = run.outcome === 'failed' ? run.failure : undefined
+      if (!failure?.authFailed && !failure?.rateLimited) return
+      const label = await labelOf(run.userId, run.connectionId)
+      conditions.raise(run.userId, {
+        subject,
+        problem: failure.authFailed
+          ? 'credential-refused'
+          : failure.retryable
+            ? 'rate-limited'
+            : 'plan-limit',
+        severity: failure.authFailed || !failure.retryable ? 'error' : 'warning',
+        title: failure.authFailed
+          ? `Could not sign in to ${label}`
+          : failure.retryable
+            ? `${label} is rate-limiting requests`
+            : `${label} has reached its usage limit`,
+        body: failure.authFailed
+          ? 'Every request on this connection is refused until its key or sign-in is fixed.'
+          : failure.retryable
+            ? 'Runs on this connection wait for the limit to reset before they send again.'
+            : 'Runs on this connection fail until the plan resets or is raised.',
+        origin: { kind: 'application', label },
+        actions: [
+          recoveryAction(
+            failure.authFailed ? `sign-in:${run.connectionId}` : 'open-settings:providers',
+          ),
+        ],
+      })
+    },
+    credentialRefreshed(event: ProviderCredentialEvent): void {
+      const subject = ['provider', event.connectionId]
+      if (event.ok) return conditions.clear(event.userId, subject)
+      conditions.raise(event.userId, {
+        subject,
+        // One problem per connection: a refresh fails with a different message every time.
+        problem: 'sign-in-expired',
+        severity: 'error',
+        title: `Could not renew the sign-in for ${event.label}`,
+        body: [
+          'Requests on this connection fail until it renews. If this keeps happening, sign in again.',
+          event.error,
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        origin: { kind: 'application', label: event.label },
+        actions: [recoveryAction(`sign-in:${event.connectionId}`)],
+      })
+    },
+  }
+}
+
+export type ProviderConditions = ReturnType<typeof createProviderConditions>
+
+/**
+ * Why a refresh threw, unwrapped through `cause`; null when it was only cancelled or timed out —
+ * a stopped run or a slow network is not a sign-in that stopped working.
+ */
+export function refreshFailureReason(error: unknown): string | null {
+  const messages: string[] = []
+  for (let current = error, depth = 0; current && depth < 4; depth++) {
+    if (current instanceof Error) {
+      if (current.name === 'AbortError' || current.name === 'TimeoutError') return null
+      messages.push(current.message)
+      current = current.cause
+    } else {
+      messages.push(errorMessage(current))
+      break
+    }
+  }
+  return messages.join(': ') || 'the refresh failed'
+}

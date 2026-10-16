@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Startup attribution, first thing the document runs. The shell stamps
+         `webview created`; the entry module stamps `entry.script`. Measured, the
+         gap between them is ~1.39s in the packaged app while everything our code
+         then does is 75ms — so this mark says how much of that gap is navigation
+         + HTML delivery versus fetching the entry module graph (257 chunks). -->
+    <script>
+      window.__LOCALIX_DOC_START = Date.now()
+    </script>
+    <!-- logo-light.svg = dark-coloured bird (for light chrome); logo-dark.svg =
+         light bird (for dark chrome) — matched to the tab background for contrast. -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/logo-light.svg"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/logo-dark.svg"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Exact sRGB of --background (index.css); kept in sync with the app theme
+         at runtime by applyThemeModeToDom (useTheme.ts). -->
+    <meta name="theme-color" content="#f8f8f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#070707" media="(prefers-color-scheme: dark)" />
+    <!-- PWA: installable as a standalone app on desktop + mobile web -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- 'black' (not 'black-translucent'): the status bar sits ABOVE the content
+         with a black backing that matches the dark-first app, so the mobile
+         header isn't clipped under the notch (it has no safe-area-inset-top). -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Localix" />
+    <meta name="application-name" content="Localix" />
+    <title>Localix — Agentic Development Environment</title>
+    <meta
+      name="description"
+      content="Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases."
+    />
+
+    <script>
+      // Prevent FOUC — apply data-theme before first paint
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('sandbox_theme')
+          // Default to dark when the user hasn't chosen; honor an explicit light/dark
+          // choice; resolve an explicit 'system' choice to the OS.
+          //
+          // The OS query is `light` with a DARK fallback, character for character the same
+          // decision as getSystemTheme() in shared/theme/useTheme.ts. It used to ask for
+          // `dark` and fall back to LIGHT, which is the same thing only while the media
+          // query has an answer. In a webview it often does not yet: WKWebView applies the
+          // native appearance asynchronously after the window is built, so during HTML parse
+          // BOTH `prefers-color-scheme` queries report false. This script then painted
+          // #f8f8f8 and React painted #070707 a moment later — the white-then-black flash on
+          // startup, most visible in dev where first paint is seconds away. Asking the same
+          // question as the app makes an unresolved query fall to dark on both sides.
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : stored === 'system'
+                ? window.matchMedia('(prefers-color-scheme: light)').matches
+                  ? 'light'
+                  : 'dark'
+                : 'dark'
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+          // Paint the real --background NOW: before index.css parses the webview
+          // shows its default white otherwise. Exact hexes of index.css tokens;
+          // applyThemeModeToDom (useTheme.ts) keeps this inline style fresh on
+          // later theme flips (an inline style wins over CSS).
+          //
+          // Except on the macOS desktop window, where an NSVisualEffectView is the
+          // backing and this fill would sit on top of it — an inline style beats
+          // the stylesheet, so painting here would hide the material for good
+          // rather than for a frame. Nothing flashes: the material IS the backing
+          // from the moment the window exists, and the window is built hidden.
+          // Same two signals `isDesktop()` uses, and the same classification
+          // `classifyOsFamily` applies — this script runs before any module loads,
+          // so it cannot import either.
+          var uaData = navigator.userAgentData
+          var platformText =
+            (uaData && uaData.platform) || navigator.platform || navigator.userAgent || ''
+          var nativeMaterial =
+            (window.__LOCALIX_DESKTOP === true ||
+              typeof window.__TAURI_INTERNALS__ !== 'undefined') &&
+            /mac|iphone|ipad/.test(platformText.toLowerCase())
+          if (!nativeMaterial) {
+            document.documentElement.style.backgroundColor =
+              theme === 'dark' ? '#070707' : '#f8f8f8'
+          }
+        } catch (_) {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>

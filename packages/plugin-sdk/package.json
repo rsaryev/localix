@@ -1,0 +1,269 @@
+{
+  "name": "@localixai/plugin-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed contracts for Localix plugin manifests, backend tools, hooks, channels, and UI contributions.",
+  "keywords": [
+    "agent",
+    "localix",
+    "plugin",
+    "sdk"
+  ],
+  "homepage": "https://localix.ai",
+  "bugs": {
+    "url": "https://github.com/rsaryev/localix/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rsaryev/localix.git",
+    "directory": "packages/plugin-sdk"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./backend": {
+      "types": "./dist/backend/index.d.ts",
+      "import": "./dist/backend/index.js"
+    },
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "import": "./dist/ui/index.js"
+    },
+    "./ui/classes": {
+      "types": "./dist/ui/classes.d.ts",
+      "import": "./dist/ui/classes.js"
+    },
+    "./ui/chart-export": {
+      "types": "./dist/ui/chart-export.d.ts",
+      "import": "./dist/ui/chart-export.js"
+    },
+    "./ui/charts": {
+      "types": "./dist/ui/charts/ChartView.d.ts",
+      "import": "./dist/ui/charts/ChartView.js"
+    },
+    "./ui/testing": {
+      "types": "./dist/ui/testing.d.ts",
+      "import": "./dist/ui/testing.js"
+    },
+    "./ui/use-problem-report": {
+      "types": "./dist/ui/use-problem-report.d.ts",
+      "import": "./dist/ui/use-problem-report.js"
+    },
+    "./ui/problems": {
+      "types": "./dist/ui/problems.d.ts",
+      "import": "./dist/ui/problems.js"
+    },
+    "./ui/components": {
+      "types": "./dist/ui/components.d.ts",
+      "import": "./dist/ui/components.js"
+    },
+    "./ui/comments": {
+      "types": "./dist/ui/comments.d.ts",
+      "import": "./dist/ui/comments.js"
+    },
+    "./ui/commands": {
+      "types": "./dist/ui/commands.d.ts",
+      "import": "./dist/ui/commands.js"
+    },
+    "./ui/storage": {
+      "types": "./dist/ui/storage.d.ts",
+      "import": "./dist/ui/storage.js"
+    },
+    "./ui/path-tree": {
+      "types": "./dist/ui/path-tree.d.ts",
+      "import": "./dist/ui/path-tree.js"
+    },
+    "./ui/interactions": {
+      "types": "./dist/ui/interactions.d.ts",
+      "import": "./dist/ui/interactions.js"
+    },
+    "./ui/file-types": {
+      "types": "./dist/ui/file-types.d.ts",
+      "import": "./dist/ui/file-types.js"
+    },
+    "./ui/focus": {
+      "types": "./dist/ui/focus/index.d.ts",
+      "import": "./dist/ui/focus/index.js"
+    },
+    "./ui/message-binding-drag": {
+      "types": "./dist/ui/message-binding-drag.d.ts",
+      "import": "./dist/ui/message-binding-drag.js"
+    },
+    "./ui/runtime": {
+      "types": "./dist/ui/runtime.d.ts",
+      "import": "./dist/ui/runtime.js"
+    },
+    "./ui/runtime-hooks": {
+      "types": "./dist/ui/runtime-hooks.d.ts",
+      "import": "./dist/ui/runtime-hooks.js"
+    },
+    "./ui/realtime-feed": {
+      "types": "./dist/ui/realtime-feed.d.ts",
+      "import": "./dist/ui/realtime-feed.js"
+    },
+    "./ui/result-count-status": {
+      "types": "./dist/ui/result-count-status.d.ts",
+      "import": "./dist/ui/result-count-status.js"
+    },
+    "./ui/session-activity": {
+      "types": "./dist/ui/session-activity.d.ts",
+      "import": "./dist/ui/session-activity.js"
+    },
+    "./ui/session-tree": {
+      "types": "./dist/ui/session-tree.d.ts",
+      "import": "./dist/ui/session-tree.js"
+    },
+    "./ui/segmented-control": {
+      "types": "./dist/ui/segmented-control.d.ts",
+      "import": "./dist/ui/segmented-control.js"
+    },
+    "./ui/stats-charts": {
+      "types": "./dist/ui/stats-charts.d.ts",
+      "import": "./dist/ui/stats-charts.js"
+    },
+    "./ui/table": {
+      "types": "./dist/ui/table.d.ts",
+      "import": "./dist/ui/table.js"
+    },
+    "./ui/transport": {
+      "types": "./dist/ui/transport.d.ts",
+      "import": "./dist/ui/transport.js"
+    },
+    "./ui/shared-resource": {
+      "types": "./dist/ui/shared-resource.d.ts",
+      "import": "./dist/ui/shared-resource.js"
+    },
+    "./ui/resource-topics": {
+      "types": "./dist/ui/resource-topics.d.ts",
+      "import": "./dist/ui/resource-topics.js"
+    },
+    "./ui/utilities": {
+      "types": "./dist/ui/utilities.d.ts",
+      "import": "./dist/ui/utilities.js"
+    },
+    "./ui/visibility": {
+      "types": "./dist/ui/visibility.d.ts",
+      "import": "./dist/ui/visibility.js"
+    },
+    "./ui/prerequisite-recovery": {
+      "types": "./dist/ui/prerequisite-recovery.d.ts",
+      "import": "./dist/ui/prerequisite-recovery.js"
+    },
+    "./ui/work-item-session": {
+      "types": "./dist/ui/work-item-session.d.ts",
+      "import": "./dist/ui/work-item-session.js"
+    },
+    "./manifest": {
+      "types": "./dist/manifest/index.d.ts",
+      "import": "./dist/manifest/index.js"
+    },
+    "./resource-refs": {
+      "types": "./dist/backend/resource-refs.d.ts",
+      "import": "./dist/backend/resource-refs.js"
+    },
+    "./typed-error": {
+      "types": "./dist/backend/typed-error.d.ts",
+      "import": "./dist/backend/typed-error.js"
+    },
+    "./navigation": {
+      "types": "./dist/navigation.d.ts",
+      "import": "./dist/navigation.js"
+    },
+    "./prerequisite": {
+      "types": "./dist/prerequisite.d.ts",
+      "import": "./dist/prerequisite.js"
+    },
+    "./session-resource": {
+      "types": "./dist/session-resource.d.ts",
+      "import": "./dist/session-resource.js"
+    },
+    "./ui-artifact": {
+      "types": "./dist/ui-artifact.d.ts",
+      "import": "./dist/ui-artifact.js"
+    },
+    "./rich-text": {
+      "types": "./dist/rich-text.d.ts",
+      "import": "./dist/rich-text.js"
+    },
+    "./document-layout": {
+      "types": "./dist/document-layout.d.ts",
+      "import": "./dist/document-layout.js"
+    },
+    "./ui/resource-sync": {
+      "types": "./dist/ui/resource-sync.d.ts",
+      "import": "./dist/ui/resource-sync.js"
+    },
+    "./ui/file-resource-sync": {
+      "types": "./dist/ui/file-resource-sync.d.ts",
+      "import": "./dist/ui/file-resource-sync.js"
+    },
+    "./agent-wait": {
+      "types": "./dist/agent-wait.d.ts",
+      "import": "./dist/agent-wait.js"
+    },
+    "./secret-shapes": {
+      "types": "./dist/secret-shapes.d.ts",
+      "import": "./dist/secret-shapes.js"
+    },
+    "./store-changes": {
+      "types": "./dist/store-changes.d.ts",
+      "import": "./dist/store-changes.js"
+    },
+    "./ui/store-resource": {
+      "types": "./dist/ui/store-resource.d.ts",
+      "import": "./dist/ui/store-resource.js"
+    },
+    "./ui/route-snapshot": {
+      "types": "./dist/ui/route-snapshot.d.ts",
+      "import": "./dist/ui/route-snapshot.js"
+    },
+    "./ui/store-snapshot": {
+      "types": "./dist/ui/store-snapshot.d.ts",
+      "import": "./dist/ui/store-snapshot.js"
+    },
+    "./manifest-label": {
+      "types": "./dist/manifest/label.d.ts",
+      "import": "./dist/manifest/label.js"
+    },
+    "./manifest-primitives": {
+      "types": "./dist/manifest/primitives.d.ts",
+      "import": "./dist/manifest/primitives.js"
+    }
+  },
+  "scripts": {
+    "build": "shx rm -rf dist && tsc --project tsconfig.build.json",
+    "dev": "tsc --project tsconfig.build.json --watch --preserveWatchOutput",
+    "test": "bun test src",
+    "type-check": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.tmp/tsconfig.tsbuildinfo",
+    "clean": "shx rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@localixai/agent": "workspace:*",
+    "@localixai/dataview": "workspace:*",
+    "@localixai/path-containment": "workspace:*",
+    "@localixai/search": "workspace:*",
+    "@localixai/visual-feedback": "workspace:*",
+    "clsx": "^2.1.1",
+    "hono": "^4.12.30",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react-dom": "^19.3.1",
+    "shx": "^0.4.0",
+    "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "react": "^19.3.1"
+  }
+}

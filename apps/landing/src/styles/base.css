@@ -1,0 +1,52 @@
+/* The product shell locks the page (overflow:hidden, height:100%) — a marketing
+   page must scroll. Make `html` the SOLE scroller (body/#root flow normally) so
+   in-page nav and `scroll-margin-top` resolve against one unambiguous scrollport. */
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+/* The kit's window material imitates desktop glass: a blue-violet gradient behind a translucent
+   ground. It belongs to the app window. On a web page it painted the whole site navy, and the
+   wind lines picked up the same hue. The landing is a flat, deep black page,
+   so it opts out of the material with its own opaque black ground. The selector repeats
+   `:root` to out-rank the material's `:not([data-desktop][data-os])` rules whatever their order. */
+:root:root:root[data-site='landing'][data-theme='dark'] {
+  --font-sans: 'Localix Landing Sans', Arial, sans-serif;
+  --font-heading: 'Localix Landing Heading', Arial, sans-serif;
+  --window-backdrop: none;
+  --work-density: 100%;
+  --sidebar-density: 100%;
+  --window-ground: #070707;
+  --window-ground-sidebar: #070707;
+  --window-ground-raised: #0d0d0d;
+  --popover-solid: #101010;
+  --popover: #101010;
+  --card: #0d0d0d;
+  --surface-sunken: #030303;
+  --bird-wind: var(--foreground);
+  background: #070707;
+
+  /* One frame language for every framed surface on the page: films, scenes, and cards. */
+  --landing-radius: 14px;
+  --landing-line: color-mix(in oklch, var(--foreground) 9%, transparent);
+  --landing-panel: color-mix(in oklch, var(--foreground) 2.5%, transparent);
+  --landing-shadow: 0 48px 120px -56px color-mix(in oklch, var(--foreground) 18%, transparent);
+  /* A gentle spring, about 4% overshoot, for things that arrive (`journey/useSequence.ts`). */
+  --ease-spring: linear(
+    0,
+    0.087 3%,
+    0.33 6.6%,
+    0.616 10.8%,
+    0.832 15.2%,
+    0.97 19.9%,
+    1.035 24.6%,
+    1.048 28.6%,
+    1.04 33%,
+    1.011 41.8%,
+    0.996 51.5%,
+    1
+  );
+}

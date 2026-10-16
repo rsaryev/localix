@@ -1,0 +1,173 @@
+/* High-contrast themes expose two cross-cutting signals: a contrast border for
+   elevated surfaces and an active border for the current/focused item. Keep that
+   hierarchy for the OS increased-contrast preference without replacing the user's
+   theme or relying on color fills. */
+@media (prefers-contrast: more) {
+  .lx-floating-surface,
+  .lx-modal-surface {
+    outline: 1px solid var(--border-strong);
+    outline-offset: -1px;
+  }
+
+  :where(
+    .lx-selected-row,
+    [aria-selected='true'],
+    [role='tab'][data-state='active'],
+    [role='menuitemradio'][aria-checked='true'],
+    [role='menuitemcheckbox'][aria-checked='true'],
+    [data-selected='true'],
+    [data-state='checked'],
+    button[aria-pressed='true'],
+    button[aria-expanded='true'],
+    [aria-current]:not([aria-current='false'])
+  ) {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+
+  :where(
+    button,
+    input,
+    textarea,
+    select,
+    [role='button'],
+    [role='menuitem'],
+    [role='menuitemradio'],
+    [role='menuitemcheckbox'],
+    [role='option'],
+    [role='tab']
+  ):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+
+  .lx-sash {
+    --sash-line-width: 2px;
+  }
+  .lx-sash::after {
+    background-color: var(--border-strong);
+  }
+}
+
+/* ── OS forced-colors / Windows High Contrast ───────────────────────────────
+   Forced-colors deliberately removes box shadows and non-URL background
+   images, and it chooses system colors from native element semantics rather
+   than ARIA roles. Most of the workbench adapts correctly without intervention;
+   these targeted repairs preserve only signals that would otherwise disappear:
+   floating-surface separation, active/selected state, drag intent and the sash.
+
+   Keep author colours enabled for content. `forced-color-adjust: none` is used
+   only on the empty scrim so it cannot become an opaque Canvas-coloured sheet. */
+@media (forced-colors: active) {
+  .lx-scrim {
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    forced-color-adjust: none;
+  }
+
+  .lx-floating-surface,
+  .lx-modal-surface {
+    border: 2px solid CanvasText;
+    box-shadow: none;
+  }
+
+  :where(
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    [role='menuitem']:not([aria-disabled='true']),
+    [role='menuitemradio']:not([aria-disabled='true']),
+    [role='menuitemcheckbox']:not([aria-disabled='true']),
+    [role='option']:not([aria-disabled='true']),
+    [role='tab']:not([aria-disabled='true'])
+  ):hover {
+    outline: 1px dashed Highlight;
+    outline-offset: -1px;
+  }
+
+  /* Active state wins over the dashed hover affordance when both apply. */
+  :where(
+    .lx-selected-row,
+    [aria-selected='true'],
+    [role='tab'][data-state='active'],
+    [role='menuitemradio'][aria-checked='true'],
+    [role='menuitemcheckbox'][aria-checked='true'],
+    [data-selected='true'],
+    [data-state='checked'],
+    button[aria-pressed='true'],
+    button[aria-expanded='true'],
+    [aria-current]:not([aria-current='false'])
+  ) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  :where(
+    button:disabled,
+    input:disabled,
+    textarea:disabled,
+    select:disabled,
+    [aria-disabled='true'],
+    [data-disabled]
+  ) {
+    color: GrayText;
+    border-color: GrayText;
+  }
+
+  :where(
+    button,
+    input,
+    textarea,
+    select,
+    [role='button'],
+    [role='menuitem'],
+    [role='menuitemradio'],
+    [role='menuitemcheckbox'],
+    [role='option'],
+    [role='tab']
+  ):focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  .lx-sash::after {
+    background-color: CanvasText;
+  }
+  .lx-sash:hover::after,
+  .lx-sash:active::after,
+  .lx-sash[data-active='true']::after,
+  .lx-sash:focus-visible::after {
+    background-color: Highlight;
+    box-shadow: none;
+  }
+
+  :root[data-localix-agent-link-drag] [data-agent-link-drop-target]:not([data-drop-active='true']) {
+    outline: 2px dashed Highlight;
+    outline-offset: -2px;
+  }
+  :root[data-localix-agent-link-drag] [data-agent-link-drop-target][data-drop-active='true'] {
+    outline: 3px solid Highlight;
+    outline-offset: -3px;
+  }
+}
+
+/* A passive action hint must let the pointer reach neighbouring controls. Its Radix
+   positioning wrapper has its own hit box, so disabling only the content is insufficient. */
+[data-radix-popper-content-wrapper]:has(> [data-passive-tooltip]) {
+  pointer-events: none;
+}
+
+/* ── Native chrome: controls aren't selectable text ──────────────────────────
+   Native desktop controls don't let a drag select their labels — only content
+   (messages, code, inputs) is selectable. This covers buttons + custom
+   interactive roles + the desktop titlebar strip, all of which are pure chrome
+   (verified: no message/code content is rendered inside a <button>). Content
+   surfaces never match these selectors, so text selection there is untouched. */
+button,
+[role='tab'],
+[role='menuitem'],
+[role='menuitemradio'],
+.app-titlebar {
+  -webkit-user-select: none;
+  user-select: none;
+}

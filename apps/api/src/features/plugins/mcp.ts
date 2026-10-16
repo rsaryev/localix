@@ -1,0 +1,125 @@
+import { errorMessage } from '../../lib/errors'
+import type { McpServerRecord } from '../mcp/repository'
+import { normalizeMcpServerEntry } from '../mcp/normalize'
+import type { DiscoveredPlugin } from './discovery'
+import { declaredConfigKeys, type PluginConfigValues } from './config'
+import { pluginDataDir, substituteMcpServerEntry } from './mcp-substitute'
+
+// Substitution internals + token collectors + `pluginDataDir` live in
+// `./mcp-substitute` (section-aware secret policy; shared with cc-hooks);
+// re-exported here so historical importers keep working.
+export {
+  isPlainObject,
+  collectMcpConfigTokens,
+  collectMcpTokensOutsideEnv,
+  pluginDataDir,
+} from './mcp-substitute'
+
+/**
+ * Build the `CLAUDE_PLUGIN_OPTION_<KEY>` env-var map for a plugin's resolved config.
+ *
+ * Per the CC spec, each declared config key is exported to spawned MCP server processes
+ * as `CLAUDE_PLUGIN_OPTION_<KEY>` (KEY = the exact declared key, case preserved). Secrets
+ * ARE included — env is the sanctioned secret channel (the only MCP config section where
+ * `${KEY}` substitution reveals sensitive values). Only keys with a resolved value are emitted.
+ *
+ * The caller merges this map AFTER the manifest-declared `env` block so that an explicit
+ * manifest env var for the same name is never clobbered.
+ */
+export function buildPluginOptionEnv(config: PluginConfigValues): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, val] of Object.entries(config)) {
+    if (val !== undefined && val !== null) {
+      out[`CLAUDE_PLUGIN_OPTION_${key}`] = String(val)
+    }
+  }
+  return out
+}
+
+/** Build synthesized MCP records for a plugin's bundled servers (config-substituted). */
+export function buildMcpRecords(
+  plugin: DiscoveredPlugin,
+  config: PluginConfigValues,
+  userId: string,
+  timestamp: string,
+  /** The home the plugin's data root lives in (→ `${CLAUDE_PLUGIN_DATA}`), as discovery was given. */
+  home: string,
+  logger?: { warn: (msg: string, meta?: unknown) => void },
+  opts?: {
+    /** Session project working directory → ${CLAUDE_PROJECT_DIR}. */
+    projectDir?: string
+  },
+): McpServerRecord[] {
+  const allowedEnvKeys = declaredConfigKeys(plugin.manifest)
+  // Inject CC plugin path variables into config so they resolve in MCP entries.
+  const enrichedConfig: PluginConfigValues = {
+    ...config,
+    CLAUDE_PLUGIN_ROOT: plugin.dir,
+    CLAUDE_PLUGIN_DATA: pluginDataDir(plugin.manifest.name, home),
+    ...(opts?.projectDir ? { CLAUDE_PROJECT_DIR: opts.projectDir } : {}),
+  }
+
+  // Build the CLAUDE_PLUGIN_OPTION_<KEY> env map from the plugin's user config values
+  // (not enrichedConfig — path vars are not user config and should not be emitted).
+  const pluginOptionEnv = buildPluginOptionEnv(config)
+
+  // Sensitive (secret) keys are substituted ONLY into the server's `env` block;
+  // anywhere else (command/args/url/headers) the token is left as-is + warned.
+  const isSensitive = (key: string): boolean => Boolean(plugin.manifest.config?.[key]?.secret)
+
+  const records: McpServerRecord[] = []
+  for (const [serverName, raw] of Object.entries(plugin.entrypoints.mcpServers)) {
+    try {
+      const { value: substituted, blockedSensitiveKeys } = substituteMcpServerEntry(
+        raw,
+        enrichedConfig,
+        allowedEnvKeys,
+        isSensitive,
+      )
+      if (blockedSensitiveKeys.length > 0) {
+        logger?.warn(
+          `plugin "${plugin.manifest.name}" MCP server "${serverName}" references sensitive config key(s) outside "env": ${blockedSensitiveKeys.join(', ')} — left unsubstituted; sensitive values are only injected via the server's "env" block`,
+        )
+      }
+      // Namespace with the plugin name so tools surface as mcp_<plugin>_<server>_<tool>
+      // and never collide with the user's own MCP servers.
+      const input = normalizeMcpServerEntry(
+        `${plugin.manifest.name}_${serverName}`,
+        substituted,
+        '',
+      )
+      const baseConfig = input.config as Record<string, unknown>
+
+      // Inject CLAUDE_PLUGIN_OPTION_<KEY> into the MCP server's env block.
+      // Manifest-declared env vars take priority — we only add keys not already set.
+      let finalConfig = baseConfig
+      if (input.transport === 'stdio' && Object.keys(pluginOptionEnv).length > 0) {
+        const manifestEnv = (baseConfig.env as Record<string, string> | undefined) ?? {}
+        const mergedEnv: Record<string, string> = {
+          // Plugin option vars first (lower priority)
+          ...pluginOptionEnv,
+          // Manifest env vars override (higher priority — never clobbered)
+          ...manifestEnv,
+        }
+        finalConfig = { ...baseConfig, env: mergedEnv }
+      }
+
+      records.push({
+        id: `plugin:${plugin.manifest.name}:${serverName}`,
+        userId,
+        projectId: plugin.projectId,
+        name: input.name,
+        description: input.description ?? '',
+        transport: input.transport,
+        config: finalConfig,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+    } catch (err) {
+      logger?.warn(`plugin "${plugin.manifest.name}" MCP server "${serverName}" is invalid`, {
+        error: errorMessage(err),
+      })
+    }
+  }
+  return records
+}

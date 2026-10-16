@@ -1,0 +1,138 @@
+[package]
+name = "desktop-tauri"
+# Keep in sync with tauri.conf.json's version (the authoritative bundle version).
+version = "0.0.1"
+description = "Open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases."
+# No `authors`: the .deb Maintainer field then falls back to the tauri.conf.json
+# `publisher` ("Localix") instead of shipping a placeholder.
+edition = "2021"
+# The toolchain CI pins (RUST_TOOLCHAIN in .github/workflows/{ci,release}.yml).
+# Declaring it makes an older local toolchain fail with "requires rustc 1.96.1"
+# instead of a confusing error from somewhere deep in the dependency graph.
+rust-version = "1.96.1"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "desktop_tauri_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Keep the native shell deterministic: Cargo.lock currently resolves Tauri to
+# 2.11.5, so pin that API/runtime instead of silently adopting a later v2 shell
+# on a lockfile refresh.
+tauri = { version = "=2.11.5", features = ["tray-icon", "macos-private-api", "unstable"] }
+tauri-plugin-opener = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-window-state = "2.4.1"
+tauri-plugin-notification = "2.3.3"
+# `deep-link` feature: a second launch's argv may carry a `localix://` URL
+# (Windows/Linux warm deep link — the OS spawns a new process); the feature
+# forwards it to the deep-link plugin's on_open_url before our callback runs.
+# Without it, warm deep links are silently dropped on Windows/Linux (macOS
+# delivers them via RunEvent and never hits this path).
+tauri-plugin-single-instance = { version = "2.4.2", features = ["deep-link"] }
+tauri-plugin-deep-link = "2.4.9"
+tauri-plugin-dialog = "2.7.1"
+base64 = "0.22.1"
+
+# macOS: NSUserDefaults access to disable the press-and-hold accent popup so
+# key repeat works in the terminal/editor, plus NSPasteboard to read the DRAG
+# pasteboard's file paths right after an OS drop (`dragged_paths` command — the
+# HTML5 drop hides the absolute path, the pasteboard still has it). All three
+# crates are already in the tree as transitive tauri/wry deps — no new fetches.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+# NSBundle: `notify` must know whether this process has a real .app bundle before
+# it touches UNUserNotificationCenter — see the comment on `has_app_bundle`.
+objc2-foundation = { version = "0.3", features = [
+  "NSString",
+  "NSUserDefaults",
+  "NSArray",
+  "NSBundle",
+  "NSJSONSerialization",
+  "NSError",
+  "NSData",
+] }
+objc2-web-kit = { version = "0.3", default-features = false, features = [
+  "WKWebView",
+  "WKSnapshotConfiguration",
+  "WKWebsiteDataStore",
+  "block2",
+  # `WKSnapshotConfiguration.rect`: a workbench panel is captured as its own rectangle.
+  "objc2-core-foundation",
+] }
+# CGRect for that rectangle; already in the tree as a transitive objc2 dependency.
+objc2-core-foundation = "0.3"
+# The WebCrypto master key (`webcrypto_key.rs`) is 16 random bytes; already in the tree via tauri.
+getrandom = "0.3"
+block2 = "0.6"
+objc2-app-kit = { version = "0.3", features = [
+  "NSPasteboard",
+  "NSImage",
+  "NSImageRep",
+  "NSBitmapImageRep",
+  "NSGraphics",
+] }
+objc2-quartz-core = { version = "0.3", default-features = false, features = [
+  "std",
+  "CALayer",
+  "CAMediaTimingFunction",
+  "objc2-core-foundation",
+  "objc2-core-graphics",
+] }
+# NSVisualEffectView, attached after the window exists. Used directly rather than through tauri's
+# own `.effects(...)` because that path DISCARDS `apply_vibrancy`'s Result, and the shell has to know
+# whether the material actually took before it tells the page anything.
+window-vibrancy = "0.6"
+mac-usernotifications = "0.3.1"
+
+# Windows: the Job Object that ends the API child's whole process tree with the shell
+# (`process_tree.rs`). Already in the lock at this version (tokio, muda, tray-icon, mio), so this
+# only enables the job-object bindings rather than adding a crate.
+# The Linux browser page layer reparents child webviews into a `gtk::Fixed`
+# (see native_browser_gtk.rs); versions match what Tauri 2.11.5 resolves.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_JobObjects",
+  "Win32_System_Threading",
+] }
+
+# Auto-updater (desktop only). Verifies the downloaded artifact against the
+# minisign pubkey in tauri.conf.json before installing. See the release workflow
+# for the signing-key secrets.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+
+# GTK 0.18 pins glib 0.18.x on Linux. Upstream glib fixed
+# RUSTSEC-2024-0429 only in 0.20, so use the reviewed 0.18.5 crate snapshot
+# with the exact one-line upstream soundness fix backported locally.
+[patch.crates-io]
+glib = { path = "vendor/glib-0.18.5" }
+
+# Smaller, faster release binary (the shell is a thin native wrapper — the heavy
+# runtime is the Bun sidecar, so optimizing for size is a clear win). `panic =
+# "abort"` drops unwinding tables; the shell has no catch_unwind recovery path.
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = "s"
+panic = "abort"
+strip = true
+
+[profile.dev]
+incremental = true

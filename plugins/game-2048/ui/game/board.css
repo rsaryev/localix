@@ -1,0 +1,144 @@
+/* ── The board ────────────────────────────────────────────────────────────────────────────────
+   Cells and tiles are styled HERE, not with utility classes: utilities reach a plugin through the
+   host's de-duplicated sheet, where a rule judged a duplicate of the host's can be dropped (live,
+   Tic-Tac-Toe's tiles collapsed into one column). Where each one sits is inline, from
+   `geometry.ts`. Colours are mixed from the theme's tokens, the way Chess and Checkers mix their
+   squares, so the board sits in light and dark alike and a tile's number stays readable on it. */
+.game-2048-board {
+  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in oklab, var(--foreground) 8%, transparent);
+  user-select: none;
+}
+
+.game-2048-board[data-won='true'] {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--status-success) 60%, transparent);
+}
+
+.game-2048-cell {
+  position: absolute;
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--foreground) 5%, transparent);
+}
+
+.game-2048-tile {
+  --game-2048-tile: color-mix(in oklab, var(--foreground) 10%, var(--background));
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--game-2048-tile);
+  color: var(--foreground);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  /* A move is the tile TRAVELLING from its cell to the next — the geometry's left/top. */
+  transition:
+    left var(--dur-fast) var(--ease-emphasized),
+    top var(--dur-fast) var(--ease-emphasized);
+}
+
+/* The value ramp: quiet for the small tiles, warmer as they grow, gold for 2048. */
+.game-2048-tile[data-value='4'] {
+  --game-2048-tile: color-mix(in oklab, var(--foreground) 18%, var(--background));
+}
+.game-2048-tile[data-value='8'] {
+  --game-2048-tile: color-mix(in oklab, var(--chart-5) 42%, var(--background));
+}
+.game-2048-tile[data-value='16'] {
+  --game-2048-tile: color-mix(in oklab, var(--chart-5) 60%, var(--background));
+}
+.game-2048-tile[data-value='32'] {
+  --game-2048-tile: color-mix(in oklab, var(--chart-8) 48%, var(--background));
+}
+.game-2048-tile[data-value='64'] {
+  --game-2048-tile: color-mix(in oklab, var(--chart-8) 66%, var(--background));
+}
+.game-2048-tile[data-value='128'] {
+  --game-2048-tile: color-mix(in oklab, var(--status-warning) 42%, var(--background));
+}
+.game-2048-tile[data-value='256'] {
+  --game-2048-tile: color-mix(in oklab, var(--status-warning) 54%, var(--background));
+}
+.game-2048-tile[data-value='512'] {
+  --game-2048-tile: color-mix(in oklab, var(--status-warning) 66%, var(--background));
+}
+.game-2048-tile[data-value='1024'] {
+  --game-2048-tile: color-mix(in oklab, var(--chart-5) 78%, var(--background));
+}
+.game-2048-tile[data-value='2048'] {
+  --game-2048-tile: color-mix(in oklab, var(--status-warning) 86%, var(--background));
+  box-shadow: 0 0 1.25rem color-mix(in oklab, var(--status-warning) 45%, transparent);
+}
+.game-2048-tile[data-value='super'] {
+  --game-2048-tile: color-mix(in oklab, var(--foreground) 82%, var(--background));
+  color: var(--background);
+}
+
+/* ── A move arriving ────────────────────────────────────────────────────────────────────────
+   Tiles that merged slide into their cell and go once the slide lands; the merged tile and the
+   spawned one appear only then, so a merge reads as two tiles meeting, not a number changing. */
+.game-2048-tile[data-leaving='true'] {
+  z-index: 0;
+  animation: game-2048-leave 1ms linear var(--dur-fast) forwards;
+}
+
+.game-2048-tile[data-arrived='merge'] {
+  z-index: 2;
+  animation: game-2048-pulse var(--dur-moderate) var(--ease-soft) var(--dur-fast) both;
+}
+
+.game-2048-tile[data-arrived='spawn'] {
+  animation: game-2048-pop var(--dur-moderate) var(--ease-emphasized) var(--dur-fast) both;
+}
+
+.game-2048-over {
+  animation: game-2048-rise var(--dur-moderate) var(--ease-emphasized) both;
+  animation-delay: var(--dur-moderate);
+}
+
+@keyframes game-2048-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes game-2048-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes game-2048-pulse {
+  0% {
+    transform: scale(0.8);
+  }
+  55% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes game-2048-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-2048-tile,
+  .game-2048-over {
+    transition: none;
+    animation: none;
+  }
+  .game-2048-tile[data-leaving='true'] {
+    display: none;
+  }
+}

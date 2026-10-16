@@ -1,0 +1,76 @@
+/* An opaque peek background replaced the editor's glass ground with a black slab.
+   This is an in-flow editor region: paint one foreground veil, use docked seams,
+   and keep the preview and tree transparent. Monaco's measured header height and
+   split layout stay intact so the preview does not clip. */
+.localix-monaco-editor .monaco-editor .peekview-widget {
+  box-shadow: none;
+}
+
+.localix-monaco-editor .monaco-editor .reference-zone-widget {
+  overflow: hidden;
+  border-radius: 0;
+  border-color: var(--color-border-soft) !important;
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .head {
+  align-items: center;
+  font-family: var(--font-sans);
+  background-image: none;
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .head .peekview-title {
+  flex: 1;
+  margin-left: var(--workbench-gutter);
+  font-size: var(--text-xs);
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .head .peekview-title .filename {
+  flex-shrink: 0;
+  max-width: 40%;
+  font-weight: 500;
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .head .peekview-title .dirname,
+.localix-monaco-editor .monaco-editor .peekview-widget .head .peekview-title .meta {
+  color: var(--text-faint);
+  font-size: var(--text-2xs);
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .head .peekview-title .dirname {
+  min-width: 0;
+  max-width: min(28rem, 45%);
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .head .peekview-title .meta {
+  flex-shrink: 0;
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .head .peekview-actions {
+  flex: 0 0 auto;
+  padding-right: var(--workbench-gutter);
+}
+
+.localix-monaco-editor .monaco-editor .peekview-widget .body {
+  border-color: var(--color-border-soft) !important;
+}
+
+.localix-monaco-editor .monaco-editor .reference-zone-widget .ref-tree {
+  border-left: 1px solid var(--color-border-soft);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+}
+
+.localix-monaco-editor .monaco-editor .reference-zone-widget .monaco-list-row {
+  border-radius: var(--radius-md);
+}
+
+.localix-monaco-editor .monaco-editor .reference-zone-widget .ref-tree .label-description {
+  color: var(--text-faint);
+  font-size: var(--text-2xs);
+}
+
+.localix-monaco-editor .monaco-editor .reference-zone-widget .preview .reference-decoration {
+  border-width: 1px;
+  border-radius: var(--radius-sm);
+}

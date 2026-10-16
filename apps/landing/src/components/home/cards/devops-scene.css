@@ -1,0 +1,161 @@
+/* DevOps: Restart is pressed (10%); the container restarts (12–38%), comes back up, and three new
+   log lines arrive one by one (40–55%), pushing the older ones up out of view. */
+.sc-ops {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.sc-ops-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.375rem;
+  padding: 0 0.5rem 0 0.75rem;
+  border-bottom: 1px solid var(--k-line);
+  color: var(--text-faint);
+  font-size: 0.625rem;
+}
+.sc-ops-head > b {
+  color: var(--foreground);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+.sc-ops-state > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
+.sc-ops-state [data-tone='ok'] {
+  color: var(--status-success);
+  animation: sc-o-up var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-ops-state [data-tone='warn'] {
+  color: var(--status-warning);
+  animation: sc-o-restarting var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-ops-state [data-tone='warn'] > .k-dot {
+  animation: sc-o-blink 700ms var(--ease-standard) infinite;
+}
+.sc-restart {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.375rem;
+  margin-left: auto;
+  padding: 0 0.5rem;
+  border: 1px solid var(--k-line);
+  border-radius: 0.375rem;
+  color: var(--text-soft);
+  animation: sc-o-press var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-log {
+  position: relative;
+  flex: 1;
+  min-height: 7.5rem;
+  overflow: hidden;
+  font-size: 0.625rem;
+  mask-image: linear-gradient(to bottom, transparent, #000 2rem);
+}
+.sc-log-lines {
+  --line: 1.25rem;
+  position: absolute;
+  right: 0;
+  bottom: 0.5rem;
+  left: 0;
+  display: grid;
+  animation: sc-o-log var(--loop) var(--k-out) var(--phase) infinite both;
+}
+.sc-log-lines > span {
+  height: var(--line);
+  overflow: hidden;
+  color: var(--text-soft);
+  line-height: var(--line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-log-lines > [data-new] {
+  color: var(--foreground);
+}
+.sc-log-lines time {
+  margin-right: 0.375rem;
+  color: var(--text-faint);
+}
+@keyframes sc-o-press {
+  0%,
+  8%,
+  13%,
+  100% {
+    transform: none;
+    background: transparent;
+  }
+  10% {
+    transform: scale(0.92);
+    background: var(--k-fill);
+  }
+}
+@keyframes sc-o-restarting {
+  0%,
+  11%,
+  40%,
+  100% {
+    opacity: 0;
+  }
+  13%,
+  38% {
+    opacity: 1;
+  }
+}
+@keyframes sc-o-up {
+  0%,
+  10%,
+  98%,
+  100% {
+    opacity: 1;
+  }
+  12%,
+  39% {
+    opacity: 0;
+  }
+  42%,
+  96% {
+    opacity: 1;
+  }
+}
+@keyframes sc-o-log {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(var(--line) * 3));
+  }
+  3%,
+  40% {
+    opacity: 1;
+    transform: translateY(calc(var(--line) * 3));
+  }
+  43%,
+  46% {
+    transform: translateY(calc(var(--line) * 2));
+  }
+  49%,
+  52% {
+    transform: translateY(var(--line));
+  }
+  55%,
+  91% {
+    opacity: 1;
+    transform: none;
+  }
+  96% {
+    opacity: 0;
+    transform: none;
+  }
+  97%,
+  100% {
+    opacity: 0;
+    transform: translateY(calc(var(--line) * 3));
+  }
+}
+@keyframes sc-o-blink {
+  50% {
+    opacity: 0.3;
+  }
+}

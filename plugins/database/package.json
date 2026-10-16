@@ -1,0 +1,40 @@
+{
+  "name": "@localix-plugin/database",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependencies of the bundled `database` workbench plugin. Deps live HERE (not in apps/api) — the staging build pre-bundles them into backend/index.bundle.mjs, so shipped plugins stay self-contained.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "bun test .",
+    "type-check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@clickhouse/client": "^1.24.1",
+    "@elastic/elasticsearch": "^9.5.1",
+    "@localixai/agent": "workspace:*",
+    "@localixai/dataview": "workspace:*",
+    "@tanstack/react-virtual": "^3.14.19",
+    "dagre": "^0.8.5",
+    "hono": "^4.12.30",
+    "json-bigint": "^1.0.0",
+    "lucide-react": "^1.57.0",
+    "mongodb": "^6.21.0",
+    "mssql": "^12.7.6",
+    "mysql2": "^3.23.0",
+    "postgres": "^3.4.9",
+    "react": "^19.3.1",
+    "ssh2": "^1.17.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@localixai/plugin-sdk": "workspace:*",
+    "@types/dagre": "^0.7.53",
+    "@types/json-bigint": "^1.0.4",
+    "@types/mssql": "^12.3.0",
+    "@types/react": "^19.3.0",
+    "@types/ssh2": "^1.15.6",
+    "react-dom": "^19.3.1",
+    "vite": "^8.3.4"
+  }
+}

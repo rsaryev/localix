@@ -1,0 +1,128 @@
+import { useState } from 'react'
+import { MarketplacesPanel } from './MarketplacesPanel'
+import { useInstallForm } from '../model/useInstallForm'
+import { InstallForm } from './InstallForm'
+import { backendClient } from '@/shared/api/client'
+import { usePlugins } from '../model/usePlugins'
+import type { Project, PluginRecord } from '@/shared/api/contracts'
+import { Button } from '@localixai/kit/button'
+import { SettingProblems } from './settingRegistry'
+import { SettingsSection } from './SettingsScaffold'
+import { AttentionRollup } from './AttentionRollup'
+import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
+import { PluginRow } from './capabilities/PluginRow'
+import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
+import { refetchActivePluginContrib } from '@/shared/contrib/enabledPlugins'
+
+interface PluginsSettingsProps {
+  /** '' = global; otherwise a project id. Drives both the list and install scope. */
+  scope: string
+  /** The agent whose rules a switch on this tab writes; `''` is the one that always exists. */
+  agentScope?: string
+  projects: Project[]
+}
+
+export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSettingsProps) {
+  const { plugins, loading, error, busy, busyLabel, refresh, toggle, remove, saveConfig } =
+    usePlugins(scope, agentScope)
+
+  // Install panel
+  const form = useInstallForm({
+    install: (src, enable) =>
+      trackCapabilityWrite(scope || null, async () => {
+        const plugin = await backendClient.installPlugin(src, {
+          projectId: scope || null,
+          enable,
+        })
+        await refetchActivePluginContrib()
+        return plugin
+      }),
+    refresh,
+    defaultEnable: true,
+  })
+
+  // Which plugin's config form is expanded.
+  const [configFor, setConfigFor] = useState<string | null>(null)
+
+  const handleSaveConfig = async (
+    p: PluginRecord,
+    values: Record<string, string | number | boolean>,
+  ) => {
+    if (await saveConfig(p, values)) setConfigFor(null)
+  }
+
+  // Glanceable roll-up: how many plugins have load/validation errors vs. only warnings.
+  const errorCount = plugins.filter((p) => p.error || (p.validation?.errors.length ?? 0) > 0).length
+  const warningCount = plugins.filter(
+    (p) => !p.error && !p.validation?.errors.length && (p.validation?.warnings.length ?? 0) > 0,
+  ).length
+  const registryAuthoritative = plugins.length > 0 || (!loading && !error)
+
+  return (
+    <div className="w-full space-y-8">
+      <SettingsSection
+        title="Plugins"
+        description="Availability applies to the selected agent. Installation and configuration are shared within their installation scope."
+        actions={
+          <>
+            <AttentionRollup errorCount={errorCount} warningCount={warningCount} />
+            <Button size="xl" variant="mono" onClick={form.open}>
+              Install plugin
+            </Button>
+          </>
+        }
+      >
+        <InstallForm
+          form={form}
+          placeholder="/path/to/plugin  ·  https://github.com/owner/repo  ·  owner/repo"
+          enableLabel="Enable after install"
+          subject="plugin"
+          destination={
+            scope
+              ? `${projects.find((project) => project.id === scope)?.name ?? 'this project'} — it ships with the repository`
+              : 'your personal plugins — available in every project'
+          }
+        />
+
+        <SettingProblems
+          className="mb-3"
+          subject="Plugins"
+          errors={error && !form.installing ? [error] : []}
+          onRetry={refresh}
+        />
+
+        <CapabilityRegistryBody
+          count={plugins.length}
+          loading={loading}
+          error={error}
+          empty={
+            <>
+              No plugins here yet. Install one with Install plugin, or drop a folder with a{' '}
+              <code>plugin.json</code> into <code>~/.localix/plugins</code>.
+            </>
+          }
+        >
+          {plugins.map((p) => (
+            <PluginRow
+              key={`${p.projectId}:${p.name}`}
+              plugin={p}
+              projects={projects}
+              busy={busy === p.name}
+              busyLabel={busy === p.name ? busyLabel : null}
+              configOpen={configFor === p.name}
+              onToggle={() => void toggle(p)}
+              onRemove={() => void remove(p)}
+              onToggleConfig={() => setConfigFor((cur) => (cur === p.name ? null : p.name))}
+              onSaveConfig={(values) => void handleSaveConfig(p, values)}
+            />
+          ))}
+        </CapabilityRegistryBody>
+      </SettingsSection>
+
+      {/* Marketplaces use the same sidecar. Mount them only after the primary
+          registry is authoritative so one outage produces one retry line. Keep
+          them mounted through later refreshes once real plugin data exists. */}
+      {!scope && registryAuthoritative && <MarketplacesPanel onChanged={refresh} />}
+    </div>
+  )
+}

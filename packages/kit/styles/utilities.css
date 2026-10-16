@@ -1,0 +1,146 @@
+/* ── Shared thin scrollbar ───────────────────────────────────────────────────
+   Global scrollbars are hidden (see the base layer) and each scroll container
+   opts back in. `scrollbar-thin` is the ONE canonical recipe for that opt-in:
+   standard `scrollbar-width`/`scrollbar-color` for engines that honor them,
+   plus the `::-webkit-scrollbar` slim thumb (matching ChatSurface) for engines
+   where the pseudo styling still applies (e.g. the desktop WKWebView). Prefer
+   this over re-spelling `[scrollbar-width:thin] …` arbitrary properties. */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+  /* Reserve the bar's space whether or not it is showing. The WebKit rule below gives a REAL
+     3px bar rather than an overlay, so without this every container it applies to shifts its
+     content sideways the moment it becomes scrollable — and this utility is the one place that
+     knows the bar's width, so it is the one place that should own the gutter. Two chat
+     containers used to spell it out at their own call sites; the other seventy did not. */
+  scrollbar-gutter: stable;
+  &::-webkit-scrollbar {
+    display: block;
+    width: 3px;
+    height: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--scroll-thumb-hover);
+  }
+}
+
+/* ── Virtualized scroll container ────────────────────────────────────────────
+   A virtualizer owns the arithmetic between scroll offset and which rows exist,
+   and the browser's scroll anchoring does the same job from the other end — it
+   picks a visible node and silently corrects `scrollTop` when that node moves.
+   The two fight: the anchor a virtual list picks is a RECYCLED, transform-placed
+   row, so when the range shifts and that node is unmounted (expanding a folder in
+   the file tree, a watcher inserting rows above the viewport) the correction is
+   computed against a node that no longer means what it did, and the list slides
+   to a position nobody asked for. `overflow-anchor: none` hands the position back
+   to the virtualizer, which already re-derives it from the row model. Apply to a
+   scroll container whose children are virtualized — not to ordinary scrollers,
+   where anchoring is the behaviour you want. */
+@utility virtual-scroller {
+  overflow-anchor: none;
+}
+
+/* ── Canonical keyboard-focus indicator ──────────────────────────────────────
+   `focus-ring` is the ONE recipe for restoring a visible keyboard-focus
+   indicator on a control that sets `outline-none` (a11y rule: never remove the
+   outline without a focus-visible replacement). Shared primitives (Button,
+   Input, Tabs, Toggle) already carry their own `focus-visible:` ring — this
+   utility is for hand-rolled buttons/rows/expanders. Inset so it never clips
+   inside overflow-hidden strips; keyboard-only (`:focus-visible`), so mouse
+   clicks stay clean.
+
+   1px in `--control-border-focus`, matching `CONTROL_FOCUS_VISIBLE` in the SDK token for token.
+   It was 2px of `--ring` at 70%, and `--ring` is monochrome by design (app identity), so the one
+   affordance a keyboard user navigates by was a heavy near-white line on the dark shell and a
+   heavy near-black one on light — the same shout the form controls were carrying. A focus edge
+   should weigh what the control's own hairline weighs; anything more reads as a defect rather
+   than a cue. `--control-border-focus` also tracks `prefers-contrast: more` (it is raised to 82%
+   of the foreground there), which `--ring` never did. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 1px solid var(--control-border-focus);
+    outline-offset: -1px;
+  }
+}
+
+/* ── Sticky header / footer occluder ─────────────────────────────────────────
+   The ONE recipe for a strip that content genuinely scrolls under: a table head,
+   a hunk bar, a list-section head, a resource-list header. Its job is to HIDE
+   what passes beneath, which a translucent pane cannot do on its own.
+
+   Read the qualifier literally, because misapplying it is the whole history of
+   this class. A strip is an occluder ONLY when it lives inside the scrolling
+   container. A header that is a flex SIBLING of a separately-scrolling list has
+   nothing sliding beneath it, so any fill it takes can only differ from the pane
+   it sits on — and it will, in one direction or the other. The global search
+   header spent three revisions proving that (`bg-background/95`, then this class
+   at 62%, then a 4% foreground veil: too dark, still too dark, too light) before
+   the answer turned out to be no fill at all. It now uses a bare stacked
+   `WorkbenchToolbar`, the standard for a filter header over a list.
+
+   For a REAL occluder the question is only HOW it hides, and there are two ways.
+   A coat of the pane's own ground was the wrong one: alpha only ever adds, so a
+   62% coat of a `--background` that is itself 85% under glass composites to ~0.93
+   against the pane's 0.85 and the strip comes out DARKER than everything around
+   it — the black band across a table head.
+
+   Occlusion is the BLUR's job; the fill's job is to say which side of the content
+   the strip is on. A header sits ABOVE its rows, so it lifts: a foreground veil,
+   the same relative-to-its-ground device the mac-glass block prescribes for every
+   other state. Eight percent is where a head reads as a distinct band on all three
+   grounds (glass, opaque dark, light) while still being unmistakably the same
+   material as its pane — and on light it darkens, because the veil mixes from
+   light's dark `--foreground`, which is the direction a light table head goes too.
+
+   Sixteen pixels of blur, not twelve: with the density gone the blur is now the
+   only thing hiding the rows, and at 12px a large-cap column value was still
+   legible as a ghost behind the header text. */
+/* Named `lx-` like the other recipes here (`lx-glass`, `lx-scrim`, `lx-floating-surface`) and
+   written as a plain class, not a `@utility`: a name beginning `sticky-` shares its prefix with
+   Tailwind's own `sticky` position utility, which puts it at the mercy of `twMerge`'s conflict
+   groups inside `cn()` — the two could cancel each other and the fill would silently vanish. */
+/* The veil is guarded EXPLICITLY rather than left to the build's automatic `color-mix` fallback,
+   which rewrites `color-mix(A x%, …)` down to bare `A`. For a foreground veil that fallback is
+   catastrophic rather than merely wrong — it compiles to a solid near-WHITE bar on the dark theme —
+   so the base rule states the opaque companion itself and the veil only applies where `color-mix`
+   is real. */
+.lx-occluder {
+  background-color: var(--background-solid);
+  -webkit-backdrop-filter: blur(16px) saturate(1.05);
+  backdrop-filter: blur(16px) saturate(1.05);
+}
+
+@supports (background: color-mix(in oklch, black 50%, oklch(0 0 0 / 0))) {
+  .lx-occluder {
+    background-color: color-mix(in oklch, var(--foreground) 8%, oklch(0 0 0 / 0));
+  }
+}
+
+/* No backdrop compositing (old WebKit, forced-colors, GPU blocklists): the blur that did the
+   hiding is gone, so the fill has to carry it alone — a fully opaque coat, same as the base rule
+   above already sets. `--background-solid`, not `--background` at 96%: this is the token the file
+   already keeps for "component fills opt out of glass", and it is the only spelling that cannot
+   compound — 96% of a `--background` that is ITSELF 85% under glass lands at ~0.97 over the pane's
+   0.85, i.e. denser than an opaque coat of the same hue would be, for no gain. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lx-occluder {
+    background-color: var(--background-solid);
+  }
+}
+
+/* Reduced transparency is an accessibility setting, not a taste. Same reasoning as the block
+   above: the opaque companion, so the strip matches the pane's tone instead of stacking on it. */
+@media (prefers-reduced-transparency: reduce) {
+  .lx-occluder {
+    background-color: var(--background-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
