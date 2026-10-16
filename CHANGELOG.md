@@ -6,7 +6,39 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
-## v0.1.0-beta.8 — draft prepared 2026-10-16
+## v0.1.0-beta.9 — draft prepared 2026-10-16
+
+### Added
+
+- An "All agents" row in the model picker of a group conversation: one model and reasoning level for
+  every member, applied in a single step. It appears when members differ or have no model.
+- `/model` is a step-by-step picker with breadcrumbs — agent, provider, model, then reasoning, turns
+  and context window — and no longer prints a model list.
+- The model list updates without a new release: Localix checks the catalog's public sources in the
+  background and on demand from Settings → System → Model list. `LOCALIX_MODEL_CATALOG_REFRESH=0`
+  turns the automatic check off.
+- Models are listed newest first for every provider.
+- PDFs open in the built-in viewer; "Open with…" switches to another matching editor such as Reader.
+
+### Changed
+
+- Reasoning levels come from the model catalog only: a model offers exactly the levels it supports,
+  and Off appears only where the model can really turn reasoning off.
+- `/model <name>` picks the level remembered for the new model, or its default, instead of keeping
+  the previous model's level.
+
+### Fixed
+
+- Opening a file from Finder, "Open With" or `localix <file>` no longer creates or switches
+  projects; it opens next to the chat on screen. A missing path fails at once.
+- The chat no longer disappears when the Browser, a terminal or a file link opens after a pane was
+  maximized in another conversation.
+- Off on Claude 5.x and GPT-6 models no longer runs at the provider's default high effort.
+- Anthropic models keep their earlier thinking across turns at every reasoning level.
+- Agent tool calls recover from a no-op edit in a batch, a stray `new_string` key and a `fork` start
+  action; validation errors name the unknown field and list allowed values.
+
+## v0.1.0-beta.8 — published 2026-10-16
 
 ### Added
 
