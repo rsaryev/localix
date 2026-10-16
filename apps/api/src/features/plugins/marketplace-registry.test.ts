@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { CLAUDE_CODE_MARKETPLACE, CLAUDE_CODE_MARKETPLACE_HINT } from './import-claude-code'
 
 import {
   addMarketplace,
@@ -29,6 +30,17 @@ describe('marketplacesRoot', () => {
 })
 
 describe('parseMarketplaceInput', () => {
+  it('hints at /plugin install for a plugin@marketplace reference, keeping SSH git URLs', () => {
+    expect(parseMarketplaceInput('cool@acme')).toEqual({
+      error:
+        '"cool@acme" looks like a plugin@marketplace reference; install it with /plugin install cool@acme',
+    })
+    expect(parseMarketplaceInput('git@github.com:acme/repo.git')).toEqual({
+      source: 'git',
+      url: 'git@github.com:acme/repo.git',
+    })
+  })
+
   it('parses owner/repo as github', () => {
     expect(parseMarketplaceInput('nextlevelbuilder/ui-ux-pro-max-skill')).toEqual({
       source: 'github',
@@ -159,7 +171,7 @@ describe('resolveEntrySource', () => {
   })
 
   // Source-variant coverage over representative entries from the official
-  // claude-plugins-official marketplace schema.
+  // official public marketplace schema.
   describe('real marketplace.json source variants', () => {
     it('github {repo, commit, sha} — sha wins, repo → https url', () => {
       // entry: fullstory
@@ -189,14 +201,14 @@ describe('resolveEntrySource', () => {
         source: {
           source: 'url',
           url: 'https://github.com/BrainBlend-AI/atomic-agents.git',
-          path: 'claude-plugin/atomic-agents',
+          path: 'plugin/atomic-agents',
           sha: '94220182',
         } as never,
       })
       expect(r).toEqual({
         git: {
           url: 'https://github.com/BrainBlend-AI/atomic-agents.git',
-          subdir: 'claude-plugin/atomic-agents',
+          subdir: 'plugin/atomic-agents',
           ref: '94220182',
         },
       })
@@ -222,7 +234,7 @@ describe('resolveEntrySource', () => {
         name: '42crunch-api-security-testing',
         source: {
           source: 'git-subdir',
-          url: 'https://github.com/42Crunch-AI/claude-plugins.git',
+          url: 'https://github.com/42Crunch-AI/agent-plugins.git',
           path: 'plugins/api-security-testing',
           ref: 'v1.5.5',
           sha: '0f325999',
@@ -230,7 +242,7 @@ describe('resolveEntrySource', () => {
       })
       expect(r).toEqual({
         git: {
-          url: 'https://github.com/42Crunch-AI/claude-plugins.git',
+          url: 'https://github.com/42Crunch-AI/agent-plugins.git',
           subdir: 'plugins/api-security-testing',
           ref: '0f325999',
         },
@@ -250,14 +262,14 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     root = join(base, 'marketplaces')
     // Built-in localix catalog with one ./plugin entry.
     localixDir = join(base, 'bundled')
-    await fs.mkdir(join(localixDir, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(join(localixDir, '.localix-plugin'), { recursive: true })
     await fs.mkdir(join(localixDir, 'web'), { recursive: true })
     await fs.writeFile(
       join(localixDir, 'web', 'plugin.json'),
       JSON.stringify({ name: 'web', version: '1.0.0', description: 'web tools' }),
     )
     await fs.writeFile(
-      join(localixDir, '.claude-plugin', 'marketplace.json'),
+      join(localixDir, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'localix',
         owner: { name: 'Localix' },
@@ -266,14 +278,14 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     )
     // A fake "upstream" marketplace repo our cloneRepo stub copies from.
     upstream = join(base, 'upstream')
-    await fs.mkdir(join(upstream, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(join(upstream, '.localix-plugin'), { recursive: true })
     await fs.mkdir(join(upstream, 'plugins', 'cool'), { recursive: true })
     await fs.writeFile(
       join(upstream, 'plugins', 'cool', 'plugin.json'),
       JSON.stringify({ name: 'cool', version: '1.0.0', description: 'cool' }),
     )
     await fs.writeFile(
-      join(upstream, '.claude-plugin', 'marketplace.json'),
+      join(upstream, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'acme',
         owner: 'acme',
@@ -299,10 +311,29 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     expect(res).toEqual({ name: 'acme', count: 1 })
   })
 
+  it('resolves plugin@owner/repo against the source a marketplace was added from', async () => {
+    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+    const res = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme/repo' }, deps)
+    expect(res.marketplace).toBe('acme')
+    expect(res.entry.name).toBe('cool')
+  })
+
+  it('refuses a Claude Code-only marketplace with the individual-install hint', async () => {
+    await fs.rm(join(upstream, '.localix-plugin'), { recursive: true })
+    await fs.mkdir(dirname(join(upstream, CLAUDE_CODE_MARKETPLACE)), { recursive: true })
+    await fs.writeFile(
+      join(upstream, CLAUDE_CODE_MARKETPLACE),
+      JSON.stringify({ name: 'cc', owner: { name: 'o' }, plugins: [] }),
+    )
+    expect(addMarketplace({ source: 'github', repo: 'o/cc' }, deps)).rejects.toThrow(
+      CLAUDE_CODE_MARKETPLACE_HINT,
+    )
+  })
+
   it('restores the previous marketplace when activation fails', async () => {
     await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
     await fs.writeFile(
-      join(upstream, '.claude-plugin', 'marketplace.json'),
+      join(upstream, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'acme',
         owner: 'acme',
@@ -330,7 +361,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     expect((activationError as Error).message).toContain('simulated activation failure')
 
     expect(
-      JSON.parse(await fs.readFile(join(installDir, '.claude-plugin/marketplace.json'), 'utf8')),
+      JSON.parse(await fs.readFile(join(installDir, '.localix-plugin/marketplace.json'), 'utf8')),
     ).toMatchObject({ plugins: [{ name: 'cool' }] })
     expect((await readKnownMarketplaces(root)).acme?.installLocation).toBe(installDir)
   })
@@ -344,7 +375,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
       [first, 'first'],
       [second, 'second'],
     ] as const) {
-      const manifestPath = join(dir, '.claude-plugin', 'marketplace.json')
+      const manifestPath = join(dir, '.localix-plugin', 'marketplace.json')
       const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as Record<
         string,
         unknown
@@ -400,7 +431,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
       keywords: ['infra'],
     }
     await fs.writeFile(
-      join(upstream, '.claude-plugin', 'marketplace.json'),
+      join(upstream, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'acme',
         owner: 'acme',
@@ -470,7 +501,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
   it('resolveMarketplaceInstall exposes entry.defaultEnabled=true when set in the catalog', async () => {
     // Rewrite the localix catalog with a defaultEnabled:true entry.
     await fs.writeFile(
-      join(localixDir, '.claude-plugin', 'marketplace.json'),
+      join(localixDir, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'localix',
         owner: { name: 'Localix' },
@@ -486,7 +517,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
 
   it('resolveMarketplaceInstall exposes entry.defaultEnabled=false when set in the catalog', async () => {
     await fs.writeFile(
-      join(localixDir, '.claude-plugin', 'marketplace.json'),
+      join(localixDir, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({
         name: 'localix',
         owner: { name: 'Localix' },
@@ -513,7 +544,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     /** Rewrite the acme upstream with a renames map, then register it. */
     async function addAcmeWithRenames(renames: Record<string, string | null>): Promise<void> {
       await fs.writeFile(
-        join(upstream, '.claude-plugin', 'marketplace.json'),
+        join(upstream, '.localix-plugin', 'marketplace.json'),
         JSON.stringify({
           name: 'acme',
           owner: 'acme',
@@ -571,12 +602,12 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
       globalThis.fetch = realFetch
     })
 
-    /** Build a real npm-shaped tarball whose root carries `.claude-plugin/marketplace.json`. */
+    /** Build a real npm-shaped tarball whose root carries `.localix-plugin/marketplace.json`. */
     async function makeMarketTarball(pluginNames: string[]): Promise<Uint8Array> {
       const work = await fs.mkdtemp(join(tmpdir(), 'npm-mkt-'))
       try {
         const pkg = join(work, 'package')
-        await fs.mkdir(join(pkg, '.claude-plugin'), { recursive: true })
+        await fs.mkdir(join(pkg, '.localix-plugin'), { recursive: true })
         const plugins = []
         for (const name of pluginNames) {
           await fs.mkdir(join(pkg, 'plugins', name), { recursive: true })
@@ -587,7 +618,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
           plugins.push({ name, source: `./plugins/${name}` })
         }
         await fs.writeFile(
-          join(pkg, '.claude-plugin', 'marketplace.json'),
+          join(pkg, '.localix-plugin', 'marketplace.json'),
           JSON.stringify({ name: 'npmmkt', owner: 'acme', plugins }),
         )
         const tgz = join(work, 'm.tgz')

@@ -1,11 +1,12 @@
 import { memo } from 'react'
-import { Boxes, Link2, Paperclip } from 'lucide-react'
+import { Boxes, Link2, Paperclip, UserRound } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { isPrimaryModifier } from '@localixai/kit/keybindings'
 import { ProgressBar } from '@localixai/kit/progress-bar'
 import { StatusDot } from '@localixai/kit/status-dot'
 
 import type { KanbanTask } from '../../shared/contracts'
+import { assigneeLabel, isHumanCard } from '../../shared/rules'
 import { KANBAN_STATUS_DOT as STATUS_DOT } from '../model/kanbanStatus'
 import {
   PRIORITY_PRESENTATION,
@@ -193,9 +194,13 @@ function TaskCardImpl({ task, doneIds, compact, dragging, selected, actions }: T
         <LabelChips labels={task.labels} className="mt-1.5" />
         <div className="mt-1.5 flex items-center gap-1.5 text-2xs text-text-faint">
           <OriginChip origin={task.origin} showLabel={false} />
-          {task.assignee && (
-            <span className="truncate" title={`Assigned to @${task.assignee}`}>
-              → @{task.assignee}
+          {assigneeLabel(task) && (
+            <span
+              className="inline-flex min-w-0 items-center gap-0.5 truncate"
+              title={`Assigned to ${assigneeLabel(task)}`}
+            >
+              →{isHumanCard(task) && <UserRound className="size-3 shrink-0" aria-hidden />}
+              <span className="truncate">{assigneeLabel(task)}</span>
             </span>
           )}
           <PipelineChips task={task} doneIds={doneIds} />

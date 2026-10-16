@@ -14,6 +14,7 @@ describe('cardMenuItems', () => {
       { kind: 'move', to: 'backlog' },
       { kind: 'move', to: 'in_progress' },
       { kind: 'move', to: 'blocked' },
+      { kind: 'move', to: 'review' },
       { kind: 'move', to: 'done' },
       { kind: 'delete' },
     ])

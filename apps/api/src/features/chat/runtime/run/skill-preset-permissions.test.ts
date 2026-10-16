@@ -17,7 +17,7 @@ const permissions = (handle: string) =>
   projectCapabilities(composeCapabilities(builtinAgentPreset(handle)), NO_ROSTERS).permissions
 
 describe('shipped presets with task-local skill preapprovals', () => {
-  test.each(BUILTIN_TEAM.map((agent) => agent.handle))(
+  test.each(BUILTIN_TEAM.filter((agent) => agent.kind !== 'human').map((agent) => agent.handle))(
     '%s retains its allowlist and argument guards',
     async (handle) => {
       const rules = permissions(handle)

@@ -2,14 +2,13 @@
  * THE SOURCES OF ATTENTION — each kind's seam, turned into items on the one registry.
  *
  * Each adapter keeps the interface its seam already calls (the HITL registry's `lifecycle`, the
- * question registry's asked/resolved, the handoff's mention and the turn entry's reply, the plans
+ * handoff's mention and the turn entry's reply, the plans
  * service's lifecycle port), so moving the journal rows behind the registry changed no seam. What
  * an adapter decides is only the item: its key, its title, what it summarises. The item builders
  * for the durable kinds are exported because a boot rebuilds those items from their own rows
  * (`restoreDurableAttention`) — through the same builder, or a restored item would read
  * differently from the live one it replaces.
  */
-import type { QuestionRecord } from '../questions/contracts'
 import type { PlanRecord, SessionPlan } from '../plans/contracts'
 import {
   hitlAttentionKey,
@@ -17,7 +16,6 @@ import {
   mentionAttentionPrefix,
   planAttentionKey,
   planAttentionPrefix,
-  questionAttentionKey,
   type AttentionItem,
   type AttentionSettleReason,
 } from './contracts'
@@ -38,10 +36,7 @@ export interface HitlRaised {
 export interface HitlEnded {
   userId?: string
   requestId: string
-  reason: Extract<
-    AttentionSettleReason,
-    'answered' | 'dismissed' | 'deferred' | 'expired' | 'cancelled'
-  >
+  reason: Extract<AttentionSettleReason, 'answered' | 'dismissed' | 'expired' | 'cancelled'>
 }
 
 /** What `createHitlRegistry` accepts as its `lifecycle` option. */
@@ -77,45 +72,6 @@ export function hitlAttention(
   }
 }
 
-// ---- question (`ask` with `wait: false`) --------------------------------------------------------
-
-export interface QuestionAttention {
-  asked(record: QuestionRecord): void
-  closed(record: QuestionRecord): void
-}
-
-const QUESTION_SETTLED_AS: Record<
-  Exclude<QuestionRecord['status'], 'pending'>,
-  AttentionSettleReason
-> = { answered: 'answered', skipped: 'dismissed', superseded: 'superseded' }
-
-export function questionItem(record: QuestionRecord): AttentionItem {
-  const more = record.questions.length - 1
-  return {
-    key: questionAttentionKey(record.id),
-    kind: 'question',
-    sessionId: record.sessionId,
-    at: record.askedAt,
-    title: 'The agent left you a question',
-    summary: `${record.questions[0]?.question ?? ''}${more > 0 ? ` (+${more} more)` : ''}`,
-    subject: { questionId: record.id, displayId: record.displayId },
-  }
-}
-
-export function questionAttention(registry: AttentionRegistry): QuestionAttention {
-  return {
-    asked: (record) => registry.raise(record.userId, questionItem(record)),
-    closed(record) {
-      if (record.status === 'pending') return
-      registry.settle(
-        record.userId,
-        { key: questionAttentionKey(record.id) },
-        QUESTION_SETTLED_AS[record.status],
-      )
-    },
-  }
-}
-
 // ---- mention (a participant addressed the person by name) ---------------------------------------
 
 export interface UserMentioned {
@@ -139,6 +95,10 @@ export function mentionAttention(registry: AttentionRegistry): MentionAttention 
   return {
     mentioned(mention) {
       const text = mention.text?.trim()
+      // One waiting mention per conversation until the person writes there (`answered`): the
+      // conversation is already flagged, and a second banner for it would only repeat the ping.
+      const prefix = mentionAttentionPrefix(mention.sessionId)
+      if (registry.list(mention.userId).some((item) => item.key.startsWith(prefix))) return
       registry.raise(mention.userId, {
         key: mentionAttentionKey(mention.sessionId, mention.messageId),
         kind: 'mention',
@@ -222,13 +182,12 @@ export function planAttention(registry: AttentionRegistry): PlanAttention {
 
 /**
  * The durable kinds outlive the process, so the registry relearns them at boot from their rows:
- * the open questions and the plans still waiting for review. HITL interactions do not — the HITL
+ * the plans still waiting for review. HITL interactions do not — the HITL
  * registry is memory-only, and the boot sweep settles their journal rows (`restart`).
  */
 export function restoreDurableAttention(
   registry: AttentionRegistry,
   sources: {
-    questions: readonly QuestionRecord[]
     plans: readonly PlanRecord[]
     /** The presenting participant's handle, by plan id — the live item names it too. */
     planAuthors?: ReadonlyMap<string, string>
@@ -237,8 +196,6 @@ export function restoreDurableAttention(
   const byUser = new Map<string, AttentionItem[]>()
   const add = (userId: string, item: AttentionItem) =>
     byUser.set(userId, [...(byUser.get(userId) ?? []), item])
-  for (const record of sources.questions)
-    if (record.status === 'pending') add(record.userId, questionItem(record))
   for (const plan of sources.plans)
     add(plan.userId, planItem(plan, sources.planAuthors?.get(plan.id) ?? null))
   for (const [userId, items] of byUser) registry.restore(userId, items)
@@ -248,7 +205,6 @@ export function restoreDurableAttention(
 export async function rebuildDurableAttention(
   registry: AttentionRegistry,
   sources: {
-    questions: readonly QuestionRecord[]
     plans: readonly PlanRecord[]
     getSession: (
       userId: string,

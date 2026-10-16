@@ -1,11 +1,12 @@
 import { memo } from 'react'
-import { Boxes, Copy, Paperclip, Trash2, X } from 'lucide-react'
+import { Boxes, Copy, Paperclip, Trash2, UserRound, X } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { TextAction } from '@localixai/kit/text-action'
 
 import type { KanbanStatus, KanbanTask } from '../../shared/contracts'
+import { assigneeLabel, isHumanCard } from '../../shared/rules'
 import {
   KANBAN_STATUS_DOT as STATUS_DOT,
   KANBAN_STATUS_LABEL as STATUS_LABEL,
@@ -103,8 +104,11 @@ export const TaskDetailHeader = memo(function TaskDetailHeader({
           </button>
         )}
         <OriginChip origin={detail.origin} />
-        {detail.assignee && (
-          <span className="rounded-sm bg-foreground/5 px-1.5 py-0.5">@{detail.assignee}</span>
+        {assigneeLabel(detail) && (
+          <span className="inline-flex items-center gap-1 rounded-sm bg-foreground/5 px-1.5 py-0.5">
+            {isHumanCard(detail) && <UserRound className="size-3" aria-hidden />}
+            {assigneeLabel(detail)}
+          </span>
         )}
         <PipelineChips task={detail} doneIds={doneIds} />
         <LabelChips labels={detail.labels} onRemove={onRemoveLabel} />

@@ -53,12 +53,6 @@ const question = { questions: [{ question: 'Which database?', options: ['pg', 's
 
 export const CORE_CALL_CASES: readonly CallCase[] = [
   row('ask', 'a blocking question', question, { effect: 'read', needsHuman: true }),
-  row(
-    'ask',
-    'a queued question',
-    { ...question, wait: false },
-    { effect: 'session', needsHuman: true },
-  ),
 
   row('bash', 'a read-only command', { command: 'ls -la' }, READ),
   row(

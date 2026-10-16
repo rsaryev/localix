@@ -1,3 +1,4 @@
+import { HUMAN_ASSIGNEE_ID } from '../shared/rules'
 import type { PluginAgentDirectory } from '@localixai/plugin-sdk/backend'
 import type { z } from 'zod'
 
@@ -84,6 +85,17 @@ export function createBoardService(deps: BoardServiceDeps) {
     )
   }
 
+  /** A card handed to the person waits on them: tell them, as an `@human` mention would. */
+  const tellHuman = (seat: BoardSeat, task: KanbanTask) => {
+    if (task.agentId !== HUMAN_ASSIGNEE_ID) return
+    void deps.agents
+      ?.notifyHuman?.(seat.userId, seat.sessionId, {
+        key: `kanban:${task.id}`,
+        text: `${task.id} is assigned to you: ${task.title}`,
+      })
+      .catch(() => {})
+  }
+
   const announce = (seat: BoardSeat, type: 'task.created' | 'task.updated', task: KanbanTask) =>
     ({ type, sessionId: seat.sessionId, task }) satisfies BoardEvent
 
@@ -106,7 +118,9 @@ export function createBoardService(deps: BoardServiceDeps) {
         agentId: null,
         assignee: null,
       }
-      return (await storeOf(seat)).update((board) => {
+      const created = await (
+        await storeOf(seat)
+      ).update((board) => {
         const { board: next, task } = createTask(
           board,
           {
@@ -127,6 +141,8 @@ export function createBoardService(deps: BoardServiceDeps) {
         )
         return { board: next, events: [announce(seat, 'task.created', task)], result: task }
       })
+      tellHuman(seat, created)
+      return created
     },
 
     async update(
@@ -137,7 +153,12 @@ export function createBoardService(deps: BoardServiceDeps) {
     ): Promise<KanbanTask> {
       const { expectedUpdatedAt, agent, ...patch } = parseInput(updateKanbanTaskSchema, raw)
       const assignment = await resolveAssignment(seat, agent)
-      return (await storeOf(seat)).update((board) => {
+      const before = assignment
+        ? (await (await storeOf(seat)).read()).tasks.find((t) => t.id === id)
+        : undefined
+      const updated = await (
+        await storeOf(seat)
+      ).update((board) => {
         const { board: next, task } = updateTask(
           board,
           id,
@@ -151,6 +172,8 @@ export function createBoardService(deps: BoardServiceDeps) {
         )
         return { board: next, events: [announce(seat, 'task.updated', task)], result: task }
       })
+      if (assignment && before?.agentId !== HUMAN_ASSIGNEE_ID) tellHuman(seat, updated)
+      return updated
     },
 
     async move(seat: BoardSeat, moves: readonly KanbanMove[], actor: KanbanActor) {

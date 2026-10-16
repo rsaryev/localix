@@ -15,6 +15,8 @@ import { createAgentFacadePhase } from './bootstrap/agent-facade'
 import { createAppServicesPhase } from './bootstrap/app-services'
 import { createAppPhase } from './bootstrap/create-app'
 import { createOpsTimersPhase } from './bootstrap/ops-timers'
+import { migrateLegacyPluginInstalls } from './features/plugins/legacy-install-migration'
+import { userHome } from './lib/env'
 import { loadLoginShellEnv, loginShellEnvSource } from './lib/login-shell-env'
 
 // Bun CLOSES a socket that receives a frame above `maxPayloadLength` (default
@@ -43,7 +45,6 @@ export async function bootstrap(
     serviceRefs,
     bootRepo,
     work,
-    questions,
     interruptedRuns,
     digests,
     finalAssistantText,
@@ -62,6 +63,8 @@ export async function bootstrap(
     providerConnectionsService,
     mediaStore,
   } = await createInfraPhase(envSource, runtimeInfo)
+  // Before any discovery: convert pre-native plugin installs once (idempotent, logged).
+  await migrateLegacyPluginInstalls({ db, homeDir: userHome(), logger })
   const {
     subsystemRegistry,
     contextProviderRegistry,
@@ -128,7 +131,6 @@ export async function bootstrap(
     externalAgents: externalAgents.port,
     db,
     work,
-    questions,
     agentNotifications,
     logger,
     catalogService,
@@ -170,7 +172,6 @@ export async function bootstrap(
     secretsStore,
     secretExposureShield,
     work,
-    questions,
     notifications,
     agentNotifications,
     chatService,

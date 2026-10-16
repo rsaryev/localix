@@ -41,7 +41,7 @@ events. Test a behavior change in the reducer first.
 | `activate` | Click on the notch, or a native first click | Open, composer focused | Focus the composer unless a request is shown    |
 | `toggle`   | `Cmd+Shift+J`                               | Open, composer focused | Rest                                            |
 | `select`   | A new request arrives, or **Next request**  | Open on that request   | Show that request                               |
-| `back`     | **Later**, or a file drop                   | Open, composer focused | Composer focused                                |
+| `back`     | A file drop                                 | Open, composer focused | Composer focused                                |
 | `resolved` | The selected request disappears             | No change              | Composer focused                                |
 | `collapse` | Outside click, blur, Escape, idle, handoff  | No change              | Rest; hover is blocked until the pointer leaves |
 
@@ -128,15 +128,14 @@ and AppKit; the system material follows reduced transparency.
 | Quick conversation               | `useQuickChat.ts` over `createSession`, `useSendMessage`, `useComposerPrefill` and the chat store's stream reducer |
 | Selected conversation and draft  | Backend view state ([shared view state](./shared-view-state.md)), `useComposerDraft`                               |
 | Session summaries and attention  | `useCompanionState.ts`, `roster.ts`; `attention/store.ts` stays authoritative                                      |
-| Request forms                    | `HitlAttentionBody`, `QueuedQuestionView` and `useQuestionActions` from `features/chat`                            |
+| Request forms                    | `HitlAttentionBody` from `features/chat`                                                                           |
 | Notifications, dock badge, menus | The workspace only; the island reads attention and never writes it                                                 |
 | Native panel, glass, pointer     | `companion_macos.rs`, `companion_material.rs`, `companion_pointer.rs`                                              |
 
 The island renders the full shared `PromptInput` and `MessageList`. Only geometry changes:
 attachments, queueing, failure restoration, the transcript projection and the Markdown renderer are
 shared with the workspace. It streams only its own conversation; other conversations arrive as
-summaries over the shared resource transport. Queued questions are matched by `subject.displayId`
-because the session read model uses display IDs, not attention record IDs.
+summaries over the shared resource transport.
 
 ## Patterns
 

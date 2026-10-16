@@ -296,25 +296,3 @@ describe('transcript projection with notices', () => {
     expect(projected.map((m) => m.id)).toEqual(['m-0', 'm-1', 'sys-1'])
   })
 })
-
-test('queued answer transport prose never appears as a human message in a transcript surface', () => {
-  const project = createTranscriptProjectionSelector()
-  const messages = [
-    message({ id: 'ask', role: 'user', content: 'Sort the desktop' }),
-    message({
-      id: 'answer-wake',
-      role: 'user',
-      isInternal: true,
-      wakeSource: 'answer',
-      content:
-        '[Answer to q-1] The user answered the question you queued earlier: - desktop_access',
-    }),
-    message({ id: 'reply', role: 'assistant', content: '**Permission received.**' }),
-  ]
-  expect(project(messages).map((item) => item.id)).toEqual(['ask', 'reply'])
-  const updated = [
-    ...messages.slice(0, 2),
-    { ...messages[2]!, content: '**Permission received.** Working…' },
-  ]
-  expect(project(updated).map((item) => item.id)).toEqual(['ask', 'reply'])
-})

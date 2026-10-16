@@ -33,8 +33,8 @@ import type { ResolveSessionAgent } from './session-agent-selection'
 import type { AgentNotifications } from '../../notifications/producers'
 import type { ModelRoute } from '../repository-types'
 import type { WorkRegistry } from '../../work/registry'
-import type { QuestionRegistry } from '../../questions/registry'
 import type { AgentManagementPort } from '../../agents/service-contract'
+import type { HumanProfile } from '../../agent-core/system-prompt-conversation-section'
 
 export const DEFAULT_TITLE = 'New Chat'
 
@@ -65,8 +65,6 @@ export interface ChatServiceDeps {
   db: Kysely<AppDatabase>
   /** The process's one work registry; the runner records background work in it. */
   work: WorkRegistry
-  /** The process's one question registry — queued `ask` questions. Absent in isolated hosts. */
-  questions?: QuestionRegistry
   /**
    * The agent-lifecycle producers of the notification journal — a run's end, a HITL request, a
    * handback. Absent in isolated hosts (tests), which then simply record nothing.
@@ -192,6 +190,8 @@ export interface ChatServiceDeps {
       leadershipPriority?: number
     }[]
   >
+  /** The person's record (`@human`) as the scope resolves it, for the prompt and the board. */
+  resolveHuman?: (userId: string, projectId: string | null) => Promise<HumanProfile>
   /** Complete scope-aware registry roster used only to describe agents to the model. */
   listRegistryAgents?: (
     userId: string,

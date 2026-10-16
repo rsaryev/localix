@@ -245,7 +245,7 @@ export async function verifyNotchLayout(page, spec) {
   const history = await page
     .getByRole('button', { name: 'Session history', exact: true })
     .boundingBox()
-  const middle = (spec.viewport.width - spec.notch.notchWidth) / 2
+  const middle = (page.viewportSize().width - spec.notch.notchWidth) / 2
   expect(folder.x + folder.width).toBeLessThanOrEqual(middle)
   expect(history.x).toBeGreaterThanOrEqual(middle + spec.notch.notchWidth)
 }

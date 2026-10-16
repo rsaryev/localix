@@ -153,9 +153,6 @@ export async function compose(page, scenario) {
       .getByText(/Configuration complete; ready for start up/)
       .first()
       .waitFor()
-  } else if (scenario === 'queued' || scenario === 'question') {
-    await button(page, 'Answer').waitFor()
-    if (scenario === 'question') await button(page, 'Answer').click()
   } else if (scenario === 'terminal-error') {
     await button(page, 'Terminal').click()
     await button(page, 'Maximize panel').first().click()

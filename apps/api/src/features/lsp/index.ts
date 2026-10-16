@@ -30,3 +30,9 @@ export {
 } from './service'
 
 export { parseLspServersConfig, configuredLspServer } from './lsp-plugin-servers'
+export {
+  pluginLspNotes,
+  summarizePluginLspServers,
+  withoutBuiltinOverlap,
+  type PluginLspServerSummary,
+} from './lsp-plugin-notes'

@@ -10,25 +10,16 @@ import { pathExists } from '../ext/fs-discovery'
  * their precedence differ, so those stay explicit per caller as constants below.
  */
 
-/**
- * Plugin manifest candidates: our native layout (`plugin.json` at the plugin root)
- * and the Claude Code convention (`.claude-plugin/plugin.json`). The ROOT manifest
- * wins when both exist.
- */
-export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = [
-  'plugin.json',
-  '.claude-plugin/plugin.json',
-]
+/** Plugin manifest location: the native `plugin.json` at the plugin root, nothing else. */
+export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = ['plugin.json']
 
-/**
- * Marketplace catalog candidates: the CC-spec `.claude-plugin/marketplace.json`
- * wins over a root `marketplace.json`. (Note the precedence is the REVERSE of the
- * plugin-manifest convention — the dotted dir leads here.)
- */
-export const MARKETPLACE_MANIFEST_CANDIDATES: readonly string[] = [
-  '.claude-plugin/marketplace.json',
-  'marketplace.json',
-]
+/** The branded marketplace catalog directory and its files. */
+export const MARKETPLACE_DIR = '.localix-plugin'
+export const MARKETPLACE_CATALOG_FILE = `${MARKETPLACE_DIR}/marketplace.json`
+export const MARKETPLACE_METADATA_FILE = `${MARKETPLACE_DIR}/marketplace.metadata.json`
+
+/** Marketplace catalog location: only the branded `.localix-plugin/marketplace.json`. */
+export const MARKETPLACE_MANIFEST_CANDIDATES: readonly string[] = [MARKETPLACE_CATALOG_FILE]
 
 /**
  * Return the absolute path of the first candidate (relative to `dir`) that exists,

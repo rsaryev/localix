@@ -5,18 +5,14 @@ import { isReasoningEffort } from '../types'
 export const AGENT_HANDLE_PATTERN = /^[a-z0-9][a-z0-9_-]*(:[a-z0-9][a-z0-9_-]*)*$/i
 
 /**
- * THE PERSON'S OWN ADDRESS IN A CONVERSATION.
- *
- * A conversation has one participant nobody could address: the human. Agents could hand work to
- * each other and could answer the person, but they had no way to say "this one is for you" — so a
- * question meant for the person was a sentence the next participant answered on their behalf.
+ * THE PERSON'S OWN ADDRESS IN A CONVERSATION — and the handle of the built-in `human` record.
  *
  * FIXED, not the person's name. A handle has to be known to the participants before they speak,
  * and it lives in their CACHED prompt prefix; keying it to a display name would put a mutable value
- * in the one place a mutable value costs the whole cache. `user` is what every model has already
- * read a million times.
+ * in the one place a mutable value costs the whole cache. What the person is called and does lives
+ * on the `human` record (label, description, instructions) and is rendered in the volatile tail.
  */
-export const USER_MENTION_HANDLE = 'user'
+export const HUMAN_HANDLE = 'human'
 
 /**
  * EVERY PARTICIPANT AT ONCE.
@@ -26,21 +22,24 @@ export const USER_MENTION_HANDLE = 'user'
  */
 export const ALL_MENTION_HANDLE = 'all'
 
+/** The person's description and instructions together; they ride in every prompt's tail. */
+export const HUMAN_PROFILE_MAX_CHARS = 1000
+
+const RESERVED_HANDLES: readonly string[] = [HUMAN_HANDLE, ALL_MENTION_HANDLE]
+const isReservedHandle = (handle: string) => RESERVED_HANDLES.includes(handle.toLowerCase())
+
+/** A handle's spelling, reserved or not. */
+const handleFormatSchema = z.string().regex(AGENT_HANDLE_PATTERN)
+
 /**
  * No agent may answer to a reserved address. Owned here, by the definition, because every agent —
  * built-in, the user's, a plugin's — is parsed through this schema: an agent handled `all` or
- * `user` used to be accepted and was then either unaddressable or routed in the person's place.
+ * `human` would be either unaddressable or routed in the person's place. Only the `human` record
+ * itself carries `human` (see {@link agentBlueprintSchema}).
  */
-export const agentHandleSchema = z
-  .string()
-  .regex(AGENT_HANDLE_PATTERN)
-  .refine(
-    (handle) => {
-      const lower = handle.toLowerCase()
-      return lower !== USER_MENTION_HANDLE && lower !== ALL_MENTION_HANDLE
-    },
-    { message: 'This handle is reserved for the conversation (`@user`, `@all`)' },
-  )
+export const agentHandleSchema = handleFormatSchema.refine((handle) => !isReservedHandle(handle), {
+  message: 'This handle is reserved for the conversation (`@human`, `@all`)',
+})
 export const agentIdSchema = z.string().min(1).max(200)
 export type AgentId = z.infer<typeof agentIdSchema>
 
@@ -56,22 +55,56 @@ export const agentContextSchema = z.strictObject({
   memory: z.strictObject({ scope: z.enum(['global', 'project', 'session']) }).optional(),
 })
 
-/** Portable authored behavior. Invocation and access policy belong to the host. */
-export const agentBlueprintSchema = z.strictObject({
-  handle: agentHandleSchema,
+/** `agent` runs; `human` is the person's own record — described, never run. Absent = agent. */
+export type AgentKind = 'agent' | 'human'
+
+const agentBlueprintFields = z.strictObject({
+  kind: z.enum(['agent', 'human']).optional(),
+  handle: handleFormatSchema,
   label: z.string().min(1).max(60).optional(),
   description: z.string().default(''),
-  instructions: z.string().trim().min(1),
+  instructions: z.string().trim(),
   /** Small hierarchy signal. It elects a room leader; it is not a general routing override. */
   leadershipPriority: z.number().int().min(-2).max(2).default(0),
   modelPreference: agentModelPreferenceSchema.optional(),
   limits: z.strictObject({ maxTurns: z.number().int().positive().optional() }).optional(),
   context: agentContextSchema.optional(),
 })
+
+/**
+ * The two kinds share one record so the person's profile uses the agents' storage, scopes and
+ * Restore. A `human` record describes the person and nothing else: no run settings, no hierarchy.
+ */
+function checkKind(
+  value: z.infer<typeof agentBlueprintFields>,
+  ctx: z.core.$RefinementCtx<z.infer<typeof agentBlueprintFields>>,
+): void {
+  const issue = (message: string, path: string) =>
+    ctx.addIssue({ code: 'custom', message, path: [path] })
+  if (value.kind !== 'human') {
+    if (isReservedHandle(value.handle))
+      issue('This handle is reserved for the conversation (`@human`, `@all`)', 'handle')
+    if (!value.instructions) issue('An agent needs instructions', 'instructions')
+    return
+  }
+  if (value.handle !== HUMAN_HANDLE) issue('The human record is handled `human`', 'handle')
+  if (value.leadershipPriority !== 0)
+    issue('The human has no hierarchy priority', 'leadershipPriority')
+  for (const field of ['modelPreference', 'limits', 'context'] as const)
+    if (value[field] !== undefined) issue('The human has no run settings', field)
+  if (value.description.length + value.instructions.length > HUMAN_PROFILE_MAX_CHARS)
+    issue(
+      `Description and instructions together stay within ${HUMAN_PROFILE_MAX_CHARS} characters`,
+      'instructions',
+    )
+}
+
+/** Portable authored behavior. Invocation and access policy belong to the host. */
+export const agentBlueprintSchema = agentBlueprintFields.superRefine(checkKind)
 export type AgentBlueprint = z.infer<typeof agentBlueprintSchema>
 
 /** The behavior an agent may author; identity, policy and run settings remain host-owned. */
-export const agentAuthoredBlueprintSchema = agentBlueprintSchema
+export const agentAuthoredBlueprintSchema = agentBlueprintFields
   .pick({ handle: true, description: true, instructions: true, leadershipPriority: true })
   .extend({
     handle: agentHandleSchema.pipe(z.string().max(100)),
@@ -97,7 +130,7 @@ export type AgentDefinition = z.infer<typeof agentDefinitionSchema>
 
 /** Code-shipped identities are stable across installs and independent of session scope. */
 export const builtinAgentId = (handle: string): AgentId =>
-  `builtin:${agentHandleSchema.parse(handle)}`
+  `builtin:${handleFormatSchema.parse(handle)}`
 
 /**
  * The agent that always exists — and therefore the one every answer is keyed to.
@@ -112,3 +145,8 @@ export const builtinAgentId = (handle: string): AgentId =>
 export const DEFAULT_AGENT_HANDLE = 'localix'
 
 export const DEFAULT_AGENT_ID: AgentId = builtinAgentId(DEFAULT_AGENT_HANDLE)
+
+/** The person's built-in record: shipped, overridable, never deleted, never run. */
+export const HUMAN_AGENT_ID: AgentId = builtinAgentId(HUMAN_HANDLE)
+
+export const isHumanAgent = (record: { kind?: AgentKind }): boolean => record.kind === 'human'

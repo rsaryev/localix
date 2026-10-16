@@ -90,7 +90,7 @@ const OPTIONAL_NATIVE_EXTERNALS = ['cpu-features']
 const BACKEND_MINIFY_FLAGS = ['--minify-syntax', '--minify-whitespace']
 /** Dev-only entries stripped from every staged drop-in. */
 const SKIP_BASENAMES = new Set([
-  '.claude-plugin',
+  '.localix-plugin',
   '.turbo',
   'node_modules',
   'package.json',

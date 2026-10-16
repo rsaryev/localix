@@ -339,9 +339,9 @@ describe('prepareDependenciesForInstall', () => {
     extra: Record<string, unknown> = {},
   ) => {
     const dir = join(root, name)
-    await fs.mkdir(join(dir, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(join(dir, '.localix-plugin'), { recursive: true })
     await fs.writeFile(
-      join(dir, '.claude-plugin', 'marketplace.json'),
+      join(dir, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({ name, owner: { name: 't' }, plugins, ...extra }),
     )
     return dir

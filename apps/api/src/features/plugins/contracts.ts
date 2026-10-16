@@ -110,6 +110,8 @@ export const pluginRecordSchema = z.object({
   homepage: z.string().optional(),
   /** Provenance from the manifest: source it was migrated from; absent = native. */
   migratedFrom: z.string().optional(),
+  /** Set when the plugin was converted from another format at install time. */
+  importedFrom: z.literal('claude-code').optional(),
   /**
    * The surfaces the plugin declares it extends (normalized; `['agent']` when the
    * manifest says nothing). Consumers group by it — see `isWorkbenchPlugin`.
@@ -213,6 +215,8 @@ export const marketplaceListingSchema = z.object({
   builtin: z.boolean(),
   count: z.number(),
   plugins: z.array(marketplaceListingPluginSchema).optional(),
+  /** Why a registered marketplace cannot be used (a Claude Code-only catalog), with a hint. */
+  unsupported: z.string().optional(),
 })
 
 export type MarketplaceListing = z.infer<typeof marketplaceListingSchema>

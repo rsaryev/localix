@@ -17,12 +17,11 @@ const msg = (overrides: Partial<Message>): Message => ({
 
 const session = (
   messages: Message[],
-  extra: Partial<Pick<UiSession, 'queuedMessages' | 'pendingInteraction' | 'questions'>> = {},
+  extra: Partial<Pick<UiSession, 'queuedMessages' | 'pendingInteraction'>> = {},
 ) => ({
   messages,
   queuedMessages: [],
   pendingInteraction: null,
-  questions: [],
   ...extra,
 })
 
@@ -64,7 +63,6 @@ describe('what an empty composer predicts a reply to', () => {
     const base = [msg({})]
     expect(replyPredictionSubject(session(base, { queuedMessages: [{}] as never }))).toBeNull()
     expect(replyPredictionSubject(session(base, { pendingInteraction: {} as never }))).toBeNull()
-    expect(replyPredictionSubject(session(base, { questions: [{}] as never }))).toBeNull()
   })
 })
 

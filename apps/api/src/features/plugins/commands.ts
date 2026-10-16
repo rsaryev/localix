@@ -47,6 +47,7 @@ export function listCommandsFromCatalog(
           ...(a.when ? { when: a.when } : {}),
         })),
         ...(cmd.argumentHint ? { argumentHint: cmd.argumentHint } : {}),
+        ...(cmd.featured ? { featured: true } : {}),
       })
     }
   }

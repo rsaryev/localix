@@ -21,10 +21,10 @@
 import type { StoredMessagePayload } from '../../../../db'
 import type { SessionRecord } from '../../repository'
 import { settleConversationTurn, type ConversationSilenceIo } from './conversation-silence'
-import { mentionsPerson, publishUserHandoff, withHandoff } from './handoff'
+import { isHumanHandoff, publishHumanHandoff, withHandoff, type HumanMentionIo } from './handoff'
 
 export async function settleConversationRow(
-  io: ConversationSilenceIo & Parameters<typeof publishUserHandoff>[0],
+  io: ConversationSilenceIo & HumanMentionIo,
   args: {
     silent: boolean
     userId: string
@@ -33,13 +33,13 @@ export async function settleConversationRow(
   },
 ): Promise<void> {
   const { silent, userId, session, payload } = args
-  const settled = withHandoff(session, payload)
+  const settled = withHandoff(payload)
   await settleConversationTurn(io, { silent, userId, sessionId: session.id, payload: settled })
   // TOLD whenever they are named, not only when the round stops for them. The two used to be one
   // condition, and a participant that asked the person AND its colleagues in one message had to be
   // either announced-and-blocking or silent-and-continuing — so the mention that read as a
   // handback took the round with it.
-  if (!silent && mentionsPerson(session, settled)) {
-    publishUserHandoff(io, { userId, sessionId: session.id, payload: settled })
+  if (!silent && isHumanHandoff(settled)) {
+    publishHumanHandoff(io, { userId, sessionId: session.id, payload: settled })
   }
 }

@@ -1,5 +1,11 @@
 import type { Kysely } from 'kysely'
-import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
+import {
+  DEFAULT_AGENT_ID,
+  HUMAN_AGENT_ID,
+  HUMAN_HANDLE,
+  isHumanAgent,
+} from '@localixai/agent/agents'
+import { builtinAgentRecord } from './builtin'
 import type { AppDatabase } from '../../db/types'
 import { availabilityOf } from '../capabilities/availability'
 import { composeCapabilities, type ResolvedCapabilities } from '../capabilities/resolve'
@@ -16,7 +22,10 @@ import type { AgentSummary } from './contracts'
 import { BUILTIN_OVERRIDE_FIELD } from './builtin-override'
 
 interface AgentCatalog {
+  /** Every agent. Never the person: nothing that iterates agents may run, lead or list them. */
   all: AgentSummary[]
+  /** The person's record (`@human`), resolved like any shipped agent's override. */
+  human: AgentSummary
   capabilitiesByAgent: ReadonlyMap<string, ResolvedCapabilities>
   enabled: AgentSummary[]
   diagnostics: ContributionReadError[]
@@ -42,10 +51,20 @@ export async function buildAgentCatalog(input: {
         : [],
     ),
   )
-  const [discovered, registered] = await Promise.all([
+  const [everyone, registered] = await Promise.all([
     discoverAgents({ ...input, approvedBuiltinOverrides }),
     createContributionReader(db, 'agent', agentContributionSchema).list(userId, projectId),
   ])
+  // Discovery is empty for a project whose directory is gone; the person is still there.
+  const humanItem = everyone.find((item) => isHumanAgent(item.record)) ?? {
+    projectId,
+    manifest: { name: HUMAN_AGENT_ID },
+    record: builtinAgentRecord(HUMAN_HANDLE)!,
+    scope: projectId ? ('project' as const) : ('global' as const),
+    path: '',
+    builtin: true,
+  }
+  const discovered = everyone.filter((item) => item !== humanItem)
   const byAgent = await createCapabilityRuleRepository(db).readMany(userId, [
     ...new Set([
       DEFAULT_AGENT_ID,
@@ -91,6 +110,7 @@ export async function buildAgentCatalog(input: {
   ]
   return {
     all,
+    human: toSummary(humanItem, stateById.get(humanItem.record.id), true, {}),
     capabilitiesByAgent: new Map(
       all.map(({ record }) => [record.id, composeCapabilities(rulesFor(record.id))]),
     ),

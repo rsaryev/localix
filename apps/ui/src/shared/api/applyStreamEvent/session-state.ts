@@ -11,7 +11,6 @@ export const sessionStateReducers: StreamReducers<
   | 'session_usage.updated'
   | 'session_triggers.updated'
   | 'session_work.updated'
-  | 'session_questions.updated'
   | 'plan.updated'
   | 'session_resume.updated'
   | 'session_queue.updated'
@@ -65,9 +64,6 @@ export const sessionStateReducers: StreamReducers<
   // monitor's latest event arrives here too: it is a field of its work record.
   'session_work.updated': (session, event) =>
     event.sessionId === session.id ? { ...session, work: event.work } : session,
-  // The open queued questions, last-wins — the composer's questions strip and the sidebar mark.
-  'session_questions.updated': (session, event) =>
-    event.sessionId === session.id ? { ...session, questions: event.questions } : session,
   // Every version of the conversation's plan, last-wins — the plan view and its versions diff.
   'plan.updated': (session, event) =>
     event.sessionId === session.id ? { ...session, plans: event.plans } : session,

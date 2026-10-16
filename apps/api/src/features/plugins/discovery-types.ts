@@ -31,9 +31,4 @@ export interface DiscoveredPlugin {
    * the loader — `error` contains the non-fatal warning for the UI/validation report.
    */
   manifestRecovered?: boolean
-  /**
-   * Compatibility flag for an explicitly installed Claude-format plugin. Derived
-   * from its `.claude-plugin/plugin.json` layout inside a Localix discovery root.
-   */
-  ccOrigin?: boolean
 }

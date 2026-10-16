@@ -6,10 +6,8 @@ import { loadManifest } from './manifest-load'
 import type { DiscoveredPlugin } from './discovery-types'
 
 /**
- * Locate a plugin's manifest. We support BOTH our native layout (`plugin.json` at
- * the plugin root) and the Claude Code convention (`.claude-plugin/plugin.json`),
- * so a plugin explicitly installed into a Localix discovery root can retain that
- * layout. The root manifest wins when both exist. Returns null when neither is present.
+ * Locate a plugin's native manifest (`plugin.json` at the plugin root), or null.
+ * Foreign layouts are converted at install time and at startup by the importer.
  */
 export async function findManifestPath(dir: string): Promise<string | null> {
   return locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)
@@ -19,8 +17,8 @@ export async function findManifestPath(dir: string): Promise<string | null> {
 const PLUGIN_COMPONENT_PATHS = ['skills', 'commands', 'agents', '.mcp.json', 'tools']
 
 /**
- * Is `dir` a plugin? True when it has a manifest (root or `.claude-plugin/`) OR — the
- * Claude Code convention where the manifest is optional — at least one recognized
+ * Is `dir` a plugin? True when it has a root manifest OR — the manifest is optional —
+ * at least one recognized
  * component directory/file (skills/commands/agents/tools/.mcp.json). Bare dirs (e.g. a
  * `cache`) are skipped. An LSP-only directory (just `.lsp.json`) does not qualify
  * through this component-based fallback.

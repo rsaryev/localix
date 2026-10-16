@@ -42,12 +42,15 @@ afterAll(async () => {
  * The shipped presets. Only `localix` ships in code now: other roles are ordinary agents the user
  * owns, so the matrix pins the one preset whose roster is every tool a chat run builds.
  */
-const PRESETS: PresetUnderTest[] = BUILTIN_AGENTS.map((agent) => ({
-  handle: agent.handle,
-  rules: builtinAgentPreset(agent.handle),
-  onRoster: () => true,
-  expected: () => undefined,
-}))
+// The person's record (`@human`) is never run, so it has no permission preset to check.
+const PRESETS: PresetUnderTest[] = BUILTIN_AGENTS.filter((agent) => agent.kind !== 'human').map(
+  (agent) => ({
+    handle: agent.handle,
+    rules: builtinAgentPreset(agent.handle),
+    onRoster: () => true,
+    expected: () => undefined,
+  }),
+)
 
 describe('the roster under test', () => {
   test('the bundled plugins load through the host loader, and some carry tools', () => {

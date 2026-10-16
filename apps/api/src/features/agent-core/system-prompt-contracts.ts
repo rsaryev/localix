@@ -3,9 +3,8 @@ import type { RunProfile } from './run-shape'
 import type { RuntimeSection } from './system-prompt-tail'
 import type { ContextFile } from './context-files'
 import type { MemoryUsage } from '../memory/file-store'
-import type { ConversationParticipant } from './system-prompt-conversation-section'
+import type { ConversationParticipant, HumanProfile } from './system-prompt-conversation-section'
 import type { BackgroundJobSnapshot } from './system-prompt-sections'
-import type { OpenQuestionsState } from './tools/hitl/ask-queue'
 import type { ApprovedPlanPrompt } from './system-prompt-plan-sections'
 
 export interface BuildAgentSystemPromptParams {
@@ -69,6 +68,8 @@ export interface BuildAgentSystemPromptParams {
   conversation?: {
     self: string
     participants: readonly ConversationParticipant[]
+    /** The person (`@human`), listed in the volatile roster as data about them. */
+    human?: HumanProfile
     /** This participant is the elected leader and receives orchestration guidance. */
     isLeader?: boolean
     /** Nobody can be tagged in: it is not a chat. */
@@ -142,12 +143,6 @@ export interface BuildAgentSystemPromptParams {
    * at least one job exists.
    */
   backgroundJobs?: BackgroundJobSnapshot[]
-  /**
-   * The questions THIS participant queued (`ask` with `wait: false`) that are still unanswered,
-   * re-read every turn — so it neither re-asks one nor forgets one is outstanding — and the ones
-   * the person skipped since it last looked.
-   */
-  openQuestions?: OpenQuestionsState
   /** The plan the person approved for this conversation — `# Approved plan`, cached prefix. */
   approvedPlan?: ApprovedPlanPrompt
   /** Set when the run was admitted in plan mode — `# Plan mode`, cached prefix; names the draft. */

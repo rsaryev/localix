@@ -5,7 +5,6 @@ import { SpendAlertStrip } from './SpendAlertStrip'
 import { UpdateStrip } from './UpdateStrip'
 import { SessionSurface } from '@/shared/contrib/sessionSurfaces'
 import { WorkStrip } from './WorkStrip'
-import { QuestionsStrip } from './QuestionsStrip'
 import { PlanStrip } from '../plan/PlanStrip'
 import { ResumeStrip } from '../resume/ResumeStrip'
 import {
@@ -88,15 +87,12 @@ export function ComposerHeaderStrips({
         />
       ) : null}
       {runtimePanel}
-      {/* The plan the agent presented, and the person's decision on it — above the questions:
+      {/* The plan the agent presented, and the person's decision on it — first:
           a presented plan has ended the agent's turn, so nothing moves until it is decided. */}
       <PlanStrip sessionId={activeSessionId} isFocused={isFocused} />
       {/* Work the agent stopped on that has no row of its own — Continue picks it up again. Below
           the plan, whose own row carries the plan's Continue. */}
       <ResumeStrip sessionId={activeSessionId} />
-      {/* Questions the agent queued for the person — above the work, because they are the one
-          thing here waiting on the person rather than on a process. */}
-      <QuestionsStrip sessionId={activeSessionId} isGenerating={isGenerating} />
       {/* The session's running background work (agent jobs, monitors and what they see, streams,
           promoted calls, servers started from the preview), pushed by the server; also hosts
           terminal liveness. */}

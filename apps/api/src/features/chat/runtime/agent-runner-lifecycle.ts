@@ -61,9 +61,7 @@ export function createRunnerLifecycle({ deps, state, wakeQueue }: RunnerLifecycl
     /** Reap all process-lifetime runtime state for a session being DELETED. */
     async forgetSession(userId: string, sessionId: string) {
       forgetSessionRuntimeState(state, sessionId)
-      // Its question rows went with the cascade; the open-question index must not outlive them.
-      deps.questions?.forgetSession(sessionId)
-      // …and so must what the person was told is waiting on them there.
+      // What the person was told is waiting on them there must not outlive the session.
       deps.notifications?.attention.forgetSession(sessionId)
       await wakeQueue.forget(userId, sessionId)
       await disposeRuntimeSession(sessionId)

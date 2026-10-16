@@ -72,7 +72,8 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     name: string,
     projectId: string,
   ): AgentSummary | undefined => {
-    const scoped = catalog.all.filter((agent) => agent.projectId === projectId)
+    // The person's record is managed here like a shipped agent's, though no agent list holds it.
+    const scoped = [...catalog.all, catalog.human].filter((agent) => agent.projectId === projectId)
     const exact = scoped.find((agent) => agent.record.id === name)
     if (exact) return exact
     const matches = scoped.filter((agent) => agent.record.handle === name)
@@ -115,6 +116,10 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
       const projectId = opts?.projectId ?? ''
       const catalog = await buildCatalog(userId, projectId)
       return catalog.all
+    },
+
+    async getHuman(userId, projectId) {
+      return (await buildCatalog(userId, projectId ?? '')).human.record
     },
 
     async listRegistrationDiagnostics(userId, projectId) {

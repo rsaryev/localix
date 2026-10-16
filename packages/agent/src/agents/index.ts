@@ -85,6 +85,7 @@ export type {
   AgentToolPresentation,
   ToolAction,
   ToolActionDescriptor,
+  SpeakerRole,
   ToolSessionContext,
   ToolCommandReplyOutcome,
   BaseAgentMessages,

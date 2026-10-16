@@ -9,12 +9,7 @@ import { toSessionSummary } from '../repository-mappers'
 import { findToolItemByCallId, toSourceRuntime } from './session-access'
 import type { HitlRegistry } from '../runtime/hitl-registry'
 import { deriveSessionTiming } from '../session-timing'
-import type {
-  SessionDetail,
-  SessionQuestion,
-  SessionSourceRuntime,
-  SessionWork,
-} from '../contracts'
+import type { SessionDetail, SessionSourceRuntime, SessionWork } from '../contracts'
 import type { ChatServiceDeps } from './context'
 import type { SessionPlan } from '../../plans/contracts'
 import type { ResumePoint } from '../../resume/contracts'
@@ -58,7 +53,6 @@ export interface SessionDetailContext {
     listQueued: (sessionId: string) => Promise<SessionDetail['queuedMessages']>
     listSessionAutoApprovedTools?: (sessionId: string) => string[]
     listWork: (userId: string, sessionId: string) => SessionWork[]
-    listQuestions?: (userId: string, sessionId: string) => SessionQuestion[]
     getTerminalWaits?: (userId: string, sessionId: string) => SessionDetail['terminalWaits']
   }
   /** Absent → no LSP server states are reported. */
@@ -245,7 +239,6 @@ export async function getSessionDetail(
     sessionUsage,
     participantUsage: summarizeParticipantUsage(messages.map((message) => message.payload)),
     work: runner.listWork(userId, id),
-    questions: runner.listQuestions?.(userId, id) ?? [],
     terminalWaits: runner.getTerminalWaits?.(userId, id) ?? [],
     loops: (() => {
       const engine = getLoopEngine()

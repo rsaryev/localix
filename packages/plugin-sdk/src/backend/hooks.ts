@@ -131,6 +131,21 @@ export interface HitlResolvedEvent {
 }
 
 /**
+ * Event handed to `onHumanMentioned` — fired when something in a chat now waits on the person: an
+ * agent's reply addressed `@human`, or a board card was assigned to them (observer-only). Nothing
+ * blocks on the hook.
+ */
+export interface HumanMentionedEvent {
+  sessionId: string
+  /** The reply that addressed the person, or the key of the notice that raised it. */
+  messageId: string
+  /** The asking agent's handle ('' when none). */
+  from: string
+  /** A notice-sized excerpt of what waits on them. */
+  text: string
+}
+
+/**
  * Optional lifecycle hooks a native module may export. All hooks below are wired:
  *
  * - `onSessionStart(ctx)` — once per session, when its first run starts.
@@ -149,6 +164,8 @@ export interface HitlResolvedEvent {
  * - `onHitlRequest(event)` / `onHitlResolved(event)` — when a run blocks on a human
  *   (confirm/ask/quiz) and when that request is answered or dismissed. Observer-only —
  *   hooks cannot veto or pre-answer.
+ * - `onHumanMentioned(event)` — when something waits on the person (an `@human` reply, a card
+ *   assigned to them), so an external channel can tell them. Observer-only.
  *
  * Every hook may be async. Each invocation is isolated per-plugin (a throwing hook is
  * logged and never breaks the turn) and capped at 5 seconds (timeout ⇒ treated as void).
@@ -173,6 +190,7 @@ export interface PluginHooks {
   onSubagentStop?: (event: SubagentStopEvent) => void | Promise<void>
   onHitlRequest?: (event: HitlRequestEvent) => void | Promise<void>
   onHitlResolved?: (event: HitlResolvedEvent) => void | Promise<void>
+  onHumanMentioned?: (event: HumanMentionedEvent) => void | Promise<void>
 }
 
 // ---------------------------------------------------------------------------

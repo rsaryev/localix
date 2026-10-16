@@ -1,4 +1,4 @@
-import { Play, RotateCcw, Undo2 } from 'lucide-react'
+import { Check, Play, RotateCcw, Undo2 } from 'lucide-react'
 
 import type { KanbanStatus, KanbanTask } from '../../shared/contracts'
 import { canTransition, USER_TARGET_STATUSES } from '../../shared/rules'
@@ -37,6 +37,8 @@ export function quickAction(
       return { to: 'ready', label: 'Set ready', Icon: Play }
     case 'blocked':
       return { to: 'ready', label: 'Re-queue', Icon: RotateCcw }
+    case 'review':
+      return { to: 'done', label: 'Approve', Icon: Check }
     case 'done':
       return { to: 'ready', label: 'Reopen', Icon: Undo2 }
     // Already ready or in progress — no quick action. A cancelled card is closed: the rules

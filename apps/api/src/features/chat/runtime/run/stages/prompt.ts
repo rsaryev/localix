@@ -28,7 +28,6 @@ import type { RunInputs } from './context'
 import type { RunFrame } from './frame'
 import type { RunToolset } from './tools'
 import type { ResolvedTurn } from './turn'
-import { speakerQuestions } from '../../question-view'
 import { approvedPlanForRun, planModeForRun } from '../../plan-view'
 import { installedAgentsPrompt } from '../../../../external-agents/installed'
 
@@ -61,6 +60,7 @@ export async function buildRunPrompt(
     triggeredSkills: inputs.triggeredSkills,
     contextFiles: inputs.contextFiles,
     projectStructure: inputs.projectStructure,
+    human: inputs.human,
     defaultCwd: inputs.defaultCwd,
     scratchDir: toolset.scratchDir,
     childRuntimeSessions: env.state.childRuntimeSessions,
@@ -73,12 +73,6 @@ export async function buildRunPrompt(
       userId,
       session.id,
       deps.readTerminalJob,
-    ),
-    // The questions THIS participant left open — a colleague's are not its to re-ask.
-    openQuestions: speakerQuestions(
-      deps.questions,
-      { userId, sessionId: session.id },
-      speakerAgentId,
     ),
     now: deps.now,
     historyMessages,

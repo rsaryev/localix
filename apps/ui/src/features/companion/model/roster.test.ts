@@ -60,7 +60,7 @@ describe('companion roster', () => {
   test('keeps every pending request, including multiple requests for the same conversation', () => {
     const first = request('approval-1', 'busy', 'interaction')
     const second = request('approval-2', 'busy', 'interaction')
-    const question = request('question', 'other', 'question')
+    const question = request('question', 'other', 'mention')
     const result = companionRoster(
       [session('busy', 20, { isRunning: true }), session('other', 10)],
       [question, first, second],
@@ -103,11 +103,11 @@ describe('companion roster', () => {
 
 describe('island requests', () => {
   const approval = request('approval', 'a', 'interaction')
-  const question = request('question', 'quick', 'question')
+  const question = request('question', 'quick', 'interaction')
   const plan = request('plan', 'b', 'plan')
   const requests = islandRequests([approval, plan, question])
 
-  test('answers inline only interactions and questions, in roster order', () => {
+  test('answers inline only interactions, in roster order', () => {
     expect(requests.map((item) => item.key)).toEqual(['approval', 'question'])
   })
 

@@ -8,11 +8,9 @@ import {
   hitlAttention,
   mentionAttention,
   planAttention,
-  questionAttention,
   type HitlLifecycleObserver,
   type MentionAttention,
   type PlanAttention,
-  type QuestionAttention,
 } from '../../attention/sources'
 import type { ProviderConditions } from '../conditions/providers'
 import type { NotificationJournal } from '../journal'
@@ -22,7 +20,6 @@ import { createOrderedLane, type LookupSession } from './facts'
 import { createPlanNotifications, type PlanNotifications } from './plans'
 import { createRunNotifications, type RunNotifications } from './runs'
 import { createWorkNotifications, type WorkNotifications } from './work'
-import type { QuestionRegistry } from '../../questions/registry'
 
 /**
  * THE SERVER'S AGENT-LIFECYCLE PRODUCERS, as one bag the composition root threads to the seams.
@@ -33,7 +30,7 @@ import type { QuestionRegistry } from '../../questions/registry'
  * One ordered lane is shared by all of them, so facts reach the journal in the order they happened
  * even when one needed an async session lookup first.
  *
- * What waits on the PERSON (`hitl`, `questions`, `mentions`, the plan's review in `plans`) is not
+ * What waits on the PERSON (`hitl`, `mentions`, the plan's review in `plans`) is not
  * written here directly: those members are attention sources, and their rows come from the one
  * mirror of the attention registry (`./attention.ts`).
  */
@@ -42,9 +39,8 @@ export interface AgentNotifications {
   hitl: HitlLifecycleObserver
   mentions: MentionAttention
   work: WorkNotifications
-  questions: QuestionAttention
   plans: PlanAttention & PlanNotifications
-  /** The one "waiting on you" registry the four sources above raise into. */
+  /** The one "waiting on you" registry the sources above raise into. */
   attention: AttentionRegistry
   /** Resolves once every fact handed over so far is queued in the journal. */
   idle(): Promise<void>
@@ -69,7 +65,6 @@ export function createAgentNotifications(deps: {
     hitl: hitlAttention(attention, deps.defaultUserId),
     mentions: mentionAttention(attention),
     work: createWorkNotifications({ ...shared, runningWork: deps.runningWork }),
-    questions: questionAttention(attention),
     plans: { ...planAttention(attention), ...createPlanNotifications(shared) },
     attention,
     idle: () => lane.idle(),
@@ -88,8 +83,6 @@ export async function startAgentNotifications(deps: {
   lookupSession: LookupSession
   defaultUserId: string
   work: Pick<WorkRegistry, 'list' | 'onEnded'>
-  /** Subscribed before its `hydrate`, like work; a hydrate raises nothing — those rows exist. */
-  questions?: Pick<QuestionRegistry, 'onAsked' | 'onResolved'>
   provider?: Pick<ProviderConditions, 'runEnded'>
   log?: (event: string, detail: Record<string, unknown>) => void
 }): Promise<AgentNotifications> {
@@ -98,8 +91,6 @@ export async function startAgentNotifications(deps: {
     runningWork: (...args) => deps.work.list(...args),
   })
   deps.work.onEnded((...args) => notifications.work.ended(...args))
-  deps.questions?.onAsked((record) => notifications.questions.asked(record))
-  deps.questions?.onResolved((record) => notifications.questions.closed(record))
   await settleStaleRequests(deps.db, deps.journal)
   return notifications
 }

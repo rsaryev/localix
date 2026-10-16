@@ -44,7 +44,6 @@ export interface SessionRuntime {
   /** request_secret only: sends the typed value over the isolated submit-secret channel. */
   submitSecretValue: (requestId: string, value: string) => void
   dismissInteraction: (requestId: string) => void
-  deferInteraction: (requestId: string) => void
   sendMessage: (
     prompt: string,
     opts: AgentOptions,
@@ -168,27 +167,6 @@ export function useSessionRuntime(sessionId: string | null): SessionRuntime {
     [clearResolvedInteraction, sessionId],
   )
 
-  const deferInteraction = useCallback(
-    (requestId: string) => {
-      setSubmittingInteractionId(requestId)
-      void backendClient
-        .interact(requestId, 'defer')
-        .then(() => clearResolvedInteraction(requestId))
-        .catch((err: unknown) => {
-          if (err instanceof ApiError && err.code === 'hitl_request_not_active') {
-            clearResolvedInteraction(requestId)
-            recoverInactiveHitlSession(sessionId)
-          } else {
-            toast.error('Could not save the question for later', {
-              description: errorMessage(err, '') || undefined,
-            })
-          }
-        })
-        .finally(() => setSubmittingInteractionId(null))
-    },
-    [clearResolvedInteraction, sessionId],
-  )
-
   const sendMessage = useCallback(
     async (
       prompt: string,
@@ -273,7 +251,6 @@ export function useSessionRuntime(sessionId: string | null): SessionRuntime {
       answerInteraction,
       submitSecretValue,
       dismissInteraction,
-      deferInteraction,
       sendMessage,
       stopGeneration,
       regenerate,
@@ -282,7 +259,6 @@ export function useSessionRuntime(sessionId: string | null): SessionRuntime {
       answerInteraction,
       submitSecretValue,
       dismissInteraction,
-      deferInteraction,
       pendingInteraction,
       regenerate,
       sendMessage,

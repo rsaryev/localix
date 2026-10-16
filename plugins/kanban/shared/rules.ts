@@ -19,6 +19,7 @@ export const USER_TARGET_STATUSES: readonly KanbanStatus[] = [
   'ready',
   'in_progress',
   'blocked',
+  'review',
   'done',
 ]
 
@@ -73,3 +74,61 @@ export function takeEligibility(
     }
   return { ok: true }
 }
+
+/** The speaker's place in its chat, as the host binds it. Missing means leader (older hosts). */
+export type BoardRole = 'leader' | 'member' | 'solo'
+export interface BoardSpeaker {
+  agentId: string
+  role?: BoardRole
+}
+
+/** The leader, a sole participant, or a call with no speaker sees and edits the whole board. */
+export const leadsBoard = (speaker: BoardSpeaker | undefined): boolean => speaker?.role !== 'member'
+
+/** The `update` fields a member may write on its own card; the rest is the leader's triage. */
+export const MEMBER_UPDATE_FIELDS: readonly string[] = ['task_id', 'items', 'priority']
+
+type Verdict = { ok: true } | { ok: false; why: string }
+
+/**
+ * What a group member may do on the board. A member works only the cards assigned to it; the
+ * board's shape — owners, epics, dependencies, wording, columns, deletion — is the leader's.
+ * `fields` are the input fields an `update` carries.
+ */
+export function memberMay(
+  action: string,
+  task: Pick<KanbanTask, 'id' | 'agentId' | 'assignee'> | null,
+  speaker: BoardSpeaker | undefined,
+  fields: readonly string[] = [],
+): Verdict {
+  if (leadsBoard(speaker)) return { ok: true }
+  if (action === 'delete' || action === 'reorder')
+    return { ok: false, why: `Only the conversation leader can ${action} cards; ask the leader.` }
+  if (!task) return { ok: true }
+  if (task.agentId !== speaker!.agentId)
+    return {
+      ok: false,
+      why: task.agentId
+        ? `${task.id} belongs to @${task.assignee ?? task.agentId}; ask the leader to reassign it.`
+        : `${task.id} is unassigned; ask the leader to assign it to you.`,
+    }
+  if (action !== 'update') return { ok: true }
+  const refused = fields.filter((field) => !MEMBER_UPDATE_FIELDS.includes(field))
+  if (refused.length)
+    return {
+      ok: false,
+      why: `A member may update only items and priority on its own card; ask the leader to change ${refused.join(', ')}.`,
+    }
+  return { ok: true }
+}
+
+/** The person's directory id: a card assigned to it waits on the human, not on an agent. */
+export const HUMAN_ASSIGNEE_ID = 'user'
+
+/** A card the person owns. */
+export const isHumanCard = (task: Pick<KanbanTask, 'agentId'>): boolean =>
+  task.agentId === HUMAN_ASSIGNEE_ID
+
+/** How a card's owner reads on the board: "you" for the person's own card. */
+export const assigneeLabel = (task: Pick<KanbanTask, 'agentId' | 'assignee'>): string | null =>
+  isHumanCard(task) ? 'you (@human)' : task.assignee ? `@${task.assignee}` : null

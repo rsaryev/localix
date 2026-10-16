@@ -40,6 +40,8 @@ export interface AgentsService {
   registrationPolicy: ReturnType<typeof createRegistrationPolicyService>
   /** Registry agents visible to one exact project or no-project scope, fused with enable-state. */
   listAgents(userId: string, opts?: { projectId?: string | null }): Promise<AgentSummary[]>
+  /** The person's record (`@human`) as this scope resolves it: project, installation, shipped. */
+  getHuman(userId: string, projectId?: string | null): Promise<AgentRecord>
   /** Agents admitted without approval on this host, from one current registry snapshot. */
   listInvocableAgents(
     userId: string,

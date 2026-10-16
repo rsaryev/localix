@@ -107,24 +107,15 @@ describe('a plan waiting for review, in the journal', () => {
     expect(rows.get('plan:R:p3')).toMatchObject({ settleReason: 'dismissed' })
   })
 
-  it('the boot sweep settles hitl rows and leaves plan and question rows open', async () => {
+  it('the boot sweep settles hitl rows and leaves plan rows open', async () => {
     const { db, journal, producers, inbox } = await setup()
     producers.plans.awaiting(U, plan(1), null)
     producers.hitl.raised({ userId: U, sessionId: 'R', requestId: 'r1', title: 'Pick' })
-    producers.questions.asked({
-      id: 'q',
-      userId: U,
-      sessionId: 'R',
-      displayId: 'q-1',
-      questions: [{ question: 'Which DB?' }],
-      askedAt: '2026-10-03T00:00:00.000Z',
-    } as never)
     await inbox()
     await settleStaleRequests(db, journal)
     const rows = await inbox()
     expect(rows.get('hitl:r1')).toMatchObject({ state: 'settled', settleReason: 'restart' })
     expect(rows.get('plan:R:p1')?.state).toBe('open')
-    expect(rows.get('question:q')?.state).toBe('open')
   })
 
   it('a completed plan is an informational row nobody has to act on', async () => {

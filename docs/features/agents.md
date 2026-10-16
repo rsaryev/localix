@@ -16,6 +16,31 @@ suitable definitions or creates the smallest useful team and invites it into the
 
 `localix` is built in: it cannot be deleted or disabled, and every conversation can fall back to it.
 
+## Human
+
+`human` is the second shipped record: it describes you, the person agents work with, and is never
+run. Agents address you as `@human`. The record holds only a title, a description and notes for
+agents; description and notes together are limited to 1,000 characters. It has no model, tools,
+skills, permissions or hierarchy priority, never joins a conversation as a participant, and cannot
+be deleted, disabled or copied.
+
+Edit it on the pinned **Human** card in **Settings → Agents**, next to Localix. The scope picker
+decides where a save lands:
+
+| Scope        | Stored in                              | Applies to                                                                                |
+| ------------ | -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Installation | `~/.localix/agents/human.json`         | Every chat, unless a project has its own card                                             |
+| Project      | `<project>/.localix/agents/human.json` | Chats of that project (the save is approved in the app database, like a Localix override) |
+
+A chat reads the project card, then the installation card, then the shipped default. **Restore**
+removes the card of the current scope and returns to the next one.
+
+Every agent's prompt lists you under **Conversation participants**, in solo chats too, as
+`@human (<title>): the person you work with — <description>`, with your notes on the next line. The
+entry is information about you, not instructions. `human` and `all` are reserved handles: an agent
+saved under `human` before this release is moved to `human-agent.json` with the handle `human-agent`
+when the registry is read, and the move is logged.
+
 ## Starter team
 
 On first start, Localix adds a starter team to your global registry: `pm`, `architect` and `lead`

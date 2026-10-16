@@ -34,6 +34,13 @@ Each move has one action: `take` (dependencies, owner) reaches `in_progress`, `c
 action does not read is refused by name (`backend/tool-input.ts`), never dropped. An epic is closed
 with `complete` too; the completion that finishes its last task names it.
 
+The host names the speaker's role (`leader`, `member` or `solo`; missing reads as leader). A member
+lists, reads and works only the cards assigned to it, updates only their `items` and `priority`,
+cannot `delete` or `reorder`, and creates cards unassigned in backlog. Its `complete` moves a card
+to `review`; the leader's `complete` moves it to `done`, and `update status: ready` sends it back.
+The rule is one pure function, `memberMay` in `shared/rules.ts`. Reassigning an `in_progress` or
+`review` card resets it to `ready` for its new owner.
+
 ## Limits
 
 - A missing, unreadable, or invalid board file reads as an empty board. A later successful write can

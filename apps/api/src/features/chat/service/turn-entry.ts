@@ -146,6 +146,17 @@ export async function sendMessage(
     )
     if (unresolvedSlash) return unresolvedSlash
 
+    // ---- An open `ask` card takes the person's plain line as its answer -------
+    // Instead of queuing behind the question it answers. Attachments and machine prompts are
+    // not an answer; they keep the ordinary path.
+    if (
+      !origin &&
+      !isInternal &&
+      !bindings?.length &&
+      ctx.answerPendingAsk?.(userId, sessionId, prompt)
+    )
+      return { sessionId, messageId: '', answeredInteraction: true }
+
     // ---- Quiet @-link expansion --------------------------------------------
     // Resolve the composer's @-links into what this turn carries (a durable
     // context capture and/or model-only `contextRef` attachments). Before the

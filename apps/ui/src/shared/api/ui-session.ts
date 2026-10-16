@@ -27,7 +27,6 @@ import type {
   SessionQueueItem,
   SessionSourceRuntime,
   SessionWork,
-  SessionQuestion,
   SessionTiming,
   UiPendingHitlInteraction,
 } from './contracts'
@@ -147,8 +146,6 @@ export interface UiSession {
   loops: SessionLoopSummary[]
   /** The session's running background work, monitors included — carried on list/detail load, live via session_work.updated. */
   work?: SessionWork[]
-  /** Questions the agent queued and nobody has answered yet — list/detail load, live via session_questions.updated. */
-  questions?: SessionQuestion[]
   /**
    * Every version of the conversation's plan, newest first, on the ROOT session — carried by its
    * detail (which replaces it on every read), live via `plan.updated`, and replaced by each

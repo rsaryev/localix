@@ -80,22 +80,20 @@ schema, and prompt sections gate on `hasTool(...)` (`system-prompt-*.ts`).
 a required `source`, and optional `to` and `deliveryKey`) is the only way a turn starts without a
 person typing. Each producer has its `source`:
 
-| Producer                                              | `source`     | Where                                             |
-| ----------------------------------------------------- | ------------ | ------------------------------------------------- |
-| A loop's trigger fire                                 | `loop`       | `bootstrap/loop-action.ts`                        |
-| A background job's exit notice                        | `bg-job`     | `runtime/exit-notices.ts`                         |
-| A monitor's event                                     | `bg-monitor` | `features/monitors/action.ts`                     |
-| A finished sub-agent's report                         | `subagent`   | `runtime/delegation-report.ts`                    |
-| A Claude Code `asyncRewake` hook                      | `hook`       | `features/cc-hooks`                               |
-| A reaction on a message                               | `reaction`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
-| The answer to a question queued with `ask wait:false` | `answer`     | `chat/service/question-facade.ts`                 |
-| The person's **Continue** on stopped work             | `resume`     | `features/resume/registry.ts`                     |
-| Plugin backends, plugin monitors, inbound webhooks    | `external`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
+| Producer                                           | `source`     | Where                                             |
+| -------------------------------------------------- | ------------ | ------------------------------------------------- |
+| A loop's trigger fire                              | `loop`       | `bootstrap/loop-action.ts`                        |
+| A background job's exit notice                     | `bg-job`     | `runtime/exit-notices.ts`                         |
+| A monitor's event                                  | `bg-monitor` | `features/monitors/action.ts`                     |
+| A finished sub-agent's report                      | `subagent`   | `runtime/delegation-report.ts`                    |
+| A Claude Code `asyncRewake` hook                   | `hook`       | `features/cc-hooks`                               |
+| A reaction on a message                            | `reaction`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
+| The person's **Continue** on stopped work          | `resume`     | `features/resume/registry.ts`                     |
+| Plugin backends, plugin monitors, inbound webhooks | `external`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
 
-A running run takes an `answer` at its next step like a typed interjection. A `resume` point is
-registered by a producer such as the approved plan, and the client offers one only while nobody
-works on the conversation. No plugin board wakes a session: the bundled `kanban` plugin records work
-and never starts a run.
+A `resume` point is registered by a producer such as the approved plan, and the client offers one
+only while nobody works on the conversation. No plugin board wakes a session: the bundled `kanban`
+plugin records work and never starts a run.
 
 Every wake enters the durable priority queue (`features/chat/runtime/wake-queue.ts`, admission in
 `wake-queue/wake.ts`). User messages are priority 0 and pre-empt wakes at 10, the top band coalesces

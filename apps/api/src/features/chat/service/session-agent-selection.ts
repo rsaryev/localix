@@ -1,4 +1,4 @@
-import { builtinAgentId, type AgentDefinition } from '@localixai/agent/agents'
+import { builtinAgentId, isHumanAgent, type AgentDefinition } from '@localixai/agent/agents'
 import { ApiError } from '../../../lib/errors'
 import { DEFAULT_AGENT_HANDLE } from '../../../db/participant'
 import { builtinAgentRecord } from '../../agents/builtin'
@@ -33,10 +33,16 @@ const resolveBuiltin: ResolveSessionAgent = async (_userId, selection) => {
   if (selection.agentId !== undefined) {
     const prefix = 'builtin:'
     if (!selection.agentId.startsWith(prefix)) return null
-    const record = builtinAgentRecord(selection.agentId.slice(prefix.length))
+    const record = runnableBuiltin(selection.agentId.slice(prefix.length))
     return record?.id === selection.agentId ? record : null
   }
-  return builtinAgentRecord(selection.handle)
+  return runnableBuiltin(selection.handle)
+}
+
+/** The person's record is shipped too, but it is never a session's participant. */
+const runnableBuiltin = (handle: string) => {
+  const record = builtinAgentRecord(handle)
+  return record && !isHumanAgent(record) ? record : null
 }
 
 /** Resolve before persistence; existing participants retain their historical snapshots on edit. */

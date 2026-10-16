@@ -9,6 +9,7 @@ import {
   marketplacesRoot,
   resolveEntrySource,
   sourceCloneUrl,
+  sourceMatchesRef,
   type MarketplaceSource,
 } from './marketplace-source'
 import { fetchNpmPlugin, type NpmEntrySource } from './marketplace-source-npm'
@@ -45,7 +46,7 @@ export {
 /**
  * Marketplace registry — the Claude Code `/plugin marketplace add` + `install
  * name@marketplace` flow. A marketplace is a git repo or local dir holding a
- * `.claude-plugin/marketplace.json` catalog. We materialize it under
+ * `.localix-plugin/marketplace.json` catalog. We materialize it under
  * `~/.localix/marketplaces/<name>/` and track the set in `known.json` (keyed by name,
  * mirroring CC's `known_marketplaces.json`: `{ source, installLocation }`).
  *
@@ -107,7 +108,7 @@ async function addMarketplaceUnlocked(
     await fs.cp(source.path, staging, { recursive: true })
   } else if (source.source === 'npm') {
     // Same staging helper as npm ENTRY sources — the tarball just needs a
-    // `.claude-plugin/marketplace.json` at its root. Failures are the npm path's
+    // `.localix-plugin/marketplace.json` at its root. Failures are the npm path's
     // typed ApiErrors (plugin_npm_fetch_failed / plugin_npm_no_version / …).
     await (deps.fetchNpm ?? fetchNpmPlugin)(source, staging)
   } else {
@@ -251,10 +252,17 @@ export async function resolveMarketplaceInstall(
   deps: MarketplaceRegistryDeps,
 ): Promise<ResolvedMarketplaceInstall> {
   const root = deps.root ?? marketplacesRoot()
+  const known = ref.marketplace === LOCALIX_MARKETPLACE ? {} : await readKnownMarketplaces(root)
+  // A marketplace is addressed by its catalog name, or by the source it was added from.
+  const byName = known[ref.marketplace]
+  const bySource = byName
+    ? undefined
+    : Object.entries(known).find(([, rec]) => sourceMatchesRef(rec.source, ref.marketplace))
+  if (bySource) ref = { ...ref, marketplace: bySource[0] }
   const marketplaceDir =
     ref.marketplace === LOCALIX_MARKETPLACE
       ? localixMarketplaceDir(deps)
-      : (await readKnownMarketplaces(root))[ref.marketplace]?.installLocation
+      : (byName ?? bySource?.[1])?.installLocation
   if (!marketplaceDir)
     throw new Error(
       `Unknown marketplace "${ref.marketplace}". Add it first: /plugin marketplace add <owner/repo>`,

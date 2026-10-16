@@ -29,12 +29,6 @@ export interface ChatMessageFacadeDeps extends Pick<
   turnEntryCtx: OperationContexts['turnEntryCtx']
   branchingCtx: OperationContexts['branchingCtx']
   wakes: OperationContexts['wakes']
-  /**
-   * The active branch moved (edit, rollback, switch, checkout): whatever it left behind is no
-   * longer the conversation. Told the moment the move STARTED, so what a run the move itself
-   * started has asked since is not mistaken for something left behind.
-   */
-  onBranchMoved?: (userId: string, sessionId: string, since: string) => Promise<void>
 }
 
 export function createChatMessageFacade({
@@ -45,18 +39,7 @@ export function createChatMessageFacade({
   turnEntryCtx,
   branchingCtx,
   wakes,
-  onBranchMoved,
 }: ChatMessageFacadeDeps) {
-  const branchMoved = async <T>(userId: string, sessionId: string, move: Promise<T>) => {
-    const since = now()
-    const result = await move
-    // Best-effort: the move happened; a stale open question is a cosmetic leftover, not a reason
-    // to fail it.
-    await onBranchMoved?.(userId, sessionId, since).catch((error: unknown) =>
-      console.warn('[chat] reconciling questions after a branch move failed', error),
-    )
-    return result
-  }
   return {
     /**
      * The user's own turn entry: the slash-command chain (control → plugin →
@@ -119,19 +102,18 @@ export function createChatMessageFacade({
       content: string,
       toolSurface?: ToolSurface,
     ): Promise<MessageMutationResponse> {
-      return branchMoved(
+      return branchingOps.editMessage(
+        branchingCtx,
         userId,
         sessionId,
-        branchingOps.editMessage(branchingCtx, userId, sessionId, messageId, content, toolSurface),
+        messageId,
+        content,
+        toolSurface,
       )
     },
 
     async rollback(userId: string, sessionId: string, messageId: string) {
-      return branchMoved(
-        userId,
-        sessionId,
-        branchingOps.rollback(branchingCtx, userId, sessionId, messageId),
-      )
+      return branchingOps.rollback(branchingCtx, userId, sessionId, messageId)
     },
 
     /** Toggle the person's own mark on a message. */
@@ -200,11 +182,7 @@ export function createChatMessageFacade({
     },
 
     async switchBranch(userId: string, sessionId: string, messageId: string, branchIndex: number) {
-      return branchMoved(
-        userId,
-        sessionId,
-        branchingOps.switchBranch(branchingCtx, userId, sessionId, messageId, branchIndex),
-      )
+      return branchingOps.switchBranch(branchingCtx, userId, sessionId, messageId, branchIndex)
     },
 
     /** Full message tree (all branches) + active path, for the branch-tree UI. */
@@ -226,11 +204,7 @@ export function createChatMessageFacade({
      * target, so listMessages returns that whole branch.
      */
     async checkoutBranch(userId: string, sessionId: string, messageId: string) {
-      return branchMoved(
-        userId,
-        sessionId,
-        branchingOps.checkoutBranch(branchingCtx, userId, sessionId, messageId),
-      )
+      return branchingOps.checkoutBranch(branchingCtx, userId, sessionId, messageId)
     },
   }
 }

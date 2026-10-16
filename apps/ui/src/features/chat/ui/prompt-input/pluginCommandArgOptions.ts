@@ -62,7 +62,9 @@ async function marketplaceOptions(): Promise<SlashArgOption[]> {
   return marketplaces.map((market) => ({
     value: market.name,
     label: market.name,
-    description: `${market.count} plugin${market.count === 1 ? '' : 's'}${market.builtin ? ' · built-in' : ''}`,
+    description: market.unsupported
+      ? 'Unsupported Claude Code marketplace'
+      : `${market.count} plugin${market.count === 1 ? '' : 's'}${market.builtin ? ' · built-in' : ''}`,
   }))
 }
 

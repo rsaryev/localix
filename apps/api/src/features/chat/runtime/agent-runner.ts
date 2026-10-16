@@ -28,8 +28,7 @@ registerContextToolClasses({
 })
 
 import type { RunnerDeps } from './agent-runner-types'
-import { createRuntimeState, type LiveItemResolver } from './agent-runner-state'
-import { sessionQuestions } from './question-view'
+import { createRuntimeState } from './agent-runner-state'
 import { createRunnerPublishing } from './agent-runner-publishing'
 import { createRunnerLifecycle } from './agent-runner-lifecycle'
 import { createRunnerQueue } from './agent-runner-queue'
@@ -160,15 +159,6 @@ export function createAgentRunner(deps: RunnerDeps) {
   const runner = {
     leadership,
     inviteAddressed,
-    /**
-     * Patch a tool item a LIVE run still writes (`run/live-item.ts`). False when no run holds it,
-     * and the caller writes the stored row — which no run will write again.
-     */
-    patchLiveToolItem: (toolCallId: string, patch: Parameters<LiveItemResolver>[0]): boolean =>
-      state.liveItemResolvers.get(toolCallId)?.(patch) ?? false,
-    /** A session's open queued questions, as the composer lists them. */
-    listQuestions: (userId: string, sessionId: string) =>
-      sessionQuestions(deps.questions, userId, sessionId),
     ...createRunnerStatus(state),
     ...createRunnerQueue({ state, wakeQueue, stopCtx }),
     ...createRunnerInteraction({ deps, repo, state }),

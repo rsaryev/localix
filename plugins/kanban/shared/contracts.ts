@@ -18,6 +18,7 @@ export const KANBAN_STATUSES = [
   'ready',
   'in_progress',
   'blocked',
+  'review',
   'done',
   'cancelled',
 ] as const

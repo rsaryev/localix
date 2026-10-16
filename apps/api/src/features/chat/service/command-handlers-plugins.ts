@@ -23,7 +23,7 @@ type PluginsCommandContext = Pick<
 const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin list',
   '/plugin create <what it should do>',
-  '/plugin install <name>@<marketplace> | <git-url> | <owner/repo> | </absolute/path>',
+  '/plugin install <name>@<marketplace> | <git-url> | <owner/repo> | </absolute/path> [--project]',
   '/plugin enable <name>',
   '/plugin disable <name>',
   '/plugin remove <name>',
@@ -97,21 +97,28 @@ export async function handlePluginsControlCommand(
   }
 
   if (sub === 'install') {
-    const source = tokens.slice(2).join(' ').trim()
+    // Global by default (~/.localix/plugins); `--project` targets this chat's project.
+    const args = tokens.slice(2)
+    const toProject = args.includes('--project')
+    const source = args
+      .filter((arg) => arg !== '--project')
+      .join(' ')
+      .trim()
     if (!source) {
       return directReply(
-        'Usage: `/plugin install <name>@<marketplace> | <git-url> | <owner/repo> | </absolute/path>`',
+        'Usage: `/plugin install <name>@<marketplace> | <git-url> | <owner/repo> | </absolute/path> [--project]`',
       )
     }
     try {
       const rec = await pluginService.install(userId, {
         source,
-        projectId: session.projectId ?? null,
+        projectId: toProject ? (session.projectId ?? null) : null,
         enable: true,
       })
       const note = rec.provides.hasNativeTools ? ' — it runs native in-process code' : ''
+      const where = rec.scope === 'project' ? 'this project' : 'all chats'
       return directReply(
-        `Installed \`${rec.name}\` v${rec.version} and enabled it${note}. Start a new turn to use it.`,
+        `Installed \`${rec.name}\` v${rec.version} for ${where} (\`${rec.dir}\`) and enabled it${note}. Start a new turn to use it.`,
       )
     } catch (err) {
       return directReply(`Install failed: ${errorMessage(err)}`)
@@ -184,7 +191,11 @@ export async function handlePluginsControlCommand(
     const lines = [
       `**${p.name}**${p.displayName && p.displayName !== p.name ? ` (${p.displayName})` : ''} v${p.version} — ${p.description || '(no description)'}`,
       `- **Enabled:** ${p.enabled ? 'yes' : 'no'} | **Origin:** ${pluginOriginLabel(p)} | **Source:** ${p.bundled ? 'bundled' : p.source}`,
-      ...(p.migratedFrom ? [`- **Migrated from:** ${p.migratedFrom}`] : []),
+      ...(p.importedFrom === 'claude-code'
+        ? [`- **Imported from Claude Code**${p.migratedFrom ? `: ${p.migratedFrom}` : ''}`]
+        : p.migratedFrom
+          ? [`- **Migrated from:** ${p.migratedFrom}`]
+          : []),
       `- **Validation:** ${errWarn}`,
       ...(chips.length ? [`- **Provides:** ${chips.join(' | ')}`] : []),
       ...(p.error ? [`- **Load error:** ${p.error}`] : []),

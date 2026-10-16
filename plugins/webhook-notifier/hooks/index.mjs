@@ -26,6 +26,7 @@ export const ALL_EVENTS = [
   'hitl_request',
   'hitl_resolved',
   'subagent_stop',
+  'human_mentioned',
 ]
 // Free-text fields are trimmed so a huge tool output can't balloon deliveries.
 const PAYLOAD_FIELD_CAP = 4000
@@ -131,6 +132,13 @@ export function register(ctx) {
       },
       onPostToolCall: (e) => {
         deliver('tool_call', e.sessionId, { toolName: e.toolName, content: trim(e.result.content) })
+      },
+      onHumanMentioned: (e) => {
+        deliver('human_mentioned', e.sessionId, {
+          messageId: e.messageId,
+          from: e.from,
+          text: trim(e.text),
+        })
       },
       onHitlRequest: (e) => {
         deliver('hitl_request', e.sessionId, {

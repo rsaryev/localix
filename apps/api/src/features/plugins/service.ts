@@ -53,7 +53,9 @@ import { normalizePluginSurfaces } from './contracts-base'
 import { resolvePluginConfig } from './config'
 import { confineToDir } from '../ext/fs-discovery'
 import { runArgOptionsScript, parseArgOptions } from './arg-options'
+import { isDefaultProject } from '../projects/default-project'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
+import { ClaudeCodeImportError, importClaudeCodePlugin } from './import-claude-code'
 import { createPluginInspections } from './inspection-snapshots'
 import type { PluginToolInspection } from './inspection-store'
 import { pluginTrustClass } from './enable'
@@ -109,9 +111,12 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   const invalidateInspection = (name?: string, projectId?: string) =>
     inspections.invalidate(name, projectId)
 
+  // The Default project's dir is the PARENT of per-chat sandboxes, never a session cwd, so
+  // it has no plugin root of its own: its chats see (and install into) the global root.
   const cwdFor = async (userId: string, projectId: string): Promise<string | null> => {
-    if (projectId && deps.resolveProjectCwd) return deps.resolveProjectCwd(userId, projectId)
-    return null
+    if (!projectId || !deps.resolveProjectCwd) return null
+    const dir = await deps.resolveProjectCwd(userId, projectId)
+    return dir && !isDefaultProject({ workingDir: dir }) ? dir : null
   }
 
   /** Resolve the scope cwd then build the fused discovery+state catalog for it. */
@@ -168,6 +173,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       author: plugin.manifest.author,
       homepage: plugin.manifest.homepage,
       migratedFrom: plugin.manifest.migratedFrom,
+      ...(plugin.manifest.origin ? { importedFrom: plugin.manifest.origin.format } : {}),
       surfaces: normalizePluginSurfaces(plugin.manifest.surfaces),
       projectId: plugin.projectId,
       scope: plugin.scope,
@@ -543,7 +549,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         throw new ApiError(
           400,
           'plugin_no_project_dir',
-          'Cannot resolve the project directory for a project-scoped install',
+          'This project has no folder of its own (chats without a project run in per-chat sandboxes). Install the plugin globally instead.',
         )
       }
       const installRoot = pluginInstallRoot(scope, cwd, home)
@@ -568,6 +574,15 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       // Validate the actual copied tree before it becomes discoverable. Marketplace
       // overlays belong to preparation too: their failures must preserve the live tree.
       const prepare = async (directory: string) => {
+        // A Claude Code plugin becomes a native one before anything reads it.
+        try {
+          const imported = await importClaudeCodePlugin(directory, { source, now })
+          if (imported) installNotes.push(...imported.notes.map((n) => `Claude Code import: ${n}`))
+        } catch (error) {
+          if (error instanceof ClaudeCodeImportError)
+            throw new ApiError(400, 'plugin_invalid', error.message)
+          throw error
+        }
         if (resolvedMarket) await applyEntryManifestOverrides(directory, resolvedMarket.entry)
         const candidate = await loadManifest(directory, scope, projectId)
         if (candidate.error) throw new ApiError(400, 'plugin_invalid', candidate.error)

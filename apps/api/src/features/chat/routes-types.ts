@@ -22,7 +22,6 @@ import type {
   QueueRemovalResult,
 } from './contracts'
 import type { ToolSurface } from '@localixai/agent/agents'
-import type { AskToolAnswer } from '../agent-core/tools/hitl/ask'
 import type {
   createSessionRequestSchema,
   importSessionRequestSchema,
@@ -211,14 +210,6 @@ export interface ChatRoutesService {
   stop(sessionId: string, callerUserId?: string): Promise<boolean>
   /** Stop one of the session's monitors. False when it is not the caller's or already ended. */
   stopSessionMonitor(userId: string, sessionId: string, monitorId: string): boolean
-  /** Answer / skip a queued question. 404 when it is not open, 409 when another tab won. */
-  answerQuestion(
-    userId: string,
-    sessionId: string,
-    questionId: string,
-    answers: AskToolAnswer[],
-  ): Promise<{ ok: true }>
-  skipQuestion(userId: string, sessionId: string, questionId: string): Promise<{ ok: true }>
   /** Unified tool interaction: kill, hitl respond/dismiss, or any custom action. */
   interact(
     toolCallId: string,

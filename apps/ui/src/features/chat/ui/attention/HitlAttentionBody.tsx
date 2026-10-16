@@ -110,9 +110,6 @@ export function HitlAttentionBody({
             onDismiss={(requestId) =>
               submit(requestId, () => backendClient.interact(requestId, 'dismiss'))
             }
-            onDefer={(requestId) =>
-              submit(requestId, () => backendClient.interact(requestId, 'defer'))
-            }
           />
         </Suspense>
       ) : (

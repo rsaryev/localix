@@ -129,6 +129,13 @@ export interface PluginAgentSummary {
   /** The name people and the model address it by, without `@`. */
   readonly handle: string
   readonly description?: string
+  /** Display title, when the entry has one (the person's record does). */
+  readonly label?: string
+  /**
+   * `human` for the one entry that is the person (`id: 'user'`, `handle: 'human'`, their record's
+   * label and description): a card can be theirs, but no agent runs it. Absent means an agent.
+   */
+  readonly kind?: 'agent' | 'human'
 }
 
 /**
@@ -145,6 +152,15 @@ export interface PluginAgentSummary {
  */
 export interface PluginAgentDirectory {
   list(userId: string, sessionId: string): Promise<readonly PluginAgentSummary[]>
+  /**
+   * Tell the person something now waits on them in this chat (a card assigned to `@human`), the
+   * same way an agent's `@human` mention does. Best-effort; absent on hosts that cannot.
+   */
+  notifyHuman?(
+    userId: string,
+    sessionId: string,
+    notice: { key: string; from?: string; text: string },
+  ): Promise<void>
 }
 
 /** Context handed to a plugin's native `register(ctx)` / hooks. */

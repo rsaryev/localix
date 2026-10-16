@@ -37,7 +37,7 @@ history**.
 | Top-level run completed                                                                        | Success                           | No                               |
 | Top-level run failed                                                                           | Error with applicable recovery    | Yes                              |
 | Human input required                                                                           | Warning, with **Respond**         | Yes                              |
-| A participant addressed you by name (`@user` in a group)                                       | Human input                       | Yes                              |
+| An agent addressed you (`@human`) or assigned you a board card                                 | Human input                       | Yes                              |
 | Sub-agent or job session completed, failed or was stopped                                      | Success, error or information     | Only a failure                   |
 | Background terminal exited                                                                     | Success for code zero, else error | Only a nonzero exit              |
 | A problem the app or a plugin found (a file that will not validate, a connection that is down) | One standing entry per subject    | Only when nothing could be shown |

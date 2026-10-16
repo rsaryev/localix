@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "localix",
+  "description": "Bundled Localix plugins — the reference set shipped with the app.",
+  "owner": {
+    "name": "Localix"
+  },
+  "renames": {
+    "docker": "devops",
+    "kubernetes": "devops",
+    "web": null,
+    "web-search": null
+  },
+  "plugins": [
+    {
+      "name": "api",
+      "source": "./api",
+      "description": "Build, save, import, parameterize, and send HTTP requests with vault-backed secret references.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "battleship",
+      "source": "./battleship",
+      "description": "Battleship against the agent, one game per chat: each side fires in turn, and the agent answers every shot with its own tool without ever seeing your fleet.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "checkers",
+      "source": "./checkers",
+      "description": "Checkers (Russian draughts) against the agent, one board per chat: the agent in that chat answers each move with its own tool, and the board goes when the chat does.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "chess",
+      "source": "./chess",
+      "description": "Chess against the agent, one board per chat: the agent in that chat answers each move with its own tool, and the board goes when the chat does.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "code-graph",
+      "source": "./code-graph",
+      "description": "A navigable map of the project's code: directories, files and symbols with their imports, calls and inheritance, built locally with tree-sitter and queryable by the agent.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "database",
+      "source": "./database",
+      "description": "Browse schemas, run queries, inspect data, and attach database context across supported engines.",
+      "version": "1.0.0",
+      "author": "Localix"
+    },
+    {
+      "name": "deliverable",
+      "source": "./deliverable",
+      "description": "Attach files named in a final response as inline media or downloadable deliverables.",
+      "version": "1.0.0",
+      "author": "Localix"
+    },
+    {
+      "name": "devops",
+      "source": "./devops",
+      "description": "Inspect local containers and Kubernetes resources through a shared operations workspace.",
+      "version": "1.0.0",
+      "author": "Localix"
+    },
+    {
+      "name": "documents",
+      "source": "./documents",
+      "description": "Read, create, inspect, and attach document, spreadsheet, presentation, PDF, and table content.",
+      "version": "1.0.0",
+      "author": "Localix"
+    },
+    {
+      "name": "game-2048",
+      "source": "./game-2048",
+      "description": "Play 2048 in a chat, or choose the agent to play the same board with its own tool.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "git-workspace",
+      "source": "./git-workspace",
+      "description": "A first-class Git workspace for changes, conflicts, history, branches, review context, and agent-assisted source-control workflows.",
+      "version": "0.1.0",
+      "author": "localix",
+      "homepage": "https://github.com/rsaryev/localix"
+    },
+    {
+      "name": "go",
+      "source": "./go",
+      "description": "Turn a free-form goal into a team: the agent plans tasks on the Kanban board, brings in the specialists it needs and coordinates them to the result.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "kanban",
+      "source": "./kanban",
+      "description": "A passive task board per chat: epics, tasks, dependencies, checklists, owners and blockers, kept by you and the agent in that chat. The board records work; it never starts it.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "learning",
+      "source": "./learning",
+      "description": "File-authored course bundles with Markdown lessons, independent multi-tab study, durable progress, and resource-based agent context.",
+      "version": "0.2.0",
+      "author": "Localix"
+    },
+    {
+      "name": "project-space",
+      "source": "./project-space",
+      "description": "One spatial board per project: notes, shapes, frames, sequence diagrams, code snippets and connectors beside live references to the project's files, folders, images and documents, kept in the project and edited by you and the agent, which can also move your camera to show you a part of it.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "reader",
+      "source": "./reader",
+      "description": "Focused local reader for explicitly opened EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with native agent context and links.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "resume",
+      "source": "./resume",
+      "description": "Structured resumes with a shared editor, revision-safe agent tools and section context.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "review",
+      "source": "./review",
+      "description": "Run a scoped diff review and file prioritized inline suggestions.",
+      "version": "1.3.0",
+      "author": "Localix"
+    },
+    {
+      "name": "template",
+      "source": "./template",
+      "description": "OS, CPU and memory history with process inspection and agent context.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "tic-tac-toe",
+      "source": "./tic-tac-toe",
+      "description": "Tic-tac-toe against the agent, one board per chat: the agent in that chat answers each move with its own tool, and the board goes when the chat does.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "trading",
+      "source": "./trading",
+      "description": "Read-only market research workspace for venues, charts, indicators, order books, and trades; no account or order path.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "webhook-notifier",
+      "source": "./webhook-notifier",
+      "description": "Send selected lifecycle events to a webhook with optional HMAC-SHA256 signing.",
+      "version": "1.0.0",
+      "author": "Localix"
+    }
+  ]
+}

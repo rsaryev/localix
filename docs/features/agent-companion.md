@@ -14,6 +14,9 @@ ready and stays above ordinary windows, with no title bar or tabs.
 | Fold                | Click outside, switch to another app or press Escape.                                                     |
 | Continue in the app | Choose **Open full conversation**.                                                                        |
 
+While a Localix workspace window is focused, hovering or clicking the folded notch does nothing and
+the click reaches the workspace below. **Cmd+Shift+J** and the menu-bar item still open the island.
+
 A preview closes shortly after the pointer leaves unless you started typing or a request is open.
 When the island folds, the keyboard returns to the app you were using. Another app may already own
 the shortcut; the menu-bar item always works.
@@ -50,8 +53,6 @@ motion keeps it still.
 
 - A new approval, question or secret request opens the island with its usual controls, and stays
   open when the pointer leaves.
-- **Later** (**Answer later** in the main app) brings back your draft and leaves a one-line link to
-  the waiting request.
 - **Next request** steps through several waiting requests. **Open chat** opens the conversation that
   asked.
 - Folding never answers, dismisses or snoozes a request. After you fold, the same request stays

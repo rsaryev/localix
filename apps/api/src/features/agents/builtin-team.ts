@@ -1,8 +1,12 @@
+import { HUMAN_HANDLE } from '@localixai/agent/agents'
 import type { AgentRecord } from './contracts'
 import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
 import { builtin } from './builtin-kit'
 
-/** Authored behavior for the sole shipped assistant; invocation and access live in Capabilities. */
+/**
+ * The shipped records: the one assistant, and the person (`@human`). Invocation and access live in
+ * Capabilities; the human has neither — it is described, never run.
+ */
 export const BUILTIN_TEAM: readonly AgentRecord[] = [
   builtin({
     handle: DEFAULT_AGENT_HANDLE,
@@ -26,5 +30,14 @@ export const BUILTIN_TEAM: readonly AgentRecord[] = [
     // duties are added to whichever agent that is (`# Collaboration`, `## Leadership`).
     instructions:
       'You are Localix Agent, a general-purpose assistant. Keep the user’s decisions with the user.',
+  }),
+  builtin({
+    kind: 'human',
+    handle: HUMAN_HANDLE,
+    label: 'Human',
+    // Empty: the prompt already introduces @human as the person you work with.
+    description: '',
+    instructions: '',
+    leadershipPriority: 0,
   }),
 ]

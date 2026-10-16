@@ -1,5 +1,5 @@
 import { ApiError } from '../../../lib/errors'
-import { agentRecordInputSchema } from '../../agents/contracts'
+import { agentHandleSchema } from '@localixai/agent/agents'
 import { TOOL } from '../../agent-core/tool-names'
 import type { MessageMutationResponse } from '../contracts'
 import type { SessionRecord } from '../repository'
@@ -24,8 +24,7 @@ export function agentCreateRequest(prompt: string): string | null {
   const request = match?.[1]?.trim()
   if (!request || /(^|\s)--\S/u.test(request)) return null
   const handle = request.replace(/^@/, '')
-  if (!/\s/u.test(request) && agentRecordInputSchema.shape.handle.safeParse(handle).success)
-    return null
+  if (!/\s/u.test(request) && agentHandleSchema.safeParse(handle).success) return null
   return request
 }
 

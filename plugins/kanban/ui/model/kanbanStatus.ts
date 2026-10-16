@@ -26,6 +26,7 @@ export const KANBAN_STATUS_LABEL: Record<KanbanStatus, string> = {
   ready: 'Ready',
   in_progress: 'In progress',
   blocked: 'Blocked',
+  review: 'Review',
   done: 'Done',
   cancelled: 'Cancelled',
 }
@@ -35,6 +36,7 @@ const STATUS_TONE: Record<KanbanStatus, WorkStatusTone> = {
   ready: 'queued',
   in_progress: 'running',
   blocked: 'error',
+  review: 'review',
   done: 'done',
   cancelled: 'idle',
 }

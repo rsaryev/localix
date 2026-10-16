@@ -4,7 +4,7 @@ import { CompletionKeyHint } from './CompletionKeyHint'
 import { CompletionMenu, type CompletionMenuItem } from './CompletionMenu'
 import { MatchedText } from '@localixai/kit/matched-text'
 import { Chip } from '@localixai/kit/chip'
-import { matchSlashCommand } from './slashCommandMatch'
+import { isFeaturedSlashCommand, matchSlashCommand } from './slashCommandMatch'
 
 export interface SlashCommand {
   id: string
@@ -31,6 +31,8 @@ export interface SlashCommand {
   args?: SlashArgSpec[]
   /** For a plugin command with DYNAMIC args — identity used to fetch their options. */
   argSource?: { plugin: string; command: string }
+  /** Shown first, under "Suggested" (a plugin command's manifest `featured`). */
+  featured?: boolean
 }
 
 interface SlashCommandMenuProps {
@@ -56,6 +58,7 @@ const CATEGORY_LABEL: Record<SlashCategoryId, string> = Object.fromEntries(
  * arrow-key nav always lines up with the visual order.
  */
 function groupLabelOf(cmd: SlashCommand): string {
+  if (isFeaturedSlashCommand(cmd)) return 'Suggested'
   if (cmd.kind === 'skill') return 'Skills'
   if (cmd.id.startsWith('plugin:')) return 'Plugins'
   if (cmd.category) return CATEGORY_LABEL[cmd.category]

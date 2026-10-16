@@ -13,14 +13,14 @@
  *   - a reply to a REPORT that addresses nobody ends with the person;
  *   - a PASS (`skip_answer`: named, asked nothing) routes nowhere, not even back.
  *
- * Addressing `@user` hands the floor back to the person as well. Every colleague hop counts
- * against `MAX_HANDOFF_CHAIN`.
+ * Addressing `@human` ends the chain: the floor is the person's and the chat waits, whoever else
+ * the reply names. Every colleague hop counts against `MAX_HANDOFF_CHAIN`.
  */
 import { createHash } from 'node:crypto'
 
 import { participantAgentId } from '../../../../db/participant'
 import type { StoredMessagePayload } from '../../../../db'
-import { mentionsUser } from '../../agent-mentions'
+import { mentionsHuman } from '../../agent-mentions'
 import { addressedHandles } from '../../conversation-addressing'
 import type { SessionRecord } from '../../repository'
 import { MAX_HANDOFF_CHAIN } from '../../turn-budget'
@@ -57,6 +57,7 @@ export function planHandoff(
   text: string,
   from: { requesters: readonly string[]; report: boolean },
 ): { reports: string[]; assignments: string[] } {
+  if (mentionsHuman(text)) return { reports: [], assignments: [] }
   const colleagues = session.agents.filter((member) => member.agentId !== speakerAgentId)
   const addressed = addressedHandles(
     text,
@@ -66,8 +67,7 @@ export function planHandoff(
     .filter((member) => from.requesters.includes(member.agentId))
     .map((member) => member.handle)
   if (addressed.length === 0) {
-    const reportBack = !from.report && !mentionsUser(text)
-    return { reports: reportBack ? requesterHandles : [], assignments: [] }
+    return { reports: from.report ? [] : requesterHandles, assignments: [] }
   }
   const isReport = (handle: string) => !from.report && requesterHandles.includes(handle)
   return {
@@ -87,8 +87,10 @@ export async function routeConversationReply(
   if (payload.passed) return
   try {
     const text = payload.isInternal ? '' : (payload.content ?? '')
-    // A lone agent hands the floor to nobody unless its reply tags someone to invite.
+    // A lone agent hands the floor to nobody unless its reply tags someone to invite; a reply to
+    // `@human` hands it to the person and invites nobody.
     if (params.session.agents.length <= 1 && !text.includes('@')) return
+    if (mentionsHuman(text)) return
     const current = await env.repo.getSession(params.userId, params.session.id)
     if (!current) return
     const session = await inviteAddressedAgents(

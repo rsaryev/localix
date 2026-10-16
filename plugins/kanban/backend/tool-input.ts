@@ -76,6 +76,7 @@ const MOVED_BY: Partial<Record<KanbanStatus, string>> = {
   in_progress: 'take (it checks dependencies and assigns you)',
   done: 'complete (it names the cards finishing releases)',
   blocked: 'block with note (the obstacle is what the column records)',
+  review: 'complete (a member’s complete sends its card to review)',
 }
 
 export function refuseOwnedMove(status: KanbanStatus | undefined): void {

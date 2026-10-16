@@ -144,8 +144,7 @@ export interface RuntimeState {
    * terminal status, or late details — and persists+publishes the result.
    *
    * Populated when a tool's outcome lands after its call returned: an item left
-   * `running` pending an async child (keyed by the child's `sourceToolCallId`),
-   * or a queued question answered while its run still goes. Consumed by
+   * `running` pending an async child (keyed by the child's `sourceToolCallId`). Consumed by
    * `resolveParentToolItem` when the child reaches a terminal state while the
    * parent run is still alive — avoids a write-ordering race with the run's
    * own `persistAndPublish` calls. Deregistered in the parent run's `finally`

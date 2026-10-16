@@ -57,6 +57,26 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
    * Purely informational (shown in Settings); set it when converting a foreign plugin.
    */
   migratedFrom: z.string().optional(),
+  /**
+   * Install-time import record. Set by the Claude Code importer (`import-claude-code.ts`)
+   * when a foreign plugin is converted into this native layout; absent for native plugins.
+   */
+  origin: z
+    .object({
+      format: z.literal('claude-code'),
+      source: z.string().optional(),
+      version: z.string().optional(),
+      importedAt: z.string().optional(),
+    })
+    .optional(),
+  /**
+   * Whether the default `commands/` / `agents/` directories are scanned in addition to
+   * the paths listed in `commands` / `agents` (default `true`, additive). `false` makes the
+   * listed paths the only source — how imported Claude Code plugins keep their REPLACE rule.
+   */
+  defaultDirs: z
+    .object({ commands: z.boolean().optional(), agents: z.boolean().optional() })
+    .optional(),
   /** Native JS/TS entrypoint(s) exporting AgentTools (and optional hooks). Defaults to ./tools if present. */
   tools: z.union([z.string(), z.array(z.string())]).optional(),
   /** Bundled skill directory/directories holding `<name>/SKILL.md`. Defaults to ./skills if present. */

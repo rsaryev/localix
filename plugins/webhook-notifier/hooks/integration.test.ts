@@ -97,6 +97,20 @@ describe('webhook-notifier plugin', () => {
     })
   })
 
+  it("delivers an agent's @human mention", async () => {
+    const hooks = await load()
+    await hooks.onHumanMentioned!({
+      sessionId: 's1',
+      messageId: 'm1',
+      from: 'lead',
+      text: '@human, ship it?',
+    })
+    await settle(() => calls.length >= 1)
+    const body = JSON.parse(calls[0].init.body)
+    expect(body.event).toBe('human_mentioned')
+    expect(body.payload).toEqual({ messageId: 'm1', from: 'lead', text: '@human, ship it?' })
+  })
+
   it('signs the body with HMAC-SHA256 when SECRET is set', async () => {
     const hooks = await load({ SECRET: 'topsecret' })
     await hooks.onHitlRequest!({

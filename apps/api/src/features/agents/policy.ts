@@ -8,13 +8,14 @@
  * leaf stays a leaf; the Vite config fails the dev server at the first `node:` import so the
  * lesson does not have to be relearned at render time.
  */
-import { builtinAgentId } from '@localixai/agent/agents'
+import { builtinAgentId, isHumanAgent } from '@localixai/agent/agents'
 import type { AgentRecord, AgentSummary } from './contracts'
 import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
 
 /** Registry ownership governs editing; it never grants execution authority. */
 export type AgentField =
   | 'id'
+  | 'kind'
   | 'name'
   | 'label'
   | 'description'
@@ -26,6 +27,7 @@ export type AgentField =
 
 export const FIELD_KEYS: Record<AgentField, readonly (keyof AgentRecord)[]> = {
   id: ['id'],
+  kind: ['kind'],
   name: ['handle'],
   label: ['label'],
   description: ['description'],
@@ -54,9 +56,19 @@ const EDITABLE: readonly AgentField[] = [
   'context',
 ]
 
+/** The person's record describes them and nothing else: no run settings, always present. */
+const HUMAN_POLICY: AgentPolicy = {
+  editable: ['label', 'description', 'prompt'],
+  disable: false,
+  delete: false,
+  duplicate: false,
+  capabilities: false,
+}
+
 export function agentPolicy(
   summary: Pick<AgentSummary, 'record' | 'builtin' | 'registration'>,
 ): AgentPolicy {
+  if (isHumanAgent(summary.record)) return HUMAN_POLICY
   return {
     editable: summary.registration ? [] : summary.builtin ? EDITABLE : ['name', ...EDITABLE],
     disable: summary.record.id !== builtinAgentId(DEFAULT_AGENT_HANDLE),
@@ -69,6 +81,7 @@ export function agentPolicy(
 
 export const FIELD_LABELS: Record<AgentField, string> = {
   id: 'identity',
+  kind: 'kind',
   name: 'handle',
   label: 'title',
   description: 'description',

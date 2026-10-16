@@ -4,6 +4,10 @@ Agents are persistent definitions in a registry. A participant is an agent added
 run is one piece of work. Creating a definition or inviting a participant does not start a model
 run. Give the participant a task with `@handle`, from your message or from a colleague's reply.
 
+You are described by the built-in `human` record, not by an agent: it is listed for every agent as
+`@human`, never runs and is not offered by `/agents` or the `agents` tool. The handles `human` and
+`all` are reserved. See [Human](agents.md#human).
+
 ## Create from a conversation
 
 Ask your assistant to create a specialist and bring it into the conversation. With the `agents` tool

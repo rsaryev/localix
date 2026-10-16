@@ -574,7 +574,6 @@ export interface AppDatabase {
   tool_usage: ToolUsageTable
   triggers: TriggersTable
   work_records: WorkRecordsTable
-  agent_questions: AgentQuestionsTable
   session_plans: SessionPlansTable
   comments: CommentsTable
   ref_sequence_counters: RefSequenceCountersTable
@@ -640,27 +639,6 @@ export interface WorkRecordsTable {
   last_event_at: Nullable<string>
   started_at: string
   ended_at: Nullable<string>
-}
-
-/**
- * A question the agent asked without waiting for the answer (`features/questions`). The row is
- * what lets the person answer it LATER — after the turn that asked has ended, or after a restart.
- */
-export interface AgentQuestionsTable {
-  id: string
-  user_id: string
-  session_id: string
-  /** The participant that asked; the answer wakes it. */
-  agent_id: string
-  /** The id the agent and the user see (`q-3`); unique and never reused per session. */
-  display_id: string
-  /** The `ask` call whose transcript item shows the question. */
-  tool_call_id: string
-  questions_json: string
-  status: 'pending' | 'answered' | 'skipped' | 'superseded'
-  answers_json: Nullable<string>
-  asked_at: string
-  resolved_at: Nullable<string>
 }
 
 /**

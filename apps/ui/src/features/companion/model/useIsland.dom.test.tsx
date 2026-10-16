@@ -81,7 +81,7 @@ test('a waiting question opens fully once, while manual folding remains respecte
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   let island!: ReturnType<typeof useIsland>
-  const question = { kind: 'question', key: 'waiting-question' } as never
+  const question = { kind: 'interaction', key: 'waiting-question' } as never
   function Host({ waiting }: { waiting: boolean }) {
     island = useIsland(waiting ? [question] : [])
     return null

@@ -6,6 +6,11 @@ import { join } from 'node:path'
 import { collectMarkdownFiles, parseCommandFile, parseAgentFile } from './discovery-cc-files'
 import { discoverPlugins, loadManifest } from './discovery'
 import { validateCompatibility } from './validate-compat'
+import {
+  CLAUDE_CODE_DIR,
+  CLAUDE_CODE_PLUGIN_MANIFEST,
+  importClaudeCodePlugin,
+} from './import-claude-code'
 
 /**
  * Nested-subdirectory namespacing for Claude Code `commands/`/`agents/` flat files:
@@ -110,8 +115,10 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
     )
     ccPlug = join(dir, 'replace-plugin-cc')
     await fs.cp(plug, ccPlug, { recursive: true })
-    await fs.mkdir(join(ccPlug, '.claude-plugin'), { recursive: true })
-    await fs.rename(join(ccPlug, 'plugin.json'), join(ccPlug, '.claude-plugin', 'plugin.json'))
+    await fs.mkdir(join(ccPlug, CLAUDE_CODE_DIR), { recursive: true })
+    await fs.rename(join(ccPlug, 'plugin.json'), join(ccPlug, CLAUDE_CODE_PLUGIN_MANIFEST))
+    // Runtime reads only the native manifest: the importer converts the Claude Code layout.
+    await importClaudeCodePlugin(ccPlug, { source: 'test' })
   })
 
   it('localix-origin plugin stays ADDITIVE (default dirs scanned alongside listed paths)', async () => {
@@ -121,21 +128,22 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
       expect.arrayContaining(['replace-plugin:alt-agent', 'replace-plugin:default-agent']),
     )
     expect(plugin.entrypoints.ccReplacedDefaults).toBeUndefined()
-    expect(plugin.ccOrigin).toBeUndefined()
+    expect(plugin.manifest.origin).toBeUndefined()
   })
 
-  it('CC-origin plugin gets REPLACE: listed commands/agents hide the default dirs', async () => {
+  it('imported Claude Code plugin keeps REPLACE: listed commands/agents hide the default dirs', async () => {
     const plugin = await loadManifest(ccPlug, 'global', '')
     expect(plugin.provides.commands).toEqual(['alt-cmd'])
     expect(plugin.provides.agents).toEqual(['replace-plugin:alt-agent'])
-    expect(plugin.ccOrigin).toBe(true)
+    expect(plugin.manifest.origin?.format).toBe('claude-code')
+    expect(plugin.manifest.defaultDirs).toEqual({ commands: false, agents: false })
     // Both hidden default dirs are recorded and surfaced as validate advisories.
     expect(plugin.entrypoints.ccReplacedDefaults?.sort()).toEqual(['agents', 'commands'])
     const { warnings } = validateCompatibility(plugin)
-    expect(warnings.join('\n')).toContain('REPLACE semantics')
+    expect(warnings.join('\n')).toContain('defaultDirs.commands = false')
   })
 
-  it('preserves CC origin across normal .localix discovery and rediscovery', async () => {
+  it('preserves the import origin across normal .localix discovery and rediscovery', async () => {
     const home = join(dir, 'restart-home')
     const installed = join(home, '.localix', 'plugins', 'replace-plugin')
     await fs.mkdir(join(home, '.localix', 'plugins'), { recursive: true })
@@ -144,7 +152,7 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
     for (let pass = 0; pass < 2; pass++) {
       const found = await discoverPlugins({ homeDir: home, cwd: null, includeBundled: false })
       const plugin = found.find((candidate) => candidate.manifest.name === 'replace-plugin')
-      expect(plugin?.ccOrigin).toBe(true)
+      expect(plugin?.manifest.origin?.format).toBe('claude-code')
       expect(plugin?.provides.commands).toEqual(['alt-cmd'])
       expect(plugin?.provides.agents).toEqual(['replace-plugin:alt-agent'])
     }

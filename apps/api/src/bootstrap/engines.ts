@@ -26,8 +26,6 @@ export interface EnginesPhaseInput
       | 'secretExposureShield'
       // A monitor is a trigger plus a work record: its `mon-N` comes from the one work namespace.
       | 'work'
-      // Its open-questions push and the consequence of each close are wired with the session services.
-      | 'questions'
       // A loop that keeps failing becomes a standing Event Center row.
       | 'notifications'
       // The attention registry and the plan's sources, wired with the session services.
@@ -56,7 +54,6 @@ export async function createEnginesPhase({
   secretsStore,
   secretExposureShield,
   work,
-  questions,
   notifications,
   agentNotifications,
 }: EnginesPhaseInput): Promise<EnginesPhase> {
@@ -66,7 +63,6 @@ export async function createEnginesPhase({
     chatService,
     lspManager,
     work,
-    questions,
     wakes,
     agentNotifications,
   })

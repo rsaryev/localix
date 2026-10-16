@@ -25,7 +25,7 @@ describe('validateMarketplace', () => {
   it('accepts the Claude Code shape (object author/owner + object git-subdir source)', () => {
     const { errors } = validateMarketplace({
       $schema: 'https://anthropic.com/claude-code/marketplace.schema.json',
-      name: 'claude-plugins-official',
+      name: 'official-plugins',
       owner: { name: 'Anthropic', email: 'support@anthropic.com' },
       plugins: [
         {
@@ -231,7 +231,7 @@ describe('buildMarketplaceManifest', () => {
 
 describe('bundled localix marketplace.json', () => {
   it('the committed catalog parses and validates clean', async () => {
-    const file = join(import.meta.dir, '../../../../../plugins/.claude-plugin/marketplace.json')
+    const file = join(import.meta.dir, '../../../../../plugins/.localix-plugin/marketplace.json')
     const raw = JSON.parse(await fs.readFile(file, 'utf8'))
     expect(raw.name).toBe('localix')
     const { errors, warnings } = validateMarketplace(raw)
@@ -240,7 +240,7 @@ describe('bundled localix marketplace.json', () => {
   })
 
   it('matches the bundled plugin names, sources, and public metadata exactly', async () => {
-    const file = join(import.meta.dir, '../../../../../plugins/.claude-plugin/marketplace.json')
+    const file = join(import.meta.dir, '../../../../../plugins/.localix-plugin/marketplace.json')
     const raw = JSON.parse(await fs.readFile(file, 'utf8')) as {
       plugins: {
         name: string
@@ -284,7 +284,7 @@ describe('bundled localix marketplace.json', () => {
   })
 
   it('preserves plugin-catalog-owned metadata', async () => {
-    const catalogDir = join(import.meta.dir, '../../../../../plugins/.claude-plugin')
+    const catalogDir = join(import.meta.dir, '../../../../../plugins/.localix-plugin')
     const raw = JSON.parse(await fs.readFile(join(catalogDir, 'marketplace.json'), 'utf8')) as {
       name: string
       description?: string

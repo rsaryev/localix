@@ -32,8 +32,7 @@ change.
 
 - **Plan** appends denials for calls classified as `files`, `host`, or `external`. This includes
   ordinary file edits, project/global memory writes, and external processes. Reads, previews, and
-  the conversation's own state — a board card, a game move, a queued question, a fork — stay
-  allowed.
+  the conversation's own state — a board card, a game move, a fork — stay allowed.
 - **Bypass** removes tool `ask` rules about call classes, such as `outside-workspace` and
   `dangerous`, leaving the other rules to decide. It turns questions about a named tool or command
   into `allow` at the same position, then appends a denial for catastrophic commands. Plugin, skill,

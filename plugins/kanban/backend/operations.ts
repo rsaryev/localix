@@ -165,11 +165,19 @@ export function updateTask(
   ) as TaskPatch
   // A card put back into `ready` without a stated reason has had its blocker dealt with.
   const clearsError = patch.status === 'ready' && patch.error === undefined
+  // A running card handed to someone else goes back to `ready`, or its new owner could never
+  // take it: `take` refuses a card that is already in progress.
+  const handedOver =
+    patch.status === undefined &&
+    opts.assignment !== undefined &&
+    opts.assignment.agentId !== current.agentId &&
+    (current.status === 'in_progress' || current.status === 'review')
   const task: KanbanTask = {
     ...current,
     ...defined,
     ...opts.assignment,
     ...(clearsError ? { error: null } : {}),
+    ...(handedOver ? { status: 'ready' as const, error: null } : {}),
     updatedAt: nextStamp(now, current.updatedAt),
   }
   const next = replace(board, task)

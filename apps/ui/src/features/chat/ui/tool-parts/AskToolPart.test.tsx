@@ -5,7 +5,6 @@ import type { AskToolDetails } from '@localixai/api/client'
 import { AskToolPart } from './AskToolPart'
 
 const input = {
-  wait: false,
   questions: [
     {
       id: 'db',
@@ -27,51 +26,21 @@ const item = (output: AskToolDetails): ToolCallItem =>
     output,
   }) as ToolCallItem
 
-/** A queued question's card says how it ended — the host rewrites it when it closes. */
-describe('a queued ask in the transcript', () => {
-  test('open: it says the agent is waiting for an answer, by the id the strip shows', () => {
-    const html = renderToStaticMarkup(
-      <AskToolPart item={item({ queued: { questionId: 'q-2', status: 'pending' } })} />,
-    )
-    expect(html).toContain('q-2 · waiting for your answer')
-  })
-
-  test('answered later: the answer, in the words the person saw, under its id', () => {
+describe('an ask in the transcript', () => {
+  test('answered: the answer, in the words the person saw', () => {
     const html = renderToStaticMarkup(
       <AskToolPart
         item={item({
-          queued: { questionId: 'q-2', status: 'answered' },
           answers: [{ id: 'db', question: 'Which database?', selectedOptions: ['pg'] }],
         })}
       />,
     )
-    expect(html).toContain('q-2 · Postgres')
+    expect(html).toContain('Postgres')
   })
 
-  test('skipped and superseded read as closed, not as answered', () => {
-    const skipped = renderToStaticMarkup(
-      <AskToolPart item={item({ queued: { questionId: 'q-2', status: 'skipped' } })} />,
-    )
-    expect(skipped).toContain('skipped — the agent decides')
-    const replaced = renderToStaticMarkup(
-      <AskToolPart item={item({ queued: { questionId: 'q-2', status: 'superseded' } })} />,
-    )
-    expect(replaced).toContain('asked again later')
-  })
-})
-
-/** `from` names an earlier question by id; the card still shows WHAT was asked. */
-describe('a re-asked question', () => {
-  test('its questions come from the details, since the call carried only an id', () => {
-    const html = renderToStaticMarkup(
-      <AskToolPart
-        item={{
-          ...item({ questions: input.questions, stillOpen: 'q-2' }),
-          input: { from: 'q-2', wait: false },
-        }}
-      />,
-    )
-    expect(html).toContain('Which database?')
-    expect(html).toContain('q-2 · already in the queue')
+  test('expired: it closes as unanswered, never as an error', () => {
+    const html = renderToStaticMarkup(<AskToolPart item={item({ expired: true })} />)
+    expect(html).toContain('No one answered in 5 minutes')
+    expect(html).not.toContain('An error occurred')
   })
 })

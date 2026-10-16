@@ -54,7 +54,11 @@ export function validatePlugin(
   }
 
   // API version compatibility. Missing → assume current (with a nudge); newer → block.
-  checkApiVersion('Plugin', PLUGIN_API_VERSION, plugin.manifest.apiVersion, errors, warnings)
+  // Authoring nudges (apiVersion/author/license/version) are for plugin AUTHORS; an imported
+  // Claude Code plugin was not written for this host, so its user gets no nudges they can't act on.
+  const imported = plugin.manifest.origin !== undefined
+  const nudges = imported ? [] : warnings
+  checkApiVersion('Plugin', PLUGIN_API_VERSION, plugin.manifest.apiVersion, errors, nudges)
 
   // Warn on missing discoverability metadata: descriptions explain purpose, Settings shows
   // authors, and explicit versions let users track updates.
@@ -62,16 +66,14 @@ export function validatePlugin(
     warnings.push('Manifest has no description — add one so users know what this plugin does.')
   }
   if (!plugin.error && !plugin.manifest.author) {
-    warnings.push(
-      'Manifest has no author — add "author" for plugin attribution (shown in Settings).',
-    )
+    nudges.push('Manifest has no author — add "author" for plugin attribution (shown in Settings).')
   }
   // `version` defaults to "0.0.0" if absent; nudge to set an explicit semver string.
   if (!plugin.error && plugin.rawManifest && !('version' in plugin.rawManifest)) {
-    warnings.push('Manifest has no version — add "version": "1.0.0" to help users track updates.')
+    nudges.push('Manifest has no version — add "version": "1.0.0" to help users track updates.')
   }
   if (!plugin.error && plugin.rawManifest && !('license' in plugin.rawManifest)) {
-    warnings.push(
+    nudges.push(
       'Manifest has no license — add an SPDX identifier and preserve separate upstream notices for adapted work.',
     )
   }

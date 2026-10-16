@@ -6,25 +6,6 @@ import { z } from 'zod'
 // wiring. Pure data, no behavior. (The file-browser RESPONSE shapes are the
 // contract half — they live in file-contracts.ts.)
 
-/** The person's answer to a question the agent queued (`ask` with `wait: false`). */
-// Bounded: a typed answer goes verbatim into the agent's next turn.
-export const answerQuestionRequestSchema = z.object({
-  questionId: z.string().min(1).max(32),
-  answers: z
-    .array(
-      z.object({
-        id: z.string().min(1).max(200),
-        question: z.string().max(2_000),
-        selectedOptions: z.array(z.string().max(2_000)).max(100),
-        customInput: z.string().max(8_000).optional(),
-      }),
-    )
-    .min(1)
-    .max(50),
-})
-
-export const skipQuestionRequestSchema = z.object({ questionId: z.string().min(1).max(32) })
-
 export const usageOverviewQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),

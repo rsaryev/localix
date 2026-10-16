@@ -41,8 +41,11 @@ describe('built-in instructions', () => {
     expect(persona).not.toContain('visualization assistant')
   })
 
-  test('only Localix is offered, and it leads by priority', () => {
-    expect(BUILTIN_AGENTS.map((agent) => agent.handle)).toEqual(['localix'])
+  test('Localix is the one shipped agent, and it leads by priority; the person ships beside it', () => {
+    expect(BUILTIN_AGENTS.map((agent) => [agent.handle, agent.kind ?? 'agent'])).toEqual([
+      ['localix', 'agent'],
+      ['human', 'human'],
+    ])
     expect(byName(DEFAULT_AGENT_HANDLE)?.leadershipPriority).toBe(2)
     expect(isBuiltinAgentName('backend')).toBe(false)
   })

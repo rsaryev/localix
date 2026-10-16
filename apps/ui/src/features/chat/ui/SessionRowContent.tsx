@@ -15,7 +15,7 @@ export const SESSION_ROW_HEIGHT_CLASS = 'h-[var(--session-row-height)]'
 
 /**
  * One status slot, in order of what the person should do about it: the conversation's most
- * pressing attention item (a blocked request, a plan, a mention, a queued question — ranked by
+ * pressing attention item (a blocked request, a plan, a mention — ranked by
  * the shared policy, drawn by the shared presentation), then unread, then pinned. The row reads
  * the same roster as the dialog and the dock, so it cannot show a different "waiting" than they do.
  */

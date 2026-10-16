@@ -53,7 +53,6 @@ export function uiSessionSummary(session: UiSession): UiSession {
     ...(session.lastMessage ? { lastMessage: session.lastMessage } : {}),
     loops: session.loops ?? [],
     work: session.work ?? [],
-    questions: session.questions ?? [],
     queuedMessages: session.queuedMessages ?? [],
     lspServers: [],
     lspDiagnostics: {},

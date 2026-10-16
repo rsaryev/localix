@@ -13,24 +13,24 @@ interface AskInteractionViewProps {
   keyboardActive?: boolean
   onSubmit: (requestId: string, answers: AskToolAnswer[]) => void
   onDismiss: (requestId: string) => void
-  onDefer?: (requestId: string) => void
   /** Which shell renders this view — the chat transcript, or the cross-session inbox dialog. */
   chrome?: HitlFrameChrome
 }
 
-/** A BLOCKING ask: a run is waiting on this decision, so it carries the deadline and Deny. */
+/**
+ * An ask: a run is waiting on this decision, so it carries the deadline and Deny. A line typed in
+ * the composer while it is open answers it too, as a custom answer (server `composer-ask-answer`).
+ */
 export function AskInteractionView({
   interaction,
   submitting,
   keyboardActive = true,
   onSubmit,
   onDismiss,
-  onDefer,
   chrome,
 }: AskInteractionViewProps) {
   const payload = interaction.request.payload
   const questions = payload.questions
-  const defer = payload.canDefer && onDefer ? () => onDefer(interaction.request.id) : undefined
   const frameRef = useRef<HTMLDivElement>(null)
   const form = useAskForm({
     compact: chrome === 'compact',
@@ -55,29 +55,15 @@ export function AskInteractionView({
       expiresAt={interaction.request.expiresAt}
       progress={questions.length > 1 ? `${form.activeIndex + 1}/${questions.length}` : undefined}
       onDismiss={() => {
-        if (submitting) return
-        if (defer) defer()
-        else onDismiss(interaction.request.id)
+        if (!submitting) onDismiss(interaction.request.id)
       }}
-      dismissLabel={defer ? 'Answer later' : 'Deny'}
+      dismissLabel="Deny"
       dismissDisabled={submitting}
       onSubmit={form.onEnter}
       keyboardActive={keyboardActive}
       rootRef={frameRef}
       footer={
         <>
-          {defer && (
-            <Button
-              variant="ghost"
-              size={chrome === 'compact' ? 'default' : 'lg'}
-              disabled={submitting}
-              onClick={defer}
-              className="text-text-soft hover:bg-surface-hover"
-            >
-              Answer later
-              <Kbd>esc</Kbd>
-            </Button>
-          )}
           <Button
             variant="ghost"
             size={chrome === 'compact' ? 'default' : 'lg'}
@@ -86,7 +72,7 @@ export function AskInteractionView({
             className="text-text-soft hover:bg-surface-hover"
           >
             Deny
-            {!defer && <Kbd>esc</Kbd>}
+            <Kbd>esc</Kbd>
           </Button>
           {questions.length > 1 && (
             <Button

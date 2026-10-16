@@ -43,6 +43,9 @@ export type {
  * The string builder below remains the compatibility surface for callers that need the
  * complete prompt.
  */
+/** The task board plugin's tool; its rules join the turn contract only when the run holds it. */
+const TASK_BOARD_TOOL = 'kanban'
+
 export function buildAgentSystemPromptParts(
   params: BuildAgentSystemPromptParams = {},
 ): BuiltAgentSystemPromptParts {
@@ -140,8 +143,11 @@ export function buildAgentSystemPromptParts(
       canChangeTopic: (params.canChangeTopic ?? false) && hasTool(TOOL.set_topic),
       canSkip: hasTool(TOOL.skip_answer),
       canInvite: !params.conversation.membershipClosed,
+      hasBoard: hasTool(TASK_BOARD_TOOL),
+      canFork: hasTool(TOOL.fork),
+      canAsk: hasTool(TOOL.ask),
     })
-    if (turnControl) sections.push(turnControl)
+    sections.push(turnControl)
   }
 
   // Gate on the `skill` tool actually being present: only the orchestrator has it.

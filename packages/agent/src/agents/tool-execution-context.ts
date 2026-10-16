@@ -10,6 +10,9 @@ import type { AgentToolResult } from './tool-result'
  * extension-owned renderers live OUTSIDE core without the host hardcoding their concepts —
  * the host wires it once; plugins consume it. Optional; tools tolerate its absence.
  */
+/** A speaker's place in its conversation, bound by the host. */
+export type SpeakerRole = 'leader' | 'member' | 'solo'
+
 export interface ToolSessionContext {
   /** The current session id. */
   id: string
@@ -27,6 +30,11 @@ export interface ToolSessionContext {
     agentId: string
     /** The name the conversation addresses it by, without `@`. */
     handle: string
+    /**
+     * Its place in the conversation: `solo` when it is the only participant, `leader` when it
+     * leads a group, `member` otherwise. Absent from older hosts; a tool treats that as leader.
+     */
+    role?: SpeakerRole
   }
   /**
    * Publish ONE plugin→UI command as a typed, REPLAYABLE session-stream frame. The host

@@ -12,12 +12,8 @@ import { optionValue } from './options'
  * THE FORM OF AN `ask` — stepping through its questions, choosing, typing a custom answer —
  * independent of what the answer is for.
  *
- * Two cards render it. A BLOCKING ask is a decision a run is waiting on (`AskInteractionView`:
- * Deny / Approve, a deadline). A QUEUED ask is a question the agent left for later
- * (`QueuedQuestionView`: Skip / Send, no deadline, closing it keeps it open). They differ in
- * their frame and their footer, never in how a question is answered, so the answering lives once,
- * here — two copies would let a fix to one (the number keys, a long label's wrapping) miss the
- * other.
+ * The card (`AskInteractionView`: Deny / Approve, a deadline) owns the frame and the footer; the
+ * answering lives here, apart from them.
  */
 export function useAskForm({
   questions,
@@ -82,8 +78,8 @@ export function useAskForm({
   // current question can be answered without reaching for the mouse. Ignored while
   // a custom answer is being typed (so digits land in the input) or with modifiers.
   useFocusEntry({
-    // Per instance: a blocking card and a queued question's card can be open at once, and only
-    // the one that owns the keyboard may take a digit.
+    // Per instance: two ask cards (the chat's and the inbox dialog's) can be mounted at once, and
+    // only the one that owns the keyboard may take a digit.
     id: `hitl-ask-options:${instanceId}`,
     kind: 'surface',
     active: keyboardActive,
@@ -123,7 +119,7 @@ export function useAskForm({
 
   // Enter steps through / submits the stepped form (see nextEnterAction). Always a handler, a
   // no-op while submitting: an absent one let the key fall through the focus stack to whatever
-  // card lay underneath — a queued question's Enter could approve the blocking card below it.
+  // card lay underneath — one card's Enter could approve another card below it.
   const onEnter = () => {
     if (submitting) return
     const action = nextEnterAction({ currentAnswered, canSubmit, isLast: isLastQuestion })

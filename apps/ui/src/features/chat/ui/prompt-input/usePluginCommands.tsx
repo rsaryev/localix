@@ -75,6 +75,7 @@ export function usePluginCommands(sessionId: string | null, enabled = true): Sla
           kind: 'builtin',
           prefix: `/${spec.fullName} `,
           args: mapArgs(spec.args),
+          ...(spec.featured ? { featured: true } : {}),
           ...(spec.args.some((a) => a.dynamic)
             ? { argSource: { plugin: spec.pluginName, command: spec.name } }
             : {}),

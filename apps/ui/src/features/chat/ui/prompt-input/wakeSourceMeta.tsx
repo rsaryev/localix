@@ -9,7 +9,6 @@ import {
   SmilePlus,
   Puzzle,
   MessageSquareShare,
-  MessageCircleQuestion,
   ClipboardPen,
   ClipboardCheck,
   Play,
@@ -43,8 +42,6 @@ const WAKE_SOURCE_ICON: Record<WakeSource, LucideIcon> = {
   reaction: SmilePlus,
   // The agent that assigned this child its task, speaking down the same edge a report goes up.
   delegator: MessageSquareShare,
-  // The person answered a question the agent queued — the glyph the questions strip wears.
-  answer: MessageCircleQuestion,
   // The person decided on a plan: comments sent back for a revision, or the go-ahead.
   'plan-review': ClipboardPen,
   'plan-approved': ClipboardCheck,

@@ -30,8 +30,25 @@ describe('plugin agent directory', () => {
     expect(await agents.list('owner', 'chat-1')).toEqual([
       { id: 'builtin:frontend', handle: 'frontend', description: 'Builds UI' },
       { id: 'builtin:qa', handle: 'qa' },
+      { id: 'user', handle: 'human', kind: 'human' },
     ])
     expect(asked).toEqual([['owner', 'PRJ-1']])
+  })
+
+  test("lists the person from their record in the session's scope", async () => {
+    const agents = createPluginAgentDirectory({
+      sessionProject: async () => 'PRJ-1',
+      listAgents: async () => AGENTS,
+      human: async (_userId, projectId) =>
+        projectId === 'PRJ-1' ? { label: 'Rus', description: 'Manual QA' } : undefined,
+    })
+    expect((await agents.list('owner', 'chat-1')).at(-1)).toEqual({
+      id: 'user',
+      handle: 'human',
+      kind: 'human',
+      label: 'Rus',
+      description: 'Manual QA',
+    })
   })
 
   // The session is resolved through an owner-scoped lookup BEFORE the registry is read: a
@@ -52,7 +69,7 @@ describe('plugin agent directory', () => {
         return AGENTS
       },
     })
-    expect(await agents.list('owner', 'chat-1')).toHaveLength(2)
+    expect(await agents.list('owner', 'chat-1')).toHaveLength(3)
     expect(asked).toEqual([null])
   })
 })

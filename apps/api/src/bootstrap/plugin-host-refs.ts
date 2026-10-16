@@ -30,6 +30,7 @@ export interface PluginHostRefs {
   chatService?: ReturnType<typeof createChatService>
   /** The agent registry's listing, for the plugin `agents` directory. */
   listAgents?: ReturnType<typeof createAgentsService>['listAgents']
+  getHuman?: ReturnType<typeof createAgentsService>['getHuman']
   /** The one wake delivery (`features/triggers/delivery`), bound once chat exists. */
   wakes?: WakeDelivery<WakeRequest>
   publishCapabilityChange?: () => void

@@ -45,7 +45,7 @@ export function createChatInteractionFacade({
       // HITL actions — toolCallId == requestId for ask/quiz tools. Capture the
       // request meta BEFORE respond/dismiss deletes it, so we can publish a
       // `hitl.resolved` event that clears the overlay on every client immediately.
-      if (action === 'respond' || action === 'dismiss' || action === 'defer') {
+      if (action === 'respond' || action === 'dismiss') {
         const meta = hitlRegistry.getRequestMeta(toolCallId)
         try {
           if (action === 'respond') {
@@ -60,8 +60,6 @@ export function createChatInteractionFacade({
             }
             const answers = (payload as Record<string, unknown> | undefined)?.answers
             hitlRegistry.respond(toolCallId, answers, callerUserId)
-          } else if (action === 'defer') {
-            hitlRegistry.defer(toolCallId, callerUserId)
           } else {
             hitlRegistry.dismiss(toolCallId, callerUserId)
           }
@@ -70,8 +68,7 @@ export function createChatInteractionFacade({
               type: 'hitl.resolved',
               sessionId: meta.sessionId,
               requestId: toolCallId,
-              reason:
-                action === 'respond' ? 'answered' : action === 'defer' ? 'deferred' : 'dismissed',
+              reason: action === 'respond' ? 'answered' : 'dismissed',
             })
           }
           return { ok: true }

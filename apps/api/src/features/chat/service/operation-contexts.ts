@@ -13,6 +13,7 @@ import type { FileOpsContext } from './file-ops'
 import { createSpawnForkSkill } from './fork-skill'
 import { createRunAgent } from './run-agent'
 import { createRunMacroCommand } from './run-macro'
+import { createAnswerPendingAsk } from './composer-ask-answer'
 import type { ChatServiceGraph } from './service-graph'
 import type { SessionCore } from './session-core'
 import type { SkillOpsContext } from './skill-ops'
@@ -225,6 +226,7 @@ export function createOperationContexts(
     runAgent,
     commandCtx,
     withSessionMutationLock,
+    answerPendingAsk: createAnswerPendingAsk(graph),
   }
 
   // The wakes chat raises itself (a reaction) go through the same one delivery as every other

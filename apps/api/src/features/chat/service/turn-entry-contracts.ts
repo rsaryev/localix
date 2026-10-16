@@ -8,6 +8,7 @@ import type { RunProfile } from '../../agent-core/run-shape'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import type { MessageBinding } from '../contracts'
 import type { RunInvocation } from '../runtime/execution-context'
+import type { AnswerPendingAsk } from './composer-ask-answer'
 
 export interface TurnEntryContext {
   deps: ChatServiceDeps
@@ -21,6 +22,8 @@ export interface TurnEntryContext {
   /** The slash-command chain's context (control / plugin / skill handlers). */
   commandCtx: CommandHandlerContext
   withSessionMutationLock: SessionMutationLock
+  /** A plain line typed while an `ask` card is open answers it (`composer-ask-answer.ts`). */
+  answerPendingAsk?: AnswerPendingAsk
 }
 
 /** Options of an engine-dispatched job/subagent turn. */

@@ -13,8 +13,15 @@ describe('Localix is the sole shipped preset', () => {
   test('the definition roster and hierarchy contain only Localix', () => {
     expect(BUILTIN_TEAM).toEqual(BUILTIN_AGENTS)
     expect(
-      BUILTIN_TEAM.map(({ handle, leadershipPriority }) => ({ handle, leadershipPriority })),
-    ).toEqual([{ handle: 'localix', leadershipPriority: 2 }])
+      BUILTIN_TEAM.map(({ handle, kind, leadershipPriority }) => ({
+        handle,
+        kind,
+        leadershipPriority,
+      })),
+    ).toEqual([
+      { handle: 'localix', kind: undefined, leadershipPriority: 2 },
+      { handle: 'human', kind: 'human', leadershipPriority: 0 },
+    ])
   })
   test('retired specialists have no shipped policy or reset target', () => {
     for (const handle of [

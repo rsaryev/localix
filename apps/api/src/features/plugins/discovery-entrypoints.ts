@@ -95,13 +95,6 @@ async function readMcpJson(file: string): Promise<Record<string, Record<string, 
 export async function resolveEntrypoints(
   dir: string,
   manifest: PluginManifest,
-  opts?: {
-    /**
-     * Compatibility mode for an explicitly supplied Claude-format plugin. Switches
-     * `commands`/`agents` to CC-spec REPLACE semantics (see below).
-     */
-    ccOrigin?: boolean
-  },
 ): Promise<ResolvedEntrypoints> {
   const diagnostics: PluginArtifactDiagnostic[] = []
   // ---- Native tool entrypoints --------------------------------------------
@@ -185,38 +178,32 @@ export async function resolveEntrypoints(
     mcpServers = await readMcpJson(join(dir, '.mcp.json'))
   }
 
-  // ---- Claude Code flat-file commands & agents -----------------------------
-  // SPLIT semantics (deliberate). For OUR plugins (localix-authored/bundled/installed)
-  // we keep ADDITIVE behavior: the default `commands/` / `agents/` dirs are always
-  // scanned alongside manifest entries — safer UX, never hides existing files, and
-  // bundled plugins may rely on it. For an explicitly supplied CC-ORIGIN plugin
-  // (`opts.ccOrigin`) we follow the CC spec:
-  // a manifest that lists `commands`/`agents` paths REPLACES the default dir scan
-  // (skills always ADD, for both origins). When REPLACE actually hides an existing
-  // default dir, the field is recorded in `ccReplacedDefaults` for a validate advisory.
-  const ccOrigin = opts?.ccOrigin === true
-  const mdOpts = ccOrigin ? { replaceDefault: true } : undefined
+  // ---- Markdown commands & agents ------------------------------------------
+  // ADDITIVE by default: the default `commands/` / `agents/` dirs are scanned alongside
+  // listed paths. `defaultDirs.<field>: false` makes the listed paths the only source
+  // (an imported Claude Code plugin records its REPLACE rule this way). Skills always add.
+  // When that hides an existing default dir, the field lands in `ccReplacedDefaults`.
+  const exclusive = (field: 'commands' | 'agents') => manifest.defaultDirs?.[field] === false
   const [commandFiles, agentFiles] = await Promise.all([
     collectMarkdownFiles(dir, manifest.commands, 'commands', {
-      ...mdOpts,
+      replaceDefault: exclusive('commands'),
       diagnostics,
       kind: 'command',
     }),
     collectMarkdownFiles(dir, manifest.agents, 'agents', {
-      ...mdOpts,
+      replaceDefault: exclusive('agents'),
       diagnostics,
       kind: 'agent',
     }),
   ])
   const ccReplacedDefaults: Array<'commands' | 'agents'> = []
-  if (ccOrigin) {
-    await Promise.all(
-      (['commands', 'agents'] as const).map(async (field) => {
-        const listsPaths = toAbsList(dir, asStringArray(manifest[field])).length > 0
-        if (listsPaths && (await pathExists(join(dir, field)))) ccReplacedDefaults.push(field)
-      }),
-    )
-  }
+  await Promise.all(
+    (['commands', 'agents'] as const).map(async (field) => {
+      if (!exclusive(field)) return
+      const listsPaths = toAbsList(dir, asStringArray(manifest[field])).length > 0
+      if (listsPaths && (await pathExists(join(dir, field)))) ccReplacedDefaults.push(field)
+    }),
+  )
 
   // ---- Claude Code declarative hooks ---------------------------------------
   // CC: the manifest `hooks` field is a path string, an array of paths, or an INLINE

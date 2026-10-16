@@ -104,6 +104,10 @@ export async function sendChatMessage(
     if (result.queued) {
       useChatStore.getState()._dropOptimistic(sessionId, { assistantId: optimisticIds.assistantId })
     }
+    // The line answered the open `ask` card instead of starting a turn: the card's answer is
+    // the transcript's record of it, so neither placeholder stays.
+    if (result.answeredInteraction)
+      useChatStore.getState()._dropOptimistic(sessionId, optimisticIds)
   } catch (err) {
     const store = useChatStore.getState()
     store._dropOptimistic(sessionId, optimisticIds)

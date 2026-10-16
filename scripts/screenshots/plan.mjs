@@ -4,39 +4,33 @@ export const capturePlan = {
     guide: 'features/agent-companion.md',
     purpose: 'An immediately focused quick request retains its draft through folding and HITL',
     scenario: 'island-quick-chat',
-    viewport: { width: 720, height: 440 },
   },
   'agents/island-expanded': {
     guide: 'features/agent-companion.md',
     purpose: 'The island opens a content-sized composer with a contextual shared-attention action',
     scenario: 'island-expanded',
-    viewport: { width: 720, height: 440 },
   },
   'agents/island-question': {
     guide: 'features/agent-companion.md',
     purpose: 'A queued question stays pending when folded and reopens inline without a dialog',
     scenario: 'island-question',
-    viewport: { width: 720, height: 440 },
   },
   'agents/island-quick-chat-light': {
     guide: 'features/agent-companion.md',
     purpose: 'The light island focuses a readable field and retains the draft across folding',
     scenario: 'island-quick-chat',
     theme: 'light',
-    viewport: { width: 720, height: 440 },
   },
   'agents/island-question-light': {
     guide: 'features/agent-companion.md',
     purpose: 'A light question focuses the answer field and remains pending across folding',
     scenario: 'island-question',
     theme: 'light',
-    viewport: { width: 720, height: 440 },
   },
   'agents/island-notch': {
     guide: 'features/agent-companion.md',
     purpose: 'On a notched display the toolbar clears the cutout and the island keeps one width',
     scenario: 'island-notch',
-    viewport: { width: 800, height: 440 },
     notch: { compactWidth: 200, compactHeight: 32, notchWidth: 200, notchHeight: 32 },
   },
   'agents/edit-command-tokens': {
@@ -235,16 +229,6 @@ export const capturePlan = {
     guide: 'getting-started/what-is-localix.md',
     purpose: 'A real passing fixture test run beside the seeded team conversation',
     scenario: 'editor',
-  },
-  'questions/queued': {
-    guide: 'features/hitl.md',
-    purpose: 'A durable question waiting above the composer',
-    scenario: 'queued',
-  },
-  'questions/waiting': {
-    guide: 'features/hitl.md',
-    purpose: 'The question opened for an explicit answer',
-    scenario: 'question',
   },
   'devops/containers': {
     guide: 'features/devops.md',

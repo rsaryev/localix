@@ -7,7 +7,6 @@ import { createChatRuntimeFacade } from './service/runtime-facade'
 import { createChatSessionFacade } from './service/session-facade'
 import { createChatMessageFacade } from './service/message-facade'
 import { createChatInteractionFacade } from './service/interaction-facade'
-import { createChatQuestionFacade } from './service/question-facade'
 import { createChatFileFacade } from './service/file-facade'
 import { createChatUsageFacade } from './service/usage-facade'
 import { createChatQueryFacade } from './service/query-facade'
@@ -39,15 +38,6 @@ export function createChatService(deps: ChatServiceDeps) {
     gatherSessionSkills,
   } = core
   const contexts = createOperationContexts(deps, graph, core)
-  // Built ahead of the facades that need it: a branch move reconciles the session's questions.
-  const questionFacade = createChatQuestionFacade({
-    ...graph,
-    db: deps.db,
-    questions: deps.questions,
-    requireSession,
-    wakes: contexts.wakes,
-  })
-
   return {
     streamRegistry,
 
@@ -92,12 +82,9 @@ export function createChatService(deps: ChatServiceDeps) {
       turnEntryCtx: contexts.turnEntryCtx,
       branchingCtx: contexts.branchingCtx,
       wakes: contexts.wakes,
-      onBranchMoved: questionFacade.reconcileQuestions,
     }),
 
     ...createChatInteractionFacade({ ...graph, deps }),
-
-    ...questionFacade,
 
     ...createChatInboundFacade({
       buildLanguageModel: contexts.buildLanguageModel,

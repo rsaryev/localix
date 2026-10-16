@@ -8,7 +8,6 @@ import type { AgentItemStatus } from '@localixai/agent/agents'
 import { recordToolUse } from '../../../tools/usage-recorder'
 import { finalizeTiming, setItemsPayload } from './turn-state'
 import { settleToolTiming } from './tool-timing'
-import { awaitsLateOutcome, holdLiveToolItem } from './live-item'
 import { persistToolResultMedia } from './tool-result-media'
 import {
   flushOrPublish,
@@ -283,9 +282,6 @@ export async function handleToolExecutionEnd(
     timing: { ...state.timing, tools: [...state.timing.tools] },
   }
   state.currentPayload = state.payload
-  // A queued question's outcome arrives after this call returned — let it reach the item this
-  // run still writes instead of racing it (`live-item.ts`).
-  if (awaitsLateOutcome(toolName, event.result.details)) holdLiveToolItem(ctx, event.toolCallId)
   await flushOrPublish(ctx, state.payload)
   publishSessionTiming(ctx)
   env.deps.hitlRegistry.clearRequest(event.toolCallId)

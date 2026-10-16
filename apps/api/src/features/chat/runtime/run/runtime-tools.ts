@@ -12,14 +12,13 @@ import type { SpawnTerminalJob } from '../../../agent-core/tools/terminal/termin
 import { announcePtyOpen } from './pty-announce'
 import { buildTerminalToolOptions } from './terminal-tool-options'
 import { buildJobsTool } from './jobs-tool'
-import { createAskQueuePort } from './ask-queue-port'
 import { buildOptionalToolPorts, explainEmptyPorts } from './runtime-tool-ports'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { createEnvironment } from '../../../agent-core/tools/environments'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunnerDeps } from '../agent-runner-types'
 import { buildFileToolPorts } from './file-tool-ports'
-import { parseLspServersConfig, configuredLspServer } from '../../../lsp'
+import { parseLspServersConfig, configuredLspServer, withoutBuiltinOverlap } from '../../../lsp'
 import type { RuntimeState } from '../agent-runner-state'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { createMemoryRepository } from '../../../memory/repository'
@@ -98,9 +97,11 @@ export function buildRunToolRegistry(
   // REPLACES the root's set; already-running servers are left untouched.
   if (deps.lspManager) {
     const pluginLspDefs = loadedPlugins.lspServers.flatMap(({ pluginName, servers }) =>
-      Object.entries(parseLspServersConfig(servers)).map(([id, cfg]) =>
-        configuredLspServer(`${pluginName}:${id}`, cfg),
-      ),
+      // A built-in server keeps the extensions it already owns (see lsp-plugin-notes.ts).
+      Object.entries(parseLspServersConfig(servers)).flatMap(([id, cfg]) => {
+        const own = withoutBuiltinOverlap(cfg)
+        return own ? [configuredLspServer(`${pluginName}:${id}`, own)] : []
+      }),
     )
     deps.lspManager.setPluginServers(defaultCwd, pluginLspDefs)
   }
@@ -198,17 +199,6 @@ export function buildRunToolRegistry(
               stop: (waitId) => deps.monitors!.stop(userId, session.id, waitId),
             }
           : undefined,
-      // `ask` with `wait: false`: the question is recorded for the person and owned by the
-      // participant taking this turn — its answer wakes that participant, not the room.
-      askQueue: deps.questions
-        ? createAskQueuePort({
-            questions: deps.questions,
-            repo: ctx.repo,
-            userId,
-            sessionId: session.id,
-            agentId: params.agentId,
-          })
-        : undefined,
       ...buildFileToolPorts({ deps, defaultCwd, userId }),
       fileMtimes: params.fileMtimes,
     },

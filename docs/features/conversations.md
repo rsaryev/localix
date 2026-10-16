@@ -47,7 +47,11 @@ order addressed, and reads that reply as its assignment.
   turn instead of queuing a second one.
 - A reply that addresses nobody returns the floor. After an assignment it goes back to the colleague
   who asked, as a report, so finished work always reaches the one who gave it. After a report, or on
-  a turn you started, it ends with you. `@user` hands the floor to you explicitly.
+  a turn you started, it ends with you.
+- `@human` addresses you, in a solo chat or a group. It ends the chain: no colleague named in the
+  same reply is queued, the chat waits for you, and you get a mention notification. At most one
+  mention waits per chat until you write there. Agents use the `ask` tool instead for a choice
+  between options. See [Human](agents.md#human).
 - Addressing the colleague who assigned the current turn is a report too, so two agents do not keep
   passing the floor back and forth.
 - A participant that is named but asked nothing, or whose part is already reported, passes with

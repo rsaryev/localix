@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "apiVersion": 1,
-  "defaultEnabled": true,
+  "defaultEnabled": false,
   "description": "Send selected lifecycle events to a webhook with optional HMAC-SHA256 signing.",
   "author": "Localix",
   "tools": "./hooks/index.mjs",
@@ -17,7 +17,7 @@
     },
     "EVENTS": {
       "type": "string",
-      "description": "Comma-separated filter: session_end, user_message, assistant_message, tool_call, hitl_request, hitl_resolved, subagent_stop. Empty = all.",
+      "description": "Comma-separated filter: session_end, user_message, assistant_message, tool_call, hitl_request, hitl_resolved, subagent_stop, human_mentioned. Empty = all.",
       "default": ""
     },
     "SECRET": {

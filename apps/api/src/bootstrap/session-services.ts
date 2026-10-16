@@ -1,7 +1,6 @@
 /**
  * The per-session support services that hang off chat: the push of a session's running work and
- * of its open queued questions, the consequence of each question's close, the conversation's
- * plan and its comments, and the inspector editor's LSP document service.
+ * the conversation's plan and its comments, and the inspector editor's LSP document service.
  *
  * Separate from `./engines` because they are not engines and nothing downstream receives them:
  * each is constructed for its side effect — a subscription, or a service landing in `serviceRefs`
@@ -12,7 +11,6 @@
 import { createLspDocumentService } from '../features/lsp'
 import type { createChatService } from '../features/chat/service'
 import { sessionWork } from '../features/chat/runtime/work-view'
-import { sessionQuestions } from '../features/chat/runtime/question-view'
 import { createCommentRepository } from '../features/comments/repository'
 import { createPlanRepository } from '../features/plans/repository'
 import { createPlanService } from '../features/plans/service'
@@ -26,7 +24,7 @@ import type { DomainServicesPhase } from './domain-services'
 
 export interface SessionServicesInput
   extends
-    Pick<InfraPhase, 'db' | 'serviceRefs' | 'work' | 'questions' | 'agentNotifications'>,
+    Pick<InfraPhase, 'db' | 'serviceRefs' | 'work' | 'agentNotifications'>,
     Pick<DomainServicesPhase, 'lspManager'> {
   chatService: ReturnType<typeof createChatService>
   wakes: TriggersWiringInput['wakes']
@@ -38,7 +36,6 @@ export function wireSessionServices({
   chatService,
   lspManager,
   work,
-  questions,
   wakes,
   agentNotifications,
 }: SessionServicesInput): void {
@@ -140,25 +137,6 @@ export function wireSessionServices({
       sessionId,
       work: sessionWork(work, userId, sessionId),
     }),
-  )
-
-  // The same push for the session's open queued questions — the composer's questions strip and
-  // the sidebar's mark — and the ONE consequence of every close: the card shows how it ended and
-  // the agent that asked hears of it (`chat/service/question-facade.ts`).
-  questions.onChange(({ userId, sessionId }) =>
-    chatService.streamRegistry.publish(userId, sessionId, {
-      type: 'session_questions.updated',
-      sessionId,
-      questions: sessionQuestions(questions, userId, sessionId),
-    }),
-  )
-  questions.onResolved(
-    (record) =>
-      void chatService
-        .settleQuestion(record)
-        .catch((error: unknown) =>
-          console.warn(`[questions] settling ${record.displayId} failed`, error),
-        ),
   )
 
   // Inspector-editor LSP document service: drives the language server from the

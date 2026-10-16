@@ -16,7 +16,11 @@ import type { SessionRecord } from '../../repository'
 import type { PersistedMessage, MessageTiming } from '../../contracts'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { CcHooksRuntime } from '../../../cc-hooks'
-import { runAssistantMessageHooks, runMemoryProviderRunEnd } from '../../../plugins/hooks'
+import {
+  runAssistantMessageHooks,
+  runHumanMentionedHooks,
+  runMemoryProviderRunEnd,
+} from '../../../plugins/hooks'
 import { finalizeTiming } from './turn-state'
 import { publishSessionTiming, type TurnEventContext } from './event-handlers'
 import type { ResolvedRunModel } from './model-selection'
@@ -165,6 +169,12 @@ export async function finalizeSuccessfulRun(args: {
     {
       streamRegistry: env.deps.streamRegistry,
       notifications: env.deps.notifications,
+      ...(ctx.pluginHooksForRun.length > 0
+        ? {
+            onHumanMentioned: (event) =>
+              void runHumanMentionedHooks(ctx.pluginHooksForRun, event, ctx.hookRunOptions),
+          }
+        : {}),
       persist: (payload) =>
         env.persistAndPublish(
           userId,

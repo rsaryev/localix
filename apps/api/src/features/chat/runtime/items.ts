@@ -197,8 +197,8 @@ export function createItemAccumulator(
       setTool(toolCallId, { name, details, status: 'running' })
     },
     /**
-     * A late outcome for an item this row still OWNS — one that lands after its call returned (a
-     * queued question answered while the run that asked is still going). False when the row no
+     * A late outcome for an item this row still OWNS — one that lands after its call returned (an async
+     * child's outcome while the run that started it is still going). False when the row no
      * longer holds the item (it was split off by `reset`), so the caller writes the stored row
      * instead: patching here would re-create the item inside the wrong row.
      */

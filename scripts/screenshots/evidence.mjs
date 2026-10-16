@@ -113,15 +113,6 @@ export async function verifyEvidence(page, scenario) {
     await expect(
       page.getByRole('heading', { name: 'Release summary', exact: true }),
     ).toBeInViewport({ ratio: 1 })
-  } else if (scenario === 'question') {
-    await expect(page.getByText('Shared workspace', { exact: true })).toBeVisible()
-    await expect(page.getByText('Team collaboration', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: /^Send answer/ })).toBeEnabled()
-  } else if (scenario === 'queued') {
-    await expect(page.getByRole('button', { name: 'Answer', exact: true })).toBeVisible()
-    await expect(
-      page.getByText('Which change should lead the release notes?', { exact: true }).first(),
-    ).toBeVisible()
   } else if (scenario === 'models') {
     await expect(page.getByText('API Key(s) (manual)', { exact: true })).toBeVisible()
     await expect(page.locator('input[type="password"]')).toHaveValue('')

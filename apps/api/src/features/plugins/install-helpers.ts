@@ -17,6 +17,11 @@ import {
 } from '../ext/install-tree'
 import { findManifestPath } from './discovery'
 import { PLUGIN_NAME_RE } from './contracts'
+import {
+  CLAUDE_CODE_MARKETPLACE_HINT,
+  isClaudeCodeMarketplace,
+  readClaudeCodePluginName,
+} from './import-claude-code'
 import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
 
 const execFileAsync = promisify(execFile)
@@ -110,7 +115,10 @@ export const copyPluginTree = copyExtensionTree
 
 async function manifestName(dir: string): Promise<string> {
   const manifestPath = (await findManifestPath(dir)) ?? join(dir, 'plugin.json')
-  const declared = await readManifestName(manifestPath)
+  // A Claude Code plugin is converted after staging; its name comes from its own manifest.
+  const declared = (await readManifestName(manifestPath)) ?? (await readClaudeCodePluginName(dir))
+  if (!declared && (await isClaudeCodeMarketplace(dir)))
+    throw new ApiError(400, 'plugin_claude_marketplace', CLAUDE_CODE_MARKETPLACE_HINT)
   if (declared) {
     if (!PLUGIN_NAME_RE.test(declared))
       throw new ApiError(400, 'plugin_invalid', 'Invalid plugin name in manifest')

@@ -161,6 +161,17 @@ above, or enable a plugin that contributes an `lspServers` map.
 
 Plugin servers use stdio and the project root.
 
+For each enabled plugin server, Localix reports two things in the plugin's validation notes
+(Settings → Plugins and `/plugin details`) and in the agent's `# Plugins` prompt section:
+
+- Extensions a built-in server already handles. The built-in server is kept for those files, and the
+  plugin server registers only the remaining extensions.
+- A `command` that is not on `PATH`, with an install hint for common servers, for example
+  `typescript-language-server not found on PATH — npm i -g typescript-language-server typescript`.
+
+There is no LSP tool. The agent receives diagnostics inside `edit` and `write` results, and the
+prompt line for a plugin server says so.
+
 Executable lookup uses the API host's login-shell environment. npm-based definitions first look for
 project and ancestor `node_modules/.bin` entries, then the API installation and `PATH`. A missing
 `PATH` executable is cached for 60 seconds, so installing it may require another attempt after that
@@ -192,8 +203,8 @@ buffer is what the server checks, and the editor reloads it from disk itself.
   extension is sent as `plaintext` even when its key selects a plugin server.
 - `startupTimeout`, `transport`, `settings`, `workspaceFolder`, `maxRestarts`, and `diagnostics` in
   a plugin declaration do not change runtime behavior.
-- Built-in definitions are considered before plugin definitions. A built-in match prevents a plugin
-  fallback even when the built-in executable is missing.
+- Built-in definitions win over plugin definitions. A plugin server never registers an extension a
+  built-in definition handles, even when the built-in executable is missing.
 - Rename and code actions apply text edits only. Workspace file-create, file-rename, and file-delete
   operations are skipped. Attached commands are not executed, even when an action also has edits.
 - Disk writes for a multi-file rename or code action are independent. A write failure does not undo

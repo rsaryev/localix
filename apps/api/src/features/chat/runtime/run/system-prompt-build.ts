@@ -29,8 +29,8 @@ import { sessionAgent } from '../message-envelope'
 import type { PersistedMessage } from '../../contracts'
 import { conversationPromptContext } from './system-prompt-conversation'
 import type { BackgroundJobSnapshot } from '../../../agent-core/system-prompt-sections'
-import type { OpenQuestionsState } from '../../../agent-core/tools/hitl/ask-queue'
 import type { ApprovedPlanPrompt } from '../../../agent-core/system-prompt-plan-sections'
+import type { HumanProfile } from '../../../agent-core/system-prompt-conversation-section'
 import type { McpInventoryEntry } from './mcp-tools'
 import type { RunSessionSnapshotRow } from './session-snapshot'
 
@@ -70,8 +70,6 @@ export interface BuildRunSystemPromptOptions {
   historyMessages?: readonly PersistedMessage[]
   /** Fresh snapshot of this session's live background jobs (re-read each turn). */
   backgroundJobs?: BackgroundJobSnapshot[]
-  /** The speaker's still-unanswered queued questions (re-read each turn). */
-  openQuestions?: OpenQuestionsState
   /** The plan the person approved for this conversation (`chat/runtime/plan-view.ts`). */
   approvedPlan?: ApprovedPlanPrompt
   /** Set when the run was admitted in plan mode — gates `# Plan mode`, naming the draft file. */
@@ -85,6 +83,8 @@ export interface BuildRunSystemPromptOptions {
     canJoinConversation: boolean
   }[]
   now?: () => string
+  /** The person's record, listed as `@human` in the volatile roster. */
+  human?: HumanProfile
 }
 
 export interface BuiltRunSystemPrompt {
@@ -174,7 +174,12 @@ export async function buildRunSystemPrompt(
   const priorities = new Map(
     (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent.leadershipPriority ?? 0]),
   )
-  const conversation = conversationPromptContext(session, speakerRoute.agentId, priorities)
+  const conversation = conversationPromptContext(
+    session,
+    speakerRoute.agentId,
+    priorities,
+    options.human,
+  )
   // A session with no participant has nobody to tell — and `sessionAgent` refuses to guess one.
   const reactions = session.agents?.length
     ? buildReactionContext(options.historyMessages ?? [], speaker)
@@ -206,7 +211,6 @@ export async function buildRunSystemPrompt(
     deliveryContext: channelOrigin ? { channel: channelOrigin } : undefined,
     loopContext,
     backgroundJobs: options.backgroundJobs,
-    openQuestions: options.openQuestions,
     approvedPlan: options.approvedPlan,
     planMode: options.planMode,
     now,

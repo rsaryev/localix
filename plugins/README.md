@@ -24,14 +24,14 @@ details, use the [plugin authoring guide](../docs/extending/plugins.md).
 
 ## Workflow and integration plugins
 
-| Plugin                                | Product surface                                        |
-| ------------------------------------- | ------------------------------------------------------ |
-| [API Client](api/)                    | HTTP requests, collections, and environments.          |
-| [Deliverables](deliverable/)          | Attach supported files named in final responses.       |
-| [Git](git-workspace/)                 | Source control, diffs, branches, and forge operations. |
-| [Kanban](kanban/)                     | A passive task board per chat.                         |
-| [Code Review](review/)                | An explicit, scoped review command.                    |
-| [Webhook Notifier](webhook-notifier/) | Lifecycle-event POSTs with optional HMAC signing.      |
+| Plugin                                | Product surface                                                                                          |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [API Client](api/)                    | HTTP requests, collections, and environments.                                                            |
+| [Deliverables](deliverable/)          | Attach supported files named in final responses.                                                         |
+| [Git](git-workspace/)                 | Source control, diffs, branches, and forge operations.                                                   |
+| [Kanban](kanban/)                     | A passive task board per chat.                                                                           |
+| [Code Review](review/)                | An explicit, scoped review command.                                                                      |
+| [Webhook Notifier](webhook-notifier/) | Lifecycle-event POSTs with optional HMAC signing. Off by default; enable it after setting `WEBHOOK_URL`. |
 
 ## Games
 
@@ -89,16 +89,24 @@ before enabling code you do not trust.
 Copy a plugin directory into the global or project install root, or use the chat control command:
 
 ```text
-/plugin install <owner/repo | git-url | local-path | name@marketplace>
+/plugin install <owner/repo | git-url | local-path | name@marketplace> [--project]
 ```
+
+Installs go to `~/.localix/plugins` (every chat) by default. `--project` installs into the current
+chat's project folder; a chat in the Default project has no folder of its own, so it installs
+globally. `name@owner/repo` also finds a marketplace by the source it was added from.
 
 Related operations include list, enable, disable, update, remove, details, validate, init, and
 marketplace management. `/plugin reload` refreshes dropped-in folders without restarting the
 application.
 
-Marketplace and compatibility catalogs can use `.claude-plugin/marketplace.json`; that path is a
-supported import contract, not the runtime install root. The authoring guide documents the exact
-accepted manifest locations and token aliases.
+The bundled catalog is `plugins/.localix-plugin/marketplace.json`, generated from the plugin folders
+by `bun run apps/api/scripts/generate-bundled-marketplace.ts` (catalog-level fields live in
+`.localix-plugin/marketplace.metadata.json`). Do not edit the catalog by hand. Marketplaces must
+carry `.localix-plugin/marketplace.json`.
+
+A single Claude Code plugin installs through the importer, which converts it into a native
+`plugin.json`; see [Claude Code plugins](../docs/extending/claude-code-plugins.md).
 
 ## Dependencies
 

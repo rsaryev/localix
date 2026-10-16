@@ -189,4 +189,19 @@ export const messagesApi = {
       }),
     )
   },
+
+  /** Tick or clear one box of a reply's checklist; the stored marks arrive as the updated message. */
+  async checkMessageTask(
+    sessionId: string,
+    messageId: string,
+    key: string,
+    checked: boolean,
+  ): Promise<{ ok: true; checked: boolean }> {
+    return unwrap(
+      await client.rpc.sessions[':id'].messages[':messageId'].tasks.$post({
+        param: { id: sessionId, messageId },
+        json: { key, checked },
+      }),
+    )
+  },
 }

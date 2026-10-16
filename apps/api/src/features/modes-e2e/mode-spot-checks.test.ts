@@ -32,7 +32,6 @@ const D = 'deny' as const
 
 const ROWS: Row[] = [
   ['ask', { questions: [{ question: 'Which?' }] }, [A, A, A, D]],
-  ['ask', { questions: [{ question: 'Which?' }], wait: false }, [A, A, A, D]],
   ['bash', { command: 'git status' }, [A, A, A, A]],
   ['bash', { command: 'npm install' }, [A, D, A, A]],
   ['bash', { command: 'git push --force origin main' }, [Q, D, A, A]],

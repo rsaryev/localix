@@ -47,20 +47,19 @@ describe('the one ranking every channel shares', () => {
   test('never the chat on screen, never a snoozed item, never a kind that does not interrupt', () => {
     const here = item({ kind: 'interaction', sessionId: 'open' })
     const snoozed = item({ kind: 'plan', sessionId: 'b' })
-    const question = item({ kind: 'question', sessionId: 'c' })
     const mention = item({ kind: 'mention', sessionId: 'd' })
-    expect(
-      dialogAttentionItem([here, snoozed, question, mention], 'open', new Set([snoozed.key])),
-    ).toBe(mention)
-    expect(dialogAttentionItem([here, question], 'open', none)).toBeNull()
+    expect(dialogAttentionItem([here, snoozed, mention], 'open', new Set([snoozed.key]))).toBe(
+      mention,
+    )
+    expect(dialogAttentionItem([here], 'open', none)).toBeNull()
   })
 
-  test('the sidebar row shows its best item; questions rank below everything else', () => {
-    const question = item({ kind: 'question', sessionId: 's', at: '2026-10-03T12:00:00.000Z' })
+  test('the sidebar row shows its best item; mentions rank below plans', () => {
+    const mention = item({ kind: 'mention', sessionId: 's', at: '2026-10-03T12:00:00.000Z' })
     const plan = item({ kind: 'plan', sessionId: 's', at: '2026-10-03T08:00:00.000Z' })
-    const items = [question, plan]
+    const items = [mention, plan]
     expect(topAttentionItem(items, 's')).toBe(plan)
-    expect(attentionBySession(items).get('s')).toEqual([plan, question])
+    expect(attentionBySession(items).get('s')).toEqual([plan, mention])
     // Memoized on the roster: every row reading it shares one grouping and stable arrays.
     expect(attentionBySession(items)).toBe(attentionBySession(items))
   })
@@ -78,7 +77,6 @@ describe('the one ranking every channel shares', () => {
         item({ kind: 'interaction', sessionId: 'a' }),
         item({ kind: 'mention', sessionId: 'a' }),
         item({ kind: 'plan', sessionId: 'b' }),
-        item({ kind: 'question', sessionId: 'c' }),
       ]),
     ).toBe(2)
   })

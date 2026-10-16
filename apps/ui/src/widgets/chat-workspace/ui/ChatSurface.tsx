@@ -7,7 +7,6 @@ import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { PulsingDot } from '@localixai/kit/pulsing-dot'
 import { useSessionRuntime, type AgentOptions } from '@/features/chat/model/agent-runtime'
-import { useQuestionUiStore } from '@/features/chat/model/questionUi'
 import { logCurrentChatMessages, useSessionById, useChatStore } from '@/features/chat/model/store'
 import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
 import { useJobTerminal } from '@/features/chat/model/useJobTerminal'
@@ -104,8 +103,6 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
   // De-globalized run flag: this session's own `isRunning`.
   const isGenerating = activeSession?.isRunning ?? false
   const agentRuntime = useSessionRuntime(sessionId)
-  const openQuestionId = useQuestionUiStore((state) => sessionId && state.openBySession[sessionId])
-  const openQuestion = activeSession?.questions?.find((question) => question.id === openQuestionId)
   const lastLoggedSessionRef = useRef<string | null>(null)
   const { composerRef, composerHeight } = useComposerHeight()
   // Seeded from the persisted draft: a reload or relaunch reopens the half-typed message.
@@ -540,21 +537,17 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
                 />
               </>
             }
-            hasInteraction={Boolean(openQuestion || agentRuntime.pendingInteraction)}
+            hasInteraction={Boolean(agentRuntime.pendingInteraction)}
             interactionOverlay={
-              openQuestion || agentRuntime.pendingInteraction ? (
+              agentRuntime.pendingInteraction ? (
                 <Suspense fallback={<LoadingHint className="min-h-14 text-xs" />}>
                   <LazyChatInteractionOverlay
                     interaction={agentRuntime.pendingInteraction}
-                    queuedQuestion={
-                      openQuestion && sessionId ? { sessionId, question: openQuestion } : undefined
-                    }
                     submittingRequestId={agentRuntime.submittingInteractionId}
                     keyboardActive={isFocused}
                     onAnswer={agentRuntime.answerInteraction}
                     onSubmitSecret={agentRuntime.submitSecretValue}
                     onDismiss={agentRuntime.dismissInteraction}
-                    onDefer={agentRuntime.deferInteraction}
                   />
                 </Suspense>
               ) : null

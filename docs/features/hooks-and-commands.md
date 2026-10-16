@@ -57,16 +57,17 @@ grants do not govern that preprocessing.
 
 Native hooks are callbacks returned by an enabled plugin's `register(ctx)` function.
 
-| Hook                               | Primary effect                                                 | Boundary                                                               |
-| ---------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `onSessionStart`                   | Observe the first run of a session through the plugin context. | Fires once per session per API process and is not awaited.             |
-| `onUserMessage`                    | Rewrite the model-facing prompt.                               | The persisted user message does not change.                            |
-| `onPreToolCall`                    | Observe, rewrite, or block built-in, plugin, and MCP calls.    | A rewrite is schema-checked when the tool exposes a compatible schema. |
-| `onPostToolCall`                   | Replace result content or append a plugin note.                | Appended text is capped at 1,024 UTF-16 code units per hook result.    |
-| `onAssistantMessage`               | Replace persisted assistant text or add message bindings.      | Content must be non-empty; bindings are validated and capped.          |
-| `onSessionEnd`                     | Observe the end of each run.                                   | It is not a logical session-deletion event.                            |
-| `onSubagentStop`                   | Observe a child session reaching a terminal status.            | Observer-only.                                                         |
-| `onHitlRequest` / `onHitlResolved` | Observe human-input request lifecycle.                         | These hooks cannot answer or veto the request.                         |
+| Hook                               | Primary effect                                                    | Boundary                                                                     |
+| ---------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `onSessionStart`                   | Observe the first run of a session through the plugin context.    | Fires once per session per API process and is not awaited.                   |
+| `onUserMessage`                    | Rewrite the model-facing prompt.                                  | The persisted user message does not change.                                  |
+| `onPreToolCall`                    | Observe, rewrite, or block built-in, plugin, and MCP calls.       | A rewrite is schema-checked when the tool exposes a compatible schema.       |
+| `onPostToolCall`                   | Replace result content or append a plugin note.                   | Appended text is capped at 1,024 UTF-16 code units per hook result.          |
+| `onAssistantMessage`               | Replace persisted assistant text or add message bindings.         | Content must be non-empty; bindings are validated and capped.                |
+| `onSessionEnd`                     | Observe the end of each run.                                      | It is not a logical session-deletion event.                                  |
+| `onSubagentStop`                   | Observe a child session reaching a terminal status.               | Observer-only.                                                               |
+| `onHitlRequest` / `onHitlResolved` | Observe human-input request lifecycle.                            | These hooks cannot answer or veto the request.                               |
+| `onHumanMentioned`                 | Observe an `@human` reply or a board card assigned to the person. | Receives `sessionId`, `messageId`, `from` and a text excerpt; observer-only. |
 
 Native rewrites compose in plugin load order. Tool pre-hooks stop at the first block; post-hooks all
 run and later hooks see earlier replacements.
@@ -234,6 +235,8 @@ hook that exits any other way, or is lost to an API restart, wakes nobody.
 
 ## Related guides
 
+- [Install Claude Code plugins](../extending/claude-code-plugins.md): hook events carried over by
+  the importer
 - [Your first session](../getting-started/first-session.md)
 - [Plugins](../extending/plugins.md)
 - [Skills](skills.md)

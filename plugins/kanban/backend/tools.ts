@@ -1,9 +1,14 @@
 import type { AgentToolExecutionContext, PluginContext } from '@localixai/plugin-sdk/backend'
 
-import { AGENT_TARGET_STATUSES } from '../shared/rules'
+import {
+  AGENT_TARGET_STATUSES,
+  HUMAN_ASSIGNEE_ID,
+  leadsBoard,
+  memberMay,
+  type BoardSpeaker,
+} from '../shared/rules'
 import { BoardRefusal } from '../shared/errors'
 import { classifyKanbanCall } from './call-class'
-import { boardUri } from '../shared/resource'
 import { KANBAN_ACTIONS, KANBAN_TOOL, slimTask, type KanbanToolDetails } from '../shared/tool'
 import type { KanbanStatus, KanbanTask } from '../shared/contracts'
 import {
@@ -15,6 +20,8 @@ import {
   taskBrief,
   unblockedBy,
 } from './describe'
+import { createCards } from './tool-create'
+import { describeOwnCards, resolveFor, visibleTo } from './member-view'
 import type { BoardSeat, BoardService } from './service'
 import { openItemsNotice, refuseOwnedMove, refuseUnreadFields, reviseChecklist } from './tool-input'
 
@@ -90,58 +97,8 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
     return { userId: ctx.userId, sessionId }
   }
 
-  async function create(seat: BoardSeat, input: Input): Promise<Result> {
-    const entries = input.creates?.length ? input.creates : [{ ...input, title: input.title ?? '' }]
-    const created: KanbanTask[] = []
-    let refused: string | null = null
-    for (const [index, entry] of entries.entries()) {
-      try {
-        if (!entry.title.trim())
-          throw new BoardRefusal(400, 'title_required', 'create requires title.')
-        const tasks = (await boards.read(seat)).tasks
-        const parent = entry.parent ? resolveTaskReference(tasks, entry.parent) : null
-        created.push(
-          await boards.create(
-            seat,
-            {
-              title: entry.title,
-              description: entry.description ?? '',
-              kind: entry.kind ?? 'task',
-              parentTaskId: parent?.id ?? null,
-              ...(entry.agent ? { agent: entry.agent } : {}),
-              ...(entry.depends_on
-                ? { dependsOn: resolveDependencies(tasks, entry.depends_on) }
-                : {}),
-              ...(entry.priority !== undefined ? { priority: entry.priority } : {}),
-              ...(entry.items ? { subtasks: reviseChecklist([], entry.items) } : {}),
-            },
-            'agent',
-          ),
-        )
-      } catch (error) {
-        // The entries before this one are on the board already. Refusing the call whole reported
-        // none of them, so the retry that fixed entry 3 created entries 1 and 2 a second time.
-        // A refusal before anything was created is still the call's own failure.
-        if (!(error instanceof BoardRefusal) || created.length === 0) throw error
-        refused = `Entry ${index + 1} was not created: ${error.message} The entries above are on the board; do not create them again.`
-        break
-      }
-    }
-    return {
-      content: [
-        ...created.map((task) => `Created ${task.id} "${task.title}" in backlog.`),
-        ...(refused ? [refused] : []),
-      ].join('\n'),
-      details: {
-        sessionId: seat.sessionId,
-        ...(created.length === 1 ? { task: created[0]! } : { tasks: created.map(slimTask) }),
-        reveal: ctx.ui.offer({
-          uri: boardUri(seat.sessionId),
-          label: 'Open board',
-          description: 'This chat’s board',
-        }),
-      },
-    }
+  const refuseFor = (verdict: { ok: true } | { ok: false; why: string }) => {
+    if (!verdict.ok) throw new BoardRefusal(409, 'leader_only', verdict.why)
   }
 
   async function onTask(
@@ -152,7 +109,19 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
   ): Promise<Result> {
     if (!input.task_id) throw new BoardRefusal(400, 'task_required', `${action} requires task_id.`)
     const board = await boards.read(seat)
-    const task = resolveTaskReference(board.tasks, input.task_id)
+    const speaker = context?.session?.speaker
+    const task = resolveFor(board.tasks, speaker, input.task_id)
+    const fields = Object.keys(input).filter(
+      (field) => field !== 'action' && input[field as keyof Input] !== undefined,
+    )
+    refuseFor(memberMay(action, task, speaker, fields))
+    if ((action === 'take' || action === 'complete') && task.agentId === HUMAN_ASSIGNEE_ID)
+      throw new BoardRefusal(
+        409,
+        'human_card',
+        `${task.id} is for @human; it waits for the person.`,
+      )
+    const leads = leadsBoard(speaker)
     const done = (content: string, written: KanbanTask): Result => ({
       content,
       details: { sessionId: seat.sessionId, task: written },
@@ -171,7 +140,6 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
           await boards.update(seat, task.id, { sortOrder: input.sort_order }, 'agent'),
         )
       case 'take': {
-        const speaker = context?.session?.speaker
         if (!speaker)
           throw new BoardRefusal(
             409,
@@ -193,6 +161,18 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         return done(`Took ${task.id}. Do the work directly.`, taken)
       }
       case 'complete': {
+        if (!leads) {
+          const sent = await boards.update(
+            seat,
+            task.id,
+            { status: 'review', error: null },
+            'agent',
+          )
+          return done(
+            `Sent ${task.id} to review; the leader will verify it.${openItemsNotice(sent.subtasks)}`,
+            sent,
+          )
+        }
         const written = await boards.update(seat, task.id, { status: 'done', error: null }, 'agent')
         const after = (await boards.read(seat)).tasks
         const released = unblockedBy(after, task.id)
@@ -219,6 +199,10 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
       case 'update': {
         refuseOwnedMove(input.status)
         const parent = input.parent ? resolveTaskReference(board.tasks, input.parent) : null
+        const handover =
+          input.agent !== undefined && (task.status === 'in_progress' || task.status === 'review')
+            ? ' If the owner changed, the card went back to ready for its new owner to take.'
+            : ''
         const written = await boards.update(
           seat,
           task.id,
@@ -236,13 +220,14 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
           },
           'agent',
         )
-        return done(`Updated ${written.id}: ${describeTask(written)}`, written)
+        return done(`Updated ${written.id}: ${describeTask(written)}${handover}`, written)
       }
     }
   }
 
-  async function list(seat: BoardSeat, input: Input): Promise<Result> {
-    let tasks = (await boards.read(seat)).tasks
+  async function list(seat: BoardSeat, input: Input, speaker?: BoardSpeaker): Promise<Result> {
+    const board = (await boards.read(seat)).tasks
+    let tasks = visibleTo(board, speaker)
     if (input.action === 'search') {
       const terms = input.query?.trim().toLowerCase().split(/\s+/).filter(Boolean) ?? []
       if (!terms.length) throw new BoardRefusal(400, 'query_required', 'search requires query.')
@@ -256,7 +241,11 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
     const more =
       tasks.length > visible.length ? `\nShowing ${LIST_CAP} of ${tasks.length} tasks.` : ''
     return {
-      content: tasks.length ? `${describeBoard(visible)}${more}` : 'No matching board tasks.',
+      content: tasks.length
+        ? `${leadsBoard(speaker) ? describeBoard(visible) : describeOwnCards(visible, board)}${more}`
+        : leadsBoard(speaker)
+          ? 'No matching board tasks.'
+          : 'No matching cards are assigned to you.',
       details: { sessionId: seat.sessionId, tasks: visible.map(slimTask) },
     }
   }
@@ -270,6 +259,7 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         'Read and edit this chat’s task board: epics, tasks, dependencies, checklists, owners and blockers. It is passive — no card state starts work.',
         'Put multi-part, durable work on the board; a small single deliverable needs no card.',
         'take a card before working it yourself (checks dependencies, assigns you, moves it to in_progress); complete it when done, or block it with the concrete obstacle.',
+        'In a group, the leader sees and edits the whole board; a member sees and works only the cards assigned to it, and its complete sends the card to review for the leader to verify.',
         'For a card another agent should do, give that participant a turn or delegate it with the card’s detail as the brief; review the report before you complete or block the card.',
       ].join(' '),
       inputSchema,
@@ -281,8 +271,10 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         try {
           refuseUnreadFields(input)
           const seat = seatOf(context)
-          if (input.action === 'list' || input.action === 'search') return await list(seat, input)
-          if (input.action === 'create') return await create(seat, input)
+          const speaker = context?.session?.speaker
+          if (input.action === 'list' || input.action === 'search')
+            return await list(seat, input, speaker)
+          if (input.action === 'create') return await createCards(ctx, boards, seat, input, speaker)
           return await onTask(seat, input.action, input, context)
         } catch (error) {
           if (error instanceof BoardRefusal) return { content: error.message, isError: true }

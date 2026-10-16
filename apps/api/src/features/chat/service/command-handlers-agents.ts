@@ -1,4 +1,4 @@
-import { agentAuthoredBlueprintSchema } from '@localixai/agent/agents'
+import { agentAuthoredBlueprintSchema, agentHandleSchema } from '@localixai/agent/agents'
 import { localixUiUri } from '@localixai/plugin-sdk/navigation'
 import { ApiError, errorMessage } from '../../../lib/errors'
 import { agentRecordInputSchema, type AgentSummary } from '../../agents/contracts'
@@ -101,7 +101,7 @@ export async function handleAgentsControlCommand(
         )
       const handle = args[0]
       if (!hasFields) {
-        if (handle) agentRecordInputSchema.shape.handle.parse(handle)
+        if (handle) agentHandleSchema.parse(handle)
         return directReply(
           `[Create ${handle ? `@${handle}` : 'an agent'}](${profileLink('', scope, undefined, handle)}) — fill in its definition and save.`,
         )

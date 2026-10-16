@@ -246,6 +246,7 @@ export type {
   AssistantMessageHookResult,
   HitlRequestEvent,
   HitlResolvedEvent,
+  HumanMentionedEvent,
   MemoryLoadContextEvent,
   MemoryProvider,
   MemoryRunEndEvent,

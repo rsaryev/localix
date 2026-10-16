@@ -42,8 +42,6 @@ import type { BootstrapServiceRefs } from './chat-service-deps'
 import { markLostWorkItems } from '../features/chat/runtime/lost-work'
 import { createWorkRegistry, type WorkRegistry } from '../features/work/registry'
 import { createWorkRepository } from '../features/work/repository'
-import { createQuestionRegistry, type QuestionRegistry } from '../features/questions/registry'
-import { createQuestionRepository } from '../features/questions/repository'
 import { installBackendHostModules } from '../features/plugins/backend-host-modules'
 
 export interface BootstrapRuntimeInfo {
@@ -68,7 +66,6 @@ export interface InfraPhase {
   serviceRefs: BootstrapServiceRefs
   bootRepo: ReturnType<typeof createChatRepository>
   work: WorkRegistry
-  questions: QuestionRegistry
   interruptedRuns: ReturnType<typeof takeInterruptedRuns>
   digests: ReturnType<typeof createDigestLoaders>
   finalAssistantText: ReturnType<typeof createDigestLoaders>['finalAssistantText']
@@ -156,12 +153,6 @@ export async function createInfraPhase(
     repo: createWorkRepository(db),
     logger: { warn: (msg) => logger.warn({ event: 'work.warn', msg }) },
   })
-  // The one question registry — what the agent asked without waiting (`ask` with `wait: false`).
-  // Built here so the notification producers below subscribe to it before anything is asked.
-  const questions = createQuestionRegistry({
-    repo: createQuestionRepository(db),
-    logger: { warn: (msg) => logger.warn({ event: 'questions.warn', msg }) },
-  })
   // The agent-lifecycle producers (`features/notifications/producers`). Started before
   // `hydrate`, whose losses they report, and awaited: a pending question the old process held is
   // settled before this process can ask a new one.
@@ -183,19 +174,15 @@ export async function createInfraPhase(
     lookupSession,
     defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
     work,
-    questions,
     provider: providerConditions,
     log: (event, detail) => logger.warn({ event, ...detail }),
   })
   await markLostWorkItems(bootRepo, await work.hydrate(), new Date().toISOString(), {
     warn: (msg) => logger.warn({ event: 'work.lost_item', msg }),
   })
-  // Hydrated before any run can ask, and unlike work NOTHING here is lost with the old process:
-  // an open question is exactly the thing that must still be waiting for the person after it.
-  await questions.hydrate()
-  // …and so is a plan presented for review. Both rejoin the "waiting on you" set from their rows.
+  // A plan presented for review is not lost with the old process: it rejoins the "waiting on
+  // you" set from its row.
   await rebuildDurableAttention(agentNotifications.attention, {
-    questions: questions.listAllPending(),
     plans: await createPlanRepository(db).listAwaitingReview(),
     getSession: (...args) => bootRepo.getSession(...args),
   })
@@ -278,7 +265,6 @@ export async function createInfraPhase(
     serviceRefs,
     bootRepo,
     work,
-    questions,
     interruptedRuns,
     digests,
     finalAssistantText,

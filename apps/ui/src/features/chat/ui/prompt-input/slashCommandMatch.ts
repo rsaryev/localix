@@ -14,7 +14,7 @@
  *
  * Non-regression guard: everything the old substring filter matched still matches
  * (substring is tier 2, always ahead of a subsequence-only tier-3 hit), and an
- * empty query returns the full list in group order exactly as before.
+ * empty query returns the full list in importance order.
  */
 import type { SlashCommand } from './SlashCommandMenu'
 import { scoreSlashMatch } from '@localixai/api/slash-match'
@@ -36,16 +36,42 @@ export interface SlashMatch {
   positions: Set<number>
 }
 
+/** A command its plugin's manifest marks `featured` is shown first, under "Suggested". */
+export const isFeaturedSlashCommand = (cmd: SlashCommand): boolean => cmd.featured === true
+
 /**
- * Group ordering used by SlashCommandMenu (Commands → Plugins → Skills). Used as
- * the WITHIN-tier tiebreak so, at equal match strength, built-ins stay ahead of
- * plugins which stay ahead of skills — the pre-fuzzy ordering.
+ * Group ordering used by SlashCommandMenu (Suggested → Commands → Plugins → Skills). Used as
+ * the WITHIN-tier tiebreak so, at equal match strength, the featured command leads, built-ins
+ * stay ahead of plugins, and plugins ahead of skills.
  */
 export function commandGroupRank(cmd: SlashCommand): number {
+  if (isFeaturedSlashCommand(cmd)) return -1
   if (cmd.kind === 'skill') return 2
   if (cmd.id.startsWith('plugin:')) return 1
   return 0
 }
+
+/**
+ * Built-in sections by how often a chat reaches for them: choosing the model and the team, then
+ * what the agent reads, then automation, memory, extensions and reference.
+ */
+const CATEGORY_IMPORTANCE: readonly string[] = [
+  'config',
+  'context',
+  'autonomous',
+  'memory',
+  'extensions',
+  'info',
+]
+
+const categoryRank = (cmd: SlashCommand): number => {
+  const rank = cmd.category ? CATEGORY_IMPORTANCE.indexOf(cmd.category) : -1
+  return rank < 0 ? CATEGORY_IMPORTANCE.length : rank
+}
+
+/** Importance order: group first, then a built-in's section; stable within a section. */
+const byImportance = (a: SlashCommand, b: SlashCommand): number =>
+  commandGroupRank(a) - commandGroupRank(b) || categoryRank(a) - categoryRank(b)
 
 /**
  * Score one command against a NON-EMPTY, already-lowercased query. Returns the
@@ -70,9 +96,9 @@ export function matchSlashCommand(query: string, cmd: SlashCommand): SlashMatch 
 /**
  * Filter + rank the command list for the given query.
  *
- * - Empty query → the full list in group order (Commands → Plugins → Skills),
- *   unchanged from the pre-fuzzy behaviour.
- * - Otherwise → matches only, sorted by (tier, group rank, original position).
+ * - Empty query → the full list by importance: featured commands first, then the built-in sections in
+ *   {@link CATEGORY_IMPORTANCE} order, then plugins, then skills.
+ * - Otherwise → matches only, sorted by (tier, importance, original position).
  *   Tier is primary so an exact/prefix hit floats above a substring hit which
  *   floats above a fuzzy-only hit; group rank + stable index preserve the old
  *   ordering within a tier.
@@ -84,18 +110,13 @@ export function filterAndRankSlashCommands(
   if (query === '') {
     return commands
       .map((cmd, i) => ({ cmd, i }))
-      .sort((a, b) => commandGroupRank(a.cmd) - commandGroupRank(b.cmd) || a.i - b.i)
+      .sort((a, b) => byImportance(a.cmd, b.cmd) || a.i - b.i)
       .map((e) => e.cmd)
   }
 
   return commands
     .map((cmd, i) => ({ cmd, i, match: matchSlashCommand(query, cmd) }))
     .filter((e): e is { cmd: SlashCommand; i: number; match: SlashMatch } => e.match !== null)
-    .sort(
-      (a, b) =>
-        a.match.tier - b.match.tier ||
-        commandGroupRank(a.cmd) - commandGroupRank(b.cmd) ||
-        a.i - b.i,
-    )
+    .sort((a, b) => a.match.tier - b.match.tier || byImportance(a.cmd, b.cmd) || a.i - b.i)
     .map((e) => e.cmd)
 }

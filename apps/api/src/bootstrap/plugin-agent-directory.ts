@@ -25,5 +25,6 @@ export function bootAgentDirectory(hostRefs: PluginHostRefs): PluginAgentDirecto
         description: agent.record.description,
         enabled: agent.enabled,
       })),
+    human: async (...args) => hostRefs.getHuman?.(...args),
   })
 }

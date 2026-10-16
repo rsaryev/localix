@@ -59,7 +59,6 @@ export interface ChatServicePhaseInput extends Pick<
   ChatServiceDeps,
   | 'db'
   | 'work'
-  | 'questions'
   | 'catalogService'
   | 'providerConnectionsService'
   | 'lspManager'
@@ -92,7 +91,6 @@ export function createChatServicePhase({
   externalAgents,
   db,
   work,
-  questions,
   agentNotifications,
   logger,
   catalogService,
@@ -130,7 +128,6 @@ export function createChatServicePhase({
     externalAgents,
     db,
     work,
-    questions,
     notifications: agentNotifications,
     logger,
     // A listing has no turn of its own, so it answers for the agent that always exists.

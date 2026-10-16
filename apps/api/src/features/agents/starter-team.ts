@@ -7,7 +7,7 @@ import type { AgentRecordInput } from './contracts'
  * deleted, so a person who never wanted a QA engineer had one in every room's directory forever.
  * Now they are written ONCE into the person's own global registry (`seed-starter-team.ts`), as
  * ordinary agents created exactly like one from `/agents create`: editable, deletable, and never
- * written again after the first seed. Only `localix` remains built in — the fallback every
+ * written again after the first seed. Only `localix` (and the person's `human` record) remains built in — the fallback every
  * conversation can start with.
  *
  * Instructions say who the role is and what its report contains. How a turn hands work on is the

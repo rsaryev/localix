@@ -48,41 +48,26 @@ export function AskToolPart({ item }: { item: ToolCallItem }) {
   const isLoading = isItemStreaming(item)
   const hasError = hasItemError(item)
   // An expired question is nobody's error: it renders neutral, with "No one answered…".
-  const unanswered = isItemDeclined(item)
+  const expired = Boolean(output?.expired)
+  const unanswered = expired || isItemDeclined(item)
   const isDismissed = item.error?.kind === 'dismissed' || item.error?.kind === 'aborted'
 
-  // Written out on the call, or recalled by `from` (the call then names only an id, and its
-  // details carry the questions it asked).
-  const questions =
-    input?.questions ?? output?.questions ?? output?.request?.payload.questions ?? []
+  const questions = input?.questions ?? output?.request?.payload.questions ?? []
   const answers = output?.answers ?? []
   const firstQuestion = questions[0]
   const firstAnswer = answers.find((a) => a.id === firstQuestion?.id)
-  // A queued question (`wait: false`): the call returned at once, and how the question ended is
-  // rewritten onto this item when the person answers or skips it.
-  const queued = output?.queued
-  const queuedClosed = queued?.status === 'skipped' || queued?.status === 'superseded'
 
   // Build the subtitle shown in the collapsed header.
   const subtitle = (() => {
     if (isLoading) return input?.loading_messages?.[0] ?? 'Waiting for your input…'
-    if (queued?.status === 'pending') return `${queued.questionId} · waiting for your answer`
-    // This call only pointed at the queued one, and nothing rewrites it when that one closes —
-    // so it says what stays true, never "waiting".
-    if (output?.stillOpen) return `${output.stillOpen} · already in the queue`
-    if (queued?.status === 'skipped') return `${queued.questionId} · skipped — the agent decides`
-    // Closed by the agent's own later ask — reworded, or asked again and answered there.
-    if (queued?.status === 'superseded') return `${queued.questionId} · asked again later`
+    if (expired) return 'No one answered in 5 minutes — the agent went on'
     if (isDismissed) return 'Dismissed — no answer sent'
     if (hasError || unanswered)
       return item.error?.personMessage ?? item.error?.userMessage ?? 'An error occurred'
     if (firstAnswer && firstQuestion) {
       const summary = selectedSummary(firstQuestion, firstAnswer.selectedOptions)
       const extra = firstAnswer.customInput?.trim()
-      const said = extra ? `${summary} — ${extra}` : summary
-      // Answered later, not on the spot: say so, or the reader takes the turn after this call
-      // for the one that used the answer.
-      return queued ? `${queued.questionId} · ${said}` : said
+      return extra ? `${summary} — ${extra}` : summary
     }
     return undefined
   })()
@@ -93,8 +78,7 @@ export function AskToolPart({ item }: { item: ToolCallItem }) {
     ) : null
 
   // Only show expanded content when we have something to show.
-  const hasExpandedContent =
-    !isLoading && questions.length > 0 && (answers.length > 0 || hasError || Boolean(queued))
+  const hasExpandedContent = !isLoading && questions.length > 0 && (answers.length > 0 || hasError)
 
   return (
     <ToolLine
@@ -104,31 +88,13 @@ export function AskToolPart({ item }: { item: ToolCallItem }) {
       badge={badge}
       isLoading={isLoading}
       hasError={hasError && !isDismissed}
-      isDismissed={isDismissed || queuedClosed || unanswered}
+      isDismissed={isDismissed || unanswered}
       // Follow-mode: collapsed while awaiting input (the overlay carries the
       // interaction); a real failure opens the card and stays open. Init-only
       // `defaultOpen` missed errors that arrived after mount.
       autoOpen={hasError && !isDismissed}
     >
-      {hasExpandedContent && queued && queued.status !== 'answered' ? (
-        <div className="space-y-2.5 py-1.5">
-          {questions.map((question) => (
-            <div key={question.id} className="space-y-1">
-              <div className="text-2xs leading-tight text-text-soft">{question.question}</div>
-              <p className="text-2xs leading-relaxed text-text-faint">
-                {question.options.map((option) => option.label).join(' · ')}
-              </p>
-            </div>
-          ))}
-          <p className="text-2xs text-text-faint">
-            {queued.status === 'pending'
-              ? 'The agent kept working. Answer it from the questions strip above the message box, whenever you like.'
-              : queued.status === 'skipped'
-                ? 'You skipped this question; the agent went on with its own judgement.'
-                : 'The agent asked this again later; the later question is the one that counts.'}
-          </p>
-        </div>
-      ) : hasExpandedContent ? (
+      {hasExpandedContent ? (
         <div className="space-y-2.5 py-1.5">
           {questions.map((question) => {
             const answer = answers.find((a) => a.id === question.id)

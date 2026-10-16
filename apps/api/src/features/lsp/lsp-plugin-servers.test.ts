@@ -3,7 +3,7 @@ import { parseLspServersConfig, configuredLspServer } from './lsp-plugin-servers
 
 describe('parseLspServersConfig', () => {
   test('parses the CC rust-analyzer shape (extensionToLanguage, no args)', () => {
-    // Real entry from claude-plugins-official rust-analyzer-lsp.
+    // Real entry from the official Claude Code marketplace, rust-analyzer-lsp.
     const cfg = parseLspServersConfig({
       'rust-analyzer': { command: 'rust-analyzer', extensionToLanguage: { '.rs': 'rust' } },
     })
@@ -14,7 +14,7 @@ describe('parseLspServersConfig', () => {
   })
 
   test('parses clangd with args + multi-extension map, normalizing extensions', () => {
-    // Real entry from claude-plugins-official clangd-lsp (has mixed-case .C/.H keys).
+    // Real entry from the official Claude Code marketplace, clangd-lsp (has mixed-case .C/.H keys).
     const cfg = parseLspServersConfig({
       clangd: {
         command: 'clangd',

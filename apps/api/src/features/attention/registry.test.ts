@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import type { AttentionItem } from './contracts'
 import { createAttentionRegistry } from './registry'
-import { planAttention, questionItem, restoreDurableAttention } from './sources'
+import { mentionAttention, planAttention, restoreDurableAttention } from './sources'
 
 const item = (key: string, at: string, sessionId = 'S1'): AttentionItem => ({
   key,
@@ -76,24 +76,26 @@ describe('the attention registry', () => {
     expect(held!.summary).toBe('l1\nl2\nl3\nl4\nl5\nl6')
   })
 
+  test('a conversation holds one waiting mention until the person writes there', () => {
+    const { registry, journal } = harness()
+    const mentions = mentionAttention(registry)
+    const ask = (messageId: string) =>
+      mentions.mentioned({ userId: 'u', sessionId: 'S1', messageId, from: 'lead', mentionedAt: 1 })
+    ask('m1')
+    ask('m2')
+    expect(registry.list('u').map((i) => i.key)).toEqual(['mention:S1:m1'])
+    mentions.answered('u', 'S1')
+    ask('m3')
+    expect(registry.list('u').map((i) => i.key)).toEqual(['mention:S1:m3'])
+    expect(journal.filter((row) => row.startsWith('raise'))).toEqual([
+      'raise mention:S1:m1',
+      'raise mention:S1:m3',
+    ])
+  })
+
   test('a boot restore fills the snapshot without writing the journal again', () => {
     const { registry, snapshots, journal } = harness()
     restoreDurableAttention(registry, {
-      questions: [
-        {
-          id: 'q',
-          userId: 'u',
-          sessionId: 'S1',
-          agentId: 'a',
-          displayId: 'q-1',
-          toolCallId: 't',
-          questions: [{ question: 'Which DB?' }] as never,
-          status: 'pending',
-          answers: null,
-          askedAt: '2026-01-01',
-          resolvedAt: null,
-        },
-      ],
       plans: [
         {
           id: 'p',
@@ -107,9 +109,9 @@ describe('the attention registry', () => {
       ],
       planAuthors: new Map([['p', 'lead']]),
     })
-    expect(snapshots).toEqual([['question:q', 'plan:R:p']])
+    expect(snapshots).toEqual([['plan:R:p']])
     expect(journal).toEqual([])
-    expect(registry.list('u')[1]?.subject.agentHandle).toBe('lead')
+    expect(registry.list('u')[0]?.subject.agentHandle).toBe('lead')
   })
 
   test('forgetting a session drops its items from the snapshot only', () => {
@@ -120,16 +122,5 @@ describe('the attention registry', () => {
     registry.forgetSession('S1')
     expect(snapshots.at(-1)).toEqual(['b'])
     expect(journal).toEqual([])
-  })
-
-  test('a question item names the first question and how many more', () => {
-    const built = questionItem({
-      id: 'q',
-      sessionId: 'S1',
-      displayId: 'q-2',
-      askedAt: 'x',
-      questions: [{ question: 'One?' }, { question: 'Two?' }],
-    } as never)
-    expect(built).toMatchObject({ key: 'question:q', summary: 'One? (+1 more)' })
   })
 })

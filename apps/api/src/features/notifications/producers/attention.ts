@@ -16,8 +16,8 @@ import {
  * EVERY "WAITING ON YOU" ITEM AS ONE EVENT CENTER ROW — the journal side of the attention
  * registry (`features/attention`).
  *
- * There used to be a producer per kind (a HITL request, a queued question, a mention), each
- * building its row its own way; a plan waiting for review would have been a fourth. The registry
+ * There used to be a producer per kind (a HITL request, a mention), each building its row
+ * its own way; a plan waiting for review would have been a third. The registry
  * is now the one place an item is raised and settled, and this observer is the one place it
  * becomes a row: the item's key is the row's key (so the rows written before the registry, and
  * the boot sweep's `hitl:` prefix, keep their meaning), its settle reason is the row's.
@@ -51,15 +51,6 @@ const ROW: Record<AttentionKind, RowShape> = {
       label: 'Respond',
       ...(item.subject.requestId ? { requestId: item.subject.requestId } : {}),
     }),
-  },
-  // Not a warning: nothing is blocked and nothing expires — it waits for the person.
-  question: {
-    topic: 'hitl.required',
-    severity: 'info',
-    label: 'Question',
-    resourceId: (item) => item.subject.displayId ?? item.subject.questionId ?? item.key,
-    title: (item) => item.title,
-    body: (item) => item.summary,
   },
   mention: {
     topic: 'user.mentioned',

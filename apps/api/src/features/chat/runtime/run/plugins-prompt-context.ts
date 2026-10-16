@@ -1,5 +1,6 @@
 import { TOOL } from '../../../agent-core/tool-names'
 import type { LoadedPlugins } from '../../../plugins/loader'
+import { summarizePluginLspServers } from '../../../lsp'
 
 function countLabel(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`
@@ -32,9 +33,26 @@ export function buildPluginsPromptContext(
     return parts.length ? [`- ${plugin.name} — ${parts.join('; ')}`] : []
   })
 
+  // LSP contributions are not tools: their diagnostics arrive inside edit/write results.
+  const lspLines = (loadedPlugins.lspServers ?? []).flatMap(({ pluginName, servers }) =>
+    summarizePluginLspServers(servers).map((server) => {
+      const exts = server.extensions.length ? server.extensions.join(', ') : 'none'
+      const builtin = server.builtinExtensions.length
+        ? `; built-in server kept for ${server.builtinExtensions.join(', ')}`
+        : ''
+      const missing =
+        server.missing && server.extensions.length
+          ? `; NOT RUNNING: ${server.command} is not on PATH${server.installHint ? ` (install: ${server.installHint})` : ''}`
+          : ''
+      return `- ${pluginName} — LSP "${server.id}": ${exts}${builtin}${missing} (diagnostics via edit/write results, not a tool)`
+    }),
+  )
+
   const promptSections = loadedPlugins.promptSections.map(
     (section) => `## ${section.pluginName}: ${section.title}\n${section.content.trim()}`,
   )
-  const blocks = [summaries.join('\n'), promptSections.join('\n\n')].filter(Boolean)
+  const blocks = [[...summaries, ...lspLines].join('\n'), promptSections.join('\n\n')].filter(
+    Boolean,
+  )
   return blocks.length ? blocks.join('\n\n') : undefined
 }

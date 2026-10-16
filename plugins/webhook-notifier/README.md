@@ -45,15 +45,16 @@ trust decision.
 
 ### Hook payloads
 
-| Hook                 | Event name          | Payload fields                                      |
-| -------------------- | ------------------- | --------------------------------------------------- |
-| `onSessionEnd`       | `session_end`       | Empty object                                        |
-| `onUserMessage`      | `user_message`      | `messageId`, `text`                                 |
-| `onAssistantMessage` | `assistant_message` | `messageId`, `content`                              |
-| `onPostToolCall`     | `tool_call`         | `toolName`, result `content`                        |
-| `onHitlRequest`      | `hitl_request`      | `requestId`, `kind`, `toolName`, `title`            |
-| `onHitlResolved`     | `hitl_resolved`     | `requestId`, `kind`, `toolName`, `dismissed`        |
-| `onSubagentStop`     | `subagent_stop`     | `childSessionId`, `status`, `durationMs`, `summary` |
+| Hook                 | Event name          | Payload fields                                                                           |
+| -------------------- | ------------------- | ---------------------------------------------------------------------------------------- |
+| `onSessionEnd`       | `session_end`       | Empty object                                                                             |
+| `onUserMessage`      | `user_message`      | `messageId`, `text`                                                                      |
+| `onAssistantMessage` | `assistant_message` | `messageId`, `content`                                                                   |
+| `onPostToolCall`     | `tool_call`         | `toolName`, result `content`                                                             |
+| `onHitlRequest`      | `hitl_request`      | `requestId`, `kind`, `toolName`, `title`                                                 |
+| `onHitlResolved`     | `hitl_resolved`     | `requestId`, `kind`, `toolName`, `dismissed`                                             |
+| `onSubagentStop`     | `subagent_stop`     | `childSessionId`, `status`, `durationMs`, `summary`                                      |
+| `onHumanMentioned`   | `human_mentioned`   | `messageId`, `from`, `text`: an agent's `@human` reply, or a card assigned to the person |
 
 ## Default state
 
@@ -82,14 +83,14 @@ Configure these manifest keys for the enabled plugin:
 | Key               | Type             | Default | Effect                                                                        |
 | ----------------- | ---------------- | ------- | ----------------------------------------------------------------------------- |
 | `WEBHOOK_URL`     | String, required | None    | Receives every selected JSON delivery                                         |
-| `EVENTS`          | String           | Empty   | Comma-separated event names; empty selects all seven supported events         |
+| `EVENTS`          | String           | Empty   | Comma-separated event names; empty selects all eight supported events         |
 | `SECRET`          | Secret string    | Empty   | Adds the hexadecimal HMAC-SHA256 signature header                             |
 | `TIMEOUT_SECONDS` | Number           | `5`     | Sets the request timeout; effective values are clamped to at least one second |
 
 `EVENTS` accepts `session_end`, `user_message`, `assistant_message`, `tool_call`, `hitl_request`,
-`hitl_resolved`, and `subagent_stop`. Whitespace around comma-separated entries is removed. Unknown
-names are ignored and logged; if no supplied name matches, the plugin logs that nothing will be
-delivered.
+`hitl_resolved`, `subagent_stop`, and `human_mentioned`. Whitespace around comma-separated entries
+is removed. Unknown names are ignored and logged; if no supplied name matches, the plugin logs that
+nothing will be delivered.
 
 The receiver must compute its digest from the unmodified raw request body. No signature header is
 sent when `SECRET` is empty.
@@ -114,7 +115,7 @@ sent when `SECRET` is empty.
   request identity, kind, tool name, and whether it was dismissed.
 - `text`, `content`, and `summary` values longer than 4,000 characters are cut at that boundary and
   receive an `…[truncated]` suffix. Other payload fields are not passed through that helper.
-- Filtering is limited to the seven exact, case-sensitive event names listed above.
+- Filtering is limited to the eight exact, case-sensitive event names listed above.
 - HMAC signing authenticates the body only when the receiver independently holds and verifies the
   same secret. It does not encrypt the request body.
 - The plugin does not wait for delivery before allowing the lifecycle handler to return. A process

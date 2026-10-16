@@ -59,6 +59,8 @@ export const pluginCommandSchema = z.object({
   prompt: z.string(), // agent-macro template; ${argName} placeholders
   /** CC `argumentHint` — placeholder shown in the composer when this command is selected. */
   argumentHint: z.string().optional(),
+  /** Shown first in the slash menu, under "Suggested". */
+  featured: z.boolean().optional(),
   /**
    * CC `model` — preferred model alias/id for this command's macro run (e.g. "opus",
    * a full catalog id). Best-effort: applied as a per-run session model override; the
@@ -123,6 +125,8 @@ export const pluginCommandSpecSchema = z.object({
   args: z.array(pluginCommandArgSpecSchema),
   /** Composer placeholder hint (CC compat: `argument-hint` in command frontmatter). */
   argumentHint: z.string().optional(),
+  /** Shown first in the slash menu, under "Suggested". */
+  featured: z.boolean().optional(),
 })
 export type PluginCommandSpec = z.infer<typeof pluginCommandSpecSchema>
 

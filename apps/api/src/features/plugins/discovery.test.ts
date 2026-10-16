@@ -2,6 +2,11 @@ import { describe, it, expect, beforeAll, afterAll, spyOn } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import {
+  CLAUDE_CODE_DIR,
+  CLAUDE_CODE_PLUGIN_MANIFEST,
+  importClaudeCodePlugin,
+} from './import-claude-code'
 
 import { resolve } from 'node:path'
 import {
@@ -138,12 +143,12 @@ beforeAll(async () => {
   await fs.mkdir(broken, { recursive: true })
   await fs.writeFile(join(broken, 'plugin.json'), '{ not valid json')
 
-  // A Claude Code plugin: manifest at .claude-plugin/plugin.json, components at root.
+  // A Claude Code plugin (converted by the importer, as an install does), components at root.
   const cc = join(dir, '.localix', 'plugins', 'cc-plugin')
-  await fs.mkdir(join(cc, '.claude-plugin'), { recursive: true })
+  await fs.mkdir(join(cc, CLAUDE_CODE_DIR), { recursive: true })
   await fs.mkdir(join(cc, 'skills', 'review'), { recursive: true })
   await fs.writeFile(
-    join(cc, '.claude-plugin', 'plugin.json'),
+    join(cc, CLAUDE_CODE_PLUGIN_MANIFEST),
     JSON.stringify({
       name: 'cc-plugin',
       version: '2.0.0',
@@ -207,13 +212,15 @@ beforeAll(async () => {
     '---\nname: wildcard\ndescription: Wildcard tools.\ntools: *\n---\n\nAll tools.',
   )
 
+  await importClaudeCodePlugin(cc, { source: 'test' })
+
   // A Claude Code ecosystem install: ~/.claude/plugins with an installed_plugins.json
-  // registry pointing at a cached plugin dir (manifest in .claude-plugin/).
+  // registry pointing at a cached plugin dir (Claude Code manifest layout).
   const ccHome = join(dir, 'claude-home')
   const cachedDir = join(ccHome, 'cache', 'official', 'eco-plugin', '1.0.0')
-  await fs.mkdir(join(cachedDir, '.claude-plugin'), { recursive: true })
+  await fs.mkdir(join(cachedDir, CLAUDE_CODE_DIR), { recursive: true })
   await fs.writeFile(
-    join(cachedDir, '.claude-plugin', 'plugin.json'),
+    join(cachedDir, CLAUDE_CODE_PLUGIN_MANIFEST),
     JSON.stringify({
       name: 'eco-plugin',
       version: '1.0.0',
@@ -338,7 +345,7 @@ describe('discoverPlugins', () => {
     expect(broken!.error).toBeTruthy()
   })
 
-  it('discovers a Claude Code plugin with a .claude-plugin/plugin.json manifest', async () => {
+  it('discovers an imported Claude Code plugin from its native manifest', async () => {
     const found = await discoverPlugins({
       cwd: dir,
       projectId: 'proj1',
@@ -348,7 +355,7 @@ describe('discoverPlugins', () => {
     expect(cc).toBeDefined()
     expect(cc!.error).toBeUndefined()
     expect(cc!.manifest.version).toBe('2.0.0')
-    // Components resolve from the plugin root, not from .claude-plugin/.
+    // Components resolve from the plugin root.
     expect(cc!.provides.skills).toContain('review')
   })
 
@@ -499,11 +506,11 @@ describe('discoverPlugins', () => {
 
 describe('foreign skills-dir plugin discovery', () => {
   it('does not discover a plugin embedded in .claude/skills/', async () => {
-    // Create <dir>/.claude/skills/embedded/.claude-plugin/plugin.json
+    // Create a Claude Code plugin manifest under <dir>/.claude/skills/embedded/
     const embeddedDir = join(dir, '.claude', 'skills', 'embedded-plugin')
-    await fs.mkdir(join(embeddedDir, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(join(embeddedDir, CLAUDE_CODE_DIR), { recursive: true })
     await fs.writeFile(
-      join(embeddedDir, '.claude-plugin', 'plugin.json'),
+      join(embeddedDir, CLAUDE_CODE_PLUGIN_MANIFEST),
       JSON.stringify({
         name: 'embedded-plugin',
         version: '1.0.0',
@@ -572,9 +579,9 @@ describe('foreign Claude plugin registries are ignored', () => {
   /** Write a minimal code-free CC plugin at cache/<mp>/<name>/<version>/. */
   const writeCached = async (ccHome: string, mp: string, name: string, version: string) => {
     const cached = join(ccHome, 'cache', mp, name, version)
-    await fs.mkdir(join(cached, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(join(cached, CLAUDE_CODE_DIR), { recursive: true })
     await fs.writeFile(
-      join(cached, '.claude-plugin', 'plugin.json'),
+      join(cached, CLAUDE_CODE_PLUGIN_MANIFEST),
       JSON.stringify({ name, version, description: `${name} ${version}` }),
     )
     return cached

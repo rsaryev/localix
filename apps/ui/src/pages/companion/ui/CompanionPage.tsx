@@ -53,7 +53,6 @@ export function CompanionPage() {
   useIslandOverlays(island.expanded)
   useIslandContributions(chat.session?.projectId)
   const { prepare } = chat
-  const [deferredKey, setDeferredKey] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   useEffect(() => {
     if (island.expanded)
@@ -132,8 +131,8 @@ export function CompanionPage() {
       <div className="lx-island-outline" aria-hidden>
         <span
           className="lx-island-edge"
-          // A quiet resting island paints nothing, so its edge light neither shows nor runs.
-          data-active={!island.expanded && !quiet}
+          // Even a quiet resting island keeps a faint idle glint so it stays discoverable.
+          data-active={!island.expanded}
           data-mode={pending ? 'waiting' : busy ? 'working' : 'idle'}
         >
           <span className="lx-island-edge-glow" />
@@ -206,7 +205,7 @@ export function CompanionPage() {
                 chat={chat}
                 dropzone={dropzone}
                 focused={island.expanded}
-                attentionActive={Boolean(pending && pending.key !== deferredKey)}
+                attentionActive={Boolean(pending)}
                 onOpen={openSession}
                 attention={
                   pending && (
@@ -214,12 +213,7 @@ export function CompanionPage() {
                       key={pending.key}
                       item={pending}
                       session={state.sessions.find((session) => session.id === pending.sessionId)}
-                      active={island.expanded && pending.key !== deferredKey}
-                      deferred={pending.key === deferredKey}
-                      onDeferredChange={(deferred) => {
-                        setDeferredKey(deferred ? pending.key : null)
-                        dispatch(deferred ? { type: 'back' } : { type: 'select', key: pending.key })
-                      }}
+                      active={island.expanded}
                       count={requests.length}
                       onNext={() => {
                         const next = nextRequest(requests, pending.key)

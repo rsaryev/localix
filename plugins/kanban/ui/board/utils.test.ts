@@ -20,6 +20,7 @@ describe('userMoveTargets', () => {
       'backlog',
       'ready',
       'blocked',
+      'review',
       'done',
     ])
   })
@@ -29,6 +30,7 @@ describe('userMoveTargets', () => {
       'ready',
       'in_progress',
       'blocked',
+      'review',
       'done',
     ])
     expect(userMoveTargets(task({ status: 'done' }))).toEqual([
@@ -36,6 +38,7 @@ describe('userMoveTargets', () => {
       'ready',
       'in_progress',
       'blocked',
+      'review',
     ])
   })
 
@@ -59,6 +62,7 @@ describe('quickAction', () => {
     expect(quickAction(task({ status: 'backlog' }))?.to).toBe('ready')
     expect(quickAction(task({ status: 'blocked' }))?.to).toBe('ready')
     expect(quickAction(task({ status: 'done' }))?.to).toBe('ready')
+    expect(quickAction(task({ status: 'review' }))?.to).toBe('done')
   })
   test('offers nothing on a cancelled card — the server refuses every move out of it', () => {
     expect(quickAction(task({ status: 'cancelled' }))).toBeNull()
@@ -77,8 +81,9 @@ describe('keyboardMoveTarget', () => {
     expect(keyboardMoveTarget('backlog', 1)).toBe('ready')
     expect(keyboardMoveTarget('ready', 1)).toBe('in_progress')
     expect(keyboardMoveTarget('in_progress', 1)).toBe('blocked')
-    expect(keyboardMoveTarget('blocked', 1)).toBe('done')
-    expect(keyboardMoveTarget('done', -1)).toBe('blocked')
+    expect(keyboardMoveTarget('blocked', 1)).toBe('review')
+    expect(keyboardMoveTarget('review', 1)).toBe('done')
+    expect(keyboardMoveTarget('done', -1)).toBe('review')
     expect(keyboardMoveTarget('blocked', -1)).toBe('in_progress')
     expect(keyboardMoveTarget('in_progress', -1)).toBe('ready')
     expect(keyboardMoveTarget('ready', -1)).toBe('backlog')

@@ -28,9 +28,9 @@ import type { PlanService } from '../../plans/service'
 import type { SkillDiscoveryLogger } from '../../agent-core/skill-discovery'
 import type { UiLocationCatalogService } from '../../ui-locations/service'
 import type { WorkRegistry } from '../../work/registry'
-import type { QuestionRegistry } from '../../questions/registry'
 import type { AgentNotifications } from '../../notifications/producers'
 import type { AgentManagementPort } from '../../agents/service-contract'
+import type { HumanProfile } from '../../agent-core/system-prompt-conversation-section'
 
 export interface RunnerDeps {
   agentManagement?: AgentManagementPort
@@ -38,11 +38,6 @@ export interface RunnerDeps {
   db: Kysely<AppDatabase>
   /** The process's one work registry — shared with the monitor service, hydrated at boot. */
   work: WorkRegistry
-  /**
-   * Where `ask` with `wait: false` records its questions (`features/questions`), hydrated at
-   * boot. Absent in isolated hosts (tests): a queued question is then refused with a reason.
-   */
-  questions?: QuestionRegistry
   /** The notification journal's lifecycle producers; a run's logical end reports through it. */
   notifications?: AgentNotifications
   /**
@@ -193,6 +188,8 @@ export interface RunnerDeps {
       canJoinConversation: boolean
     }[]
   >
+  /** The person's record (`@human`) as the scope resolves it, for the prompt and the board. */
+  resolveHuman?: (userId: string, projectId: string | null) => Promise<HumanProfile>
   now?: () => string
 }
 

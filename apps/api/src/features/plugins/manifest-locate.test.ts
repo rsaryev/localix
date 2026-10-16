@@ -8,12 +8,11 @@ import {
   MARKETPLACE_MANIFEST_CANDIDATES,
   PLUGIN_MANIFEST_CANDIDATES,
 } from './manifest-locate'
+import { CLAUDE_CODE_MARKETPLACE, CLAUDE_CODE_PLUGIN_MANIFEST } from './import-claude-code'
 
 /**
- * Shared manifest-locating core: first existing candidate wins, candidate order is
- * the precedence order, and the two callers' candidate lists keep their (opposite)
- * precedences — plugin manifests prefer the ROOT file, marketplace catalogs prefer
- * the `.claude-plugin/` file.
+ * Shared manifest-locating core: first existing candidate wins, candidate order is the
+ * precedence order, and each caller reads exactly one branded location.
  */
 
 let dir: string
@@ -46,23 +45,20 @@ describe('locateManifest', () => {
     expect(await locateManifest(dir, ['missing.json', 'b.json'])).toBe(join(dir, 'b.json'))
   })
 
-  it('plugin candidates: root plugin.json wins over .claude-plugin/plugin.json', async () => {
-    await touch('.claude-plugin/plugin.json')
-    expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBe(
-      join(dir, '.claude-plugin', 'plugin.json'),
-    )
+  it('plugin candidates: only the root plugin.json, never a foreign layout', async () => {
+    await touch(CLAUDE_CODE_PLUGIN_MANIFEST)
+    expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBeNull()
     await touch('plugin.json')
     expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBe(join(dir, 'plugin.json'))
   })
 
-  it('marketplace candidates: .claude-plugin/marketplace.json wins over the root file', async () => {
+  it('marketplace candidates: only .localix-plugin/marketplace.json', async () => {
     await touch('marketplace.json')
+    await touch(CLAUDE_CODE_MARKETPLACE)
+    expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBeNull()
+    await touch('.localix-plugin/marketplace.json')
     expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBe(
-      join(dir, 'marketplace.json'),
-    )
-    await touch('.claude-plugin/marketplace.json')
-    expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBe(
-      join(dir, '.claude-plugin', 'marketplace.json'),
+      join(dir, '.localix-plugin', 'marketplace.json'),
     )
   })
 })

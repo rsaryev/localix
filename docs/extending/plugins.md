@@ -220,11 +220,13 @@ All paths below are relative to the plugin directory and confined to it.
 | `license`          | string, optional                                                    | Records an SPDX identifier.                                                 | Informational only.                                                                                                                                               |
 | `keywords`         | string array, optional                                              | Records discovery tags.                                                     | Informational only.                                                                                                                                               |
 | `migratedFrom`     | string, optional                                                    | Records migration provenance.                                               | Informational only.                                                                                                                                               |
+| `origin`           | `{ format: 'claude-code', source?, version?, importedAt? }`         | Records that the importer converted this plugin.                            | Written by the Claude Code importer; Settings shows the plugin as imported.                                                                                       |
+| `defaultDirs`      | `{ commands?: boolean, agents?: boolean }`; both `true`             | `false` stops scanning the default `commands/` or `agents/` directory.      | The importer sets `false` when a Claude Code manifest lists paths, which keeps its replace rule.                                                                  |
 | `surfaces`         | string array; `['agent']`                                           | Declares where the plugin runs; `agent` and `workbench` are current values. | Values are normalized and unknown values are retained.                                                                                                            |
 | `defaultEnabled`   | boolean, optional                                                   | Chooses the initial state for bundled plugins.                              | Ignored for installed plugins, which always wait to be allowed; bundled code-free plugins start on and bundled native-entrypoint plugins wait when it is omitted. |
 | `tools`            | string or string array                                              | Selects native entrypoints.                                                 | If omitted, the first supported file under `tools/` or at `tools.*` is used.                                                                                      |
 | `skills`           | string or string array                                              | Adds skill roots.                                                           | The default `skills/` root and a root `SKILL.md` are also scanned.                                                                                                |
-| `commands`         | array of command objects or Markdown paths                          | Adds `/<plugin>:<name>` commands.                                           | The default `commands/` directory is also scanned for Localix-native plugins.                                                                                     |
+| `commands`         | array of command objects or Markdown paths                          | Adds `/<plugin>:<name>` commands.                                           | The default `commands/` directory is also scanned unless `defaultDirs.commands` is `false`.                                                                       |
 | `contributions`    | typed declaration array; max 1,000                                  | Registers native values through host-owned schemas.                         | Installed through the contribution registry; unknown kinds fail closed.                                                                                           |
 | `agents`           | legacy role objects or Markdown paths; max 8                        | Retains external/legacy declarations during the transition.                 | Conversion to native registered agents is not yet complete.                                                                                                       |
 | `mcpServers`       | server map, path, or path array                                     | Loads inline or file-based MCP server declarations.                         | If omitted, `.mcp.json` is read when present.                                                                                                                     |
@@ -360,6 +362,7 @@ Three add agent capability with no workbench of their own:
 ## Related guides
 
 - [Build workbench UI](plugin-ui.md)
+- [Install Claude Code plugins](claude-code-plugins.md)
 - [Connect MCP](../features/mcp.md)
 
 ## Source of truth
@@ -369,4 +372,5 @@ Three add agent capability with no workbench of their own:
 - [Entrypoint resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery-entrypoints.ts)
 - [Enable policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)
 - [Runtime loader](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/loader.ts)
+- [Claude Code importer](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/import-claude-code.ts)
 - [Backend context and services](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/context.ts)

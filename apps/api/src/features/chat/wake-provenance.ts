@@ -60,7 +60,6 @@ export const WAKE_SOURCE_LABEL: Record<WakeSource, string> = {
   subagent: 'Sub-agent',
   reaction: 'Reaction',
   delegator: 'Delegator',
-  answer: 'Answer',
   'plan-review': 'Plan review',
   'plan-approved': 'Plan approval',
   resume: 'Continue',

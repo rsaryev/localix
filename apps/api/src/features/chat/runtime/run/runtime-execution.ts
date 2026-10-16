@@ -14,7 +14,7 @@ export function buildRuntimeToolContext(input: {
   userId: string
   sessionId: string
   /** The participant this run speaks as — what a tool records as the actor. */
-  speaker?: { agentId: string; handle: string }
+  speaker?: { agentId: string; handle: string; role: 'leader' | 'member' | 'solo' }
   asyncRegistry: AsyncToolRegistry
   scratchDir: string
   /** See {@link AgentToolExecutionContext.interactive} — computed by isHitlReachable. */

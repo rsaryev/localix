@@ -13,7 +13,6 @@ import type { PluginBuildToolOptions } from './tools/plugin-build'
 import type { ConfigureToolOptions } from './tools/configure/configure'
 import type { PlanToolOptions } from './tools/plan/plan'
 import type { BashWaitHost } from './tools/bash/bash-until'
-import type { AskQueuePort } from './tools/hitl/ask-queue'
 import type { TerminalToolDeps } from './tools/terminal/terminal'
 import type { ExecutionEnvironment } from './tools/environment'
 import type { SpawnTerminalJob } from './tools/terminal/terminal-job'
@@ -85,11 +84,6 @@ export interface CoreToolDeps {
   bashPluginBinDirs?: string[]
   /** Engine for `bash` `until` waits (poll + wake). Bound to user+session; absent → unavailable. */
   bashWaitHost?: BashWaitHost
-  /**
-   * Where `ask` with `wait: false` records a question for the person to answer later. Bound to
-   * user + session + the asking participant; absent → `wait: false` is refused with a reason.
-   */
-  askQueue?: AskQueuePort
   /** Keyless research runtime policy. No provider credentials are accepted. */
   researchConfig?: Partial<ResearchConfig>
   /**

@@ -53,17 +53,11 @@ async function badge(items: AttentionItem[], session: Partial<UiSession> = {}) {
 
 describe('the sidebar row badge', () => {
   test('shows the most pressing item from the shared roster', async () => {
-    expect(await badge([item('question', 'q1'), item('plan', 'p1')])).toBe(
+    expect(await badge([item('mention', 'm1'), item('plan', 'p1')])).toBe(
       'A plan is waiting for your review',
     )
     expect(await badge([item('plan', 'p1'), item('interaction', 'h1')])).toBe(
       'The agent is waiting for your input',
-    )
-  })
-
-  test('counts queued questions in its label', async () => {
-    expect(await badge([item('question', 'q1'), item('question', 'q2')])).toBe(
-      'The agent asked you 2 questions',
     )
   })
 

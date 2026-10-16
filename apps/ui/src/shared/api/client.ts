@@ -7,7 +7,6 @@
 import { lspApi } from './lspClient'
 import { usageApi } from './usage-client'
 import { projectsApi } from './projects-client'
-import { questionsApi } from './questions-client'
 import { plansApi } from './plans-client'
 import { resumeApi } from './resume-client'
 import { attentionApi } from './attention-client'
@@ -94,7 +93,6 @@ export const backendClient = {
   // shared/api/eventSocket.ts (subscribed by features/chat/model/agent-runtime.ts).
 
   ...projectsApi,
-  ...questionsApi,
   ...plansApi,
   ...resumeApi,
   ...attentionApi,

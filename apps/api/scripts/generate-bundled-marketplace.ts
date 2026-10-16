@@ -1,9 +1,8 @@
 /**
  * Regenerate the bundled Localix marketplace catalog at
- * `plugins/.claude-plugin/marketplace.json` from the actual bundled plugins.
+ * `plugins/.localix-plugin/marketplace.json` from the actual bundled plugins.
  *
- * The catalog is a Claude Code-compatible `.claude-plugin/marketplace.json` (one
- * unified format) listing every plugin under the repo's `plugins/` root with a
+ * The catalog lists every plugin under the repo's `plugins/` root with a
  * relative `./<name>` source. Run after adding/removing/renaming a bundled plugin:
  *
  *   bun run apps/api/scripts/generate-bundled-marketplace.ts
@@ -11,10 +10,14 @@
  * The committed file is guarded by marketplace.test.ts (must parse + validate clean).
  */
 import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 import { discoverBundledPlugins, bundledPluginsRoot } from '../src/features/plugins/discovery'
 import { buildMarketplaceManifest, validateMarketplace } from '../src/features/plugins/marketplace'
+import {
+  MARKETPLACE_CATALOG_FILE,
+  MARKETPLACE_METADATA_FILE,
+} from '../src/features/plugins/manifest-locate'
 
 async function main(): Promise<void> {
   // Hermetic bundled-only scan: `discoverPlugins` merges the developer's installed
@@ -22,7 +25,7 @@ async function main(): Promise<void> {
   // bundled copy and silently drop it from
   // the catalog — making generation depend on what the dev happens to have installed.
   const bundled = (await discoverBundledPlugins()).filter((p) => !p.error)
-  const metadataFile = join(bundledPluginsRoot(), '.claude-plugin', 'marketplace.metadata.json')
+  const metadataFile = join(bundledPluginsRoot(), MARKETPLACE_METADATA_FILE)
   const metadata = JSON.parse(await fs.readFile(metadataFile, 'utf8')) as {
     name: string
     description?: string
@@ -50,9 +53,8 @@ async function main(): Promise<void> {
   }
   for (const w of warnings) console.warn(`warning: ${w}`)
 
-  const dir = join(bundledPluginsRoot(), '.claude-plugin')
-  await fs.mkdir(dir, { recursive: true })
-  const file = join(dir, 'marketplace.json')
+  const file = join(bundledPluginsRoot(), MARKETPLACE_CATALOG_FILE)
+  await fs.mkdir(dirname(file), { recursive: true })
   await fs.writeFile(file, JSON.stringify(market, null, 2) + '\n')
   console.log(`Wrote ${market.plugins.length} plugins to ${file}`)
 }

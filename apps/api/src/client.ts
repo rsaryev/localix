@@ -37,7 +37,6 @@ export type {
   MessageInvocationBinding,
   SessionLoopSummary,
   SessionWork,
-  SessionQuestion,
   SessionQueueItem,
   QueueClearResult,
   QueuePromoteResult,
@@ -308,7 +307,6 @@ export type {
   AskToolRequest,
   AskToolResponse,
 } from './features/agent-core/tools/hitl/ask'
-export type { AskQueuedDetails } from './features/agent-core/tools/hitl/ask-queue'
 
 export type {
   ConfirmToolPayload,

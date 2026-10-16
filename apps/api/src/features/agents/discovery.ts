@@ -1,11 +1,13 @@
 import { promises as fs } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { isHumanAgent } from '@localixai/agent/agents'
 import type { AgentRecord } from './contracts'
 import { decodeNativeAgent } from './native-format'
 import { BUILTIN_AGENTS, isBuiltinAgentName } from './builtin'
 import { belongsToNativeScope } from './registry-identity'
 import { builtinOverrideHash } from './builtin-override'
+import { relocateReservedHandle } from './reserved-handle-rename'
 
 export const globalAgentsDir = (home = homedir()): string => join(home, '.localix', 'agents')
 export const projectAgentsDir = (cwd: string): string => join(cwd, '.localix', 'agents')
@@ -25,15 +27,23 @@ export interface AgentFile {
 }
 
 /** Native storage has one strict format. External formats enter through import adapters. */
-export async function parseAgentRecordJson(file: string): Promise<AgentRecord | null> {
+async function readAgentFile(file: string): Promise<AgentFile | null> {
   try {
     const stat = await fs.lstat(file)
     if (!stat.isFile() || stat.size > 1024 * 1024) return null
-    const parsed = decodeNativeAgent(await fs.readFile(file, 'utf8'), file)
-    return parsed.status === 'accepted' ? parsed.value : null
+    const { path, text } = await relocateReservedHandle({
+      path: file,
+      text: await fs.readFile(file, 'utf8'),
+    })
+    const parsed = decodeNativeAgent(text, path)
+    return parsed.status === 'accepted' ? { record: parsed.value, path } : null
   } catch {
     return null
   }
+}
+
+export async function parseAgentRecordJson(file: string): Promise<AgentRecord | null> {
+  return (await readAgentFile(file))?.record ?? null
 }
 
 export async function listAgentFiles(dir: string): Promise<AgentFile[]> {
@@ -45,13 +55,7 @@ export async function listAgentFiles(dir: string): Promise<AgentFile[]> {
   } catch {
     return []
   }
-  const files = await Promise.all(
-    names.map(async (name) => {
-      const path = join(dir, name)
-      const record = await parseAgentRecordJson(path)
-      return record ? { record, path } : null
-    }),
-  )
+  const files = await Promise.all(names.map((name) => readAgentFile(join(dir, name))))
   return files.filter((file): file is AgentFile => file !== null)
 }
 
@@ -82,7 +86,8 @@ export async function discoverAgents(opts: {
       opts.approvedBuiltinOverrides?.get(record.id) !== builtinOverrideHash(record)
     )
       continue
-    if (!shipped && !belongsToNativeScope(record.id, projectId)) continue
+    // Only the shipped record describes the person; a file cannot mint a second one.
+    if (!shipped && (isHumanAgent(record) || !belongsToNativeScope(record.id, projectId))) continue
     ids.add(record.id)
     byHandle.set(record.handle, {
       projectId,
@@ -99,7 +104,24 @@ export async function discoverAgents(opts: {
   if (project) {
     for (const { record, path } of await listAgentFiles(opts.globalDir ?? globalAgentsDir())) {
       if (byHandle.has(record.handle) || ids.has(record.id)) continue
-      if (!belongsToNativeScope(record.id, '')) continue
+      const shipped = BUILTIN_AGENTS.find((agent) => agent.id === record.id)
+      if (shipped) {
+        // The installation's edit of a shipped agent is this project's default: project file →
+        // installation file → shipped record. It stays the project's entry, so an edit here
+        // writes a project override and Restore returns to the installation's version.
+        if (shipped.handle !== record.handle) continue
+        ids.add(record.id)
+        byHandle.set(record.handle, {
+          projectId,
+          manifest: { name: record.id },
+          record,
+          scope,
+          path: '',
+          builtin: true,
+        })
+        continue
+      }
+      if (isHumanAgent(record) || !belongsToNativeScope(record.id, '')) continue
       ids.add(record.id)
       byHandle.set(record.handle, {
         projectId: '',

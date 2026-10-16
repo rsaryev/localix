@@ -102,7 +102,6 @@ and interruption lifetime. Current trigger coverage is explicit:
 | --------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Top-level run         | `run.completed`, `run.failed`                                 | User-stop suppression stays with the producer                                 |
 | Human input           | `hitl.required`                                               | The envelope carries open and respond intents                                 |
-| Queued question       | `hitl.required`, key `question:<id>`, severity `info`         | Not `hitl:`, so the boot sweep leaves it; settled when the question closes    |
 | Plan to review        | `hitl.required`, key `plan:<root>:<plan>`, severity `warning` | Not `hitl:`, so the boot sweep leaves it; a newer version settles it          |
 | Addressed by name     | `user.mentioned`                                              | Keyed to the message, so a replay is one row                                  |
 | Child session         | `child.completed`, `child.failed`, `child.stopped`            | Keyed per run; a stop is a quiet `info` row                                   |
@@ -152,8 +151,9 @@ attention registry (`apps/api/src/features/attention/sources.ts`), and the regis
 an item is raised and settled. From it follow the user-wide `attention.updated` snapshot frame,
 `GET /rpc/attention` (what a reload restores) and, through one observer
 (`apps/api/src/features/notifications/producers/attention.ts`), the journal row — whose key is the
-item's key. Durable kinds (queued questions, plans under review) are rebuilt from their rows at
-boot; HITL requests are memory-only and the boot sweep settles their rows.
+item's key. Plans under review, the durable kind, are rebuilt from their rows at boot; HITL requests
+are memory-only and the boot sweep settles their rows, along with any `question:` rows left by the
+retired queued questions.
 
 | Fact                     | Seam                                                                                                                                             | Key                                                                  | Raises nothing when                                                                  |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -161,7 +161,6 @@ boot; HITL requests are memory-only and the boot sweep settles their rows.
 | Sub-agent or job run     | the same seam, for a `subagent` or `job` session                                                                                                 | `child:<session>:<message>`                                          | a hook verifier                                                                      |
 | Question to the person   | `trackRequest` in `hitl-registry.ts`; settled by its ending                                                                                      | `hitl:<request>`                                                     | never; a restart settles every open one (`restart`) before boot continues            |
 | Addressed by name        | `publishUserHandoff` in `run/handoff.ts`; settled (`answered`) when the person writes in that conversation (`sendMessage`)                       | `mention:<session>:<message>`                                        | the reply is hidden                                                                  |
-| Queued question          | the question registry's `onAsked`; settled by `onResolved` (`answered`, `dismissed` for a skip, `superseded`)                                    | `question:<id>`                                                      | a boot reload — the row already exists                                               |
 | Plan to review           | the plans service's `present`; settled `answered` (approve, changes sent), `dismissed` (set aside, left Plan mode), `superseded` (newer version) | `plan:<root>:<plan>`                                                 | a review that could not be delivered                                                 |
 | Plan completed           | the plans service's `complete` — an `info` `run.completed` row, settles nothing                                                                  | `plan-completed:<root>:<plan>`                                       | never                                                                                |
 | Background work ended    | `WorkRegistry.onEnded` (`end`, `hydrate`, `losePending`)                                                                                         | `work:<record>`                                                      | a sub-agent record, or an ending that wakes the agent                                |
@@ -183,8 +182,8 @@ order. An expired, quiet, disabled, or focused event can therefore enter history
 toast, native banner, or terminal escape.
 
 The attention test returns true for severity `error` or category `human-input`. The category covers
-blocking requests, queued questions, mentions, and plans waiting for review. The web and desktop app
-has no toast transport: its interruption is the desktop native banner, decided in the window
+blocking requests, mentions, and plans waiting for review. The web and desktop app has no toast
+transport: its interruption is the desktop native banner, decided in the window
 (`apps/ui/src/shared/lib/notifications/interruption.ts`) — only the window knows its focus and which
 chat is on screen. It asks only for a row that OPENS by a change delivered live (an `n` frame, or
 the answer to this window's own op); a catch-up read is history and never interrupts.

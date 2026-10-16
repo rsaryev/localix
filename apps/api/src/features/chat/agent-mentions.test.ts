@@ -1,21 +1,22 @@
 import { describe, expect, test } from 'bun:test'
 
-import { ALL_MENTION_HANDLE, agentHandleSchema, USER_MENTION_HANDLE } from '@localixai/agent/agents'
+import { ALL_MENTION_HANDLE, agentHandleSchema, HUMAN_HANDLE } from '@localixai/agent/agents'
 import {
   mentionSpans,
   agentNameSpans,
   mentionedHandles,
-  mentionsUser,
+  mentionsHuman,
   conversationMentionHandles,
 } from './agent-mentions'
 
 test('no agent may answer to a reserved address', () => {
-  // An agent handled `all` or `user` was accepted, and was then unaddressable or routed in the
-  // person's place.
-  for (const reserved of ['user', 'ALL', 'User']) {
+  // An agent handled `all` or `human` would be unaddressable or routed in the person's place.
+  for (const reserved of ['human', 'Human', 'ALL']) {
     expect(agentHandleSchema.safeParse(reserved).success).toBe(false)
   }
-  expect(agentHandleSchema.safeParse('allison').success).toBe(true)
+  // Only the two conversation addresses are reserved.
+  for (const handle of ['allison', 'user', 'human-agent'])
+    expect(agentHandleSchema.safeParse(handle).success).toBe(true)
 })
 
 const PARTICIPANTS = ['lead', 'qa', 'backend']
@@ -77,45 +78,51 @@ describe('agentNameSpans — weak references in prose', () => {
   })
 
   test('does not reinterpret explicit mentions, substrings, emails, or reserved conversation words', () => {
-    expect(agentNameSpans('@pm pmo qa@example.com all user', ['pm', 'qa', 'all', 'user'])).toEqual(
-      [],
-    )
+    expect(
+      agentNameSpans('@pm pmo qa@example.com all human', ['pm', 'qa', 'all', 'human']),
+    ).toEqual([])
   })
 })
 
 describe('the person is an address too', () => {
-  test('mentionsUser reads @user through the same grammar as any handle', () => {
-    expect(mentionsUser('@user, option A or B?')).toBe(true)
+  test('mentionsHuman reads @human through the same grammar as any handle', () => {
+    expect(HUMAN_HANDLE).toBe('human')
+    expect(mentionsHuman('@human, option A or B?')).toBe(true)
     // Case, and trailing punctuation, exactly as for a colleague.
-    expect(mentionsUser('Waiting for you, @User.')).toBe(true)
+    expect(mentionsHuman('Waiting for you, @Human.')).toBe(true)
+  })
+
+  test('@user is not an address of the person', () => {
+    expect(mentionsHuman('@user, option A or B?')).toBe(false)
   })
 
   test('a word that merely contains the handle is not an address', () => {
     // The whole reason the grammar matches against KNOWN handles rather than any `@word`:
     // an email and a longer handle both end in something that is not a mention of anyone.
-    expect(mentionsUser('user@example.com')).toBe(false)
-    expect(mentionsUser('@username writes')).toBe(false)
-    expect(mentionsUser('we will decide ourselves')).toBe(false)
+    expect(mentionsHuman('user@example.com')).toBe(false)
+    expect(mentionsHuman('@username writes')).toBe(false)
+    expect(mentionsHuman('@humans write')).toBe(false)
+    expect(mentionsHuman('we will decide ourselves')).toBe(false)
   })
 
   test('the conversation addresses its participants, the person and everyone from one list', () => {
     expect(conversationMentionHandles(PARTICIPANTS)).toEqual([
       ...PARTICIPANTS,
-      USER_MENTION_HANDLE,
+      HUMAN_HANDLE,
       ALL_MENTION_HANDLE,
     ])
     // And the list resolves all three kinds, which is what the transcript renderer needs to turn
     // each into its own chip.
     expect(
-      mentionedHandles('@all — @qa, ask @user', conversationMentionHandles(PARTICIPANTS)),
-    ).toEqual([ALL_MENTION_HANDLE, 'qa', USER_MENTION_HANDLE])
+      mentionedHandles('@all — @qa, ask @human', conversationMentionHandles(PARTICIPANTS)),
+    ).toEqual([ALL_MENTION_HANDLE, 'qa', HUMAN_HANDLE])
   })
 
   test('the person wins over a participant that answers to the same handle', () => {
     // Two participants on one address is not a thing this grammar can express, and of the two
     // readings the person's is the one a participant cannot work around.
-    expect(mentionedHandles('@user?', conversationMentionHandles(['user']))).toEqual([
-      USER_MENTION_HANDLE,
+    expect(mentionedHandles('@human?', conversationMentionHandles(['human']))).toEqual([
+      HUMAN_HANDLE,
     ])
   })
 })

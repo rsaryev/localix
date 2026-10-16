@@ -34,8 +34,6 @@ const uiSettingsShape = {
   /** Editor / code (monospace) font — drives `--font-mono`. */
   codeFont: z.enum(['fragment-mono', 'jetbrains-mono', 'fira-code', 'system-mono']).optional(),
   fontSize: z.enum(['sm', 'md', 'lg', 'xl']).optional(),
-  /** ISO timestamp set when the user finishes (or skips) the first-run onboarding wizard. Absent → wizard auto-shows. */
-  onboardingCompletedAt: z.string().optional(),
   /**
    * Per-command keyboard-shortcut overrides. Keyed by the stable command id from
    * the UI keybindings catalog; the value is a platform-neutral canonical chord

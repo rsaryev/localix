@@ -19,6 +19,9 @@ import { DEFAULT_PERMISSION_MODE } from '../../../../capabilities/permission-mod
 import { pluginProblemNotice } from '../../plugin-problem-notice'
 import { resolvePluginSessionDataDir } from '../../../../plugins/session-storage'
 import { createPluginAgentDirectory } from '../../../../plugins/agent-directory'
+import { runHumanMentionedHooks } from '../../../../plugins/hooks'
+import type { LoadedPluginHook } from '../../../../plugins/loader'
+import { publishHumanMention } from '../handoff'
 import type { ModelView } from '../../model-view/view'
 import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
@@ -36,67 +39,90 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     turn.admittedAgent.capabilities,
     session.permissionMode ?? DEFAULT_PERMISSION_MODE,
   )
-  const context = await prepareRunContext(
-    {
-      memoryRepo: env.memoryRepo,
-      projectsRepo: env.projectsRepo,
-      pluginRepo: env.pluginRepo,
-      contextSnapshots: runtimeState.contextSnapshots,
-      laneSnapshots: createParticipantLaneSnapshotRepository(deps.db),
-      runScopes: runtimeState.runScopes,
-      now,
-      logger: env.deps.logger,
-      // A plugin hook's user-facing problem rides the same frame a Claude Code hook's
-      // non-blocking `systemMessage` does — one inline transcript warning the client renders —
-      // marked as a plugin's, so the client also keeps it as a standing Event Center row.
-      publishPluginProblem: ({ userId: owner, ...problem }) =>
-        deps.streamRegistry.publish(owner, problem.sessionId, pluginProblemNotice(problem)),
-      // A tool's session folder, behind the same ownership gate a route's goes through: a
-      // session that is gone (or never was the user's) rejects before anything is created. Pure
-      // in its arguments — the plugin context it lands on is shared by every run of the scope.
-      pluginSessionStorage: (pluginName) => ({
-        resolveDataDir: (owner, sessionId) =>
-          resolvePluginSessionDataDir({
-            pluginName,
-            userId: owner,
-            sessionId,
-            authorize: async (user, session) => {
-              if (!(await env.repo.getSession(user, session))) throw new Error('Session not found')
-            },
-          }),
-      }),
-      // The agents a plugin tool may name, behind the same ownership gate: the session is read
-      // for the user first, then only the enabled agents of its scope are listed.
-      pluginAgentDirectory: createPluginAgentDirectory({
-        sessionProject: async (user, session) => {
-          const record = await env.repo.getSession(user, session)
-          return record ? (record.projectId ?? null) : undefined
-        },
-        listAgents: async (user, projectId) =>
-          ((await deps.listRegistryAgents?.(user, projectId)) ?? []).map((agent) => ({
-            id: agent.agentId,
-            handle: agent.name,
-            description: agent.description,
-            enabled: agent.enabled,
-          })),
-      }),
-    },
-    {
-      userId,
-      agent: { ...turn.admittedAgent, capabilities: mode.capabilities },
-      session,
-      speakerAgentId,
-      historyMessages: params.historyMessages,
-      // The prompt snapshot is frozen per view epoch (see stages/view.ts).
-      viewEpoch: view.epochId,
-      globalAgentSettings: turn.globalAgentSettings,
-    },
-  )
+  const human = (user: string, projectId: string | null) =>
+    deps.resolveHuman?.(user, projectId) ?? Promise.resolve(undefined)
+  // Observer hooks (HITL, subagent stop, `@human`) are fire-and-forget: no loop latency. The
+  // plugin hooks are bound once loaded below; a card assigned before then fires none.
+  let pluginHooks: readonly LoadedPluginHook[] = []
+  const hookRunOptions: HookRunOptions = { sessionId: session.id, logger: consoleWarnLogger }
+  const [context, humanProfile] = await Promise.all([
+    prepareRunContext(
+      {
+        memoryRepo: env.memoryRepo,
+        projectsRepo: env.projectsRepo,
+        pluginRepo: env.pluginRepo,
+        contextSnapshots: runtimeState.contextSnapshots,
+        laneSnapshots: createParticipantLaneSnapshotRepository(deps.db),
+        runScopes: runtimeState.runScopes,
+        now,
+        logger: env.deps.logger,
+        // A plugin hook's user-facing problem rides the same frame a Claude Code hook's
+        // non-blocking `systemMessage` does — one inline transcript warning the client renders —
+        // marked as a plugin's, so the client also keeps it as a standing Event Center row.
+        publishPluginProblem: ({ userId: owner, ...problem }) =>
+          deps.streamRegistry.publish(owner, problem.sessionId, pluginProblemNotice(problem)),
+        // A tool's session folder, behind the same ownership gate a route's goes through: a
+        // session that is gone (or never was the user's) rejects before anything is created. Pure
+        // in its arguments — the plugin context it lands on is shared by every run of the scope.
+        pluginSessionStorage: (pluginName) => ({
+          resolveDataDir: (owner, sessionId) =>
+            resolvePluginSessionDataDir({
+              pluginName,
+              userId: owner,
+              sessionId,
+              authorize: async (user, session) => {
+                if (!(await env.repo.getSession(user, session)))
+                  throw new Error('Session not found')
+              },
+            }),
+        }),
+        // The agents a plugin tool may name, behind the same ownership gate: the session is read
+        // for the user first, then only the enabled agents of its scope are listed.
+        pluginAgentDirectory: createPluginAgentDirectory({
+          sessionProject: async (user, session) => {
+            const record = await env.repo.getSession(user, session)
+            return record ? (record.projectId ?? null) : undefined
+          },
+          listAgents: async (user, projectId) =>
+            ((await deps.listRegistryAgents?.(user, projectId)) ?? []).map((agent) => ({
+              id: agent.agentId,
+              handle: agent.name,
+              description: agent.description,
+              enabled: agent.enabled,
+            })),
+          human: (user, projectId) => human(user, projectId),
+          // A card assigned to `@human` tells the person exactly as an `@human` reply does.
+          notifyHuman: (user, sessionId, notice) =>
+            publishHumanMention(
+              {
+                streamRegistry: deps.streamRegistry,
+                notifications: deps.notifications,
+                onHumanMentioned: (event) =>
+                  void runHumanMentionedHooks(pluginHooks, event, hookRunOptions),
+              },
+              user,
+              { sessionId, messageId: notice.key, from: notice.from ?? '', text: notice.text },
+            ),
+        }),
+      },
+      {
+        userId,
+        agent: { ...turn.admittedAgent, capabilities: mode.capabilities },
+        session,
+        speakerAgentId,
+        historyMessages: params.historyMessages,
+        // The prompt snapshot is frozen per view epoch (see stages/view.ts).
+        viewEpoch: view.epochId,
+        globalAgentSettings: turn.globalAgentSettings,
+      },
+    ),
+    // Volatile, not frozen: it rides `# Conversation participants`, so an edit reaches the next turn.
+    human(userId, session.projectId ?? null),
+  ])
   const { defaultCwd, loadedPlugins } = context
   frame.teardown.pluginHooks = loadedPlugins.hooks
   frame.teardown.defaultCwd = defaultCwd
-  // Observer hooks (HITL, subagent stop) are fire-and-forget: they never add loop latency.
-  const hookRunOptions: HookRunOptions = { sessionId: session.id, logger: consoleWarnLogger }
+  pluginHooks = loadedPlugins.hooks
 
   // Plugin onSessionStart hooks — once per session, best-effort, non-blocking.
   fireSessionStartHooks({
@@ -138,6 +164,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
 
   return {
     ...context,
+    ...(humanProfile ? { human: humanProfile } : {}),
     humanReachable: mode.humanReachable,
     hookRunOptions,
     ccHooks,

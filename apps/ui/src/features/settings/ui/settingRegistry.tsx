@@ -1,5 +1,5 @@
 import { cn } from '@localixai/plugin-sdk/ui/classes'
-import type { StatusTone } from '@localixai/plugin-sdk/ui'
+import type { ProblemConsequence, StatusTone } from '@localixai/plugin-sdk/ui'
 import { Fragment, type ReactNode } from 'react'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { StatusDot } from '@localixai/kit/status-dot'
@@ -72,9 +72,15 @@ export function SettingProblems({
   warnings = NO_MESSAGES,
   onRetry,
   className,
+  consequence,
 }: {
   /** What the problems are about: the tab's name, or the record the row shows. */
   subject: string
+  /**
+   * What the problems mean for the surface. Omitted = the shared `stale` default; a record row
+   * whose findings do not mean "showing an older version" passes `none`.
+   */
+  consequence?: ProblemConsequence
   errors?: readonly string[]
   warnings?: readonly string[]
   onRetry?: () => void
@@ -85,7 +91,9 @@ export function SettingProblems({
     ...warnings.map((message) => ({ severity: 'warning' as const, message })),
   ]
   const problem = useProblemReport(
-    problems.length ? { subject: { label: subject }, problems } : null,
+    problems.length
+      ? { subject: { label: subject }, problems, ...(consequence ? { consequence } : {}) }
+      : null,
     {
       scope: PROBLEM_SCOPE,
       sourceVisible: true,

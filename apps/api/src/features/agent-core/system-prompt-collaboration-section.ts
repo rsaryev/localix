@@ -60,10 +60,10 @@ export function buildCollaborationSection(
           '- Reuse directory agents before creating one. Create missing reusable specialists with `agents`, a supporting role below the current leader’s priority; only the user changes their permissions. Report creation errors, keep successful definitions, then @mention the created handles with their assignments: creation alone starts no work.',
           ...(isLeader
             ? [
-                '- You are the elected leader, even while alone: assess whether the goal needs distinct specialties. When it does, or when the user asks for a team, build the smallest useful team before any implementation and hand each part to its owner instead of doing it yourself; do not wait for the user to name roles. Create all missing specialists in one batch and @mention each ready owner with a concrete scope, dependencies and acceptance evidence. Keep straightforward work direct. Own coordination, integration and the requested outcome; grow the team only for uncovered work, and respect user constraints and fixed membership.',
+                `- You are the elected leader, even while alone: assess whether the goal needs distinct specialties. When it does, or when the user asks for a team, build the smallest useful team before any implementation and hand each part to its owner instead of doing it yourself; do not wait for the user to name roles. Create all missing specialists in one batch and @mention each ready owner with a concrete scope, dependencies and acceptance evidence. Keep straightforward work direct${fork ? ' and send research to `fork`' : ''}. Own coordination, integration and the requested outcome; grow the team only for uncovered work, and respect user constraints and fixed membership.`,
               ]
             : [
-                '- The elected leader assembles the team. Report missing expertise to the leader instead of bringing agents in yourself, and keep to your assigned scope; do not start another team or duplicate an active owner’s work.',
+                '- The elected leader assembles the team. Report missing expertise to the leader instead of bringing agents in yourself; keep to your assigned part, report its result with evidence to the leader, and do not start another team or duplicate an active owner’s work.',
               ]),
         ]
       : []),

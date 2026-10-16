@@ -56,10 +56,9 @@ async function readSkillNames(skillDirs: string[]): Promise<string[]> {
 }
 
 /**
- * Parse one plugin directory into a DiscoveredPlugin (never throws).
- * A plugin whose selected manifest is `.claude-plugin/plugin.json` is an explicitly
- * installed Claude-format artifact, so its `commands`/`agents` use CC-spec REPLACE
- * semantics. A root `plugin.json` remains Localix-native and additive.
+ * Parse one plugin directory into a DiscoveredPlugin (never throws). Reads only the
+ * native root `plugin.json`; foreign layouts are converted at install time
+ * (`import-claude-code.ts`) and never read here.
  */
 export async function loadManifest(
   dir: string,
@@ -68,7 +67,6 @@ export async function loadManifest(
   bundled = false,
 ): Promise<DiscoveredPlugin> {
   const manifestPath = await findManifestPath(dir)
-  const ccOrigin = manifestPath === join(dir, '.claude-plugin', 'plugin.json')
   // The manifest is OPTIONAL (Claude Code parity): a directory with only component
   // folders (skills/commands/agents/.mcp.json) is a valid plugin named after its dir.
   // Read+CC-promote+validate+recover lives in parseManifestFile — a malformed
@@ -78,7 +76,7 @@ export async function loadManifest(
     basename(dir),
   )
 
-  const entrypoints = await resolveEntrypoints(dir, manifest, ccOrigin ? { ccOrigin } : undefined)
+  const entrypoints = await resolveEntrypoints(dir, manifest)
   // Parse command and agent files in parallel (independent reads).
   const [parsedCmdFiles, parsedAgentFiles, skillNames] = await Promise.all([
     Promise.all(
@@ -148,7 +146,6 @@ export async function loadManifest(
     agents,
     bundled,
     error,
-    ...(ccOrigin ? { ccOrigin: true } : {}),
     ...(manifestRecovered ? { manifestRecovered: true } : {}),
   }
 }

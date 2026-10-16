@@ -174,11 +174,16 @@ html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
 }
 .lx-island-edge {
   --edge-gap: 3px;
-  --edge-rim: 2px;
-  --edge-duration: 3.6s;
+  --edge-rim: 1px;
+  --edge-duration: 7s;
+  --edge-opacity: 0.4;
+  --edge-glow-opacity: 0.22;
+  --edge-accent: var(--composer-accent);
+  /* The participant beam's palette: one travelling glint on an otherwise transparent rim. */
   --edge-colors:
-    var(--composer-accent), var(--status-info),
-    color-mix(in oklch, var(--composer-accent), transparent 60%), var(--composer-accent);
+    transparent 0% 52%, color-mix(in oklch, var(--edge-accent), transparent 72%) 62%,
+    color-mix(in oklch, var(--foreground), transparent 14%) 72%,
+    color-mix(in oklch, var(--edge-accent), transparent 34%) 80%, transparent 90% 100%;
   position: absolute;
   inset: calc(var(--edge-gap) * -1);
   border-radius: 0 0 calc(var(--radius) + var(--edge-gap)) calc(var(--radius) + var(--edge-gap));
@@ -187,21 +192,19 @@ html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
   transition: opacity var(--dur-moderate) var(--ease-soft);
 }
 .lx-island-edge[data-active='true'] {
-  opacity: 1;
+  opacity: var(--edge-opacity);
 }
-.lx-island-edge[data-active='true'][data-mode='idle'] {
+/* Idle agents: barely there, a slow faint glint with no halo. */
+.lx-island-edge[data-mode='idle'] {
   --edge-duration: 12s;
-  --edge-rim: 1px;
-  opacity: 0.22;
-}
-.lx-island-edge[data-mode='idle'] .lx-island-edge-glow {
-  opacity: 0.16;
+  --edge-opacity: 0.26;
+  --edge-glow-opacity: 0.12;
 }
 .lx-island-edge[data-mode='waiting'] {
-  --edge-duration: 2s;
-  --edge-colors:
-    var(--status-warning), var(--composer-accent),
-    color-mix(in oklch, var(--status-warning), transparent 60%), var(--status-warning);
+  --edge-duration: 5s;
+  --edge-opacity: 0.55;
+  --edge-glow-opacity: 0.3;
+  --edge-accent: var(--status-warning);
 }
 .lx-island-edge-rim,
 .lx-island-edge-glow {
@@ -217,10 +220,10 @@ html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
   mask-composite: exclude;
 }
 .lx-island-edge-glow {
-  inset: -4px;
-  padding: calc(var(--edge-rim) + 4px);
-  opacity: 0.6;
-  filter: blur(6px);
+  inset: -2px;
+  padding: calc(var(--edge-rim) + 2px);
+  opacity: var(--edge-glow-opacity);
+  filter: blur(5px);
 }
 .lx-island-edge-rim::before,
 .lx-island-edge-glow::before {
@@ -238,7 +241,7 @@ html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
 }
 
 [data-theme='light'] .lx-island-edge-glow {
-  opacity: 0.3;
+  opacity: calc(var(--edge-glow-opacity) * 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -13,9 +13,9 @@
  * the text name".
  */
 
-// The two reserved addresses — the person (`@user`) and everyone (`@all`) — are owned by the agent
-// definition, which refuses them as handles; this grammar reads them like any other address.
-import { ALL_MENTION_HANDLE, USER_MENTION_HANDLE } from '@localixai/agent/agents'
+// The two reserved addresses — the person (`@human`) and everyone (`@all`) — are owned by the agent
+// definition, which refuses them as agent handles; this grammar reads them like any other address.
+import { ALL_MENTION_HANDLE, HUMAN_HANDLE } from '@localixai/agent/agents'
 
 /**
  * A candidate mention: `@` after start-of-text or a character a handle cannot end with, then a
@@ -115,26 +115,23 @@ export function mentionedHandles(text: string, known: readonly string[]): string
 /**
  * Does this text address the PERSON?
  *
- * The one reader of {@link USER_MENTION_HANDLE} that is not a list: a reply's own text is the
- * only evidence there is that its author meant the question for the human, so the conversation's
+ * The one reader of {@link HUMAN_HANDLE} that is not a list: a reply's own text is the only
+ * evidence there is that its author meant the question for the human, so the conversation's
  * handoff and the notification it raises both start here.
  */
-export function mentionsUser(text: string): boolean {
-  return mentionedHandles(text, [USER_MENTION_HANDLE]).length > 0
+export function mentionsHuman(text: string): boolean {
+  return mentionedHandles(text, [HUMAN_HANDLE]).length > 0
 }
 
 /**
  * Every address a conversation's text can name: its participants, plus the person and everyone.
  *
- * For the surfaces that LINKIFY rather than route — the transcript renderer — so a `@user` or an
- * `@all` in a reply reads as the chip it is instead of plain text. The reserved two go last
- * because
- * {@link mentionedHandles} canonicalises through a Map: a conversation that somehow held an agent
- * handled `user` would resolve the address to the person, which is the precedence stated on the
- * constant.
+ * For the surfaces that LINKIFY rather than route — the transcript renderer — so a `@human` or an
+ * `@all` in a reply reads as the chip it is instead of plain text. The reserved two go last because
+ * {@link mentionedHandles} canonicalises through a Map; no agent may carry either handle anyway.
  */
 export function conversationMentionHandles(participantHandles: readonly string[]): string[] {
-  return [...participantHandles, USER_MENTION_HANDLE, ALL_MENTION_HANDLE]
+  return [...participantHandles, HUMAN_HANDLE, ALL_MENTION_HANDLE]
 }
 
 /**
@@ -167,7 +164,7 @@ export function agentNameSpans(
     known
       .filter((handle) => {
         const key = normalize(handle)
-        return key !== USER_MENTION_HANDLE && key !== ALL_MENTION_HANDLE
+        return key !== HUMAN_HANDLE && key !== ALL_MENTION_HANDLE
       })
       .map((handle) => [normalize(handle), handle] as const),
   )

@@ -2,6 +2,7 @@ import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
 import { editDistance, isUnsafeRelPath, isKebabCase } from '../ext/manifest-validate'
 import { CC_HOOK_EVENTS } from '../cc-hooks/contracts'
+import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
 
 /**
  * Cross-spec (Claude Code) compatibility checks. Emits only WARNINGS — never blocks load.
@@ -54,6 +55,8 @@ const KNOWN_FIELDS = new Set([
   'license',
   'keywords',
   'migratedFrom',
+  'origin',
+  'defaultDirs',
   'surfaces',
   'tools',
   'skills',
@@ -215,14 +218,16 @@ export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidatio
     }
   }
 
-  // CC REPLACE semantics advisory — emitted ONLY when behavior actually differs from
-  // the old additive scan: a CC-origin plugin whose manifest lists `commands`/`agents`
-  // paths while the default dir also exists (the default dir is now NOT scanned).
+  // `defaultDirs.<field>: false` advisory — only when it actually hides an existing
+  // default dir (the Claude Code REPLACE rule an imported plugin carries).
   for (const field of plugin.entrypoints.ccReplacedDefaults ?? []) {
     warnings.push(
-      `Claude Code REPLACE semantics: the manifest lists "${field}" paths, so the default "${field}/" directory is NOT scanned (it exists in this plugin). List "./${field}" explicitly to keep both.`,
+      `The manifest lists "${field}" paths with defaultDirs.${field} = false, so the default "${field}/" directory is NOT scanned (it exists in this plugin). List "./${field}" explicitly to keep both.`,
     )
   }
+
+  // LSP servers: missing binaries (with an install hint) and built-in overlap.
+  warnings.push(...pluginLspNotes(summarizePluginLspServers(plugin.entrypoints.lspServers)))
 
   // Kebab-case name: our schema accepts underscores/camel, but the Claude.ai
   // marketplace sync requires strict kebab-case.

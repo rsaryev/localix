@@ -52,7 +52,7 @@ const PLAN_REFUSAL =
   'your findings to the agent that delegated the work.'
 
 /** Plan: everything that reaches past this conversation is refused; reads, views and the
- *  conversation's own state (a board card, a queued question, a delegated explorer) are not. */
+ *  conversation's own state (a board card, a delegated explorer) are not. */
 const PLAN_DENIALS: Rule[] = (['files', 'host', 'external'] as const).map((effect) => ({
   action: 'tool:*',
   resource: `effect:${effect}`,

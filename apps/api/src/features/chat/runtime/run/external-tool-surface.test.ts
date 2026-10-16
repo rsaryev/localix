@@ -28,7 +28,7 @@ const surface = (rules: Parameters<typeof composeCapabilities>[0], tools = [exte
   })
 
 describe('dynamic tools and agent presets', () => {
-  test.each(BUILTIN_TEAM.map((agent) => agent.handle))(
+  test.each(BUILTIN_TEAM.filter((agent) => agent.kind !== 'human').map((agent) => agent.handle))(
     '%s applies its roster in every mode',
     (handle) => {
       for (const mode of ['default', 'plan', 'bypass', 'autonomous'] as const) {

@@ -34,7 +34,7 @@ const TTL_MS = {
 
 /**
  * What waits on the person, by the row's category rather than a list of topics: a list had to be
- * extended by hand for every new way of waiting (a queued question, a presented plan) and missed
+ * extended by hand for every new way of waiting (a mention, a presented plan) and missed
  * each one until someone noticed it never interrupted. The server files every such row as
  * `human-input`; the native kind and the hour-long TTL follow from that one field.
  */

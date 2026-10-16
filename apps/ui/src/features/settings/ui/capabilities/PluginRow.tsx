@@ -66,12 +66,17 @@ export function PluginRow({
   const metadata: SettingRegistryMetaItem[] = [
     { label: `v${plugin.version}` },
     { label: projName },
-    {
-      label: plugin.migratedFrom ? 'migrated' : 'native',
-      title: plugin.migratedFrom
-        ? `Migrated from ${plugin.migratedFrom}`
-        : 'Written natively for Localix',
-    },
+    plugin.importedFrom === 'claude-code'
+      ? {
+          label: 'imported',
+          title: `Imported from Claude Code${plugin.migratedFrom ? ` (${plugin.migratedFrom})` : ''}`,
+        }
+      : {
+          label: plugin.migratedFrom ? 'migrated' : 'native',
+          title: plugin.migratedFrom
+            ? `Migrated from ${plugin.migratedFrom}`
+            : 'Written natively for Localix',
+        },
     ...(isWorkbenchPlugin(plugin.surfaces)
       ? [
           {
@@ -159,6 +164,8 @@ export function PluginRow({
         subject={pluginLabel(plugin)}
         errors={errors}
         warnings={warnings}
+        // Findings about the record: a plugin row never "shows the last valid version".
+        consequence="none"
       />
       {plugin.enabled && plugin.provides.tools.length > 0 && (
         <p

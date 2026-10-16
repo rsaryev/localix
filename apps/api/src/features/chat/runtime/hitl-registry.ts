@@ -8,7 +8,6 @@ import { ApiError } from '../../../lib/errors'
 import type { PendingHitlInteraction } from '../contracts'
 import type { HitlLifecycleObserver } from '../../notifications/producers'
 import { isInteractAllowedForOwner } from './interact-ownership'
-import { AskDeferredError, type AskToolPayload } from '../../agent-core/tools/hitl/ask'
 
 export interface PendingRequestMeta {
   /** Interactive session where the prompt is rendered and answered. */
@@ -243,26 +242,6 @@ export function createHitlRegistry(opts: HitlRegistryOptions = {}) {
       metaByRequestId.delete(requestId)
       shownByRequestId.delete(requestId)
       opts.lifecycle?.ended({ userId, requestId, reason: 'dismissed' })
-    },
-
-    /** Release only a queueable ask; permissions and secret requests still need a decision. */
-    defer(requestId: string, callerUserId?: string) {
-      const pending = controller.getPending(requestId)
-      const meta = metaByRequestId.get(requestId)
-      if (
-        !pending ||
-        !isInteractAllowedForOwner(meta?.userId, callerUserId) ||
-        pending.request.kind !== 'ask' ||
-        (pending.request.payload as AskToolPayload).canDefer !== true
-      ) {
-        throw new ApiError(409, 'hitl_request_not_active', 'This question cannot be deferred')
-      }
-      if (!controller.reject(requestId, new AskDeferredError())) {
-        throw new ApiError(409, 'hitl_request_not_active', 'HITL request is no longer active')
-      }
-      metaByRequestId.delete(requestId)
-      shownByRequestId.delete(requestId)
-      opts.lifecycle?.ended({ userId: meta?.userId, requestId, reason: 'deferred' })
     },
   }
 }

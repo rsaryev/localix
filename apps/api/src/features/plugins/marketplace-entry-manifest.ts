@@ -13,7 +13,7 @@ import { isRecord } from '../../lib/record'
  *
  *  - `strict:false` + NO plugin.json in the plugin dir → the entry IS the whole
  *    manifest (the `*-lsp` plugins ship only LICENSE+README; the `box` skill-bundle
- *    lists `skills` inline). We SYNTHESIZE a Claude-format plugin.json from the entry.
+ *    lists `skills` inline). We SYNTHESIZE a native root plugin.json from the entry.
  *  - strict (default) + an existing plugin.json → the entry SUPPLEMENTS it. We
  *    additively merge the entry's component fields WITHOUT overwriting anything the
  *    real manifest already declares (`skills` union; `lspServers`/`mcpServers` add
@@ -121,10 +121,8 @@ export function mergeEntryOverrides(
  * Reconcile a freshly-installed plugin dir with its marketplace entry's inline
  * components. Writes a synthesized plugin.json when the dir has none, or additively
  * supplements an existing one (components + entry metadata: version overrides;
- * displayName/description fill gaps). No-op when the entry declares neither. The
- * A synthesized manifest is written to `<dir>/.claude-plugin/plugin.json`, preserving
- * the marketplace entry's Claude origin across discovery and restarts. Existing root
- * or nested manifests are updated in place.
+ * displayName/description fill gaps). No-op when the entry declares neither. A
+ * synthesized manifest is written to `<dir>/plugin.json`; an existing one is updated in place.
  */
 export async function applyEntryManifestOverrides(
   dir: string,
@@ -134,10 +132,8 @@ export async function applyEntryManifestOverrides(
   const manifestPath = await findManifestPath(dir)
   if (!manifestPath) {
     // No plugin.json anywhere → the entry is the whole manifest (strict:false).
-    const synthesizedPath = join(dir, '.claude-plugin', 'plugin.json')
-    await fs.mkdir(join(dir, '.claude-plugin'), { recursive: true })
     await fs.writeFile(
-      synthesizedPath,
+      join(dir, 'plugin.json'),
       JSON.stringify(synthesizeEntryManifest(entry), null, 2) + '\n',
       'utf8',
     )

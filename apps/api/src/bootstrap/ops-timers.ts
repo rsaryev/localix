@@ -151,14 +151,12 @@ export function createOpsTimersPhase({
   hostRefs.monitorHost = monitorHost
 
   const startOpsTimers = (signal: AbortSignal = new AbortController().signal): void => {
-    // Once, at startup: a report or an answer whose live delivery a dead process never finished.
+    // Once, at startup: a report whose live delivery a dead process never finished.
     const recoverReports = async () => {
       try {
         // Every user's children, not only the default user's: a report owed to anyone else
         // would otherwise never be recovered.
         await recoverDelegationReports(db, (request) => chatService.wakeSession(request))
-        // The same sweep for a queued question's answer: recorded, but its wake never admitted.
-        await chatService.redeliverAnswers()
       } catch (error) {
         logger.warn({ event: 'delegation.recovery_failed', error: errorMessage(error) })
       }

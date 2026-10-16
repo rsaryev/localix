@@ -21,7 +21,7 @@ const setInputValue = (input: HTMLInputElement, value: string) => {
 }
 
 describe('HITL control contracts', () => {
-  test('Answer later and closing a queueable ask defer it without denying or answering', async () => {
+  test('an ask offers no Answer later: Esc and Deny both deny it', async () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { AskInteractionView } = await import('./AskInteractionView')
@@ -29,7 +29,6 @@ describe('HITL control contracts', () => {
     const host = document.createElement('div')
     document.body.append(host)
     const root = createRoot(host)
-    const deferred: string[] = []
     const denied: string[] = []
     const answered: unknown[] = []
     const interaction: PendingAskInteraction = {
@@ -40,7 +39,6 @@ describe('HITL control contracts', () => {
         payload: {
           toolCallId: 'ask-later',
           loading_messages: [],
-          canDefer: true,
           questions: [
             { id: 'direction', question: 'Which direction?', options: [{ label: 'Fast' }] },
           ],
@@ -60,20 +58,11 @@ describe('HITL control contracts', () => {
               onDismiss={(id) => {
                 denied.push(id)
               }}
-              onDefer={(id) => {
-                deferred.push(id)
-              }}
             />
           </ActionRegistryProvider>,
         ),
       )
-      const later = [...host.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
-        button.textContent?.trim().startsWith('Answer later'),
-      )
-      await React.act(async () => later?.click())
-      await React.act(async () =>
-        host.querySelector<HTMLButtonElement>('[aria-label="Answer later"]')?.click(),
-      )
+      expect(host.textContent).not.toContain('Answer later')
       await React.act(async () => {
         host.querySelector<HTMLInputElement>('input')?.focus()
         host
@@ -82,14 +71,13 @@ describe('HITL control contracts', () => {
             new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
           )
       })
-      expect(deferred).toEqual(['ask-later', 'ask-later', 'ask-later'])
-      expect(denied).toEqual([])
+      expect(denied).toEqual(['ask-later'])
       expect(answered).toEqual([])
       const deny = [...host.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
         button.textContent?.trim().startsWith('Deny'),
       )
       await React.act(async () => deny?.click())
-      expect(denied).toEqual(['ask-later'])
+      expect(denied).toEqual(['ask-later', 'ask-later'])
     } finally {
       await React.act(async () => root.unmount())
       host.remove()

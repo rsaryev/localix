@@ -9,7 +9,12 @@ import {
 } from './marketplace'
 import { bundledPluginsRoot } from './discovery'
 import { marketplacesRoot, type MarketplaceSource } from './marketplace-source'
-import { locateManifest, MARKETPLACE_MANIFEST_CANDIDATES } from './manifest-locate'
+import {
+  locateManifest,
+  MARKETPLACE_CATALOG_FILE,
+  MARKETPLACE_MANIFEST_CANDIDATES,
+} from './manifest-locate'
+import { CLAUDE_CODE_MARKETPLACE_HINT, isClaudeCodeMarketplace } from './import-claude-code'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
 /** A registered marketplace record (mirrors CC's known_marketplaces.json entries). */
@@ -41,7 +46,7 @@ export async function writeKnownMarketplaces(
   await fs.writeFile(knownFile(root), JSON.stringify(known, null, 2) + '\n')
 }
 
-/** Locate a marketplace manifest: `.claude-plugin/marketplace.json` or root `marketplace.json`. */
+/** Locate a marketplace catalog: `.localix-plugin/marketplace.json`. */
 export async function findMarketplaceManifest(dir: string): Promise<string | null> {
   return locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)
 }
@@ -49,7 +54,10 @@ export async function findMarketplaceManifest(dir: string): Promise<string | nul
 /** Read + deterministically validate a marketplace catalog from a materialized dir. */
 export async function readMarketplace(dir: string): Promise<Marketplace> {
   const manifestPath = await findMarketplaceManifest(dir)
-  if (!manifestPath) throw new Error(`No .claude-plugin/marketplace.json found in ${dir}`)
+  if (!manifestPath) {
+    if (await isClaudeCodeMarketplace(dir)) throw new Error(CLAUDE_CODE_MARKETPLACE_HINT)
+    throw new Error(`No ${MARKETPLACE_CATALOG_FILE} found in ${dir}`)
+  }
   const raw = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as unknown
   const { errors } = validateMarketplace(raw)
   if (errors.length) throw new Error(`Invalid marketplace.json: ${errors.join('; ')}`)
@@ -77,6 +85,11 @@ export interface MarketplaceListing {
   builtin: boolean
   count: number
   plugins: MarketplaceListingPlugin[]
+  /**
+   * Why this registered marketplace cannot be used — set for a source that carries only a
+   * Claude Code catalog (kept listed so the user sees it, with the install hint).
+   */
+  unsupported?: string
 }
 
 function toListingPlugins(market: Marketplace): MarketplaceListingPlugin[] {
@@ -122,7 +135,16 @@ export async function listMarketplaces(
                   plugins: toListingPlugins(marketplace),
                 }
               } catch {
-                return { name, builtin: false, count: 0, plugins: [] }
+                const unsupported = (await isClaudeCodeMarketplace(rec.installLocation))
+                  ? CLAUDE_CODE_MARKETPLACE_HINT
+                  : undefined
+                return {
+                  name,
+                  builtin: false,
+                  count: 0,
+                  plugins: [],
+                  ...(unsupported ? { unsupported } : {}),
+                }
               }
             })(),
           ],

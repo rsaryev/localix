@@ -123,7 +123,6 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
     createAgentRunner({
       db: deps.db,
       work: deps.work,
-      questions: deps.questions,
       notifications: deps.notifications,
       // The RESOLVED reader, so a wake the runner starts from its own read of a session sees
       // the same models a typed turn does. See `RunnerDeps.repo`.
@@ -173,6 +172,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       persistPermissionRule: deps.persistPermissionRule,
       listInvocableRegistryAgents: deps.listInvocableRegistryAgents,
       listRegistryAgents: deps.listRegistryAgents,
+      resolveHuman: deps.resolveHuman,
       agentManagement: deps.agentManagement,
       now: deps.now,
     })

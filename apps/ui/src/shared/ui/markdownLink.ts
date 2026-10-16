@@ -15,16 +15,16 @@ export type MarkdownLinkTarget =
   | { kind: 'external'; href: string; newTab: boolean }
   /**
    * The renderer's OWN in-app schemes: `mention:` (a file mention chip), `agent:` (an agent
-   * mention chip) and `user:` (the reader's own mention). Minted by our remark plugins, never by
+   * mention chip) and `human:` (the reader's own mention). Minted by our remark plugins, never by
    * a model or a page, and consumed by the `a` component — so they must survive the URL
    * transform, which otherwise strips every scheme it has no click route for. Before this kind
    * existed the transform removed them and the chips rendered as plain text, which no test
-   * caught — and `user:` reproduced it exactly, the day it was added.
+   * caught — and the reader's own scheme reproduced it exactly, the day it was added.
    */
   | { kind: 'chip'; href: string }
   | { kind: 'inert' }
 
-const CHIP_SCHEMES = ['mention:', 'agent:', 'user:'] as const
+const CHIP_SCHEMES = ['mention:', 'agent:', 'human:'] as const
 const isChipHref = (href: string): boolean => CHIP_SCHEMES.some((scheme) => href.startsWith(scheme))
 
 function supportedExternalHref(href: string): { href: string; newTab: boolean } | null {

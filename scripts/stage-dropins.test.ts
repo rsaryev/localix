@@ -426,12 +426,12 @@ describe('stageDropins', () => {
       JSON.stringify({ name: 'clean', version: '1.0.0', license: 'MIT' }),
     )
     write(join(pluginDir, '.turbo', 'cache.json'), '{}')
-    write(join(root, 'plugins', '.claude-plugin', 'marketplace.json'), '{}')
+    write(join(root, 'plugins', '.localix-plugin', 'marketplace.json'), '{}')
 
     stageDropins({ repoRoot: root, outPlugins })
 
     expect(existsSync(join(outPlugins, 'clean', '.turbo'))).toBe(false)
-    expect(existsSync(join(outPlugins, '.claude-plugin'))).toBe(false)
+    expect(existsSync(join(outPlugins, '.localix-plugin'))).toBe(false)
   })
 
   test('bundles JS/MJS/TS tools so staged plugins do not need the repo node_modules', async () => {

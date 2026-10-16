@@ -66,7 +66,6 @@ export interface PendingTurn {
  */
 export const isBoundaryDeliverable = (turn: PendingTurn): boolean =>
   isDelegatorMessage(turn) ||
-  isQuestionAnswer(turn) ||
   (!turn.agentTurn &&
     turn.kind === 'user' &&
     !turn.bindings?.length &&
@@ -84,23 +83,6 @@ export const isBoundaryDeliverable = (turn: PendingTurn): boolean =>
 export const isDelegatorMessage = (turn: PendingTurn): boolean =>
   turn.kind === 'wake' &&
   turn.source === 'delegator' &&
-  !turn.agentTurn &&
-  !turn.bindings?.length &&
-  !hasExecutionOverrides(turn)
-
-/**
- * The person's answer to a question the agent queued (`ask` with `wait: false`).
- *
- * A machine wake only by transport: its content is what the person chose, in reply to the agent,
- * so a run still going should take it at its next step exactly as it takes a typed interjection —
- * an agent that queued a question in order to keep working is the one most likely to still be
- * working when the answer comes, and making it finish first is the wait the queue exists to
- * avoid. Unlike a delegator's message it is ADDRESSED (the participant that asked), so the
- * steering taker still checks the recipient.
- */
-export const isQuestionAnswer = (turn: PendingTurn): boolean =>
-  turn.kind === 'wake' &&
-  turn.source === 'answer' &&
   !turn.agentTurn &&
   !turn.bindings?.length &&
   !hasExecutionOverrides(turn)

@@ -6,9 +6,10 @@ import {
   createAskTool,
   normalizeAskAnswers,
   prepareAskArguments,
+  NO_WATCHER_TEXT,
+  UNANSWERED_ASK_TEXT,
   type AskToolResponse,
 } from './ask'
-import type { AskQueuePort } from './ask-queue'
 import { HITL_DECISION_MS } from './decision-deadline'
 
 describe('createAskTool', () => {
@@ -96,7 +97,7 @@ describe('createAskTool', () => {
    * transcript recorded a choice nobody made, and "the user picked Careful" could equally
    * mean the user was in another room.
    */
-  test('an unanswered question is refused, never auto-answered', async () => {
+  test('an unanswered question closes after the deadline, never auto-answered', async () => {
     // The controller's own expiry: a clock already past the deadline rejects at request time.
     const humanInLoop = createHumanInLoopController({ now: () => Date.now() + HITL_DECISION_MS })
     const result = await createAskTool().execute(
@@ -116,8 +117,12 @@ describe('createAskTool', () => {
       undefined,
       { humanInLoop },
     )
-    expect(result.isError).toBe(true)
-    expect(result.content).toContain('AUTO-DENIED')
+    // Not an error: the person was away. The model is told to go on with its best assumption.
+    expect(result.isError).toBeUndefined()
+    expect(result.content).toBe(UNANSWERED_ASK_TEXT)
+    expect(result.content).toContain('did not answer within 5 minutes')
+    expect(result.content).not.toContain('AUTO-DENIED')
+    expect(result.details).toMatchObject({ expired: true })
     // The recommended option is nowhere in the result: nothing was chosen on anyone's behalf.
     expect(result.content).not.toContain('Careful')
     expect(humanInLoop.listPending()).toHaveLength(0)
@@ -125,16 +130,18 @@ describe('createAskTool', () => {
 })
 
 describe('ask classification', () => {
-  test.each([
-    ['blocking by default', { questions: [] }, { effect: 'read', needsHuman: true }],
-    ['blocking explicitly', { wait: true }, { effect: 'read', needsHuman: true }],
-    ['queued for later', { wait: false }, { effect: 'session', needsHuman: true }],
-    ['a non-boolean wait', { wait: 'false' }, { effect: 'external', needsHuman: true }],
-    // Not an object: the schema refuses it, so the class is the widest, never a guess.
-    ['no input object', null, { effect: 'external', needsHuman: true }],
-  ] as const)('%s', (_label, input, expected) => {
-    expect(classifyAsk(input)).toEqual(expected)
-    expect(createAskTool().classify?.(input)).toEqual(expected)
+  test('every ask is a read that needs a human', () => {
+    for (const input of [{ questions: [] }, null]) {
+      expect(classifyAsk(input)).toEqual({ effect: 'read', needsHuman: true })
+      expect(createAskTool().classify?.(input)).toEqual({ effect: 'read', needsHuman: true })
+    }
+  })
+
+  test('the schema no longer accepts wait or from', () => {
+    const questions = [{ id: 'q', question: 'Q', options: [{ label: 'x' }] }]
+    expect(askToolInputSchema.safeParse({ questions }).success).toBe(true)
+    expect(askToolInputSchema.safeParse({ from: 'q-1' }).success).toBe(false)
+    expect(askToolInputSchema.keyof().options).not.toContain('wait')
   })
 })
 
@@ -150,17 +157,8 @@ describe('ask in a run nobody watches', () => {
       interactive: false,
     })
     expect(result.isError).toBe(true)
-    expect(result.content).toContain('No one can answer')
+    expect(result.content).toBe(NO_WATCHER_TEXT)
     expect(humanInLoop.listPending()).toHaveLength(0)
-  })
-
-  test('with a queue, the refusal points at wait: false', async () => {
-    const queue = { queue: async () => ({ questionId: 'q-1' }) } as unknown as AskQueuePort
-    const result = await createAskTool(queue).execute('call_1', blocking, undefined, undefined, {
-      humanInLoop: createHumanInLoopController(),
-      interactive: false,
-    })
-    expect(result.content).toContain('wait: false')
   })
 
   test('an absent `interactive` flag still raises the card', async () => {
@@ -196,20 +194,16 @@ describe('prepareAskArguments', () => {
       question: 'Continue?',
       options,
       recommended: 0,
-      wait: true,
     })
     expect(prepared).toEqual({
-      wait: true,
       questions: [{ id: 'mode', question: 'Continue?', options, recommended: 0 }],
     })
     expect(askToolInputSchema.safeParse(prepared).success).toBe(true)
   })
 
-  test('the canonical shape, a re-ask and a bare loading message', () => {
+  test('the canonical shape and a bare loading message', () => {
     const canonical = { questions: [{ id: 'a', question: 'Q', options: [{ label: 'x' }] }] }
     expect(prepareAskArguments(canonical)).toBe(canonical)
-    const reask = { from: 'q-1', question: 'ignored' }
-    expect(prepareAskArguments(reask)).toBe(reask)
     expect(prepareAskArguments({ ...canonical, loading_messages: 'Thinking' })).toEqual({
       ...canonical,
       loading_messages: ['Thinking'],

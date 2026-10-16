@@ -8,7 +8,7 @@ import type {
   SessionSummary,
   SessionTiming,
 } from './read-model'
-import type { SessionLoopSummary, SessionQueueItem, SessionQuestion, SessionWork } from './queue'
+import type { SessionLoopSummary, SessionQueueItem, SessionWork } from './queue'
 import type { SessionPlan } from '../../plans/contracts'
 import type { ResumePoint } from '../../resume/contracts'
 import type { AttentionItem } from '../../attention/contracts'
@@ -118,7 +118,7 @@ export type AgentStreamEvent =
       type: 'hitl.resolved'
       sessionId: string
       requestId: string
-      reason?: 'answered' | 'dismissed' | 'deferred' | 'expired' | 'cancelled'
+      reason?: 'answered' | 'dismissed' | 'expired' | 'cancelled'
     }
   | {
       /**
@@ -194,16 +194,6 @@ export type AgentStreamEvent =
       type: 'session_work.updated'
       sessionId: string
       work: SessionWork[]
-    }
-  | {
-      /**
-       * The session's open queued questions changed — the agent asked one (`ask` with
-       * `wait: false`), or one was answered, skipped or replaced. The FULL list, last-wins, like
-       * the work snapshot beside it.
-       */
-      type: 'session_questions.updated'
-      sessionId: string
-      questions: SessionQuestion[]
     }
   | {
       /**

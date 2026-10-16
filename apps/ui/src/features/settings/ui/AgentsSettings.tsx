@@ -5,6 +5,7 @@ import { SettingProblems } from './settingRegistry'
 import { SettingsPageHeader } from './SettingsScaffold'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { AgentRow } from './capabilities/AgentRow'
+import { HumanAgentCard } from './capabilities/HumanAgentCard'
 import { ProjectSwitcher } from './ScopeSwitcher'
 import { openAgentProfile, openNewAgentProfile } from '../model/agentProfileTab'
 
@@ -54,13 +55,15 @@ export function AgentsSettings({ scope, projects, onScopeChange }: AgentsSetting
       />
 
       <CapabilityRegistryBody
-        count={agents.length}
+        // The person's card is always listed, so the registry is never empty.
+        count={agents.length + 1}
         loading={loading}
         error={error}
         empty={
           <>No agents here yet. Create one with New agent, or import them from another AI agent.</>
         }
       >
+        <HumanAgentCard scope={scope} />
         {agents.map((a) => (
           <AgentRow
             key={`${a.projectId}:${a.record.id}`}

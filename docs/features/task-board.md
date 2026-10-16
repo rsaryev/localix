@@ -19,6 +19,9 @@ Empty columns are collapsed to keep the cards readable.
 | Epic    | A card that groups tasks.                                                | An epic cannot be taken; take one of its tasks.                    |
 | Take    | The agent's act of claiming a card: it becomes the owner, `in_progress`. | Refused while a dependency is not `done`.                          |
 | Passive | The board records work and never starts it.                              | No card state starts a run, wakes an agent or invites anyone.      |
+| Review  | A member's finished card, waiting for the leader to verify it.           | Not `done`: it does not release dependents or finish its epic.     |
+| Leader  | The group chat's leading agent, or the only agent in a chat.             | Sees and edits the whole board.                                    |
+| Member  | Any other agent of a group chat.                                         | Sees and works only the cards assigned to it.                      |
 
 ## What you can do
 
@@ -27,6 +30,7 @@ Empty columns are collapsed to keep the cards readable.
 | Open the board                   | The **Board** rail button, a board link in the transcript, or search.       | The board follows the chat it belongs to.                         |
 | Add and edit cards               | The board's create dialog and task panel, or ask the agent.                 | A card's owner must be an enabled agent of the chat's scope.      |
 | Move cards                       | Drag, keyboard moves or the card menu; a drag of many cards lands together. | You cannot cancel a card; only the agent closes one as cancelled. |
+| Approve a reviewed card          | **Approve** on a card in **Review**, or move it to **Done**.                | Moving it to **Ready** sends it back for more work.               |
 | Turn review comments into a card | **Task** beside **Send** in a comment batch.                                | The card lands in the backlog with the commented files attached.  |
 | Link a card into a message       | `@resource:` → **Board**, or drag the card into the composer.               | The agent receives the card's brief, not a live view.             |
 | Search cards                     | Global search, the **Tasks** group (`task:` prefix).                        | Searches only the board of the chat the search runs in.           |
@@ -53,13 +57,40 @@ plugin tool: the agent loads it once with `activate_tools`, and the session reme
    entry written as `{ text, done }` sets that item's tick.
 5. The agent calls `complete`, which names the cards it released and any checklist items still
    unticked, or `block` with the obstacle.
-6. An epic is never taken, and its status is its own: the board does not close it. The completion
+6. In a group chat, a member's `complete` moves its card to `review`, and the leader verifies it:
+   `complete` moves it to `done`, `update` with `status: ready` sends it back.
+7. An epic is never taken, and its status is its own: the board does not close it. The completion
    that finishes an epic's last task says so, and the agent closes the epic with `complete`.
 
 A tool `create` batch saves entries one by one. If a later entry is refused, the earlier cards
 remain and the reply names the refused entry; retry only the missing work. A filesystem or other
 unexpected failure can also leave earlier entries saved. This differs from a multi-card drag, which
 validates and saves the complete move batch together.
+
+### Roles in a group chat
+
+The host names the speaking agent's role with every call: `solo` when it is the chat's only agent,
+`leader` for the group's leader, `member` for everyone else. A call without a role acts as the
+leader.
+
+| Action                      | Leader or solo agent          | Member                                                       |
+| --------------------------- | ----------------------------- | ------------------------------------------------------------ |
+| `list`, `search`            | Every card.                   | Only its own cards, each with its epic's title.              |
+| `detail`                    | Any card.                     | Only its own cards; a lookup never names a colleague's card. |
+| `take`, `block`, `complete` | Any card it may take or owns. | Only its own cards; `complete` sends the card to `review`.   |
+| `update`                    | Every field.                  | Only `items` and `priority` on its own cards.                |
+| `create`                    | As requested.                 | Unassigned, in `backlog`, for the leader to triage.          |
+| `delete`, `reorder`         | Allowed.                      | Refused.                                                     |
+
+Reassigning a card that is `in_progress` or in `review` puts it back to `ready`, so its new owner
+can `take` it.
+
+### Cards for you
+
+The board's directory lists you as `human`. A card assigned to `human` waits for you: the board
+shows it with a person icon and "you (@human)", and assigning it raises the same mention
+notification as an `@human` reply. Agents cannot `take` or `complete` such a card; the tool answers
+"LX-n is for @human; it waits for the person." Move your own cards on the board as usual.
 
 Each workflow move has one action. `update` changes a card's text, owner, epic, priority,
 dependencies and checklist, and moves it only to `backlog`, `ready` or `cancelled`: `in_progress` is
@@ -74,6 +105,7 @@ reached through `take`, which checks dependencies, `done` through `complete` and
 | `ready`       | Prepared for an agent to take.               |
 | `in_progress` | An agent took responsibility.                |
 | `blocked`     | Work cannot continue; the card explains why. |
+| `review`      | A member finished; the leader verifies it.   |
 | `done`        | Work was marked complete.                    |
 | `cancelled`   | Work was explicitly abandoned; final.        |
 

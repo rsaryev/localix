@@ -821,8 +821,7 @@ describe('ROSTER_EVENT_TYPES', () => {
     'hitl.resolved',
     'user.mentioned', // a member asked the person directly; the room it happened in is one
     //                   they were not watching, which is the whole point of the frame
-    'session_questions.updated', // the sidebar marks a session whose agent queued a question
-    'plan.updated', // a plan waiting for review, the same way
+    'plan.updated', // the sidebar marks a session whose plan waits for review
     'session_resume.updated', // the root's unfinished work, shown in a delegated child's composer too
     'plan.presented', // opens the plan tab even while the person watches a delegated child
     'attention.updated', // the user's whole "waiting on you" set — not session state at all

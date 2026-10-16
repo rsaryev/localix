@@ -77,15 +77,12 @@ export function createChatQueryFacade({ repo, runner, sessionLifecycleCtx }: Cha
           session,
           loops: loopOps.listSessionLoops(userId, session.id),
           work: runner.listWork(userId, session.id),
-          questions: runner.listQuestions(userId, session.id),
           queued: await runner.listQueued(session.id),
         })),
       )
-      for (const { session, loops, work, questions, queued } of overlays) {
+      for (const { session, loops, work, queued } of overlays) {
         if (loops.length > 0) session.loops = loops
         if (work.length > 0) session.work = work
-        // The sidebar marks a session with open questions; it reads them off this list.
-        if (questions.length > 0) session.questions = questions
         if (queued.length > 0) session.queuedMessages = queued
       }
       return result

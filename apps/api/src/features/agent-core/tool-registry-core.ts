@@ -98,7 +98,7 @@ export function buildCoreTools(
 
   return [
     {
-      tool: createAskTool(core.askQueue),
+      tool: createAskTool(),
     },
     {
       tool: bashTool,

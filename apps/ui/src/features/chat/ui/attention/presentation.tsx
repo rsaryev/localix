@@ -11,7 +11,7 @@
  * silently.
  */
 import type { ComponentType } from 'react'
-import { AtSign, ClipboardList, Hand, MessageCircleQuestion, type LucideIcon } from 'lucide-react'
+import { AtSign, ClipboardList, Hand, type LucideIcon } from 'lucide-react'
 import type { AttentionItem, AttentionKind } from '@localixai/api/client'
 
 import { HitlAttentionBody } from './HitlAttentionBody'
@@ -31,9 +31,6 @@ export interface AttentionPresentation {
   badge: AttentionBadge
   Body?: ComponentType<AttentionBodyProps>
 }
-
-const count = (items: readonly AttentionItem[], kind: AttentionKind) =>
-  items.filter((item) => item.kind === kind).length
 
 export const ATTENTION_PRESENTATION: Record<AttentionKind, AttentionPresentation> = {
   interaction: {
@@ -59,17 +56,5 @@ export const ATTENTION_PRESENTATION: Record<AttentionKind, AttentionPresentation
       label: () => 'Someone in this conversation is asking you',
     },
     Body: MentionAttentionBody,
-  },
-  question: {
-    badge: {
-      icon: MessageCircleQuestion,
-      toneClass: 'text-status-warning',
-      label: (items) => {
-        const open = count(items, 'question')
-        return open === 1
-          ? 'The agent asked you a question'
-          : `The agent asked you ${open} questions`
-      },
-    },
   },
 }

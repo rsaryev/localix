@@ -213,6 +213,7 @@ export function createDomainServicesPhase({
     syncBundledContributions: (...args) => pluginService.syncBundledContributions(...args),
   })
   hostRefs.listAgents = (...args) => agentsService.listAgents(...args)
+  hostRefs.getHuman = (...args) => agentsService.getHuman(...args)
   // A crashed language server is a low-severity Event Center row until it is ready again.
   const lspManager = createLspManager({
     health: createLspConditions(notifications, env.LOCALIX_DEFAULT_USER_ID),

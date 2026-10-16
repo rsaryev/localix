@@ -113,9 +113,8 @@ a deliberate placement in the relevant guide. Failed runs cannot automatically p
 The 2026-10-08 documentation refresh uses the same dark product appearance and 3× standard. Agent
 profiles focus on standing instructions, context and turn limits. Resumes show a populated PDF
 beside its fields. SQLite results come from querying the fixture's release checks. The Markdown
-Guide board contains interactive components whose tab switching is checked. Queued questions are
-restored from deterministic fixture records; they are not attributed to a live model. The optional
-Docker capture opens only the dedicated demo container and shows actual logs and controls.
+Guide board contains interactive components whose tab switching is checked. The optional Docker
+capture opens only the dedicated demo container and shows actual logs and controls.
 
 Historical light-theme demonstrations, old landing frames, before/after comparisons and transient
 startup/error captures stay on disk as history, but are excluded from the current public manifest.

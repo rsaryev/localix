@@ -134,11 +134,8 @@ const REPLAY_TIER: Record<AgentStreamEvent['type'], EventTier> = {
   // --- session-scoped panels: each is a last-wins snapshot a reconnecting client needs ---
   'session_triggers.updated': ['replayable', 'watched'],
   'session_work.updated': ['replayable', 'watched'],
-  // `roster`, unlike the work beside it: an open question is the person's to act on, so its
-  // session's row has to say so while the person is looking at another one. It is rare by
-  // nature — a question asked, a question closed — so the firehose pays nothing for it.
-  'session_questions.updated': ['replayable', 'roster'],
-  // A plan waiting for review is the person's to act on, like an open question — and as rare.
+  // `roster`: a plan waiting for review is the person's to act on, so its session's row has to
+  // say so while the person is looking at another one. It is rare, so the firehose pays little.
   'plan.updated': ['replayable', 'roster'],
   // Unfinished work moves with the plan beside it (approved, completed, set aside) — as rare, and
   // `roster` for the same reason: it is the ROOT's, read from a delegated child's composer too.

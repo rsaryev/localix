@@ -1,6 +1,12 @@
 import type { LoadedPluginHook } from './loader'
 import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
-import type { HitlRequestEvent, HitlResolvedEvent, PluginHooks, SubagentStopEvent } from './native'
+import type {
+  HitlRequestEvent,
+  HitlResolvedEvent,
+  HumanMentionedEvent,
+  PluginHooks,
+  SubagentStopEvent,
+} from './native'
 
 // Lifecycle + observer hooks: fire-and-forget notifications a plugin can observe
 // (subagent-stop, HITL request/resolved, session-end). Split out of hooks.ts;
@@ -8,7 +14,9 @@ import type { HitlRequestEvent, HitlResolvedEvent, PluginHooks, SubagentStopEven
 // per-plugin isolation + timeout, never throws.
 
 /** Fire an observer-only hook on every declaring plugin (isolation + timeout each). */
-async function runObserverHooks<K extends 'onSubagentStop' | 'onHitlRequest' | 'onHitlResolved'>(
+async function runObserverHooks<
+  K extends 'onSubagentStop' | 'onHitlRequest' | 'onHitlResolved' | 'onHumanMentioned',
+>(
   hookName: K,
   hookEntries: readonly LoadedPluginHook[],
   event: Parameters<NonNullable<PluginHooks[K]>>[0],
@@ -57,6 +65,15 @@ export async function runHitlResolvedHooks(
   options: HookRunOptions,
 ): Promise<void> {
   return runObserverHooks('onHitlResolved', hookEntries, event, options)
+}
+
+/** Fire every plugin's `onHumanMentioned` when an agent's reply addresses the person. */
+export async function runHumanMentionedHooks(
+  hookEntries: readonly LoadedPluginHook[],
+  event: HumanMentionedEvent,
+  options: HookRunOptions,
+): Promise<void> {
+  return runObserverHooks('onHumanMentioned', hookEntries, event, options)
 }
 
 /**

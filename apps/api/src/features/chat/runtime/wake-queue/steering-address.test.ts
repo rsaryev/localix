@@ -88,45 +88,6 @@ test('a child report is leased only for its delegator at an explicit tool seam',
   expect(queue.hasPending(session.id)).toBe(false)
 })
 
-test("a queued question's answer joins the run of the participant that asked — and no one else's", async () => {
-  const session = sessionFixture({ id: 'answer-session' })
-  const queue = createWakeQueue({
-    repo: {} as never,
-    streamRegistry: { publish: () => {} } as never,
-    now: () => '2026-10-02T00:00:00.000Z',
-    state: {
-      activeRuns: new Map([[session.id, new AbortController()]]),
-      drainingSessions: new Set(),
-      sessionRunIdentity: new Map(),
-    },
-    run: async () => ({ status: 'completed' as const }),
-  })
-  queues.push(queue)
-  await queue.wake({
-    userId: session.userId,
-    session,
-    content: '[Answer to q-1] …',
-    internal: true,
-    source: 'answer',
-    to: { participant: 'agent:lead' },
-  })
-  // Promised as a next-step delivery, like a typed interjection — not a turn of its own.
-  expect(queue.list(session.id)).toMatchObject([{ source: 'answer', delivery: 'next-tool' }])
-  // A colleague's run does not take an answer to a question it never asked.
-  expect(
-    await queue.reserveSteerable(session.id, undefined, {
-      participant: 'agent:qa',
-      allowUnaddressed: true,
-    }),
-  ).toEqual([])
-  expect(
-    await queue.reserveSteerable(session.id, undefined, {
-      participant: 'agent:lead',
-      allowUnaddressed: false,
-    }),
-  ).toMatchObject([{ source: 'answer', content: '[Answer to q-1] …' }])
-})
-
 test('generic wakes never become mid-run steering even with a subagent address', async () => {
   const session = sessionFixture({ id: 'generic-wake-session' })
   const queue = createWakeQueue({

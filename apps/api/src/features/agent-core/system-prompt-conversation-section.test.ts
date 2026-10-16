@@ -6,9 +6,14 @@ import {
   isMultiAgentConversation,
 } from './system-prompt-conversation-section'
 import {
+  HUMAN_BOARD_CONTROL,
+  HUMAN_CONTROL,
+  LEADER_BOARD,
+  MEMBER_BOARD,
   SOLO_TURN_CONTROL,
   TEAM_CONVERSATION,
   TEAM_LEADERSHIP,
+  TEAM_MEMBER,
 } from './system-prompt-team-contract'
 
 const PARTICIPANTS = [
@@ -33,8 +38,35 @@ describe('the conversation roster', () => {
     expect(section).not.toContain(TEAM_CONVERSATION)
   })
 
-  test('a single agent has no roster', () => {
-    expect(buildParticipantsSection({ self: 'qa', participants: [{ handle: 'qa' }] })).toBeNull()
+  test('the person is always a participant, described by their record', () => {
+    const solo = buildParticipantsSection({ self: 'qa', participants: [{ handle: 'qa' }] })
+    expect(solo).toContain('- @human (Human): the person you work with')
+    const described = buildParticipantsSection({
+      self: 'qa',
+      participants: PARTICIPANTS,
+      human: {
+        label: 'Rus',
+        description: 'Manual QA — I verify releases by hand',
+        instructions: 'Prefers short\nquestions.',
+      },
+    })
+    expect(described).toContain(
+      '- @human (Rus): the person you work with — Manual QA — I verify releases by hand\n  About them, in their words: Prefers short questions.',
+    )
+  })
+
+  test('the description and instructions together stay within the cap', () => {
+    const section = buildParticipantsSection({
+      self: 'qa',
+      participants: [{ handle: 'qa' }],
+      human: { description: 'x'.repeat(700), instructions: 'z'.repeat(700) },
+    })
+    expect(section).toContain('x'.repeat(700))
+    expect(section).toContain('z'.repeat(300))
+    expect(section).not.toContain('z'.repeat(301))
+  })
+
+  test('the person does not make a solo chat a group', () => {
     expect(isMultiAgentConversation({ self: 'qa', participants: [{ handle: 'qa' }] })).toBe(false)
     expect(isMultiAgentConversation(undefined)).toBe(false)
     expect(isMultiAgentConversation({ self: 'qa', participants: PARTICIPANTS })).toBe(true)
@@ -49,8 +81,17 @@ describe('the turn protocol', () => {
     // The full contract binds turns only once colleagues are present.
     expect(solo).not.toContain('Everyone here')
     expect(solo).not.toContain(TEAM_CONVERSATION)
-    // Nothing to say to a lone agent that can neither invite nor own the topic.
-    expect(buildTurnControlSection({ multi: false })).toBeNull()
+    // Even a lone agent that can neither invite nor own the topic can hand the person the floor.
+    const bare = buildTurnControlSection({ multi: false })
+    expect(bare).toContain(HUMAN_CONTROL)
+  })
+
+  test('@human rules reach solo and group runs alike', () => {
+    for (const multi of [false, true]) {
+      const section = buildTurnControlSection({ multi, hasBoard: true })
+      expect(section).toContain('Address @human with a concrete question, decision or request')
+      expect(section).toContain(HUMAN_BOARD_CONTROL)
+    }
   })
 
   test('a multi-agent run gets the addressing contract and the lane isolation', () => {
@@ -64,14 +105,21 @@ describe('the turn protocol', () => {
     expect(multi).not.toContain('handoff note')
   })
 
-  test('never names a task board — that workflow belongs to the tool that owns one', () => {
-    // A board is a plugin tool now; a core contract naming it would be prose for a tool most
-    // runs do not hold, the defect that once made a model invent a KANBAN.md.
-    for (const isLeader of [true, false]) {
-      const section = buildTurnControlSection({ multi: true, isLeader })
-      expect(section).not.toMatch(/\bboard\b/i)
-      expect(section).not.toMatch(/\bcards?\b/i)
-    }
+  test('names a task board only for a run that holds one', () => {
+    // A board is a plugin tool; a contract naming it for a run without it once made a model
+    // invent a KANBAN.md.
+    for (const multi of [false, true])
+      for (const isLeader of [true, false]) {
+        const section = buildTurnControlSection({ multi, isLeader })
+        expect(section).not.toMatch(/\bboard\b/i)
+        expect(section).not.toMatch(/\bcards?\b/i)
+      }
+    expect(buildTurnControlSection({ multi: true, isLeader: true, hasBoard: true })).toContain(
+      LEADER_BOARD,
+    )
+    expect(buildTurnControlSection({ multi: true, isLeader: false, hasBoard: true })).toContain(
+      MEMBER_BOARD,
+    )
   })
 
   test('only the elected leader receives orchestration ownership', () => {
@@ -85,6 +133,12 @@ describe('the turn protocol', () => {
     expect(participant).not.toContain(TEAM_LEADERSHIP)
     expect(participant).not.toContain('You are the leader')
     expect(participant).toContain('leader owns coordination and the final answer to the user')
+    expect(participant).toContain(TEAM_MEMBER)
+    expect(participant).toContain('@mention only the leader or @human')
+    expect(buildTurnControlSection({ multi: true, isLeader: true, canFork: true })).toContain(
+      '`fork`',
+    )
+    expect(leader).toContain('is not approval of a plan')
   })
 })
 

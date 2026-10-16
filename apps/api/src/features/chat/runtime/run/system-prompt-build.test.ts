@@ -71,6 +71,27 @@ describe('channelNameFromSourceKey', () => {
 })
 
 describe('buildPluginsPromptContext', () => {
+  test('lists LSP contributions by extension, with a missing binary and its install hint', () => {
+    const loadedPlugins = {
+      loaded: [],
+      promptSections: [],
+      lspServers: [
+        {
+          pluginName: 'typescript-lsp',
+          servers: {
+            typescript: {
+              command: 'typescript-language-server',
+              extensionToLanguage: { '.ts': 'typescript', '.zzz': 'zzz' },
+            },
+          },
+        },
+      ],
+    } as unknown as LoadedPlugins
+    const out = buildPluginsPromptContext(loadedPlugins, [])!
+    expect(out).toContain('- typescript-lsp — LSP "typescript": .zzz; built-in server kept for .ts')
+    expect(out).toContain('diagnostics via edit/write results, not a tool')
+  })
+
   test('indexes only model-actionable contributions without repeating manifest descriptions', () => {
     const loadedPlugins = {
       loaded: [

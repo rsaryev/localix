@@ -81,9 +81,7 @@ export function useIsland(
   // A request that was not here before reveals itself once; a manual fold keeps it quiet.
   useEffect(() => {
     const urgent = items.find(
-      (item) =>
-        (item.kind === 'interaction' || item.kind === 'question') &&
-        !announced.current.has(item.key),
+      (item) => item.kind === 'interaction' && !announced.current.has(item.key),
     )
     announced.current = new Set(items.map((item) => item.key))
     const selectedExists = items.some((item) => item.key === state.selectedKey)

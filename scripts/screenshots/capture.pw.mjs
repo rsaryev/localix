@@ -38,7 +38,6 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     const route = `${uiOrigin}/#/project/${prefix ? fixture[`${prefix}ProjectId`] : fixture.projectId}/${prefix ? fixture[`${prefix}SessionId`] : fixture.sessionId}`
     const errors = []
     page.on('pageerror', (error) => errors.push(error.message))
-    if (spec.viewport) await page.setViewportSize(spec.viewport)
     if (spec.theme)
       await page.addInitScript((theme) => localStorage.setItem('sandbox_theme', theme), spec.theme)
     const island = spec.scenario.startsWith('island-')

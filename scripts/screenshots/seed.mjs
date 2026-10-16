@@ -147,34 +147,6 @@ for (const [index] of messages.entries()) {
       id,
     )
 }
-// Durable demo question, restored into the real registry after restarting the capture API.
-const question = [
-  {
-    id: 'release_scope',
-    question: 'Which change should lead the release notes?',
-    options: [
-      { label: 'Shared workspace', description: 'Lead with source, preview and checks together.' },
-      {
-        label: 'Team collaboration',
-        description: 'Lead with the group conversation and task board.',
-      },
-    ],
-    recommended: 0,
-  },
-]
-db.query(
-  'INSERT OR IGNORE INTO agent_questions(id,user_id,session_id,agent_id,display_id,tool_call_id,questions_json,status,asked_at) VALUES (?,?,?,?,?,?,?,?,?)',
-).run(
-  'capture-release-scope',
-  'local-user',
-  fixture.sessionId,
-  'builtin:localix',
-  'q-1',
-  'capture-ask',
-  JSON.stringify(question),
-  'pending',
-  new Date().toISOString(),
-)
 db.close()
 const result = await api(sessionRoute('/resume'))
 const resumes = Array.isArray(result) ? result : result.resumes
@@ -242,6 +214,4 @@ await seedExternal(fixture)
 fixture.resumeId = resume.id
 fixture.connectionId = connection.id
 await fs.writeFile(fixtureFile, `${JSON.stringify(fixture, null, 2)}\n`)
-console.log(
-  'Demo seeded without credentials or model calls. Restart only the capture API to restore the queued question.',
-)
+console.log('Demo seeded without credentials or model calls.')

@@ -3,15 +3,15 @@ import type { AgentTool } from './types'
 /**
  * WHAT ONE CALL REACHES, from least to most consequential.
  *
- * A read/write bit could not tell a read-only session which writes are harmless: a game move,
- * a board card and a question queued for later are writes, and refusing them made planning
+ * A read/write bit could not tell a read-only session which writes are harmless: a game move
+ * and a board card are writes, and refusing them made planning
  * unusable, while letting "writes" through let `DROP TABLE` in. The line a session mode draws
  * is about WHERE the effect lands, so that is what a call declares.
  *
  * - `read`      observes; changes nothing anywhere (a network GET of public data included).
  * - `view`      ephemeral UI the person is looking at: a chart drawing, a camera move, a pane.
  * - `session`   state owned by this conversation and deleted with it: a board card, a game, a
- *               queued question, a child session it delegates to.
+ *               child session it delegates to.
  * - `files`     files on disk — the workspace or anywhere a path rule can judge.
  * - `host`      the agent's own durable state beyond this conversation: global memory, skills,
  *               loops and triggers, plugins, configuration, secrets.

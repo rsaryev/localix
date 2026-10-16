@@ -1,6 +1,5 @@
 import type { ParticipantRef } from '../../../db/participant'
 import type { MessageBinding } from './messages'
-import type { AskToolQuestion } from '../../agent-core/tools/hitl/ask'
 
 /**
  * Public shape of one piece of RUNNING background work (`features/work`) — a job, a stream, a
@@ -23,21 +22,6 @@ export interface SessionWork {
   eventCount: number
   lastEvent: string | null
   lastEventAt: string | null
-}
-
-/**
- * One question the agent queued for the person (`ask` with `wait: false`) that is still open —
- * what the composer's questions strip lists and answers. Closed questions are not listed; how one
- * ended is on its `ask` transcript item.
- */
-export interface SessionQuestion {
-  /** `q-3` — the same id the agent was told. */
-  id: string
-  /** The participant that asked; its answer wakes it. */
-  agentId: string
-  toolCallId: string
-  questions: AskToolQuestion[]
-  askedAt: string
 }
 
 /**
@@ -135,15 +119,6 @@ export type WakeSource =
    * one runs for it, and that run reports back like the first.
    */
   | 'delegator'
-  /**
-   * THE PERSON ANSWERED A QUESTION THE AGENT QUEUED — `ask` with `wait: false`.
-   *
-   * Its own source because it is neither a typed message nor a machine wake: the person's own
-   * words, given in reply to something the agent asked, possibly long after. A run still going
-   * takes it at its next step, the way a typed interjection is taken (`isQuestionAnswer`); an idle
-   * session runs a turn for it, and the chip on that turn says it was the answer.
-   */
-  | 'answer'
   /**
    * THE PERSON DECIDED ON A PLAN THE AGENT PRESENTED (`features/plans`): `plan-review` sends the
    * version's comments back for a revision, `plan-approved` hands it over for implementation in

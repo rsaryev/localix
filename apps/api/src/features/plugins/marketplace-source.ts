@@ -93,9 +93,34 @@ export function parseMarketplaceInput(
   if (gh)
     return gh[2] ? { source: 'github', repo: gh[1], ref: gh[2] } : { source: 'github', repo: gh[1] }
 
+  // `plugin@marketplace` typed into `marketplace add` (SSH `git@host:path` matched above).
+  if (/^[^@\s/:]+@[^@\s:]+$/.test(trimmed))
+    return {
+      error: `"${trimmed}" looks like a plugin@marketplace reference; install it with /plugin install ${trimmed}`,
+    }
+
   return {
     error: `Invalid marketplace source "${input}". Use owner/repo, https://…, git@…, npm:package, or an absolute path.`,
   }
+}
+
+/**
+ * Does a stored source match a user-typed marketplace reference (`owner/repo`, a git URL)?
+ * Lets `install name@owner/repo` find a marketplace registered under its catalog name.
+ */
+export function sourceMatchesRef(src: MarketplaceSource, ref: string): boolean {
+  const norm = (v: string) =>
+    v
+      .trim()
+      .replace(/^https?:\/\/github\.com\//, '')
+      .replace(/\.git$/, '')
+      .replace(/\/$/, '')
+      .toLowerCase()
+  const want = norm(ref)
+  if (src.source === 'github') return norm(src.repo) === want
+  if (src.source === 'git') return norm(src.url) === want
+  if (src.source === 'npm') return src.package.toLowerCase() === want
+  return false
 }
 
 /** The git clone URL for a remote source. */

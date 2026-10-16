@@ -1,15 +1,33 @@
 import {
   CONVERSATION_TURN_CONTROL,
+  HUMAN_ASK_CONTROL,
+  HUMAN_BOARD_CONTROL,
+  HUMAN_CONTROL,
+  LEADER_BOARD,
+  LEADER_FORK,
+  MEMBER_BOARD,
+  MEMBER_SKIP,
   SKIP_ANSWER_CONTROL,
+  SOLO_BOARD,
+  SOLO_ROLE,
   SOLO_TURN_CONTROL,
   TEAM_CONVERSATION,
   TEAM_LEADERSHIP,
+  TEAM_MEMBER,
   TOPIC_CONTROL,
 } from './system-prompt-team-contract'
+import { HUMAN_HANDLE, HUMAN_PROFILE_MAX_CHARS } from '@localixai/agent/agents'
 
 export interface ConversationParticipant {
   handle: string
   description?: string
+}
+
+/** The person's record as the prompt reads it: who they are, never instructions to follow. */
+export interface HumanProfile {
+  label?: string
+  description: string
+  instructions: string
 }
 
 /**
@@ -44,41 +62,86 @@ export function buildTurnControlSection(input: {
   canSkip?: boolean
   /** A tag can bring an agent in: an open chat, not a fixed roster or a delegated team. */
   canInvite?: boolean
-}): string | null {
+  /** The run holds a task board tool; board rules render only then. */
+  hasBoard?: boolean
+  /** The run holds `fork`. */
+  canFork?: boolean
+  /** The run holds `ask`. */
+  canAsk?: boolean
+}): string {
   const topic = input.canChangeTopic ? [TOPIC_CONTROL] : []
+  const board = (line: string) => (input.hasBoard ? [line] : [])
+  const fork = (line: string) => (input.canFork ? [line] : [])
+  const human = [
+    HUMAN_CONTROL,
+    ...(input.canAsk ? [HUMAN_ASK_CONTROL] : []),
+    ...board(HUMAN_BOARD_CONTROL),
+  ]
   if (!input.multi) {
-    const solo = input.canInvite ? [SOLO_TURN_CONTROL] : []
-    return solo.length || topic.length
-      ? ['# Conversation turn control', ...solo, ...topic].join('\n')
-      : null
+    return [
+      '# Conversation turn control',
+      ...(input.canInvite ? [SOLO_TURN_CONTROL] : []),
+      ...human,
+      ...board(SOLO_BOARD),
+      ...fork(SOLO_ROLE),
+      ...topic,
+    ].join('\n')
   }
   return [
     '# Conversation turn control',
     CONVERSATION_TURN_CONTROL,
+    ...human,
     ...(input.canSkip ? [SKIP_ANSWER_CONTROL] : []),
     ...topic,
     'Only the user removes participants; keep colleagues after their work is done.',
     TEAM_CONVERSATION,
     ...(input.isLeader
-      ? ['## Leadership', TEAM_LEADERSHIP]
+      ? ['## Leadership', TEAM_LEADERSHIP, ...fork(LEADER_FORK), ...board(LEADER_BOARD)]
       : [
-          'The conversation leader owns coordination and the final answer to the user: do your assigned part and report concrete results.',
+          '## Your part',
+          TEAM_MEMBER,
+          ...(input.canSkip ? [MEMBER_SKIP] : []),
+          ...board(MEMBER_BOARD),
         ]),
     'Workspace files are shared with everyone; never read a colleague’s private scratch files.',
     'Do not sign your messages or narrate who speaks next.',
   ].join('\n')
 }
 
-/** `# Conversation participants` — who else is here, from the speaker's point of view. */
+/** One line per field: a profile is data in a list, not a block of prose. */
+const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim()
+
+/** The `@human` entry, bounded like the record itself. */
+function humanEntry(human: HumanProfile | undefined): string[] {
+  const label = oneLine(human?.label ?? '') || 'Human'
+  const description = oneLine(human?.description ?? '').slice(0, HUMAN_PROFILE_MAX_CHARS)
+  const instructions = oneLine(human?.instructions ?? '').slice(
+    0,
+    Math.max(0, HUMAN_PROFILE_MAX_CHARS - description.length),
+  )
+  return [
+    `- @${HUMAN_HANDLE} (${label}): the person you work with${description ? ` — ${description}` : ''}`,
+    ...(instructions ? [`  About them, in their words: ${instructions}`] : []),
+  ]
+}
+
+/**
+ * `# Conversation participants` — who is here, from the speaker's point of view.
+ *
+ * The person is always listed, alone or not: `@human` is how any agent hands them the floor, and
+ * their record says what to ask them for. It rides here, in the volatile tail, so editing it never
+ * rewrites the cached prefix.
+ */
 export function buildParticipantsSection(input: {
   self: string
   participants: readonly ConversationParticipant[]
-}): string | null {
+  human?: HumanProfile
+}): string {
   const others = input.participants.filter((participant) => participant.handle !== input.self)
-  if (others.length === 0) return null
   return [
     '# Conversation participants',
     `You are ${input.self}. Other participants, addressed with @:`,
+    ...humanEntry(input.human),
     ...others.map(
       (participant) =>
         `- @${participant.handle}${participant.description ? `: ${participant.description}` : ''}`,

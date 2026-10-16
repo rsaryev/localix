@@ -81,7 +81,7 @@ export type NotificationAction =
 
 /**
  * What KIND of fact a notification is, independent of its topic. `human-input` is everything
- * waiting on the person (a blocking request, a queued question, a mention, a plan to review):
+ * waiting on the person (a blocking request, a mention, a plan to review):
  * interruption policy keys on it, so a new waiting kind interrupts without a topic list to update.
  * The same vocabulary as the server journal's row category.
  */

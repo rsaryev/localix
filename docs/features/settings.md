@@ -65,6 +65,10 @@ container is narrow. The action row remains reachable while scrolling and wraps 
 Read-only definitions explain their owner, and controls follow the same field policy as the server.
 Restoring a built-in definition fills the draft for review; it does not write until saved.
 
+The pinned **Human** card on the same page edits your own record (`@human`): title, description and
+notes for agents, with a 1,000-character counter and **Restore**. It follows the page's scope
+picker. See [Human](agents.md#human).
+
 The built-in run limit is 1,000 tool-loop turns. An agent limit can lower it, and delegated tasks
 can impose another cap; the editor shows inherited and effective values. See
 [agent context and limits](agents.md#model-limits-and-context) for preload and memory behavior.

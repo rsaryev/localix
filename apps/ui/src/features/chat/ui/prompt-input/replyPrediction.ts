@@ -34,14 +34,11 @@ const hasWords = (message: Message) =>
 
 /** The agent's message a reply would answer, or null when there is none to answer now. */
 export function replyPredictionSubject(
-  session:
-    | Pick<UiSession, 'messages' | 'queuedMessages' | 'pendingInteraction' | 'questions'>
-    | undefined,
+  session: Pick<UiSession, 'messages' | 'queuedMessages' | 'pendingInteraction'> | undefined,
 ): Message | null {
   if (!session) return null
   if (session.queuedMessages.length > 0) return null
   if (session.pendingInteraction) return null
-  if ((session.questions?.length ?? 0) > 0) return null
   // From the end, without copying: this runs in a store selector, once per streamed token.
   for (let index = session.messages.length - 1; index >= 0; index--) {
     const message = session.messages[index]!

@@ -28,7 +28,6 @@ import {
   formatRuntimeContext,
 } from './system-prompt-sections'
 import type { BuildAgentSystemPromptParams } from './system-prompt'
-import { buildOpenQuestionsSection } from './tools/hitl/ask-queue'
 import { buildParticipantsSection } from './system-prompt-conversation-section'
 
 /**
@@ -132,13 +131,6 @@ export function buildRuntimeTailSections(
       'background-jobs',
       buildBackgroundJobsSection(params.backgroundJobs, { canManage: hasTool(TOOL.jobs) }),
     )
-  }
-  // Gated on `ask` like every section on a tool's state: a run that cannot ask has nobody to
-  // re-ask, and is told nothing about questions a different shape of run left open.
-  if (params.openQuestions && hasTool(TOOL.ask)) {
-    const now = params.now ? Date.parse(params.now()) : Date.now()
-    const { open, skipped } = params.openQuestions
-    state('open-questions', buildOpenQuestionsSection(open, now, skipped))
   }
   return sections
 }

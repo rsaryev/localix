@@ -51,7 +51,7 @@ function makeHarness(opts?: {
     userId: string
     content: string
     queuedAt: string
-    source?: 'subagent' | 'external' | 'user-busy' | 'delegator' | 'answer'
+    source?: 'subagent' | 'external' | 'user-busy' | 'delegator'
     internal?: boolean
     clientMessageId?: string
   }>
@@ -227,18 +227,6 @@ describe('createSteeringTaker', () => {
       isInternal: true,
       origin: 'delegator',
     })
-  })
-
-  it("hands a queued question's answer over as the person's words, never as untrusted data", async () => {
-    // It travels as a wake, but it is what the person chose; framing it as machine data would
-    // tell the agent to distrust the very answer it asked for.
-    const answer = '[Answer to q-1] The user answered the question you queued earlier:'
-    const h = makeHarness({
-      turns: [{ userId: 'u1', content: answer, queuedAt: 't1', source: 'answer' }],
-    })
-    const out = await h.taker()
-    expect(out[0]).toBe(answer)
-    expect(h.inserted[0]!.payload).toMatchObject({ isInternal: true, origin: 'answer' })
   })
 
   it('waits for a completed tool boundary, then consumes an addressed child report once', async () => {

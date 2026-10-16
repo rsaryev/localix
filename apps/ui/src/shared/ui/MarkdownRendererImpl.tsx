@@ -33,9 +33,9 @@ import { MarkdownAgentLink } from './MarkdownAgentLink'
 import { MarkdownAppViewLink } from './MarkdownAppViewLink'
 import { childrenToText, getLanguage, isCodeBlock } from '@localixai/markdown/markdownHelpers'
 import { remarkFileMention, mentionPathFromHref } from './remarkFileMention'
-import { remarkAgentMention, agentHandleFromHref, isUserMentionHref } from './remarkAgentMention'
+import { remarkAgentMention, agentHandleFromHref, isHumanMentionHref } from './remarkAgentMention'
 import { AgentMentionChip } from './AgentMentionChip'
-import { UserMentionChip } from './UserMentionChip'
+import { HumanMentionChip } from './HumanMentionChip'
 import { FileMentionChip } from './FileMentionChip'
 import { ExternalAnchor } from './external-anchor'
 import { MarkdownBlockquote } from '@localixai/markdown/MarkdownBlockquote'
@@ -390,9 +390,9 @@ function MarkdownLink({ href, children: c }: MarkdownLinkProps) {
   // The person's own mention first: it is the one participant with no registry identity behind
   // it, so it must never fall into the agent lookup below. The label loses its `@` because the
   // chip draws one of its own — the matched span covers the `@`, so passing the text through
-  // printed `@@user`.
-  if (isUserMentionHref(safeHref)) {
-    return <UserMentionChip>{childrenToText(c).replace(/^@/, '')}</UserMentionChip>
+  // printed `@@human`.
+  if (isHumanMentionHref(safeHref)) {
+    return <HumanMentionChip>{childrenToText(c).replace(/^@/, '')}</HumanMentionChip>
   }
   const agentHandle = agentHandleFromHref(safeHref)
   if (agentHandle) return <AgentMentionChip handle={agentHandle} />

@@ -438,7 +438,7 @@ describe('bundled plugin installation', () => {
   test('skips authoring and metadata directories', async () => {
     const { source, home } = await fixture()
     await writePlugin(source, 'scaffold', 'authoring only', { private: true })
-    await fs.mkdir(join(source, '.claude-plugin'), { recursive: true })
+    await fs.mkdir(join(source, '.localix-plugin'), { recursive: true })
 
     const managed = await syncBundledPlugins(source, home)
 

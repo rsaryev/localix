@@ -17,11 +17,9 @@
  */
 import { USER_PARTICIPANT } from '../../../../db/participant'
 import type { StoredMessagePayload } from '../../../../db'
-import { USER_MENTION_HANDLE } from '@localixai/agent/agents'
-import { mentionsUser } from '../../agent-mentions'
+import { HUMAN_HANDLE } from '@localixai/agent/agents'
+import { mentionsHuman } from '../../agent-mentions'
 import type { AgentStreamEvent } from '../../contracts'
-import { isMultiParticipant } from '../../session-route'
-import type { SessionRecord } from '../../repository'
 import type { AgentNotifications } from '../../../notifications/producers'
 
 /** How much of the question travels in the notification. A banner is not a transcript. */
@@ -32,70 +30,76 @@ const textOf = (payload: Pick<StoredMessagePayload, 'content'>): string =>
   typeof payload.content === 'string' ? payload.content : ''
 
 /**
- * Does this reply name the person at all? The gate for TELLING them — which is a different
- * question from whether the round ends, and was the same one until a participant asked its
- * colleagues and the person in one breath.
- */
-export function mentionsPerson(
-  session: Pick<SessionRecord, 'agents'>,
-  payload: Pick<StoredMessagePayload, 'content'>,
-): boolean {
-  return isMultiParticipant(session) && mentionsUser(textOf(payload))
-}
-
-/**
- * The payload to write, unchanged when this reply did not hand the conversation back.
+ * The payload to write, unchanged when this reply did not address `@human`.
  *
- * Only with several participants. A one-to-one chat has a single counterpart and every reply is already for the
- * person, so marking one of them would say nothing.
+ * In a one-to-one chat too: every reply there is for the person, but an explicit `@human` is the
+ * agent saying the chat now waits on them, which is worth a notification wherever they are. The
+ * stored ref stays `user` — the persisted participant id of the person.
  */
-export function withHandoff(
-  session: Pick<SessionRecord, 'agents'>,
-  payload: StoredMessagePayload,
-): StoredMessagePayload {
-  if (!isMultiParticipant(session)) return payload
+export function withHandoff(payload: StoredMessagePayload): StoredMessagePayload {
   // Who answers next is `conversation-routing.ts`'s; this only stamps a row addressed to the person.
-  if (!textOf(payload).trim() || !mentionsUser(textOf(payload))) return payload
-  return toPerson(payload)
+  if (!mentionsHuman(textOf(payload))) return payload
+  return { ...payload, to: USER_PARTICIPANT, toSnapshot: { handle: HUMAN_HANDLE } }
 }
 
-function toPerson(payload: StoredMessagePayload): StoredMessagePayload {
-  return { ...payload, to: USER_PARTICIPANT, toSnapshot: { handle: USER_MENTION_HANDLE } }
-}
-
-/** Did the row that was just written hand the turn back to the person? */
-export function isUserHandoff(payload: Pick<StoredMessagePayload, 'to'>): boolean {
+/** Did the row that was just written hand the turn to the person? */
+export function isHumanHandoff(payload: Pick<StoredMessagePayload, 'to'>): boolean {
   return payload.to === USER_PARTICIPANT
 }
 
+/** Something in a chat now waits on the person: an `@human` reply, or a card assigned to them. */
+export interface HumanMention {
+  sessionId: string
+  /** The row (or other subject) the person is pointed at. */
+  messageId: string
+  /** The handle of whoever asked; '' when no agent did. */
+  from: string
+  text: string
+}
+
+export interface HumanMentionIo {
+  streamRegistry: {
+    publish: (userId: string, sessionId: string, event: AgentStreamEvent) => void
+  }
+  /** The attention item (and its journal row and native notification) — the frame is only news. */
+  notifications?: Pick<AgentNotifications, 'mentions'>
+  /** External channels (plugins' `onHumanMentioned`). Fire-and-forget. */
+  onHumanMentioned?: (event: HumanMention) => void
+}
+
+/** Tell the person, wherever they are: the stream frame, the attention item, the plugin hook. */
+export function publishHumanMention(io: HumanMentionIo, userId: string, input: HumanMention): void {
+  const text = input.text.trim()
+  const mention = {
+    ...input,
+    text: text.length > NOTICE_CHARS ? `${text.slice(0, NOTICE_CHARS)}…` : text,
+    mentionedAt: Date.now(),
+  }
+  io.streamRegistry.publish(userId, input.sessionId, { type: 'user.mentioned', ...mention })
+  io.notifications?.mentions.mentioned({ userId, ...mention })
+  io.onHumanMentioned?.({
+    sessionId: mention.sessionId,
+    messageId: mention.messageId,
+    from: mention.from,
+    text: mention.text,
+  })
+}
+
 /**
- * Tell the person, wherever they are.
- *
  * After the row is committed, not before: the frame carries a `messageId` the client follows
  * into the transcript, and a notification that arrives ahead of the message it points at is a
  * link to nothing.
  */
-export function publishUserHandoff(
-  io: {
-    streamRegistry: {
-      publish: (userId: string, sessionId: string, event: AgentStreamEvent) => void
-    }
-    /** The attention item (and its journal row) for the same mention — the frame is only news. */
-    notifications?: Pick<AgentNotifications, 'mentions'>
-  },
+export function publishHumanHandoff(
+  io: HumanMentionIo,
   args: { userId: string; sessionId: string; payload: StoredMessagePayload },
 ): void {
-  const { payload } = args
-  const text = typeof payload.content === 'string' ? payload.content.trim() : ''
-  const mention = {
+  publishHumanMention(io, args.userId, {
     sessionId: args.sessionId,
-    messageId: payload.id,
-    // The snapshot frozen at insert, like every other display of an author in a conversation: a renamed
-    // agent must not retro-author the question it asked under its old name.
-    from: payload.authorSnapshot?.handle ?? '',
-    text: text.length > NOTICE_CHARS ? `${text.slice(0, NOTICE_CHARS)}…` : text,
-    mentionedAt: Date.now(),
-  }
-  io.streamRegistry.publish(args.userId, args.sessionId, { type: 'user.mentioned', ...mention })
-  io.notifications?.mentions.mentioned({ userId: args.userId, ...mention })
+    messageId: args.payload.id,
+    // The snapshot frozen at insert, like every other display of an author in a conversation: a
+    // renamed agent must not retro-author the question it asked under its old name.
+    from: args.payload.authorSnapshot?.handle ?? '',
+    text: textOf(args.payload),
+  })
 }

@@ -166,3 +166,29 @@ describe('filterAndRankSlashCommands', () => {
     expect(filterAndRankSlashCommands('zzz', list)).toEqual([])
   })
 })
+
+describe('importance order', () => {
+  const list = [
+    cmd({ trigger: 'help', category: 'info' }),
+    cmd({ trigger: 'loop', category: 'autonomous' }),
+    cmd({ trigger: 'fork', category: 'context' }),
+    cmd({ trigger: 'model', category: 'config' }),
+    cmd({ id: 'plugin:board', trigger: 'board' }),
+    cmd({ id: 'plugin:start', trigger: 'start', featured: true }),
+  ]
+
+  test('an empty query puts the featured command first, then the built-ins by section importance', () => {
+    expect(filterAndRankSlashCommands('', list).map((c) => c.trigger)).toEqual([
+      'start',
+      'model',
+      'fork',
+      'loop',
+      'help',
+      'board',
+    ])
+  })
+
+  test('a featured command also leads its own match tier', () => {
+    expect(filterAndRankSlashCommands('t', list)[0]?.trigger).toBe('start')
+  })
+})

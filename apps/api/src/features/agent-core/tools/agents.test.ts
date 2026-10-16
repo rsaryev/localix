@@ -98,7 +98,7 @@ describe('agent catalog tool', () => {
       await expect(tool.execute('call', { action: 'create', agents } as never)).rejects.toThrow()
     }
     expect(writes).toBe(0)
-    for (const handle of ['user', 'all', '../escape'])
+    for (const handle of ['human', 'all', '../escape'])
       expect(agentAuthoredBlueprintSchema.safeParse({ ...blueprint, handle }).success).toBe(false)
   })
 

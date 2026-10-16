@@ -167,8 +167,22 @@ describe('assignments and reports', () => {
 
   test('a question to the person is not reported back', async () => {
     const h = harness()
-    await h.route('agent-b', '@user, which language first?', assignment(), askedBy('agent-a'))
+    await h.route('agent-b', '@human, which language first?', assignment(), askedBy('agent-a'))
     expect(h.queued).toEqual([])
+  })
+
+  test('@human is never routed or invited as an agent', async () => {
+    const h = harness()
+    await h.route('agent-b', '@human, which language first?')
+    expect(h.queued).toEqual([])
+    expect(h.session().agents.map((agent) => agent.handle)).not.toContain('human')
+  })
+
+  test('@human ends the chain even when colleagues are named beside it', async () => {
+    const h = harness()
+    await h.route('agent-b', '@human, which language first? @gamma, @qa stand by.')
+    expect(h.queued).toEqual([])
+    expect(h.session().agents.map((agent) => agent.handle)).not.toContain('qa')
   })
 })
 

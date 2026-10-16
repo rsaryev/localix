@@ -1,0 +1,29 @@
+{
+  "name": "go",
+  "category": "utilities",
+  "displayName": "Go",
+  "version": "0.1.0",
+  "license": "MIT",
+  "apiVersion": 1,
+  "defaultEnabled": true,
+  "description": "Turn a free-form goal into a team: the agent plans tasks on the Kanban board, brings in the specialists it needs and coordinates them to the result.",
+  "author": "Localix",
+  "keywords": ["team", "agents", "kickoff", "orchestrate", "plan"],
+  "commands": [
+    {
+      "name": "go",
+      "description": "Hand a goal to a team — the agent plans it on the board, picks the specialists and runs the work once you approve.",
+      "argumentHint": "<goal in your own words>",
+      "args": [
+        {
+          "name": "goal",
+          "type": "text",
+          "description": "What you want done, in your own words.",
+          "placeholder": "e.g. ship a pricing page with a working checkout"
+        }
+      ],
+      "prompt": "Lead a team to this goal, from plan to result.\n\nGoal: ${goal}\n\nIf the goal is empty, ask what should be done and END your turn.\n\n1. Scope. Send any research — reading code or docs, searches, comparisons — to a `fork` with a precise question and plan from its short report. Ask @human with `ask` only what would change the plan; otherwise state your assumptions.\n\n2. Plan. Create one epic and 3–8 tasks on the board, each with a clear outcome, a checklist and dependencies where order matters.\n\n3. Staff. Reuse fitting specialists from `agents list`; create one only for a missing role, at most 4 roles. Assign each card with `update agent`. Work without a distinct role goes to a `fork`. A card only the person can do goes to @human.\n\n4. Approve. Show the tasks, owners and what runs in parallel, ask @human to approve or adjust, and END your turn. Only an explicit answer to the plan is approval.\n\n5. Run. @mention each ready owner with its card id, scope, inputs and expected evidence; start independent cards together and dependent ones when their dependencies are done.\n\n6. Close. Verify each card in review, sending a `fork` when it needs reading or running, then complete it or send it back with what is missing. When every card is done, complete the epic and summarize what was delivered, where it is and what is still open.",
+      "featured": true
+    }
+  ]
+}

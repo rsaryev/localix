@@ -49,7 +49,7 @@ export function companionRoster(sessions: readonly UiSession[], items: readonly 
   return { waiting, working, recent }
 }
 
-const isRequest = (item: AttentionItem) => item.kind === 'interaction' || item.kind === 'question'
+const isRequest = (item: AttentionItem) => item.kind === 'interaction'
 
 /** Requests the island can answer inline, in roster order. Plans and mentions open the chat. */
 export function islandRequests(waiting: readonly AttentionItem[]) {

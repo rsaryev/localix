@@ -9,7 +9,7 @@ import type { SessionPlan } from '../../plans/contracts'
 import type { ResumePoint } from '../../resume/contracts'
 import type { LastMessagePreview } from '../repository-types'
 import type { reasoningEffortSchema, runtimeStatusSchema, sessionKindSchema } from './session'
-import type { SessionLoopSummary, SessionQueueItem, SessionQuestion, SessionWork } from './queue'
+import type { SessionLoopSummary, SessionQueueItem, SessionWork } from './queue'
 import type { SessionTiming } from './timing'
 
 export type { MessageProviderMeta, MessageTiming, SessionTiming, ToolTiming } from './timing'
@@ -82,11 +82,6 @@ export interface SessionSummary {
   loops: SessionLoopSummary[]
   /** Runtime overlay: the session's running background work (`features/work`). Empty when none. */
   work: SessionWork[]
-  /**
-   * Runtime overlay: questions the agent queued that are still unanswered (`features/questions`),
-   * oldest first. Absent when none — the session list marks a row that has some.
-   */
-  questions?: SessionQuestion[]
   /** Ephemeral: messages queued behind an in-flight run (process-local; lost on API restart). */
   queuedMessages: SessionQueueItem[]
   /** Aggregate timing across the session's messages. Null when not yet computed. */
@@ -288,6 +283,8 @@ export interface MessageMutationResponse {
   messageId: string
   /** Queued behind an in-flight run. `messageId` is empty until `message.created` arrives. */
   queued?: true
+  /** The line answered the session's open `ask` card; no turn was started or queued. */
+  answeredInteraction?: true
 }
 
 export interface RollbackResponse {

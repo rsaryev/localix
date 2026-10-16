@@ -21,26 +21,30 @@ import {
  *     open `hitl:` row offers "Respond" for a request nothing will accept. Every one is stale by
  *     construction, so all are settled (`restart`). This MUST complete before a new request can be
  *     raised, or the prefix settle would close a live question too; the caller awaits it at boot.
- *     ONLY `hitl:`: a queued question (`question:`) and a plan under review (`plan:`) are rows
- *     whose subject survives the restart, and the attention registry restores them;
+ *     Also `question:`: rows left by the retired queued questions, whose subject no longer exists.
+ *     A plan under review (`plan:`) survives the restart, and the attention registry restores it;
  *   - a run that was mid-flight left a truncated reply. The transcript gets a notice
  *     (`interrupted-runs.ts`); the inbox gets a warning, filed under the failure prefix so the
  *     session's next finished run settles it like any superseded failure.
  */
 
+/** `question:` is the retired queued-question kind; nothing raises it any more. */
+const STALE_PREFIXES = [HITL_PREFIX, 'question:'] as const
+
 export async function settleStaleRequests(
   db: Kysely<AppDatabase>,
   journal: NotificationJournal,
 ): Promise<void> {
-  const owners = await db
-    .selectFrom('notification_inbox')
-    .select('user_id')
-    .distinct()
-    .where('state', '=', 'open')
-    .where('subject_key', 'like', `${HITL_PREFIX}%`)
-    .execute()
-  for (const { user_id } of owners)
-    journal.settle(user_id, { prefix: HITL_PREFIX, reason: 'restart' })
+  for (const prefix of STALE_PREFIXES) {
+    const owners = await db
+      .selectFrom('notification_inbox')
+      .select('user_id')
+      .distinct()
+      .where('state', '=', 'open')
+      .where('subject_key', 'like', `${prefix}%`)
+      .execute()
+    for (const { user_id } of owners) journal.settle(user_id, { prefix, reason: 'restart' })
+  }
   await journal.flush()
 }
 

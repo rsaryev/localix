@@ -3,16 +3,15 @@ import { z } from 'zod'
 import type { PluginValidation } from './contracts'
 
 /**
- * Plugin marketplace (`.claude-plugin/marketplace.json`) — Claude Code compatible.
+ * Plugin marketplace (`.localix-plugin/marketplace.json`).
  *
  * A marketplace is a curated catalog of plugin ENTRIES, each pointing at a `source`
  * (a relative `./path` inside the marketplace repo, or an object describing a remote
- * git/github/url/npm source). Claude Code stores installed marketplaces under
- * `~/.claude/plugins/marketplaces/<name>/.claude-plugin/marketplace.json` and tracks
- * them in `known_marketplaces.json`.
+ * git/github/url/npm source). Registered marketplaces live under
+ * `~/.localix/marketplaces/<name>/` and are tracked in `known.json`.
  *
- * We model the SAME shape (so we can read a real CC marketplace and emit one for our
- * bundled `plugins/`), validated leniently at parse time + deterministically by
+ * The entry shape follows the widely used catalog schema (so our bundled `plugins/`
+ * catalog stays familiar to authors), validated leniently at parse time + deterministically by
  * {@link validateMarketplace}, which separates blocking schema and source-path errors
  * from non-blocking catalog-hygiene warnings.
  */
