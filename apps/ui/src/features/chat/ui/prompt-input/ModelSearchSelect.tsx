@@ -4,11 +4,12 @@ import { ChevronUp } from 'lucide-react'
 import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
 import type { useConnections } from './useConnections'
 import type { ReasoningEffort } from '../../model/reasoning'
-import type { SessionAgentRoute } from '@/shared/api/contracts'
+import type { SessionAgentRoute, SessionModelChoicesView } from '@/shared/api/contracts'
 import { modelTriggerLabel } from './modelTriggerLabel'
 import { subscribeModelPicker, type ModelPickerRequest } from '@/shared/lib/modelPickerBus'
 import { useChatStore } from '../../model/store'
 import type { PartyRouteChoice } from '../../model/sessionPartyRoute'
+import { findSessionInState } from '../../model/findSession'
 import { notifyPartyRouteFailure } from './model-select/partyRouteFailure'
 
 // The trigger is present in every composer, while Vaul + the model-routing
@@ -25,6 +26,9 @@ const loadModelPickerDrawer = async () => {
 const ModelPickerDrawer = lazy(() =>
   loadModelPickerDrawer().then((module) => ({ default: module.ModelPickerDrawer })),
 )
+
+/** A session nobody has chosen a model in yet; one constant so the drawer's rows stay memoized. */
+const NO_CHOICES: SessionModelChoicesView = { agents: {} }
 
 interface ModelSearchSelectProps {
   models: CatalogModel[]
@@ -111,10 +115,14 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
 
   const isGroup = (participants?.length ?? 0) > 1
   const applyPartyRoute = useChatStore((state) => state.applyPartyRoute)
-  // The "All agents" row writes the whole room; only an existing group has one to write.
+  // The session's model choices: the picker lists agents not invited yet on them.
+  const modelChoices = useChatStore((state) => findSessionInState(state, sessionId)?.modelChoices)
+  // "All agents" writes the same choice to every listed agent, invited or not; any existing
+  // session has one to write, a single agent included.
   const onApplyPartyRoute = useCallback(
-    async (choice: PartyRouteChoice): Promise<void> => {
-      if (sessionId) await applyPartyRoute(sessionId, choice).catch(notifyPartyRouteFailure)
+    async (choice: PartyRouteChoice, agentIds: readonly string[]): Promise<void> => {
+      if (sessionId)
+        await applyPartyRoute(sessionId, choice, agentIds).catch(notifyPartyRouteFailure)
     },
     [applyPartyRoute, sessionId],
   )
@@ -196,12 +204,13 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
             sessionConnectionId={activeId}
             onPickSessionModel={onSelectionChange}
             participants={participants}
+            {...(sessionId ? { sessionId, modelChoices: modelChoices ?? NO_CHOICES } : {})}
             participantScope={participantScope}
             reasoningEffort={reasoningEffort}
             onReasoningEffortChange={onReasoningEffortChange}
             initialAgentId={selectedAgentId}
             onAgentTargetChange={onSelectAgent}
-            onApplyPartyRoute={isGroup && sessionId ? onApplyPartyRoute : undefined}
+            onApplyPartyRoute={sessionId ? onApplyPartyRoute : undefined}
           />
         </Suspense>
       )}

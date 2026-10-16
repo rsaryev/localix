@@ -32,16 +32,16 @@ history**.
 
 ### What becomes an entry
 
-| Runtime fact                                                                                   | Entry                             | Interrupts                       |
-| ---------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------- |
-| Top-level run completed                                                                        | Success                           | No                               |
-| Top-level run failed                                                                           | Error with applicable recovery    | Yes                              |
-| Human input required                                                                           | Warning, with **Respond**         | Yes                              |
-| An agent addressed you (`@human`) or assigned you a board card                                 | Human input                       | Yes                              |
-| Sub-agent or job session completed, failed or was stopped                                      | Success, error or information     | Only a failure                   |
-| Background terminal exited                                                                     | Success for code zero, else error | Only a nonzero exit              |
-| A problem the app or a plugin found (a file that will not validate, a connection that is down) | One standing entry per subject    | Only when nothing could be shown |
-| An action you took that failed, or that needs a decision from you                              | Error or warning                  | Only an error                    |
+| Runtime fact                                                                                   | Entry                                                                                           | Interrupts                       |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------- |
+| Top-level run completed                                                                        | Success                                                                                         | No                               |
+| Top-level run failed                                                                           | Error with applicable recovery                                                                  | Yes                              |
+| Human input required                                                                           | Warning, with **Respond**                                                                       | Yes                              |
+| An agent addressed you (`@human`) or assigned you a board card                                 | Human input                                                                                     | Yes                              |
+| Sub-agent or job session completed, failed or was stopped                                      | Success, error or information                                                                   | Only a failure                   |
+| Background terminal exited                                                                     | Success for code zero; information for a stop or a stop signal (129, 130, 137, 143); else error | Only an unexpected nonzero exit  |
+| A problem the app or a plugin found (a file that will not validate, a connection that is down) | One standing entry per subject                                                                  | Only when nothing could be shown |
+| An action you took that failed, or that needs a decision from you                              | Error or warning                                                                                | Only an error                    |
 
 A logical run reports once after retries and continuations finish. Successful top-level runs report
 when no later turns remain queued; nested chats do not add the same completion entry. **Retry**

@@ -119,21 +119,38 @@ export function backgroundJobFinishedReminder(
   toolCallId: string,
   recoveryToolAvailable = true,
   jobStatus?: string,
+  stop?: { by: 'agent' | 'person' | 'timeout'; timeoutSecs?: number },
 ): string {
-  // A job the caller (or the user) STOPPED is not a failure and not news: say what happened so
-  // the model does not spend its reply explaining an "exit -1" it caused.
-  const status =
-    jobStatus === 'killed'
-      ? 'was stopped as requested'
-      : exitCode === undefined
-        ? 'finished'
-        : exitCode === 0
-          ? 'finished successfully (exit 0)'
-          : `FAILED (exit ${exitCode})`
+  const status = backgroundJobOutcome(exitCode, jobStatus, stop)
   const recovery = recoveryToolAvailable
     ? `Its full output is stored: \`tool_output(action="get", tool_call_id="${toolCallId}")\`.`
     : 'Its output is not stored in this run.'
   return `A background job you started ${status} while you were working: \`${command}\`. ${recovery}`
+}
+
+/**
+ * A job's end in plain words. A STOP is not a failure and not news: a stopped job exits with its
+ * stop signal (130 for a closed pane, 143 for SIGTERM), and "FAILED (exit 130)" sent the model
+ * off to explain — or restart — a server that was simply stopped. Only an unexpected non-zero
+ * exit is a failure.
+ */
+export function backgroundJobOutcome(
+  exitCode: number | undefined,
+  jobStatus?: string,
+  stop?: { by: 'agent' | 'person' | 'timeout'; timeoutSecs?: number },
+): string {
+  if (stop?.by === 'timeout' || jobStatus === 'timeout')
+    return stop?.timeoutSecs
+      ? `was stopped after its ${stop.timeoutSecs} s timeout`
+      : 'was stopped when its timeout expired'
+  if (stop?.by === 'agent') return 'was stopped as you requested'
+  if (stop?.by === 'person') return 'was stopped by the person'
+  if (jobStatus === 'killed')
+    return exitCode === undefined || exitCode < 0
+      ? 'was stopped'
+      : `was stopped by a signal (exit ${exitCode})`
+  if (exitCode === undefined) return 'finished'
+  return exitCode === 0 ? 'finished successfully (exit 0)' : `FAILED (exit ${exitCode})`
 }
 
 type AfterToolCall = NonNullable<AgentRuntimeRunInput['afterToolCall']>

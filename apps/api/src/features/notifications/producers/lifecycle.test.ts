@@ -9,6 +9,7 @@ import type { InboxEntry } from '../contracts'
 import { createNotificationJournal } from '../journal'
 import { recordInterruptedRuns, settleStaleRequests, startAgentNotifications } from '.'
 import type { SessionFacts } from './facts'
+import { terminalOutcome } from './work'
 
 const databases: ReturnType<typeof createDatabase>[] = []
 afterEach(async () => {
@@ -150,6 +151,22 @@ describe('background work', () => {
     const keys = (await inbox()).map((row) => row.key)
     expect(keys.filter((key) => key.startsWith('work:'))).toHaveLength(1)
     expect(keys.filter((key) => key.startsWith('terminal:'))).toEqual(['terminal:T2'])
+  })
+
+  // LOCALIX-388: a server closed at its 60 s timeout was journaled as an error "exited (130)".
+  it('a stop says why, a stop signal is an interruption, and only a real failure is an error', () => {
+    expect(terminalOutcome({ exitCode: 130, stopped: true, stopReason: 'timeout 60 s' })).toEqual({
+      severity: 'info',
+      title: 'Background terminal stopped (timeout 60 s)',
+    })
+    expect(terminalOutcome({ exitCode: 130 })).toEqual({
+      severity: 'info',
+      title: 'Background terminal interrupted (exit 130)',
+    })
+    expect(terminalOutcome({ exitCode: 2 })).toEqual({
+      severity: 'error',
+      title: 'Background terminal exited with code 2',
+    })
   })
 
   it('an explicitly closed terminal is a stopped event rather than a failure', async () => {

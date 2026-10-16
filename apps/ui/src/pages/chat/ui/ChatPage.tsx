@@ -44,7 +44,7 @@ import { discoverUi } from '@/shared/contrib/discover'
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
 import { useSystemToggle } from '@/shared/hooks/useSystemToggle'
 import { useIsMobile, isMobileViewport } from '@/shared/hooks/useIsMobile'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { initialSidebarOpen, rememberSidebarOpen } from '../model/sidebarOpenState'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { useUrlStoreSync } from '../model/useUrlStoreSync'
 import { useRailActions } from '../model/useRailActions'
@@ -142,8 +142,6 @@ function useRuntimeStatus(): RuntimeStatus | undefined {
   return useSyncExternalStore(subscribeRuntimeStatus, runtimeStatus, NO_RUNTIME_STATUS)
 }
 
-const SIDEBAR_OPEN_KEY = 'localix_sidebar_open'
-
 export function ChatPage() {
   useEffect(() => installBrowserPageWindowTransfers(), [])
   useEffect(() => installBrowserPageOwnership(), [])
@@ -207,13 +205,11 @@ export function ChatPage() {
   useCodeSnippetOpener()
   // Restore the last open/closed state on desktop; on mobile the sidebar is a
   // full overlay, so auto-reopening it on load would hide the chat.
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (isMobileViewport()) return false
-    return loadString(SIDEBAR_OPEN_KEY) === '1'
-  })
+  // A first run starts collapsed (`sidebarOpenState.ts`).
+  const [sidebarOpen, setSidebarOpen] = useState(() => initialSidebarOpen(isMobileViewport()))
   useEffect(() => {
     if (isMobile) return
-    saveString(SIDEBAR_OPEN_KEY, sidebarOpen ? '1' : '0')
+    rememberSidebarOpen(sidebarOpen)
   }, [sidebarOpen, isMobile])
 
   const { resolvedTheme } = useTheme()

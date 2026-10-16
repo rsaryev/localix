@@ -11,6 +11,7 @@ import {
   writeMembership,
   writeParticipants,
 } from './repository-conversation-participants'
+import { writeModelChoices } from './repository-model-choices'
 import type { ModelRoute, SessionRecord } from './repository-types'
 import { serializeSessionProvenance } from './session-provenance'
 import { sessionRowPatch } from './repository-session-patch'
@@ -207,25 +208,15 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
       await writeAgentRoute(db, id, agentId, route, opts)
     },
 
-    /** Re-route several participants in ONE transaction, so no run reads half a room moved. */
-    async updateSessionAgentRoutes(
+    /**
+     * The person's model choice for the named agents, seated or not — seats and choice map in
+     * ONE transaction (`repository-model-choices.ts`).
+     */
+    updateSessionAgentRoutes: (
       userId: string,
       id: string,
       routes: readonly ({ agentId: string } & Partial<ModelRoute>)[],
-    ): Promise<void> {
-      await retrySqliteBusy(() =>
-        db.transaction().execute(async (trx) => {
-          const owned = await trx
-            .selectFrom('agent_sessions')
-            .select('id')
-            .where('user_id', '=', userId)
-            .where('id', '=', id)
-            .executeTakeFirst()
-          if (!owned) return
-          for (const { agentId, ...route } of routes) await writeAgentRoute(trx, id, agentId, route)
-        }),
-      )
-    },
+    ): Promise<void> => writeModelChoices(db, userId, id, routes),
 
     /**
      * Replace the generated fallback title only while it is still current.

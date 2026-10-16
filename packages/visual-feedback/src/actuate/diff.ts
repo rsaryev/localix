@@ -22,6 +22,7 @@ function nullRegistry(): RefRegistry {
     get: () => null,
     identityOf: () => null,
     findByIdentity: () => null,
+    isEmpty: () => false,
   }
 }
 

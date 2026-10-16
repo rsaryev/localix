@@ -29,6 +29,8 @@ export const sessionStateReducers: StreamReducers<
       isPinned: event.session.isPinned,
       isArchived: event.session.isArchived,
       agents: event.session.agents,
+      // The seats and the session's choices move together; replacing one alone painted "Mixed".
+      ...(event.session.modelChoices ? { modelChoices: event.session.modelChoices } : {}),
       // An approved plan switches the mode on the server; without this the composer kept
       // showing Plan until the next reload.
       permissionMode: event.session.permissionMode,

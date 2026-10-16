@@ -42,7 +42,12 @@ export function createTerminalPorts(
           session.onPreviewUrl(...args)
         },
         write: (...args) => session.write(...args),
-        kill: () => session.dispose(),
+        // Through the service's `close`, not `session.dispose()`: a job the agent, the person or
+        // a timeout stopped is a stop, and only `close` marks the exit so. Disposed directly, the
+        // pane's synthetic 130 reached the person as "Background terminal exited (130)".
+        kill: (reason) => {
+          if (!serviceRefs.terminalService?.close(userId, session.id, reason)) session.dispose()
+        },
       }
     },
     // Plain text, because both readers hand it to the model (the `# Background jobs` tail and

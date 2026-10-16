@@ -62,6 +62,11 @@ export const pluginCommandSchema = z.object({
   /** Shown first in the slash menu, under "Suggested". */
   featured: z.boolean().optional(),
   /**
+   * Deferred tools the command's work needs for the rest of the chat, activated when it runs, as
+   * if the agent had called `activate_tools` (e.g. a board tool for a command that plans on it).
+   */
+  activateTools: z.array(z.string().min(1)).max(8).optional(),
+  /**
    * CC `model` — preferred model alias/id for this command's macro run (e.g. "opus",
    * a full catalog id). Best-effort: applied as a per-run session model override; the
    * id must be valid for a configured provider (an unknown id fails that run, same as CC).

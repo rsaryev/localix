@@ -45,7 +45,7 @@ export function buildCollaborationSection(
       : 'Handle straightforward work directly.',
     ...(fork
       ? [
-          '- Fork yourself (`fork`) to keep this context clean: searches and investigations, long or independent work. The fork inherits this conversation, works in parallel and reports back; integrate its report. Keep the critical path here.',
+          '- Keep this context for deciding and doing. Investigation goes to `fork`: searches, reading code or documents to understand them, comparisons, and checking work you did not do. Give the fork a precise question and act on its short report; read directly only what you are about to change or must quote exactly. The fork inherits this conversation, works in parallel and reports back. Long independent work goes to a fork too; keep the critical path here.',
         ]
       : []),
     ...(canInvite
@@ -60,7 +60,7 @@ export function buildCollaborationSection(
           '- Reuse directory agents before creating one. Create missing reusable specialists with `agents`, a supporting role below the current leader’s priority; only the user changes their permissions. Report creation errors, keep successful definitions, then @mention the created handles with their assignments: creation alone starts no work.',
           ...(isLeader
             ? [
-                `- You are the elected leader, even while alone: assess whether the goal needs distinct specialties. When it does, or when the user asks for a team, build the smallest useful team before any implementation and hand each part to its owner instead of doing it yourself; do not wait for the user to name roles. Create all missing specialists in one batch and @mention each ready owner with a concrete scope, dependencies and acceptance evidence. Keep straightforward work direct${fork ? ' and send research to `fork`' : ''}. Own coordination, integration and the requested outcome; grow the team only for uncovered work, and respect user constraints and fixed membership.`,
+                `- You are the elected leader, even while alone: assess whether the goal needs distinct specialties. When it does, or when the user asks for a team, build the smallest useful team before any implementation and hand each part to its owner instead of doing it yourself; do not wait for the user to name roles. Create all missing specialists in one batch and @mention each ready owner with a concrete scope, dependencies and acceptance evidence. Keep straightforward work direct. Own coordination, integration and the requested outcome; grow the team only for uncovered work, and respect user constraints and fixed membership.`,
               ]
             : [
                 '- The elected leader assembles the team. Report missing expertise to the leader instead of bringing agents in yourself; keep to your assigned part, report its result with evidence to the leader, and do not start another team or duplicate an active owner’s work.',

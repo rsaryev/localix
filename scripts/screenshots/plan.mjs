@@ -220,6 +220,13 @@ export const capturePlan = {
     purpose: 'Find a command from a populated workspace',
     scenario: 'palette',
   },
+  'workspace/first-run': {
+    guide: 'features/workspace.md',
+    purpose:
+      'A first launch with no saved layout: panels collapsed and the workspace tips centered',
+    scenario: 'first-run',
+    firstRun: true,
+  },
   'workspace/editor-grid': {
     guide: 'features/workspace.md',
     purpose: 'Source and terminal tabs in one main column beside the team conversation',

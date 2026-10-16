@@ -11,8 +11,10 @@ import type { LastMessagePreview } from '../repository-types'
 import type { reasoningEffortSchema, runtimeStatusSchema, sessionKindSchema } from './session'
 import type { SessionLoopSummary, SessionQueueItem, SessionWork } from './queue'
 import type { SessionTiming } from './timing'
+import type { SessionModelChoicesView } from './model-choices'
 
 export type { MessageProviderMeta, MessageTiming, SessionTiming, ToolTiming } from './timing'
+export type { JoinRoutesView, ModelChoiceView, SessionModelChoicesView } from './model-choices'
 export type { LastMessagePreview } from '../repository-types'
 
 /** One participant of a conversation, and the model its turns run on here. */
@@ -65,6 +67,8 @@ export interface SessionSummary {
    * a single field could only ever describe the one-participant case.
    */
   agents: SessionAgentRoute[]
+  /** Model choices per agent, seated or not (`session-model-choices.ts`). */
+  modelChoices: SessionModelChoicesView
   /** A delegated child its delegator closed; null while open. The chat is read-only when set. */
   closedAt: string | null
   /** How the agent's rules are rewritten for this conversation's runs; a child shows its root's. */

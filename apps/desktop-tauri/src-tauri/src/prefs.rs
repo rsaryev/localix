@@ -113,31 +113,31 @@ pub(crate) fn load_theme_is_dark<R: tauri::Runtime>(app: &AppHandle<R>) -> Optio
         })
 }
 
-/// Path of the island switch: a file holding `off` while the person has turned the island off.
+/// Path of the island switch: a file holding `on` once the person has turned the island on.
 fn island_file<R: tauri::Runtime>(app: &AppHandle<R>) -> Option<std::path::PathBuf> {
     app.path().app_config_dir().ok().map(|d| d.join("island"))
 }
 
-/// Whether the agent island may show. On unless the person turned it off in Settings.
+/// Whether the agent island may show. Off until the person turns it on (onboarding or Settings).
 pub(crate) fn island_enabled<R: tauri::Runtime>(app: &AppHandle<R>) -> bool {
     cfg!(target_os = "macos")
         && island_file(app)
             .and_then(|p| std::fs::read_to_string(p).ok())
-            .is_none_or(|s| s.trim() != "off")
+            .is_some_and(|s| s.trim() == "on")
 }
 
-/// Persist the island switch. On is the default, so turning it on removes the file.
+/// Persist the island switch. Off is the default, so turning it off removes the file.
 #[cfg(target_os = "macos")]
 pub(crate) fn save_island_enabled<R: tauri::Runtime>(app: &AppHandle<R>, enabled: bool) {
     let Some(path) = island_file(app) else {
         return;
     };
     if enabled {
-        let _ = std::fs::remove_file(path);
-    } else {
         if let Some(dir) = path.parent() {
             let _ = std::fs::create_dir_all(dir);
         }
-        let _ = std::fs::write(path, "off");
+        let _ = std::fs::write(path, "on");
+    } else {
+        let _ = std::fs::remove_file(path);
     }
 }

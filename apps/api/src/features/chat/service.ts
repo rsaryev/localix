@@ -60,6 +60,7 @@ export function createChatService(deps: ChatServiceDeps) {
     ...createChatSessionFacade({
       repo,
       now,
+      routeDefaults: graph.routeDefaults,
       sessionLifecycleCtx,
       sessionDetailCtx,
       getSessionDetail,

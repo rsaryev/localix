@@ -14,7 +14,9 @@ pub(crate) fn register(window: &WebviewWindow) {
     #[cfg(target_os = "macos")]
     crate::macos_tabs::install_new_tab_action(&app, &window.as_ref().window());
     window.on_window_event(move |event| match event {
+        WindowEvent::Focused(false) => crate::companion::workspace_focus_changed(&app),
         WindowEvent::Focused(true) => {
+            crate::companion::workspace_focus_changed(&app);
             crate::workspace_windows::workspaces(&app).active = Some(label.clone());
             crate::menu::activate_workspace(&app, &label);
             #[cfg(target_os = "macos")]

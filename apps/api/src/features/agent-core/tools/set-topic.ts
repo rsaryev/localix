@@ -19,6 +19,12 @@ const setTopicInputSchema = z.strictObject({
 })
 type SetTopicInput = z.infer<typeof setTopicInputSchema>
 
+/** The goal as one sentence: a goal the model already ended with a period must not end in "..". */
+const sentence = (text: string): string => {
+  const trimmed = text.trim()
+  return /[.!?…]$/.test(trimmed) ? trimmed : `${trimmed}.`
+}
+
 /**
  * Start a new session topic and keep working in the same turn.
  *
@@ -47,7 +53,7 @@ export function createSetTopicTool(port: SetTopicPort) {
         previousTopicSummary: input.previous_topic_summary,
       })
       return {
-        content: `Topic saved: ${input.title}. Goal: ${input.goal}. Earlier context is replaced by the summary from the next run on; continue the work now.`,
+        content: `Topic saved: ${input.title}. Goal: ${sentence(input.goal)} From your next model call on, everything before the request that opened this topic is replaced by previous_topic_summary. Continue the work now; do not set the topic again.`,
       }
     },
   })

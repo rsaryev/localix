@@ -25,6 +25,14 @@ export async function verifyEvidence(page, scenario) {
   if (['api-client', 'documents', 'reader'].includes(scenario)) {
     return (await import('./content-workbenches.mjs')).verifyContent(page, scenario)
   }
+  if (scenario === 'first-run') {
+    await expect(page.getByRole('region', { name: 'Workspace tips', exact: true })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Session history', exact: true })).toBeHidden()
+    await expect(page.getByRole('combobox', { name: 'Browser address', exact: true })).toBeHidden()
+    await expect(page.locator('[data-slot="terminal-pane"]')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Add participant', exact: true })).toBeHidden()
+    return
+  }
   if (scenario === 'browser-preview') {
     await expect(page.getByRole('region', { name: 'Session history', exact: true })).toBeHidden()
     const preview = page.frameLocator('iframe[title^="http://127.0.0.1:5160"]')

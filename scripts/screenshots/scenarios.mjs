@@ -153,6 +153,8 @@ export async function compose(page, scenario) {
       .getByText(/Configuration complete; ready for start up/)
       .first()
       .waitFor()
+  } else if (scenario === 'first-run') {
+    await page.getByRole('region', { name: 'Workspace tips', exact: true }).waitFor()
   } else if (scenario === 'terminal-error') {
     await button(page, 'Terminal').click()
     await button(page, 'Maximize panel').first().click()

@@ -89,7 +89,7 @@ export type SeatRouteFor = (
   userId: string,
   projectId: string | null,
   agentId: string,
-  given?: { chosen?: Partial<ModelRoute> | null; primary?: Partial<ModelRoute> | null },
+  given?: { chosen?: Partial<ModelRoute> | null },
 ) => Promise<SeatRoute>
 
 export function createRouteDefaults(ports: RouteDefaultsPorts) {
@@ -118,9 +118,9 @@ export function createRouteDefaults(ports: RouteDefaultsPorts) {
         ? settingsMemo(userId, () => ports.loadAgentModelSettings!(userId).catch(() => []))
         : [],
     ])
-    return (
+    const decide = (
       agentId: string,
-      given: { chosen?: Partial<ModelRoute> | null; primary?: Partial<ModelRoute> | null } = {},
+      given: { chosen?: Partial<ModelRoute> | null } = {},
     ): SeatRoute =>
       birthRoute({
         ...given,
@@ -129,6 +129,25 @@ export function createRouteDefaults(ports: RouteDefaultsPorts) {
         project,
         effortForModel: (modelId) => rememberedEffort(settings, agentId, modelId),
       })
+    decide.known = (): string[] => [...new Set([...agents.keys(), ...recent.byAgent.keys()])]
+    decide.fallback = (): SeatRoute => birthRoute({ project })
+    return decide
+  }
+
+  /**
+   * What each agent would join this project's conversations on with no session choice — the
+   * picker shows it for an agent not invited yet. Per agent with a card or a last pick, and the
+   * route of every other agent (the project's, or none).
+   */
+  const joinRoutes = async (userId: string, projectId: string | null) => {
+    const decide = await sources(userId, projectId)
+    const agents: Record<string, ModelRoute> = {}
+    for (const agentId of decide.known()) {
+      const { modelOrigin: _origin, ...route } = decide(agentId)
+      if (route.modelId) agents[agentId] = route
+    }
+    const { modelOrigin: _fallbackOrigin, ...fallback } = decide.fallback()
+    return { agents, fallback: fallback.modelId ? fallback : null }
   }
 
   /** The complete route one NEW seat is born with. */
@@ -143,22 +162,17 @@ export function createRouteDefaults(ports: RouteDefaultsPorts) {
     const filled: SessionAgentRoute[] = []
     if (!session.agents?.some((member) => !member.modelId)) return { session, filled }
     const decide = await sources(userId, session.projectId ?? null)
-    let primary: SessionAgentRoute | undefined
-    const agents = session.agents.map((member, index) => {
-      let next = member
-      if (!member.modelId) {
-        const route = decide(member.agentId, { primary: index === 0 ? null : primary })
-        if (route.modelId) {
-          next = {
-            ...member,
-            modelId: route.modelId,
-            providerConnectionId: route.providerConnectionId,
-            reasoningEffort: route.reasoningEffort,
-          }
-          filled.push(next)
-        }
+    const agents = session.agents.map((member) => {
+      if (member.modelId) return member
+      const route = decide(member.agentId)
+      if (!route.modelId) return member
+      const next = {
+        ...member,
+        modelId: route.modelId,
+        providerConnectionId: route.providerConnectionId,
+        reasoningEffort: route.reasoningEffort,
       }
-      if (index === 0) primary = next
+      filled.push(next)
       return next
     })
     return { session: { ...session, agents }, filled }
@@ -170,7 +184,7 @@ export function createRouteDefaults(ports: RouteDefaultsPorts) {
     settingsMemo.drop(userId)
   }
 
-  return { seatRoute, fillParty, sources, forget }
+  return { seatRoute, fillParty, sources, joinRoutes, forget }
 }
 
 export type RouteDefaults = ReturnType<typeof createRouteDefaults>

@@ -29,11 +29,21 @@ Only pinned tools count toward this grouping. A category highlights when one of 
 At launch the workspace reopens the tabs you left. If no chat tab was open, or on a first run, no
 chat opens on its own.
 
+A first run, with no saved layout, starts calm: the chat sidebar is collapsed, no file, Browser or
+terminal tab is open, and the main column shows one empty group with the workspace tips centered.
+The left rail and top bar stay visible, and the default project is selected. Opening the sidebar or
+a tab works as usual and is remembered, so later launches restore the layout you left.
+
 A new chat with no model selected, and any editor group with nothing open, shows a carousel of
-workspace tips, most important first: connecting a model, approvals and permission modes, project
-folders, `@` references, base keymaps, the command palette, agents in one chat, and appearance. Each
-tip animates the real surface; four carry the control itself. The carousel never takes focus and
-remembers the last tip you viewed on this device.
+workspace tips in setup order: appearance, the agent island, connecting a model, approvals and
+permission modes, project folders, `@` references, base keymaps, the command palette, agents in one
+chat, and handing a whole goal to a team. Each tip animates the real surface; five carry the control
+itself.
+
+The goal tip appears only while an enabled plugin features a command, such as the bundled `/go`, and
+shows that command. The agent island tip appears only in the macOS desktop app; its switch turns the
+island on or off at once, like the one in Settings. The carousel never takes focus and remembers the
+last tip you viewed on this device.
 
 Open **All tools** (**…**) to browse the complete catalog and toggle the pin beside each tool. Pin
 changes keep the menu open and persist on this device. Right-click an individual button to unpin or

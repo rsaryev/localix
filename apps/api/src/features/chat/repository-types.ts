@@ -1,6 +1,7 @@
 import type { AgentSessionKind, ReasoningEffort } from '../../db'
 import type { PermissionMode } from '../capabilities/permission-modes'
 import type { SessionProvenance } from './session-provenance'
+import type { SessionModelChoices } from './session-model-choices'
 
 /**
  * Row/record shapes for the chat repository, split out of repository.ts so the
@@ -65,14 +66,21 @@ export interface ModelRoute {
 
 /**
  * What the user last CHOSE, which is the "recent" level of the model chain
- * (`agent-route-resolution.ts`) — per agent, plus the freshest of any agent as the floor.
+ * (`agent-route-resolution.ts`) — per agent.
  *
- * Read out of the seats themselves rather than kept in a store of its own: a seat holds a model
- * only when someone picked one there, so the seats already are this record, and a second copy
- * would be a second thing to keep in step with the picker.
+ * Read out of the picks themselves rather than kept in a store of its own: a seat holds a stamped
+ * model only when someone picked one there, and a session's choice map stamps every pick —
+ * including one for an agent not invited yet — so together they already are this record.
  */
 export interface RecentRoutes {
-  byAgent: Map<string, { providerConnectionId: string | null; modelId: string }>
+  byAgent: Map<string, RecentRoute>
+}
+
+/** One agent's last pick. The level is known only for a pick from the choice map. */
+export interface RecentRoute {
+  providerConnectionId: string | null
+  modelId: string
+  reasoningEffort?: ReasoningEffort
 }
 
 /**
@@ -128,6 +136,12 @@ export interface SessionRecord {
    * conversation. The ROUTE survives regardless — it is stored here, not looked up.
    */
   agents: SessionAgentRoute[]
+  /**
+   * The person's model choices in this session, per agent, seated or not —
+   * what an agent that joins starts on (`session-model-choices.ts`). Absent on a record built in
+   * memory before it is stored, which is "nothing chosen".
+   */
+  modelChoices?: SessionModelChoices
   /**
    * When a delegated child was CLOSED (`fork` action close), or null while it is open. A closed child
    * is terminal history: no wake, no message, no send reaches a run in it again.

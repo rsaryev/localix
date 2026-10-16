@@ -172,7 +172,13 @@ export function isModelConfigField(field: { key: string; type?: string }): boole
 // One participant of a conversation plus the model it runs on, and the two functions that read
 // it. Imported from the server's leaf rather than restated here: the shape crosses the wire
 // unchanged, so a second declaration on this side could only ever drift from it.
-import type { SessionAgentRoute, CapabilityRules } from '@localixai/api/client'
+import type {
+  SessionAgentRoute,
+  CapabilityRules,
+  ModelChoiceView,
+  JoinRoutesView,
+  SessionModelChoicesView,
+} from '@localixai/api/client'
 
 /**
  * One capability rule. A switch and a permission are the same statement: `tool:bash` over
@@ -200,7 +206,7 @@ export interface CapabilityScope {
   projectId?: string | null
   agentId?: string | null
 }
-export type { SessionAgentRoute }
+export type { SessionAgentRoute, ModelChoiceView, JoinRoutesView, SessionModelChoicesView }
 export {
   agentRoute,
   isMultiParticipant,

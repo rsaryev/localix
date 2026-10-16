@@ -257,21 +257,37 @@ selected by default. Reasoning and turns per message are saved per agent, provid
 changing one participant does not change another. Authored agent and host limits still apply.
 Permission mode has its own pill above the input.
 
+### Models for agents before they join
+
+The Agents list in the model picker shows the conversation's participants first, then every other
+agent that could join it, each marked _not invited_. Pick a model for an agent before you invite it:
+the choice belongs to this conversation, and the agent joins on that model and level. Without a
+choice here, the row shows what the agent would join on: its default model, else the model you last
+picked for it, else the project's (see
+[Which model a participant runs on](providers.md#which-model-a-participant-runs-on)). A model chosen
+for one agent never changes another agent's model.
+
 ### One model for every agent
 
-Each participant keeps its own model and reasoning level, so switching one agent to a stronger model
-leaves the others where they were. When a group's participants use different models or levels, when
-one has no model, or when a model is no longer available, the Agents list in the model picker starts
-with an **All agents** row. Its second line states the current mix, for example
+Each agent keeps its own model and reasoning level, so switching one agent to a stronger model
+leaves the others where they were. The Agents list always starts with an **All agents** row, also in
+a conversation with one agent. Its second line states the current mix, for example
 `Mixed · 2 models · 2 levels · 1 not set`. Screen readers announce the same text with the row.
 
-Select **All agents**, then pick a model as usual. Every participant moves to that model in a single
-write; a participant who left the conversation meanwhile causes the whole change to be refused
-instead of half-applied. The level starts at the model's default, or at a level you set for that
-model in its details first, and is clamped to the levels the model offers. Once the group shares a
-model, changing the reasoning level in the model's details changes it for everyone. The choice is
-remembered per agent and model, as a per-participant pick is. Turns per message remain a per-agent
-setting.
+Select **All agents**, then pick a model as usual. Every listed agent, invited or not, moves to that
+model in a single write: **All agents** is a shortcut that makes the same choice for each listed
+agent, not a separate setting. Each of those choices also becomes your last choice for that agent,
+so a new conversation starts every agent without a default model on it. An agent that can no longer
+take part causes the whole change to be refused instead of half-applied.
+
+The level starts at the model's default, or at a level you set for that model in its details first,
+and is clamped to the levels the model offers. Once every agent shares a model, changing the
+reasoning level in the model's details changes it for everyone. The choice is remembered per agent
+and model, as a single pick is. Turns per message remain a per-agent setting.
+
+A check mark on **All agents** shows that every listed agent is on the same model and level. Picking
+a model for one agent afterwards moves only that agent; the others keep their model, and the check
+mark disappears.
 
 Reasoning **Off** is offered only for models that can actually turn reasoning off; elsewhere the
 request carries the model's lowest level, and the picker shows that level instead of Off. A model
@@ -284,8 +300,9 @@ field offers the same levels for the agent's pinned model.
 Type `/model` to choose a model without opening the picker. The composer shows the picker's columns
 as steps, in the same order, each with a list of choices:
 
-1. **Agent** — only in a group. **All agents** comes first, followed by each participant with its
-   current model and level. A private chat skips this step.
+1. **Agent** — **All agents** comes first, followed by each participant with its current model and
+   level, then the agents that are not invited yet. A conversation with one agent shows this step
+   too.
 2. **Provider** — your connections, in the picker's order. The participant's current connection is
    marked.
 3. **Model** — the models of that connection. Type to filter by name, id or reasoning level.
@@ -298,7 +315,9 @@ as steps, in the same order, each with a list of choices:
 Each choice becomes a crumb in the composer. Select a crumb's × to return to that step, or press
 Backspace in an empty step to remove the last crumb. Press Enter on an optional step to apply what
 you have chosen. The result is the same write the picker makes: one participant's route, or one
-batch for **All agents**, with the level starting where the picker would start it.
+batch for **All agents**, with the level starting where the picker would start it. `/model` and the
+picker store the choice the same way, so an agent's next run and an agent that joins later both use
+it.
 
 `/model` never prints a list of models. `/model <name>` still switches the participant you are
 addressing (or `/model @qa <name>`) by matching the name.

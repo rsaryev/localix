@@ -848,6 +848,18 @@ describe('applyStreamEventToSession — message + session mutations', () => {
     expect((r as unknown as { isPinned: boolean }).isPinned).toBe(true)
   })
 
+  // A level change for All moved the seat and every saved choice on the server, but the store
+  // kept the old choices beside the new seat, so the picker read two levels and showed "Mixed".
+  test('session.updated moves the session model choices together with the seats', () => {
+    const choice = { modelId: 'm', providerConnectionId: 'c', reasoningEffort: 'low' }
+    const modelChoices = { agents: { a: choice, b: choice } }
+    const r = applyStreamEventToSession(
+      makeSession(),
+      ev({ type: 'session.updated', session: { id: 'sess-1', title: 't', modelChoices } }),
+    )
+    expect((r as unknown as { modelChoices: unknown }).modelChoices).toEqual(modelChoices)
+  })
+
   // ORDERING defense: session.updated is promote-only for isRunning. Title generation
   // on the first message publishes a session.updated that can arrive BEFORE run.started,
   // carrying runtimeStatus !== 'running'. It must NOT clear an isRunning already set

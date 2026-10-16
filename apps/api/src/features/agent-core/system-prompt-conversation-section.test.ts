@@ -135,9 +135,6 @@ describe('the turn protocol', () => {
     expect(participant).toContain('leader owns coordination and the final answer to the user')
     expect(participant).toContain(TEAM_MEMBER)
     expect(participant).toContain('@mention only the leader or @human')
-    expect(buildTurnControlSection({ multi: true, isLeader: true, canFork: true })).toContain(
-      '`fork`',
-    )
     expect(leader).toContain('is not approval of a plan')
   })
 })

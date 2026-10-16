@@ -2,8 +2,9 @@ import { expect } from '@playwright/test'
 import { api } from './runtime.mjs'
 
 // `conversations/apply-model-to-all`: the seeded room disagrees — the main agent on a stronger
-// model and level than the two specialists — so the picker offers its "All agents" row. Model
-// ids only; no connection or credential is stated, and nothing is sent to a provider.
+// model and level than the two specialists — so the always-offered "All agents" row reads as mixed
+// and not chosen. Model ids only; no connection or credential is stated, and nothing is sent to a
+// provider.
 const ROUTES = [
   ['localix', 'openai/gpt-5.5', 'high'],
   ['frontend', 'anthropic/claude-haiku-4-5', 'low'],
@@ -41,7 +42,9 @@ export async function verifyPartyRoute(page) {
   // The mixed state is named in the row and read with its button.
   const status = page.locator(`[id="${await row.getAttribute('aria-describedby')}"]`)
   await expect(status).toHaveText(/^Mixed · 2 models · 2 levels/)
-  // First in the Agents group, above each participant's own row.
+  // Nobody picked "All" yet: the row carries no check mark.
+  await expect(dialog(page).getByTestId('party-route-chosen')).toHaveCount(0)
+  // First in the Agents group, above each participant's own row (agents not invited follow them).
   const buttons = dialog(page).getByRole('button', { name: /^Configure / })
   await expect(buttons.first()).toHaveAccessibleName('Configure all agents')
   for (const label of ['Localix', 'Frontend', 'QA Engineer'])

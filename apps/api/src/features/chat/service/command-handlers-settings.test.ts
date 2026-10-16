@@ -46,7 +46,10 @@ describe('/model', () => {
         },
       },
       repo: {
-        updateSessionAgentRoute: async (...args: unknown[]) => void writes.push(args[3]),
+        updateSessionAgentRoutes: async (...args: unknown[]) => {
+          const [{ agentId: _agentId, ...route }] = args[2] as [{ agentId: string }]
+          writes.push(route)
+        },
         updateSession: async () => {},
       },
       runner: { leadership: () => async () => [] },

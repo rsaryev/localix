@@ -194,6 +194,8 @@ export interface AgentSessionsTable {
   closed_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** The session's permission mode (`capabilities/permission-modes.ts`); see the 20261003 migration. */
   permission_mode: ColumnType<string, string | undefined, string | undefined>
+  /** The session's model choices per agent and for all agents (`session-model-choices.ts`). */
+  model_choices: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** User-visible chat-message branch leaf (`agent_messages.id`). THE message tree's tip — the
    *  parallel `runtime_leaf_entry_id`, plus the `revision`/`next_entry_sequence` pair that versioned
    *  it, belonged to the write-only runtime tree and were dropped with it

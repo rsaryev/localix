@@ -130,7 +130,7 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
       const pageRoot = deps.root ?? document.body ?? document.documentElement
       let target: Element
       if (cmd.ref || cmd.selector) {
-        const t = resolveTarget(cmd, deps.reg, deps.root)
+        const t = resolveTarget(cmd, deps.reg, deps.root, { observeOnly: true })
         if (isFail(t)) return t
         target = t
       } else {

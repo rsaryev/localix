@@ -185,9 +185,7 @@ describe('updateSession — model selection', () => {
       route: { agentId: 'fixture:reviewer', modelId: 'm3' },
     })
 
-    expect(getRouteWrites()).toEqual([
-      { agentId: 'fixture:reviewer', route: { agentId: 'fixture:reviewer', modelId: 'm3' } },
-    ])
+    expect(getRouteWrites()).toEqual([{ agentId: 'fixture:reviewer', route: { modelId: 'm3' } }])
     // A route change names no session field, so the session row is not written at all.
     expect(getSaved()).toBeNull()
   })

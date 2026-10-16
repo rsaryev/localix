@@ -7,7 +7,7 @@ import {
   type ToolBackedItem,
 } from '@localixai/agent/agents'
 import { buildToolItem } from '../items'
-import { backgroundJobFinishedReminder } from '../mid-run-reminders'
+import { backgroundJobFinishedReminder, backgroundJobOutcome } from '../mid-run-reminders'
 import { wrapDelegatedWake } from '../wake-envelope'
 import type { ExitNotice } from '../exit-notices'
 import { workStatusOfJob } from '../../../work/contracts'
@@ -92,13 +92,15 @@ export function createBackgroundEmitter({
     const done = opts?.done === true
     const jobStatus =
       opts?.jobStatus ?? (done ? (opts?.exitCode === 0 ? 'completed' : 'failed') : 'running')
+    // The item is the CALL that started the job, and that call succeeded: a job later stopped
+    // (by the agent, the person, its own timeout, or a stop signal) did what it was asked until
+    // then. `aborted` read as "this tool call was cancelled"; the job's own outcome rides
+    // `details.jobStatus`. Only a job that exited non-zero on its own failed.
     const itemStatus: AgentItemStatus = !done
       ? 'running'
-      : jobStatus === 'killed' || jobStatus === 'timeout'
-        ? 'aborted'
-        : opts?.exitCode === 0
-          ? 'completed'
-          : 'failed'
+      : jobStatus === 'killed' || jobStatus === 'timeout' || opts?.exitCode === 0
+        ? 'completed'
+        : 'failed'
     // Rebuild the background tool's item with the latest output (live on every
     // flush, terminal on done) — it rides the message snapshot, no tool.* event.
     const messageId = itemOwners.get(toolCallId) ?? assistantMessageId
@@ -224,6 +226,7 @@ export function createBackgroundEmitter({
             toolCallId,
             args.recoveryToolAvailable,
             jobStatus,
+            opts?.stop,
           ),
         )
       const notice = exitNotices.get(toolCallId)
@@ -235,14 +238,16 @@ export function createBackgroundEmitter({
         // notify: the job's exit is its armed notice's one fire — a new turn, so the agent
         // reacts without hanging. A notice that could not be armed degrades to the reminder.
         const content = wrapDelegatedWake(
-          `[Background job finished: ${cmd}] exit=${opts?.exitCode ?? '?'}\n\n${output}`,
+          // The outcome in words, as the mid-run note has it: a bare `exit=143` read as a result.
+          `[Background job ended: ${cmd}] It ${backgroundJobOutcome(opts?.exitCode, jobStatus, opts?.stop)}.\n\n${output}`,
         )
         void (notice ?? Promise.resolve(null)).then((armed) =>
           armed ? armed.fire(content) : remind(),
         )
       } else {
         void notice?.then((armed) => armed?.dismiss(jobStatus))
-        remind()
+        // The agent's own `jobs stop` already answered it: a reminder repeating it is noise.
+        if (opts?.stop?.by !== 'agent') remind()
       }
     }
   }

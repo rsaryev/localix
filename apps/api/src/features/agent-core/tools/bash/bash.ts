@@ -155,16 +155,19 @@ export function createBashTool(
       }
 
       const cwd = resolveCwd(input, defaultCwd)
-      // Background tasks run until they complete naturally or are stopped — a
-      // small model-supplied timeout must NOT kill them (the classic footgun:
-      // `npm run dev` backgrounded with timeout:10 dies after 10s). Background
-      // ignores any timeout below 60s and treats 0 as "no limit"; foreground
-      // honors the model's value or defaults to 60s.
-      const timeoutSecs = background
-        ? input.timeout && input.timeout >= 60
-          ? input.timeout
-          : 0
-        : (input.timeout ?? 60)
+      // A background job runs until it exits or is stopped: `timeout` is the CALL's budget, and
+      // models pass it out of habit (`python3 -m http.server`, `timeout: 60` — LOCALIX-388), which
+      // used to close the server after 60 s and report it as a failure. Only an `until` wait,
+      // whose `timeout` IS its deadline, keeps it (values below 60 s → the engine's default).
+      // Foreground honors the model's value or defaults to 60 s.
+      const timeoutSecs =
+        input.until !== undefined
+          ? input.timeout && input.timeout >= 60
+            ? input.timeout
+            : 0
+          : background
+            ? 0
+            : (input.timeout ?? 60)
       // Executed string may carry the `timeout` shim; the model-facing/displayed
       // command stays the original (input.command) everywhere.
       const execCommand = withCommandShims(input.command)

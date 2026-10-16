@@ -71,7 +71,10 @@ interface PreviewStore extends PreviewMaps {
     sessionId: string,
     previewId: string,
     viewport: PreviewEntry['viewport'],
+    byAgent?: boolean,
   ) => void
+  /** A run ended: every tab an agent pinned to a size in this workspace fits the pane again. */
+  resetAgentViewports: (sessionId: string) => void
   /** Record a freshly-opened/updated preview into the session's strip (active + open tab). */
   recordPreview: (sessionId: string, entry: PreviewEntry) => void
   /** Switch the session's active tab. */
@@ -100,8 +103,31 @@ export const usePreviewStore = create<PreviewStore>((set, get) => ({
   previewBySession: init.previewBySession,
   previewTabsBySession: init.previewTabsBySession,
 
-  setPreviewViewport: (session, previewId, viewport) =>
-    set((s) => patchTab(s, workspaceOf(session), previewId, (entry) => ({ ...entry, viewport }))),
+  setPreviewViewport: (session, previewId, viewport, byAgent) =>
+    set((s) =>
+      patchTab(s, workspaceOf(session), previewId, (entry) => ({
+        ...entry,
+        viewport,
+        agentViewport: byAgent && viewport ? true : undefined,
+      })),
+    ),
+  resetAgentViewports: (session) =>
+    set((s) => {
+      const sessionId = workspaceOf(session)
+      let next: PreviewMaps = s
+      for (const tab of s.previewTabsBySession[sessionId] ?? []) {
+        if (!tab.agentViewport) continue
+        next = {
+          ...next,
+          ...patchTab(next, sessionId, tab.previewId, (entry) => ({
+            ...entry,
+            viewport: null,
+            agentViewport: undefined,
+          })),
+        }
+      }
+      return next === s ? {} : next
+    }),
 
   recordPreview: (session, entry) => {
     useBrowserHistory.getState().record(entry.url, entry.title)

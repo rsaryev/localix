@@ -1,0 +1,225 @@
+/* "/<command> goal" → the plan lands on the board → "Approve the plan?" */
+.wt-goal {
+  --loop: 9s;
+  position: absolute;
+  inset: 0;
+}
+.wt-gl-composer {
+  left: 0;
+  right: 0;
+  bottom: 1.75rem;
+  padding: 0.75rem 0.75rem 1.25rem;
+  background: var(--card);
+}
+.wt-gl-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 1rem;
+  font-size: 0.6875rem;
+  color: var(--foreground);
+  white-space: pre;
+}
+.wt-gl-ph {
+  position: absolute;
+  left: 0;
+  color: var(--text-faint);
+  animation: wt-gl-ph var(--loop) steps(1, end) infinite both;
+}
+.wt-gl-letter {
+  display: inline-block;
+  overflow: hidden;
+  max-width: 0;
+  animation: wt-gl-letter var(--loop) steps(1, end) infinite both;
+  animation-delay: calc(var(--i) * 45ms);
+}
+.wt-gl-caret {
+  width: 1px;
+  height: 0.8125rem;
+  margin-left: 1px;
+  background: var(--foreground);
+  animation: wt-gl-blink 1s steps(1) infinite;
+}
+
+.wt-gl-plan {
+  left: 0;
+  top: 1.25rem;
+  width: 17rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  padding: 0.3125rem;
+  animation: wt-gl-plan var(--loop) var(--ease-emphasized) infinite both;
+}
+.wt-gl-head {
+  color: var(--text-faint);
+}
+.wt-gl-count {
+  margin-left: auto;
+  color: var(--text-faint);
+}
+.wt-gl-task {
+  animation: wt-gl-task var(--loop) var(--ease-soft) infinite both;
+  animation-delay: calc(var(--i) * 220ms);
+}
+.wt-gl-task b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  color: var(--foreground);
+}
+.wt-gl-check {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 1px solid var(--tip-ink);
+  border-radius: 0.1875rem;
+}
+.wt-gl-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  color: var(--text-soft);
+}
+
+.wt-gl-ask {
+  z-index: 1;
+  right: 0;
+  top: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 11rem;
+  padding: 0.625rem;
+  border-radius: 0.625rem;
+  background: var(--tip-popover);
+  color: var(--foreground);
+  animation: wt-gl-ask var(--loop) var(--ease-emphasized) infinite both;
+}
+.wt-gl-question {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 500;
+}
+.wt-gl-answers {
+  display: flex;
+  gap: 0.375rem;
+}
+.wt-gl-answer {
+  display: inline-grid;
+  place-items: center;
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--tip-line);
+  border-radius: 0.375rem;
+  color: var(--text-soft);
+}
+.wt-gl-approve {
+  border-color: transparent;
+  background: var(--foreground);
+  color: var(--background);
+  animation: wt-gl-press var(--loop) var(--ease-soft) infinite both;
+}
+
+@keyframes wt-gl-ph {
+  0%,
+  6% {
+    opacity: 1;
+  }
+  7%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wt-gl-letter {
+  0%,
+  6% {
+    max-width: 0;
+  }
+  7%,
+  94% {
+    max-width: 1em;
+  }
+  95%,
+  100% {
+    max-width: 0;
+  }
+}
+@keyframes wt-gl-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes wt-gl-plan {
+  0%,
+  34% {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.98);
+  }
+  40%,
+  92% {
+    opacity: 1;
+    transform: none;
+  }
+  97%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wt-gl-task {
+  0%,
+  38% {
+    opacity: 0;
+    transform: translateX(-0.25rem);
+  }
+  44%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wt-gl-ask {
+  0%,
+  56% {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.97);
+  }
+  62%,
+  92% {
+    opacity: 1;
+    transform: none;
+  }
+  97%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wt-gl-press {
+  0%,
+  76%,
+  82%,
+  100% {
+    transform: none;
+    box-shadow: none;
+  }
+  79% {
+    transform: scale(0.94);
+    box-shadow: 0 0 0 2px var(--tip-ink);
+  }
+}
+
+/* The shared reduced-motion rule settles on each loop's last (cleared) frame; this scene
+   shows its point instead: the typed goal, the plan and the question. */
+@media (prefers-reduced-motion: reduce) {
+  .wt-goal * {
+    animation: none !important;
+  }
+  .wt-gl-ph {
+    opacity: 0;
+  }
+  .wt-gl-letter {
+    max-width: 1em;
+  }
+}

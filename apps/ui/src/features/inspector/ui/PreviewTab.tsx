@@ -154,7 +154,10 @@ export function PreviewTab({
     previewId,
     frameBlocked: blocked,
     setViewport: (size) =>
-      changeViewport(size ? { label: 'Custom', ...size } : PREVIEW_VIEWPORT_FILL),
+      changeViewport(size ? { label: 'Custom', ...size } : PREVIEW_VIEWPORT_FILL, {
+        byAgent: true,
+      }),
+    currentViewport: fixedViewport ? { width: viewport.width!, height: viewport.height! } : null,
     vf,
     hasInjectUrl: !!injectUrl,
     engaged,

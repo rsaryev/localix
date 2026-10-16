@@ -77,3 +77,11 @@ pub(crate) fn companion_open_session(
     let _ = (app, caller, session_id);
     Err(UNAVAILABLE.into())
 }
+
+pub(crate) fn workspace_focus_changed(_: &AppHandle) {}
+
+#[tauri::command]
+pub(crate) fn companion_workspace_focus(app: AppHandle, caller: Webview) -> Result<bool, String> {
+    let _ = (app, caller);
+    Err(UNAVAILABLE.into())
+}

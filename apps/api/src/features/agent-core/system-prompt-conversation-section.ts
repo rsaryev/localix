@@ -4,12 +4,10 @@ import {
   HUMAN_BOARD_CONTROL,
   HUMAN_CONTROL,
   LEADER_BOARD,
-  LEADER_FORK,
   MEMBER_BOARD,
   MEMBER_SKIP,
   SKIP_ANSWER_CONTROL,
   SOLO_BOARD,
-  SOLO_ROLE,
   SOLO_TURN_CONTROL,
   TEAM_CONVERSATION,
   TEAM_LEADERSHIP,
@@ -64,14 +62,11 @@ export function buildTurnControlSection(input: {
   canInvite?: boolean
   /** The run holds a task board tool; board rules render only then. */
   hasBoard?: boolean
-  /** The run holds `fork`. */
-  canFork?: boolean
   /** The run holds `ask`. */
   canAsk?: boolean
 }): string {
   const topic = input.canChangeTopic ? [TOPIC_CONTROL] : []
   const board = (line: string) => (input.hasBoard ? [line] : [])
-  const fork = (line: string) => (input.canFork ? [line] : [])
   const human = [
     HUMAN_CONTROL,
     ...(input.canAsk ? [HUMAN_ASK_CONTROL] : []),
@@ -83,7 +78,6 @@ export function buildTurnControlSection(input: {
       ...(input.canInvite ? [SOLO_TURN_CONTROL] : []),
       ...human,
       ...board(SOLO_BOARD),
-      ...fork(SOLO_ROLE),
       ...topic,
     ].join('\n')
   }
@@ -96,7 +90,7 @@ export function buildTurnControlSection(input: {
     'Only the user removes participants; keep colleagues after their work is done.',
     TEAM_CONVERSATION,
     ...(input.isLeader
-      ? ['## Leadership', TEAM_LEADERSHIP, ...fork(LEADER_FORK), ...board(LEADER_BOARD)]
+      ? ['## Leadership', TEAM_LEADERSHIP, ...board(LEADER_BOARD)]
       : [
           '## Your part',
           TEAM_MEMBER,

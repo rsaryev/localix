@@ -16,6 +16,7 @@ import type {
   LastMessagePreview,
   ResumePoint,
   SessionAgentRoute,
+  SessionModelChoicesView,
   SessionPlan,
 } from '@localixai/api/client'
 import type { PermissionMode } from '@localixai/api/permission-modes'
@@ -108,6 +109,12 @@ export interface UiSession {
    * belongs to an agent inside a conversation, not to the conversation.
    */
   agents: SessionAgentRoute[]
+  /**
+   * The person's model choices here, independent of membership: per agent, seated or not, and
+   * `all` for agents without their own. An agent that joins starts on its entry, else `all`.
+   * Absent on a session the client built before the server answered — nothing chosen.
+   */
+  modelChoices?: SessionModelChoicesView
   /** How the agent's rules are rewritten for this conversation (`@localixai/api/permission-modes`). */
   permissionMode: PermissionMode
   /** A delegated child its delegator closed; nothing wakes it, and its composer is read-only. */

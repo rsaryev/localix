@@ -44,10 +44,17 @@ export function ExitBadge({ code }: { code: number }) {
   )
 }
 
+const BG_STATUS_LABEL: Partial<Record<NonNullable<CommandItem['jobStatus']>, string>> = {
+  killed: 'stopped',
+  timeout: 'stopped at its timeout',
+}
+
 export function BgBadge({ status }: { status: CommandItem['jobStatus'] }) {
   const done = status !== undefined && status !== 'running'
-  const tone = !done ? 'running' : status === 'completed' ? 'done' : 'error'
-  const label = `Background job${status ? ` — ${status}` : ''}`
+  // A stopped job (by the agent, the person or its timeout) is not a failure: grey, not red.
+  const stopped = status === 'killed' || status === 'timeout'
+  const tone = !done ? 'running' : status === 'completed' ? 'done' : stopped ? 'idle' : 'error'
+  const label = `Background job${status ? ` — ${BG_STATUS_LABEL[status] ?? status}` : ''}`
   return (
     <MetadataTooltip label={label}>
       <span className="inline-flex items-center gap-1 text-2xs font-medium text-text-soft">
@@ -121,7 +128,10 @@ export function CommandCard({ item }: { item: CommandItem }) {
       {item.isBackground && (
         <BgBadge status={item.jobStatus ?? (isActive ? 'running' : 'completed')} />
       )}
-      {item.exitCode !== undefined && item.exitCode !== 0 && <ExitBadge code={item.exitCode} />}
+      {/* A stopped job's exit code is its stop signal (130, 143), not a result worth a badge. */}
+      {item.exitCode !== undefined && item.exitCode !== 0 && !serverKilled && (
+        <ExitBadge code={item.exitCode} />
+      )}
     </span>
   )
 

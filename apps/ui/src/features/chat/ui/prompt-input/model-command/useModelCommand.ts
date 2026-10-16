@@ -7,6 +7,7 @@ import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { toast } from '@/shared/lib/notify'
 import { findSessionInState } from '../../../model/findSession'
 import { useChatStore } from '../../../model/store'
+import type { AgentSummary, JoinRoutesView } from '@/shared/api/contracts'
 import { participantRows, type ParticipantRecord } from '../model-select/participantRows'
 import { recordRecentModel } from '../model-select/recentModels'
 import { rememberAgentModelSettings } from '../model-select/rememberModelReasoning'
@@ -36,6 +37,10 @@ export function useModelCommand(
   const catalog = useRef({ models, oauthProviderIds })
   catalog.current = { models, oauthProviderIds }
   const records = useRef(new Map<string, ParticipantRecord>())
+  /** The registry as the picker lists it: the agents not invited yet are rows too. */
+  const directory = useRef<readonly AgentSummary[]>([])
+  /** What each agent not invited yet would join on, as the picker shows it. */
+  const joinRoutes = useRef<JoinRoutesView | null>(null)
 
   /** The picker's inputs as they are right now — a loader runs after the render it came from. */
   const context = useCallback((): ModelCommandContext => {
@@ -44,7 +49,17 @@ export function useModelCommand(
     const oauth = new Set(catalog.current.oauthProviderIds)
     const agentSettings = useUserSettings.getState().settings.agentSettings
     return {
-      participants: participantRows(session?.agents, (id) => records.current.get(id)),
+      participants: participantRows(
+        session?.agents,
+        (id) => records.current.get(id),
+        session
+          ? {
+              agents: directory.current,
+              choices: session.modelChoices,
+              joinRoutes: joinRoutes.current,
+            }
+          : undefined,
+      ),
       connections: sortProvidersOAuthFirst(state.connections, oauth, (row) => row.providerId),
       models: catalog.current.models,
       sessionConnectionId,
@@ -57,15 +72,18 @@ export function useModelCommand(
     async (argName: string, query: string, committed: Readonly<Record<string, string>>) => {
       // Registry names and turn ceilings, as the picker's Agents column shows them.
       if (argName === 'agent' || argName === 'turns') {
-        const snapshot = await backendClient
-          .fetchCapabilitySnapshot({ projectId: projectId ?? '' })
-          .catch(() => null)
+        const [snapshot, join] = await Promise.all([
+          backendClient.fetchCapabilitySnapshot({ projectId: projectId ?? '' }).catch(() => null),
+          sessionId ? backendClient.getJoinRoutes(sessionId).catch(() => null) : null,
+        ])
+        joinRoutes.current = join
         for (const agent of snapshot?.agents ?? [])
           records.current.set(agent.record.id, agent.record)
+        if (snapshot) directory.current = snapshot.agents
       }
       return modelStepOptions(context(), argName, query, committed)
     },
-    [context, projectId],
+    [context, projectId, sessionId],
   )
 
   const skipArg = useCallback<SkipArgFor>(
@@ -79,11 +97,15 @@ export function useModelCommand(
       if (!sessionId) return
       const store = useChatStore.getState()
       if (plan.kind === 'party') {
-        await store.applyPartyRoute(sessionId, {
-          providerConnectionId: plan.connectionId,
-          modelId: plan.modelId,
-          reasoningEffort: plan.reasoningEffort,
-        })
+        await store.applyPartyRoute(
+          sessionId,
+          {
+            providerConnectionId: plan.connectionId,
+            modelId: plan.modelId,
+            reasoningEffort: plan.reasoningEffort,
+          },
+          context().participants.map((row) => row.agentId),
+        )
       } else {
         await store.setModelSelection(
           sessionId,
@@ -107,7 +129,7 @@ export function useModelCommand(
       }
       recordRecentModel({ connectionId: plan.connectionId, modelId: plan.modelId })
     },
-    [sessionId],
+    [context, sessionId],
   )
 
   /** Run a completed `/model` selection here and clear the draft; false hands it to the server. */

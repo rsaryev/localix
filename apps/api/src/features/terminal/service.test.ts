@@ -124,6 +124,27 @@ describe('terminal service', () => {
     ])
   })
 
+  // LOCALIX-388: a job closed at its timeout reached the person as "Background terminal exited
+  // (130)". A stop with a reason must say it was stopped, and why.
+  test('a close with a reason publishes a stop that carries it', async () => {
+    const lifecycle: unknown[] = []
+    const s = createTerminalService({
+      backend: makeBackend().backend,
+      resolveCwd: async () => '/workspace',
+      publishLifecycle: (_userId, _sessionId, event) => lifecycle.push(event),
+    })
+    const timedOut = await s.spawnCommand('u1', {
+      sessionId: 'chat-1',
+      command: 'python3 -m http.server',
+    })
+    const closed = await s.spawnCommand('u1', { sessionId: 'chat-1', command: 'npm run dev' })
+    s.close('u1', timedOut.id, 'timeout 60 s')
+    s.close('u1', closed.id)
+    expect(lifecycle[0]).toMatchObject({ exitCode: 130, stopped: true, stopReason: 'timeout 60 s' })
+    expect(lifecycle[1]).toMatchObject({ exitCode: 130, stopped: true })
+    expect(lifecycle[1]).not.toHaveProperty('stopReason')
+  })
+
   test('publishes one deterministic finished event when an explicit close has no PTY exit callback', async () => {
     let killed = 0
     let backendExit = (_code: number) => {}

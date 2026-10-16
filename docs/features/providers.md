@@ -61,17 +61,23 @@ if that one no longer works. It never crosses to a different provider or model.
 A new seat's route is decided once, when the participant joins, and then stored. Its model comes
 from the first source that names one:
 
-| Order | Source                              | Set from                      |
-| ----- | ----------------------------------- | ----------------------------- |
-| 1     | An explicit choice                  | The model picker, or `/model` |
-| 2     | Your last choice **for this agent** | Learned from the picker       |
-| 3     | The agent's default                 | **Settings → Agents**         |
-| 4     | The project                         | **Settings → Project**        |
-| 5     | The conversation's main model       | Its first participant         |
+| Order | Source                                       | Set from                                                 |
+| ----- | -------------------------------------------- | -------------------------------------------------------- |
+| 1     | The conversation's choice **for this agent** | The model picker (including **All agents**), or `/model` |
+| 2     | The agent's default                          | **Settings → Agents**                                    |
+| 3     | Your last choice **for this agent**          | Every pick for that agent, in any conversation           |
+| 4     | The project                                  | **Settings → Project**                                   |
 
-Its **reasoning effort** is the explicit choice, otherwise the level last chosen for that agent on
-that model, otherwise the agent's default, otherwise **medium**. It never copies another
-participant's level or another model's level, and it is never capped.
+A new conversation is not seeded with a copy of another one: each agent resolves through this order.
+An agent without a default model therefore starts on the model you last picked for it, including a
+pick made through **All agents** or for an agent that was never invited. A participant never copies
+another participant's model. With none of these sources, the seat has no model until you pick one.
+The model picker lists an agent that is not invited yet on the model this order would give it.
+
+Its **reasoning effort** is the explicit choice, otherwise the level of your last choice when the
+model came from it, otherwise the level last chosen for that agent on that model, otherwise the
+agent's default, otherwise **medium**. It never copies another participant's level or another
+model's level, and it is never capped.
 
 Later changes to defaults reach new seats only. Conversations created before this rule may hold a
 seat with no model; it is filled once by the same rule on first read and stored. A delegated child

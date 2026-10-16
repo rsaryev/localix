@@ -36,8 +36,12 @@ export async function openPreviewAndSnapshot(
       error: error instanceof Error ? error.message : 'Browser readiness check failed.',
     }
   }
+  const notLoaded =
+    !openSnap && res.unreachable
+      ? `\nThe page did not load: ${res.url} did not respond (${res.unreachable}). Check that its server is still running (restart it if it stopped), or open a static file with file_path instead.`
+      : ''
   return {
-    content: `${res.content}\nBrowser tab ID: ${res.previewId}. ${openSnap ? 'Agent bridge ready.' : 'Agent bridge not ready; opening is not evidence of a completed check.'}${readinessError ? `\n${readinessError.errorCode ?? 'bridge_not_ready'}: ${readinessError.error}` : ''}${openSnap ? `\n\n${snapshotContent(openSnap)}` : ''}`,
+    content: `${res.content}\nBrowser tab ID: ${res.previewId}. ${openSnap ? 'Agent bridge ready.' : 'Agent bridge not ready; opening is not evidence of a completed check.'}${notLoaded}${readinessError ? `\n${readinessError.errorCode ?? 'bridge_not_ready'}: ${readinessError.error}` : ''}${openSnap ? `\n\n${snapshotContent(openSnap)}` : ''}`,
     details: {
       action: 'open',
       previewId: res.previewId,

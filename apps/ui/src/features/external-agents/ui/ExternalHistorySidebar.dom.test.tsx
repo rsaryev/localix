@@ -113,6 +113,7 @@ test('Unified history shows owned Localix and external sessions together within 
       id,
       title: id,
       projectId,
+      modelChoices: { agents: {} },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       seq: 1,

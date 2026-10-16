@@ -10,8 +10,8 @@ describe('# Collaboration follows the room', () => {
   test('alone, the agent does the work itself and forks only side work', () => {
     const solo = buildCollaborationSection(all, { withColleagues: false, ...chat })!
     expect(solo).toContain('Handle straightforward work directly')
-    expect(solo).toContain('Fork yourself (`fork`) to keep this context clean')
-    expect(solo).toContain('integrate its report')
+    expect(solo).toContain('Investigation goes to `fork`')
+    expect(solo).toContain('act on its short report')
     expect(solo).toContain('Bring in a suitable agent from the directory')
   })
 

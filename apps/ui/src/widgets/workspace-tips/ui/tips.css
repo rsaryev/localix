@@ -260,3 +260,15 @@
     animation-name: wt-fade-out;
   }
 }
+
+/* A command the sentence teaches: the slash menu's spelling, in a quiet chip. */
+.wt-command {
+  display: inline-block;
+  padding: 0 0.3em;
+  border-radius: 0.3em;
+  background: var(--tip-veil-strong);
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  white-space: nowrap;
+}

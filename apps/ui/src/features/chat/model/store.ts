@@ -131,7 +131,11 @@ export interface ChatStore {
   /** `agentId` names whose effort; omitted, the conversation's own participant. */
   setReasoningEffort: (s: string, e: ReasoningEffort, agentId?: string) => Promise<void>
   /** One model and level for every participant of a group, in one write. */
-  applyPartyRoute: (sessionId: string, choice: PartyRouteChoice) => Promise<void>
+  applyPartyRoute: (
+    sessionId: string,
+    choice: PartyRouteChoice,
+    agentIds?: readonly string[],
+  ) => Promise<void>
 
   /** Stop a session's run (server owns cancellation; we clear its queue + optimistic flag). */
   stopGeneration: (sessionId: string) => void

@@ -1,30 +1,28 @@
 import { useCallback, useMemo } from 'react'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ReasoningEffort } from '../../../model/reasoning'
-import type { PartyRouteChoice } from '../../../model/sessionPartyRoute'
+import type { ApplyPartyRoute } from '../../../model/sessionPartyRoute'
 import type { ParticipantRow } from './ModelTaskColumn'
-import { partyStatusText, PARTY_TARGET, showPartyRow, summarizeParty } from './partyRoute'
-import type { PickerTarget } from './pickerTarget'
+import { isAllChosen, partyStatusText, summarizeParty } from './partyRoute'
 import { resolveLiveTaskModel } from './taskReasoning'
 
 /**
- * Everything the model browser needs for its "All agents" target: the room's summary, the row
- * the column draws, and the two writes it makes through the same `onApplyPartyRoute` port.
+ * Everything the model browser needs for its "All agents" target: the summary of every listed
+ * agent, the row the column draws, and the two writes it makes through the same
+ * `onApplyPartyRoute` port — each naming every listed agent, invited or not.
  */
 export function usePartyRoute({
   participants,
   sessionConnectionId,
   models,
   connections,
-  taskKey,
   onApplyPartyRoute,
 }: {
   participants: readonly ParticipantRow[]
   sessionConnectionId: string | null
   models: readonly CatalogModel[]
   connections: readonly { id: string; providerId: string }[]
-  taskKey: PickerTarget
-  onApplyPartyRoute?: (choice: PartyRouteChoice) => void | Promise<void>
+  onApplyPartyRoute?: ApplyPartyRoute
 }) {
   const summary = useMemo(
     () =>
@@ -36,8 +34,8 @@ export function usePartyRoute({
     [connections, models, participants, sessionConnectionId],
   )
   const column = useMemo(() => {
-    if (!showPartyRow(summary, taskKey === PARTY_TARGET, Boolean(onApplyPartyRoute)))
-      return undefined
+    // Always offered where it can be written — one agent included.
+    if (!onApplyPartyRoute || summary.size === 0) return undefined
     // The one model the routed members share, named the way their own rows name it.
     const first = participants.find((member) => member.route?.modelId)?.route
     const live = first
@@ -48,18 +46,24 @@ export function usePartyRoute({
       : null
     return {
       status: partyStatusText(summary, live?.model.name ?? first?.modelId ?? null),
-      mixed: summary.relevant,
+      mixed:
+        summary.models > 1 || summary.levels > 1 || summary.unset > 0 || summary.unavailable > 0,
+      chosen: isAllChosen(summary),
     }
-  }, [connections, models, onApplyPartyRoute, participants, sessionConnectionId, summary, taskKey])
+  }, [connections, models, onApplyPartyRoute, participants, sessionConnectionId, summary])
+  const agentIds = useMemo(() => participants.map((member) => member.agentId), [participants])
   const partyRoute = useCallback(() => summary.slot, [summary])
   const onPickPartyModel = useCallback(
     (connectionId: string, modelId: string, reasoningEffort: ReasoningEffort) =>
-      onApplyPartyRoute?.({ providerConnectionId: connectionId, modelId, reasoningEffort }),
-    [onApplyPartyRoute],
+      onApplyPartyRoute?.(
+        { providerConnectionId: connectionId, modelId, reasoningEffort },
+        agentIds,
+      ),
+    [agentIds, onApplyPartyRoute],
   )
   const onPartyReasoningChange = useCallback(
-    (reasoningEffort: ReasoningEffort) => void onApplyPartyRoute?.({ reasoningEffort }),
-    [onApplyPartyRoute],
+    (reasoningEffort: ReasoningEffort) => void onApplyPartyRoute?.({ reasoningEffort }, agentIds),
+    [agentIds, onApplyPartyRoute],
   )
   return { summary, column, partyRoute, onPickPartyModel, onPartyReasoningChange }
 }

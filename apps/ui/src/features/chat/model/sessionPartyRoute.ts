@@ -5,9 +5,13 @@ import type { ReasoningEffort } from './reasoning'
 import { patchSessionById } from './sessionListHelpers'
 import { findSessionInState } from './findSession'
 import type { ChatStore, CustomSet } from './store'
+import { withModelChoices } from './sessionModelChoices'
 
 /**
- * ONE ROUTE FOR THE WHOLE ROOM — "put every agent on this model at this level".
+ * "ALL" — ONE ROUTE FOR EVERY AGENT THE PICKER LISTS.
+ *
+ * A cascade, not a setting: the write names each listed agent (seated or not yet invited) with the
+ * same route, and each becomes that agent's own choice (`sessionModelChoices.ts`).
  *
  * `modelId` absent changes only the level (the room already shares a model). The level is the
  * caller's, already clamped to the chosen model: every member gets the same model, so one clamp
@@ -19,6 +23,12 @@ export interface PartyRouteChoice {
   reasoningEffort: ReasoningEffort
 }
 
+/** The picker's "All" port: the choice, and every agent the picker lists (invited or not). */
+export type ApplyPartyRoute = (
+  choice: PartyRouteChoice,
+  agentIds: readonly string[],
+) => void | Promise<void>
+
 export type PartyRouteEntry = {
   agentId: string
   providerConnectionId?: string | null
@@ -26,7 +36,7 @@ export type PartyRouteEntry = {
   reasoningEffort: ReasoningEffort
 }
 
-/** The batch a choice becomes: one entry per seated member, in join order. */
+/** The batch a choice becomes: one entry per listed agent, in the picker's order. */
 export function partyRouteEntries(
   agents: readonly { agentId: string }[],
   choice: PartyRouteChoice,
@@ -65,12 +75,21 @@ export function createApplyPartyRoute({
   get: () => ChatStore
   lane: Map<string, Promise<UiSession>>
 }) {
-  return async (sessionId: string, choice: PartyRouteChoice): Promise<void> => {
+  return async (
+    sessionId: string,
+    choice: PartyRouteChoice,
+    /** Every agent the picker lists; absent, the seated ones. */
+    agentIds?: readonly string[],
+  ): Promise<void> => {
     const previous = findSessionInState(get(), sessionId)
-    if (!previous || previous.agents.length === 0) return
-    const entries = partyRouteEntries(previous.agents, choice)
+    if (!previous) return
+    const listed = agentIds?.map((agentId) => ({ agentId })) ?? previous.agents
+    if (listed.length === 0) return
+    const entries = partyRouteEntries(listed, choice)
     customSet((state) =>
-      patchSessionById(state, sessionId, (session) => applyEntries(session, entries)),
+      patchSessionById(state, sessionId, (session) =>
+        withModelChoices(applyEntries(session, entries), entries),
+      ),
     )
     const persist = () => backendClient.updateSession(sessionId, { routes: entries })
     const prior = lane.get(sessionId)
@@ -86,6 +105,7 @@ export function createApplyPartyRoute({
         customSet((state) =>
           patchSessionById(state, sessionId, (current) => ({
             ...current,
+            modelChoices: previous.modelChoices,
             agents: current.agents.map((member) => {
               const before = previous.agents.find((seat) => seat.agentId === member.agentId)
               if (!before) return member

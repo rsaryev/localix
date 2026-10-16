@@ -37,7 +37,8 @@ export function uniqueCatalogModelProvider(
 }
 
 /**
- * Persist a route a slash command chose, as the point write it is.
+ * Persist a route a slash command chose, through the picker's own choice writer
+ * (`repository-model-choices.ts`): the seat and the session's choice for this agent together.
  *
  * `/model` re-routes ONE participant, so it says exactly that. Handing the
  * whole record to `updateSession` instead would state the whole party, and the record these
@@ -52,7 +53,7 @@ async function persistRoute(
   agentId: string,
   route: Partial<ModelRoute>,
 ): Promise<void> {
-  await ctx.repo.updateSessionAgentRoute(userId, sessionId, agentId, route)
+  await ctx.repo.updateSessionAgentRoutes(userId, sessionId, [{ agentId, ...route }])
   await ctx.repo.updateSession(userId, sessionId, { updatedAt: updated.updatedAt })
   ctx.publishSession(updated)
 }

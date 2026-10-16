@@ -41,11 +41,18 @@ export interface IslandOptions {
   nativePointer?: boolean
   /** Nothing works or waits: the resting island draws nothing until hover or the shortcut. */
   quiet?: boolean
+  /** A Localix workspace is focused: new requests wait there instead of opening the island. */
+  holdAttention?: boolean
 }
 
 export function useIsland(
   items: readonly AttentionItem[],
-  { height = ISLAND.canvasHeight, nativePointer = false, quiet = false }: IslandOptions = {},
+  {
+    height = ISLAND.canvasHeight,
+    nativePointer = false,
+    quiet = false,
+    holdAttention = false,
+  }: IslandOptions = {},
 ) {
   const [state, dispatch] = useReducer(reduceIsland, RESTING_ISLAND)
   const reducedMotion = useReducedMotion()
@@ -79,16 +86,26 @@ export function useIsland(
     announced.current.clear()
   }, [])
   // A request that was not here before reveals itself once; a manual fold keeps it quiet.
+  // While a workspace is focused, unannounced requests stay unannounced until the person leaves.
   useEffect(() => {
-    const urgent = items.find(
-      (item) => item.kind === 'interaction' && !announced.current.has(item.key),
+    const urgent = holdAttention
+      ? undefined
+      : items.find((item) => item.kind === 'interaction' && !announced.current.has(item.key))
+    const seen = announced.current
+    announced.current = new Set(
+      items.filter((item) => !holdAttention || seen.has(item.key)).map((item) => item.key),
     )
-    announced.current = new Set(items.map((item) => item.key))
     const selectedExists = items.some((item) => item.key === state.selectedKey)
     if (urgent && !selectedExists) dispatch({ type: 'select', key: urgent.key })
     else if (state.selectedKey && !selectedExists)
       dispatch({ type: 'resolved', key: state.selectedKey })
-  }, [items, state.selectedKey])
+  }, [items, state.selectedKey, holdAttention])
+  // Returning to a workspace folds a request card; the workspace shows the same request.
+  const held = useRef(holdAttention)
+  useEffect(() => {
+    if (holdAttention && !held.current && state.selectedKey) onCollapse()
+    held.current = holdAttention
+  }, [holdAttention, state.selectedKey])
 
   // One serialized native layout request per phase or height change; stale targets are dropped.
   const revision = useRef(0)

@@ -22,7 +22,8 @@ export interface BackgroundInputPayload {
 export interface BgProc {
   onOutput(listener: (chunk: string) => void): void
   write(text: string): void
-  kill(): void
+  /** Stop the job on purpose; `reason` (`timeout 60 s`) is told to the person where it shows. */
+  kill(reason?: string): void
   /** Resolves with the exit code (null on spawn/IO error). Cached — safe to await repeatedly. */
   exited: Promise<number | null>
   /** Backend terminal id when the job runs in a PTY pane; absent for child_process jobs. */
@@ -158,7 +159,7 @@ export async function ptyBgProc(
   return {
     onOutput: (cb) => handle.onData(cb),
     write: (text) => handle.write(text),
-    kill: () => handle.kill(),
+    kill: (reason) => handle.kill(reason),
     exited,
     terminalId: handle.terminalId,
     onPreviewUrl: handle.onPreviewUrl ? (cb) => handle.onPreviewUrl!(cb) : undefined,

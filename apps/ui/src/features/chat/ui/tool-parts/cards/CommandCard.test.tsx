@@ -20,4 +20,11 @@ describe('CommandCard status badges', () => {
     expect(html).toContain('data-tooltip-trigger="true"')
     expect(html).not.toContain('title=')
   })
+
+  // LOCALIX-388: a server stopped at its timeout showed a red badge, as if it had failed.
+  test('a stopped job is grey and says it was stopped, not red', () => {
+    const html = renderToStaticMarkup(<BgBadge status="timeout" />)
+    expect(html).not.toContain('bg-status-error')
+    expect(html).toContain('stopped at its timeout')
+  })
 })

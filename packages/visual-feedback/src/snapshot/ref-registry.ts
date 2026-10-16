@@ -57,6 +57,9 @@ export interface RefRegistry {
    *  refs. Returns the element, or null when there is no match or it is ambiguous
    *  (never guesses between two equally-matching elements). */
   findByIdentity(identity: RefIdentity): Element | null
+  /** No snapshot has run in this document yet (neither generation holds a ref): a ref the
+   *  agent names came from a snapshot another renderer of the same page took. */
+  isEmpty(): boolean
 }
 
 function normalizeKey(raw: string): string {
@@ -105,6 +108,9 @@ export function createRefRegistry(): RefRegistry {
         return healed
       }
       return null
+    },
+    isEmpty() {
+      return map.size === 0 && prev.size === 0
     },
     identityOf(raw) {
       const key = normalizeKey(raw)

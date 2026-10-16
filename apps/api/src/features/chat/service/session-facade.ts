@@ -1,5 +1,10 @@
 import type { z } from 'zod'
-import type { importSessionRequestSchema, MessageToolDetails, SessionDetail } from '../contracts'
+import type {
+  importSessionRequestSchema,
+  JoinRoutesView,
+  MessageToolDetails,
+  SessionDetail,
+} from '../contracts'
 import { importSession, type ImportSessionInput } from './import-session'
 import * as loopOps from './loop-ops'
 import * as monitorOps from './monitor-ops'
@@ -18,7 +23,10 @@ import { recordSessionNotice } from '../runtime/session-notice'
  * spelled out at the call: the in-memory watches and loops of a session go only after its row
  * really is gone.
  */
-export interface ChatSessionFacadeDeps extends Pick<ChatServiceGraph, 'repo' | 'now'> {
+export interface ChatSessionFacadeDeps extends Pick<
+  ChatServiceGraph,
+  'repo' | 'now' | 'routeDefaults'
+> {
   sessionLifecycleCtx: SessionCore['sessionLifecycleCtx']
   sessionDetailCtx: SessionCore['sessionDetailCtx']
   getSessionDetail: SessionCore['getSessionDetail']
@@ -27,6 +35,7 @@ export interface ChatSessionFacadeDeps extends Pick<ChatServiceGraph, 'repo' | '
 export function createChatSessionFacade({
   repo,
   now,
+  routeDefaults,
   sessionLifecycleCtx,
   sessionDetailCtx,
   getSessionDetail,
@@ -66,6 +75,12 @@ export function createChatSessionFacade({
       opts?: { messageLimit?: number; deferToolDetails?: boolean },
     ): Promise<SessionDetail> {
       return getSessionDetail(userId, id, opts)
+    },
+
+    /** What an agent not invited yet would join on (`JoinRoutesView`). */
+    async getJoinRoutes(userId: string, id: string): Promise<JoinRoutesView> {
+      const session = await sessionLifecycleCtx.requireSession(userId, id)
+      return routeDefaults.joinRoutes(userId, session.projectId ?? null)
     },
 
     getMessageToolDetails(

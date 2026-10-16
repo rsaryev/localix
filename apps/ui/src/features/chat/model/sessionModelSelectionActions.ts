@@ -9,6 +9,7 @@ import { findSessionInState } from './findSession'
 import type { ChatStore, CustomSet } from './store'
 import type { SessionActions } from './sessionActionsSlice'
 import { createApplyPartyRoute } from './sessionPartyRoute'
+import { choiceFor, withModelChoices } from './sessionModelChoices'
 
 /** The per-session model/effort actions of the chat store, sharing one ordered write lane. */
 export function createModelSelectionActions({
@@ -45,22 +46,23 @@ export function createModelSelectionActions({
     // the request all name the same participant even if the party changes mid-flight.
     const target = agentId ?? (previous ? sessionRoute(previous).agentId : undefined)
     const previousRoute = previous && target ? agentRoute(previous, target) : undefined
+    // An agent not invited yet has no seat: the pick is the session's choice for it, which it
+    // joins on (`sessionModelChoices.ts`).
+    const seated = Boolean(previousRoute)
     // Model selection is interaction state: paint it synchronously. Waiting for
     // the PATCH response left a newly-created cross-scope chat displaying its
     // previous/null connection, even though the backend had already persisted
     // the choice. Roll back only if this exact optimistic pair is still current.
+    const picked = {
+      providerConnectionId: connectionId,
+      modelId,
+      ...(reasoningEffort ? { reasoningEffort } : {}),
+    }
     customSet((state) =>
-      patchSessionById(state, sessionId, (session) =>
-        withRoute(
-          session,
-          {
-            providerConnectionId: connectionId,
-            modelId,
-            ...(reasoningEffort ? { reasoningEffort } : {}),
-          },
-          target,
-        ),
-      ),
+      patchSessionById(state, sessionId, (session) => {
+        const routed = withRoute(session, picked, target)
+        return target ? withModelChoices(routed, [{ agentId: target, ...picked }]) : routed
+      }),
     )
 
     const persist = () =>
@@ -82,6 +84,14 @@ export function createModelSelectionActions({
       session = await write
       latest = modelSelectionWriteTail.get(sessionId) === write
     } catch (error) {
+      if (!seated && previous && modelSelectionWriteTail.get(sessionId) === write) {
+        customSet((state) =>
+          patchSessionById(state, sessionId, (current) => ({
+            ...current,
+            modelChoices: previous.modelChoices,
+          })),
+        )
+      }
       if (previousRoute && target && modelSelectionWriteTail.get(sessionId) === write) {
         customSet((state) =>
           patchSessionById(state, sessionId, (current) => {
@@ -115,6 +125,10 @@ export function createModelSelectionActions({
     // A newer choice may change only effort on the same model/connection. Pair equality
     // cannot detect that, so only the last write is allowed to replace the session snapshot.
     if (!latest) return
+    if (!seated) {
+      get()._replaceSession(session)
+      return
+    }
     const current = findSessionInState(get(), sessionId)
     const currentRoute = current && target ? agentRoute(current, target) : undefined
     if (
@@ -163,14 +177,20 @@ export function createModelSelectionActions({
     // compact control beside the composer speaks for the conversation and so for its first one.
     const target = findSessionInState(get(), sessionId)
     const agentId = forAgentId ?? (target ? sessionRoute(target).agentId : undefined)
-    const route = target && agentId ? agentRoute(target, agentId) : undefined
+    // A seat, else — for an agent not invited yet — the session's choice for it.
+    const route =
+      target && agentId
+        ? (agentRoute(target, agentId) ?? choiceFor(target.modelChoices, agentId))
+        : undefined
     if (!route?.modelId || !agentId) return
     if (!route.providerConnectionId) {
       // A seat whose model names no connection yet (the run binds one) still takes the level:
       // write the effort alone instead of dropping the choice.
       customSet((state) =>
         patchSessionById(state, sessionId, (session) =>
-          withRoute(session, { reasoningEffort }, agentId),
+          withModelChoices(withRoute(session, { reasoningEffort }, agentId), [
+            { agentId, reasoningEffort },
+          ]),
         ),
       )
       await backendClient.updateSession(sessionId, { route: { agentId, reasoningEffort } })

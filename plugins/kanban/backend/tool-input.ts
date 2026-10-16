@@ -36,7 +36,7 @@ const READS: Record<KanbanAction, readonly string[]> = {
     'items',
   ],
   take: ['task_id'],
-  complete: ['task_id'],
+  complete: ['task_id', 'items_done'],
   block: ['task_id', 'note'],
   reorder: ['task_id', 'sort_order'],
   delete: ['task_id'],
@@ -119,5 +119,5 @@ export function reviseChecklist(
 export function openItemsNotice(subtasks: readonly KanbanSubtask[]): string {
   const open = subtasks.filter((item) => !item.done)
   if (!open.length) return ''
-  return ` ${open.length} of ${subtasks.length} checklist items are unticked: ${open.map((item) => `"${item.text}"`).join(', ')}.`
+  return ` ${open.length} of ${subtasks.length} checklist items are unticked: ${open.map((item) => `"${item.text}"`).join(', ')}. If they were done, complete with items_done: true next time; do not complete the card again.`
 }

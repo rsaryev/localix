@@ -214,9 +214,20 @@ user/origin are serialized because their frames share browser storage. Commands 
 replayed on socket reconnect; the client briefly buffers them only while a host mounts.
 
 The viewport action changes the existing toolbar state and measures `window.innerWidth` and
-`window.innerHeight` through the probe. Missing or mismatched measurements fail the check. Unknown
-settings are rejected rather than silently ignored. This is layout resizing, not device, user-agent,
-or touch emulation.
+`window.innerHeight` through the probe. Missing or mismatched measurements fail the check. The tool
+remembers a fixed size per tab for the rest of the run and attaches it to every later command, so
+whichever host claims a command (another window, a remounted pane) applies the same frame before
+measuring. `viewport: null` and an `open` without a size clear it. A size the agent set is marked on
+the tab, and the UI returns those tabs to fit-to-pane when the run completes or fails; a size the
+person picked is kept.
+
+A command whose `preview_id` names no tab in the workspace strip is answered after a short grace
+period by a stand-in host in the UI with `not_found` and the open tab IDs and URLs, instead of
+timing out as `host_unavailable`. A `take_screenshot` by ref in a document that has not snapshotted
+yet numbers the page first, because the snapshot from `open` may have come from another renderer of
+the same tab. Drive actions never do this, since after a reload the same ref can name a different
+control. Unknown settings are rejected rather than silently ignored. This is layout resizing, not
+device, user-agent, or touch emulation.
 
 Diagnostics distinguish `app_disconnected`, `host_unavailable`, `probe_not_ready`, `timeout`, and
 `frame_blocked`. New diagnostic failures are not automatically reopened and retried: an interaction

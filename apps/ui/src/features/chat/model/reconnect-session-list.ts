@@ -20,6 +20,7 @@ export function mergeSessionListSummary(current: UiSession, summary: UiSession):
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
     agents: summary.agents,
+    ...(summary.modelChoices ? { modelChoices: summary.modelChoices } : {}),
     permissionMode: summary.permissionMode,
     isRunning: summary.isRunning,
     projectId: summary.projectId,

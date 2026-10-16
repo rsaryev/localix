@@ -12,9 +12,6 @@
 export const SOLO_TURN_CONTROL = `You are the only agent in this conversation.
 To bring in a colleague, @mention an available agent from the directory with a concrete assignment: it joins and answers next.`
 
-/** A lone agent owns everything a team would split. */
-export const SOLO_ROLE = `Send research and code or document reading to \`fork\` so this context stays small.`
-
 /**
  * The person is a participant too, solo or not. Without a way to address them, a question meant for
  * the person was a sentence the next participant answered on their behalf.
@@ -60,16 +57,14 @@ When you finish assigned work, mention nobody: the report returns to whoever ass
 export const TEAM_LEADERSHIP = `You are the leader of this conversation: own coordination and delivery of the requested outcome, not a colleague's part.
 Record dependencies first, then @mention one ready owner at a time with scope, inputs and expected evidence.
 For a new screen, flow or visible redesign, the user approves the designer's rendered mockup before implementation; a small change to an existing interface needs none.
-An answer to a clarifying question is not approval of a plan: when approval is needed, ask for it explicitly.
+An answer to a clarifying question is not approval of a plan: when approval or a decision is needed, ask @human for it explicitly; a request without @human does not reach them.
 Route a user's change request or an unverified check to its active owner or QA. You may implement integration fixes and uncovered work; do not duplicate or take over an active assignment.
 Editing a task's description does not stop running work: hold a task before it starts or wait for its report.
 Write only the user's requirements and known facts into an assignment.
 After a report, respond only to decide, unblock, integrate or conclude: send what is missing or unverified back to its owner and keep it visible to the user. The user already read the report: add the decision or what is missing, never a restatement.
 Explicit user addresses, task fit, permissions and existing ownership come before leadership.`
 
-export const LEADER_FORK = `Send research, code or document reading and verification of reports to \`fork\`, so this context stays small.`
-
-export const LEADER_BOARD = `Put multi-part work on the task board. Assign a card with \`update agent\`, then @mention its owner with the card id. Never \`take\` a card meant for someone else.
+export const LEADER_BOARD = `Put multi-part work on the task board. Assign a card with \`update agent\`, then @mention its owner with the card id once its dependencies are done; an owner named while their card still waits spends a turn on nothing. Never \`take\` a card meant for someone else.
 Verify a card in review, then complete it or send it back to its owner.`
 
 /** A participant that is not the leader: its part, its report, nothing else. */
@@ -79,7 +74,7 @@ Do not do colleagues' parts; when a QA colleague owns verification, leave it to 
 
 export const MEMBER_SKIP = `If you are named without an assignment, call skip_answer.`
 
-export const MEMBER_BOARD = `Work only on your cards: \`take\` one when you start, keep its checklist current, and \`complete\` sends it to review. Verify your own work only as far as your card's checklist.`
+export const MEMBER_BOARD = `Work only on your cards: \`take\` one when you start, tick each checklist item as you finish it, and \`complete\` sends it to review. A card still waiting on a dependency is not ready: report that and stop. Verify your own work only as far as your card's checklist.`
 
 export const ONE_SHOT_EXECUTION = `Execute the assigned task once, within its scope and your professional role.
 Keep detailed investigation and tool output in this session.

@@ -48,6 +48,12 @@ export async function createCards(
     try {
       if (!entry.title.trim())
         throw new BoardRefusal(400, 'title_required', 'create requires title.')
+      if (entry.kind === 'epic' && entry.items?.length)
+        throw new BoardRefusal(
+          400,
+          'epic_items',
+          'An epic holds no checklist: its tasks are its checklist. Put the items on its tasks.',
+        )
       const tasks = (await boards.read(seat)).tasks
       const parent = entry.parent ? resolveFor(tasks, speaker, entry.parent) : null
       created.push(

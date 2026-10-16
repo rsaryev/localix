@@ -16,6 +16,7 @@ import { useIslandContentHeight } from '@/features/companion/model/useIslandCont
 import { useQuickChat } from '@/features/companion/model/useQuickChat'
 import { useIslandOverlays } from '@/features/companion/model/useIslandOverlays'
 import { useIslandContributions } from '@/features/companion/model/useIslandContributions'
+import { useWorkspaceFocus } from '@/features/companion/model/useWorkspaceFocus'
 import {
   companionRoster,
   islandRequests,
@@ -42,12 +43,15 @@ export function CompanionPage() {
   const geometry = useIslandGeometry()
   const content = useIslandContentHeight(geometry.notchHeight)
   const requests = islandRequests(roster.waiting)
+  // A focused workspace already shows its requests; the folded island does not repeat them.
+  const workspaceFocused = useWorkspaceFocus()
   // The quick conversation is a session too, so its runs count as work here.
-  const quiet = roster.working.length === 0 && requests.length === 0
+  const quiet = roster.working.length === 0 && (requests.length === 0 || workspaceFocused)
   const island = useIsland(roster.waiting, {
     height: content.height,
     nativePointer: geometry.nativePointer,
     quiet,
+    holdAttention: workspaceFocused,
   })
   const chat = useQuickChat(island.expanded)
   useIslandOverlays(island.expanded)
@@ -65,8 +69,9 @@ export function CompanionPage() {
   })
   const pending = pendingRequest(requests, island.selectedKey, chat.session?.id)
   const busy = chat.running || roster.working.length > 0
+  const waiting = Boolean(pending) && (island.expanded || !workspaceFocused)
   // The folded edge stays soft at rest and brightens while agents work or wait.
-  const status = pending ? 'Waiting for your answer' : busy ? 'Working' : ''
+  const status = waiting ? 'Waiting for your answer' : busy ? 'Working' : ''
   useEffect(() => startSettingsBootstrap(loadSettings), [loadSettings])
   useEffect(() => {
     document.documentElement.dataset.companion = 'true'
@@ -133,7 +138,7 @@ export function CompanionPage() {
           className="lx-island-edge"
           // Even a quiet resting island keeps a faint idle glint so it stays discoverable.
           data-active={!island.expanded}
-          data-mode={pending ? 'waiting' : busy ? 'working' : 'idle'}
+          data-mode={waiting ? 'waiting' : busy ? 'working' : 'idle'}
         >
           <span className="lx-island-edge-glow" />
           <span className="lx-island-edge-rim" />

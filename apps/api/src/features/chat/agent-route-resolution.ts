@@ -9,9 +9,13 @@
  * This module is the only place that decides a seat's starting route. It runs when a seat is
  * born (a new conversation, an invited participant) and once for a legacy seat stored blank.
  *
- *   MODEL:  what the caller asked for → your last model for this agent → the agent's card → the project → the room's
- *           primary participant (so a specialist is never stranded with no model).
- *   EFFORT: what the caller asked for → the level last chosen for THAT model and agent → the agent's card → the default.
+ *   MODEL:  what the caller asked for (for a newcomer: the session's choice for it —
+ *           `session-model-choices.ts`) → the agent's card (its own default model) → the model
+ *           this agent used most recently (your last pick for it, in any conversation) → the
+ *           project. Never another participant's model. A new chat is not seeded with anything:
+ *           every seat resolves through this chain.
+ *   EFFORT: what the caller asked for → the level of that last pick, when the model came from it
+ *           → the level last chosen for THAT model and agent → the agent's card → the default.
  *           Never another model's level, never another participant's.
  *
  * Nothing here reads a database or a file; the caller gathers the sources.
@@ -20,7 +24,10 @@ import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
 import type { ReasoningEffort } from '../../db/types'
 import type { ModelRoute } from './repository-types'
 
-/** Where a seat's starting model came from. Only `session` is a user's own choice. */
+/**
+ * Where a seat's starting model came from. Only `session` is a user's own choice; `primary` is
+ * a delegated child's snapshot of its parent (`seedParticipants`), never a newcomer's.
+ */
 export type RouteOrigin = 'session' | 'project' | 'recent' | 'agent' | 'primary' | 'unset'
 
 export interface SeatSources {
@@ -32,8 +39,6 @@ export interface SeatSources {
   agent?: Partial<ModelRoute> | null
   /** The project's default route. */
   project?: Partial<ModelRoute> | null
-  /** The room's first participant, already seated — the last resort for the model. */
-  primary?: Partial<ModelRoute> | null
   /** The level last chosen for this agent on one model, if any. */
   effortForModel?: (modelId: string) => ReasoningEffort | undefined
 }
@@ -47,12 +52,14 @@ const hasModel = (route: Partial<ModelRoute> | null | undefined): boolean =>
 
 /** The complete route a new seat is stored with. */
 export function birthRoute(sources: SeatSources): SeatRoute {
-  const candidates: [Exclude<RouteOrigin, 'unset'>, Partial<ModelRoute> | null | undefined][] = [
+  const candidates: [
+    Exclude<RouteOrigin, 'unset' | 'primary'>,
+    Partial<ModelRoute> | null | undefined,
+  ][] = [
     ['session', sources.chosen],
-    ['recent', sources.recentForAgent],
     ['agent', sources.agent],
+    ['recent', sources.recentForAgent],
     ['project', sources.project],
-    ['primary', sources.primary],
   ]
   const winner = candidates.find(([, route]) => hasModel(route))
   const modelId = winner?.[1]?.modelId ?? ''
@@ -64,6 +71,7 @@ export function birthRoute(sources: SeatSources): SeatRoute {
     modelOrigin: winner?.[0] ?? 'unset',
     reasoningEffort:
       sources.chosen?.reasoningEffort ??
+      (winner?.[0] === 'recent' ? sources.recentForAgent?.reasoningEffort : undefined) ??
       (modelId ? sources.effortForModel?.(modelId) : undefined) ??
       sources.agent?.reasoningEffort ??
       DEFAULT_REASONING_EFFORT,

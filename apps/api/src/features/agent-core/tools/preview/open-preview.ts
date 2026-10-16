@@ -47,6 +47,9 @@ export type OpenPreviewCoreResult =
       content: string
       background?: boolean
       viewport?: { width: number; height: number } | null
+      /** A local address that did not answer the open-time request (the reason), e.g. a dev
+       *  server that stopped. The tab still opens; the caller explains a probe that never came. */
+      unreachable?: string
     }
   | { ok: false; content: string }
 
@@ -188,6 +191,7 @@ export async function openPreviewCore(
   // itself: a server-side GET can be blocked by bot defenses or TLS configuration even when the
   // page works in a browser, and framing headers do not apply to a native child WebView.
   let frameBlocked = false
+  let unreachable: string | undefined
   const localHost = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname)
   if (!autoServed && localHost) {
     // Follow redirects so we read the FINAL page's headers (e.g. google.com 301s to a consent
@@ -196,7 +200,10 @@ export async function openPreviewCore(
       method: 'GET',
       redirect: 'follow',
       signal: AbortSignal.timeout(2500),
-    }).catch(() => null)
+    }).catch((error: unknown) => {
+      unreachable = describeFetchFailure(error)
+      return null
+    })
     if (res) {
       frameBlocked = isFrameBlocked(res.headers)
       // This request needs headers only; release streaming/large response bodies.
@@ -268,5 +275,13 @@ export async function openPreviewCore(
     frameBlocked,
     autoServed,
     content,
+    ...(unreachable ? { unreachable } : {}),
   }
+}
+
+function describeFetchFailure(error: unknown): string {
+  const code = (error as { code?: unknown } | null)?.code
+  if (code === 'ConnectionRefused' || code === 'ECONNREFUSED') return 'connection refused'
+  if (error instanceof Error && error.name === 'TimeoutError') return 'no response within 2.5 s'
+  return error instanceof Error && error.message ? error.message : 'no response'
 }

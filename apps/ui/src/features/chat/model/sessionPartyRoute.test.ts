@@ -54,7 +54,7 @@ function harness() {
     get: () => state as never,
     lane: new Map(),
   })
-  return { apply, agents: () => state.sessions[0]!.agents }
+  return { apply, agents: () => state.sessions[0]!.agents, session: () => state.sessions[0]! }
 }
 
 let restore: (() => void) | undefined
@@ -133,5 +133,46 @@ describe('applyPartyRoute — the whole room on one model', () => {
       apply('s1', { providerConnectionId: 'conn-openai', modelId: 'x/y', reasoningEffort: 'max' }),
     ).rejects.toThrow('agent_unavailable')
     expect(agents()).toEqual(room().agents)
+  })
+
+  test('"All" names every listed agent, invited or not, and nothing else', async () => {
+    const patches: unknown[] = []
+    const remember = spyOn(useUserSettings.getState(), 'update').mockImplementation(() => {})
+    let resolveWrite: (session: UiSession) => void = () => {}
+    const update = spyOn(backendClient, 'updateSession').mockImplementation(((
+      _id: string,
+      patch: unknown,
+    ) => {
+      patches.push(patch)
+      return new Promise<UiSession>((resolve) => (resolveWrite = resolve))
+    }) as never)
+    restore = () => {
+      update.mockRestore()
+      remember.mockRestore()
+    }
+    const { apply, session } = harness()
+    const route = {
+      providerConnectionId: 'conn-openai',
+      modelId: 'openai/gpt-6.1-sol',
+      reasoningEffort: 'high' as const,
+    }
+    const pending = apply('s1', route, ['builtin:localix', 'frontend', 'qa', 'not-invited'])
+    // Optimistic: the agent not invited yet shows the model it will join on.
+    expect(session().modelChoices).toEqual({
+      agents: Object.fromEntries(
+        ['builtin:localix', 'frontend', 'qa', 'not-invited'].map((id) => [id, route]),
+      ),
+    })
+    expect(patches[0]).toMatchObject({
+      routes: [
+        { agentId: 'builtin:localix' },
+        { agentId: 'frontend' },
+        { agentId: 'qa' },
+        { agentId: 'not-invited', ...route },
+      ],
+    })
+    expect(patches[0]).not.toHaveProperty('allAgents')
+    resolveWrite(session())
+    await pending
   })
 })

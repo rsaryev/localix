@@ -5,7 +5,7 @@
  * those — split them off, filter the body, re-append.
  */
 const TRAILING_MARKER =
-  /^\[(?:exit -?\d+|Timed out after \d+s|terminated \(signal \d+\)|Killed by user)\]$/
+  /^\[(?:exit -?\d+|Timed out after \d+s|terminated \(signal \d+\)|Killed by user|Stopped by the (?:agent|person))\]$/
 
 export function splitTrailingMarkers(output: string): { body: string; markers: string[] } {
   const lines = output.split('\n')

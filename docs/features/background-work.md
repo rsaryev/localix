@@ -95,11 +95,29 @@ will be interrupted. Review and stop important background work before restarting
 
 ### Job deadlines
 
-For `background: true`, omitting `timeout` or supplying an accepted value below 60 seconds leaves
-the job without a deadline. Values 60–600 seconds set a job deadline. A foreground command normally
-defaults to 60 seconds; promotion requires background support and a local detached process, with
-room under the session's job limit. Promotion keeps that process running without reusing the expired
-foreground timeout as its new deadline.
+A background job has no deadline: it runs until it exits, the agent stops it with `jobs`, you stop
+it, its session is deleted, or the server stops. `timeout` on a `background: true` call is ignored,
+so a server started with a habitual `timeout: 60` is not closed a minute later. It sets the deadline
+of an `until` wait (values below 60 seconds use the engine's default) and of a foreground command,
+which defaults to 60 seconds. A job also outlives the turn that started it: stopping or replacing
+that turn after the call has returned does not stop the job.
+
+Promotion requires background support and a local detached process, with room under the session's
+job limit; it keeps that process running without reusing the expired foreground timeout as its new
+deadline.
+
+### How a job's end is reported
+
+A stop is not a failure. The call that started the job settles as completed, and the job's own
+outcome is shown beside it.
+
+| End                                                    | Agent's mid-run note                        | Chat notice and Event Center                        |
+| ------------------------------------------------------ | ------------------------------------------- | --------------------------------------------------- |
+| Exit 0                                                 | `finished successfully (exit 0)`            | Background terminal finished                        |
+| Unexpected non-zero exit                               | `FAILED (exit N)`                           | Background terminal exited with code N              |
+| The agent ran `jobs stop`                              | None; the `jobs` result already answered it | Background terminal stopped (stopped by the agent)  |
+| You stopped it                                         | `was stopped by the person`                 | Background terminal stopped (stopped by the person) |
+| A stop signal from elsewhere (exit 129, 130, 137, 143) | `was stopped by a signal (exit N)`          | Background terminal interrupted (exit N)            |
 
 ## Limits
 

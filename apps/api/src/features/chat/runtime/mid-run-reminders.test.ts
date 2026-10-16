@@ -9,6 +9,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   backgroundJobFinishedReminder,
+  backgroundJobOutcome,
   drainMidRunReminders,
   forgetMidRunReminders,
   MID_RUN_REMINDER_MAX,
@@ -95,8 +96,35 @@ describe('recordMidRunReminder / drainMidRunReminders', () => {
 describe('backgroundJobFinishedReminder', () => {
   test('a stopped job reads as stopped, not failed — the caller asked for it', () => {
     const text = backgroundJobFinishedReminder('sleep 40', -1, 'tc-1', true, 'killed')
-    expect(text).toContain('was stopped as requested')
+    expect(text).toContain('A background job you started was stopped while')
     expect(text).not.toContain('FAILED')
+  })
+
+  // LOCALIX-388: `python3 -m http.server` started with `timeout: 60` was closed at 60 s (exit
+  // 130) and the agent was told it FAILED, so it went to restart a server nobody had broken.
+  test('a job stopped by its timeout says so, never FAILED (exit 130)', () => {
+    const text = backgroundJobFinishedReminder(
+      'python3 -m http.server',
+      130,
+      'tc-1',
+      true,
+      'timeout',
+      {
+        by: 'timeout',
+        timeoutSecs: 60,
+      },
+    )
+    expect(text).toContain('was stopped after its 60 s timeout')
+    expect(text).not.toContain('FAILED')
+  })
+
+  test('says who stopped a job, and a stop signal from elsewhere is a stop, not a failure', () => {
+    expect(backgroundJobOutcome(130, 'killed', { by: 'person' })).toBe('was stopped by the person')
+    expect(backgroundJobOutcome(143, 'killed', { by: 'agent' })).toBe(
+      'was stopped as you requested',
+    )
+    expect(backgroundJobOutcome(130, 'killed')).toBe('was stopped by a signal (exit 130)')
+    expect(backgroundJobOutcome(2, 'failed')).toBe('FAILED (exit 2)')
   })
 
   test('names the failure, so a non-zero exit is not read as success', () => {

@@ -6,9 +6,10 @@ import type { SlashArgSpec } from './slash-args'
  *
  * Every step is `dynamic`: its rows are the picker's live data (the room, the connections, the
  * connection's models, the levels THAT model offers), which only the composer holds. A surface
- * whose context does not apply skips a step (`parseCommandArgs`' `skip`): the agent step in a
- * one-agent chat, Reasoning for a model that does not reason, and the per-agent settings for
- * "All agents", exactly where the picker shows no such control. The settings are optional —
+ * whose context does not apply skips a step (`parseCommandArgs`' `skip`): Reasoning for a model
+ * that does not reason, and the per-agent settings for "All agents", exactly where the picker
+ * shows no such control. The agent step lists every agent the picker lists — the participants,
+ * then the agents that could join — and "All agents", one-agent chat included. The settings are optional —
  * Enter applies what is chosen so far, as a pick in the picker does.
  *
  * Typed text still works: `/model <name>` reaches the server, which fuzzy-matches the name for

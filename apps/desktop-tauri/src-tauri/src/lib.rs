@@ -342,6 +342,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             companion::companion_ready,
+            companion::companion_workspace_focus,
             companion::companion_open_session,
             companion::companion_set_expanded,
             companion::companion_geometry,

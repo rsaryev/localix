@@ -160,7 +160,7 @@ export function createWorkNotifications(deps: {
       if (endedTerminals.has(event.terminalId)) return
       const owner = { userId, sessionId }
       if (deps.runningWork(owner).some((record) => record.terminalId === event.terminalId)) return
-      const failed = event.exitCode !== 0 && !event.stopped
+      const outcome = terminalOutcome(event)
       lane.run(() =>
         recordFor(
           userId,
@@ -169,12 +169,8 @@ export function createWorkNotifications(deps: {
             key: terminalKey(event.terminalId),
             topic: 'terminal.finished',
             category: 'terminal',
-            severity: event.stopped ? 'info' : failed ? 'error' : 'success',
-            title: event.stopped
-              ? 'Background terminal stopped'
-              : failed
-                ? `Background terminal exited (${event.exitCode})`
-                : 'Background terminal finished',
+            severity: outcome.severity,
+            title: outcome.title,
             body: event.command,
             ...(event.finishedAt !== undefined ? { occurredAt: event.finishedAt } : {}),
           },
@@ -183,4 +179,32 @@ export function createWorkNotifications(deps: {
       )
     },
   }
+}
+
+// A process stopped by a signal exits 128+N: SIGHUP, SIGINT (a closed pane), SIGKILL, SIGTERM.
+const STOP_SIGNAL_EXITS = new Set([129, 130, 137, 143])
+
+/**
+ * A finished terminal in plain words. A stop is not a failure: an explicit close carries its
+ * reason (`timeout 60 s`), and a stop signal from elsewhere (^C in the pane) reads as an
+ * interruption. Only an unexpected non-zero exit is an error.
+ */
+export function terminalOutcome(event: { exitCode: number; stopped?: true; stopReason?: string }): {
+  severity: 'info' | 'error' | 'success'
+  title: string
+} {
+  if (event.stopped)
+    return {
+      severity: 'info',
+      title: event.stopReason
+        ? `Background terminal stopped (${event.stopReason})`
+        : 'Background terminal stopped',
+    }
+  if (event.exitCode === 0) return { severity: 'success', title: 'Background terminal finished' }
+  if (STOP_SIGNAL_EXITS.has(event.exitCode))
+    return {
+      severity: 'info',
+      title: `Background terminal interrupted (exit ${event.exitCode})`,
+    }
+  return { severity: 'error', title: `Background terminal exited with code ${event.exitCode}` }
 }

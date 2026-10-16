@@ -58,7 +58,7 @@ describe('All agents row', () => {
             { agentId: 'localix', handle: 'localix' },
             { agentId: 'qa', handle: 'qa' },
           ]}
-          party={{ status: 'Mixed · 2 models · 1 not set', mixed: true }}
+          party={{ status: 'Mixed · 2 models · 1 not set', mixed: true, chosen: false }}
         />,
       )
       const button = ui.host.querySelector<HTMLButtonElement>(

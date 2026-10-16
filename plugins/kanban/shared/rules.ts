@@ -70,9 +70,16 @@ export function takeEligibility(
     return {
       ok: false,
       reason: 'dependencies',
-      why: `${task.id} has unfinished dependencies: ${unmet.join(', ')}.`,
+      why: `${task.id} has unfinished dependencies: ${unmet.map((id) => describeUnmet(id, board)).join(', ')}. Take it once they are done.`,
     }
   return { ok: true }
+}
+
+/** A dependency with its state; one in review waits for the leader, not for more work. */
+function describeUnmet(id: string, board: readonly Pick<KanbanTask, 'id' | 'status'>[]): string {
+  const status = board.find((card) => card.id === id)?.status
+  if (status === 'review') return `${id} (in review — the leader completes it after verifying)`
+  return status ? `${id} (${status === 'in_progress' ? 'in progress' : status})` : id
 }
 
 /** The speaker's place in its chat, as the host binds it. Missing means leader (older hosts). */

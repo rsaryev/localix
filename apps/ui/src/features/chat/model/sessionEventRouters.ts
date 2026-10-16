@@ -180,6 +180,7 @@ export function routePreviewUpdated(
   revealPreview(sessionId, {
     background: parsed.background,
     viewport: parsed.viewport,
+    agentViewport: parsed.viewport ? true : undefined,
     previewId: parsed.previewId ?? originOf(parsed.url),
     url: parsed.url,
     title: parsed.title,

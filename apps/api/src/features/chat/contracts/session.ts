@@ -148,9 +148,9 @@ export const updateSessionRequestSchema = z.object({
   title: z.string().trim().min(1).max(SESSION_TITLE_MAX_CHARS).optional(),
   route: sessionRouteRequestSchema.optional(),
   /**
-   * Re-route SEVERAL participants in one write — "put the whole room on this model". Each entry
-   * names its agent; every named agent must be a participant or nothing is written. Not combined
-   * with `route`: one patch states one re-route.
+   * Choose models for SEVERAL agents in one write. Each entry names its agent, seated or not yet
+   * invited (the choice waits for it); every named agent must be able to take part or nothing is
+   * written. Not combined with `route`: one patch states one re-route.
    */
   routes: z
     .array(sessionRouteRequestSchema.extend({ agentId: z.string().min(1).max(200) }))

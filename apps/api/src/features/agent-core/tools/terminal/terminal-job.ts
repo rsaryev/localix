@@ -18,7 +18,8 @@ export interface TerminalJobHandle {
    *  knowing how URLs are detected — the host (terminal) owns that. */
   onPreviewUrl?(listener: (url: string) => void): void
   write(data: string): void
-  kill(): void
+  /** Stop the job on purpose. `reason` (`timeout 60 s`) reaches the person's exit notice. */
+  kill(reason?: string): void
 }
 
 /**

@@ -7,6 +7,8 @@ import { routedParticipants, sessionFixture } from '../../testing/session-fixtur
 import { createChatRepository } from './repository'
 import { updateSessionRequestSchema } from './contracts/session'
 import { assertRoutePatch, writeRoutePatch } from './service/session-route-patch'
+import { reseatParticipants } from './service/participant-routes'
+import { birthRoute } from './agent-route-resolution'
 
 /** "Put the whole room on this model" — one batch write, all or nothing. */
 describe('batch participant routes', () => {
@@ -75,7 +77,7 @@ describe('batch participant routes', () => {
     expect((await repo.getSession(session.userId, session.id))?.agents).toEqual(session.agents)
   })
 
-  test('a batch naming a departed agent is refused before anything is written', async () => {
+  test('a batch naming an agent who could not take part is refused before anything is written', async () => {
     const failure = await assertRoutePatch({}, 'u', room(), {
       routes: [
         { agentId: 'lead', modelId: 'm' },
@@ -116,5 +118,53 @@ describe('batch participant routes', () => {
         routes: [{ agentId: 'qa', modelId: 'm', reasoningEffort: 'high' }],
       }).success,
     ).toBe(true)
+  })
+
+  test('an agent not invited yet can be given a model; it waits in the choice map', async () => {
+    const session = room()
+    await repo.insertSession(session)
+    const resolve = async (_u: string, selection: { agentId?: string }) =>
+      selection.agentId === 'later' ? { id: 'later', handle: 'later' } : null
+    const patch = { routes: [{ agentId: 'later', modelId: 'm/later' }] }
+    await assertRoutePatch({ resolveSessionAgent: resolve }, 'u', session, patch)
+    await writeRoutePatch({ repo } as never, session.userId, session.id, session, patch)
+    const saved = (await repo.getSession(session.userId, session.id))!
+    expect(saved.agents).toEqual(session.agents)
+    expect(saved.modelChoices?.agents.later?.modelId).toBe('m/later')
+  })
+
+  test('"All" is a cascade: every listed agent gets its own entry, a newcomer has none', async () => {
+    const session = room()
+    await repo.insertSession(session)
+    const all = {
+      providerConnectionId: null,
+      modelId: 'openai/all',
+      reasoningEffort: 'high' as const,
+    }
+    await writeRoutePatch({ repo } as never, session.userId, session.id, session, {
+      routes: session.agents.map(({ agentId }) => ({ agentId, ...all })),
+    })
+    const current = (await repo.getSession(session.userId, session.id))!
+    expect(Object.keys(current.modelChoices?.agents ?? {})).toEqual(['lead', 'qa', 'fe'])
+    const seated = await reseatParticipants(
+      { ...current, userId: session.userId },
+      [...current.agents, { agentId: 'newcomer', handle: 'newcomer' }],
+      async (_u, _p, _agentId, given) => birthRoute({ chosen: given?.chosen ?? null }),
+    )
+    expect(
+      seated.map(({ agentId, modelId, reasoningEffort }) => [agentId, modelId, reasoningEffort]),
+    ).toEqual([
+      ['lead', 'openai/all', 'high'],
+      ['qa', 'openai/all', 'high'],
+      ['fe', 'openai/all', 'high'],
+      ['newcomer', '', 'medium'],
+    ])
+  })
+
+  test('the wire schema has no all-agents choice', () => {
+    const parsed = updateSessionRequestSchema.safeParse({
+      allAgents: { modelId: 'm', reasoningEffort: 'high' },
+    })
+    expect(parsed.success && 'allAgents' in parsed.data).toBe(false)
   })
 })

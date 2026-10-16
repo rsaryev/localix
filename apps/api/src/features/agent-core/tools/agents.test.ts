@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { agentAuthoredBlueprintSchema } from '@localixai/agent/agents'
 import {
   createAgentsTool,
+  describeCatalog,
   classifyAgentsCall,
   prepareAgentsArguments,
   type CatalogAgent,
@@ -165,9 +166,21 @@ describe('agent catalog tool', () => {
     expect(JSON.stringify(tool.inputSchema.toJSONSchema?.())).toContain('reusable in any project')
     expect(tool.executionModeFor?.(read)).toBe('parallel')
     expect(tool.executionModeFor?.(create)).toBe('sequential')
-    expect(JSON.parse(String((await tool.execute('read', read)).content))).toEqual({
-      agents: [agent],
-    })
+    const listed = await tool.execute('read', read)
+    expect(listed.content).toBe(`- @${agent.handle} (project) — ${agent.description}`)
+    expect(listed.details).toEqual({ agents: [agent] })
+  })
+
+  test('list is one compact line per specialist with only the flags a choice needs', () => {
+    expect(
+      describeCatalog([
+        { ...agent, handle: 'lead', leadershipPriority: 1, scope: 'project' },
+        { ...agent, handle: 'old', scope: 'global', enabled: false, canJoinConversation: false },
+      ]),
+    ).toBe(
+      `- @lead (project, priority 1) — ${agent.description}\n- @old (disabled, cannot join chats) — ${agent.description}`,
+    )
+    expect(describeCatalog([])).toContain('No specialists yet')
   })
 })
 

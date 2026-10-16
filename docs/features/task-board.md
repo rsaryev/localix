@@ -56,9 +56,11 @@ plugin tool: the agent loads it once with `activate_tools`, and the session reme
 4. While it works, the agent ticks checklist items with `update`: `items` is the whole list, and an
    entry written as `{ text, done }` sets that item's tick.
 5. The agent calls `complete`, which names the cards it released and any checklist items still
-   unticked, or `block` with the obstacle.
+   unticked, or `block` with the obstacle. `items_done: true` ticks the whole checklist in the same
+   call, and completing a card that is already done changes nothing.
 6. In a group chat, a member's `complete` moves its card to `review`, and the leader verifies it:
-   `complete` moves it to `done`, `update` with `status: ready` sends it back.
+   `complete` moves it to `done`, `update` with `status: ready` sends it back. A member cannot send
+   a card to review with unticked items, and an epic is created without a checklist of its own.
 7. An epic is never taken, and its status is its own: the board does not close it. The completion
    that finishes an epic's last task says so, and the agent closes the epic with `complete`.
 

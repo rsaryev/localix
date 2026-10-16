@@ -2,6 +2,7 @@ import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
 import type { SeatRouteFor } from './session-route-defaults'
 import type { SessionAgentRoute, ModelRoute } from '../repository-types'
 import { sessionRoute } from '../session-route'
+import { choiceFor, type SessionModelChoices } from '../session-model-choices'
 import {
   resolveSessionParticipants,
   type ResolveSessionAgent,
@@ -46,7 +47,6 @@ export async function bornParticipants(args: {
     seated.push(
       await seatNewcomer(args.seat, args.userId, args.projectId, agent, {
         chosen: chosenRoute(agent, explicit),
-        primary: seated[0] ?? null,
       }),
     )
   }
@@ -73,7 +73,7 @@ export async function seatNewcomer(
   userId: string,
   projectId: string | null,
   agent: ResolvedSessionAgent,
-  given: { chosen?: Partial<ModelRoute> | null; primary?: Partial<ModelRoute> | null },
+  given: { chosen?: Partial<ModelRoute> | null },
 ): Promise<SessionAgentRoute> {
   const {
     providerConnectionId: _connection,
@@ -112,12 +112,17 @@ export async function seatNewcomer(
  * either — which is exactly what would happen if the patch's entries were taken as written,
  * because a caller adding one participant states the whole list and knows nobody else's model.
  *
- * A newcomer's route is decided once, by the same `seatRoute` a new conversation uses — its
- * own last model, its card, the project, else the room's primary — and its effort is the level
- * remembered for that model, never the conversation's or another participant's.
+ * A newcomer's route is decided once: the session's choice for it (`session-model-choices.ts`),
+ * else the same `seatRoute` a new conversation uses — its card, its own last model, the project.
+ * Never another participant's model.
  */
 export async function reseatParticipants(
-  session: { agents: SessionAgentRoute[]; projectId?: string | null; userId?: string },
+  session: {
+    agents: SessionAgentRoute[]
+    projectId?: string | null
+    userId?: string
+    modelChoices?: SessionModelChoices
+  },
   next: readonly ResolvedSessionAgent[],
   seat?: SeatRouteFor,
 ): Promise<SessionAgentRoute[]> {
@@ -130,7 +135,7 @@ export async function reseatParticipants(
     } else if (seat && session.userId) {
       out.push(
         await seatNewcomer(seat, session.userId, session.projectId ?? null, member, {
-          primary: out[0] ?? session.agents[0] ?? null,
+          chosen: choiceFor(session.modelChoices, member.agentId),
         }),
       )
     } else {
@@ -139,6 +144,7 @@ export async function reseatParticipants(
         modelId: '',
         reasoningEffort: DEFAULT_REASONING_EFFORT,
         ...member,
+        ...choiceFor(session.modelChoices, member.agentId),
         handle: member.handle,
       })
     }

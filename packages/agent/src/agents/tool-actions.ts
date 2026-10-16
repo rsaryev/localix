@@ -104,6 +104,11 @@ export interface AsyncToolRegistry {
       details?: Record<string, unknown>
       /** When true on the final update, "wake" the owning session with the result. */
       notify?: boolean
+      /**
+       * Who stopped a job that ended on a deliberate stop, so its notices say what happened
+       * instead of reporting the stop's signal exit as a failure. Absent for a natural exit.
+       */
+      stop?: { by: 'agent' | 'person' | 'timeout'; timeoutSecs?: number }
     },
   ): void
 

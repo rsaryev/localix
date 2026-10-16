@@ -17,6 +17,9 @@ export interface PreviewEntry {
   background?: boolean
   userOpened?: boolean
   viewport?: { width: number; height: number } | null
+  /** The fixed size came from an agent's width check, not from the person: it is returned to
+   *  responsive when the run ends, so the pane is never left pinned after a run. */
+  agentViewport?: boolean
   /** Stable opaque tab identity, independent of URL and origin. */
   previewId: string
   url: string
@@ -67,6 +70,7 @@ function retainTabFacts(previous: PreviewEntry | undefined, entry: PreviewEntry)
     ...entry,
     userOpened: entry.userOpened ?? previous.userOpened,
     viewport: entry.viewport === undefined ? previous.viewport : entry.viewport,
+    agentViewport: entry.viewport === undefined ? previous.agentViewport : entry.agentViewport,
   }
 }
 

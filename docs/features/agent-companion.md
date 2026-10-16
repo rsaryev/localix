@@ -3,7 +3,8 @@
 Localix's macOS island lives at the notch. It opens a quick chat, shows when agents are working and
 brings their questions to you without switching windows. When nothing is happening it is invisible;
 while an agent works, a light travels around the edge of the notch. It starts after the workspace is
-ready and stays above ordinary windows, with no title bar or tabs.
+ready and stays above ordinary windows, with no title bar or tabs. The island is off until you turn
+it on; see [Turn the island on or off](#turn-the-island-on-or-off).
 
 ## Open and fold
 
@@ -16,6 +17,8 @@ ready and stays above ordinary windows, with no title bar or tabs.
 
 While a Localix workspace window is focused, hovering or clicking the folded notch does nothing and
 the click reaches the workspace below. **Cmd+Shift+J** and the menu-bar item still open the island.
+A new request waits in the workspace instead of opening the island; it appears on the island once
+you switch to another app.
 
 A preview closes shortly after the pointer leaves unless you started typing or a request is open.
 When the island folds, the keyboard returns to the app you were using. Another app may already own
@@ -88,11 +91,12 @@ On macOS, click the Localix icon in the menu bar to open its menu: **Quick Chat*
 your recent conversations, **Open Localix**, **Settings…** and **Quit Localix**. On Windows and
 Linux, a left click opens Localix and a right click opens the app menu, without **Quick Chat**.
 
-## Turn the island off
+## Turn the island on or off
 
-Open **Settings → Preferences → Agent island** and turn off **Show the agent island**. The island,
-its shortcut and the **Quick Chat** menu-bar item disappear on this device until you turn it back
-on.
+The island is off by default. Turn it on from the agent island tip in the workspace tips, or open
+**Settings → Preferences → Agent island** and turn on **Show the agent island**; it appears at once.
+Turning it off in either place hides the island, its shortcut and the **Quick Chat** menu-bar item
+on this device until you turn it back on.
 
 The top row holds session history, New session and the working folder. History resumes a
 conversation inside the island. Choosing a folder starts a new chat in that project; existing

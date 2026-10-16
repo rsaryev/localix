@@ -24,8 +24,19 @@ export const fail = (errorCode: VfCommandErrorCode, error: string): Fail => ({
   errorCode,
 })
 
-export function resolveTarget(cmd: VfCommand, reg: RefRegistry, root?: Element): Element | Fail {
+export function resolveTarget(
+  cmd: VfCommand,
+  reg: RefRegistry,
+  root?: Element,
+  opts: { observeOnly?: boolean } = {},
+): Element | Fail {
   if (cmd.ref) {
+    // A document that never snapshotted has no refs: the snapshot the agent read was taken by
+    // another renderer of the same tab (the readiness snapshot of `open`, before the visible pane
+    // took over). Ref numbering is a deterministic DOM walk, so an action that only LOOKS numbers
+    // this page and resolves the ref. A drive action never does: after a reload the same number
+    // can name a different control, and a click must not land on it.
+    if (opts.observeOnly && reg.isEmpty()) buildSnapshot(reg, { root })
     const el = reg.get(cmd.ref)
     // Under a root, a ref healed by its selector could land outside it; that is not the target.
     if (el && (!root || root.contains(el))) return el

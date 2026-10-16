@@ -128,6 +128,7 @@ export function toUiSessionSummary(summary: SessionSummary): UiSession {
     rootSessionId: summary.rootSessionId,
     sessionKind: summary.sessionKind,
     agents: summary.agents,
+    modelChoices: summary.modelChoices,
     permissionMode: summary.permissionMode,
     closedAt: summary.closedAt ?? null,
     description: summary.description,

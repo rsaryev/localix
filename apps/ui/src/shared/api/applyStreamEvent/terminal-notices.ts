@@ -180,7 +180,7 @@ export const terminalNoticeReducers: StreamReducers<
       ),
     }
     const next = terminalLifecycleNotice(settled, event, 'finished', 'Background terminal finished')
-    const failed = event.exitCode !== 0 && !event.stopped && !event.interactive
+    const outcome = terminalFinishedOutcome(event)
     const messages = next.messages.map((message) => {
       if (
         message.terminalLifecycle?.kind !== 'finished' ||
@@ -191,20 +191,9 @@ export const terminalNoticeReducers: StreamReducers<
         ...message,
         systemNotice: {
           ...message.systemNotice!,
-          text: event.stopped
-            ? 'Background terminal stopped'
-            : failed
-              ? `Background terminal exited (${event.exitCode})`
-              : 'Background terminal finished',
-          tone: failed ? ('error' as const) : ('neutral' as const),
-          activity: {
-            id: `terminal:${event.terminalId}`,
-            state: event.stopped
-              ? ('stopped' as const)
-              : failed
-                ? ('failed' as const)
-                : ('completed' as const),
-          },
+          text: outcome.text,
+          tone: outcome.state === 'failed' ? ('error' as const) : ('neutral' as const),
+          activity: { id: `terminal:${event.terminalId}`, state: outcome.state },
         },
       }
     })
@@ -217,4 +206,33 @@ export const terminalNoticeReducers: StreamReducers<
           : session.activePhase,
     }
   },
+}
+
+// A process stopped by a signal exits 128+N: SIGHUP, SIGINT (a closed pane), SIGKILL, SIGTERM.
+const STOP_SIGNAL_EXITS = new Set([129, 130, 137, 143])
+
+/**
+ * A finished terminal in plain words. A stop is not a failure: an explicit close carries its
+ * reason (`timeout 60 s`, `stopped by the agent`), a stop signal from elsewhere reads as an
+ * interruption, and only an unexpected non-zero exit is an error. Mirrors the server journal's
+ * `terminalOutcome` (notifications/producers/work.ts).
+ */
+export function terminalFinishedOutcome(event: {
+  exitCode: number
+  stopped?: true
+  stopReason?: string
+  interactive?: true
+}): { text: string; state: 'stopped' | 'failed' | 'completed' } {
+  if (event.stopped)
+    return {
+      text: event.stopReason
+        ? `Background terminal stopped (${event.stopReason})`
+        : 'Background terminal stopped',
+      state: 'stopped',
+    }
+  if (event.exitCode === 0 || event.interactive)
+    return { text: 'Background terminal finished', state: 'completed' }
+  if (STOP_SIGNAL_EXITS.has(event.exitCode))
+    return { text: `Background terminal interrupted (exit ${event.exitCode})`, state: 'stopped' }
+  return { text: `Background terminal exited with code ${event.exitCode}`, state: 'failed' }
 }

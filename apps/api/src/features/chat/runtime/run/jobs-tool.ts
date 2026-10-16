@@ -56,7 +56,12 @@ export function buildJobsTool(input: {
         const record = work.resolve(owner, toolCallId)
         if (record?.kind === 'monitor' && action === 'kill' && deps.monitors)
           return deps.monitors.stop(userId, sessionId, record.displayId)
-        const ok = runAction(toolCallId, action, payload) || runOnPane(record, action, payload)
+        // Tagged so the job's end reads "stopped by the agent" — and so its own stop does not
+        // come back to the agent as a mid-run "your job ended" reminder it already knows.
+        const actionPayload =
+          action === 'kill' ? { ...(payload as object | undefined), by: 'agent' } : payload
+        const ok =
+          runAction(toolCallId, action, actionPayload) || runOnPane(record, action, payload)
         const terminalId = record?.terminalId
         if (ok && action === 'send_input' && terminalId) {
           deps.streamRegistry.publish(userId, sessionId, {

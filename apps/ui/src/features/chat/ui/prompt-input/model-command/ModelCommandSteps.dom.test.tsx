@@ -123,13 +123,14 @@ test('a group walks Agents → Provider → Model → Settings with keyboard and
   }
 })
 
-test('a one-agent chat starts at Provider, and a non-reasoning model skips Reasoning', async () => {
+test('a one-agent chat names its agent, and a non-reasoning model skips Reasoning', async () => {
   const ui = await mount(
     context([member('solo', 'openai/gpt')]),
-    '/model conn-openai openai/plain ',
+    '/model @solo conn-openai openai/plain ',
   )
   try {
     expect(ui.state.current.slashArgs.chips.map((chip) => chip.spec.name)).toEqual([
+      'agent',
       'provider',
       'model',
     ])

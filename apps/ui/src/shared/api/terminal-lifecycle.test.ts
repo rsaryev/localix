@@ -85,9 +85,9 @@ describe('Web terminal lifecycle', () => {
       }),
     )
     expect(finished.messages[finished.messages.length - 1]?.systemNotice?.text).toBe(
-      'Background terminal exited (130)',
+      'Background terminal interrupted (exit 130)',
     )
-    expect(finished.messages.at(-1)?.systemNotice?.tone).toBe('error')
+    expect(finished.messages.at(-1)?.systemNotice?.tone).toBe('neutral')
     expect(finished.messages[0]?.systemNotice?.text).toBe('Waited for background terminal')
     expect(finished.messages[0]?.terminalLifecycle?.active).toBe(false)
     expect(finished.activePhase).toBeNull()
@@ -149,6 +149,25 @@ describe('Web terminal lifecycle', () => {
       tone: 'neutral',
       text: 'Background terminal stopped',
       activity: { state: 'stopped' },
+    })
+  })
+
+  // LOCALIX-388: a server closed at its 60 s timeout read "Background terminal exited (130)".
+  test('a stop says why, and only an unexpected exit is a failure', () => {
+    const finish = (extra: Record<string, unknown>) =>
+      applyStreamEventToSession(
+        session(),
+        event({ type: 'terminal.finished', sessionId: 'sess-1', terminalId: 'pty-1', ...extra }),
+      ).messages[0]?.systemNotice
+    expect(finish({ exitCode: 130, stopped: true, stopReason: 'timeout 60 s' })).toMatchObject({
+      text: 'Background terminal stopped (timeout 60 s)',
+      tone: 'neutral',
+      activity: { state: 'stopped' },
+    })
+    expect(finish({ exitCode: 2 })).toMatchObject({
+      text: 'Background terminal exited with code 2',
+      tone: 'error',
+      activity: { state: 'failed' },
     })
   })
 

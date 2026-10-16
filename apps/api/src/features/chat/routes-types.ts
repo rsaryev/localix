@@ -1,6 +1,7 @@
 import type { z } from 'zod'
 
 import type {
+  JoinRoutesView,
   DirListing,
   FileSearchResult,
   FileContentResponse,
@@ -68,6 +69,7 @@ export interface ChatRoutesService {
     id: string,
     opts?: { messageLimit?: number; deferToolDetails?: boolean },
   ): Promise<SessionDetail>
+  getJoinRoutes(userId: string, id: string): Promise<JoinRoutesView>
   getMessageToolDetails(
     userId: string,
     sessionId: string,

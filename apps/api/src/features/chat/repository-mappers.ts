@@ -7,6 +7,7 @@ import type { PersistedMessage, SessionSummary } from './contracts'
 import type { SessionRecord } from './repository'
 import { parseSessionProvenance } from './session-provenance'
 import { parseParticipants } from './repository-conversation-participants'
+import { emptyModelChoices, parseModelChoices, unstampedChoices } from './session-model-choices'
 
 // Row→record mappers for the chat repository. Type-only `SessionRecord` import
 // from ./repository is erased at compile time, so there is no runtime import
@@ -42,6 +43,7 @@ export const mapSession = (row: {
   agents_json?: string | null
   closed_at?: string | null
   permission_mode?: string | null
+  model_choices?: string | null
   description?: string | null
   avatar?: string | null
   archived_at?: string | null
@@ -72,6 +74,7 @@ export const mapSession = (row: {
   sourceToolCallId: row.source_tool_call_id ?? null,
   provenance: parseSessionProvenance(row.invocation_json),
   agents: parseParticipants(row.agents_json),
+  modelChoices: unstampedChoices(parseModelChoices(row.model_choices)),
   closedAt: row.closed_at ?? null,
   permissionMode: parsePermissionMode(row.permission_mode),
   description: row.description ?? null,
@@ -126,6 +129,7 @@ export const toSessionSummary = (record: SessionRecord): SessionSummary => ({
   rootSessionId: record.rootSessionId,
   sessionKind: record.sessionKind,
   agents: record.agents,
+  modelChoices: record.modelChoices ?? emptyModelChoices(),
   closedAt: record.closedAt ?? null,
   permissionMode: record.permissionMode ?? DEFAULT_PERMISSION_MODE,
   description: record.description,

@@ -174,7 +174,7 @@ describe('kanban tool', () => {
       expect(refused.content).toContain(owner)
     }
     expect((await act({ action: 'take', task_id: 'LX-2' })).content).toContain(
-      'unfinished dependencies: LX-1',
+      'unfinished dependencies: LX-1 (backlog). Take it once they are done.',
     )
     expect(
       (await act({ action: 'update', task_id: 'LX-2', status: 'ready' })).isError,
@@ -191,7 +191,9 @@ describe('kanban tool', () => {
     })
     await act({ action: 'take', task_id: 'LX-1' })
     const done = await act({ action: 'complete', task_id: 'LX-1' })
-    expect(done.content).toBe('Completed LX-1. 1 of 2 checklist items are unticked: "publish".')
+    expect(done.content).toBe(
+      'Completed LX-1. 1 of 2 checklist items are unticked: "publish". If they were done, complete with items_done: true next time; do not complete the card again.',
+    )
   })
 
   // An agent finished every task of an epic and stopped, reporting that the epic "did not

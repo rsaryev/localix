@@ -1,6 +1,6 @@
 import type { ReasoningEffort } from '@localixai/agent'
 import type { PermissionMode } from '@localixai/api/permission-modes'
-import type { HistorySearchHit, Message, UiSession } from '../contracts'
+import type { HistorySearchHit, JoinRoutesView, Message, UiSession } from '../contracts'
 import { toUiSession, toUiSessionSummary } from '../converters'
 import { client, unwrap, assertOk } from '../internal'
 
@@ -44,6 +44,13 @@ export const sessionsApi = {
     const query = limit ? { q, limit: String(limit) } : { q }
     const json = await unwrap(await client.rpc['history-search'].$get({ query }))
     return json.hits
+  },
+
+  /** What each agent not invited yet would join this session on (`JoinRoutesView`). */
+  async getJoinRoutes(id: string, signal?: AbortSignal): Promise<JoinRoutesView> {
+    return unwrap(
+      await client.rpc.sessions[':id']['join-routes'].$get({ param: { id } }, { init: { signal } }),
+    )
   },
 
   async getSession(id: string, signal?: AbortSignal): Promise<UiSession> {
@@ -105,7 +112,10 @@ export const sessionsApi = {
         modelId?: string
         reasoningEffort?: ReasoningEffort
       }
-      /** Re-route several participants in one write; each must still be seated, or none moves. */
+      /**
+       * Choose models for several agents in one write — seated, or not invited yet (the choice
+       * waits for them). Each must be able to take part, or none moves.
+       */
       routes?: Array<{
         agentId: string
         providerConnectionId?: string | null

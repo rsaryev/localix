@@ -61,6 +61,9 @@ export function createChatSessionsRoutes(service: ChatRoutesService) {
           )
         },
       )
+      .get('/sessions/:id/join-routes', zValidator('param', sessionParamsSchema), async (c) => {
+        return c.json(await service.getJoinRoutes(c.get('userId'), c.req.valid('param').id), 200)
+      })
       .get(
         '/sessions/:id/messages/:messageId/tool-details',
         zValidator('param', messageParamsSchema),

@@ -59,10 +59,21 @@ The agent can set the same frame dimensions controlled by the toolbar:
 }
 ```
 
-Use the `preview_id` returned by `open`, not an invented target. Width and height are integer CSS
+Use the `preview_id` returned by `open`, not an invented target. An ID that names no open tab
+returns a `not_found` error listing the open tab IDs and URLs. Width and height are integer CSS
 pixels, each from 240 to 3840. The reply reports the page's actual dimensions; a mismatch is an
 error. Set `viewport` to `null` to restore **Fill panel**, or swap width and height for landscape.
-Dimensions are remembered per preview and remain synchronized with the manual controls.
+
+Tabs stay responsive by default: `open` without `viewport` fits the page to the pane and reports the
+actual CSS size. A fixed size is for checking one width. It applies to every later command on that
+tab, so a `snapshot` after `viewport` measures the same frame, and each result reminds the agent to
+reset it. `viewport: null` or an `open` without a size restores fit-to-pane, and when the agent's
+run ends, every tab it pinned returns to fit-to-pane. A size you choose in the toolbar is kept.
+
+To view a local HTML file, `open` it with `file_path`. Localix serves the file's folder, so relative
+assets such as `style.css` and `game.js` load without a separate server. When a local URL does not
+answer, `open` reports that the page did not load (for example, connection refused) and suggests
+checking that its server is still running.
 
 For checks in a fork, `open` with `background:true` mounts a native Preview host without selecting
 its conversation or revealing the panel. This requires a connected Localix application, not a

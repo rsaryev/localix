@@ -18,26 +18,36 @@ describe('birthRoute — the one decision of a new seat', () => {
     })
   })
 
-  test('the model falls to your last pick, the card, the project, then the primary', () => {
+  test('the model falls to the card, your last pick, then the project — never another seat', () => {
     expect(birthRoute({ recentForAgent: { modelId: 'r' }, agent: { modelId: 'a' } }).modelId).toBe(
-      'r',
+      'a',
     )
+    expect(
+      birthRoute({ recentForAgent: { modelId: 'r' }, project: { modelId: 'p' } }),
+    ).toMatchObject({ modelId: 'r', modelOrigin: 'recent' })
     expect(birthRoute({ agent: { modelId: 'a' }, project: { modelId: 'p' } }).modelOrigin).toBe(
       'agent',
     )
-    expect(birthRoute({ project: { modelId: 'p' }, primary: { modelId: 'x' } }).modelId).toBe('p')
-    expect(birthRoute({ primary: { modelId: 'x', providerConnectionId: 'c' } })).toMatchObject({
-      modelId: 'x',
+    expect(birthRoute({ project: { modelId: 'p', providerConnectionId: 'c' } })).toMatchObject({
+      modelId: 'p',
       providerConnectionId: 'c',
-      modelOrigin: 'primary',
+      modelOrigin: 'project',
     })
+    expect(birthRoute({})).toMatchObject({ modelId: '', modelOrigin: 'unset' })
+  })
+
+  test('a last pick from a choice map brings its own level', () => {
+    const route = birthRoute({
+      recentForAgent: { modelId: 'haiku', reasoningEffort: 'low' },
+      effortForModel: () => 'high',
+    })
+    expect(route).toMatchObject({ modelId: 'haiku', reasoningEffort: 'low', modelOrigin: 'recent' })
   })
 
   test('the effort is the level remembered for THAT model, never another seat’s', () => {
     const route = birthRoute({
       recentForAgent: { modelId: 'openai/a' },
       agent: { reasoningEffort: 'low' },
-      primary: { modelId: 'x', reasoningEffort: 'max' },
       effortForModel: (modelId) => (modelId === 'openai/a' ? 'high' : undefined),
     })
     expect(route.reasoningEffort).toBe('high')
@@ -45,9 +55,7 @@ describe('birthRoute — the one decision of a new seat', () => {
 
   test('with no memory the card, then the default — no clamp, no carry', () => {
     expect(birthRoute({ agent: { reasoningEffort: 'xhigh' } }).reasoningEffort).toBe('xhigh')
-    expect(birthRoute({ primary: { reasoningEffort: 'max' } }).reasoningEffort).toBe(
-      DEFAULT_REASONING_EFFORT,
-    )
+    expect(birthRoute({ project: { modelId: 'p' } }).reasoningEffort).toBe(DEFAULT_REASONING_EFFORT)
   })
 })
 

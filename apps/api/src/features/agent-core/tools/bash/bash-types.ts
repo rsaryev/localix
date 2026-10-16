@@ -31,7 +31,7 @@ export const bashToolInputSchema = z.object({
     .max(600)
     .optional()
     .describe(
-      'Seconds (default 60, max 600). Background ignores values below 60; omit for no limit.',
+      'Seconds (default 60, max 600) for a foreground command or an `until` wait. A background job ignores it and runs until it exits or is stopped.',
     ),
   background: z
     .boolean()

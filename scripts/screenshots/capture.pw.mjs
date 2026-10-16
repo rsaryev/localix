@@ -43,6 +43,14 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     const island = spec.scenario.startsWith('island-')
     if (island) {
       await (await import('./agent-island.mjs')).openIsland(page, uiOrigin, spec.notch)
+    } else if (spec.firstRun) {
+      // No saved UI state, cleared once so a reload inside the scenario keeps what it wrote.
+      await page.addInitScript(() => {
+        if (sessionStorage.getItem('capture_first_run')) return
+        localStorage.clear()
+        sessionStorage.setItem('capture_first_run', '1')
+      })
+      await page.goto(`${uiOrigin}/#/`)
     } else {
       await page.goto(route)
       await expect(page.getByRole('button', { name: 'Add participant', exact: true })).toBeVisible()

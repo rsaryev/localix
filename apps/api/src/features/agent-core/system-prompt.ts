@@ -144,7 +144,6 @@ export function buildAgentSystemPromptParts(
       canSkip: hasTool(TOOL.skip_answer),
       canInvite: !params.conversation.membershipClosed,
       hasBoard: hasTool(TASK_BOARD_TOOL),
-      canFork: hasTool(TOOL.fork),
       canAsk: hasTool(TOOL.ask),
     })
     sections.push(turnControl)

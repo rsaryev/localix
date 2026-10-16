@@ -9,6 +9,8 @@ interface PreviewCommandRelayOptions {
   previewId?: string
   frameBlocked?: boolean
   setViewport: (size: { width: number; height: number } | null) => void
+  /** The frame's current fixed size; null while it fits the pane. */
+  currentViewport?: { width: number; height: number } | null
   vf: Pick<VisualFeedbackBridge, 'connected' | 'whenConnected' | 'runCommand'>
   hasInjectUrl: boolean
   engaged: boolean
@@ -86,7 +88,7 @@ export function usePreviewCommandRelay(options: PreviewCommandRelayOptions): voi
             notEngaged: true,
             errorCode: 'probe_not_ready',
             error:
-              'Preview host is mounted but the page probe is not ready. Check the page URL and server before retrying.',
+              'The page did not load in this Browser tab, or it loaded without the page probe. If its server stopped (connection refused), restart it and open the URL again; for a static file use open with file_path.',
           })
           return
         }
@@ -102,18 +104,16 @@ export function usePreviewCommandRelay(options: PreviewCommandRelayOptions): voi
             return
           }
           setViewport(command.viewport)
-          // A one-shot rAF/timeout race, not a polling loop, so it stays outside pollAttempts.
-          // A background WebView may throttle animation frames. The timer still lets
-          // React commit; measurement below forces layout and verifies the actual result.
-          await new Promise<void>((resolve) => {
-            const fallback = setTimeout(resolve, 250)
-            requestAnimationFrame(() =>
-              requestAnimationFrame(() => {
-                clearTimeout(fallback)
-                resolve()
-              }),
-            )
-          })
+          await nextFrames()
+        } else if (
+          command.viewport !== undefined &&
+          !sameSize(command.viewport, options.currentViewport ?? null)
+        ) {
+          // The tab's size travels with every command: this host may not be the one that
+          // applied the agent's `viewport` (another window, a remounted pane), and measuring a
+          // frame of a different size would report the wrong page.
+          setViewport(command.viewport)
+          await nextFrames()
         }
         if (cancelled) return
         const measure = () =>
@@ -188,6 +188,27 @@ export function usePreviewCommandRelay(options: PreviewCommandRelayOptions): voi
       pending.clear()
     }
   }, [options.enabled])
+}
+
+type Size = { width: number; height: number }
+
+function sameSize(a: Size | null, b: Size | null): boolean {
+  return a === b || (!!a && !!b && a.width === b.width && a.height === b.height)
+}
+
+/** Let React commit a resize before measuring. A one-shot rAF/timeout race, not a polling loop:
+ *  a background WebView may throttle animation frames, and the timer still lets React commit;
+ *  the measurement that follows forces layout and verifies the actual result. */
+function nextFrames(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const fallback = setTimeout(resolve, 250)
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        clearTimeout(fallback)
+        resolve()
+      }),
+    )
+  })
 }
 
 function readViewport(value: string | undefined): { width: number; height: number } | undefined {

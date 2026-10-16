@@ -114,6 +114,25 @@ export function classifyAgentsCall(input: unknown): CallClass {
   return { effect: 'external' }
 }
 
+/**
+ * One line per specialist: the handle to @mention, what it does, and only the flags a choice needs.
+ * The raw records (ids, booleans) cost ~2 KB per call and the model never used the ids.
+ */
+export function describeCatalog(agents: readonly CatalogAgent[]): string {
+  if (!agents.length) return 'No specialists yet. Create one with action "create".'
+  return agents
+    .map((agent) => {
+      const flags = [
+        agent.scope === 'project' ? 'project' : '',
+        agent.leadershipPriority ? `priority ${agent.leadershipPriority}` : '',
+        agent.enabled ? '' : 'disabled',
+        agent.canJoinConversation ? '' : 'cannot join chats',
+      ].filter(Boolean)
+      return `- @${agent.handle}${flags.length ? ` (${flags.join(', ')})` : ''} — ${agent.description}`
+    })
+    .join('\n')
+}
+
 /** Persistent specialists, independent of the fork tool's parallel copies and runs. */
 export function createAgentsTool(port: AgentsToolPort) {
   return defineAgentTool<AgentsInput>({
@@ -136,7 +155,10 @@ export function createAgentsTool(port: AgentsToolPort) {
     async execute(toolCallId, raw) {
       // Validate direct host invocations too; no unchecked fields may reach the authoring port.
       const input = agentsToolInputSchema.parse(raw)
-      if (input.action === 'list') return { content: JSON.stringify({ agents: await port.list() }) }
+      if (input.action === 'list') {
+        const agents = await port.list()
+        return { content: describeCatalog(agents), details: { agents } }
+      }
       if (!input.agents) {
         throw new Error(
           'create requires "agents": [{handle, description, instructions, leadership_priority}]',

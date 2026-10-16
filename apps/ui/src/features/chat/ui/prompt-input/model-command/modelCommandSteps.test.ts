@@ -7,8 +7,9 @@ const values = (rows: { value: string }[]) => rows.map((row) => row.value)
 const committedMap = (record: Record<string, string>) => new Map(Object.entries(record))
 
 describe('/model steps — which apply', () => {
-  test('a one-agent chat has no agent step; a group has one', () => {
-    expect(skipModelStep(context([member('solo', 'openai/gpt')]), 'agent', new Map())).toBe(true)
+  test('every chat with an agent has the agent step: All agents is always a choice', () => {
+    expect(skipModelStep(context([member('solo', 'openai/gpt')]), 'agent', new Map())).toBe(false)
+    expect(skipModelStep(context([]), 'agent', new Map())).toBe(true)
     const group = context([member('lead', 'openai/gpt'), member('qa', 'anthropic/opus')])
     expect(skipModelStep(group, 'agent', new Map())).toBe(false)
   })
@@ -127,7 +128,7 @@ describe('/model steps — rows', () => {
 
   test('an agent’s turn ceiling bounds the offered steps', () => {
     const capped = context([member('lead', 'openai/gpt', 'high', { maxTurnsLimit: 20 })])
-    const picked = { provider: 'conn-openai', model: 'openai/gpt' }
+    const picked = { agent: '@lead', provider: 'conn-openai', model: 'openai/gpt' }
     expect(values(modelStepOptions(capped, 'turns', '', picked))).toEqual([
       'keep',
       'default',

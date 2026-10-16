@@ -87,13 +87,12 @@ export function ModelBrowser({
     () => sortProvidersOAuthFirst(connections, oauthIdSet, (connection) => connection.providerId),
     [connections, oauthIdSet],
   )
-  // "All agents": one model and level for the whole room, offered when the room disagrees.
+  // "All agents": one model and level for every listed agent and for agents invited later.
   const party = usePartyRoute({
     participants,
     sessionConnectionId,
     models,
     connections: orderedConnections,
-    taskKey,
     onApplyPartyRoute,
   })
 

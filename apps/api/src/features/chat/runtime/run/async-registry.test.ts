@@ -162,6 +162,34 @@ describe('emitBackground — bounded snapshot fan-out', () => {
     expect(reminders).toHaveLength(1)
   })
 
+  // LOCALIX-388: a server stopped at its timeout showed its starting call as `aborted`, and told
+  // the agent the job FAILED (exit 130). The call succeeded; the job was stopped.
+  test('a stopped job settles its call as completed and tells the agent why it stopped', () => {
+    const { registry, snapshots, reminders } = setup()
+    registry.registerActions('tc-1', bashActions)
+    registry.emitBackground('tc-1', 'Serving HTTP', {
+      done: true,
+      jobStatus: 'timeout',
+      exitCode: 130,
+      stop: { by: 'timeout', timeoutSecs: 60 },
+    })
+    const payload = (snapshots.at(-1) as unknown[])[3] as { items: { status: string }[] }
+    expect(payload.items[0]!.status).toBe('completed')
+    expect(String((reminders[0] as unknown[])[1])).toContain('stopped after its 60 s timeout')
+  })
+
+  test("the agent's own `jobs stop` does not come back to it as a reminder", () => {
+    const { registry, reminders } = setup()
+    registry.registerActions('tc-1', bashActions)
+    registry.emitBackground('tc-1', 'Serving HTTP', {
+      done: true,
+      jobStatus: 'killed',
+      exitCode: 130,
+      stop: { by: 'agent' },
+    })
+    expect(reminders).toEqual([])
+  })
+
   test('a notify job ARMS its notice as it starts, and its finish is that notice firing', async () => {
     const notices = recordingNotices()
     const { registry, reminders } = setup(undefined, notices, { command: 'build', notify: true })
@@ -173,7 +201,9 @@ describe('emitBackground — bounded snapshot fan-out', () => {
     registry.emitBackground('tc-1', 'done', { done: true, notify: true, exitCode: 0 })
     await flushNotices()
     expect(notices.fired).toHaveLength(1)
-    expect(notices.fired[0]).toContain('[Background job finished: build] exit=0')
+    expect(notices.fired[0]).toContain(
+      '[Background job ended: build] It finished successfully (exit 0).',
+    )
     expect(reminders).toEqual([])
   })
 

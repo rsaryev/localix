@@ -26,6 +26,7 @@ import { classifyBrowserCall } from './browser-classify'
 import { RELOAD_NOTICE, snapshotContent } from './browser-format'
 import { openPreviewAndSnapshot } from './browser-open'
 import { formatReply } from './browser-reply'
+import { createViewportMemory } from './browser-viewport'
 
 /**
  * `browser` — lets the agent DRIVE the Browser tabs the user has open, local previews and
@@ -81,7 +82,19 @@ interface ActionOutcome {
   reloaded?: boolean
 }
 
-export function createBrowserTool(deps: BrowserToolDeps) {
+export function createBrowserTool(hostDeps: BrowserToolDeps) {
+  // Every relay carries the tab's fixed size (if any), and every open re-decides it.
+  const viewports = createViewportMemory()
+  const deps: BrowserToolDeps = {
+    ...hostDeps,
+    send: (command, opts) => hostDeps.send(viewports.apply(command), opts),
+    async openPreview(input) {
+      const opened = await hostDeps.openPreview(input)
+      if (opened.ok) viewports.remember(opened.previewId, input.viewport)
+      return opened
+    },
+  }
+
   /** A relay that failed. A self-healed failure (stale ref / covered target) rides a
    *  FRESH snapshot back — fold it into the error so the agent retargets in the SAME
    *  turn instead of spending a call to re-snapshot (the re-snapshot churn trap). */
@@ -120,6 +133,17 @@ export function createBrowserTool(deps: BrowserToolDeps) {
 
   /** One resolved action, start to finish (open/close are tool-only; the rest relay). */
   async function runAction(input: ResolvedInput): Promise<ActionOutcome> {
+    const outcome = await relayAction(input)
+    const { result } = outcome
+    if (result.isError) return outcome
+    if (input.action === 'viewport')
+      viewports.remember(input.preview_id ?? result.details?.previewId, input.viewport)
+    if (!['open', 'viewport', 'snapshot'].includes(input.action)) return outcome
+    const note = viewports.note(result.details?.previewId ?? input.preview_id)
+    return note ? { ...outcome, result: { ...result, content: result.content + note } } : outcome
+  }
+
+  async function relayAction(input: ResolvedInput): Promise<ActionOutcome> {
     if (input.action === 'open') return { result: await openPreviewAndSnapshot(deps, input) }
     if (input.action === 'close') {
       // Closing without a tab ID must never close an arbitrary shared tab.
@@ -155,10 +179,7 @@ export function createBrowserTool(deps: BrowserToolDeps) {
       if ('error' in setup) return relayFailure('steps', setup)
     }
 
-    const outcome =
-      input.action === 'history'
-        ? await deps.send(buildPreviewCommand(input))
-        : await deps.send(buildPreviewCommand(input))
+    const outcome = await deps.send(buildPreviewCommand(input))
     if ('error' in outcome) return relayFailure(input.action as PreviewAction, outcome)
     return {
       reloaded: outcome.result.reloaded,

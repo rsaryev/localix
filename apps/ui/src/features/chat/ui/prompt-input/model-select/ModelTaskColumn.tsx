@@ -15,6 +15,8 @@ type TaskRow = Omit<ModelRoutingTask, 'key' | 'group'> & {
   key: PickerTarget
   section: string
   origin?: ParticipantRow['modelOrigin']
+  /** An agent not in the conversation yet: its model is the one it will join on. */
+  uninvited?: boolean
 }
 
 /**
@@ -73,8 +75,8 @@ interface ModelTaskColumnProps {
   participants: readonly ParticipantRow[]
   /** `column` in the wide drawer; `sheet` inside the narrow layout's workload popover. */
   layout?: PickerColumnLayout
-  /** The "All agents" row, when the room disagrees (`partyRoute.ts`); absent hides it. */
-  party?: { status: string; mixed: boolean }
+  /** The "All agents" row (`partyRoute.ts`); absent hides it. `mixed` = "All" is not the choice. */
+  party?: { status: string; mixed: boolean; chosen: boolean }
 }
 
 /** One row of the party: who, and what they run on here. */
@@ -106,6 +108,11 @@ export interface ParticipantRow {
   }
   /** Which level answered, so the row can say "from the project" instead of implying a choice. */
   modelOrigin?: 'session' | 'project' | 'agent' | 'recent' | 'primary' | 'unset'
+  /**
+   * `false` for an agent that is not in the conversation yet: listed so its model can be chosen
+   * before it is invited, and `route` is the session's choice it will join on.
+   */
+  invited?: false
 }
 
 /**
@@ -130,7 +137,11 @@ export function ModelTaskColumn({
     ...participants.map((member) => ({
       key: agentTarget(member.agentId),
       label: member.label || member.handle,
-      hint: `Model for @${member.handle} in this conversation`,
+      hint:
+        member.invited === false
+          ? `Model @${member.handle} joins this conversation on`
+          : `Model for @${member.handle} in this conversation`,
+      ...(member.invited === false ? { uninvited: true } : {}),
       // Where the model came from, said in the row itself: a model with no such word cannot be
       // told apart from one chosen here, and the two differ in what changing it will affect.
       origin: member.modelOrigin,
@@ -176,6 +187,7 @@ export function ModelTaskColumn({
                   active={activeTask === PARTY_TARGET}
                   status={party.status}
                   mixed={party.mixed}
+                  chosen={party.chosen}
                   onSelect={() => onSelectTask(PARTY_TARGET)}
                 />
               )}
@@ -234,17 +246,19 @@ export function ModelTaskColumn({
                     label && enabled ? 'text-text-soft' : 'text-text-faint',
                   )}
                 >
-                  {!enabled
-                    ? label
-                      ? `${label} · saved`
-                      : 'No model selected'
-                    : label
-                      ? t.origin && ORIGIN_NOTE[t.origin]
-                        ? `${label} · ${ORIGIN_NOTE[t.origin]}`
-                        : label
-                      : t.required
-                        ? 'Not set'
-                        : (t.fallbackLabel ?? 'Use session model')}
+                  {t.uninvited
+                    ? `${label ?? t.fallbackLabel ?? 'Not set'} · not invited`
+                    : !enabled
+                      ? label
+                        ? `${label} · saved`
+                        : 'No model selected'
+                      : label
+                        ? t.origin && ORIGIN_NOTE[t.origin]
+                          ? `${label} · ${ORIGIN_NOTE[t.origin]}`
+                          : label
+                        : t.required
+                          ? 'Not set'
+                          : (t.fallbackLabel ?? 'Use session model')}
                 </span>
               </div>
             </div>

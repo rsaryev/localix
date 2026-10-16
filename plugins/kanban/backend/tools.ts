@@ -14,16 +14,15 @@ import type { KanbanStatus, KanbanTask } from '../shared/contracts'
 import {
   describeBoard,
   describeTask,
-  epicFinishedBy,
   resolveDependencies,
   resolveTaskReference,
   taskBrief,
-  unblockedBy,
 } from './describe'
 import { createCards } from './tool-create'
+import { completeCard } from './tool-complete'
 import { describeOwnCards, resolveFor, visibleTo } from './member-view'
 import type { BoardSeat, BoardService } from './service'
-import { openItemsNotice, refuseOwnedMove, refuseUnreadFields, reviseChecklist } from './tool-input'
+import { refuseOwnedMove, refuseUnreadFields, reviseChecklist } from './tool-input'
 
 type Result = { content: string; details?: KanbanToolDetails; isError?: boolean }
 
@@ -81,6 +80,10 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         'For "update": the whole checklist, in order. A plain string keeps an existing item’s tick; { text, done } sets it.',
       ),
     sort_order: z.number().optional(),
+    items_done: z
+      .boolean()
+      .optional()
+      .describe('For "complete": every checklist item is finished; tick them all as it completes.'),
     creates: z
       .array(createEntry)
       .optional()
@@ -160,34 +163,8 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         })
         return done(`Took ${task.id}. Do the work directly.`, taken)
       }
-      case 'complete': {
-        if (!leads) {
-          const sent = await boards.update(
-            seat,
-            task.id,
-            { status: 'review', error: null },
-            'agent',
-          )
-          return done(
-            `Sent ${task.id} to review; the leader will verify it.${openItemsNotice(sent.subtasks)}`,
-            sent,
-          )
-        }
-        const written = await boards.update(seat, task.id, { status: 'done', error: null }, 'agent')
-        const after = (await boards.read(seat)).tasks
-        const released = unblockedBy(after, task.id)
-        const notice = released.length
-          ? ` Now unblocked: ${released.map((card) => `${card.id} (@${card.assignee ?? 'unassigned'})`).join(', ')}.`
-          : ''
-        const epic = epicFinishedBy(after, task.id)
-        const epicNotice = epic
-          ? ` Every task of epic ${epic.id} is finished; complete it too when its goal is met.`
-          : ''
-        return done(
-          `Completed ${task.id}.${openItemsNotice(written.subtasks)}${notice}${epicNotice}`,
-          written,
-        )
-      }
+      case 'complete':
+        return completeCard(boards, seat, task, leads, input.items_done === true)
       case 'block': {
         const reason = input.note?.trim()
         if (!reason) throw new BoardRefusal(400, 'note_required', 'block requires note.')
@@ -245,7 +222,7 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         ? `${leadsBoard(speaker) ? describeBoard(visible) : describeOwnCards(visible, board)}${more}`
         : leadsBoard(speaker)
           ? 'No matching board tasks.'
-          : 'No matching cards are assigned to you.',
+          : 'No matching cards are assigned to you. Read any card by id with detail.',
       details: { sessionId: seat.sessionId, tasks: visible.map(slimTask) },
     }
   }

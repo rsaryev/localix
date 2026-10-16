@@ -66,7 +66,9 @@ const advertisedObject = z.object({
     .strict()
     .nullable()
     .optional()
-    .describe('open/viewport: CSS size; null fills the panel.'),
+    .describe(
+      'Omit: pages stay responsive (fit the pane). A size is only for checking one width; reset with null.',
+    ),
   action: z
     .enum(ACTIONS)
     // Optional so an unambiguous call missing `action` (e.g. only `expression`) is
@@ -75,7 +77,10 @@ const advertisedObject = z.object({
     .optional()
     .describe('open/close/viewport/snapshot/steps/take_screenshot/console/evaluate/history.'),
   url: z.string().optional().describe("open: page URL, or plugin:<name> for a plugin's view."),
-  file_path: z.string().optional().describe('open: serve a static file.'),
+  file_path: z
+    .string()
+    .optional()
+    .describe('open: local file; serves its folder with assets. No server needed.'),
   ref: z.string().optional().describe('take_screenshot: snapshot ref.'),
   snapshot_after: z.boolean().optional().describe('steps/evaluate: include fresh tree.'),
   steps: z
@@ -285,4 +290,4 @@ export function buildPreviewCommand(input: ResolvedInput): PreviewCommand {
  * holds this tool. This says how the tool behaves.
  */
 export const BROWSER_DESCRIPTION =
-  'Drive local and remote Browser tabs in the connected desktop app; relay-only. Reuse preview_id from open or Browser context. history reads or manages shared visits without a tab ID. Local sites support visual feedback. Errors and auto-dismissed dialogs during an action are attached. Reload invalidates refs: re-snapshot. Reopen file_path after editing.'
+  'Drive local and remote Browser tabs in the connected desktop app; relay-only. Reuse preview_id from open or Browser context. Local files: open file_path, which serves its folder with relative assets; never start a server just to view static files. Tabs stay responsive (fit the pane): leave viewport unset; set it only to check a specific width, then reset with viewport null. history manages shared visits without a tab ID. Errors and auto-dismissed dialogs during an action are attached. Reload invalidates refs: re-snapshot. Reopen file_path after editing.'

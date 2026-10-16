@@ -5,6 +5,7 @@ import { backendClient } from '@/shared/api/client'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
 import { usePreviewCommandRelay } from './usePreviewCommandRelay'
 import type { VisualFeedbackBridge } from './useVisualFeedback'
+import type { PreviewCommand } from '@/shared/api/contracts'
 
 let teardown: () => Promise<void>
 const globals = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -31,6 +32,7 @@ async function fixture(
     ready?: () => Promise<boolean>
     denied?: boolean
     enabled?: boolean
+    current?: { width: number; height: number } | null
   } = {},
 ) {
   const { createRoot } = await import('react-dom/client')
@@ -72,6 +74,7 @@ async function fixture(
         engage={() => {}}
         enabled={options.enabled}
         setViewport={(size) => sizes.push(size)}
+        currentViewport={options.current ?? null}
       />,
     ),
   )
@@ -86,6 +89,14 @@ async function fixture(
           sessionId,
           commandId: `${sessionId}-${replies.length}`,
           command: { action: 'viewport', previewId, viewport },
+        })
+      }),
+    run: (command: PreviewCommand) =>
+      act(async () => {
+        previewControlBus.publish({
+          sessionId,
+          commandId: `${sessionId}-${replies.length}`,
+          command,
         })
       }),
     cleanup: async () => {
@@ -155,5 +166,30 @@ test('a released host hands an unexecuted command to a replacement host', async 
     expect(f.replies.at(-1)).toMatchObject({ ok: false, release: true })
   } finally {
     await f.cleanup()
+  }
+})
+
+// A snapshot answered by a host that never saw the agent's `viewport` command measured 1120 × 820
+// right after `viewport 320 × 740` was confirmed. The size now rides every command.
+test('a command carrying the tab size applies it before running, once', async () => {
+  const f = await fixture({ actual: { width: 320, height: 740 } })
+  try {
+    await f.run({ action: 'snapshot', previewId: 'target', viewport: { width: 320, height: 740 } })
+    expect(f.sizes).toEqual([{ width: 320, height: 740 }])
+    expect(f.commands[0]).toBe('snapshot')
+    expect(f.replies.at(-1)).toMatchObject({ result: { viewport: { width: 320, height: 740 } } })
+  } finally {
+    await f.cleanup()
+  }
+  const same = await fixture({ current: { width: 320, height: 740 } })
+  try {
+    await same.run({
+      action: 'snapshot',
+      previewId: 'target',
+      viewport: { width: 320, height: 740 },
+    })
+    expect(same.sizes).toEqual([])
+  } finally {
+    await same.cleanup()
   }
 })

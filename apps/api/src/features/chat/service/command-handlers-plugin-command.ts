@@ -6,6 +6,7 @@ import type { MessageBinding } from '@localixai/agent'
 import { resolveMessageBindings } from './message-bindings'
 import type { SessionRecord } from '../repository'
 import { resolveModelAlias } from '../../agent-core/model-alias'
+import { nextActivatedTools } from '../runtime/run/tool-deferral'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext } from './command-handlers-context'
 
@@ -83,6 +84,13 @@ export async function handlePluginCommand(
       cwd: projectDir,
     })
     const resolvedBindings = await resolveMessageBindings(deps, userId, session, bindings)
+    if (match.command.activateTools?.length) {
+      const tools = match.command.activateTools
+      const stored = await repo.changeActivatedTools(userId, sessionId, (current) =>
+        nextActivatedTools(current, tools),
+      )
+      if (stored) session.activatedTools = stored.next
+    }
     return runMacroCommand(
       userId,
       sessionId,

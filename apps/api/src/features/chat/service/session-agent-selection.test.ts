@@ -101,7 +101,45 @@ describe('session agent assignment', () => {
         modelOrigin: 'agent',
       },
     ])
-    expect(asked).toEqual([{ agentId: 'new', given: { primary: first } }])
+    expect(asked).toEqual([{ agentId: 'new', given: { chosen: null } }])
+  })
+
+  test('a newcomer joins on the session’s choice for it, else the chain decides', async () => {
+    const first = routedParticipants({ agentId: 'first', handle: 'first', modelId: 'seed' })[0]
+    const asked: unknown[] = []
+    const seat = async (
+      _userId: string,
+      _projectId: string | null,
+      agentId: string,
+      given?: { chosen?: unknown },
+    ) => {
+      asked.push({ agentId, chosen: given?.chosen })
+      return {
+        providerConnectionId: 'c',
+        modelId: 'chosen',
+        reasoningEffort: 'low' as const,
+        modelOrigin: 'session' as const,
+      }
+    }
+    const own = {
+      providerConnectionId: null,
+      modelId: 'own/model',
+      reasoningEffort: 'max' as const,
+    }
+    await reseatParticipants(
+      {
+        agents: [first],
+        userId: 'u',
+        projectId: 'p',
+        modelChoices: { agents: { picked: own } },
+      },
+      [first, { agentId: 'picked', handle: 'picked' }, { agentId: 'later', handle: 'later' }],
+      seat,
+    )
+    expect(asked).toEqual([
+      { agentId: 'picked', chosen: own },
+      { agentId: 'later', chosen: null },
+    ])
   })
 
   test('an empty draft is allowed while duplicate participants are refused', async () => {

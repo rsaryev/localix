@@ -2,19 +2,22 @@ import { reasoningForModel } from '@localixai/agent'
 import { ApiError } from '../../../lib/errors'
 import type { ModelRoute, SessionRecord } from '../repository'
 import { sessionRoute } from '../session-route'
+import { resolveSessionParticipants } from './session-agent-selection'
 import type { SessionLifecycleCtx, UpdateSessionPatch } from './session-lifecycle-contracts'
 
 /**
- * WHAT A SESSION PATCH SAYS ABOUT ROUTES — one participant (`route`) or several (`routes`).
+ * WHAT A SESSION PATCH SAYS ABOUT MODELS — one agent (`route`) or several (`routes` — the
+ * picker's "All" is this, naming every listed agent). An agent need not be seated: a model can be chosen
+ * before an invitation (`session-model-choices.ts`).
  *
- * Both are checked before anything is written: a connection that no longer exists, or an agent
- * who is no longer seated, refuses the whole patch. A batch that wrote the members it could and
- * skipped the rest would leave the room half-moved while the client believes it moved.
+ * All of it is checked before anything is written: a connection that no longer exists, or an
+ * agent who could not take part, refuses the whole patch. A batch that wrote the members it
+ * could and skipped the rest would leave the room half-moved while the client believes it moved.
  */
 export async function assertRoutePatch(
-  ctx: Pick<SessionLifecycleCtx, 'connectionExists'>,
+  ctx: Pick<SessionLifecycleCtx, 'connectionExists' | 'resolveSessionAgent'>,
   userId: string,
-  session: Pick<SessionRecord, 'agents'>,
+  session: Pick<SessionRecord, 'agents' | 'projectId'>,
   patch: Pick<UpdateSessionPatch, 'route' | 'routes'>,
 ): Promise<void> {
   if (patch.route && patch.routes) {
@@ -41,13 +44,27 @@ export async function assertRoutePatch(
       }
     }
   }
+  // An agent who is not seated must be one that could join; the resolver refuses anyone else.
   const seated = new Set(session.agents.map((agent) => agent.agentId))
-  if (routes.some((route) => route.agentId && !seated.has(route.agentId))) {
-    throw new ApiError(404, 'agent_unavailable', 'Selected agent is no longer a participant')
+  const unseated = routes.flatMap((route) =>
+    route.agentId && !seated.has(route.agentId) ? [{ agentId: route.agentId }] : [],
+  )
+  if (unseated.length > 0) {
+    await resolveSessionParticipants({
+      userId,
+      projectId: session.projectId,
+      requested: unseated,
+      host: 'chat',
+      ...(ctx.resolveSessionAgent ? { resolve: ctx.resolveSessionAgent } : {}),
+    })
   }
 }
 
-/** Persist the route statement of a patch already checked by {@link assertRoutePatch}. */
+/**
+ * Persist the model statement of a patch already checked by {@link assertRoutePatch} through the
+ * one choice writer `/model` uses too: seats and the session's choice map in one transaction, so
+ * a failure halfway moves nobody.
+ */
 export async function writeRoutePatch(
   ctx: Pick<SessionLifecycleCtx, 'repo'>,
   userId: string,
@@ -55,15 +72,13 @@ export async function writeRoutePatch(
   session: Pick<SessionRecord, 'agents'>,
   patch: Pick<UpdateSessionPatch, 'route' | 'routes'>,
 ): Promise<void> {
-  if (patch.routes) {
-    // One transaction, never a loop of point writes: a failure halfway must move nobody.
-    await ctx.repo.updateSessionAgentRoutes(userId, id, patch.routes)
-    return
-  }
-  if (patch.route) {
-    const target = patch.route.agentId ?? sessionRoute(session).agentId
-    await ctx.repo.updateSessionAgentRoute(userId, id, target, patch.route)
-  }
+  const routes =
+    patch.routes ??
+    (patch.route
+      ? [{ ...patch.route, agentId: patch.route.agentId ?? sessionRoute(session).agentId }]
+      : [])
+  if (routes.length === 0) return
+  await ctx.repo.updateSessionAgentRoutes(userId, id, routes)
 }
 
 /**

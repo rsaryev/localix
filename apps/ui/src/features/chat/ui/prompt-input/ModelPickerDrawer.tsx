@@ -7,8 +7,9 @@ import { useMemo } from 'react'
 import { useAgents } from '@/features/settings/model/useAgents'
 import type { ParticipantRow } from './model-select/ModelTaskColumn'
 import { participantRows } from './model-select/participantRows'
-import type { SessionAgentRoute } from '@/shared/api/contracts'
-import type { PartyRouteChoice } from '../../model/sessionPartyRoute'
+import { useJoinRoutes } from './model-select/useJoinRoutes'
+import type { SessionAgentRoute, SessionModelChoicesView } from '@/shared/api/contracts'
+import type { ApplyPartyRoute } from '../../model/sessionPartyRoute'
 
 interface ModelPickerDrawerProps {
   open: boolean
@@ -26,14 +27,21 @@ interface ModelPickerDrawerProps {
   ) => void | Promise<void>
   /** The conversation's party, routes resolved by the server, in join order. */
   participants?: readonly SessionAgentRoute[]
+  /**
+   * The session's model choices. With them the Agents column also lists every agent that could
+   * join, on the choice it would join on; absent (no conversation yet), only the party.
+   */
+  modelChoices?: SessionModelChoicesView
+  /** The conversation the choices belong to: an agent not invited yet shows what it would join on. */
+  sessionId?: string
   /** Scope for resolving participant display names ('' = global). */
   participantScope?: string
   reasoningEffort: ReasoningEffort
   onReasoningEffortChange: (effort: ReasoningEffort, agentId?: string) => void
   initialAgentId?: string | null
   onAgentTargetChange?: (agentId: string) => void
-  /** One model and level for the whole room; offered only in a group (`partyRoute.ts`). */
-  onApplyPartyRoute?: (choice: PartyRouteChoice) => void | Promise<void>
+  /** "All": one model and level for every listed agent and agents invited later. */
+  onApplyPartyRoute?: ApplyPartyRoute
 }
 
 /**
@@ -53,6 +61,8 @@ export function ModelPickerDrawer({
   reasoningEffort,
   onReasoningEffortChange,
   participants,
+  modelChoices,
+  sessionId,
   participantScope = '',
   initialAgentId,
   onAgentTargetChange,
@@ -61,10 +71,16 @@ export function ModelPickerDrawer({
   // Registry names live behind the lazy drawer on purpose: the composer shows a party without
   // them, and a chat that never opens the picker should not pay for a roster fetch.
   const { agents } = useAgents(participantScope)
+  const joinRoutes = useJoinRoutes(sessionId, open)
   const byId = useMemo(() => new Map(agents.map((agent) => [agent.record.id, agent])), [agents])
   const named = useMemo<ParticipantRow[]>(
-    () => participantRows(participants, (agentId) => byId.get(agentId)?.record),
-    [byId, participants],
+    () =>
+      participantRows(
+        participants,
+        (agentId) => byId.get(agentId)?.record,
+        modelChoices ? { agents, choices: modelChoices, joinRoutes } : undefined,
+      ),
+    [agents, byId, joinRoutes, modelChoices, participants],
   )
 
   return (

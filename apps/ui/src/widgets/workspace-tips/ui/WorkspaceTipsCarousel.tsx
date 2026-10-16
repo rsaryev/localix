@@ -3,15 +3,26 @@ import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 import { requestNewChat } from '@/shared/lib/chatChromeBus'
+import { useFeaturedCommand } from '@/shared/contrib/useFeaturedCommand'
+import { useIslandEnabled } from '@/shared/lib/islandSetting'
 // Shared scene styles first: each scene's own stylesheet overrides `.wt-pane` after it.
 import './tips.css'
-import { WORKSPACE_TIPS, type WorkspaceTip } from './workspaceTips'
+import { visibleTips, WORKSPACE_TIPS, type WorkspaceTip } from './workspaceTips'
 
 const LAST_TIP_KEY = 'localix.workspaceTips.last'
 
-function initialIndex(): number {
-  const index = WORKSPACE_TIPS.findIndex((tip) => tip.id === loadString(LAST_TIP_KEY))
-  return index === -1 ? 0 : index
+/**
+ * Where `id` sits among the slides shown now. A hidden slide (its requirement unmet, or
+ * gone since it was remembered) resolves to the next shown one, so the tour neither jumps
+ * back to the start nor shifts when a slide appears later.
+ */
+function indexOf(tips: WorkspaceTip[], id: string | null): number {
+  const shown = tips.findIndex((tip) => tip.id === id)
+  if (shown !== -1) return shown
+  const order = WORKSPACE_TIPS.findIndex((tip) => tip.id === id)
+  if (order === -1) return 0
+  const next = tips.findIndex((tip) => WORKSPACE_TIPS.indexOf(tip) > order)
+  return next === -1 ? tips.length - 1 : next
 }
 
 /** A scene's loop length from its own `--loop`, so one pass ends where the scene restarts. */
@@ -35,36 +46,44 @@ function loopMs(stage: HTMLElement | null): number {
  * and keeps looping only while the pointer is on the carousel.
  */
 export function WorkspaceTipsCarousel() {
-  const [{ index, leaving }, setState] = useState<{
-    index: number
+  const featuredCommand = useFeaturedCommand() !== null
+  // Null outside the macOS desktop app, and until the shell reports the switch.
+  const island = useIslandEnabled() !== null
+  const tips = visibleTips({ featuredCommand, island })
+  // The current slide is held by id, not position: a slide that appears once plugins load
+  // must not move the person to a different tip.
+  const [{ id, leaving }, setState] = useState<{
+    id: string | null
     leaving: WorkspaceTip | null
-  }>(() => ({ index: initialIndex(), leaving: null }))
+  }>(() => ({ id: loadString(LAST_TIP_KEY), leaving: null }))
   const [engaged, setEngaged] = useState(false)
   const [firstPass, setFirstPass] = useState(true)
   const stageRef = useRef<HTMLDivElement>(null)
-  const tip = WORKSPACE_TIPS[index] ?? WORKSPACE_TIPS[0]
+  const index = indexOf(tips, id)
+  const tip = tips[index] ?? tips[0]
 
   useEffect(() => {
     setFirstPass(true)
     const timer = window.setTimeout(() => setFirstPass(false), loopMs(stageRef.current))
     return () => window.clearTimeout(timer)
-  }, [index])
+  }, [tip?.id])
 
   if (!tip) return null
   const isFirst = index === 0
-  const isLast = index === WORKSPACE_TIPS.length - 1
+  const isLast = index === tips.length - 1
 
   const go = (next: number) => {
-    if (next < 0 || next >= WORKSPACE_TIPS.length || next === index) return
-    setState({ index: next, leaving: tip })
-    saveString(LAST_TIP_KEY, WORKSPACE_TIPS[next]?.id ?? null)
+    const target = tips[next]
+    if (!target || next === index) return
+    setState({ id: target.id, leaving: tip })
+    saveString(LAST_TIP_KEY, target.id)
   }
 
   // Arrow keys on the progress bar page and carry focus along, like a tab list.
   const onSegmentKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
     const next = index + step
-    if (step === 0 || next < 0 || next >= WORKSPACE_TIPS.length) return
+    if (step === 0 || next < 0 || next >= tips.length) return
     event.preventDefault()
     go(next)
     const segments = event.currentTarget.parentElement?.children
@@ -138,7 +157,7 @@ export function WorkspaceTipsCarousel() {
             Previous
           </Button>
           <div className="flex items-center gap-1.5">
-            {WORKSPACE_TIPS.map((item, i) => (
+            {tips.map((item, i) => (
               <button
                 key={item.id}
                 type="button"

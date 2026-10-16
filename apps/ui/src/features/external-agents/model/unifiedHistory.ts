@@ -36,6 +36,7 @@ export function nativeHistoryRows(
         isPinned: false,
         isArchived: false,
         runtimeStatus: 'idle',
+        modelChoices: { agents: {} },
         agents: [
           {
             agentId: DEFAULT_AGENT_ID,

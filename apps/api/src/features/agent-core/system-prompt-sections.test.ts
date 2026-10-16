@@ -389,7 +389,7 @@ describe('buildExecutionDiscipline — the batching rule reaches a read-only ros
 describe('# Collaboration — one rule for who does the work', () => {
   it('tells a role with `fork` how forking works, and never how to delegate', () => {
     const out = buildCollaborationSection(['read', 'search', 'fork'])!
-    expect(out).toContain('Fork yourself (`fork`)')
+    expect(out).toContain('Investigation goes to `fork`')
     expect(out).toContain('inherits this conversation')
     // A role that still names the removed tool learns nothing about it.
     expect(buildCollaborationSection(['read', 'search', 'agents'])).toBeNull()

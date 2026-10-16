@@ -113,21 +113,25 @@ export async function runBackgroundCommand(
     bgFlushTimer = setTimeout(flushBackgroundUpdate, BACKGROUND_STREAM_THROTTLE_MS)
   }
 
-  const bgKilled = { byUser: false, byTimeout: false }
-  const doBgKill = (reason: 'user' | 'timeout') => {
-    if (bgSettled) return
-    if (reason === 'user') bgKilled.byUser = true
-    else bgKilled.byTimeout = true
-    proc.kill()
+  // Who stopped it, if anyone: a deliberate stop is reported as a stop, never a failure.
+  let stoppedBy: 'agent' | 'person' | 'timeout' | undefined
+  const doBgKill = (by: 'agent' | 'person' | 'timeout') => {
+    if (bgSettled || stoppedBy) return
+    stoppedBy = by
+    proc.kill(by === 'timeout' ? `timeout ${timeoutSecs} s` : `stopped by the ${by}`)
   }
-  const onBgAbort = () => doBgKill('user')
+  // Only while THIS call is still open: cancelling the call before it returns cancels the job it
+  // was starting. Once the call has returned, the job is work that outlives the turn — a later
+  // stop of the run (the person interrupting, a queued message replacing it) must not kill it.
+  const onBgAbort = () => doBgKill('person')
   signal?.addEventListener('abort', onBgAbort, { once: true })
   const unregisterBg = context?.asyncRegistry?.registerActions(toolCallId, {
     kill: {
       label: 'Kill',
       icon: 'square',
-      execute: () => {
-        doBgKill('user')
+      // `jobs stop` passes `{ by: 'agent' }`; the person's Stop button passes nothing.
+      execute: (payload?: unknown) => {
+        doBgKill((payload as { by?: string } | undefined)?.by === 'agent' ? 'agent' : 'person')
       },
     },
     send_input: {
@@ -186,18 +190,19 @@ export async function runBackgroundCommand(
       }
       const wallTimeMs = Date.now() - startMs
       const jobStatus = classifyBgExit({
-        byUser: bgKilled.byUser,
-        byTimeout: bgKilled.byTimeout,
+        byUser: stoppedBy === 'agent' || stoppedBy === 'person',
+        byTimeout: stoppedBy === 'timeout',
         exitCode: exitCode ?? null,
       })
       const settledOutput = bgOutput()
-      const finalOutput = bgKilled.byUser
-        ? settledOutput + '\n[Killed by user]'
-        : bgKilled.byTimeout
-          ? settledOutput + `\n[Timed out after ${timeoutSecs}s]`
-          : exitCode !== 0
-            ? settledOutput + `\n[exit ${exitCode}]`
-            : settledOutput
+      const finalOutput =
+        stoppedBy === 'agent' || stoppedBy === 'person'
+          ? settledOutput + `\n[Stopped by the ${stoppedBy}]`
+          : stoppedBy === 'timeout'
+            ? settledOutput + `\n[Timed out after ${timeoutSecs}s]`
+            : exitCode !== 0
+              ? settledOutput + `\n[exit ${exitCode}]`
+              : settledOutput
       // Model-facing copy gets the content-aware filter (test-runner output →
       // summary/failures); the UI copy below (onUpdate) stays raw.
       // `modelFacingOutput`, not a bare filter: it applies the content-aware filter AND the honest
@@ -219,6 +224,9 @@ export async function runBackgroundCommand(
           done: true,
           jobStatus,
           notify: input.notify,
+          ...(stoppedBy
+            ? { stop: { by: stoppedBy, ...(stoppedBy === 'timeout' ? { timeoutSecs } : {}) } }
+            : {}),
           details: {
             command: command,
             cwd,
@@ -272,6 +280,7 @@ export async function runBackgroundCommand(
       startMs,
     )
 
+  signal?.removeEventListener('abort', onBgAbort)
   const earlyExited = bgDone || bgSettled
   const jobId = context?.asyncRegistry?.getBackgroundJobId?.(toolCallId) ?? toolCallId
   const content = renderBackgroundStartResult({

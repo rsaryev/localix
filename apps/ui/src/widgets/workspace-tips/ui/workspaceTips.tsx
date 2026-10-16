@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react'
 import { ApprovalScene } from './scenes/ApprovalScene'
 import { AppearanceAction, AppearanceScene } from './scenes/AppearanceScene'
+import { GoalAction, GoalScene } from './scenes/GoalScene'
+import { IslandAction, IslandScene } from './scenes/IslandScene'
 import { KeymapAction, KeymapScene } from './scenes/KeymapScene'
 import { MentionScene } from './scenes/MentionScene'
 import { ModelAction, ModelScene } from './scenes/ModelScene'
@@ -19,17 +21,38 @@ export interface WorkspaceTip {
   rest: string
   Scene: ComponentType
   Action?: ComponentType
+  /** Shown only when an enabled plugin features a command for this slide to teach. */
+  needsFeaturedCommand?: boolean
+  /** Shown only where the agent island exists (the macOS desktop app). */
+  needsIsland?: boolean
 }
 
 /**
- * Ranked by what a new user hits: nothing sends without a model; what the agent may do
- * on its own and where it works come next; then how to point it at things, how to move
- * fast, what else it can do, and comfort last. Choices alternate with how-it-works
+ * Ranked by what a new user sets up first: how the app looks and whether the agent island
+ * is on, then the model nothing sends without; what the agent may do on its own and where
+ * it works come next; then how to point it at things, how to move fast and what else it
+ * can do. Choices alternate with how-it-works
  * slides so the carousel never reads as a settings form. Every scene draws a surface
  * that exists today — no split groups, no rail theme button. Ids are stable: the
- * last-seen tip is remembered.
+ * last-seen tip is remembered. A slide that needs a featured command is left out while
+ * no enabled plugin features one; the island slide only shows in the macOS desktop app.
  */
 export const WORKSPACE_TIPS: WorkspaceTip[] = [
+  {
+    id: 'appearance',
+    lead: 'Make it yours.',
+    rest: 'Fonts and code style live in Preferences; one click sets the theme —',
+    Scene: AppearanceScene,
+    Action: AppearanceAction,
+  },
+  {
+    id: 'island',
+    lead: 'An agent at the notch.',
+    rest: 'Ask from any app and answer the agent without switching windows —',
+    Scene: IslandScene,
+    Action: IslandAction,
+    needsIsland: true,
+  },
   {
     id: 'model',
     lead: 'Connect a model.',
@@ -76,10 +99,24 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
     Scene: TeamScene,
   },
   {
-    id: 'appearance',
-    lead: 'Make it yours.',
-    rest: 'Fonts and code style live in Preferences; one click sets the theme —',
-    Scene: AppearanceScene,
-    Action: AppearanceAction,
+    id: 'goal',
+    lead: 'Hand over a whole goal.',
+    rest: 'Type it after the command; the leader plans it on the board, brings in specialists and starts once you approve —',
+    Scene: GoalScene,
+    Action: GoalAction,
+    needsFeaturedCommand: true,
   },
 ]
+
+/** What the optional slides need, as known now. */
+export interface TipRequirements {
+  featuredCommand: boolean
+  island: boolean
+}
+
+/** The slides to show now: the full list minus those whose requirement is unmet. */
+export function visibleTips(met: TipRequirements): WorkspaceTip[] {
+  return WORKSPACE_TIPS.filter(
+    (tip) => (!tip.needsFeaturedCommand || met.featuredCommand) && (!tip.needsIsland || met.island),
+  )
+}

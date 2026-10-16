@@ -105,3 +105,36 @@ test('a dragged browser tab lands before its drop target, or last on the strip',
     expect(order()).toEqual(['a', 'b', 'c'])
   })
 })
+
+// An agent's width check used to leave the person's pane pinned at 1120 × 820 after the run.
+test("a run's end returns the tabs an agent pinned to responsive, never the person's", () => {
+  withEmptyStore(() => {
+    const store = usePreviewStore.getState()
+    store.recordPreview('chat-a', { previewId: 'agent', url: 'http://localhost:1/', version: 1 })
+    store.recordPreview('chat-a', { previewId: 'person', url: 'http://localhost:2/', version: 1 })
+    store.setPreviewViewport('chat-a', 'agent', { width: 320, height: 740 }, true)
+    store.setPreviewViewport('chat-a', 'person', { width: 375, height: 667 })
+    store.resetAgentViewports('chat-a')
+    const tabs = usePreviewStore.getState().previewTabsBySession['chat-a'] ?? []
+    expect(tabs.find((tab) => tab.previewId === 'agent')?.viewport).toBeNull()
+    expect(tabs.find((tab) => tab.previewId === 'person')?.viewport).toEqual({
+      width: 375,
+      height: 667,
+    })
+  })
+})
+
+test('an agent open with a size is agent-pinned; a refresh without one keeps that fact', () => {
+  withEmptyStore(() => {
+    const store = usePreviewStore.getState()
+    const tab = { previewId: 'tab', url: 'http://localhost:1/', version: 1 }
+    store.recordPreview('chat-a', {
+      ...tab,
+      viewport: { width: 1120, height: 820 },
+      agentViewport: true,
+    })
+    store.recordPreview('chat-a', { ...tab, version: 2 })
+    store.resetAgentViewports('chat-a')
+    expect(usePreviewStore.getState().previewBySession['chat-a']?.viewport).toBeNull()
+  })
+})

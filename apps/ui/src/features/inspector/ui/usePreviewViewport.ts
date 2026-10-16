@@ -50,7 +50,7 @@ export function usePreviewViewport({
       )
   }, [active, initialViewport])
   const changeViewport = useCallback(
-    (next: PreviewViewportPreset) => {
+    (next: PreviewViewportPreset, opts: { byAgent?: boolean } = {}) => {
       setViewport(next)
       // Remembered on the tab, in the strip of the chat that owns it; a frame with no chat has
       // no strip to remember it in.
@@ -61,6 +61,7 @@ export function usePreviewViewport({
             sessionId,
             previewId,
             isFixedViewport(next) ? { width: next.width!, height: next.height! } : null,
+            opts.byAgent,
           )
     },
     [sessionId, previewId],

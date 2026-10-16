@@ -67,7 +67,9 @@ describe('kanban roles', () => {
     expect(listed.content).not.toContain('Secret refactor')
     expect(listed.details?.tasks?.map((task) => task.id)).toEqual(['LX-2'])
     const searched = await act(QA, { action: 'search', query: 'refactor' })
-    expect(searched.content).toBe('No matching cards are assigned to you.')
+    expect(searched.content).toBe(
+      'No matching cards are assigned to you. Read any card by id with detail.',
+    )
   })
 
   test('a member lookup never names a colleague’s card', async () => {
@@ -112,6 +114,49 @@ describe('kanban roles', () => {
     await act(QA, { action: 'complete', task_id: 'LX-2' })
     const approved = await act(LEADER, { action: 'complete', task_id: 'LX-2' })
     expect(approved.details?.task?.status).toBe('done')
+  })
+
+  test('a member cannot send a card to review with unticked checklist items', async () => {
+    const act = await seeded()
+    await act(LEADER, { action: 'update', task_id: 'LX-2', items: ['Unit', 'E2E'] })
+    await act(QA, { action: 'take', task_id: 'LX-2' })
+    const refused = await act(QA, { action: 'complete', task_id: 'LX-2' })
+    expect(refused.isError).toBe(true)
+    expect(refused.content).toContain('unticked checklist items: "Unit", "E2E"')
+    await act(QA, {
+      action: 'update',
+      task_id: 'LX-2',
+      items: [
+        { text: 'Unit', done: true },
+        { text: 'E2E', done: true },
+      ],
+    })
+    const sent = await act(QA, { action: 'complete', task_id: 'LX-2' })
+    expect(sent.details?.task?.status).toBe('review')
+  })
+
+  test('items_done ticks the checklist as the card completes, and a done card stays done', async () => {
+    const act = await seeded()
+    await act(LEADER, { action: 'update', task_id: 'LX-2', items: ['Unit', 'E2E'] })
+    await act(QA, { action: 'take', task_id: 'LX-2' })
+    const sent = await act(QA, { action: 'complete', task_id: 'LX-2', items_done: true })
+    expect(sent.details?.task?.status).toBe('review')
+    expect(sent.details?.task?.subtasks?.every((item) => item.done)).toBe(true)
+    const approved = await act(LEADER, { action: 'complete', task_id: 'LX-2' })
+    expect(approved.content).not.toContain('unticked')
+    const again = await act(LEADER, { action: 'complete', task_id: 'LX-2' })
+    expect(again.isError).toBeFalsy()
+    expect(again.content).toBe('LX-2 is already done; nothing changed.')
+  })
+
+  test('an epic is created without a checklist of its own', async () => {
+    const act = board()
+    const refused = await act(LEADER, {
+      action: 'create',
+      creates: [{ title: 'Launch', kind: 'epic', items: ['Plan'] }],
+    })
+    expect(refused.isError).toBe(true)
+    expect(refused.content).toContain('An epic holds no checklist')
   })
 
   test('a task in review does not finish its epic', async () => {

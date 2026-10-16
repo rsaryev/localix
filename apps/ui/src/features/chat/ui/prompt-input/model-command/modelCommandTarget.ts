@@ -16,6 +16,7 @@ export const ALL_AGENTS = 'all'
  * catalog, and the per-agent model settings in user settings.
  */
 export interface ModelCommandContext {
+  /** The picker's Agents column: the participants, then the agents that could join. */
   participants: readonly ParticipantRow[]
   /** Ordered as the picker's provider column orders them (OAuth first). */
   connections: readonly { id: string; providerId: string; label: string }[]
@@ -30,17 +31,18 @@ export type ModelCommandTarget =
   | { kind: 'agent'; member: ParticipantRow }
   | { kind: 'party'; members: readonly ParticipantRow[] }
 
-/** Is the agent step shown? Only where the room has more than one member, as in the picker. */
-export const hasAgentStep = (context: ModelCommandContext) => context.participants.length > 1
+/**
+ * Is the agent step shown? Wherever there is an agent to list, as in the picker: "All agents" is
+ * always offered — one agent included — because it is also what agents invited later join on.
+ */
+export const hasAgentStep = (context: ModelCommandContext) => context.participants.length > 0
 
-/** Whom the command configures: the chosen member, the whole room, or a one-agent chat's agent. */
+/** Whom the command configures: the chosen agent (invited or not), or every listed agent. */
 export function commandTarget(
   context: ModelCommandContext,
   agentValue: string | undefined,
 ): ModelCommandTarget | null {
   const { participants } = context
-  if (!hasAgentStep(context))
-    return participants[0] ? { kind: 'agent', member: participants[0] } : null
   if (agentValue === ALL_AGENTS) return { kind: 'party', members: participants }
   const handle = agentValue?.replace(/^@/, '').toLowerCase()
   const member = participants.find((row) => row.handle.toLowerCase() === handle)

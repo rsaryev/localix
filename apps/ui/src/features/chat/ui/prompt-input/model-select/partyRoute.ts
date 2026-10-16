@@ -3,11 +3,13 @@ import type { ParticipantRow } from './ModelTaskColumn'
 import type { ModelRoutingSlot } from './taskReasoning'
 
 /**
- * THE "ALL AGENTS" ROW of the picker's Agents column — one model and level for the whole room.
+ * THE "ALL AGENTS" ROW of the picker's Agents column — a cascade that writes one model and level
+ * to every listed agent, invited or not, each as its own choice. Nothing stores "All".
  *
- * Each member of a group keeps its own route, and nothing makes one follow another: switching
- * the main agent to a stronger model leaves the others where they were. This row is the one
- * gesture that says "everyone, this model", and it only shows up when the room disagrees.
+ * Each agent keeps its own route, and nothing makes one follow another: switching one agent to a
+ * stronger model leaves the others where they were, and "All" then no longer describes the
+ * session. The row is always offered; it reads as chosen only when every listed agent is on the
+ * same model and level ({@link isAllChosen}).
  */
 export const PARTY_TARGET = 'party' as const
 
@@ -26,8 +28,6 @@ export interface PartySummary {
   unavailable: number
   /** The room's shared route when every member is on one model; null when they differ. */
   slot: ModelRoutingSlot
-  /** Worth offering: a group whose members differ, or one with a member without a model. */
-  relevant: boolean
 }
 
 export function summarizeParty(
@@ -64,10 +64,12 @@ export function summarizeParty(
           ...(level ? { reasoningEffort: level } : {}),
         }
       : null,
-    relevant:
-      participants.length > 1 &&
-      (models.size > 1 || levels.size > 1 || unset > 0 || unavailable > 0),
   }
+}
+
+/** Does "All" describe the listing? Only when every listed agent is on one model at one level. */
+export function isAllChosen(summary: PartySummary): boolean {
+  return summary.slot !== null && summary.level !== undefined && summary.unavailable === 0
 }
 
 /** A level as the picker names it (`High`). */
@@ -85,9 +87,4 @@ export function partyStatusText(summary: PartySummary, modelLabel: string | null
   ].filter(Boolean)
   const mixed = summary.models > 1 || summary.levels > 1 || summary.unset > 0
   return `${mixed ? 'Mixed · ' : ''}${parts.join(' · ')}`
-}
-
-/** Show the row when it is relevant, and keep it while it is the target being configured. */
-export function showPartyRow(summary: PartySummary, active: boolean, canApply: boolean): boolean {
-  return canApply && (summary.relevant || (active && summary.size > 1))
 }

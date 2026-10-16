@@ -27,7 +27,8 @@ export function createTerminalService(deps: TerminalServiceDeps) {
   const sessions = new Map<string, TerminalSession>()
   const exitedSessions = new Map<string, { session: TerminalSession; expiresAt: number }>()
   const lastUserInputActivity = new Map<string, number>()
-  const stoppedTerminals = new Set<string>()
+  /** Terminals closed on purpose → the plain-words reason (`timeout 60 s`), or '' for none. */
+  const stoppedTerminals = new Map<string, string>()
 
   const pruneExitedSessions = (now = Date.now()) => {
     for (const [id, entry] of exitedSessions) {
@@ -89,6 +90,7 @@ export function createTerminalService(deps: TerminalServiceDeps) {
         backend: deps.backend,
         onExit: (sid, exitCode) => {
           const exited = sessions.get(sid)
+          const stopReason = stoppedTerminals.get(sid)
           const stopped = stoppedTerminals.delete(sid)
           if (exited) archiveExitedSession(exited)
           sessions.delete(sid)
@@ -102,6 +104,7 @@ export function createTerminalService(deps: TerminalServiceDeps) {
               cwd,
               finishedAt: Date.now(),
               ...(stopped ? { stopped: true as const } : {}),
+              ...(stopReason ? { stopReason } : {}),
               // No command = the login shell `open` gives the person; they typed `exit` themselves.
               ...(input.command ? {} : { interactive: true as const }),
               ...(input.wakesAgent ? { wakesAgent: true as const } : {}),
@@ -236,10 +239,11 @@ export function createTerminalService(deps: TerminalServiceDeps) {
       return [...sessions.values()].flatMap((s) => (s.userId === userId ? [s.info] : []))
     },
 
-    close(userId: string, id: string): boolean {
+    /** Stop a terminal on purpose. `reason` says why in plain words for the exit notice. */
+    close(userId: string, id: string, reason?: string): boolean {
       const session = ownedBy(userId, id)
       if (!session) return false
-      stoppedTerminals.add(id)
+      stoppedTerminals.set(id, reason ?? '')
       session.dispose()
       // TerminalSession.dispose() synchronously runs the same authoritative
       // onExit path as a natural exit. Keep these deletes as defensive no-ops for

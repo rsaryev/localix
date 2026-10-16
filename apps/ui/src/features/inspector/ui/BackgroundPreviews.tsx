@@ -10,6 +10,7 @@ import { browserEngine, hostsInFrame } from '../model/browserUrl'
 import { closeNativePages } from '../model/nativePages'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { useNativeBrowserAgent } from './useNativeBrowserAgent'
+import { useUnknownTabReply } from './useUnknownTabReply'
 
 interface BackgroundPreviewHost {
   sessionId: string
@@ -56,6 +57,7 @@ export function releaseBackgroundPreviews(sessionId: string): void {
 export default function BackgroundPreviews() {
   const tabs = usePreviewStore((s) => s.previewTabsBySession)
   useNativeBrowserAgent(tabs)
+  useUnknownTabReply()
   useEffect(() => {
     if (!isDesktop) return
     return eventSocket.onSessionEvent((sessionId, event) => {
@@ -66,8 +68,10 @@ export default function BackgroundPreviews() {
   useEffect(
     () =>
       eventSocket.onSessionEvent((sessionId, event) => {
-        if (event.type === 'run.completed' || event.type === 'run.failed')
+        if (event.type === 'run.completed' || event.type === 'run.failed') {
+          usePreviewStore.getState().resetAgentViewports(sessionId)
           releaseBackgroundPreviews(sessionId)
+        }
       }),
     [],
   )

@@ -181,6 +181,11 @@ export type WorkspaceStreamEvent =
       /** Explicitly closed through the terminal controls, rather than a process failure. */
       stopped?: true
       /**
+       * Why a stopped terminal was stopped, in plain words a notice can quote: `timeout 60 s`,
+       * `stopped by the agent`. Absent when the stop gave no reason (the person's Close button).
+       */
+      stopReason?: string
+      /**
        * The login shell the person opened from the terminal panel, not a job. The frame still
        * settles the pane; a client must not report it, since the person typed `exit` themselves.
        */

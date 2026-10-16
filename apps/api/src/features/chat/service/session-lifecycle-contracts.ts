@@ -40,8 +40,8 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
       route: Partial<ModelRoute>,
     ) => Promise<void>
     /**
-     * Several participants re-routed in one transaction (`UpdateSessionPatch.routes`). Required:
-     * a per-member fallback would let a failure halfway leave the room half-moved.
+     * The person's model choice — the named agents, seated or not — in one transaction (`repository-model-choices.ts`). Required: a per-member
+     * fallback would let a failure halfway leave the room half-moved.
      */
     updateSessionAgentRoutes: (
       userId: string,
@@ -162,7 +162,10 @@ export interface UpdateSessionPatch {
    * chat, the first in a group.
    */
   route?: { agentId?: string } & Partial<ModelRoute>
-  /** Re-route several named participants at once; all must be seated, or nothing is written. */
+  /**
+   * Choose models for several named agents at once — seated, or not yet invited (their choice
+   * waits for them). All must be able to take part, or nothing is written.
+   */
   routes?: Array<{ agentId: string } & Partial<ModelRoute>>
   isPinned?: boolean
   isArchived?: boolean

@@ -149,3 +149,30 @@ pub(crate) fn set_island_enabled(
     crate::menu::rebuild_menus(&app);
     Ok(())
 }
+
+/// Whether a Localix workspace window is the key window, so the island leaves attention to it.
+fn workspace_focused(app: &AppHandle) -> bool {
+    crate::workspace_windows::views(app)
+        .iter()
+        .any(|view| view.window().is_focused().unwrap_or(false))
+}
+
+/// A workspace gained or lost focus. Deferred so a switch between two workspaces settles first.
+pub(crate) fn workspace_focus_changed(app: &AppHandle) {
+    let handle = app.clone();
+    crate::main_queue::defer(move || {
+        let _ = handle.emit_to(
+            LABEL,
+            "companion-workspace-focus",
+            workspace_focused(&handle),
+        );
+    });
+}
+
+#[tauri::command]
+pub(crate) fn companion_workspace_focus(app: AppHandle, caller: Webview) -> Result<bool, String> {
+    if !is_companion(&caller) {
+        return Err("Only the companion reads workspace focus".into());
+    }
+    Ok(workspace_focused(&app))
+}

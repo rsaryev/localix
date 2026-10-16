@@ -75,3 +75,51 @@ test('ordinary text reaches the next handler without loading plugin commands', a
   expect(await handlePluginCommand(f.ctx, 'u', session.id, session, 'plain text')).toBeNull()
   expect(f.trace).toEqual([])
 })
+
+test('a command that declares tools activates them for the chat before its run starts', async () => {
+  const stored = ['web_fetch']
+  const order: string[] = []
+  const run = sessionFixture({ id: 'plugin-tools', userId: 'u' })
+  const ctx = {
+    now: () => 'now',
+    deps: {},
+    repo: {
+      listMessages: async () => [],
+      changeActivatedTools: async (
+        _u: string,
+        _s: string,
+        change: (current: string[]) => { next: string[] } | null,
+      ) => {
+        order.push('activate')
+        const changed = change(stored)
+        if (changed) stored.splice(0, stored.length, ...changed.next)
+        return changed
+      },
+    },
+    runner: { leadership: () => noLeadership },
+    gatherEnabledPluginCommands: async () => [
+      {
+        plugin: 'planner',
+        pluginDir: '/fixture/planner',
+        command: {
+          name: 'planner',
+          prompt: 'Plan ${goal}',
+          args: [{ name: 'goal', type: 'text' }],
+          activateTools: ['board'],
+        },
+      },
+    ],
+    resolveSessionWorkingDir: async () => '/work',
+    runMacroCommand: async () => {
+      order.push('run')
+      expect(run.activatedTools).toEqual(['web_fetch', 'board'])
+      return { sessionId: run.id, messageId: 'run' }
+    },
+    insertDirectReply: async () => {
+      throw new Error('a valid command must not reply directly')
+    },
+  } as unknown as CommandHandlerContext
+  await handlePluginCommand(ctx, 'u', run.id, run, '/planner ship it')
+  expect(order).toEqual(['activate', 'run'])
+  expect(stored).toEqual(['web_fetch', 'board'])
+})

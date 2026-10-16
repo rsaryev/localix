@@ -63,8 +63,12 @@ export interface SessionActions {
     reasoningEffort: ReasoningEffort,
     agentId?: string,
   ) => Promise<void>
-  /** One model and level for every participant, as one server write (`sessionPartyRoute.ts`). */
-  applyPartyRoute: (sessionId: string, choice: PartyRouteChoice) => Promise<void>
+  /** "All": the same route for every listed agent, as one server write (`sessionPartyRoute.ts`). */
+  applyPartyRoute: (
+    sessionId: string,
+    choice: PartyRouteChoice,
+    agentIds?: readonly string[],
+  ) => Promise<void>
 }
 
 export function createSessionActions({

@@ -1,35 +1,28 @@
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
-import type { RecentRoutes } from './repository-types'
+import type { RecentRoute, RecentRoutes } from './repository-types'
+import { parseModelChoices } from './session-model-choices'
 
 /**
- * THE ROUTES THE USER LAST CHOSE — the "recent" level of the model chain.
+ * THE MODEL EACH AGENT USED MOST RECENTLY — the "recent" level of the model chain.
  *
- * A seat holds a model only when someone picked one for that participant in that conversation.
- * `model_selected_at` records that event separately from conversation activity: reopening an old
- * Flash conversation must not make Flash the agent's newest preference again.
+ * Two records of a pick, both written by the one choice writer (`repository-model-choices.ts`):
+ * a seat's `model_selected_at` (a model picked for a participant, or stated at birth), and a
+ * session's choice-map stamp (`model_choices.chosenAt`), which also covers a pick for an agent
+ * that was never seated — the picker's "All" cascade names every listed agent. The newest of the
+ * two wins per agent. Reopening an old conversation stamps nothing, so it never makes an old
+ * model the agent's newest preference again.
  *
  * Its own module rather than another method on the session reader, because it answers a
  * different question: every query there is "what is this session", and this one is "what has
  * this person been choosing" — over all of them at once, grouped by agent.
- */
-
-/**
- * Every eligible seat, newest first. The reasoning level is NOT learned here: it is remembered
- * per agent and model (`agentModelSettings`), never as "the last level used for anything".
- * The reducer below takes the first row per agent. This avoids relying on SQLite's bare-column behavior beside `MAX()` and
- * makes ties deterministic.
  *
- * Every participant of a room counts, not only the one at position 0: a model chosen for the
- * third member is a choice, and reading position 0 alone silently dropped it.
- *
- * `is_pinned` is deliberately absent from the ordering — the query this replaced led with it,
- * which made "the model I last used" mean "the model in my oldest pinned chat". Pinning is about
- * where a conversation sits in the sidebar.
+ * Every participant of a room counts, not only the one at position 0, and `is_pinned` plays no
+ * part: pinning is about where a conversation sits in the sidebar.
  */
 export function createRecentRouteQueries(db: Kysely<AppDatabase>) {
-  const modelsNewestFirst = (userId: string) =>
+  const seatPicks = (userId: string) =>
     db
       .selectFrom('agent_sessions')
       .innerJoin('conversation_participants as route', 'route.session_id', 'agent_sessions.id')
@@ -42,24 +35,41 @@ export function createRecentRouteQueries(db: Kysely<AppDatabase>) {
       .where('agent_sessions.user_id', '=', userId)
       .where('route.model_id', '!=', '')
       .where('route.model_selected_at', 'is not', null)
-      .orderBy('route.model_selected_at', 'desc')
-      .orderBy('route.session_id', 'desc')
-      .orderBy('route.position', 'desc')
+      .execute()
+
+  const choiceMaps = (userId: string) =>
+    db
+      .selectFrom('agent_sessions')
+      .select('model_choices')
+      .where('user_id', '=', userId)
+      .where('model_choices', 'is not', null)
       .execute()
 
   return {
     async listRecentRoutes(userId: string): Promise<RecentRoutes> {
-      const models = await modelsNewestFirst(userId)
-      const byAgent = new Map<string, { providerConnectionId: string | null; modelId: string }>()
-      for (const row of models) {
+      const [seats, maps] = await Promise.all([seatPicks(userId), choiceMaps(userId)])
+      const newest = new Map<string, { at: string; route: RecentRoute }>()
+      const offer = (agentId: string, at: string, route: RecentRoute) => {
+        const held = newest.get(agentId)
+        // Seats are offered first and a tie goes to the later offer: one pick stamps its seat and
+        // its entry in the same transaction, and the entry also knows the level.
+        if (!held || at >= held.at) newest.set(agentId, { at, route })
+      }
+      for (const row of seats) {
         if (!row.chosen_at) continue
-        const route = {
+        offer(row.agent_id, row.chosen_at, {
           providerConnectionId: row.provider_connection_id,
           modelId: row.model_id,
-        }
-        if (!byAgent.has(row.agent_id)) byAgent.set(row.agent_id, route)
+        })
       }
-      return { byAgent }
+      for (const row of maps) {
+        const choices = parseModelChoices(row.model_choices)
+        for (const [agentId, at] of Object.entries(choices.chosenAt ?? {})) {
+          const route = choices.agents[agentId]
+          if (route) offer(agentId, at, route)
+        }
+      }
+      return { byAgent: new Map([...newest].map(([agentId, { route }]) => [agentId, route])) }
     },
   }
 }
