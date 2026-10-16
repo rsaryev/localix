@@ -184,6 +184,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* Two columns: an odd last card takes the full row instead of leaving a gap. */
+@media (min-width: 40rem) and (max-width: 63.99rem) {
+  .bento-cell:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
 @media (min-width: 64rem) {
   .bento-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

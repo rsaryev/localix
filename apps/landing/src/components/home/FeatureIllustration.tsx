@@ -2,6 +2,7 @@ import type { HighlightId } from '../../pages/homeHighlights'
 import { BrowserScene, ContextScene, PluginScene } from './cards/workflowScenes'
 import { CliScene, SpaceScene, TeamScene } from './cards/agentScenes'
 import { GitScene, GraphScene, KanbanScene } from './cards/toolScenes'
+import { IslandScene } from './cards/islandScene'
 import { ApiScene, DatabaseScene, DevOpsScene } from './cards/opsScenes'
 
 /** Drawn workflow illustrations, not recorded sessions or product screenshots. */
@@ -12,6 +13,7 @@ const scenes = {
   team: TeamScene,
   external: CliScene,
   space: SpaceScene,
+  island: IslandScene,
   git: GitScene,
   graph: GraphScene,
   kanban: KanbanScene,

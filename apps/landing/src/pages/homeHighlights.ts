@@ -7,6 +7,7 @@ export type HighlightId =
   | 'external'
   | 'team'
   | 'space'
+  | 'island'
   | 'git'
   | 'graph'
   | 'kanban'
@@ -67,6 +68,14 @@ export const HOMEPAGE_HIGHLIGHTS: HomepageHighlight[] = [
     anchor: 'what-you-can-do',
   },
   {
+    id: 'island',
+    wide: true,
+    title: 'An agent at the notch',
+    body: 'On macOS, an optional island at the notch shows agents at work, takes a quick request from any app, and brings their questions to you without switching windows.',
+    slug: 'features--agent-companion',
+    anchor: 'activity-and-decisions',
+  },
+  {
     id: 'git',
     title: 'Git',
     body: 'Review diffs, stage changes, resolve conflicts, and manage branches beside the conversation.',
@@ -96,6 +105,7 @@ export const HOMEPAGE_HIGHLIGHTS: HomepageHighlight[] = [
   },
   {
     id: 'api',
+    wide: true,
     title: 'API Client',
     body: 'Build saved HTTP requests, reuse environments and secret references, and inspect responses in place.',
     slug: 'features--api',
