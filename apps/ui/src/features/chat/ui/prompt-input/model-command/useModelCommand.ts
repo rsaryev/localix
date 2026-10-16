@@ -92,17 +92,17 @@ export function useModelCommand(
           plan.reasoningEffort,
           plan.agentId,
         )
-        const { maxTurns, contextPercent } = plan.settings
+        const { maxTurns, contextLimit } = plan.settings
         const triple = { agentId: plan.agentId, providerId: plan.providerId, modelId: plan.modelId }
         if (maxTurns !== undefined)
           rememberAgentModelSettings(agentSettingsIo, {
             ...triple,
             maxTurns: maxTurns ?? undefined,
           })
-        if (contextPercent !== undefined)
+        if (contextLimit !== undefined)
           rememberAgentModelSettings(agentSettingsIo, {
             ...triple,
-            contextPercent: contextPercent ?? undefined,
+            contextLimit: contextLimit ?? undefined,
           })
       }
       recordRecentModel({ connectionId: plan.connectionId, modelId: plan.modelId })

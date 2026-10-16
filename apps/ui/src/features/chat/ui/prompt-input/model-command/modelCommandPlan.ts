@@ -1,4 +1,4 @@
-import { clampContextPercent } from '@localixai/agent'
+import type { ContextLimit } from '@localixai/agent'
 import { clampMaxTurns } from '@localixai/api/turn-budget'
 import { parseCommandArgs, type SlashArgSpec } from '../SlashArgSpec'
 import { isReasoningEffort, type ReasoningEffort } from '../../../model/reasoning'
@@ -9,12 +9,13 @@ import {
   startReasoning,
   type ModelCommandContext,
 } from './modelCommandTarget'
+import { contextLimitOptions } from '../model-select/modelSettingChoices'
 import { KEEP, skipModelStep, USE_DEFAULT } from './modelCommandSteps'
 
 /**
  * What a completed `/model` does — the write the picker would make for the same choices:
  *   - one member: its seat route (`setModelSelection`) plus, when chosen, its per-model
- *     Turns / Context window settings (`rememberAgentModelSettings`, as the details panel writes);
+ *     Turns / Context limit settings (`rememberAgentModelSettings`, as the details panel writes);
  *   - All agents: one batch route for the room (`applyPartyRoute`).
  * A setting is `null` to clear it back to the default and absent to leave it as it is.
  */
@@ -26,7 +27,7 @@ export type ModelCommandPlan =
       modelId: string
       providerId: string
       reasoningEffort: ReasoningEffort
-      settings: { maxTurns?: number | null; contextPercent?: number | null }
+      settings: { maxTurns?: number | null; contextLimit?: ContextLimit | null }
     }
   | { kind: 'party'; connectionId: string; modelId: string; reasoningEffort: ReasoningEffort }
 
@@ -37,6 +38,18 @@ function settingValue(
   if (value === undefined || value === KEEP) return undefined
   if (value === USE_DEFAULT) return null
   return parse(value)
+}
+
+/** `keep` leaves it, `default`/`auto` clears it, an offered `400k`/`1m`/`full` sets it. */
+function contextLimitValue(
+  raw: string | undefined,
+  contextWindow: number | undefined,
+): ContextLimit | null | undefined | false {
+  if (raw === undefined || raw === KEEP) return undefined
+  const arg = raw.trim().toLowerCase()
+  if (arg === USE_DEFAULT || arg === 'auto') return null
+  const option = contextLimitOptions(contextWindow).options.find((row) => row.arg === arg)
+  return option && option.value !== undefined ? option.value : false
 }
 
 /**
@@ -76,9 +89,9 @@ export function resolveModelCommand(
   const maxTurns = settingValue(committed.get('turns'), (raw) =>
     /^\d+$/.test(raw) ? clampMaxTurns(Number(raw)) : null,
   )
-  const contextPercent = settingValue(committed.get('context'), (raw) =>
-    /^\d+%?$/.test(raw) ? clampContextPercent(Number(raw.replace('%', ''))) : null,
-  )
+  const contextLimit = contextLimitValue(committed.get('context'), model.contextLength)
+  // A limit this model does not offer is refused, as an unoffered reasoning level is.
+  if (contextLimit === false) return null
   return {
     kind: 'agent',
     agentId: target.member.agentId,
@@ -88,7 +101,7 @@ export function resolveModelCommand(
     reasoningEffort,
     settings: {
       ...(maxTurns !== undefined ? { maxTurns } : {}),
-      ...(contextPercent !== undefined ? { contextPercent } : {}),
+      ...(contextLimit !== undefined ? { contextLimit } : {}),
     },
   }
 }

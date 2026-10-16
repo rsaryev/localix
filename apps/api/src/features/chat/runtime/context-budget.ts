@@ -1,15 +1,8 @@
+import { scaledReserveTokens, type ContextLimit } from '@localixai/agent'
+
 import { resolveContextWindow, resolveEffectiveContextWindow } from './agent-runner-constants'
 
-/**
- * Window-scaled headroom reserved out of the context window for the next response and the
- * growth inside a run. Scales both ways: big windows reserve 10% (a 1M model reserves ~100k,
- * not a flat 16k), small windows reserve 20% (a flat 16k floor left a 32k model a 15.6k
- * ceiling — below the fixed prompt+tools cost, so every run overflowed; offline simulation).
- * Unchanged for the common 128k–256k range: max(min(16384, 20%), 10%) = 16384–25600.
- */
-export function scaledReserveTokens(contextWindow: number): number {
-  return Math.max(Math.min(16384, Math.floor(contextWindow * 0.2)), Math.floor(contextWindow * 0.1))
-}
+export { scaledReserveTokens }
 
 /**
  * One host-owned description of the context limits for a model request.
@@ -41,8 +34,8 @@ export interface ResolveContextBudgetOptions {
   fixedOverheadTokens?: number
   /** The session's delegation depth — a child budgets against a smaller window. 0 if absent. */
   depth?: number
-  /** Share of the real window to budget against (`clampContextPercent`). Default `DEFAULT_CONTEXT_PERCENT`. */
-  contextPercent?: number
+  /** The person's context limit for this agent/model (`context-limit.ts`). Absent is Auto. */
+  contextLimit?: ContextLimit
 }
 
 const normalizedTokens = (tokens: number | undefined): number =>
@@ -67,11 +60,7 @@ export function resolveContextBudgetFrame(
 ): ContextBudgetFrame {
   const model = { contextLength: options.contextWindow }
   const rawWindow = resolveContextWindow(model)
-  const effectiveWindow = resolveEffectiveContextWindow(
-    model,
-    options.depth,
-    options.contextPercent,
-  )
+  const effectiveWindow = resolveEffectiveContextWindow(model, options.depth, options.contextLimit)
   const reserve = scaledReserveTokens(effectiveWindow)
   const fixedOverhead = normalizedTokens(options.fixedOverheadTokens)
   const trigger = Math.max(0, effectiveWindow - reserve)

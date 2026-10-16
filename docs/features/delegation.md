@@ -97,7 +97,8 @@ waiting for a lane live in process memory; restarting the server does not restor
 
 The budget counts children **created**, not runs: messaging an existing fork creates none. Only a
 message the person writes resets it. The context window shrinks with depth as well: a conversation
-budgets against 256k tokens and its child against 128k.
+budgets against its full policy window, its child against at most 128k and every level below against
+64k.
 
 ## Progress and report delivery
 

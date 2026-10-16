@@ -11,7 +11,7 @@
  * Load → decide: the repository reads happen here and nowhere in the history pipeline, which
  * stays a pure function of this value and the rows.
  */
-import type { CheckpointReason, ContextCheckpoint } from '@localixai/agent'
+import type { CheckpointReason, ContextCheckpoint, ContextLimit } from '@localixai/agent'
 
 import { participantAgentId } from '../../../../db/participant'
 import type { PersistedMessage, SessionModelView } from '../../contracts'
@@ -76,7 +76,7 @@ function measuredPressure(
   hostId: string | undefined,
   contextWindow: number | undefined,
   depth: number | undefined,
-  contextPercent: number | undefined,
+  contextLimit: ContextLimit | undefined,
 ): ReturnType<typeof checkpointPressure> {
   const from = hostId ? rows.findIndex((row) => row.id === hostId) : 0
   for (let i = rows.length - 1; i >= Math.max(0, from); i--) {
@@ -85,7 +85,7 @@ function measuredPressure(
     const tokens = row.payload.usage?.contextTokens
     if (typeof tokens !== 'number' || !Number.isFinite(tokens) || tokens <= 0) continue
     return checkpointPressure(
-      resolveContextBudgetFrame({ contextWindow, depth, contextPercent }),
+      resolveContextBudgetFrame({ contextWindow, depth, contextLimit }),
       tokens,
     )
   }
@@ -133,8 +133,8 @@ export async function loadModelView(
     contextWindow?: number
     /** The session's delegation depth — the window it budgets against (`contextWindowCapAt`). */
     depth?: number
-    /** The user's share of the context window (`clampContextPercent`). */
-    contextPercent?: number
+    /** The person's context limit for this agent/model (`context-limit.ts`). */
+    contextLimit?: ContextLimit
     /** A recovery re-entry, or a signal the previous run left, that forces a checkpoint. */
     forced?: CheckpointReason
   },
@@ -175,7 +175,7 @@ export async function loadModelView(
     hostId,
     input.contextWindow,
     input.depth,
-    input.contextPercent,
+    input.contextLimit,
   )
   const due = input.forced ?? (pressure === 'due' ? 'threshold' : undefined)
   return {

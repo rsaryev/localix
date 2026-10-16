@@ -227,7 +227,7 @@ hook that exits any other way, or is lost to an API restart, wakes nobody.
 - A plugin or skill macro sent while a run is active waits in the queue as a whole command — its
   badge, model override, tool grants and hooks — and runs as its own turn.
 - `/model` walks the model picker's steps in the composer — agent (groups only, with **All
-  agents**), provider, model, then optional reasoning, turns and context window settings — and never
+  agents**), provider, model, then optional reasoning, turns and context limit settings — and never
   prints a model list. See [Switch models with `/model`](conversations.md#switch-models-with-model).
   Typed as `/model <name>`, it acts on one participant: the one named first (`/model @qa sonnet`),
   otherwise the participant your unaddressed message would go to.

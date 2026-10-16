@@ -8,7 +8,7 @@ message in its view.
 
 | Term            | Meaning                                                                                         | Boundary                                                           |
 | --------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Request ceiling | The policy window minus the response reserve; every request must fit it.                        | Per model from the catalog window, capped by delegation depth.     |
+| Request ceiling | The context limit, or the window minus the response reserve; every request must fit it.         | Per model from the catalog window, capped by delegation depth.     |
 | View            | The model-facing copy of the conversation one agent reads on a turn.                            | Stored messages are never rewritten to build it.                   |
 | Checkpoint      | A one-time, model-free re-plan of the view when it reaches the high-water mark.                 | Between checkpoints the view is only appended to.                  |
 | Epoch card      | A short deterministic summary of evicted turns: files, commands, errors, requests, last answer. | Lists facts; it does not carry the reasons behind decisions.       |
@@ -16,14 +16,31 @@ message in its view.
 
 ## What you can do
 
-| Action                    | Result                                                                            | Boundary                                                                    |
-| ------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Watch the usage ring      | See request size against the ceiling and the **Next checkpoint at** figure.       | Limits arrive with a run's first snapshot, at the session's depth.          |
-| See where the view begins | An **Earlier turns checkpointed** divider marks the last evicted message.         | Only the newest checkpoint is drawn; a topic change removes the line.       |
-| Keep a message whole      | Right-click a message → **Pin to agent context**; a pinned mark appears under it. | The next checkpoint preserves it; a late pin uses a bounded context insert. |
-| Start a clean context     | Ask the agent to start a new topic, or open a new chat.                           | Earlier messages stay visible in the stored transcript.                     |
-| Recover older output      | The agent follows `tool_output` handles or `history_search` pointers.             | The tool must be in the agent's roster for its pointer to appear.           |
-| Replay a stored session   | Run `replay-context-policy <sessionId>` against `localix.db`.                     | Read-only; prints every number a checkpoint decision turned on.             |
+| Action                    | Result                                                                                  | Boundary                                                                    |
+| ------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Set the context limit     | Model details → **Context limit**: **Auto**, a token step the model holds, or **Full**. | Shown only for a model whose window exceeds 272k plus its reserve.          |
+| Watch the usage ring      | See request size against the ceiling and the **Next checkpoint at** figure.             | Limits arrive with a run's first snapshot, at the session's depth.          |
+| See where the view begins | An **Earlier turns checkpointed** divider marks the last evicted message.               | Only the newest checkpoint is drawn; a topic change removes the line.       |
+| Keep a message whole      | Right-click a message → **Pin to agent context**; a pinned mark appears under it.       | The next checkpoint preserves it; a late pin uses a bounded context insert. |
+| Start a clean context     | Ask the agent to start a new topic, or open a new chat.                                 | Earlier messages stay visible in the stored transcript.                     |
+| Recover older output      | The agent follows `tool_output` handles or `history_search` pointers.                   | The tool must be in the agent's roster for its pointer to appear.           |
+| Replay a stored session   | Run `replay-context-policy <sessionId>` against `localix.db`.                           | Read-only; prints every number a checkpoint decision turned on.             |
+
+### Context limit
+
+The context limit is how many tokens a request may hold before a checkpoint reshapes the view. It is
+set per agent and model, like a reasoning level, and offered from the model's own window:
+
+| Choice | Request ceiling                                               |
+| ------ | ------------------------------------------------------------- |
+| Auto   | `min(272,000, window − reserve)`; the default.                |
+| Steps  | 128k, 200k, 400k, 600k, 1M, 2M, 5M or 10M — those below Full. |
+| Full   | The whole window minus the response reserve.                  |
+
+A model whose Auto already is its whole window (up to about 302k) shows no setting. Long contexts
+cost more on every request and recall worse, so Auto stops at 272k even on a 1M window; choose a
+larger step when a task needs it, or a smaller one to save cost. A step remembered from a larger
+model reads as this model's Full.
 
 There is no command that summarizes the conversation with a model. The runtime checkpoints on its
 own, and a typed `/compact` is reported as an unknown command.
@@ -137,15 +154,15 @@ carries.
 
 ### Request budget
 
-| Control           | Current rule                                                            |
-| ----------------- | ----------------------------------------------------------------------- |
-| Policy window     | Catalog context window, or `128,000` when unknown; capped by depth.     |
-| Cap by depth      | `256,000` for a conversation, `128,000` for its child, `64,000` below   |
-| Response reserve  | `max(min(16,384, 20% of window), 10% of window)`                        |
-| Request ceiling   | Policy window minus response reserve                                    |
-| Checkpoint mark   | 85% of the ceiling                                                      |
-| Checkpoint target | 30% of the ceiling minus fixed overhead, at least 25% of history budget |
-| Protected tail    | Up to 8 recent messages within `clamp(15%, 16,384, 65,536)` tokens      |
+| Control           | Current rule                                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Policy window     | The smallest window whose ceiling is the context limit, at most the catalog window (`128,000` when unknown); capped by depth. |
+| Cap by depth      | None for a conversation, `128,000` for its child, `64,000` below                                                              |
+| Response reserve  | `max(min(16,384, 20% of window), 10% of window)`                                                                              |
+| Request ceiling   | Policy window minus response reserve: the context limit, or less where the window or depth cap is smaller.                    |
+| Checkpoint mark   | 85% of the ceiling                                                                                                            |
+| Checkpoint target | 30% of the ceiling minus fixed overhead, at least 25% of history budget                                                       |
+| Protected tail    | Up to 8 recent messages within `clamp(15%, 16,384, 65,536)` tokens                                                            |
 
 ### How a request is sized
 

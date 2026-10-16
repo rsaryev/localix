@@ -14,10 +14,19 @@ const model = (id: string, extra: Partial<CatalogModel> = {}): CatalogModel =>
     ...extra,
   }) as CatalogModel
 
-/** Two connections, a reasoner without Off, one with it, and one that does not reason. */
+/**
+ * Two connections, a reasoner without Off, one with it, and one that does not reason. Windows:
+ * 200k (Auto is the whole window), 1M (offers context-limit steps), none.
+ */
 export const MODELS = [
-  model('anthropic/opus', { reasoningEfforts: ['low', 'medium', 'high', 'max'] }),
-  model('openai/gpt', { reasoningEfforts: ['off', 'minimal', 'low', 'medium', 'high'] }),
+  model('anthropic/opus', {
+    reasoningEfforts: ['low', 'medium', 'high', 'max'],
+    contextLength: 200_000,
+  }),
+  model('openai/gpt', {
+    reasoningEfforts: ['off', 'minimal', 'low', 'medium', 'high'],
+    contextLength: 1_000_000,
+  }),
   model('openai/plain', { supportsReasoning: false, reasoningEfforts: [] }),
 ]
 

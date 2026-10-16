@@ -1,4 +1,4 @@
-import { clampContextPercent } from '@localixai/agent'
+import { contextLimitWindow, type ContextLimit } from '@localixai/agent'
 
 // Model-facing context trim (a checkpoint's planContextCompression call, and the in-run
 // wire prune): the most-recent turns are kept verbatim (the model's active working set);
@@ -17,7 +17,7 @@ export const MODEL_TRIM_KEEP_RECENT_TOKENS = 16384
 // resolveKeepRecentTokens.
 //
 // NB: callers pass the EFFECTIVE window (`resolveEffectiveContextWindow`), so the cap below
-// binds once that window exceeds ~437k (e.g. a 1M model at the default 70%).
+// binds once that window exceeds ~437k (e.g. a 1M model on a 400k or larger limit).
 const MODEL_TRIM_KEEP_RECENT_FRACTION = 0.15
 export const MODEL_TRIM_KEEP_RECENT_CAP = 65_536
 
@@ -81,21 +81,21 @@ export function contextWindowCapAt(depth: number): number {
 }
 
 /**
- * The window a request must FIT UNDER (the percent is user-tunable per agent/model in
- * `agentModelSettings[].contextPercent`, default 70): `min(percent × realWindow, cap at this depth)` — the
- * ceiling the checkpoint policy measures against and the budget a checkpoint's
- * `planContextCompression` spends.
+ * The window a request must FIT UNDER: the window whose ceiling is the person's context limit for
+ * this agent/model (`agentModelSettings[].contextLimit`, Auto = 272k; see `context-limit.ts`),
+ * never beyond the model's own window, then capped by delegation depth — the ceiling the
+ * checkpoint policy measures against and the budget a checkpoint's `planContextCompression`
+ * spends.
  *
  * The invariant is pinned in `agent-runner-constants.test.ts`.
  */
 export function resolveEffectiveContextWindow(
   catalogModel?: { contextLength?: number },
   depth = 0,
-  contextPercent?: number,
+  contextLimit?: ContextLimit,
 ): number {
-  const percent = clampContextPercent(contextPercent)
-  const scaled = Math.floor((resolveContextWindow(catalogModel) * percent) / 100)
-  return Math.min(scaled, contextWindowCapAt(depth))
+  const window = contextLimitWindow(resolveContextWindow(catalogModel), contextLimit)
+  return Math.min(window, contextWindowCapAt(depth))
 }
 
 // The prompt-cache TTL policy that used to live here is now the ADAPTER's

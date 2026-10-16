@@ -133,7 +133,7 @@ async function materializeGolden(
   const frame = resolveContextBudgetFrame({
     contextWindow: window,
     fixedOverheadTokens: 1_000,
-    contextPercent: 100,
+    contextLimit: 'full',
   })
   const intake = await intakeTurn({
     deps,

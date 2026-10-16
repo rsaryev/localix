@@ -1,8 +1,4 @@
-import {
-  CONTEXT_PERCENT_STEPS,
-  clampContextPercent,
-  DEFAULT_CONTEXT_PERCENT,
-} from '@localixai/agent'
+import { contextLimitChoices, formatContextTokens, type ContextLimit } from '@localixai/agent'
 import {
   clampMaxTurns,
   DEFAULT_MAX_TURNS,
@@ -11,9 +7,9 @@ import {
 } from '@localixai/api/turn-budget'
 
 /**
- * THE PER-AGENT MODEL SETTINGS' CHOICES — what "Turns per message" and "Context window" offer, and
+ * THE PER-AGENT MODEL SETTINGS' CHOICES — what "Turns per message" and "Context limit" offer, and
  * what they read as. One source for the picker's controls (`MaxTurnsControl`,
- * `ContextPercentControl`) and `/model`'s settings steps, so the two can never offer different
+ * `ContextLimitControl`) and `/model`'s settings steps, so the two can never offer different
  * values.
  */
 
@@ -37,11 +33,40 @@ export function maxTurnsChoices(value: number | undefined, inherited: number, li
   return { current, options }
 }
 
-export const contextPercentLabel = (value: number) => `${clampContextPercent(value)}%`
+/** One context-limit row: the stored value it writes (`undefined` = Auto) and how it reads. */
+export interface ContextLimitOption {
+  value: ContextLimit | undefined
+  label: string
+  /** The `/model` argument that names it: `auto`, `400k`, `1m`, `full`. */
+  arg: string
+}
 
-/** The share in force and the steps offered; a stored off-step value stays selectable. */
-export function contextPercentChoices(value: number | undefined) {
-  const current = clampContextPercent(value)
-  const options = [...new Set([...CONTEXT_PERCENT_STEPS, current])].sort((a, b) => a - b)
-  return { current, options, defaultValue: DEFAULT_CONTEXT_PERCENT }
+/**
+ * What a model offers for its context limit, like its reasoning levels: Auto, the ladder steps
+ * its window holds, and Full. `adjustable` is false when Auto already is the whole window —
+ * the setting is then not shown at all.
+ */
+export function contextLimitOptions(contextWindow: number | undefined, value?: ContextLimit) {
+  // A model the catalog gives no window offers nothing to choose: the runtime budgets it at Auto.
+  const choices = contextLimitChoices(contextWindow && contextWindow > 0 ? contextWindow : 0, value)
+  const options: ContextLimitOption[] = [
+    { value: undefined, label: `Auto · ${formatContextTokens(choices.auto)}`, arg: 'auto' },
+    ...choices.steps.map((step) => {
+      const label = formatContextTokens(step)
+      return { value: step, label, arg: label.toLowerCase() }
+    }),
+    { value: 'full', label: `Full · ${formatContextTokens(choices.full)}`, arg: 'full' },
+  ]
+  const selected =
+    choices.current === undefined
+      ? options[0]!
+      : (options.find((option) => option.value === choices.current) ??
+        // A value this model does not offer (remembered from a bigger model) reads as what it
+        // gives here: its whole window is Full, anything else its own token count.
+        (choices.currentTokens === choices.full ? options.at(-1) : undefined) ?? {
+          value: choices.current,
+          label: formatContextTokens(choices.currentTokens),
+          arg: formatContextTokens(choices.currentTokens).toLowerCase(),
+        })
+  return { adjustable: choices.adjustable, options, selected, currentTokens: choices.currentTokens }
 }

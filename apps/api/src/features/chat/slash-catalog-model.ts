@@ -2,7 +2,7 @@ import type { SlashArgSpec } from './slash-args'
 
 /**
  * `/model` as the picker's own hierarchy, one step per column and in the same order:
- * Agents → Provider → Model → Settings (Reasoning, Turns per message, Context window).
+ * Agents → Provider → Model → Settings (Reasoning, Turns per message, Context limit).
  *
  * Every step is `dynamic`: its rows are the picker's live data (the room, the connections, the
  * connection's models, the levels THAT model offers), which only the composer holds. A surface
@@ -37,6 +37,6 @@ export const MODEL_ARGS: SlashArgSpec[] = [
     type: 'choice',
     dynamic: true,
     optional: true,
-    placeholder: 'Context window share — or Enter to apply…',
+    placeholder: 'Context limit — or Enter to apply…',
   },
 ]

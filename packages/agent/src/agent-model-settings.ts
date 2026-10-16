@@ -1,3 +1,4 @@
+import type { ContextLimit } from './context-limit'
 import type { ReasoningEffort } from './types'
 
 /** Model parameters belong to an exact agent/provider/model triple, never to a whole party. */
@@ -7,19 +8,8 @@ export interface AgentModelSettings {
   modelId: string
   effort?: ReasoningEffort
   maxTurns?: number
-  /** Share of the model's context window the run budgets against, in percent. */
-  contextPercent?: number
-}
-
-/** Default and bounds for `contextPercent`: the share of the real window a run budgets against. */
-export const DEFAULT_CONTEXT_PERCENT = 70
-export const MIN_CONTEXT_PERCENT = 20
-export const MAX_CONTEXT_PERCENT = 100
-export const CONTEXT_PERCENT_STEPS = [30, 50, 70, 80, 90, 100] as const
-
-export function clampContextPercent(percent?: number): number {
-  if (typeof percent !== 'number' || !Number.isFinite(percent)) return DEFAULT_CONTEXT_PERCENT
-  return Math.min(MAX_CONTEXT_PERCENT, Math.max(MIN_CONTEXT_PERCENT, Math.round(percent)))
+  /** Request ceiling the run budgets against (`context-limit.ts`); absent means Auto. */
+  contextLimit?: ContextLimit
 }
 
 export function agentModelSettingsFor(
@@ -43,9 +33,9 @@ export function setAgentModelSettings(
   const next = { ...previous, ...patch }
   if ('effort' in patch && patch.effort === undefined) delete next.effort
   if ('maxTurns' in patch && patch.maxTurns === undefined) delete next.maxTurns
-  if ('contextPercent' in patch && patch.contextPercent === undefined) delete next.contextPercent
+  if ('contextLimit' in patch && patch.contextLimit === undefined) delete next.contextLimit
   const rest = (settings ?? []).filter((entry) => entry !== previous)
   const kept =
-    next.effort !== undefined || next.maxTurns !== undefined || next.contextPercent !== undefined
+    next.effort !== undefined || next.maxTurns !== undefined || next.contextLimit !== undefined
   return (kept ? [next, ...rest] : rest).slice(0, 200)
 }

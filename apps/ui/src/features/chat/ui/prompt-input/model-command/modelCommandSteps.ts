@@ -3,8 +3,7 @@ import type { SlashArgOption } from '../SlashArgSpec'
 import { modelReasoningOptions } from '../../../model/modelReasoning'
 import { filterModels } from '../model-select/filterModels'
 import {
-  contextPercentChoices,
-  contextPercentLabel,
+  contextLimitOptions,
   inheritedMaxTurns,
   maxTurnsChoices,
   maxTurnsLabel,
@@ -35,7 +34,8 @@ const matches = (query: string, ...texts: (string | undefined)[]) => {
 /**
  * Which steps do not apply — exactly where the picker shows no such column or control: Agents in
  * a one-agent chat, Reasoning for a model that does not reason, and Turns / Context window for
- * "All agents" (the picker offers those for one participant only).
+ * "All agents" (the picker offers those for one participant only), and Context limit for a model
+ * whose Auto already is its whole window (the picker shows no such row there).
  */
 export function skipModelStep(
   context: ModelCommandContext,
@@ -47,7 +47,12 @@ export function skipModelStep(
     const model = connectionModel(context, committed.get('provider'), committed.get('model'))
     return model !== undefined && !model.supportsReasoning
   }
-  if (name === 'turns' || name === 'context') return committed.get('agent') === ALL_AGENTS
+  if (name === 'turns' || name === 'context') {
+    if (committed.get('agent') === ALL_AGENTS) return true
+    if (name === 'turns') return false
+    const model = connectionModel(context, committed.get('provider'), committed.get('model'))
+    return model !== undefined && !contextLimitOptions(model.contextLength).adjustable
+  }
   return false
 }
 
@@ -155,15 +160,19 @@ export function modelStepOptions(
     ].filter((row) => matches(query, row.label, row.value))
   }
   if (name === 'context') {
-    const { current, options, defaultValue } = contextPercentChoices(entry?.contextPercent)
+    const { options, selected } = contextLimitOptions(model.contextLength, entry?.contextLimit)
     return [
       {
         value: KEEP,
-        label: `Keep ${contextPercentLabel(current)}`,
-        description: 'Leave the context window share as it is',
+        label: `Keep ${selected.label}`,
+        description: 'Leave the context limit as it is',
       },
-      { value: USE_DEFAULT, label: 'Use default', description: contextPercentLabel(defaultValue) },
-      ...options.map((step) => ({ value: `${step}%`, label: contextPercentLabel(step) })),
+      ...options.map((option) => ({
+        // Auto is the default: choosing it clears the stored limit, as the picker's Auto does.
+        value: option.value === undefined ? USE_DEFAULT : option.arg,
+        label: option.label,
+        ...(option.value === undefined ? { description: 'Default for this model' } : {}),
+      })),
     ].filter((row) => matches(query, row.label, row.value))
   }
   return []

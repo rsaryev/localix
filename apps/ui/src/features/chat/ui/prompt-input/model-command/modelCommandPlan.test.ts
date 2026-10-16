@@ -53,10 +53,24 @@ describe('resolveModelCommand', () => {
   })
 
   test('settings: keep leaves them, default clears them, a value sets them', () => {
-    const plan = resolveModelCommand(solo, 'conn-openai openai/gpt low default 50%', MODEL_ARGS)
-    expect(plan).toMatchObject({ kind: 'agent', settings: { maxTurns: null, contextPercent: 50 } })
+    const plan = resolveModelCommand(solo, 'conn-openai openai/gpt low default 600k', MODEL_ARGS)
+    expect(plan).toMatchObject({
+      kind: 'agent',
+      settings: { maxTurns: null, contextLimit: 600_000 },
+    })
+    expect(
+      resolveModelCommand(solo, 'conn-openai openai/gpt low keep full', MODEL_ARGS),
+    ).toMatchObject({ settings: { contextLimit: 'full' } })
+    expect(
+      resolveModelCommand(solo, 'conn-openai openai/gpt low keep auto', MODEL_ARGS),
+    ).toMatchObject({ settings: { contextLimit: null } })
     const kept = resolveModelCommand(solo, 'conn-openai openai/gpt low keep keep', MODEL_ARGS)
     expect(kept).toMatchObject({ settings: {} })
+  })
+
+  test('a context limit the model does not offer is refused, not stored', () => {
+    expect(resolveModelCommand(solo, 'conn-openai openai/gpt low keep 50%', MODEL_ARGS)).toBeNull()
+    expect(resolveModelCommand(solo, 'conn-openai openai/gpt low keep 2m', MODEL_ARGS)).toBeNull()
   })
 
   test('a group names its member, and All agents becomes one batch for the room', () => {

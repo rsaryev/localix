@@ -100,7 +100,7 @@ describe('window limits at the start of a run', () => {
     )
     // A model smaller than the cap keeps its own window.
     expect(resolveContextBudgetFrame({ contextWindow: 32_000, depth: 1 }).effectiveWindow).toBe(
-      22_400,
+      32_000,
     )
   })
 })

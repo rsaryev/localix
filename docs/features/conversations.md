@@ -287,8 +287,9 @@ as steps, in the same order, each with a list of choices:
 3. **Model** — the models of that connection. Type to filter by name, id or reasoning level.
 4. **Settings** — optional. **Reasoning** offers only the levels the chosen model supports and is
    skipped for a model that does not reason. For one participant, **Turns per message** and
-   **Context window** follow; each offers _Keep_, _Use default_ and the picker's values. **All
-   agents** stops after Reasoning, as the picker does.
+   **Context limit** follow; each offers _Keep_, _Use default_ and the picker's values. Context
+   limit is skipped for a model with nothing to choose, and accepts `auto`, `400k`, `1m` or `full`.
+   **All agents** stops after Reasoning, as the picker does.
 
 Each choice becomes a crumb in the composer. Select a crumb's × to return to that step, or press
 Backspace in an empty step to remove the last crumb. Press Enter on an optional step to apply what

@@ -31,11 +31,19 @@ describe('/model steps — which apply', () => {
     ).toBe(false)
   })
 
-  test('All agents has no per-agent Turns or Context window, as in the picker', () => {
+  test('All agents has no per-agent Turns or Context limit, as in the picker', () => {
     const group = context([member('lead', 'openai/gpt'), member('qa', 'anthropic/opus')])
     expect(skipModelStep(group, 'turns', committedMap({ agent: 'all' }))).toBe(true)
     expect(skipModelStep(group, 'context', committedMap({ agent: 'all' }))).toBe(true)
     expect(skipModelStep(group, 'context', committedMap({ agent: '@qa' }))).toBe(false)
+  })
+
+  test('a model whose Auto is its whole window has no Context limit step', () => {
+    const group = context([member('lead', 'openai/gpt'), member('qa', 'anthropic/opus')])
+    const opus = { agent: '@qa', provider: 'conn-anthropic', model: 'anthropic/opus' }
+    const gpt = { agent: '@qa', provider: 'conn-openai', model: 'openai/gpt' }
+    expect(skipModelStep(group, 'context', committedMap(opus))).toBe(true)
+    expect(skipModelStep(group, 'context', committedMap(gpt))).toBe(false)
   })
 })
 
@@ -100,14 +108,21 @@ describe('/model steps — rows', () => {
     expect(rows.find((row) => row.value === 'max')?.description).toContain('current')
   })
 
-  test('Turns and Context window offer keep, default and the controls’ own steps', () => {
+  test('Turns and Context limit offer keep, default and the controls’ own steps', () => {
     const picked = { agent: '@lead', provider: 'conn-openai', model: 'openai/gpt' }
     const turns = values(modelStepOptions(group, 'turns', '', picked))
     expect(turns.slice(0, 2)).toEqual(['keep', 'default'])
     expect(turns).toContain('20')
-    const share = values(modelStepOptions(group, 'context', '', picked))
-    expect(share.slice(0, 2)).toEqual(['keep', 'default'])
-    expect(share).toContain('70%')
+    // The 1M model's own ladder, like its reasoning levels: Auto, the steps it holds, Full.
+    expect(values(modelStepOptions(group, 'context', '', picked))).toEqual([
+      'keep',
+      'default',
+      '128k',
+      '200k',
+      '400k',
+      '600k',
+      'full',
+    ])
   })
 
   test('an agent’s turn ceiling bounds the offered steps', () => {

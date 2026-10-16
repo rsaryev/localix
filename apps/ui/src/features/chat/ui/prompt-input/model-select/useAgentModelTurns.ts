@@ -1,5 +1,5 @@
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
-import { agentModelSettingsFor } from '@localixai/agent'
+import { agentModelSettingsFor, type ContextLimit } from '@localixai/agent'
 import { inheritedMaxTurns } from './modelSettingChoices'
 import { rememberAgentModelSettings, type ModelReasoningMemoryIo } from './rememberModelReasoning'
 
@@ -25,7 +25,7 @@ export function useAgentModelTurns(
           modelId,
         )
       : undefined
-  const remember = (patch: { maxTurns?: number } | { contextPercent?: number }) => {
+  const remember = (patch: { maxTurns?: number } | { contextLimit?: ContextLimit }) => {
     if (!agentId || !providerId || !modelId) return
     rememberAgentModelSettings(agentSettingsIo, { agentId, providerId, modelId, ...patch })
   }
@@ -36,8 +36,8 @@ export function useAgentModelTurns(
     limit: agentLimit,
     onChange: (maxTurns: number | undefined) => remember({ maxTurns }),
     context: {
-      value: entry?.contextPercent,
-      onChange: (contextPercent: number | undefined) => remember({ contextPercent }),
+      value: entry?.contextLimit,
+      onChange: (contextLimit: ContextLimit | undefined) => remember({ contextLimit }),
     },
   }
 }

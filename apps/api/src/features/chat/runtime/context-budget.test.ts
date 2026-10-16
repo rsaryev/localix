@@ -8,7 +8,9 @@ import {
   historyBudgetTokens,
   assertFixedOverheadFits,
   resolveContextBudgetFrame,
+  scaledReserveTokens,
 } from './context-budget'
+import { CONTEXT_LIMIT_AUTO_TOKENS, CONTEXT_LIMIT_STEPS } from '@localixai/agent'
 
 describe('resolveContextBudgetFrame', () => {
   test('derives every limit from one effective window', () => {
@@ -19,34 +21,31 @@ describe('resolveContextBudgetFrame', () => {
 
     expect(frame).toEqual({
       rawWindow: 372_000,
-      effectiveWindow: 260_400,
-      reserve: 26_040,
+      effectiveWindow: 302_222,
+      reserve: 30_222,
       fixedOverhead: 10_000,
-      trigger: 234_360,
-      historyBudget: 224_360,
+      trigger: 272_000,
+      historyBudget: 262_000,
     })
     expect(historyBudgetTokens(frame.effectiveWindow, frame.fixedOverhead)).toBe(
       frame.historyBudget,
     )
   })
 
-  test('the default budgets against 70% of the window; 100% keeps the physical window', () => {
-    expect(resolveContextBudgetFrame({ contextWindow: 1_000_000 }).effectiveWindow).toBe(700_000)
+  test('Auto is a 272k ceiling on a large window; Full keeps the physical one', () => {
+    expect(resolveContextBudgetFrame({ contextWindow: 1_000_000 })).toMatchObject({
+      effectiveWindow: 302_222,
+      reserve: 30_222,
+      trigger: 272_000,
+    })
     expect(
-      resolveContextBudgetFrame({ contextWindow: 1_000_000, contextPercent: 45 }).effectiveWindow,
-    ).toBe(450_000)
-    // Out-of-range percents clamp to [20, 100].
-    expect(
-      resolveContextBudgetFrame({ contextWindow: 100_000, contextPercent: 5 }).effectiveWindow,
-    ).toBe(20_000)
-    expect(
-      resolveContextBudgetFrame({ contextWindow: 100_000, contextPercent: 150 }).effectiveWindow,
-    ).toBe(100_000)
+      resolveContextBudgetFrame({ contextWindow: 1_000_000, contextLimit: 'full' }).trigger,
+    ).toBe(900_000)
     expect(
       resolveContextBudgetFrame({
         contextWindow: 32_000,
         fixedOverheadTokens: 7_100,
-        contextPercent: 100,
+        contextLimit: 'full',
       }),
     ).toEqual({
       rawWindow: 32_000,
@@ -58,18 +57,54 @@ describe('resolveContextBudgetFrame', () => {
     })
   })
 
+  test('every step a model can hold becomes exactly that request ceiling', () => {
+    for (const step of CONTEXT_LIMIT_STEPS) {
+      const { trigger } = resolveContextBudgetFrame({
+        contextWindow: 20_000_000,
+        contextLimit: step,
+      })
+      expect(trigger).toBeGreaterThanOrEqual(step)
+      expect(trigger).toBe(step)
+    }
+  })
+
+  test('Auto never drops below min(272k, window - reserve)', () => {
+    const windows = [8_000, 32_000, 128_000, 200_000, 262_144, 272_000, 300_000, 302_222, 302_222]
+    for (const window of [...windows, 400_000, 1_000_000, 2_000_000, 10_000_000]) {
+      const { trigger } = resolveContextBudgetFrame({ contextWindow: window })
+      expect(trigger).toBeGreaterThanOrEqual(
+        Math.min(CONTEXT_LIMIT_AUTO_TOKENS, window - scaledReserveTokens(window)),
+      )
+    }
+    // A window under 272k + reserve gets exactly its own window minus the reserve.
+    expect(resolveContextBudgetFrame({ contextWindow: 272_000 }).trigger).toBe(244_800)
+  })
+
+  test('stored values outside the ladder are read safely, never as errors', () => {
+    // Below the ladder → its first step; above → Full; garbage → Auto.
+    expect(resolveContextBudgetFrame({ contextWindow: 1_000_000, contextLimit: 5 }).trigger).toBe(
+      128_000,
+    )
+    expect(
+      resolveContextBudgetFrame({ contextWindow: 1_000_000, contextLimit: 99_000_000 }).trigger,
+    ).toBe(900_000)
+    expect(
+      resolveContextBudgetFrame({ contextWindow: 1_000_000, contextLimit: Number.NaN }).trigger,
+    ).toBe(272_000)
+  })
+
   test('missing catalog metadata uses the conservative fallback', () => {
     const frame = resolveContextBudgetFrame()
     expect(frame.rawWindow).toBe(128_000)
-    expect(frame.effectiveWindow).toBe(89_600)
-    expect(frame.trigger).toBe(73_216)
+    expect(frame.effectiveWindow).toBe(128_000)
+    expect(frame.trigger).toBe(111_616)
     expect(frame.historyBudget).toBe(frame.trigger)
   })
 
   test('invalid overhead never creates negative or fractional budgets', () => {
     expect(
       resolveContextBudgetFrame({ contextWindow: 32_000, fixedOverheadTokens: -1 }),
-    ).toMatchObject({ fixedOverhead: 0, historyBudget: 17_920 })
+    ).toMatchObject({ fixedOverhead: 0, historyBudget: 25_600 })
     expect(
       resolveContextBudgetFrame({ contextWindow: 32_000, fixedOverheadTokens: 99_999.9 }),
     ).toMatchObject({ fixedOverhead: 99_999, historyBudget: 0 })
@@ -93,7 +128,7 @@ describe('LocalContextBudgetExceededError', () => {
       code: LOCAL_CONTEXT_BUDGET_ERROR_CODE,
       reason: 'active_turn_too_large',
       requiredTokens: 30_000,
-      availableTokens: 17_920,
+      availableTokens: 25_600,
       protectedMessageIds: ['active'],
     })
     expect(error.message).not.toContain('Context window exceeded')

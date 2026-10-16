@@ -4,6 +4,7 @@ import {
   resolveContextBudgetFrame,
   scaledReserveTokens,
 } from './context-budget'
+import { windowForCeiling } from '@localixai/agent'
 import {
   DEFAULT_CONTEXT_WINDOW,
   resolveContextWindow,
@@ -16,7 +17,7 @@ import { CHECKPOINT_HIGH_WATER } from './model-view/checkpoint-policy'
 
 /** The whole-request ceiling the checkpoint policy and the in-run prune measure against. */
 const ceilingOf = (effectiveWindow: number) =>
-  resolveContextBudgetFrame({ contextWindow: effectiveWindow, contextPercent: 100 }).trigger
+  resolveContextBudgetFrame({ contextWindow: effectiveWindow, contextLimit: 'full' }).trigger
 
 describe('resolveKeepRecentTokens (H2 — window-scaled keep-recent tail)', () => {
   test('falls back to the flat floor when the window is unknown / non-positive', () => {
@@ -80,17 +81,41 @@ describe('resolveContextWindow — a missing catalog entry is not evidence of pr
 })
 
 /**
- * The BUDGET (what a request must fit under) uses the user's share of the window (default 70%),
+ * The BUDGET (what a request must fit under) uses the person's context limit (Auto = 272k),
  * so a model is never promised history it is not allowed to reach.
  */
 describe('the history budget and the request ceiling', () => {
   const WINDOWS = [8_000, 32_000, 64_000, 128_000, 200_000, 262_144, 400_000, 1_000_000, 2_000_000]
 
-  test('the effective window is the default 70% of the real one', () => {
-    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 })).toBe(700_000)
-    expect(resolveEffectiveContextWindow({ contextLength: 32_000 })).toBe(22_400)
-    expect(resolveEffectiveContextWindow(undefined)).toBe(DEFAULT_CONTEXT_WINDOW * 0.7)
-    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 }, 0, 100)).toBe(1_000_000)
+  test('Auto budgets a 272k ceiling on every window that holds it', () => {
+    const auto = windowForCeiling(272_000)
+    for (const window of [400_000, 1_000_000, 2_000_000, 5_000_000])
+      expect(resolveEffectiveContextWindow({ contextLength: window })).toBe(auto)
+  })
+
+  test('a window that cannot hold 272k keeps all of itself under Auto', () => {
+    expect(resolveEffectiveContextWindow({ contextLength: 32_000 })).toBe(32_000)
+    expect(resolveEffectiveContextWindow(undefined)).toBe(DEFAULT_CONTEXT_WINDOW)
+    expect(resolveEffectiveContextWindow({ contextLength: 200_000 })).toBe(200_000)
+    expect(resolveEffectiveContextWindow({ contextLength: 272_000 })).toBe(272_000)
+  })
+
+  test('a chosen step or Full is honored, never past the model window', () => {
+    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 }, 0, 600_000)).toBe(
+      windowForCeiling(600_000),
+    )
+    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 }, 0, 128_000)).toBe(
+      windowForCeiling(128_000),
+    )
+    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 }, 0, 'full')).toBe(1_000_000)
+    // A step larger than this model (remembered from a bigger one) reads as its whole window.
+    expect(resolveEffectiveContextWindow({ contextLength: 400_000 }, 0, 2_000_000)).toBe(400_000)
+  })
+
+  test('the delegation-depth cap still bounds every choice', () => {
+    expect(resolveEffectiveContextWindow({ contextLength: 400_000 }, 1)).toBe(128_000)
+    expect(resolveEffectiveContextWindow({ contextLength: 1_000_000 }, 1, 'full')).toBe(128_000)
+    expect(resolveEffectiveContextWindow({ contextLength: 400_000 }, 2)).toBe(64_000)
   })
 
   /**
@@ -127,12 +152,14 @@ describe('the history budget and the request ceiling', () => {
   })
 
   test('the protected tail scales with the budget the model actually lives in', () => {
-    // A 200k model at 70% gets 0.15 × 140k = 21000; a 1M model hits the 65536 cap.
+    // A 200k model budgets its whole window: 0.15 × 200k = 30000; a 1M model on Full hits the cap.
     expect(resolveKeepRecentTokens(resolveEffectiveContextWindow({ contextLength: 200_000 }))).toBe(
-      21_000,
+      30_000,
     )
     expect(
-      resolveKeepRecentTokens(resolveEffectiveContextWindow({ contextLength: 1_000_000 })),
+      resolveKeepRecentTokens(
+        resolveEffectiveContextWindow({ contextLength: 1_000_000 }, 0, 'full'),
+      ),
     ).toBe(MODEL_TRIM_KEEP_RECENT_CAP)
     expect(resolveKeepRecentTokens(resolveEffectiveContextWindow({ contextLength: 32_000 }))).toBe(
       MODEL_TRIM_KEEP_RECENT_TOKENS,

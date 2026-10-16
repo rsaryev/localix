@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
+import type { ContextLimit } from '@localixai/agent'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ReasoningEffort } from '../../../model/reasoning'
-import { ContextPercentControl } from '../ContextPercentControl'
+import { ContextLimitControl } from '../ContextLimitControl'
 import { MaxTurnsControl } from '../MaxTurnsControl'
 import { ModelReasoningMenu } from './ModelReasoningMenu'
+import { contextLimitOptions } from './modelSettingChoices'
 
 interface ModelDetailSettingsProps {
   model: CatalogModel
@@ -12,8 +14,11 @@ interface ModelDetailSettingsProps {
     inherited: number
     limit?: number
     onChange: (next: number | undefined) => void
-    /** Share of the context window the run budgets against. */
-    context?: { value: number | undefined; onChange: (next: number | undefined) => void }
+    /** The request ceiling the run budgets against (`context-limit.ts`). */
+    context?: {
+      value: ContextLimit | undefined
+      onChange: (next: ContextLimit | undefined) => void
+    }
   }
   /** The model this target runs on: its level writes the live route, not just a preference. */
   current: boolean
@@ -78,9 +83,9 @@ export function ModelDetailSettings({
           <MaxTurnsControl {...turns} />
         </SettingRow>
       ) : null}
-      {turns?.context ? (
-        <SettingRow label="Context window">
-          <ContextPercentControl {...turns.context} />
+      {turns?.context && contextLimitOptions(model.contextLength).adjustable ? (
+        <SettingRow label="Context limit">
+          <ContextLimitControl contextWindow={model.contextLength} {...turns.context} />
         </SettingRow>
       ) : null}
     </div>
