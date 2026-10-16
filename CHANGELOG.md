@@ -6,7 +6,7 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
-## v0.1.0-beta.3 — draft prepared 2026-10-15
+## v0.1.0-beta.7 — draft prepared 2026-10-15
 
 The first beta published after the repository history was reset. Earlier beta tags and their
 installers were removed; this release replaces them.
