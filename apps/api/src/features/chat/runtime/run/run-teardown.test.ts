@@ -28,12 +28,13 @@ import { teardownRun } from './run-teardown'
 import type { RunEnv } from './types'
 
 function makeEnv() {
+  const settled: string[] = []
   const env = {
-    deps: {},
+    deps: { hitlRegistry: { clearSource: (id: string) => settled.push(id) } },
     hasPendingQueue: () => false,
     drainPendingAndRun: async () => {},
   } as unknown as RunEnv
-  return { env }
+  return { env, settled }
 }
 
 const session = {
@@ -64,7 +65,7 @@ function baseArgs(
 
 describe('teardownRun — continuation / re-entrancy guard', () => {
   test('the OWNING run clears its registry entries', () => {
-    const { env } = makeEnv()
+    const { env, settled } = makeEnv()
     const state = createRuntimeState(testWork())
     const abort = new AbortController()
     state.activeRuns.set(session.id, abort)
@@ -75,11 +76,13 @@ describe('teardownRun — continuation / re-entrancy guard', () => {
 
     expect(state.activeRuns.has(session.id)).toBe(false)
     expect(state.activeRunSessions.has(session.id)).toBe(false)
+    // A stopped run may never emit its tool end: the questions it still holds are settled.
+    expect(settled).toEqual([session.id])
     expect(state.stoppedRuntimeSessionIds.has(session.id)).toBe(false)
   })
 
   test('a continuation that re-registered the session survives an old run teardown', () => {
-    const { env } = makeEnv()
+    const { env, settled } = makeEnv()
     const state = createRuntimeState(testWork())
     const abortA = new AbortController()
     state.activeRuns.set(session.id, abortA)
@@ -91,6 +94,8 @@ describe('teardownRun — continuation / re-entrancy guard', () => {
     state.activeRunSessions.set(session.id, { userId: 'u1', session })
 
     teardownRun(baseArgs(env, state, abortA))
+    // The continuation's questions are its own; the old run must not settle them.
+    expect(settled).toEqual([])
 
     // B's entry must be intact — teardown of A did not clear the continuation.
     expect(state.activeRuns.get(session.id)).toBe(abortB)

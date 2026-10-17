@@ -42,7 +42,9 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       await page.addInitScript((theme) => localStorage.setItem('sandbox_theme', theme), spec.theme)
     const island = spec.scenario.startsWith('island-')
     if (island) {
-      await (await import('./agent-island.mjs')).openIsland(page, uiOrigin, spec.notch)
+      await (
+        await import('./agent-island.mjs')
+      ).openIsland(page, uiOrigin, spec.notch, spec.scenario)
     } else if (spec.firstRun) {
       // No saved UI state, cleared once so a reload inside the scenario keeps what it wrote.
       await page.addInitScript(() => {

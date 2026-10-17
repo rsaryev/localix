@@ -17,9 +17,14 @@ interface AskInteractionViewProps {
   chrome?: HitlFrameChrome
 }
 
+/** The server's fallback title for an untitled request ("ask needs input") names a tool, not a person. */
+const GENERIC_TITLE = /^\S+ needs input$/
+
 /**
- * An ask: a run is waiting on this decision, so it carries the deadline and Deny. A line typed in
- * the composer while it is open answers it too, as a custom answer (server `composer-ask-answer`).
+ * An ask: the agent's question, not a permission. A run waits on it, so it carries the deadline,
+ * but its words are a conversation's: **Send** answers, **Skip** (Esc) tells the agent the person
+ * skipped it, and silence lets the agent continue without an answer. A line typed in the composer
+ * while it is open answers it too, as a custom answer (server `composer-ask-answer`).
  */
 export function AskInteractionView({
   interaction,
@@ -46,18 +51,19 @@ export function AskInteractionView({
   return (
     <HitlInteractionFrame
       chrome={chrome}
-      title={interaction.request.title ?? payload.loading_messages[0] ?? 'Waiting for your input'}
+      title={askTitle(interaction.request.title)}
       detail={
         questions.length > 1
           ? `${form.answeredCount}/${questions.length} answered`
-          : 'The agent needs a decision to continue'
+          : 'The agent needs your answer to continue'
       }
       expiresAt={interaction.request.expiresAt}
+      expiryOutcome="continue"
       progress={questions.length > 1 ? `${form.activeIndex + 1}/${questions.length}` : undefined}
       onDismiss={() => {
         if (!submitting) onDismiss(interaction.request.id)
       }}
-      dismissLabel="Deny"
+      dismissLabel="Skip this question"
       dismissDisabled={submitting}
       onSubmit={form.onEnter}
       keyboardActive={keyboardActive}
@@ -71,7 +77,7 @@ export function AskInteractionView({
             onClick={() => onDismiss(interaction.request.id)}
             className="text-text-soft hover:bg-surface-hover"
           >
-            Deny
+            Skip
             <Kbd>esc</Kbd>
           </Button>
           {questions.length > 1 && (
@@ -92,7 +98,7 @@ export function AskInteractionView({
               disabled={!form.canSubmit || submitting}
               onClick={form.submit}
             >
-              Approve
+              Send
               <Kbd className="border-background/30 text-background/70">↵</Kbd>
             </Button>
           ) : (
@@ -112,4 +118,11 @@ export function AskInteractionView({
       {form.body}
     </HitlInteractionFrame>
   )
+}
+
+/** A specific title the agent gave wins; the tool-named fallback becomes a person's sentence. */
+export function askTitle(title: string | undefined): string {
+  const trimmed = title?.trim()
+  if (!trimmed || GENERIC_TITLE.test(trimmed)) return 'The agent asks'
+  return trimmed.replace(/: \S+ needs input$/, ': the agent asks')
 }

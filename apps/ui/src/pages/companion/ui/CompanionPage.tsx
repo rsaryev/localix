@@ -19,13 +19,16 @@ import { useIslandContributions } from '@/features/companion/model/useIslandCont
 import { useWorkspaceFocus } from '@/features/companion/model/useWorkspaceFocus'
 import {
   companionRoster,
+  islandNotices,
   islandRequests,
   nextRequest,
   pendingRequest,
 } from '@/features/companion/model/roster'
 import { islandStyle } from '@/features/companion/model/geometry'
+import { inDeadProject } from '@/features/companion/model/islandConversation'
 import { IslandAttention } from '@/features/companion/ui/IslandAttention'
 import { IslandToolbar } from '@/features/companion/ui/IslandToolbar'
+import { IslandNotice } from '@/features/companion/ui/IslandNotice'
 const QuickChat = lazy(() =>
   import('@/features/companion/ui/QuickChat').then(({ QuickChat }) => ({ default: QuickChat })),
 )
@@ -43,10 +46,11 @@ export function CompanionPage() {
   const geometry = useIslandGeometry()
   const content = useIslandContentHeight(geometry.notchHeight)
   const requests = islandRequests(roster.waiting)
+  const notices = islandNotices(roster.waiting)
   // A focused workspace already shows its requests; the folded island does not repeat them.
   const workspaceFocused = useWorkspaceFocus()
   // The quick conversation is a session too, so its runs count as work here.
-  const quiet = roster.working.length === 0 && (requests.length === 0 || workspaceFocused)
+  const quiet = roster.working.length === 0 && (roster.waiting.length === 0 || workspaceFocused)
   const island = useIsland(roster.waiting, {
     height: content.height,
     nativePointer: geometry.nativePointer,
@@ -56,12 +60,21 @@ export function CompanionPage() {
   const chat = useQuickChat(island.expanded)
   useIslandOverlays(island.expanded)
   useIslandContributions(chat.session?.projectId)
-  const { prepare } = chat
-  const [actionError, setActionError] = useState<string | null>(null)
+  const { prepare, leave } = chat
+  // A folder removed in the workspace takes its conversation with it, silently, like a dead
+  // project route in the main app; opening the island then lands on the default project.
+  const deadProject = inDeadProject(
+    state.projectsLoaded ? state.projects : null,
+    chat.session?.projectId,
+  )
   useEffect(() => {
-    if (island.expanded)
-      void prepare().catch(() => setActionError('Could not start a conversation.'))
-  }, [island.expanded, prepare])
+    if (deadProject) leave()
+  }, [deadProject, leave])
+  const [actionError, setActionError] = useState<string | null>(null)
+  // Opening validates the remembered conversation; a dropped one lands on a valid conversation.
+  useEffect(() => {
+    if (island.expanded) void prepare().catch(() => {})
+  }, [island.expanded, prepare, chat.sessionId])
   const { dispatch, collapse } = island
   const dropzone = useComposerDropzone({
     onAddFiles: (files) => void chat.files.addFiles(files),
@@ -69,9 +82,9 @@ export function CompanionPage() {
   })
   const pending = pendingRequest(requests, island.selectedKey, chat.session?.id)
   const busy = chat.running || roster.working.length > 0
-  const waiting = Boolean(pending) && (island.expanded || !workspaceFocused)
+  const waiting = (Boolean(pending) || notices.length > 0) && (island.expanded || !workspaceFocused)
   // The folded edge stays soft at rest and brightens while agents work or wait.
-  const status = waiting ? 'Waiting for your answer' : busy ? 'Working' : ''
+  const status = waiting ? 'Waiting for you' : busy ? 'Working' : ''
   useEffect(() => startSettingsBootstrap(loadSettings), [loadSettings])
   useEffect(() => {
     document.documentElement.dataset.companion = 'true'
@@ -93,6 +106,11 @@ export function CompanionPage() {
     })
     return () => cancelAnimationFrame(frame)
   }, [island.expanded])
+  const alert =
+    actionError ||
+    (chat.startFailed ? 'Could not start a conversation.' : null) ||
+    (!state.loading && !state.connected ? 'Reconnecting… Your draft is saved.' : null) ||
+    (state.error ? 'Could not refresh. Showing the last update.' : null)
   const openSession = (id: string) => {
     setActionError(null)
     void openCompanionSession(id).catch(() => setActionError('Could not open the conversation.'))
@@ -182,21 +200,16 @@ export function CompanionPage() {
               onRefresh={state.refresh}
             />
           )}
-          {(state.error || actionError || (!state.loading && !state.connected)) && (
-            <div role="alert" className="flex items-center gap-2 px-2 text-xs text-status-error">
-              <span className="flex-1">
-                {actionError ||
-                  (state.connected
-                    ? 'Could not refresh. Showing the last update.'
-                    : 'Reconnecting… Your draft is saved.')}
-              </span>
+          {alert && (
+            <div role="alert" className="lx-island-alert">
+              <span className="min-w-0 flex-1">{alert}</span>
               <Button
                 variant="ghost"
                 size="xs"
                 onClick={() => {
                   setActionError(null)
                   state.refresh()
-                  void prepare().catch(() => setActionError('Could not start a conversation.'))
+                  if (chat.startFailed || !chat.sessionId) void chat.retry().catch(() => {})
                 }}
               >
                 Retry
@@ -212,6 +225,15 @@ export function CompanionPage() {
                 focused={island.expanded}
                 attentionActive={Boolean(pending)}
                 onOpen={openSession}
+                notice={
+                  notices[0] && (
+                    <IslandNotice
+                      item={notices[0]}
+                      count={notices.length}
+                      onOpen={() => openSession(notices[0]!.sessionId)}
+                    />
+                  )
+                }
                 attention={
                   pending && (
                     <IslandAttention

@@ -126,6 +126,7 @@ and AppKit; the system material follows reduced transparency.
 | Phases, hover and focus          | `features/companion/model/island.ts`, `useIsland.ts`                                                               |
 | Sizes                            | `features/companion/model/geometry.ts`, `companion::geometry` in Rust                                              |
 | Quick conversation               | `useQuickChat.ts` over `createSession`, `useSendMessage`, `useComposerPrefill` and the chat store's stream reducer |
+| Which conversation is shown      | `islandConversation.ts`: restore the remembered one, or land (`reuseEmptyDraft`) when it or its folder is gone     |
 | Selected conversation and draft  | Backend view state ([shared view state](./shared-view-state.md)), `useComposerDraft`                               |
 | Session summaries and attention  | `useCompanionState.ts`, `roster.ts`; `attention/store.ts` stays authoritative                                      |
 | Request forms                    | `HitlAttentionBody` from `features/chat`                                                                           |
@@ -136,6 +137,34 @@ The island renders the full shared `PromptInput` and `MessageList`. Only geometr
 attachments, queueing, failure restoration, the transcript projection and the Markdown renderer are
 shared with the workspace. It streams only its own conversation; other conversations arrive as
 summaries over the shared resource transport.
+
+### Remembered conversation
+
+The island remembers its conversation in backend view state, with a local copy for the first paint.
+Opening the island restores it, or lands on a conversation when nothing is remembered. A landing
+uses the server's empty-draft reuse (`POST /rpc/sessions` with `reuseEmptyDraft: true`), so repeated
+opens converge on one untouched chat of the default project instead of minting drafts.
+
+A remembered conversation that no longer exists (`session_not_found` on restore or refresh, or a
+`session.deleted` event) is forgotten everywhere it is stored, and the island lands again. A
+conversation whose folder was removed is left the same way once the project roster loads, matching
+the workspace's dead-project route. **New session** and the folder picker fall back to the default
+project when the chosen folder is gone, and to the server's default agent when the default assistant
+is unavailable. None of these show an error: nothing the person did is wrong. Only a landing that
+genuinely fails shows **Could not start a conversation.**, and its **Retry** runs the
+restore-or-land step again rather than only refreshing summaries.
+
+### Waiting items
+
+A blocking HITL request (`interaction`) is shown inline with its real controls and hides the
+composer until it is answered; `ask` always blocks, so there is no way to defer a question from the
+island. The ask card speaks as a question, not a permission: **Send** answers, **Skip** (Esc)
+returns "the person skipped this question" to the agent, and the deadline reads "Continues without
+your answer". A run that stops while a card is open settles it (`clearSource` at run teardown), and
+dismissing a card whose run already ended succeeds instead of failing. A card assigned to the person
+(`mention`, from `@human`) or a plan waiting for review does not block a run, so the island keeps
+the composer and shows one compact line with **Open chat**. Both kinds light the folded edge; only
+an interaction opens the island by itself.
 
 ## Patterns
 

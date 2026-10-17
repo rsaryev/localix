@@ -5,6 +5,7 @@ import type { AgentStreamEvent, UiSession } from '@/shared/api/contracts'
 import {
   applyCompanionEvent,
   companionRoster,
+  islandNotices,
   islandRequests,
   nextRequest,
   pendingRequest,
@@ -122,5 +123,17 @@ describe('island requests', () => {
     expect(nextRequest(requests, 'approval')?.key).toBe('question')
     expect(nextRequest(requests, 'question')?.key).toBe('approval')
     expect(nextRequest(requests, 'resolved-elsewhere')?.key).toBe('approval')
+  })
+})
+
+describe('island notices', () => {
+  test('an assigned card or plan is a notice; only a blocking interaction is a request', () => {
+    const waiting = [
+      request('hitl:1', 's1', 'interaction'),
+      request('mention:s2:m', 's2', 'mention'),
+      request('plan:s3', 's3', 'plan'),
+    ]
+    expect(islandRequests(waiting).map((item) => item.key)).toEqual(['hitl:1'])
+    expect(islandNotices(waiting).map((item) => item.key)).toEqual(['mention:s2:m', 'plan:s3'])
   })
 })

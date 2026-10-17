@@ -22,7 +22,10 @@ export function handleHitlRequest(ctx: TurnEventContext, event: EventOf<'human_i
   // A second `Date.now()` for the frame could drift from the time this run believes it asked.
   const requestedAt = Date.now()
   state.hitlStartTimes.set(event.toolCallId, requestedAt)
-  const requestTitle = request.title?.trim() || `${event.toolName} needs input`
+  // A question is a person's sentence, not a tool name ("ask needs input" read like a permission).
+  const requestTitle =
+    request.title?.trim() ||
+    (request.kind === 'ask' ? 'The agent asks' : `${event.toolName} needs input`)
   const toolName =
     session.sessionKind === 'subagent' ? `sub-agent · ${event.toolName}` : event.toolName
   const surfacedRequest =

@@ -80,6 +80,8 @@ export function teardownRun({
     activeRunSessions.delete(session.id)
     stoppedRuntimeSessionIds.delete(session.id)
     runtimeState.cascadeStoppedSessionIds.delete(session.id)
+    // A stopped run may never emit the tool end that clears its card; settle what it still holds.
+    env.deps.hitlRegistry.clearSource(session.id)
   }
   // Clean up this session's spilled-attachment dir when the run truly ends (no
   // continuation re-registered the session). The dir is session-scoped

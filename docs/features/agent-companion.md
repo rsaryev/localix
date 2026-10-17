@@ -36,6 +36,9 @@ live reply with the same Markdown renderer as the main chat.
 - Drag files onto the island to attach them.
 - Your draft and the selected conversation are kept on the backend. Folding keeps both, and the main
   app sees the same draft. If both places edit it at once, the island asks which text to keep.
+- If the conversation the island was showing is deleted, or its folder is removed, the island
+  quietly opens an empty conversation in your default workspace instead, reusing one that is already
+  empty. If that fails too, the island shows **Could not start a conversation.** with **Retry**.
 
 ### Examples
 
@@ -58,6 +61,11 @@ motion keeps it still.
   open when the pointer leaves.
 - **Next request** steps through several waiting requests. **Open chat** opens the conversation that
   asked.
+- A question from an agent keeps the run waiting until you answer it, for up to five minutes, then
+  the agent continues without it. Choose an option or type an answer and press **Send**, press
+  **Skip** (Esc) to let the agent go on without an answer, or choose **Open chat**.
+- A card assigned to you (`@human`) or a plan waiting for review appears as one line above the
+  composer with **Open chat**. It does not open the island by itself.
 - Folding never answers, dismisses or snoozes a request. After you fold, the same request stays
   quiet until you hover or click.
 

@@ -13,6 +13,7 @@ import { useIslandInputFocus } from '../model/useIslandInputFocus'
 export function QuickChat({
   chat,
   attention,
+  notice,
   attentionActive,
   dropzone,
   focused,
@@ -20,6 +21,7 @@ export function QuickChat({
 }: {
   chat: ReturnType<typeof useQuickChat>
   attention: ReactNode
+  notice?: ReactNode
   attentionActive: boolean
   dropzone: ComposerDropzone
   focused: boolean
@@ -50,11 +52,12 @@ export function QuickChat({
         </WorkItemSessionProvider>
       )}
       {chat.error && (
-        <p role="alert" className="px-2 text-xs text-status-error">
+        <p role="alert" className="lx-island-alert">
           {chat.error}
         </p>
       )}
       {attention}
+      {!attentionActive && notice}
       <div ref={chat.composerRef} hidden={attentionActive}>
         <PromptInput
           layout="embedded"

@@ -21,7 +21,7 @@ const setInputValue = (input: HTMLInputElement, value: string) => {
 }
 
 describe('HITL control contracts', () => {
-  test('an ask offers no Answer later: Esc and Deny both deny it', async () => {
+  test('an ask offers no Answer later: Esc and Skip both skip it', async () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { AskInteractionView } = await import('./AskInteractionView')
@@ -73,11 +73,26 @@ describe('HITL control contracts', () => {
       })
       expect(denied).toEqual(['ask-later'])
       expect(answered).toEqual([])
-      const deny = [...host.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
-        button.textContent?.trim().startsWith('Deny'),
+      const skip = [...host.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
+        button.textContent?.trim().startsWith('Skip'),
       )
-      await React.act(async () => deny?.click())
+      await React.act(async () => skip?.click())
       expect(denied).toEqual(['ask-later', 'ask-later'])
+      // A question, not a permission: no Deny/Approve, and the untitled fallback reads as a person.
+      expect(host.textContent).not.toContain('Deny')
+      expect(host.textContent).not.toContain('Approve')
+      expect(host.textContent).toContain('The agent asks')
+      expect(host.textContent).toContain('The agent needs your answer to continue')
+      const send = [...host.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
+        button.textContent?.trim().startsWith('Send'),
+      )
+      // Nothing chosen or typed yet (no recommended option): Send waits for an answer.
+      expect(send?.disabled).toBe(true)
+      await React.act(async () => {
+        const custom = host.querySelector<HTMLInputElement>('input')!
+        setInputValue(custom, 'Go fast')
+      })
+      expect(send?.disabled).toBe(false)
     } finally {
       await React.act(async () => root.unmount())
       host.remove()
@@ -147,10 +162,9 @@ describe('HITL control contracts', () => {
 
       await act(async () => fast?.click())
       expect(fast?.getAttribute('aria-pressed')).toBe('true')
-      // `Approve`, the same word every other card's affirmative carries — an ask used to end
-      // in `Continue`, which named the navigation rather than the answer.
+      // `Send`: an ask is answered, not approved — permission cards keep Approve.
       const submit = [...host.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
-        button.textContent?.trim().startsWith('Approve'),
+        button.textContent?.trim().startsWith('Send'),
       )
       expect(submit?.getAttribute('data-variant')).toBe('mono')
       await act(async () => submit?.click())

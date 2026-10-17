@@ -2,17 +2,18 @@
 export const capturePlan = {
   'agents/island-quick-chat': {
     guide: 'features/agent-companion.md',
-    purpose: 'An immediately focused quick request retains its draft through folding and HITL',
+    purpose:
+      'An immediately focused quick request retains its draft and attachment state through folding',
     scenario: 'island-quick-chat',
   },
   'agents/island-expanded': {
     guide: 'features/agent-companion.md',
-    purpose: 'The island opens a content-sized composer with a contextual shared-attention action',
+    purpose: 'With nothing waiting, the island opens a content-sized, focused composer',
     scenario: 'island-expanded',
   },
   'agents/island-question': {
     guide: 'features/agent-companion.md',
-    purpose: 'A queued question stays pending when folded and reopens inline without a dialog',
+    purpose: 'A live agent question blocks its run, stays pending when folded and reopens inline',
     scenario: 'island-question',
   },
   'agents/island-quick-chat-light': {

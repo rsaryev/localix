@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createHumanInLoopController } from '@localixai/agent/agents'
+import { createHumanInLoopController, HumanInLoopDismissedError } from '@localixai/agent/agents'
 import {
   askToolInputSchema,
   classifyAsk,
@@ -7,6 +7,7 @@ import {
   normalizeAskAnswers,
   prepareAskArguments,
   NO_WATCHER_TEXT,
+  SKIPPED_ASK_TEXT,
   UNANSWERED_ASK_TEXT,
   type AskToolResponse,
 } from './ask'
@@ -126,6 +127,26 @@ describe('createAskTool', () => {
     // The recommended option is nowhere in the result: nothing was chosen on anyone's behalf.
     expect(result.content).not.toContain('Careful')
     expect(humanInLoop.listPending()).toHaveLength(0)
+  })
+})
+
+describe('skipping a question', () => {
+  test('Skip tells the agent the person skipped it — not an error, not a denial', async () => {
+    const humanInLoop = createHumanInLoopController()
+    const pending = createAskTool().execute(
+      'call_skip',
+      { questions: [{ id: 'scope', question: 'Which scope?', options: [{ label: 'All' }] }] },
+      undefined,
+      undefined,
+      { humanInLoop },
+    )
+    await Promise.resolve()
+    expect(humanInLoop.reject('call_skip', new HumanInLoopDismissedError())).toBe(true)
+    const result = await pending
+    expect(result.isError).toBeUndefined()
+    expect(result.content).toBe(SKIPPED_ASK_TEXT)
+    expect(result.content).toContain('skipped this question')
+    expect(result.details).toMatchObject({ skipped: true })
   })
 })
 

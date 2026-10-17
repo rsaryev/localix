@@ -252,3 +252,27 @@ html:not([data-desktop='true'][data-os='mac']) .lx-island-material {
     animation-play-state: paused;
   }
 }
+
+/* One compact line: the message, then its working action. */
+.lx-island-alert {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 2);
+  min-height: var(--chrome-control-md);
+  padding-inline: calc(var(--spacing) * 2) calc(var(--spacing) * 1);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--status-error), transparent 90%);
+  color: var(--status-error);
+  font-size: var(--text-xs);
+}
+.lx-island-notice {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 2);
+  min-height: var(--chrome-control-md);
+  padding-inline: calc(var(--spacing) * 2) calc(var(--spacing) * 1);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-hover);
+  font-size: var(--text-xs);
+}

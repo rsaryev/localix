@@ -49,7 +49,9 @@ export function AskToolPart({ item }: { item: ToolCallItem }) {
   const hasError = hasItemError(item)
   // An expired question is nobody's error: it renders neutral, with "No one answered…".
   const expired = Boolean(output?.expired)
-  const unanswered = expired || isItemDeclined(item)
+  // Skip is a choice the person made, not a failure: also neutral.
+  const skipped = Boolean((output as { skipped?: boolean } | undefined)?.skipped)
+  const unanswered = expired || skipped || isItemDeclined(item)
   const isDismissed = item.error?.kind === 'dismissed' || item.error?.kind === 'aborted'
 
   const questions = input?.questions ?? output?.request?.payload.questions ?? []
@@ -61,6 +63,7 @@ export function AskToolPart({ item }: { item: ToolCallItem }) {
   const subtitle = (() => {
     if (isLoading) return input?.loading_messages?.[0] ?? 'Waiting for your input…'
     if (expired) return 'No one answered in 5 minutes — the agent went on'
+    if (skipped) return 'Skipped — the agent went on without an answer'
     if (isDismissed) return 'Dismissed — no answer sent'
     if (hasError || unanswered)
       return item.error?.personMessage ?? item.error?.userMessage ?? 'An error occurred'

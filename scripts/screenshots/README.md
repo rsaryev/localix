@@ -4,7 +4,7 @@ Run these Playwright tests deliberately. They are excluded from Bun's normal dis
 part of CI. Each scenario performs real UI actions, checks the result, and only then writes a native
 4800×3000 PNG. No DOM replacement, CSS recoloring, pixel retouching, real provider credentials or
 model calls are needed. Composer scenarios seed an explicitly fake provider key in the isolated
-database to exercise the configured composer; they never send it to a provider.
+database to exercise the configured composer; it never reaches a provider.
 
 ## Start an isolated demo
 
@@ -20,10 +20,9 @@ origins. Never point the capture runner at the personal application on port 5050
 bun run screenshots:seed
 ```
 
-Restart the capture workspace after the first seed so the backend restores the durable demo
-question. Seeding is repeatable: it keeps one project, conversation, resume, database and component
-board. The runtime verifier compares the temporary database identity with both its descriptor and
-the running API, and refuses another database. Data stays outside the repository.
+Seeding is repeatable: it keeps one project, conversation, resume, database and component board. The
+runtime verifier compares the temporary database identity with both its descriptor and the running
+API, and refuses another database. Data stays outside the repository.
 
 A failed seed can leave partial fixtures. In particular, the disposable Git repository inherits
 commit signing and its initial commit can time out. Rerunning skips initialization when `.git`
@@ -39,6 +38,27 @@ bunx playwright install chromium
 
 Alternatively, set `CAPTURE_BROWSER` to an installed Chrome executable. `LOCALIX_CAPTURE_ROOT` can
 select another dedicated `localix-…capture…` directory beneath the system temporary directory.
+
+## Live agent question
+
+The `agents/island-question*` scenarios need a run that genuinely blocks on the agent's `ask` tool.
+Start the isolated API with the scripted provider preload instead of the plain command printed by
+`screenshots:prepare`:
+
+```bash
+TURBO_ENV_MODE=loose BUN_OPTIONS="--preload=$PWD/scripts/screenshots/scripted-provider.mjs" \
+  LOCALIX_DB_FILE=<capture-root>/localix.db LOCALIX_DEV_API_PORT=5151 LOCALIX_DEV_UI_PORT=5150 \
+  VITE_DEV_HOST=127.0.0.1 bun scripts/dev-servers.mjs
+```
+
+`TURBO_ENV_MODE=loose` lets Turborepo pass `BUN_OPTIONS` to the API; use the `--preload=` form,
+because a separate argument breaks `bun install` and `bun x`. The preload answers only requests that
+carry the seeded placeholder key, with a scripted OpenAI Responses stream that calls `ask` once per
+user turn and then replies with a short text. Every other request uses the real `fetch`. The
+scenario sends a message to the `Island question fixture` conversation and waits for the live
+request; other island scenarios dismiss pending requests through `/rpc/tools/interact` first. The
+scenario refuses to send anything unless the running API process left the preload's marker beside
+the capture database. The run is real; the model reply is scripted.
 
 ## Demo HTTP responses
 

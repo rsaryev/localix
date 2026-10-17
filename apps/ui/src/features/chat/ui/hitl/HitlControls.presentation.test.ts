@@ -39,15 +39,16 @@ describe('HITL control presentation', () => {
  * card, and the words are the whole interface at the moment a decision is made.
  */
 describe('every decision card answers in the same words', () => {
-  const VIEWS = [
-    './AskInteractionView.tsx',
+  const PERMISSIONS = [
     './SecretInteractionView.tsx',
     './ConfirmInteractionView.tsx',
     './ConfigChangeInteractionView.tsx',
   ]
 
-  test('refusing is Deny and agreeing is Approve, everywhere', () => {
-    for (const file of VIEWS) {
+  const VIEWS = ['./AskInteractionView.tsx', ...PERMISSIONS]
+
+  test('refusing is Deny and agreeing is Approve on every permission card', () => {
+    for (const file of PERMISSIONS) {
       const source = read(file)
       expect({ file, deny: source.includes('>\n            Deny') }).toEqual({ file, deny: true })
       expect({ file, approve: source.includes('Approve') }).toEqual({ file, approve: true })
@@ -87,5 +88,15 @@ describe('every decision card answers in the same words', () => {
     // `remaining` reads "in 4m 12s" by itself — a literal "in" before it doubled the word.
     expect(frame).toContain('Auto-deny {remaining}')
     expect(frame).not.toContain('Auto-deny in {remaining}')
+    expect(frame).toContain('Continues without your answer {remaining}')
+  })
+
+  test('a question is answered, not approved: Send and Skip, and silence lets the agent go on', () => {
+    const ask = read('./AskInteractionView.tsx')
+    expect(ask).toContain('>\n            Skip')
+    expect(ask).toContain('Send')
+    expect(ask).not.toContain('Approve')
+    expect(ask).not.toContain('>\n            Deny')
+    expect(ask).toContain('expiryOutcome="continue"')
   })
 })

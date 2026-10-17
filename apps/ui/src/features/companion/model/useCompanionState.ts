@@ -16,6 +16,7 @@ import { applyCompanionEvent } from './roster'
 export function useCompanionState() {
   const [sessions, setSessions] = useState<readonly UiSession[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [projectsLoaded, setProjectsLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [connected, setConnected] = useState(eventSocket.isConnected)
@@ -45,7 +46,10 @@ export function useCompanionState() {
       if (roster.status === 'fulfilled') {
         update(reconcileSessionListAfterReconnect(before, held.current, roster.value))
       }
-      if (projectList.status === 'fulfilled') setProjects(projectList.value)
+      if (projectList.status === 'fulfilled') {
+        setProjects(projectList.value)
+        setProjectsLoaded(true)
+      }
       setError(
         roster.status === 'rejected' ||
           projectList.status === 'rejected' ||
@@ -77,7 +81,10 @@ export function useCompanionState() {
       }),
       resourceSync.register('projects', {
         read: (signal) => backendClient.listProjects(signal),
-        apply: setProjects,
+        apply: (next) => {
+          setProjects(next)
+          setProjectsLoaded(true)
+        },
         onError: () => setError(true),
       }),
       startResourceSyncTransport(),
@@ -97,5 +104,5 @@ export function useCompanionState() {
     }
   }, [])
 
-  return { sessions, projects, items, loading, error, connected, refresh }
+  return { sessions, projects, projectsLoaded, items, loading, error, connected, refresh }
 }

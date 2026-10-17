@@ -21,10 +21,35 @@ import { sessionRoute } from '@/shared/api/contracts'
 import { findCatalogModelForConnection } from '@localixai/agent/catalog'
 import { reconcileAfterReconnect } from '@/features/chat/model/reconnect-reconcile'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { isAgentUnavailable } from '@/features/chat/model/newChatAgent'
+import { isMissingSession, landIn, restoreOrLand } from './islandConversation'
 
 export const ISLAND_SESSION_KEY = 'localix_companion_session_v1'
 /** The backend view-state record that both the island and the workspace read. */
 const QUICK_CHAT = { kind: 'surface', key: 'quick-chat' } as const
+
+/**
+ * One creation pipeline: `landing` reuses an untouched draft, otherwise a new chat. Quick requests
+ * go to the default assistant; when that agent is withdrawn or disabled the server picks its own
+ * default instead of leaving the island without a conversation.
+ */
+const createIn = async (projectId: string | null, landing: boolean) => {
+  const store = useChatStore.getState()
+  try {
+    return await store.createSession(
+      undefined,
+      scopedNewConversation(projectId, { kind: 'default' }, landing),
+    )
+  } catch (error) {
+    if (!isAgentUnavailable(error)) throw error
+    const session = await backendClient.createSession({
+      projectId,
+      ...(landing ? { reuseEmptyDraft: true } : {}),
+    })
+    useChatStore.getState()._replaceSession(session)
+    return session
+  }
+}
 
 /** A surface of the existing chat pipeline, not another runner or notification channel. */
 export function useQuickChat(focused = true) {
@@ -43,6 +68,10 @@ export function useQuickChat(focused = true) {
   }, [sessionId, selection.loaded])
   const session = useChatStore((state) => (sessionId ? findSessionInState(state, sessionId) : null))
   const [error, setError] = useState<string | null>(null)
+  // Landing failed: nothing to show. The island offers Retry for exactly this.
+  const [startFailed, setStartFailed] = useState(false)
+  // Bumped by Retry so the refresh of the current conversation runs again.
+  const [attempt, setAttempt] = useState(0)
   const [draft, setDraft, draftState] = useComposerDraft(sessionId)
   const composerRef = useRef<HTMLDivElement>(null)
   const creation = useRef<Promise<
@@ -67,29 +96,40 @@ export function useQuickChat(focused = true) {
     saveString(ISLAND_SESSION_KEY, id)
     viewStateStore.set(QUICK_CHAT, { sessionId: id })
   }, [])
+  // A remembered conversation the server no longer has is dropped silently, everywhere.
+  const forget = useCallback((id: string) => {
+    if (legacy.current === id) legacy.current = null
+    if (loadString(ISLAND_SESSION_KEY) === id) saveString(ISLAND_SESSION_KEY, null)
+    if (target.current !== id) return
+    target.current = null
+    viewStateStore.set(QUICK_CHAT, { sessionId: null })
+  }, [])
   const prepare = useCallback(() => {
     if (creation.current) return creation.current
     creation.current = (async () => {
       const selected = await viewStateStore.ready(QUICK_CHAT)
       let id = selected.value && 'sessionId' in selected.value ? selected.value.sessionId : null
       if (!id && selected.revision === 0) id = legacy.current
-      if (id) {
-        const restored =
-          findSessionInState(useChatStore.getState(), id) ?? (await backendClient.getSession(id))
-        useChatStore.getState()._replaceSession(restored)
-        if (selected.revision === 0) selectSession(id)
-        return restored
-      }
-      const created = await useChatStore
-        .getState()
-        .createSession(undefined, scopedNewConversation(null, { kind: 'default' }))
-      if (created) selectSession(created.id)
-      return created
-    })().finally(() => {
-      creation.current = null
-    })
+      const { session, restored } = await restoreOrLand(id, {
+        find: (sessionId) => findSessionInState(useChatStore.getState(), sessionId),
+        fetch: (sessionId) => backendClient.getSession(sessionId),
+        land: (projectId) => createIn(projectId, true),
+        forget,
+      })
+      if (session && restored) useChatStore.getState()._replaceSession(session)
+      if (session && (!restored || selected.revision === 0)) selectSession(session.id)
+      setStartFailed(false)
+      return session
+    })()
+      .catch((cause: unknown) => {
+        setStartFailed(true)
+        throw cause
+      })
+      .finally(() => {
+        creation.current = null
+      })
     return creation.current
-  }, [selectSession])
+  }, [selectSession, forget])
   const forkSession = useForkSession(sessionId, selectSession)
   const agentOpts = useMemo(() => ({ model, reasoningEffort }), [model, reasoningEffort])
   const send = useSendMessage({
@@ -127,10 +167,16 @@ export function useQuickChat(focused = true) {
           applySession: (detail) => useChatStore.getState()._replaceSession(detail),
         })
       } catch (cause) {
-        if (alive) setError(errorMessage(cause, 'Could not refresh this task.'))
+        if (!alive) return
+        if (isMissingSession(cause)) forget(sessionId)
+        else setError(errorMessage(cause, 'Could not refresh this conversation.'))
       }
     }
     const off = eventSocket.onSessionEvent((id, event) => {
+      if (event.type === 'session.deleted' && event.sessionIds.includes(sessionId)) {
+        forget(sessionId)
+        return
+      }
       if (id !== sessionId) return
       const current = findSessionInState(useChatStore.getState(), id)
       if (current && needsSessionResync(current, event)) void recover()
@@ -146,7 +192,7 @@ export function useQuickChat(focused = true) {
       off()
       reconnect()
     }
-  }, [sessionId])
+  }, [sessionId, forget, attempt])
 
   const reset = () => {
     if (running || creation.current) return
@@ -154,9 +200,7 @@ export function useQuickChat(focused = true) {
   }
   const startInProject = async (projectId: string | null) => {
     if (running || creation.current) return
-    creation.current = useChatStore
-      .getState()
-      .createSession(undefined, scopedNewConversation(projectId, { kind: 'default' }))
+    creation.current = landIn(projectId, (scope) => createIn(scope, false))
     try {
       const created = await creation.current
       if (created) {
@@ -179,9 +223,24 @@ export function useQuickChat(focused = true) {
       selectSession(id)
       setError(null)
     } catch (cause) {
-      setError(errorMessage(cause, 'Could not open the conversation.'))
+      setError(
+        isMissingSession(cause)
+          ? 'That conversation was deleted.'
+          : errorMessage(cause, 'Could not open the conversation.'),
+      )
     }
   }
+  /** Leave the current conversation (its folder was removed); the island lands anew. */
+  const leave = useCallback(() => {
+    if (target.current) forget(target.current)
+  }, [forget])
+  /** Retry what failed: restore or land the conversation and refresh it again. */
+  const retry = useCallback(() => {
+    setError(null)
+    setStartFailed(false)
+    setAttempt((value) => value + 1)
+    return prepare()
+  }, [prepare])
   return {
     files,
     scrolling,
@@ -190,12 +249,15 @@ export function useQuickChat(focused = true) {
     session,
     running,
     error,
+    startFailed,
     send,
     stop: runtime.stopGeneration,
     reset,
     startInProject,
     resume,
     prepare,
+    retry,
+    leave,
     draft,
     setDraft,
     composerRef,

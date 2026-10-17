@@ -53,10 +53,37 @@ describe('createHitlRegistry', () => {
     await p
   })
 
-  test('respond / dismiss on an unknown request throws', () => {
-    const r = createHitlRegistry()
+  test('respond on an unknown request throws; dismissing it settles the stale card instead', () => {
+    const ended: unknown[] = []
+    const r = createHitlRegistry({
+      lifecycle: { raised: () => {}, ended: (ending) => ended.push(ending) },
+    })
     expect(() => r.respond('nope', {})).toThrow('no longer active')
-    expect(() => r.dismiss('nope')).toThrow('no longer active')
+    expect(() => r.dismiss('nope', 'alice')).not.toThrow()
+    expect(ended).toEqual([{ userId: 'alice', requestId: 'nope', reason: 'dismissed' }])
+  })
+
+  test('a stopped run settles the questions it still holds, and only its own', async () => {
+    const ended: { requestId: string; reason: string }[] = []
+    const r = createHitlRegistry({
+      lifecycle: { raised: () => {}, ended: (ending) => ended.push(ending) },
+    })
+    const mine = r.controller.request(req('ask-1'))
+    const other = r.controller.request(req('ask-2'))
+    mine.catch(() => {})
+    other.catch(() => {})
+    r.trackRequest('s1', 'm', 'ask-1', 'ask', req('ask-1'), 'alice')
+    r.trackRequest('s2', 'm', 'ask-2', 'ask', req('ask-2'), 'alice')
+    r.clearSource('s1')
+    expect(ended.map((ending) => [ending.requestId, ending.reason])).toEqual([
+      ['ask-1', 'cancelled'],
+    ])
+    expect(r.getPendingInteraction('s1')).toBeNull()
+    expect(r.getPendingInteraction('s2')).not.toBeNull()
+    await expect(mine).rejects.toBeDefined()
+    // A late dismissal from a client that still shows it is not an error.
+    expect(() => r.dismiss('ask-1', 'alice')).not.toThrow()
+    r.dismiss('ask-2', 'alice')
   })
 
   test('dismiss rejects the pending request and clears its meta', () => {

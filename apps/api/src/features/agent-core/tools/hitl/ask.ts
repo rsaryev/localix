@@ -89,6 +89,8 @@ export interface AskToolDetails {
   response?: AskToolResponse
   answers?: AskToolAnswer[]
   expired?: boolean
+  /** The person chose Skip; renders neutral like an expired card. */
+  skipped?: boolean
 }
 
 /**
@@ -96,6 +98,13 @@ export interface AskToolDetails {
  * error either — the person was away — so the model reads a plain instruction to go on.
  */
 export const UNANSWERED_ASK_TEXT = `The human did not answer within ${HITL_DECISION_MS / 60_000} minutes. Continue with your best assumption and state it in your reply; ask again later only if it still blocks the work.`
+
+/**
+ * The person chose **Skip**: a decision, not a failure and not a permission refusal. The model
+ * reads that it should go on without this answer rather than retrying the same question.
+ */
+export const SKIPPED_ASK_TEXT =
+  'The human skipped this question. Continue with your best assumption and state it in your reply; do not ask the same question again unless it truly blocks the work.'
 
 /**
  * Keep only what the questions allow: chosen values that are one of the question's options, one
@@ -198,6 +207,12 @@ export function createAskTool(): AgentTool<AskToolInput, AskToolDetails> {
       try {
         result = await context.humanInLoop.request<AskToolRequest, AskToolResponse>(request, signal)
       } catch (error) {
+        if (
+          error instanceof Error &&
+          error.name === 'HumanInLoopDismissedError' &&
+          !signal?.aborted
+        )
+          return { content: SKIPPED_ASK_TEXT, details: { request, skipped: true } }
         if (!isHitlTimeout(error)) throw error
         return { content: UNANSWERED_ASK_TEXT, details: { request, expired: true } }
       }

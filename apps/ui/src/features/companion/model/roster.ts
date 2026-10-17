@@ -56,6 +56,11 @@ export function islandRequests(waiting: readonly AttentionItem[]) {
   return waiting.filter(isRequest)
 }
 
+/** Waiting items that do not block a run (an assigned card, a plan): a notice, not a card. */
+export function islandNotices(waiting: readonly AttentionItem[]) {
+  return waiting.filter((item) => !isRequest(item))
+}
+
 /** The selected request first, then the quick chat's own, then the oldest waiting request. */
 export function pendingRequest(
   requests: readonly AttentionItem[],

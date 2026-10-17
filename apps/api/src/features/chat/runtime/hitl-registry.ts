@@ -124,6 +124,19 @@ export function createHitlRegistry(opts: HitlRegistryOptions = {}) {
     return interactions
   }
 
+  const clearRequest = (requestId: string) => {
+    const meta = metaByRequestId.get(requestId)
+    const expiresAt = shownByRequestId.get(requestId)?.expiresAt
+    metaByRequestId.delete(requestId)
+    shownByRequestId.delete(requestId)
+    // Still recorded means nobody answered or dismissed it (both delete the record first).
+    if (meta) {
+      const reason = expiresAt !== undefined && expiresAt <= Date.now() ? 'expired' : 'cancelled'
+      opts.onClearedUnanswered?.({ requestId, meta, reason })
+      opts.lifecycle?.ended({ userId: meta.userId, requestId, reason })
+    }
+  }
+
   return {
     controller,
 
@@ -174,16 +187,18 @@ export function createHitlRegistry(opts: HitlRegistryOptions = {}) {
       return shown
     },
 
-    clearRequest(requestId: string) {
-      const meta = metaByRequestId.get(requestId)
-      const expiresAt = shownByRequestId.get(requestId)?.expiresAt
-      metaByRequestId.delete(requestId)
-      shownByRequestId.delete(requestId)
-      // Still recorded means nobody answered or dismissed it (both delete the record first).
-      if (meta) {
-        const reason = expiresAt !== undefined && expiresAt <= Date.now() ? 'expired' : 'cancelled'
-        opts.onClearedUnanswered?.({ requestId, meta, reason })
-        opts.lifecycle?.ended({ userId: meta.userId, requestId, reason })
+    clearRequest,
+
+    /**
+     * Settle every request a finished run still holds. A stopped or failed run can end without the
+     * tool-end event that normally clears its card, which left a question in attention that nobody
+     * could answer (dismissing it answered "no longer active"). The run is over, so they are moot.
+     */
+    clearSource(sourceSessionId: string) {
+      for (const [requestId, meta] of metaByRequestId) {
+        if (meta.sourceSessionId !== sourceSessionId) continue
+        controller.reject(requestId, new HumanInLoopDismissedError())
+        clearRequest(requestId)
       }
     },
 
@@ -234,7 +249,11 @@ export function createHitlRegistry(opts: HitlRegistryOptions = {}) {
       }
       const accepted = controller.reject(requestId, new HumanInLoopDismissedError())
       if (!accepted) {
-        throw new ApiError(409, 'hitl_request_not_active', 'HITL request is no longer active')
+        // Already over (its run stopped or it expired). Dismissing is what the person wanted, so
+        // settle whatever still shows it — the caller's own attention item — instead of failing.
+        if (metaByRequestId.has(requestId)) clearRequest(requestId)
+        else opts.lifecycle?.ended({ userId: callerUserId, requestId, reason: 'dismissed' })
+        return
       }
       const userId = metaByRequestId.get(requestId)?.userId
       // Both maps, always together: they are one record in two halves, and leaving the shielded

@@ -58,9 +58,14 @@ interface HitlInteractionFrameProps {
    * keyboard ownership, the scroll boundary and the pinned footer that live here.
    */
   chrome?: HitlFrameChrome
+  /** What happens at the deadline; worded on the card. Defaults to `deny`. */
+  expiryOutcome?: HitlExpiryOutcome
 }
 
 export type HitlFrameChrome = 'inline' | 'dialog' | 'compact'
+
+/** What silence does: a permission is denied; a question lets the agent continue without it. */
+export type HitlExpiryOutcome = 'deny' | 'continue'
 
 /**
  * The unanswered outcome, said plainly and identically everywhere.
@@ -69,7 +74,7 @@ export type HitlFrameChrome = 'inline' | 'dialog' | 'compact'
  * no agent. The one card that used to guess — `ask` picked its recommended option — is what
  * made that sentence worth printing.
  */
-function DeadlineNote({ expiresAt }: { expiresAt: number }) {
+function DeadlineNote({ expiresAt, outcome }: { expiresAt: number; outcome: HitlExpiryOutcome }) {
   // `remaining` already carries its preposition ("in 4m 12s", or "now" once elapsed); writing
   // another "in" before it rendered "in in 4m 12s" on every card. Two words, not a clause:
   // "No answer in 4m 12s — denied" was wide enough to push Approve onto a second line in the
@@ -77,10 +82,18 @@ function DeadlineNote({ expiresAt }: { expiresAt: number }) {
   const remaining = useCountdownMs(expiresAt, { whenElapsed: 'now' })
   return (
     <span
-      title="With no answer, the request is denied"
+      title={
+        outcome === 'continue'
+          ? 'With no answer, the agent continues without it'
+          : 'With no answer, the request is denied'
+      }
       className="mr-auto shrink-0 tabular-nums text-2xs text-text-faint"
     >
-      Auto-deny {remaining}
+      {outcome === 'continue' ? (
+        <>Continues without your answer {remaining}</>
+      ) : (
+        <>Auto-deny {remaining}</>
+      )}
     </span>
   )
 }
@@ -129,6 +142,7 @@ export function HitlInteractionFrame({
   rootRef,
   maxHeightClass,
   chrome = 'inline',
+  expiryOutcome = 'deny',
 }: HitlInteractionFrameProps) {
   // A modal owns the viewport it opens over, so the fold sits lower there than in a chat card
   // sharing the transcript with everything above it.
@@ -262,7 +276,7 @@ export function HitlInteractionFrame({
         {!showHeading && progress && (
           <span className="font-mono text-2xs text-text-faint">{progress}</span>
         )}
-        {expiresAt !== undefined && <DeadlineNote expiresAt={expiresAt} />}
+        {expiresAt !== undefined && <DeadlineNote expiresAt={expiresAt} outcome={expiryOutcome} />}
         {/* Keep the actions together beside the deadline, but let larger ask footers wrap
             within the card on narrow screens instead of overflowing its edge. */}
         <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-1.5">
