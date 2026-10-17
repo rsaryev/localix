@@ -14,9 +14,8 @@
     </linearGradient>
   </defs>
   <rect width="1200" height="630" fill="#070707" />
-  <g font-family="Localix Landing Heading, DM Sans Variable, DM Sans, Inter, Helvetica Neue, Arial, sans-serif" fill="#f4f4f5" font-weight="600" font-size="58" letter-spacing="-1.6">
-    <text x="80" y="140">One workspace for you</text>
-    <text x="80" y="208">and a team of agents</text>
+  <g font-family="Localix Landing Heading, DM Sans Variable, DM Sans, Inter, Helvetica Neue, Arial, sans-serif" fill="#f4f4f5" font-weight="600" font-size="72" letter-spacing="-2">
+    <text x="80" y="174">Everything is context</text>
   </g>
   <image href="logo.svg" x="980" y="70" width="140" height="140" />
   <g clip-path="url(#window)">

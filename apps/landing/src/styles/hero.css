@@ -119,6 +119,9 @@
 /* On narrow screens the bird flies beside the heading's short last line, as it does beside the
    whole heading on desktop, so the description keeps the full width. */
 @media (max-width: 63.99rem) {
+  .hero-copy > h1 {
+    max-width: calc(100% - var(--bird-slot-width));
+  }
   .hero-bird-slot {
     grid-area: heading;
     justify-self: end;

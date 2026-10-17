@@ -5,45 +5,34 @@
 <h1 align="center">Localix</h1>
 
 <p align="center">
-  <strong>One workspace for you and a team of agents.</strong><br>
-  An open source workspace where you and your agents share the editor, terminals, preview, and databases.
+  <strong>Everything is context</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/rsaryev/localix/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/rsaryev/localix/ci.yml?branch=main&label=CI"></a>
-  <a href="https://github.com/rsaryev/localix/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/rsaryev/localix?include_prereleases&label=release"></a>
-  <img alt="Tested on macOS; Linux experimental" src="https://img.shields.io/badge/tested-macOS-informational">
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-informational"></a>
-  <img alt="Status: beta" src="https://img.shields.io/badge/status-beta-lightgrey">
+  Localix is a desktop development environment built around agents. The editor, terminals, browser, databases, and plugins are parts of one app, so anything you open can become context for an agent, and anything an agent does shows up where you work.
 </p>
 
 <p align="center">
-  <a href="https://github.com/rsaryev/localix/releases/latest"><strong>Download</strong></a> ·
-  <a href="https://localix.ai">Website</a> ·
+  <a href="https://github.com/rsaryev/localix/releases/latest">Download</a> ·
   <a href="docs/README.md">Documentation</a> ·
-  <a href="#quick-start">Run from source</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="#run-from-source">Run from source</a>
 </p>
 
 <p align="center">
-  <img src="docs/assets/films/team.gif" alt="A team of agents building a project in one Localix workspace" width="880">
+  <a href="https://localix.ai/films/demo.mp4">
+    <img src="docs/assets/films/demo.png" alt="Watch the Localix demo: a /workflows prompt fills the board, agents build and test a 2048 game in the browser, and a comment gets the cells resized" width="880">
+  </a>
 </p>
 
 ## Download
 
-Get an installer from the [latest release](https://github.com/rsaryev/localix/releases/latest).
+- **macOS, Apple silicon:** `Localix-macos-arm64.dmg` from the
+  [latest release](https://github.com/rsaryev/localix/releases/latest), signed and notarized
+- **macOS Intel, Linux, Windows:** no installer yet, [run from source](#run-from-source)
 
-| Platform             | File                      | Status                          |
-| -------------------- | ------------------------- | ------------------------------- |
-| macOS, Apple silicon | `Localix-macos-arm64.dmg` | Tested; signed and notarized    |
-| macOS, Intel         | None yet                  | [Run from source](#quick-start) |
-| Linux                | None yet                  | [Run from source](#quick-start) |
-| Windows              | None yet                  | [Run from source](#quick-start) |
+Each release lists checksums in `SHA256SUMS.txt`.
 
-Localix ships and has been tested only on macOS on Apple silicon. On other systems, run it from
-source; installers for them will follow. Each release lists checksums in `SHA256SUMS.txt`.
-
-## Quick start
+## Run from source
 
 For the desktop app, install [Bun](https://bun.sh) **1.3.14**, a Rust toolchain, and your platform's
 [Tauri prerequisites](https://tauri.app/start/prerequisites/).
@@ -71,11 +60,5 @@ and [troubleshooting](docs/getting-started/troubleshooting.md) for startup probl
 
 ## Contributing
 
-Localix is in beta. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and
-[the code map](docs/internals/code-map.md) to find the owning module. Changes are recorded in
-[CHANGELOG.md](CHANGELOG.md).
-
-Follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report vulnerabilities per
-[SECURITY.md](SECURITY.md).
-
-[MIT license](LICENSE).
+Localix is in beta. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
+[the code map](docs/internals/code-map.md).

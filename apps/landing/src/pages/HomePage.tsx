@@ -37,12 +37,12 @@ export function HomePage() {
         <div className="hero-layout relative">
           <div className="hero-copy min-w-0">
             <RevealHeading
-              text="One workspace for you and a team of agents"
+              text="Everything is context"
               className="display text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem] xl:text-[4.25rem]"
             />
             <p className="lede hero-rise text-lg">
-              An open source workspace where you and your agents share the editor, terminals,
-              preview, and databases
+              A desktop development environment built around agents. Anything you open can become
+              context, and anything an agent does shows up where you work
             </p>
             <HomeActions className="hero-actions hero-rise" />
           </div>

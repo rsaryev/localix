@@ -105,9 +105,9 @@ describe('landing page shell', () => {
       read('lib/structuredData.ts'),
     ]
     for (const carrier of carriers) expect(carrier).toContain(sentence)
-    // The concise hero preserves the same working surfaces as the metadata.
+    // The hero states the product's short form: everything you open can become context.
     expect(read('pages/HomePage.tsx').replaceAll(/\s+/g, ' ')).toContain(
-      'share the editor, terminals, preview, and databases',
+      'Anything you open can become context, and anything an agent does shows up where you work',
     )
     // llms.txt is hand-maintained and wraps its copy inside a blockquote, so unwrap first.
     const llms = readFileSync(join(appRoot, 'public/llms.txt'), 'utf8')

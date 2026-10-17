@@ -52,8 +52,10 @@ test('mobile bird flies beside the heading without narrowing the description', (
   const css = readLandingStyles()
   expect(css).toContain("grid-template-areas: 'badge' 'heading' 'description' 'action'")
   expect(css).toMatch(
-    /@media \(max-width: 63\.99rem\) \{\s*\.hero-bird-slot \{\s*grid-area: heading;\s*justify-self: end;\s*align-self: end;/u,
+    /@media \(max-width: 63\.99rem\) \{[^@]*\.hero-bird-slot \{\s*grid-area: heading;\s*justify-self: end;\s*align-self: end;/u,
   )
+  // The heading leaves the bird's width free so the bird never covers a word.
+  expect(css).toContain('max-width: calc(100% - var(--bird-slot-width))')
   expect(css).toContain('--bird-slot-width: 5.5rem')
   expect(css).toContain('--bird-size: 4.5rem')
 })
