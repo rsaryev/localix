@@ -6,12 +6,29 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
-## v0.1.0-beta.9 — draft prepared 2026-10-16
+## v0.1.0-beta.10 — draft prepared 2026-10-17
 
 ### Added
 
-- An "All agents" row in the model picker of a group conversation: one model and reasoning level for
-  every member, applied in a single step. It appears when members differ or have no model.
+- `/workflows <goal>` hands a goal to a team: the chat's leader breaks it into cards on the Kanban
+  board, reuses or creates the specialists it needs and coordinates them to the result. Whether work
+  waits for an approved plan is the chat's permission mode.
+- Team roles: the elected leader is named in every agent's prompt and owns coordination; members
+  work only on their own cards, and a member's finished card waits in a new **Review** column until
+  the leader verifies it.
+- `@human`, a built-in record that describes you to agents (Settings → Agents, globally or per
+  project). Agents ask you with question cards instead of mentioning you, and can assign you a
+  Kanban card, which notifies you.
+- The macOS agent island is back: a quick request and agent questions at the notch, with one open
+  size. It is off until you turn it on in onboarding or Settings, and stays quiet while a Localix
+  window is focused.
+- The model picker lists every agent you can invite, so models can be set before inviting. "All
+  agents" sets every listed agent at once; each agent then resolves through this chat's choice, its
+  own default, its last pick, then the project.
+- Context limit per model in tokens (Auto, steps the window holds, Full) instead of a percentage.
+- Onboarding opens with appearance and the island, and gains a tip for the goal command.
+- Claude Code plugins are converted to the Localix format when installed; installs default to global
+  scope, and LSP plugins report a missing language server with an install hint.
 - `/model` is a step-by-step picker with breadcrumbs — agent, provider, model, then reasoning, turns
   and context window — and no longer prints a model list.
 - The model list updates without a new release: Localix checks the catalog's public sources in the
@@ -22,6 +39,16 @@ Changes land on `main`.
 
 ### Changed
 
+- An agent's question always waits up to five minutes for your answer, then the agent continues on a
+  stated assumption; "Answer later" and queued questions are gone.
+- Background jobs ignore `timeout` and outlive the turn that started them; a deliberate stop is
+  reported as stopped, not as a failure.
+- The Browser keeps previews fitted to the pane; an agent pins a width only for a check and the pane
+  returns to fit afterwards.
+- Webhook Notifier is off by default; its `human_mentioned` event is now `human_assigned` (2.0.0).
+- The starter team no longer includes Team Lead, Project Manager or QA Engineer; agents you already
+  have stay.
+- A fresh install opens with every panel collapsed on an empty workspace.
 - Reasoning levels come from the model catalog only: a model offers exactly the levels it supports,
   and Off appears only where the model can really turn reasoning off.
 - `/model <name>` picks the level remembered for the new model, or its default, instead of keeping
@@ -29,6 +56,12 @@ Changes land on `main`.
 
 ### Fixed
 
+- The drop hint no longer sticks in the composer after a drag that ended outside the window, such as
+  a macOS screenshot thumbnail.
+- The folded island no longer opens on hover or takes clicks while a Localix window is focused.
+- A Kanban card no longer gets stuck in review when its owner completes it again, and an epic
+  described next to its tasks is no longer silently dropped.
+- An unknown Browser tab id answers with the open tabs instead of "host unavailable".
 - Opening a file from Finder, "Open With" or `localix <file>` no longer creates or switches
   projects; it opens next to the chat on screen. A missing path fails at once.
 - The chat no longer disappears when the Browser, a terminal or a file link opens after a pane was
