@@ -78,6 +78,8 @@ export const sessionsApi = {
      * default agent, which is what "new chat" means; two or more makes it a group.
      */
     agentIds?: string[]
+    /** A landing: the server answers with the project's newest untouched chat when it has one. */
+    reuseEmptyDraft?: boolean
   }): Promise<UiSession> {
     const json = await unwrap(await client.rpc.sessions.$post({ json: input ?? {} }))
     return toUiSession(json)

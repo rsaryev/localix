@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { createActivatedToolQueries } from './repository-activated-tools'
+import { createEmptyDraftQueries } from './repository-empty-draft'
 import { createHistoryQueries } from './repository-history'
 import { createMessageQueries } from './repository-messages'
 import { createRuntimeQueries } from './repository-runtime'
@@ -41,6 +42,7 @@ export function createChatRepository(db: Kysely<AppDatabase>) {
     ...createSessionReadQueries(db),
     ...createRecentRouteQueries(db),
     ...createSessionWriteQueries(db),
+    ...createEmptyDraftQueries(db),
     ...createSessionTopicQueries(db),
     ...createActivatedToolQueries(db),
     ...createUsageQueries(db),

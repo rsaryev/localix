@@ -12,6 +12,7 @@ import type { ChatServiceGraph } from './service-graph'
 import type { SessionCore } from './session-core'
 import * as sessionDetail from './session-detail'
 import * as sessionLifecycle from './session-lifecycle'
+import { createDraftReuse } from './session-draft-reuse'
 import type { StoredSystemNotice } from '../../../db/payload'
 import { recordSessionNotice } from '../runtime/session-notice'
 
@@ -40,11 +41,13 @@ export function createChatSessionFacade({
   sessionDetailCtx,
   getSessionDetail,
 }: ChatSessionFacadeDeps) {
+  const landOnDraft = createDraftReuse(sessionLifecycleCtx)
   return {
     createSession(
       userId: string,
       input: sessionLifecycle.CreateSessionInput,
     ): Promise<SessionDetail> {
+      if (input.reuseEmptyDraft) return landOnDraft(userId, input)
       return sessionLifecycle.createSession(sessionLifecycleCtx, userId, input)
     },
 

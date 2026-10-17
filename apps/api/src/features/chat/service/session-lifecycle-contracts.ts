@@ -22,6 +22,13 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
     lastMessagesByUser: (userId: string) => Promise<Map<string, LastMessagePreview>>
     allocateSessionRef: (userId: string) => Promise<{ seq: number; id: string }>
     insertSession: (session: SessionRecord) => Promise<void>
+    /** The newest untouched chat in a project with exactly this participant (see repository-empty-draft). */
+    findEmptyDraft?: (
+      userId: string,
+      projectId: string,
+      agentId: string,
+      defaultTitle: string,
+    ) => Promise<string | null>
     getSession: (userId: string, id: string) => Promise<SessionRecord | null>
     /** The session's own fields; only the keys present are written. */
     updateSession: (userId: string, id: string, patch: Partial<SessionRecord>) => Promise<void>
@@ -153,6 +160,11 @@ export interface CreateSessionInput {
   description?: string | null
   /** A group's avatar ref; omitted = generated from the title. */
   avatar?: string | null
+  /**
+   * A landing, not a "New chat": reopen the project's newest untouched chat with the same
+   * participant instead of minting another one (see session-draft-reuse.ts).
+   */
+  reuseEmptyDraft?: boolean
 }
 
 export interface UpdateSessionPatch {

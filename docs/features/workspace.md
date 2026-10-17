@@ -29,6 +29,10 @@ Only pinned tools count toward this grouping. A category highlights when one of 
 At launch the workspace reopens the tabs you left. If no chat tab was open, or on a first run, no
 chat opens on its own.
 
+A window that lands on the home view, including one whose remembered project was deleted, opens the
+default project's newest untouched chat instead of creating another empty one, so several windows
+landing at once share one chat. **New chat** always starts a new conversation.
+
 A first run, with no saved layout, starts calm: the chat sidebar is collapsed, no file, Browser or
 terminal tab is open, and the main column shows one empty group with the workspace tips centered.
 The left rail and top bar stay visible, and the default project is selected. Opening the sidebar or

@@ -3,6 +3,7 @@ import type { UiSession } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { composerDrafts } from '@/shared/lib/composerDrafts'
 import { createSessionActions } from './sessionActionsSlice'
+import { createProjectActions } from './projectActionsSlice'
 import { mergeSessionState } from './sessionListHelpers'
 import { scopedNewConversation } from './conversationStartStrategy'
 import type { ChatStore } from './store'
@@ -49,8 +50,14 @@ function harness(
     get: () => state,
     autoCreateInFlight: new Map(),
   })
+  const projectActions = createProjectActions({
+    set: apply as never,
+    customSet: apply as never,
+    get: () => ({ ...state, createSession: actions.createSession }) as ChatStore,
+  })
   return {
     newChat: () => actions.createSession(undefined, scopedNewConversation('P')),
+    land: () => projectActions.createHomeDraft(),
     active: () => state.activeSessionId,
     roster: () => state.allSessions,
   }
@@ -111,5 +118,24 @@ describe('New chat reuses only a genuinely untouched draft', () => {
     expect((await secondWindow.newChat())?.id).toBe('new-2')
     expect((await firstWindow.newChat())?.id).toBe('new-1')
     expect(created).toBe(2)
+  })
+})
+
+describe('a landing asks the server for any untouched chat', () => {
+  const requests = () =>
+    (backendClient.createSession as unknown as { mock: { calls: unknown[][] } }).mock.calls.map(
+      ([input]) => input as { reuseEmptyDraft?: boolean },
+    )
+
+  test('the home landing (launch, dead project route) requests find-or-create', async () => {
+    const h = harness([row('used', 2)], 'used')
+    await h.land()
+    expect(requests().map((input) => input.reuseEmptyDraft)).toEqual([true])
+  })
+
+  test('the New chat gesture never asks to reuse', async () => {
+    const h = harness([row('used', 2)], 'used')
+    await h.newChat()
+    expect(requests().map((input) => input.reuseEmptyDraft)).toEqual([undefined])
   })
 })

@@ -207,6 +207,7 @@ export function createSessionActions({
         const request = {
           title,
           projectId: targetProjectId,
+          ...(strategy.landing ? { reuseEmptyDraft: true } : {}),
         }
         // An agent the server refuses (`agent_unavailable`: withdrawn, or not allowed in a
         // chat) must not cost the user their New chat. An INHERITED one is a guess, so it

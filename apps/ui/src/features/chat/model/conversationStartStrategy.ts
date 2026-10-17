@@ -22,11 +22,19 @@ export type ConversationParticipantStrategy =
  *
  * Every entry point shares one creation lane. Only a fresh untouched draft created by this
  * workspace is eligible for reuse, with the same project and exactly one matching participant.
- * Saved history and drafts created by another workspace never substitute for a new chat.
+ * Saved history and drafts created by another workspace never substitute for a new chat. A
+ * `landing` is not a new chat: it only needs one to show, so the server may hand back any
+ * untouched chat of that project.
  */
 export interface ConversationStartStrategy {
   scope: ConversationScopeStrategy
   participant: ConversationParticipantStrategy
+  /**
+   * A landing (home, launch, a project opened with no chat), not the New chat gesture: any
+   * window may reopen the project's newest untouched chat, which the server finds or creates
+   * in one serialized step so windows landing together converge on one chat.
+   */
+  landing?: boolean
 }
 
 export const activeConversationDraft = (): ConversationStartStrategy => ({
@@ -38,7 +46,9 @@ export const activeConversationDraft = (): ConversationStartStrategy => ({
 export const scopedNewConversation = (
   projectId: string | null,
   participant: ConversationParticipantStrategy = { kind: 'inherit' },
+  landing = false,
 ): ConversationStartStrategy => ({
+  ...(landing ? { landing } : {}),
   // `null` is the unresolved neutral route, not a project-less workspace. Keep that intent
   // explicit so it cannot accidentally inherit whichever project is still active in Zustand.
   scope: projectId === null ? { kind: 'default' } : { kind: 'scope', projectId },

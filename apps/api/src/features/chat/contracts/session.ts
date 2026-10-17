@@ -38,6 +38,12 @@ export const createSessionRequestSchema = z
      */
     externalAgentProvider: z.string().min(1).max(64).optional(),
     agentIds: z.array(z.string().trim().min(1).max(200)).optional(),
+    /**
+     * A landing (the neutral home, a launch, a window leaving a dead project) rather than the
+     * New chat gesture: answer with the project's newest untouched chat when one exists, so
+     * every window that lands at once converges on one chat instead of one each.
+     */
+    reuseEmptyDraft: z.boolean().optional(),
   })
   .strict()
 

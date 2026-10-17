@@ -100,12 +100,16 @@ export function createProjectActions({ set, customSet, get }: ProjectActionsDeps
       // so a re-fired home effect (or a fresh-chat send racing this) joins the pending
       // creation and lands on the SAME draft instead of double-creating.
       //
+      // A LANDING, not a New chat: the server answers with the project's newest untouched chat
+      // when there is one, so windows landing together (a launch, a dead project route in each
+      // restored window) converge on one chat instead of leaving an empty one each.
+      //
       // Without a roster yet, omit the id and let the server file it: its answer carries
       // the project, and that is the value the store records.
       const fallback = get().projects.find((project) => project.isDefault)?.id
       return await get().createSession(
         undefined,
-        scopedNewConversation(fallback ?? null, { kind: 'default' }),
+        scopedNewConversation(fallback ?? null, { kind: 'default' }, true),
       )
     },
 

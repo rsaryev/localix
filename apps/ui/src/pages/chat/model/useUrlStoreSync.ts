@@ -305,7 +305,7 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
       ) {
         projectDrafting.current = routeProjectId
         try {
-          await createSession(undefined, scopedNewConversation(routeProjectId))
+          await createSession(undefined, scopedNewConversation(routeProjectId, undefined, true))
         } catch (error) {
           if (!routed.isMissingProjectError(error)) throw error // useDeadProjectRoute leaves the route
         } finally {
