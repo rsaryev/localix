@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Localix is a desktop development environment built around agents. The editor, terminals, browser, databases, and plugins are parts of one app, so anything you open can become context for an agent, and anything an agent does shows up where you work.
+  Localix is a desktop development environment built around agents. The editor, terminals, browser, databases, plugins, and coding agents like Claude Code and Codex are parts of one app, so anything you open can become context for an agent, and anything an agent does shows up where you work.
 </p>
 
 <p align="center">
