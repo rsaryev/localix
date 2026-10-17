@@ -59,8 +59,8 @@ priorities retain participant order. Explicit user routing and existing work own
 precedence. Supporting specialists should have a lower priority than the coordinator.
 
 The bundled **Code Review** plugin adds the `/review` command, not an agent: the speaking agent
-forks itself with the review procedure as the fork's task, and the fork returns findings and a
-structured verdict.
+delegates the review procedure to a child session, and the child returns findings and a structured
+verdict.
 
 ## Default tool candidates
 
@@ -139,8 +139,9 @@ user-created agents and permission decisions are retained. A participant whose d
 longer available remains visible in `/agents members`; add `localix` with `/agents add localix`
 before removing unavailable participants.
 
-Agents [fork themselves](delegation.md) for parallel copies, or invite authored colleagues into the
-conversation. A specialist definition is persistent; it is not a child run.
+Agents [delegate](delegation.md) self-contained tasks to child sessions, run by themselves or an
+authored specialist, or invite colleagues into the conversation. A specialist definition is
+persistent; it is not a child run.
 
 Handing the floor between participants needs no tool: the host routes each reply by its `@handle`
 addresses (see [Conversations](conversations.md)). Two protocol tools stay available even if an old

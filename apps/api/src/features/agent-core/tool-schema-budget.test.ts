@@ -23,9 +23,12 @@ import { richRegistry } from './testing/prompt-harness'
 // 7.2k (2026-10-12): `agents` (~560) removed — `fork` is the only child work now, and its line to
 // each fork (message/stop/close/list) is counted here for the first time (measured 7,176).
 // 7.55k: the new catalog-only `agents` schema adds 341 tokens (measured total 7,517).
-// It authors standing behavior; child run management still belongs exclusively to `fork`.
+// It authors standing behavior; child run management still belongs exclusively to `fork`
+// (now `delegate`).
 // Team batching and explicit priority add 90 tokens (measured total 7,607).
-const WIRE_BUDGET_TOKENS = 7_650
+// `fork` became `delegate`: the agent choice, the context choice and `wait` add 137 tokens
+// (measured total 7,744).
+const WIRE_BUDGET_TOKENS = 7_800
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
 
@@ -57,7 +60,7 @@ describe('default wire schema budget', () => {
       TOOL.plugin_build,
       TOOL.memory,
       TOOL.jobs,
-      TOOL.fork,
+      TOOL.delegate,
       TOOL.agents,
       TOOL.history_search,
       TOOL.external_agent_sessions,
@@ -74,7 +77,7 @@ describe('default wire schema budget', () => {
     expect(JSON.stringify(bash?.inputSchema.toJSONSchema?.() ?? {})).toContain('terminal_id')
   })
 
-  test('agents authors catalog entries; only fork carries child management', () => {
+  test('agents authors catalog entries; only delegate carries child management', () => {
     const names = wire.map((tool) => tool.name)
     expect(names).toContain('agents')
     const agents = wire.find((tool) => tool.name === TOOL.agents)
@@ -83,8 +86,8 @@ describe('default wire schema budget', () => {
     expect(authoringSchema).not.toContain('"get"')
     for (const action of ['delegate', 'message', 'stop', 'close'])
       expect(authoringSchema).not.toContain(`"${action}"`)
-    const fork = wire.find((tool) => tool.name === TOOL.fork)
-    const schema = JSON.stringify(fork?.inputSchema.toJSONSchema?.() ?? {})
+    const delegate = wire.find((tool) => tool.name === TOOL.delegate)
+    const schema = JSON.stringify(delegate?.inputSchema.toJSONSchema?.() ?? {})
     for (const action of ['message', 'stop', 'close', 'list']) expect(schema).toContain(action)
   })
 

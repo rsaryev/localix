@@ -3,14 +3,14 @@ import { describe, expect, test } from 'bun:test'
 import { buildCollaborationSection } from './system-prompt-collaboration-section'
 import { TOOL } from './tool-names'
 
-const all = [TOOL.fork]
+const all = [TOOL.delegate]
 const chat = { inConversation: true }
 
 describe('# Collaboration follows the room', () => {
-  test('alone, the agent does the work itself and forks only side work', () => {
+  test('alone, the agent does the work itself and delegates only side work', () => {
     const solo = buildCollaborationSection(all, { withColleagues: false, ...chat })!
     expect(solo).toContain('Handle straightforward work directly')
-    expect(solo).toContain('Investigation goes to `fork`')
+    expect(solo).toContain('Investigation goes to `delegate`')
     expect(solo).toContain('act on its short report')
     expect(solo).toContain('Bring in a suitable agent from the directory')
   })
@@ -25,24 +25,23 @@ describe('# Collaboration follows the room', () => {
     expect(room).not.toContain('conversation_control')
   })
 
-  // Agents no longer hand work to other agents: no wording may teach it, in any room.
-  test('no room is taught to delegate to another agent', () => {
-    for (const withColleagues of [false, true]) {
-      const section = buildCollaborationSection(all, { withColleagues, ...chat })!
-      expect(section).not.toContain('`agents`')
-      expect(section).not.toContain('action:"delegate"')
-      expect(section).not.toMatch(/\bdelegat/i)
-    }
+  // A child starts from its task alone and does not block the caller unless asked to.
+  test('delegation names its agent choice, clean context and non-blocking default', () => {
+    const section = buildCollaborationSection(all, { withColleagues: false, ...chat })!
+    expect(section).toContain('`agent` names a directory agent')
+    expect(section).toContain('It sees only the task')
+    expect(section).toContain('Leave wait off')
+    expect(buildCollaborationSection([], { withColleagues: true })).not.toMatch(/\bdelegat/i)
   })
 
   test('each bullet stays gated on what the run can do', () => {
     const room = buildCollaborationSection([], { withColleagues: true })!
-    expect(room).not.toContain('`fork`')
-    expect(room).not.toContain('running fork')
-    const job = buildCollaborationSection([TOOL.fork], { withColleagues: false })!
-    expect(job).toContain('`fork`')
+    expect(room).not.toContain('`delegate`')
+    expect(room).not.toContain('running child')
+    const job = buildCollaborationSection([TOOL.delegate], { withColleagues: false })!
+    expect(job).toContain('`delegate`')
     expect(job).not.toContain('Bring in')
-    // No fork, no conversation to grow, no colleagues: nothing to decide.
+    // No delegation, no conversation to grow, no colleagues: nothing to decide.
     expect(buildCollaborationSection([], { withColleagues: false })).toBeNull()
   })
 
@@ -70,7 +69,7 @@ describe('# Collaboration follows the room', () => {
     expect(member).not.toContain('do not wait for the user to name roles')
     expect(member).toContain('Report missing expertise to the leader')
     expect(
-      buildCollaborationSection([TOOL.agents, TOOL.fork], {
+      buildCollaborationSection([TOOL.agents, TOOL.delegate], {
         withColleagues: false,
         isLeader: true,
       }),

@@ -17,7 +17,7 @@ _Demo workspace captured on 8 October 2026. The conversation is seeded._
 | Choose a model for each kind of work | Route supported providers, models, and reasoning preferences to sessions and auxiliary workloads                             | [Providers and models](../features/providers.md)                                            |
 | Edit, run, and inspect a project     | Open files, run PTY terminals, inspect diffs, and keep previews beside the session                                           | [Workspace](../features/workspace.md)                                                       |
 | Work with one agent                  | Bind a project, provider connection, model, and agent to one stored session                                                  | [Your first session](first-session.md)                                                      |
-| Coordinate a larger goal             | Track tasks on a chat's Kanban board; let an agent fork itself for parallel side work from a root chat                       | [Kanban board](../features/task-board.md)                                                   |
+| Coordinate a larger goal             | Track tasks on a chat's Kanban board; let an agent delegate parallel side work from a root chat                              | [Kanban board](../features/task-board.md)                                                   |
 | Point at a UI defect                 | Attach rendered element context and available source locations from a supported Localix preview                              | [Visual Feedback](../features/visual-feedback.md)                                           |
 | Inspect infrastructure and data      | Inspect containers, Kubernetes resources, and saved database connections directly through bundled workbenches                | [DevOps Workspace](../features/devops.md) and [Database workbench](../features/database.md) |
 | Produce documents                    | Extract supported files, open read-only viewers, and generate DOCX, XLSX, or PDF from the workspace                          | [Documents](../features/documents.md)                                                       |
@@ -28,7 +28,7 @@ _Demo workspace captured on 8 October 2026. The conversation is seeded._
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | **Agentic Development Environment** | The Localix category: connected development surfaces, context, model routes, agents, and extensible workbenches |
 | **Session**                         | A stored transcript with project, model selections, participants, and runtime state                             |
-| **Fork**                            | A child session in which an agent continues itself on one task, started explicitly with the `fork` tool         |
+| **Delegated task**                  | A child session that runs one task for an agent, started explicitly with the `delegate` tool                    |
 | **Workbench**                       | A plugin-contributed product surface and its matching domain capabilities                                       |
 
 ## How it works
@@ -43,7 +43,7 @@ each turn's tool surface from the answering agent's capability rules, enabled pl
 other configured extensions.
 
 The bundled Kanban plugin keeps one board per chat with its tasks, dependencies, and results. It
-never starts work. An agent explicitly takes a task and may explicitly `fork` itself when a child
+never starts work. An agent explicitly takes a task and may explicitly `delegate` it when a child
 session is useful.
 
 Plugin discovery follows the current project. The shared UI catalog uses the default assistant's
@@ -67,8 +67,8 @@ permission to call its tools.
   source, but no product control selects them for a session.
 - Localix does not supply a hosted model or provider credential. A direct run stops when its
   provider connection or session model is missing.
-- A Kanban card does not create a workspace or execution context. Any explicit fork uses the owning
-  session hierarchy and workspace.
+- A Kanban card does not create a workspace or execution context. Any explicit delegation uses the
+  owning session hierarchy and workspace.
 - Nothing checks a completed Kanban task automatically. The acting agent records the result with
   `complete`; invite QA into the conversation when a change needs an independent look.
 - Visual Feedback requires a supported Localix preview with a connected or injectable probe. Source

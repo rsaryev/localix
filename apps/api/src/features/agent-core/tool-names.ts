@@ -174,14 +174,13 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'automation',
     exposure: CHAT_ONLY,
   },
-  fork: {
-    name: 'fork',
-    label: 'Fork',
+  delegate: {
+    name: 'delegate',
+    label: 'Delegate',
     description:
-      'Continue yourself in a child session that inherits this conversation, and message, stop or close your forks.',
+      'Hand a task to yourself or another agent in a child session, and message, stop or close it.',
     category: 'automation',
-    // A fork is a root chat's: the child it creates may not fork again. It is the only child work
-    // an agent creates — agents do not hand work to other agents.
+    // Delegation is a root chat's: the child it creates may not delegate again.
     exposure: CONVERSATION_TREE,
   },
   loops: {

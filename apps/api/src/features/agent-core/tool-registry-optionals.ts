@@ -1,5 +1,5 @@
 import { createBrowserTool } from './tools/browser/browser'
-import { createForkTool } from './tools/fork'
+import { createDelegateTool } from './tools/delegate'
 import { createAgentsTool } from './tools/agents'
 import { createLoopsTool } from './tools/loops'
 import { createPluginBuildTool } from './tools/plugin-build'
@@ -29,10 +29,8 @@ export function buildNamedOptionals(
     namedOptionals.push({ tool: createAgentsTool(optional.agents) })
   }
 
-  if (optional.fork) {
-    namedOptionals.push({
-      tool: createForkTool(optional.fork),
-    })
+  if (optional.delegate) {
+    namedOptionals.push({ tool: createDelegateTool(optional.delegate) })
   }
 
   if (optional.loops) {

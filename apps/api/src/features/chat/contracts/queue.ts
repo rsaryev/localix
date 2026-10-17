@@ -112,7 +112,7 @@ export type WakeSource =
    */
   | 'reaction'
   /**
-   * THE AGENT THAT DELEGATED A TASK SPOKE TO ITS CHILD — `fork` action message.
+   * THE AGENT THAT DELEGATED A TASK SPOKE TO ITS CHILD — `delegate` action message.
    *
    * The reverse of `subagent`: that one carries a child's report up, this carries its delegator's
    * word down. A running child takes it at its next step boundary (`isDelegatorMessage`); an idle

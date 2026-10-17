@@ -60,8 +60,8 @@ describe('what a resource approval remembers', () => {
 
   test('a call that names nothing is granted the tool for the session, never as a rule', () => {
     // One click must not make a whole tool unprompted forever.
-    const grant = resourceGrant('fork', [])
-    expect(grant).toMatchObject({ scope: 'fork', kind: 'tool' })
+    const grant = resourceGrant('delegate', [])
+    expect(grant).toMatchObject({ scope: 'delegate', kind: 'tool' })
     expect(grant?.rule).toBeUndefined()
   })
 
@@ -128,9 +128,9 @@ describe('what a remembered scope covers', () => {
   })
 
   test('a bare tool-name scope never starts covering a call that names something', () => {
-    const bare: GrantCall = { toolName: 'fork', subject: 'resource', targets: [] }
-    expect(grantCoversCall('fork', bare)).toBe(true)
-    expect(grantCoversCall('fork', { ...bare, targets: ['builtin:qa'] })).toBe(false)
+    const bare: GrantCall = { toolName: 'delegate', subject: 'resource', targets: [] }
+    expect(grantCoversCall('delegate', bare)).toBe(true)
+    expect(grantCoversCall('delegate', { ...bare, targets: ['builtin:qa'] })).toBe(false)
     expect(grantCoversCall('bash', bash('ls'))).toBe(false)
   })
 })

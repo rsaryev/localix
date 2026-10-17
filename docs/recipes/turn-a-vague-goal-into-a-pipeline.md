@@ -13,22 +13,22 @@ execution. The board comes from the bundled Kanban plugin; the
    owner, and the take is refused while a dependency is not `done`.
 4. For work another participant should do in this conversation, address it with `@handle` and the
    assignment. For isolated side work, read the card with
-   `kanban { action: "detail", task_id: "LX-…" }` and fork with its scope, dependencies, and
-   acceptance criteria as the task. The fork inherits the conversation but not the board; the card
-   stays the parent's to complete or block.
+   `kanban { action: "detail", task_id: "LX-…" }` and `delegate` it with its scope, dependencies,
+   and acceptance criteria as the task. The child sees only that task, not the board; the card stays
+   the parent's to complete or block.
 5. The parent agent reviews the report, then records the outcome with `kanban` `complete`. If
    progress is impossible, it records the reason with `block`.
 6. Repeat for the tasks that `complete` names as newly unblocked.
 
 The board remains useful across turns because tasks, dependencies, checklists, and results persist
-with the chat. The board itself has no execution queue or automatic attempts. Forks use separate
-child-session lanes; marking a card ready or assigning an owner does not enter those lanes. Deleting
-the chat removes its board.
+with the chat. The board itself has no execution queue or automatic attempts. Delegated tasks use
+separate child-session lanes; marking a card ready or assigning an owner does not enter those lanes.
+Deleting the chat removes its board.
 
-## Fork a prepared task
+## Delegate a prepared task
 
-Use a root chat; `fork` is on by default for every shipped agent. For example, a documentation-check
-card becomes this input:
+Use a root chat; `delegate` is on by default for every shipped agent. For example, a
+documentation-check card becomes this input:
 
 ```json
 {
@@ -37,18 +37,19 @@ card becomes this input:
 }
 ```
 
-Replace the title and task with the actual card's work. The fork already knows the conversation, so
-the task states the goal and when it is done. The parent checks the returned report before marking
-its card complete. Schedule dependent work only after its prerequisite is verified.
+Replace the title and task with the actual card's work. The child starts from the task alone, so the
+task states everything it needs: the goal, its inputs and when it is done. Add `"agent"` to give the
+card to a directory specialist instead of running it yourself. The parent checks the returned report
+before marking its card complete. Schedule dependent work only after its prerequisite is verified.
 
 ## Related guides
 
 - [Kanban](../features/task-board.md)
-- [Forks](../features/delegation.md)
+- [Delegation](../features/delegation.md)
 - [Conversation handoffs](../features/conversations.md#passing-work-between-agents)
 
 ## Source of truth
 
-- [Fork input schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/fork.ts)
-- [Fork admission](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/agent-fork.ts)
+- [Delegate input schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/delegate.ts)
+- [Delegation admission](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/delegate-start.ts)
 - [Board tool actions](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/tools.ts)

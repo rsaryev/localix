@@ -192,14 +192,14 @@ test('disabling the parent source withdraws its registered reviewer immediately'
   ).not.toBe('allowed')
 })
 
-test('/review forks the speaking agent and contributes no agent of its own', async () => {
+test('/review delegates to a child and contributes no agent of its own', async () => {
   const review = await loadManifest(
     join(import.meta.dir, '../../../../../plugins/review'),
     'global',
     '',
   )
   expect(review.provides.agents ?? []).toEqual([])
-  expect(review.commands[0]?.prompt).toContain('call `fork`')
+  expect(review.commands[0]?.prompt).toContain('call `delegate`')
   expect(review.commands[0]?.prompt).not.toContain('`agents`')
   expect(review.commands[0]?.prompt).not.toContain('kanban_task_id')
 })

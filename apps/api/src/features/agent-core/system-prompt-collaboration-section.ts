@@ -1,9 +1,10 @@
 import { TOOL } from './tool-names'
 
 /**
- * `# Collaboration` — the one rule for WHO does a piece of work: you, a fork of yourself, or a
- * colleague in the conversation. Agents do not hand work to other agents in child sessions:
- * another role joins the conversation, where the user can see and redirect it.
+ * `# Collaboration` — the one rule for WHO does a piece of work: you, a child session you delegate
+ * a bounded task to (yourself or a directory agent), or a colleague in the conversation. A role
+ * that owns a part of the goal joins the conversation, where the user can see and redirect it; a
+ * child session is for a self-contained task whose report is all the conversation needs.
  *
  * It was scattered across nine places that each answered part of it in their own words: the
  * orchestrator role guidance, an execution-discipline line, the turn-control contract, the
@@ -11,18 +12,18 @@ import { TOOL } from './tool-names'
  * tool descriptions. A model reading one rule in one place and another in the next had to
  * reconcile them itself, and the copies had started to disagree.
  *
- * Every bullet is gated on what the run can do: forking needs `fork`, bringing a colleague in
- * needs a conversation a tag can grow, creating one needs `agents`. With none of them there is
+ * Every bullet is gated on what the run can do: delegating needs `delegate`, bringing a colleague
+ * in needs a conversation a tag can grow, creating one needs `agents`. With none of them there is
  * nothing to decide, and no section. How a plugin's own tool records work (a task board, say) is
  * that tool's schema to say, not this rule.
  */
 export function buildCollaborationSection(
   toolNames: readonly string[],
   // The answer to WHO changes with the room, so the rule has to know it. Alone, doing it
-  // yourself is the default and a fork buys parallelism. With colleagues present that default
+  // yourself is the default and delegation buys parallelism. With colleagues present that default
   // is the failure: a non-leader once read "do the work yourself … delegate
   // substantial work" with @frontend and @qa in the room and sent both tasks to one-shot
-  // children the person could not see or redirect — which is why other roles now only join.
+  // children the person could not see or redirect — which is why a colleague's part goes to them.
   room: {
     withColleagues: boolean
     /** A conversation exists for this run (a chat or a delegated team). */
@@ -32,10 +33,10 @@ export function buildCollaborationSection(
   } = { withColleagues: false },
 ): string | null {
   const has = (name: string) => toolNames.includes(name)
-  const fork = has(TOOL.fork)
+  const delegate = has(TOOL.delegate)
   const inConversation = room.inConversation ?? room.withColleagues
   const canInvite = inConversation && !room.membershipClosed
-  if (!fork && !canInvite && !room.withColleagues) return null
+  if (!delegate && !canInvite && !room.withColleagues) return null
   const { withColleagues } = room
   const isLeader = room.isLeader ?? !withColleagues
   return [
@@ -43,9 +44,10 @@ export function buildCollaborationSection(
     withColleagues
       ? 'Colleagues share this conversation: each part belongs to the participant whose role owns it. Do your own part; hand a colleague their ready part by @mentioning them, so they work here, where the user can redirect them.'
       : 'Handle straightforward work directly.',
-    ...(fork
+    ...(delegate
       ? [
-          '- Keep this context for deciding and doing. Investigation goes to `fork`: searches, reading code or documents to understand them, comparisons, and checking work you did not do. Give the fork a precise question and act on its short report; read directly only what you are about to change or must quote exactly. The fork inherits this conversation, works in parallel and reports back. Long independent work goes to a fork too; keep the critical path here.',
+          '- Keep this context for deciding and doing. Investigation goes to `delegate`: searches, reading code or documents to understand them, comparisons, and checking work you did not do. Give the child a precise, self-contained task and act on its short report; read directly only what you are about to change or must quote exactly. Long independent work goes to a child too; keep the critical path here.',
+          '- The child runs as you unless `agent` names a directory agent whose role fits the task better. It sees only the task; add context:"conversation" only when the task truly depends on this chat. Leave wait off and keep working; set wait:true only when your very next step needs the report.',
         ]
       : []),
     ...(canInvite
@@ -67,6 +69,6 @@ export function buildCollaborationSection(
               ]),
         ]
       : []),
-    `- Work ${fork ? 'already owned by a colleague or a running fork' : 'a colleague has already taken on'} is theirs: ask for its status instead of starting it again.`,
+    `- Work ${delegate ? 'already owned by a colleague or a running child' : 'a colleague has already taken on'} is theirs: ask for its status instead of starting it again.`,
   ].join('\n')
 }

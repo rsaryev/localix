@@ -387,13 +387,13 @@ describe('buildExecutionDiscipline — the batching rule reaches a read-only ros
 })
 
 describe('# Collaboration — one rule for who does the work', () => {
-  it('tells a role with `fork` how forking works, and never how to delegate', () => {
-    const out = buildCollaborationSection(['read', 'search', 'fork'])!
-    expect(out).toContain('Investigation goes to `fork`')
-    expect(out).toContain('inherits this conversation')
-    // A role that still names the removed tool learns nothing about it.
+  it('tells a role with `delegate` how delegating works', () => {
+    const out = buildCollaborationSection(['read', 'search', 'delegate'])!
+    expect(out).toContain('Investigation goes to `delegate`')
+    expect(out).toContain('context:"conversation"')
+    // `agents` authors specialists; it starts no child work.
     expect(buildCollaborationSection(['read', 'search', 'agents'])).toBeNull()
-    expect(out).not.toMatch(/delegat|`agents`/i)
+    expect(out).not.toContain('`agents`')
   })
 
   it('names only the tools the run holds', () => {
@@ -402,7 +402,6 @@ describe('# Collaboration — one rule for who does the work', () => {
       inConversation: true,
     })!
     expect(inviteOnly).toContain('@mention it with a concrete assignment')
-    expect(inviteOnly).not.toContain('`fork`')
     expect(inviteOnly).not.toContain('delegate')
     expect(inviteOnly).not.toMatch(/\bcards?\b|\bboard\b/i)
   })
@@ -414,8 +413,8 @@ describe('# Collaboration — one rule for who does the work', () => {
   it('is the only place that says when to delegate or invite', () => {
     // It used to be scattered over nine places; the role line and execution discipline were
     // two of them.
-    const roster = ['read', 'fork', 'set_topic']
-    expect(buildExecutionDiscipline(roster)).not.toMatch(/delegate|invite|fork/)
+    const roster = ['read', 'delegate', 'set_topic']
+    expect(buildExecutionDiscipline(roster)).not.toMatch(/delegate|invite/)
     expect(buildRoleSection(SHAPE.orchestrator, roster) ?? '').not.toMatch(
       /delegate|invite|durable work/,
     )

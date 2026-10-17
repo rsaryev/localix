@@ -1,5 +1,5 @@
 import type { AgentsService } from '../../agents/service-contract'
-import type { DelegatedRunSummary } from '../../agent-core/tools/fork-control'
+import type { DelegatedRunSummary } from '../../agent-core/tools/delegate-control'
 import type { TaskDelegationOptions } from '../../agent-core/tools/task-delegation-contracts'
 import type { RunProfile } from '../../agent-core/run-shape'
 /**
@@ -22,7 +22,7 @@ import type { SubagentCloseResult } from '../service/subagent-close'
 import type { DelegationPriority } from '../../agent-core/delegation-lanes'
 
 export interface AgentServiceBinding {
-  /** An agent named by id OR handle, admitted for child work — how `fork` resolves the forking agent. */
+  /** An agent named by id OR handle, admitted for child work (how `delegate` resolves it). */
   resolveDelegateAgent?: TaskDelegationOptions['resolveAgent']
   /**
    * Create a child session. Returns its id plus `taskName` — the child's addressable canonical
@@ -74,7 +74,7 @@ export interface AgentServiceBinding {
   finalAssistantText?: (userId: string, sessionId: string) => Promise<string | null>
   /** Stop an owned child session. callerUserId is enforced by chatService. */
   stopSession?: (sessionId: string, callerUserId?: string) => void | Promise<void>
-  /** A parent's message to its child: joins a running run, or opens a new one (`fork` message). */
+  /** A parent's message to its child: joins a running run, or opens a new one (`delegate`). */
   messageSubagent?: (
     userId: string,
     sessionId: string,
@@ -96,7 +96,7 @@ export interface AgentServiceBinding {
    * (`delegation-lanes.ts`).
    */
   countDelegationsSinceHuman?: (userId: string, rootSessionId: string) => Promise<number>
-  /** Close a child for good (`fork` close) — see `service/subagent-close.ts`. */
+  /** Close a child for good (`delegate` close) — see `service/subagent-close.ts`. */
   closeSubagent?: (userId: string, sessionId: string) => Promise<SubagentCloseResult>
   /** After a child's run ends: start the next one for delegator messages no run took. */
   flushChildMessages?: (userId: string, sessionId: string) => Promise<void>

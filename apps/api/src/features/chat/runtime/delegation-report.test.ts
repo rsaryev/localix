@@ -96,25 +96,12 @@ describe('child report wording', () => {
       text: 'partial',
     })
     expect(message.split('\n')[0]).toBe(
-      '[Background sub-agent was STOPPED before finishing] Audit (id: c1) was STOPPED before finishing.',
+      '[Delegated task was STOPPED before finishing] Audit (id: c1) was STOPPED before finishing.',
     )
   })
 
-  test('a fork follow-up goes to the same fork, not to a fresh one', () => {
-    // A new fork knows nothing the first learned; a message keeps all of it.
-    const message = delegationReportMessage({
-      label: 'Audit',
-      childSessionId: 'c1',
-      runId: 'm1',
-      status: 'completed',
-      text: 'done',
-      forked: true,
-    })
-    expect(message.startsWith('[Your fork finished]')).toBe(true)
-    expect(message).toContain('`fork` action:"message"')
-  })
-
-  test('an older delegated child still reports, without naming the removed `agents` tool', () => {
+  test('a follow-up goes to the same child, not to a fresh one', () => {
+    // A new child knows nothing the first learned; a message keeps all of it.
     const message = delegationReportMessage({
       label: 'Audit',
       childSessionId: 'c1',
@@ -122,8 +109,9 @@ describe('child report wording', () => {
       status: 'completed',
       text: 'done',
     })
+    expect(message.startsWith('[Delegated task finished]')).toBe(true)
     expect(message).toContain('Its final report:\ndone')
-    expect(message).not.toContain('`agents`')
+    expect(message).toContain('`delegate` action:"message"')
   })
 })
 

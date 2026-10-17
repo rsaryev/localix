@@ -25,8 +25,8 @@ must still reach the board a person has open.
 One tool, `kanban`, with an `action`: `list`, `search`, `create`, `update`, `take`, `complete`,
 `block`, `reorder`, `delete`, `detail`. `take` records the agent the host names as the speaker,
 never a name from the input. A card another agent should do is handed over with a turn; isolated
-side work can go to a `fork` of the speaking agent, using `detail` as its task. The board never runs
-it.
+side work can go to a child session with `delegate`, using `detail` as its task. The board never
+runs it.
 
 Each move has one action: `take` (dependencies, owner) reaches `in_progress`, `complete` reaches
 `done`, `block` reaches `blocked`; `update` edits a card and moves it only to `backlog`, `ready` or

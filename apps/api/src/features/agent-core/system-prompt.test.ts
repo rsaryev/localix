@@ -95,7 +95,7 @@ describe('buildAgentSystemPrompt', () => {
   test('active-subagent guidance follows the final runtime tool roster', () => {
     // A fork cannot fork again: the host withholds `fork` (`delegation-hierarchy.ts`), and a
     // child carries no history tool.
-    const subagentRegistry = richRegistry(SHAPE.subagent, ['fork'])
+    const subagentRegistry = richRegistry(SHAPE.subagent, ['delegate'])
     const subagentPrompt = buildAgentSystemPrompt({
       agentProfile: SHAPE.subagent,
       toolRegistry: subagentRegistry,
@@ -106,7 +106,7 @@ describe('buildAgentSystemPrompt', () => {
     // strongest case is the negative one: a child with neither fork nor history
     // controls is told only to wait rather than inventing lifecycle operations.
     expect(subagentRegistry.toolNames).not.toContain('history_search')
-    expect(subagentRegistry.toolNames).not.toContain('fork')
+    expect(subagentRegistry.toolNames).not.toContain('delegate')
     expect(subagentPrompt).toContain('Wait for its completion message')
     expect(subagentPrompt).not.toContain('`history_search`')
 
@@ -121,7 +121,7 @@ describe('buildAgentSystemPrompt', () => {
       activeSubAgents: [{ title: 'nested worker', task: 'child-session' }],
     })
     expect(orchestratorRegistry.toolNames).toContain('agents')
-    expect(orchestratorRegistry.toolNames).toContain('fork')
+    expect(orchestratorRegistry.toolNames).toContain('delegate')
     expect(orchestratorPrompt).toContain('`fork` action:"list"')
     expect(orchestratorPrompt).toContain('do not poll for completion')
     expect(orchestratorPrompt).toContain('results arrive automatically as new messages')

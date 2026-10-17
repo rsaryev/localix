@@ -6,7 +6,7 @@ import type { DocumentTextExtractor } from './tools/file/document-ports'
 import type { ResearchConfig } from './tools/web/research'
 import type { DiagnosticsReporter, EditorBufferProbe } from './tools/file/file-utils'
 import type { OutlineProvider } from './tools/file/outline'
-import type { ForkToolPort } from './tools/fork'
+import type { DelegateToolPort } from './tools/delegate'
 import type { AgentsToolPort } from './tools/agents'
 import type { LoopsToolOptions } from './tools/loops'
 import type { PluginBuildToolOptions } from './tools/plugin-build'
@@ -119,8 +119,8 @@ export interface OptionalToolPorts {
   tool_output?: AgentTool
   skill?: AgentTool
   jobs?: AgentTool
-  /** The speaking agent continuing in a copy of itself, and its line to each fork (`tools/fork.ts`). */
-  fork?: ForkToolPort
+  /** Tasks handed to child sessions, and the line to each child (`tools/delegate.ts`). */
+  delegate?: DelegateToolPort
   agents?: AgentsToolPort
   loops?: LoopsToolOptions
   /** The host's plugin authoring: build, test and reload (or create) one user plugin. */

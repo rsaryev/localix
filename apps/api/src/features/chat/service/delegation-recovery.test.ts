@@ -30,13 +30,11 @@ async function fixture() {
     status = 'completed',
     content = 'Responsive layout verified.',
     updatedAt = SETTLED_AT,
-    extra: { forked?: true } = {},
   ) => {
     const invocation = JSON.stringify({
       kind: 'task-delegation',
       parentSessionId: 'parent',
       parentParticipant: 'agent:builtin:lead',
-      ...extra,
     })
     await sql`INSERT INTO agent_sessions (id, user_id, title, project_id, parent_session_id, root_session_id, session_kind, runtime_status, invocation_json, updated_at)
       VALUES (${id}, 'u', ${id}, 'p', 'parent', 'parent', 'subagent', ${status}, ${invocation}, ${updatedAt})`.execute(
@@ -281,19 +279,14 @@ test("recovery runs for every user who owns a child, each report under its owner
   ])
 })
 
-test("a recovered fork report reads as the agent's own fork, and only forks are marked so", async () => {
+test('a recovered report reads exactly like a live one', async () => {
   const { db, addChild, queue } = await fixture()
-  await addChild('fork', 'completed', 'Forked result.', SETTLED_AT, { forked: true })
-  await addChild('legacy', 'completed', 'Delegated result.')
+  await addChild('review', 'completed', 'Delegated result.')
   const { sent, wake } = admittingWake(queue)
-  expect(await recoverDelegationReports(db, wake, SWEEP_AT)).toBe(2)
-  const byChild = (id: string) => sent.find((request) => request.content.includes(`id: ${id})`))!
-  expect(byChild('fork').content.startsWith('[Your fork finished]')).toBe(true)
-  expect(byChild('legacy').content.startsWith('[Background sub-agent finished]')).toBe(true)
-  for (const request of sent) expect(request.content).not.toContain('`agents`')
-  const rows = await listDelegatedRuns(db, 'u', 'parent', { usage: false })
-  expect(rows.find((row) => row.sessionId === 'fork')?.forked).toBe(true)
-  expect(rows.find((row) => row.sessionId === 'legacy')?.forked).toBeUndefined()
+  expect(await recoverDelegationReports(db, wake, SWEEP_AT)).toBe(1)
+  expect(sent[0]!.content.startsWith('[Delegated task finished] ')).toBe(true)
+  expect(sent[0]!.content).toContain('Its final report:\nDelegated result.')
+  expect(sent[0]!.content).toContain('`delegate` action:"message"')
 })
 
 test('a run summary carries what the child consumed across all its runs, and its priority', async () => {

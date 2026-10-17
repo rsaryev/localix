@@ -1,17 +1,17 @@
 import type { DelegationPriority } from '../delegation-lanes'
 
 /**
- * Talking to a fork after it started: list, message, stop, close.
+ * Talking to a delegated child after it started: list, message, stop, close.
  *
- * A fork used to be fire-and-wait. The agent could list its children and nothing else, so a task
- * that turned out wrong ran to completion on the wrong premise, a follow-up meant a fresh fork
- * that knew nothing the first had learned, and only a person could stop a runaway child. The agent
- * that forked keeps a line to each fork:
+ * Delegation used to be fire-and-wait. The agent could list its children and nothing else, so a
+ * task that turned out wrong ran to completion on the wrong premise, a follow-up meant a fresh
+ * child that knew nothing the first had learned, and only a person could stop a runaway child. The
+ * agent that delegated keeps a line to each child:
  *
- *   message — a running fork reads it at its next step; an idle one runs again for it (in its
+ *   message — a running child reads it at its next step; an idle one runs again for it (in its
  *             turn, when the parent already has children running), same session, same memory;
- *   stop    — the running fork stops this run; it can still be messaged later;
- *   close   — the fork stops and is never woken again, by anyone.
+ *   stop    — the running child stops this run; it can still be messaged later;
+ *   close   — the child stops and is never woken again, by anyone.
  *
  * A run the parent is waiting on reports back when it finishes or fails, so the answer to a
  * message always arrives as a report; a stopped run reports nothing (`delegation-awaits.ts`). The
@@ -36,8 +36,6 @@ export interface DelegatedRunSummary {
   level?: number
   /** The session that created it. */
   parentSessionId?: string
-  /** The child is a fork of the agent itself (`fork`), not an older delegation to another agent. */
-  forked?: boolean
 }
 
 /** What the host's delivery answered, mirrored from `SubagentMessageDelivery` without importing chat. */
@@ -53,8 +51,8 @@ export type ChildCloseResult =
   | { closed: true; wasRunning: boolean; alreadyClosed: boolean }
   | { closed: false; reason: 'gone' | 'not-subagent' }
 
-export interface ForkControlPorts {
-  /** This session's own forks — the only children the tool resolves. */
+export interface DelegateControlPorts {
+  /** This session's own children — the only ones the tool resolves. */
   listRuns: () => Promise<DelegatedRunSummary[]>
   message: (sessionId: string, text: string, interrupt?: boolean) => Promise<ChildMessageDelivery>
   stop: (sessionId: string) => Promise<void>
@@ -66,9 +64,9 @@ export interface ToolAnswer {
   isError?: boolean
 }
 
-/** A fork of this session, named the way `list` prints it: session id or task name. */
+/** A child of this session, named the way `list` prints it: session id or task name. */
 async function resolveRun(
-  ports: ForkControlPorts,
+  ports: DelegateControlPorts,
   reference: string,
 ): Promise<DelegatedRunSummary | ToolAnswer> {
   const wanted = reference.trim()
@@ -77,7 +75,7 @@ async function resolveRun(
   )
   if (run && (run.level ?? 1) === 1) return run
   return {
-    content: `No fork "${wanted}" in this conversation. Call action:"list" for the ids.`,
+    content: `No delegated task "${wanted}" in this conversation. Call action:"list" for the ids.`,
     isError: true,
   }
 }
@@ -99,7 +97,7 @@ const isAnswer = (value: DelegatedRunSummary | ToolAnswer): value is ToolAnswer 
   'content' in value
 
 const closedAnswer = (run: DelegatedRunSummary): ToolAnswer => ({
-  content: `\`${run.taskName}\` is closed and takes nothing more. Fork again if the work continues.`,
+  content: `\`${run.taskName}\` is closed and takes nothing more. Delegate again if the work continues.`,
   isError: true,
 })
 
@@ -115,10 +113,10 @@ function formatRun(run: DelegatedRunSummary): string {
     .join(' · ')
 }
 
-/** `list`: this session's forks, with what they have spent in all. */
-export async function listForks(ports: ForkControlPorts): Promise<ToolAnswer> {
+/** `list`: this session's children, with what they have spent in all. */
+export async function listDelegations(ports: DelegateControlPorts): Promise<ToolAnswer> {
   const runs = (await ports.listRuns()).filter((run) => (run.level ?? 1) === 1)
-  if (!runs.length) return { content: 'No forks in this session.' }
+  if (!runs.length) return { content: 'No delegated tasks in this session.' }
   const priced = runs.filter((run) => run.usage?.costUsd != null)
   const spent = formatUsage({
     tokens: runs.reduce((sum, run) => sum + (run.usage?.tokens ?? 0), 0),
@@ -126,17 +124,17 @@ export async function listForks(ports: ForkControlPorts): Promise<ToolAnswer> {
   })
   return {
     content: [
-      `**Forks (${runs.length})${spent ? ` — ${spent} in all` : ''}:**`,
+      `**Delegated tasks (${runs.length})${spent ? ` — ${spent} in all` : ''}:**`,
       ...runs.map(formatRun),
     ].join('\n'),
   }
 }
 
 export async function messageRun(
-  ports: ForkControlPorts,
+  ports: DelegateControlPorts,
   reference: string,
   text: string,
-  /** Stop the fork's current run now and restart it with this message. */
+  /** Stop the child's current run now and restart it with this message. */
   interrupt?: boolean,
 ): Promise<ToolAnswer> {
   const run = await resolveRun(ports, reference)
@@ -151,7 +149,7 @@ export async function messageRun(
           isError: true,
         }
   }
-  // What the fork has spent so far rides every answer, so the agent weighs another message
+  // What the child has spent so far rides every answer, so the agent weighs another message
   // against the bill it is adding to — not after the report, when the next run is already paid.
   const spent = formatUsage(run.usage)
   const tail = `Its report arrives on its own when the run ends — do not wait on it.${
@@ -170,11 +168,11 @@ export async function messageRun(
       content: `Interrupted \`${run.taskName}\`: its current run is being stopped, and it restarts with your message — no report for the run it cut short. ${tail}`,
     }
   return {
-    content: `\`${run.taskName}\` will run your message in its turn (position ${delivery.position}): other forks are using the parallel slots. ${tail}`,
+    content: `\`${run.taskName}\` will run your message in its turn (position ${delivery.position}): other children are using the parallel slots. ${tail}`,
   }
 }
 
-export async function stopRun(ports: ForkControlPorts, reference: string): Promise<ToolAnswer> {
+export async function stopRun(ports: DelegateControlPorts, reference: string): Promise<ToolAnswer> {
   const run = await resolveRun(ports, reference)
   if (isAnswer(run)) return run
   if (run.status !== 'running') {
@@ -191,7 +189,10 @@ export async function stopRun(ports: ForkControlPorts, reference: string): Promi
   }
 }
 
-export async function closeRun(ports: ForkControlPorts, reference: string): Promise<ToolAnswer> {
+export async function closeRun(
+  ports: DelegateControlPorts,
+  reference: string,
+): Promise<ToolAnswer> {
   const run = await resolveRun(ports, reference)
   if (isAnswer(run)) return run
   const result = await ports.close(run.sessionId)
@@ -205,7 +206,7 @@ export async function closeRun(ports: ForkControlPorts, reference: string): Prom
   }
 }
 
-/** stop/close over one fork or several: every fork answered, in the order named. */
+/** stop/close over one child or several: every child answered, in the order named. */
 export async function eachRun(
   refs: string | readonly string[],
   act: (ref: string) => Promise<ToolAnswer>,

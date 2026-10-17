@@ -1,24 +1,25 @@
 /**
- * Only root conversations create child work, and the only child work an agent creates is a fork
- * of itself (`tools/fork.ts`). A fork executes its task and reports back; it cannot fork again.
+ * Only root conversations create child work (`tools/delegate.ts`). A delegated child executes its
+ * task and reports back; it cannot delegate again, so a tree is one level deep and no chain of
+ * agents handing work to each other can form.
  */
 
-/** The deepest a fork sits: the root is depth 0, its forks depth 1. */
-export const MAX_FORK_DEPTH = 1
+/** The deepest a delegated child sits: the root is depth 0, its children depth 1. */
+export const MAX_DELEGATION_DEPTH = 1
 
-/** Can a session at this depth fork at all? Decides whether it is offered the tool. */
+/** Can a session at this depth delegate at all? Decides whether it is offered the tool. */
 export function delegatesAt(depth: number): boolean {
-  return depth < MAX_FORK_DEPTH
+  return depth < MAX_DELEGATION_DEPTH
 }
 
 /**
- * What a fork is told about forking, once, with its task. Without it a fork spends a turn on a
- * fork the depth limit refuses.
+ * What a child is told about delegating, once, with its task. Without it a child spends a turn on
+ * a delegation the depth limit refuses.
  */
 export function delegationNote(depth: number): string {
   return delegatesAt(depth)
-    ? 'You may fork an independent part of this task with `fork`; do the core of it yourself.'
-    : 'Do this task yourself: a fork cannot fork again.'
+    ? 'You may delegate an independent part of this task with `delegate`; do the core of it yourself.'
+    : 'Do this task yourself: a delegated task cannot be delegated again.'
 }
 
 export interface DelegationPosition {
@@ -26,6 +27,6 @@ export interface DelegationPosition {
   depth: number
   /** Agent ids that created the sessions above this one, root first. */
   chain: readonly string[]
-  /** The agent forking now. */
+  /** The agent delegating now. */
   self: string | null
 }

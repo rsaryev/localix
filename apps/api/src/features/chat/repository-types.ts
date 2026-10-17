@@ -143,8 +143,8 @@ export interface SessionRecord {
    */
   modelChoices?: SessionModelChoices
   /**
-   * When a delegated child was CLOSED (`fork` action close), or null while it is open. A closed child
-   * is terminal history: no wake, no message, no send reaches a run in it again.
+   * When a delegated child was CLOSED (`delegate` action close), or null while it is open. A closed
+   * child is terminal history: no wake, no message, no send reaches a run in it again.
    */
   closedAt?: string | null
   /**

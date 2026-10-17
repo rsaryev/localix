@@ -2,9 +2,9 @@
  * The report a parent receives each time a delegated child's run ends — one builder for both
  * paths that deliver it.
  *
- * EVERY RUN REPORTS. A child is not one-shot any more: the agent that forked it can message it
- * (`fork` action message) and the person can write into its chat, and each of those starts a run whose
- * result the parent must see — delegated, worked, reported; messaged, worked, reported. A report
+ * EVERY RUN REPORTS. A child is not one-shot any more: the agent that delegated to it can message
+ * it (`delegate` action message) and the person can write into its chat, and each of those starts a
+ * run whose result the parent must see — delegated, worked, reported; messaged, worked, reported. A report
  * sent only for the first run left every later answer in a transcript nobody was reading.
  *
  * Two paths exist because a child can outlive the process running it: the LIVE seam in
@@ -17,36 +17,11 @@
  *
  *   bound the text → word the message → address it (session, participant, key).
  */
-import { truncateTail } from '@localixai/agent'
-import { truncationMarker } from '../../agent-core/tools/tool-output'
+import { reportBody } from '../../agent-core/tools/child-report'
 import { agentParticipant } from '../../../db/participant'
 import type { WakeRequest } from '../contracts'
 
-/** Unbounded child reports once exhausted the parent's context. Keep the conclusion
- * (tail), with a pointer to the full child transcript, instead of copying its log. */
-const CHILD_REPORT_MAX_LINES = 120
-const CHILD_REPORT_MAX_BYTES = 12_000
-
-const NO_REPORT_NOTICE =
-  'It produced no final text. Its transcript can be read with `history_search`.'
-
-/**
- * Cap one child's report and, when capped, say exactly how to read the rest.
- *
- * The bound is the whole defence against a tree bricking the conversation that owns it, and a
- * silent regression here is invisible until a session is already unrecoverable.
- */
-export function childReport(text: string, childSessionId: string): string {
-  const truncated = truncateTail(text, {
-    maxLines: CHILD_REPORT_MAX_LINES,
-    maxBytes: CHILD_REPORT_MAX_BYTES,
-  })
-  if (!truncated.truncated) return text
-  return `${truncationMarker(truncated, {
-    kept: 'last',
-    advice: `Read the full transcript with history_search session_id:"${childSessionId}".`,
-  })}\n${truncated.content}`
-}
+export { childReport } from '../../agent-core/tools/child-report'
 
 export interface DelegationReportInput {
   /** The child's label (the delegation title). */
@@ -58,8 +33,6 @@ export interface DelegationReportInput {
   status: string | null
   /** The run's final assistant text; empty or absent means it produced none. */
   text: string | null | undefined
-  /** The reporting child is a fork of the delegator itself (`fork`), not another agent. */
-  forked?: boolean
 }
 
 /** The wake content the parent reads. */
@@ -70,19 +43,11 @@ export function delegationReportMessage(input: DelegationReportInput): string {
       : input.status === 'stopped'
         ? 'was STOPPED before finishing'
         : 'finished'
-  const text = input.text?.trim()
-  const body = text
-    ? `\n\nIts final report:\n${childReport(text, input.childSessionId)}`
-    : `\n\n${NO_REPORT_NOTICE}`
-  if (input.forked) {
-    return (
-      `[Your fork ${outcome}] ${input.label} (id: ${input.childSessionId}) ${outcome}.${body}\n\n` +
-      'To change or extend this work, send the fork `fork` action:"message".'
-    )
-  }
-  // A child an older conversation delegated to another agent: it still reports, but nothing the
-  // agent holds now manages it — a person can still open its chat and talk to it.
-  return `[Background sub-agent ${outcome}] ${input.label} (id: ${input.childSessionId}) ${outcome}.${body}`
+  return (
+    `[Delegated task ${outcome}] ${input.label} (id: ${input.childSessionId}) ${outcome}.\n\n` +
+    `${reportBody(input.text, input.childSessionId)}\n\n` +
+    'To change or extend this work, send the child `delegate` action:"message".'
+  )
 }
 
 /**

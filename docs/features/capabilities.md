@@ -8,16 +8,16 @@ allows.
 
 ## What you can do
 
-| Goal                                  | How                                                                             |
-| ------------------------------------- | ------------------------------------------------------------------------------- |
-| Restrict which tools an agent may use | Switch tools off for that agent in **Settings → Capabilities**                  |
-| Require confirmation before a change  | Add an `ask` rule to the agent (see [Permissions](permissions.md))              |
-| Stop being asked about one command    | Choose **Always** under **Allow** on the confirmation card, then **Approve**    |
-| Stop being asked inside one folder    | Click the folder in the path on a file's confirmation card                      |
-| Switch off a plugin tool              | Switch off that tool, or the whole plugin, for the agent                        |
-| Track substantial work                | Keep the Kanban plugin on; let the agent `fork` itself when parallel work helps |
-| Cut tokens per turn                   | Give the agent fewer tools — a lean agent is a lean prompt                      |
-| Undo your edits to a shipped role     | **Reset to defaults** on that agent's Permission rules                          |
+| Goal                                  | How                                                                          |
+| ------------------------------------- | ---------------------------------------------------------------------------- |
+| Restrict which tools an agent may use | Switch tools off for that agent in **Settings → Capabilities**               |
+| Require confirmation before a change  | Add an `ask` rule to the agent (see [Permissions](permissions.md))           |
+| Stop being asked about one command    | Choose **Always** under **Allow** on the confirmation card, then **Approve** |
+| Stop being asked inside one folder    | Click the folder in the path on a file's confirmation card                   |
+| Switch off a plugin tool              | Switch off that tool, or the whole plugin, for the agent                     |
+| Track substantial work                | Keep the Kanban plugin on; let the agent `delegate` when parallel work helps |
+| Cut tokens per turn                   | Give the agent fewer tools — a lean agent is a lean prompt                   |
+| Undo your edits to a shipped role     | **Reset to defaults** on that agent's Permission rules                       |
 
 ## How it works
 
@@ -55,7 +55,7 @@ plan for approval. For a lasting restriction, give the agent rules that deny the
 denying file-write tools alone does not prevent writes through shell commands or other tools. Agreed
 work can be tracked on the chat's [Kanban board](task-board.md), which the bundled Kanban plugin
 provides; the board starts no model or session. When separate execution is useful, the agent
-explicitly calls `fork`, whose child runs as the same agent under the same rules.
+explicitly calls `delegate`, whose child runs as itself or a directory agent under the same mode.
 
 ### Going back to what we ship
 

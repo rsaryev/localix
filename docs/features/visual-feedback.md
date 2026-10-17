@@ -75,9 +75,9 @@ assets such as `style.css` and `game.js` load without a separate server. When a 
 answer, `open` reports that the page did not load (for example, connection refused) and suggests
 checking that its server is still running.
 
-For checks in a fork, `open` with `background:true` mounts a native Preview host without selecting
-its conversation or revealing the panel. This requires a connected Localix application, not a
-standalone headless browser. Opening reports probe readiness separately from URL availability.
+For checks in a delegated child, `open` with `background:true` mounts a native Preview host without
+selecting its conversation or revealing the panel. This requires a connected Localix application,
+not a standalone headless browser. Opening reports probe readiness separately from URL availability.
 Layout resizing does not establish real-device touch behavior.
 
 ## How it works

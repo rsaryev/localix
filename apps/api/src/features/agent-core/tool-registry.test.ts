@@ -44,7 +44,7 @@ const maximalRegistryOptions = {
     skill: inertTool('skill'),
     jobs: inertTool('jobs'),
     browser: {} as never,
-    fork: {} as never,
+    delegate: {} as never,
     agents: {} as never,
     loops: {} as never,
     plugin_build: { run: async () => ({ text: '', ok: true }) },
@@ -340,9 +340,9 @@ describe('createRuntimeToolRegistry', () => {
 
   test('a port the host left empty is a ledger row, never a silent absence', () => {
     const registry = createRuntimeToolRegistry({})
-    expect(registry.ledger.get('fork')).toEqual({
+    expect(registry.ledger.get('delegate')).toEqual({
       state: 'withheld',
-      reason: { layer: 'authority', kind: 'missing', capability: 'host:fork' },
+      reason: { layer: 'authority', kind: 'missing', capability: 'host:delegate' },
     })
     // A removed tool has no row at all: nothing could ever build it.
     expect(registry.ledger.get('agents')).toEqual({

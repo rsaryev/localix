@@ -72,7 +72,7 @@ export const isBoundaryDeliverable = (turn: PendingTurn): boolean =>
     !hasExecutionOverrides(turn))
 
 /**
- * A delegator's word to the child running its task (`fork` action message).
+ * A delegator's word to the child running its task (`delegate` action message).
  *
  * The one machine wake a RUNNING model may take mid-step: it amends the child's brief, and making
  * the child finish on the stale brief first would waste exactly the work the message exists to

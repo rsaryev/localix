@@ -10,7 +10,7 @@ import {
   BookOpen,
   MessageCircleQuestion,
   Plug,
-  GitFork,
+  Forward,
   RefreshCw,
   MousePointerClick,
   Globe,
@@ -190,13 +190,13 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     icon: Terminal,
     stackable: true,
   },
-  // The agent continuing in a copy of itself — one card per fork, like a spawn. Its
-  // list/message/stop/close calls share the card: each still names the fork it touched.
-  fork: {
-    label: 'Forked',
-    noun: 'forks',
-    verb: 'Forking',
-    icon: GitFork,
+  // A task handed to a child session — one card per delegation, like a spawn. Its
+  // list/message/stop/close calls share the card: each still names the child it touched.
+  delegate: {
+    label: 'Delegated',
+    noun: 'delegated tasks',
+    verb: 'Delegating',
+    icon: Forward,
     stackable: false,
   },
   loops: {

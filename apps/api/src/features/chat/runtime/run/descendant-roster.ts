@@ -16,7 +16,7 @@ import type { RunSessionSnapshotRow } from './session-snapshot'
  *
  * The subtree, because what a delegation put in motion is the reader's to know: a grandchild still
  * working is why its child has not reported yet. Indented under its owner (`↳`), because seeing is
- * not managing — a deeper run is its owner's to message or stop (`fork-control.ts`).
+ * not managing — a deeper run is its owner's to message or stop (`delegate-control.ts`).
  *
  * `viewer` is the participant taking this turn, and it changes what the roster MEANS. A room's
  * members share one session, so without it every member was told that every colleague's

@@ -50,9 +50,9 @@ plugin tool: the agent loads it once with `activate_tools`, and the session reme
    `blocked`, with all dependencies `done`. If another agent owns the card, reassign it first or
    give its owner the work.
 3. For a card another agent should do, the agent addresses that participant with `@handle` and the
-   assignment. For isolated side work, the agent can fork itself with the card's `detail` as the
-   task. A fork knows nothing about the board: the card stays the parent's to complete or block
-   after it reviews the report.
+   assignment. For isolated side work, the agent can `delegate` the card's `detail` as the task. A
+   child knows nothing about the board: the card stays the parent's to complete or block after it
+   reviews the report.
 4. While it works, the agent ticks checklist items with `update`: `items` is the whole list, and an
    entry written as `{ text, done }` sets that item's tick.
 5. The agent calls `complete`, which names the cards it released and any checklist items still
@@ -155,12 +155,12 @@ See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a too
   the record of what changed and how it was verified.
 - The volatile board digest the core prompt once carried is gone: the agent reads the board with
   `list` when it needs it.
-- Card usage and cost are not attributed per card. Forked runs are billed to their own sessions; see
-  [Cost tracking](cost-tracking.md).
+- Card usage and cost are not attributed per card. Delegated runs are billed to their own sessions;
+  see [Cost tracking](cost-tracking.md).
 
 ## Related guides
 
-- [Forks](delegation.md)
+- [Delegation](delegation.md)
 - [Conversations](conversations.md)
 - [Capabilities](capabilities.md)
 - [Plugins](../extending/plugins.md)

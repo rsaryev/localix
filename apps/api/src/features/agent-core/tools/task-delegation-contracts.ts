@@ -21,7 +21,7 @@ export interface QueuedDelegation {
   queued: number
 }
 
-/** The forking agent as the registry resolves it, with the defaults its fork's run inherits. */
+/** The agent a task goes to as the registry resolves it, with the defaults its child run takes. */
 export interface DelegateAgent {
   agentId: string
   handle: string
@@ -35,9 +35,9 @@ export interface TaskDelegationOptions {
   userId: string
   parentSessionId: string
   projectId?: string
-  /** Where the forking session sits in the tree, and which agent forks. Read per call. */
+  /** Where the delegating session sits in the tree, and which agent delegates. Read per call. */
   position: () => MaybePromise<DelegationPosition>
-  /** Resolve the forking agent itself; null when it is no longer enabled. */
+  /** Resolve an agent by id or handle for child work; null when it is not enabled here. */
   resolveAgent: (
     reference: string,
     scope: { projectId?: string },
@@ -59,8 +59,6 @@ export interface TaskDelegationOptions {
         priority: DelegationPriority
         depth: number
         chain: string[]
-        /** The delegating agent itself, continuing in a copy of the conversation (`fork`). */
-        forked?: true
       }
       projectId?: string
       pinnedSkills?: string[]
@@ -78,6 +76,6 @@ export interface TaskDelegationOptions {
     },
   ) => Promise<EarlyDelegationOutcome | QueuedDelegation | undefined>
   onSubagentStart?: (agentType: string, agentId: string) => void
-  /** Copy this conversation, as of the calling turn, into a forked child (`agent-fork.ts`). */
-  inheritConversation?: (childSessionId: string) => Promise<void>
+  /** Copy this conversation, filtered, into a child started with `context: "conversation"`. */
+  copyConversation: (childSessionId: string) => Promise<void>
 }

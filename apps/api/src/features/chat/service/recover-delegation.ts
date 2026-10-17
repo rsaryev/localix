@@ -79,8 +79,6 @@ export function delegationRecoveryQuery(db: Kysely<AppDatabase>, userId: string,
       .select(
         sql<string | null>`json_extract(s.invocation_json, '$.parentParticipant')`.as('recipient'),
       )
-      // A fork's report reads as the agent's own work, recovered or live (`delegation-report.ts`).
-      .select(sql<number | null>`json_extract(s.invocation_json, '$.forked')`.as('forked'))
       // The delegating participant's handle in the session the report lands in — the delegator's
       // own (`delegationReportSession`) — so a recovered report routes exactly like a live one.
       .select(
@@ -130,7 +128,6 @@ async function recoverForUser(
           runId: child.run_id ?? 'launch',
           status: child.runtime_status,
           text: child.report,
-          ...(child.forked ? { forked: true } : {}),
         }),
       )
       if (result.delivered) delivered++

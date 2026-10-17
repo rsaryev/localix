@@ -32,7 +32,7 @@ change.
 
 - **Plan** appends denials for calls classified as `files`, `host`, or `external`. This includes
   ordinary file edits, project/global memory writes, and external processes. Reads, previews, and
-  the conversation's own state — a board card, a game move, a fork — stay allowed.
+  the conversation's own state — a board card, a game move, a delegated task — stay allowed.
 - **Bypass** removes tool `ask` rules about call classes, such as `outside-workspace` and
   `dangerous`, leaving the other rules to decide. It turns questions about a named tool or command
   into `allow` at the same position, then appends a denial for catastrophic commands. Plugin, skill,
@@ -51,11 +51,11 @@ Assuming the agent's other rules permit the tool, Plan treats these calls differ
 | Memory `set` with `scope: "project"` or `"global"`   | `host`     | Refused.                                            |
 | File edit confined to this root chat's plan Markdown | `session`  | May run; ordinary file targets are refused.         |
 
-Plan permits some state changes, including board edits and forks. It does not make the whole
-application read-only; use the call's classification and permission rules to trace a refusal.
+Plan permits some state changes, including board edits and delegated tasks. It does not make the
+whole application read-only; use the call's classification and permission rules to trace a refusal.
 
-A mode belongs to the whole conversation tree: a fork the conversation starts runs under the same
-mode, and changing the mode reaches every child session on its next run. A child session's own
+A mode belongs to the whole conversation tree: a child the conversation delegates to runs under the
+same mode, and changing the mode reaches every child session on its next run. A child session's own
 button shows the mode but cannot change it.
 
 A change takes effect on the next run. A run already in progress finishes under the mode it started
@@ -78,11 +78,11 @@ instead of rewriting it, and you can open it like any other file:
 
 `<conversation>` is the conversation's reference, such as `LOCALIX-42`. Only Markdown files directly
 inside this conversation's own plan folder receive the Plan-mode file exception: writing another
-conversation's `PLAN.md` counts as an ordinary file change and is refused, and a fork writes no plan
-file at all. The folder is relative to the root conversation’s working directory. Chosen project
-directories are preserved when the chat is deleted. A root chat in **Default** uses a scratch
-directory, whose cleanup can remove its plan files; copy anything you need to keep into a chosen
-project first.
+conversation's `PLAN.md` counts as an ordinary file change and is refused, and a delegated child
+writes no plan file at all. The folder is relative to the root conversation’s working directory.
+Chosen project directories are preserved when the chat is deleted. A root chat in **Default** uses a
+scratch directory, whose cleanup can remove its plan files; copy anything you need to keep into a
+chosen project first.
 
 The exception covers Markdown files in that directory, not only `PLAN.md`. Version snapshots are
 owned by Localix: the database version is authoritative, and the host rewrites a snapshot from it
@@ -168,8 +168,8 @@ conversation shows "Plan vN continued.", and the reply that follows is marked as
 Continue.
 
 Continue appears only while nothing else is happening in the conversation: no reply running, no
-message or wake waiting in the queue, no request waiting for you, and no fork still working. A plan
-the agent has completed, or that you set aside, offers nothing to continue.
+message or wake waiting in the queue, no request waiting for you, and no delegated task still
+working. A plan the agent has completed, or that you set aside, offers nothing to continue.
 
 Background bash jobs and monitors do not block this idle check, so Continue does not establish that
 all processes have stopped. Continue is shared infrastructure for features that register resume

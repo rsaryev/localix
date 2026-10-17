@@ -1,8 +1,8 @@
 # Background work
 
 Background work is what a session keeps running after the turn that started it ends: a dev server, a
-long build, a watch, a fork of the agent. Use this page to see how that work is started, found,
-stopped, and reported, and what a restart does to it.
+long build, a watch, a task delegated to a child session. Use this page to see how that work is
+started, found, stopped, and reported, and what a restart does to it.
 
 ## Terminology
 
@@ -11,7 +11,7 @@ stopped, and reported, and what a restart does to it.
 | Job         | A `bash` command running in the background, addressed as `bg-1`, `bg-2`.              | Starting a job checks the session’s running work; see Limits for the shared count.              |
 | Pane        | An interactive terminal (`bash` `action: "open"`), or a server the preview restarted. | Listed as `bg-N` with its terminal id and counted when starting another job.                    |
 | Monitor     | A wait or watch the session is woken by, addressed as `mon-1`.                        | Described on its own page: [Wait for something to happen](monitors.md).                         |
-| Sub-agent   | A detached child of the session (a fork), addressed as `sub-1`.                       | It does not count toward the job limit.                                                         |
+| Sub-agent   | A detached child of the session (`delegate`), addressed as `sub-1`.                   | It does not count toward the job limit.                                                         |
 | Work record | The durable row every one of these has: what it is, that it runs, how it ended.       | One row per item; the running set is also kept in memory for live actions.                      |
 | Exit notice | The wake armed for a job started with `notify`.                                       | Repeated exit reports reuse one delivery identity; delivery is not proof of a successful reply. |
 
@@ -24,7 +24,7 @@ stopped, and reported, and what a restart does to it.
 | See what is running   | The composer's background-work strip lists jobs, monitors and sub-agents together.             | It shows running work; an item leaves the strip when it ends.                                            |
 | Read or stop one      | `jobs` with `action="list"`, `"read"`, `"stop"` or `"send_input"`, or the strip's Stop.        | Stop is a request: a process gets a moment to exit before it is killed.                                  |
 | Open a job's terminal | A job started in a terminal pane opens from its strip row.                                     | If PTY creation fails or no terminal host exists, the job has only its captured transcript output.       |
-| Talk to a fork        | `fork` with `action="message"`, `"stop"` or `"close"` ([Forks](delegation.md)).                | Every run of a child is listed as `sub-N` and reports back.                                              |
+| Talk to a child       | `delegate` with `action="message"`, `"stop"` or `"close"` ([Delegation](delegation.md)).       | Every run of a child is listed as `sub-N` and reports back.                                              |
 
 ## Manage live work
 
@@ -42,7 +42,7 @@ Use the returned `job_id` with `jobs`, for example:
 
 **Stop requested** confirms that the registered action was invoked, not that the process has exited.
 List again to check whether it remains in the running registry. An item without a stop action can
-refuse the request; manage listed forks through `fork`.
+refuse the request; manage listed children through `delegate`.
 
 ```json
 { "action": "send_input", "job_id": "bg-1", "input": "status\n" }
@@ -85,7 +85,7 @@ The same mechanism carries a CC hook's asynchronous rewake.
 | Job       | Localix does not reattach it: its stored running row becomes `lost`, and its transcript card is settled. |
 | Notify    | The notice ends with `restart` and wakes nobody; the job is listed as `lost`.                            |
 | Monitor   | A wait resumes from its row; a watch ends with `restart`. See [monitors](monitors.md).                   |
-| Sub-agent | Its report is recovered from the finished child, once. See [forks](delegation.md).                       |
+| Sub-agent | Its report is recovered from the finished child, once. See [delegation](delegation.md).                  |
 
 Restarting the desktop app to install an update is such a restart. The confirmation uses the UI's
 loaded session roster: it counts top-level turns in flight and work items whose kind is not
@@ -143,7 +143,7 @@ outcome is shown beside it.
 
 - [Wait for something to happen](monitors.md)
 - [Repeat work on a schedule](loops.md)
-- [Forks](delegation.md)
+- [Delegation](delegation.md)
 
 ## Source of truth
 

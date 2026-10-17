@@ -126,8 +126,8 @@ export async function createAgentFacadePhase({
     flushChildMessages: (...args) => chatService.flushChildMessages(...args),
     listDelegatedRuns: (...args) => listDelegatedRuns(db, ...args),
     resolveRunAgent: (...args) => agentsService.resolveRunAgent(...args),
-    // How `fork` resolves the forking agent itself (by id; a handle is accepted too), admitted
-    // for child work with the defaults its fork's run inherits.
+    // How `delegate` resolves the agent a task goes to (by id; a handle is accepted too), admitted
+    // through its `delegation` host with the defaults its child run takes.
     resolveDelegateAgent: async (reference, { projectId }) => {
       const wanted = reference.trim().replace(/^@/, '').trim()
       const byHandle = async () =>

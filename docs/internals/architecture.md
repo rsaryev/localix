@@ -108,7 +108,7 @@ Kanban is a bundled plugin
 passive board per chat, stored in that chat's plugin folder. Core names no board. The plugin reaches
 the host only through generic seams — per-chat storage, the agent directory, the tool's bound
 speaker, a resource and a search provider, and a live-frame stream. It creates no session and starts
-no run; agents create child sessions only by forking themselves with the `fork` tool. The
+no run; agents create child sessions only with the `delegate` tool. The
 [Kanban guide](../features/task-board.md) owns the board's lifecycle.
 
 ## Configuration

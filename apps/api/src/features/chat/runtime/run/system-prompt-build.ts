@@ -147,7 +147,7 @@ export async function buildRunSystemPrompt(
           ? [{ title: c.session.title }]
           : [],
       )
-  if (activeSubAgents.length && runtimeTools.toolNames.includes(TOOL.fork)) {
+  if (activeSubAgents.length && runtimeTools.toolNames.includes(TOOL.delegate)) {
     const runs = await getAgentService()
       // The roster prints progress, not spend: skip the per-child usage reads on every turn.
       ?.listDelegatedRuns?.(userId, session.id, { usage: false })

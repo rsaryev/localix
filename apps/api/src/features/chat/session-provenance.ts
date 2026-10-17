@@ -34,11 +34,6 @@ export type SessionProvenance =
       depth?: number
       /** Agent ids that delegated down to it, root first — the agents it may never hand work to. */
       chain?: string[]
-      /**
-       * A FORK: the delegating agent itself continues in the child, which starts with a copy of
-       * the parent conversation (`run/fork-conversation.ts`) instead of a self-contained brief.
-       */
-      forked?: true
     }
   | { kind: 'loop'; parentSessionId: string; loopId: string }
   | { kind: 'hook'; parentSessionId: string; phase: 'verifier' }
@@ -112,15 +107,13 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         'priority',
         'depth',
         'chain',
-        'forked',
       ]) &&
         isString(value.parentSessionId) &&
         isString(value.toolCallId) &&
         optionalString(value.parentParticipant) &&
         (value.priority === undefined || isDelegationPriority(value.priority)) &&
         (value.depth === undefined || isDepth(value.depth)) &&
-        (value.chain === undefined || isStringList(value.chain)) &&
-        (value.forked === undefined || value.forked === true)
+        (value.chain === undefined || isStringList(value.chain))
         ? {
             kind: 'task-delegation',
             parentSessionId: value.parentSessionId,
@@ -129,7 +122,6 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
             ...(isDelegationPriority(value.priority) ? { priority: value.priority } : {}),
             ...(isDepth(value.depth) ? { depth: value.depth } : {}),
             ...(isStringList(value.chain) ? { chain: value.chain } : {}),
-            ...(value.forked === true ? { forked: true as const } : {}),
           }
         : reject(raw)
     case 'loop':

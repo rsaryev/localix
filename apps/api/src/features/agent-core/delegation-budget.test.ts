@@ -34,7 +34,7 @@ describe('the runaway bound: new children since the person last wrote', () => {
     )
     const reason = !verdict.ok ? verdict.reason : ''
     expect(reason).toContain(String(DELEGATIONS_PER_HUMAN_TURN))
-    expect(reason).toContain('`fork` action:"message"')
+    expect(reason).toContain('`delegate` action:"message"')
     expect(reason).not.toContain('`agents`')
     expect(reason).toContain('resets when the user writes again')
   })

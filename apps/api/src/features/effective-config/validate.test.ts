@@ -19,7 +19,7 @@ describe('computeToolSurface', () => {
     // named its MODE, then a session-level economy trim. Both were second answers to a question
     // the capability chain owns, and both let Settings show a tool the run never saw.
     const surface = computeToolSurface({ disabledTools: [] })
-    for (const name of ['fork', 'jobs', 'skill']) {
+    for (const name of ['delegate', 'jobs', 'skill']) {
       expect(surface.enabled).toContain(name)
     }
     expect(surface.disabled).toEqual([])

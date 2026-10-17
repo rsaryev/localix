@@ -1,5 +1,5 @@
 /**
- * Admission limits for child work (today: forks, `tools/fork.ts`).
+ * Admission limits for child work (`tools/delegate.ts`).
  *
  * WHY THIS EXISTS: one session issued delegations without any bound and reached 782
  * sub-sessions. The observable failure was not "too many agents" in the abstract — it
@@ -81,8 +81,8 @@ export function admitDelegation(
     return {
       ok: false,
       reason:
-        `You have started ${created} new forks since the user last wrote, which is the limit of ${budget.maxPerHumanTurn} per user message. ` +
-        'Give follow-up work to the forks you already have with `fork` action:"message" — that creates none — or do the rest yourself. ' +
+        `You have started ${created} new delegated tasks since the user last wrote, which is the limit of ${budget.maxPerHumanTurn} per user message. ` +
+        'Give follow-up work to the children you already have with `delegate` action:"message" — that creates none — or do the rest yourself. ' +
         'The limit resets when the user writes again.',
     }
   }

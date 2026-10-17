@@ -10,12 +10,16 @@ import type { EarlyDelegationOutcome } from '../../../agent-core/tools/task-dele
 import { agentParticipant } from '../../../../db/participant'
 import { delegationReportWake } from '../delegation-report'
 import { releaseLane, requestLane } from '../../../agent-core/delegation-lanes'
-import { expectReport, takeExpectedReport } from '../../../agent-core/delegation-awaits'
+import {
+  deliverHeldReport,
+  expectReport,
+  takeExpectedReport,
+} from '../../../agent-core/delegation-awaits'
 import { delegatesAt } from '../../../agent-core/delegation-hierarchy'
 import { delegationPlace } from '../../session-provenance'
 import { endSubagentWork, type SubagentWorkDeps } from './subagent-work'
 import { releaseChildSurfaces, type ChildSurfaceDeps } from './child-surfaces'
-import { copyConversationForFork } from './fork-conversation'
+import { copyConversationForDelegate } from './delegate-context'
 
 /**
  * How long a delegation call watches its child before returning "running".
@@ -42,13 +46,13 @@ export interface TaskDelegationOptionsInput {
   ccHooks?: CcHooksRuntime
   /** Where a detached child is recorded as the session's background work (`sub-N`). */
   subagentWork: SubagentWorkDeps
-  /** The calling turn's live assistant row — left out of a fork's copy of the conversation. */
+  /** The calling turn's live assistant row — left out of a child's copy of the conversation. */
   currentMessageId?: () => string
 }
 
 /**
- * Wire the child-session host for a run that may create children — `fork`, the only child work an
- * agent creates. Runtime capability policy is the independent authority gate.
+ * Wire the child-session host for a run that may create children with `delegate`. Runtime
+ * capability policy is the independent authority gate.
  *
  * Returns `undefined` whenever a precondition is missing: the session cannot create children,
  * or no agent service is bound yet.
@@ -58,7 +62,7 @@ export function buildTaskDelegationOptions(
 ): TaskDelegationOptions | undefined {
   const { userId, session, agentProfile, ccHooks } = input
 
-  if (!isDelegationParent(session) || !isToolDirect(agentProfile, TOOL.fork)) return undefined
+  if (!isDelegationParent(session) || !isToolDirect(agentProfile, TOOL.delegate)) return undefined
   // Persisted nested sessions remain readable, but only the root can create new child work.
   const place = delegationPlace(session.provenance)
   if (!delegatesAt(place.depth)) return undefined
@@ -91,18 +95,19 @@ export function buildTaskDelegationOptions(
         },
       }),
     // Where this session sits (`delegation-hierarchy.ts`), as its creation wrote it, and the
-    // agent forking now — a fork is that agent itself.
+    // agent delegating now.
     position: () => ({ ...place, self: input.agentId ?? null }),
-    inheritConversation: async (childSessionId) => {
-      await copyConversationForFork(input.repo, {
+    copyConversation: async (childSessionId) => {
+      await copyConversationForDelegate(input.repo, {
         userId,
         sourceSessionId: session.id,
         childSessionId,
+        delegatingAgentId: input.agentId,
         exclude: input.currentMessageId ? [input.currentMessageId()] : [],
       })
     },
     // Keyed by ROOT: the budget counts the children the whole conversation created since the
-    // person last wrote there, whichever participant forked them.
+    // person last wrote there, whichever participant delegated them.
     delegationsSinceHuman: svc.countDelegationsSinceHuman
       ? () => svc.countDelegationsSinceHuman!(userId, session.rootSessionId ?? session.id)
       : undefined,
@@ -157,8 +162,13 @@ export function buildTaskDelegationOptions(
             // after the settle window has passed is a no-op.
             reportEarlyExit?.({ status, hasReport: Boolean(text?.trim()) })
             // A launch that threw never became a run, so no run end will report it — and the
-            // parent would wait for a report that never comes. Only that case reports from here.
-            if (!launched && takeExpectedReport(sid)) {
+            // parent would wait for a report that never comes. Only that case reports from here:
+            // to the delegating call when it waits (`wait: true`), as a wake otherwise.
+            if (
+              !launched &&
+              takeExpectedReport(sid) &&
+              !deliverHeldReport(sid, { status: 'failed', text })
+            ) {
               const handle = session.agents.find((m) => m.agentId === input.agentId)?.handle
               await wake(
                 delegationReportWake({
@@ -171,8 +181,6 @@ export function buildTaskDelegationOptions(
                   runId: 'launch',
                   status: status ?? 'failed',
                   text,
-                  // Every child this host starts now is a fork of the calling agent.
-                  forked: true,
                 }),
               ).catch((err) => console.warn('[delegate] parent wake failed:', err))
             }

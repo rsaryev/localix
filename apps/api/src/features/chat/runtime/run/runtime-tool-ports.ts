@@ -18,7 +18,7 @@ import { runPluginBuild } from '../../../plugins/authoring/build-port'
 import { buildDirectToolInstances } from './runtime-tool-instances'
 import { buildBrowserOptions } from './browser-options'
 import { buildTaskDelegationOptions } from './task-delegation-options'
-import { buildForkOptions } from './fork-options'
+import { buildDelegateOptions } from './delegate-options'
 import { buildAgentsOptions } from './agents-options'
 import { buildConfigureOptions } from './configure-options'
 import { buildPlanOptions } from './plan-options'
@@ -37,7 +37,7 @@ type RegistryParams = Parameters<typeof buildRunToolRegistry>[1]
  */
 const EMPTY_PORT_CAPABILITY: Readonly<Record<string, string>> = {
   [TOOL.context_budget]: 'context.budget',
-  [TOOL.fork]: 'agents.fork',
+  [TOOL.delegate]: 'agents.delegate',
   [TOOL.agents]: 'agents.registry',
   [TOOL.browser]: 'preview.control',
   [TOOL.configure]: 'config.proposals',
@@ -115,7 +115,7 @@ export function buildOptionalToolPorts(
       announceCapabilityChange: deps.announceCapabilityChange,
     }),
     jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,
-    fork: buildForkOptions({ userId, session, agentProfile, taskDelegation }),
+    delegate: buildDelegateOptions({ userId, session, agentProfile, taskDelegation }),
     agents: buildAgentsOptions(ctx, params),
     loops: isToolDirect(agentProfile, TOOL.loops)
       ? { userId, sessionId: session.id, agentId: params.agentId }

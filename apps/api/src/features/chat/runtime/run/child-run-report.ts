@@ -3,8 +3,8 @@
  *
  * The report used to be sent by the delegation's continuation, which watches exactly ONE run:
  * the one the delegation launched. A child can now run again — its delegator messages it
- * (`fork` action message) — and those later runs ended in a transcript nobody was reading: the parent
- * had its first report and never heard another word.
+ * (`delegate` action message) — and those later runs ended in a transcript nobody was reading: the
+ * parent had its first report and never heard another word.
  *
  * So the report hangs off the run's LOGICAL END, the one seam every run passes exactly once
  * whichever way it ended (`stages/complete.ts`, `stages/fail.ts` — the same place the run
@@ -23,7 +23,11 @@
  * The record ends first so the parent's woken turn does not still list the child as running.
  */
 import { hasChildrenAtWork, releaseLane } from '../../../agent-core/delegation-lanes'
-import { takeExpectedReport } from '../../../agent-core/delegation-awaits'
+import {
+  deliverHeldReport,
+  dropExpectedReport,
+  takeExpectedReport,
+} from '../../../agent-core/delegation-awaits'
 import { participantAgentId } from '../../../../db/participant'
 import type { SessionRecord } from '../../repository'
 import { getAgentService } from '../agent-service-binding'
@@ -76,8 +80,14 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
     await svc.flushChildMessages?.(userId, session.id)
   }
   // A stopped run reports nothing: the delegator stopped it (its tool result said so), or a
-  // person took the child over.
-  if (run.outcome === 'stopped') return skip()
+  // person took the child over. A delegating call still waiting on it hears that it stopped, and
+  // has its answer: the wait is over.
+  if (run.outcome === 'stopped') {
+    if (deliverHeldReport(session.id, { status: 'stopped', text: null })) {
+      dropExpectedReport(session.id)
+    }
+    return skip()
+  }
   // A child is not done when ONE of its runs ends while its work goes on: a teammate's turn
   // queued in its session, or a child of its own still running — whose report will wake it
   // again. It reports once, when it has gone quiet; the delegator's wait stands until then.
@@ -87,7 +97,9 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
   if (!takeExpectedReport(session.id)) return skip()
 
   const message = await env.repo.getMessage(userId, session.id, run.runId).catch(() => null)
-  const text = message?.payload.role === 'assistant' ? message.payload.content : null
+  const text = message?.payload.role === 'assistant' ? (message.payload.content ?? null) : null
+  // A delegating call that waits (`wait: true`) takes the report as its result: no wake.
+  if (deliverHeldReport(session.id, { status: run.outcome, text })) return skip()
   // Addressed to the delegating participant, by the handle it has in the session the report
   // lands in — the delegator's own session, which for a nested child is a team's.
   const delegatingAgentId = provenance.parentParticipant
@@ -109,7 +121,6 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
       runId: run.runId,
       status: run.outcome,
       text,
-      ...(provenance.forked ? { forked: true } : {}),
     }),
   )
   await svc.flushChildMessages?.(userId, session.id)

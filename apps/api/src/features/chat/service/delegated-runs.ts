@@ -1,6 +1,6 @@
 import { sql, type Kysely } from 'kysely'
 import type { AppDatabase } from '../../../db/types'
-import type { DelegatedRunSummary } from '../../agent-core/tools/fork-control'
+import type { DelegatedRunSummary } from '../../agent-core/tools/delegate-control'
 import { DELEGATION_PRIORITIES, type DelegationPriority } from '../../agent-core/delegation-lanes'
 import { createUsageRepository } from '../../usage/repository'
 import { readSessionUsageRows, summarizeSessionUsageFromTurns } from '../../usage/session-summary'
@@ -17,7 +17,7 @@ const MAX_SUBTREE_LEVELS = 4
  *
  * Below, never above: a session sees the work its delegation put in motion and what it costs,
  * and nothing of the agents that delegated to it. It MANAGES only level 1; the tool refuses a
- * deeper row (`fork-control.ts`). A tree-wide list used to hand the root its grandchildren as
+ * deeper row (`delegate-control.ts`). A tree-wide list used to hand the root its grandchildren as
  * if they were its own children, with no way to tell them apart.
  *
  * Bounded projection: expand only the latest assistant's items, never the entire transcript.
@@ -51,7 +51,6 @@ export function delegatedRunsQuery(
       .select(['s.id', 's.task_name', 's.runtime_status', 's.updated_at', 's.closed_at'])
       .select(['s.parent_session_id', 'tree.level'])
       .select(sql<string | null>`json_extract(s.invocation_json, '$.priority')`.as('priority'))
-      .select(sql<number | null>`json_extract(s.invocation_json, '$.forked')`.as('forked'))
       .select(
         sql<
           string | null
@@ -129,9 +128,6 @@ export async function listDelegatedRuns(
       (row.last_tool ? `Last observed tool: ${row.last_tool}` : 'No public progress yet'),
     reportAvailable: row.runtime_status === 'completed' && Boolean(row.progress),
     level: Number(row.level),
-    // Only a fork is the agent's to manage; an older child delegated to another agent is listed
-    // for the prompt's roster and stays a person's to talk to.
-    ...(row.forked ? { forked: true } : {}),
     ...(row.parent_session_id ? { parentSessionId: row.parent_session_id } : {}),
   }))
 }

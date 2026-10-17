@@ -5,8 +5,8 @@ import { createWakeQueue } from '../wake-queue'
 import { SELF_CAUSED_WAKES } from './self-wake-budget'
 
 /**
- * A delegator's message (`fork` action message) reaches its child either way: a running child takes it
- * at its next step, an idle child runs for it. Pinned on the real queue, because the two paths are
+ * A delegator's message (`delegate` action message) reaches its child either way: a running child
+ * takes it at its next step, an idle child runs for it. Pinned on the real queue, because the two paths are
  * owned by different readers (steering and the drain) and a child that could only be reached one
  * way is exactly the one-shot child this replaced.
  */

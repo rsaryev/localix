@@ -111,15 +111,15 @@ describe('an agent dispatched into a run', () => {
 
 describe('run shapes', () => {
   test('uses tool exposure instead of per-capability booleans', () => {
-    expect(isToolDirect(CHAT_RUN_PROFILE, 'fork')).toBe(true)
+    expect(isToolDirect(CHAT_RUN_PROFILE, 'delegate')).toBe(true)
     expect(isToolDirect(CHAT_RUN_PROFILE, 'jobs')).toBe(true)
     expect(isToolDirect(CHAT_RUN_PROFILE, 'browser')).toBe(true)
 
     const sub = profileOf('subagent')
     // Subsessions cannot fork even through an explicit agent tool list.
-    expect(isToolDirect(sub, 'fork')).toBe(false)
-    expect(isToolDirect(child(['fork']), 'fork')).toBe(false)
-    expect(isToolDirect(profileOf('automation'), 'fork')).toBe(false)
+    expect(isToolDirect(sub, 'delegate')).toBe(false)
+    expect(isToolDirect(child(['delegate']), 'delegate')).toBe(false)
+    expect(isToolDirect(profileOf('automation'), 'delegate')).toBe(false)
     // Registry authoring belongs to a chat; a child never creates agents.
     expect(isToolDirect(CHAT_RUN_PROFILE, 'agents')).toBe(true)
     expect(isToolDirect(sub, 'agents')).toBe(false)

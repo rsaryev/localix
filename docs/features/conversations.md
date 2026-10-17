@@ -82,17 +82,17 @@ conversation is idle; no timer automatically starts the backlog.
 A solo agent in an open chat is told only that tagging a directory agent brings it in. The full turn
 protocol applies from the first turn that starts with two or more agents. The protocol sits in the
 cached part of the system prompt and the participant roster in the per-turn tail, so an invitation
-does not rewrite the cached prefix. When to do the work yourself, fork or bring a colleague in is
-one `# Collaboration` rule.
+does not rewrite the cached prefix. When to do the work yourself, delegate it or bring a colleague
+in is one `# Collaboration` rule.
 
 For dependent work, the leader records the dependency and addresses only the next participant whose
 part is actionable. Results move through the chain one owner at a time; status broadcasts to the
 whole roster create redundant turns and are discouraged.
 
 The `# Collaboration` rule follows the conversation. Alone, an agent does the work itself and brings
-a suitable colleague in when another role is needed. An agent can also [fork itself](delegation.md)
-for independent side work; that is on by default. Agents do not delegate work to other agents:
-another role joins the conversation as a participant.
+a suitable colleague in when another role is needed. An agent can also [delegate](delegation.md) a
+self-contained side task to a child session, run by itself or a directory agent; that is on by
+default. A role that owns a part of the goal joins the conversation as a participant instead.
 
 Once colleagues are present, every participant — not only the leader — does its own part and
 addresses a colleague's ready part to them, so the work happens where you can see and redirect it.
@@ -147,7 +147,7 @@ Pending rows and their ordering survive process restart.
 
 A visible user message can steer an already running response when it names nobody, the running
 agent, or `@all`. "@qa stop" typed while @backend works waits for its own turn with @qa. A parent's
-`fork` message can also amend its running fork's task at a step boundary.
+`delegate` message can also amend its running child's task at a step boundary.
 
 Your steering message outranks the tool calls the agent chose before it could read the message. A
 call that is already running finishes, but the calls of the same response that have not started yet
@@ -155,11 +155,11 @@ are returned unrun, with a note to re-issue them if they still apply. Your messa
 model at once instead of after the whole batch. Calls waiting on an approval prompt are not
 deferred, because your message may be the answer to it.
 
-An eligible child report can join the forking agent's next model request after a fully completed
+An eligible child report can join the delegating agent's next model request after a fully completed
 tool turn, at most one report per tool boundary. Group chats require the report to address the
 current speaker; a solo chat can also take an unaddressed report. Other reports, webhooks and loops
 wait for a separate turn. The host waits for tool-checkpoint settlement before splitting the
-assistant row; see [Forks](delegation.md#progress-and-report-delivery). Disabling
+assistant row; see [Delegation](delegation.md#progress-and-report-delivery). Disabling
 `LOCALIX_MID_RUN_INTERJECT` keeps these queued messages and reports for later turns.
 
 A slash command sent while the session is busy waits in the queue as a whole command — with its
