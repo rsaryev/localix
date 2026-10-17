@@ -15,8 +15,9 @@ use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use crate::log::logln;
 use crate::process_tree::ProcessTree;
 use crate::runtime_contract::{
-    RuntimeReady, API_ATTACH_WAIT_MS, API_SHUTDOWN_DEADLINE_MS, DESKTOP_RUNTIME_ARG, ENV_CLI_ENTRY,
-    ENV_LAUNCH_ID, ENV_PARENT_PID, READY_PREFIX, SHUTDOWN_COMMAND,
+    RuntimeOwnedElsewhere, RuntimeReady, API_ATTACH_WAIT_MS, API_SHUTDOWN_DEADLINE_MS,
+    DESKTOP_RUNTIME_ARG, ENV_CLI_ENTRY, ENV_LAUNCH_ID, ENV_PARENT_PID, OWNED_ELSEWHERE_PREFIX,
+    READY_PREFIX, SHUTDOWN_COMMAND,
 };
 use crate::supervisor::{
     clock_jitter, is_hung, next_strikes, plan_restart, probe, Restart, BEAT, STRIKES,
@@ -399,6 +400,33 @@ fn spawn_runtime(
                             *last = Some(text.chars().take(300).collect());
                         }
                     }
+                    // Another live copy of the app owns the data folder, and the runtime left it
+                    // alone (`apps/api/src/lib/runtime-shell-owner.ts`). Nothing here may start
+                    // another one: hand the user over to that copy.
+                    if let Some(payload) = text.strip_prefix(OWNED_ELSEWHERE_PREFIX) {
+                        let owner = serde_json::from_str::<RuntimeOwnedElsewhere>(payload);
+                        handle
+                            .state::<ApiSidecar>()
+                            .stopping
+                            .store(true, Ordering::Release);
+                        match owner {
+                            #[cfg(target_os = "macos")]
+                            Ok(owner) => crate::instance::handoff::yield_to(owner.shell_pid),
+                            #[cfg(not(target_os = "macos"))]
+                            Ok(owner) => report_error(
+                                &handle,
+                                format!(
+                                    "another Localix (pid {}) is already running on this data \
+                                     folder; quit it, or use that window",
+                                    owner.shell_pid
+                                ),
+                            ),
+                            Err(error) => report_error(
+                                &handle,
+                                format!("invalid owned-elsewhere frame: {error}"),
+                            ),
+                        }
+                    }
                     if let Some(payload) = text.strip_prefix(READY_PREFIX) {
                         match serde_json::from_str::<RuntimeReady>(payload)
                             .map_err(|error| error.into())
@@ -461,6 +489,7 @@ fn spawn_runtime(
                         ready,
                         owns_runtime,
                         stopping || sidecar.respawn_held.load(Ordering::Acquire),
+                        payload.code,
                     )
                     .then(|| {
                         let mut history = sidecar.restarts.lock().unwrap();
@@ -469,16 +498,19 @@ fn spawn_runtime(
                     if let Some(Restart::After(pause)) = restart {
                         respawn_after_crash(&handle, respawn_res.clone(), payload.code, pause);
                     } else {
+                        let why = if payload.code == Some(0) && ready {
+                            " because something outside the app stopped it (another copy of \
+                             Localix?), so it was not started again"
+                        } else if restart.is_some() {
+                            " and keeps stopping, so it was not started again"
+                        } else {
+                            ""
+                        };
                         report_error(
                             &handle,
                             format!(
-                                "local API exited (code {:?}){} — see {API_LOG_PATH}",
+                                "local API exited (code {:?}){why} — see {API_LOG_PATH}",
                                 payload.code,
-                                if restart.is_some() {
-                                    " and keeps stopping, so it was not started again"
-                                } else {
-                                    ""
-                                }
                             ),
                         );
                     }
@@ -625,8 +657,13 @@ fn take_for_pid<T>(slot: &mut Option<T>, pid: u32, pid_of: impl Fn(&T) -> u32) -
 /// and saw become ready: a start that never got there is the startup retry's job, and a runtime
 /// that exits while the app quits or updates must stay down. HOW OFTEN is the supervisor's call
 /// (`supervisor::plan_restart`): a sliding window, not a lifetime allowance of one.
-fn should_respawn(ready: bool, owns_runtime: bool, winding_down: bool) -> bool {
-    ready && owns_runtime && !winding_down
+///
+/// A clean exit (code 0) this shell did not ask for is a DELIBERATE stop by someone else — a
+/// signal, typically another copy of the app on the same data folder — never a crash. Restarting
+/// it took the database back from whoever stopped it, which stopped ours again: the two copies
+/// replaced each other's runtime every few seconds. A crash exits non-zero or by signal.
+fn should_respawn(ready: bool, owns_runtime: bool, winding_down: bool, code: Option<i32>) -> bool {
+    ready && owns_runtime && !winding_down && code != Some(0)
 }
 
 /// Start the runtime again after it died post-`ready`, on a fresh port, after `pause`. The page is
@@ -809,13 +846,22 @@ mod tests {
 
     #[test]
     fn only_an_owned_ready_runtime_dying_unasked_is_respawned() {
-        assert!(should_respawn(true, true, false));
+        assert!(should_respawn(true, true, false, Some(1)));
+        // Killed by a signal (the health watchdog, a crash): no code at all.
+        assert!(should_respawn(true, true, false, None));
         // Quitting or updating: it must stay down.
-        assert!(!should_respawn(true, true, true));
+        assert!(!should_respawn(true, true, true, Some(1)));
         // Never became ready: the startup retry owns that.
-        assert!(!should_respawn(false, true, false));
+        assert!(!should_respawn(false, true, false, Some(1)));
         // A runtime this shell only attached to is not ours to restart.
-        assert!(!should_respawn(true, false, false));
+        assert!(!should_respawn(true, false, false, Some(1)));
+    }
+
+    #[test]
+    fn a_clean_exit_nobody_here_asked_for_is_not_restarted() {
+        // Another copy of the app stopped it. Restarting would take the database back from that
+        // copy and start the two replacing each other's runtime in a loop.
+        assert!(!should_respawn(true, true, false, Some(0)));
     }
 
     #[test]

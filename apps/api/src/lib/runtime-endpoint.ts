@@ -25,6 +25,8 @@ export interface RuntimeEndpoint extends RuntimeReadyFrame {
   listenHost?: string
   /** Which build is serving (`lib/runtime-build.ts`); absent from runtimes older than it. */
   buildId?: string
+  /** The desktop shell that launched this runtime; absent outside the desktop app. */
+  shellPid?: number
 }
 
 export interface RuntimeIdentity {
@@ -426,7 +428,9 @@ export async function readRuntimeEndpoint(
         value.runtimeMode !== 'development-watch') ||
       (value.listenHost !== undefined &&
         (typeof value.listenHost !== 'string' || value.listenHost.length === 0)) ||
-      (value.buildId !== undefined && typeof value.buildId !== 'string')
+      (value.buildId !== undefined && typeof value.buildId !== 'string') ||
+      (value.shellPid !== undefined &&
+        (!Number.isInteger(value.shellPid) || (value.shellPid as number) <= 0))
     ) {
       return null
     }

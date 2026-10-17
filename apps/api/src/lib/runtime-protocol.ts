@@ -16,6 +16,15 @@ export const LOCALIX_RUNTIME_READY_PREFIX = 'LOCALIX_RUNTIME_READY '
  * `bun scripts/runtime-contract.mjs --write`.
  */
 
+/**
+ * The stdout line a desktop runtime writes, before exiting with `RUNTIME_EXIT_OWNED_ELSEWHERE`, when
+ * the data folder already belongs to a runtime that ANOTHER live desktop shell owns (a second copy
+ * of the app installed at a different path). The JSON names that shell, so this one can hand the
+ * user over to it instead of taking the database away from it.
+ */
+export const LOCALIX_RUNTIME_OWNED_ELSEWHERE_PREFIX = 'LOCALIX_RUNTIME_OWNED_ELSEWHERE '
+/** EX_TEMPFAIL: "someone else has this", never a crash to restart. */
+export const RUNTIME_EXIT_OWNED_ELSEWHERE = 75
 /** The argument that makes the API run as the shell's child: ready frame on stdout, stdin channel. */
 export const DESKTOP_RUNTIME_ARG = '--desktop-runtime'
 /** The line the shell writes to the runtime's stdin to ask it to stop (followed by a newline). */

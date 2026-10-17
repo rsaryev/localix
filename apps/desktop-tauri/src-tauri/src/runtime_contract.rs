@@ -5,6 +5,9 @@
 /// The stdout line that carries the runtime endpoint once the API is serving.
 pub(crate) const READY_PREFIX: &str = "LOCALIX_RUNTIME_READY ";
 
+/// The stdout line a runtime writes when another live shell's runtime owns the data folder.
+pub(crate) const OWNED_ELSEWHERE_PREFIX: &str = "LOCALIX_RUNTIME_OWNED_ELSEWHERE ";
+
 /// The argument that makes the API run as the shell's child.
 pub(crate) const DESKTOP_RUNTIME_ARG: &str = "--desktop-runtime";
 
@@ -27,4 +30,11 @@ pub(crate) const API_SHUTDOWN_DEADLINE_MS: u128 = 4000;
 pub(crate) struct RuntimeReady {
     pub(crate) base_url: String,
     pub(crate) pid: u32,
+}
+
+/// The owned-elsewhere frame: the pid of the desktop shell that owns the running runtime.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RuntimeOwnedElsewhere {
+    pub(crate) shell_pid: u32,
 }

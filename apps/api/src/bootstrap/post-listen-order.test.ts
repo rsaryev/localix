@@ -83,8 +83,9 @@ describe('post-listen bootstrap order', () => {
       'draining = true',
       'postListen.abort()',
       "cleanup('clearRuntimeEndpoint'",
-      "cleanup('channelHost.stop'",
+      // Client connections close before the subsystems they could reach are stopped.
       "cleanup('server.stop'",
+      "cleanup('channelHost.stop'",
       "cleanup('ownership.release'",
       "cleanup('uninstallSignalHandlers'",
     ])

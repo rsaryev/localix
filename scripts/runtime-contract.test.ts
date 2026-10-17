@@ -52,6 +52,8 @@ describe('the generated Rust contract', () => {
     expect(rust).toContain('DESKTOP_RUNTIME_ARG: &str = "--desktop-runtime";')
     expect(rust).toContain('pub(crate) base_url: String,')
     expect(rust).toContain('pub(crate) pid: u32,')
+    expect(rust).toContain('OWNED_ELSEWHERE_PREFIX: &str = "LOCALIX_RUNTIME_OWNED_ELSEWHERE ";')
+    expect(rust).toContain('pub(crate) shell_pid: u32,')
   })
 
   test('refuses a value Rust would not read back as written', () => {
@@ -64,6 +66,7 @@ describe('the generated Rust contract', () => {
 describe('the shell and the runtime stay on one contract', () => {
   test('sidecar.rs spells none of the shared values itself', () => {
     expect(sidecar).not.toContain('LOCALIX_RUNTIME_READY')
+    expect(sidecar).not.toContain('LOCALIX_RUNTIME_OWNED_ELSEWHERE')
     expect(sidecar).not.toContain('b"shutdown')
     expect(sidecar).not.toContain('"--desktop-runtime"')
     for (const name of Object.values(protocol.RUNTIME_ENV)) {

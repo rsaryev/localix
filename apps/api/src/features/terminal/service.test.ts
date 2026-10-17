@@ -290,6 +290,35 @@ describe('terminal service', () => {
     expect(s.list('c')).toHaveLength(0)
   })
 
+  test('disposeAll kills every PTY even when one session fails to dispose', async () => {
+    const killed: number[] = []
+    let spawned = 0
+    const backend: PtyBackend = {
+      spawn() {
+        const index = spawned++
+        return {
+          write() {},
+          resize() {},
+          onData() {},
+          onExit() {},
+          kill() {
+            killed.push(index)
+            // The first PTY fails the way xterm's leak check did at shutdown.
+            if (index === 0) throw new Error('leaking disposables')
+          },
+        }
+      },
+    }
+    const s = svc(backend)
+    await s.open('u1', { sessionId: 'chat-1' })
+    await s.open('u1', { sessionId: 'chat-1' })
+    await s.open('u1', { sessionId: 'chat-1' })
+
+    expect(() => s.disposeAll()).toThrow('1 terminal(s) failed to dispose')
+    expect(killed).toEqual([0, 1, 2])
+    expect(s.list('u1')).toEqual([])
+  })
+
   test('close on an unknown id is false', async () => {
     const { backend } = makeBackend()
     expect(svc(backend).close('u1', 'nope')).toBe(false)

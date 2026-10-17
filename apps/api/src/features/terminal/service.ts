@@ -267,12 +267,27 @@ export function createTerminalService(deps: TerminalServiceDeps) {
       return closed
     },
 
-    /** Tear down every live PTY (server shutdown). */
+    /**
+     * Tear down every live PTY (server shutdown). One session failing to dispose (xterm's
+     * "leaking disposables" error) used to abort the loop, so every PTY after it survived the
+     * shutdown and the failure turned the exit code into a crash. Each session now gets its
+     * turn; the first failure is reported once all of them have been killed.
+     */
     disposeAll(): void {
-      for (const s of sessions.values()) s.dispose()
+      const failures: unknown[] = []
+      for (const s of sessions.values()) {
+        try {
+          s.dispose()
+        } catch (error) {
+          failures.push(error)
+        }
+      }
       sessions.clear()
       exitedSessions.clear()
       lastUserInputActivity.clear()
+      if (failures.length > 0) {
+        throw new AggregateError(failures, `${failures.length} terminal(s) failed to dispose`)
+      }
     },
   }
 }

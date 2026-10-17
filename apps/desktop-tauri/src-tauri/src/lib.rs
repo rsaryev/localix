@@ -12,7 +12,7 @@
 //   ✓ Native application menu    → build_app_menu (branded "Localix").
 //   ✓ Native notifications       → tauri-plugin-notification + `notify` command
 //                                   (UI invokes it; unfocused-only).
-//   ✓ single-instance            → tauri-plugin-single-instance (focus running win).
+//   ✓ single-instance            → tauri-plugin-single-instance; macOS: instance.rs lock.
 //   ✓ Deep links `localix://…`   → tauri-plugin-deep-link + DeepLinks buffer +
 //                                   `deep_link_ready` flush (grammar lives in the
 //                                   UI's shared/lib/deepLink.ts).
@@ -98,6 +98,8 @@ mod companion_material;
 mod companion_pointer;
 mod deeplink;
 mod frontend_flush;
+#[cfg(target_os = "macos")]
+mod instance;
 mod log;
 #[cfg(target_os = "macos")]
 mod macos_tabs;
@@ -203,11 +205,13 @@ pub fn run() {
     // first. Every `logln_at` below is relative to this.
     let _ = crate::log::elapsed_ms();
     let builder = tauri::Builder::default();
-    // Windows/Linux document opens arrive in argv. macOS LaunchServices owns the
-    // singleton and delivers documents through Apple events AFTER setup. The
-    // plugin exits a second bundle during setup, before that event arrives (e.g.
-    // an installed app opened while `tauri dev` holds its socket), losing the file
-    // and forwarding only focus. Let the macOS bundle receive its own documents.
+    #[cfg(target_os = "macos")]
+    let builder = crate::instance::handoff::manage(builder); // one shell per data folder
+                                                             // Windows/Linux document opens arrive in argv. macOS LaunchServices owns the
+                                                             // singleton and delivers documents through Apple events AFTER setup. The
+                                                             // plugin exits a second bundle during setup, before that event arrives (e.g.
+                                                             // an installed app opened while `tauri dev` holds its socket), losing the file
+                                                             // and forwarding only focus. Let the macOS bundle receive its own documents.
     #[cfg(not(target_os = "macos"))]
     let builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
         show_main_window(app);
@@ -408,6 +412,10 @@ pub fn run() {
         .manage(crate::workspace_windows::WorkspaceWindows::default())
         .manage(crate::workspace_transfer::WorkspaceTransfers::default())
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            if crate::instance::handoff::setup_secondary(app) {
+                return Ok(());
+            }
             // Before any webview exists, so no page can reach WebKit's keychain fallback first.
             #[cfg(target_os = "macos")]
             webcrypto_key::install(app.handle());
@@ -538,6 +546,10 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if crate::instance::handoff::on_run_event(app, &event) {
+                return;
+            }
             match event {
                 // FILE ASSOCIATION open on macOS (double-click / "Open With"): the OS
                 // delivers the file URL(s) here (warm or cold). Route each through the
@@ -550,6 +562,12 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 RunEvent::Reopen { .. } => {
                     show_main_window(app);
+                }
+                #[cfg(target_os = "macos")]
+                RunEvent::Opened { urls } if crate::instance::handoff::is_secondary(app) => {
+                    for url in urls {
+                        crate::instance::handoff::collect(app, url.to_string());
+                    }
                 }
                 #[cfg(target_os = "macos")]
                 RunEvent::Opened { urls } => {

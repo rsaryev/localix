@@ -22,10 +22,13 @@ import {
   type RuntimeEndpoint,
   waitForRuntimeEndpoint,
 } from './lib/runtime-endpoint'
+import { owningShellPid, RuntimeOwnedElsewhereError } from './lib/runtime-shell-owner'
 import {
   DESKTOP_RUNTIME_ARG,
   LOCALIX_API_PROTOCOL_VERSION,
+  LOCALIX_RUNTIME_OWNED_ELSEWHERE_PREFIX,
   LOCALIX_RUNTIME_READY_PREFIX,
+  RUNTIME_EXIT_OWNED_ELSEWHERE,
   RUNTIME_ATTACH_WAIT_MS,
   RUNTIME_ENV,
   RUNTIME_SHUTDOWN_DEADLINE_MS,
@@ -39,7 +42,7 @@ import { installServerSignalHandlers } from './lib/process-signals'
 import { armShutdownDeadline } from './lib/shutdown-deadline'
 import { installOrphanGuard } from './lib/orphan-guard'
 import { startupDiag } from './lib/startup-diagnostics'
-import { withTimeout } from './lib/timeout'
+import { createShutdownSteps } from './lib/shutdown-steps'
 import { isSameBuild, runtimeBuildId } from './lib/runtime-build'
 import {
   currentStdinFacts,
@@ -100,6 +103,9 @@ const SHUTDOWN_DEADLINE_MS = RUNTIME_SHUTDOWN_DEADLINE_MS
 /** Per-step budget, so one wedged subsystem cannot spend the whole deadline alone. */
 const SHUTDOWN_STEP_MS = 1_500
 
+/** Closing the listener and its connections is immediate; waiting longer only spends the deadline. */
+const SERVER_STOP_MS = 750
+
 /**
  * Is this the "someone else already has that port" failure?
  *
@@ -158,6 +164,11 @@ export interface StartServerOptions {
    * produce a running server nothing can reach.
    */
   portFallback?: boolean
+  /**
+   * The desktop shell that owns this runtime (`LOCALIX_DESKTOP_PARENT_PID`). Recorded in the
+   * endpoint, and makes a runtime owned by ANOTHER live shell off limits (`runtime-shell-owner`).
+   */
+  shellPid?: number
 }
 
 /**
@@ -261,26 +272,22 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
     draining = true
     postListen.abort()
     shutdownPromise = (async () => {
-      const errors: unknown[] = []
       // The guarantee. Everything below is only the polite version of leaving.
       const deadline = armShutdownDeadline({
         ms: SHUTDOWN_DEADLINE_MS,
-        onExpire: () =>
-          dropOwnershipArtifactsSync([runtimeOwnership.lockFile, ...publishedEndpointFiles]),
+        onExpire: () => {
+          startupDiag(`shutdown passed its ${SHUTDOWN_DEADLINE_MS}ms deadline; leaving anyway`)
+          dropOwnershipArtifactsSync([runtimeOwnership.lockFile, ...publishedEndpointFiles])
+        },
       })
-      const cleanup = async (
-        label: string,
-        operation: () => void | Promise<void>,
-      ): Promise<void> => {
-        try {
-          // The async wrapper is load-bearing: it turns a SYNCHRONOUS throw from
-          // `operation()` into a rejection, so a step that fails before its first await
-          // is still recorded rather than escaping past the deadline bookkeeping.
-          await withTimeout((async () => operation())(), SHUTDOWN_STEP_MS, label)
-        } catch (error) {
-          errors.push(error)
-        }
-      }
+      // A failed step is a warning, not a failed shutdown (`lib/shutdown-steps.ts`): the process
+      // is leaving either way, and a non-zero exit reads as a crash the desktop shell restarts.
+      const steps = createShutdownSteps(SHUTDOWN_STEP_MS, ({ step, error }) => {
+        runtime.logger.warn({ event: 'shutdown.step_failed', step, err: error })
+        startupDiag(`shutdown step ${step} did not finish cleanly: ${String(error)}`)
+      })
+      const cleanup = (label: string, operation: () => unknown, timeoutMs?: number) =>
+        steps.run(label, operation, timeoutMs)
 
       for (const file of publishedEndpointFiles) {
         await cleanup('clearRuntimeEndpoint', () => clearRuntimeEndpoint(process.pid, file))
@@ -292,6 +299,12 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       // "stopped" rows — the person quit the app; that is not news.
       await cleanup('backendHost.stop', () => runtime.backendHost.stop())
       await cleanup('notifications.close', () => runtime.notifications.close())
+      // Close every client connection next — the realtime WebSockets, streaming responses,
+      // keep-alive sockets — so nothing a page still holds open can reach a subsystem this
+      // teardown is about to stop. `stop(true)` drops the connections at once; its promise is
+      // given a short budget of its own and is never what decides the exit code: a listener
+      // that is slow to report closed must not use up the whole deadline.
+      if (server) await cleanup('server.stop', () => server?.stop(true), SERVER_STOP_MS)
       // Stop accepting inbound platform messages before aborting runs, so no new
       // agent turn is spawned mid-teardown.
       await cleanup('channelHost.stop', () => runtime.channelHost.stop())
@@ -326,7 +339,6 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       await cleanup('disposePreviewServers', () => disposePreviewServers())
       // Release any held system controls (e.g. the keep-awake sleep inhibitor).
       await cleanup('systemService.stopAll', () => runtime.systemService.stopAll())
-      if (server) await cleanup('server.stop', () => server?.stop(true))
       // Ownership is released LAST on purpose, after the database handle is gone: a
       // second runtime that started while this one was still writing would run its
       // startup migration over a live run (see the note on `startServer`). The deadline
@@ -344,10 +356,6 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       await cleanup('restoreConsole', () => restoreConsole?.())
       await cleanup('closeLogDestination', () => closeLogDestination(logDestination))
       deadline.disarm()
-
-      if (errors.length > 0) {
-        throw new AggregateError(errors, 'One or more API shutdown steps failed')
-      }
     })()
     return shutdownPromise
   }
@@ -407,6 +415,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       runtimeMode: watch ? 'development-watch' : 'daemon',
       listenHost: runtime.env.HOST,
       buildId: runtimeBuildId(),
+      ...(options.shellPid ? { shellPid: options.shellPid } : {}),
     }
     await publishRuntimeEndpoint(endpoint, runtimeOwnership.endpointFile)
     publishedEndpointFiles.push(runtimeOwnership.endpointFile)
@@ -481,6 +490,20 @@ function endpointCanAttach(
 }
 
 /**
+ * A desktop runtime never attaches to or stops a runtime that another LIVE desktop shell owns:
+ * that is a second copy of the app on the same data folder, and taking its database started the
+ * two copies replacing each other's runtime in a loop. The shell hands the user over instead.
+ */
+function refuseAnotherShellsRuntime(
+  endpoint: RuntimeEndpoint,
+  options: StartOrAttachServerOptions,
+): void {
+  if (options.shellPid === undefined) return
+  const owner = owningShellPid(endpoint, options.shellPid)
+  if (owner !== null) throw new RuntimeOwnedElsewhereError(owner, endpoint.baseUrl)
+}
+
+/**
  * How long to wait for an election winner to publish its endpoint.
  *
  * Deliberately far below the desktop shell's per-attempt budget: a wait that outlives the
@@ -501,6 +524,8 @@ export async function startOrAttachServer(
 ): Promise<ConnectedServer> {
   const discovered = await discoverRuntimeEndpoint()
   const existing = isOwnDescriptor(discovered) ? null : discovered
+  // Before attaching OR replacing: a runtime another live shell owns is that shell's.
+  if (existing) refuseAnotherShellsRuntime(existing, options)
   if (existing && endpointCanAttach(existing, options)) {
     return {
       baseUrl: existing.baseUrl,
@@ -527,6 +552,7 @@ export async function startOrAttachServer(
       protocolVersion: LOCALIX_API_PROTOCOL_VERSION,
       timeoutMs: ATTACH_WAIT_MS,
     })
+    refuseAnotherShellsRuntime(endpoint, options)
     if (!endpointCanAttach(endpoint, options)) {
       throw new Error(
         `Localix API at ${endpoint.baseUrl} (build ${endpoint.buildId ?? 'unknown'}) cannot serve ` +
@@ -543,16 +569,34 @@ export async function startOrAttachServer(
 }
 
 async function runDesktopRuntime(): Promise<void> {
-  const server = await startOrAttachServer({
-    installSignalHandlers: true,
-    logFile: runtimeLogFile(),
-    // The native shell hands the webview a port, and the browser-side client
-    // deliberately constructs 127.0.0.1:<port>. An IPv6-only runtime is valid for a
-    // caller that consumes the full baseUrl, but cannot serve Desktop.
-    attachHost: '127.0.0.1',
-    // The shell's port is a reservation it already let go of; only here is that true.
-    portFallback: true,
-  })
+  const parentPid = Number(envString(RUNTIME_ENV.parentPid))
+  const validParent = Number.isInteger(parentPid) && parentPid > 0 ? parentPid : undefined
+  let server: ConnectedServer
+  try {
+    server = await startOrAttachServer({
+      installSignalHandlers: true,
+      logFile: runtimeLogFile(),
+      // The native shell hands the webview a port, and the browser-side client
+      // deliberately constructs 127.0.0.1:<port>. An IPv6-only runtime is valid for a
+      // caller that consumes the full baseUrl, but cannot serve Desktop.
+      attachHost: '127.0.0.1',
+      // The shell's port is a reservation it already let go of; only here is that true.
+      portFallback: true,
+      shellPid: validParent,
+    })
+  } catch (error) {
+    if (!(error instanceof RuntimeOwnedElsewhereError)) throw error
+    // Not a failure to restart: another copy of the app owns this data folder. The shell
+    // reads the frame and hands the user over to that copy (`sidecar.rs`).
+    startupDiag(`${error.message}; leaving the data folder to it`)
+    process.stdout.write(
+      `${LOCALIX_RUNTIME_OWNED_ELSEWHERE_PREFIX}${JSON.stringify({
+        shellPid: error.shellPid,
+        baseUrl: error.baseUrl,
+      })}\n`,
+    )
+    process.exit(RUNTIME_EXIT_OWNED_ELSEWHERE)
+  }
   // Bounded like the attach wait, not by the 40 s default: the shell kills a start attempt
   // at 12 s (`READY_TIMEOUT_SECS`, sidecar.rs), so a longer wait could only end in that kill,
   // with no diagnostic. The endpoint is normally already published here.
@@ -571,12 +615,12 @@ async function runDesktopRuntime(): Promise<void> {
   const stop = async (): Promise<void> => {
     if (stopping) return
     stopping = true
-    await server.stop().catch((error) => console.error('API shutdown failed', error))
+    // Exit 0 whatever the teardown reports: the shell asked for this stop, and a non-zero
+    // code is what its supervisor reads as a crash to restart.
+    await server.stop().catch((error) => console.warn('API shutdown incomplete', error))
     process.exit(0)
   }
   watchShutdownCommand(process.stdin, () => void stop())
-  const parentPid = Number(envString(RUNTIME_ENV.parentPid))
-  const validParent = Number.isInteger(parentPid) && parentPid > 0 ? parentPid : undefined
   // The shell's pipe closing IS the shell dying — immune to the pid reuse that can blind
   // the watchdog below (lib/desktop-parent.ts). Only when stdin is that pipe.
   if (stdinIsParentPipe(currentStdinFacts(validParent))) {
