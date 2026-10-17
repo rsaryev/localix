@@ -1,35 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
   <title id="title">Localix — One workspace for you and a team of agents</title>
-  <!-- Kept in sync with the product sentence in index.html / README. The visible
-       <text> lines below are hand-wrapped at fixed coordinates, so they stay as
-       they are: re-flowing them is a design change, not a copy edit. -->
+  <!-- Kept in sync with the product sentence in index.html / README. The card mirrors the
+       homepage: the headline with the bird beside it, and the demo's app window rising from the
+       bottom edge. `og.png` is rendered from this file with the landing's own fonts. -->
   <desc id="description">Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.</desc>
   <defs>
-    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#070707"/>
-      <stop offset="1" stop-color="#0b0b0b"/>
+    <clipPath id="window">
+      <rect x="80" y="292" width="1040" height="420" rx="18" />
+    </clipPath>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.55" stop-color="#070707" stop-opacity="0" />
+      <stop offset="1" stop-color="#070707" stop-opacity="0.85" />
     </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#background)"/>
-  <rect x="1" y="1" width="1198" height="628" fill="none" stroke="#292929" stroke-width="2"/>
-
-  <text x="80" y="98" fill="#d7d7dc" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="6">LOCALIX</text>
-
-  <text x="80" y="228" fill="#f4f4f5" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="64" font-weight="500" letter-spacing="-2.2">One workspace for you</text>
-  <text x="80" y="302" fill="#f4f4f5" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="64" font-weight="500" letter-spacing="-2.2">and a team of agents</text>
-
-  <text x="80" y="374" fill="#b8b8c0" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="400">Localix is an open source Agentic Development Environment:</text>
-  <text x="80" y="406" fill="#b8b8c0" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="400">one workspace where you and a team of agents share the</text>
-  <text x="80" y="438" fill="#b8b8c0" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="400">editor, terminals, preview, and databases.</text>
-
-  <g font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="600" fill="#d7d7dc">
-    <rect x="80" y="505" width="126" height="46" rx="23" fill="#151515" stroke="#353535"/>
-    <text x="143" y="534" text-anchor="middle">AGENTS</text>
-    <rect x="222" y="505" width="136" height="46" rx="23" fill="#151515" stroke="#353535"/>
-    <text x="290" y="534" text-anchor="middle">CONTEXT</text>
-    <rect x="374" y="505" width="140" height="46" rx="23" fill="#151515" stroke="#353535"/>
-    <text x="444" y="534" text-anchor="middle">BROWSER</text>
-    <rect x="530" y="505" width="134" height="46" rx="23" fill="#151515" stroke="#353535"/>
-    <text x="597" y="534" text-anchor="middle">PLUGINS</text>
+  <rect width="1200" height="630" fill="#070707" />
+  <g font-family="Localix Landing Heading, DM Sans Variable, DM Sans, Inter, Helvetica Neue, Arial, sans-serif" fill="#f4f4f5" font-weight="600" font-size="58" letter-spacing="-1.6">
+    <text x="80" y="140">One workspace for you</text>
+    <text x="80" y="208">and a team of agents</text>
   </g>
+  <image href="logo.svg" x="980" y="70" width="140" height="140" />
+  <g clip-path="url(#window)">
+    <image href="films/demo.jpg" x="80" y="292" width="1040" height="791" preserveAspectRatio="xMidYMin slice" />
+    <rect x="80" y="292" width="1040" height="338" fill="url(#fade)" />
+  </g>
+  <rect x="80.5" y="292.5" width="1039" height="420" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.1" />
 </svg>

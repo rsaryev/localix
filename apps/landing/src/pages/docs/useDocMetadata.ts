@@ -1,21 +1,10 @@
 import { useEffect } from 'react'
 import type { DocPage } from '@/generated/docs'
 import { SITE_ORIGIN } from '@/lib/site'
+import { HOME_DESCRIPTION, HOME_STRUCTURED_DATA } from '@/lib/structuredData'
 
 const HOME_TITLE = 'Localix — One workspace for you and a team of agents'
-const HOME_DESCRIPTION =
-  'Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.'
 const HOME_URL = `${SITE_ORIGIN}/`
-const HOME_STRUCTURED_DATA = JSON.stringify({
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'Localix',
-  applicationCategory: 'DeveloperApplication',
-  url: HOME_URL,
-  description: HOME_DESCRIPTION,
-  image: `${HOME_URL}og.png`,
-  author: { '@type': 'Organization', name: 'Localix', url: HOME_URL },
-})
 
 /**
  * The tags this hook owns. `index.html` ships them for the home page, so every
@@ -89,7 +78,7 @@ export function useDocMetadata(active: DocPage | undefined) {
         description: HOME_DESCRIPTION,
         url: HOME_URL,
         ogType: 'website',
-        structuredData: HOME_STRUCTURED_DATA,
+        structuredData: JSON.stringify(HOME_STRUCTURED_DATA),
       })
     }
   }, [active])

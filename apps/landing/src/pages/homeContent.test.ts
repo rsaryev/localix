@@ -1,4 +1,3 @@
-import { readLandingStyles } from '../../scripts/read-styles'
 import { expect, test } from 'bun:test'
 import { readFileSync, readdirSync } from 'node:fs'
 import { slugifyDocHeading } from '../lib/docHeading'
@@ -13,11 +12,10 @@ import {
   KANBAN_FEATURES,
   PLUGIN_FEATURES,
   PLUGINS,
-  SECTIONS,
   SECTION_GUIDES,
   SPACE_FEATURES,
 } from './homeContent'
-import { FILMS } from '../components/home/filmContent'
+import { DEMO_POSTER, DEMO_SRC } from '../components/home/DemoFilm'
 import { WORKSPACE_LINKS, PLATFORM_OVERVIEW } from './homeOverview'
 
 interface NavigationGroup {
@@ -57,7 +55,6 @@ test('homepage copy stays in the calm register the README uses', () => {
       title,
       body,
     ]),
-    ...FILMS.flatMap(({ title, detail }) => [title, detail]),
     homePage,
   ].join(' ')
 
@@ -75,7 +72,6 @@ test('homepage copy states no speed or duration the repository does not measure'
       title,
       body,
     ]),
-    ...FILMS.flatMap(({ title, detail }) => [title, detail]),
     homePage,
   ].join(' ')
 
@@ -84,53 +80,22 @@ test('homepage copy states no speed or duration the repository does not measure'
   )
 })
 
-test('every capture the homepage asks for is one the shots build selects', () => {
-  // ProductShot renders nothing for a key the build did not select, so a section added without its
-  // key in HOME_SHOT_KEYS silently loses its picture and leaves an empty half of the row.
-  const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
-  const buildShots = readFileSync(new URL('../../scripts/build-shots.mjs', import.meta.url), 'utf8')
-  const selected = new Set(
-    [...(/HOME_SHOT_KEYS = \[([^\]]*)\]/u.exec(buildShots)?.[1] ?? '').matchAll(/'([^']+)'/gu)].map(
-      (match) => match[1],
-    ),
-  )
-  const requested = [
-    ...homePage.matchAll(/shot="([^"]+)"/gu),
-    ...readFileSync(
-      new URL('../components/home/ProductShowcase.tsx', import.meta.url),
-      'utf8',
-    ).matchAll(/shot="([^"]+)"/gu),
-  ].map((match) => match[1])
-
-  expect(requested.length).toBeGreaterThan(0)
-  for (const key of requested) expect(selected.has(key)).toBe(true)
-})
-
-test('the section rail enumerates the sections the page actually renders', () => {
-  // The rail scrolls by element id; a label without a section is a dead dot,
-  // and a section without a label is unreachable from the rail.
+test('the homepage is the hero and the demo', () => {
   const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
   const rendered = [...homePage.matchAll(/<Section\s+id="([a-z-]+)"/gu)].map((match) => match[1])
 
-  expect(SECTIONS.map((section) => section.id)).toEqual(rendered)
-
-  // One team film, the animated feature cards, and the closing actions.
-  expect(FILMS.map((film) => film.key)).toEqual(['team'])
-  expect(homePage).toContain('<ChapterFilm />')
-  expect(homePage).toContain('<PlatformBento />')
-  expect(homePage).not.toContain('WorkspaceTour')
-  expect(homePage).not.toContain('Your models. Your rules.')
+  expect(rendered).toEqual(['intro'])
+  expect(homePage).toContain('<DemoFilm />')
+  expect(homePage).not.toContain('PlatformBento')
+  expect(homePage).not.toContain('SectionNav')
 })
 
-test('every homepage film is published with its poster', () => {
-  // A film key without its files plays nothing and leaves an empty frame on the page.
+test('the demo film is published with its poster', () => {
+  // A missing file plays nothing and leaves an empty frame on the page.
   const films = readdirSync(new URL('../../public/films/', import.meta.url))
 
-  expect(new Set(FILMS.map((film) => film.key)).size).toBe(FILMS.length)
-  for (const film of FILMS) {
-    expect(films).toContain(`${film.key}.mp4`)
-    expect(films).toContain(`${film.key}.jpg`)
-  }
+  expect(films).toContain(DEMO_SRC.replace('/films/', ''))
+  expect(films).toContain(DEMO_POSTER.replace('/films/', ''))
 })
 
 test('the hero sizes its bird through the responsive layout', () => {
@@ -142,15 +107,6 @@ test('the hero sizes its bird through the responsive layout', () => {
   const bird = readFileSync(new URL('../components/home/HeroBird.tsx', import.meta.url), 'utf8')
   expect(bird).toContain('stageClassName="h-full w-full"')
   expect(bird).not.toContain('calc(100%+')
-})
-
-test('mobile hides the decorative hero and keeps the chapter row scrollable', () => {
-  const styles = readLandingStyles()
-  const films = readFileSync(new URL('../components/home/films.css', import.meta.url), 'utf8')
-  expect(styles).toMatch(
-    /@media \(max-width: 767px\)[\s\S]*#intro \.product-showcase \{\s*display: none;/u,
-  )
-  expect(films).toMatch(/\.film-chapters \{[^}]*overflow-x: auto;/u)
 })
 
 test('every homepage capability links to a published documentation page', () => {

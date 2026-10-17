@@ -1,4 +1,3 @@
-import type { SectionItem } from '@/components/SectionNav'
 import type { FeatureRow } from './homeContentTypes'
 
 export type { FeatureRow } from './homeContentTypes'
@@ -7,13 +6,6 @@ export * from './homeContentPlatform'
 export * from './homeContentExternal'
 
 export { REPOSITORY_URL } from '@/lib/site'
-
-export const SECTIONS: SectionItem[] = [
-  { id: 'intro', label: 'Localix' },
-  { id: 'workspace', label: 'A team in one conversation' },
-  { id: 'platform', label: 'Features' },
-  { id: 'start', label: 'Get started' },
-]
 
 export const SECTION_GUIDES = {
   conversations: { slug: 'features--conversations', label: 'Meet the agents' },

@@ -1,17 +1,15 @@
 /* The hero bird loops while it is visible. `HeroBird` sets `data-paused` when the hero is scrolled
    away or the tab is hidden; pausing keeps the position, so it resumes mid-flight, not from zero. */
 .hero-layout {
-  --bird-slot-width: 7rem;
-  --bird-slot-height: 10rem;
-  --bird-size: 5rem;
-  --copy-bird-gap: 1rem;
+  --bird-slot-width: 5.5rem;
+  --bird-slot-height: 5.5rem;
+  --bird-size: 4.5rem;
   --lede-gap: 1.25rem;
   --action-gap: 2rem;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--bird-slot-width);
-  grid-template-areas: 'badge badge' 'heading heading' 'description bird' 'action action';
-  column-gap: var(--copy-bird-gap);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'badge' 'heading' 'description' 'action';
   align-items: center;
 }
 .hero-copy {
@@ -118,10 +116,15 @@
   width: var(--bird-size);
   height: var(--bird-size);
 }
-@media (max-width: 350px) {
-  .hero-layout {
-    --bird-slot-width: 6rem;
-    --bird-size: 4rem;
+/* On narrow screens the bird flies beside the heading's short last line, as it does beside the
+   whole heading on desktop, so the description keeps the full width. */
+@media (max-width: 63.99rem) {
+  .hero-bird-slot {
+    grid-area: heading;
+    justify-self: end;
+    align-self: end;
+    width: var(--bird-slot-width);
+    margin-bottom: var(--lede-gap);
   }
 }
 @media (min-width: 64rem) {
@@ -148,13 +151,13 @@
     margin-top: 1.5rem;
   }
   .hero-bird-slot {
-    --hero-bird-height: 24rem;
+    --hero-bird-height: 18rem;
     height: var(--hero-bird-height);
   }
 }
 @media (min-width: 80rem) {
   .hero-bird-slot {
-    --hero-bird-height: 30rem;
+    --hero-bird-height: 20rem;
   }
 }
 .hero-bird {

@@ -26,14 +26,6 @@ describe('landing page shell', () => {
     }
   })
 
-  test('the section rail stays inside the page gutter', () => {
-    // `right-2` (0.5rem) + the `size-6` (1.5rem) dot target ends at 2rem, inside
-    // the shell's 2.5rem `lg:px-10` gutter — it must not sit over the content.
-    const nav = read('components/SectionNav.tsx')
-    expect(nav).toContain('fixed right-2 top-1/2')
-    expect(nav).toContain('size-6')
-  })
-
   test('the docs rails share one sticky offset', () => {
     // The two rails are separate components; they still have to pin on one line.
     const rails = ['pages/docs/DocsSidebar.tsx', 'pages/docs/DocsTableOfContents.tsx'].flatMap(
@@ -110,7 +102,7 @@ describe('landing page shell', () => {
     const carriers = [
       readFileSync(join(appRoot, 'index.html'), 'utf8'),
       readFileSync(join(appRoot, 'public/og.svg'), 'utf8'),
-      read('pages/docs/useDocMetadata.ts'),
+      read('lib/structuredData.ts'),
     ]
     for (const carrier of carriers) expect(carrier).toContain(sentence)
     // The concise hero preserves the same working surfaces as the metadata.

@@ -150,10 +150,14 @@
   }
   #intro .lede {
     margin-top: 1.25rem;
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
   }
-  #intro .product-showcase {
-    display: none;
+  #intro .demo-film {
+    margin-top: 2rem;
+  }
+  #intro .demo-play {
+    height: var(--chrome-control-lg);
+    padding-inline: 1rem;
   }
   main > section:not(#intro) {
     padding-block: 3rem;

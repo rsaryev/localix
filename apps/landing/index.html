@@ -32,6 +32,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Localix" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:url" content="https://localix.ai/" />
     <meta property="og:title" content="Localix — One workspace for you and a team of agents" />
     <meta
@@ -42,7 +43,10 @@
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Localix — One workspace for you and a team of agents" />
+    <meta
+      property="og:image:alt"
+      content="One workspace for you and a team of agents, above the Localix app running a /workflows demo"
+    />
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Localix — One workspace for you and a team of agents" />
@@ -51,7 +55,10 @@
       content="Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases."
     />
     <meta name="twitter:image" content="https://localix.ai/og.png" />
-    <meta name="twitter:image:alt" content="Localix — One workspace for you and a team of agents" />
+    <meta
+      name="twitter:image:alt"
+      content="One workspace for you and a team of agents, above the Localix app running a /workflows demo"
+    />
     <!-- The landing stays dark from the first paint, independently of system appearance. -->
     <style>
       html {
@@ -73,13 +80,40 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Localix",
-        "applicationCategory": "DeveloperApplication",
-        "url": "https://localix.ai/",
-        "description": "Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.",
-        "image": "https://localix.ai/og.png",
-        "author": { "@type": "Organization", "name": "Localix", "url": "https://localix.ai/" }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://localix.ai/#website",
+            "name": "Localix",
+            "url": "https://localix.ai/",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://localix.ai/#app",
+            "name": "Localix",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "macOS",
+            "url": "https://localix.ai/",
+            "description": "Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.",
+            "image": "https://localix.ai/og.png",
+            "screenshot": "https://localix.ai/films/demo.jpg",
+            "license": "https://opensource.org/licenses/MIT",
+            "isAccessibleForFree": true,
+            "sameAs": ["https://github.com/rsaryev/localix"],
+            "author": { "@type": "Organization", "name": "Localix", "url": "https://localix.ai/" }
+          },
+          {
+            "@type": "VideoObject",
+            "name": "Localix demo: one /workflows run",
+            "description": "A /workflows prompt fills the board, agents build and test a 2048 game in the browser, and a comment gets the cells resized.",
+            "thumbnailUrl": "https://localix.ai/films/demo.jpg",
+            "contentUrl": "https://localix.ai/films/demo.mp4",
+            "uploadDate": "2026-10-18",
+            "duration": "PT52S",
+            "about": { "@id": "https://localix.ai/#app" }
+          }
+        ]
       }
     </script>
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />

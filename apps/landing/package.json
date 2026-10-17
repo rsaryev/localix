@@ -12,7 +12,6 @@
     "build": "tsc -b && vite build",
     "postbuild": "bun run scripts/build-static-docs.mjs",
     "test": "bun test scripts src",
-    "test:features": "playwright test --config scripts/highlights.config.mjs",
     "pretype-check": "bun run generate",
     "type-check": "tsc -b",
     "docs:gen": "bun run scripts/build-docs.mjs",

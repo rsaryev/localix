@@ -32,7 +32,8 @@ describe('product positioning', () => {
   test.each([
     ['apps/landing/index.html', [TITLE, DESCRIPTION]],
     ['apps/landing/public/og.svg', [TITLE, DESCRIPTION]],
-    ['apps/landing/src/pages/docs/useDocMetadata.ts', [TITLE, DESCRIPTION]],
+    ['apps/landing/src/pages/docs/useDocMetadata.ts', [TITLE]],
+    ['apps/landing/src/lib/structuredData.ts', [DESCRIPTION]],
     ['apps/ui/index.html', [DESCRIPTION]],
     [
       'README.md',

@@ -39,8 +39,8 @@ test('the deferred hero reserves its final geometry before the bird mounts', () 
   expect(readLandingStyles()).toMatch(
     /\.hero-bird-slot \{\s*grid-area: bird;\s*height: var\(--bird-slot-height\);\s*overflow: visible;/u,
   )
-  expect(readLandingStyles()).toContain('--hero-bird-height: 24rem')
-  expect(readLandingStyles()).toContain('--hero-bird-height: 30rem')
+  expect(readLandingStyles()).toContain('--hero-bird-height: 18rem')
+  expect(readLandingStyles()).toContain('--hero-bird-height: 20rem')
   expect(read('../components/home/HeroBird.tsx')).toContain('stageClassName="h-full w-full"')
   expect(read('../components/home/HeroBird.tsx')).toContain(
     "const desktopQuery = '(min-width: 64rem)'",
@@ -48,17 +48,14 @@ test('the deferred hero reserves its final geometry before the bird mounts', () 
   expect(read('../components/home/HeroBird.tsx')).not.toContain('if (!desktop) return null')
 })
 
-test('mobile bird shares the description row without narrowing the heading or action', () => {
+test('mobile bird flies beside the heading without narrowing the description', () => {
   const css = readLandingStyles()
-  expect(css).toContain(
-    "grid-template-areas: 'badge badge' 'heading heading' 'description bird' 'action action'",
+  expect(css).toContain("grid-template-areas: 'badge' 'heading' 'description' 'action'")
+  expect(css).toMatch(
+    /@media \(max-width: 63\.99rem\) \{\s*\.hero-bird-slot \{\s*grid-area: heading;\s*justify-self: end;\s*align-self: end;/u,
   )
-  expect(css).toContain('--bird-slot-width: 7rem')
-  expect(css).toContain('--bird-slot-height: 10rem')
-  expect(css).toContain('--bird-size: 5rem')
-  expect(css).toContain('@media (max-width: 350px)')
-  expect(css).toContain('--bird-slot-width: 6rem')
-  expect(css).toContain('--bird-size: 4rem')
+  expect(css).toContain('--bird-slot-width: 5.5rem')
+  expect(css).toContain('--bird-size: 4.5rem')
 })
 
 test('wind extends behind hero copy without intercepting actions or clipping at the bird', () => {

@@ -96,10 +96,6 @@ body {
     transform: none;
     transition: none;
   }
-
-  .showcase-panel {
-    transition: none;
-  }
 }
 
 /* ── Marketing typography ────────────────────────────────────
@@ -177,19 +173,4 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* The closing call to action repeats the hero's actions under the last section heading. */
-.closing {
-  padding-top: 4rem;
-  border-top: 1px solid var(--landing-line);
-}
-.closing > .section-heading {
-  margin-bottom: 2rem;
-}
-.closing-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
 }
