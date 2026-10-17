@@ -3,7 +3,7 @@
  * (`apps/api/src/features/notifications/contracts.ts`) both derive from this list, so a topic
  * added here cannot be accepted by one side and rejected by the other.
  *
- * - `user.mentioned`: a participant in a conversation addressed the person and is waiting on them.
+ * - `user.mentioned`: a board card in a conversation was assigned to the person and waits on them.
  * - `child.stopped`: a sub-agent or job was stopped before it finished — recorded, never an
  *   interruption.
  */

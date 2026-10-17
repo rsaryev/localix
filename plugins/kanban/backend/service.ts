@@ -85,7 +85,7 @@ export function createBoardService(deps: BoardServiceDeps) {
     )
   }
 
-  /** A card handed to the person waits on them: tell them, as an `@human` mention would. */
+  /** A card handed to the person waits on them: tell them wherever they are. */
   const tellHuman = (seat: BoardSeat, task: KanbanTask) => {
     if (task.agentId !== HUMAN_ASSIGNEE_ID) return
     void deps.agents

@@ -230,7 +230,7 @@ describe('mentions', () => {
       key: 'mention:S1:q1',
       topic: 'user.mentioned',
       category: 'human-input',
-      title: '@reviewer is asking you',
+      title: '@reviewer assigned you a card',
       body: 'Ship?',
     })
   })

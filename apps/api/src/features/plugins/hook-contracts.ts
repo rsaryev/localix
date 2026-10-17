@@ -15,7 +15,7 @@ export type {
   AssistantMessageEvent,
   HitlRequestEvent,
   HitlResolvedEvent,
-  HumanMentionedEvent,
+  HumanAssignedEvent,
   MemoryLoadContextEvent,
   MemoryProvider,
   MemoryRunEndEvent,

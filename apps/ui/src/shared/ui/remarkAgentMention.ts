@@ -7,27 +7,10 @@
 // answers first and the composer uses to complete. Three readers, one regex.
 import { visit } from 'unist-util-visit'
 import type { Root, Text, Link, InlineCode } from 'mdast'
-import { HUMAN_HANDLE } from '@localixai/agent/agents'
 import { agentNameSpans, mentionSpans } from '@localixai/api/agent-mentions'
 
 export function agentHref(handle: string): string {
   return `agent:${encodeURIComponent(handle)}`
-}
-
-/**
- * The person's own mention gets its OWN scheme, not the agent one.
- *
- * `@human` is a participant like the others and matches through the same grammar, but it is not
- * a conversation agent — there is no participant profile to open. An `agent:` href for it would
- * send the one chip that is about the reader to a lookup that must fail.
- */
-export function humanMentionHref(): string {
-  return 'human:'
-}
-
-/** Is this href the person's own mention? */
-export function isHumanMentionHref(href?: string): boolean {
-  return href === 'human:'
 }
 
 /** Decodes an `agent:` href back to its handle, or null if not an agent mention. */
@@ -64,7 +47,7 @@ function codeMention(node: InlineCode, handles: readonly string[]): string | nul
 function mentionLink(handle: string, label: string): Link {
   return {
     type: 'link',
-    url: handle.toLowerCase() === HUMAN_HANDLE ? humanMentionHref() : agentHref(handle),
+    url: agentHref(handle),
     children: [{ type: 'text', value: label }],
   }
 }

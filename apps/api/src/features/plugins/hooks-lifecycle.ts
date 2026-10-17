@@ -3,7 +3,7 @@ import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
 import type {
   HitlRequestEvent,
   HitlResolvedEvent,
-  HumanMentionedEvent,
+  HumanAssignedEvent,
   PluginHooks,
   SubagentStopEvent,
 } from './native'
@@ -15,7 +15,7 @@ import type {
 
 /** Fire an observer-only hook on every declaring plugin (isolation + timeout each). */
 async function runObserverHooks<
-  K extends 'onSubagentStop' | 'onHitlRequest' | 'onHitlResolved' | 'onHumanMentioned',
+  K extends 'onSubagentStop' | 'onHitlRequest' | 'onHitlResolved' | 'onHumanAssigned',
 >(
   hookName: K,
   hookEntries: readonly LoadedPluginHook[],
@@ -67,13 +67,13 @@ export async function runHitlResolvedHooks(
   return runObserverHooks('onHitlResolved', hookEntries, event, options)
 }
 
-/** Fire every plugin's `onHumanMentioned` when an agent's reply addresses the person. */
-export async function runHumanMentionedHooks(
+/** Fire every plugin's `onHumanAssigned` when a board card is assigned to the person. */
+export async function runHumanAssignedHooks(
   hookEntries: readonly LoadedPluginHook[],
-  event: HumanMentionedEvent,
+  event: HumanAssignedEvent,
   options: HookRunOptions,
 ): Promise<void> {
-  return runObserverHooks('onHumanMentioned', hookEntries, event, options)
+  return runObserverHooks('onHumanAssigned', hookEntries, event, options)
 }
 
 /**

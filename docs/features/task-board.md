@@ -90,8 +90,8 @@ can `take` it.
 ### Cards for you
 
 The board's directory lists you as `human`. A card assigned to `human` waits for you: the board
-shows it with a person icon and "you (@human)", and assigning it raises the same mention
-notification as an `@human` reply. Agents cannot `take` or `complete` such a card; the tool answers
+shows it with a person icon and "you (@human)", and assigning it raises a mention notification (and
+the `onHumanAssigned` plugin hook). Agents cannot `take` or `complete` such a card; the tool answers
 "LX-n is for @human; it waits for the person." Move your own cards on the board as usual.
 
 Each workflow move has one action. `update` changes a card's text, owner, epic, priority,

@@ -40,10 +40,10 @@ permission modes, project folders, `@` references, base keymaps, the command pal
 chat, and handing a whole goal to a team. Each tip animates the real surface; five carry the control
 itself.
 
-The goal tip appears only while an enabled plugin features a command, such as the bundled `/go`, and
-shows that command. The agent island tip appears only in the macOS desktop app; its switch turns the
-island on or off at once, like the one in Settings. The carousel never takes focus and remembers the
-last tip you viewed on this device.
+The goal tip appears only while an enabled plugin features a command, such as the bundled
+`/workflows`, and shows that command. The agent island tip appears only in the macOS desktop app;
+its switch turns the island on or off at once, like the one in Settings. The carousel never takes
+focus and remembers the last tip you viewed on this device.
 
 Open **All tools** (**…**) to browse the complete catalog and toggle the pin beside each tool. Pin
 changes keep the menu open and persist on this device. Right-click an individual button to unpin or

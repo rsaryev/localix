@@ -149,6 +149,20 @@ describe('kanban roles', () => {
     expect(again.content).toBe('LX-2 is already done; nothing changed.')
   })
 
+  test('a card described beside creates is refused instead of dropped', async () => {
+    const act = board()
+    const refused = await act(LEADER, {
+      action: 'create',
+      title: 'Launch',
+      kind: 'epic',
+      creates: [{ title: 'Build', agent: 'dev' }],
+    })
+    expect(refused.isError).toBe(true)
+    expect(refused.content).toContain('create got title, kind beside creates')
+    const listed = await act(LEADER, { action: 'list' })
+    expect(listed.content).not.toContain('Build')
+  })
+
   test('an epic is created without a checklist of its own', async () => {
     const act = board()
     const refused = await act(LEADER, {

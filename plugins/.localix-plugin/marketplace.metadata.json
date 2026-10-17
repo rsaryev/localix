@@ -8,6 +8,7 @@
     "docker": "devops",
     "kubernetes": "devops",
     "web": null,
-    "web-search": null
+    "web-search": null,
+    "go": "workflows"
   }
 }

@@ -7,7 +7,8 @@ import {
 } from './system-prompt-conversation-section'
 import {
   HUMAN_BOARD_CONTROL,
-  HUMAN_CONTROL,
+  HUMAN_ASK_CONTROL,
+  HUMAN_NO_ASK_CONTROL,
   LEADER_BOARD,
   MEMBER_BOARD,
   SOLO_TURN_CONTROL,
@@ -81,17 +82,37 @@ describe('the turn protocol', () => {
     // The full contract binds turns only once colleagues are present.
     expect(solo).not.toContain('Everyone here')
     expect(solo).not.toContain(TEAM_CONVERSATION)
-    // Even a lone agent that can neither invite nor own the topic can hand the person the floor.
+    // Even a lone agent that can neither invite nor own the topic learns how to reach the person.
     const bare = buildTurnControlSection({ multi: false })
-    expect(bare).toContain(HUMAN_CONTROL)
+    expect(bare).toContain(HUMAN_NO_ASK_CONTROL)
   })
 
-  test('@human rules reach solo and group runs alike', () => {
+  test('the person is reached through ask, never a mention, in solo and group runs alike', () => {
     for (const multi of [false, true]) {
-      const section = buildTurnControlSection({ multi, hasBoard: true })
-      expect(section).toContain('Address @human with a concrete question, decision or request')
+      const section = buildTurnControlSection({ multi, hasBoard: true, canAsk: true })
+      expect(section).toContain(HUMAN_ASK_CONTROL)
+      expect(section).toContain('Never @mention the person')
+      expect(section).not.toContain(HUMAN_NO_ASK_CONTROL)
       expect(section).toContain(HUMAN_BOARD_CONTROL)
     }
+  })
+
+  test('a run without ask proceeds on a stated assumption and never names the tool', () => {
+    const section = buildTurnControlSection({ multi: true })
+    expect(section).toContain('proceed on your best assumption and state it')
+    expect(section).not.toContain('ask tool')
+  })
+
+  test('a member hands no work out and answers only about its own part', () => {
+    const member = buildTurnControlSection({ multi: true, isLeader: false })
+    expect(member).toContain('never @mention colleagues — only the leader hands work out')
+    expect(member).toContain("questions about the whole work are the leader's")
+  })
+
+  test('no contract line makes work wait on an approval; Plan mode owns that', () => {
+    const leader = buildTurnControlSection({ multi: true, isLeader: true, canAsk: true })
+    expect(leader).not.toContain('mockup')
+    expect(leader).not.toContain('waits for it')
   })
 
   test('a multi-agent run gets the addressing contract and the lane isolation', () => {
@@ -134,8 +155,7 @@ describe('the turn protocol', () => {
     expect(participant).not.toContain('You are the leader')
     expect(participant).toContain('leader owns coordination and the final answer to the user')
     expect(participant).toContain(TEAM_MEMBER)
-    expect(participant).toContain('@mention only the leader or @human')
-    expect(leader).toContain('is not approval of a plan')
+    expect(participant).toContain('@mention only the leader; never @mention colleagues')
   })
 })
 

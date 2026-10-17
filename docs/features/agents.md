@@ -19,10 +19,12 @@ suitable definitions or creates the smallest useful team and invites it into the
 ## Human
 
 `human` is the second shipped record: it describes you, the person agents work with, and is never
-run. Agents address you as `@human`. The record holds only a title, a description and notes for
-agents; description and notes together are limited to 1,000 characters. It has no model, tools,
-skills, permissions or hierarchy priority, never joins a conversation as a participant, and cannot
-be deleted, disabled or copied.
+run. Agents never address you with an `@` mention: to get your answer, a decision or an approval
+they use the `ask` tool ([HITL](hitl.md)); otherwise they report and stop, and the reply returns to
+you. A run with no way to ask proceeds on its best assumption and states it. The record holds only a
+title, a description and notes for agents; description and notes together are limited to 1,000
+characters. It has no model, tools, skills, permissions or hierarchy priority, never joins a
+conversation as a participant, and cannot be deleted, disabled or copied.
 
 Edit it on the pinned **Human** card in **Settings → Agents**, next to Localix. The scope picker
 decides where a save lands:
@@ -37,9 +39,10 @@ removes the card of the current scope and returns to the next one.
 
 Every agent's prompt lists you under **Conversation participants**, in solo chats too, as
 `@human (<title>): the person you work with — <description>`, with your notes on the next line. The
-entry is information about you, not instructions. `human` and `all` are reserved handles: an agent
-saved under `human` before this release is moved to `human-agent.json` with the handle `human-agent`
-when the registry is read, and the move is logged.
+entry is information about you, not instructions or an address. A board card may still be assigned
+to you ([Cards for you](task-board.md#cards-for-you)). `human` and `all` are reserved handles: an
+agent saved under `human` before this release is moved to `human-agent.json` with the handle
+`human-agent` when the registry is read, and the move is logged.
 
 ## Starter team
 

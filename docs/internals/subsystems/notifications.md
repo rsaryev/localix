@@ -103,7 +103,7 @@ and interruption lifetime. Current trigger coverage is explicit:
 | Top-level run         | `run.completed`, `run.failed`                                 | User-stop suppression stays with the producer                                 |
 | Human input           | `hitl.required`                                               | The envelope carries open and respond intents                                 |
 | Plan to review        | `hitl.required`, key `plan:<root>:<plan>`, severity `warning` | Not `hitl:`, so the boot sweep leaves it; a newer version settles it          |
-| Addressed by name     | `user.mentioned`                                              | Keyed to the message, so a replay is one row                                  |
+| Card for the person   | `user.mentioned`                                              | Keyed to the message, so a replay is one row                                  |
 | Child session         | `child.completed`, `child.failed`, `child.stopped`            | Keyed per run; a stop is a quiet `info` row                                   |
 | Background terminal   | `terminal.finished`                                           | Exit code zero is success; other exit codes are errors                        |
 | Application operation | `application.notification`                                    | The caller supplies severity, title, and optional body                        |
@@ -160,7 +160,7 @@ retired queued questions.
 | Run finished or failed   | `completeRun` / `failRun` after the last retry or segment                                                                                        | `run:<session>:<message>`, failures `run-failed:<session>:<message>` | stopped, a channel turn, a hook verifier, a nested chat's finish, turns still queued |
 | Sub-agent or job run     | the same seam, for a `subagent` or `job` session                                                                                                 | `child:<session>:<message>`                                          | a hook verifier                                                                      |
 | Question to the person   | `trackRequest` in `hitl-registry.ts`; settled by its ending                                                                                      | `hitl:<request>`                                                     | never; a restart settles every open one (`restart`) before boot continues            |
-| Addressed by name        | `publishUserHandoff` in `run/handoff.ts`; settled (`answered`) when the person writes in that conversation (`sendMessage`)                       | `mention:<session>:<message>`                                        | the reply is hidden                                                                  |
+| Card for the person      | `publishHumanAssignment` in `run/human-assignment.ts`; settled (`answered`) when the person writes in that conversation (`sendMessage`)          | `mention:<session>:<message>`                                        | never                                                                                |
 | Plan to review           | the plans service's `present`; settled `answered` (approve, changes sent), `dismissed` (set aside, left Plan mode), `superseded` (newer version) | `plan:<root>:<plan>`                                                 | a review that could not be delivered                                                 |
 | Plan completed           | the plans service's `complete` — an `info` `run.completed` row, settles nothing                                                                  | `plan-completed:<root>:<plan>`                                       | never                                                                                |
 | Background work ended    | `WorkRegistry.onEnded` (`end`, `hydrate`, `losePending`)                                                                                         | `work:<record>`                                                      | a sub-agent record, or an ending that wakes the agent                                |
@@ -272,7 +272,7 @@ identify the failure it reports and settle when its owning condition clears.
 | Top-level run            |                                      10 minutes |    30 seconds |
 | Human input              | 60 minutes, capped at the request's `expiresAt` |    30 seconds |
 | Child session            |                                      10 minutes |    10 minutes |
-| Addressed by name        |                                      60 minutes |    30 seconds |
+| Card for the person      |                                      60 minutes |    30 seconds |
 | Background terminal      |                                      10 minutes |    10 minutes |
 | Application notification |                                      10 minutes |    30 seconds |
 | Standing condition       |                                      60 minutes |    60 minutes |

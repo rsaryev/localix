@@ -206,7 +206,7 @@ describe('runMacroCommand', () => {
     ])
   })
 
-  test('the participant who answered last answers the command, not the least recent one', async () => {
+  test('a command addressed to nobody goes to the leader, whoever answered last', async () => {
     // The strategy reads the transcript's last row as "who answered the user last"; with the
     // command's own row counted, that rule never matched and the turn went elsewhere.
     const room = sessionFixture({
@@ -239,6 +239,6 @@ describe('runMacroCommand', () => {
     } as unknown as PersistedMessage
     const h = harness()
     await h.run('u', 's', room, [answeredByA('a1'), answeredByB], '/x', 'do x', '2026-01-07')
-    expect(h.runArgs?.scope.speakerAgentId).toBe('b')
+    expect(h.runArgs?.scope.speakerAgentId).toBe('a')
   })
 })

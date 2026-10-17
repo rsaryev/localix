@@ -66,7 +66,7 @@ describe('conversation leadership', () => {
     ).toEqual([{ agentId: 'builtin:frontend', source: 'user-default' }])
   })
 
-  test('the registry is read only when a leader is actually elected', async () => {
+  test('the registry is read only when nobody is addressed', async () => {
     const addressed = registry()
     await multiParticipantStrategy.recipients(context([], addressed.roster), {
       kind: 'user-message',
@@ -82,7 +82,7 @@ describe('conversation leadership', () => {
       kind: 'user-message',
       text: 'Build it',
     })
-    expect([addressed.reads.count, continuing.reads.count, electing.reads.count]).toEqual([0, 0, 1])
+    expect([addressed.reads.count, continuing.reads.count, electing.reads.count]).toEqual([0, 1, 1])
   })
 
   test('an explicit address wins even on the first turn', async () => {
@@ -94,23 +94,13 @@ describe('conversation leadership', () => {
     ).toEqual([{ agentId: 'builtin:frontend', source: 'user-address' }])
   })
 
-  test('after history exists, ordinary continuity resumes instead of forcing the leader', async () => {
+  // Only the leader hands work out, so a message to nobody in particular is the leader's even
+  // after a colleague spoke last.
+  test('a message addressed to nobody goes to the leader, whoever answered last', async () => {
     expect(
       await multiParticipantStrategy.recipients(context([answer('builtin:frontend')]), {
         kind: 'user-message',
         text: 'Continue',
-      }),
-    ).toEqual([{ agentId: 'builtin:frontend', source: 'user-default' }])
-  })
-
-  test('an empty persisted assistant placeholder does not consume the leader turn', async () => {
-    const placeholder = {
-      payload: { role: 'assistant', from: 'agent:builtin:pm', to: 'user', content: '' },
-    } as never
-    expect(
-      await multiParticipantStrategy.recipients(context([placeholder]), {
-        kind: 'user-message',
-        text: 'Build it',
       }),
     ).toEqual([{ agentId: 'builtin:lead', source: 'user-default' }])
   })

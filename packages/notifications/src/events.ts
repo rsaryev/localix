@@ -145,7 +145,7 @@ export function agentNotificationEnvelope(
       topic: trigger.type,
       category: 'human-input',
       severity: 'warning',
-      title: trigger.from ? `@${trigger.from} is asking you` : 'A participant is asking you',
+      title: trigger.from ? `@${trigger.from} assigned you a card` : 'A card is assigned to you',
       body: trigger.text?.trim() || trigger.sessionTitle,
       source,
       persistence: 'durable',

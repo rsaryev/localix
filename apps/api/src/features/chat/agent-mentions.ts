@@ -113,25 +113,15 @@ export function mentionedHandles(text: string, known: readonly string[]): string
 }
 
 /**
- * Does this text address the PERSON?
+ * Every address a conversation's text can name: its participants, plus everyone.
  *
- * The one reader of {@link HUMAN_HANDLE} that is not a list: a reply's own text is the only
- * evidence there is that its author meant the question for the human, so the conversation's
- * handoff and the notification it raises both start here.
- */
-export function mentionsHuman(text: string): boolean {
-  return mentionedHandles(text, [HUMAN_HANDLE]).length > 0
-}
-
-/**
- * Every address a conversation's text can name: its participants, plus the person and everyone.
- *
- * For the surfaces that LINKIFY rather than route — the transcript renderer — so a `@human` or an
- * `@all` in a reply reads as the chip it is instead of plain text. The reserved two go last because
- * {@link mentionedHandles} canonicalises through a Map; no agent may carry either handle anyway.
+ * For the surfaces that LINKIFY rather than route — the transcript renderer — so an `@all` in a
+ * reply reads as the chip it is instead of plain text. The person is not an address (agents reach
+ * them through `ask`), so `@human` stays plain text. The reserved handle goes last because
+ * {@link mentionedHandles} canonicalises through a Map; no agent may carry it anyway.
  */
 export function conversationMentionHandles(participantHandles: readonly string[]): string[] {
-  return [...participantHandles, HUMAN_HANDLE, ALL_MENTION_HANDLE]
+  return [...participantHandles, ALL_MENTION_HANDLE]
 }
 
 /**

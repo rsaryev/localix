@@ -2,7 +2,7 @@ import {
   CONVERSATION_TURN_CONTROL,
   HUMAN_ASK_CONTROL,
   HUMAN_BOARD_CONTROL,
-  HUMAN_CONTROL,
+  HUMAN_NO_ASK_CONTROL,
   LEADER_BOARD,
   MEMBER_BOARD,
   MEMBER_SKIP,
@@ -68,8 +68,7 @@ export function buildTurnControlSection(input: {
   const topic = input.canChangeTopic ? [TOPIC_CONTROL] : []
   const board = (line: string) => (input.hasBoard ? [line] : [])
   const human = [
-    HUMAN_CONTROL,
-    ...(input.canAsk ? [HUMAN_ASK_CONTROL] : []),
+    input.canAsk ? HUMAN_ASK_CONTROL : HUMAN_NO_ASK_CONTROL,
     ...board(HUMAN_BOARD_CONTROL),
   ]
   if (!input.multi) {
@@ -122,8 +121,8 @@ function humanEntry(human: HumanProfile | undefined): string[] {
 /**
  * `# Conversation participants` — who is here, from the speaker's point of view.
  *
- * The person is always listed, alone or not: `@human` is how any agent hands them the floor, and
- * their record says what to ask them for. It rides here, in the volatile tail, so editing it never
+ * The person is always listed, alone or not, as data: their record says who they are and what to
+ * ask them for. They are never addressed with a mention — questions go through `ask`. It rides here, in the volatile tail, so editing it never
  * rewrites the cached prefix.
  */
 export function buildParticipantsSection(input: {
@@ -134,7 +133,7 @@ export function buildParticipantsSection(input: {
   const others = input.participants.filter((participant) => participant.handle !== input.self)
   return [
     '# Conversation participants',
-    `You are ${input.self}. Other participants, addressed with @:`,
+    `You are ${input.self}. Other participants (agents are addressed with @):`,
     ...humanEntry(input.human),
     ...others.map(
       (participant) =>

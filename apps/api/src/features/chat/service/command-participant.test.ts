@@ -35,11 +35,11 @@ describe('which participant a slash command is about', () => {
     expect(target?.rest).toBe('high\n\nfix the flaky test')
   })
 
-  test('without one it is the participant the person is talking to, not the first seat', async () => {
-    // `/model sonnet` in a conversation where @qa has been answering used to re-route @lead.
+  test('without one it is the leader, whoever answered last', async () => {
+    // Only the leader hands work out, so a command that names nobody is the leader's.
     const history = [answeredBy('lead'), answeredBy('qa')]
     const target = await commandTarget(session, history, 'sonnet', leadership)
-    expect(target?.participant.agentId).toBe('qa')
+    expect(target?.participant.agentId).toBe('lead')
     expect(target?.rest).toBe('sonnet')
   })
 

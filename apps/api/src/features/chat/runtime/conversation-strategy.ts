@@ -117,16 +117,6 @@ export function conversationLeader(
   )
 }
 
-function hasParticipantAnswer(history: readonly PersistedMessage[]): boolean {
-  return history.some(
-    (message) =>
-      message.payload.role === 'assistant' &&
-      message.payload.to === 'user' &&
-      participantAgentId(message.payload.from) !== null &&
-      (Boolean(message.payload.content?.trim()) || Boolean(message.payload.items?.length)),
-  )
-}
-
 export const directConversationStrategy: ConversationStrategy = {
   id: 'direct',
   accepts: ({ session }) => !isMultiParticipant(session),
@@ -142,7 +132,7 @@ export const multiParticipantStrategy: ConversationStrategy = {
   accepts: ({ session }) => isMultiParticipant(session),
   async recipients(context, event) {
     if (event.kind !== 'user-message') return explicitRecipients(context, event)
-    const { session, history } = context
+    const { session } = context
     const named = mentionedHandles(event.text, [
       ...session.agents.map((member) => member.handle),
       ALL_MENTION_HANDLE,
@@ -163,20 +153,9 @@ export const multiParticipantStrategy: ConversationStrategy = {
           ),
       ]
     if (direct.length) return direct
-    // The first unaddressed turn establishes the room through its elected leader. Deriving this
-    // from durable transcript history survives restarts and branching without a second state bit.
-    if (!hasParticipantAnswer(history)) {
-      const leader = conversationLeader(session, await context.priorities())
-      return leader ? [{ agentId: leader.agentId, source: 'user-default' }] : []
-    }
-    const last = history.at(-1)?.payload
-    const answering =
-      last?.role === 'assistant' && last.to === 'user' ? participantAgentId(last.from) : null
-    const target =
-      answering && session.agents.some((member) => member.agentId === answering)
-        ? answering
-        : leastRecent(context)
-    return target ? [{ agentId: target, source: 'user-default' }] : []
+    // A message addressed to nobody belongs to the leader: only the leader hands work out.
+    const leader = conversationLeader(session, await context.priorities())
+    return leader ? [{ agentId: leader.agentId, source: 'user-default' }] : []
   },
 }
 

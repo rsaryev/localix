@@ -19,9 +19,9 @@ import { DEFAULT_PERMISSION_MODE } from '../../../../capabilities/permission-mod
 import { pluginProblemNotice } from '../../plugin-problem-notice'
 import { resolvePluginSessionDataDir } from '../../../../plugins/session-storage'
 import { createPluginAgentDirectory } from '../../../../plugins/agent-directory'
-import { runHumanMentionedHooks } from '../../../../plugins/hooks'
+import { runHumanAssignedHooks } from '../../../../plugins/hooks'
 import type { LoadedPluginHook } from '../../../../plugins/loader'
-import { publishHumanMention } from '../handoff'
+import { publishHumanAssignment } from '../human-assignment'
 import type { ModelView } from '../../model-view/view'
 import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
@@ -41,7 +41,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   )
   const human = (user: string, projectId: string | null) =>
     deps.resolveHuman?.(user, projectId) ?? Promise.resolve(undefined)
-  // Observer hooks (HITL, subagent stop, `@human`) are fire-and-forget: no loop latency. The
+  // Observer hooks (HITL, subagent stop, a card assigned to `@human`) are fire-and-forget: no loop latency. The
   // plugin hooks are bound once loaded below; a card assigned before then fires none.
   let pluginHooks: readonly LoadedPluginHook[] = []
   const hookRunOptions: HookRunOptions = { sessionId: session.id, logger: consoleWarnLogger }
@@ -91,14 +91,14 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
               enabled: agent.enabled,
             })),
           human: (user, projectId) => human(user, projectId),
-          // A card assigned to `@human` tells the person exactly as an `@human` reply does.
+          // A card assigned to `@human` waits on the person: tell them wherever they are.
           notifyHuman: (user, sessionId, notice) =>
-            publishHumanMention(
+            publishHumanAssignment(
               {
                 streamRegistry: deps.streamRegistry,
                 notifications: deps.notifications,
-                onHumanMentioned: (event) =>
-                  void runHumanMentionedHooks(pluginHooks, event, hookRunOptions),
+                onHumanAssigned: (event) =>
+                  void runHumanAssignedHooks(pluginHooks, event, hookRunOptions),
               },
               user,
               { sessionId, messageId: notice.key, from: notice.from ?? '', text: notice.text },

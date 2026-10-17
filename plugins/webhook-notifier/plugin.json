@@ -2,7 +2,7 @@
   "name": "webhook-notifier",
   "category": "utilities",
   "displayName": "Webhook Notifier",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "apiVersion": 1,
   "defaultEnabled": false,
@@ -17,7 +17,7 @@
     },
     "EVENTS": {
       "type": "string",
-      "description": "Comma-separated filter: session_end, user_message, assistant_message, tool_call, hitl_request, hitl_resolved, subagent_stop, human_mentioned. Empty = all.",
+      "description": "Comma-separated filter: session_end, user_message, assistant_message, tool_call, hitl_request, hitl_resolved, subagent_stop, human_assigned. Empty = all.",
       "default": ""
     },
     "SECRET": {

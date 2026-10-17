@@ -245,10 +245,8 @@ describe('mention chips', () => {
     expect(html).not.toContain('agent:pmo')
   })
 
-  test('the person’s own mention gets its own scheme, not the agent one', () => {
-    // `@human` is a participant and matches through the same grammar, but it resolves to no
-    // conversation agent — there is no profile to open. An `agent:` href would send the one
-    // chip that is about the reader into a lookup that must fail.
+  test('an agent writing @human is plain text — the person is not an address', () => {
+    // Agents reach the person through `ask`; a stray `@human` must not read as a handoff.
     const html = renderToStaticMarkup(
       <ReactMarkdown
         remarkPlugins={[remarkAgentMention(conversationMentionHandles(['qa']))]}
@@ -258,8 +256,9 @@ describe('mention chips', () => {
       </ReactMarkdown>,
     )
     expect(html).toContain('href="agent:qa"')
-    expect(html).toContain('href="human:"')
+    expect(html).not.toContain('human:')
     expect(html).not.toContain('agent:human')
+    expect(html).toContain('@human please confirm')
   })
 
   test('a mention the writer wrapped in backticks is still a mention', () => {
@@ -291,17 +290,5 @@ describe('mention chips', () => {
       </ReactMarkdown>,
     )
     expect(html).not.toContain('href="agent:')
-  })
-
-  test('the person’s chip writes ONE @ — its glyph is the @', () => {
-    // The matched span covers the `@` and the chip draws one of its own, so passing the text
-    // through printed `@@human` in every conversation reply that addressed the person.
-    const html = renderToStaticMarkup(
-      <MarkdownRendererImpl mentionHandles={conversationMentionHandles(['qa'])}>
-        {'@human please confirm'}
-      </MarkdownRendererImpl>,
-    )
-    expect(html).not.toContain('@@')
-    expect(html).toContain('human')
   })
 })

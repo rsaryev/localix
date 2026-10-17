@@ -1,6 +1,6 @@
 import { sessionFixture } from '../../../testing/session-fixture'
 import { describe, expect, test } from 'bun:test'
-import { createRunAgent } from './run-agent'
+import { createRunAgent, resolveExistingMessages } from './run-agent'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import { ORCHESTRATION_DELEGATE_TASK, childExecutionContext } from '../runtime/execution-context'
@@ -141,30 +141,15 @@ describe('runAgent history loader', () => {
   })
 
   test('drops the rows this turn inserted from the loader result', async () => {
-    // A post-insert load sees the new user row at the tail (the leaf advanced; the assistant
-    // slot is minted after the load). Left in, it would be the transcript's last row, and the
-    // strategy reads that row as "who answered the user last" — so @b, who did, would lose the
-    // turn to the least-recent participant.
-    const room = sessionFixture({
-      id: 's',
-      agents: ['a', 'b'].map((agentId) => ({
-        agentId,
-        handle: agentId,
-        providerConnectionId: null,
-        modelId: 'm',
-        reasoningEffort: 'medium' as const,
-      })),
-    })
-    const answeredByB = {
-      ...msg('b1', 'assistant', 'done'),
-      payload: { id: 'b1', role: 'assistant', from: 'agent:b', to: 'user', content: 'done' },
-    } as unknown as PersistedMessage
-    const h = harness(room)
-    const loader = async () => [msg('m1', 'user', 'earlier'), answeredByB, ...h.inserted]
-
-    await h.runAgent('u', 's', room, loader, 'now', '2026-01-01')
-
-    expect(h.runArgs?.scope.speakerAgentId).toBe('b')
+    // A post-insert load sees the turn's own rows at the tail; the turn's history is the
+    // transcript before them.
+    const earlier = msg('m1', 'user', 'earlier')
+    const reply = msg('a1', 'assistant', 'done')
+    const loaded = await resolveExistingMessages(
+      async () => [earlier, reply, msg('u2', 'user', 'now'), msg('a2', 'assistant', '')],
+      ['u2', 'a2'],
+    )
+    expect(loaded.map((row) => row.id)).toEqual(['m1', 'a1'])
   })
 
   test('enqueues the turn by its trigger row, with no history attached', async () => {

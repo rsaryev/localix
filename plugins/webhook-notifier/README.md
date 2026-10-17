@@ -45,16 +45,16 @@ trust decision.
 
 ### Hook payloads
 
-| Hook                 | Event name          | Payload fields                                                                           |
-| -------------------- | ------------------- | ---------------------------------------------------------------------------------------- |
-| `onSessionEnd`       | `session_end`       | Empty object                                                                             |
-| `onUserMessage`      | `user_message`      | `messageId`, `text`                                                                      |
-| `onAssistantMessage` | `assistant_message` | `messageId`, `content`                                                                   |
-| `onPostToolCall`     | `tool_call`         | `toolName`, result `content`                                                             |
-| `onHitlRequest`      | `hitl_request`      | `requestId`, `kind`, `toolName`, `title`                                                 |
-| `onHitlResolved`     | `hitl_resolved`     | `requestId`, `kind`, `toolName`, `dismissed`                                             |
-| `onSubagentStop`     | `subagent_stop`     | `childSessionId`, `status`, `durationMs`, `summary`                                      |
-| `onHumanMentioned`   | `human_mentioned`   | `messageId`, `from`, `text`: an agent's `@human` reply, or a card assigned to the person |
+| Hook                 | Event name          | Payload fields                                                   |
+| -------------------- | ------------------- | ---------------------------------------------------------------- |
+| `onSessionEnd`       | `session_end`       | Empty object                                                     |
+| `onUserMessage`      | `user_message`      | `messageId`, `text`                                              |
+| `onAssistantMessage` | `assistant_message` | `messageId`, `content`                                           |
+| `onPostToolCall`     | `tool_call`         | `toolName`, result `content`                                     |
+| `onHitlRequest`      | `hitl_request`      | `requestId`, `kind`, `toolName`, `title`                         |
+| `onHitlResolved`     | `hitl_resolved`     | `requestId`, `kind`, `toolName`, `dismissed`                     |
+| `onSubagentStop`     | `subagent_stop`     | `childSessionId`, `status`, `durationMs`, `summary`              |
+| `onHumanAssigned`    | `human_assigned`    | `messageId`, `from`, `text`: a board card assigned to the person |
 
 ## Default state
 
@@ -88,8 +88,8 @@ Configure these manifest keys for the enabled plugin:
 | `TIMEOUT_SECONDS` | Number           | `5`     | Sets the request timeout; effective values are clamped to at least one second |
 
 `EVENTS` accepts `session_end`, `user_message`, `assistant_message`, `tool_call`, `hitl_request`,
-`hitl_resolved`, `subagent_stop`, and `human_mentioned`. Whitespace around comma-separated entries
-is removed. Unknown names are ignored and logged; if no supplied name matches, the plugin logs that
+`hitl_resolved`, `subagent_stop`, and `human_assigned`. Whitespace around comma-separated entries is
+removed. Unknown names are ignored and logged; if no supplied name matches, the plugin logs that
 nothing will be delivered.
 
 The receiver must compute its digest from the unmodified raw request body. No signature header is

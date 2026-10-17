@@ -13,14 +13,13 @@
  *   - a reply to a REPORT that addresses nobody ends with the person;
  *   - a PASS (`skip_answer`: named, asked nothing) routes nowhere, not even back.
  *
- * Addressing `@human` ends the chain: the floor is the person's and the chat waits, whoever else
- * the reply names. Every colleague hop counts against `MAX_HANDOFF_CHAIN`.
+ * The person is never addressed by a mention (a question for them goes through `ask`), so an
+ * `@human` in a reply is plain text here. Every colleague hop counts against `MAX_HANDOFF_CHAIN`.
  */
 import { createHash } from 'node:crypto'
 
 import { participantAgentId } from '../../../../db/participant'
 import type { StoredMessagePayload } from '../../../../db'
-import { mentionsHuman } from '../../agent-mentions'
 import { addressedHandles } from '../../conversation-addressing'
 import type { SessionRecord } from '../../repository'
 import { MAX_HANDOFF_CHAIN } from '../../turn-budget'
@@ -57,7 +56,6 @@ export function planHandoff(
   text: string,
   from: { requesters: readonly string[]; report: boolean },
 ): { reports: string[]; assignments: string[] } {
-  if (mentionsHuman(text)) return { reports: [], assignments: [] }
   const colleagues = session.agents.filter((member) => member.agentId !== speakerAgentId)
   const addressed = addressedHandles(
     text,
@@ -87,10 +85,8 @@ export async function routeConversationReply(
   if (payload.passed) return
   try {
     const text = payload.isInternal ? '' : (payload.content ?? '')
-    // A lone agent hands the floor to nobody unless its reply tags someone to invite; a reply to
-    // `@human` hands it to the person and invites nobody.
+    // A lone agent hands the floor to nobody unless its reply tags someone to invite.
     if (params.session.agents.length <= 1 && !text.includes('@')) return
-    if (mentionsHuman(text)) return
     const current = await env.repo.getSession(params.userId, params.session.id)
     if (!current) return
     const session = await inviteAddressedAgents(

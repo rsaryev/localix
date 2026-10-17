@@ -9,7 +9,8 @@
     "docker": "devops",
     "kubernetes": "devops",
     "web": null,
-    "web-search": null
+    "web-search": null,
+    "go": "workflows"
   },
   "plugins": [
     {
@@ -91,13 +92,6 @@
       "homepage": "https://github.com/rsaryev/localix"
     },
     {
-      "name": "go",
-      "source": "./go",
-      "description": "Turn a free-form goal into a team: the agent plans tasks on the Kanban board, brings in the specialists it needs and coordinates them to the result.",
-      "version": "0.1.0",
-      "author": "Localix"
-    },
-    {
       "name": "kanban",
       "source": "./kanban",
       "description": "A passive task board per chat: epics, tasks, dependencies, checklists, owners and blockers, kept by you and the agent in that chat. The board records work; it never starts it.",
@@ -164,7 +158,14 @@
       "name": "webhook-notifier",
       "source": "./webhook-notifier",
       "description": "Send selected lifecycle events to a webhook with optional HMAC-SHA256 signing.",
-      "version": "1.0.0",
+      "version": "2.0.0",
+      "author": "Localix"
+    },
+    {
+      "name": "workflows",
+      "source": "./workflows",
+      "description": "Turn a free-form goal into a team: the agent plans tasks on the Kanban board, brings in the specialists it needs and coordinates them to the result.",
+      "version": "0.1.0",
       "author": "Localix"
     }
   ]

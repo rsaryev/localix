@@ -165,7 +165,7 @@ describe('the other sources keep their rows', () => {
     expect((await inbox()).get('mention:R:m1')).toMatchObject({
       topic: 'user.mentioned',
       category: 'human-input',
-      title: '@qa is asking you',
+      title: '@qa assigned you a card',
       body: 'Ship it?',
     })
     expect(producers.attention.list(U)[0]).toMatchObject({

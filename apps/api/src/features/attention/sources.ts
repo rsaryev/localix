@@ -72,7 +72,7 @@ export function hitlAttention(
   }
 }
 
-// ---- mention (a participant addressed the person by name) ---------------------------------------
+// ---- mention (a board card assigned to the person) ----------------------------------------------
 
 export interface UserMentioned {
   userId: string
@@ -104,7 +104,7 @@ export function mentionAttention(registry: AttentionRegistry): MentionAttention 
         kind: 'mention',
         sessionId: mention.sessionId,
         at: new Date(mention.mentionedAt ?? Date.now()).toISOString(),
-        title: mention.from ? `@${mention.from} is asking you` : 'A participant is asking you',
+        title: mention.from ? `@${mention.from} assigned you a card` : 'A card is assigned to you',
         ...(text ? { summary: text } : {}),
         subject: {
           messageId: mention.messageId,

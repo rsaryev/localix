@@ -8,19 +8,14 @@
  */
 import { stopNotice } from './stop-notice'
 import { announceEmptyReply, announceRunStopped } from './finalize-notices'
-import { settleConversationRow } from './finalize-conversation-turn'
-import { isPass, isSilentConversationTurn } from './conversation-silence'
+import { isPass, isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
 import { GENERAL_PURPOSE_AGENT } from '../../../ext/cc-agent-selection'
 
 import type { SessionRecord } from '../../repository'
 import type { PersistedMessage, MessageTiming } from '../../contracts'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { CcHooksRuntime } from '../../../cc-hooks'
-import {
-  runAssistantMessageHooks,
-  runHumanMentionedHooks,
-  runMemoryProviderRunEnd,
-} from '../../../plugins/hooks'
+import { runAssistantMessageHooks, runMemoryProviderRunEnd } from '../../../plugins/hooks'
 import { finalizeTiming } from './turn-state'
 import { publishSessionTiming, type TurnEventContext } from './event-handlers'
 import type { ResolvedRunModel } from './model-selection'
@@ -162,19 +157,10 @@ export async function finalizeSuccessfulRun(args: {
     )
   }
 
-  // Fill the assistant row — or hide it, when this participant stayed out of the conversation —
-  // and, if it handed the turn back to the person, mark it and say so
-  // (`finalize-conversation-turn.ts` owns the order).
-  await settleConversationRow(
+  // Fill the assistant row — or hide it, when this participant stayed out of the conversation.
+  await settleConversationTurn(
     {
       streamRegistry: env.deps.streamRegistry,
-      notifications: env.deps.notifications,
-      ...(ctx.pluginHooksForRun.length > 0
-        ? {
-            onHumanMentioned: (event) =>
-              void runHumanMentionedHooks(ctx.pluginHooksForRun, event, ctx.hookRunOptions),
-          }
-        : {}),
       persist: (payload) =>
         env.persistAndPublish(
           userId,
@@ -184,7 +170,12 @@ export async function finalizeSuccessfulRun(args: {
           state.assistantCreatedAt,
         ),
     },
-    { silent: silentInConversation, userId, session, payload: state.currentPayload },
+    {
+      silent: silentInConversation,
+      userId,
+      sessionId: session.id,
+      payload: state.currentPayload,
+    },
   )
   // The reply itself hands the floor on: whoever it addresses answers next, or the colleague who
   // asked for this turn hears back. Queued turns of colleagues it merely names move up. Everything

@@ -80,8 +80,9 @@ export const STARTER_TEAM: readonly Required<
       'Reuse the design system before writing a new primitive, and name the token, not the pixel. ' +
       'Care about the states nobody screenshots — empty, loading, failed, too long, too narrow. A ' +
       'successful build does not verify the rendered interface: open it, use it, and compare it ' +
-      'with an approved mockup at the same viewport, taking the mockup’s tokens verbatim. Build in ' +
-      'the project’s own code and leave the mockup untouched as the reference. Report each ' +
+      'with the designer’s mockup, when there is one, at the same viewport, taking its tokens ' +
+      'verbatim. Build in the project’s own code and leave the mockup untouched as the ' +
+      'reference. Report each ' +
       'acceptance check as passed, failed or not run, with evidence.',
   },
   {
@@ -94,11 +95,11 @@ export const STARTER_TEAM: readonly Required<
       'flow before the layout, and the empty, loading, failed and too-long states before the ' +
       'happy one. For a new screen, flow or visible redesign, your first deliverable is a RENDERED ' +
       'mockup the person can open — in an existing product with its own tokens and components, in ' +
-      'an empty workspace one self-contained mockup.html — shown in the preview at its real size, ' +
-      'and approved before implementation. Make it implementable 1:1: named tokens, one frame per ' +
+      'an empty workspace one self-contained mockup.html — shown in the preview at its real size. ' +
+      'Make it implementable 1:1: named tokens, one frame per ' +
       'state with its label outside the frame, the fewest states that decide the design. A small ' +
       'change to an existing screen needs no mockup. Report the artifact, the covered states, the ' +
-      'rendered evidence and the approval status.',
+      'rendered evidence.',
   },
   {
     handle: 'qa',

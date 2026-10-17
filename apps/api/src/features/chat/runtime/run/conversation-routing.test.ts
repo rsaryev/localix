@@ -165,10 +165,11 @@ describe('assignments and reports', () => {
     expect(h.queued).toEqual([])
   })
 
-  test('a question to the person is not reported back', async () => {
+  test('@human is plain text: a finished assignment still reports back to who asked', async () => {
+    // The person is reached through `ask`, never a mention, so writing @human ends nothing.
     const h = harness()
-    await h.route('agent-b', '@human, which language first?', assignment(), askedBy('agent-a'))
-    expect(h.queued).toEqual([])
+    await h.route('agent-b', 'Done; @human may want to look.', assignment(), askedBy('agent-a'))
+    expect(h.queued.map((entry) => entry.speaker)).toEqual(['agent-a'])
   })
 
   test('@human is never routed or invited as an agent', async () => {
@@ -178,11 +179,10 @@ describe('assignments and reports', () => {
     expect(h.session().agents.map((agent) => agent.handle)).not.toContain('human')
   })
 
-  test('@human ends the chain even when colleagues are named beside it', async () => {
+  test('@human beside a colleague does not hold the colleague back', async () => {
     const h = harness()
-    await h.route('agent-b', '@human, which language first? @gamma, @qa stand by.')
-    expect(h.queued).toEqual([])
-    expect(h.session().agents.map((agent) => agent.handle)).not.toContain('qa')
+    await h.route('agent-b', '@human, FYI. @qa, verify the checkout flow.')
+    expect(h.queued.map((entry) => entry.speaker)).toEqual(['agent-q'])
   })
 })
 

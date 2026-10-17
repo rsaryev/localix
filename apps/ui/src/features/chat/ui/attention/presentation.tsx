@@ -53,7 +53,7 @@ export const ATTENTION_PRESENTATION: Record<AttentionKind, AttentionPresentation
     badge: {
       icon: AtSign,
       toneClass: 'text-status-info',
-      label: () => 'Someone in this conversation is asking you',
+      label: () => 'A card in this conversation is assigned to you',
     },
     Body: MentionAttentionBody,
   },

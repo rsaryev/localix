@@ -96,9 +96,9 @@ the chat snooze an item in that window only. The request keeps waiting, the badg
 and a new item in the same chat still raises the dialog. The dock badge counts the chats that have a
 blocked request, a plan or a mention waiting.
 
-A mention comes from an agent's `@human` reply, in a solo chat or a group, or from a board card
-assigned to you. A chat holds at most one waiting mention until you write in it, so a second
-`@human` in the same chat does not raise another banner.
+A mention comes from a board card assigned to you. Agents never mention you to ask something: a
+question, decision or approval arrives as an **Ask** request. A chat holds at most one waiting
+mention until you write in it, so a second card in the same chat does not raise another banner.
 
 ### Confirm and session grants
 

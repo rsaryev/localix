@@ -153,8 +153,9 @@ export interface PluginAgentSummary {
 export interface PluginAgentDirectory {
   list(userId: string, sessionId: string): Promise<readonly PluginAgentSummary[]>
   /**
-   * Tell the person something now waits on them in this chat (a card assigned to `@human`), the
-   * same way an agent's `@human` mention does. Best-effort; absent on hosts that cannot.
+   * Tell the person something now waits on them in this chat (a card assigned to `@human`): the
+   * stream frame, the attention item and `onHumanAssigned`. Best-effort; absent on hosts that
+   * cannot.
    */
   notifyHuman?(
     userId: string,

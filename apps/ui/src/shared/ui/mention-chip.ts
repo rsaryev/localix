@@ -1,5 +1,5 @@
 /**
- * The inline mention chip — `@agent`, `@file`, `@you` rendered inside message text.
+ * The inline mention chip — `@agent` or `@file` rendered inside message text.
  *
  * Three components spelled this shape by hand, two of them byte-for-byte, and neither clickable one
  * carried a focus indicator: a keyboard user tabbing through a message landed on a button that did
@@ -15,6 +15,4 @@ const MENTION_CHIP_BASE =
 export const MENTION_CHIP = {
   /** A mention that navigates — an agent's profile, a file. */
   link: `${MENTION_CHIP_BASE} gap-1 bg-surface-hover font-medium text-text-strong ring-border/60 outline-none transition-colors hover:bg-surface-active focus-ring`,
-  /** A mention of the reader — informational, not a control. */
-  self: `${MENTION_CHIP_BASE} gap-0.5 bg-status-info/12 font-semibold text-status-info ring-status-info/30`,
 } as const

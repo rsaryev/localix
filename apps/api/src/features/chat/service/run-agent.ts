@@ -164,8 +164,7 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
     )
 
     // Authorship is fixed at insert and never patched, so resolve the strategy before creating
-    // the first assistant placeholder. With no explicit address, the least-recent participant
-    // is chosen deterministically from the shared history.
+    // the first assistant placeholder. With no explicit address, the leader answers.
     const existing = await resolveExistingMessages(existingMessages, [userPayload.id])
     // A tag in the message brings an available agent in, so the address below can reach it.
     if (!opts?.isInternal) session = await runner.inviteAddressed(userId, session, prompt)

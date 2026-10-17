@@ -97,18 +97,18 @@ describe('webhook-notifier plugin', () => {
     })
   })
 
-  it("delivers an agent's @human mention", async () => {
+  it('delivers a card assigned to the person', async () => {
     const hooks = await load()
-    await hooks.onHumanMentioned!({
+    await hooks.onHumanAssigned!({
       sessionId: 's1',
-      messageId: 'm1',
+      messageId: 'card:T-1',
       from: 'lead',
-      text: '@human, ship it?',
+      text: 'T-1 Approve copy',
     })
     await settle(() => calls.length >= 1)
     const body = JSON.parse(calls[0].init.body)
-    expect(body.event).toBe('human_mentioned')
-    expect(body.payload).toEqual({ messageId: 'm1', from: 'lead', text: '@human, ship it?' })
+    expect(body.event).toBe('human_assigned')
+    expect(body.payload).toEqual({ messageId: 'card:T-1', from: 'lead', text: 'T-1 Approve copy' })
   })
 
   it('signs the body with HMAC-SHA256 when SECRET is set', async () => {

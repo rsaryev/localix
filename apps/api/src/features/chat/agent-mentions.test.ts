@@ -1,11 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 
-import { ALL_MENTION_HANDLE, agentHandleSchema, HUMAN_HANDLE } from '@localixai/agent/agents'
+import { ALL_MENTION_HANDLE, agentHandleSchema } from '@localixai/agent/agents'
 import {
   mentionSpans,
   agentNameSpans,
   mentionedHandles,
-  mentionsHuman,
   conversationMentionHandles,
 } from './agent-mentions'
 
@@ -84,46 +83,13 @@ describe('agentNameSpans — weak references in prose', () => {
   })
 })
 
-describe('the person is an address too', () => {
-  test('mentionsHuman reads @human through the same grammar as any handle', () => {
-    expect(HUMAN_HANDLE).toBe('human')
-    expect(mentionsHuman('@human, option A or B?')).toBe(true)
-    // Case, and trailing punctuation, exactly as for a colleague.
-    expect(mentionsHuman('Waiting for you, @Human.')).toBe(true)
-  })
-
-  test('@user is not an address of the person', () => {
-    expect(mentionsHuman('@user, option A or B?')).toBe(false)
-  })
-
-  test('a word that merely contains the handle is not an address', () => {
-    // The whole reason the grammar matches against KNOWN handles rather than any `@word`:
-    // an email and a longer handle both end in something that is not a mention of anyone.
-    expect(mentionsHuman('user@example.com')).toBe(false)
-    expect(mentionsHuman('@username writes')).toBe(false)
-    expect(mentionsHuman('@humans write')).toBe(false)
-    expect(mentionsHuman('we will decide ourselves')).toBe(false)
-  })
-
-  test('the conversation addresses its participants, the person and everyone from one list', () => {
-    expect(conversationMentionHandles(PARTICIPANTS)).toEqual([
-      ...PARTICIPANTS,
-      HUMAN_HANDLE,
-      ALL_MENTION_HANDLE,
-    ])
-    // And the list resolves all three kinds, which is what the transcript renderer needs to turn
-    // each into its own chip.
+describe('the person is not an address', () => {
+  test('the conversation links its participants and everyone, never the person', () => {
+    expect(conversationMentionHandles(PARTICIPANTS)).toEqual([...PARTICIPANTS, ALL_MENTION_HANDLE])
+    // Agents reach the person through `ask`; an `@human` in a reply is plain text.
     expect(
       mentionedHandles('@all — @qa, ask @human', conversationMentionHandles(PARTICIPANTS)),
-    ).toEqual([ALL_MENTION_HANDLE, 'qa', HUMAN_HANDLE])
-  })
-
-  test('the person wins over a participant that answers to the same handle', () => {
-    // Two participants on one address is not a thing this grammar can express, and of the two
-    // readings the person's is the one a participant cannot work around.
-    expect(mentionedHandles('@human?', conversationMentionHandles(['human']))).toEqual([
-      HUMAN_HANDLE,
-    ])
+    ).toEqual([ALL_MENTION_HANDLE, 'qa'])
   })
 })
 

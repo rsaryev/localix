@@ -122,24 +122,22 @@ export type AgentStreamEvent =
     }
   | {
       /**
-       * A MEMBER OF A ROOM ADDRESSED THE PERSON, and the round ended there.
+       * A BOARD CARD WAS ASSIGNED TO THE PERSON. Agents never address the person by mention (a
+       * question goes through `ask`); a card handed to `@human` is what still waits on them.
        *
-       * Its own frame rather than a fact the client digs out of `message.updated`: an assistant
-       * row is patched many times while it streams, so a client deriving this would have to
-       * debounce a field that is only final at the end — and the one thing that must not happen
-       * is the person being told twice, or not at all. The producer knows exactly when it is
-       * true (once, at finalize), so it says so once.
+       * Its own frame because the producer knows exactly when it is true (once, when the card is
+       * assigned), so it says so once — never twice, never not at all.
        *
        * Replayable, and for the same reason `hitl.requested` is: the whole point is a person who
        * was not looking. `mentionedAt` is the fact's own time so a replay on reconnect is judged
-       * by when the question was asked, not by when the socket came back.
+       * by when the card was assigned, not by when the socket came back.
        */
       type: 'user.mentioned'
       sessionId: string
       messageId: string
-      /** Who asked, in the spelling frozen on the row — never re-resolved. */
+      /** Who assigned it ('' when no agent did). */
       from: string
-      /** The reply's own words, trimmed to a notification's worth. */
+      /** The card, trimmed to a notification's worth. */
       text: string
       mentionedAt: number
     }

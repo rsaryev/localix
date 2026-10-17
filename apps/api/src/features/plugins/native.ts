@@ -49,7 +49,7 @@ export type {
   SubagentStopEvent,
   HitlRequestEvent,
   HitlResolvedEvent,
-  HumanMentionedEvent,
+  HumanAssignedEvent,
   PluginHooks,
   MemoryLoadContextEvent,
   MemoryRunEndEvent,

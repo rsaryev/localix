@@ -1,10 +1,10 @@
 import type { CSSProperties } from 'react'
-import { CircleHelp, KanbanSquare } from 'lucide-react'
+import { KanbanSquare } from 'lucide-react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
 import { useFeaturedCommand } from '@/shared/contrib/useFeaturedCommand'
 import './goal-scene.css'
 
-/** The plan the leader drafts on the board: one card per specialist. */
+/** The cards the leader puts on the board: one per specialist. */
 const TASKS = [
   { id: 'design', owner: 'Design', title: 'Pricing tiers and layout' },
   { id: 'frontend', owner: 'Frontend', title: 'Build the pricing page' },
@@ -13,8 +13,8 @@ const TASKS = [
 
 /**
  * The featured goal command, as it runs: the composer takes the command and a goal, the
- * leader's plan lands on the board with an owner per task, and a question card asks the
- * person to approve before anything starts.
+ * leader's cards land on the board with an owner per task, and the leader hands the first ready
+ * card to its owner. Whether a plan waits for approval is the chat's permission mode, not this.
  */
 export function GoalScene() {
   const command = useFeaturedCommand()
@@ -24,7 +24,7 @@ export function GoalScene() {
       <div className="wt-pane wt-gl-plan">
         <span className="wt-row wt-gl-head">
           <KanbanSquare />
-          <span className="wt-label">Plan</span>
+          <span className="wt-label">Board</span>
           <span className="wt-gl-count">3 tasks</span>
         </span>
         {TASKS.map(({ id, owner, title }, i) => (
@@ -40,12 +40,11 @@ export function GoalScene() {
       </div>
       <div className="wt-pane wt-gl-ask">
         <span className="wt-gl-question">
-          <CircleHelp className="size-2.5" />
-          Approve the plan?
+          <MonogramAvatar identity="localix" label="Localix" size={12} />
+          Localix
         </span>
-        <span className="wt-gl-answers">
-          <span className="wt-gl-answer wt-gl-approve">Approve</span>
-          <span className="wt-gl-answer">Change it</span>
+        <span className="wt-gl-handoff">
+          <b>@design</b> take LX-2: pricing tiers and layout
         </span>
       </div>
       <div className="wt-pane wt-gl-composer">

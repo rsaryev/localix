@@ -101,7 +101,7 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'goal',
     lead: 'Hand over a whole goal.',
-    rest: 'Type it after the command; the leader plans it on the board, brings in specialists and starts once you approve —',
+    rest: 'Type it after the command; the leader breaks it into cards, brings in specialists and coordinates them —',
     Scene: GoalScene,
     Action: GoalAction,
     needsFeaturedCommand: true,

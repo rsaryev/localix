@@ -38,7 +38,7 @@ is also how it hands the floor on: each participant it addresses with `@handle` 
 order addressed, and reads that reply as its assignment.
 
 ```text
-@design, draft the checkout mockup at 390 px; @frontend, build it after I approve.
+@design, draft the checkout mockup at 390 px; @frontend, build it from that mockup.
 ```
 
 - A handle inside code, a fenced block, a block quote or a link target is a reference, not an
@@ -48,10 +48,13 @@ order addressed, and reads that reply as its assignment.
 - A reply that addresses nobody returns the floor. After an assignment it goes back to the colleague
   who asked, as a report, so finished work always reaches the one who gave it. After a report, or on
   a turn you started, it ends with you.
-- `@human` addresses you, in a solo chat or a group. It ends the chain: no colleague named in the
-  same reply is queued, the chat waits for you, and you get a mention notification. At most one
-  mention waits per chat until you write there. Agents use the `ask` tool instead for a choice
-  between options. See [Human](agents.md#human).
+- Agents never address you with `@human`. When an agent needs your answer, a decision or an
+  approval, it uses the `ask` tool, which blocks its run for up to 5 minutes and notifies you like
+  any [HITL](hitl.md) request; otherwise it reports and stops, and the reply returns to you.
+  `@human` written in a reply is plain text and routes nothing. See [Human](agents.md#human).
+- Only the leader hands work out. A member @mentions only the leader, never a colleague, and answers
+  you only about its own part; questions about the whole work are the leader's.
+- Whether work waits for your approval is the chat's permission mode (**Plan**), not a team rule.
 - Addressing the colleague who assigned the current turn is a report too, so two agents do not keep
   passing the floor back and forth.
 - A participant that is named but asked nothing, or whose part is already reported, passes with

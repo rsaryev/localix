@@ -14,7 +14,7 @@ export { loadMemoryProviderContext, runMemoryProviderRunEnd } from './memory-hoo
  * - [[hooks-messages]] `runUserMessageHooks` / `runAssistantMessageHooks` rewrite
  *   the model-facing prompt and the persisted assistant reply.
  * - [[hooks-lifecycle]] the observer-only notifications (`onSubagentStop`,
- *   `onHitlRequest`/`onHitlResolved`, `onHumanMentioned`) plus `runSessionEndHooks`.
+ *   `onHitlRequest`/`onHitlResolved`, `onHumanAssigned`) plus `runSessionEndHooks`.
  *
  * Guarantees (same for every hook): per-plugin try/catch isolation — a throwing
  * hook is logged and NEVER breaks the turn — and a hard timeout per invocation
@@ -27,6 +27,6 @@ export {
   runSubagentStopHooks,
   runHitlRequestHooks,
   runHitlResolvedHooks,
-  runHumanMentionedHooks,
+  runHumanAssignedHooks,
   runSessionEndHooks,
 } from './hooks-lifecycle'

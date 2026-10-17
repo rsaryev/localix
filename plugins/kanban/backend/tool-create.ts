@@ -41,6 +41,17 @@ export async function createCards(
   speaker?: BoardSpeaker,
 ): Promise<CreateResult> {
   const leads = leadsBoard(speaker)
+  // A batch is the whole request: a card described beside `creates` was silently dropped (an
+  // epic written next to its tasks never existed, and the tasks came out without a parent).
+  const beside = (
+    ['title', 'description', 'agent', 'kind', 'parent', 'depends_on', 'priority', 'items'] as const
+  ).filter((field) => input[field] !== undefined)
+  if (input.creates?.length && beside.length)
+    throw new BoardRefusal(
+      400,
+      'mixed_create',
+      `create got ${beside.join(', ')} beside creates. Put every card in creates, the epic first: [{ title, kind: "epic" }, { title, parent: "<epic title>" }, …].`,
+    )
   const entries = input.creates?.length ? input.creates : [{ ...input, title: input.title ?? '' }]
   const created: KanbanTask[] = []
   let refused: string | null = null
