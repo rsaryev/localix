@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href="https://localix.ai/films/demo.mp4">
+  <a href="https://localix.ai">
     <img src="docs/assets/films/demo.png" alt="Watch the Localix demo: a /workflows prompt fills the board, agents build and test a 2048 game in the browser, and a comment gets the cells resized" width="880">
   </a>
 </p>
