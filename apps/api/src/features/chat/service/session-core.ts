@@ -158,6 +158,8 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
       (await deps.providerConnectionsService.listConnections(userId)).connections.some(
         (connection) => connection.id === connectionId,
       ),
+    projectExists: async (userId, projectId) =>
+      (await projectsRepo.getProject(userId, projectId)) !== null,
     // A stated level lands on what its model offers — the picker's rule, enforced here.
     reasoningModel: routeReasoningModel(deps),
     // Only the effort is decided at birth; the model is left blank so the chain answers for it

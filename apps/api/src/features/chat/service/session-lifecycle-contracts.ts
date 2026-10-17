@@ -84,6 +84,13 @@ export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'
    */
   connectionExists?: (userId: string, connectionId: string) => Promise<boolean>
   /**
+   * Does this user hold this project? Same shape as {@link connectionExists}: a UI holding a
+   * project id from a recreated database used to have its New chat refused as
+   * `agent_unavailable` (the seat resolver cannot see agents in a project that is not there),
+   * a message about the wrong thing. Optional for the same reason.
+   */
+  projectExists?: (userId: string, projectId: string) => Promise<boolean>
+  /**
    * The reasoning capability of the model a route names, for clamping a stated level
    * (`clampRoutePatch`). Null when the catalog cannot resolve it; absent in a narrow host.
    */

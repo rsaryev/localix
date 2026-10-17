@@ -102,4 +102,24 @@ describe('automatic HTTP event tracing', () => {
       },
     })
   })
+
+  it('never raises a person-facing row for a failed background catalog publish', () => {
+    const failedPublish = {
+      phase: 'failed' as const,
+      traceId: 'h9',
+      operation: 'PUT ui-locations',
+      method: 'PUT',
+      ts: 1_000,
+      attributes: { path: '/rpc/ui-locations' },
+      error: Object.assign(new Error('Project not found'), {
+        status: 404,
+        code: 'project_not_found',
+      }),
+    }
+    expect(apiFailureNeedsFallback(failedPublish)).toBeFalse()
+    // Still a diagnostic in the trace.
+    expect(apiRequestTraceStep(failedPublish)).toMatchObject({ phase: 'failed' })
+    // Other writes keep their fallback.
+    expect(apiFailureNeedsFallback({ ...failedPublish, operation: 'PUT projects' })).toBeTrue()
+  })
 })

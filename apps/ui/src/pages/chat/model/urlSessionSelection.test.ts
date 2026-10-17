@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { UiSession } from '@/shared/api/contracts'
 import { ApiError } from '@/shared/api/internal'
-import { isMissingRoutedSessionError, shouldLoadRoutedSession } from './urlSessionSelection'
+import {
+  isDeadRoutedProject,
+  isMissingProjectError,
+  isMissingRoutedSessionError,
+  shouldLoadRoutedSession,
+} from './urlSessionSelection'
 
 const session = (id: string, bodyLoaded?: boolean) =>
   ({ id, messages: [], bodyLoaded }) as unknown as UiSession
@@ -50,5 +55,32 @@ describe('isMissingRoutedSessionError', () => {
     expect(isMissingRoutedSessionError(new ApiError('gone', 410))).toBe(true)
     expect(isMissingRoutedSessionError(new ApiError('starting', 503))).toBe(false)
     expect(isMissingRoutedSessionError(new Error('offline'))).toBe(false)
+  })
+})
+
+describe('isDeadRoutedProject', () => {
+  const roster = { projects: [{ id: 'PRJ-1' }], projectsLoaded: true }
+
+  test('a routed project the answered roster lacks is dead (recreated database)', () => {
+    expect(isDeadRoutedProject(roster, 'PRJ-11')).toBe(true)
+  })
+
+  test('nothing is judged before the roster answers', () => {
+    expect(isDeadRoutedProject({ projects: [], projectsLoaded: false }, 'PRJ-11')).toBe(false)
+  })
+
+  test('a live project and the neutral route are never dead', () => {
+    expect(isDeadRoutedProject(roster, 'PRJ-1')).toBe(false)
+    expect(isDeadRoutedProject(roster, null)).toBe(false)
+  })
+})
+
+describe('isMissingProjectError', () => {
+  test('recognizes only project_not_found', () => {
+    expect(isMissingProjectError(new ApiError('Project not found', 404, 'project_not_found'))).toBe(
+      true,
+    )
+    expect(isMissingProjectError(new ApiError('gone', 404, 'session_not_found'))).toBe(false)
+    expect(isMissingProjectError(new Error('Project not found'))).toBe(false)
   })
 })

@@ -52,6 +52,7 @@ export async function createSession(
   // whose whole purpose is that "no project" must not resolve to the `global` capability scope.
   const projectId =
     input.projectId ?? parent?.projectId ?? (await ctx.resolveDefaultProjectId(userId))
+  if (input.projectId) await assertStatedProjectExists(ctx, userId, input.projectId)
   await assertStatedConnectionExists(ctx, userId, input.providerConnectionId)
   const sessionKind = input.sessionKind ?? 'chat'
   assertDelegatedSession(input, sessionKind)
@@ -178,6 +179,15 @@ function assertDelegatedSession(
  * one. A caller naming something that does not exist has made a request error, and the answer
  * has to say which thing and what to do about it.
  */
+async function assertStatedProjectExists(
+  ctx: SessionLifecycleCtx,
+  userId: string,
+  projectId: string,
+): Promise<void> {
+  if (!ctx.projectExists || (await ctx.projectExists(userId, projectId))) return
+  throw new ApiError(404, 'project_not_found', 'Project not found')
+}
+
 async function assertStatedConnectionExists(
   ctx: SessionLifecycleCtx,
   userId: string,

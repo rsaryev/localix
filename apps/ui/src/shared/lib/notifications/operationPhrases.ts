@@ -39,7 +39,8 @@ const RESOURCES: Readonly<Record<string, { noun: string; verbs?: Partial<Record<
     'shell-command': { noun: 'the localix command', verbs: { create: 'update' } },
     loops: { noun: 'the loop' },
     usage: { noun: 'the usage figures' },
-    'ui-locations': { noun: 'the layout' },
+    // Not the window layout: the catalog of places agents may open things in this window.
+    'ui-locations': { noun: 'the places agents can open', verbs: { save: 'update' } },
     'resource-refs': { noun: 'the linked resource' },
   }
 

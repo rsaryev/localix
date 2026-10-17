@@ -43,10 +43,21 @@ export function apiRequestTraceStep(
   }
 }
 
+/**
+ * Background convergence the app retries or settles on its own, never a person's action. The
+ * UI-location catalog is republished on every registry change and reconnect; a failed publish
+ * raised "Could not save the layout" once per window per attempt — about nothing the person did
+ * or can fix. Its trace step is still recorded as a diagnostic.
+ */
+const BACKGROUND_SYNC_OPERATIONS = new Set(['PUT ui-locations'])
+
 export function apiFailureNeedsFallback(
   event: ApiRequestEvent,
   context?: ObservedOperationContext,
 ): boolean {
+  if (BACKGROUND_SYNC_OPERATIONS.has(event.operation) && !isUserInitiatedOperation(context)) {
+    return false
+  }
   return (
     event.phase === 'failed' &&
     ((event.method !== 'GET' && event.method !== 'HEAD') || isUserInitiatedOperation(context))

@@ -292,6 +292,36 @@ describe('UI location catalog frontend sync', () => {
     }
   })
 
+  test('a project the API does not know is dropped silently: no retry, no warning', async () => {
+    // The stale `PRJ-11` a restored window held after the database was recreated: each attempt
+    // used to schedule a retry and raise "Could not save the layout" again.
+    const { ApiError } = await import('@/shared/api/internal')
+    const publish = mock(async () => {
+      throw new ApiError('Project not found', 404, 'project_not_found')
+    })
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
+    const h = harness(publish)
+    const stop = createUiLocationCatalogSync('PRJ-11', h.ports)
+    try {
+      h.queued.shift()!()
+      await tick()
+      expect(publish).toHaveBeenCalledTimes(1)
+      expect(h.delays).toEqual([])
+      const ownWarnings = warn.mock.calls.filter((call) =>
+        String(call[0]).includes('[ui-locations]'),
+      )
+      expect(ownWarnings).toEqual([])
+      // A later registry change or reconnect does not resurrect the dead scope either.
+      h.update(snapshot(2, 'Integrated terminal'))
+      while (h.queued.length > 0) h.queued.shift()!()
+      await tick()
+      expect(publish).toHaveBeenCalledTimes(1)
+    } finally {
+      warn.mockRestore()
+      stop()
+    }
+  })
+
   test('publishes the complete initial snapshot for the active project', async () => {
     const publish = mock(
       async (_projectId: string | null, _snapshot: UiAgentLocationCatalogSnapshot) => ({

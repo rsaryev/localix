@@ -16,7 +16,8 @@ import { scopePath } from '@/shared/routing/routes'
 import { composerBus } from '@/shared/lib/composerBus'
 import { startStartupRetry } from '@/shared/lib/startupRetry'
 import type { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
-import { isMissingRoutedSessionError, shouldLoadRoutedSession } from './urlSessionSelection'
+import * as routed from './urlSessionSelection'
+import { useDeadProjectRoute } from './useDeadProjectRoute'
 import { scopedNewConversation } from '@/features/chat/model/conversationStartStrategy'
 import { cancelLaunchChatHold } from '@/widgets/editor-grid/model/launchChatHold'
 
@@ -76,6 +77,7 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
     createSession,
   } = opts
   const goReplace = nav.goReplace
+  useDeadProjectRoute(routeProjectId, hasHydrated && !isHomeRoute && !isLegacyRoute, goReplace)
 
   // One-time normalization after hydration: when the URL is underspecified
   // (root `/` or `/chat` without a session), stamp the store's remembered
@@ -273,13 +275,13 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
         stopSessionRetry = startStartupRetry(async () => {
           if (cancelled) return true
           const state = useChatStore.getState()
-          if (!shouldLoadRoutedSession(state, routeSessionId)) return true
+          if (!routed.shouldLoadRoutedSession(state, routeSessionId)) return true
           try {
             await selectSession(routeSessionId, { signal: sessionLoad.signal })
             return true
           } catch (error) {
             if (cancelled || sessionLoad.signal.aborted) return true
-            if (isMissingRoutedSessionError(error)) {
+            if (routed.isMissingRoutedSessionError(error)) {
               goReplace(routeProjectId ? scopePath(routeProjectId) : '/')
               return true
             }
@@ -304,6 +306,8 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
         projectDrafting.current = routeProjectId
         try {
           await createSession(undefined, scopedNewConversation(routeProjectId))
+        } catch (error) {
+          if (!routed.isMissingProjectError(error)) throw error // useDeadProjectRoute leaves the route
         } finally {
           if (projectDrafting.current === routeProjectId) projectDrafting.current = null
         }
