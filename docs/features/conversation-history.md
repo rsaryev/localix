@@ -29,12 +29,14 @@ wording remain separate.
 ## Find and recover earlier messages
 
 Sidebar search filters titles immediately and searches stored message text after you enter at least
-two characters. **Found in messages** shows one row per conversation from up to 30 ranked message
-hits; many matches in one conversation can leave fewer result rows. Selecting a row opens the
-conversation, not the exact matching message. Rows whose sessions are absent from the loaded sidebar
-list are omitted. Search uses quoted full-text terms together, not a substring, regular expression,
-or semantic similarity search. Punctuation-only input has no searchable terms. An unavailable index
-or a search failure can appear as no results.
+two characters. It applies to the open history tab; the **External** tab filters
+[native CLI sessions](external-agents.md#sessions-and-projects) by title only. **Found in messages**
+shows one row per conversation from up to 30 ranked message hits; many matches in one conversation
+can leave fewer result rows. Selecting a row opens the conversation, not the exact matching message.
+Rows whose sessions are absent from the loaded sidebar list are omitted. Search uses quoted
+full-text terms together, not a substring, regular expression, or semantic similarity search.
+Punctuation-only input has no searchable terms. An unavailable index or a search failure can appear
+as no results.
 
 An agent with `history_search` can recover earlier text when you refer to past work, follow a
 checkpoint pointer, or inspect another session in your workspace:

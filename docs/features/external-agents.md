@@ -6,11 +6,17 @@ coding agent's own history.
 
 ## Sessions and projects
 
-The history panel combines Localix chats with native CLI sessions recorded in the selected directory
-and its subdirectories. Agent icons before each title identify the linked agent. Default stays
-within the Localix workspace tree; it never aggregates machine-wide CLI history. A native session
-already linked to a Localix chat appears once, under that chat. Archiving the chat does not bring
-back a native duplicate.
+The history panel has two tabs. **Localix** lists Localix chats, including chats linked to a CLI.
+**External** lists native CLI sessions recorded in the selected directory and its subdirectories.
+Localix is the default; the panel remembers the selected tab on this device. Search, sorting and
+grouping apply within the open tab, and message search runs only on the Localix tab. A project
+without a folder shows no External tab. With no installed CLI or no recorded session, the External
+tab says where this history comes from.
+
+Agent icons before each title identify the linked agent. Default stays within the Localix workspace
+tree; it never aggregates machine-wide CLI history. A native session already linked to a Localix
+chat appears once, as that chat on the Localix tab. Archiving the chat does not bring back a native
+duplicate.
 
 All Localix chats share the same project selector, search, grouping, sorting, pinning, archive
 controls, menus and batch actions. Opening a native history row first gives it a normal linked chat,

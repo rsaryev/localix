@@ -242,15 +242,14 @@ test('Unified history shows owned Localix and external sessions together within 
         </MemoryRouter>,
       ),
     )
+    const tab = (name: string) =>
+      [...host.querySelectorAll<HTMLElement>('[role="tab"]')].find((t) => t.textContent === name)!
+    expect(tab('Localix').getAttribute('aria-selected')).toBe('true')
     expect(host.textContent).toContain('Our chat')
-    expect(host.querySelector('[role="tablist"]')).toBeNull()
     expect(host.textContent).toContain('Our external')
-    expect(host.textContent).toContain('Our chat')
     expect(host.textContent).not.toContain('Project external')
-    expect(host.textContent).toContain('Recorded CLI')
-    expect(host.textContent).not.toContain('Duplicate CLI')
-    expect(host.textContent).not.toContain('Foreign CLI')
-    expect(host.querySelectorAll('[data-session-row]')).toHaveLength(3)
+    expect(host.textContent).not.toContain('Recorded CLI')
+    expect(host.querySelectorAll('[data-session-row]')).toHaveLength(2)
     await act(async () => host.querySelector<HTMLElement>('[data-session-row="Our chat"]')!.click())
     expect(open).not.toHaveBeenCalled()
     await act(async () =>
@@ -259,6 +258,12 @@ test('Unified history shows owned Localix and external sessions together within 
     expect(selected).toEqual(['Our chat', 'Our external'])
     expect(open).toHaveBeenCalledWith('Our external')
     expect(terminal).toHaveBeenCalledWith('Our external', 'pty', 'Codex')
+    await act(async () => tab('External').click())
+    expect(host.textContent).toContain('Recorded CLI')
+    expect(host.textContent).not.toContain('Our chat')
+    expect(host.textContent).not.toContain('Duplicate CLI')
+    expect(host.textContent).not.toContain('Foreign CLI')
+    expect(host.querySelectorAll('[data-session-row]')).toHaveLength(1)
     await act(async () =>
       host.querySelector<HTMLElement>('[data-session-row="native:codex:recorded"]')!.click(),
     )
@@ -266,18 +271,20 @@ test('Unified history shows owned Localix and external sessions together within 
     expect(selected).toEqual(['Our chat', 'Our external', 'linked-native'])
     expect(terminal).toHaveBeenCalledWith('linked-native', 'pty', 'Codex')
     await act(async () => useChatStore.setState({ activeProjectId: 'project' }))
-    expect(host.textContent).toContain('Project external')
-    expect(host.textContent).not.toContain('Our external')
     expect(host.textContent).not.toContain('Recorded CLI')
     expect(nativeHistory).toHaveBeenLastCalledWith('', true, {
       cwd: '/work/project',
       includeDescendants: true,
     })
+    await act(async () => tab('Localix').click())
+    expect(host.textContent).toContain('Project external')
+    expect(host.textContent).not.toContain('Our external')
     expect(foreignHistory).not.toHaveBeenCalled()
   } finally {
     await act(async () => root.unmount())
     host.remove()
     useChatStore.setState(original)
+    localStorage.clear()
     for (const spy of [
       agentData,
       installedAgents,

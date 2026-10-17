@@ -146,4 +146,13 @@ export async function verifyExternal(page, scenario) {
   const viewport = await page.locator('.xterm-screen').boundingBox()
   expect(viewport.height).toBeGreaterThan(750)
   await expect(page.locator('.monaco-editor')).toHaveCount(0)
+  // A linked chat is a Localix chat: it lists under the default Localix tab, not External.
+  if (await page.getByRole('region', { name: 'Session history', exact: true }).isVisible()) {
+    const sources = page.getByRole('tablist', { name: 'History source', exact: true })
+    await expect(sources.getByRole('tab', { name: 'Localix', exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    await expect(page.locator(`[data-session-row="${fixture.externalSessionId}"]`)).toBeVisible()
+  }
 }

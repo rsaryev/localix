@@ -100,6 +100,9 @@ The top navigation follows **workspace → chat → sub-session**. Its chat menu
 conversations in the selected workspace across all agents. The current location stays prominent;
 ancestor labels are quieter and truncate first when space is limited.
 
+The sidebar's **Localix** tab lists these conversations. When the project has a folder, an
+**External** tab lists [coding-agent CLI history](external-agents.md#sessions-and-projects) from it.
+
 A sidebar row shows the conversation title and when it was last active on one line. Main chats omit
 decorative leading icons; sub-sessions keep their worker, thread or fork icon. A spinner marks an
 agent that is working. Beside the timestamp, one status mark shows the most pressing item waiting

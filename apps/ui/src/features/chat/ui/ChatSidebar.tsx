@@ -22,11 +22,10 @@ import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
 import { useSessionTreeRenderer } from './SessionTree'
 import { useAddProjectFolder } from '../model/useAddProjectFolder'
 import { openOwnedExternalSession } from '@/features/external-agents/model/createSession'
-import { useExternalHistory } from '@/features/external-agents/model/useExternalHistory'
-import { nativeHistoryRows } from '@/features/external-agents/model/unifiedHistory'
 import { NativeSessionRow } from '@/features/external-agents/ui/NativeSessionRow'
 import { NativeHistoryStatus } from '@/features/external-agents/ui/NativeHistoryStatus'
-import { sortSessionsList } from '../model/useSidebarSessions'
+import { useHistorySource } from './useHistorySource'
+import { ExternalHistoryEmpty, HistorySourceTabs } from './HistorySourceTabs'
 import { isPrimaryModifier } from '@/shared/lib/keybindings'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { DEFAULT_SESSION_GROUPING_MODE, type SessionGroupingMode } from '../model/sessionGrouping'
@@ -127,28 +126,16 @@ export function ChatSidebar({
   // No slice any more: pagination belongs to the GROUP now, because one cap over the whole
   // list would truncate before the chats were split by agent — the fortieth chat of a busy
   // agent would hide the only chat of a quiet one.
-  const nativeHistory = useExternalHistory(search, Boolean(activeProject?.workingDir), {
-    cwd: activeProject?.workingDir,
-    includeDescendants: true,
+  const history = useHistorySource({
+    allSessions,
+    scopeSessions,
+    activeProject,
+    search,
+    normalizedSearch,
+    sortMode,
   })
-  const nativeRows = useMemo(
-    () => nativeHistoryRows(nativeHistory.sessions, allSessions, activeProject),
-    [nativeHistory.sessions, allSessions, activeProject],
-  )
-  const visibleSessions = useMemo(
-    () =>
-      sortSessionsList(
-        [
-          ...scopeSessions,
-          ...nativeRows.sessions.filter(
-            (session) =>
-              !normalizedSearch || session.title.toLowerCase().includes(normalizedSearch),
-          ),
-        ],
-        sortMode,
-      ),
-    [scopeSessions, nativeRows.sessions, normalizedSearch, sortMode],
-  )
+  const { nativeHistory, nativeRows, visibleSessions } = history
+  const isExternal = history.source === 'external'
   const orderedRootIds = useMemo(() => scopeSessions.map((s) => s.id), [scopeSessions])
 
   // The selected root chats, filtered to sessions that still exist (a deleted or
@@ -191,7 +178,7 @@ export function ChatSidebar({
   // Cross-conversation message search (server FTS5) — this is the GLOBAL,
   // cross-scope discovery path: it surfaces chats in ANY scope the scope-local
   // title filter can't, in a separate "Found in messages" section.
-  const { hits: historyHits, loading: historyLoading } = useHistorySearch(search)
+  const { hits: historyHits, loading: historyLoading } = useHistorySearch(isExternal ? '' : search)
   const sessionsById = useMemo(
     () => new Map(allSessions.filter((s) => s.projectId === activeProjectId).map((s) => [s.id, s])),
     [allSessions, activeProjectId],
@@ -282,7 +269,7 @@ export function ChatSidebar({
   )
   const handleNewChat = useSidebarNewChat(activeProjectId, agents, onNewChat)
 
-  const emptyPane = Boolean(search) || groupingMode !== 'agent' || chatRoster.length === 0
+  const showRoster = !isExternal && !search && groupingMode === 'agent' && chatRoster.length > 0
 
   const renderSessionTree = useSessionTreeRenderer({
     activeSessionId,
@@ -347,71 +334,79 @@ export function ChatSidebar({
         onClose={closeSearch}
       />
 
-      <div
-        ref={rosterRef}
-        role="region"
-        aria-label="Session history"
-        className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin"
-        onClick={(e) => {
-          if (e.target === e.currentTarget && selection.isSelectionActive) selection.clear()
-        }}
+      <HistorySourceTabs
+        source={history.source}
+        onChange={history.setSource}
+        externalAvailable={history.externalAvailable}
       >
-        {/* The roster stands even with no chats under it: it lists who you can talk to, not
+        <div
+          ref={rosterRef}
+          role="region"
+          aria-label="Session history"
+          className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 py-2 scrollbar-thin"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && selection.isSelectionActive) selection.clear()
+          }}
+        >
+          {/* The roster stands even with no chats under it: it lists who you can talk to, not
             what you have said, and hiding it left a new workspace with no way to start. It
             steps aside while SEARCHING — agents with nothing under them answer no query. */}
-        {(visibleSessions.length > 0 ||
-          (!search && groupingMode === 'agent' && chatRoster.length > 0)) && (
-          <div className="flex flex-col gap-0.5">
-            <SessionRoster
-              sessions={visibleSessions}
-              roster={chatRoster}
-              groupingMode={groupingMode}
-              renderSession={(session) => {
-                const source = nativeRows.sources.get(session.id)
-                return source
-                  ? [
-                      <NativeSessionRow
-                        key={session.id}
-                        session={session}
-                        source={source}
-                        onSelect={onSelect}
-                      />,
-                    ]
-                  : renderSessionTree(session)
-              }}
-              onNewChatWith={handleNewChat}
-            />
-          </div>
-        )}
-
-        <NativeHistoryStatus history={nativeHistory} />
-
-        {search && (
-          <HistorySearchResults
-            hits={historyHits}
-            sessionsById={sessionsById}
-            onSelect={handleSelectHistoryHit}
-          />
-        )}
-
-        {search && historyLoading && historyHits.length === 0 && (
-          <p className="px-3 py-3 text-2xs text-sidebar-foreground/40">Searching messages…</p>
-        )}
-
-        {/* Only when the pane would otherwise be blank — the roster above is content too. */}
-        {!hasResults &&
-          visibleSessions.length === 0 &&
-          emptyPane &&
-          historyHits.length === 0 &&
-          !historyLoading &&
-          !nativeHistory.loading && (
-            <div className="flex min-h-0 flex-1 select-none items-center justify-center px-4 text-center text-xs text-sidebar-foreground/40">
-              {search
-                ? 'No matching chats in this workspace.'
-                : 'No conversations in this workspace yet.'}
+          {(visibleSessions.length > 0 || showRoster) && (
+            <div className="flex flex-col gap-0.5">
+              <SessionRoster
+                sessions={visibleSessions}
+                roster={isExternal ? [] : chatRoster}
+                groupingMode={isExternal ? 'activity' : groupingMode}
+                renderSession={(session) => {
+                  const source = nativeRows.sources.get(session.id)
+                  return source
+                    ? [
+                        <NativeSessionRow
+                          key={session.id}
+                          session={session}
+                          source={source}
+                          onSelect={onSelect}
+                        />,
+                      ]
+                    : renderSessionTree(session)
+                }}
+                onNewChatWith={handleNewChat}
+              />
             </div>
           )}
-      </div>
+
+          {isExternal && <NativeHistoryStatus history={nativeHistory} />}
+
+          {search && !isExternal && (
+            <HistorySearchResults
+              hits={historyHits}
+              sessionsById={sessionsById}
+              onSelect={handleSelectHistoryHit}
+            />
+          )}
+
+          {search && !isExternal && historyLoading && historyHits.length === 0 && (
+            <p className="px-3 py-3 text-2xs text-sidebar-foreground/40">Searching messages…</p>
+          )}
+
+          {/* Only when the pane would otherwise be blank — the roster above is content too. */}
+          {isExternal && visibleSessions.length === 0 && (
+            <ExternalHistoryEmpty history={nativeHistory} search={Boolean(search)} />
+          )}
+          {!isExternal &&
+            !hasResults &&
+            visibleSessions.length === 0 &&
+            !showRoster &&
+            historyHits.length === 0 &&
+            !historyLoading && (
+              <div className="flex min-h-0 flex-1 select-none items-center justify-center px-4 text-center text-xs text-sidebar-foreground/40">
+                {search
+                  ? 'No matching chats in this workspace.'
+                  : 'No conversations in this workspace yet.'}
+              </div>
+            )}
+        </div>
+      </HistorySourceTabs>
 
       {selectedSessions.length > 0 && (
         <SessionBatchBar
