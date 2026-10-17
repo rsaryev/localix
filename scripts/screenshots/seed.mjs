@@ -16,14 +16,6 @@ import { seedPartyRoutes } from './party-route.mjs'
 import { emptyEntry } from '../../plugins/resume/shared/schema.ts'
 
 await verifyDemoRuntime()
-// Captures exercise workspace features without provider setup or model credentials.
-await api(
-  '/user/profile',
-  {
-    uiSettingsPatch: { onboardingCompletedAt: new Date().toISOString() },
-  },
-  'PATCH',
-)
 const root = await prepare()
 const projects = await api('/projects')
 const projectList = Array.isArray(projects) ? projects : projects.projects
