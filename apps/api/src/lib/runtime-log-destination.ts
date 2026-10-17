@@ -62,5 +62,26 @@ export function createRuntimeLogDestination(path: string) {
   const fd = openSync(path, 'a', 0o600)
   closeSync(fd)
   chmodSync(path, 0o600)
-  return pino.destination({ dest: path, sync: false, mkdir: false, mode: 0o600 })
+  return dropWritesAfterClose(
+    pino.destination({ dest: path, sync: false, mkdir: false, mode: 0o600 }),
+  )
+}
+
+/**
+ * A line logged after shutdown closed the sink is dropped, not thrown. SonicBoom throws
+ * `SonicBoom destroyed` from `write`, and pino lets it propagate into whichever caller logged —
+ * a late reconcile or journal drain — where it surfaced as an uncaught error that turned a clean
+ * quit into exit 1. Diagnostics must never be what crashes the runtime.
+ */
+function dropWritesAfterClose<T extends ReturnType<typeof pino.destination>>(destination: T): T {
+  const write = destination.write.bind(destination)
+  destination.write = (data: string): boolean => {
+    if ((destination as { destroyed?: boolean }).destroyed) return false
+    try {
+      return write(data)
+    } catch {
+      return false
+    }
+  }
+  return destination
 }

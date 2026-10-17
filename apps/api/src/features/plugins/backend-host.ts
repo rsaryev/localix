@@ -73,6 +73,7 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
   const refreshDebouncer = createDebouncer(REFRESH_DEBOUNCE_MS)
   // Serializes reconciles so overlapping toggles converge to last-state-wins.
   let lifecycle: Promise<void> = Promise.resolve()
+  let stopped = false
 
   function wireBackend(pluginName: string, backend: BackendSubsystem): WiredBackend {
     deps.subsystemRegistry.register(backend)
@@ -185,6 +186,8 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
     // instance kept, so live streams/services are never churned by an unrelated
     // toggle.
     const desired = await deps.loadBackends()
+    // The load is the slow part; a shutdown that landed meanwhile must not get new wiring.
+    if (stopped) return
     const { desiredByName, nextUiActions, refused, revisionOf } = planPluginBackends(desired, deps)
 
     // Deleting the CURRENT key mid-iteration is well-defined for a Map, and the awaits
@@ -214,6 +217,7 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
   async function reconcileReported(): Promise<void> {
     try {
       await reconcileNow()
+      if (stopped) return
       deps.conditions?.reconciled()
     } catch (err) {
       deps.conditions?.reconciled(err instanceof Error ? err.message : String(err))
@@ -222,6 +226,7 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
   }
 
   function enqueue(task: () => Promise<void>): Promise<void> {
+    if (stopped) return Promise.resolve()
     lifecycle = lifecycle.catch(() => undefined).then(task)
     return lifecycle
   }
@@ -279,5 +284,10 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
     // Reads the table at CALL time: a reconcile swaps in a new one rather than mutating it.
     invokeUiAction: (input) => uiActions.invoke(input),
     wired: () => [...wired.keys()],
+    async stop() {
+      stopped = true
+      refreshDebouncer.cancel()
+      await lifecycle.catch(() => undefined)
+    },
   }
 }

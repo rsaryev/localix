@@ -1,16 +1,13 @@
-import type { Kysely, Transaction } from 'kysely'
+import type { Transaction } from 'kysely'
 
 import type { AppDatabase } from '../../db/types'
 import { retrySqliteBusy } from '../../db/seq'
-import type {
-  ClientJournalOp,
-  InboxChange,
-  InboxSyncResponse,
-  RaiseFact,
-  SettleFact,
-} from './contracts'
+import type { ClientJournalOp, InboxChange, RaiseFact, SettleFact } from './contracts'
 import { isPending, isRepeatOf, raise, read, repeat, settle } from './projection'
-import { createNotificationRepository, type NotificationRepository } from './repository'
+import { createNotificationRepository } from './repository'
+import type { NotificationJournal, NotificationJournalDeps } from './journal-contracts'
+
+export type { NotificationJournal, NotificationJournalDeps } from './journal-contracts'
 import { pruneJournal } from './retention'
 
 /**
@@ -45,30 +42,6 @@ interface Job {
   fail?: (error: unknown) => void
 }
 
-export interface NotificationJournalDeps {
-  db: Kysely<AppDatabase>
-  /** Scrubs secrets (vault values, token patterns) from text before it is stored. */
-  redact?: (userId: string, text: string) => string
-  log?: (event: string, detail: Record<string, unknown>) => void
-  now?: () => number
-}
-
-export interface NotificationJournal {
-  /** Raise a fact. Fire-and-forget: the caller never waits on or fails with the journal. */
-  record(userId: string, fact: RaiseFact): void
-  /** Settle one row or a prefix of rows. Fire-and-forget. */
-  settle(userId: string, fact: SettleFact): void
-  /** Apply a client's batch; a retried op id is a no-op. Resolves with what changed. */
-  apply(userId: string, ops: readonly ClientJournalOp[]): Promise<InboxChange[]>
-  sync(userId: string, since: number): Promise<InboxSyncResponse>
-  subscribe(userId: string, listener: (change: InboxChange) => void): () => void
-  /** Resolves once everything queued so far is committed (boot ordering, tests). */
-  flush(): Promise<void>
-  /** Apply retention (`retention.ts`) behind the queued writes; resolves with rows removed. */
-  prune(): Promise<number>
-  repository: NotificationRepository
-}
-
 export function createNotificationJournal(deps: NotificationJournalDeps): NotificationJournal {
   const repo = createNotificationRepository(deps.db)
   const now = deps.now ?? Date.now
@@ -76,6 +49,16 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
   const listeners = new Map<string, Set<(change: InboxChange) => void>>()
   let queue: Job[] = []
   let draining: Promise<void> | null = null
+  let closed = false
+  // A failure report must never become the failure: during a teardown race the logger itself can
+  // already be gone, and a throw here would escape the drain as an unhandled rejection.
+  const log = (event: string, detail: Record<string, unknown>) => {
+    try {
+      deps.log?.(event, detail)
+    } catch {
+      /* the log sink is closed; the job's own `fail` still reports */
+    }
+  }
 
   const scrub = (userId: string, fact: RaiseFact): RaiseFact => ({
     ...fact,
@@ -192,7 +175,7 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
             results.push(await repo.transaction((trx) => applyOne(trx, job, at)))
           } catch (jobError) {
             results.push([])
-            deps.log?.('notifications.write_failed', {
+            log('notifications.write_failed', {
               op: job.op.kind,
               error: String(jobError instanceof Error ? jobError.message : jobError),
               batchError: String(error instanceof Error ? error.message : error),
@@ -220,6 +203,10 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
   }
 
   function enqueue(job: Job) {
+    if (closed) {
+      job.fail?.(new Error('The notification journal is closed'))
+      return
+    }
     queue.push(job)
     schedule()
   }
@@ -276,6 +263,10 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
       }
     },
     flush,
+    async close() {
+      closed = true
+      await flush()
+    },
     async prune() {
       // Behind everything already queued, and as its own transaction: retention must never run
       // between a fact's event and its projection.

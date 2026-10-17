@@ -285,6 +285,13 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       for (const file of publishedEndpointFiles) {
         await cleanup('clearRuntimeEndpoint', () => clearRuntimeEndpoint(process.pid, file))
       }
+      // Quiesce first. A boot reconcile still loading plugin backends, or a fact queued for the
+      // inbox, used to finish after `db.destroy` and the log sink below: its write failed, the
+      // failure log threw `SonicBoom destroyed`, and the process exited 1 after a clean quit.
+      // Closing the journal here also means the jobs and terminals this teardown kills raise no
+      // "stopped" rows — the person quit the app; that is not news.
+      await cleanup('backendHost.stop', () => runtime.backendHost.stop())
+      await cleanup('notifications.close', () => runtime.notifications.close())
       // Stop accepting inbound platform messages before aborting runs, so no new
       // agent turn is spawned mid-teardown.
       await cleanup('channelHost.stop', () => runtime.channelHost.stop())

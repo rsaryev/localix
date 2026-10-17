@@ -11,9 +11,27 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import { createLogger } from './logger'
 import { createRuntimeLogDestination } from './runtime-log-destination'
 
 describe('createRuntimeLogDestination', () => {
+  test('a line logged after shutdown closed the sink is dropped, not thrown', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'localix-log-closed-'))
+    const path = join(root, 'runtime.log')
+    try {
+      const destination = createRuntimeLogDestination(path)
+      const logger = createLogger('info', destination)
+      logger.info({ event: 'before' })
+      destination.end()
+      await new Promise<void>((resolve) => destination.on('close', resolve))
+      expect((destination as { destroyed?: boolean }).destroyed).toBe(true)
+      // A late journal drain or plugin reconcile logging here used to crash the quit with exit 1.
+      expect(() => logger.warn({ event: 'notifications.write_failed' })).not.toThrow()
+      expect(readFileSync(path, 'utf8')).toContain('before')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
   test('creates and repairs the diagnostics file as owner-only', async () => {
     const root = mkdtempSync(join(tmpdir(), 'localix-log-permissions-'))
     const path = join(root, 'nested', 'runtime.log')

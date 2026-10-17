@@ -67,4 +67,10 @@ export interface PluginBackendHost {
   invokeUiAction(input: PluginUiActionCall): Promise<unknown>
   /** Currently wired plugin names (diagnostics/tests). */
   wired(): string[]
+  /**
+   * Server shutdown: wait out the reconcile in flight and refuse every later one, so a boot
+   * reconcile that loses the race to `stop` never wires, logs or reports after teardown. Wired
+   * subsystems are torn down by the shutdown's `onShutdown` sweep, not here.
+   */
+  stop(): Promise<void>
 }

@@ -335,12 +335,12 @@ export async function bootstrap(
     lspDocumentService: serviceRefs.lspDocumentService!,
     systemService,
     terminalService: serviceRefs.terminalService!,
-    // Returned so the shutdown handler can kill the agent's background monitors
-    // deterministically (watch processes are detached; nothing else reaps them).
+    // For shutdown: monitors are detached watch processes nothing else reaps.
     monitorService: serviceRefs.monitorService!,
-    // Returned so the shutdown handler can run each subsystem's `onShutdown` hook.
-    // A stateless subsystem's is a noop; a stateful one (a bundled workbench that
-    // owns long-lived child processes) tears its children down there.
+    // Quiesced first at shutdown, while the database and log sink are still open.
+    notifications,
+    backendHost,
+    // For shutdown: each subsystem's `onShutdown` (a stateful one tears its children down).
     subsystemRegistry,
   }
 }
