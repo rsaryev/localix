@@ -30,6 +30,42 @@ export function resolveFor(
   return exact ?? resolveTaskReference([...visibleTo(tasks, speaker), ...also], raw)
 }
 
+/**
+ * Cards a member may read but not work: the ones its own cards depend on, and the ones that depend
+ * on its cards. Seeing their state lets a member say "waiting on LX-3 (review)" instead of guessing.
+ */
+export function relatedCards(
+  tasks: readonly KanbanTask[],
+  speaker: BoardSpeaker | undefined,
+): readonly KanbanTask[] {
+  if (leadsBoard(speaker)) return []
+  const own = visibleTo(tasks, speaker)
+  const ownIds = new Set(own.map((task) => task.id))
+  const upstream = new Set(own.flatMap((task) => task.dependsOn))
+  return tasks.filter(
+    (task) =>
+      !ownIds.has(task.id) &&
+      (upstream.has(task.id) || task.dependsOn.some((id) => ownIds.has(id))),
+  )
+}
+
+/** The cards a member's own cards wait on, marked read-only, for its list. */
+export function describeDependencies(
+  own: readonly KanbanTask[],
+  board: readonly KanbanTask[],
+): string {
+  const lines = board
+    .filter((task) => !own.includes(task))
+    .map((task) => {
+      const waiting = own.filter((card) => card.dependsOn.includes(task.id)).map((card) => card.id)
+      return waiting.length
+        ? `${describeTask(task)} (dependency of ${waiting.join(', ')}; read-only)`
+        : null
+    })
+    .filter((line): line is string => line !== null)
+  return lines.length ? `\nDependencies:\n${lines.join('\n')}` : ''
+}
+
 /** A member's own cards, each with the title of its epic as context. */
 export function describeOwnCards(own: readonly KanbanTask[], board: readonly KanbanTask[]): string {
   return own

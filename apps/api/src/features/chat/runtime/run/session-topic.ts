@@ -23,20 +23,25 @@ export async function assertTopicAuthor(
   }
 }
 
-/** The speaker's place in the conversation: alone, leading the group, or a member of it. */
-export async function speakerRole(
+/**
+ * The speaker's role plus, for a member, the elected leader's handle — so a tool's refusal can
+ * name who to ask instead of "the leader".
+ */
+export async function speakerPlace(
   env: TopicEnv,
   userId: string,
   session: Pick<SessionRecord, 'agents' | 'projectId'>,
   agentId: string,
-): Promise<'leader' | 'member' | 'solo'> {
-  if (session.agents.length <= 1) return 'solo'
+): Promise<{ role: 'leader' | 'member' | 'solo'; leader?: string }> {
+  if (session.agents.length <= 1) return { role: 'solo' }
   const priorities = await rosterLeadership(
     env.deps.listRegistryAgents,
     userId,
     session.projectId,
   )()
-  return conversationLeader(session, priorities)?.agentId === agentId ? 'leader' : 'member'
+  const leader = conversationLeader(session, priorities)
+  if (leader?.agentId === agentId) return { role: 'leader' }
+  return { role: 'member', ...(leader ? { leader: leader.handle } : {}) }
 }
 
 /** Save shared fields and cut history together. No colleague tool output or private lane is loaded. */

@@ -87,7 +87,13 @@ export type BoardRole = 'leader' | 'member' | 'solo'
 export interface BoardSpeaker {
   agentId: string
   role?: BoardRole
+  /** For a member: the elected leader's handle, without `@`. Absent from older hosts. */
+  leader?: string
 }
+
+/** Whom a member asks: "@localix (the leader)", or "the leader" when the host did not say. */
+export const leaderOf = (speaker: BoardSpeaker | undefined): string =>
+  speaker?.leader ? `@${speaker.leader} (the leader)` : 'the leader'
 
 /** The leader, a sole participant, or a call with no speaker sees and edits the whole board. */
 export const leadsBoard = (speaker: BoardSpeaker | undefined): boolean => speaker?.role !== 'member'
@@ -110,21 +116,24 @@ export function memberMay(
 ): Verdict {
   if (leadsBoard(speaker)) return { ok: true }
   if (action === 'delete' || action === 'reorder')
-    return { ok: false, why: `Only the conversation leader can ${action} cards; ask the leader.` }
+    return {
+      ok: false,
+      why: `Only the conversation leader can ${action} cards; ask ${leaderOf(speaker)}.`,
+    }
   if (!task) return { ok: true }
   if (task.agentId !== speaker!.agentId)
     return {
       ok: false,
       why: task.agentId
-        ? `${task.id} belongs to @${task.assignee ?? task.agentId}; ask the leader to reassign it.`
-        : `${task.id} is unassigned; ask the leader to assign it to you.`,
+        ? `${task.id} belongs to @${task.assignee ?? task.agentId}; ask ${leaderOf(speaker)} to reassign it.`
+        : `${task.id} is unassigned; ask ${leaderOf(speaker)} to assign it to you.`,
     }
   if (action !== 'update') return { ok: true }
   const refused = fields.filter((field) => !MEMBER_UPDATE_FIELDS.includes(field))
   if (refused.length)
     return {
       ok: false,
-      why: `A member may update only items and priority on its own card; ask the leader to change ${refused.join(', ')}.`,
+      why: `A member may update only items and priority on its own card; ask ${leaderOf(speaker)} to change ${refused.join(', ')}.`,
     }
   return { ok: true }
 }

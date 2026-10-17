@@ -72,6 +72,8 @@ export interface BuildAgentSystemPromptParams {
     human?: HumanProfile
     /** This participant is the elected leader and receives orchestration guidance. */
     isLeader?: boolean
+    /** The elected leader's handle, recomputed each run; the volatile roster names it. */
+    leader?: string
     /** Nobody can be tagged in: it is not a chat. */
     membershipClosed?: boolean
   }

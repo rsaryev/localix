@@ -16,6 +16,8 @@ export interface ConversationPromptContext {
   /** The person, always listed beside the agents (`@human`). */
   human?: HumanProfile
   isLeader: boolean
+  /** The elected leader's handle (no `@`); the roster marks it, so every agent knows whom to report to. */
+  leader?: string
   /** Nobody here can be invited or removed: it is not a chat. */
   membershipClosed: boolean
 }
@@ -34,11 +36,13 @@ export function conversationPromptContext(
 ): ConversationPromptContext | undefined {
   const speaker = agentRoute(session, speakerAgentId)
   if (!speaker) return undefined
+  const leader = conversationLeader(session, priorities)
   return {
     self: speaker.handle,
     participants: (session.agents ?? []).map((participant) => ({ handle: participant.handle })),
     ...(human ? { human } : {}),
-    isLeader: conversationLeader(session, priorities)?.agentId === speaker.agentId,
+    isLeader: leader?.agentId === speaker.agentId,
+    ...(leader ? { leader: leader.handle } : {}),
     membershipClosed: session.sessionKind !== 'chat',
   }
 }

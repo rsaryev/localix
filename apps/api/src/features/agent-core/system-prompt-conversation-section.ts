@@ -5,6 +5,7 @@ import {
   HUMAN_NO_ASK_CONTROL,
   LEADER_BOARD,
   MEMBER_BOARD,
+  MEMBER_BOARD_SKIP,
   MEMBER_SKIP,
   SKIP_ANSWER_CONTROL,
   SOLO_BOARD,
@@ -95,6 +96,7 @@ export function buildTurnControlSection(input: {
           TEAM_MEMBER,
           ...(input.canSkip ? [MEMBER_SKIP] : []),
           ...board(MEMBER_BOARD),
+          ...(input.canSkip ? board(MEMBER_BOARD_SKIP) : []),
         ]),
     'Workspace files are shared with everyone; never read a colleague’s private scratch files.',
     'Do not sign your messages or narrate who speaks next.',
@@ -129,15 +131,25 @@ export function buildParticipantsSection(input: {
   self: string
   participants: readonly ConversationParticipant[]
   human?: HumanProfile
+  /** The elected leader's handle; marked only once the conversation has colleagues. */
+  leader?: string
 }): string {
   const others = input.participants.filter((participant) => participant.handle !== input.self)
+  const leader = others.length ? input.leader : undefined
   return [
     '# Conversation participants',
     `You are ${input.self}. Other participants (agents are addressed with @):`,
     ...humanEntry(input.human),
     ...others.map(
       (participant) =>
-        `- @${participant.handle}${participant.description ? `: ${participant.description}` : ''}`,
+        `- @${participant.handle}${participant.handle === leader ? ' (leader)' : ''}${participant.description ? `: ${participant.description}` : ''}`,
     ),
+    ...(!leader
+      ? []
+      : leader === input.self
+        ? ['You are the leader.']
+        : [
+            `The leader is @${leader}: report to them, and send board or process problems to them.`,
+          ]),
   ].join('\n')
 }

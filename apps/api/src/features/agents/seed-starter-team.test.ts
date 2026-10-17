@@ -30,23 +30,23 @@ describe('the starter team', () => {
     const h = harness()
     const created = await seedStarterTeam(h.ports as never, 'u')
     expect(created).toEqual(STARTER_TEAM.map((role) => role.handle))
-    expect(h.registry.get('qa')).toMatchObject({ projectId: '', leadershipPriority: 0 })
+    expect(h.registry.get('devops')).toMatchObject({ projectId: '', leadershipPriority: 0 })
     expect(h.config.starterTeamSeed).toBe(STARTER_TEAM_SEED_VERSION)
   })
 
   test('an agent the person deleted never comes back', async () => {
     const h = harness()
     await seedStarterTeam(h.ports as never, 'u')
-    h.registry.delete('qa')
+    h.registry.delete('devops')
     expect(await seedStarterTeam(h.ports as never, 'u')).toEqual([])
-    expect(h.registry.has('qa')).toBe(false)
+    expect(h.registry.has('devops')).toBe(false)
   })
 
   test('a handle the person already uses keeps its definition', async () => {
-    const h = harness(['qa'])
+    const h = harness(['devops'])
     const created = await seedStarterTeam(h.ports as never, 'u')
-    expect(created).not.toContain('qa')
-    expect(h.registry.get('qa')?.instructions).toBe('Mine.')
+    expect(created).not.toContain('devops')
+    expect(h.registry.get('devops')?.instructions).toBe('Mine.')
   })
 
   test('no role names the removed delegation model or a parent session', () => {

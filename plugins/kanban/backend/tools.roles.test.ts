@@ -189,4 +189,47 @@ describe('kanban roles', () => {
     const taken = await act(DEV, { action: 'take', task_id: 'LX-2' })
     expect(taken.details?.task?.status).toBe('in_progress')
   })
+
+  test('a member’s refusal names the elected leader', async () => {
+    const act = await seeded()
+    const named = { ...QA, leader: 'lead' }
+    const theirs = await act(named, { action: 'take', task_id: 'LX-3' })
+    expect(theirs.content).toBe('LX-3 belongs to @dev; ask @lead (the leader) to reassign it.')
+    const created = await act(named, { action: 'create', title: 'Flaky CI' })
+    expect(created.content).toContain('@lead (the leader) will triage it')
+  })
+
+  test('a member’s complete on a card already in review does not re-send it', async () => {
+    const act = await seeded()
+    const named = { ...QA, leader: 'lead' }
+    await act(named, { action: 'take', task_id: 'LX-2' })
+    const sent = await act(named, { action: 'complete', task_id: 'LX-2' })
+    expect(sent.content).toBe('Sent LX-2 to review; @lead (the leader) will verify it.')
+    const again = await act(named, { action: 'complete', task_id: 'LX-2' })
+    expect(again.isError).toBeFalsy()
+    expect(again.content).toBe(
+      'LX-2 is already in review; @lead verifies it. Nothing to do until then.',
+    )
+    expect(again.details?.task?.updatedAt).toBe(sent.details?.task?.updatedAt)
+  })
+
+  test('a member reads, but never works, the cards linked to its own by dependency', async () => {
+    const act = await seeded()
+    await act(LEADER, { action: 'update', task_id: 'LX-2', depends_on: ['LX-3'] })
+    await act(DEV, { action: 'take', task_id: 'LX-3' })
+    await act(DEV, { action: 'complete', task_id: 'LX-3' })
+    const listed = await act(QA, { action: 'list' })
+    expect(listed.content).toContain('LX-3')
+    expect(listed.content).toContain('(dependency of LX-2; read-only)')
+    expect(listed.details?.tasks?.map((task) => task.id)).toEqual(['LX-2'])
+    const upstream = await act(QA, { action: 'detail', task_id: 'LX-3' })
+    expect(upstream.isError).toBeFalsy()
+    expect(upstream.content).toContain('review')
+    const downstream = await act(DEV, { action: 'detail', task_id: 'LX-2' })
+    expect(downstream.isError).toBeFalsy()
+    expect((await act(QA, { action: 'complete', task_id: 'LX-3' })).content).toContain(
+      'belongs to @dev',
+    )
+    expect((await act(QA, { action: 'update', task_id: 'LX-3', priority: 1 })).isError).toBe(true)
+  })
 })

@@ -35,6 +35,11 @@ export interface ToolSessionContext {
      * leads a group, `member` otherwise. Absent from older hosts; a tool treats that as leader.
      */
     role?: SpeakerRole
+    /**
+     * For a `member`: the elected leader's handle, without `@`, so a tool can say whom to ask.
+     * Absent for a leader, a solo speaker, or an older host.
+     */
+    leader?: string
   }
   /**
    * Publish ONE plugin→UI command as a typed, REPLAYABLE session-stream frame. The host

@@ -18,12 +18,20 @@ export async function completeCard(
   task: KanbanTask,
   leads: boolean,
   itemsDone: boolean,
+  /** Whom a member's card waits on: "@localix (the leader)" or "the leader". */
+  leader = 'the leader',
 ): Promise<Result> {
   const done = (content: string, written: KanbanTask): Result => ({
     content,
     details: { sessionId: seat.sessionId, task: written },
   })
   if (task.status === 'done') return done(`${task.id} is already done; nothing changed.`, task)
+  // A member re-completing its card in review would re-send it; the verification is the leader's.
+  if (!leads && task.status === 'review')
+    return done(
+      `${task.id} is already in review; ${leader.replace(' (the leader)', '')} verifies it. Nothing to do until then.`,
+      task,
+    )
   if (itemsDone && task.subtasks.some((item) => !item.done))
     await boards.update(
       seat,
@@ -41,7 +49,7 @@ export async function completeCard(
       )
     const sent = await boards.update(seat, task.id, { status: 'review', error: null }, 'agent')
     return done(
-      `Sent ${task.id} to review; the leader will verify it.${openItemsNotice(sent.subtasks)}`,
+      `Sent ${task.id} to review; ${leader} will verify it.${openItemsNotice(sent.subtasks)}`,
       sent,
     )
   }

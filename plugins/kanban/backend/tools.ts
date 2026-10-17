@@ -3,6 +3,7 @@ import type { AgentToolExecutionContext, PluginContext } from '@localixai/plugin
 import {
   AGENT_TARGET_STATUSES,
   HUMAN_ASSIGNEE_ID,
+  leaderOf,
   leadsBoard,
   memberMay,
   type BoardSpeaker,
@@ -20,7 +21,13 @@ import {
 } from './describe'
 import { createCards } from './tool-create'
 import { completeCard } from './tool-complete'
-import { describeOwnCards, resolveFor, visibleTo } from './member-view'
+import {
+  describeDependencies,
+  describeOwnCards,
+  relatedCards,
+  resolveFor,
+  visibleTo,
+} from './member-view'
 import type { BoardSeat, BoardService } from './service'
 import { refuseOwnedMove, refuseUnreadFields, reviseChecklist } from './tool-input'
 
@@ -117,7 +124,9 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
     const fields = Object.keys(input).filter(
       (field) => field !== 'action' && input[field as keyof Input] !== undefined,
     )
-    refuseFor(memberMay(action, task, speaker, fields))
+    // A member reads (never works) the cards its own depend on, or that depend on its own.
+    const readsRelated = action === 'detail' && relatedCards(board.tasks, speaker).includes(task)
+    if (!readsRelated) refuseFor(memberMay(action, task, speaker, fields))
     if ((action === 'take' || action === 'complete') && task.agentId === HUMAN_ASSIGNEE_ID)
       throw new BoardRefusal(
         409,
@@ -131,7 +140,12 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
     })
     switch (action) {
       case 'detail':
-        return done(taskBrief(task, board), task)
+        return done(
+          readsRelated
+            ? `${describeTask(task)} (read-only for you)\n\n${taskBrief(task, board)}`
+            : taskBrief(task, board),
+          task,
+        )
       case 'delete':
         await boards.remove(seat, task.id)
         return { content: `Deleted ${task.id}.`, details: { sessionId: seat.sessionId } }
@@ -164,7 +178,7 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         return done(`Took ${task.id}. Do the work directly.`, taken)
       }
       case 'complete':
-        return completeCard(boards, seat, task, leads, input.items_done === true)
+        return completeCard(boards, seat, task, leads, input.items_done === true, leaderOf(speaker))
       case 'block': {
         const reason = input.note?.trim()
         if (!reason) throw new BoardRefusal(400, 'note_required', 'block requires note.')
@@ -219,7 +233,7 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
       tasks.length > visible.length ? `\nShowing ${LIST_CAP} of ${tasks.length} tasks.` : ''
     return {
       content: tasks.length
-        ? `${leadsBoard(speaker) ? describeBoard(visible) : describeOwnCards(visible, board)}${more}`
+        ? `${leadsBoard(speaker) ? describeBoard(visible) : `${describeOwnCards(visible, board)}${describeDependencies(visible, relatedCards(board, speaker))}`}${more}`
         : leadsBoard(speaker)
           ? 'No matching board tasks.'
           : 'No matching cards are assigned to you. Read any card by id with detail.',
@@ -236,7 +250,7 @@ export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
         'Read and edit this chat’s task board: epics, tasks, dependencies, checklists, owners and blockers. It is passive — no card state starts work.',
         'Put multi-part, durable work on the board; a small single deliverable needs no card.',
         'take a card before working it yourself (checks dependencies, assigns you, moves it to in_progress); complete it when done, or block it with the concrete obstacle.',
-        'In a group, the leader sees and edits the whole board; a member sees and works only the cards assigned to it, and its complete sends the card to review for the leader to verify.',
+        'In a group, the leader sees and edits the whole board; a member works only the cards assigned to it (and reads the cards they depend on), and its complete sends the card to review for the leader to verify.',
         'For a card another agent should do, give that participant a turn or delegate it with the card’s detail as the brief; review the report before you complete or block the card.',
       ].join(' '),
       inputSchema,

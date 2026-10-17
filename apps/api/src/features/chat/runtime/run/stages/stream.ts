@@ -14,7 +14,7 @@ import { TOOL } from '../../../../agent-core/tool-names'
 import { buildExternalizeAfterToolCall } from '../../../../context-store/externalize'
 import { createContextStoreRepository } from '../../../../context-store/repository'
 import { agentRoute } from '../../../session-route'
-import { speakerRole } from '../session-topic'
+import { speakerPlace } from '../session-topic'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
@@ -88,7 +88,7 @@ export async function streamRun(
           speaker: {
             agentId: speakerRoute.agentId,
             handle: speakerRoute.handle,
-            role: await speakerRole(env, userId, session, speakerRoute.agentId),
+            ...(await speakerPlace(env, userId, session, speakerRoute.agentId)),
           },
         }
       : {}),

@@ -31,6 +31,29 @@ describe('the conversation roster', () => {
     expect(section).not.toContain('- @qa')
   })
 
+  test('a solo roster names no leader; a group one marks it once', () => {
+    expect(
+      buildParticipantsSection({ self: 'qa', participants: [{ handle: 'qa' }], leader: 'qa' }),
+    ).not.toContain('leader')
+    const member = buildParticipantsSection({
+      self: 'qa',
+      participants: PARTICIPANTS,
+      leader: 'lead',
+    })
+    expect(member).toContain('- @lead (leader): Plans the work')
+    expect(member).toContain('The leader is @lead')
+  })
+
+  test('board rules send process problems to the leader and say a wait once', () => {
+    const member = buildTurnControlSection({ multi: true, hasBoard: true, canSkip: true })
+    expect(member).toContain('goes to the leader by @mention, never to the person')
+    expect(member).toContain('say so once and stop')
+    expect(member).toContain('call skip_answer')
+    const leader = buildTurnControlSection({ multi: true, isLeader: true, hasBoard: true })
+    expect(leader).toContain('Never hand verification or completion to a member.')
+    expect(leader).toContain('never bring in another coordinating role')
+  })
+
   test('carries no rules — they live in the stable turn-control section', () => {
     // The roster rides the volatile tail because agents change it mid-conversation; a rule in
     // it would be re-sent uncached on every turn and duplicated with the protocol.

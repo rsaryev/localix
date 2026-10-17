@@ -3,7 +3,7 @@ import type { PluginContext } from '@localixai/plugin-sdk/backend'
 import type { KanbanTask } from '../shared/contracts'
 import { BoardRefusal } from '../shared/errors'
 import { boardUri } from '../shared/resource'
-import { leadsBoard, type BoardSpeaker } from '../shared/rules'
+import { leaderOf, leadsBoard, type BoardSpeaker } from '../shared/rules'
 import { slimTask, type KanbanToolDetails } from '../shared/tool'
 import { resolveDependencies } from './describe'
 import { resolveFor } from './member-view'
@@ -108,7 +108,9 @@ export async function createCards(
   return {
     content: [
       ...created.map((task) => `Created ${task.id} "${task.title}" in backlog.`),
-      ...(!leads && created.length ? ['The leader will triage it: owner, place and status.'] : []),
+      ...(!leads && created.length
+        ? [`${sentenceStart(leaderOf(speaker))} will triage it: owner, place and status.`]
+        : []),
       ...(refused ? [refused] : []),
     ].join('\n'),
     details: {
@@ -122,3 +124,5 @@ export async function createCards(
     },
   }
 }
+
+const sentenceStart = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1)

@@ -46,11 +46,13 @@ agent saved under `human` before this release is moved to `human-agent.json` wit
 
 ## Starter team
 
-On first start, Localix adds a starter team to your global registry: `pm`, `architect` and `lead`
-(priority **1**), and `backend`, `frontend`, `design`, `qa` and `devops` (priority **0**). They are
-ordinary agents, created exactly like one from `/agents create`, with the same default permission
-rules. Edit or delete any of them; a deleted role is not added again, and a handle you already use
-keeps your definition. Tag one in a conversation to bring it in.
+On first start, Localix adds a starter team to your global registry: `architect` (priority **1**),
+and `backend`, `frontend`, `design` and `devops` (priority **0**). Coordination is the elected
+leader's, so the team ships no project manager or team lead; agents seeded by an earlier version
+stay in your registry until you delete them. They are ordinary agents, created exactly like one from
+`/agents create`, with the same default permission rules. Edit or delete any of them; a deleted role
+is not added again, and a handle you already use keeps your definition. Tag one in a conversation to
+bring it in.
 
 Specialists have explicit priorities from **−2** to **2**. Higher priority elects the leader; equal
 priorities retain participant order. Explicit user routing and existing work ownership still take
