@@ -154,14 +154,24 @@ const MIN_DEVIATION = 0.03
  * This query's scores in standard deviations from their mean. Every vector is scored anyway,
  * so the scale is free; a match "stands out" when its z clears the gate. A tiny collection
  * (under {@link MIN_POPULATION}) cannot define a distribution, so its z is derived from a
- * fixed scale around a typical unrelated cosine instead — conservative, never inflated.
+ * fixed scale around a typical unrelated cosine instead — conservative, never inflated — and
+ * its clear leader stands out on its own ({@link SMALL_LEADER}).
  */
 export function standardize(scores: Float32Array): Float64Array {
   const n = scores.length
   const z = new Float64Array(n)
   if (n === 0) return z
   if (n < MIN_POPULATION) {
-    for (let i = 0; i < n; i++) z[i] = (scores[i]! - SMALL_POPULATION_MEAN) / SMALL_POPULATION_DEV
+    let top = 0
+    for (let i = 0; i < n; i++) {
+      z[i] = (scores[i]! - SMALL_POPULATION_MEAN) / SMALL_POPULATION_DEV
+      if (scores[i]! > scores[top]!) top = i
+    }
+    let second = -Infinity
+    for (let i = 0; i < n; i++) if (i !== top) second = Math.max(second, scores[i]!)
+    const leads =
+      scores[top]! >= SMALL_LEADER.cosine && scores[top]! - second >= SMALL_LEADER.margin
+    if (n > 1 && leads) z[top] = Math.max(z[top]!, SMALL_LEADER.z)
     return z
   }
   let sum = 0
@@ -181,3 +191,12 @@ export function standardize(scores: Float32Array): Float64Array {
  */
 const SMALL_POPULATION_MEAN = 0.64
 const SMALL_POPULATION_DEV = 0.04
+/**
+ * A catalog of a few short items (agents, MCP servers) scores lower than passages: one line of
+ * description against a query in another language reaches 0.69–0.75 when it is the right one,
+ * while unrelated queries top out near 0.61 and chat-like ones ("how are you", "help me") near
+ * 0.67–0.70 with no clear leader. So the best item stands out when it is above `cosine` AND ahead
+ * of the runner-up by `margin` — measured on six agents in Russian and English: every unrelated
+ * and chat-like query stayed out, and most descriptive ones got their agent.
+ */
+const SMALL_LEADER = { cosine: 0.68, margin: 0.02, z: 2 }

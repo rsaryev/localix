@@ -19,7 +19,15 @@ export interface CatalogRow {
   title: string
   /** What it is for. */
   description: string
+  /**
+   * What it does, at more length (an agent's instructions): a one-line description is too thin
+   * for meaning to stand out, so its start is embedded after the description.
+   */
+  body?: string
 }
+
+/** How much of a row's body is embedded: its opening says what it is; the rest is detail. */
+const BODY_CHARS = 800
 
 /** A catalog item's key in its collection, and the name back from one. */
 export const catalogKey = (scope: string, name: string) => `${scope}:${name}`
@@ -42,7 +50,9 @@ export function createScopedCatalogSource(options: {
     key: catalogKey(scope, row.name),
     userId: options.owner,
     title: row.title,
-    text: row.description.trim() || row.title,
+    text: [row.description.trim() || row.title, row.body?.trim().slice(0, BODY_CHARS)]
+      .filter(Boolean)
+      .join('\n\n'),
     scope,
   })
 

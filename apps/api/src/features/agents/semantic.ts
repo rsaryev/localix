@@ -24,7 +24,8 @@ export function createAgentsSemanticSource(deps: {
   return createScopedCatalogSource({
     collection: AGENTS_COLLECTION,
     label: 'Agents',
-    version: 1,
+    // 2: an agent's instructions are embedded with its description.
+    version: 2,
     owner: deps.owner,
     projects: deps.projects,
     list: async (projectId) =>
@@ -32,6 +33,7 @@ export function createAgentsSemanticSource(deps: {
         name: a.record.handle,
         title: a.record.label || a.record.handle,
         description: a.record.description ?? '',
+        body: a.record.instructions,
       })),
   })
 }

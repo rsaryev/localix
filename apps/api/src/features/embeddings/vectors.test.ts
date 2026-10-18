@@ -64,6 +64,19 @@ describe('standardize', () => {
     expect(z[1]!).toBeLessThan(1)
   })
 
+  test("a tiny catalog's clear leader stands out; a crowded top or a low one does not", () => {
+    // Six agents, measured: "server and API" → backend 0.711, runner-up 0.660.
+    expect(standardize(new Float32Array([0.711, 0.66, 0.637, 0.61, 0.6, 0.59]))[0]!).toBe(2)
+    // "help me": 0.702 against 0.688 — no leader, so no match.
+    expect(standardize(new Float32Array([0.702, 0.688, 0.677, 0.65, 0.62, 0.6]))[0]!).toBeLessThan(
+      2,
+    )
+    // "how are you": a lead, but below anything a description reaches.
+    expect(standardize(new Float32Array([0.671, 0.641, 0.636, 0.6, 0.59, 0.58]))[0]!).toBeLessThan(
+      2,
+    )
+  })
+
   test('scoreRows is the dot product of each row', () => {
     const matrix = new Float32Array([1, 0, 0, 1, 0.6, 0.8])
     expect([...scoreRows(matrix, 3, 2, new Float32Array([1, 0]))]).toEqual([
