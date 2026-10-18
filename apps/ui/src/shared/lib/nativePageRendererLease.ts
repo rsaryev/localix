@@ -23,12 +23,19 @@ export const nativePageRendererLease = {
     if (current?.lease === lease) current.active = false
   },
   last: (tabId: string): string | undefined => leases.get(tabId)?.lease,
+  /** A mounted tab holds the page, shown or not: it draws it again without reopening it. */
+  mounted: (tabId: string): boolean => leases.get(tabId)?.active === true,
   retire(tabId: string): { lease: string } | null {
     if (retired.has(tabId)) return null
     retired.add(tabId)
     const lease = leases.get(tabId)?.lease ?? newLease()
     leases.delete(tabId)
     return { lease }
+  },
+  /** A retired page was opened again without a mount (an agent driving a hidden tab): the next
+   *  close must reach it, or it keeps running with no tab. */
+  revive: (tabId: string): void => {
+    retired.delete(tabId)
   },
   forget: (tabId: string): void => {
     leases.delete(tabId)

@@ -66,6 +66,8 @@ pub(crate) fn register(window: &WebviewWindow) {
             crate::workspace_drag::cancel_owner(&app, &label);
             app.state::<crate::native_browser_lifecycle::NativeBrowserLifecycle>()
                 .forget_owner(&label);
+            #[cfg(target_os = "macos")]
+            crate::native_browser_state::forget_owner(&label);
             let _removed = crate::workspace_windows::workspaces(&app)
                 .entries
                 .remove(&label);

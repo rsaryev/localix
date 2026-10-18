@@ -8,8 +8,10 @@ import type { PreviewEntry, PreviewsBySession } from '../model/preview'
 import { PreviewTab } from './PreviewTab'
 import { browserEngine, hostsInFrame } from '../model/browserUrl'
 import { closeNativePages } from '../model/nativePages'
+import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { useNativeBrowserAgent } from './useNativeBrowserAgent'
+import { useNativePageSync } from './useNativePageSync'
 import { useUnknownTabReply } from './useUnknownTabReply'
 
 interface BackgroundPreviewHost {
@@ -37,7 +39,8 @@ export function selectBackgroundPreviewHosts(
 
 /**
  * A run ended: its workspace's off-screen tabs give up their renderers. The tabs stay in the strip
- * and come back when shown, or when the agent commands one again (`routePreviewCommand`).
+ * and come back when shown, or when the agent commands one again (`routePreviewCommand`). A tab
+ * still mounted in a hidden panel is not off screen in this sense: it holds its page.
  */
 export function releaseBackgroundPreviews(sessionId: string): void {
   const workspace = workspaceOf(sessionId)
@@ -47,7 +50,10 @@ export function releaseBackgroundPreviews(sessionId: string): void {
     .filter(
       (entry) =>
         browserEngine(entry) === 'native' &&
-        !foreground[previewHostKey(sessionId, entry.previewId)],
+        !foreground[previewHostKey(sessionId, entry.previewId)] &&
+        // A tab in a panel that is mounted but not active keeps its page: it shows it again by
+        // framing it, never by reopening it, so a page closed under it would come back blank.
+        !nativePageRendererLease.mounted(entry.previewId),
     )
     .map((entry) => entry.previewId)
   closeNativePages(native, 'Could not release background browser pages')
@@ -57,6 +63,7 @@ export function releaseBackgroundPreviews(sessionId: string): void {
 export default function BackgroundPreviews() {
   const tabs = usePreviewStore((s) => s.previewTabsBySession)
   useNativeBrowserAgent(tabs)
+  useNativePageSync()
   useUnknownTabReply()
   useEffect(() => {
     if (!isDesktop) return

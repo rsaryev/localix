@@ -69,6 +69,9 @@ function retainTabFacts(previous: PreviewEntry | undefined, entry: PreviewEntry)
   return {
     ...entry,
     userOpened: entry.userOpened ?? previous.userOpened,
+    // A pin is the person's; an agent reopening the site must not let close-all take the tab.
+    pinned: entry.pinned ?? previous.pinned,
+    nativePage: entry.nativePage ?? previous.nativePage,
     viewport: entry.viewport === undefined ? previous.viewport : entry.viewport,
     agentViewport: entry.viewport === undefined ? previous.agentViewport : entry.agentViewport,
   }
@@ -84,11 +87,19 @@ function upsertByOrigin(list: PreviewEntry[], entry: PreviewEntry): PreviewEntry
     : [...list, remembered]
 }
 
-/** Record a freshly-opened preview: make it active + upsert its open tab. */
+/**
+ * Record a freshly-opened preview: upsert its open tab and make it active — unless it was opened
+ * in the background while another tab is showing, which it must not replace.
+ */
 export function recordPreview(m: PreviewMaps, sessionId: string, entry: PreviewEntry): PreviewMaps {
-  const remembered = retainTabFacts(m.previewBySession[sessionId], entry)
+  const active = m.previewBySession[sessionId]
+  const remembered = retainTabFacts(
+    m.previewTabsBySession[sessionId]?.find((tab) => tab.previewId === entry.previewId) ?? active,
+    entry,
+  )
+  const keepActive = entry.background && active && active.previewId !== entry.previewId
   return {
-    previewBySession: { ...m.previewBySession, [sessionId]: remembered },
+    previewBySession: { ...m.previewBySession, [sessionId]: keepActive ? active : remembered },
     previewTabsBySession: {
       ...m.previewTabsBySession,
       [sessionId]: upsertByOrigin(m.previewTabsBySession[sessionId] ?? [], remembered),

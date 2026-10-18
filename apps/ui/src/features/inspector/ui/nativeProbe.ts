@@ -1,6 +1,7 @@
 import { API_BASE_URL, apiFetch } from '@/shared/api/client'
 import { pollAttempts } from '@/shared/lib/pollAttempts'
 import { tauriInvoke } from '@/shared/lib/tauri'
+import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
 import type { PreviewEntry } from '../model/preview'
 import { nativeProbeUrl } from '../model/nativeProbeUrl'
 
@@ -47,9 +48,12 @@ interface PageState {
   /** The document's `readyState`. */
   state?: DocumentReadyState
   bridge?: boolean
+  /** The document began to unload: a navigation the page started is replacing it. */
+  leaving?: boolean
 }
 
-const PAGE_STATE = 'JSON.stringify({state:document.readyState,bridge:!!window.__localixBrowser})'
+const PAGE_STATE =
+  'JSON.stringify({state:document.readyState,bridge:!!window.__localixBrowser,leaving:!!window.__localixBrowser?.leaving?.()})'
 
 /**
  * Whether the document in the page has parsed and is the one the tab is loading.
@@ -63,7 +67,8 @@ const PAGE_STATE = 'JSON.stringify({state:document.readyState,bridge:!!window.__
  */
 function documentReady(loading: boolean, page: PageState | null): boolean {
   if (!page?.state || page.state === 'loading') return false
-  return !loading || page.state === 'interactive'
+  // Off macOS the shell knows only of loads it asked for; the leaving document knows of the rest.
+  return !(loading || page.leaving) || page.state === 'interactive'
 }
 
 /**
@@ -78,6 +83,7 @@ export async function ensureNativeProbe(tab: PreviewEntry): Promise<void> {
   const invoke = tauriInvoke()
   if (!invoke) throw new Error('Native browser is unavailable')
   const tabId = tab.previewId
+  nativePageRendererLease.revive(tabId)
   await invoke('browser_open', { tabId, url: tab.url })
   const script = await probeSource()
   let lastState = 'No response from the page'

@@ -110,6 +110,7 @@ mod native_browser;
 #[cfg(target_os = "linux")]
 mod native_browser_gtk;
 mod native_browser_lifecycle;
+mod native_browser_state;
 #[cfg(target_os = "macos")]
 mod native_chrome;
 #[cfg(target_os = "macos")]
@@ -409,6 +410,7 @@ pub fn run() {
         .manage(crate::frontend_flush::FrontendFlush::default())
         .manage(crate::native_notifications::NativeNotifications::default())
         .manage(crate::native_browser_lifecycle::NativeBrowserLifecycle::default())
+        .manage(crate::native_browser_state::LoadTracker::default())
         .manage(crate::workspace_windows::WorkspaceWindows::default())
         .manage(crate::workspace_transfer::WorkspaceTransfers::default())
         .setup(|app| {

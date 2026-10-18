@@ -106,3 +106,21 @@ pub(crate) fn hide(view: &Webview) -> Result<(), String> {
     })
     .map_err(|error| error.to_string())
 }
+
+/// Whether a page can go back and forward. WebKitGTK is asked on the GTK main thread, as `adopt`
+/// is, and the command waits for the answer with a deadline.
+pub(crate) async fn history(view: &Webview) -> Result<(bool, bool), String> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    view.with_webview(move |platform| {
+        use webkit2gtk::WebViewExt;
+        let page = platform.inner();
+        let _ = tx.send((page.can_go_back(), page.can_go_forward()));
+    })
+    .map_err(|error| error.to_string())?;
+    crate::round_trip::await_reply(
+        rx,
+        std::time::Duration::from_secs(2),
+        "Browser navigation state timed out",
+    )
+    .await
+}

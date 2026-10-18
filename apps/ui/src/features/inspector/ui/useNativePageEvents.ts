@@ -5,34 +5,55 @@ import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 
-interface PageEvent {
+export interface PageEvent {
   tabId: string
   url?: string
   title?: string | null
   loading?: boolean
+  /** Sent where the shell observes the page's history (macOS); elsewhere it is asked for. */
+  canGoBack?: boolean
+  canGoForward?: boolean
+}
+
+export interface PageHistory {
+  canGoBack: boolean
+  canGoForward: boolean
 }
 
 export interface NativePageEventHandlers {
-  /** The page started (`loading`) or finished loading an http(s) document. */
-  onNavigated: (url: string, loading: boolean) => void
-  onTitle: (title: string) => void
+  /** The page's address or load state changed: a load started (`loading`) or finished, or the
+   *  page moved itself (`history.pushState`). `history` comes along where the shell knows it. */
+  onNavigated: (url: string, loading: boolean, history?: PageHistory) => void
+  onTitle?: (title: string) => void
   /** The page asked for a new window; it opens as a tab instead. */
-  onPopup: (url: string) => void
+  onPopup?: (url: string) => void
 }
 
-const WEB_URL = /^https?:\/\//
+export const WEB_URL = /^https?:\/\//
 
-function readPageEvent(payload: unknown): PageEvent | null {
+const optional = (value: unknown, type: 'string' | 'boolean') =>
+  value === undefined || typeof value === type
+
+export function readPageEvent(payload: unknown): PageEvent | null {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null
-  const { tabId, url, title, loading } = payload as Record<string, unknown>
+  const { tabId, url, title, loading, canGoBack, canGoForward } = payload as Record<string, unknown>
   if (
     typeof tabId !== 'string' ||
-    (url !== undefined && typeof url !== 'string') ||
-    (title !== undefined && title !== null && typeof title !== 'string') ||
-    (loading !== undefined && typeof loading !== 'boolean')
+    !optional(url, 'string') ||
+    (title !== null && !optional(title, 'string')) ||
+    !optional(loading, 'boolean') ||
+    !optional(canGoBack, 'boolean') ||
+    !optional(canGoForward, 'boolean')
   )
     return null
-  return { tabId, url, title, loading }
+  return {
+    tabId,
+    url: url as string | undefined,
+    title: title as string | null | undefined,
+    loading: loading as boolean | undefined,
+    canGoBack: canGoBack as boolean | undefined,
+    canGoForward: canGoForward as boolean | undefined,
+  }
 }
 
 /** What the shell reports about one native page, delivered to the latest handlers. */
@@ -64,14 +85,18 @@ export function useNativePageEvents(tabId: string, handlers: NativePageEventHand
         })
     }
     subscribe('browser:navigated', (event) => {
-      if (event.url && WEB_URL.test(event.url))
-        latest.current.onNavigated(event.url, event.loading === true)
+      if (!event.url || !WEB_URL.test(event.url)) return
+      const history =
+        event.canGoBack !== undefined && event.canGoForward !== undefined
+          ? { canGoBack: event.canGoBack, canGoForward: event.canGoForward }
+          : undefined
+      latest.current.onNavigated(event.url, event.loading === true, history)
     })
     subscribe('browser:title', (event) => {
-      if (event.title) latest.current.onTitle(event.title)
+      if (event.title) latest.current.onTitle?.(event.title)
     })
     subscribe('browser:popup', (event) => {
-      if (event.url && WEB_URL.test(event.url)) latest.current.onPopup(event.url)
+      if (event.url && WEB_URL.test(event.url)) latest.current.onPopup?.(event.url)
     })
     return () => {
       disposed = true

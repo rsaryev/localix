@@ -24,6 +24,8 @@ interface Moment {
   loading: boolean
   /** What the document in the page says of itself. */
   state: DocumentReadyState
+  /** The document began to unload (a link the page followed) — the shell may not know. */
+  leaving?: boolean
 }
 
 /** A page as WebKit reports it, one moment per poll, settling as a finished load after them. */
@@ -45,7 +47,7 @@ function fakePage(moments: Moment[]) {
           bridge = true
           return JSON.stringify({ bridge })
         }
-        return JSON.stringify({ state: now().state, bridge })
+        return JSON.stringify({ state: now().state, bridge, leaving: now().leaving })
       },
     },
   }
@@ -76,4 +78,12 @@ test('a page still fetching its resources takes the bridge as soon as it has par
   ])
   await ensureNativeProbe(TAB)
   expect(page.injections).toEqual(['after 2 polls'])
+})
+
+test('a page leaving by a link of its own is waited out where the shell cannot see the load', async () => {
+  // Windows and Linux report no load the page started; the leaving document says so itself.
+  const leaving: Moment = { loading: false, state: 'complete', leaving: true }
+  const page = fakePage([leaving, leaving])
+  await ensureNativeProbe(TAB)
+  expect(page.injections).toEqual(['after 3 polls'])
 })

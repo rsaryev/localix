@@ -72,15 +72,14 @@ export function NativeBrowserTab({
     active,
   })
 
+  // The address, title and popups are kept in the strip for every page (`useNativePageSync`);
+  // this tab follows what it draws itself.
   useNativePageEvents(tab.previewId, {
-    onNavigated: (url, started) => {
-      updateTab(sessionId, tab.previewId, { url })
+    onNavigated: (_url, started, history) => {
       setLoading(started)
-      refreshNavigation()
+      if (history) setNavigation(history)
+      else refreshNavigation()
     },
-    onTitle: (title) => updateTab(sessionId, tab.previewId, { title }),
-    // A popup opens beside its opener, in the same chat's Browser.
-    onPopup: (url) => usePreviewStore.getState().openBrowserTab(sessionId, url),
   })
 
   const navigate = (url: string) => {

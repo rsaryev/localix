@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 beforeAll(() => GlobalRegistrator.register())
@@ -21,4 +21,20 @@ test('the native bridge installs once and returns an agent snapshot by command I
   }
   expect(outcome).toMatchObject({ ok: true, result: { action: 'snapshot' } })
   expect(bridge!.take('snapshot-1')).toBeUndefined()
+})
+
+test('an unload that started reads as leaving, and fades when nothing replaces the page', async () => {
+  await import('./native-entry')
+  const bridge = window.__localixBrowser!
+  expect(bridge.leaving()).toBe(false)
+  const now = Date.now()
+  const clock = spyOn(Date, 'now').mockReturnValue(now)
+  try {
+    window.dispatchEvent(new Event('beforeunload'))
+    expect(bridge.leaving()).toBe(true)
+    clock.mockReturnValue(now + 3000)
+    expect(bridge.leaving()).toBe(false)
+  } finally {
+    clock.mockRestore()
+  }
 })

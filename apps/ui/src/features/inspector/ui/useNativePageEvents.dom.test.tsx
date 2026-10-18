@@ -47,7 +47,8 @@ async function mountEvents(
   const received: unknown[] = []
   function Harness({ tabId, label }: { tabId: string; label: string }) {
     useNativePageEvents(tabId, {
-      onNavigated: (url, loading) => received.push({ label, url, loading }),
+      onNavigated: (url, loading, history) =>
+        received.push(history ? { label, url, loading, history } : { label, url, loading }),
       onTitle: (title) => received.push({ label, title }),
       onPopup: (popup) => received.push({ label, popup }),
     })
@@ -138,6 +139,7 @@ test('malformed payloads, foreign page IDs and nonweb popups are ignored', async
       { tabId: 'page-one', url: {} },
       { tabId: 'page-one', title: {} },
       { tabId: 'page-one', url: 'https://example/', loading: 'yes' },
+      { tabId: 'page-one', url: 'https://example/', canGoBack: 'yes' },
       { tabId: 'other', url: 'https://example/' },
       { tabId: 'page-one', url: 'javascript:alert(1)' },
     ]) {
@@ -187,5 +189,28 @@ test('failed native subscriptions report once without an unhandled listener reje
   } finally {
     await view.cleanup()
     notify.mockRestore()
+  }
+})
+
+test('a page that reports its history hands it to the tab with its address', async () => {
+  const view = await mountEvents()
+  try {
+    view.emit('browser:navigated', {
+      tabId: 'page-one',
+      url: 'https://example/route',
+      loading: false,
+      canGoBack: true,
+      canGoForward: false,
+    })
+    expect(view.received).toEqual([
+      {
+        label: 'initial',
+        url: 'https://example/route',
+        loading: false,
+        history: { canGoBack: true, canGoForward: false },
+      },
+    ])
+  } finally {
+    await view.cleanup()
   }
 })

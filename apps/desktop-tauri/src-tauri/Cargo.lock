@@ -772,6 +772,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
  "tauri-plugin-window-state",
+ "webkit2gtk",
  "window-vibrancy",
  "windows-sys 0.61.2",
 ]

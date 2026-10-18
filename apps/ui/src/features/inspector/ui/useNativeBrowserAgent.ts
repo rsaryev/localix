@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { isDesktop } from '@localixai/kit/environment'
-import { pollAttempts } from '@/shared/lib/pollAttempts'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import type { PreviewsBySession } from '../model/preview'
 import { browserEngine } from '../model/browserUrl'
 import { decodeEvalResult, ensureNativeProbe } from './nativeProbe'
+import { drivesPage, navigatedAfter, navigatedResult, runInPage } from './nativeCommand'
 
 /**
  * Claim a command once, then drive the exact native tab ID with the shared actuator.
@@ -64,40 +64,43 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
                   expression: '({width:window.innerWidth,height:window.innerHeight})',
                 }
               : event.command
-          await invoke('browser_inject', {
-            tabId: tab.previewId,
-            script: `window.__localixBrowser.run(${JSON.stringify(event.commandId)}, ${JSON.stringify(command)})`,
-          })
-          const answered = await pollAttempts(100, 100, async () => {
-            const raw = await invoke('browser_eval', {
-              tabId: tab.previewId,
-              script: `JSON.stringify(window.__localixBrowser?.take(${JSON.stringify(event.commandId)}) ?? null)`,
+          let outcome = await runInPage(invoke, tab.previewId, event.commandId, command)
+          if (outcome === 'replaced' && !drivesPage(command.action)) {
+            // A read caught by a navigation it did not start reads the page that replaced it.
+            await ensureNativeProbe(tab)
+            outcome = await runInPage(invoke, tab.previewId, `${event.commandId}:retry`, command)
+          }
+          let navigated = outcome === 'replaced'
+          if (outcome && outcome !== 'replaced' && outcome.ok)
+            navigated = await navigatedAfter(invoke, tab.previewId, command.action)
+          if (navigated) {
+            // The action led to another document: wait for it, and answer with it.
+            await ensureNativeProbe(tab)
+            const page = await runInPage(invoke, tab.previewId, `${event.commandId}:page`, {
+              action: 'snapshot',
             })
-            const outcome = decodeEvalResult(raw) as {
-              ok?: boolean
-              result?: Record<string, unknown>
-              error?: string
-              errorCode?: string
-            } | null
-            if (outcome && typeof outcome.ok === 'boolean') {
-              const viewport =
-                event.command.action === 'viewport' && outcome.result?.value
-                  ? decodeEvalResult(outcome.result.value)
-                  : undefined
-              await backendClient.previewResult(event.commandId, {
-                ...outcome,
-                hostId,
-                result:
-                  event.command.action === 'viewport'
-                    ? { action: 'viewport', previewId: tab.previewId, viewport }
-                    : { ...outcome.result, previewId: tab.previewId },
-              })
-              return true
+            if (!page || page === 'replaced' || !page.ok)
+              throw new Error('The page navigated and the new page did not answer')
+            const previous = outcome && outcome !== 'replaced' ? outcome.result : undefined
+            outcome = {
+              ok: true,
+              result: navigatedResult(command.action, previous, page.result),
             }
-            return false
+          }
+          if (!outcome || outcome === 'replaced')
+            throw new Error('Browser page did not answer the command')
+          const viewport =
+            event.command.action === 'viewport' && outcome.result?.value
+              ? decodeEvalResult(outcome.result.value)
+              : undefined
+          await backendClient.previewResult(event.commandId, {
+            ...outcome,
+            hostId,
+            result:
+              event.command.action === 'viewport'
+                ? { action: 'viewport', previewId: tab.previewId, viewport }
+                : { ...outcome.result, previewId: tab.previewId },
           })
-          if (answered) return
-          throw new Error('Browser page did not answer the command')
         } catch (error) {
           await backendClient.previewResult(event.commandId, {
             ok: false,

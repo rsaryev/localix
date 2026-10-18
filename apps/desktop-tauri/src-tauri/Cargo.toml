@@ -107,6 +107,8 @@ tauri-nspanel = "=2.1.1"
 # (see native_browser_gtk.rs); versions match what Tauri 2.11.5 resolves.
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
+# Back/forward of a page (`native_browser_gtk::history`); the version wry already resolves.
+webkit2gtk = "2.0"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = [

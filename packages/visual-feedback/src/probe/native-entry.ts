@@ -6,7 +6,17 @@ import { installConsoleCapture, runCommand, type ActuateDeps } from '../actuate/
 interface NativeBridge {
   run: (id: string, command: VfCommand) => void
   take: (id: string) => unknown
+  /** The document began to unload moments ago: a navigation is replacing it. */
+  leaving: () => boolean
 }
+
+/**
+ * How long an unload that started counts as a navigation in flight. Engines other than WebKit on
+ * macOS cannot say whether a load the page itself started (a link, a form) is in flight; the
+ * document can. A download or a 204 answer unloads nothing, so the signal fades instead of
+ * holding commands until the next page.
+ */
+const LEAVING_MS = 3000
 
 declare global {
   interface Window {
@@ -21,6 +31,11 @@ if (!window.__localixBrowser) {
     prevTree: { value: '' },
   }
   const results = new Map<string, unknown>()
+  let leftAt = Number.NEGATIVE_INFINITY
+  // Passive: it never asks the person to confirm leaving.
+  window.addEventListener('beforeunload', () => {
+    leftAt = Date.now()
+  })
   window.__localixBrowser = {
     run(id, command) {
       if (results.has(id)) return
@@ -35,6 +50,7 @@ if (!window.__localixBrowser) {
           }),
       )
     },
+    leaving: () => Date.now() - leftAt < LEAVING_MS,
     take(id) {
       const result = results.get(id)
       if (result !== null && result !== undefined) results.delete(id)

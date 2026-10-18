@@ -295,7 +295,9 @@ fn open_page(
     let title_app = app.clone();
     let title_id = tab_id.clone();
     let popup_app = app.clone();
-    let popup_id = tab_id;
+    let popup_id = tab_id.clone();
+    #[cfg(not(target_os = "macos"))]
+    let load_label = view_label.clone();
     // Establish the platform appearance before the destination's first script runs.
     let builder = WebviewBuilder::new(
         view_label.clone(),
@@ -306,6 +308,14 @@ fn open_page(
     let builder = builder
         .on_navigation(|next| matches!(next.scheme(), "http" | "https" | "about"))
         .on_page_load(move |_view, payload| {
+            #[cfg(not(target_os = "macos"))]
+            {
+                let loads = nav_app.state::<crate::native_browser_state::LoadTracker>();
+                match payload.event() {
+                    PageLoadEvent::Started => loads.committed(&load_label),
+                    PageLoadEvent::Finished => loads.finished(&load_label),
+                }
+            }
             let _ = nav_app.emit_to(
                 &nav_owner,
                 "browser:navigated",
@@ -370,6 +380,16 @@ fn open_page(
             }
         });
     apply_theme_to_view(&view, &theme)?;
+    #[cfg(target_os = "macos")]
+    {
+        let owner = caller.label().to_string();
+        let observed_app = app.clone();
+        view.with_webview(move |platform| {
+            let webview: &objc2_web_kit::WKWebView = unsafe { &*platform.inner().cast() };
+            crate::native_browser_state::observe(&observed_app, &owner, &tab_id, webview);
+        })
+        .map_err(|error| error.to_string())?;
+    }
     view.navigate(target).map_err(|error| error.to_string())
 }
 
@@ -505,9 +525,18 @@ pub(crate) fn browser_navigate(
     url: String,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    page(&app, &caller, &tab_id)?
-        .navigate(page_url(&url)?)
-        .map_err(|error| error.to_string())
+    let view = page(&app, &caller, &tab_id)?;
+    let target = page_url(&url)?;
+    load_requested(&app, &view);
+    view.navigate(target).map_err(|error| error.to_string())
+}
+
+/// Off macOS the engine cannot be asked whether a load is in flight; remember that one was asked
+/// for, so a command waits for the incoming document instead of reading the outgoing one.
+fn load_requested(_app: &AppHandle, _view: &Webview) {
+    #[cfg(not(target_os = "macos"))]
+    _app.state::<crate::native_browser_state::LoadTracker>()
+        .requested(_view.label(), std::time::Instant::now());
 }
 
 #[tauri::command]
@@ -517,9 +546,9 @@ pub(crate) fn browser_reload(
     tab_id: String,
 ) -> Result<(), String> {
     require_main(&caller)?;
-    page(&app, &caller, &tab_id)?
-        .reload()
-        .map_err(|error| error.to_string())
+    let view = page(&app, &caller, &tab_id)?;
+    load_requested(&app, &view);
+    view.reload().map_err(|error| error.to_string())
 }
 
 #[derive(Serialize)]
@@ -527,6 +556,8 @@ pub(crate) fn browser_reload(
 pub(crate) struct BrowserNavigationState {
     can_go_back: bool,
     can_go_forward: bool,
+    /// The address the page is at now, which a page changes itself (`history.pushState`).
+    url: String,
     /// A main-frame load is in flight, so the document now in the page is about to be replaced.
     /// WebKit's own answer, not one inferred from comparing addresses: a page that rewrites its
     /// URL with `history.replaceState` never matches the address the tab last loaded.
@@ -541,6 +572,7 @@ pub(crate) async fn browser_navigation_state(
 ) -> Result<BrowserNavigationState, String> {
     require_main(&caller)?;
     let view = page(&app, &caller, &tab_id)?;
+    let url = view.url().map(|url| url.to_string()).unwrap_or_default();
     #[cfg(target_os = "macos")]
     {
         use objc2_web_kit::WKWebView;
@@ -550,6 +582,7 @@ pub(crate) async fn browser_navigation_state(
             let _ = tx.send(BrowserNavigationState {
                 can_go_back: unsafe { webview.canGoBack() },
                 can_go_forward: unsafe { webview.canGoForward() },
+                url,
                 loading: unsafe { webview.isLoading() },
             });
         })
@@ -563,11 +596,18 @@ pub(crate) async fn browser_navigation_state(
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = view;
+        // Windows: WebView2's history is not reached through wry, so both stay offered.
+        #[cfg(target_os = "linux")]
+        let (can_go_back, can_go_forward) = crate::native_browser_gtk::history(&view).await?;
+        #[cfg(not(target_os = "linux"))]
+        let (can_go_back, can_go_forward) = (true, true);
         Ok(BrowserNavigationState {
-            can_go_back: true,
-            can_go_forward: true,
-            loading: false,
+            can_go_back,
+            can_go_forward,
+            url,
+            loading: app
+                .state::<crate::native_browser_state::LoadTracker>()
+                .loading(view.label(), std::time::Instant::now()),
         })
     }
 }
@@ -584,6 +624,7 @@ pub(crate) fn browser_go(
         return Err("Invalid browser history direction".into());
     }
     let view = page(&app, &caller, &tab_id)?;
+    load_requested(&app, &view);
     #[cfg(target_os = "macos")]
     {
         use objc2_web_kit::WKWebView;
@@ -639,6 +680,8 @@ pub(crate) async fn browser_close_many(
             {
                 continue;
             }
+            #[cfg(target_os = "macos")]
+            crate::native_browser_state::forget(&view_label);
             if let Some(view) = app.get_webview(&view_label) {
                 let _ = hide_page(&view);
                 if let Err(error) = view.close() {

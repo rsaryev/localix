@@ -25,6 +25,22 @@ describe('preview state transforms', () => {
     expect(originOf('not a url')).toBe('not a url')
   })
 
+  test('a background open joins the strip without replacing the tab on screen', () => {
+    const shown = recordPreview(empty, 'S', entry('a'))
+    const next = recordPreview(shown, 'S', entry('b', { background: true }))
+    expect(next.previewBySession.S?.previewId).toBe('a')
+    expect(next.previewTabsBySession.S?.map((e) => e.previewId)).toEqual(['a', 'b'])
+    expect(
+      recordPreview(empty, 'S', entry('b', { background: true })).previewBySession.S,
+    ).toMatchObject({ previewId: 'b' })
+  })
+
+  test('an agent reopening a tab keeps its pin and its engine', () => {
+    const pinned = recordPreview(empty, 'S', entry('a', { pinned: true, nativePage: true }))
+    const reopened = recordPreview(pinned, 'S', entry('a', { version: 2 }))
+    expect(reopened.previewTabsBySession.S?.[0]).toMatchObject({ pinned: true, nativePage: true })
+  })
+
   test('recordPreview opens, activates, and dedups by origin', () => {
     const a = recordPreview(empty, 'S', entry('a'))
     expect(a.previewTabsBySession.S.map((e) => e.previewId)).toEqual(['a'])

@@ -4,6 +4,8 @@ import { openPolicy } from '@/shared/lib/workspaceOf'
 import { usePreviewStore } from './previewStore'
 import type { PreviewEntry } from './preview'
 import { previewHostKey, usePreviewHosts } from './previewHosts'
+import { navigateReopenedNativePage } from './nativePageNavigation'
+import { workspaceOf } from '@/shared/lib/workspaceOf'
 
 /**
  * Record an opened preview and reveal its tab — from EITHER the `preview.updated` stream frame or
@@ -25,9 +27,13 @@ export function revealPreview(sessionId: string, entry: PreviewEntry): void {
   if (appliedVersions.size > 500) appliedVersions.clear()
   if (appliedVersions.get(key) === entry.version) return
   appliedVersions.set(key, entry.version)
+  const previous = usePreviewStore
+    .getState()
+    .previewTabsBySession[workspaceOf(sessionId)]?.find((tab) => tab.previewId === entry.previewId)
   // Record the preview CONTENT (active entry + mini-browser tab + history) so the Preview
   // work item's body has something to show; the grid only owns the TAB.
   usePreviewStore.getState().recordPreview(sessionId, entry)
+  navigateReopenedNativePage(previous, entry)
   usePreviewHosts.getState().opened(previewHostKey(sessionId, entry.previewId))
   if (entry.background) return
   // An on-screen gate, not an owner lookup: the Browser tab is this chat's own (the request below
