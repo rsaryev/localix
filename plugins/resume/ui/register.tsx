@@ -65,7 +65,7 @@ export function registerUi(host: PluginUiHost): void {
         'Structured resume editor with a saved revision and explicitly labeled unsaved draft context. Identity, sections and role context share one core model.',
       tools: ['resume'],
       nextSteps: [
-        'Use resume guide for the schema, then get for current identifiers and revision.',
+        'Create with one resume init carrying the whole content as document; to edit an existing resume, get its ids and revision, then update.',
         'Use duplicate for an independent role variant; update only intended fields and preserve intervening changes.',
         'Read source files with existing tools. Draft snapshots are evidence; do not invent qualifications or overwrite saved state from a stale draft.',
       ],

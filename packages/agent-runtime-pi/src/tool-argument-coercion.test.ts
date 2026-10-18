@@ -118,3 +118,50 @@ describe('the validation message a model repairs its call from', () => {
     )
   })
 })
+
+describe('a union the call has already chosen a branch of', () => {
+  const entry = z.strictObject({ title: z.string(), link: z.string().nullable() })
+  const actions = z.discriminatedUnion('action', [
+    z.strictObject({ action: z.literal('guide') }),
+    z.strictObject({ action: z.literal('init'), title: z.string(), entries: z.array(entry) }),
+    z.strictObject({
+      action: z.literal('update'),
+      operations: z.array(
+        z.discriminatedUnion('op', [
+          z.strictObject({ op: z.literal('rename'), title: z.string() }),
+          z.strictObject({ op: z.literal('add'), entry }),
+        ]),
+      ),
+    }),
+  ])
+
+  const message = (args: unknown) => {
+    try {
+      check(actions, args)
+    } catch (error) {
+      return (error as Error).message
+    }
+    throw new Error('expected a validation failure')
+  }
+
+  test('reports only the named branch, so the model fixes one field instead of dropping it all', () => {
+    // LOCALIX-64/66: an `init` with one entry missing `link` read the `guide` branch's
+    // complaints — every init field "not accepted here" — and the model resent init empty.
+    const text = message({ action: 'init', title: 'CV', entries: [{ title: 'Go' }] })
+    expect(text).toContain('entries.0.link')
+    expect(text).not.toContain('not accepted here')
+    expect(text).not.toContain('must be equal to constant')
+  })
+
+  test('narrows nested discriminated unions inside arrays as well', () => {
+    const text = message({ action: 'update', operations: [{ op: 'add', entry: { title: 'Go' } }] })
+    expect(text).toContain('operations.0.entry.link')
+    expect(text).not.toContain('must be equal to constant')
+  })
+
+  test('an unknown discriminator lists the values it allows', () => {
+    expect(message({ action: 'create', title: 'CV' })).toContain(
+      'action: must be one of "guide", "init", "update"',
+    )
+  })
+})

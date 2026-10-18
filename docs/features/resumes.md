@@ -65,7 +65,9 @@ not guarantee acceptance by an applicant tracking system.
 Ask the agent to initialize a resume from a template, edit existing content, or create a variant for
 a role. The `resume` tool provides validated initialization, reads, revision-safe edits,
 duplication, history, and text or structured exports. It links its result back to the resume tab.
-The agent should use your supplied facts and ask for missing information.
+The agent writes a whole resume in one `init` call and fills in identifiers and empty fields itself.
+A field that the section type does not take is moved or dropped, and the result reports it. The call
+is not refused for it. The agent should use your supplied facts and ask for missing information.
 
 Saved files are located at `.localix/resumes/<id>/resume.json` in the chat’s effective working
 directory. A chosen project keeps these files after chat deletion. A root chat in **Default** uses a

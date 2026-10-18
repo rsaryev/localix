@@ -105,6 +105,13 @@ The delta names unknown keys once (`unknown parameter "x" — not accepted here`
 enum values (`must be one of "a", "b"`); every other error keeps TypeBox's message. The same
 tripwire file pins the wording.
 
+For a union whose branches each fix one property to a constant (`action`, `op`), the error report
+(`narrowForReport`) checks only the branch the call names, walking nested objects and arrays. When
+the call names no branch, the report lists the allowed discriminator values. TypeBox reports a miss
+against every branch and prints the first one, usually the wrong one: an `init` call with one bad
+nested field read as the `guide` branch's `unknown parameters` complaint, and the model dropped its
+content. Validation itself is unchanged; only the message is narrowed.
+
 The Codex OAuth login carries the official Codex CLI's stale-login recovery behavior: a new
 attempt cancels the previous callback listener, retries the preferred port, and falls back to
 the second registered callback port. Since upstream moved every provider onto one loopback

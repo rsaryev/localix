@@ -334,6 +334,59 @@ function formatValidationMessage(error: TLocalizedValidationError): string | und
 	return error.message;
 }
 
+// LOCALIX DELTA — see vendor/pi/UPSTREAM.md.
+// A union whose branches each fix one property to a constant (`action`, `op`) is a choice the
+// call already made. TypeBox reports a miss against EVERY branch, and the first one it prints is
+// usually the wrong one: an `init` call with a bad nested field read `unknown parameters "title",
+// "document"` and `action: must be equal to constant` — the `guide` branch's complaints — so the
+// model dropped its content instead of fixing one field (LOCALIX-64/66). For the error report
+// only, replace each such union with the branch the value names (or, when it names none, with
+// the list of discriminator values), walking nested objects and arrays the same way.
+function discriminatorOf(branches: JsonSchemaObject[]): string | undefined {
+	const first = branches[0]?.properties;
+	if (!first) return undefined;
+	return Object.keys(first).find((key) =>
+		branches.every((branch) => {
+			const property = branch.properties?.[key] as { const?: unknown } | undefined;
+			return property !== undefined && property.const !== undefined;
+		}),
+	);
+}
+
+function narrowForReport(schema: JsonSchemaObject, value: unknown): JsonSchemaObject {
+	if (!schema || typeof schema !== "object") return schema;
+	const branches = schema.oneOf ?? schema.anyOf;
+	if (Array.isArray(branches) && typeof value === "object" && value !== null && !Array.isArray(value)) {
+		const key = discriminatorOf(branches);
+		if (key !== undefined) {
+			const { oneOf: _oneOf, anyOf: _anyOf, ...rest } = schema;
+			const chosen = (value as Record<string, unknown>)[key];
+			const branch = branches.find(
+				(item) => (item.properties?.[key] as { const?: unknown }).const === chosen,
+			);
+			if (!branch) {
+				const allowed = branches.map((item) => (item.properties?.[key] as { const?: unknown }).const);
+				return { ...rest, type: "object", properties: { [key]: { enum: allowed } as JsonSchemaObject }, required: [key] };
+			}
+			return narrowForReport({ ...rest, ...branch }, value);
+		}
+	}
+	let next = schema;
+	if (schema.properties && typeof value === "object" && value !== null && !Array.isArray(value)) {
+		const properties = { ...schema.properties };
+		for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+			if (properties[key]) properties[key] = narrowForReport(properties[key], child);
+		}
+		next = { ...next, properties };
+	}
+	if (schema.items && !Array.isArray(schema.items) && Array.isArray(value)) {
+		const items = schema.items;
+		const { items: _items, ...rest } = next;
+		next = { ...rest, prefixItems: value.map((item) => narrowForReport(items, item)) } as JsonSchemaObject;
+	}
+	return next;
+}
+
 /**
  * Finds a tool by name and validates the tool call arguments against its TypeBox schema
  * @param tools Array of tool definitions
@@ -380,8 +433,10 @@ export function validateToolArguments(tool: Tool, toolCall: ToolCall): any {
 		return args;
 	}
 
+	const reportSchema = narrowForReport(tool.parameters as JsonSchemaObject, args);
+	const reporter = reportSchema === (tool.parameters as JsonSchemaObject) ? validator : Compile(reportSchema as never);
 	const errors =
-		validator
+		reporter
 			.Errors(args)
 			.flatMap((error) => {
 				const message = formatValidationMessage(error);

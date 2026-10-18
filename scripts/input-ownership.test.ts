@@ -29,6 +29,8 @@ const NATIVE_INPUT_OWNERS = new Map<string, number>([
   ['packages/kit/src/overlays/find-widget.tsx', 1],
   ['packages/kit/src/controls/input.tsx', 1],
   ['packages/kit/src/controls/search-input.tsx', 1],
+  // The stepped slider primitive is a native range input under its own track and step dots.
+  ['packages/kit/src/controls/slider.tsx', 1],
   ['packages/kit/src/controls/switch.tsx', 1],
   ['plugins/api/ui/ui/ImportDialog.tsx', 1], // hidden file picker behind a Button
   ['plugins/database/ui/ui/DefaultSqlEditor.tsx', 1],

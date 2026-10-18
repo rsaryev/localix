@@ -1,37 +1,39 @@
 import { classifyByAction, type PluginContext } from '@localixai/plugin-sdk/backend'
 import { z } from 'zod'
 import { resolve } from 'node:path'
-import { templates, templateIds, createTemplateDocument } from '../shared/templates'
+import { templateIds } from '../shared/templates'
 import { RESUME_DIR } from '../shared/file-contract'
-import { documentSchema, emptyDocument, idSchema } from '../shared/schema'
-import { operationsSchema } from '../shared/operations'
+import { idSchema } from '../shared/schema'
 import { exportDocument } from '../shared/format'
 import { resumeUri } from '../shared/resource-uri'
-import { sectionDefinitions } from '../shared/sections'
+import { contentInputSchema, documentFromContent } from './authoring'
+import { authoringOperationsSchema, resolveOperations } from './authoring-ops'
+import { resumeGuide, resumeOutline } from './tool-guide'
 import { ResumeError, type ResumeService } from './service'
+
+const revision = z.string().regex(/^[a-f0-9]{64}$/u)
 
 export const toolInputSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('guide') }),
   z.strictObject({ action: z.literal('list') }),
   z.strictObject({ action: z.literal('history'), id: idSchema }),
-  z.strictObject({
-    action: z.literal('restore'),
-    id: idSchema,
-    revision: z.string().regex(/^[a-f0-9]{64}$/u),
-    target: z.string().regex(/^[a-f0-9]{64}$/u),
-  }),
+  z.strictObject({ action: z.literal('restore'), id: idSchema, revision, target: revision }),
   z.strictObject({ action: z.literal('get'), id: idSchema, sectionId: idSchema.optional() }),
   z.strictObject({
     action: z.literal('init'),
-    template: z.enum(templateIds).default('awal'),
     title: z.string().trim().min(1).max(500),
-    document: documentSchema.optional(),
+    template: z.enum(templateIds).optional(),
+    document: contentInputSchema
+      .optional()
+      .describe('The whole resume in one call; omit for the empty template'),
   }),
   z.strictObject({
     action: z.literal('update'),
     id: idSchema,
-    revision: z.string().regex(/^[a-f0-9]{64}$/u),
-    operations: operationsSchema,
+    revision: revision
+      .optional()
+      .describe('From your last init/get/update; guards against overwriting'),
+    operations: authoringOperationsSchema,
   }),
   z.strictObject({
     action: z.literal('duplicate'),
@@ -44,6 +46,22 @@ export const toolInputSchema = z.discriminatedUnion('action', [
     format: z.enum(['json', 'markdown', 'text', 'yaml', 'lanjut']),
   }),
 ])
+type ToolInput = z.infer<typeof toolInputSchema>
+
+/** One line per problem, addressed the way the author wrote the call. */
+function describeIssues(error: z.ZodError) {
+  return error.issues
+    .slice(0, 12)
+    .map((issue) => {
+      const path = issue.path
+        .map((part, index) =>
+          typeof part === 'number' ? `[${part}]` : index ? `.${String(part)}` : String(part),
+        )
+        .join('')
+      return `- ${path || 'input'}: ${issue.message}`
+    })
+    .join('\n')
+}
 
 export function createResumeTool(ctx: PluginContext, service: ResumeService) {
   return ctx.defineTool({
@@ -51,7 +69,7 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
     label: 'Resume',
     activeVerb: 'Working on a resume',
     description:
-      'Call guide once before authoring custom content; it specifies allowed fields per section. Initialize from a template with init, then edit structured resume files shared with the Resumes workbench. guide explains fields and edit operations. list returns identifiers and revisions; get returns authoritative structured content (optionally one section). init already returns IDs and revision, so use them directly for update without a redundant get. update applies a small atomic operation batch against the revision from init or the latest get; on conflict read again and preserve intervening edits. duplicate creates an independent variant; export returns text, Markdown, native JSON/YAML or Lanjut interchange. Use existing read/file tools for source documents and analysis. Do not invent qualifications or achievements.',
+      'Create and edit structured resumes shared with the Resumes workbench. init {title, template?, document?} creates one; pass the whole content as document in that same call: {targetRole?, header: {name, headline, email, phone, location, links}, sections: [{type, entries: [{title, organization, location, start, end, body, bullets}]}]}. Write only fields with content; ids and empty fields are filled in. Section types: summary (one entry, body only), experience, internship, projects, organizations, education, certifications, skills/languages (title + comma-separated body, no bullets), custom. Dates YYYY or YYYY-MM; end "present" for ongoing. update {id, revision, operations} applies 1–50 operations; addEntry accepts a section type as sectionId. Results return ids, revision and notes about anything adjusted. guide lists fields per section and every operation; list, get (full content), history, restore, duplicate and export (text, markdown, json, yaml, lanjut) cover the rest. Do not invent qualifications for a real person.',
     inputSchema: toolInputSchema,
     executionMode: 'sequential',
     mutates: true,
@@ -73,89 +91,20 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
       update: { effect: 'files' },
       duplicate: { effect: 'files' },
     }),
-    async execute(_callId, input) {
+    async execute(_callId, raw) {
+      // The runtime checks the JSON schema only; zod runs here so optional fields and
+      // refinements mean the same thing on both sides.
+      let input: ToolInput
       try {
-        if (input.action === 'guide')
-          return {
-            content: JSON.stringify(
-              {
-                schemaVersion: 1,
-                templates,
-                canonicalFile: '.localix/resumes/<id>/resume.json',
-                fileWorkflow:
-                  'init creates the template-backed file and returns its workspace-relative path. Use ordinary read/edit tools to work on that file; get validates it and returns its current content hash. UI and tool edits share that file.',
-                sections: sectionDefinitions,
-                emptyDocument: emptyDocument(),
-                authoring: {
-                  skillsAndLanguages:
-                    'Use title for the skill/language, proficiency for an optional level, or body for grouped content. Always provide bullets: []. Non-empty bullets and company context are rejected in these sections. variant belongs only to custom sections.',
-                  efficientCreation:
-                    'For custom content, guide then init with a valid complete document is enough. For template-first editing, init returns section/entry IDs and revision for update; no intervening get is needed.',
-                },
-                entry: {
-                  id: 'Generate a UUID',
-                  title: '',
-                  organization: '',
-                  location: '',
-                  start: 'YYYY or YYYY-MM or empty',
-                  end: 'YYYY or YYYY-MM or empty',
-                  current: false,
-                  body: 'Plain text or restricted rich-text JSON (see richText)',
-                  bullets: ['Plain text achievement'],
-                  link: null,
-                  context: 'Optional company or project context',
-                  proficiency: 'Optional skill or language level',
-                },
-                richText: {
-                  document: {
-                    type: 'doc',
-                    content: [
-                      {
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: 'Example', marks: [{ type: 'bold' }] }],
-                      },
-                    ],
-                  },
-                  nodes: [
-                    'paragraph',
-                    'text',
-                    'hardBreak',
-                    'bulletList',
-                    'orderedList',
-                    'listItem',
-                  ],
-                  marks: [
-                    'bold',
-                    'italic',
-                    'link (attrs.href: absolute HTTP, HTTPS, mailto or tel URL)',
-                  ],
-                  lists:
-                    'List content is listItem nodes; each item begins with a paragraph. Ordered lists may set attrs.start.',
-                  limits:
-                    '8,000 description characters; 1,000 nodes and 12 levels per rich document. No HTML, images, headings, colors or arbitrary attributes.',
-                },
-                operations: [
-                  'header: merge value',
-                  'metadata: merge title/targetRole/jobDescription',
-                  'presentation: replace value preserving existing fields; template, font, language, showIcons, sectionSpacing, letterSpacing, lineHeight, nameScale, titleScale, bodyScale, photoSize, photoRadius, photoAlign',
-                  'addSection: section {id,type,title,hidden,entries}',
-                  'updateSection: sectionId, value {title?,hidden?,columns?,showProficiency?,variant?}',
-                  'removeSection: sectionId',
-                  'moveSection: sectionId, index (zero-based)',
-                  'addEntry: sectionId, entry',
-                  'updateEntry: sectionId, entryId, value (only changed fields)',
-                  'removeEntry: sectionId, entryId',
-                  'moveEntry: sectionId, entryId, index',
-                ],
-                limits:
-                  '100 resumes per user; 24 sections; 60 entries per section; 30 bullets per entry; 50 operations per batch; 100,000 serialized characters excluding portrait; portrait up to 300,000 characters.',
-                workflow:
-                  'Read source files using existing tools. Ask for missing facts. Create or duplicate, get current ids/revision, update only intended fields. Hidden sections stay in JSON and get but are omitted from visible exports. Target role/job description are context only, never exported as resume prose. The UI exports template-aware PDF/DOCX via Documents. Markdown generation is linear; no ATS acceptance guarantee.',
-              },
-              null,
-              2,
-            ),
-          }
+        input = toolInputSchema.parse(raw)
+      } catch (error) {
+        return {
+          content: `Invalid resume call:\n${describeIssues(error as z.ZodError)}`,
+          isError: true,
+        }
+      }
+      try {
+        if (input.action === 'guide') return { content: JSON.stringify(resumeGuide()) }
         if (input.action === 'list')
           return {
             content: JSON.stringify(
@@ -176,16 +125,6 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
               ),
             ),
           }
-        if (input.action === 'restore') {
-          const resume = await service.restore(
-            ctx.userId,
-            input.id,
-            input.revision,
-            input.target,
-            'agent',
-          )
-          return { content: JSON.stringify({ ...resume, path: service.path(resume.id) }) }
-        }
         if (input.action === 'get') {
           const resume = await service.get(ctx.userId, input.id)
           const section = input.sectionId
@@ -220,28 +159,10 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
           const resume = await service.get(ctx.userId, input.id)
           return { content: exportDocument(resume.document, input.format) }
         }
-        const resume =
-          input.action === 'init'
-            ? await service.create(
-                ctx.userId,
-                {
-                  ...(input.document ?? createTemplateDocument(input.template, input.title)),
-                  title: input.title,
-                },
-                undefined,
-                'agent',
-              )
-            : input.action === 'duplicate'
-              ? await service.duplicate(ctx.userId, input.id, input.title, 'agent')
-              : await service.update(
-                  ctx.userId,
-                  input.id,
-                  input.revision,
-                  input.operations,
-                  'agent',
-                )
+        const notes: string[] = []
+        const resume = await mutate(input, notes)
         return {
-          content: JSON.stringify({ ...resume, path: service.path(resume.id) }),
+          content: JSON.stringify(resumeOutline(resume, service.path(resume.id), notes)),
           details: ctx.ui.offer({ uri: resumeUri(resume.id), label: resume.document.title }),
         }
       } catch (error) {
@@ -250,11 +171,41 @@ export function createResumeTool(ctx: PluginContext, service: ResumeService) {
             error instanceof ResumeError
               ? `${error.code}: ${error.message}`
               : error instanceof z.ZodError
-                ? `Invalid resume: ${JSON.stringify(error.issues)}`
-                : 'Resume operation failed. Read the current resume and retry; do not discard unrelated content.',
+                ? `Invalid resume:\n${describeIssues(error)}\nNothing was saved; fix these fields and resend the call.`
+                : error instanceof Error
+                  ? `${error.message}. Nothing was saved.`
+                  : 'Resume operation failed. Read the current resume and retry; do not discard unrelated content.',
           isError: true,
         }
       }
     },
   })
+
+  async function mutate(
+    input: Extract<ToolInput, { action: 'init' | 'update' | 'duplicate' | 'restore' }>,
+    notes: string[],
+  ) {
+    if (input.action === 'init')
+      return service.create(
+        ctx.userId,
+        documentFromContent(input.title, input.template ?? 'awal', input.document, notes),
+        undefined,
+        'agent',
+      )
+    if (input.action === 'duplicate')
+      return service.duplicate(ctx.userId, input.id, input.title, 'agent')
+    if (input.action === 'restore')
+      return service.restore(ctx.userId, input.id, input.revision, input.target, 'agent')
+    const current = await service.get(ctx.userId, input.id)
+    const operations = resolveOperations(current.document, input.operations, notes)
+    // Operations address content by id, so applying them to the latest file is safe; a stated
+    // revision still refuses a stale one.
+    return service.update(
+      ctx.userId,
+      input.id,
+      input.revision ?? current.revision,
+      operations,
+      'agent',
+    )
+  }
 }

@@ -24,7 +24,7 @@ const short = z
     'Use a single line',
   )
 const prose = z.string().max(8_000)
-const richProse = z
+export const richProse = z
   .union([prose, richTextSchema])
   .refine((value) => richTextToText(value).length <= 8_000, 'Description exceeds 8,000 characters')
 export const linkSchema = z.strictObject({
