@@ -6,13 +6,12 @@ session, auxiliary calls, or cross-session totals.
 
 ## What you can do
 
-| Surface                     | Result                                                       | Boundary                                         |
-| --------------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| Composer indicator          | Inspect the latest attempt, context fill, totals, and cache. | A failed attempt can have no provider usage.     |
-| Session status bar          | Inspect aggregate timing for the current session.            | Timing is separate from provider usage and cost. |
-| `/usage`                    | Read visible-turn totals and recorded auxiliary calls.       | The report covers the current session.           |
-| **Usage & Spend** workbench | Explore totals, trends, breakdowns, and a request log.       | Data comes from the local usage ledger.          |
-| Spend alert                 | Warn after session cost crosses a configured threshold.      | The client-side alert never stops a run.         |
+| Surface                     | Result                                                       | Boundary                                     |
+| --------------------------- | ------------------------------------------------------------ | -------------------------------------------- |
+| Composer indicator          | Inspect the latest attempt, context fill, totals, and cache. | A failed attempt can have no provider usage. |
+| `/usage`                    | Read visible-turn totals and recorded auxiliary calls.       | The report covers the current session.       |
+| **Usage & Spend** workbench | Explore totals, trends, breakdowns, and a request log.       | Data comes from the local usage ledger.      |
+| Spend alert                 | Warn after session cost crosses a configured threshold.      | The client-side alert never stops a run.     |
 
 This guide describes the workbench's **Localix** tab. The **External** tab reads separate agent
 history; see [External agents](external-agents.md#statistics).
@@ -172,6 +171,5 @@ whole multiple of its threshold after dismissal.
 - [Usage range calculation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/usageRange.ts)
 - [Usage queries and paging lifecycle](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/useUsageStats.ts)
 - [Usage workbench](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/stats/ui/StatsPanel.tsx)
-- [Session timing status](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/StatusBar.tsx)
 - [Composer usage indicator](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/UsageIndicator.tsx)
 - [Spend alert policy](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/spendAlert.ts)

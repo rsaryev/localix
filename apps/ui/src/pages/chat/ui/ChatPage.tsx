@@ -169,14 +169,12 @@ export function ChatPage() {
     })),
   )
 
-  const { sessionTitle, lspServers, sessionTiming, isRunning } = useChatStore(
+  const { sessionTitle, lspServers } = useChatStore(
     useShallow((state) => {
       const session = findSessionInState(state, state.activeSessionId)
       return {
         sessionTitle: session?.title ?? null,
         lspServers: session?.lspServers,
-        sessionTiming: session?.sessionTiming,
-        isRunning: session?.isRunning,
       }
     }),
   )
@@ -532,14 +530,7 @@ export function ChatPage() {
         />
       }
       statusSessionId={activeSessionId}
-      footer={
-        <StatusBar
-          lspServers={lspServers}
-          sessionTiming={sessionTiming}
-          isRunning={isRunning}
-          onOpenProblems={openProblems}
-        />
-      }
+      footer={<StatusBar lspServers={lspServers} onOpenProblems={openProblems} />}
     >
       <Suspense fallback={<LoadingHint>Opening workspace…</LoadingHint>}>
         {workspaceTransferReady && <GridView resolvedTheme={resolvedTheme} isMobile={isMobile} />}

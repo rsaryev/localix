@@ -11,12 +11,8 @@ describe('chat status bar presentation', () => {
     expect(source).not.toContain('<WorkbenchStatusButton\n      disabled')
   })
 
-  test('shows timing details through the shared collision-aware popover layer', () => {
-    expect(source).toContain('<Popover>')
-    expect(source).toContain('side="top"')
-    expect(source).toContain('aria-label="Session timing details"')
-    expect(source).not.toContain('useDismissableOverlay')
-    expect(source).not.toContain('absolute bottom-full')
-    expect(source).not.toContain('z-50')
+  test('leaves session run timing out of the bar', () => {
+    expect(source).not.toContain('Session timing')
+    expect(source).not.toContain('sessionTiming')
   })
 })

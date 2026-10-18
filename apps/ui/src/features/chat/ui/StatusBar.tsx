@@ -1,10 +1,7 @@
-import { Clock, PlugZap } from 'lucide-react'
-import type { LspServerState, SessionTiming } from '@/shared/api/contracts'
-import { useElapsedMs } from '@/shared/hooks/useCountdown'
-import { formatElapsed as fmtMs } from '@localixai/plugin-sdk/ui/utilities'
+import { PlugZap } from 'lucide-react'
+import type { LspServerState } from '@/shared/api/contracts'
 import { useRealtimeConnection } from '@/shared/hooks/useRealtimeConnection'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
 import {
   WorkbenchStatusBar,
   WorkbenchStatusButton,
@@ -14,77 +11,8 @@ import { SemanticIndexStatusItem } from '@/features/settings/ui/SemanticIndexSta
 
 interface StatusBarProps {
   lspServers?: LspServerState[]
-  sessionTiming?: SessionTiming | null
-  /** True while the agent is actively running this session (drives the live ticker). */
-  isRunning?: boolean
   /** Open the Problems panel — wired to the error/warning counts below. */
   onOpenProblems?: () => void
-}
-
-/** Ticks once per second; shows the persisted total plus elapsed time since mount. */
-function LiveTotal({ baseMs }: { baseMs: number }) {
-  const extraMs = useElapsedMs()
-  return <span className="tabular-nums">{fmtMs(baseMs + extraMs)}</span>
-}
-
-function SessionTimingItem({ timing, isRunning }: { timing: SessionTiming; isRunning?: boolean }) {
-  const rows: Array<{ label: string; value: number }> = [
-    { label: 'Model (real)', value: timing.modelMs },
-    { label: '· Wait / TTFT', value: timing.waitMs ?? 0 },
-    { label: '· Tool-input gen', value: timing.toolGenMs ?? 0 },
-    { label: 'Reveal (smoothing)', value: timing.revealMs ?? 0 },
-    { label: 'Tools (exec)', value: timing.toolMs },
-    { label: 'HITL wait', value: timing.hitlMs },
-    { label: 'Idle / overhead', value: timing.idleMs },
-  ]
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <WorkbenchStatusButton className="gap-1.5" title="Session timing">
-          <Clock
-            className={['size-2.5', isRunning ? 'text-status-success' : ''].join(' ')}
-            aria-hidden="true"
-          />
-          <span className="font-semibold tracking-wide text-text-soft">
-            {isRunning ? (
-              <LiveTotal key="run" baseMs={timing.totalMs} />
-            ) : (
-              <span className="tabular-nums">{fmtMs(timing.totalMs)}</span>
-            )}
-          </span>
-          <span className="text-text-faint">{isRunning ? 'running' : 'total'}</span>
-        </WorkbenchStatusButton>
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="start"
-        aria-label="Session timing details"
-        className="w-56 gap-0 overflow-hidden p-0"
-      >
-        <div className="flex flex-col divide-y divide-border-soft">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-xs font-medium text-text-strong">Total</span>
-            <span className="text-xs font-semibold tabular-nums text-text-strong">
-              {fmtMs(timing.totalMs)}
-            </span>
-          </div>
-          {rows.map((r) => (
-            <div key={r.label} className="flex items-center justify-between px-3 py-1.5">
-              <span className="text-2xs text-text-soft">{r.label}</span>
-              <span className="text-2xs tabular-nums text-text-faint">{fmtMs(r.value)}</span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between px-3 py-1.5 text-2xs text-text-faint">
-            <span>
-              {timing.turns} {timing.turns === 1 ? 'turn' : 'turns'} · {timing.runs}{' '}
-              {timing.runs === 1 ? 'run' : 'runs'}
-            </span>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
 }
 
 function LspStatusItem({
@@ -148,24 +76,17 @@ function RealtimeStatusItem() {
   )
 }
 
-export function StatusBar({
-  lspServers,
-  sessionTiming,
-  isRunning,
-  onOpenProblems,
-}: StatusBarProps) {
+export function StatusBar({ lspServers, onOpenProblems }: StatusBarProps) {
   const hasLsp = Boolean(lspServers && lspServers.length > 0)
-  const hasTiming = Boolean(sessionTiming && sessionTiming.totalMs > 0)
   const realtime = useRealtimeConnection()
 
-  // Always reserve the bar's height — never unmount. When a run starts, timing/LSP
+  // Always reserve the bar's height — never unmount. When a run starts, LSP
   // items fade in *inside* the fixed-height bar instead of growing the footer, so
   // the message viewport keeps a stable height and the layout never jolts.
   return (
     <WorkbenchStatusBar aria-label="Session status" divided>
       {realtime === 'reconnecting' && <RealtimeStatusItem />}
       {hasLsp && <LspStatusItem servers={lspServers!} onOpenProblems={onOpenProblems} />}
-      {hasTiming && <SessionTimingItem timing={sessionTiming!} isRunning={isRunning} />}
       {/* App-wide background work sits at the trailing edge, as in an editor's status bar. */}
       <SemanticIndexStatusItem className="ml-auto" />
     </WorkbenchStatusBar>

@@ -46,21 +46,3 @@ export function useCountdownMs(targetMs: number | null, labels: CountdownLabels 
   const isoTarget = targetMs === null ? null : new Date(targetMs).toISOString()
   return useCountdown(isoTarget, labels)
 }
-/** Live 1Hz elapsed-ms ticker from a start time (defaults to mount). */
-export function useElapsedMs(startMs?: number): number {
-  // Capture the mount time ONCE via lazy state. A `Date.now()` DEFAULT param would
-  // recompute on every render — producing a fresh start, resetting the effect dep
-  // and the counter to ~0 each tick (the timer never advances). Lazy init runs once.
-  const mountStart = useState(() => Date.now())[0]
-  const start = startMs ?? mountStart
-  const [elapsedMs, setElapsedMs] = useState(0)
-
-  useEffect(() => {
-    const tick = () => setElapsedMs(Math.max(0, Date.now() - start))
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [start])
-
-  return elapsedMs
-}
