@@ -234,6 +234,16 @@ pub(crate) fn page_label(owner: &str, tab_id: &str) -> Result<String, String> {
     Ok(format!("browser-{owner}--{tab_id}"))
 }
 
+/// A page's address where the engine can be read from any thread. On macOS `Webview::url()`
+/// panics for a page without an address (its first load failed), so it is never called there:
+/// the address comes from `native_browser_state` instead, and this one is empty.
+fn page_address(_view: &Webview) -> String {
+    #[cfg(target_os = "macos")]
+    return String::new();
+    #[cfg(not(target_os = "macos"))]
+    _view.url().map(|url| url.to_string()).unwrap_or_default()
+}
+
 fn page(app: &AppHandle, caller: &Webview, tab_id: &str) -> Result<Webview, String> {
     let view = app
         .get_webview(&page_label(caller.label(), tab_id)?)
@@ -333,7 +343,7 @@ fn open_page(
                 "browser:title",
                 BrowserPageEvent {
                     tab_id: title_id.clone(),
-                    url: view.url().map(|url| url.to_string()).unwrap_or_default(),
+                    url: page_address(&view),
                     title: Some(title),
                     loading: false,
                 },
@@ -390,6 +400,8 @@ fn open_page(
         })
         .map_err(|error| error.to_string())?;
     }
+    // The first load is in flight from here, so its readiness waits instead of reading `about:blank`.
+    load_requested(&app, &view);
     view.navigate(target).map_err(|error| error.to_string())
 }
 
@@ -572,7 +584,6 @@ pub(crate) async fn browser_navigation_state(
 ) -> Result<BrowserNavigationState, String> {
     require_main(&caller)?;
     let view = page(&app, &caller, &tab_id)?;
-    let url = view.url().map(|url| url.to_string()).unwrap_or_default();
     #[cfg(target_os = "macos")]
     {
         use objc2_web_kit::WKWebView;
@@ -582,7 +593,7 @@ pub(crate) async fn browser_navigation_state(
             let _ = tx.send(BrowserNavigationState {
                 can_go_back: unsafe { webview.canGoBack() },
                 can_go_forward: unsafe { webview.canGoForward() },
-                url,
+                url: crate::native_browser_state::address(webview),
                 loading: unsafe { webview.isLoading() },
             });
         })
@@ -596,6 +607,7 @@ pub(crate) async fn browser_navigation_state(
     }
     #[cfg(not(target_os = "macos"))]
     {
+        let url = page_address(&view);
         // Windows: WebView2's history is not reached through wry, so both stay offered.
         #[cfg(target_os = "linux")]
         let (can_go_back, can_go_forward) = crate::native_browser_gtk::history(&view).await?;

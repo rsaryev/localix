@@ -87,3 +87,19 @@ test('a page leaving by a link of its own is waited out where the shell cannot s
   await ensureNativeProbe(TAB)
   expect(page.injections).toEqual(['after 3 polls'])
 })
+
+test('a page whose load failed is reported as not loaded instead of an unanswered command', async () => {
+  // WebKit leaves a page whose first load failed with no address at all.
+  ;(window as { __TAURI__?: unknown }).__TAURI__ = {
+    core: {
+      invoke: async (command: string) => {
+        if (command === 'browser_navigation_state') return { loading: false, url: '' }
+        if (command === 'browser_eval') return JSON.stringify({ state: 'complete', bridge: false })
+        return null
+      },
+    },
+  }
+  await expect(ensureNativeProbe(TAB)).rejects.toThrow(
+    'The page did not load: https://www.google.com/search?q=hi did not respond',
+  )
+})

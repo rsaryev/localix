@@ -27,7 +27,7 @@ pub(crate) struct PageState {
 }
 
 #[cfg(target_os = "macos")]
-pub(crate) use observe::{forget, forget_owner, observe};
+pub(crate) use observe::{address, forget, forget_owner, observe};
 
 #[cfg(target_os = "macos")]
 mod observe {
@@ -79,13 +79,19 @@ mod observe {
         static OBSERVERS: RefCell<HashMap<String, Retained<PageObserver>>> = RefCell::new(HashMap::new());
     }
 
-    fn read(view: &WKWebView, tab_id: &str) -> PageState {
+    /// The page's address, or empty while it has none. Not `Webview::url()`: wry unwraps WebKit's
+    /// `URL`, which is nil in a page whose first load failed, and the shell panicked.
+    pub(crate) fn address(view: &WKWebView) -> String {
         let url: Option<Retained<AnyObject>> = unsafe { msg_send![view, URL] };
         let url: Option<Retained<NSString>> =
             url.and_then(|url| unsafe { msg_send![&*url, absoluteString] });
+        url.map(|url| url.to_string()).unwrap_or_default()
+    }
+
+    fn read(view: &WKWebView, tab_id: &str) -> PageState {
         PageState {
             tab_id: tab_id.to_string(),
-            url: url.map(|url| url.to_string()).unwrap_or_default(),
+            url: address(view),
             loading: unsafe { view.isLoading() },
             can_go_back: Some(unsafe { view.canGoBack() }),
             can_go_forward: Some(unsafe { view.canGoForward() }),

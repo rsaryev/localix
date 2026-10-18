@@ -52,6 +52,8 @@ interface PageState {
   leaving?: boolean
 }
 
+const WEB_ADDRESS = /^https?:\/\//
+
 const PAGE_STATE =
   'JSON.stringify({state:document.readyState,bridge:!!window.__localixBrowser,leaving:!!window.__localixBrowser?.leaving?.()})'
 
@@ -88,10 +90,22 @@ export async function ensureNativeProbe(tab: PreviewEntry): Promise<void> {
   const script = await probeSource()
   let lastState = 'No response from the page'
   const initialized = await pollAttempts(60, 100, async (attempt) => {
-    const loading = await invoke('browser_navigation_state', { tabId }).then(
-      (state) => (state as { loading?: boolean }).loading === true,
-      () => false,
+    const navigation = await invoke('browser_navigation_state', { tabId }).then(
+      (state) => state as { loading?: boolean; url?: string },
+      () => null,
     )
+    const loading = navigation?.loading === true
+    // A page whose load failed has no web address: there is no document to drive, and waiting
+    // out the attempts only ended in "did not answer", which named nothing.
+    if (
+      !loading &&
+      typeof navigation?.url === 'string' &&
+      !WEB_ADDRESS.test(navigation.url) &&
+      WEB_ADDRESS.test(tab.url)
+    )
+      throw new Error(
+        `The page did not load: ${tab.url} did not respond (the address may not exist, or the connection failed).`,
+      )
     // Named rather than `typeof state`: at the cast, `state` is narrowed to its `null`
     // initializer, so `typeof state` would type every answer as `null`.
     let state: PageState | null = null
