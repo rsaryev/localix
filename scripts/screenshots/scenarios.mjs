@@ -54,6 +54,8 @@ export async function compose(page, scenario) {
     return (await import('./agent-management.mjs')).composeAgentManagement(page)
   if (['kanban-board', 'kanban-conversation'].includes(scenario))
     return (await import('./kanban-workbenches.mjs')).composeKanban(page, scenario)
+  if (scenario === 'visual-feedback')
+    return (await import('./visual-feedback.mjs')).composeVisualFeedback(page)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).composeSessionDrag(page)
   if (scenario === 'party-route') return (await import('./party-route.mjs')).composePartyRoute(page)

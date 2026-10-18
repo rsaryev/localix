@@ -4,8 +4,8 @@ import { mediaSrc } from '@/shared/lib/mediaSrc'
 import type { PendingAttachment } from '@/shared/lib/attachment-policy'
 import type { MessageAttachment } from '@/shared/api/contracts'
 
-/** The id a surface-provided piece of evidence is staged under — removable like any other file. */
-const SEED_ID = 'comment-evidence'
+/** The ids surface-provided evidence is staged under — removable like any other file. */
+const SEED_PREFIX = 'comment-evidence'
 
 /**
  * One comment being written: its note and everything it will carry.
@@ -30,13 +30,15 @@ export interface CommentDraft {
 }
 
 export function useCommentDraft(
-  /** Evidence the surface captured with the target, if any. */
-  seed: MessageAttachment | undefined,
+  /** Evidence the surface captured with the target, or everything an edited comment carries. */
+  seed: MessageAttachment | readonly MessageAttachment[] | undefined,
   /** Identity of the thing being commented on — a new one starts a clean draft. */
   target: string | undefined,
+  /** The note a draft starts from: an existing comment's, when it is reopened to edit. */
+  initialNote = '',
 ): CommentDraft {
-  const [note, setNote] = useState('')
-  const [seedDropped, setSeedDropped] = useState(false)
+  const [note, setNote] = useState(initialNote)
+  const [dropped, setDropped] = useState<ReadonlySet<string>>(() => new Set())
   const {
     attachments: added,
     gate,
@@ -46,19 +48,24 @@ export function useCommentDraft(
   } = useComposerAttachments(undefined)
 
   const attachments = useMemo(() => {
-    if (!seed || seedDropped) return added
-    // Only a media attachment has bytes to preview; anything else shows as a plain chip.
-    const previewUrl =
-      seed.kind === 'image' || seed.kind === 'video' || seed.kind === 'audio'
-        ? mediaSrc(seed)
-        : undefined
-    return [{ id: SEED_ID, attachment: seed, ...(previewUrl ? { previewUrl } : {}) }, ...added]
-  }, [added, seed, seedDropped])
+    const seeds: readonly MessageAttachment[] = !seed ? [] : 'kind' in seed ? [seed] : seed
+    const offered = seeds.flatMap((attachment, i) => {
+      const id = i === 0 ? SEED_PREFIX : `${SEED_PREFIX}-${i}`
+      if (dropped.has(id)) return []
+      // Only a media attachment has bytes to preview; anything else shows as a plain chip.
+      const previewUrl =
+        attachment.kind === 'image' || attachment.kind === 'video' || attachment.kind === 'audio'
+          ? mediaSrc(attachment)
+          : undefined
+      return [{ id, attachment, ...(previewUrl ? { previewUrl } : {}) }]
+    })
+    return [...offered, ...added]
+  }, [added, seed, dropped])
 
   const remove = useCallback(
     (id: string) => {
-      if (id === SEED_ID) {
-        setSeedDropped(true)
+      if (id.startsWith(SEED_PREFIX)) {
+        setDropped((prev) => new Set(prev).add(id))
         return
       }
       removeAttachment(id)
@@ -68,7 +75,7 @@ export function useCommentDraft(
 
   const reset = useCallback(() => {
     setNote('')
-    setSeedDropped(false)
+    setDropped(new Set())
     clearAttachments()
   }, [clearAttachments])
 
@@ -78,6 +85,7 @@ export function useCommentDraft(
   if (seenTarget !== target) {
     setSeenTarget(target)
     reset()
+    setNote(initialNote)
   }
 
   return {

@@ -87,7 +87,9 @@ export function AnchoredCommentCard({
   return (
     <div
       ref={ref}
-      className="pointer-events-auto absolute z-(--z-overlay)"
+      // The overlay recipe's entrance (fade + settle from 95%, `--dur-instant`), for a card that
+      // mounts rather than opening through a Radix state.
+      className="pointer-events-auto absolute z-(--z-overlay) origin-top animate-in fade-in-0 zoom-in-95 duration-(--dur-instant)"
       style={{ left, top, width: cardWidth }}
     >
       <CommentDraftCard

@@ -11,7 +11,7 @@
 export const VF_BRIDGE_KEY = '__vf' as const
 
 /** Protocol version — bumped if the message shape changes incompatibly. */
-export const VF_PROTOCOL_VERSION = 1
+export const VF_PROTOCOL_VERSION = 2
 
 /** Attribute the probe stamps on its own overlay nodes so hit-testing skips them. */
 export const VF_IGNORE_ATTR = 'data-vf-ignore'
@@ -230,12 +230,21 @@ export interface VfCommandResult {
 /** Why a command failed — drives the agent's recovery (re-snapshot, dismiss overlay…). */
 export type VfCommandErrorCode = 'not_found' | 'intercepted' | 'bad_request' | 'failed'
 
+/** A comment's mark on the page: the element, and what pointing at it shows. */
+export interface VfMark {
+  id: string
+  selector: string
+  /** Its number in the comment list. */
+  index: number
+  note: string
+}
+
 /** Host → probe commands. */
 export type VfHostMessage =
   | { type: 'set-mode'; mode: VfMode }
   | { type: 'theme'; vars: Record<string, string> }
-  /** Highlight every element that already carries a comment (re-sent after a reload). */
-  | { type: 'set-marks'; selectors: string[] }
+  /** Tint every element that already carries a comment (re-sent after a reload). */
+  | { type: 'set-marks'; marks: VfMark[] }
   /** Scroll a saved comment's element into view + highlight it (clicked in the list). */
   | { type: 'reveal'; selector: string }
   /** Agent-driven control: execute one command and reply with `command-result`. */
@@ -260,4 +269,6 @@ export type VfProbeMessage =
     }
   /** Esc pressed inside the preview (iframe had focus) → the host leaves comment mode. */
   | { type: 'escape' }
+  /** A commented element was clicked while commenting: the host opens that comment. */
+  | { type: 'open-mark'; id: string; rect: VfRect }
   | { type: 'error'; message: string }

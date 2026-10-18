@@ -56,3 +56,51 @@ test('rejects stale channels and settles pending commands when the frame changes
     host.remove()
   }
 })
+
+test('a comment being written survives a page reload, and a commented element opens its comment', async () => {
+  const { act, useRef } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { useVisualFeedback } = await import('./useVisualFeedback')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  let bridge: VisualFeedbackBridge | undefined
+  const posted: Array<Record<string, unknown>> = []
+  function Harness() {
+    const frame = useRef<HTMLIFrameElement>(null)
+    bridge = useVisualFeedback(frame)
+    return <iframe ref={frame} title="Preview reload test" />
+  }
+  const emit = async (channel: string, payload: Record<string, unknown>) => {
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          source: host.querySelector('iframe')!.contentWindow,
+          data: { ...payload, [VF_BRIDGE_KEY]: channel },
+        }),
+      )
+    })
+  }
+  const rect = { x: 0, y: 0, width: 10, height: 10 }
+  const capture = { kind: 'element', summary: 'Title', selector: '#title', rect }
+  try {
+    await act(async () => root.render(<Harness />))
+    const frame = host.querySelector('iframe')!.contentWindow!
+    frame.postMessage = ((message: Record<string, unknown>) => posted.push(message)) as never
+    await emit('one', { type: 'ready', channelId: 'one', version: VF_PROTOCOL_VERSION })
+    await emit('one', { type: 'selected', capture })
+    expect(bridge!.pending?.capture.selector).toBe('#title')
+
+    await act(async () => bridge!.notifyReload())
+    await emit('two', { type: 'ready', channelId: 'two', version: VF_PROTOCOL_VERSION })
+    expect(bridge!.pending?.capture.selector).toBe('#title')
+    expect(posted.at(-1)).toMatchObject({ type: 'reveal', selector: '#title' })
+
+    await emit('two', { type: 'open-mark', id: 'c1', rect })
+    expect(bridge!.openedMark).toEqual({ id: 'c1', rect })
+    expect(bridge!.pending).toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})

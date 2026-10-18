@@ -9,6 +9,8 @@ export async function verifyEvidence(page, scenario) {
     return (await import('./agent-management.mjs')).verifyAgentManagement(page)
   if (['kanban-board', 'kanban-conversation'].includes(scenario))
     return (await import('./kanban-workbenches.mjs')).verifyKanban(page, scenario)
+  if (scenario === 'visual-feedback')
+    return (await import('./visual-feedback.mjs')).verifyVisualFeedback(page)
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).verifySessionDrag(page)
   if (scenario === 'party-route') return (await import('./party-route.mjs')).verifyPartyRoute(page)

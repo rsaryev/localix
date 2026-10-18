@@ -7,6 +7,7 @@ import type {
   VfCommandResult,
   VfHostMessage,
   VfImage,
+  VfMark,
   VfMode,
   VfProbeMessage,
   VfRect,
@@ -33,7 +34,10 @@ export interface VisualFeedbackBridge {
   setMode: (mode: VfMode) => void
   clearPending: () => void
   /** Quietly highlight every element that already carries a comment (re-sent on reconnect). */
-  setMarks: (selectors: string[]) => void
+  setMarks: (marks: VfMark[]) => void
+  /** A commented element the person clicked in the page: the comment to open, and where. */
+  openedMark: { id: string; rect: VfRect } | null
+  clearOpenedMark: () => void
   /** Call on iframe `load`: the old probe is gone until the new page handshakes. */
   notifyReload: () => void
   /** Scroll a saved comment's element into view + highlight it (clicked in the list). */
@@ -60,13 +64,19 @@ export function useVisualFeedback(
   const [connected, setConnected] = useState(false)
   const [mode, setModeState] = useState<VfMode>('off')
   const [pending, setPending] = useState<{ capture: VfCapture; rect: VfRect } | null>(null)
+  const [openedMark, setOpenedMark] = useState<{ id: string; rect: VfRect } | null>(null)
+  // The pick being written about, readable by the mount-once handler: a reloaded page re-finds it.
+  const pendingRef = useRef(pending)
+  useEffect(() => {
+    pendingRef.current = pending
+  })
 
   // Mirror state into refs so the mount-once message handler reads current values
   // without re-subscribing.
   const channelRef = useRef<string | null>(null)
   const modeRef = useRef<VfMode>('off')
   // Kept so a reloaded page gets its comment highlights back on the next handshake.
-  const marksRef = useRef<string[]>([])
+  const marksRef = useRef<VfMark[]>([])
   // In-flight agent commands awaiting a `command-result`, keyed by commandId.
   const pendingCommandsRef = useRef<Map<string, (reply: VfCommandReply) => void>>(new Map())
   // Callers blocked in whenConnected(), resolved on the next `ready` handshake.
@@ -116,10 +126,10 @@ export function useVisualFeedback(
           // engaged the proxy and is waiting for the probe to handshake).
           for (const w of connectionWaitersRef.current) w(true)
           connectionWaitersRef.current = []
-          // A fresh `ready` (probe sends it once per page load) means a reloaded
-          // page — drop any in-progress composer anchored to the old DOM, whose
-          // element is gone and whose rect would never update again.
-          setPending(null)
+          // A fresh `ready` (probe sends it once per page load) means a reloaded page. A comment
+          // being written survives it: dev servers reload on every save, and dropping the card
+          // threw away what the person was typing. The new page is asked to find the element
+          // again, so the card follows it; where it is gone, the card stays where it was.
           // The page that reported a probe problem is gone with the reload.
           if (probeProblemRef.current) {
             probeProblemRef.current = false
@@ -128,20 +138,30 @@ export function useVisualFeedback(
           // Re-sync everything for this (possibly reloaded) probe.
           post({ type: 'theme', vars: toVfVars(getThemeVars()) })
           post({ type: 'set-mode', mode: modeRef.current })
-          post({ type: 'set-marks', selectors: marksRef.current })
+          post({ type: 'set-marks', marks: marksRef.current })
+          const writing = pendingRef.current?.capture.selector
+          if (writing) post({ type: 'reveal', selector: writing })
           break
         }
         case 'selected':
+          setOpenedMark(null)
           setPending({ capture: data.capture, rect: data.capture.rect })
           break
         case 'active-rect':
-          setPending((p) => (p && data.rect ? { ...p, rect: data.rect } : p))
+          if (!data.rect) break
+          setPending((p) => (p ? { ...p, rect: data.rect! } : p))
+          setOpenedMark((m) => (m ? { ...m, rect: data.rect! } : m))
+          break
+        case 'open-mark':
+          setPending(null)
+          setOpenedMark({ id: data.id, rect: data.rect })
           break
         case 'escape':
           // Esc from inside the preview → leave comment mode (clears any pending pick).
           modeRef.current = 'off'
           setModeState('off')
           setPending(null)
+          setOpenedMark(null)
           post({ type: 'set-mode', mode: 'off' })
           break
         case 'command-result': {
@@ -199,7 +219,10 @@ export function useVisualFeedback(
     (next: VfMode) => {
       setModeState(next)
       modeRef.current = next
-      if (next === 'off') setPending(null)
+      if (next === 'off') {
+        setPending(null)
+        setOpenedMark(null)
+      }
       post({ type: 'set-mode', mode: next })
     },
     [post],
@@ -207,13 +230,16 @@ export function useVisualFeedback(
 
   const clearPending = useCallback(() => {
     setPending(null)
+    setOpenedMark(null)
     post({ type: 'clear' })
   }, [post])
 
+  const clearOpenedMark = clearPending
+
   const setMarks = useCallback(
-    (selectors: string[]) => {
-      marksRef.current = selectors
-      post({ type: 'set-marks', selectors })
+    (marks: VfMark[]) => {
+      marksRef.current = marks
+      post({ type: 'set-marks', marks })
     },
     [post],
   )
@@ -226,7 +252,7 @@ export function useVisualFeedback(
   const notifyReload = useCallback(() => {
     channelRef.current = null
     setConnected(false)
-    setPending(null)
+    // A comment being written outlives the navigation; the next `ready` re-finds its element.
     for (const resolve of pendingCommandsRef.current.values()) {
       resolve({ ok: false, notEngaged: true, error: 'The preview navigated before replying.' })
     }
@@ -310,6 +336,8 @@ export function useVisualFeedback(
     setMode,
     clearPending,
     setMarks,
+    openedMark,
+    clearOpenedMark,
     notifyReload,
     reveal,
     runCommand,
@@ -319,14 +347,16 @@ export function useVisualFeedback(
 }
 
 /**
- * Map host theme vars → the probe's collision-free `--vf-*` namespace. We forward
- * ONLY the overlay accent (derived from the app's primary), never the generic
- * palette — setting `--primary`/`--background` on the previewed page would restyle
- * the user's app, which we must not do.
+ * Map host theme vars → the probe's collision-free `--vf-*` namespace. We forward ONLY the
+ * overlay's own colours, never the generic palette — setting `--primary`/`--background` on the
+ * previewed page would restyle the user's app, which we must not do.
+ *
+ * The accent is the app's info hue, not its primary. The app is monochrome: `--primary` is near
+ * white in the dark theme and near black in the light one, and the page under the overlay is
+ * neither app's — a white outline and a 12% white tint vanished on a light page entirely. A
+ * chromatic accent reads on either, and the dark/light halo keeps its edge crisp on both.
  */
 function toVfVars(host: Record<string, string>): Record<string, string> {
-  const out: Record<string, string> = {}
-  if (host['--primary']) out['--vf-accent'] = host['--primary']
-  if (host['--primary-foreground']) out['--vf-accent-foreground'] = host['--primary-foreground']
-  return out
+  const accent = host['--status-info'] || host['--primary']
+  return accent ? { '--vf-accent': accent, '--vf-accent-foreground': '#fff' } : {}
 }

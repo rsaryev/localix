@@ -55,6 +55,11 @@ export const capturePlan = {
     purpose: 'Live local preview after a real release-review action beside the seeded conversation',
     scenario: 'browser-preview',
   },
+  'browser/visual-feedback-comment': {
+    guide: 'features/visual-feedback.md',
+    purpose: 'A preview comment reopened from its element, numbered, to edit or delete',
+    scenario: 'visual-feedback',
+  },
   'context/composer-context': {
     guide: 'features/workspace.md',
     purpose: 'Automatic open-file and terminal context with source labels and estimated sizes',

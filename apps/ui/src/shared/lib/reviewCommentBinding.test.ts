@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { useComments } from '@localixai/plugin-sdk/ui/comments'
 import {
-  forgetSubmittedReviewComments,
+  forgetReviewComments,
   reviewCommentBinding,
   reviewCommentToken,
 } from './reviewCommentBinding'
@@ -36,13 +36,13 @@ describe('reviewCommentBinding', () => {
  * a message the mark it left is describing feedback already given. Leaving it invited the same
  * note twice and left a reviewed page looking permanently un-actioned.
  */
-describe('forgetSubmittedReviewComments', () => {
+describe('forgetReviewComments', () => {
   test('drops exactly the comments whose tokens were sent', () => {
     const store = useComments.getState()
     const sent = store.add('preview:s1', { kind: 'element', targetId: 'a', label: 'A' }, 'one')
     const kept = store.add('preview:s1', { kind: 'element', targetId: 'b', label: 'B' }, 'two')
 
-    forgetSubmittedReviewComments([reviewCommentToken(sent)])
+    forgetReviewComments([reviewCommentToken(sent)])
 
     expect(useComments.getState().comments.map((c) => c.id)).toEqual([kept])
   })
@@ -52,7 +52,7 @@ describe('forgetSubmittedReviewComments', () => {
     store.add('preview:s1', { kind: 'element', targetId: 'a', label: 'A' }, 'one')
 
     // A file link and a snippet that no comment owns both ride the same submitted-keys list.
-    forgetSubmittedReviewComments(['@file:src/a.ts', '@snippet:some-other-thing'])
+    forgetReviewComments(['@file:src/a.ts', '@snippet:some-other-thing'])
 
     expect(useComments.getState().comments).toHaveLength(1)
   })

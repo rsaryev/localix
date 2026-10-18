@@ -90,3 +90,36 @@ describe('a sweep across the window', () => {
     expect(picks[0]?.rect).toEqual({ x: 100, y: 100, width: 300, height: 200 })
   })
 })
+
+describe('pressing while commenting', () => {
+  test('a click on a commented element opens its comment instead of a new pick', () => {
+    const opened: Element[] = []
+    const picker = createPicker({
+      onHover() {},
+      onMarquee() {},
+      onPick(event) {
+        picks.push(event)
+      },
+      onPickMarked(el) {
+        opened.push(el)
+        return true
+      },
+    })
+    picker.setEnabled(true)
+    picks = []
+    dispatch('pointerdown', 50, 50)
+    dispatch('pointerup', 50, 50)
+    picker.destroy()
+    expect(opened).toHaveLength(1)
+    // The picker from beforeEach still takes the press; this one declined to start a pick.
+    expect(picks.every((pick) => pick.kind === 'element')).toBe(true)
+  })
+
+  test('the page hears none of the press under the picker', () => {
+    let heard = 0
+    const target = document.getElementById('prose')!
+    target.addEventListener('mousedown', () => (heard += 1))
+    target.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true }))
+    expect(heard).toBe(0)
+  })
+})

@@ -40,6 +40,8 @@ function makeBridge(overrides: Partial<VisualFeedbackBridge> = {}): VisualFeedba
     setMode() {},
     clearPending() {},
     setMarks() {},
+    openedMark: null,
+    clearOpenedMark() {},
     notifyReload() {},
     reveal() {},
     async runCommand() {
@@ -145,5 +147,152 @@ test('a text quick-add attaches on the spot — the words already are the commen
     off()
     await act(async () => root.unmount())
     host.remove()
+  }
+})
+
+/** Mount the layer with a bridge, collecting what reaches the composer. */
+async function mountLayer(bridge: VisualFeedbackBridge, sessionId: string) {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { VisualFeedbackLayer } = await import('./VisualFeedbackLayer')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const inserts: ComposerInsert[] = []
+  const off = composerBus.subscribe((insert) => {
+    inserts.push(insert)
+    return true
+  })
+  const render = (next: VisualFeedbackBridge) =>
+    act(async () =>
+      root.render(
+        <VisualFeedbackLayer bridge={next} sessionId={sessionId} url="http://localhost:5173" />,
+      ),
+    )
+  await render(bridge)
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  return {
+    host,
+    inserts,
+    render,
+    act,
+    async type(text: string) {
+      const field = host.querySelector('textarea')!
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
+      await act(async () => {
+        setter.call(field, text)
+        field.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+    },
+    async submit() {
+      await act(async () => {
+        host
+          .querySelector('form')
+          ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      })
+    },
+    async cleanup() {
+      off()
+      await act(async () => root.unmount())
+      host.remove()
+    },
+  }
+}
+
+const scope = (sessionId: string) => `preview:${sessionId}:http://localhost:5173`
+
+function seedComment(sessionId: string, body: string): string {
+  return useComments.getState().add(
+    scope(sessionId),
+    {
+      kind: 'element',
+      targetId: '#title',
+      label: 'Title',
+      locator: { selector: '#title', capture, assets: [] },
+    },
+    body,
+  )
+}
+
+test('a commented element reopens its comment, and saving refreshes the same chip', async () => {
+  const id = seedComment('preview-edit', 'Too small')
+  let closed = 0
+  const view = await mountLayer(
+    makeBridge({
+      pending: null,
+      openedMark: { id, rect: capture.rect },
+      clearOpenedMark() {
+        closed++
+      },
+    }),
+    'preview-edit',
+  )
+  try {
+    expect(view.host.querySelector('textarea')?.value).toBe('Too small')
+    expect(view.host.textContent).toContain('#1')
+    await view.type('Make it 32px')
+    await view.submit()
+    expect(useComments.getState().comments[0]?.body).toBe('Make it 32px')
+    const token = view.inserts[0]?.bindings?.[0]
+    expect(token?.kind === 'context' ? token.target.token : undefined).toBe(`@snippet:${id}`)
+    expect(closed).toBe(1)
+  } finally {
+    await view.cleanup()
+  }
+})
+
+test('deleting a reopened comment withdraws it and its chip', async () => {
+  const id = seedComment('preview-delete', 'Wrong colour')
+  const retracted: string[] = []
+  const offRetract = composerBus.subscribeRetract((retract) => {
+    retracted.push(...retract.tokens)
+    return true
+  })
+  const view = await mountLayer(
+    makeBridge({ pending: null, openedMark: { id, rect: capture.rect } }),
+    'preview-delete',
+  )
+  try {
+    const remove = view.host.querySelector<HTMLButtonElement>('[aria-label="Delete comment"]')
+    await view.act(async () => remove?.click())
+    expect(useComments.getState().comments).toHaveLength(0)
+    expect(retracted).toEqual([`@snippet:${id}`])
+  } finally {
+    offRetract()
+    await view.cleanup()
+  }
+})
+
+test('a pick the page cannot render still attaches, and says it has no screenshot', async () => {
+  const view = await mountLayer(
+    makeBridge({
+      async captureElement() {
+        return null
+      },
+    }),
+    'preview-no-shot',
+  )
+  try {
+    expect(view.host.textContent).toContain('No screenshot')
+    await view.submit()
+    expect(view.inserts).toHaveLength(1)
+  } finally {
+    await view.cleanup()
+  }
+})
+
+test('every comment is marked on the page with its number and note', async () => {
+  const id = seedComment('preview-marks', 'Align left')
+  const marks: unknown[] = []
+  const view = await mountLayer(
+    makeBridge({ pending: null, setMarks: (next) => marks.push(next) }),
+    'preview-marks',
+  )
+  try {
+    expect(marks.at(-1)).toEqual([{ id, selector: '#title', index: 1, note: 'Align left' }])
+  } finally {
+    await view.cleanup()
   }
 })

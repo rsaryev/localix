@@ -20,6 +20,7 @@
  * resets whenever the ref disappears from the prompt).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { forgetReviewComments } from '@/shared/lib/reviewCommentBinding'
 import type { ContextRefExpansion, MessageContextBinding } from '@/shared/api/contracts'
 import {
   parseContextRefs,
@@ -219,6 +220,8 @@ export function useContextRefs(
         prev.some((r) => r.key === key) ? prev.filter((r) => r.key !== key) : prev,
       )
       setExcluded((prev) => (prev.has(key) ? prev : new Set(prev).add(key)))
+      // A review comment's chip IS the comment: removing it withdraws the comment too.
+      forgetReviewComments([key])
     },
     [autoRefs, dismissByKey],
   )
@@ -239,13 +242,14 @@ export function useContextRefs(
     // publish the same target, and dismissing just the winning ref would let the
     // shadowed tab immediately reappear.
     dismissAllAutoRefs(autos)
+    forgetReviewComments(pinnedRefs.map((ref) => ref.key))
     setPinnedRefs((prev) => (prev.length === 0 ? prev : []))
     setExcluded((prev) => {
       const next = new Set(prev)
       for (const ref of refs) next.add(ref.key)
       return next.size === prev.size ? prev : next
     })
-  }, [autos, refs])
+  }, [autos, refs, pinnedRefs])
 
   const clearPinnedRefs = useCallback((keys?: readonly string[]) => {
     if (keys?.length === 0) return

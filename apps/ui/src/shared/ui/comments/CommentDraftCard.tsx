@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react'
-import { Paperclip } from 'lucide-react'
+import { Paperclip, Trash2 } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
+import { IconButton } from '@localixai/kit/icon-button'
 import { Textarea } from '@localixai/kit/textarea'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { matchesChord, withChordHint } from '@/shared/lib/keybindings'
@@ -30,10 +31,14 @@ export function CommentDraftCard({
   submitLabel = 'Add comment',
   /**
    * Whether a comment with no words is worth attaching. True where the target itself carries the
-   * message — a picked element arrives with its screenshot, and "look at this" is a complete
-   * observation; false for prose, where a quote with no note says nothing.
+   * message — a picked element arrives with its selector, source and (when the page could render
+   * it) a screenshot, and "look at this" is a complete observation; false for prose, where a quote
+   * with no note says nothing. It used to require the screenshot too, so an element the page could
+   * not render left a card whose only button stayed disabled.
    */
   allowEmpty = false,
+  /** Withdraw an existing comment — offered when one is reopened to edit. */
+  onDelete,
   /**
    * Whether the comment can carry files. False where the comment is stored somewhere that keeps
    * only text (a plan's server-side comments): offering Attach there would accept a file and then
@@ -54,13 +59,14 @@ export function CommentDraftCard({
   allowEmpty?: boolean
   attachments?: boolean
   busy?: boolean
+  onDelete?: () => void
   className?: string
   /** Placement is the surface's business — this only forwards it. */
   style?: React.CSSProperties
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasEvidence = draft.attachments.length > 0
-  const canSubmit = !busy && (draft.note.trim().length > 0 || (allowEmpty && hasEvidence))
+  const canSubmit = !busy && (draft.note.trim().length > 0 || allowEmpty)
 
   return (
     <form
@@ -113,21 +119,34 @@ export function CommentDraftCard({
         }}
       />
       <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1.5">
-        {attachments ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            title="Attach files or images"
-            className="text-text-soft hover:text-foreground"
-          >
-            <Paperclip data-icon="inline-start" aria-hidden /> Attach
-          </Button>
-        ) : (
-          <span />
-        )}
-        <div role="group" aria-label="New comment actions" className="flex items-center gap-1.5">
+        <div className="flex items-center gap-0.5">
+          {onDelete && (
+            <IconButton
+              size="sm"
+              onClick={onDelete}
+              aria-label="Delete comment"
+              tooltip="Delete comment"
+              className="text-text-soft hover:text-status-error"
+            >
+              <Trash2 className="size-3.5" />
+            </IconButton>
+          )}
+          {attachments ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach files or images"
+              className="text-text-soft hover:text-foreground"
+            >
+              <Paperclip data-icon="inline-start" aria-hidden /> Attach
+            </Button>
+          ) : (
+            <span />
+          )}
+        </div>
+        <div role="group" aria-label="Comment actions" className="flex items-center gap-1.5">
           <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
             Cancel
           </Button>

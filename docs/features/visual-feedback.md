@@ -15,15 +15,16 @@ attachment or a model run._
 
 ## What you can do
 
-| Action                   | Mechanism                                                                                           | Boundary                                                                    |
-| ------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Comment on one element   | Click an element to capture its selector, DOM path, text, role, styles, rectangle, and source hint. | Source resolution and the automatic JPEG are best-effort.                   |
-| Add selected text        | Select page text in Visual Feedback mode; it attaches as context immediately.                       | Text quick-add creates no screenshot.                                       |
-| Mark empty space         | Drag a rectangle to capture its viewport coordinates.                                               | A region has no element selector or source location.                        |
-| Mark several elements    | Drag across elements to retain leaf selectors and discard wrapping ancestors.                       | The capture records one primary element plus a bounded member list.         |
-| Comment on the screen    | Sweep across most of the window to capture the whole page instead of a part of it.                  | A sweep that wide discards any text selection it crossed on the way.        |
-| Collect review comments  | Each observation becomes one attached context item in the composer, with an optional screenshot.    | Attaching does not send a turn. Commented elements carry a quiet page tint. |
-| Check responsive layouts | Pin the iframe to a named CSS viewport size and rotate its width and height.                        | This changes layout size only, not browser or device identity.              |
+| Action                   | Mechanism                                                                                           | Boundary                                                                           |
+| ------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Comment on one element   | Click an element to capture its selector, DOM path, text, role, styles, rectangle, and source hint. | Source resolution and the automatic JPEG are best-effort.                          |
+| Add selected text        | Select page text in Visual Feedback mode; it attaches as context immediately.                       | Text quick-add creates no screenshot.                                              |
+| Mark empty space         | Drag a rectangle to capture its viewport coordinates.                                               | A region has no element selector or source location.                               |
+| Mark several elements    | Drag across elements to retain leaf selectors and discard wrapping ancestors.                       | The capture records one primary element plus a bounded member list.                |
+| Comment on the screen    | Sweep across most of the window to capture the whole page instead of a part of it.                  | A sweep that wide discards any text selection it crossed on the way.               |
+| Collect review comments  | Each observation becomes one attached context item in the composer, with an optional screenshot.    | Attaching does not send a turn. Commented elements carry a quiet page tint.        |
+| Revisit a comment        | Point at a tinted element to read its number and note; click it to edit or delete the comment.      | Removing its context item withdraws the comment and its tint; sending clears both. |
+| Check responsive layouts | Pin the iframe to a named CSS viewport size and rotate its width and height.                        | This changes layout size only, not browser or device identity.                     |
 
 ### Let the agent drive the preview
 
@@ -88,7 +89,13 @@ proxy that forwards page requests, assets, and WebSocket traffic.
 
 The probe and host UI establish a per-load `postMessage` channel. Turning Visual Feedback on sends a
 mode change through that channel, so it does not reload a connected preview. A page reload creates a
-new handshake and clears any composer anchored to the old DOM.
+new handshake; a comment being written survives it, and the new page is asked to find its element
+again so the card follows it.
+
+While commenting, the page receives no presses: clicks, mouse and touch presses stop at the probe,
+so a control under the pointer is picked rather than operated. The probe draws in its own shadow
+root above the page and re-measures on scroll, resize and DOM changes, so outlines and tints follow
+layout shifts and re-rendered elements.
 
 ### Capture and source resolution
 

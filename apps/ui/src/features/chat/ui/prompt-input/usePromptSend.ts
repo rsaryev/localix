@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 
 import type { MessageBinding } from '@/shared/api/contracts'
 import { toast } from '@/shared/lib/notify'
-import { forgetSubmittedReviewComments } from '@/shared/lib/reviewCommentBinding'
+import { forgetReviewComments } from '@/shared/lib/reviewCommentBinding'
 
 import type { useContextRefs } from '../../model/useContextRefs'
 
@@ -67,7 +67,7 @@ export function usePromptSend(input: {
         ctxRefs.clearPinnedRefs(submittedPinnedKeys)
         // A review comment that has been delivered stops marking its target: the commented
         // sentence and the preview element are no longer awaiting feedback.
-        forgetSubmittedReviewComments(submittedPinnedKeys)
+        forgetReviewComments(submittedPinnedKeys)
       } finally {
         preparingSendRef.current = false
         setPreparingSend(false)

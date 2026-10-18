@@ -51,12 +51,13 @@ export function reviewCommentToken(token: string): string {
 /**
  * Forget every comment the given tokens belong to — the other half of the cycle.
  *
- * A comment exists to be delivered. Once its context has ridden out with a message, the mark it
- * left on a commented sentence or the preview element is describing feedback that has already been
- * given: leaving it there invites the same note twice, and makes a page look unreviewed-but-
- * marked forever. The composer knows exactly which tokens went, so it says so here.
+ * A comment and its chip are one thing in two places. Once its context has ridden out with a
+ * message, the mark it left on a commented sentence or the preview element describes feedback
+ * already given: leaving it invites the same note twice. And when the person removes the chip by
+ * hand, the comment is withdrawn: the tint it left on the page used to stay, pointing at a
+ * comment that no longer went anywhere.
  */
-export function forgetSubmittedReviewComments(tokens: readonly string[]): void {
+export function forgetReviewComments(tokens: readonly string[]): void {
   if (tokens.length === 0) return
   const ids = new Set(
     tokens.filter((token) => token.startsWith(PREFIX)).map((token) => token.slice(PREFIX.length)),

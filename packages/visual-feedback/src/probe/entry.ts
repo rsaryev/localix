@@ -9,7 +9,6 @@
  */
 
 import { VF_IGNORE_ATTR, VF_PROTOCOL_VERSION, type VfMode } from '../protocol/index'
-import { getViewportRect } from '../core/geometry'
 import { motionSafeScrollBehavior } from '../core/motion'
 import { createResolverChain } from '../source/index'
 import { createOverlay } from '../overlay/index'
@@ -53,11 +52,24 @@ function mount(): () => void {
   const resolveSource = createResolverChain({
     servedFile: cfg.servedFile,
   })
-  const overlay = createOverlay()
   const transport = createProbeTransport(window.parent)
+  // The composer follows the selection: its rect goes to the host whenever it moves, and once as
+  // null when the selection goes, rather than on every scroll whether anything is selected or not.
+  let sentRect = 'null'
+  const overlay = createOverlay({
+    onLayout: () => {
+      const rect = overlay.activeRect()
+      const key = JSON.stringify(rect)
+      if (key === sentRect) return
+      sentRect = key
+      transport.send({ type: 'active-rect', rect })
+    },
+  })
+  const cursor = commentCursor()
 
   let mode: VfMode = 'off'
-  let activeEl: Element | null = null
+  // The element just picked: hovering it again would stack the hover outline on the selection.
+  let picked: Element | null = null
 
   // Agent-control state: a ref registry (eN → element, rebuilt each snapshot), a
   // console ring buffer, and the last interactive tree for action diffs. A FRESH
@@ -94,7 +106,10 @@ function mount(): () => void {
   const picker = createPicker({
     // Hover is purely visual: the probe draws the outline in-page; the host doesn't
     // need per-move messages.
-    onHover: (el) => overlay.setHover(el),
+    onHover: (el) => {
+      if (el !== picked) picked = null
+      overlay.setHover(picked ? null : el)
+    },
     onMarquee: (rect) => overlay.setMarquee(rect),
     onPick: (ev) => {
       let capture
@@ -111,35 +126,31 @@ function mount(): () => void {
         return
       }
       if (!capture) return
-      activeEl = ev.element
+      picked = ev.element
       overlay.setHover(null)
-      overlay.setActive(ev.element)
+      overlay.setActive(
+        ev.page
+          ? null
+          : ev.kind === 'area' || ev.kind === 'multi'
+            ? { area: capture.rect, members: ev.members }
+            : ev.element
+              ? { element: ev.element }
+              : null,
+      )
       transport.send({ type: 'selected', capture })
     },
+    // A click on something already commented opens that comment rather than starting a second
+    // one on the same element.
+    onPickMarked: (el) => {
+      const mark = overlay.markOf(el)
+      if (!mark) return false
+      picked = el
+      overlay.setHover(null)
+      overlay.setActive({ element: el })
+      transport.send({ type: 'open-mark', id: mark.id, rect: overlay.activeRect()! })
+      return true
+    },
   })
-
-  // Re-report the active element rect + refresh overlay on scroll/resize. Use the
-  // NATIVE rAF captured at mount, not the global one — the page's own scripts may
-  // patch the global rAF later, and the overlay's repositioning (pins/active-box)
-  // must not depend on what the page does with it.
-  const rawRAF = window.requestAnimationFrame.bind(window)
-  let raf = 0
-  const onViewportChange = () => {
-    if (raf) return
-    raf = rawRAF(() => {
-      raf = 0
-      overlay.refresh()
-      transport.send({
-        type: 'active-rect',
-        rect: activeEl?.isConnected ? getViewportRect(activeEl) : null,
-      })
-    })
-  }
-  // capture:true catches scrolls in any subtree (scroll doesn't bubble); passive:true
-  // since we never preventDefault — keeps the page's scroll smooth.
-  const scrollOpts = { capture: true, passive: true } as const
-  window.addEventListener('scroll', onViewportChange, scrollOpts)
-  window.addEventListener('resize', onViewportChange, { passive: true })
 
   // Esc while commenting (iframe has focus) → tell the host to leave comment mode,
   // the standard exit for an inspect/pick mode. (A focused host composer catches Esc
@@ -160,18 +171,18 @@ function mount(): () => void {
       case 'set-mode':
         mode = msg.mode
         picker.setEnabled(mode === 'comment')
-        document.documentElement.style.cursor = mode === 'comment' ? 'crosshair' : ''
+        cursor.set(mode === 'comment')
         if (mode === 'off') {
           overlay.setActive(null)
           overlay.setHover(null)
-          activeEl = null
+          picked = null
         }
         break
       case 'theme':
         applyThemeVars(msg.vars)
         break
       case 'set-marks':
-        overlay.setMarks(msg.selectors)
+        overlay.setMarks(msg.marks ?? [])
         break
       case 'reveal': {
         let el: Element | null = null
@@ -182,8 +193,8 @@ function mount(): () => void {
         }
         if (el) {
           el.scrollIntoView({ behavior: motionSafeScrollBehavior('smooth'), block: 'center' })
-          activeEl = el
-          overlay.setActive(el) // highlight the commented element
+          overlay.setActive({ element: el })
+          overlay.pulse()
         }
         break
       }
@@ -214,7 +225,7 @@ function mount(): () => void {
       }
       case 'clear':
         overlay.setActive(null)
-        activeEl = null
+        picked = null
         break
     }
   })
@@ -229,10 +240,24 @@ function mount(): () => void {
     actuate.console.uninstall()
     resourceErrors.uninstall()
     dialogs.uninstall()
-    window.removeEventListener('scroll', onViewportChange, scrollOpts)
-    window.removeEventListener('resize', onViewportChange)
     window.removeEventListener('keydown', onKeyDown, true)
-    document.documentElement.style.cursor = ''
+    cursor.set(false)
+  }
+}
+
+/**
+ * The crosshair while commenting, as a stylesheet: set inline on `<html>` it lost to every element
+ * that declares its own cursor — every link and button on the page.
+ */
+function commentCursor(): { set(on: boolean): void } {
+  const style = document.createElement('style')
+  style.setAttribute(VF_IGNORE_ATTR, '')
+  style.textContent = '*, *::before, *::after { cursor: crosshair !important; }'
+  return {
+    set(on) {
+      if (on && !style.isConnected) document.head?.appendChild(style)
+      if (!on) style.remove()
+    },
   }
 }
 

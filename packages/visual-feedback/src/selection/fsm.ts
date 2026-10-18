@@ -44,6 +44,8 @@ export interface PickerCallbacks {
   onHover(el: Element | null): void
   onMarquee(rect: { x: number; y: number; width: number; height: number } | null): void
   onPick(ev: PickEvent): void
+  /** A plain click on an element: true when it was taken as opening that element's comment. */
+  onPickMarked?(el: Element): boolean
 }
 
 function isOwn(target: EventTarget | null): boolean {
@@ -51,11 +53,14 @@ function isOwn(target: EventTarget | null): boolean {
   return !!el?.closest?.(`[${VF_IGNORE_ATTR}]`)
 }
 
-/** True if the event's real target (composedPath head) is part of the probe overlay. */
+/**
+ * True if the event's real target is part of the probe overlay. The whole path is read: the
+ * overlay draws inside a shadow root, and `closest` stops at its boundary.
+ */
 function eventHitsOverlay(e: Event): boolean {
-  const path = e.composedPath?.()
-  const head = path?.[0] as Element | undefined
-  return isOwn(head ?? (e.target as Element | null))
+  const path = e.composedPath?.() ?? []
+  if (path.some((node) => (node as Element).hasAttribute?.(VF_IGNORE_ATTR))) return true
+  return isOwn(e.target)
 }
 
 function collectMarqueeTargets(
@@ -125,7 +130,9 @@ export function createPicker(cb: PickerCallbacks): Picker {
   }
 
   const onDown = (e: PointerEvent) => {
-    if (!enabled || e.button !== 0 || eventHitsOverlay(e)) return
+    if (!enabled || eventHitsOverlay(e)) return
+    e.stopPropagation()
+    if (e.button !== 0) return
     downX = e.clientX
     downY = e.clientY
     dragging = false
@@ -134,6 +141,7 @@ export function createPicker(cb: PickerCallbacks): Picker {
 
   const onUp = (e: PointerEvent) => {
     if (!enabled) return
+    if (!eventHitsOverlay(e)) e.stopPropagation()
     const wasDragging = dragging
     const startEl = downOnEl
     downOnEl = null
@@ -186,7 +194,7 @@ export function createPicker(cb: PickerCallbacks): Picker {
 
     // Otherwise a plain click → single element.
     const el = startEl && !isOwn(startEl) ? startEl : deepElementFromPoint(e.clientX, e.clientY)
-    if (el && !isOwn(el)) cb.onPick({ kind: 'element', element: el })
+    if (el && !isOwn(el) && !cb.onPickMarked?.(el)) cb.onPick({ kind: 'element', element: el })
   }
 
   // In comment mode, swallow native clicks on links/buttons so picking doesn't navigate.
@@ -196,10 +204,20 @@ export function createPicker(cb: PickerCallbacks): Picker {
     e.stopPropagation()
   }
 
+  // While commenting, the page hears none of the press itself either. Only the click was
+  // swallowed, so a menu that opens on mousedown, a drag handle or a press-and-hold still fired
+  // under the picker. Propagation stops at the document; the default stays, so text can still be
+  // selected and quoted.
+  const onPressCapture = (e: Event) => {
+    if (enabled && !eventHitsOverlay(e)) e.stopPropagation()
+  }
+  const PRESS_EVENTS = ['mousedown', 'mouseup', 'dblclick', 'auxclick', 'touchstart', 'touchend']
+
   document.addEventListener('pointermove', onMove, true)
   document.addEventListener('pointerdown', onDown, true)
   document.addEventListener('pointerup', onUp, true)
   document.addEventListener('click', onClickCapture, true)
+  for (const type of PRESS_EVENTS) document.addEventListener(type, onPressCapture, true)
 
   return {
     setEnabled(on) {
@@ -216,6 +234,7 @@ export function createPicker(cb: PickerCallbacks): Picker {
       document.removeEventListener('pointerdown', onDown, true)
       document.removeEventListener('pointerup', onUp, true)
       document.removeEventListener('click', onClickCapture, true)
+      for (const type of PRESS_EVENTS) document.removeEventListener(type, onPressCapture, true)
     },
   }
 }

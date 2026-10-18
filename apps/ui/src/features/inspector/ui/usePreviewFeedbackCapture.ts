@@ -6,16 +6,23 @@ import { toast } from '@/shared/lib/notify'
 import { previewPickMode } from '../model/previewSelection'
 import type { VisualFeedbackBridge } from './useVisualFeedback'
 
+export interface PreviewFeedbackCapture {
+  capture: VfCapture | undefined
+  ready: boolean
+  asset?: MessageAttachment
+  /** The screenshot could not be taken; the comment goes without one. */
+  failed?: boolean
+}
+
 /** Capture identity survives rect updates and note edits; bridge identity does not. */
 export function usePreviewFeedbackCapture(
   capture: VfCapture | undefined,
   captureElement: VisualFeedbackBridge['captureElement'],
-): { capture: VfCapture | undefined; ready: boolean; asset?: MessageAttachment } {
-  const [result, setResult] = useState<{
-    capture: VfCapture | undefined
-    ready: boolean
-    asset?: MessageAttachment
-  }>({ capture: undefined, ready: false })
+): PreviewFeedbackCapture {
+  const [result, setResult] = useState<PreviewFeedbackCapture>({
+    capture: undefined,
+    ready: false,
+  })
   useEffect(() => {
     setResult({ capture, ready: false })
     if (!capture?.selector || previewPickMode(capture) === 'quick-add') {
@@ -29,6 +36,9 @@ export function usePreviewFeedbackCapture(
         setResult({
           capture,
           ready: true,
+          // The page answered without a picture (an element it could not render): said in the
+          // card, so "no screenshot" is not mistaken for one still coming.
+          ...(img ? {} : { failed: true }),
           ...(img
             ? {
                 asset: {
@@ -44,7 +54,7 @@ export function usePreviewFeedbackCapture(
       })
       .catch((error: unknown) => {
         if (!cancelled) {
-          setResult({ capture, ready: true })
+          setResult({ capture, ready: true, failed: true })
           toast.warning('Could not capture a screenshot of the selection', {
             description: [errorMessage(error, ''), 'The selected context was attached without it.']
               .filter(Boolean)

@@ -1,223 +1,240 @@
 /**
- * In-page overlay — draws the hover outline, the active-selection box, the drag
- * marquee, and persistent numbered markers for saved comments. Rendered with
- * vanilla DOM in a `position:fixed` root so it tracks scroll natively. Every node
- * carries `data-vf-ignore` so hit-testing and the host both skip it.
+ * In-page overlay — the hover outline, the selected element or area, the drag marquee, and a
+ * quiet tint on everything that already carries a comment.
  *
- * Colors are driven by CSS variables forwarded from the host theme (so the
- * overlay matches the app), with sensible fallbacks.
+ * It lives in a shadow root under one `position:fixed` host (see `styles.ts` for why), and it
+ * FOLLOWS what it outlines: a scroll, a resize or any change to the page's DOM schedules one
+ * re-measure on the next frame. Positions used to be re-read on scroll and resize only, so an
+ * image that loaded, an accordion that opened or a framework re-render left the outline on empty
+ * space and the comment tints on the wrong elements.
+ *
+ * Every node is unreachable to the picker: the host carries `data-vf-ignore` and is
+ * `pointer-events:none`, and rasterized screenshots skip it.
  */
 
-import { VF_IGNORE_ATTR } from '../protocol/index'
+import { VF_IGNORE_ATTR, type VfRect } from '../protocol/index'
 import { getViewportRect } from '../core/geometry'
 import { getElementSummary } from '../core/identify'
+import { OVERLAY_CSS } from './styles'
 
-const Z = 2147483000 // just under max — above app content, the probe owns the top
-
-function div(parent: Element, style: Partial<CSSStyleDeclaration>): HTMLDivElement {
-  const d = document.createElement('div')
-  d.setAttribute(VF_IGNORE_ATTR, '')
-  Object.assign(d.style, style)
-  parent.appendChild(d)
-  return d
+/** A comment's mark: which element it is on, and what the person sees when they point at it. */
+export interface OverlayMark {
+  id: string
+  selector: string
+  /** Its number in the comment list, as the composer shows it. */
+  index: number
+  note: string
 }
+
+/** What is selected: one element, or a dragged area (optionally with the elements it caught). */
+export type OverlayTarget = { element: Element } | { area: VfRect; members?: Element[] }
 
 export interface Overlay {
   setHover(el: Element | null): void
-  setActive(el: Element | null): void
-  setMarquee(rect: { x: number; y: number; width: number; height: number } | null): void
-  /** Quiet highlight over every element that already carries a comment. */
-  setMarks(selectors: string[]): void
-  /** Recompute positions of active box + marks (call on scroll/resize). */
+  setActive(target: OverlayTarget | null): void
+  /** The selected target's current viewport rect, or null. */
+  activeRect(): VfRect | null
+  setMarquee(rect: VfRect | null): void
+  setMarks(marks: OverlayMark[]): void
+  /** The mark on exactly this element, if one is there. */
+  markOf(el: Element): OverlayMark | null
+  /** Draw the eye to the selected target (a comment revealed from the host). */
+  pulse(): void
   refresh(): void
   destroy(): void
 }
 
-export function createOverlay(): Overlay {
+const Z = '2147483647'
+
+export function createOverlay(options: { onLayout?: () => void } = {}): Overlay {
+  const host = document.createElement('div')
+  host.setAttribute(VF_IGNORE_ATTR, '')
+  host.setAttribute('aria-hidden', 'true')
+  // Inline, so no page rule can move or hide the host itself.
+  host.style.cssText = `all:initial;position:fixed;inset:0;pointer-events:none;z-index:${Z};`
+  const shadow = host.attachShadow({ mode: 'open' })
+  const style = document.createElement('style')
+  style.textContent = OVERLAY_CSS
   const root = document.createElement('div')
-  root.setAttribute(VF_IGNORE_ATTR, '')
-  Object.assign(root.style, {
-    position: 'fixed',
-    inset: '0',
-    pointerEvents: 'none',
-    zIndex: String(Z),
-    contain: 'strict',
-  } as Partial<CSSStyleDeclaration>)
-  document.documentElement.appendChild(root)
+  root.className = 'root'
+  shadow.append(style, root)
+  document.documentElement.appendChild(host)
 
-  const accent = 'var(--vf-accent, var(--primary, #4c8bf5))'
-
-  // A contrast halo that sandwiches the accent border between a DARK and a LIGHT
-  // hairline, so the outline stays crisp and legible on ANY background — including a
-  // pure-white page (where a white-only ring vanished) and dark/busy ones. The dark
-  // ring carries on light backgrounds, the light ring on dark. `EASE` keeps motion smooth.
-  const EASE = 'cubic-bezier(.4, 0, .2, 1)'
-  const HOVER_HALO = '0 0 0 1px rgba(0,0,0,.45), 0 0 0 2.5px rgba(255,255,255,.6)'
-  const ACTIVE_HALO = '0 0 0 1.5px rgba(0,0,0,.5), 0 0 0 3.5px rgba(255,255,255,.65)'
-  const hoverBox = div(root, {
-    position: 'fixed',
-    display: 'none',
-    boxSizing: 'border-box',
-    border: `2px solid ${accent}`,
-    borderRadius: '4px',
-    background: 'color-mix(in oklch, var(--vf-accent, #4c8bf5) 8%, transparent)',
-    boxShadow: `${HOVER_HALO}, 0 2px 12px -3px color-mix(in oklch, var(--vf-accent, #4c8bf5) 55%, transparent)`,
-    transition: `left 70ms ${EASE}, top 70ms ${EASE}, width 70ms ${EASE}, height 70ms ${EASE}`,
-    pointerEvents: 'none',
-  })
-  const activeBox = div(root, {
-    position: 'fixed',
-    display: 'none',
-    boxSizing: 'border-box',
-    border: `2px solid ${accent}`,
-    borderRadius: '4px',
-    // Dark + light halo → accent ring → soft glow: pops off the page on any background.
-    boxShadow: `${ACTIVE_HALO}, 0 0 0 5px color-mix(in oklch, var(--vf-accent, #4c8bf5) 30%, transparent), 0 6px 20px -6px color-mix(in oklch, var(--vf-accent, #4c8bf5) 60%, transparent)`,
-    pointerEvents: 'none',
-  })
-  const marquee = div(root, {
-    position: 'fixed',
-    display: 'none',
-    boxSizing: 'border-box',
-    border: `1.5px dashed ${accent}`,
-    background: 'color-mix(in oklch, var(--vf-accent, #4c8bf5) 8%, transparent)',
-    pointerEvents: 'none',
-  })
-  // Small label showing what the cursor is over (so you know what you'll pick).
-  const hoverLabel = div(root, {
-    position: 'fixed',
-    display: 'none',
-    maxWidth: '240px',
-    padding: '3px 7px',
-    borderRadius: '5px',
-    font: '500 11px/1.4 ui-sans-serif, system-ui, sans-serif',
-    color: 'var(--vf-accent-foreground, #fff)',
-    background: accent,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    boxShadow: '0 0 0 1px rgba(255,255,255,.18), 0 2px 8px rgba(0,0,0,.32)',
-    pointerEvents: 'none',
-  })
-  const markerLayer = div(root, { position: 'fixed', inset: '0', pointerEvents: 'none' })
+  const node = (className: string) => {
+    const el = document.createElement('div')
+    el.className = className
+    root.appendChild(el)
+    return el
+  }
+  const markLayer = node('marks')
+  const hoverBox = node('box hover')
+  const activeBox = node('box active')
+  const marquee = node('box marquee')
+  const label = node('label')
 
   let hoverEl: Element | null = null
-  let activeEl: Element | null = null
-  // Resolved once per setMarks (selector → element + mark node); refresh() only
-  // repositions them, so scrolling doesn't re-query the DOM or rebuild nodes.
-  let marks: Array<{ el: Element; mark: HTMLDivElement }> = []
+  let active: (OverlayTarget & { scroll: { x: number; y: number } }) | null = null
+  let marks: Array<OverlayMark & { el: Element | null; box: HTMLDivElement }> = []
 
-  function place(box: HTMLDivElement, el: Element | null) {
-    if (!el || !el.isConnected) {
-      box.style.display = 'none'
+  function show(box: HTMLElement, rect: VfRect | null) {
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      box.removeAttribute('data-on')
       return
     }
+    box.setAttribute('data-on', '')
+    box.style.transform = `translate3d(${rect.x}px, ${rect.y}px, 0)`
+    box.style.width = `${rect.width}px`
+    box.style.height = `${rect.height}px`
+  }
+
+  const liveRect = (el: Element | null) => (el?.isConnected ? getViewportRect(el) : null)
+
+  function resolve(selector: string): Element | null {
+    try {
+      return selector ? document.querySelector(selector) : null
+    } catch {
+      return null
+    }
+  }
+
+  function currentActiveRect(): VfRect | null {
+    if (!active) return null
+    if ('element' in active) return liveRect(active.element)
+    const members = active.members?.filter((el) => el.isConnected) ?? []
+    if (members.length) return union(members.map(getViewportRect))
+    // An area is a place on the page: it scrolls with the document.
+    return {
+      ...active.area,
+      x: active.area.x - (window.scrollX - active.scroll.x),
+      y: active.area.y - (window.scrollY - active.scroll.y),
+    }
+  }
+
+  function placeLabel() {
+    const rect = liveRect(hoverEl)
+    if (!rect) {
+      label.removeAttribute('data-on')
+      return
+    }
+    label.setAttribute('data-on', '')
+    const width = label.offsetWidth
+    const x = Math.max(4, Math.min(rect.x, window.innerWidth - width - 4))
+    const above = rect.y - 22
+    const below = rect.y + rect.height + 4
+    // Above the element; below it near the top edge; inside its top when it fills the screen.
+    const y =
+      above >= 4 ? above : below + 20 <= window.innerHeight ? below : Math.max(4, rect.y + 4)
+    label.style.transform = `translate3d(${x}px, ${y}px, 0)`
+  }
+
+  function measure() {
+    show(hoverBox, liveRect(hoverEl))
+    placeLabel()
+    show(activeBox, currentActiveRect())
+    for (const mark of marks) {
+      // A re-render replaces the element the selector named: find the new one.
+      if (!mark.el?.isConnected) mark.el = resolve(mark.selector)
+      show(mark.box, liveRect(mark.el))
+    }
+    options.onLayout?.()
+  }
+
+  // One re-measure per frame, through the rAF the page had when the probe mounted: a page that
+  // patches `requestAnimationFrame` later must not decide when the overlay moves.
+  const raf = window.requestAnimationFrame.bind(window)
+  let scheduled = 0
+  const schedule = () => {
+    if (!scheduled) scheduled = raf(() => ((scheduled = 0), measure()))
+  }
+  const mutations = new MutationObserver(() => {
+    if (hoverEl || active || marks.length) schedule()
+  })
+  mutations.observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    characterData: true,
+  })
+  const listen = { capture: true, passive: true } as const
+  window.addEventListener('scroll', schedule, listen)
+  window.addEventListener('resize', schedule, { passive: true })
+
+  function describe(el: Element): void {
+    const mark = overlay.markOf(el)
+    label.textContent = ''
+    if (mark) {
+      const number = document.createElement('b')
+      number.textContent = `#${mark.index}`
+      label.append(number, mark.note ? `“${mark.note}”` : getElementSummary(el))
+      hoverBox.setAttribute('data-marked', '')
+      return
+    }
+    hoverBox.removeAttribute('data-marked')
     const r = getViewportRect(el)
-    box.style.display = 'block'
-    box.style.left = `${r.x}px`
-    box.style.top = `${r.y}px`
-    box.style.width = `${r.width}px`
-    box.style.height = `${r.height}px`
+    label.textContent = `${getElementSummary(el)} · ${Math.round(r.width)}×${Math.round(r.height)}`
   }
 
-  function positionHover() {
-    place(hoverBox, hoverEl)
-    if (!hoverEl || !hoverEl.isConnected) {
-      hoverLabel.style.display = 'none'
-      return
-    }
-    const r = getViewportRect(hoverEl)
-    hoverLabel.style.display = 'block'
-    hoverLabel.style.left = `${Math.max(2, r.x)}px`
-    const above = r.y - 20
-    hoverLabel.style.top = `${above < 2 ? r.y + r.height + 4 : above}px` // flip below near the top edge
-  }
-
-  /**
-   * Draw what already carries a comment.
-   *
-   * A numbered pin per comment was the first attempt and it was too loud: circles floating over
-   * the very layout being reviewed, each shouting an index nobody needed. This is the plan's
-   * idiom instead — the marked thing is tinted, the way a commented sentence is highlighted —
-   * so the page still reads as the page.
-   */
-  function buildMarks(selectors: string[]) {
-    markerLayer.textContent = ''
-    marks = []
-    for (const selector of selectors) {
-      let el: Element | null = null
-      try {
-        el = selector ? document.querySelector(selector) : null
-      } catch {
-        el = null
-      }
-      if (!el) continue
-      const mark = div(markerLayer, {
-        position: 'fixed',
-        boxSizing: 'border-box',
-        borderRadius: '3px',
-        border: `1px solid color-mix(in oklch, ${accent} 55%, transparent)`,
-        background: `color-mix(in oklch, ${accent} 12%, transparent)`,
-        pointerEvents: 'none',
-      })
-      marks.push({ el, mark })
-    }
-    positionMarks()
-  }
-
-  function positionMarks() {
-    for (const { el, mark } of marks) {
-      if (!el.isConnected) {
-        mark.style.display = 'none'
-        continue
-      }
-      const r = getViewportRect(el)
-      mark.style.display = 'block'
-      mark.style.left = `${r.x}px`
-      mark.style.top = `${r.y}px`
-      mark.style.width = `${r.width}px`
-      mark.style.height = `${r.height}px`
-    }
-  }
-
-  return {
+  const overlay: Overlay = {
     setHover(el) {
-      // The FSM calls this on every pointermove; skip the recompute when the hovered
-      // element hasn't changed (scroll/resize repositioning goes through refresh()).
       if (el === hoverEl) return
       hoverEl = el
-      if (el?.isConnected) {
-        // Summary + size (devtools-style), so you see what and how big before picking.
-        const r = getViewportRect(el)
-        hoverLabel.textContent = `${getElementSummary(el)} · ${Math.round(r.width)}×${Math.round(r.height)}`
+      if (el?.isConnected) describe(el)
+      measure()
+    },
+    setActive(target) {
+      active = target ? { ...target, scroll: { x: window.scrollX, y: window.scrollY } } : null
+      activeBox.removeAttribute('data-pulse')
+      activeBox.removeAttribute('data-enter')
+      if (active) {
+        void activeBox.offsetWidth // restart the entrance for a new selection
+        activeBox.setAttribute('data-enter', '')
       }
-      positionHover()
+      measure()
     },
-    setActive(el) {
-      activeEl = el
-      place(activeBox, el)
-    },
+    activeRect: currentActiveRect,
     setMarquee(rect) {
-      if (!rect) {
-        marquee.style.display = 'none'
-        return
+      show(marquee, rect)
+    },
+    setMarks(next) {
+      markLayer.textContent = ''
+      marks = next.map((mark) => {
+        const box = document.createElement('div')
+        box.className = 'box mark'
+        markLayer.appendChild(box)
+        return { ...mark, el: resolve(mark.selector), box }
+      })
+      if (hoverEl?.isConnected) describe(hoverEl)
+      measure()
+    },
+    markOf(el) {
+      for (let i = marks.length - 1; i >= 0; i--) {
+        const mark = marks[i]!
+        if (!mark.el?.isConnected) mark.el = resolve(mark.selector)
+        if (mark.el === el) return mark
       }
-      marquee.style.display = 'block'
-      marquee.style.left = `${rect.x}px`
-      marquee.style.top = `${rect.y}px`
-      marquee.style.width = `${rect.width}px`
-      marquee.style.height = `${rect.height}px`
+      return null
     },
-    setMarks(selectors) {
-      buildMarks(selectors)
+    pulse() {
+      if (!active) return
+      activeBox.removeAttribute('data-pulse')
+      void activeBox.offsetWidth
+      activeBox.setAttribute('data-pulse', '')
     },
-    refresh() {
-      positionHover()
-      place(activeBox, activeEl)
-      positionMarks()
-    },
+    refresh: measure,
     destroy() {
-      root.remove()
+      mutations.disconnect()
+      window.removeEventListener('scroll', schedule, listen)
+      window.removeEventListener('resize', schedule)
+      host.remove()
     },
   }
+  return overlay
+}
+
+function union(rects: VfRect[]): VfRect {
+  const left = Math.min(...rects.map((r) => r.x))
+  const top = Math.min(...rects.map((r) => r.y))
+  const right = Math.max(...rects.map((r) => r.x + r.width))
+  const bottom = Math.max(...rects.map((r) => r.y + r.height))
+  return { x: left, y: top, width: right - left, height: bottom - top }
 }
