@@ -7,12 +7,14 @@
  * Chat owns these rows, so it owns how they are read; the index only pages through them.
  * Hidden rows — wake prompts (`isInternal`), UI-only notices and system notices — are returned
  * with empty text, which the index treats as "nothing to embed" (and deletes a stale vector).
- * Change capture is the outbox triggers in the `semantic_index` migration; a key `read` does
+ * Changes arrive through the core change feed (`chatSemanticTargets` below); a key `read` does
  * not return was deleted.
  */
 import { sql, type Kysely, type RawBuilder } from 'kysely'
 import type { SemanticSource, SemanticSourceItem } from '@localixai/plugin-sdk/backend'
 import type { AppDatabase } from '../../db/types'
+import type { CoreRefs } from '../changes/core-entities'
+import type { SemanticTargets } from '../embeddings/targets'
 
 export const MESSAGES_COLLECTION = 'chat.messages'
 export const SESSIONS_COLLECTION = 'chat.sessions'
@@ -21,6 +23,7 @@ interface MessageRow {
   rowid: number
   id: string
   user_id: string
+  session_id: string
   project_id: string | null
   text: string
   hidden: number
@@ -38,11 +41,13 @@ const toMessageItem = (row: MessageRow): SemanticSourceItem => ({
   userId: row.user_id,
   text: row.hidden ? '' : row.text,
   scope: row.project_id,
+  // A chat's deletion takes its messages (`CORE_CASCADES`).
+  parent: row.session_id,
 })
 
 export function createMessagesSemanticSource(db: Kysely<AppDatabase>): SemanticSource {
   const select = (where: RawBuilder<unknown>, limit: number | null) => sql<MessageRow>`
-    SELECT m.rowid AS rowid, m.id, m.user_id, s.project_id, m.search_text AS text, ${HIDDEN} AS hidden
+    SELECT m.rowid AS rowid, m.id, m.user_id, m.session_id, s.project_id, m.search_text AS text, ${HIDDEN} AS hidden
     FROM agent_messages AS m
     JOIN agent_sessions AS s ON s.id = m.session_id
     WHERE m.role IN ('user', 'assistant') AND ${where}
@@ -51,6 +56,7 @@ export function createMessagesSemanticSource(db: Kysely<AppDatabase>): SemanticS
   `
   return {
     collection: MESSAGES_COLLECTION,
+    label: 'Messages',
     version: 1,
     async scan(cursor, limit) {
       const after = cursor ? Number(cursor) : 0
@@ -74,6 +80,25 @@ export function createMessagesSemanticSource(db: Kysely<AppDatabase>): SemanticS
   }
 }
 
+/**
+ * The message a chat's run finalizes when it leaves `running`: its latest assistant message,
+ * whose search text the run/session terminal triggers set. Null when it has none.
+ */
+export async function finalizedMessageOf(
+  db: Kysely<AppDatabase>,
+  sessionId: string,
+): Promise<string | null> {
+  const row = await db
+    .selectFrom('agent_messages')
+    .select('id')
+    .where('session_id', '=', sessionId)
+    .where('role', '=', 'assistant')
+    .orderBy('sequence', 'desc')
+    .limit(1)
+    .executeTakeFirst()
+  return row?.id ?? null
+}
+
 export function createSessionsSemanticSource(db: Kysely<AppDatabase>): SemanticSource {
   const base = () =>
     db.selectFrom('agent_sessions').select(['id', 'user_id', 'project_id', 'title'])
@@ -91,6 +116,7 @@ export function createSessionsSemanticSource(db: Kysely<AppDatabase>): SemanticS
   })
   return {
     collection: SESSIONS_COLLECTION,
+    label: 'Chats',
     version: 1,
     async scan(cursor, limit) {
       let q = base().orderBy('id').limit(limit)
@@ -112,5 +138,26 @@ export function createSessionsSemanticSource(db: Kysely<AppDatabase>): SemanticS
         .executeTakeFirst()
       return Number(row?.n ?? 0)
     },
+  }
+}
+
+/**
+ * Chat's targets in the semantic index: a chat is its title's item, a message its own. A chat's
+ * change may also have finalized its last message (a run leaving `running`), so that message is
+ * re-read with it; a chat's deletion takes its messages' vectors (they name it as their parent).
+ */
+export function chatSemanticTargets(
+  db: Kysely<AppDatabase>,
+): Pick<SemanticTargets<CoreRefs>, 'chat.session' | 'chat.message'> {
+  return {
+    'chat.session': {
+      collection: SESSIONS_COLLECTION,
+      keyOf: (ref) => ref.id,
+      related: async (ref) => {
+        const finalized = await finalizedMessageOf(db, ref.id)
+        return finalized ? [{ collection: MESSAGES_COLLECTION, key: finalized }] : []
+      },
+    },
+    'chat.message': { collection: MESSAGES_COLLECTION, keyOf: (ref) => ref.id },
   }
 }

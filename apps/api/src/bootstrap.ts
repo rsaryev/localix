@@ -1,3 +1,4 @@
+import { startSemantic } from './bootstrap/semantic-changes'
 import type { WebSocketHandler } from 'bun'
 import { websocket } from './features/realtime/ws'
 import { MAX_MESSAGE_BINDINGS_TOTAL_BYTES } from './features/chat/contracts'
@@ -301,10 +302,7 @@ export async function bootstrap(
       startBackendHost()
       startEngines()
       startOpsTimers(signal)
-      void localModels
-        .boot()
-        .then(() => semanticService.boot())
-        .catch((err: unknown) => logger.warn({ event: 'semantic.boot_failed', error: String(err) }))
+      startSemantic({ db, logger, localModels, semanticService, changes: infra.changes, signal })
     })
   }
   return {
@@ -337,6 +335,7 @@ export async function bootstrap(
     backendHost,
     // For shutdown: each subsystem's `onShutdown` (a stateful one tears its children down).
     subsystemRegistry,
+    changes: infra.changes, // For shutdown: its consumers stop before what they write to.
     // For shutdown: stops the indexer, then the local model server process.
     semanticService,
     localModels,

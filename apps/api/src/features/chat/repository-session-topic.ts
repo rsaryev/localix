@@ -8,6 +8,7 @@ import {
 } from '../../db'
 import type { SessionTopic } from '../agent-core/session-topic'
 import type { SessionRecord } from './repository-types'
+import { recordSessionChanges } from './session-changes'
 
 export function createSessionTopicQueries(db: Kysely<AppDatabase>) {
   return {
@@ -27,6 +28,7 @@ export function createSessionTopicQueries(db: Kysely<AppDatabase>) {
         .where('user_id', '=', userId)
         .where('id', '=', id)
         .execute()
+      await recordSessionChanges(db, userId, [id])
     },
 
     /** Commit the shared topic and its history boundary together, or change neither. */
@@ -74,6 +76,7 @@ export function createSessionTopicQueries(db: Kysely<AppDatabase>) {
             )
             .executeTakeFirst()
           if (Number(result.numUpdatedRows) !== 1) return false
+          await recordSessionChanges(trx, userId, [id])
           if (!boundary || !host) return true
           await trx
             .updateTable('agent_messages')

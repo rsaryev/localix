@@ -5,6 +5,7 @@ import type { PersistedMessage } from './contracts'
 import type { SessionLeafOps } from './repository-tree'
 import { syncMessageUsage } from './repository-usage-sync'
 import type { MessageParseCache } from './message-parse-cache'
+import { recordCoreChanges } from '../changes/core-entities'
 
 export function createMessageWriteQueries(
   db: Kysely<AppDatabase>,
@@ -83,6 +84,14 @@ export function createMessageWriteQueries(
         parentId = input.id
       }
       await setLeaf(sessionId, parentId, trx)
+      await recordCoreChanges(
+        trx,
+        inputs.map((input) => ({
+          entity: 'chat.message' as const,
+          op: 'upserted' as const,
+          ref: { id: input.id, userId: input.userId, sessionId },
+        })),
+      )
     })
   }
   return {
@@ -197,6 +206,14 @@ export function createMessageWriteQueries(
           .where('session_id', '=', sessionId)
           .where('id', 'in', [...toDelete])
           .execute()
+        await recordCoreChanges(
+          trx,
+          [...toDelete].map((messageId) => ({
+            entity: 'chat.message' as const,
+            op: 'deleted' as const,
+            ref: { id: messageId, userId, sessionId },
+          })),
+        )
         // Repair the tree leaf if it was deleted (e.g. rollback drops the tail):
         // point it at the highest-sequence remaining message, or null when empty.
         const leaf = await currentLeaf(sessionId, trx)

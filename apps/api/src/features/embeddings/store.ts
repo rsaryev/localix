@@ -15,6 +15,7 @@ export interface StoredItem {
   key: string
   userId: string
   scope: string | null
+  parent: string | null
   hash: string
   chunks: StoredChunk[]
 }
@@ -117,8 +118,13 @@ export function createSemanticStore(db: Kysely<AppDatabase>) {
       await db.deleteFrom('semantic_items').where('collection', '=', name).execute()
     },
 
-    async listCollections(): Promise<CollectionState[]> {
-      const names = await db.selectFrom('semantic_collections').select('name').execute()
+    /** Every collection's state, or only `only`'s. */
+    async listCollections(only?: string): Promise<CollectionState[]> {
+      const names = await db
+        .selectFrom('semantic_collections')
+        .select('name')
+        .$if(only !== undefined, (q) => q.where('name', '=', only!))
+        .execute()
       const out: CollectionState[] = []
       for (const { name } of names) {
         const state = await this.readCollection(name)
@@ -162,6 +168,7 @@ export function createSemanticStore(db: Kysely<AppDatabase>) {
               chunk,
               user_id: item.userId,
               scope: item.scope,
+              parent: item.parent,
               content_hash: item.hash,
               excerpt: stored.excerpt,
               vector: stored.vector,
@@ -183,6 +190,18 @@ export function createSemanticStore(db: Kysely<AppDatabase>) {
           .where('item_key', 'in', batch)
           .execute()
       }
+    },
+
+    /** The keys stored under `parent` (its deletion removes them). */
+    async keysUnder(collection: string, parent: string): Promise<string[]> {
+      const rows = await db
+        .selectFrom('semantic_items')
+        .select('item_key')
+        .distinct()
+        .where('collection', '=', collection)
+        .where('parent', '=', parent)
+        .execute()
+      return rows.map((r) => r.item_key)
     },
 
     /** Every stored key of a collection (reconcile: what a full scan did not see is gone). */

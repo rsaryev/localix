@@ -16,7 +16,7 @@ import type { ParticipantRow } from './ModelTaskColumn'
 import { initialPickerTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
-import { modelKindForTarget, useEmbeddingWorkload } from './useEmbeddingWorkload'
+import { useEmbeddingWorkload, useWorkloadModels } from './useEmbeddingWorkload'
 import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'
 import { ResetRouteRow, WorkloadOffOverlay } from './ModelBrowserParts'
@@ -78,20 +78,8 @@ export function ModelBrowser({
     [participants, sessionConnectionId],
   )
 
-  const {
-    providers: allProviders,
-    oauthProviderIds,
-    oauthProviders,
-    modelsOfKind,
-  } = useModelsCatalog()
-  // Each workload lists the kind of model it runs on: chat, or embedding for semantic search.
-  const taskKind = modelKindForTarget(taskKey)
-  const models = taskKind === 'chat' ? chatModels : modelsOfKind(taskKind)
-  // Every row's label resolves against its own kind, whichever workload is open.
-  const allModels = useMemo(
-    () => [...chatModels, ...modelsOfKind('embedding')],
-    [chatModels, modelsOfKind],
-  )
+  const { providers: allProviders, oauthProviderIds, oauthProviders } = useModelsCatalog()
+  const { taskKind, models, allModels } = useWorkloadModels(chatModels, taskKey)
 
   const { providerCounts, oauthIdSet, unconnectedProviders, filteredUnconnectedProviders } =
     useModelSelectProviders({

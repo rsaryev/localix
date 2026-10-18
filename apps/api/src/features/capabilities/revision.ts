@@ -55,7 +55,28 @@ export function capabilityRevision(): number {
  */
 export function bumpCapabilityRevision(): number {
   revision += 1
+  for (const listener of listeners) {
+    try {
+      listener(revision)
+    } catch {
+      /* a listener never fails the mutation that bumped */
+    }
+  }
   return revision
+}
+
+const listeners = new Set<(revision: number) => void>()
+
+/**
+ * Run `listener` on every bump — the one place every capability mutation passes (skills,
+ * plugins, MCP servers, agents), so a consumer of "capabilities changed" needs no hook of its
+ * own in each owner. Returns the unsubscribe.
+ */
+export function onCapabilityRevision(listener: (revision: number) => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
 }
 
 /**

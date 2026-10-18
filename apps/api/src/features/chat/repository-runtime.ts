@@ -1,3 +1,4 @@
+import { recordSessionChanges } from './session-changes'
 import { sql, type Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
@@ -56,11 +57,16 @@ export function createRuntimeQueries(db: Kysely<AppDatabase>) {
      * see `takeInterruptedRuns` in db/migrator.ts.
      */
     async markRunningSessionsStopped(): Promise<void> {
-      await db
-        .updateTable('agent_sessions')
-        .set({ runtime_status: 'stopped' })
-        .where('runtime_status', '=', 'running')
-        .execute()
+      await db.transaction().execute(async (trx) => {
+        const stopped = await trx
+          .updateTable('agent_sessions')
+          .set({ runtime_status: 'stopped' })
+          .where('runtime_status', '=', 'running')
+          .returning(['id', 'user_id'])
+          .execute()
+        // Leaving `running` finalizes each one's last message (the search projection's trigger).
+        for (const row of stopped) await recordSessionChanges(trx, row.user_id, [row.id])
+      })
     },
 
     /**

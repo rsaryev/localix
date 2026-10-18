@@ -2,6 +2,7 @@ import type { Transaction } from 'kysely'
 
 import type { AppDatabase } from '../../db/types'
 import { retrySqliteBusy } from '../../db/seq'
+import { createBatchWriter } from '../../lib/batch-writer'
 import type { ClientJournalOp, InboxChange, RaiseFact, SettleFact } from './contracts'
 import { isPending, isRepeatOf, raise, read, repeat, settle } from './projection'
 import { createNotificationRepository } from './repository'
@@ -14,11 +15,10 @@ import { pruneJournal } from './retention'
  * THE ONE WRITE PATH into the notification journal, for the server and the client alike.
  *
  * A producer records a fact at the seam where it became final and moves on: `record` and `settle`
- * never await, never throw, and never slow a run down. Facts queue in-process and ONE writer drains
- * them in order, a batch per transaction, so concurrent producers cannot interleave half a
- * transition and SQLite sees one writer instead of many. The window a crash can lose is the batch
- * in flight; facts with a durable source of their own are re-recorded at boot, and the projection's
- * idempotency (`projection.ts`) makes that safe.
+ * never await, never throw, and never slow a run down. The shared single writer
+ * (`lib/batch-writer.ts`) commits them in order, a batch per transaction. The window a crash can
+ * lose is the batch in flight; facts with a durable source of their own are re-recorded at boot,
+ * and the projection's idempotency (`projection.ts`) makes that safe.
  *
  * A committed change is published to the user's live subscribers (the socket) AFTER commit, so a
  * client never sees a row the database does not hold.
@@ -47,18 +47,6 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
   const now = deps.now ?? Date.now
   const redact = deps.redact ?? ((_userId: string, text: string) => text)
   const listeners = new Map<string, Set<(change: InboxChange) => void>>()
-  let queue: Job[] = []
-  let draining: Promise<void> | null = null
-  let closed = false
-  // A failure report must never become the failure: during a teardown race the logger itself can
-  // already be gone, and a throw here would escape the drain as an unhandled rejection.
-  const log = (event: string, detail: Record<string, unknown>) => {
-    try {
-      deps.log?.(event, detail)
-    } catch {
-      /* the log sink is closed; the job's own `fail` still reports */
-    }
-  }
 
   const scrub = (userId: string, fact: RaiseFact): RaiseFact => ({
     ...fact,
@@ -151,69 +139,26 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
     }
   }
 
-  async function drain(): Promise<void> {
-    // Yield once so every fact recorded in the same tick joins the first transaction.
-    await Promise.resolve()
-    while (queue.length > 0) {
-      const batch = queue
-      queue = []
-      const at = now()
-      let results: InboxChange[][] = []
-      try {
-        results = await retrySqliteBusy(() =>
-          repo.transaction(async (trx) => {
-            const out: InboxChange[][] = []
-            for (const job of batch) out.push(await applyOne(trx, job, at))
-            return out
-          }),
-        )
-      } catch (error) {
-        // One poisoned op must not lose the rest of the batch: retry each on its own.
-        results = []
-        for (const job of batch) {
-          try {
-            results.push(await repo.transaction((trx) => applyOne(trx, job, at)))
-          } catch (jobError) {
-            results.push([])
-            log('notifications.write_failed', {
-              op: job.op.kind,
-              error: String(jobError instanceof Error ? jobError.message : jobError),
-              batchError: String(error instanceof Error ? error.message : error),
-            })
-            job.fail?.(jobError)
-            job.fail = undefined
-          }
-        }
-      }
-      batch.forEach((job, index) => {
-        const changes = results[index] ?? []
-        publish(job.userId, changes)
-        job.done?.(changes)
-      })
-    }
-  }
-
-  // One drain at a time. A job queued after the loop saw an empty queue but before `finally` ran
-  // would otherwise wait for the next unrelated record, so `finally` re-schedules.
-  function schedule() {
-    draining ??= drain().finally(() => {
-      draining = null
-      if (queue.length > 0) schedule()
-    })
-  }
+  const writer = createBatchWriter<AppDatabase, Job, InboxChange[]>({
+    transaction: (run) => repo.transaction(run),
+    apply: applyOne,
+    retry: retrySqliteBusy,
+    settled(job, outcome) {
+      if ('error' in outcome) return job.fail?.(outcome.error)
+      publish(job.userId, outcome.result)
+      job.done?.(outcome.result)
+    },
+    log: deps.log,
+    failureEvent: 'notifications.write_failed',
+    describe: (job) => ({ op: job.op.kind }),
+    now,
+  })
 
   function enqueue(job: Job) {
-    if (closed) {
-      job.fail?.(new Error('The notification journal is closed'))
-      return
-    }
-    queue.push(job)
-    schedule()
+    if (!writer.enqueue(job)) job.fail?.(new Error('The notification journal is closed'))
   }
 
-  async function flush(): Promise<void> {
-    while (draining) await draining
-  }
+  const flush = () => writer.flush()
 
   const toOp = (op: ClientJournalOp): Op =>
     op.op === 'raise'
@@ -263,10 +208,7 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
       }
     },
     flush,
-    async close() {
-      closed = true
-      await flush()
-    },
+    close: () => writer.close(),
     async prune() {
       // Behind everything already queued, and as its own transaction: retention must never run
       // between a fact's event and its projection.

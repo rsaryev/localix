@@ -255,10 +255,8 @@ export function createAppServicesPhase({
         .plugins,
   })
 
-  // Global search: ONE registry fanning a text query out across domain providers
-  // (projects, chat sessions/messages, the bundled workbenches,
-  // files, secrets, skills, plugins, MCP, agent providers, models). Composed in
-  // boot/search.ts; registration order IS the group order.
+  // Global search: ONE registry fanning a text query out across every domain's provider, words and
+  // meaning. Composed in boot/search.ts; registration order IS the group order.
   const searchService = buildSearchService({
     db,
     projectsService,
@@ -271,6 +269,7 @@ export function createAppServicesPhase({
     agentsService,
     catalogService,
     semanticService,
+    owner: env.LOCALIX_DEFAULT_USER_ID,
   })
   serviceRefs.globalSearch = searchService // the agent's `global_search`; chat is built first
 
@@ -280,6 +279,7 @@ export function createAppServicesPhase({
     userService,
     providerConnectionsService,
     agentsService,
+    skillsCuratorService,
     secretsService,
     systemService,
     defaultUserId: env.LOCALIX_DEFAULT_USER_ID,

@@ -9,6 +9,8 @@ export type InstallState = 'idle' | 'downloading' | 'failed'
 
 export interface SemanticCollectionStatus {
   name: string
+  /** What its source calls these items (`Messages`); collections come and go with plugins. */
+  label: string
   items: number
   chunks: number
   /** While a reconcile runs: items visited and the source's own count (null when unknown). */

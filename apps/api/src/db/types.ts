@@ -1,3 +1,4 @@
+import type { ChangeCursorsTable, ChangeEventsTable } from './change-types'
 import type { ColumnType, Generated } from 'kysely'
 
 import type { ReasoningEffort } from './enums'
@@ -574,6 +575,8 @@ export interface AppDatabase {
   user_view_state: UserViewStateTable
   semantic_settings: SemanticSettingsTable
   semantic_collections: SemanticCollectionsTable
+  change_events: ChangeEventsTable
+  change_cursors: ChangeCursorsTable
   semantic_items: SemanticItemsTable
   semantic_outbox: SemanticOutboxTable
   user_profiles: UserProfilesTable

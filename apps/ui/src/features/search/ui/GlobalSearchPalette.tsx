@@ -129,7 +129,7 @@ export function GlobalSearchPalette({
             </div>
           )}
           {search.problem ? null : trimmed.length === 0 ? (
-            <CommandEmpty>Search projects, chats, messages, settings, commands…</CommandEmpty>
+            <CommandEmpty>Search everything</CommandEmpty>
           ) : displayGroups.length === 0 ? (
             <CommandEmpty>
               {search.loading ? (

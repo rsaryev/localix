@@ -42,13 +42,31 @@ Each layer names only the one below it. `agent-runtime-pi` sees local chat model
 | ---------------------- | ------------------------------------------------------------------------------------------ |
 | `semantic_settings`    | The one switch and the model id                                                            |
 | `semantic_collections` | Per collection: fingerprint (model + width + prompts + source version) and backfill cursor |
-| `semantic_items`       | One row per passage: key, chunk, owner, scope, content hash, excerpt, float16 vector       |
+| `semantic_items`       | One row per passage: key, chunk, owner, scope, parent, content hash, excerpt, vector       |
 | `semantic_outbox`      | Keys changed since embedding, deduplicated                                                 |
 
-The `semantic_index` migration's triggers write `chat.messages` and `chat.sessions` keys into the
-outbox on insert, text change and delete — including cascaded deletes — but only while
-`semantic_settings.enabled = 1`. Enabling the feature always runs one reconcile, which catches what
-changed while it was off.
+Changes arrive through the [change feed](change-feed.md): semantic search is one of its consumers.
+Each feature that owns an indexed kind declares a target (`embeddings/targets.ts`): its collection,
+an item's key from a notice's ref, and items the change may also have touched (a chat's change
+re-reads the message its run finalizes). `upserted` and `deleted` queue the key in the outbox,
+`resync` reconciles the collection, and a parent's deletion removes every item stored under it (a
+chat's messages name it as their `parent`), whether semantic search is on or off. Enabling the
+feature always runs one reconcile, which catches what changed while it was off.
+
+| Collection             | Source                                    | Category in the status bar |
+| ---------------------- | ----------------------------------------- | -------------------------- |
+| `chat.messages`        | `chat/semantic-sources.ts`                | Messages                   |
+| `chat.sessions`        | `chat/semantic-sources.ts`                | Chats                      |
+| `capabilities.skills`  | `skills-curator/semantic.ts`              | Skills                     |
+| `capabilities.plugins` | `plugins/semantic.ts`                     | Plugins                    |
+| `capabilities.mcp`     | `mcp/semantic.ts`                         | MCP servers                |
+| `agents`               | `agents/semantic.ts`                      | Agents                     |
+| `plugin:<name>:<…>`    | a plugin's `host.semantic.registerSource` | the source's `label`       |
+
+Capability catalogs are listed whole for the workspace owner (`embeddings/list-source.ts`): global
+items under the scope `global`, each project's own under its id, keyed `<scope>:<name>`. Their
+search providers fuse meaning and words through `search/catalog-hybrid.ts`, asking for
+`[global, projectId]`.
 
 ## Matching
 
@@ -70,11 +88,12 @@ nothing, and the right chat ranked first for every descriptive query tried in Ru
 
 ## Adding a semantic source
 
-Register a `SemanticSource` (`@localixai/plugin-sdk/backend`): a collection name, a version, and
-`scan`/`read`. Core sources are registered in
-[`bootstrap/semantic.ts`](../../../apps/api/src/bootstrap/semantic.ts). Report changes through the
-outbox (a trigger, or `semanticService.changed`). A plugin uses `host.semantic`: its collections are
-namespaced `plugin:<name>:<collection>`, and `query` returns matches carrying `z` and `gate`.
+Register a `SemanticSource` (`@localixai/plugin-sdk/backend`): a collection name, a `label` (its
+category in the status bar), a version, and `scan`/`read`. A core kind also gets a target in
+[`bootstrap/semantic-changes.ts`](../../../apps/api/src/bootstrap/semantic-changes.ts), and its
+writers record changes on the change feed; the map does not compile until every kind of the core
+registry has a target or `'ignore'`. A plugin uses `host.semantic`: its collections are namespaced
+`plugin:<name>:<collection>`, and `query` returns matches carrying `z` and `gate`.
 
 A search provider receives `query.semantic` only when the hybrid strategy is active. Fuse its
 matches with `fuse()` and pass each match's `gate`; without `query.semantic` keep the words-only

@@ -2,8 +2,9 @@
  * PLUGINS search provider (agent-core search) — matches plugin name/displayName +
  * description over the plugin catalog. Every hit addresses one row in its exact scope.
  */
-import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
-import { bestFieldScore } from '../agent-core/search/match'
+import type { SearchProvider } from '../agent-core/search/provider'
+import { catalogHits } from '../search/catalog-hybrid'
+import { PLUGINS_COLLECTION } from './semantic'
 import { settingsEntityUiUri } from '@localixai/plugin-sdk/navigation'
 
 export interface PluginSearchRow {
@@ -26,20 +27,20 @@ export function createPluginsSearchProvider(port: PluginsSearchPort): SearchProv
       const rows = await port
         .listPlugins(userId, query.projectId)
         .catch(() => [] as PluginSearchRow[])
-      const hits: SearchHit[] = []
-      for (const p of rows) {
-        const score = bestFieldScore([p.displayName, p.name, p.description], query.text)
-        if (score <= 0) continue
-        hits.push({
+      return catalogHits(query, {
+        collection: PLUGINS_COLLECTION,
+        rows,
+        nameOf: (p) => p.name,
+        fields: (p) => [p.displayName, p.name, p.description],
+        hit: (p, score) => ({
           id: settingsEntityUiUri('plugins', 'plugin', p.name, query.projectId ?? ''),
           domain: 'plugins',
           title: p.displayName || p.name,
           subtitle: p.description,
           icon: 'plugin',
           score,
-        })
-      }
-      return hits
+        }),
+      })
     },
   }
 }

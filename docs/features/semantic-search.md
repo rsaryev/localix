@@ -27,8 +27,10 @@ text leaves it.
 
 Each user and assistant message is cut into passages of about 1,600 characters and embedded, and
 each conversation title is embedded on its own. The vectors live in the local database. Hidden rows
-(wake prompts, interface notices) are never embedded. New, edited and deleted messages reach the
-index through database triggers that only record changes while semantic search is on.
+(wake prompts, interface notices) are never embedded. Skills, plugins, MCP servers and agents are
+indexed too, each as its own category, so a search for a skill is never crowded by chats. New,
+edited and deleted items reach the index within seconds; deleting a chat removes its messages'
+vectors at once. The status bar menu lists every category with how much it holds.
 
 A query runs two ways at once:
 

@@ -16,6 +16,7 @@ import { semanticApi, type SemanticStatus } from '@/shared/api/semanticApi'
 import { useSemanticStatus } from '@/shared/hooks/useLocalModels'
 import { openModelPicker } from '@/shared/lib/modelPickerBus'
 import { indexActivity, indexLine, type IndexActivity } from '../model/semanticFormat'
+import { SemanticIndexBreakdown } from './SemanticIndexBreakdown'
 
 const ICONS: Partial<Record<IndexActivity, typeof Pause>> = {
   idle: Check,
@@ -82,7 +83,7 @@ export function SemanticIndexStatusItem({ className }: { className?: string }) {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{segment}</DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="end" className="w-64">
+      <DropdownMenuContent side="top" align="end" className="w-80">
         {/* A plain header, not the kit's uppercase section label: the feature, then its state. */}
         <DropdownMenuLabel className="space-y-2 px-2 pt-2 pb-2.5 font-normal normal-case tracking-normal">
           <div className="space-y-0.5">
@@ -91,7 +92,8 @@ export function SemanticIndexStatusItem({ className }: { className?: string }) {
               <span className="text-text-soft">{status.model.label}</span> · {detail}
             </p>
           </div>
-          {shown.percent !== null && (
+          {/* A build shows per category below; only the model's download has one bar here. */}
+          {shown.activity === 'downloading' && shown.percent !== null && (
             <ProgressBar
               value={shown.percent}
               className="h-1"
@@ -100,6 +102,9 @@ export function SemanticIndexStatusItem({ className }: { className?: string }) {
             />
           )}
         </DropdownMenuLabel>
+        {shown.activity !== 'downloading' && (
+          <SemanticIndexBreakdown collections={status.index.collections} />
+        )}
         <DropdownMenuSeparator />
         {working && (
           <DropdownMenuItem onSelect={() => act(() => semanticApi.pause())}>

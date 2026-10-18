@@ -5,11 +5,11 @@
  *   1. RECONCILE — a full `scan` of a collection whose vector space is new (first enable, new
  *      model, new source version) or whose data may have moved while indexing was off. Items
  *      whose hash is unchanged cost a read; keys the scan never saw are deleted at the end.
- *   2. CHANGES — the outbox (SQLite triggers for core data, `changed()` for plugins): the
- *      named keys are read back from their source; a key the source no longer returns is gone.
+ *   2. CHANGES — the outbox (keys the change feed and plugins name): read back from their source;
+ *      a key the source no longer returns is gone.
  *
- * Failures never drop work: a batch that fails stays queued and the pass retries with backoff.
- * Progress (counts, rate, ETA) is kept for the status the settings page and search show.
+ * Failures never drop work: a failed batch stays queued and retries with backoff. Progress
+ * (counts, rate, ETA) feeds the status bar.
  */
 import type { SemanticSource } from '@localixai/plugin-sdk/backend'
 import type { EmbeddingEngine } from './engine'
@@ -28,6 +28,7 @@ export type IndexerPhase = 'stopped' | 'idle' | 'reconciling' | 'updating' | 're
 
 export interface CollectionProgress {
   collection: string
+  label: string
   /** Items a running reconcile has visited / will visit (null when the source cannot count). */
   scanned: number | null
   total: number | null
@@ -262,9 +263,9 @@ export function createIndexer(deps: IndexerDeps) {
     },
     /** Something changed (plugin `changed()`, a newly registered source): run soon. */
     kick,
-    /** Re-scan every collection (Settings "Rebuild index" passes `fromScratch`). */
-    async rescan(fromScratch: boolean) {
-      for (const state of await store.listCollections()) {
+    /** Re-scan every collection, or one; "Rebuild index" passes `fromScratch`. */
+    async rescan(fromScratch: boolean, collection?: string) {
+      for (const state of await store.listCollections(collection)) {
         if (fromScratch) {
           await store.clearCollection(state.name)
           cache.drop(state.name)
@@ -280,6 +281,7 @@ export function createIndexer(deps: IndexerDeps) {
           const r = reconcile.get(s.collection)
           return {
             collection: s.collection,
+            label: s.label ?? s.collection,
             scanned: r?.scanned ?? null,
             total: r?.total ?? null,
             reconciling: !!r,

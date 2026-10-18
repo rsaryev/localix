@@ -62,6 +62,7 @@ export function buildSemanticStatus(input: {
       lastError: progress.lastError,
       collections: progress.collections.map((c) => ({
         name: c.collection,
+        label: c.label,
         items: counts.get(c.collection)?.items ?? 0,
         chunks: counts.get(c.collection)?.chunks ?? 0,
         scanned: c.scanned,

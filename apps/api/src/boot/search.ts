@@ -39,6 +39,7 @@ import type { createAgentsService } from '../features/agents/service'
 import type { createCatalogService } from '../features/catalog/service'
 import type { SemanticService } from '../features/embeddings/service'
 import { createMessageSearchReads } from '../features/chat/message-search-reads'
+import { registerCapabilitySemantics } from '../bootstrap/capability-semantic'
 
 /** How long eager search may reuse the runtime adapter's model catalog. */
 const MODELS_CACHE_TTL_MS = 30_000
@@ -58,6 +59,8 @@ export interface SearchCompositionDeps {
   catalogService: ReturnType<typeof createCatalogService>
   /** Semantic search: when on, providers with a collection fuse meaning with words. */
   semanticService?: SemanticService
+  /** Whose capability catalogs are indexed (the workspace owner). */
+  owner: string
 }
 
 export function buildSearchService(
@@ -179,6 +182,20 @@ export function buildSearchService(
       },
     }),
   )
+
+  // The meaning half of the skill, plugin, MCP and agent groups: each its own collection.
+  if (semanticService) {
+    registerCapabilitySemantics({
+      db,
+      owner: deps.owner,
+      semantic: semanticService,
+      projects: projectsService,
+      skills: skillsCuratorService,
+      plugins: pluginService,
+      mcp: mcpService,
+      agents: agentsService,
+    })
+  }
 
   return createSearchService({
     registry,

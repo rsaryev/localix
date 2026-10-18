@@ -19,6 +19,12 @@
  * lets a search honestly answer "no good matches" instead of always returning a top ten.
  */
 
+/**
+ * The `scope` of an item available everywhere (a global capability), beside items scoped to one
+ * project: a query for a project asks for `[SEMANTIC_GLOBAL_SCOPE, projectId]`.
+ */
+export const SEMANTIC_GLOBAL_SCOPE = 'global'
+
 /** What the embedding is for — picks the model's task prompt. */
 export type SemanticTask = 'search' | 'question' | 'code' | 'similarity' | 'classification'
 
@@ -34,6 +40,11 @@ export interface SemanticSourceItem {
   title?: string
   /** One filter value queries may restrict to (a project id, a board id). */
   scope?: string | null
+  /**
+   * The key of the item this one belongs to (a message's chat), when deleting that one deletes
+   * this one too: the host removes every item under a deleted parent without a key per child.
+   */
+  parent?: string | null
   /** Task the item is retrieved for. Default `search`. */
   task?: SemanticTask
 }
@@ -53,6 +64,8 @@ export interface SemanticSourcePage {
 export interface SemanticSource {
   /** Collection name. A plugin's names are namespaced by the host (`plugin:<name>:<collection>`). */
   collection: string
+  /** What a person calls these items (`Messages`, `Cards`), where the index lists its categories. */
+  label?: string
   /** Bump to re-embed every item, e.g. after changing what `text` contains. */
   version: number
   scan(cursor: string | null, limit: number): Promise<SemanticSourcePage>

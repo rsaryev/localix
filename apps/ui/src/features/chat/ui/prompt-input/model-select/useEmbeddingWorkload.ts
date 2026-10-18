@@ -1,8 +1,9 @@
 import { useCallback, useMemo } from 'react'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
-import type { ModelKind } from '@localixai/agent/catalog'
+import type { CatalogModel, ModelKind } from '@localixai/agent/catalog'
 import { semanticApi, type SemanticStatus } from '@/shared/api/semanticApi'
 import { useSemanticStatus } from '@/shared/hooks/useLocalModels'
+import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import type { PickerTarget } from './pickerTarget'
 import type { ModelRoutingSlot } from './taskReasoning'
 import type { useModelTaskRouting } from './useModelTaskRouting'
@@ -12,6 +13,21 @@ type Routing = ReturnType<typeof useModelTaskRouting>
 /** The kind of model a picker target runs on: chat, unless its workload says otherwise. */
 export function modelKindForTarget(target: PickerTarget): ModelKind {
   return MODEL_ROUTING_TASKS.find((task) => task.key === target)?.modelKind ?? 'chat'
+}
+
+/**
+ * The models a workload lists — the kind it runs on: chat, or embedding for semantic search —
+ * and every kind together, so a row's label resolves whichever workload is open.
+ */
+export function useWorkloadModels(chatModels: CatalogModel[], target: PickerTarget) {
+  const { modelsOfKind } = useModelsCatalog()
+  const taskKind = modelKindForTarget(target)
+  const models = taskKind === 'chat' ? chatModels : modelsOfKind(taskKind)
+  const allModels = useMemo(
+    () => [...chatModels, ...modelsOfKind('embedding')],
+    [chatModels, modelsOfKind],
+  )
+  return { taskKind, models, allModels }
 }
 
 /** The catalog id of semantic search's model: `local/<id>` on this computer. */

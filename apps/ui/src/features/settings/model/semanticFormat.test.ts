@@ -26,6 +26,7 @@ describe('indexLine', () => {
         collections: [
           {
             name: 'chat.messages',
+            label: 'Messages',
             items: 0,
             chunks: 0,
             scanned: 40,
@@ -70,7 +71,17 @@ describe('indexActivity', () => {
   test('a build, a pause and a failure each have their own state', () => {
     const building = {
       phase: 'reconciling' as const,
-      collections: [{ name: 'm', items: 0, chunks: 0, scanned: 1, total: 4, reconciling: true }],
+      collections: [
+        {
+          name: 'm',
+          label: 'Messages',
+          items: 0,
+          chunks: 0,
+          scanned: 1,
+          total: 4,
+          reconciling: true,
+        },
+      ],
     }
     expect(indexActivity(live(building))).toEqual({
       activity: 'building',

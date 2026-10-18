@@ -1,17 +1,29 @@
 /**
- * The whole semantic path over a real migrated database: change-capture triggers → outbox →
- * indexer → vectors → the hybrid chat providers. The engine is the deterministic fake.
+ * The whole semantic path over a real migrated database: change feed → chat's semantic targets →
+ * outbox → indexer → vectors → the hybrid chat providers. The engine is the deterministic fake.
  */
 import { describe, expect, test } from 'bun:test'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
+import {
+  createCoreChangeFeed,
+  recordCoreChanges,
+  type CoreCascades,
+  type CoreRefs,
+} from '../changes/core-entities'
 import { createIndexer } from '../embeddings/indexer'
+import { removeKeys } from '../embeddings/ingest'
+import { semanticHandlers } from '../embeddings/targets'
 import { createSemanticReader } from '../embeddings/semantic-index'
 import { createSemanticStore } from '../embeddings/store'
 import { createFakeEngine, FAKE_DIMENSIONS } from '../embeddings/testing/fake-engine'
 import { createVectorCache } from '../embeddings/vector-cache'
 import { createMessageSearchReads } from './message-search-reads'
-import { createMessagesSemanticSource, createSessionsSemanticSource } from './semantic-sources'
+import {
+  chatSemanticTargets,
+  createMessagesSemanticSource,
+  createSessionsSemanticSource,
+} from './semantic-sources'
 import { createMessagesSearchProvider, createSessionsSearchProvider } from './search-provider'
 
 type Db = ReturnType<typeof createDatabase>
@@ -58,7 +70,7 @@ async function setup() {
     await indexer.idle()
     await indexer.idle()
   }
-  return { db, store, indexer, engine, reader, run }
+  return { db, store, cache, indexer, engine, reader, run }
 }
 
 async function seed(db: Db) {
@@ -77,7 +89,7 @@ async function seed(db: Db) {
 }
 
 describe('semantic pipeline over chat', () => {
-  test('triggers capture nothing while semantic search is off', async () => {
+  test('a row written without a change notice reaches nothing', async () => {
     const { db, store } = await setup()
     await addSession(db, 's1', 'x')
     await addMessage(db, 'm1', 's1', 'hello')
@@ -95,23 +107,60 @@ describe('semantic pipeline over chat', () => {
     expect(await store.keysOf('chat.messages')).not.toContain('m-wake')
   })
 
-  test('new, edited and deleted rows flow through the outbox while on', async () => {
-    const { db, store, indexer, engine, run } = await setup()
-    await store.writeSettings({ enabled: true, modelId: null, ownerUserId: null })
+  test('chat changes on the feed reach the index; a chat deletion takes its messages', async () => {
+    const { db, store, cache, indexer, engine, run } = await setup()
     await seed(db)
     indexer.start(engine)
     await run()
+    const feed = createCoreChangeFeed(db)
+    await feed.subscribe(
+      'semantic-index',
+      semanticHandlers<CoreRefs, CoreCascades>(
+        {
+          ...chatSemanticTargets(db),
+          skill: 'ignore',
+          plugin: 'ignore',
+          mcp: 'ignore',
+          agent: 'ignore',
+        },
+        {
+          changed: (collection, keys) => store.enqueue(collection, keys),
+          resync: async () => {},
+          removeUnder: async (collection, parent) => {
+            await removeKeys(
+              { store, cache },
+              collection,
+              await store.keysUnder(collection, parent),
+            )
+          },
+        },
+      ),
+    )
     await addMessage(db, 'm-new', 's-hooks', 'docker compose fails on the container port')
+    await recordCoreChanges(db, {
+      entity: 'chat.message',
+      op: 'upserted',
+      ref: { id: 'm-new', userId: 'u1', sessionId: 's-hooks' },
+    })
+    await feed.settle()
     expect(await store.outboxSize()).toBeGreaterThan(0)
     await run()
     expect(await store.keysOf('chat.messages')).toContain('m-new')
-    // Deleting the session cascades to its messages; the delete triggers fire for each.
+    // The chat goes, and its messages with it: one notice, no key per message.
+    await db.deleteFrom('agent_messages').where('session_id', '=', 's-hooks').execute()
     await db.deleteFrom('agent_sessions').where('id', '=', 's-hooks').execute()
+    await recordCoreChanges(db, {
+      entity: 'chat.session',
+      op: 'deleted',
+      ref: { id: 's-hooks', userId: 'u1' },
+    })
+    await feed.settle()
     await run()
     const keys = await store.keysOf('chat.messages')
     expect(keys).not.toContain('m-new')
     expect(keys).not.toContain('m-retry')
     expect(await store.keysOf('chat.sessions')).toEqual(['s-fonts'])
+    await feed.close()
   })
 
   test('the hybrid providers find by meaning and say so; nonsense finds nothing', async () => {

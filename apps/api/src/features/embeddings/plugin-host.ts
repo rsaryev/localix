@@ -39,6 +39,8 @@ export function createPluginSemanticHost(
     registerSource(source: SemanticSource) {
       return service.registerSource({
         collection: own(source.collection),
+        // A plugin's category is named by its source, else by its own collection name.
+        label: source.label ?? source.collection,
         version: source.version,
         scan: (cursor, limit) => source.scan(cursor, limit),
         read: (keys) => source.read(keys),

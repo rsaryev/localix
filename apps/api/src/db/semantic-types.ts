@@ -28,6 +28,8 @@ export interface SemanticItemsTable {
   chunk: number
   user_id: string
   scope: string | null
+  /** The item whose deletion removes this one (a message's chat), when it has one. */
+  parent: string | null
   content_hash: string
   excerpt: string
   vector: Uint8Array

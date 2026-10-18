@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { nextRefSeq, retrySqliteBusy } from '../../db'
+import { recordSessionChanges } from './session-changes'
 import { deleteSessionChunks } from '../context-store/maintenance'
 import { claimSessionIdentity, type SessionIdentityClaim } from './repository-session-identity'
 import { sessionRef } from './contracts'
@@ -70,6 +71,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
     // The participants are a second statement inside the same transaction, so a session and the
     // people in it commit together: a reader can never see a conversation with nobody in it.
     await writeParticipants(exec, record.id, record.agents)
+    await recordSessionChanges(exec, record.userId, [record.id])
   }
   return {
     /** Reserve the next globally unique `LOCALIX-<seq>` ref. */
@@ -114,6 +116,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
             .where('id', '=', id)
             .executeTakeFirst()
           if (!owned) return
+          await recordSessionChanges(trx, userId, [id])
           const rowPatch = sessionRowPatch(patch)
           if (Object.keys(rowPatch).length > 0)
             await trx
@@ -243,7 +246,11 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
             .where('previous_topic_summary', 'is', null),
         )
         .executeTakeFirst()
-      return Number(result.numUpdatedRows) === 1
+      const updated = Number(result.numUpdatedRows) === 1
+      if (updated) {
+        await recordSessionChanges(db, userId, [id])
+      }
+      return updated
     },
 
     async deleteSession(
@@ -282,6 +289,8 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
           .execute()
         // The search index is a virtual table: no foreign key reaches it.
         await deleteSessionChunks(trx, userId, sessionIds)
+        // Each chat's messages go with it (`CORE_CASCADES`).
+        await recordSessionChanges(trx, userId, sessionIds, 'deleted')
       })
     },
   }

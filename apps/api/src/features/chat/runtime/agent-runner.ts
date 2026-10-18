@@ -51,6 +51,7 @@ import { createMcpRepository } from '../../mcp/repository'
 import { failedRun } from './run-outcome'
 import { classifyRunError } from './run/classify-run-error'
 import { createAgentRunRepository } from '../../../db/agent-run-repository'
+import { recordSessionChanges } from '../session-changes'
 
 export function createAgentRunner(deps: RunnerDeps) {
   // Handed in, not built here: see `RunnerDeps.repo` for the turn that failed when it was.
@@ -61,7 +62,16 @@ export function createAgentRunner(deps: RunnerDeps) {
   const projectsRepo = createProjectsRepository(deps.db)
   const mcpRepo = createMcpRepository(deps.db)
   const pluginRepo = createCapabilitySourceRepository(deps.db, 'plugin')
-  const agentRuns = createAgentRunRepository(deps.db)
+  const runs = createAgentRunRepository(deps.db)
+  const agentRuns: typeof runs = {
+    ...runs,
+    // A run leaving `running` finalizes its chat's last message (the search projection's
+    // trigger): say the chat changed, so consumers re-read it.
+    async finishRun(userId, input) {
+      await runs.finishRun(userId, input)
+      await recordSessionChanges(deps.db, userId, [input.sessionId])
+    },
+  }
 
   const state = createRuntimeState(deps.work)
   const { activeRuns, drainingSessions } = state

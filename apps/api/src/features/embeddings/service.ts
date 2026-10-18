@@ -5,16 +5,16 @@
  * fetch it quietly in the background (`local-models/background.ts`); until it is here, search
  * answers from words alone, and the moment it is installed, indexing starts. Turning it off
  * stops wanting the model (its background download pauses). While on and installed, an engine
- * exists, the indexer keeps every registered source's collection current, and `strategy()`
- * tells search to fuse meaning with words. While off, the change-capture triggers are inert and
- * search is exactly lexical. Download, files and the server process belong to
- * `features/local-models`.
+ * exists, the indexer keeps every registered source's collection current (from the change feed),
+ * and `strategy()` tells search to fuse meaning with words. While off, nothing is embedded and
+ * search is exactly lexical. Downloads and the model server belong to `features/local-models`.
  */
 import type { SemanticSource } from '@localixai/plugin-sdk/backend'
 import type { LocalModelsService } from '../local-models/service'
 import type { SemanticStatus, SearchStrategyNote } from './contracts'
 import { createEmbeddingEngine, type EmbeddingBackend, type EmbeddingEngine } from './engine'
 import { createIndexer } from './indexer'
+import { removeKeys } from './ingest'
 import {
   EMBEDDINGGEMMA_2,
   localEmbeddingModel,
@@ -237,6 +237,19 @@ export function createSemanticService(deps: SemanticServiceDeps) {
       if (!enabled || keys.length === 0) return
       await store.enqueue(collection, keys)
       indexer.kick()
+    },
+
+    /** Anything in `collection` may have changed: reconcile it (while on; enabling scans anyway). */
+    async resync(collection: string) {
+      if (enabled) await indexer.rescan(false, collection)
+    },
+
+    /**
+     * `parent` was deleted, and every item under it with it: drop their vectors — on or off, so
+     * a deleted chat never leaves its messages' vectors behind.
+     */
+    async removeUnder(collection: string, parent: string) {
+      await removeKeys({ store, cache }, collection, await store.keysUnder(collection, parent))
     },
 
     reader,

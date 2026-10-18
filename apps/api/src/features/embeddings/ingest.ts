@@ -106,6 +106,7 @@ export async function ingestItems(
       key: item.key,
       userId: item.userId,
       scope: item.scope ?? null,
+      parent: item.parent ?? null,
       hash: prepared.hash,
       chunks: prepared.chunks.map((excerpt, i) => ({ excerpt, vector: encodeVector(list[i]!) })),
     })

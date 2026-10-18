@@ -4,6 +4,7 @@ import type { RealtimeResource } from '../features/realtime/resources'
 import { bumpCapabilityRevision } from '../features/capabilities/revision'
 import type { createChatService } from '../features/chat/service'
 import type { AgentsService } from '../features/agents/service'
+import type { SkillsCuratorService } from '../features/skills-curator/service'
 
 /** The composition root owns which read models a committed service mutation invalidates. */
 export function installResourceSync(
@@ -17,6 +18,7 @@ export function installResourceSync(
   > & {
     chatService: ReturnType<typeof createChatService>
     agentsService: AgentsService
+    skillsCuratorService: SkillsCuratorService
     defaultUserId: string
   },
 ): void {
@@ -79,6 +81,22 @@ export function installResourceSync(
     publish,
   )
   observeMutations(deps.agentsService.registrationPolicy, { publish: ['capabilities'] }, publish)
+  // Skills are files: their writers had no hook, so neither clients nor the index heard of them.
+  observeMutations(
+    deps.chatService,
+    { createSkill: ['capabilities'], updateSkill: ['capabilities'], deleteSkill: ['capabilities'] },
+    publish,
+  )
+  observeMutations(
+    deps.skillsCuratorService,
+    {
+      setPinned: ['capabilities'],
+      archive: ['capabilities'],
+      restore: ['capabilities'],
+      runCurator: ['capabilities'],
+    },
+    publish,
+  )
   observeMutations(
     deps.secretsService,
     {

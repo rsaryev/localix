@@ -1,19 +1,18 @@
+import type { CoreChangeFeed } from '../features/changes/core-entities'
+import { buildAgentEngine } from './agent-engine'
+import { createCoreChanges } from './change-feed'
 import { dirname, join } from 'node:path'
 import type { DestinationStream } from 'pino'
-import { createPiEngine, streamIdleWatchdog } from '@localixai/agent-runtime-pi'
-import { buildLocalModels, localProviderHost } from './local-models'
 import type { LocalModelsService } from '../features/local-models/service'
 import type { AgentEngine, AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
 import { createDatabase, migrateToLatest } from '../db'
 import { takeInterruptedRuns } from '../db/migrator'
 import { createDigestLoaders } from '../boot/digests'
 import { createCatalogService } from '../features/catalog/service'
-import { createModelCatalogStore } from '../features/catalog/models-store'
 import { logCatalogRefresh } from '../features/catalog/refresh-schedule'
 import { createChatRepository } from '../features/chat/repository'
 import { createMediaStore } from '../features/media/store'
 import { createProviderConnectionsService } from '../features/provider-connections/service'
-import { createDeviceIdGetter } from '../features/provider-connections/device-id'
 import { observeMcpOAuthSecrets } from '../features/mcp/oauth/runtime'
 import { mcpClientManager } from '../features/mcp/client-manager'
 import { createMcpConditions } from '../features/notifications/conditions/mcp'
@@ -89,6 +88,8 @@ export interface InfraPhase {
   mediaStore: ReturnType<typeof createMediaStore>
   /** Models on this computer: the `local` provider's and semantic search's one source. */
   localModels: LocalModelsService
+  /** The core change feed's consumers; producers write with `recordCoreChanges`. */
+  changes: CoreChangeFeed
 }
 
 export async function createInfraPhase(
@@ -106,28 +107,8 @@ export async function createInfraPhase(
 
   const db = createDatabase({ filename: env.LOCALIX_DB_FILE })
   await migrateToLatest(db, { defaultUserId: env.LOCALIX_DEFAULT_USER_ID })
-  // A provider that accepts the request and then goes quiet used to stall a run for pi's
-  // SDK transport default (~10 minutes) — the only ceiling, since no timeoutMs was set. The
-  // watchdog bounds SILENCE rather than the whole request, so a long answer that keeps
-  // streaming is untouched while a stalled one fails in minutes.
-  //
-  // The ONE place the adapter is named. Swapping engines is this line; every consumer
-  // downstream reads the neutral ports off `engine`. Refreshed catalogs persist across launches.
-  const localModels = buildLocalModels({
-    logger,
-    root: env.LOCALIX_MODELS_DIR,
-    hfToken: env.HF_TOKEN,
-  })
-  const engine = createPiEngine({
-    localProvider: localProviderHost(localModels),
-    maxRetries: 2,
-    maxRetryDelayMs: 60_000,
-    middleware: [streamIdleWatchdog()],
-    getDeviceId: createDeviceIdGetter(),
-    catalogStore: createModelCatalogStore(),
-    onCatalogEntryDropped: (providerId, reason) =>
-      logger.info({ event: 'catalog.entry_dropped', providerId, reason }),
-  })
+  const changes = createCoreChanges(db, logger)
+  const { localModels, engine } = buildAgentEngine({ logger, env })
   const { runtime: agentRuntime, languageModels: languageModelFactory } = engine
   // Forward holder: the terminal service is created below (it depends on
   // chatService for cwd resolution), but chatService needs it to run background
@@ -278,6 +259,7 @@ export async function createInfraPhase(
     db,
     engine,
     localModels,
+    changes,
     agentRuntime,
     languageModelFactory,
     serviceRefs,

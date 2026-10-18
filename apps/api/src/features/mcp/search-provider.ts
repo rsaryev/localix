@@ -3,8 +3,9 @@
  * per-user MCP server records (NEVER connects/probes). Every hit addresses one
  * row in its exact scope.
  */
-import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
-import { bestFieldScore } from '../agent-core/search/match'
+import type { SearchProvider } from '../agent-core/search/provider'
+import { catalogHits } from '../search/catalog-hybrid'
+import { MCP_COLLECTION } from './semantic'
 import { settingsEntityUiUri } from '@localixai/plugin-sdk/navigation'
 
 export interface McpSearchRow {
@@ -24,20 +25,20 @@ export function createMcpSearchProvider(port: McpSearchPort): SearchProvider {
     icon: 'mcp',
     async search(userId, query) {
       const rows = await port.listServers(userId, query.projectId).catch(() => [] as McpSearchRow[])
-      const hits: SearchHit[] = []
-      for (const s of rows) {
-        const score = bestFieldScore([s.name, s.description], query.text)
-        if (score <= 0) continue
-        hits.push({
+      return catalogHits(query, {
+        collection: MCP_COLLECTION,
+        rows,
+        nameOf: (s) => s.name,
+        fields: (s) => [s.name, s.description],
+        hit: (s, score) => ({
           id: settingsEntityUiUri('mcp', 'mcp', s.name, query.projectId ?? ''),
           domain: 'mcp',
           title: s.name,
           subtitle: s.description,
           icon: 'mcp',
           score,
-        })
-      }
-      return hits
+        }),
+      })
     },
   }
 }

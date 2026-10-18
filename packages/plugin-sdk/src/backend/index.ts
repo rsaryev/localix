@@ -147,6 +147,7 @@ export {
 } from './search-provider'
 // The semantic index seam: sources, queries and the plugin host capability.
 export type * from './semantic'
+export { SEMANTIC_GLOBAL_SCOPE } from './semantic'
 // The problem shape a backend puts on the wire is the SAME one the UI renders — re-exported
 // here so a server file never has to reach into the `ui/` half to name it.
 export type { Problem, ProblemSeverity } from '../ui/problems'

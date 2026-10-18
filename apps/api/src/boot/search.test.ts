@@ -21,6 +21,7 @@ describe('search composition', () => {
 
     const service = buildSearchService({
       db,
+      owner: 'u1',
       chatService,
       backendHost: { setSearchRegistry() {} },
       // Named-domain search below never invokes these providers; the composition

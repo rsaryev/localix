@@ -322,7 +322,8 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       // Stop editor-document diagnostics fan-out, then kill the language-server children.
       await cleanup('lspDocumentService.dispose', () => runtime.lspDocumentService.dispose())
       await cleanup('lspManager.dispose', () => runtime.lspManager.dispose())
-      // Stop the semantic indexer and the embedding server child.
+      // Stop the change feed's consumers, then the semantic indexer and the embedding server child.
+      await cleanup('changes.close', () => runtime.changes.close())
       await cleanup('semanticService.shutdown', () => runtime.semanticService.shutdown())
       await cleanup('localModels.shutdown', () => runtime.localModels.shutdown())
       // Kill every live PTY (interactive terminals + PTY-backed background jobs) —

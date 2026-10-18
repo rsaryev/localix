@@ -153,11 +153,7 @@ export function GlobalSearchTab({
           </div>
         )}
         {search.problem ? null : trimmed.length === 0 ? (
-          <StateNotice
-            icon={Search}
-            title="Search everything"
-            body="Projects, chats, messages, databases, settings and more."
-          />
+          <StateNotice icon={Search} title="Search everything" />
         ) : displayGroups.length === 0 ? (
           search.loading ? (
             <LoadingHint />
