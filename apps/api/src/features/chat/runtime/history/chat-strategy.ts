@@ -86,7 +86,7 @@ export interface ChatHistoryRunContext {
   /** The frozen view in force and whether this turn re-plans it (`model-view/view.ts`). */
   view: ModelView
   recoveryToolAvailable?: boolean
-  /** Is `history_search` in the roster? Cards and folds point at it only when it is. */
+  /** Is `global_search` in the roster? Cards and folds point at it only when it is. */
   recallToolAvailable?: boolean
   /** Is `memory` in the roster? The checkpoint warning asks the agent to save with it. */
   memoryToolAvailable?: boolean

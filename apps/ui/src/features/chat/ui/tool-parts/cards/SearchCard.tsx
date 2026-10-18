@@ -5,6 +5,7 @@ import { ErrorRow, IORow, ToolBody, OutputBlock } from '../ToolIO'
 import { isItemStreaming, hasItemError, itemErrorMessage } from '../itemHelpers'
 import { asRecord, countNonEmptyLines, strField } from './format'
 import { searchInputQueries } from './batchInput'
+import { globalSearchSummary } from './globalSearchSummary'
 
 /** Shared shell for the search-flavoured cards: backticked query title + OUT body. */
 function SearchLikeCard({
@@ -189,30 +190,30 @@ function SingleSearchCard({ item }: { item: ToolCallItem }) {
   )
 }
 
-/** Rich card for the `history_search` tool — query + result count from resultText. */
-export function HistorySearchCard({ item }: { item: ToolCallItem }) {
-  const input = asRecord(item.input)
+/**
+ * Rich card for `global_search` — and for `history_search` calls in older transcripts, which
+ * were the same reads under the old name: the query and its result count (noting a match by
+ * meaning), or what conversation was read.
+ */
+export function GlobalSearchCard({ item }: { item: ToolCallItem }) {
   const streaming = isItemStreaming(item)
   const hasError = hasItemError(item)
-
-  const query = strField(input, 'query') ?? 'search'
+  const summary = globalSearchSummary(item.input, item.resultText)
   const output = (item.resultText ?? '').trim() ? item.resultText! : ''
-  const count = countNonEmptyLines(output)
-
   const subtitle = streaming
-    ? 'Searching history…'
+    ? summary.mode === 'search'
+      ? 'Searching…'
+      : 'Reading…'
     : hasError
       ? 'Failed'
-      : output
-        ? `${count} result${count === 1 ? '' : 's'}`
-        : 'No matches'
+      : summary.subtitle
 
   return (
     <SearchLikeCard
       item={item}
-      icon={History}
-      query={query}
-      inText={query}
+      icon={summary.mode === 'search' ? Search : History}
+      query={summary.title}
+      inText={summary.title}
       subtitle={subtitle}
       output={output || undefined}
     />

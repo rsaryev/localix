@@ -12,6 +12,8 @@ import { createPiAuthRuntime } from './auth'
 import { createPiLanguageModelFactory } from './language-model'
 import type { PiModelMiddleware } from './middleware'
 import { createPiCatalog } from './catalog'
+import { createLocalProvider, type LocalProviderHost } from './local-provider'
+import { registerPiProvider } from './providers'
 import { createPiAgentRuntime } from './runtime'
 import { requestTuning, type PiRequestTuning } from './stream-options'
 
@@ -24,10 +26,14 @@ export interface PiEngineOptions extends PiRequestTuning {
   catalogStore?: EngineCatalogStore
   /** A persisted catalog entry was dropped instead of restored. */
   onCatalogEntryDropped?: (providerId: string, reason: string) => void
+  /** Models on this computer, served by the host: registered as the `local` provider. */
+  localProvider?: LocalProviderHost
 }
 
 export function createPiEngine(options: PiEngineOptions = {}): AgentEngine {
   const shared = requestTuning(options)
+  // Before the catalog's collection is built, so it lists the provider from the first read.
+  if (options.localProvider) registerPiProvider(createLocalProvider(options.localProvider))
   const catalog = createPiCatalog({
     ...(options.catalogStore ? { store: options.catalogStore } : {}),
     ...(options.onCatalogEntryDropped ? { onDropped: options.onCatalogEntryDropped } : {}),
@@ -45,5 +51,6 @@ export function createPiEngine(options: PiEngineOptions = {}): AgentEngine {
       createPiAuthRuntime({ credentialStore, getDeviceId: options.getDeviceId }),
     listCatalog: () => catalog.list(),
     refreshCatalog: (refresh) => catalog.refresh(refresh),
+    invalidateCatalog: () => catalog.invalidate(),
   }
 }

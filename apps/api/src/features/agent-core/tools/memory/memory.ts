@@ -64,7 +64,7 @@ export function createMemoryTool(
       selection
         ? `Recall and persist short notes only in the agent's ${selection} scope. Other scopes are unavailable.`
         : 'Persist and recall short notes across sessions. set writes to the narrowest scope (the project, or this session outside one); scope="global" only for durable facts about the user under `user.*` keys. get/list read every visible scope, narrowest wins.',
-      'Save declarative FACTS, not instructions, and nothing that goes stale within a week (task progress, PR numbers, SHAs) — past work is recalled via history_search.',
+      'Save declarative FACTS, not instructions, and nothing that goes stale within a week (task progress, PR numbers, SHAs) — past work is recalled via global_search.',
     ].join(' '),
     inputSchema: memoryToolInputSchema,
     executionMode: 'sequential',

@@ -1,8 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import { createDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
-import { createHistorySearchTool } from './history-search'
+import type { HistorySearchRepo } from './history-search'
+import { createGlobalSearchTool } from '../global-search/global-search'
 import { createChatRepository } from '../../../chat/repository'
+
+/** The history modes now live in `global_search`; these tests drive them through it. */
+const createHistorySearchTool = (repo: HistorySearchRepo, userId: string) =>
+  createGlobalSearchTool({ history: repo, userId, sessionId: 'session-test', projectId: null })
 
 async function createTestDb() {
   const db = createDatabase() // in-memory
@@ -50,7 +55,7 @@ async function insertSession(
     .execute()
 }
 
-describe('history_search tool', () => {
+describe('global_search history tool', () => {
   test('query that matches returns snippets', async () => {
     const db = await createTestDb()
     await insertSession(db, { id: 'session_1', userId: 'user_1' })
@@ -157,7 +162,7 @@ describe('history_search tool', () => {
   })
 })
 
-describe('history_search scroll mode', () => {
+describe('global_search history scroll mode', () => {
   async function seedSession(db: Awaited<ReturnType<typeof createTestDb>>, count: number) {
     await insertSession(db, { id: 'session_1', userId: 'user_1' })
     for (let i = 1; i <= count; i++) {
@@ -235,13 +240,13 @@ describe('history_search scroll mode', () => {
     expect(payload.messages).toHaveLength(11)
 
     // The schema caps window at 15 (LLM-side validation).
-    const { historySearchInputSchema } = await import('./history-search')
-    expect(
-      historySearchInputSchema.safeParse({ session_id: 'session_1', window: 16 }).success,
-    ).toBe(false)
-    expect(
-      historySearchInputSchema.safeParse({ session_id: 'session_1', window: 15 }).success,
-    ).toBe(true)
+    const { globalSearchInputSchema } = await import('../global-search/global-search')
+    expect(globalSearchInputSchema.safeParse({ session_id: 'session_1', window: 16 }).success).toBe(
+      false,
+    )
+    expect(globalSearchInputSchema.safeParse({ session_id: 'session_1', window: 15 }).success).toBe(
+      true,
+    )
   })
 
   test('unknown session or foreign anchor returns a clean message', async () => {
@@ -285,7 +290,7 @@ describe('history_search scroll mode', () => {
   })
 })
 
-describe('history_search browse mode', () => {
+describe('global_search history browse mode', () => {
   test('no args lists recent sessions with previews', async () => {
     const db = await createTestDb()
     for (const n of [1, 2, 3]) {

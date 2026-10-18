@@ -16,6 +16,8 @@ import agents from '../ui/AgentsSettings.surface'
 import project from '../ui/ProjectsSettings.surface'
 import context from '../ui/ContextSettings.surface'
 import system from '../ui/SystemSettings.surface'
+import models from '../ui/ModelsSettings.surface'
+import modelList from '../ui/ModelCatalogSection.surface'
 import diagnostics from '../ui/DiagnosticsSettings.surface'
 
 const surfaces: UiLocationContribution[] = [
@@ -29,6 +31,8 @@ const surfaces: UiLocationContribution[] = [
   plugins,
   rules,
   project,
+  models,
+  modelList,
   system,
   context,
   diagnostics,

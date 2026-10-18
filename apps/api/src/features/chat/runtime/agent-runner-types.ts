@@ -1,3 +1,4 @@
+import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
 import type { AgentTool } from '@localixai/agent/agents'
 import type { ExternalAgentsPort } from '../../external-agents/contracts'
@@ -151,6 +152,8 @@ export interface RunnerDeps {
    * Composed after chat — an approval changes a session's mode and wakes it — so forward-held.
    */
   plans?: PlanService
+  /** The search palette's service — the agent's `global_search` (forward-held, built after chat). */
+  globalSearch?: GlobalSearchPort
   /**
    * The text of `file` as an editor this user holds it open (possibly unsaved), or undefined.
    * Lets the file tools tell the model when its write lands under the person's unsaved edits.

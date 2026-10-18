@@ -76,7 +76,7 @@ describe('aggregate extension prompt budgets', () => {
       canInspectHistory: true,
       canListRuns: false,
     })
-    expect(inspectOnly).toContain('`history_search`')
+    expect(inspectOnly).toContain('`global_search`')
     expect(inspectOnly).not.toContain('`fork`')
 
     const listOnly = buildActiveSubAgentsSection(agents, {
@@ -85,18 +85,18 @@ describe('aggregate extension prompt budgets', () => {
     })
     expect(listOnly).toContain('`fork` action:"list"')
     expect(listOnly).not.toContain('`agents`')
-    expect(listOnly).not.toContain('`history_search`')
+    expect(listOnly).not.toContain('`global_search`')
 
     const observeOnly = buildActiveSubAgentsSection(agents, {
       canInspectHistory: false,
       canListRuns: false,
     })
     expect(observeOnly).not.toContain('`fork`')
-    expect(observeOnly).not.toContain('`history_search`')
+    expect(observeOnly).not.toContain('`global_search`')
     expect(observeOnly).toContain('Wait for its completion message')
   })
 
-  test('does not advertise history_search in a truncated roster when it is unavailable', () => {
+  test('does not advertise global_search in a truncated roster when it is unavailable', () => {
     const out = buildActiveSubAgentsSection(
       Array.from({ length: 200 }, (_, index) => ({
         title: `worker-${index}-${'x'.repeat(100)}`,
@@ -106,7 +106,7 @@ describe('aggregate extension prompt budgets', () => {
     )
 
     expect(out).toContain('aggregate prompt budget reached')
-    expect(out).not.toContain('`history_search`')
+    expect(out).not.toContain('`global_search`')
     expect(out).toContain('`fork`')
   })
 

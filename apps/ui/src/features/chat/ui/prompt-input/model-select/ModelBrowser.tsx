@@ -16,6 +16,7 @@ import type { ParticipantRow } from './ModelTaskColumn'
 import { initialPickerTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
+import { modelKindForTarget, useEmbeddingWorkload } from './useEmbeddingWorkload'
 import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'
 import { ResetRouteRow, WorkloadOffOverlay } from './ModelBrowserParts'
@@ -36,7 +37,7 @@ const NO_PARTICIPANTS: readonly ParticipantRow[] = []
  * Conversation picks call `onPickSessionModel`; workload picks update their settings route.
  */
 export function ModelBrowser({
-  models,
+  models: chatModels,
   connectionsState,
   sessionModelId,
   sessionConnectionId,
@@ -47,11 +48,13 @@ export function ModelBrowser({
   initialQuery = '',
   initialProviderId,
   initialConnectionId,
+  initialWorkload,
   taskColumn = true,
   participants = NO_PARTICIPANTS,
   initialAgentId,
   onAgentTargetChange,
   onApplyPartyRoute,
+  onDismiss,
 }: ModelBrowserProps) {
   const { connections, activeId, addApiKeyConnection, addOAuthConnection } = connectionsState
   const [search, setSearch] = useState(initialQuery)
@@ -65,15 +68,30 @@ export function ModelBrowser({
   // Below lg the details (and the model's settings) open in place of the list.
   const [detailsView, setDetailsView] = useState(false)
   const [renameLabel, setRenameLabel] = useState('')
-  const [taskKey, setTaskKey] = useState<PickerTarget>(() =>
-    initialPickerTarget(participants, initialAgentId),
+  const [taskKey, setTaskKey] = useState<PickerTarget>(
+    () =>
+      MODEL_ROUTING_TASKS.find((task) => task.key === initialWorkload)?.key ??
+      initialPickerTarget(participants, initialAgentId),
   )
   const participantRoute = useCallback(
     (agentId: string) => participantSlot(participants, agentId, sessionConnectionId),
     [participants, sessionConnectionId],
   )
 
-  const { providers: allProviders, oauthProviderIds, oauthProviders } = useModelsCatalog()
+  const {
+    providers: allProviders,
+    oauthProviderIds,
+    oauthProviders,
+    modelsOfKind,
+  } = useModelsCatalog()
+  // Each workload lists the kind of model it runs on: chat, or embedding for semantic search.
+  const taskKind = modelKindForTarget(taskKey)
+  const models = taskKind === 'chat' ? chatModels : modelsOfKind(taskKind)
+  // Every row's label resolves against its own kind, whichever workload is open.
+  const allModels = useMemo(
+    () => [...chatModels, ...modelsOfKind('embedding')],
+    [chatModels, modelsOfKind],
+  )
 
   const { providerCounts, oauthIdSet, unconnectedProviders, filteredUnconnectedProviders } =
     useModelSelectProviders({
@@ -113,21 +131,25 @@ export function ModelBrowser({
   } = // Each participant answers for itself. The party arrives already resolved by the server
     // (conversation, then project, then the agent's card), so the column shows what each member
     // will actually run on rather than repeating whoever the picker has selected.
-    useModelTaskRouting({
-      models,
-      connections,
-      orderedConnections,
+    useEmbeddingWorkload(
+      useModelTaskRouting({
+        models: allModels,
+        connections,
+        orderedConnections,
+        taskKey,
+        sessionModelId,
+        sessionConnectionId,
+        participantRoute: participants.length > 0 ? participantRoute : undefined,
+        reasoningEffort,
+        onReasoningEffortChange,
+        onPickSessionModel,
+        partyRoute: party.partyRoute,
+        onPickPartyModel: party.onPickPartyModel,
+        onPartyReasoningChange: party.onPartyReasoningChange,
+      }),
       taskKey,
-      sessionModelId,
-      sessionConnectionId,
-      participantRoute: participants.length > 0 ? participantRoute : undefined,
-      reasoningEffort,
-      onReasoningEffortChange,
-      onPickSessionModel,
-      partyRoute: party.partyRoute,
-      onPickPartyModel: party.onPickPartyModel,
-      onPartyReasoningChange: party.onPartyReasoningChange,
-    })
+      orderedConnections,
+    )
 
   // Initialize the sidebar selection ONCE per mount (render-time adjust — the
   // selection is derived from the first data that arrives). We must not re-sync
@@ -255,13 +277,14 @@ export function ModelBrowser({
   // A participant has nothing to reset TO: its fallback is the agent's own model, and clearing
   // the conversation's choice is what the row's fallback label already offers.
   const resettableWorkload = workloadKey(taskKey)
-  const resetRow = resettableWorkload ? (
-    <ResetRouteRow
-      selected={!currentSlot}
-      label={activeTaskMeta?.fallbackLabel ?? 'Use session model'}
-      onReset={() => setRouteSlot(resettableWorkload, null)}
-    />
-  ) : null
+  const resetRow =
+    resettableWorkload && taskKind === 'chat' ? (
+      <ResetRouteRow
+        selected={!currentSlot}
+        label={activeTaskMeta?.fallbackLabel ?? 'Use session model'}
+        onReset={() => setRouteSlot(resettableWorkload, null)}
+      />
+    ) : null
   const handleSearchChange = (value: string) => {
     setSearch(value)
     resetPaging()
@@ -398,6 +421,8 @@ export function ModelBrowser({
                 setRenameLabel={setRenameLabel}
                 onAddApiKey={handleAddApiKey}
                 onAddOAuth={handleAddOAuth}
+                modelKind={taskKind}
+                onDismiss={onDismiss}
               />
 
               {/* ── Model details side panel (collapsible) ── */}

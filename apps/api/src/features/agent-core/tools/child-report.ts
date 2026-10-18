@@ -7,7 +7,7 @@ const CHILD_REPORT_MAX_LINES = 120
 const CHILD_REPORT_MAX_BYTES = 12_000
 
 export const NO_REPORT_NOTICE =
-  'It produced no final text. Its transcript can be read with `history_search`.'
+  'It produced no final text. Its transcript can be read with `global_search`.'
 
 /**
  * Cap one child's report and, when capped, say exactly how to read the rest. Both ways a report
@@ -25,7 +25,7 @@ export function childReport(text: string, childSessionId: string): string {
   if (!truncated.truncated) return text
   return `${truncationMarker(truncated, {
     kept: 'last',
-    advice: `Read the full transcript with history_search session_id:"${childSessionId}".`,
+    advice: `Read the full transcript with global_search session_id:"${childSessionId}".`,
   })}\n${truncated.content}`
 }
 

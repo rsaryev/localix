@@ -21,7 +21,7 @@ import type { AgentSessionsService } from '../../external-agents/backend/service
 import type { CoreToolDeps, OptionalToolPorts } from '../tool-registry'
 import { createSkillTool } from '../tools/skill'
 import { createMemoryTool } from '../tools/memory/memory'
-import { createHistorySearchTool } from '../tools/history/history-search'
+import { createGlobalSearchTool } from '../tools/global-search/global-search'
 import { createToolOutputTool } from '../tools/context-search/context-search'
 import { createJobsTool } from '../tools/bash/jobs'
 import { createContextBudgetTool } from '../tools/context-budget'
@@ -45,7 +45,13 @@ export function productionOptionalPorts(
   return {
     context_budget: createContextBudgetTool(() => undefined),
     memory: createMemoryTool(inert(), 'user-1', 'project-1', 'session-1'),
-    history_search: createHistorySearchTool(inert(), 'user-1'),
+    global_search: createGlobalSearchTool({
+      port: inert(),
+      history: inert(),
+      userId: 'user-1',
+      sessionId: 'session-1',
+      projectId: 'project-1',
+    }),
     tool_output: createToolOutputTool(inert(), inert(), 'user-1', 'session-1'),
     skill: createSkillTool(),
     jobs: createJobsTool(inert(), { terminalInput: true }),

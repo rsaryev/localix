@@ -65,13 +65,13 @@ export function readPointer(
 
 /**
  * The route back to a whole MESSAGE that left the model's view — its text folded, or the message
- * evicted into an epoch card. The message is durable in the transcript and `history_search`
+ * evicted into an epoch card. The message is durable in the transcript and `global_search`
  * scrolls to it by id, so naming the id IS the recovery. Without the recall tool in this run's
  * roster the pointer must not advertise a call the model cannot make.
  */
 export function messageRecallClause(messageId: string, recallToolAvailable = true): string {
   return recallToolAvailable
-    ? `; history_search(around_message_id="${messageId}") shows it in full`
+    ? `; global_search(around_message_id="${messageId}") shows it in full`
     : ''
 }
 

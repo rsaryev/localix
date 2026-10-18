@@ -5,6 +5,8 @@ export interface ModelPickerRequest {
   query?: string
   providerId?: string
   connectionId?: string
+  /** Open on this workload's row (`semanticSearch`, `inlineCompletion`…). */
+  workload?: string
 }
 
 type Listener = (request: ModelPickerRequest) => void

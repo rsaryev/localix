@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ModelsSettings } from './ModelsSettings'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { SettingsSearch } from './SettingsSearch'
 import { PreferencesSettings } from './PreferencesSettings'
@@ -130,6 +131,9 @@ export function SettingsPanel({
     if (activeTab === 'preferences') return <PreferencesSettings />
     if (activeTab === 'editor') return <EditorSettings />
     if (activeTab === 'shortcuts') return <KeyboardShortcutsSettings />
+    if (activeTab === 'models' || activeTab === 'model-list') {
+      return <ModelsSettings activeTab={activeTab} onTabChange={onTabChange} />
+    }
     if (activeTab === 'system' || activeTab === 'context' || activeTab === 'diagnostics') {
       return <SystemSettings activeTab={activeTab} onTabChange={onTabChange} />
     }

@@ -32,7 +32,7 @@ describe('child report bounding', () => {
     // Actionable, not just truncated: the transcript is still reachable, and the parent
     // needs the session id to reach it. Without this the cap would DESTROY information
     // instead of relocating it.
-    expect(out).toContain('history_search')
+    expect(out).toContain('global_search')
     expect(out).toContain('LOCALIX-9')
   })
 
@@ -84,7 +84,7 @@ describe('child report wording', () => {
       text: '  ',
     })
     expect(message).toContain('no final text')
-    expect(message).toContain('history_search')
+    expect(message).toContain('global_search')
   })
 
   test('the status and the child are named in the headline', () => {

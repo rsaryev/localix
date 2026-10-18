@@ -115,7 +115,8 @@ export interface OptionalToolPorts {
   /** Read-only budget report over the host's frame + last measurement; absent when no frame. */
   context_budget?: AgentTool
   memory?: AgentTool
-  history_search?: AgentTool
+  /** The search palette's service, bound to the run's session and project. */
+  global_search?: AgentTool
   tool_output?: AgentTool
   skill?: AgentTool
   jobs?: AgentTool

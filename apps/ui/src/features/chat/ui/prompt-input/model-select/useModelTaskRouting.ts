@@ -1,5 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
-import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
+import {
+  findCatalogModelForConnection,
+  resolveLiveCatalogModel,
+  type CatalogModel,
+} from '@localixai/agent/catalog'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import type { ModelRoutingTaskKey } from '@localixai/api/client'
 import {
@@ -231,8 +235,13 @@ export function useModelTaskRouting({
   )
 
   const pickModel = useCallback(
-    async (connectionId: string, modelId: string) => {
-      const nextModel = findCatalogModelForConnection(models, connections, connectionId, modelId)
+    async (pickedConnectionId: string, modelId: string) => {
+      // The model's own provider decides the connection: a pick never pairs a model with a
+      // connection of another provider (a `local/…` model routed through OpenRouter).
+      const live = resolveLiveCatalogModel(models, connections, modelId, pickedConnectionId)
+      const connectionId = live?.connection.id ?? pickedConnectionId
+      const nextModel =
+        live?.model ?? findCatalogModelForConnection(models, connections, connectionId, modelId)
       if (!connectionById.has(connectionId) || !nextModel) return
       // Re-picking the running model keeps its level; any other model starts at the level last
       // chosen for it, else its default. The previous model's level never carries over.

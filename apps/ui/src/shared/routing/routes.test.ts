@@ -38,7 +38,7 @@ describe('parseSettingsTab', () => {
   })
   test('valid string tab passes through, invalid/undefined → preferences', () => {
     expect(parseSettingsTab('preferences', undefined)).toBe('preferences')
-    expect(parseSettingsTab('models', undefined)).toBe('preferences')
+    expect(parseSettingsTab('local-models', undefined)).toBe('preferences')
     expect(parseSettingsTab('bogus', undefined)).toBe('preferences')
     expect(parseSettingsTab(undefined, undefined)).toBe('preferences')
   })

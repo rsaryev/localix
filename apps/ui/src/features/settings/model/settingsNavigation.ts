@@ -39,6 +39,12 @@ export const SETTINGS_SECTIONS = [
     description: 'Project name and shared instructions',
   },
   {
+    id: 'models',
+    label: 'Models',
+    group: 'Application',
+    description: "Models on this computer and the providers' model list",
+  },
+  {
     id: 'system',
     label: 'System',
     group: 'Application',
@@ -49,5 +55,6 @@ export const SETTINGS_SECTIONS = [
 export function primarySettingsSection(tab: SettingsTabId): string {
   if (typeof tab === 'object') return 'project'
   if (tab === 'diagnostics' || tab === 'context') return 'system'
+  if (tab === 'model-list') return 'models'
   return isCapabilityTab(tab) ? 'tools' : tab
 }

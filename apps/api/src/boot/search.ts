@@ -37,6 +37,8 @@ import type { createPluginService } from '../features/plugins/service'
 import type { createMcpService } from '../features/mcp/service'
 import type { createAgentsService } from '../features/agents/service'
 import type { createCatalogService } from '../features/catalog/service'
+import type { SemanticService } from '../features/embeddings/service'
+import { createMessageSearchReads } from '../features/chat/message-search-reads'
 
 /** How long eager search may reuse the runtime adapter's model catalog. */
 const MODELS_CACHE_TTL_MS = 30_000
@@ -54,6 +56,8 @@ export interface SearchCompositionDeps {
   mcpService: ReturnType<typeof createMcpService>
   agentsService: ReturnType<typeof createAgentsService>
   catalogService: ReturnType<typeof createCatalogService>
+  /** Semantic search: when on, providers with a collection fuse meaning with words. */
+  semanticService?: SemanticService
 }
 
 export function buildSearchService(
@@ -70,6 +74,7 @@ export function buildSearchService(
     mcpService,
     agentsService,
     catalogService,
+    semanticService,
   } = deps
   const registry = createSearchProviderRegistry()
 
@@ -91,6 +96,7 @@ export function buildSearchService(
     ),
     searchMessages: (userId: string, q: string, limit: number) =>
       chatService.searchHistoryDetailed(userId, q, limit),
+    hybridReads: createMessageSearchReads(db),
   }
   registry.register(createSessionsSearchProvider(chatSearchPort))
   registry.register(createMessagesSearchProvider(chatSearchPort))
@@ -174,5 +180,16 @@ export function buildSearchService(
     }),
   )
 
-  return createSearchService({ registry })
+  return createSearchService({
+    registry,
+    ...(semanticService
+      ? {
+          strategy: {
+            note: () => semanticService.strategy(),
+            queryFor: (userId: string, text: string) =>
+              semanticService.reader.queryFor(userId, text),
+          },
+        }
+      : {}),
+  })
 }

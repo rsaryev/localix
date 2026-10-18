@@ -50,7 +50,7 @@ Handle straightforward work directly.
 - loops
 - plugin_build
 - memory
-- history_search
+- global_search
 - context_budget
 - tool_output
 - skill

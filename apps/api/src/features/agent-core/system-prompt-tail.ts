@@ -118,7 +118,7 @@ export function buildRuntimeTailSections(
     state(
       'sub-agents',
       buildActiveSubAgentsSection(params.activeSubAgents, {
-        canInspectHistory: hasTool(TOOL.history_search),
+        canInspectHistory: hasTool(TOOL.global_search),
         canListRuns: hasTool(TOOL.delegate),
       }),
     )

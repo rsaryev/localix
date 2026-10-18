@@ -27,6 +27,8 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       await (await import('./kanban-workbenches.mjs')).seedKanban(fixture)
     if (spec.scenario === 'agent-management')
       await (await import('./agent-management.mjs')).seedAgentManagement(fixture)
+    if (['local-models-settings', 'semantic-search'].includes(spec.scenario))
+      await (await import('./local-models.mjs')).seedLocalModels()
     const board = spec.scenario === 'answer-board'
     const prefix = board
       ? 'board'
@@ -53,6 +55,11 @@ for (const [key, spec] of Object.entries(capturePlan)) {
         sessionStorage.setItem('capture_first_run', '1')
       })
       await page.goto(`${uiOrigin}/#/`)
+    } else if (spec.start === 'home' || spec.start === 'project') {
+      // Workspace-wide surfaces (Settings, Search) need no conversation open; `project` makes the
+      // fixture project active first, because search is scoped to the active project.
+      await page.goto(spec.start === 'home' ? `${uiOrigin}/#/` : route)
+      await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible()
     } else {
       await page.goto(route)
       await expect(page.getByRole('button', { name: 'Add participant', exact: true })).toBeVisible()

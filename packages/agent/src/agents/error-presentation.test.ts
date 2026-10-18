@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { classifyAgentError } from './error-classification'
 import { presentError, presentErrorInfo } from './error-presentation'
+import { MODEL_NOT_DOWNLOADED } from './errors'
 
 describe('presenting a failed run to a person', () => {
   test('a raw provider body is never the reason; it is offered only as detail', () => {
@@ -50,5 +51,19 @@ describe('presenting a failed run to a person', () => {
   test('the headline follows the wording rule and names the conversation', () => {
     const presented = presentError(new Error('x'), { conversation: 'Refactor the parser' })
     expect(presented.headline).toBe('Could not finish the reply in “Refactor the parser”')
+  })
+})
+
+describe('a local model that is not on this computer yet', () => {
+  test('says the provider’s own sentence, with no provider settings to open', () => {
+    const presented = presentError(
+      new Error(
+        `${MODEL_NOT_DOWNLOADED} Gemma 4 E2B is not downloaded. Pick it in the model picker to download it.`,
+      ),
+    )
+    expect(presented.reason).toBe(
+      'Gemma 4 E2B is not downloaded. Pick it in the model picker to download it.',
+    )
+    expect(presented.actions).toEqual([])
   })
 })

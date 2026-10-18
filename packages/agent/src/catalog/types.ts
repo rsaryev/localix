@@ -23,9 +23,17 @@ export interface ModelCost extends ModelCostRates {
   tiers?: ModelCostTier[]
 }
 
+/**
+ * What a model is for. One catalog lists every kind, and each consumer asks for its own: chat
+ * workloads for `chat`, semantic search for `embedding`. Absent means `chat` (every model a
+ * runtime adapter lists).
+ */
+export type ModelKind = 'chat' | 'embedding'
+
 export interface CatalogModel {
   id: string
   name: string
+  kind?: ModelKind
   providerId: string
   providerName: string
   contextLength?: number
@@ -57,6 +65,8 @@ export interface CatalogModel {
   /** Human-readable pricing for models the token rates cannot describe (e.g. a router). */
   pricingLabel?: string
   family?: string
+  /** An embedding model's vector widths: what it returns, and what an index stores of it. */
+  embedding?: { dimensions: number; storedDimensions: number }
 }
 
 /** Catalog metadata needed to display and configure a model provider. */

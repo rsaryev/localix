@@ -27,6 +27,15 @@ export type ModelUnavailableReason =
   | 'model_not_in_catalog'
   | 'no_enabled_key'
   | 'credential_unavailable'
+  | 'model_not_downloaded'
+
+/**
+ * How a provider whose models run on this computer says one is not on it yet. A provider's
+ * stream error reaches the host as text only, so the sentence carries this prefix and the
+ * classifier reads the reason from it — then shows the sentence after it, which the provider
+ * wrote for a person ("Gemma 4 E2B is still downloading — 40%…").
+ */
+export const MODEL_NOT_DOWNLOADED = 'Local model not ready:'
 
 export class AgentRunError extends Error {
   readonly code: AgentRunErrorCode

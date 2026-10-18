@@ -12,6 +12,7 @@ describe('shared model task catalog', () => {
       'titleGeneration',
       'inlineCompletion',
       'delegation',
+      'semanticSearch',
     ])
     expect(MODEL_TASKS[0]).toMatchObject({ key: 'session', required: true })
   })
@@ -24,7 +25,17 @@ describe('shared model task catalog', () => {
       'titleGeneration',
       'inlineCompletion',
       'delegation',
+      'semanticSearch',
     ])
+  })
+
+  test('a workload names the kind of model it runs on; chat when it does not say', () => {
+    const kindOf = (key: string) => AUX_MODEL_TASKS.find((t) => t.key === key)
+    expect(kindOf('semanticSearch')).toMatchObject({
+      modelKind: 'embedding',
+      defaultEnabled: false,
+    })
+    expect(kindOf('delegation')).not.toHaveProperty('modelKind')
   })
 
   test('reads availability from the same record as the saved model assignment', () => {

@@ -3,13 +3,27 @@ import type {
   EngineCatalogRefreshResult,
 } from '@localixai/agent/runtime'
 import type { CatalogRefreshResponse, CatalogResponse } from './contracts'
-import { sortCatalogModelsNewestFirst, sortProvidersOAuthFirst } from '@localixai/agent/catalog'
+import {
+  modelKindOf,
+  sortCatalogModelsNewestFirst,
+  sortProvidersOAuthFirst,
+} from '@localixai/agent/catalog'
 
 /** Engine-neutral model catalog source supplied by the runtime adapter. */
 export interface CatalogSource {
   list(): CatalogResponse | Promise<CatalogResponse>
   /** Restore persisted catalogs and, with `allowNetwork`, fetch newer ones. Absent: a fixed catalog. */
   refresh?(options: EngineCatalogRefreshOptions): Promise<EngineCatalogRefreshResult>
+}
+
+/**
+ * Models of another kind than the runtime's chat models (embedding models today), contributed
+ * by the feature that runs them and listed in the same catalog: one list, every kind, each
+ * consumer asking for its own. A source signals `invalidate` when its list changes.
+ */
+export interface CatalogModelSource {
+  id: string
+  list(): Promise<CatalogResponse['models']>
 }
 
 export interface CatalogServiceDeps {
@@ -48,17 +62,37 @@ export function createCatalogService(deps: CatalogServiceDeps) {
   let restoring: Promise<void> | undefined
   let checking: Promise<CatalogRefreshResponse> | undefined
 
+  const modelSources = new Map<string, CatalogModelSource>()
+  const chatViews = new WeakMap<CatalogResponse, CatalogResponse>()
+
+  /** Contributed models, named by their provider; a failing source contributes nothing. */
+  const contributed = async (providers: CatalogResponse['providers']) => {
+    const names = new Map(providers.map((p) => [p.id, p.name]))
+    const lists = await Promise.all(
+      [...modelSources.values()].map((source) => source.list().catch(() => [])),
+    )
+    return lists.flat().map((model) => ({
+      ...model,
+      providerName: names.get(model.providerId) ?? model.providerName,
+    }))
+  }
+
   const build = (): Promise<CatalogResponse> =>
     // Through the executor so a source that THROWS rejects instead of escaping `warm()` uncaught.
-    new Promise<CatalogResponse>((resolve) => resolve(deps.source.list())).then((catalog) => ({
-      ...catalog,
-      providers: sortProvidersOAuthFirst(
-        catalog.providers,
-        catalog.oauthProviderIds,
-        (provider) => provider.id,
-      ),
-      models: sortCatalogModelsNewestFirst(catalog.models),
-    }))
+    new Promise<CatalogResponse>((resolve) => resolve(deps.source.list())).then(
+      async (catalog) => ({
+        ...catalog,
+        providers: sortProvidersOAuthFirst(
+          catalog.providers,
+          catalog.oauthProviderIds,
+          (provider) => provider.id,
+        ),
+        models: sortCatalogModelsNewestFirst([
+          ...catalog.models,
+          ...(await contributed(catalog.providers)),
+        ]),
+      }),
+    )
 
   const load = async (): Promise<CatalogResponse> => {
     if (restoring) await restoring
@@ -88,7 +122,36 @@ export function createCatalogService(deps: CatalogServiceDeps) {
       // failure, so the first real read builds again and surfaces the error to its caller.
       load().catch((error: unknown) => deps.onWarmError?.(error))
     },
-    getCatalog: load,
+    /**
+     * The chat catalog: what every chat surface on the server lists and resolves against
+     * (`/model`, search, plugin channels, model resolution). One object per build.
+     */
+    async getCatalog(): Promise<CatalogResponse> {
+      const full = await load()
+      let chat = chatViews.get(full)
+      if (!chat) {
+        chat = { ...full, models: full.models.filter((m) => modelKindOf(m) === 'chat') }
+        chatViews.set(full, chat)
+      }
+      return chat
+    },
+    /** Every kind of model — what the catalog route serves, each client asking for its own. */
+    getFullCatalog: load,
+
+    /** A host-owned provider's model list changed (local models): build again on next read. */
+    invalidate(): void {
+      loaded = undefined
+    },
+
+    /** Add models of another kind to the catalog (see {@link CatalogModelSource}). */
+    registerModelSource(source: CatalogModelSource): () => void {
+      modelSources.set(source.id, source)
+      loaded = undefined
+      return () => {
+        if (modelSources.get(source.id) === source) modelSources.delete(source.id)
+        loaded = undefined
+      }
+    },
 
     /** Restore the persisted catalogs, without network access. Reads wait for it. */
     restore(): Promise<void> {

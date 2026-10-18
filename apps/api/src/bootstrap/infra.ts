@@ -1,6 +1,8 @@
 import { dirname, join } from 'node:path'
 import type { DestinationStream } from 'pino'
 import { createPiEngine, streamIdleWatchdog } from '@localixai/agent-runtime-pi'
+import { buildLocalModels, localProviderHost } from './local-models'
+import type { LocalModelsService } from '../features/local-models/service'
 import type { AgentEngine, AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
 import { createDatabase, migrateToLatest } from '../db'
 import { takeInterruptedRuns } from '../db/migrator'
@@ -85,6 +87,8 @@ export interface InfraPhase {
   uiLocationCatalogService: ReturnType<typeof createUiLocationCatalogService>
   providerConnectionsService: ReturnType<typeof createProviderConnectionsService>
   mediaStore: ReturnType<typeof createMediaStore>
+  /** Models on this computer: the `local` provider's and semantic search's one source. */
+  localModels: LocalModelsService
 }
 
 export async function createInfraPhase(
@@ -109,7 +113,13 @@ export async function createInfraPhase(
   //
   // The ONE place the adapter is named. Swapping engines is this line; every consumer
   // downstream reads the neutral ports off `engine`. Refreshed catalogs persist across launches.
+  const localModels = buildLocalModels({
+    logger,
+    root: env.LOCALIX_MODELS_DIR,
+    hfToken: env.HF_TOKEN,
+  })
   const engine = createPiEngine({
+    localProvider: localProviderHost(localModels),
     maxRetries: 2,
     maxRetryDelayMs: 60_000,
     middleware: [streamIdleWatchdog()],
@@ -234,6 +244,11 @@ export async function createInfraPhase(
     onWarmError: (error) => logger.warn({ event: 'catalog.warm_failed', err: error }),
     onRefresh: logCatalogRefresh(logger),
   })
+  // A download finished or a model was removed: the `local` provider lists something else now.
+  localModels.onListChanged(() => {
+    engine.invalidateCatalog?.()
+    catalogService.invalidate()
+  })
   const uiLocationCatalogService = createUiLocationCatalogService()
   // Restore persisted catalogs (disk, no network; reads wait), then warm for the first turn.
   void catalogService.restore()
@@ -249,6 +264,8 @@ export async function createInfraPhase(
     onCredentialRefresh: (...args) => providerConditions.credentialRefreshed(...args),
     createAuthRuntime: (...args) => engine.createAuth(...args),
     credentialVault: secretsStore,
+    // A provider connected or removed changes what the catalog lists from it (embedding models).
+    onChanged: () => catalogService.invalidate(),
   })
   // Filesystem media store, rooted beside the db (`~/.localix/media/`). Uploaded
   // media bytes live here as content-addressed files, served by id over
@@ -260,6 +277,7 @@ export async function createInfraPhase(
     logger,
     db,
     engine,
+    localModels,
     agentRuntime,
     languageModelFactory,
     serviceRefs,

@@ -11,7 +11,8 @@ import {
 } from './contracts'
 
 export interface CatalogRoutesService {
-  getCatalog(): Promise<CatalogResponse>
+  /** Every kind of model: clients filter by `kind` (chat, embedding…). */
+  getFullCatalog(): Promise<CatalogResponse>
   /** Fetch newer model lists now. Absent: the catalog cannot be refreshed. */
   check?(options: { force?: boolean }): Promise<CatalogRefreshResponse>
 }
@@ -55,7 +56,7 @@ export function createCatalogRoutes(service: CatalogRoutesService) {
   const app = new Hono<AppContext>()
 
   const routes = app.get('/', async (c) => {
-    const { body, etag } = wireFor(await service.getCatalog())
+    const { body, etag } = wireFor(await service.getFullCatalog())
     // `no-cache` = store it, but revalidate before every use: the browser then sends the tag back
     // on its own, and a new build (a new tag) is never masked by a stale copy.
     c.header('ETag', etag)
@@ -69,7 +70,7 @@ export function createCatalogRoutes(service: CatalogRoutesService) {
     }) as unknown as TypedResponse<CatalogResponse, 200, 'json'>
   })
 
-  // An explicit request from the person (Settings → System → Model list), so it runs even when the
+  // An explicit request from the person (Settings → Models → Model list), so it runs even when the
   // automatic refresh is switched off, and it skips the freshness window.
   const withRefresh = routes.post('/refresh', async (c) => {
     if (!service.check) {

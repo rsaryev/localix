@@ -1,18 +1,8 @@
 import type { StorageUsage } from '@/shared/api/storageApi'
 
-const UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const
+import { formatBytes } from '@/shared/lib/formatBytes'
 
-/** `1536` → `1.5 KB`. Decimal only while it is informative: three digits need none. */
-export function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < UNITS.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${value >= 100 || unit === 0 ? Math.round(value) : value.toFixed(1)} ${UNITS[unit]}`
-}
+export { formatBytes }
 
 /** The windows offered for removing or auto-removing old conversations. */
 export const RETENTION_DAY_CHOICES = [30, 90, 180, 365] as const

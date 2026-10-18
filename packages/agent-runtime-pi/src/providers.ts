@@ -93,7 +93,7 @@ type PiProviderDefinition =
   | { kind: 'shared'; provider: Provider }
   | { kind: 'isolated'; id: typeof RADIUS_PROVIDER_ID; create: () => Provider }
 
-let providerDefinitions: ReadonlyMap<string, PiProviderDefinition> | undefined
+let providerDefinitions: Map<string, PiProviderDefinition> | undefined
 let oauthFlowsRegistered = false
 
 function ensureBunOAuthFlows(): void {
@@ -111,7 +111,7 @@ function ensureBunOAuthFlows(): void {
  */
 function createPiProviderDefinitions(
   refresher: GeneratedCatalogRefresher,
-): ReadonlyMap<string, PiProviderDefinition> {
+): Map<string, PiProviderDefinition> {
   ensureBunOAuthFlows()
   return new Map(
     builtinProviders().map((provider): [string, PiProviderDefinition] => {
@@ -157,6 +157,20 @@ function getProviderDefinitions(): ReadonlyMap<string, PiProviderDefinition> {
   // The process's refresher: one build of the generated catalog serves every provider of a refresh.
   providerDefinitions ??= createPiProviderDefinitions(new GeneratedCatalogRefresher())
   return providerDefinitions
+}
+
+/**
+ * Add a provider the HOST defines (the `local` provider) to the process's shared definitions,
+ * beside pi's built-ins: every collection — the catalog, a run, a completion — then sees it the
+ * way it sees a built-in. Its id must not shadow a built-in.
+ */
+export function registerPiProvider(provider: Provider): void {
+  const definitions = getProviderDefinitions() as Map<string, PiProviderDefinition>
+  const existing = definitions.get(provider.id)
+  if (existing && !(existing.kind === 'shared' && existing.provider === provider)) {
+    throw new Error(`pi provider "${provider.id}" is already registered`)
+  }
+  definitions.set(provider.id, { kind: 'shared', provider: freezeProviderDefinition(provider) })
 }
 
 /**

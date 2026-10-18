@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { SearchInput } from '@localixai/kit/search-input'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
+import { Search } from 'lucide-react'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
+import { StateNotice } from '@localixai/kit/state-notice'
 import { useChatStore } from '@/features/chat/model/store'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 import { useGlobalSearch } from '../model/useGlobalSearch'
@@ -150,14 +152,12 @@ export function GlobalSearchTab({
             <ProblemLine {...searchProblem} />
           </div>
         )}
-        {/* Top-aligned, not `EmptyHint`'s default both-axis centering: this pane is full height,
-            so a centered hint floats hundreds of pixels down and the top of the pane — where the
-            eye lands after typing — reads as an empty black void. The guidance belongs under the
-            controls that produced it. */}
         {search.problem ? null : trimmed.length === 0 ? (
-          <EmptyHint className="h-auto items-start justify-start px-3 py-4">
-            Search across projects, chats, messages, databases, settings and more.
-          </EmptyHint>
+          <StateNotice
+            icon={Search}
+            title="Search everything"
+            body="Projects, chats, messages, databases, settings and more."
+          />
         ) : displayGroups.length === 0 ? (
           search.loading ? (
             <LoadingHint />

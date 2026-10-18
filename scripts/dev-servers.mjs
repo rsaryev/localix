@@ -149,6 +149,9 @@ export function observeChildProcess(child, label) {
   return { exited, outcome: () => outcome }
 }
 
+/** Above the workspace's persistent dev tasks, with room for more packages. */
+const WORKSPACE_DEV_CONCURRENCY = 64
+
 export function resolveDevTurboCommands(workspace) {
   const apiFilter = '--filter=@localixai/api'
   const frontendFilters = workspace
@@ -162,7 +165,16 @@ export function resolveDevTurboCommands(workspace) {
   return {
     prepare: ['x', 'turbo', 'dev:prepare', '--output-logs=new-only', apiFilter, ...frontendFilters],
     api: ['x', 'turbo', 'dev', '--only', apiFilter],
-    frontend: ['x', 'turbo', 'dev', '--only', ...frontendFilters],
+    // Every workspace package's persistent `dev` runs at once; Turbo refuses a run whose persistent
+    // tasks reach its default concurrency of 10, which the workspace passed as plugins were added.
+    frontend: [
+      'x',
+      'turbo',
+      'dev',
+      '--only',
+      ...(workspace ? [`--concurrency=${WORKSPACE_DEV_CONCURRENCY}`] : []),
+      ...frontendFilters,
+    ],
   }
 }
 

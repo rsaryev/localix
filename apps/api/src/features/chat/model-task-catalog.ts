@@ -19,6 +19,11 @@ interface ModelTaskDescriptor {
   toggleable?: boolean
   /** Behaviour before the user stores an explicit on/off choice. */
   defaultEnabled?: boolean
+  /**
+   * The kind of model the workload runs on. Absent: a chat model from the catalog. `embedding`:
+   * an embedding model, chosen and switched by its own service (semantic search owns its state).
+   */
+  modelKind?: 'embedding'
 }
 
 /**
@@ -47,6 +52,15 @@ export const AUX_MODEL_TASKS = [
     hint: 'Runs delegated sub-agents',
     fallbackLabel: 'Use session model',
     toggleable: true,
+  },
+  {
+    key: 'semanticSearch',
+    label: 'Semantic search',
+    hint: 'Finds chats by meaning, for search and the agent',
+    fallbackLabel: 'EmbeddingGemma 2',
+    toggleable: true,
+    defaultEnabled: false,
+    modelKind: 'embedding',
   },
 ] as const satisfies readonly ({ key: string } & ModelTaskDescriptor)[]
 

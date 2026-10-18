@@ -113,6 +113,7 @@ export function buildOptionalToolPorts(
       skillOverrides: params.skillOverrides,
       memoryScope: params.memoryScope,
       announceCapabilityChange: deps.announceCapabilityChange,
+      globalSearch: deps.globalSearch,
     }),
     jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,
     delegate: buildDelegateOptions({ userId, session, agentProfile, taskDelegation }),

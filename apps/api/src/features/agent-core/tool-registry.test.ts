@@ -38,7 +38,7 @@ const maximalRegistryOptions = {
   },
   optional: {
     memory: inertTool('memory'),
-    history_search: inertTool('history_search'),
+    global_search: inertTool('global_search'),
     tool_output: inertTool('tool_output'),
     context_budget: inertTool('context_budget'),
     skill: inertTool('skill'),

@@ -1,3 +1,4 @@
+import { LOCAL_PROVIDER_ID, LocalConnectPanel } from './LocalConnectPanel'
 import { useState, type ReactNode } from 'react'
 import { Check, Copy, ExternalLink, KeyRound, LogIn, Plus, X } from 'lucide-react'
 import type { ProviderEntry } from '@localixai/agent/catalog'
@@ -140,6 +141,10 @@ export function AddConnectionForm({
     } finally {
       setBusy(false)
     }
+  }
+
+  if (provider.id === LOCAL_PROVIDER_ID) {
+    return <LocalConnectPanel nav={nav} onAdded={onAdded} onAddApiKey={onAddApiKey} />
   }
 
   return (

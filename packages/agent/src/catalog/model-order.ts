@@ -1,10 +1,24 @@
-import type { CatalogModel } from './types'
+import type { CatalogModel, ModelKind } from './types'
+
+/** A model's kind, with absence read as chat (what every runtime adapter lists). */
+export const modelKindOf = (model: Pick<CatalogModel, 'kind'>): ModelKind => model.kind ?? 'chat'
+
+/** Providers that run on this computer (the host's `local` provider). They lead every list. */
+export const ON_DEVICE_PROVIDER_IDS: ReadonlySet<string> = new Set(['local'])
+
+/** On-device providers first, source order kept within each band. */
+export function onDeviceFirst<T>(providers: readonly T[], providerId: (provider: T) => string): T[] {
+  return [...providers].sort(
+    (left, right) =>
+      Number(ON_DEVICE_PROVIDER_IDS.has(providerId(right))) -
+      Number(ON_DEVICE_PROVIDER_IDS.has(providerId(left))),
+  )
+}
 
 /**
- * Sort provider-like values by OAuth capability while preserving their source
- * order within both bands. `oauthProviderIds` is authoritative because a
- * provider may support both OAuth and API keys while exposing `api-key` as its
- * default auth type.
+ * Sort provider-like values for display: on-device providers first, then by OAuth capability,
+ * preserving source order within each band. `oauthProviderIds` is authoritative because a
+ * provider may support both OAuth and API keys while exposing `api-key` as its default auth type.
  */
 export function sortProvidersOAuthFirst<T>(
   providers: readonly T[],
@@ -12,10 +26,11 @@ export function sortProvidersOAuthFirst<T>(
   providerId: (provider: T) => string,
 ): T[] {
   const oauthIds = oauthProviderIds instanceof Set ? oauthProviderIds : new Set(oauthProviderIds)
-  return [...providers].sort(
-    (left, right) =>
-      Number(oauthIds.has(providerId(right))) - Number(oauthIds.has(providerId(left))),
-  )
+  const band = (provider: T) => {
+    const id = providerId(provider)
+    return ON_DEVICE_PROVIDER_IDS.has(id) ? 0 : oauthIds.has(id) ? 1 : 2
+  }
+  return [...providers].sort((left, right) => band(left) - band(right))
 }
 
 function releaseTimestamp(model: CatalogModel): number | undefined {

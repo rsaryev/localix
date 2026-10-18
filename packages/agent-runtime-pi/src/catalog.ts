@@ -133,6 +133,11 @@ export function createPiCatalog(options: PiCatalogOptions = {}) {
       return cloneCatalog(projection)
     },
 
+    /** A host-owned provider's list changed; the next `list()` projects again. */
+    invalidate() {
+      projection = undefined
+    },
+
     async refresh(refresh: EngineCatalogRefreshOptions): Promise<EngineCatalogRefreshResult> {
       const result = await models.refresh({
         allowNetwork: refresh.allowNetwork,

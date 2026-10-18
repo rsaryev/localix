@@ -104,6 +104,7 @@ export function ModelPickerDrawer({
       initialQuery={seed?.query}
       initialProviderId={seed?.providerId}
       initialConnectionId={seed?.connectionId}
+      initialWorkload={seed?.workload}
       initialAgentId={initialAgentId}
       onAgentTargetChange={onAgentTargetChange}
       onApplyPartyRoute={onApplyPartyRoute}

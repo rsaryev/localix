@@ -13,6 +13,8 @@ import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
 import { bestFieldScore } from '../agent-core/search/match'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
 import { localixResourceUri, localixUiUri } from '@localixai/plugin-sdk/navigation'
+import type { MessageSearchReads } from './message-search-reads'
+import { hybridMessageHits, hybridSessionHits } from './search-provider-hybrid'
 
 /**
  * A search hit's id IS a `localix://resource/chat` resource URI (that is what makes a result
@@ -47,6 +49,8 @@ export interface MessageSearchHit {
 export interface ChatSearchPort {
   listSessions(userId: string, projectId?: string | null): Promise<SessionSearchRow[]>
   searchMessages(userId: string, query: string, limit: number): Promise<MessageSearchHit[]>
+  /** The reads of the hybrid strategy; without them a semantic query falls back to words. */
+  hybridReads?: MessageSearchReads
 }
 
 /**
@@ -92,6 +96,13 @@ export function createSessionsSearchProvider(port: ChatSearchPort): SearchProvid
       const rows = await port
         .listSessions(userId, query.projectId)
         .catch(() => [] as SessionSearchRow[])
+      if (query.semantic) {
+        return hybridSessionHits(
+          { sessions: rows, toUri: sessionUri },
+          { ...query, semantic: query.semantic },
+          SESSION_CAP,
+        )
+      }
       const hits: SearchHit[] = []
       for (const s of rows) {
         if (query.projectId !== undefined && s.projectId !== query.projectId) continue
@@ -206,6 +217,17 @@ export function createMessagesSearchProvider(port: ChatSearchPort): SearchProvid
     tier: 'eager',
     icon: 'message',
     async search(userId, query) {
+      if (query.semantic && port.hybridReads) {
+        const sessions = await port
+          .listSessions(userId, query.projectId)
+          .catch(() => [] as SessionSearchRow[])
+        return hybridMessageHits(
+          { reads: port.hybridReads, sessions, toUri: messageUri },
+          userId,
+          { ...query, semantic: query.semantic },
+          MESSAGE_CAP,
+        )
+      }
       // Best-effort title map so a message hit reads as "in <chat>".
       const [hits, sessions] = await Promise.all([
         port.searchMessages(userId, query.text, MESSAGE_CAP).catch(() => [] as MessageSearchHit[]),

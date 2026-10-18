@@ -1,5 +1,5 @@
 import { HumanInLoopDismissedError, HumanInLoopTimeoutError } from './human-in-loop'
-import { AgentRunError } from './errors'
+import { AgentRunError, MODEL_NOT_DOWNLOADED } from './errors'
 import { isProviderHttpError, providerRetryDelayMs } from '../utils/provider-http-error'
 import { agentRunErrorToInfo } from './agent-run-error-info'
 import type { AgentErrorInfo } from './error-classification-contracts'
@@ -64,6 +64,18 @@ function classifyErrorKind(error: unknown): AgentErrorInfo {
 
   if (error instanceof AgentRunError) {
     return agentRunErrorToInfo(error)
+  }
+
+  // A local model that is not on this computer yet: the provider's own sentence says what to do.
+  if (error instanceof Error && error.message.includes(MODEL_NOT_DOWNLOADED)) {
+    return {
+      kind: 'fatal',
+      userMessage: error.message
+        .slice(error.message.indexOf(MODEL_NOT_DOWNLOADED) + MODEL_NOT_DOWNLOADED.length)
+        .trim(),
+      retryable: false,
+      modelUnavailable: 'model_not_downloaded',
+    }
   }
 
   // A provider rejection — recognized by NAME, and its status read back out of the

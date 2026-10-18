@@ -6,6 +6,7 @@ import { loadScopesWithinBudget, PLUGIN_SCOPE_BUDGET_MS } from '../features/plug
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
 import { createPluginHostServices } from './plugin-host-services'
+import type { SemanticService } from '../features/embeddings/service'
 import { createProjectsRepository } from '../features/projects/repository'
 import type { createSecretsStore } from '../features/secrets/store'
 import type { createSecretExposureShield } from '../features/secrets/exposure-shield'
@@ -48,6 +49,7 @@ export interface PluginHostsPhaseInput
   secretsStore: ReturnType<typeof createSecretsStore>
   secretExposureShield: ReturnType<typeof createSecretExposureShield>
   mediaStore: ReturnType<typeof createMediaStore>
+  semanticService: SemanticService
 }
 
 export interface PluginHostsPhase {
@@ -75,6 +77,7 @@ export function createPluginHostsPhase({
   contextProviderRegistry,
   textInputSurfaceRegistry,
   notifications,
+  semanticService,
 }: PluginHostsPhaseInput): PluginHostsPhase {
   const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
   const pluginConditions = createPluginConditions(notifications, env.LOCALIX_DEFAULT_USER_ID)
@@ -98,6 +101,7 @@ export function createPluginHostsPhase({
   const hostForPlugin = createPluginHostServices({
     hostRefs,
     serviceRefs,
+    semanticService,
     secretsStore,
     secretExposureShield,
     mediaStore,

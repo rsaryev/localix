@@ -15,7 +15,7 @@ automatically.
 | ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Memory              | Store keyed Markdown notes at session, project, or global scope                        | Use `/memory`, the `memory` tool, or deliberate file edits; tool writes enforce the note budget        |
 | Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `skill` tool; see [Skills](skills.md)          |
-| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `history_search`; transcripts are not injected on every turn                           |
+| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `global_search`; transcripts are not injected on every turn                            |
 | Learning Studio     | Build, import, export, and study file-authored courses                                 | The bundled `learning` plugin is enabled by default but can be disabled; courses belong to one session |
 | Memory-provider API | Let one enabled native plugin replace or append built-in prompt memory                 | Provider calls are bounded and best-effort; a disabled plugin contributes nothing                      |
 
@@ -85,9 +85,11 @@ remains frozen. Set `LOCALIX_FREEZE_CONTEXT=0` to rebuild the snapshot on each r
 
 ### Recall and courses
 
-`history_search` has three modes: a `query` performs SQLite FTS discovery grouped by session, a
-`sessionId` reads a bounded window around a message, and no arguments browse recent sessions. The
-tool returns previews and message identifiers rather than replaying a full transcript.
+`global_search` recalls past work. A `query` runs the search palette's own search — words, and
+meaning when [semantic search](semantic-search.md) is on — with `domains` narrowing it to categories
+such as messages or chats; `around_message_id` or `session_id` reads a bounded window of a
+conversation; no arguments browse recent sessions. The tool returns previews and message identifiers
+rather than replaying a full transcript.
 
 Learning Studio validates course bundles authored under `.localix/learning-drafts/`, imports valid
 content into the owning session's plugin data, and exposes the course hierarchy as session-scoped
@@ -143,9 +145,9 @@ encoded keys.
 - Memory scope filters recall and tool access; it is not a filesystem sandbox for other tools.
 - Memory Markdown is plaintext on disk. It is readable by processes with access to the same OS
   account and home directory.
-- `history_search` must survive the active role and tool policy. Discovery also requires SQLite
-  FTS5; an unavailable FTS table returns an error instead of falling back to transcript injection.
-- A whole-tool denial without later argument exceptions removes `memory`, `history_search`, or
+- `global_search` must survive the active role and tool policy. Discovery also requires SQLite FTS5;
+  an unavailable FTS table returns an error instead of falling back to transcript injection.
+- A whole-tool denial without later argument exceptions removes `memory`, `global_search`, or
   `skill` from the roster. Conditional rules can retain a tool while refusing individual calls.
   Built-in memory remains a separate prompt input.
 - A memory provider's `onRunEnd` hook is fire-and-forget. Failure or timeout does not roll back the

@@ -132,7 +132,14 @@ describe('development Turbo orchestration', () => {
       '--filter=@localixai/api',
       '--filter=!@localixai/api',
     ])
-    expect(commands.frontend).toEqual(['x', 'turbo', 'dev', '--only', '--filter=!@localixai/api'])
+    expect(commands.frontend).toEqual([
+      'x',
+      'turbo',
+      'dev',
+      '--only',
+      '--concurrency=64',
+      '--filter=!@localixai/api',
+    ])
   })
 })
 

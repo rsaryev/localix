@@ -26,6 +26,8 @@ const modelCostSchema = modelCostRatesSchema.extend({
 export const catalogModelSchema = z.object({
   id: z.string(),
   name: z.string(),
+  /** Absent: a chat model. */
+  kind: z.enum(['chat', 'embedding']).optional(),
   providerId: z.string(),
   providerName: z.string(),
   contextLength: z.number().int().nonnegative().optional(),
@@ -47,6 +49,12 @@ export const catalogModelSchema = z.object({
   cost: modelCostSchema.optional(),
   pricingLabel: z.string().optional(),
   family: z.string().optional(),
+  embedding: z
+    .object({
+      dimensions: z.number().int().positive(),
+      storedDimensions: z.number().int().positive(),
+    })
+    .optional(),
 })
 
 export const catalogResponseSchema = z.object({

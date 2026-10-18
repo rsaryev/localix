@@ -10,19 +10,20 @@ need a catalog entry, and sign-in appears only when that runtime reports an OAut
 
 ## What you can do
 
-| Capability                | Mechanism                                                                                 | Boundary                                                             |
-| ------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Connect with an API key   | Store a key from the model picker's provider form                                         | A provider must exist in the runtime catalog                         |
-| Sign in through OAuth     | Start the interaction advertised by the runtime adapter                                   | Availability and interaction style depend on the provider definition |
-| Keep separate connections | Add and label more than one connection for the same provider                              | A session stores one preferred connection                            |
-| Manage connection keys    | Add, remove, enable, or disable masked keys                                               | Cannot remove the only key or disable the last enabled key           |
-| Choose a session model    | Bind a catalog model and connection from the composer                                     | The model must belong to the connection's provider                   |
-| Inspect model fit         | Compare capabilities, modalities, limits, wire protocol, and pricing including tiers      | Catalog records can be partial or change with the active runtime     |
-| Narrow the model list     | Search models, or filter by tools, reasoning, vision, priced caching, or free             | A facet appears only when some model in the list matches it          |
-| Find a provider           | Search the provider column; it filters connections and providers to add                   | It never narrows the model list                                      |
-| Choose reasoning effort   | Pick a level in the model details panel's Settings, remembered per agent and model        | A model that publishes none offers only "off"                        |
-| Route auxiliary work      | Select model slots for session titles, inline completion, and delegated agents            | Each unset route uses its documented fallback                        |
-| Get new models            | The model list refreshes in the background; **Settings → System → Model list** checks now | Only providers whose models come from the generated catalog          |
+| Capability                | Mechanism                                                                                      | Boundary                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Connect with an API key   | Store a key from the model picker's provider form                                              | A provider must exist in the runtime catalog                         |
+| Sign in through OAuth     | Start the interaction advertised by the runtime adapter                                        | Availability and interaction style depend on the provider definition |
+| Keep separate connections | Add and label more than one connection for the same provider                                   | A session stores one preferred connection                            |
+| Manage connection keys    | Add, remove, enable, or disable masked keys                                                    | Cannot remove the only key or disable the last enabled key           |
+| Choose a session model    | Bind a catalog model and connection from the composer                                          | The model must belong to the connection's provider                   |
+| Inspect model fit         | Compare capabilities, modalities, limits, wire protocol, and pricing including tiers           | Catalog records can be partial or change with the active runtime     |
+| Narrow the model list     | Search models, or filter by tools, reasoning, vision, priced caching, or free                  | A facet appears only when some model in the list matches it          |
+| Find a provider           | Search the provider column; it filters connections and providers to add                        | It never narrows the model list                                      |
+| Choose reasoning effort   | Pick a level in the model details panel's Settings, remembered per agent and model             | A model that publishes none offers only "off"                        |
+| Route auxiliary work      | Select model slots for session titles, inline completion, and delegated agents                 | Each unset route uses its documented fallback                        |
+| Get new models            | The model list refreshes in the background; **Settings → System → Model list** checks now      | Only providers whose models come from the generated catalog          |
+| Run models locally        | Connect **Local** (no key); picking a model downloads it — see [Local models](local-models.md) | The model runs on this computer's memory and processor               |
 
 ## How it works
 
@@ -127,7 +128,7 @@ shipped. Localix adds no metadata of its own.
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Startup                              | The last refreshed lists are restored from `~/.localix/model-catalog/` before the first catalog answer. No request is sent.                |
 | Shortly after startup, then hourly   | A provider whose stored list is older than six hours is fetched again, while the app is idle. The rest answer from disk.                   |
-| **Settings → System → Model list**   | **Check for new models** fetches every list now, including when automatic checks are off.                                                  |
+| **Settings → Models → Model list**   | **Check for new models** fetches every list now, including when automatic checks are off.                                                  |
 | A source is unreachable or malformed | The whole check fails and every provider keeps its current list; the server logs the cause. The setting row shows it after a manual check. |
 
 A refresh adds models and updates their details; it does not remove a model the shipped baseline

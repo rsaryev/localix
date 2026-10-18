@@ -34,7 +34,7 @@ const FIXED_NOW = () => '2026-06-01T12:00:00.000Z'
  */
 const LEAN_ROSTER_DISABLED: readonly string[] = [
   TOOL.memory,
-  TOOL.history_search,
+  TOOL.global_search,
   TOOL.vault,
   TOOL.skill,
   TOOL.jobs,

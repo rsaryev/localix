@@ -23,7 +23,7 @@ message in its view.
 | See where the view begins | An **Earlier turns checkpointed** divider marks the last evicted message.               | Only the newest checkpoint is drawn; a topic change removes the line.       |
 | Keep a message whole      | Right-click a message → **Pin to agent context**; a pinned mark appears under it.       | The next checkpoint preserves it; a late pin uses a bounded context insert. |
 | Start a clean context     | Ask the agent to start a new topic, or open a new chat.                                 | Earlier messages stay visible in the stored transcript.                     |
-| Recover older output      | The agent follows `tool_output` handles or `history_search` pointers.                   | The tool must be in the agent's roster for its pointer to appear.           |
+| Recover older output      | The agent follows `tool_output` handles or `global_search` pointers.                    | The tool must be in the agent's roster for its pointer to appear.           |
 | Replay a stored session   | Run `replay-context-policy <sessionId>` against `localix.db`.                           | Read-only; prints every number a checkpoint decision turned on.             |
 
 ### Context limit
@@ -141,8 +141,8 @@ lose their stored reasoning, which a rewritten prefix would invalidate anyway.
 | `# Context checkpoint ahead` | Once, past the 72% mark: what a checkpoint keeps of older turns. |
 | `# Pinned messages`          | A pin the checkpoint in force shows only in part or not at all.  |
 
-Cards and folded answers point at `history_search(around_message_id="…")`, which scrolls around a
-message without needing its session id. The pointers appear only when `history_search` is in the
+Cards and folded answers point at `global_search(around_message_id="…")`, which scrolls around a
+message without needing its session id. The pointers appear only when `global_search` is in the
 agent's roster.
 
 ### Hooks
@@ -181,11 +181,11 @@ for the next measured request; only a view that exceeds the ceiling checkpoints 
 Completed tool calls cross a durable artifact barrier before the next model request, so masking can
 cite the original `tool_call_id`. Run preparation requires `tool_output` with its `get` operation.
 
-| Recovery path    | What it restores                              | Boundary                                                         |
-| ---------------- | --------------------------------------------- | ---------------------------------------------------------------- |
-| `tool_output`    | Stored text or successful mutation input.     | Active branch only; one replay is clipped at 100,000 characters. |
-| `history_search` | Messages around an evicted or folded message. | This user's history only.                                        |
-| Read or rerun    | Current files or reproducible command output. | Required for stale reads or unstored detail.                     |
+| Recovery path   | What it restores                              | Boundary                                                         |
+| --------------- | --------------------------------------------- | ---------------------------------------------------------------- |
+| `tool_output`   | Stored text or successful mutation input.     | Active branch only; one replay is clipped at 100,000 characters. |
+| `global_search` | Messages around an evicted or folded message. | This user's history only.                                        |
+| Read or rerun   | Current files or reproducible command output. | Required for stale reads or unstored detail.                     |
 
 ## Configuration
 

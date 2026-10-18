@@ -60,6 +60,25 @@ request; other island scenarios dismiss pending requests through `/rpc/tools/int
 scenario refuses to send anything unless the running API process left the preload's marker beside
 the capture database. The run is real; the model reply is scripted.
 
+## Local models and semantic search
+
+`local-models/settings` and `search/meaning-match` are opt-in: they need the pinned embedding model
+in a dedicated models folder, and never download one or read a person's own `~/.localix/models`.
+Clone the runtime and the embedding model into the capture root, then start the isolated API with
+`LOCALIX_MODELS_DIR` pointing there:
+
+```bash
+M=<capture-root>/models; mkdir -p $M/models $M/runtime
+cp -cR ~/.localix/models/runtime/b11600 $M/runtime/
+cp -cR ~/.localix/models/models/ggml-org--embeddinggemma-2-GGUF--Q8_0 $M/models/
+LOCALIX_MODELS_DIR=$M LOCALIX_DB_FILE=<capture-root>/localix.db … bun scripts/dev-servers.mjs
+LOCALIX_CAPTURE_LOCAL_MODELS=1 bun run test:screenshots --grep 'local-models/|search/meaning'
+```
+
+The seed turns semantic search on and waits for the real index. The query shares only stopwords with
+the matched fixture message, so the hit and its **meaning** label are the model's work. Both
+scenarios start from the workspace (`start` in `plan.mjs`) rather than an open conversation.
+
 ## Demo HTTP responses
 
 The optional runner starts a small Bun HTTP fixture on `127.0.0.1:5160` for the browser preview and

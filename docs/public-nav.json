@@ -88,6 +88,8 @@
           "title": "Models & context",
           "pages": [
             "features/providers.md",
+            "features/local-models.md",
+            "features/semantic-search.md",
             "features/context-checkpoints.md",
             "features/tools.md",
             "features/tool-budget.md"

@@ -160,7 +160,7 @@ test('recovery delivers one bounded report to its parent participant without rer
   expect(sent[0]!.to).toEqual({ participant: 'agent:builtin:lead', handle: 'lead' })
   expect(sent[0]!.content.length).toBeLessThan(13000)
   // The same truncation marker as a live report: it names where the rest of the report lives.
-  expect(sent[0]!.content).toContain('history_search session_id:"child"')
+  expect(sent[0]!.content).toContain('global_search session_id:"child"')
   expect(sent[0]!.content).not.toContain('PRIVATE')
   expect(
     (

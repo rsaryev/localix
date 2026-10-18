@@ -38,7 +38,7 @@ full-text terms together, not a substring, regular expression, or semantic simil
 Punctuation-only input has no searchable terms. An unavailable index or a search failure can appear
 as no results.
 
-An agent with `history_search` can recover earlier text when you refer to past work, follow a
+An agent with `global_search` can recover earlier text when you refer to past work, follow a
 checkpoint pointer, or inspect another session in your workspace:
 
 | Request             | Result                                           | Boundary                                                |

@@ -73,4 +73,9 @@ export interface AgentEngine {
    * provider's failure: it is reported in `errors` and that provider keeps its list.
    */
   refreshCatalog(options: EngineCatalogRefreshOptions): Promise<EngineCatalogRefreshResult>
+  /**
+   * Forget the built catalog: a provider whose list the HOST owns (local models) changed it.
+   * The next `listCatalog()` builds again.
+   */
+  invalidateCatalog?(): void
 }

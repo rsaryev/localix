@@ -2,7 +2,7 @@
  * The tools a run hands to the registry ALREADY BUILT.
  *
  * Most tools reach `createRuntimeToolRegistry` as an options object and are constructed
- * inside it; these seven cannot, because their constructors need host collaborators the
+ * inside it; these cannot, because their constructors need host collaborators the
  * agent-core registry must not know (a chat repository, the memory/user stores, the
  * context-store, the loaded plugin set). Building them here keeps that exception in ONE
  * place and off the assembly path, which is what let `runtime-tools.ts` stay a wiring
@@ -17,8 +17,11 @@ import { TOOL } from '../../../agent-core/tool-names'
 import { agentParticipant } from '../../../../db/participant'
 import { createMemoryTool } from '../../../agent-core/tools/memory/memory'
 import { createSkillTool } from '../../../agent-core/tools/skill'
-import { createHistorySearchTool } from '../../../agent-core/tools/history/history-search'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
+import {
+  createGlobalSearchTool,
+  type GlobalSearchPort,
+} from '../../../agent-core/tools/global-search/global-search'
 import type { createContextStoreRepository } from '../../../context-store/repository'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { createMemoryRepository } from '../../../memory/repository'
@@ -43,12 +46,14 @@ export interface DirectToolInstanceDeps {
   memoryScope?: MemoryScope
   /** The host's capability announcement, for the skill tool's save/delete (see `createSkillTool`). */
   announceCapabilityChange?: () => void
+  /** The search palette's service; absent in hosts built without global search. */
+  globalSearch?: GlobalSearchPort
 }
 
 /** The pre-built tool slots of `createRuntimeToolRegistry`, ready to spread into it. */
 export function buildDirectToolInstances(
   deps: DirectToolInstanceDeps,
-): Pick<OptionalToolPorts, 'memory' | 'skill' | 'history_search' | 'tool_output'> {
+): Pick<OptionalToolPorts, 'memory' | 'skill' | 'global_search' | 'tool_output'> {
   const {
     agentProfile,
     disabledTools,
@@ -81,8 +86,14 @@ export function buildDirectToolInstances(
           deps.announceCapabilityChange,
         )
       : undefined,
-    history_search: isToolDirect(agentProfile, TOOL.history_search)
-      ? createHistorySearchTool(repo, userId)
+    global_search: isToolDirect(agentProfile, TOOL.global_search)
+      ? createGlobalSearchTool({
+          ...(deps.globalSearch ? { port: deps.globalSearch } : {}),
+          history: repo,
+          userId,
+          sessionId: session.id,
+          projectId: session.projectId ?? null,
+        })
       : undefined,
     // Search + exact-recovery halves of context externalization. The final
     // disabledTools filter may remove the consolidated tool like any built-in.

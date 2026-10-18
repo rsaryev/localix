@@ -6,7 +6,7 @@ import { SettingsRow, SettingsRows, SettingsSection } from './SettingsScaffold'
 import { SettingsActionActivity } from './SettingsActionActivity'
 
 /**
- * Settings → System → Model list: an explicit check for new models and prices.
+ * Settings → Models → Model list: an explicit check for new models and prices.
  *
  * The server checks on its own after startup and every hour, refetching a provider's list once it
  * is six hours old; this asks for every list now. A check that changes nothing, or one that fails,
@@ -44,7 +44,7 @@ export function ModelCatalogSection() {
 
   return (
     <SettingsSection
-      anchor="system-model-list"
+      anchor="model-list"
       title="Model list"
       description="New models and prices come from models.dev, OpenRouter, Vercel AI Gateway, and NVIDIA in the background, without an app update."
     >

@@ -101,7 +101,7 @@ describe('# Approved plan', () => {
 describe('no prompt names a tool its run lacks', () => {
   test('the detector sees a backticked name, an action call and a bare compound name', () => {
     expect(phantoms('call `plan` now', new Set())).toContain('plan')
-    expect(phantoms('use history_search', new Set())).toContain('history_search')
+    expect(phantoms('use global_search', new Set())).toContain('global_search')
     expect(phantoms('# Available tools\n- plan\n\nnothing', new Set())).toEqual([])
   })
 

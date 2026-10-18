@@ -144,7 +144,7 @@ describe('catalog refresh', () => {
   test('POST /refresh checks now, past the freshness window', async () => {
     const seen: unknown[] = []
     const app = createCatalogRoutes({
-      getCatalog: async () => catalogNamed('m'),
+      getFullCatalog: async () => catalogNamed('m'),
       check: async (options) => {
         seen.push(options)
         return { ok: true, changed: true, failedProviders: [] }

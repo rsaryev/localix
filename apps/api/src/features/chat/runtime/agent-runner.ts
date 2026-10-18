@@ -24,7 +24,7 @@ import { registerContextToolClasses } from '@localixai/agent'
 // `read` (images included) is already a base read-result tool. `view_image` was removed, but
 // saved sessions still hold its results, which are recoverable observations like a read.
 registerContextToolClasses({
-  readResult: ['view_image', 'history_search'],
+  readResult: ['view_image', 'global_search'],
 })
 
 import type { RunnerDeps } from './agent-runner-types'

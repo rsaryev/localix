@@ -103,10 +103,11 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'knowledge',
     exposure: CHAT_DEFAULT,
   },
-  history_search: {
-    name: 'history_search',
-    label: 'History search',
-    description: 'Search across past conversation messages.',
+  global_search: {
+    name: 'global_search',
+    label: 'Global search',
+    description:
+      'Search chats, messages, files and every searchable resource; read past conversations.',
     category: 'knowledge',
     exposure: CHAT_DEFAULT,
   },

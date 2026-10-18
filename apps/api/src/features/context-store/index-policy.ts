@@ -23,7 +23,7 @@ import { TOOL } from '../agent-core/tool-names'
  */
 export const INDEX_SKIPPED_TOOLS: ReadonlySet<string> = new Set<string>([
   TOOL.tool_output,
-  TOOL.history_search,
+  TOOL.global_search,
   // Historical sessions may still contain model-visible image results from the removed
   // `attach_file` and `view_image` tools: base64 pixels, nothing to index.
   'attach_file',

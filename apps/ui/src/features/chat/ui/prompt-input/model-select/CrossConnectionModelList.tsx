@@ -67,10 +67,10 @@ export function CrossConnectionModelList({
         }
       />
       {searchToolbar}
-      <CommandList className="scrollbar-thin max-h-full min-h-0 flex-1 overflow-y-auto">
-        {items.length === 0 ? (
-          <EmptyHint className="h-auto py-6 text-xs">{emptyLabel}</EmptyHint>
-        ) : (
+      {items.length === 0 ? (
+        <EmptyHint className="flex-1 text-xs">{emptyLabel}</EmptyHint>
+      ) : (
+        <CommandList className="scrollbar-thin max-h-full min-h-0 flex-1 overflow-y-auto">
           <CommandGroup className={PICKER_LIST}>
             {items.map((item) => (
               <ModelListItem
@@ -89,8 +89,8 @@ export function CrossConnectionModelList({
               />
             ))}
           </CommandGroup>
-        )}
-      </CommandList>
+        </CommandList>
+      )}
     </div>
   )
 }

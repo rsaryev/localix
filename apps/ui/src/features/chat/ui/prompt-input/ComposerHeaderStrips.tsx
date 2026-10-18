@@ -3,6 +3,7 @@ import type { ChatUsagePayload } from '@localixai/agent'
 import { StatusTipStrip } from './StatusTipStrip'
 import { SpendAlertStrip } from './SpendAlertStrip'
 import { UpdateStrip } from './UpdateStrip'
+import { LocalModelsStrip } from './LocalModelsStrip'
 import { SessionSurface } from '@/shared/contrib/sessionSurfaces'
 import { WorkStrip } from './WorkStrip'
 import { PlanStrip } from '../plan/PlanStrip'
@@ -70,6 +71,8 @@ export function ComposerHeaderStrips({
     <div className="overflow-hidden rounded-t-(--radius-composer)">
       {/* A new app version is ready. About the app, not this session, so it leads the stack. */}
       <UpdateStrip isFocused={isFocused} />
+      {/* Local models downloading or paused: about the app too, where its update shows. */}
+      <LocalModelsStrip isFocused={isFocused} />
       {/* One thin contextual tip strip; stream status lives under the active message. */}
       <StatusTipStrip tip={tip} onDismissTip={onDismissTip} />
       {/* Who is in the conversation. First in the stack because it is the least volatile thing

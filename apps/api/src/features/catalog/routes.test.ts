@@ -29,7 +29,7 @@ const catalog = (name: string): CatalogResponse => ({
 describe('GET /rpc/models/catalog', () => {
   test('a client holding the current build gets a 304 with no body', async () => {
     const current = catalog('M')
-    const app = createCatalogRoutes({ getCatalog: async () => current })
+    const app = createCatalogRoutes({ getFullCatalog: async () => current })
 
     const first = await app.request('/')
     expect(first.status).toBe(200)
@@ -46,7 +46,7 @@ describe('GET /rpc/models/catalog', () => {
 
   test('a new build is a new tag, so a stale copy is replaced', async () => {
     let current = catalog('Before')
-    const app = createCatalogRoutes({ getCatalog: async () => current })
+    const app = createCatalogRoutes({ getFullCatalog: async () => current })
     const etag = (await app.request('/')).headers.get('etag')!
 
     current = catalog('After')

@@ -201,7 +201,7 @@ describe('planCheckpoint + projectCheckpoint', () => {
     expect(checkpoint.evictedThroughId).toBeUndefined()
     expect(answer && 'text' in answer ? answer.text : '').toContain(ELISION_MARKER)
     expect(answer && 'text' in answer ? answer.text : '').toContain(
-      `history_search(around_message_id="${entries[1]!.message.id}")`,
+      `global_search(around_message_id="${entries[1]!.message.id}")`,
     )
   })
 })

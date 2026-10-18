@@ -46,7 +46,7 @@ async function mount(result: RefreshResult | Error) {
   }
 }
 
-describe('Settings → System → Model list', () => {
+describe('Settings → Models → Model list', () => {
   test('a check that succeeds says the list is up to date', async () => {
     const view = await mount({ ok: true, changed: true, failedProviders: [] })
     try {

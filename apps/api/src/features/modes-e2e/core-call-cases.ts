@@ -89,7 +89,7 @@ export const CORE_CALL_CASES: readonly CallCase[] = [
   row('read', 'a workspace image', { path: `${WORKSPACE}/shot.png` }, READ),
   row('search', 'a content search', { pattern: 'TODO' }, READ),
   row('research', 'a web search', { query: 'bun sqlite wal' }, READ),
-  row('history_search', 'a history search', { query: 'cache layer' }, READ),
+  row('global_search', 'a search', { query: 'cache layer' }, READ),
   row('context_budget', 'the budget', {}, READ),
   row('tool_output', 'a stored output', { action: 'get', id: 'out-1' }, READ),
 

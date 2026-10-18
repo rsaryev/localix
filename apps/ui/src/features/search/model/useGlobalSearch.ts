@@ -87,6 +87,7 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
   const [problem, setProblem] = useState<Problem | null>(null)
   const [domainProblems, setDomainProblems] = useState<Problem[]>(EMPTY_PROBLEMS)
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
+  // How the last answer was found: words, or words and meaning (semantic search on).
   const [debounced, setDebounced] = useState(opts.initialQuery ?? '')
 
   // Last-write-wins guard shared by the paged fetch AND load-more.

@@ -95,7 +95,7 @@ export async function buildRunPrompt(
     session,
     inputs.defaultCwd,
     otherChats,
-    toolset.runtimeTools.toolNames.includes(TOOL.history_search),
+    toolset.runtimeTools.toolNames.includes(TOOL.global_search),
   )
   const runtimeSections: RuntimeSection[] = triggerContext
     ? [

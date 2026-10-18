@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Problem, SearchHit } from '../agent-core/search/provider'
+import type { SearchStrategyNote } from '../embeddings/contracts'
 
 /**
  * Request/response contracts for the ONE global-search endpoint (`POST /rpc/search`).
@@ -20,6 +21,10 @@ export const searchRequestSchema = z.object({
   sessionId: z.string().nullish(),
   /** Active project (optional scoping). */
   projectId: z.string().nullish(),
+  /** Search every project instead of `projectId`'s (project-scoped domains stop filtering). */
+  allProjects: z.boolean().optional(),
+  /** `lexical` forces words-only matching; omitted = the person's setting decides. */
+  strategy: z.enum(['auto', 'lexical']).optional(),
 })
 
 export type SearchRequest = z.infer<typeof searchRequestSchema>
@@ -42,6 +47,8 @@ export interface SearchResponse {
   total: number
   /** Opaque offset cursor for the scoped view ("show all"); absent when there is no more. */
   nextCursor?: string
+  /** How this query was answered: words only, or words and meaning. */
+  strategy: SearchStrategyNote
   /**
    * Domains that could not answer. Present ONLY when something failed, so an absent
    * field means "these results are complete" — the distinction a plain `[]` erased.

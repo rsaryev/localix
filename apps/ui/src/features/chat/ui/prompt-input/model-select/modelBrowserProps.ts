@@ -36,6 +36,8 @@ export interface ModelBrowserProps {
   /** Prefer a connected or connectable provider when the picker opens. */
   initialProviderId?: string
   initialConnectionId?: string
+  /** Open on this workload's row instead of the conversation's. */
+  initialWorkload?: string
   /**
    * Show the "For which task" column. Off when the browser picks a model for something that
    * is NOT a workload route — an agent definition, say — where a click on another task row
@@ -59,5 +61,7 @@ export interface ModelBrowserProps {
    * Put every participant on one model and level. Present only where a conversation with a
    * party can take it; absent, the "All agents" row is never offered.
    */
+  /** Close the picker: a link that takes the person elsewhere (Settings) dismisses it first. */
+  onDismiss?: () => void
   onApplyPartyRoute?: ApplyPartyRoute
 }

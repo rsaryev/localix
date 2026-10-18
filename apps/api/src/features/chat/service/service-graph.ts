@@ -156,6 +156,9 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       get plans() {
         return deps.plans
       },
+      get globalSearch() {
+        return deps.globalSearch
+      },
       get editorBufferText() {
         return deps.editorBufferText
       },

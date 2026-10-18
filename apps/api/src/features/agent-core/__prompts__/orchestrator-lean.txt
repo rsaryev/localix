@@ -75,7 +75,7 @@ Follow the house style.
 
 # Unavailable tools
 These exist but are switched off for this run. If the task needs one, propose it with `configure` — the user approves with one click; never claim the tool does not exist:
-- memory, history_search, vault, skill, jobs, browser — switched off by this agent's rules → configure {action:"propose", change:{kind:"tool.enable", name:"<tool>"}}
+- memory, global_search, vault, skill, jobs, browser — switched off by this agent's rules → configure {action:"propose", change:{kind:"tool.enable", name:"<tool>"}}
 
 # Answer formatting
 Replies render as GitHub Markdown with $…$ math plus the forms below; the user's style preferences override them.

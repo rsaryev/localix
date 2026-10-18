@@ -57,6 +57,10 @@ import { createSecretsRoutes } from './features/secrets/routes'
 import { createResourceRefRoutes } from './features/resource-refs/routes'
 import type { ResourceProviderRegistry } from './features/agent-core/resource-refs/provider'
 import { createSearchRoutes } from './features/search/routes'
+import { createSemanticRoutes } from './features/embeddings/routes'
+import { createLocalModelsRoutes } from './features/local-models/routes'
+import type { LocalModelsService } from './features/local-models/service'
+import type { SemanticService } from './features/embeddings/service'
 import type { SearchService } from './features/search/service'
 import type { SecretsService } from './features/secrets/service'
 import { createRealtimeRoute } from './features/realtime/ws'
@@ -136,6 +140,10 @@ export interface AppDeps extends ConversationRouteDeps {
   resourceRefsRegistry: ResourceProviderRegistry
   /** Global search — ONE endpoint fanning a query across every domain provider. */
   searchService: SearchService
+  /** Semantic search: model install, index state and its settings actions. */
+  semanticService: SemanticService
+  /** Models on this computer: catalog, downloads and the model server. */
+  localModelsService: LocalModelsService
   /** Frontend-published, immutable UI destination catalogs for agent discovery. */
   uiLocationCatalogService: UiLocationCatalogService
   /** Central secrets store — write-only values referenced by `secret:<KEY>` handles. */
@@ -276,6 +284,8 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
       }),
     )
     .route('/rpc/search', createSearchRoutes(deps.searchService))
+    .route('/rpc/semantic', createSemanticRoutes(deps.semanticService))
+    .route('/rpc/local-models', createLocalModelsRoutes(deps.localModelsService))
     .route(
       '/rpc/ui-locations',
       createUiLocationCatalogRoutes(deps.uiLocationCatalogService, {

@@ -105,10 +105,10 @@ describe('buildAgentSystemPrompt', () => {
     // The property under test is that the guidance tracks the FINAL roster, so the
     // strongest case is the negative one: a child with neither fork nor history
     // controls is told only to wait rather than inventing lifecycle operations.
-    expect(subagentRegistry.toolNames).not.toContain('history_search')
+    expect(subagentRegistry.toolNames).not.toContain('global_search')
     expect(subagentRegistry.toolNames).not.toContain('delegate')
     expect(subagentPrompt).toContain('Wait for its completion message')
-    expect(subagentPrompt).not.toContain('`history_search`')
+    expect(subagentPrompt).not.toContain('`global_search`')
 
     // The positive half of the same property: a roster that DOES carry the tool gets the
     // guidance. Without this the assertions above would pass on a prompt that simply
@@ -136,7 +136,7 @@ describe('buildAgentSystemPrompt', () => {
       activeSubAgents: [{ title: 'orphaned worker', task: 'child-session' }],
     })
     expect(lockedPrompt).not.toContain('`fork`')
-    expect(lockedPrompt).not.toContain('`history_search`')
+    expect(lockedPrompt).not.toContain('`global_search`')
     expect(lockedPrompt).toContain('Wait for its completion message')
   })
 

@@ -17,7 +17,7 @@ export {
 export type { ProviderResponseFacts } from '../utils/provider-http-error'
 export { createGateRefusalTracker, DEFAULT_GATE_REFUSAL_POLICY } from './gate-refusal-tracker'
 export type { GateRefusalPolicy, GateRefusalTracker, GateRefusalTrip } from './gate-refusal-tracker'
-export { AgentRunError, isAgentRunError } from './errors'
+export { AgentRunError, isAgentRunError, MODEL_NOT_DOWNLOADED } from './errors'
 export type { AgentRunErrorCode, ModelUnavailableReason } from './errors'
 export * from './human-in-loop'
 export * from './toolset'

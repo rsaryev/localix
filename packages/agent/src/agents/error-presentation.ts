@@ -89,6 +89,10 @@ export function presentErrorInfo(
           }
         : { reason: 'This connection has reached its usage limit.', actions: [providers] }
     }
+    // Not on this computer yet: its download (in the model picker) is the way, not a provider.
+    if (info.modelUnavailable === 'model_not_downloaded') {
+      return { reason: sentence(info.userMessage), actions: [] }
+    }
     if (info.modelUnavailable) return { reason: sentence(info.userMessage), actions: [providers] }
     // A retry sends the same history and fails the same way; the reason says what does help.
     if (info.kind === 'context_overflow') return { reason: sentence(info.userMessage), actions: [] }

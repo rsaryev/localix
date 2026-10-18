@@ -1,6 +1,38 @@
 import type { SettingsIndexEntry } from './settingsIndex'
 
 export const SYSTEM_SETTINGS_INDEX: SettingsIndexEntry[] = [
+  // Local models — models that run on this computer
+  {
+    id: 'local-models.installed',
+    tab: 'models',
+    tabLabel: 'Models',
+    title: 'Models on this computer',
+    description: 'Downloaded local models, their downloads, and removing them.',
+    keywords: ['local', 'offline', 'gguf', 'llama', 'remove', 'disk', 'pause', 'download'],
+    anchor: 'local-models-installed',
+  },
+  {
+    id: 'local-models.catalog',
+    tab: 'models',
+    tabLabel: 'Models',
+    title: 'Get local models',
+    description:
+      'Recommended Gemma 4 for this computer, popular models, or any by its Hugging Face id.',
+    keywords: [
+      'download',
+      'recommended',
+      'gemma',
+      'embedding',
+      'speed',
+      'quality',
+      'qwen',
+      'llama',
+      'hugging face',
+      'gguf',
+      'local provider',
+    ],
+    anchor: 'local-models-catalog',
+  },
   // System — the app itself: updates, terminal command, local data
   {
     id: 'system.updates',
@@ -11,13 +43,13 @@ export const SYSTEM_SETTINGS_INDEX: SettingsIndexEntry[] = [
     anchor: 'system-updates',
   },
   {
-    id: 'system.model-list',
-    tab: 'system',
-    tabLabel: 'System',
+    id: 'models.model-list',
+    tab: 'model-list',
+    tabLabel: 'Models',
     title: 'Model list',
     description: 'Check for new models and prices without an app update.',
     keywords: ['models', 'catalog', 'refresh', 'models.dev', 'openrouter', 'providers', 'prices'],
-    anchor: 'system-model-list',
+    anchor: 'model-list',
   },
   {
     id: 'system.cli',

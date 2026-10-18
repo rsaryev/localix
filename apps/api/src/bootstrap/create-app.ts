@@ -26,6 +26,7 @@ export interface CreateAppPhaseInput
       | 'providerConnectionsService'
       | 'serviceRefs'
       | 'work'
+      | 'localModels'
     >,
     Pick<RegistriesPhase, 'wsFrameRegistry' | 'resourceRefsRegistry'>,
     Pick<PluginHostsPhase, 'backendHost' | 'firstReconcile'>,
@@ -85,6 +86,8 @@ export function createAppPhase({
   capabilityApplyService,
   capabilityPermissions,
   searchService,
+  semanticService,
+  localModels,
   chatService,
 }: CreateAppPhaseInput): CreateAppPhase {
   const app = createApp({
@@ -119,6 +122,8 @@ export function createAppPhase({
     wsFrameRegistry,
     resourceRefsRegistry,
     searchService,
+    semanticService,
+    localModelsService: localModels,
     uiLocationCatalogService,
     secretsService,
     providerConnectionsService,

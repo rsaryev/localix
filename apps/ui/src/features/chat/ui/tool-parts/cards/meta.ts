@@ -1,3 +1,4 @@
+import { currentToolName } from './legacyToolNames'
 import {
   FileText,
   Gauge,
@@ -134,11 +135,11 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     icon: Brain,
     stackable: true,
   },
-  history_search: {
-    label: 'History',
-    noun: 'lookups',
-    verb: 'Searching history',
-    icon: History,
+  global_search: {
+    label: 'Search',
+    noun: 'searches',
+    verb: 'Searching',
+    icon: Search,
     stackable: true,
   },
   tool_output: {
@@ -286,7 +287,7 @@ export function toolDisplayLabel(name: string): string {
 
 /** Look up presentation meta for a tool name (fallback for unknown tools). */
 export function toolMeta(name: string): ToolMeta {
-  const registered = META[name] ?? contributedToolMeta(name)
+  const registered = META[currentToolName(name)] ?? contributedToolMeta(name)
   if (registered) return registered
   if (name.startsWith('mcp_')) return MCP_META
   return isAlwaysStandaloneToolName(name) ? STANDALONE_FALLBACK_META : FALLBACK_META

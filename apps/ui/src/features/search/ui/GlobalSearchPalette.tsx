@@ -1,3 +1,4 @@
+import { semanticApi } from '@/shared/api/semanticApi'
 import { useEffect, useMemo } from 'react'
 import { CornerDownLeft } from 'lucide-react'
 import {
@@ -84,6 +85,8 @@ export function GlobalSearchPalette({
     if (open) {
       setQuery('')
       clearScope()
+      // Start the embedding engine while the person types, so the first query does not wait.
+      void semanticApi.prewarm().catch(() => {})
     }
   }, [open, setQuery, clearScope])
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Info, Settings } from 'lucide-react'
-import { CommandEmpty, CommandGroup, CommandList } from '@localixai/kit/command'
+import { CommandGroup, CommandList } from '@localixai/kit/command'
+import { EmptyHint } from '@localixai/kit/empty-hint'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { IconButton } from '@localixai/kit/icon-button'
 import { PanelHeader } from '@localixai/kit/panel-header'
@@ -37,6 +38,8 @@ interface ConnectionModelListProps {
   onToggleFavorite: (id: string) => void
   /** Optional row rendered above the model list (e.g. the aux "Use session model" reset). */
   prepend?: ReactNode
+  /** Shown, centered in the column, when nothing is listed; by default "No models found". */
+  empty?: ReactNode
 }
 
 /**
@@ -64,6 +67,7 @@ export function ConnectionModelList({
   isFavorite,
   onToggleFavorite,
   prepend,
+  empty,
 }: ConnectionModelListProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -112,31 +116,32 @@ export function ConnectionModelList({
       />
       {searchToolbar}
 
-      <CommandList className="scrollbar-thin max-h-full min-h-0 flex-1 overflow-y-auto">
-        <CommandEmpty className="py-6 text-center text-xs text-text-soft">
-          No models found
-        </CommandEmpty>
-        <CommandGroup className={PICKER_LIST}>
-          {prepend}
-          {visibleModels.map((m) => (
-            <ModelListItem
-              key={m.id}
-              model={m}
-              selected={selectedValue === m.id}
-              onSelect={() => onSelectModel(m.id)}
-              onMouseEnter={() => onModelMouseEnter(m.id)}
-              onMouseLeave={onModelMouseLeave}
-              favorited={isFavorite(m.id)}
-              onToggleFavorite={() => onToggleFavorite(m.id)}
-            />
-          ))}
-          {visibleCount < filteredModels.length && (
-            <div ref={sentinelRef} className="flex justify-center py-2 text-2xs text-text-soft">
-              <ActivitySignal label="Loading more" />
-            </div>
-          )}
-        </CommandGroup>
-      </CommandList>
+      {filteredModels.length === 0 && !prepend ? (
+        (empty ?? <EmptyHint className="flex-1 text-xs">No models found</EmptyHint>)
+      ) : (
+        <CommandList className="scrollbar-thin max-h-full min-h-0 flex-1 overflow-y-auto">
+          <CommandGroup className={PICKER_LIST}>
+            {prepend}
+            {visibleModels.map((m) => (
+              <ModelListItem
+                key={m.id}
+                model={m}
+                selected={selectedValue === m.id}
+                onSelect={() => onSelectModel(m.id)}
+                onMouseEnter={() => onModelMouseEnter(m.id)}
+                onMouseLeave={onModelMouseLeave}
+                favorited={isFavorite(m.id)}
+                onToggleFavorite={() => onToggleFavorite(m.id)}
+              />
+            ))}
+            {visibleCount < filteredModels.length && (
+              <div ref={sentinelRef} className="flex justify-center py-2 text-2xs text-text-soft">
+                <ActivitySignal label="Loading more" />
+              </div>
+            )}
+          </CommandGroup>
+        </CommandList>
+      )}
     </div>
   )
 }

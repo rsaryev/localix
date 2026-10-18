@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { PanelHeader } from '@localixai/kit/panel-header'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
-import type { ProviderEntry } from '@localixai/agent/catalog'
+import type { ModelKind, ProviderEntry } from '@localixai/agent/catalog'
 import type { ProviderConnection } from '@/shared/api/contracts'
 import type { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import type { useConnections } from '../useConnections'
@@ -10,6 +10,8 @@ import { AddConnectionForm } from './AddConnectionForm'
 import { ConnectionModelList } from './ConnectionModelList'
 import { ConnectionSettingsPanel } from './ConnectionSettingsPanel'
 import { CrossConnectionModelList } from './CrossConnectionModelList'
+import { LOCAL_PROVIDER_ID } from './LocalConnectPanel'
+import { LocalModelsEmpty } from './LocalModelsEmpty'
 import { ModelFilterMenu } from './ModelFilterMenu'
 import type { SelectedItem } from './ModelSelectSidebar'
 import { PickerPanelTitle } from './PickerPanelTitle'
@@ -56,6 +58,9 @@ export interface ModelBrowserMainPanelProps {
     provider: ProviderEntry,
     label: string,
   ) => ReturnType<ReturnType<typeof useConnections>['addOAuthConnection']>
+  /** The kind of model the open workload runs on (an empty Local list names it). */
+  modelKind: ModelKind
+  onDismiss?: () => void
 }
 
 /** The model column: favorites, recents, a connection's models, its settings, or the add form. */
@@ -137,6 +142,12 @@ export function ModelBrowserMainPanel(props: ModelBrowserMainPanelProps) {
           onModelMouseLeave={onModelMouseLeave}
           isFavorite={(id) => isFavorite(selectedConn.id, id)}
           onToggleFavorite={(id) => toggleFav(selectedConn.id, id)}
+          empty={
+            selectedConn.providerId === LOCAL_PROVIDER_ID &&
+            paging.connectionModels.length === 0 ? (
+              <LocalModelsEmpty kind={props.modelKind} onNavigate={props.onDismiss} />
+            ) : undefined
+          }
         />
       )}
 

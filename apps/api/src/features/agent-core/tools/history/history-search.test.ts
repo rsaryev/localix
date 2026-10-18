@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'bun:test'
-import { createHistorySearchTool, toFtsMatchQuery, extractMessageText } from './history-search'
+import { toFtsMatchQuery, extractMessageText } from './history-search'
+import type { HistorySearchRepo } from './history-search'
+import { createGlobalSearchTool } from '../global-search/global-search'
+
+/** The history modes now live in `global_search`; these tests drive them through it. */
+const createHistorySearchTool = (repo: HistorySearchRepo, userId: string) =>
+  createGlobalSearchTool({ history: repo, userId, sessionId: 'session-test', projectId: null })
 
 describe('extractMessageText', () => {
   it('returns a non-empty string content directly', () => {
@@ -56,7 +62,7 @@ describe('toFtsMatchQuery', () => {
  * sessions matched — a match is not a read — while SCROLL returns the messages themselves, so that
  * session's content really is in the evidence the model saw.
  */
-describe('history_search provenance', () => {
+describe('global_search history provenance', () => {
   const row = (id: string, sessionId: string) => ({
     id,
     sessionId,

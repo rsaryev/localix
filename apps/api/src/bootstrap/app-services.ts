@@ -26,6 +26,7 @@ import { BUILTIN_TOOL_NAMES } from '../features/agent-core/tool-names'
 import { createConfigProposalService } from '../features/config-proposals/service'
 import { bumpCapabilityRevision } from '../features/capabilities/revision'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
+import type { SemanticService } from '../features/embeddings/service'
 
 export interface AppServicesPhaseInput
   extends
@@ -55,6 +56,7 @@ export interface AppServicesPhaseInput
     >,
     Pick<EnginesPhase, 'auxUsageRepo'> {
   chatService: ReturnType<typeof createChatService>
+  semanticService: SemanticService
 }
 
 export interface AppServicesPhase {
@@ -69,6 +71,7 @@ export interface AppServicesPhase {
    *  phase cannot drift from what the routes require. */
   capabilityPermissions: Pick<CapabilityRoutesService, 'readRules' | 'writeRules'>
   searchService: ReturnType<typeof buildSearchService>
+  semanticService: SemanticService
 }
 
 export function createAppServicesPhase({
@@ -93,6 +96,7 @@ export function createAppServicesPhase({
   skillsCuratorService,
   auxUsageRepo,
   chatService,
+  semanticService,
 }: AppServicesPhaseInput): AppServicesPhase {
   // Host-level system controls (keep-awake, …) — process-wide, in-memory.
   const systemService = createSystemService({ logger })
@@ -266,7 +270,9 @@ export function createAppServicesPhase({
     mcpService,
     agentsService,
     catalogService,
+    semanticService,
   })
+  serviceRefs.globalSearch = searchService // the agent's `global_search`; chat is built first
 
   installResourceSync({
     chatService,
@@ -289,5 +295,6 @@ export function createAppServicesPhase({
     capabilityApplyService,
     capabilityPermissions,
     searchService,
+    semanticService,
   }
 }

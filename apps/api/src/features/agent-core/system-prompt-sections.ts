@@ -126,7 +126,7 @@ export function formatRuntimeContext(params: BuildAgentSystemPromptParams): stri
 
 // NB: there is no "# Tool discipline" section. Per-tool usage/policy is owned by each
 // tool's own JSON schema `description` (the single home the model reads when deciding
-// how to call it) — memory/history_search/skill and every plugin tool carry their
+// how to call it) — memory/global_search/skill and every plugin tool carry their
 // own guidance there. Cross-tool BEHAVIOR (routing, verification, finishing) lives in
 // "# Core principles" / "# Execution discipline". Keeping tool specifics out of the prompt
 // avoids the prompt↔schema duplication that billed the same advice twice every turn.

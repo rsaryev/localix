@@ -1,7 +1,8 @@
+import { currentToolName } from './legacyToolNames'
 import type { ComponentType } from 'react'
 import type { ToolCallItem } from '@localixai/agent/agents'
 import { ReadCard } from './ReadCard'
-import { SearchCard, HistorySearchCard } from './SearchCard'
+import { SearchCard, GlobalSearchCard } from './SearchCard'
 import { MemoryCard, SkillCard, JobsCard } from './actionCards'
 import { TerminalToolCard } from './TerminalToolCard'
 import { BrowserCard } from './BrowserCard'
@@ -27,7 +28,7 @@ export const TOOL_CARDS: Partial<Record<PresentableToolName, ToolCardComponent>>
   // a path, a size, the image glyph for `kind: 'image'`, and the picture itself.
   view_image: ReadCard,
   search: SearchCard,
-  history_search: HistorySearchCard,
+  global_search: GlobalSearchCard,
   memory: MemoryCard,
   skill: SkillCard,
   jobs: JobsCard,
@@ -48,7 +49,7 @@ export const TOOL_CARDS: Partial<Record<PresentableToolName, ToolCardComponent>>
  * the right place to absorb the open keyspace.
  */
 export function getToolCard(name: string): ToolCardComponent | undefined {
-  return TOOL_CARDS[name as PresentableToolName] ?? contributedToolCard(name)
+  return TOOL_CARDS[currentToolName(name) as PresentableToolName] ?? contributedToolCard(name)
 }
 
 /**

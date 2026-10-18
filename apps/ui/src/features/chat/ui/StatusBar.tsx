@@ -10,6 +10,7 @@ import {
   WorkbenchStatusButton,
   WorkbenchStatusItem,
 } from '@localixai/kit/workbench-statusbar'
+import { SemanticIndexStatusItem } from '@/features/settings/ui/SemanticIndexStatusItem'
 
 interface StatusBarProps {
   lspServers?: LspServerState[]
@@ -165,6 +166,8 @@ export function StatusBar({
       {realtime === 'reconnecting' && <RealtimeStatusItem />}
       {hasLsp && <LspStatusItem servers={lspServers!} onOpenProblems={onOpenProblems} />}
       {hasTiming && <SessionTimingItem timing={sessionTiming!} isRunning={isRunning} />}
+      {/* App-wide background work sits at the trailing edge, as in an editor's status bar. */}
+      <SemanticIndexStatusItem className="ml-auto" />
     </WorkbenchStatusBar>
   )
 }

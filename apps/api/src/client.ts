@@ -355,6 +355,18 @@ export type {
 export type { ShellCommandStatusDto } from './features/shell-command/contracts'
 export type { PruneResult } from './features/storage/service'
 export type { StorageUsage } from './db/storage'
+export type {
+  SemanticCollectionStatus,
+  SemanticStatus,
+  SearchStrategyNote,
+} from './features/embeddings/contracts'
+export type {
+  InstallJob,
+  LocalModelEntry,
+  LocalModelKind,
+  LocalModelSpec,
+  LocalModelsStatus,
+} from './features/local-models/contracts'
 
 export type { EditPrediction } from './features/edit-prediction/contracts'
 

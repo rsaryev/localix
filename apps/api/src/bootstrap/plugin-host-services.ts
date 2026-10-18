@@ -12,6 +12,8 @@ import type { createSecretExposureShield } from '../features/secrets/exposure-sh
 import type { createMediaStore } from '../features/media/store'
 import type { BootstrapServiceRefs } from './chat-service-deps'
 import type { PluginHostRefs } from './plugin-host-refs'
+import type { SemanticService } from '../features/embeddings/service'
+import { createPluginSemanticHost } from '../features/embeddings/plugin-host'
 
 type HostForPlugin = Parameters<typeof loadPluginBackends>[0]['hostForPlugin']
 
@@ -31,6 +33,7 @@ export function createPluginHostServices(deps: {
   secretExposureShield: ReturnType<typeof createSecretExposureShield>
   mediaStore: ReturnType<typeof createMediaStore>
   pluginWakes: ReturnType<typeof createPluginWakes>
+  semanticService: SemanticService
 }): HostForPlugin {
   const { hostRefs, serviceRefs, secretsStore, secretExposureShield, mediaStore, pluginWakes } =
     deps
@@ -75,6 +78,8 @@ export function createPluginHostServices(deps: {
         }),
     },
     agents: bootAgentDirectory(hostRefs),
+    // Confined to the plugin's own `plugin:<name>:*` collections.
+    semantic: createPluginSemanticHost(deps.semanticService, pluginName),
     // The native watcher only the host bundles; a plugin's own `fs.watch` drops bursts on macOS.
     watchPath: watchPathNative,
     files: {

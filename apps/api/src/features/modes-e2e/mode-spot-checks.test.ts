@@ -52,7 +52,7 @@ const ROWS: Row[] = [
   ['plugin_build', { name: 'x' }, [A, D, A, A]],
   ['memory', { action: 'set', key: 'k', value: 'v', scope: 'session' }, [A, A, A, A]],
   ['memory', { action: 'set', key: 'k', value: 'v' }, [A, D, A, A]],
-  ['history_search', { query: 'x' }, [A, A, A, A]],
+  ['global_search', { query: 'x' }, [A, A, A, A]],
   ['external_agent_sessions', { action: 'transcript', key: 'codex:s1' }, [A, A, A, A]],
   ['context_budget', {}, [A, A, A, A]],
   ['tool_output', { action: 'get', id: 'o' }, [A, A, A, A]],

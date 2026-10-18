@@ -25,6 +25,8 @@ grouping and pagination.
 | Page one domain            | Select **Show all** and request 30-hit pages with an opaque offset cursor       | Pagination applies only to one backend domain                      |
 | Open a result              | Resolve its canonical resource or UI URI through `invokeUi`                     | Write commands require a user-selected `commands` hit              |
 | Contribute a plugin domain | Register a backend provider plus matching UI scope, icon, and activation anchor | The enabled plugin owns its lifecycle and must namespace its id    |
+| Search by meaning          | Turn on semantic search; providers with a collection receive `query.semantic`   | Chats and messages today; see [semantic index](semantic-index.md)  |
+| Search from the agent      | `global_search` calls the same service with the run's session and project       | Hits inside the agent's own conversation are left out              |
 
 The [UI anchors](ui-anchors.md) page owns activation grammar. The
 [workbench contribution](workbench-contributions.md) page owns plugin registration rules.
@@ -35,7 +37,7 @@ The [UI anchors](ui-anchors.md) page owns activation grammar. The
 GlobalSearchPalette or GlobalSearchTab
   -> useGlobalSearch and SearchRequestCoordinator
   -> POST /rpc/search
-  -> SearchService
+  -> SearchService (picks the strategy: lexical, or hybrid with query.semantic)
   -> SearchProviderRegistry parallel fan-out
   -> provider-local matches
   -> service grouping, sorting, and pagination
@@ -145,7 +147,11 @@ composition changes.
 - Aggregate totals are totals after provider caps, not counts of every possible source record.
 - The offset cursor is opaque at the API boundary but currently encodes a numeric offset. Changing
   sort order between pages can move or repeat results.
-- Search is a user interface service. There is no model-facing `global_search` agent tool.
+- The agent's `global_search` tool and the UI share this service and its ranking; the tool adds only
+  its own-conversation filter, the history reads (`around_message_id`, `session_id`, browse) and a
+  model-sized output budget.
+- `strategy: 'lexical'` on a request forces words-only matching; `allProjects` lifts the project
+  filter. Every response names its strategy, and the UI shows it only while semantic search is on.
 
 ## Related guides
 

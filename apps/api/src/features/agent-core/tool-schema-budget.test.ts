@@ -28,6 +28,8 @@ import { richRegistry } from './testing/prompt-harness'
 // Team batching and explicit priority add 90 tokens (measured total 7,607).
 // `fork` became `delegate`: the agent choice, the context choice and `wait` add 137 tokens
 // (measured total 7,744).
+// `history_search` became modes of `global_search` (320): the palette's search over every
+// domain, by meaning too, plus the conversation reads, in one tool (measured total 7,789).
 const WIRE_BUDGET_TOKENS = 7_800
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
@@ -62,7 +64,7 @@ describe('default wire schema budget', () => {
       TOOL.jobs,
       TOOL.delegate,
       TOOL.agents,
-      TOOL.history_search,
+      TOOL.global_search,
       TOOL.external_agent_sessions,
       TOOL.tool_output,
     ])

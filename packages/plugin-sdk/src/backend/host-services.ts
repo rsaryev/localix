@@ -16,6 +16,7 @@
  */
 
 import type { PluginAgentDirectory, PluginPathWatch, PluginScreenSnapshot } from './context'
+import type { SemanticIndexHost } from './semantic'
 
 /** Host-side terminal reader: the same three calls, with the user the host resolves. */
 export interface TerminalReadHost {
@@ -207,6 +208,7 @@ export interface PluginHostServices {
   }
   /** The enabled agents of a session's scope, read-only (see {@link PluginAgentDirectory}). */
   agents?: PluginAgentDirectory
+  semantic?: SemanticIndexHost
   /**
    * Provider-neutral desktop file intents. Plugins may prepare an artifact, while
    * the host remains the sole owner of platform launch mechanics.

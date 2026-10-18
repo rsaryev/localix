@@ -40,6 +40,21 @@ export const capturePlan = {
       'Agent command flags and values have separate editable crumbs and priority suggestions',
     scenario: 'agent-command',
   },
+  'local-models/settings': {
+    guide: 'features/local-models.md',
+    purpose:
+      'The installed models and the labs’ models to download, each sized for this computer',
+    scenario: 'local-models-settings',
+    requires: 'LOCALIX_CAPTURE_LOCAL_MODELS',
+    start: 'home',
+  },
+  'search/meaning-match': {
+    guide: 'features/semantic-search.md',
+    purpose: 'A query sharing no word with the fixture finds its layouts message by meaning',
+    scenario: 'semantic-search',
+    requires: 'LOCALIX_CAPTURE_LOCAL_MODELS',
+    start: 'project',
+  },
   'task-board/board': {
     guide: 'features/task-board.md',
     purpose: 'Four seeded cards with a real keyboard move persisted from Backlog to Ready',

@@ -6,7 +6,7 @@ import { describeWithholdReason, remediableWithholds, type ToolLedger } from './
  *
  * Rendered only when the run holds `configure`: naming a remedy to a run that cannot
  * propose it would be a pointer to nothing (the same rule the sub-agents section applies
- * to `history_search`). And only REMEDIABLE withholds are listed: a tool a sub-agent can
+ * to `global_search`). And only REMEDIABLE withholds are listed: a tool a sub-agent can
  * structurally never carry, or one whose host authority is absent, is not the model's
  * business — telling it would only tempt a turn spent discovering that.
  *

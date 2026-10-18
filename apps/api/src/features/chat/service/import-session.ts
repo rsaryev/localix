@@ -9,7 +9,7 @@ import { toPersistedMessage } from '../runtime/message-envelope'
  *
  * The counterpart to `openTranscript` on the UI side: that one shows a foreign conversation without
  * keeping it, this one keeps it. Everything downstream — search, digests, `@session:` refs,
- * `history_search` — then works on it because it is an ordinary session, not a special kind.
+ * `global_search` — then works on it because it is an ordinary session, not a special kind.
  *
  * WHAT THIS DELIBERATELY DOES NOT KNOW. There is no provider, no adapter, no file format and no
  * external id anywhere in this module. A caller arrives having already shaped its source into our

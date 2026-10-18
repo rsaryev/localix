@@ -4,6 +4,12 @@ import type { ReasoningEffort } from './enums'
 import type { CapabilityRuleTable, ConfigProposalsTable } from './capability-types'
 import type { ExtensionContributionTable } from './extension-types'
 import type {
+  SemanticCollectionsTable,
+  SemanticItemsTable,
+  SemanticOutboxTable,
+  SemanticSettingsTable,
+} from './semantic-types'
+import type {
   NotificationEventsTable,
   NotificationInboxTable,
   NotificationOpReceiptsTable,
@@ -566,6 +572,10 @@ export interface AppDatabase {
   agent_delivery_receipts: AgentDeliveryReceiptsTable
   agent_memory: AgentMemoryTable
   user_view_state: UserViewStateTable
+  semantic_settings: SemanticSettingsTable
+  semantic_collections: SemanticCollectionsTable
+  semantic_items: SemanticItemsTable
+  semantic_outbox: SemanticOutboxTable
   user_profiles: UserProfilesTable
   sqlite_master: SqliteMasterTable
   projects: ProjectsTable

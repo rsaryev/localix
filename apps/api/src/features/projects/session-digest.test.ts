@@ -22,9 +22,9 @@ describe('buildSessionDigest', () => {
     expect(out).toContain('Status: idle · 12 messages · updated 2026-07-03')
   })
 
-  it('always points the agent at history_search for deeper reads', () => {
-    expect(buildSessionDigest(base)).toContain('history_search')
-    expect(buildSessionDigest(base)).toContain('sessionId "LOCALIX-42"')
+  it('always points the agent at global_search for deeper reads', () => {
+    expect(buildSessionDigest(base)).toContain('global_search')
+    expect(buildSessionDigest(base)).toContain('session_id "LOCALIX-42"')
   })
 
   it('keeps only the last N turns, oldest→newest', () => {
@@ -50,6 +50,6 @@ describe('buildSessionDigest', () => {
   it('empty session (no summary or turns) still renders a valid digest', () => {
     const out = buildSessionDigest({ ...base, messageCount: 0 })
     expect(out).toContain('(No conversation content yet.)')
-    expect(out).toContain('history_search')
+    expect(out).toContain('global_search')
   })
 })

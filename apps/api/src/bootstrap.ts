@@ -15,6 +15,7 @@ import { createAgentFacadePhase } from './bootstrap/agent-facade'
 import { createAppServicesPhase } from './bootstrap/app-services'
 import { createAppPhase } from './bootstrap/create-app'
 import { createOpsTimersPhase } from './bootstrap/ops-timers'
+import { buildSemanticService } from './bootstrap/semantic'
 import { migrateLegacyPluginInstalls } from './features/plugins/legacy-install-migration'
 import { userHome } from './lib/env'
 import { loadLoginShellEnv, loginShellEnvSource } from './lib/login-shell-env'
@@ -36,6 +37,7 @@ export async function bootstrap(
   envSource: Record<string, string | undefined> = process.env,
   runtimeInfo?: BootstrapRuntimeInfo,
 ) {
+  const infra = await createInfraPhase(envSource, runtimeInfo)
   const {
     env,
     logger,
@@ -62,7 +64,10 @@ export async function bootstrap(
     uiLocationCatalogService,
     providerConnectionsService,
     mediaStore,
-  } = await createInfraPhase(envSource, runtimeInfo)
+    localModels,
+  } = infra
+  // Semantic search, built from infra alone; every later phase that consumes it gets this one.
+  const semanticService = buildSemanticService(infra)
   // Before any discovery: convert pre-native plugin installs once (idempotent, logged).
   await migrateLegacyPluginInstalls({ db, homeDir: userHome(), logger })
   const {
@@ -88,6 +93,7 @@ export async function bootstrap(
       db,
       env,
       logger,
+      semanticService,
       notifications,
       serviceRefs,
       secretsStore,
@@ -191,17 +197,8 @@ export async function bootstrap(
     bootRepo,
     interruptedRuns,
   })
-  const {
-    systemService,
-    shellCommandService,
-    inlineCompletionService,
-    nextEditService,
-    effectiveConfigService,
-    capabilitySnapshotService,
-    capabilityApplyService,
-    capabilityPermissions,
-    searchService,
-  } = createAppServicesPhase({
+  // Handed to the app phase whole: its input extends this phase's output.
+  const appServices = createAppServicesPhase({
     db,
     env,
     logger,
@@ -223,6 +220,7 @@ export async function bootstrap(
     skillsCuratorService,
     auxUsageRepo,
     chatService,
+    semanticService,
   })
   const { app } = createAppPhase({
     externalAgents: externalAgents.service,
@@ -250,15 +248,8 @@ export async function bootstrap(
     pluginService,
     agentsService,
     skillsCuratorService,
-    systemService,
-    shellCommandService,
-    inlineCompletionService,
-    nextEditService,
-    effectiveConfigService,
-    capabilitySnapshotService,
-    capabilityApplyService,
-    capabilityPermissions,
-    searchService,
+    ...appServices,
+    localModels,
     chatService,
   })
   const { channelHost, monitorHost, startOpsTimers, warmStartupCaches } = createOpsTimersPhase({
@@ -310,6 +301,10 @@ export async function bootstrap(
       startBackendHost()
       startEngines()
       startOpsTimers(signal)
+      void localModels
+        .boot()
+        .then(() => semanticService.boot())
+        .catch((err: unknown) => logger.warn({ event: 'semantic.boot_failed', error: String(err) }))
     })
   }
   return {
@@ -333,7 +328,7 @@ export async function bootstrap(
     monitorHost,
     lspManager,
     lspDocumentService: serviceRefs.lspDocumentService!,
-    systemService,
+    systemService: appServices.systemService,
     terminalService: serviceRefs.terminalService!,
     // For shutdown: monitors are detached watch processes nothing else reaps.
     monitorService: serviceRefs.monitorService!,
@@ -342,5 +337,8 @@ export async function bootstrap(
     backendHost,
     // For shutdown: each subsystem's `onShutdown` (a stateful one tears its children down).
     subsystemRegistry,
+    // For shutdown: stops the indexer, then the local model server process.
+    semanticService,
+    localModels,
   }
 }

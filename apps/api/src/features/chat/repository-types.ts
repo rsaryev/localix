@@ -17,13 +17,13 @@ export interface HistorySearchHit {
   createdAt: string
 }
 
-/** An FTS5 hit that also carries the matched message id + sequence (history_search v2 discovery). */
+/** An FTS5 hit that also carries the matched message id + sequence (global_search v2 discovery). */
 export interface HistorySearchHitDetailed extends HistorySearchHit {
   messageId: string
   sequence: number
 }
 
-/** A raw history message row used by history_search window / bookend / browse helpers. */
+/** A raw history message row used by global_search window / bookend / browse helpers. */
 export interface HistoryMessageRow {
   id: string
   sessionId: string
@@ -33,7 +33,7 @@ export interface HistoryMessageRow {
   createdAt: string
 }
 
-/** A session row for history_search browse mode (recent sessions). */
+/** A session row for global_search browse mode (recent sessions). */
 export interface RecentSessionRow {
   id: string
   title: string
@@ -43,7 +43,7 @@ export interface RecentSessionRow {
   firstUserPayloadJson: string | null
 }
 
-/** Title + timestamps for a known session id (history_search discovery grouping). */
+/** Title + timestamps for a known session id (global_search discovery grouping). */
 export interface SessionMetaRow {
   id: string
   title: string

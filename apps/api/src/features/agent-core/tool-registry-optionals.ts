@@ -51,9 +51,9 @@ export function buildNamedOptionals(
     })
   }
 
-  if (optional.history_search) {
+  if (optional.global_search) {
     namedOptionals.push({
-      tool: optional.history_search,
+      tool: optional.global_search,
     })
   }
 

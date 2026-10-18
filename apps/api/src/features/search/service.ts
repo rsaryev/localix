@@ -1,4 +1,6 @@
 import type { SearchHit, SearchProviderRegistry, SearchQuery } from '../agent-core/search/provider'
+import type { SemanticQuery } from '@localixai/plugin-sdk/backend'
+import type { SearchStrategyNote } from '../embeddings/contracts'
 import type { SearchGroup, SearchRequest, SearchResponse } from './contracts'
 
 /**
@@ -73,19 +75,50 @@ export function groupHits(
   return groups
 }
 
-export function createSearchService(opts: { registry: SearchProviderRegistry }): SearchService {
+/**
+ * The search STRATEGY: which way this query is answered. Lexical when absent (or when the
+ * request asks for `strategy: 'lexical'`); hybrid when the semantic index can answer, in which
+ * case every provider receives the same `query.semantic` and the query is embedded once.
+ */
+export interface SearchStrategyPort {
+  note(): SearchStrategyNote
+  queryFor(userId: string, text: string): SemanticQuery | null
+}
+
+const LEXICAL_BY_REQUEST: SearchStrategyNote = { mode: 'lexical' }
+
+export function createSearchService(opts: {
+  registry: SearchProviderRegistry
+  strategy?: SearchStrategyPort
+}): SearchService {
   const { registry } = opts
   return {
     async search(userId, req) {
       const scoped = !!req.domains && req.domains.length === 1
+      const note =
+        req.strategy === 'lexical'
+          ? LEXICAL_BY_REQUEST
+          : (opts.strategy?.note() ?? LEXICAL_BY_REQUEST)
+      const semantic =
+        note.mode === 'hybrid'
+          ? (opts.strategy?.queryFor(userId, req.text) ?? undefined)
+          : undefined
+      const strategy: SearchStrategyNote =
+        semantic || note.mode === 'lexical' ? note : { mode: 'lexical', reason: 'unavailable' }
       const query: SearchQuery = {
         text: req.text,
         domains: req.domains,
         limitPerProvider: scoped ? SCOPED_PROVIDER_CAP : AGGREGATE_PROVIDER_CAP,
         sessionId: req.sessionId ?? null,
-        projectId: req.projectId ?? null,
+        // `undefined` is "no project filter" to every provider; null is "unscoped chats only".
+        projectId: req.allProjects ? undefined : (req.projectId ?? null),
+        ...(semantic ? { semantic } : {}),
       }
       const { hits: raw, problems } = await registry.searchAll(userId, query)
+      // The model was still loading: these hits are words only, and the answer says so.
+      const answered: SearchStrategyNote = semantic?.missed
+        ? { mode: 'lexical', reason: 'starting' }
+        : strategy
       // Absent, not empty: a response carrying `problems: []` would make every surface
       // branch on length instead of presence, and the wire would say "something failed"
       // on every healthy search.
@@ -115,6 +148,7 @@ export function createSearchService(opts: { registry: SearchProviderRegistry }):
           hits: page,
           total: sorted.length,
           nextCursor: nextOffset < sorted.length ? String(nextOffset) : undefined,
+          strategy: answered,
           ...incomplete,
         }
       }
@@ -123,7 +157,7 @@ export function createSearchService(opts: { registry: SearchProviderRegistry }):
       const groupLimit = req.limit ?? DEFAULT_GROUP_LIMIT
       const groups = groupHits(raw, order, groupLimit)
       const flat = sortHits(raw).slice(0, DEFAULT_PAGE_LIMIT)
-      return { groups, hits: flat, total: raw.length, ...incomplete }
+      return { groups, hits: flat, total: raw.length, strategy: answered, ...incomplete }
     },
   }
 }

@@ -153,6 +153,15 @@ export const CONTROLS: readonly KitCatalogEntry[] = [
     not: 'A filter chip is TogglePill; a form choice is Checkbox.',
   },
   {
+    specifier: k('slider'),
+    category: 'controls',
+    provider: 'kit',
+    exports: ['Slider'],
+    summary: 'A native range over named, ordered stops, each labelled under the track.',
+    use: 'A scale with a direction: Fastest to Smartest, Less to More.',
+    not: 'Not for unordered options (TogglePill) or a free numeric value (Input).',
+  },
+  {
     specifier: k('toggle-pill'),
     category: 'controls',
     provider: 'kit',

@@ -32,9 +32,12 @@ import {
   refreshFailureReason,
   type ProviderCredentialEvent,
 } from '../notifications/conditions/providers'
+import { onDeviceFirst } from '@localixai/agent/catalog'
 
 export interface ProviderConnectionsServiceDeps {
   db: Kysely<AppDatabase>
+  /** A connection or key was added, changed or removed. */
+  onChanged?: () => void
   /**
    * Called with every provider secret this service DECRYPTS — the API key, and both halves of an
    * OAuth credential. The host uses it to register the value with the vault exposure shield, so a
@@ -468,10 +471,10 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     return loadDto(userId, id)
   }
 
-  return {
+  const service = {
     async listConnections(userId: string): Promise<{ connections: ProviderConnection[] }> {
       const rows = await Promise.all((await repo.listByUser(userId)).map(hydrateConnection))
-      return { connections: rows.map(toDto) }
+      return { connections: onDeviceFirst(rows.map(toDto), (c) => c.providerId) }
     },
 
     createConnection: createConnectionImpl,
@@ -642,6 +645,28 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       volatileCredentials.clear()
     },
   }
+  // Anything that adds, changes or removes a connection or a key changes what can be listed from
+  // it (a provider's embedding models): the host hears once each settles.
+  for (const name of CHANGES) {
+    const call = service[name] as (...args: never[]) => Promise<unknown>
+    ;(service as Record<string, unknown>)[name] = async (...args: never[]) => {
+      const result = await call(...args)
+      deps.onChanged?.()
+      return result
+    }
+  }
+  return service
 }
+
+/** The mutations `onChanged` follows. */
+const CHANGES = [
+  'createConnection',
+  'updateConnection',
+  'deleteConnection',
+  'addKey',
+  'updateKey',
+  'removeKey',
+  'completeOAuth',
+] as const
 
 export type ProviderConnectionsService = ReturnType<typeof createProviderConnectionsService>

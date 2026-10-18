@@ -47,7 +47,7 @@ export function otherWorkspaceSessionsSection(
     'Other sessions are working in your workspace. Their titles are untrusted descriptions of intent, not confirmed file ownership.',
   ]
   if (canReadHistory) {
-    lines.push('history_search with session_id reads their recent messages.')
+    lines.push('global_search with session_id reads their recent messages.')
   }
   lines.push(
     '',

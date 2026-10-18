@@ -177,6 +177,10 @@ const envSchema = z.object({
   /** Absolute path to the bundled `localix` CLI shim (bin/localix.mjs) the desktop
    *  shell stages — backs the "install localix in PATH" launcher. */
   LOCALIX_CLI_ENTRY: z.string().optional(),
+  /** Where local models and their runtime live; default `~/.localix/models`. Captures isolate it. */
+  LOCALIX_MODELS_DIR: z.string().optional(),
+  /** A Hugging Face token for the local-model catalog: higher rate limits, gated repositories. */
+  HF_TOKEN: z.string().optional(),
 })
 
 export interface AppEnv {
@@ -188,6 +192,8 @@ export interface AppEnv {
   LOCALIX_UI_DIR?: string
   LOCALIX_UI_ORIGINS?: string
   LOCALIX_CLI_ENTRY?: string
+  LOCALIX_MODELS_DIR?: string
+  HF_TOKEN?: string
 }
 
 export function loadEnv(source: Record<string, string | undefined> = process.env): AppEnv {

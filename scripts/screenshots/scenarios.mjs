@@ -61,6 +61,8 @@ export async function compose(page, scenario) {
   if (scenario === 'party-route') return (await import('./party-route.mjs')).composePartyRoute(page)
   if (scenario === 'model-command')
     return (await import('./model-command.mjs')).composeModelCommand(page)
+  if (['local-models-settings', 'semantic-search'].includes(scenario))
+    return (await import('./local-models.mjs')).composeLocalModels(page, scenario)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
     return (await import('./platform-views.mjs')).composePlatformViews(page, scenario)
   if (

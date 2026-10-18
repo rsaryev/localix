@@ -7,6 +7,8 @@ import { SectionLabel } from '@localixai/kit/section-label'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import { formatTokenPrice, hasKnownTokenPricing } from './modelPricing'
 import { ExternalAnchor } from '@/shared/ui/external-anchor'
+import { LocalModelFacts } from '@/shared/ui/local-models/LocalModelFacts'
+import { LOCAL_PROVIDER_ID } from './LocalConnectPanel'
 
 /**
  * The details column of the model picker, organised by what a reader comes for.
@@ -123,7 +125,21 @@ export function ModelDetailPanel({ model, providerDoc, settings }: ModelDetailPa
           </section>
         )}
 
+        {model.providerId === LOCAL_PROVIDER_ID && (
+          <LocalModelFacts
+            modelId={model.id.slice(`${LOCAL_PROVIDER_ID}/`.length)}
+            label={model.name}
+          />
+        )}
+
         <Group title="Overview">
+          {model.embedding && (
+            <Row label="Dimensions">
+              {model.embedding.storedDimensions < model.embedding.dimensions
+                ? `${model.embedding.dimensions} · stores ${model.embedding.storedDimensions}`
+                : model.embedding.dimensions}
+            </Row>
+          )}
           {model.contextLength ? (
             <Row label="Context">{thousands(model.contextLength)} tokens</Row>
           ) : null}

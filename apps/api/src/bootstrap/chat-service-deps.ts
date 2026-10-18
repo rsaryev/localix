@@ -22,6 +22,7 @@ import type { ExitNotices } from '../features/chat/runtime/exit-notices'
 import type { ConfigProposalService } from '../features/config-proposals/service'
 import type { PlanService } from '../features/plans/service'
 import type { ResumeRegistry } from '../features/resume/registry'
+import type { SearchService } from '../features/search/service'
 import type { CommentRepository } from '../features/comments/repository'
 import type { createLspDocumentService } from '../features/lsp'
 import type { createAgentsService } from '../features/agents/service'
@@ -53,6 +54,8 @@ export interface BootstrapServiceRefs {
   /** "Continue" (`features/resume`) — built with the session services, beside the plans. */
   resume?: ResumeRegistry
   comments?: CommentRepository
+  /** Global search — built with the app services, after chat; the agent's `global_search`. */
+  globalSearch?: SearchService
 }
 
 export interface ChatServicePhaseInput extends Pick<
@@ -275,6 +278,9 @@ export function createChatServicePhase({
     },
     get resume() {
       return serviceRefs.resume
+    },
+    get globalSearch() {
+      return serviceRefs.globalSearch
     },
     // The LSP document service is built after chat (it publishes on chat's stream), so the
     // file tools reach its open buffers at call time, like the holders above.

@@ -45,7 +45,7 @@ export function ModelPickerShell({
               fallback={<LoadingHint className="min-h-64 text-xs">Loading models…</LoadingHint>}
             >
               {children}
-              <ModelBrowser {...browser} />
+              <ModelBrowser onDismiss={() => onOpenChange(false)} {...browser} />
             </Suspense>
           )}
         </DrawerBody>

@@ -29,6 +29,7 @@
  * renders, so nothing translates between the two ends.
  */
 import type { Problem } from '../ui/problems'
+import type { SemanticQuery } from './semantic'
 import { DeadlineExceededError, withTimeout } from './timeout'
 
 /** A single search result across any domain. */
@@ -54,6 +55,11 @@ export interface SearchHit {
   icon?: string
   /** Provider-local relevance in [0,1]; higher = better. The service sorts on it. */
   score: number
+  /**
+   * What made this a match, when the provider knows: the query's words, its meaning
+   * (semantic strategy only), or both. Absent for providers that only match text.
+   */
+  matchedBy?: 'words' | 'meaning' | 'both'
 }
 
 /** The query handed to every provider. */
@@ -70,6 +76,12 @@ export interface SearchQuery {
   projectId?: string | null
   /** Cancellation for slow (CLI / live-connection) providers. */
   signal?: AbortSignal
+  /**
+   * The SEMANTIC strategy for this query, present only when semantic search is on and its
+   * engine can answer. A provider that has a semantic collection fuses it with its own
+   * word matching; every other provider ignores it and the lexical strategy is unchanged.
+   */
+  semantic?: SemanticQuery
 }
 
 /**

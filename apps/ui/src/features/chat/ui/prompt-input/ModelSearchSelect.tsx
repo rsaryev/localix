@@ -1,7 +1,11 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ChevronUp } from 'lucide-react'
-import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
+import {
+  findCatalogModelForConnection,
+  resolveLiveCatalogModel,
+  type CatalogModel,
+} from '@localixai/agent/catalog'
 import type { useConnections } from './useConnections'
 import type { ReasoningEffort } from '../../model/reasoning'
 import type { SessionAgentRoute, SessionModelChoicesView } from '@/shared/api/contracts'
@@ -137,6 +141,8 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
       ) ?? null)
     : activeConnection
   const shownValue = shown?.modelId ?? value
+  // The route's own connection first; a namespaced id whose connection names another provider
+  // (an older pick) still finds its model, so the trigger never shows a bare id.
   const selectedModel = useMemo(
     () =>
       findCatalogModelForConnection(
@@ -144,7 +150,9 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
         connectionsState.connections,
         shownConnection?.id ?? null,
         shownValue,
-      ),
+      ) ??
+      resolveLiveCatalogModel(models, connectionsState.connections, shownValue, shownConnection?.id)
+        ?.model,
     [connectionsState.connections, models, shownConnection?.id, shownValue],
   )
   const modelLabel = modelTriggerLabel({

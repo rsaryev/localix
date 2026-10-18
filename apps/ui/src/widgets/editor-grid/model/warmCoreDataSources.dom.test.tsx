@@ -141,6 +141,7 @@ describe('warm-hidden core work-item data sources', () => {
       groups: [],
       hits: [],
       total: 0,
+      strategy: { mode: 'lexical' },
     })
     function Search() {
       useGlobalSearch({ initialQuery: 'alpha', debounceMs: 0 })

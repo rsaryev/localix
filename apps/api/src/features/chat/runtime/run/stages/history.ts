@@ -80,7 +80,7 @@ export async function materializeRunHistory(
         speakerAgentId,
       ),
       view,
-      recallToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.history_search),
+      recallToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.global_search),
       memoryToolAvailable: toolset.runtimeTools.toolNames.includes(TOOL.memory),
       state: frame.stores.context,
       ...(runtimeState.tokenCalibration.has(calibrationKey)

@@ -1,3 +1,4 @@
+import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { Kysely } from 'kysely'
 import type { AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
@@ -172,6 +173,8 @@ export interface ChatServiceDeps {
   plans?: PlanService
   /** "Continue" — the conversation's unfinished work (features/resume). Forward-held. */
   resume?: ResumeRegistry
+  /** Global search, the one the search palette uses — the agent's `global_search` tool. */
+  globalSearch?: GlobalSearchPort
   /**
    * The editor's open-buffer text for a file (possibly unsaved), from the LSP document service.
    * Same forward-holder shape as `monitors`: the service is composed after chat.

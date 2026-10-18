@@ -181,3 +181,26 @@ describe('runtime catalog facade', () => {
     expect(await service.getCatalog()).toEqual(catalog)
   })
 })
+
+describe('contributed model kinds', () => {
+  test('a source adds models of another kind to the full catalog; the chat view leaves them out', async () => {
+    const service = createCatalogService({ source: { list: () => catalog } })
+    service.registerModelSource({
+      id: 'embeddings',
+      list: async () => [
+        {
+          ...catalog.models[0]!,
+          id: 'openai-codex/text-embedding',
+          name: 'Embedding',
+          kind: 'embedding' as const,
+          outputModalities: ['embedding'],
+        },
+      ],
+    })
+    expect((await service.getFullCatalog()).models.map((m) => m.id)).toEqual([
+      'openai-codex/gpt-5',
+      'openai-codex/text-embedding',
+    ])
+    expect((await service.getCatalog()).models.map((m) => m.id)).toEqual(['openai-codex/gpt-5'])
+  })
+})

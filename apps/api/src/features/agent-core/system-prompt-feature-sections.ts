@@ -168,7 +168,7 @@ export function buildActiveSubAgentsSection(
   const recoveryNotice = capabilities.canListRuns
     ? '[Additional active sub-agents omitted: aggregate prompt budget reached. Use `fork` action:"list" for your forks.]'
     : capabilities.canInspectHistory
-      ? '[Additional active sub-agents omitted: aggregate prompt budget reached. Use `history_search` for the full roster.]'
+      ? '[Additional active sub-agents omitted: aggregate prompt budget reached. Use `global_search` for the full roster.]'
       : '[Additional active sub-agents omitted: aggregate prompt budget reached. Wait for their completion messages before overlapping their work.]'
   const roster = capAggregatePromptContext(
     activeSubAgents.map((a) => `- «${a.title}»${a.task ? ` — ${a.task}` : ''}`).join('\n'),
@@ -178,7 +178,7 @@ export function buildActiveSubAgentsSection(
   const inspection = capabilities.canListRuns
     ? 'Use `fork` action:"list" only when a report went missing or ownership is unclear; do not poll for completion. `fork` action:"message" amends a fork\'s task (a finished fork runs again and reports again), action:"stop" ends its current run, and action:"close" ends a fork you are done with for good.'
     : capabilities.canInspectHistory
-      ? 'Use `history_search` only to recover a missed report or coordinate ownership; do not poll for completion.'
+      ? 'Use `global_search` only to recover a missed report or coordinate ownership; do not poll for completion.'
       : 'Wait for its completion message.'
   return [
     '# Active sub-agents',

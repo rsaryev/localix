@@ -42,6 +42,8 @@ export const SETTINGS_STRING_TABS = [
   'agents',
   ...CAPABILITY_TABS,
   'project',
+  'models',
+  'model-list',
   'system',
   'context',
   'diagnostics',

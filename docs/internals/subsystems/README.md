@@ -18,6 +18,7 @@ the linked feature guides.
 | [Documents plugin](documents.md)                                                  | Extraction, viewers, generation, and format limits                                 |
 | [Edit prediction](edit-prediction.md)                                             | Prediction requests, cancellation, caching, and acceptance                         |
 | [Global search](global-search.md)                                                 | Search domains, ranking, navigation, and result limits                             |
+| [Semantic index and local models](semantic-index.md)                              | Embedding engine, indexing, hybrid ranking, the model router and plugin API        |
 | [Kubernetes provider](kubernetes-workbench.md)                                    | Contexts, resources, watches, actions, and safety gates                            |
 | [Message bindings](message-bindings.md)                                           | Durable message-to-resource links and runtime projection                           |
 | [Notifications](notifications.md)                                                 | Notification policy, delivery channels, and interruption state                     |

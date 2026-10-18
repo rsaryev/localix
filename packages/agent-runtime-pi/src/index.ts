@@ -6,6 +6,8 @@ export {
 } from './auth'
 export type { PiAuthRuntimeOptions } from './auth'
 export { createPiEngine } from './engine'
+export { LOCAL_PROVIDER_ID } from './local-provider'
+export type { LocalChatModel, LocalProviderHost } from './local-provider'
 export type { PiEngineOptions } from './engine'
 export { createPiAgentRuntime, shouldStopForTurnBudget } from './runtime'
 export type { PiAgentRuntimeRunInput } from './runtime'
