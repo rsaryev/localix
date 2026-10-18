@@ -24,6 +24,7 @@ pub(crate) fn load(app: &tauri::AppHandle) -> SavedSession {
     session_path(app)
         .and_then(|path| std::fs::read(path).ok())
         .and_then(|bytes| crate::workspace_session_model::decode_session(&bytes))
+        .map(SavedSession::bounded_hidden)
         .unwrap_or_default()
 }
 

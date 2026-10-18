@@ -10,22 +10,36 @@ export async function verifyWindowLifecycle({ invoke, probe, wait, events, id, v
     'The native new-tab button retained its raised bezel',
   )
   const original = (await probe()).session.groups[0]
-  const assert = (value, message) => {
-    if (!value) throw new Error(message)
+  const describe = (state) =>
+    JSON.stringify({
+      groups: state.session.groups.map((g) => [
+        g.hidden,
+        g.selected,
+        g.tabs.map((t) => t.label.slice(-4)),
+      ]),
+      windows: state.windows.map((w) => [w.label.slice(-4), w.visible, w.key, w.minimized]),
+    })
+  const assert = (value, message, state) => {
+    if (!value) throw new Error(state ? `${message} ${describe(state)}` : message)
   }
   const sameGroup = (state) => {
     const group = state.session.groups.find((g) => g.tabs.some((tab) => tab.label === id))
-    assert(group, 'The hidden workspace group disappeared')
+    assert(group, 'The hidden workspace group disappeared', state)
     assert(
       JSON.stringify(group.tabs) === JSON.stringify(original.tabs),
       'Window close/reopen changed workspace identities, order or routes',
+      state,
     )
-    assert(group.selected === original.selected, 'Window close/reopen changed the selected tab')
+    assert(
+      group.selected === original.selected,
+      'Window close/reopen changed the selected tab',
+      state,
+    )
   }
 
   const hidden = await invoke('workspace_probe', { action: 'red_close_reopen' })
-  assert(hidden.lifecycleComplete, 'The native red button did not hide the entire group')
-  assert(hidden.windows.length === 3, 'The native red button destroyed workspaces')
+  assert(hidden.lifecycleComplete, 'The native red button did not hide the entire group', hidden)
+  assert(hidden.windows.length === 3, 'The native red button destroyed workspaces', hidden)
   sameGroup(hidden)
   await wait(
     (state) => state.windows.some((w) => w.key && w.visible),
@@ -38,12 +52,30 @@ export async function verifyWindowLifecycle({ invoke, probe, wait, events, id, v
     (state) => state.windows.length === 4 && state.windows.find((w) => w.label === fresh)?.key,
     'New Workspace Window did not create a fresh window',
   )
-  assert(freshState.session.groups.length === 2, 'New Workspace Window reused the existing group')
+  assert(
+    freshState.session.groups.length === 2,
+    'New Workspace Window reused the existing group',
+    freshState,
+  )
   await events.emitTo(fresh, 'probe:action', { action: 'close' })
   await wait(
     (state) => state.windows.length === 3,
     'Explicit tab close retained the fresh workspace',
   )
+
+  // A window closed while another stays on screen is destroyed, not kept as a hidden webview:
+  // only the last visible group is retained for Dock reopen.
+  const extra = await invoke('workspace_open', { asTab: false })
+  await wait(
+    (state) => state.windows.length === 4 && state.windows.find((w) => w.label === extra)?.key,
+    'A second workspace window did not open',
+  )
+  await events.emitTo(extra, 'probe:action', { action: 'red_close' })
+  const destroyed = await wait(
+    (state) => state.windows.length === 3 && state.session.groups.length === 1,
+    'Closing a window beside a visible one retained it as a hidden workspace',
+  )
+  sameGroup(destroyed)
 
   // This is the common path used by Dock reopen, tray Show and external launch/deep links.
   await invoke('workspace_probe', { action: 'reopen' })
@@ -56,7 +88,11 @@ export async function verifyWindowLifecycle({ invoke, probe, wait, events, id, v
 
   // Window > Close Window uses the same bounded flush + hide as the native button.
   const menuHidden = await invoke('workspace_probe', { action: 'hide_window_reopen' })
-  assert(menuHidden.lifecycleComplete, 'Close Window did not preserve and hide the group')
+  assert(
+    menuHidden.lifecycleComplete,
+    'Close Window did not preserve and hide the group',
+    menuHidden,
+  )
   sameGroup(menuHidden)
   await invoke('workspace_probe', { action: 'reopen' })
   await wait(
@@ -65,7 +101,7 @@ export async function verifyWindowLifecycle({ invoke, probe, wait, events, id, v
   )
 
   const minimized = await invoke('workspace_probe', { action: 'minimize_reopen' })
-  assert(minimized.lifecycleComplete, 'Native minimize failed')
+  assert(minimized.lifecycleComplete, 'Native minimize failed', minimized)
   const unminimized = await wait(
     (state) =>
       state.windows.some((w) => w.key && w.visible) && state.windows.every((w) => !w.minimized),

@@ -17,21 +17,36 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
         };
         group.hidden = true;
         let labels: Vec<_> = group.tabs.iter().map(|tab| tab.label.clone()).collect();
-        {
-            if !crate::workspace_windows::workspaces(&app).reserve_hide(&labels) {
+        let destroy = {
+            let mut data = crate::workspace_windows::workspaces(&app);
+            if data.other_group_visible(&labels) {
+                true
+            } else if data.reserve_hide(&labels) {
+                false
+            } else {
                 return;
             }
+        };
+        // Another window stays on screen, so this group is not the Dock-reopen target: a hidden
+        // copy would keep running the whole app (socket, plugins, streaming) for nobody.
+        if destroy {
+            for label in &labels {
+                crate::workspace_lifecycle::close(&app, label);
+            }
+            return;
         }
         std::thread::spawn(move || {
             crate::frontend_flush::flush(&app, &labels, false);
             let handle = app.clone();
             crate::macos_tabs::defer(move || {
                 let selected = &group.tabs[group.selected].label;
-                let should_hide = {
+                let (should_hide, stale) = {
                     let mut data = crate::workspace_windows::workspaces(&handle);
                     let pending = data.entries.get(selected).is_some_and(|entry| entry.hiding);
+                    let mut stale = Vec::new();
                     if pending {
-                        data.hidden_groups.push(group.clone());
+                        // One retained group: an older one is replaced, not accumulated.
+                        stale = std::mem::replace(&mut data.hidden_groups, vec![group.clone()]);
                     } else {
                         for label in &labels {
                             if let Some(entry) = data.entries.get_mut(label) {
@@ -39,8 +54,13 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
                             }
                         }
                     }
-                    pending
+                    (pending, stale)
                 };
+                for label in stale.iter().flat_map(|group| &group.tabs) {
+                    if !labels.contains(&label.label) {
+                        crate::workspace_lifecycle::close(&handle, &label.label);
+                    }
+                }
                 if should_hide {
                     // orderOut removes a tab and selects another: hide every member, retaining
                     // the pre-hide group so neither reopen nor Quit sees detached stubs.
@@ -54,15 +74,52 @@ pub(crate) fn hide(app: &AppHandle, label: &str) {
                         if let Some(entry) = data.entries.get_mut(label) {
                             entry.hiding = false;
                             entry.hidden = true;
+                            entry.hidden_at = Some(std::time::Instant::now());
                         }
                     }
                     data.active = Some(selected.clone());
                     drop(data);
                     let handle = handle.clone();
+                    keep_hidden(handle.clone(), labels.clone(), 0);
                     crate::workspace_session::save_in_background(&handle);
                 }
             });
         });
+    });
+}
+
+/// How often, and how many times, a hidden group is checked for a member AppKit put back.
+const KEEP_HIDDEN_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
+const KEEP_HIDDEN_CHECKS: u8 = 10;
+
+/// Ordering out the selected tab makes AppKit select a sibling and order it front on a later
+/// pass, after the sibling's own hide already ran: the group was recorded hidden while one
+/// window stayed on screen. Re-hide any member still flagged hidden; a reopen clears the flag
+/// first, so this never fights one.
+fn keep_hidden(app: AppHandle, labels: Vec<String>, check: u8) {
+    if check == KEEP_HIDDEN_CHECKS {
+        return;
+    }
+    crate::main_queue::after(KEEP_HIDDEN_INTERVAL, move || {
+        let hidden: Vec<_> = {
+            let data = crate::workspace_windows::workspaces(&app);
+            labels
+                .iter()
+                .filter(|label| data.entries.get(*label).is_some_and(|entry| entry.hidden))
+                .cloned()
+                .collect()
+        };
+        if hidden.is_empty() {
+            return;
+        }
+        for label in &hidden {
+            if let Some(window) = app.get_window(label) {
+                if window.is_visible().unwrap_or(false) {
+                    let _ = window.hide();
+                }
+            }
+        }
+        keep_hidden(app, hidden, check + 1);
     });
 }
 
@@ -149,6 +206,7 @@ pub(crate) fn reopen_for_label<R: tauri::Runtime>(app: &AppHandle<R>, label: &st
             for label in labels {
                 if let Some(entry) = data.entries.get_mut(&label) {
                     entry.hidden = false;
+                    entry.hidden_at = None;
                     entry.hiding = false;
                     entry.revealed = true;
                     entry.host = None;

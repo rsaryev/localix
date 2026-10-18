@@ -140,6 +140,40 @@ impl SavedSession {
         }
     }
 
+    /// Every restored group is a live webview running the whole app, so a closed group survives
+    /// only as the Dock-reopen target: one, and only when no window is visible. Sessions saved
+    /// before this bound kept every closed group and relaunched a dozen hidden copies.
+    pub(crate) fn bounded_hidden(mut self) -> Self {
+        if self.groups.iter().any(|group| !group.hidden) {
+            self.groups.retain(|group| !group.hidden);
+        } else if let Some(keep) = self
+            .groups
+            .iter()
+            .position(|group| {
+                group
+                    .tabs
+                    .iter()
+                    .any(|tab| Some(&tab.label) == self.active.as_ref())
+            })
+            .or_else(|| self.groups.len().checked_sub(1))
+        {
+            let group = self.groups.swap_remove(keep);
+            self.groups = vec![group];
+        }
+        let active_kept = self.active.as_ref().is_some_and(|active| {
+            self.groups
+                .iter()
+                .any(|group| group.tabs.iter().any(|tab| &tab.label == active))
+        });
+        if !active_kept {
+            self.active = self
+                .groups
+                .first()
+                .map(|group| group.tabs[group.selected].label.clone());
+        }
+        self
+    }
+
     pub(crate) fn validated(self) -> Option<Self> {
         let mut seen = std::collections::HashSet::new();
         if self.groups.len() > 64 || self.groups.iter().map(|g| g.tabs.len()).sum::<usize>() > 64 {

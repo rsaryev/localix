@@ -19,6 +19,8 @@ pub(crate) struct Workspace {
     pub(crate) restore_fullscreen: bool,
     pub(crate) provisional: bool,
     pub(crate) hidden: bool,
+    /// When the group was ordered out; AppKit's own follow-up focus is not a reopen.
+    pub(crate) hidden_at: Option<std::time::Instant>,
     pub(crate) transfer_presented: bool,
     pub(crate) transfer_pending: bool,
 }
@@ -38,13 +40,26 @@ impl Default for Workspace {
             restore_fullscreen: false,
             provisional: false,
             hidden: false,
+            hidden_at: None,
             transfer_presented: false,
             transfer_pending: false,
         }
     }
 }
 
+/// AppKit selects and focuses a sibling of a tab it just ordered out. A focus this soon after
+/// the hide is that echo, not a person reopening the group from the Window menu.
+pub(crate) const HIDE_FOCUS_ECHO: std::time::Duration = std::time::Duration::from_millis(500);
+
 impl Workspace {
+    /// A focus event on this hidden workspace can be a deliberate reopen.
+    pub(crate) fn focus_can_reopen(&self) -> bool {
+        !self.hiding
+            && self
+                .hidden_at
+                .is_none_or(|hidden_at| hidden_at.elapsed() >= HIDE_FOCUS_ECHO)
+    }
+
     pub(crate) fn allows_reveal(&self) -> bool {
         self.ready && !self.revealed && !self.provisional && !self.hidden && !self.transfer_pending
     }
@@ -77,6 +92,19 @@ impl WindowData {
             self.entries.get_mut(label).unwrap().hiding = true;
         }
         true
+    }
+
+    /// Whether a workspace outside `labels` stays on screen. Closing a group then destroys it:
+    /// retaining it hidden only pays off as the Dock-reopen target of the last visible group.
+    #[cfg(target_os = "macos")]
+    pub(crate) fn other_group_visible(&self, labels: &[String]) -> bool {
+        self.entries.iter().any(|(label, entry)| {
+            !labels.contains(label)
+                && !entry.hidden
+                && !entry.hiding
+                && !entry.closing
+                && !entry.provisional
+        })
     }
 
     pub(crate) fn reserve_close(&mut self, label: &str) -> Option<bool> {

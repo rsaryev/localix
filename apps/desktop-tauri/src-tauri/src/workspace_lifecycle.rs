@@ -25,7 +25,9 @@ pub(crate) fn register(window: &WebviewWindow) {
             {
                 let restore_hidden = {
                     let data = crate::workspace_windows::workspaces(&app);
-                    data.entries.get(&label).is_some_and(|entry| !entry.hiding)
+                    data.entries
+                        .get(&label)
+                        .is_some_and(|entry| entry.focus_can_reopen())
                         && data
                             .hidden_groups
                             .iter()
@@ -183,6 +185,7 @@ pub(crate) fn close(app: &AppHandle, label: &str) {
                     {
                         entry.closing = false;
                         entry.hidden = true;
+                        entry.hidden_at = Some(std::time::Instant::now());
                     }
                     #[cfg(target_os = "macos")]
                     crate::workspace_session::save_in_background(&handle);

@@ -232,3 +232,67 @@ fn unknown_legacy_active_falls_back_to_first_valid_group_selected_tab() {
     corrupt["groups"][0]["tabs"][0]["route"] = serde_json::json!("https://example.com");
     assert!(decode_session(&serde_json::to_vec(&corrupt).unwrap()).is_none());
 }
+
+fn hidden(labels: &[&str]) -> SavedGroup {
+    SavedGroup {
+        hidden: true,
+        ..group(labels, 0)
+    }
+}
+
+#[test]
+fn closed_groups_are_not_relaunched_beside_a_visible_window() {
+    let session = SavedSession {
+        groups: vec![
+            group(&["workspace-0000000000000001"], 0),
+            hidden(&["workspace-0000000000000002"]),
+            hidden(&["workspace-0000000000000003"]),
+        ],
+        active: Some("workspace-0000000000000002".into()),
+    }
+    .bounded_hidden();
+    assert_eq!(session.groups.len(), 1);
+    assert!(!session.groups[0].hidden);
+    assert_eq!(
+        session.active.as_deref(),
+        Some("workspace-0000000000000001")
+    );
+    assert!(session.validated().is_some());
+}
+
+#[test]
+fn with_every_window_closed_only_the_active_group_stays_reopenable() {
+    let session = SavedSession {
+        groups: (1..=12)
+            .map(|index| format!("workspace-{index:016x}"))
+            .map(|label| hidden(&[label.as_str()]))
+            .collect(),
+        active: Some("workspace-0000000000000005".into()),
+    }
+    .bounded_hidden();
+    assert_eq!(session.groups.len(), 1);
+    assert!(session.groups[0].hidden);
+    assert_eq!(
+        session.groups[0].tabs[0].label,
+        "workspace-0000000000000005"
+    );
+    assert_eq!(
+        session.active.as_deref(),
+        Some("workspace-0000000000000005")
+    );
+
+    let fallback = SavedSession {
+        groups: vec![
+            hidden(&["workspace-0000000000000001"]),
+            hidden(&["workspace-0000000000000002"]),
+        ],
+        active: None,
+    }
+    .bounded_hidden();
+    assert_eq!(fallback.groups.len(), 1);
+    assert_eq!(
+        fallback.active.as_deref(),
+        Some("workspace-0000000000000002")
+    );
+    assert!(SavedSession::default().bounded_hidden().groups.is_empty());
+}

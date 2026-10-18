@@ -28,8 +28,9 @@ async function run(baseUrl, stage, expected) {
   const { verifyChrome: readChrome } = await import(baseUrl + '/native-window-fixture.js')
   const verifyChrome = () => readChrome({ probe, id, pause })
   const wait = async (predicate, message) => {
+    let state
     for (let attempt = 0; attempt < 100; attempt++) {
-      const state = await probe()
+      state = await probe()
       if (attempt === 0)
         void fetch(baseUrl + '/trace', {
           method: 'POST',
@@ -45,7 +46,9 @@ async function run(baseUrl, stage, expected) {
       if (predicate(state)) return state
       await pause()
     }
-    throw new Error(message)
+    const groups = state.session.groups.map((g) => [g.hidden, g.selected, g.tabs.length])
+    const windows = state.windows.map((w) => [w.label.slice(-4), w.visible, w.key, w.minimized])
+    throw new Error(`${message} ${JSON.stringify({ groups, windows })}`)
   }
   await events.listen('localix://before-quit', ({ payload }) => {
     void invoke('quit_ready', { requestId: payload.requestId })
