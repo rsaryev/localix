@@ -29,7 +29,7 @@ import { eventWindow } from './event-window'
 import { tailTurnState, TURN_TAIL_BYTES } from '../live/turn-state'
 import { asRecord, asString } from './json-util'
 import { mapConcurrent } from './usage'
-import { ID, summarizeCodex as summarize } from './codex-summary'
+import { ID, summarizeCodex as summarize, foldCodex } from './codex-summary'
 
 const SESSION_DIRS = ['sessions', 'archived_sessions']
 const SUMMARY_CONCURRENCY = 8
@@ -208,6 +208,7 @@ export const codexAdapter: ProviderAdapter = {
   async readSummaries(refs) {
     return mapConcurrent(refs, SUMMARY_CONCURRENCY, summarize)
   },
+  foldSummary: (ref, previous) => foldCodex(ref, previous),
   readTranscript,
   readTurnState,
 }

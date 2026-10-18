@@ -49,10 +49,12 @@ impl Default for Workspace {
 
 /// AppKit selects and focuses a sibling of a tab it just ordered out. A focus this soon after
 /// the hide is that echo, not a person reopening the group from the Window menu.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub(crate) const HIDE_FOCUS_ECHO: std::time::Duration = std::time::Duration::from_millis(500);
 
 impl Workspace {
     /// A focus event on this hidden workspace can be a deliberate reopen.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn focus_can_reopen(&self) -> bool {
         !self.hiding
             && self

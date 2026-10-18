@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { newestQuotas } from './index-cache'
+import { newestQuotas } from './newest-quotas'
 import type { QuotaReading, SessionSummary } from '../../shared/contracts'
 
 /**

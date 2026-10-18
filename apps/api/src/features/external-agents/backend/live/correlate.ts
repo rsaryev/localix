@@ -68,8 +68,18 @@ export async function correlateOnce(
   const floor = entry.launchedAt - SLACK_MS
   // Started in the window — see the header. `updatedAt` is the fallback only for a session whose
   // provider recorded no start, which would otherwise be uncorrelatable forever.
-  let candidates = summaries.filter((s) =>
-    s.startedAt === undefined ? s.updatedAt >= floor : s.startedAt >= floor,
+  // A session another delegation already holds is not a candidate: two agents launched in one
+  // directory would otherwise both adopt the first one's transcript before the second wrote its own.
+  const held = new Set(
+    live
+      .list()
+      .filter((other) => other.terminalId !== terminalId && other.provider === entry.provider)
+      .flatMap((other) => (other.nativeSessionId ? [other.nativeSessionId] : [])),
+  )
+  let candidates = summaries.filter(
+    (s) =>
+      !held.has(s.nativeSessionId) &&
+      (s.startedAt === undefined ? s.updatedAt >= floor : s.startedAt >= floor),
   )
   if (cwd) {
     const scoped = candidates.filter((s) => s.cwd === cwd)

@@ -352,3 +352,16 @@ describe('a timeout says what IS happening, not only what did not', () => {
     expect(outcome.summary).not.toContain('Screens unchanged')
   })
 })
+
+describe('a pending key follows its delegation', () => {
+  test('correlation does not turn a wait on the pending key into `not-live`', () => {
+    const store = makeStore()
+    store.open({ terminalId: 't1', localixSessionId: 'lx1', provider: 'claude-code' })
+    const pending = store.keyOf(store.get('t1')!)
+    store.adopt('t1', 'native-1')
+    expect(store.byKey(pending)?.terminalId).toBe('t1')
+    expect(store.byKey(linkKeyOf({ provider: 'claude-code', nativeSessionId: 'native-1' }))).toBe(
+      store.get('t1'),
+    )
+  })
+})

@@ -118,19 +118,23 @@ async function readSummaries(
         order by p.time_created, p.id
         limit 8`,
     )
+    // Only the sessions asked for: a live session changes every message, and aggregating the whole
+    // table for its one row cost as much as summarizing every session (59 ms of 89 on a 107 MB db).
+    const ids = JSON.stringify([...wanted])
     const messageCounts = new Map(
       db
-        .query<MessageCountRow, []>(
+        .query<MessageCountRow, [string]>(
           `select session_id, count(*) as messages
              from message
-            where json_extract(data, '$.role') in ('user', 'assistant')
+            where session_id in (select value from json_each(?))
+              and json_extract(data, '$.role') in ('user', 'assistant')
             group by session_id`,
         )
-        .all()
+        .all(ids)
         .map((row) => [row.session_id, row.messages]),
     )
     const usageRows = db
-      .query<UsageRow, []>(
+      .query<UsageRow, [string]>(
         `select session_id,
                 strftime('%Y-%m-%d', time_created / 1000, 'unixepoch') as day,
                 json_extract(data, '$.modelID') as model,
@@ -142,11 +146,12 @@ async function readSummaries(
                 sum(coalesce(json_extract(data, '$.tokens.reasoning'), 0)) as reasoning_tokens,
                 sum(coalesce(json_extract(data, '$.tokens.total'), 0)) as total_tokens
            from message
-          where json_extract(data, '$.role') = 'assistant'
+          where session_id in (select value from json_each(?))
+            and json_extract(data, '$.role') = 'assistant'
             and json_type(data, '$.tokens') is not null
           group by session_id, day, model`,
       )
-      .all()
+      .all(ids)
     return summarizeOpencodeRows(rows, wanted, usageRows, messageCounts, firstPrompt, path)
   } finally {
     db.close()

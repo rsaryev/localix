@@ -13,18 +13,22 @@ export function useExternalHistory(
   scope?: { provider?: string; cwd?: string; includeDescendants?: boolean },
 ) {
   const installed = useInstalledAgents()
-  const providers = installed.agents
-    .filter((agent) => !scope?.provider || agent.id === scope.provider)
-    .map((agent) => agent.id)
-    .join(',')
+  // Not keyed on the installed list: the route already narrows to installed agents, so the roster
+  // starts beside `/providers` instead of waiting for it.
   const query = useSWRInfinite(
     (index, previous: Awaited<ReturnType<typeof externalAgentsApi.roster>> | null) => {
-      if (!enabled || !providers || previous?.withheld === 0) return null
-      return ['external-agents:history', providers, text, scope?.cwd ?? '', index] as const
+      if (!enabled || previous?.withheld === 0) return null
+      return [
+        'external-agents:history',
+        scope?.provider ?? '',
+        text,
+        scope?.cwd ?? '',
+        index,
+      ] as const
     },
-    ([, ids, search, cwd, index]) =>
+    ([, provider, search, cwd, index]) =>
       externalAgentsApi.roster({
-        providers: ids.split(','),
+        providers: provider ? [provider] : undefined,
         text: search,
         cwdPrefix: cwd || undefined,
         includeChildren: true,
@@ -33,16 +37,19 @@ export function useExternalHistory(
       }),
     {
       isPaused: () => !enabled,
+      // A new search keeps the current rows until its own arrive, rather than blanking the list
+      // behind a loading line on every keystroke.
+      keepPreviousData: true,
       revalidateOnFocus: enabled,
       revalidateOnReconnect: enabled,
       shouldRetryOnError: false,
     },
   )
-  const live = useHistoryStream(enabled && Boolean(providers), () => {
+  const live = useHistoryStream(enabled, () => {
     void query.mutate()
   })
   useVisiblePolling({
-    enabled: enabled && Boolean(providers) && !live,
+    enabled: enabled && !live,
     intervalMs: 30_000,
     onTick: () => query.mutate(),
   })
@@ -52,6 +59,7 @@ export function useExternalHistory(
       (row) =>
         !row.sourcePath.startsWith('terminal:') &&
         installed.agents.some((agent) => agent.id === row.provider) &&
+        (!scope?.provider || row.provider === scope.provider) &&
         (!scope?.cwd ||
           row.cwd === scope.cwd ||
           (scope.includeDescendants &&
@@ -63,8 +71,11 @@ export function useExternalHistory(
   return {
     agents: installed.agents,
     sessions,
-    loading: installed.isLoading || query.isLoading,
-    loadingMore: query.isValidating,
+    // Rows kept from the previous search still count; rows of another scope are filtered out above,
+    // and an empty list while a read is running is loading, not "no sessions".
+    loading: (installed.isLoading || query.isLoading) && sessions.length === 0,
+    // Only a page beyond the loaded ones: a background refresh must not read as "Loading…".
+    loadingMore: query.size > (query.data?.length ?? 0),
     error: installed.error ?? query.error,
     total: query.data?.[0]?.total ?? 0,
     hasMore: Boolean(last?.withheld),

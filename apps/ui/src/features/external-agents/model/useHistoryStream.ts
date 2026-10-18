@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { createRealtimeFeed, useRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
 
 import {
@@ -28,20 +27,11 @@ export const historyFeed = createRealtimeFeed<string, HistoryFrame>({
 
 /**
  * Re-read when history moves, while `enabled`. Returns whether changes are being pushed, which is
- * what lets the panel's timer fall back to a backstop. Re-enabling (a tab shown again) re-reads
- * once, since nothing was followed while it was hidden.
+ * what lets the panel's timer fall back to a backstop. Re-enabling (a tab shown again) needs no
+ * read of its own: the callers' queries are keyed on the same flag, and SWR revalidates a key that
+ * comes back — a second read here doubled every tab switch.
  */
 export function useHistoryStream(enabled: boolean, onChange: () => void): boolean {
-  const latest = useRef(onChange)
-  const followed = useRef(false)
-  useEffect(() => {
-    latest.current = onChange
-  })
-  useEffect(() => {
-    if (!enabled) return
-    if (followed.current) latest.current()
-    followed.current = true
-  }, [enabled])
   return useRealtimeFeed(historyFeed, enabled ? HISTORY : null, {
     // A window behind another application is not reading: its focus refresh catches up.
     frame: () => {

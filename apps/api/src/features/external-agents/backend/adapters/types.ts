@@ -45,6 +45,21 @@ export interface SourceRef {
   readonly parentHint?: string
 }
 
+/**
+ * Where an append-only summary fold stopped: the byte offset after its last whole record, a mark
+ * of the bytes before it, and whatever the format's fold has to carry across the cut.
+ */
+export interface SummaryFold {
+  readonly offset: number
+  readonly mark: string
+  readonly carry?: Readonly<Record<string, unknown>>
+}
+
+export interface FoldedSummary {
+  readonly summary: SessionSummary
+  readonly fold?: SummaryFold
+}
+
 export interface AdapterEnv {
   readonly env: Readonly<Record<string, string | undefined>>
   readonly homeDir: string
@@ -117,6 +132,18 @@ export interface ProviderAdapter {
   listSources(env: AdapterEnv): Promise<readonly SourceRef[]>
   /** Parse summaries for the given refs only (index-cache misses). */
   readSummaries(refs: readonly SourceRef[], env: AdapterEnv): Promise<readonly SessionSummary[]>
+  /**
+   * Summarize one session, continuing from `previous` when the source only grew since it was read.
+   *
+   * Optional, for append-only logs. Their token usage is a walk of the whole file, and a live
+   * session is appended to every few seconds, so without a resume point every append re-read a file
+   * that runs to tens of megabytes. The index prefers this over `readSummaries` when present.
+   */
+  foldSummary?(
+    ref: SourceRef,
+    previous: FoldedSummary | undefined,
+    env: AdapterEnv,
+  ): Promise<FoldedSummary>
   /** Parse one session's body, bounded. */
   readTranscript(req: TranscriptRequest, env: AdapterEnv): Promise<TranscriptResult>
   /**

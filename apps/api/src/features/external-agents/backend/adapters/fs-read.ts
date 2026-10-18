@@ -138,6 +138,80 @@ export async function* streamJsonlRecords(
 }
 
 /**
+ * Fold the newline-terminated JSONL records in `[start, end)` and return the byte offset just past
+ * the last whole line, which is where the next fold of the same append-only file resumes.
+ *
+ * Offsets are BYTES, so lines are cut on the raw `\n` byte before decoding; UTF-8 never encodes a
+ * code point with that byte, so the cut cannot split a character. An unterminated last line counts
+ * only when it is a whole record; a fragment is a writer mid-append, left for the fold that sees
+ * the rest of it rather than counted twice.
+ */
+export async function foldJsonlFrom(
+  path: string,
+  start: number,
+  end: number,
+  /** A cheap substring test that skips a line before it is parsed — most lines are not wanted. */
+  wanted: (line: string) => boolean,
+  onRecord: (record: Record<string, unknown>) => void,
+): Promise<number> {
+  const decoder = new TextDecoder()
+  let consumed = start
+  let carry: Uint8Array | undefined
+  for await (const chunk of Bun.file(path).slice(start, end).stream()) {
+    const bytes: Uint8Array = carry ? Buffer.concat([carry, chunk]) : chunk
+    const last = bytes.lastIndexOf(10)
+    if (last < 0) {
+      carry = bytes
+      continue
+    }
+    // One decode per chunk, up to its last newline: decoding line by line cost more than parsing.
+    for (const raw of decoder.decode(bytes.subarray(0, last)).split('\n')) {
+      const line = raw.trim()
+      if (line[0] !== '{' || !wanted(line)) continue
+      try {
+        const parsed: unknown = JSON.parse(line)
+        if (parsed && typeof parsed === 'object') onRecord(parsed as Record<string, unknown>)
+      } catch {
+        // A malformed line is skipped, and still consumed: re-reading it would not mend it.
+      }
+    }
+    consumed += last + 1
+    carry = last + 1 < bytes.length ? bytes.slice(last + 1) : undefined
+  }
+  const rest = carry ? decoder.decode(carry).trim() : ''
+  if (rest[0] === '{') {
+    try {
+      const parsed: unknown = JSON.parse(rest)
+      if (parsed && typeof parsed === 'object' && wanted(rest))
+        onRecord(parsed as Record<string, unknown>)
+      consumed += carry!.length
+    } catch {
+      // A fragment: the writer has not finished this line yet.
+    }
+  }
+  return consumed
+}
+
+/**
+ * The bytes just before `offset`, as a fingerprint of the prefix a fold already read.
+ *
+ * Appending never changes them, so a mismatch means the file was rewritten under the same name and
+ * the fold must start over rather than add new records onto a summary of different ones.
+ */
+export async function readMark(path: string, offset: number, bytes = 64): Promise<string> {
+  if (offset <= 0) return ''
+  const take = Math.min(bytes, offset)
+  const handle = await open(path, 'r')
+  try {
+    const buf = Buffer.alloc(take)
+    const { bytesRead } = await handle.read(buf, 0, take, offset - take)
+    return buf.subarray(0, bytesRead).toString('base64')
+  } finally {
+    await handle.close()
+  }
+}
+
+/**
  * Records for a transcript read, from whichever END the caller asked for.
  *
  * A forward stream cannot reach the end of a file larger than its cap, and that is not a theoretical

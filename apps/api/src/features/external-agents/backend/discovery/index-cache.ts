@@ -21,8 +21,10 @@
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import type { ProviderAdapter, AdapterEnv } from '../adapters/types'
-import type { ProviderStatus, QuotaReading, SessionSummary } from '../../shared/contracts'
+import type { ProviderAdapter, AdapterEnv, SourceRef, SummaryFold } from '../adapters/types'
+import { nextFolds, readMisses } from './read-misses'
+import { newestQuotas } from './newest-quotas'
+import type { ProviderStatus, SessionSummary } from '../../shared/contracts'
 
 /** Two rapid callers share one scan; a third arriving later gets a fresh one. */
 const SCAN_COALESCE_MS = 1_500
@@ -32,6 +34,12 @@ interface CacheFile {
   /** provider id -> `<sessionId>|<revision>` -> summary. The provider id is a KEY IN THE DOCUMENT,
    *  never a path. */
   providers: Record<string, Record<string, SessionSummary>>
+  /**
+   * provider id -> native session id -> where that session's append-only fold stopped. Optional: a
+   * cache written before folds existed is still valid, and a session without one refolds from byte
+   * 0 the next time it changes.
+   */
+  folds?: Record<string, Record<string, SummaryFold>>
 }
 
 /**
@@ -75,41 +83,19 @@ export interface ProviderIndex {
   readonly status: ProviderStatus
 }
 
-/**
- * The account's CURRENT windows: the newest reading of EACH one any of its sessions recorded.
- *
- * Folded here rather than on a session because a quota is not a property of a session — every
- * session of one agent draws on the same windows, so an older session's percentage describes a
- * moment, not a state. Ordered by when the provider WROTE the reading, not by when the file was
- * touched: a transcript can be rewritten by a later append without the quota line changing.
- *
- * Keyed on the window's LENGTH, which is the correction this fold needed. `primary` is not a fixed
- * window — with two open, Codex puts the 5-hour one there and moves the weekly to `secondary` — so a
- * single "newest reading" flips between a 5-hour percentage and a weekly one depending on which
- * session wrote last, and presents them as the same quantity.
- */
-export function newestQuotas(summaries: readonly SessionSummary[]): readonly QuotaReading[] {
-  const byWindow = new Map<number, QuotaReading>()
-  for (const summary of summaries) {
-    for (const quota of summary.quotas ?? []) {
-      const seen = byWindow.get(quota.windowMinutes)
-      if (!seen || quota.observedAt > seen.observedAt) byWindow.set(quota.windowMinutes, quota)
-    }
-  }
-  // Shortest window first: it is the one most likely to bind, and a stable order keeps the workspace
-  // from reshuffling between scans.
-  return [...byWindow.values()].sort((a, b) => a.windowMinutes - b.windowMinutes)
-}
-
 export class SessionIndex {
   private readonly adapters: readonly ProviderAdapter[]
   private readonly env: AdapterEnv
   private readonly stateDir: string
   private readonly log: (message: string) => void
   private readonly memory = new Map<string, Map<string, SessionSummary>>()
+  private readonly folds = new Map<string, Map<string, SummaryFold>>()
   private readonly inFlight = new Map<string, { at: number; promise: Promise<ProviderIndex> }>()
   private readonly last = new Map<string, ProviderIndex>()
-  private loadedAll = false
+  /** Each provider's refs from its last scan, by native session id. */
+  private readonly refs = new Map<string, Map<string, SourceRef>>()
+  /** The one read of the cache file, shared: every provider's scan waits for the same load. */
+  private loading: Promise<void> | undefined
   private writing: Promise<void> = Promise.resolve()
 
   constructor(
@@ -149,9 +135,17 @@ export class SessionIndex {
     return join(this.stateDir, 'index.json')
   }
 
-  private async loadAll(): Promise<void> {
-    if (this.loadedAll) return
-    this.loadedAll = true
+  /**
+   * Shared as a promise, not a flag. A flag set before the read let the providers scanned alongside
+   * the first one see "loaded" while the file was still being read, so after every restart they
+   * started from an empty cache and re-parsed their whole history.
+   */
+  private loadAll(): Promise<void> {
+    this.loading ??= this.readCache()
+    return this.loading
+  }
+
+  private async readCache(): Promise<void> {
     try {
       const parsed = JSON.parse(await readFile(this.cachePath(), 'utf8')) as CacheFile
       if (parsed.version !== CACHE_VERSION || !parsed.providers) return
@@ -160,6 +154,8 @@ export class SessionIndex {
         for (const [key, summary] of Object.entries(entries)) map.set(key, summary)
         this.memory.set(provider, map)
       }
+      for (const [provider, entries] of Object.entries(parsed.folds ?? {}))
+        this.folds.set(provider, new Map(Object.entries(entries)))
     } catch {
       // A missing or corrupt cache is a cold start, never an error: the source of truth is on disk.
     }
@@ -178,7 +174,9 @@ export class SessionIndex {
     const path = this.cachePath()
     const providers: Record<string, Record<string, SessionSummary>> = {}
     for (const [provider, map] of this.memory) providers[provider] = Object.fromEntries(map)
-    const payload: CacheFile = { version: CACHE_VERSION, providers }
+    const folds: Record<string, Record<string, SummaryFold>> = {}
+    for (const [provider, map] of this.folds) folds[provider] = Object.fromEntries(map)
+    const payload: CacheFile = { version: CACHE_VERSION, providers, folds }
     // Serialize: four providers scanning in parallel share one target, so overlapping temp+rename
     // pairs would otherwise race and one section could be lost.
     this.writing = this.writing.then(async () => {
@@ -203,6 +201,7 @@ export class SessionIndex {
     let error: string | undefined
     try {
       const refs = await adapter.listSources(this.env)
+      this.refs.set(adapter.id, new Map(refs.map((ref) => [ref.nativeSessionId, ref])))
       const cache = await this.load(adapter.id)
       const hits: SessionSummary[] = []
       const misses = []
@@ -211,7 +210,9 @@ export class SessionIndex {
         if (hit) hits.push(hit)
         else misses.push(ref)
       }
-      const parsed = misses.length > 0 ? await adapter.readSummaries(misses, this.env) : []
+      const previous = new Map([...cache.values()].map((s) => [s.nativeSessionId, s]))
+      const read = await readMisses(adapter, misses, previous, this.folds.get(adapter.id), this.env)
+      const parsed = read.summaries
       // Rebuild rather than mutate, so revisions belonging to deleted or superseded sessions are
       // evicted instead of growing the cache without bound.
       const next = new Map<string, SessionSummary>()
@@ -225,6 +226,7 @@ export class SessionIndex {
         if (summary) next.set(cacheKey(ref), summary)
       }
       this.memory.set(adapter.id, next)
+      this.folds.set(adapter.id, nextFolds(this.folds.get(adapter.id), refs, misses, read.folds))
       if (misses.length > 0) await this.persist()
       summaries = [...hits, ...parsed]
     } catch (cause) {
@@ -264,6 +266,20 @@ export class SessionIndex {
 
   async scanAll(): Promise<readonly ProviderIndex[]> {
     return Promise.all(this.adapters.map((a) => this.scan(a)))
+  }
+
+  /**
+   * One session's source and summary, from a (coalesced) scan rather than a listing of its own: a
+   * transcript, a resume or a context read then costs the scan, not another whole-file walk.
+   */
+  async find(
+    adapter: ProviderAdapter,
+    nativeSessionId: string,
+  ): Promise<{ ref: SourceRef; summary: SessionSummary } | undefined> {
+    const index = await this.scan(adapter)
+    const ref = this.refs.get(adapter.id)?.get(nativeSessionId)
+    const summary = ref && index.summaries.find((s) => s.nativeSessionId === nativeSessionId)
+    return ref && summary ? { ref, summary } : undefined
   }
 
   /** Last completed scan, without triggering one. Used by paths that must not block on I/O. */

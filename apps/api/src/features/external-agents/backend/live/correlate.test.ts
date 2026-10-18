@@ -237,3 +237,26 @@ describe('correlating a delegation to its transcript', () => {
     expect(live.get(terminalId)?.nativeSessionId).toBe('first')
   })
 })
+
+describe('a transcript belongs to one delegation', () => {
+  test('a session another terminal already adopted is not a candidate for the next one', async () => {
+    const { live } = liveStore('/work/app')
+    live.adopt('t1', 'first')
+    live.open({
+      terminalId: 't2',
+      localixSessionId: 's1',
+      provider: 'claude-code',
+      cwd: '/work/app',
+    })
+    // The second agent has not written its transcript yet: only the first one's exists.
+    const result = await correlateOnce(
+      indexOf([summary({ nativeSessionId: 'first', startedAt: NOW, cwd: '/work/app' })]),
+      adapter,
+      live,
+      't2',
+      '/work/app',
+    )
+    expect(result.adopted).toBeUndefined()
+    expect(live.get('t2')?.nativeSessionId).toBeUndefined()
+  })
+})

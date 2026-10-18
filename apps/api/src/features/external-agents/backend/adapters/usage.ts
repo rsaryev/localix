@@ -129,6 +129,27 @@ function addTo(target: MutableUsage, usage: TokenUsage, model: string | undefine
   target.models.set(model, addUsage(target.models.get(model) ?? emptyUsage(), usage))
 }
 
+function countersOf(usage: TokenUsage): TokenUsage {
+  return {
+    inputTokens: usage.inputTokens,
+    cachedInputTokens: usage.cachedInputTokens,
+    cacheWriteTokens: usage.cacheWriteTokens,
+    outputTokens: usage.outputTokens,
+    reasoningTokens: usage.reasoningTokens,
+    totalTokens: usage.totalTokens,
+    requests: usage.requests,
+  }
+}
+
+function restoreInto(
+  target: MutableUsage,
+  totals: TokenUsage,
+  models: readonly ModelTokenUsage[],
+): void {
+  target.totals = countersOf(totals)
+  for (const model of models) target.models.set(model.model, countersOf(model))
+}
+
 function modelsOf(source: MutableUsage): ModelTokenUsage[] {
   return [...source.models.entries()]
     .map(([model, usage]) => ({ model, ...usage }))
@@ -145,8 +166,49 @@ export class SessionUsageAccumulator {
   private readonly total = mutableUsage()
   private readonly days = new Map<string, MutableUsage>()
 
+  /**
+   * Continue from a previous `result()`. It is lossless — totals and models, per session and per
+   * day, are exactly what this holds — which is what lets a resumed fold add only the new records.
+   */
+  static from(usage: SessionTokenUsage | undefined): SessionUsageAccumulator {
+    const accumulator = new SessionUsageAccumulator()
+    if (!usage) return accumulator
+    restoreInto(accumulator.total, usage, usage.byModel)
+    for (const day of usage.byDay) {
+      const bucket = mutableUsage()
+      restoreInto(bucket, day, day.byModel)
+      accumulator.days.set(day.day, bucket)
+    }
+    return accumulator
+  }
+
   add(usage: TokenUsage, model?: string, timestamp?: number): void {
     if (usage.totalTokens <= 0 && usage.requests <= 0) return
+    this.apply(usage, model, timestamp)
+  }
+
+  /**
+   * Replace a sample already added with a later reading of the same request, under the first
+   * reading's model and day. A provider that rewrites a request as it streams reports the final
+   * counts last; this adds the signed difference, so nothing is counted twice.
+   */
+  replace(previous: TokenUsage, next: TokenUsage, model?: string, timestamp?: number): void {
+    this.apply(
+      {
+        inputTokens: next.inputTokens - previous.inputTokens,
+        cachedInputTokens: next.cachedInputTokens - previous.cachedInputTokens,
+        cacheWriteTokens: next.cacheWriteTokens - previous.cacheWriteTokens,
+        outputTokens: next.outputTokens - previous.outputTokens,
+        reasoningTokens: next.reasoningTokens - previous.reasoningTokens,
+        totalTokens: next.totalTokens - previous.totalTokens,
+        requests: next.requests - previous.requests,
+      },
+      model,
+      timestamp,
+    )
+  }
+
+  private apply(usage: TokenUsage, model?: string, timestamp?: number): void {
     addTo(this.total, usage, model)
     const day = dayOf(timestamp)
     const bucket = this.days.get(day) ?? mutableUsage()

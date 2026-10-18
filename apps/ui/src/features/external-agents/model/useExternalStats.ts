@@ -26,24 +26,25 @@ export function useExternalStats(range: ExternalStatsRange, filters: ExternalSta
         cwdPrefix: filters.project || undefined,
         model: filters.model || undefined,
       }),
-    { revalidateOnFocus: true, shouldRetryOnError: false },
+    { revalidateOnFocus: true, shouldRetryOnError: false, keepPreviousData: true },
   )
   const refresh = async () => {
     await installed.mutate()
     await stats.mutate()
   }
+  // History moving changes the numbers, not which agents are installed.
   const live = useHistoryStream(visible && Boolean(ids), () => {
-    void refresh()
+    void stats.mutate()
   })
   useVisiblePolling({
     enabled: visible && Boolean(ids) && !live,
     intervalMs: 30_000,
-    onTick: refresh,
+    onTick: () => stats.mutate(),
   })
   return {
     agents: installed.agents,
     stats: stats.data,
-    loading: installed.isLoading || stats.isLoading,
+    loading: installed.isLoading || (stats.isLoading && !stats.data),
     error: installed.error ?? stats.error,
     refresh,
   }

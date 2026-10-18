@@ -26,7 +26,7 @@ import { eventWindow } from './event-window'
 import { tailTurnState, TURN_TAIL_BYTES } from '../live/turn-state'
 import { asRecord, asString, contentParts } from './json-util'
 import { mapConcurrent } from './usage'
-import { ID, summarizeClaudeCode as summarize } from './claude-summary'
+import { ID, summarizeClaudeCode as summarize, foldClaudeCode } from './claude-summary'
 
 const SUMMARY_CONCURRENCY = 8
 
@@ -242,6 +242,7 @@ export const claudeCodeAdapter: ProviderAdapter = {
   async readSummaries(refs) {
     return mapConcurrent(refs, SUMMARY_CONCURRENCY, summarize)
   },
+  foldSummary: (ref, previous) => foldClaudeCode(ref, previous),
   readTranscript,
   readTurnState,
 }

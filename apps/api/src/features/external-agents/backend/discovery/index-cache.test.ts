@@ -164,4 +164,44 @@ describe('the session index', () => {
     expect(result.summaries).toEqual([])
     expect(result.status.error).toContain('EACCES')
   })
+
+  test('a grown session resumes from the fold it left, even after a restart', async () => {
+    const dir = await stateDir()
+    const { adapter, state } = counting([ref('a', 'r1'), ref('b', 'r1')])
+    const handed: (number | undefined)[] = []
+    const folding: ProviderAdapter = {
+      ...adapter,
+      async foldSummary(source, previous) {
+        handed.push(previous?.fold?.offset)
+        return {
+          summary: summaryOf(source),
+          fold: { offset: (previous?.fold?.offset ?? 0) + 10, mark: 'm' },
+        }
+      },
+    }
+    await new SessionIndex([folding], ENV, dir, () => {}).scan(folding)
+    state.refs = [ref('a', 'r2'), ref('b', 'r1')]
+    await new SessionIndex([folding], ENV, dir, () => {}).scan(folding)
+    // Both cold, then only `a` again — handed the offset its first fold stopped at.
+    expect(handed).toEqual([undefined, undefined, 10])
+    expect(state.parsed).toEqual([])
+    const stored = JSON.parse(await readFile(join(dir, 'index.json'), 'utf8'))
+    expect(stored.folds.fake).toEqual({
+      a: { offset: 20, mark: 'm' },
+      b: { offset: 10, mark: 'm' },
+    })
+  })
+
+  test('providers scanned together after a restart all start from the stored cache', async () => {
+    const dir = await stateDir()
+    const fakes = ['a', 'b', 'c'].map((id) => {
+      const { adapter, state } = counting([ref(`${id}-1`, 'r1')])
+      return { adapter: { ...adapter, id } as ProviderAdapter, state }
+    })
+    const adapters = fakes.map((fake) => fake.adapter)
+    await new SessionIndex(adapters, ENV, dir, () => {}).scanAll()
+    for (const fake of fakes) fake.state.parsed = []
+    await new SessionIndex(adapters, ENV, dir, () => {}).scanAll()
+    expect(fakes.map((fake) => fake.state.parsed)).toEqual([[], [], []])
+  })
 })

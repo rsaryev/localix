@@ -3,10 +3,11 @@
  * place the layers are wired together. Routes and tools are thin callers of this.
  */
 
+import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import type { TerminalRead } from '@localixai/plugin-sdk/backend'
 import type { AdapterEnv, ProviderAdapter, SourceRef } from './adapters/types'
-import { readNativeSummary, readSessionResume } from './resume-session'
+import { sessionResume } from './resume-session'
 import { PROVIDER_ADAPTERS, adapterFor } from './adapters/registry'
 import { SessionIndex } from './discovery/index-cache'
 import { buildRoster } from './discovery/roster'
@@ -29,6 +30,7 @@ import {
 } from './session-transcript'
 import type {
   Bounded,
+  SessionSummary,
   ProviderStatus,
   RosterQuery,
   RosterRow,
@@ -48,6 +50,7 @@ export class AgentSessionsService {
   private readonly turnSources = new Map<string, { adapter: ProviderAdapter; ref: SourceRef }>()
   private readonly env: AdapterEnv
   private readonly timers = new Set<ReturnType<typeof setTimeout>>()
+  private stopped = false
 
   constructor(
     stateDir: string,
@@ -63,6 +66,13 @@ export class AgentSessionsService {
     this.manifests = new ManifestRegistry(stateDir, log)
     this.live = new LiveStore(this.manifests)
     this.index = new SessionIndex(PROVIDER_ADAPTERS, this.env, stateDir, log)
+    // A closed delegation's log is never read again; keep only the live ones' locations.
+    this.live.onChange((entry) => {
+      if (entry.closed && entry.nativeSessionId)
+        this.turnSources.delete(
+          linkKeyOf({ provider: entry.provider, nativeSessionId: entry.nativeSessionId }),
+        )
+    })
     this.history = new HistoryWatch(
       async () =>
         (await Promise.all(this.availableAdapters().map((a) => a.probeRoots(this.env)))).flat(),
@@ -110,6 +120,7 @@ export class AgentSessionsService {
   }
 
   shutdown(): void {
+    this.stopped = true
     for (const timer of this.timers) clearTimeout(timer)
     this.timers.clear()
     this.history.close()
@@ -137,6 +148,8 @@ export class AgentSessionsService {
    * instant the terminal opens. Timers are tracked so shutdown can cancel them.
    */
   private scheduleCorrelation(terminalId: string, attempt = 0): void {
+    // A correlation in flight at shutdown would otherwise schedule its retry onto a dead service.
+    if (this.stopped) return
     scheduleCorrelationAttempt({
       attempt,
       timers: () => this.timers,
@@ -219,16 +232,32 @@ export class AgentSessionsService {
     const entries = this.live.list(sessionId ?? undefined)
     await Promise.all(
       entries.map((entry) =>
-        this.terminalRead!.screen({ sessionId, terminalId: entry.terminalId })
-          .then((screen) => {
-            if (screen) this.live.observeScreen(entry.terminalId, screen.text)
-          })
+        this.refreshEntry(sessionId, entry.terminalId)
           // A pane that vanished between listing and reading is not an error worth failing a
-          // roster over; its own `close` observation will land through the hook.
+          // roster over.
           .catch(() => undefined),
       ),
     )
     await this.refreshTurnStates(entries)
+  }
+
+  /**
+   * One delegation's screen, or its end. Only the model's own `bash close` used to close an entry,
+   * so an agent that exited by itself, or whose pane the user closed, stayed live in the roster and
+   * held every wait on it to its timeout. A retained final screen is the host saying it exited.
+   */
+  private async refreshEntry(sessionId: string | null, terminalId: string): Promise<void> {
+    const read = this.terminalRead
+    if (!read) return
+    const screen = await read.screen({ sessionId, terminalId })
+    if (screen) {
+      this.live.observeScreen(terminalId, screen.text)
+      return
+    }
+    const final = await read.finalScreen({ sessionId, terminalId })
+    if (!final) return
+    this.live.observeScreen(terminalId, final.text)
+    this.live.close(terminalId)
   }
 
   /**
@@ -262,7 +291,11 @@ export class AgentSessionsService {
       // that says the session ended, or nothing at all. A provider that cannot answer keeps the
       // manifest's degraded state with its stated reason, which is the honest outcome.
       if (!found?.adapter.readTurnState) return
-      const state = await found.adapter.readTurnState(found.ref, this.env, now)
+      // The ref is kept for the life of the delegation, so its modification time is not: a stale
+      // one would age every `working` reading past its evidence window within 90 s of the first.
+      const { mtimeMs } = await stat(found.ref.sourcePath)
+      const ref = { ...found.ref, updatedAtHint: mtimeMs }
+      const state = await found.adapter.readTurnState(ref, this.env, now)
       if (state) this.live.observeTurn(entry.terminalId, state, now)
     } catch {
       // A transcript that cannot be read is simply no evidence; the degraded state stands. Forget
@@ -297,17 +330,18 @@ export class AgentSessionsService {
     return entry ? entry.explain : null
   }
 
+  /** A session's adapter, source and indexed summary — one coalesced scan, no listing per call. */
   private async findSource(key: string): Promise<{
     adapter: ProviderAdapter
-    ref: Awaited<ReturnType<ProviderAdapter['listSources']>>[number]
+    ref: SourceRef
+    summary: SessionSummary
   } | null> {
     const parsed = parseLinkKey(key)
     if (!parsed) return null
     const adapter = adapterFor(parsed.provider)
     if (!adapter || !this.availableAdapters().includes(adapter)) return null
-    const refs = await adapter.listSources(this.env)
-    const ref = refs.find((r) => r.nativeSessionId === parsed.nativeSessionId)
-    return ref ? { adapter, ref } : null
+    const found = await this.index.find(adapter, parsed.nativeSessionId)
+    return found ? { adapter, ...found } : null
   }
 
   private availableAdapters(): readonly ProviderAdapter[] {
@@ -317,11 +351,11 @@ export class AgentSessionsService {
 
   /** Resolve native continuation without loading the conversation's events. */
   async nativeSummary(key: string) {
-    return readNativeSummary(await this.findSource(key), this.env)
+    return (await this.findSource(key))?.summary ?? null
   }
 
   async resume(key: string) {
-    return readSessionResume(await this.findSource(key), this.env)
+    return sessionResume((await this.findSource(key))?.summary ?? null)
   }
 
   async transcript(
@@ -335,9 +369,7 @@ export class AgentSessionsService {
   ): Promise<TranscriptSlice | null> {
     const found = await this.findSource(key)
     if (!found) return null
-    const { adapter, ref } = found
-    const [summary] = await adapter.readSummaries([ref], this.env)
-    if (!summary) return null
+    const { adapter, ref, summary } = found
     const limit = transcriptEventLimit(maxEvents)
     const result = await adapter.readTranscript(
       transcriptRequest(ref, limit, maxCharsPerEvent, tail, from),

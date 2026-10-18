@@ -106,8 +106,16 @@ export class LiveStore {
     return this.byTerminal.get(terminalId)
   }
 
+  /**
+   * The entry a key names. A pending key keeps naming its delegation after correlation adopts the
+   * native session: a caller that started waiting before the transcript existed holds that key, and
+   * losing the entry would read as `not-live` — which settles the wait while the agent starts up.
+   */
   byKey(key: string): LiveEntry | undefined {
-    for (const entry of this.byTerminal.values()) if (this.keyOf(entry) === key) return entry
+    for (const entry of this.byTerminal.values()) {
+      if (this.keyOf(entry) === key || pendingKeyFor(entry.provider, entry.terminalId) === key)
+        return entry
+    }
     return undefined
   }
 
