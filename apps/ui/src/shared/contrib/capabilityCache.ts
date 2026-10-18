@@ -7,11 +7,11 @@ import { shouldSurfaceStartupFailure, startStartupRetry } from '@/shared/lib/sta
 import {
   adoptCapabilitySnapshot,
   pluginContribSnapshot,
-  pluginContribVersion,
+  pluginCapabilityVersion,
+  pluginContribScope,
   refetchActivePluginContrib,
   subscribePluginContrib,
 } from './enabledPlugins'
-import { usePluginContribVersion } from './usePluginContribVersion'
 import { trackCapabilityWrite } from './capabilityWrites'
 
 /**
@@ -29,7 +29,7 @@ import { trackCapabilityWrite } from './capabilityWrites'
  *    the project the workbench is showing cost ZERO extra requests;
  *  - any other scope is fetched once and shared by every reader of that scope, with
  *    concurrent readers joining the in-flight request rather than starting their own;
- *  - a capability mutation bumps `pluginContribVersion`, which marks every cached
+ *  - a capability mutation bumps `pluginCapabilityVersion`, which marks every cached
  *    scope stale, so nothing can serve a document from before a toggle.
  *
  * Entity BODIES are deliberately not here: a skill's content, a panel's or a view's
@@ -86,6 +86,17 @@ function setScope(scope: string, next: Partial<ScopeState>): void {
 }
 
 /** The workbench singleton's document when it describes exactly this scope. */
+/**
+ * `scope` is the one the workbench singleton is loading right now. Its document is on its way
+ * through the singleton; fetching it here too was a second request for the same answer.
+ */
+function awaitingActiveDocument(scope: string): boolean {
+  const active = pluginContribScope()
+  if (active === undefined || pluginContribSnapshot().document) return false
+  const { projectId, agentId } = parseCapabilityScope(scope)
+  return !agentId && (projectId ?? null) === active
+}
+
 function activeDocumentFor(scope: string): CapabilitySnapshot | null {
   const document = pluginContribSnapshot().document
   if (!document) return null
@@ -118,8 +129,8 @@ export function peekCapabilities(scope: string, enabled = true): CapabilityCache
  * one request for it. Called from an effect — never during render.
  */
 export function ensureCapabilities(scope: string): void {
-  if (activeDocumentFor(scope)) return
-  const version = pluginContribVersion()
+  if (activeDocumentFor(scope) || awaitingActiveDocument(scope)) return
+  const version = pluginCapabilityVersion()
   const state = scopes.get(scope)
   // Already current, or already loading for this very version: nothing to start. An
   // invalidation sets `loadedVersion` to -1, so it always falls through to a reload.
@@ -193,7 +204,7 @@ async function sendRuleChanges(
         snapshot: next,
         loading: false,
         error: null,
-        loadedVersion: pluginContribVersion(),
+        loadedVersion: pluginCapabilityVersion(),
       })
     }
   }
@@ -254,7 +265,11 @@ function subscribe(listener: () => void): () => void {
  * been opened yet, so an unopened surface costs no request at all.
  */
 export function useCapabilities(scope: string, enabled = true): CapabilityCacheEntry {
-  const version = usePluginContribVersion()
+  const version = useSyncExternalStore(
+    subscribePluginContrib,
+    pluginCapabilityVersion,
+    pluginCapabilityVersion,
+  )
   const invalidation = useSyncExternalStore(
     subscribe,
     () => cacheRevision,

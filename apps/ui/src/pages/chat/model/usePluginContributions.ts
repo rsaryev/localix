@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 
 import { reconcileUnavailableContributedItems } from '@/features/workspace-grid/model'
-import { eventSocket } from '@/shared/api/eventSocket'
 import {
   pluginContribSnapshot,
   pluginContribSourceFor,
   preparePluginContribScope,
-  refetchActivePluginContrib,
   refetchPluginContrib,
   startPluginContribSync,
   subscribePluginContrib,
@@ -107,21 +105,9 @@ export function usePluginContributionsSync({
       stop?.()
     }
   }, [hasHydrated, routeProjectId])
-  // Close the startup half of that stream contract. The backend host wires plugin
-  // backends OFF the readiness path on purpose — an unhealthy plugin must not be
-  // able to stop the app from starting — and announces the result with a single
-  // `resources.changed`. A cold desktop start has no socket yet when that lands, and
-  // a first connect declares no cursor, so the server replays nothing: the set the
-  // UI fetched a moment earlier would stay authoritative forever. Re-reading once
-  // the socket is live makes the pair total. `publish()` only advances its version
-  // when the capability set actually moved, so the common "nothing changed" case
-  // costs exactly one GET and no dependent refetch.
-  useEffect(() => {
-    if (!hasHydrated) return
-    return eventSocket.onConnected(() => {
-      void refetchActivePluginContrib()
-    })
-  }, [hasHydrated])
+  // No socket-connect refetch here: `resourceSync.connected()` re-reads `capabilities` on
+  // every connect (`app/workspaceResourceSync.ts`), which closes the startup race of a
+  // `resources.changed` landing before the socket existed. A second one here doubled it.
   // Recomputed when the runtime view store changes (add/remove on (re)sync). The
   // version is the dep even though the body reads the store directly — the linter
   // can't see that data dependency.

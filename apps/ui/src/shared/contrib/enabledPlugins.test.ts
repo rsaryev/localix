@@ -1,8 +1,10 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import type { CapabilitySnapshot, PluginRecord, PluginViewSpec } from '@/shared/api/contracts'
 import {
   __resetPluginContrib,
+  announcePluginUiChanged,
+  pluginCapabilityVersion,
   pluginContribSnapshot,
   pluginContribVersion,
   preparePluginContribScope,
@@ -303,6 +305,61 @@ describe('plugin contribution synchronization', () => {
     // A real mutation does advance it.
     await refetchPluginContrib(source({ revision: 8, plugins: [plugin('sample', false)] }))
     expect(pluginContribVersion()).toBe(converged + 1)
+  })
+
+  test('a plugin UI reload re-reads derived surfaces but never stales capability documents', async () => {
+    // Cached capability documents used to key on the UI reload counter, so every plugin
+    // batch that settled at startup re-fetched every cached scope's whole snapshot.
+    await refetchPluginContrib(source({ revision: 7, plugins: [plugin('sample')] }))
+    const documents = pluginCapabilityVersion()
+    const surfaces = pluginContribVersion()
+
+    announcePluginUiChanged()
+    expect(pluginContribVersion()).toBe(surfaces + 1)
+    expect(pluginCapabilityVersion()).toBe(documents)
+
+    await refetchPluginContrib(source({ revision: 8, plugins: [plugin('sample', false)] }))
+    expect(pluginCapabilityVersion()).toBe(documents + 1)
+  })
+
+  test('switching scope does not stale other scopes; a moved server or set in one scope does', async () => {
+    await refetchPluginContrib(source({ revision: 7, plugins: [plugin('sample')] }))
+    const documents = pluginCapabilityVersion()
+
+    preparePluginContribScope('PRJ-1')
+    await refetchPluginContrib(
+      source({
+        revision: 7,
+        scope: { projectId: 'PRJ-1', agentId: null },
+        plugins: [plugin('sample'), plugin('kanban')],
+      }),
+    )
+    expect(pluginCapabilityVersion()).toBe(documents)
+
+    await refetchPluginContrib(
+      source({ revision: 7, scope: { projectId: 'PRJ-1', agentId: null }, plugins: [] }),
+    )
+    expect(pluginCapabilityVersion()).toBe(documents + 1)
+  })
+
+  test('a bare resync before any route installed its loader reads nothing', async () => {
+    const fetchSnapshot = spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue(
+      snapshot(),
+    )
+    try {
+      startPluginContribSync()()
+      await flush()
+      expect(fetchSnapshot).not.toHaveBeenCalled()
+
+      const load = mock(() => refetchPluginContrib(source({ revision: 3 })))
+      startPluginContribSync(load)()
+      startPluginContribSync()()
+      await flush()
+      expect(load).toHaveBeenCalledTimes(2)
+      expect(fetchSnapshot).not.toHaveBeenCalled()
+    } finally {
+      fetchSnapshot.mockRestore()
+    }
   })
 
   test('reordering the same enabled names publishes the new document without advancing the reload key', async () => {

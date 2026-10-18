@@ -6,6 +6,7 @@ import {
 } from './pluginContribSnapshot'
 
 export type { PluginContribSnapshot } from './pluginContribSnapshot'
+export { pluginCapabilityVersion } from './capabilityVersion'
 import type {
   CapabilitySnapshot,
   CapabilityToolSurface,
@@ -31,6 +32,7 @@ import {
   runPluginUiLoads,
   type PluginUiDiscovery,
 } from './pluginUiLoads'
+import { __resetCapabilityVersion, noteCapabilityDocument } from './capabilityVersion'
 import { rememberShellCapabilities, type ShellCapabilitiesFrame } from '@/shared/lib/shellSnapshot'
 
 /**
@@ -54,6 +56,8 @@ import { rememberShellCapabilities, type ShellCapabilitiesFrame } from '@/shared
 let snapshot: PluginContribSnapshot = EMPTY_SNAPSHOT
 const listeners = new Set<() => void>()
 let version = 0
+/** Whether a caller installed a scoped loader; until then a bare resync has no scope to read. */
+let loaderInstalled = false
 let requestVersion = 0
 let activeSyncGeneration = 0
 // How many snapshot loads are in flight. A superseded request hands publication to
@@ -121,6 +125,7 @@ function publish(next: PluginContribSnapshot): void {
   publishNames(next.enabledNames)
   syncThirdPartyViews(next.views)
   if (capabilitiesMoved) version += 1
+  if (next.document) noteCapabilityDocument(next.document, next.enabledNames)
   for (const l of listeners) l()
   // This snapshot costs a plugin-discovery round trip (measured: ~1.2s on a packaged
   // boot), and every gate treats "not loaded yet" as "disabled" — which is why the rail
@@ -372,8 +377,14 @@ export function startPluginContribSync(
   schedule: StartupRetrySchedule = scheduleStartupRetry,
   cancel: StartupRetryCancel = cancelStartupRetry,
 ): () => void {
+  // A bare resync (`resources.changed`, a socket connect) before any route installed its loader
+  // would read the GLOBAL scope the route then discards; the route's own start reads after it.
+  if (!load && !loaderInstalled) return () => {}
   stopActiveSync?.()
-  if (load) currentLoad = load
+  if (load) {
+    currentLoad = load
+    loaderInstalled = true
+  }
   const generation = ++activeSyncGeneration
   const stop = startStartupRetry(currentLoad, schedule, cancel)
   stopActiveSync = stop
@@ -406,6 +417,11 @@ export function pluginContribVersion(): number {
   return version
 }
 
+/** The project this store converges to; `undefined` until a route or frame established it. */
+export function pluginContribScope(): string | null | undefined {
+  return activeProjectId
+}
+
 /** Test seam: forget the loaded state (does not notify). */
 export function __resetPluginContrib(): void {
   stopActiveSync?.()
@@ -417,6 +433,8 @@ export function __resetPluginContrib(): void {
   if (syncFailing) syncProblems((problems) => problems.__resetPluginSyncProblems())
   syncFailing = false
   version = 0
+  __resetCapabilityVersion()
+  loaderInstalled = false
   currentLoad = () => refetchPluginContrib()
   inFlightRequests = 0
   snapshot = EMPTY_SNAPSHOT
