@@ -166,6 +166,11 @@ re-read once there. A file path is watched by its own name. It exists on the boo
 a backend singleton keeps the one it was given, with a slow backstop poll for loads without it. To
 push a change to an open view, use [a live stream](plugin-ui.md#a-live-stream-of-your-own).
 
+### Search by meaning and follow your own changes
+
+A backend can index its own items by meaning with `ctx.host.semantic` and record and read its own
+change notices with `ctx.host.changes`. See [Semantic index and change feed](plugin-semantics.md).
+
 ### Bundled executables on PATH
 
 An enabled plugin's `bin/` directory is prepended to the PATH of the commands the agent runs:

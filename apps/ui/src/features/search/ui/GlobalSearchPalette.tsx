@@ -1,3 +1,4 @@
+import { SearchProjectScope } from './SearchProjectScope'
 import { semanticApi } from '@/shared/api/semanticApi'
 import { useEffect, useMemo } from 'react'
 import { CornerDownLeft } from 'lucide-react'
@@ -14,6 +15,7 @@ import {
 import { CommandHints } from '@/shared/ui/command-hints'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { useChatStore } from '@/features/chat/model/store'
+import { useSearchProject } from '../model/useSearchProject'
 import { useGlobalSearch } from '../model/useGlobalSearch'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { activateSearchHit } from '../model/activateSearch'
@@ -51,12 +53,8 @@ export function GlobalSearchPalette({
   onOpenChange,
   commands,
 }: GlobalSearchPaletteProps) {
-  const activeProjectId = useChatStore((s) => s.activeProjectId)
-  const search = useGlobalSearch({
-    groupLimit: 5,
-    sessionId,
-    projectId: activeProjectId,
-  })
+  const { projectId, projects } = useSearchProject(sessionId)
+  const search = useGlobalSearch({ groupLimit: 5, sessionId, projectId })
   const { setQuery, clearScope } = search
 
   const activate = useUiNavigation({
@@ -113,6 +111,14 @@ export function GlobalSearchPalette({
           placeholder={search.scope.placeholder ?? 'Search everything…'}
           value={search.query}
           onValueChange={search.setQuery}
+          trailing={
+            <SearchProjectScope
+              currentProjectId={projectId}
+              projects={projects}
+              scope={search.projectScope}
+              onChange={search.setProjectScope}
+            />
+          }
         />
         <CommandList>
           {problems.length > 0 && (

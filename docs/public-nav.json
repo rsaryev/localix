@@ -125,6 +125,7 @@
         "extending/plugin-problems.md",
         "extending/ui-kit.md",
         "extending/plugin-wakes.md",
+        "extending/plugin-semantics.md",
         "extending/sealed-moves.md",
         "extending/plugin-routes.md",
         "extending/skills-authoring.md",

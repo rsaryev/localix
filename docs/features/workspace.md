@@ -200,6 +200,11 @@ own chat working directory. **Show all** opens one domain’s paged results.
 scopes. A failed domain can leave other results available, with a problem shown alongside them.
 Results are bounded previews, so a displayed total is not a count of every possible source match.
 
+Search looks in the current project: its chats and messages, and the skills, plugins, MCP servers
+and agents it has besides the global ones. The project's name at the end of the field opens the
+others and **All projects**; projects, settings and models belong to none and are searched either
+way. The palette and the Search tab use the same project: the chat's, else the active one.
+
 ### Explicit and automatic context
 
 Drag a conversation from the sidebar into the message composer to add its context link. Sidebar rows

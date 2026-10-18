@@ -16,6 +16,7 @@
  */
 
 import type { PluginAgentDirectory, PluginPathWatch, PluginScreenSnapshot } from './context'
+import type { ChangeFeedHost } from './changes'
 import type { SemanticIndexHost } from './semantic'
 
 /** Host-side terminal reader: the same three calls, with the user the host resolves. */
@@ -203,12 +204,11 @@ export interface PluginHostServices {
    * owns `sessionId` before returning a directory. Plugins never construct
    * `~/.localix` paths themselves, and one session can never enumerate another.
    */
-  sessionStorage?: {
-    resolveDataDir(userId: string, sessionId: string): Promise<string>
-  }
+  sessionStorage?: { resolveDataDir(userId: string, sessionId: string): Promise<string> }
   /** The enabled agents of a session's scope, read-only (see {@link PluginAgentDirectory}). */
   agents?: PluginAgentDirectory
   semantic?: SemanticIndexHost
+  changes?: ChangeFeedHost
   /**
    * Provider-neutral desktop file intents. Plugins may prepare an artifact, while
    * the host remains the sole owner of platform launch mechanics.

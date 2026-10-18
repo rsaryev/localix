@@ -2,7 +2,7 @@
 .demo-film {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 1680 / 1278;
+  aspect-ratio: 1680 / 946;
   max-width: 72rem;
   margin: 2.5rem auto 0;
   border-radius: clamp(0.625rem, 1.4vw, 1rem);

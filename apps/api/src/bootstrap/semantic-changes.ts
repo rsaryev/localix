@@ -13,7 +13,7 @@ import { chatSemanticTargets } from '../features/chat/semantic-sources'
 import type { SemanticService } from '../features/embeddings/service'
 import type { LocalModelsService } from '../features/local-models/service'
 import type { createLogger } from '../lib/logger'
-import { startChangeFeedRetention } from './change-feed'
+import { startChangeFeedRetention, type ChangeFeeds } from './change-feed'
 import { semanticHandlers, type SemanticTargets } from '../features/embeddings/targets'
 import { mcpSemanticTarget } from '../features/mcp/semantic'
 import { pluginsSemanticTarget } from '../features/plugins/semantic'
@@ -49,10 +49,11 @@ export function startSemantic(deps: {
   logger: ReturnType<typeof createLogger>
   localModels: Pick<LocalModelsService, 'boot'>
   semanticService: SemanticService
-  changes: CoreChangeFeed
+  changes: ChangeFeeds
   signal?: AbortSignal
 }): void {
-  const { db, semanticService: semantic, changes: feed } = deps
+  const { db, semanticService: semantic } = deps
+  const feed = deps.changes.core
   void deps.localModels
     .boot()
     .then(() => semantic.boot())
@@ -60,5 +61,5 @@ export function startSemantic(deps: {
     .catch((err: unknown) =>
       deps.logger.warn({ event: 'semantic.boot_failed', error: String(err) }),
     )
-  startChangeFeedRetention(feed, deps.signal)
+  startChangeFeedRetention(deps.changes, deps.signal)
 }

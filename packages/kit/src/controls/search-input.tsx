@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react'
-import { useRef, type ComponentProps } from 'react'
+import { useRef, type ComponentProps, type ReactNode } from 'react'
 import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/plugin-sdk/ui/classes'
 
 type SearchInputProps = Omit<
@@ -29,6 +29,8 @@ type SearchInputProps = Omit<
   tone?: 'default' | 'sidebar'
   /** Extra classes on the outer wrapper. */
   className?: string
+  /** A quiet control at the field's end, after the clear button (a scope picker). */
+  trailing?: ReactNode
 }
 
 /**
@@ -51,6 +53,7 @@ export function SearchInput({
   onFocus,
   onBlur,
   'aria-label': ariaLabel,
+  trailing,
   ...inputProps
 }: SearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -141,6 +144,7 @@ export function SearchInput({
           <X className={roomy ? 'size-3.5' : 'size-3'} />
         </button>
       )}
+      {trailing}
     </div>
   )
 }

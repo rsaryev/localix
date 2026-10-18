@@ -24,6 +24,7 @@ Read [Privacy](getting-started/privacy.md) to understand data storage and outbou
 | Control what enters the next request | [Workspace context](features/workspace.md#explicit-and-automatic-context) · [Checkpoints](features/context-checkpoints.md) |
 | Review actions before they run       | [Permission modes](features/permission-modes.md) · [Permission rules](features/permissions.md)                             |
 | Choose a provider or model           | [Providers](features/providers.md)                                                                                         |
+| Run models on this computer          | [Local models](features/local-models.md) · [Semantic search](features/semantic-search.md)                                  |
 | Track a larger goal                  | [Kanban](features/task-board.md) · [Session tasks recipe](recipes/turn-a-vague-goal-into-a-pipeline.md)                    |
 | Wait for CI or repeat a prompt       | [Monitors](features/monitors.md) · [Loops](features/loops.md)                                                              |
 | Add a tool or workbench              | [Build with the agent](extending/build-with-the-agent.md) · [Plugin authoring](extending/plugins.md)                       |
@@ -76,6 +77,8 @@ Each recipe walks through one task from setup to a visible result.
 | [Annotate a live preview](features/visual-feedback.md)            | Attach source-mapped element feedback from a live preview.         |
 | [Use language server features](features/lsp.md)                   | Use diagnostics and language-server features.                      |
 | [Track model usage and estimated cost](features/cost-tracking.md) | Inspect model usage and estimated request cost.                    |
+| [Run models on this computer](features/local-models.md)           | Download Gemma 4 and other open models sized for this computer.    |
+| [Search by meaning](features/semantic-search.md)                  | Find chats, skills, plugins, MCP servers and agents by meaning.    |
 | [Manage notifications](features/notifications.md)                 | Configure notifications and review recorded events.                |
 | [Use Localix from the command line](features/cli.md)              | Open a project or file through the desktop shell launcher.         |
 
@@ -137,6 +140,7 @@ Each recipe walks through one task from setup to a visible result.
 | [Report plugin failures](extending/plugin-problems.md)             | Report plugin failures through the host’s problem surfaces.        |
 | [The UI kit](extending/ui-kit.md)                                  | Use shared components, tokens, and supported import paths.         |
 | [Wake a session from a plugin](extending/plugin-wakes.md)          | Wake a session from a plugin event.                                |
+| [Semantic index and change feed](extending/plugin-semantics.md)    | Index a plugin's items by meaning and follow its own changes.      |
 | [Validate plugin route requests](extending/plugin-routes.md)       | Validate plugin HTTP request contracts.                            |
 | [Author a skill](extending/skills-authoring.md)                    | Write SKILL.md procedures and supporting resources.                |
 | [Shared Markdown](extending/markdown.md)                           | Use the shared Markdown renderer and interactive components.       |

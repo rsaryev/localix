@@ -5,6 +5,7 @@ import { Search } from 'lucide-react'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { useChatStore } from '@/features/chat/model/store'
+import { useSearchProject } from '../model/useSearchProject'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 import { useGlobalSearch } from '../model/useGlobalSearch'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
@@ -14,6 +15,7 @@ import { getUiCommands } from '@/shared/contrib/uiCommands'
 import { subscribeUiLocations, uiLocationRevision } from '@/shared/contrib/uiLocations'
 import { ALL_SCOPE } from '../model/scopes'
 import { ScopeBar } from './ScopeBar'
+import { SearchProjectScope } from './SearchProjectScope'
 import { GroupSection, ScopedResults } from './SearchResults'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
 
@@ -35,9 +37,7 @@ export function GlobalSearchTab({
   // chat on screen instead made a kept-alive Search tab of chat A search B's workspace and open
   // B's hits once the person switched chats.
   const sessionId = useWorkItemSessionId()
-  const projectId = useChatStore(
-    (s) => s.allSessions.find((session) => session.id === sessionId)?.projectId ?? null,
-  )
+  const { projectId, projects } = useSearchProject(sessionId)
   const uiLocationsRevision = useSyncExternalStore(
     subscribeUiLocations,
     uiLocationRevision,
@@ -135,6 +135,14 @@ export function GlobalSearchTab({
           // pills reads as a different family — the corner is what makes the row one control
           // group rather than a box with chips under it.
           className="rounded-full"
+          trailing={
+            <SearchProjectScope
+              currentProjectId={projectId}
+              projects={projects}
+              scope={search.projectScope}
+              onChange={search.setProjectScope}
+            />
+          }
           placeholder={search.scope.placeholder ?? 'Search everything…'}
           onKeyDown={(e) => {
             // Backspace on an empty box drops the active scope pill.

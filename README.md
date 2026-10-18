@@ -24,6 +24,18 @@
   </a>
 </p>
 
+## On this computer
+
+- **Local models.** Settings → Models picks Gemma 4 at the size your machine runs well, with a
+  Fastest–Smartest slider, and adds any GGUF model by its Hugging Face id. Nothing you send them
+  leaves the computer. See [local models](docs/features/local-models.md).
+- **Search by meaning.** On by default: an embedding model downloads in the background, and search
+  then finds chats, messages, skills, plugins, MCP servers and agents by what they mean, in any
+  language. See [semantic search](docs/features/semantic-search.md).
+- **For plugins.** A plugin can index its own items and follow its own changes through
+  `ctx.host.semantic` and `ctx.host.changes`. See
+  [semantic index and change feed](docs/extending/plugin-semantics.md).
+
 ## Download
 
 - **macOS, Apple silicon:** `Localix-macos-arm64.dmg` from the
@@ -44,7 +56,8 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Connect a provider through the model picker, choose a model, and start a conversation.
+Connect a provider through the model picker — or download a model in Settings → Models to run one on
+this computer — choose a model, and start a conversation.
 
 To use the browser workspace instead of the desktop shell:
 

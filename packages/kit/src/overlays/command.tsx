@@ -73,6 +73,7 @@ function CommandInput({
   containerClassName,
   inputGroupClassName,
   icon: Icon = Search,
+  trailing,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input> & {
   icon?: LucideIcon
@@ -80,6 +81,8 @@ function CommandInput({
   containerClassName?: string
   /** Surface and density overrides for the shared input frame. */
   inputGroupClassName?: string
+  /** A quiet control at the field's end (a scope picker). */
+  trailing?: React.ReactNode
 }) {
   const resultCount = useCommandState((state) => state.filtered.count)
 
@@ -107,6 +110,7 @@ function CommandInput({
           <InputGroupAddon>
             <Icon className="size-3.5 shrink-0 opacity-50 in-data-[slot=dialog-content]:size-4" />
           </InputGroupAddon>
+          {trailing && <InputGroupAddon align="inline-end">{trailing}</InputGroupAddon>}
         </InputGroup>
       </div>
       {/* Keep status outside cmdk's role=listbox: only options/groups belong

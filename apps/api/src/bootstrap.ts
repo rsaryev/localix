@@ -95,6 +95,7 @@ export async function bootstrap(
       env,
       logger,
       semanticService,
+      changes: infra.changes,
       notifications,
       serviceRefs,
       secretsStore,

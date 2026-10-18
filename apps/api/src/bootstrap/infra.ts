@@ -1,6 +1,5 @@
-import type { CoreChangeFeed } from '../features/changes/core-entities'
 import { buildAgentEngine } from './agent-engine'
-import { createCoreChanges } from './change-feed'
+import { createChangeFeeds, type ChangeFeeds } from './change-feed'
 import { dirname, join } from 'node:path'
 import type { DestinationStream } from 'pino'
 import type { LocalModelsService } from '../features/local-models/service'
@@ -88,8 +87,8 @@ export interface InfraPhase {
   mediaStore: ReturnType<typeof createMediaStore>
   /** Models on this computer: the `local` provider's and semantic search's one source. */
   localModels: LocalModelsService
-  /** The core change feed's consumers; producers write with `recordCoreChanges`. */
-  changes: CoreChangeFeed
+  /** The change feeds' consumers: the core's (producers write with `recordCoreChanges`), plugins'. */
+  changes: ChangeFeeds
 }
 
 export async function createInfraPhase(
@@ -107,7 +106,7 @@ export async function createInfraPhase(
 
   const db = createDatabase({ filename: env.LOCALIX_DB_FILE })
   await migrateToLatest(db, { defaultUserId: env.LOCALIX_DEFAULT_USER_ID })
-  const changes = createCoreChanges(db, logger)
+  const changes = createChangeFeeds(db, logger)
   const { localModels, engine } = buildAgentEngine({ logger, env })
   const { runtime: agentRuntime, languageModels: languageModelFactory } = engine
   // Forward holder: the terminal service is created below (it depends on

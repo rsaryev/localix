@@ -38,6 +38,11 @@ export interface UseGlobalSearchOptions {
   debounceMs?: number
 }
 
+/** Every project, rather than one. */
+export const ALL_PROJECTS = 'all'
+/** The current project (null), another project's id, or {@link ALL_PROJECTS}. */
+export type ProjectScope = string | null
+
 export interface GlobalSearchState {
   /** The effective text (typed prefix already promoted into `scope`). */
   query: string
@@ -66,6 +71,9 @@ export interface GlobalSearchState {
    * dead backend and "no matches" were the same empty list.
    */
   domainProblems: Problem[]
+  /** Where it looks: the current project (null), another project by id, or every project. */
+  projectScope: ProjectScope
+  setProjectScope: (scope: ProjectScope) => void
   /** A specific server domain is active (drives the flat, paginated view). */
   scopedMode: boolean
   canLoadMore: boolean
@@ -77,7 +85,7 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
   const groupLimit = opts.groupLimit ?? DEFAULT_GROUP_LIMIT
   const debounceMs = opts.debounceMs ?? DEFAULT_DEBOUNCE
   const sessionId = opts.sessionId ?? null
-  const projectId = opts.projectId ?? null
+  const currentProjectId = opts.projectId ?? null
 
   const [queryText, setQueryText] = useState(opts.initialQuery ?? '')
   const [scopeId, setScopeId] = useState<string | null>(scopeById(opts.initialScope)?.id ?? null)
@@ -87,7 +95,9 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
   const [problem, setProblem] = useState<Problem | null>(null)
   const [domainProblems, setDomainProblems] = useState<Problem[]>(EMPTY_PROBLEMS)
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
-  // How the last answer was found: words, or words and meaning (semantic search on).
+  const [projectScope, setProjectScope] = useState<ProjectScope>(null)
+  const everywhere = projectScope === ALL_PROJECTS
+  const projectId = projectScope === null || everywhere ? currentProjectId : projectScope
   const [debounced, setDebounced] = useState(opts.initialQuery ?? '')
 
   // Last-write-wins guard shared by the paged fetch AND load-more.
@@ -164,6 +174,7 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
           limit: scopedMode ? SCOPED_PAGE : groupLimit,
           sessionId,
           projectId,
+          ...(everywhere ? { allProjects: true } : {}),
         },
         ticket.controller.signal,
       )
@@ -202,6 +213,7 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
     groupLimit,
     sessionId,
     projectId,
+    everywhere,
     coordinator,
   ])
 
@@ -220,6 +232,7 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
           cursor: nextCursor,
           sessionId,
           projectId,
+          ...(everywhere ? { allProjects: true } : {}),
         },
         ticket.controller.signal,
       )
@@ -257,6 +270,7 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
     scopeId,
     sessionId,
     projectId,
+    everywhere,
     coordinator,
   ])
 
@@ -271,6 +285,8 @@ export function useGlobalSearch(opts: UseGlobalSearchOptions = {}): GlobalSearch
     total,
     problem,
     domainProblems,
+    projectScope,
+    setProjectScope,
     scopedMode,
     canLoadMore: scopedMode && !!nextCursor,
     loadMore,

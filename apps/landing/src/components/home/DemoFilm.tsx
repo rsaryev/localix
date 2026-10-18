@@ -7,7 +7,7 @@ export const DEMO_SRC = '/films/demo.mp4'
 export const DEMO_POSTER = '/films/demo.jpg'
 
 /**
- * The product demo: a silent recording of one `/workflows` run, cropped to the app window. The
+ * The product demo: a silent recording of one workflows run, cropped to the app window. The
  * poster waits with a single centred action; the film loads only when the reader asks for it,
  * then loops without player chrome. A click on the frame pauses or resumes it, and it pauses on
  * its own while scrolled away.
@@ -42,9 +42,9 @@ export function DemoFilm() {
         className="demo-video"
         src={started ? DEMO_SRC : undefined}
         poster={DEMO_POSTER}
-        aria-label="A /workflows prompt fills the board, agents build and test a 2048 game in the browser, and a comment gets the cells resized"
+        aria-label="A /workflows prompt puts three cards on the board, agents build and test a dark 2048 game in the browser, and a Visual Feedback comment adds a light theme"
         width={1680}
-        height={1278}
+        height={946}
         muted
         loop
         playsInline

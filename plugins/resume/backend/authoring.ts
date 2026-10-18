@@ -72,7 +72,9 @@ export type SectionInput = z.infer<typeof sectionInputSchema>
 export type HeaderInput = z.infer<typeof headerInputSchema>
 export type ContentInput = z.infer<typeof contentInputSchema>
 
-const ONGOING = /^(?:present|current|now|ongoing|today|настоящее время|по настоящее время)$/iu
+// Russian résumés say "ongoing" too ("present time", "to the present time"): escaped, sources are English.
+const ONGOING =
+  /^(?:present|current|now|ongoing|today|\u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0435 \u0432\u0440\u0435\u043c\u044f|\u043f\u043e \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u0435 \u0432\u0440\u0435\u043c\u044f)$/iu
 const SCALARS = ['title', 'organization', 'location', 'start', 'end'] as const
 
 function date(value: string | undefined) {

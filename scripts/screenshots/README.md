@@ -76,7 +76,7 @@ LOCALIX_CAPTURE_LOCAL_MODELS=1 bun run test:screenshots --grep 'local-models/|se
 ```
 
 The seed turns semantic search on and waits for the real index. The query shares only stopwords with
-the matched fixture message, so the hit and its **meaning** label are the model's work. Both
+the matched fixture message, so the hit is the model's work; how it was found is not shown. Both
 scenarios start from the workspace (`start` in `plan.mjs`) rather than an open conversation.
 
 ## Demo HTTP responses

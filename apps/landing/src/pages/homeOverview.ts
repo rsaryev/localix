@@ -20,6 +20,18 @@ export const WORKSPACE_LINKS: OverviewLink[] = [
 
 export const PLATFORM_OVERVIEW: OverviewLink[] = [
   {
+    title: 'Local models',
+    body: 'Run Gemma 4 and other open models on this computer, sized for it.',
+    slug: 'features--local-models',
+    anchor: 'what-you-can-do',
+  },
+  {
+    title: 'Search by meaning',
+    body: 'Find chats, skills, plugins and agents by what they mean, in any language.',
+    slug: 'features--semantic-search',
+    anchor: 'what-you-can-do',
+  },
+  {
     title: 'Model routing',
     body: 'Give conversations, completions, and delegated agents their own model routes.',
     slug: 'features--providers',

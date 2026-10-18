@@ -41,7 +41,7 @@ export interface PluginHostsPhaseInput
       | 'contextProviderRegistry'
       | 'textInputSurfaceRegistry'
     >,
-    Pick<InfraPhase, 'notifications'> {
+    Pick<InfraPhase, 'notifications' | 'changes'> {
   db: ReturnType<typeof createDatabase>
   env: ReturnType<typeof loadEnv>
   logger: ReturnType<typeof createLogger>
@@ -78,6 +78,7 @@ export function createPluginHostsPhase({
   textInputSurfaceRegistry,
   notifications,
   semanticService,
+  changes,
 }: PluginHostsPhaseInput): PluginHostsPhase {
   const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
   const pluginConditions = createPluginConditions(notifications, env.LOCALIX_DEFAULT_USER_ID)
@@ -102,6 +103,7 @@ export function createPluginHostsPhase({
     hostRefs,
     serviceRefs,
     semanticService,
+    changes: changes.plugins,
     secretsStore,
     secretExposureShield,
     mediaStore,
