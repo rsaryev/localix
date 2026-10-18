@@ -3,7 +3,7 @@
     "bytes": 365
   },
   "./backend": {
-    "bytes": 44834,
+    "bytes": 45508,
     "shake": {
       "export": "ASSISTANT_BINDINGS_MAX",
       "bytes": 31
@@ -32,6 +32,9 @@
   },
   "./rich-text": {
     "bytes": 3611
+  },
+  "./sealed": {
+    "bytes": 1209
   },
   "./secret-shapes": {
     "bytes": 347,
@@ -149,7 +152,7 @@
     "bytes": 900
   },
   "./ui/store-resource": {
-    "bytes": 3834
+    "bytes": 3829
   },
   "./ui/store-snapshot": {
     "bytes": 9119

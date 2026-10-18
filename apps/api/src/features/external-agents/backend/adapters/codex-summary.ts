@@ -1,10 +1,10 @@
 import type { QuotaReading, SessionSummary } from '../../shared/contracts'
 import type { FoldedSummary, SourceRef } from './types'
-import { foldJsonlFrom, parseWindowLines, readHead, readMark } from './fs-read'
+import { parseWindowLines, readHead } from './fs-read'
 import { linkKeyOf } from '../../shared/identity'
 import { asRecord, asString, asNumber as numberOf, firstText } from './json-util'
 import { normalizeTokenSample, SessionUsageAccumulator, usageDelta } from './usage'
-import { resumableFold, usageEnd } from './summary-fold'
+import { foldOnward, resumableFold, usageEnd } from './summary-fold'
 import type { TokenUsage } from '../../shared/contracts'
 
 export const ID = 'codex'
@@ -39,8 +39,21 @@ function quotaOf(
   }
 }
 
+/** One Codex counter object; input includes cache reads, and output already includes reasoning. */
+function codexSample(counters: Record<string, unknown>) {
+  return normalizeTokenSample({
+    inputTokens: numberOf(counters.input_tokens),
+    cachedInputTokens: numberOf(counters.cached_input_tokens ?? counters.cache_read_input_tokens),
+    cacheWriteTokens: numberOf(counters.cache_write_input_tokens),
+    outputTokens: numberOf(counters.output_tokens),
+    reasoningTokens: numberOf(counters.reasoning_output_tokens),
+    totalTokens: numberOf(counters.total_tokens),
+    inputIncludesCached: true,
+  })
+}
+
 /** What a cut through a rollout has to carry: the cumulative counter and model it stood at. */
-interface Carry {
+type Carry = {
   readonly previousTotal?: TokenUsage
   readonly currentModel?: string
 }
@@ -125,75 +138,60 @@ async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined) {
   let previousTotal = carry.previousTotal
   let currentModel = carry.currentModel
   let messageCount = resumed?.summary.messageCount ?? 0
-  const start = resumed?.fold?.offset ?? 0
-  const offset = await foldJsonlFrom(ref.sourcePath, start, end, FOLDED_LINE, (rec) => {
-    const payload = asRecord(rec.payload)
-    if (!payload) return
-    if (rec.type === 'turn_context') {
-      currentModel = asString(payload.model) ?? currentModel
-      return
-    }
-    if (rec.type === 'response_item' && payload.type === 'message') {
-      const role = asString(payload.role)
-      if (role === 'user' || role === 'assistant') messageCount += 1
-      return
-    }
-    if (rec.type !== 'event_msg' || payload.type !== 'token_count') return
-    // The account's quota windows ride on the SAME event as the token counters, so reading them
-    // costs nothing this walk was not already paying. Both slots are read and keyed on the
-    // window's LENGTH, because `primary` does not name a fixed window: with two open, `primary` is
-    // the 5-hour one and the weekly moves to `secondary`. Last reading of each window wins.
-    const limits = asRecord(payload.rate_limits)
-    if (limits) {
-      const planType = asString(limits.plan_type)
-      const at = Date.parse(asString(rec.timestamp) ?? '') || Date.now()
-      for (const slot of [limits.primary, limits.secondary]) {
-        const reading = quotaOf(asRecord(slot), planType, at)
-        if (reading) quotas.set(reading.windowMinutes, reading)
+  const fold = await foldOnward(
+    ref,
+    resumed,
+    end,
+    FOLDED_LINE,
+    (rec) => {
+      const payload = asRecord(rec.payload)
+      if (!payload) return
+      if (rec.type === 'turn_context') {
+        currentModel = asString(payload.model) ?? currentModel
+        return
       }
-    }
-    const info = asRecord(payload.info)
-    const total = asRecord(info?.total_token_usage)
-    const last = asRecord(info?.last_token_usage)
-    const timestampText = asString(rec.timestamp)
-    const timestamp = timestampText ? Date.parse(timestampText) || undefined : undefined
-    currentModel = asString(info?.model) ?? currentModel
-    if (total) {
-      const normalized = normalizeTokenSample({
-        inputTokens: numberOf(total.input_tokens),
-        cachedInputTokens: numberOf(total.cached_input_tokens ?? total.cache_read_input_tokens),
-        cacheWriteTokens: numberOf(total.cache_write_input_tokens),
-        outputTokens: numberOf(total.output_tokens),
-        reasoningTokens: numberOf(total.reasoning_output_tokens),
-        totalTokens: numberOf(total.total_tokens),
-        inputIncludesCached: true,
-      })
-      usage.add(usageDelta(normalized, previousTotal), currentModel, timestamp)
-      previousTotal = normalized
-    } else if (last) {
-      usage.add(
-        normalizeTokenSample({
-          inputTokens: numberOf(last.input_tokens),
-          cachedInputTokens: numberOf(last.cached_input_tokens ?? last.cache_read_input_tokens),
-          cacheWriteTokens: numberOf(last.cache_write_input_tokens),
-          outputTokens: numberOf(last.output_tokens),
-          reasoningTokens: numberOf(last.reasoning_output_tokens),
-          totalTokens: numberOf(last.total_tokens),
-          inputIncludesCached: true,
-        }),
-        currentModel,
-        timestamp,
-      )
-    }
-  })
-  const next: Carry = {
-    ...(previousTotal ? { previousTotal } : {}),
-    ...(currentModel ? { currentModel } : {}),
-  }
+      if (rec.type === 'response_item' && payload.type === 'message') {
+        const role = asString(payload.role)
+        if (role === 'user' || role === 'assistant') messageCount += 1
+        return
+      }
+      if (rec.type !== 'event_msg' || payload.type !== 'token_count') return
+      // The account's quota windows ride on the SAME event as the token counters, so reading them
+      // costs nothing this walk was not already paying. Both slots are read and keyed on the
+      // window's LENGTH, because `primary` does not name a fixed window: with two open, `primary` is
+      // the 5-hour one and the weekly moves to `secondary`. Last reading of each window wins.
+      const limits = asRecord(payload.rate_limits)
+      if (limits) {
+        const planType = asString(limits.plan_type)
+        const at = Date.parse(asString(rec.timestamp) ?? '') || Date.now()
+        for (const slot of [limits.primary, limits.secondary]) {
+          const reading = quotaOf(asRecord(slot), planType, at)
+          if (reading) quotas.set(reading.windowMinutes, reading)
+        }
+      }
+      const info = asRecord(payload.info)
+      const total = asRecord(info?.total_token_usage)
+      const last = asRecord(info?.last_token_usage)
+      const timestampText = asString(rec.timestamp)
+      const timestamp = timestampText ? Date.parse(timestampText) || undefined : undefined
+      currentModel = asString(info?.model) ?? currentModel
+      if (total) {
+        const normalized = codexSample(total)
+        usage.add(usageDelta(normalized, previousTotal), currentModel, timestamp)
+        previousTotal = normalized
+      } else if (last) {
+        usage.add(codexSample(last), currentModel, timestamp)
+      }
+    },
+    (): Carry => ({
+      ...(previousTotal ? { previousTotal } : {}),
+      ...(currentModel ? { currentModel } : {}),
+    }),
+  )
   return {
     accumulator: usage,
     quotas,
     messageCount,
-    fold: { offset, mark: await readMark(ref.sourcePath, offset), carry: { ...next } },
+    fold,
   }
 }

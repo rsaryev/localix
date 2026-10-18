@@ -1,9 +1,9 @@
 # Games with your agent
 
-Open **Chess**, **Checkers**, **Battleship** or **Tic-Tac-Toe** from a conversation’s workbench
-rail. Each conversation has its own saved game. Your move on the board asks that conversation’s
-agent to respond through the game’s tool; its move appears on the same board. A new game starts the
-next round, and deleting the conversation removes its game.
+Open **Chess**, **Checkers**, **Battleship**, **Tic-Tac-Toe** or **Rock Paper Scissors** from a
+conversation’s workbench rail. Each conversation has its own saved game. Your move on the board asks
+that conversation’s agent to respond through the game’s tool; its move appears on the same board. A
+new game starts the next round, and deleting the conversation removes its game.
 
 These captures show legal saved demo positions in the actual workbenches. They demonstrate the board
 and its controls; no model was called to produce the opponent’s moves.
@@ -35,5 +35,12 @@ Choose an empty cell to play X. The result appears on the board when the game en
 score and a new game action.
 
 ![A finished tic-tac-toe game with a winning row and the result](../assets/screenshots/games/tic-tac-toe--2026-10-08.png)
+
+## Rock Paper Scissors
+
+Pick rock, paper or scissors. Whoever opens a round seals the move first, and the other side sees
+only a digest until it has chosen too. When the agent opens, its card stays face down and the chat
+shows its move as `[sealed]`. After your pick, both moves are revealed, and the table checks the
+agent's move against the digest it showed you. Openers alternate from round to round.
 
 For a tile puzzle with a separate human-play mode, see [2048](game-2048.md).

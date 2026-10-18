@@ -15,7 +15,26 @@ export interface AgentToolPresentation {
    * retain the item. Kept as an object so surfaces can add independent policies.
    */
   transcript?: 'tool' | 'content' | 'hidden'
+  /**
+   * Values only the calling model may read. Unlike `transcript`, this is not presentation: the named
+   * input fields (and, with `result`, the result, details and error text) are replaced before the
+   * item is persisted or streamed, so neither the user's client nor a later history rebuild ever
+   * holds them. The model sees the real values for the rest of its run only; a tool that keeps a
+   * secret across turns stores it itself and hands it back through a sealed result.
+   */
+  sealed?: AgentToolSealing
 }
+
+/** Which parts of a tool call {@link AgentToolPresentation.sealed} withholds. */
+export interface AgentToolSealing {
+  /** Top-level input keys replaced with {@link SEALED_PLACEHOLDER}. */
+  input?: readonly string[]
+  /** Also withhold the result text, details and error text. */
+  result?: boolean
+}
+
+/** What a sealed value reads as everywhere outside the run that produced it. */
+export const SEALED_PLACEHOLDER = '[sealed]'
 
 /**
  * UI category used to group tools in settings.

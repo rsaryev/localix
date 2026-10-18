@@ -35,13 +35,14 @@ details, use the [plugin authoring guide](../docs/extending/plugins.md).
 
 ## Games
 
-| Plugin                      | Product surface                                    |
-| --------------------------- | -------------------------------------------------- |
-| [2048](game-2048/)          | A board controlled by the user or agent in a chat. |
-| [Battleship](battleship/)   | Fleet placement, shots, and agent-opponent play.   |
-| [Checkers](checkers/)       | Legal moves and agent-opponent play.               |
-| [Chess](chess/)             | Legal moves and agent-opponent play.               |
-| [Tic-Tac-Toe](tic-tac-toe/) | A per-chat board and agent-opponent play.          |
+| Plugin                                      | Product surface                                    |
+| ------------------------------------------- | -------------------------------------------------- |
+| [2048](game-2048/)                          | A board controlled by the user or agent in a chat. |
+| [Battleship](battleship/)                   | Fleet placement, shots, and agent-opponent play.   |
+| [Checkers](checkers/)                       | Legal moves and agent-opponent play.               |
+| [Chess](chess/)                             | Legal moves and agent-opponent play.               |
+| [Rock Paper Scissors](rock-paper-scissors/) | Sealed moves against the agent, checked by digest. |
+| [Tic-Tac-Toe](tic-tac-toe/)                 | A per-chat board and agent-opponent play.          |
 
 [System Overview](template/) doubles as the workbench reference: retain its registration entry, host
 adapter, and backend structure when copying, then replace its domain code. Its

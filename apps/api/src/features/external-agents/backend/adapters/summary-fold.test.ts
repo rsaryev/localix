@@ -5,6 +5,7 @@ import { join } from 'node:path'
 
 import { foldClaudeCode } from './claude-summary'
 import { foldCodex } from './codex-summary'
+import { githubCopilotAdapter } from './github-copilot'
 import { foldJsonlFrom, revisionOf } from './fs-read'
 import type { FoldedSummary, SourceRef } from './types'
 
@@ -138,5 +139,27 @@ describe('append-only summary folds', () => {
     const again = await foldClaudeCode(await refOf(path), first)
     expect(again.summary).toEqual((await foldClaudeCode(await refOf(path), undefined)).summary)
     expect(again.summary.usage?.outputTokens).toBe(21)
+  })
+
+  test('GitHub Copilot: the title found before a cut survives it', async () => {
+    const text = [
+      JSON.stringify({
+        type: 'session.start',
+        data: { startTime: '2026-08-03T10:00:00.000Z', context: { cwd: '/work/app' } },
+      }),
+      JSON.stringify({ type: 'user.message', data: { content: 'Rename the parser' } }),
+      JSON.stringify({ type: 'tool.execution_complete', data: { result: { content: 'ok' } } }),
+      JSON.stringify({ type: 'assistant.message', data: { content: 'Done' } }),
+      JSON.stringify({ type: 'user.message', data: { content: 'Thanks' } }),
+    ].join('\n')
+    const fold = githubCopilotAdapter.foldSummary!
+    const { stepped, whole } = await foldInSteps(
+      (ref, previous) => fold(ref, previous, { env: {}, homeDir: '/nonexistent' }),
+      text,
+      [text.indexOf('{"type":"tool'), text.lastIndexOf('{"type":"user')],
+    )
+    expect(stepped.summary).toEqual(whole.summary)
+    expect(whole.summary.title).toBe('Rename the parser')
+    expect(whole.summary.messageCount).toBe(3)
   })
 })

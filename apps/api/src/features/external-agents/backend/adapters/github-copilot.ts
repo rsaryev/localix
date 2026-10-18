@@ -34,10 +34,8 @@ import { shellQuote } from '@localixai/plugin-sdk/backend'
  * was. `usageSessions` already says "measured for N of M", so leaving it out is a figure withheld,
  * not a figure lost.
  *
- * `COPILOT_HOME` replaces the root rather than being searched beside it — same rule as `CODEX_HOME`.
- * The name is read from the installed binary's own strings, not assumed.
- *
- * `sourceFormat` is our own token for this provider's format.
+ * `COPILOT_HOME` replaces the root rather than being searched beside it — same rule as `CODEX_HOME`;
+ * the name is read from the installed binary's own strings. `sourceFormat` is our own token.
  */
 
 import { readdir, stat } from 'node:fs/promises'
@@ -46,6 +44,7 @@ import { join } from 'node:path'
 
 import type {
   AdapterEnv,
+  FoldedSummary,
   ProviderAdapter,
   RootProbe,
   SourceRef,
@@ -53,7 +52,8 @@ import type {
   TranscriptResult,
 } from './types'
 import type { SessionSummary, TranscriptEvent } from '../../shared/contracts'
-import { clip, pathExists, revisionOf, jsonlRecords, streamJsonlRecords } from './fs-read'
+import { clip, pathExists, revisionOf, jsonlRecords } from './fs-read'
+import { foldOnward, resumableFold } from './summary-fold'
 import { firstText } from './json-util'
 import { eventWindow } from './event-window'
 import { tailTurnState, TURN_TAIL_BYTES } from '../live/turn-state'
@@ -64,9 +64,8 @@ const ID = 'github-copilot'
 /** Bounded like the other adapters: a session that grew past this is read up to here, never whole. */
 const MAX_FILE_BYTES = 32 * 1024 * 1024
 /**
- * The same bound the other four adapters pass to `firstText`. A title is a NAME: it flattens to one
- * line and ends in a single ellipsis, where `clip` — which this used — is for event BODIES and appends
- * a `\n[... N more characters]` marker, producing a 146-character "title" with a newline inside it.
+ * The bound the other adapters pass to `firstText`: a title is a NAME, one line with one ellipsis.
+ * `clip`, which this used, is for event BODIES and appended a `\n[... N more characters]` marker.
  */
 const TITLE_CHARS = 120
 /** Matches the other adapters: enough parallelism to hide I/O latency, not enough to thrash. */
@@ -83,15 +82,13 @@ function sessionsDir(env: AdapterEnv): string {
   return join(homeFor(env), 'session-state')
 }
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined
-}
 
-function asString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.length > 0 ? value : undefined
-}
+const asString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.length > 0 ? value : undefined
 
 async function probeRoots(env: AdapterEnv): Promise<readonly RootProbe[]> {
   const path = sessionsDir(env)
@@ -131,36 +128,61 @@ async function listSources(env: AdapterEnv): Promise<readonly SourceRef[]> {
   return refs
 }
 
+/** Copilot records no title; the first thing a person said is carried, since the head moves on. */
+type Carry = { readonly title?: string }
+
+/** What a summary reads; tool traffic, the bulk of the file, is skipped before it is parsed. */
+const SUMMARY_LINE = (line: string) =>
+  line.includes('"session.start"') || line.includes('.message"')
+
 async function summarize(ref: SourceRef): Promise<SessionSummary> {
-  let cwd: string | undefined
-  let model: string | undefined
-  let startedAt: number | undefined
-  let title: string | undefined
-  let messageCount = 0
+  return (await foldSummary(ref, undefined)).summary
+}
 
-  for await (const rec of streamJsonlRecords(ref.sourcePath, MAX_FILE_BYTES)) {
-    const type = asString(rec.type)
-    if (!type) continue
-    const data = asRecord(rec.data)
-    if (type === 'session.start') {
-      const context = asRecord(data?.context)
-      cwd = asString(context?.cwd) ?? asString(context?.gitRoot)
-      model = asString(data?.selectedModel)
-      const start = asString(data?.startTime) ?? asString(rec.timestamp)
-      startedAt = start ? Date.parse(start) || undefined : undefined
-      continue
-    }
-    if (type === 'user.message' || type === 'assistant.message') {
-      messageCount += 1
-      // The first thing a person said is the only title this format offers — it records none.
-      if (title === undefined && type === 'user.message') {
-        const content = asString(data?.content)
-        if (content) title = firstText(content, TITLE_CHARS)
+/** The summary, continued from where the previous fold of this append-only log stopped. */
+async function foldSummary(
+  ref: SourceRef,
+  previous: FoldedSummary | undefined,
+): Promise<FoldedSummary> {
+  const resumed = await resumableFold(ref, previous)
+  const prior = resumed?.summary
+  let cwd = prior?.cwd
+  let model = prior?.model
+  let startedAt = prior?.startedAt
+  let title = (resumed?.fold?.carry as Carry | undefined)?.title
+  let messageCount = prior?.messageCount ?? 0
+  // Bounded like the whole-file read it replaces: past the cap, the summary stops growing.
+  const end = Math.min(ref.sourceBytes ?? MAX_FILE_BYTES, MAX_FILE_BYTES)
+  const fold = await foldOnward(
+    ref,
+    resumed,
+    end,
+    SUMMARY_LINE,
+    (rec) => {
+      const type = asString(rec.type)
+      if (!type) return
+      const data = asRecord(rec.data)
+      if (type === 'session.start') {
+        const context = asRecord(data?.context)
+        cwd = asString(context?.cwd) ?? asString(context?.gitRoot)
+        model = asString(data?.selectedModel)
+        const start = asString(data?.startTime) ?? asString(rec.timestamp)
+        startedAt = start ? Date.parse(start) || undefined : undefined
+        return
       }
-    }
-  }
+      if (type === 'user.message' || type === 'assistant.message') {
+        messageCount += 1
+        // The first thing a person said is the only title this format offers — it records none.
+        if (title === undefined && type === 'user.message') {
+          const content = asString(data?.content)
+          if (content) title = firstText(content, TITLE_CHARS)
+        }
+      }
+    },
+    (): Carry => (title ? { title } : {}),
+  )
 
-  return {
+  const summary: SessionSummary = {
     key: linkKeyOf({ provider: ID, nativeSessionId: ref.nativeSessionId }),
     provider: ID,
     nativeSessionId: ref.nativeSessionId,
@@ -172,6 +194,7 @@ async function summarize(ref: SourceRef): Promise<SessionSummary> {
     ...(messageCount > 0 ? { messageCount } : {}),
     sourcePath: ref.sourcePath,
   }
+  return { summary, fold }
 }
 
 /** The tool result's payload, preferring the detailed form the CLI shows on request. */
@@ -270,6 +293,7 @@ export const githubCopilotAdapter: ProviderAdapter = {
   async readSummaries(refs) {
     return mapConcurrent(refs, SUMMARY_CONCURRENCY, summarize)
   },
+  foldSummary: (ref, previous) => foldSummary(ref, previous),
   readTranscript,
   readTurnState,
   resumeCommand: (id) => `copilot --resume=${shellQuote(id)}`,

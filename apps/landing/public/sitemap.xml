@@ -75,6 +75,7 @@
   <url><loc>https://localix.ai/docs/extending--plugin-problems</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--ui-kit</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--plugin-wakes</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--sealed-moves</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--plugin-routes</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--skills-authoring</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--markdown</loc><priority>0.7</priority></url>

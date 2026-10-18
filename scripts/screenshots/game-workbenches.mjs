@@ -10,6 +10,7 @@ const titles = {
   checkers: 'Checkers',
   battleship: 'Battleship',
   'tic-tac-toe': 'Tic-Tac-Toe',
+  'rock-paper-scissors': 'Rock Paper Scissors',
 }
 
 export async function seedGames(fixture) {
@@ -112,6 +113,16 @@ export async function composeGame(page, scenario) {
       page.getByRole('button', { name: 'Cell 3, top right: empty', exact: true }).click(),
     )
     await expect(page.getByRole('heading', { name: 'You won', exact: true })).toBeVisible()
+  } else if (scenario === 'rock-paper-scissors') {
+    // The agent's sealed move is face down and its value never reached the browser.
+    const before = await api(route(scenario, fixture))
+    expect(before.round.theirs).toMatchObject({ revealed: false, owner: 'agent' })
+    expect(JSON.stringify(before.round)).not.toContain('paper')
+    await expect(page.getByRole('figure', { name: 'Agent: sealed', exact: true })).toBeVisible()
+    await actAndRead(page, scenario, () =>
+      page.getByRole('button', { name: 'Scissors', exact: true }).click(),
+    )
+    await expect(page.getByText('Digest checked', { exact: false })).toBeVisible()
   } else {
     const nextHit = initial.fleets.agent[0].cells[3]
     const cell = `${String.fromCharCode(65 + (nextHit % 10))}${Math.floor(nextHit / 10) + 1}`
@@ -163,6 +174,16 @@ export async function verifyGame(page, scenario) {
     await expect(
       page.getByRole('button', { name: 'Cell 3, top right: X', exact: true }),
     ).toBeVisible()
+  } else if (scenario === 'rock-paper-scissors') {
+    expect(game.round.number).toBe(2)
+    expect(game.round.outcome).toBe('won')
+    expect(game.round.mine).toBe('scissors')
+    expect(game.round.theirs).toMatchObject({ revealed: true, value: 'paper' })
+    expect(game.record).toEqual({ won: 2, lost: 0, draw: 0 })
+    await expect(page.getByRole('figure', { name: 'Agent: Paper', exact: true })).toBeVisible()
+    await expect(page.getByRole('figure', { name: 'You: Scissors', exact: true })).toBeVisible()
+    await expect(page.getByText('Scissors cut paper.', { exact: true })).toBeVisible()
+    await expect(page.getByText('Digest checked', { exact: false })).toBeVisible()
   } else if (scenario === 'battleship') {
     expect(game.turn).toBe('you')
     expect(game.shots).toHaveLength(13)

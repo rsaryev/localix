@@ -134,6 +134,13 @@
       "author": "Localix"
     },
     {
+      "name": "rock-paper-scissors",
+      "source": "./rock-paper-scissors",
+      "description": "Rock paper scissors against the agent, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
       "name": "template",
       "source": "./template",
       "description": "OS, CPU and memory history with process inspection and agent context.",

@@ -63,7 +63,11 @@ export async function compose(page, scenario) {
     return (await import('./model-command.mjs')).composeModelCommand(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
     return (await import('./platform-views.mjs')).composePlatformViews(page, scenario)
-  if (['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe'].includes(scenario))
+  if (
+    ['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe', 'rock-paper-scissors'].includes(
+      scenario,
+    )
+  )
     return (await import('./game-workbenches.mjs')).composeGame(page, scenario)
   if (['code-graph', 'git', 'learning'].includes(scenario))
     return (await import('./developer-workbenches.mjs')).composeDeveloper(page, scenario)

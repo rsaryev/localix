@@ -3,7 +3,7 @@
  * Split out of event-handlers.ts to keep that dispatcher focused; these operate
  * on the same RunTurnState through the shared TurnEventContext.
  */
-import type { AgentItemStatus } from '@localixai/agent/agents'
+import { isToolBackedItem, type AgentItemStatus } from '@localixai/agent/agents'
 
 import { recordToolUse } from '../../../tools/usage-recorder'
 import { finalizeTiming, setItemsPayload } from './turn-state'
@@ -251,13 +251,6 @@ export async function handleToolExecutionEnd(
         ? cancelledLabel
         : ('failed' as const)
   finalizeTiming(state)
-  // Overwrite the child's NOW line with a compact form of the tool's RESULT so
-  // the delegate card / runtime panel show "what it just did" (e.g. "Applied
-  // patch to config.ts") between tools, not only the tool name at start. Skip
-  // the delegate ack ("Sub-agent started.") and empty results.
-  if (resultText?.trim()) {
-    forwardChildActivity(ctx, compactActivityLabel(resultText))
-  }
   // A still-running background job / async delegate stays `running` (its
   // final state arrives later via emitBackground / child completion); otherwise terminal.
   const endStatus: AgentItemStatus = backgroundStillRunning ? 'running' : terminalStatus('aborted')
@@ -276,9 +269,21 @@ export async function handleToolExecutionEnd(
     // persisted on the item so "why did this run without asking?" survives reload.
     gate: event.provenance,
   })
+  const items = acc.list()
+  // Overwrite the child's NOW line with a compact form of the tool's RESULT so
+  // the delegate card / runtime panel show "what it just did" (e.g. "Applied
+  // patch to config.ts") between tools, not only the tool name at start. Skip
+  // the delegate ack ("Sub-agent started.") and empty results. Read from the stored item, so a
+  // sealed result reaches the mirror as sealed as it reaches the transcript.
+  const shownText = items
+    .filter(isToolBackedItem)
+    .find((item) => item.toolCallId === event.toolCallId)?.resultText
+  if (shownText?.trim()) {
+    forwardChildActivity(ctx, compactActivityLabel(shownText))
+  }
   state.payload = {
     ...state.payload,
-    items: acc.list(),
+    items,
     timing: { ...state.timing, tools: [...state.timing.tools] },
   }
   state.currentPayload = state.payload

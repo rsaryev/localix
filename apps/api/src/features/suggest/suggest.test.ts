@@ -384,11 +384,13 @@ describe('createInlineCompletionService', () => {
     const service = createInlineCompletionService(
       makeDeps('x', capture, () => new Promise(() => {})),
     )
+    // Long enough for the provider call to start on a loaded CI runner: at 10ms the work before
+    // it could spend the whole deadline, so the provider was never reached and never aborted.
     const output = await service.complete(
       'u1',
       { sessionId: 's1', surfaces: { chat: { draft: 'run' } } },
       undefined,
-      Date.now() + 10,
+      Date.now() + 250,
     )
     expect(output).toEqual({})
     expect(capture.requests[0]!.signal?.aborted).toBe(true)

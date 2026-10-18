@@ -28,6 +28,7 @@ export type AgentMessage = AgentMessageMap[keyof AgentMessageMap]
 export type {
   AgentTool,
   AgentToolPresentation,
+  AgentToolSealing,
   AgentToolCategory,
   ToolSurface,
   ToolAvailability,

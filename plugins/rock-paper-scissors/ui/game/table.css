@@ -1,0 +1,67 @@
+/* A move turning face up: it rises into place instead of popping in, so the reveal is seen. */
+.rps-reveal {
+  display: inline-block;
+  animation: rps-reveal var(--dur-slow) var(--ease-emphasized) both;
+}
+
+/* The winning hand lifts once, after it has landed. */
+.rps-win {
+  animation:
+    rps-reveal var(--dur-slow) var(--ease-emphasized) both,
+    rps-win var(--dur-slow) var(--ease-soft) var(--dur-slow) both;
+}
+
+/* The hand's size is the plugin's own, not a theme step: a host that retunes its type scale must
+   not shrink the one thing the table is about. */
+.rps-glyph {
+  display: inline-block;
+  font-size: 5.5rem;
+  line-height: 1;
+  user-select: none;
+}
+
+/* A sealed hand settles in once when it lands, so a glance notices the commitment arrived. */
+.rps-sealed {
+  animation: rps-seal var(--dur-moderate) var(--ease-soft) both;
+}
+
+@media (hover: hover) {
+  .rps-pick:enabled:hover .rps-pick-glyph {
+    transform: translateY(-2px) scale(1.06);
+  }
+}
+
+.rps-pick-glyph {
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+
+@keyframes rps-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.85);
+  }
+}
+
+@keyframes rps-win {
+  45% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes rps-seal {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rps-reveal,
+  .rps-win,
+  .rps-sealed {
+    animation: none;
+  }
+  .rps-pick-glyph {
+    transition: none;
+  }
+}

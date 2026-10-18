@@ -123,6 +123,7 @@
         "extending/plugin-problems.md",
         "extending/ui-kit.md",
         "extending/plugin-wakes.md",
+        "extending/sealed-moves.md",
         "extending/plugin-routes.md",
         "extending/skills-authoring.md",
         "extending/markdown.md"

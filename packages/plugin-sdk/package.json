@@ -203,6 +203,10 @@
       "types": "./dist/ui/file-resource-sync.d.ts",
       "import": "./dist/ui/file-resource-sync.js"
     },
+    "./sealed": {
+      "types": "./dist/sealed.d.ts",
+      "import": "./dist/sealed.js"
+    },
     "./agent-wait": {
       "types": "./dist/agent-wait.d.ts",
       "import": "./dist/agent-wait.js"

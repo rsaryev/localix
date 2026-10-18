@@ -83,6 +83,7 @@ export type {
   AgentToolUpdateCallback,
   AsyncToolRegistry,
   AgentToolPresentation,
+  AgentToolSealing,
   ToolAction,
   ToolActionDescriptor,
   SpeakerRole,
@@ -105,6 +106,7 @@ export type {
   AfterToolCallResult,
 } from './types'
 export { DEFAULT_TOOL_EXPOSURE } from './types'
+export { SEALED_PLACEHOLDER } from './tool-definition'
 export type { CallClass, CallEffect } from './call-class'
 export { NON_MUTATING_EFFECTS, classifyByFlag, classifyToolCall } from './call-class'
 // The one place the wire's image-type boundary is defined; the spill decision needs it.

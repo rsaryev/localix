@@ -1,10 +1,10 @@
 import type { SessionSummary, TokenUsage } from '../../shared/contracts'
 import type { FoldedSummary, SourceRef } from './types'
-import { foldJsonlFrom, parseWindowLines, readHead, readMark, readTail } from './fs-read'
+import { parseWindowLines, readHead, readTail } from './fs-read'
 import { linkKeyOf } from '../../shared/identity'
 import { asRecord, asString, asNumber as numberOf, firstText, textOfContent } from './json-util'
 import { normalizeTokenSample, SessionUsageAccumulator } from './usage'
-import { resumableFold, usageEnd } from './summary-fold'
+import { foldOnward, resumableFold, usageEnd } from './summary-fold'
 
 export const ID = 'claude-code'
 const HEAD_BYTES = 64 * 1024
@@ -13,7 +13,7 @@ const TAIL_BYTES = 32 * 1024
 /** Only user and assistant records count, and most of a transcript's bytes are neither. */
 const MESSAGE_LINE = (line: string) => line.includes('"assistant"') || line.includes('"user"')
 
-interface Carry {
+type Carry = {
   /** The assistant message the previous fold ended on, and the usage already counted for it. */
   readonly pending?: {
     readonly id: string
@@ -119,47 +119,52 @@ async function foldUsage(ref: SourceRef, resumed: FoldedSummary | undefined, hea
   let pending = carry.pending
   let anonymous = carry.anonymous
   let messageCount = resumed?.summary.messageCount ?? 0
-  const start = resumed?.fold?.offset ?? 0
-  const offset = await foldJsonlFrom(ref.sourcePath, start, end, MESSAGE_LINE, (rec) => {
-    const type = asString(rec.type)
-    if ((type !== 'user' && type !== 'assistant') || rec.isMeta === true) return
-    const message = asRecord(rec.message)
-    if (!message) return
-    const identity =
-      asString(message.id) ?? asString(rec.uuid) ?? `${type}:anonymous-${anonymous++}`
-    if (type !== 'assistant') {
-      messageCount += 1
-      return
-    }
-    const raw = asRecord(message.usage)
-    const timestampText = asString(rec.timestamp)
-    const sample = raw
-      ? normalizeTokenSample({
-          inputTokens: numberOf(raw.input_tokens),
-          cachedInputTokens: numberOf(raw.cache_read_input_tokens),
-          cacheWriteTokens: numberOf(raw.cache_creation_input_tokens),
-          outputTokens: numberOf(raw.output_tokens),
-        })
-      : undefined
-    if (identity !== pending?.id) {
-      messageCount += 1
-      pending = { id: identity }
-    }
-    if (!sample) return
-    if (pending.usage) {
-      accumulator.replace(pending.usage, sample, pending.model, pending.timestamp)
-      pending = { ...pending, usage: sample }
-      return
-    }
-    const model = asString(message.model)
-    const timestamp = timestampText ? Date.parse(timestampText) || undefined : undefined
-    accumulator.add(sample, model, timestamp)
-    pending = { id: identity, usage: sample, model, timestamp }
-  })
-  const next: Carry = { anonymous, headTitle, ...(pending ? { pending } : {}) }
+  const fold = await foldOnward(
+    ref,
+    resumed,
+    end,
+    MESSAGE_LINE,
+    (rec) => {
+      const type = asString(rec.type)
+      if ((type !== 'user' && type !== 'assistant') || rec.isMeta === true) return
+      const message = asRecord(rec.message)
+      if (!message) return
+      const identity =
+        asString(message.id) ?? asString(rec.uuid) ?? `${type}:anonymous-${anonymous++}`
+      if (type !== 'assistant') {
+        messageCount += 1
+        return
+      }
+      const raw = asRecord(message.usage)
+      const timestampText = asString(rec.timestamp)
+      const sample = raw
+        ? normalizeTokenSample({
+            inputTokens: numberOf(raw.input_tokens),
+            cachedInputTokens: numberOf(raw.cache_read_input_tokens),
+            cacheWriteTokens: numberOf(raw.cache_creation_input_tokens),
+            outputTokens: numberOf(raw.output_tokens),
+          })
+        : undefined
+      if (identity !== pending?.id) {
+        messageCount += 1
+        pending = { id: identity }
+      }
+      if (!sample) return
+      if (pending.usage) {
+        accumulator.replace(pending.usage, sample, pending.model, pending.timestamp)
+        pending = { ...pending, usage: sample }
+        return
+      }
+      const model = asString(message.model)
+      const timestamp = timestampText ? Date.parse(timestampText) || undefined : undefined
+      accumulator.add(sample, model, timestamp)
+      pending = { id: identity, usage: sample, model, timestamp }
+    },
+    (): Carry => ({ anonymous, headTitle, ...(pending ? { pending } : {}) }),
+  )
   return {
     accumulator,
     messageCount,
-    fold: { offset, mark: await readMark(ref.sourcePath, offset), carry: { ...next } },
+    fold,
   }
 }

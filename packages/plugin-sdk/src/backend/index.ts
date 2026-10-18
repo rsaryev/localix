@@ -276,6 +276,7 @@ export type {
   AgentTool,
   AgentToolExecutionContext,
   AgentToolResult,
+  AgentToolSealing,
   CallClass,
   CallEffect,
   HumanInLoopController,
@@ -289,5 +290,7 @@ export { createJsonStoreFeed, onStoreWrite, openJsonStore } from './json-store'
 export type { JsonStore } from './json-store'
 export { askAgentForTurn } from './agent-turn'
 export type { Seat, Wake } from './agent-turn'
+export { seal } from './sealed'
+export type { Sealed, SealedView } from '../sealed'
 
 export { observeMutations } from './observe-mutations'

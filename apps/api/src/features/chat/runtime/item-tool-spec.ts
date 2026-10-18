@@ -1,6 +1,7 @@
 import type { AgentItemStatus } from '@localixai/agent/agents'
 import type { ToolItemSpec } from './item-builders'
 import type { ItemAccumulatorOptions } from './items'
+import { sealToolSpec } from './sealed-items'
 
 const STATUS_RANK: Record<AgentItemStatus, number> = {
   pending: 0,
@@ -10,7 +11,7 @@ const STATUS_RANK: Record<AgentItemStatus, number> = {
   aborted: 2,
 }
 
-/** Fold a tool patch without downgrading status or storing unshielded input/details. */
+/** Fold a tool patch without downgrading status or storing unshielded or unsealed values. */
 export function mergeToolItemSpec(options: {
   toolCallId: string
   patch: Partial<ToolItemSpec> & { name: string }
@@ -25,12 +26,13 @@ export function mergeToolItemSpec(options: {
     patch.status && (!prev || STATUS_RANK[patch.status] >= STATUS_RANK[prev.status])
       ? patch.status
       : (prev?.status ?? 'pending')
+  const presentation = opts.presentationFor?.(patch.name) ?? prev?.presentation
   const spec: ToolItemSpec = {
     toolCallId,
     activeVerb: activeVerbFor(patch.name),
     ...prev,
     ...patch,
-    presentation: opts.presentationFor?.(patch.name) ?? prev?.presentation,
+    presentation,
     actions: opts.actionsFor ? opts.actionsFor(toolCallId) : prev?.actions,
     standalone:
       opts.standaloneFor?.(patch.name) === true ||
@@ -43,5 +45,6 @@ export function mergeToolItemSpec(options: {
     ...('details' in patch ? { details: sanitize(patch.details) } : {}),
     status,
   }
-  return spec
+  // Last, over the shielded copy: a sealed value must not survive in any field a patch carried.
+  return sealToolSpec(spec, presentation?.sealed)
 }

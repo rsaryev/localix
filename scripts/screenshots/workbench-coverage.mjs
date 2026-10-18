@@ -23,6 +23,7 @@ export const workbenchEvidence = {
   checkers: ['games/checkers', 'features/games.md'],
   battleship: ['games/battleship', 'features/games.md'],
   'tic-tac-toe': ['games/tic-tac-toe', 'features/games.md'],
+  'rock-paper-scissors': ['games/rock-paper-scissors', 'features/games.md'],
 }
 // DevOps owns two providers; a Docker image does not prove its Kubernetes surfaces.
 export const additionalSurfaceEvidence = {

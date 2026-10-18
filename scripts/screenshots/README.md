@@ -103,7 +103,7 @@ bun run screenshots:coverage
 
 The audit prints current files, dimensions and placement, and creates a local visual contact sheet.
 It labels historical comparisons separately; they are excluded from the public asset manifest.
-Coverage checks each of the 18 workbench owners against its scenario, native capture and owning
+Coverage checks each of the 19 workbench owners against its scenario, native capture and owning
 guide. DevOps has an additional Kubernetes check: a Docker capture does not prove that provider.
 
 ## Stable names and useful evidence
@@ -136,10 +136,12 @@ Game captures use legal saved demo positions validated by each plugin's shared r
 Checkers begin after four scripted plies, then select a piece to show legal destinations.
 Tic-Tac-Toe starts after four scripted moves and a real click completes the winning row. Battleship
 starts with scripted hits and misses on both boards; a real shot sinks a ship while retaining the
-human turn. 2048 starts in **I play** mode and uses real arrow keys to merge tiles. Its assertions
-wait until the rendered tiles match the saved board before capturing the image.
+human turn. Rock Paper Scissors starts after one revealed round, with the agent's sealed opening
+move for round 2 face down; a real pick reveals it and the view checks its digest. 2048 starts in
+**I play** mode and uses real arrow keys to merge tiles. Its assertions wait until the rendered
+tiles match the saved board before capturing the image.
 
-These are illustrative positions, not recorded model games. The other four games retain their real
+These are illustrative positions, not recorded model games. The other five games retain their real
 agent-opponent UI; no human-versus-human mode is invented, and the scenarios never wake a model.
 Each scenario resets its own isolated game state so reruns keep the same starting position.
 

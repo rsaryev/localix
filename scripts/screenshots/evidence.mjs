@@ -18,7 +18,11 @@ export async function verifyEvidence(page, scenario) {
     return (await import('./model-command.mjs')).verifyModelCommand(page)
   if (['trading', 'system-overview', 'kubernetes'].includes(scenario))
     return (await import('./platform-views.mjs')).verifyPlatformViews(page, scenario)
-  if (['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe'].includes(scenario))
+  if (
+    ['game-2048', 'chess', 'checkers', 'battleship', 'tic-tac-toe', 'rock-paper-scissors'].includes(
+      scenario,
+    )
+  )
     return (await import('./game-workbenches.mjs')).verifyGame(page, scenario)
   if (['code-graph', 'git', 'learning'].includes(scenario))
     return (await import('./developer-workbenches.mjs')).verifyDeveloper(page, scenario)

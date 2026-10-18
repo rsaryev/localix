@@ -163,6 +163,12 @@ export const capturePlan = {
     scenario: 'battleship',
     scope: 'platform',
   },
+  'games/rock-paper-scissors': {
+    guide: 'features/games.md',
+    purpose: 'A sealed agent move revealed by a real pick, with its digest checked',
+    scenario: 'rock-paper-scissors',
+    scope: 'platform',
+  },
   'games/tic-tac-toe': {
     guide: 'features/games.md',
     purpose: 'A real winning move from a saved demo position',

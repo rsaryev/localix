@@ -11,6 +11,8 @@ surface compact. The other bundled games have the same shape:
   them through `checkers`; it can also resign a lost game.
 - **Battleship** has hidden information. During play its wake uses the agent's view and hides the
   user's fleet; completed games reveal both fleets.
+- **Rock Paper Scissors** seals the opener's move. The wake carries the user's move as a digest, and
+  the agent's own move is a [sealed](sealed-moves.md) tool argument the chat never shows.
 - **Chess** takes its rules from a library, behind one module. Its wake lists the legal moves in SAN
   with the FEN, and the agent answers through `chess`; it can also resign a lost game.
 

@@ -1,5 +1,5 @@
-import type { FoldedSummary, SourceRef } from './types'
-import { readMark } from './fs-read'
+import type { FoldedSummary, SourceRef, SummaryFold } from './types'
+import { foldJsonlFrom, readMark } from './fs-read'
 
 /** Above this a session's usage is not walked at all, so it never carries a fold either. */
 export const MAX_USAGE_FILE_BYTES = 128 * 1024 * 1024
@@ -27,4 +27,27 @@ export async function resumableFold(
 export function usageEnd(ref: SourceRef): number | undefined {
   const size = ref.sourceBytes
   return size !== undefined && size <= MAX_USAGE_FILE_BYTES ? size : undefined
+}
+
+/**
+ * Fold the records the previous fold has not read, up to `end`, and say where this one stopped.
+ * `carry` is asked after the walk, so it reports what the fold holds at its cut.
+ */
+export async function foldOnward(
+  ref: SourceRef,
+  resumed: FoldedSummary | undefined,
+  end: number,
+  wanted: (line: string) => boolean,
+  onRecord: (record: Record<string, unknown>) => void,
+  carry: () => Readonly<Record<string, unknown>> | undefined,
+): Promise<SummaryFold> {
+  const offset = await foldJsonlFrom(
+    ref.sourcePath,
+    resumed?.fold?.offset ?? 0,
+    end,
+    wanted,
+    onRecord,
+  )
+  const held = carry()
+  return { offset, mark: await readMark(ref.sourcePath, offset), ...(held ? { carry: held } : {}) }
 }

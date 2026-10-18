@@ -4,6 +4,8 @@ import { captureRoot, verifyDemoRuntime } from './runtime.mjs'
 import * as chess from '../../plugins/chess/shared/game.ts'
 import * as checkers from '../../plugins/checkers/shared/game.ts'
 import * as tic from '../../plugins/tic-tac-toe/shared/game.ts'
+import * as rps from '../../plugins/rock-paper-scissors/shared/game.ts'
+import { seal } from '../../packages/plugin-sdk/src/backend/sealed.ts'
 import * as battleship from '../../plugins/battleship/shared/game.ts'
 import * as puzzle from '../../plugins/game-2048/shared/game.ts'
 import { placeFleet } from '../../plugins/battleship/shared/rules.ts'
@@ -27,6 +29,13 @@ export async function seedGames() {
   for (const [i, cell] of [0, 3, 1, 4].entries())
     game = tic.applyMove(game, cell, i % 2 ? 'agent' : 'you', now)
   games['tic-tac-toe'] = tic.gameSchema.parse(game)
+  // One revealed round, then the agent opens round 2 with a sealed move the UI shows face down.
+  game = rps.newGame({ ...identity('rps'), roundId: 'capture-round-1', first: 'you', now })
+  game = rps.applyMove(game, seal('rock', 'you', now), now)
+  game = rps.applyMove(game, seal('scissors', 'agent', now), now)
+  game = rps.nextRound(game, { id: 'capture-round-2', now })
+  game = rps.applyMove(game, seal('paper', 'agent', now), now)
+  games['rock-paper-scissors'] = rps.gameSchema.parse(game)
   let randomState = 42
   const random = () => {
     randomState = (1664525 * randomState + 1013904223) >>> 0
