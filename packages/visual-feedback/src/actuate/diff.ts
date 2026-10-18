@@ -9,7 +9,8 @@
  * flips `html[data-theme]` and every CSS color but leaves the interactive tree
  * untouched; diffing the tree alone would report "(no visible change)" and gaslight
  * the agent into thinking a WORKING click did nothing.
- * Folding document state into the baseline makes such changes visible.
+ * Folding document state into the baseline makes such changes visible. Short visible texts
+ * (a score, a counter) are folded in for the same reason.
  */
 
 import { buildSnapshot, type RefRegistry } from '../snapshot/index'
@@ -71,9 +72,22 @@ function documentStateSignature(root?: Element): string {
   return lines.join('\n')
 }
 
+// A short visible text: a score, a counter, a status line. They change while no control does —
+// a 2048 move only changes the score — and the diff called a working move "(no visible change)".
+const SHORT_TEXT = /^- text "[^"]{1,40}"/
+
+/** Internal: the short texts of the page, one snapshot line each. */
+function shortTexts(root?: Element): string {
+  return buildSnapshot(nullRegistry(), { maxDepth: 30, root })
+    .tree.split('\n')
+    .map((line) => line.trim())
+    .filter((line) => SHORT_TEXT.test(line))
+    .join('\n')
+}
+
 /** The combined structural + document-state signature used as the diff baseline. */
 export function stateForDiff(root?: Element): string {
-  return `${documentStateSignature(root)}\n${interactiveLines(root)}`
+  return `${documentStateSignature(root)}\n${interactiveLines(root)}\n${shortTexts(root)}`
 }
 
 export function diffTrees(prev: string, next: string): string | undefined {

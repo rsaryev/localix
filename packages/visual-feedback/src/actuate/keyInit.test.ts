@@ -17,10 +17,14 @@ function deps(): ActuateDeps {
 
 /** Press `key` on document.body and return the captured keydown {key, keyCode}. */
 async function press(key: string): Promise<{ key: string; keyCode: number }> {
+  return (await pressFull(key)).short
+}
+
+async function pressFull(key: string) {
   document.body.innerHTML = ''
-  let got = { key: '', keyCode: -1 }
+  let got = { short: { key: '', keyCode: -1 }, code: '' }
   const onKey = (e: KeyboardEvent) => {
-    got = { key: e.key, keyCode: e.keyCode }
+    got = { short: { key: e.key, keyCode: e.keyCode }, code: e.code }
   }
   document.addEventListener('keydown', onKey, true)
   await runCommand({ action: 'press', key }, deps())
@@ -44,6 +48,14 @@ describe('press key normalization', () => {
     expect((await press('Esc')).key).toBe('Escape')
     expect((await press('Return')).key).toBe('Enter')
     expect((await press('Del')).key).toBe('Delete')
+  })
+
+  it('names the physical key, which games read instead of the character', async () => {
+    expect((await pressFull('Left')).code).toBe('ArrowLeft')
+    expect((await pressFull('w')).code).toBe('KeyW')
+    expect((await pressFull('7')).code).toBe('Digit7')
+    expect((await pressFull('Space')).code).toBe('Space')
+    expect((await pressFull('Enter')).code).toBe('Enter')
   })
 
   it('sends the literal + key instead of an empty key', async () => {

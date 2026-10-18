@@ -152,6 +152,7 @@ function keyInit(chord: string): KeyboardEventInit & { key: string } {
   const k = NAMED_KEYS[key.toLowerCase()] ?? key
   return {
     key: k,
+    code: physicalCode(k),
     bubbles: true,
     cancelable: true,
     ctrlKey: mods.has('ctrl') || mods.has('control'),
@@ -178,6 +179,30 @@ const KEY_CODES: Record<string, number> = {
   End: 35,
   PageUp: 33,
   PageDown: 34,
+}
+// The physical key (`event.code`), which games read so a layout cannot move their controls:
+// play2048.co moves only on `code` "ArrowLeft"/"KeyA", and every key it got carried an empty one.
+const PUNCTUATION_CODES: Record<string, string> = {
+  ' ': 'Space',
+  '-': 'Minus',
+  '=': 'Equal',
+  '+': 'Equal',
+  ',': 'Comma',
+  '.': 'Period',
+  '/': 'Slash',
+  ';': 'Semicolon',
+  "'": 'Quote',
+  '[': 'BracketLeft',
+  ']': 'BracketRight',
+  '\\': 'Backslash',
+  '`': 'Backquote',
+}
+function physicalCode(key: string): string {
+  if (/^[a-z]$/i.test(key)) return `Key${key.toUpperCase()}`
+  if (/^[0-9]$/.test(key)) return `Digit${key}`
+  if (key in PUNCTUATION_CODES) return PUNCTUATION_CODES[key]!
+  // Named keys (Enter, Escape, ArrowUp, F5…) share their name with their code.
+  return key.length > 1 ? key : ''
 }
 function keyCodeOf(key: string): number {
   if (key in KEY_CODES) return KEY_CODES[key]
