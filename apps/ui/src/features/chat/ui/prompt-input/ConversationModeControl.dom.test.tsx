@@ -61,11 +61,12 @@ async function mount(value: ConversationMode, canBeSolo = true) {
 }
 
 describe('ConversationModeControl — whether agents share the conversation', () => {
-  test('the chip names the mode; the menu checks it and switches to the other', async () => {
+  test('the icon names the mode; the menu checks it and switches to the other', async () => {
     const ui = await mount('solo')
     try {
-      expect(ui.trigger.textContent).toBe('Solo')
-      expect(ui.trigger.getAttribute('data-slot')).toBe('composer-chip')
+      // An icon like Add participant beside it, not a labelled pill: one figure is solo.
+      expect(ui.trigger.textContent).toBe('')
+      expect(ui.trigger.querySelector('.lucide-user')).not.toBeNull()
       expect(ui.trigger.getAttribute('aria-label')).toBe('Conversation mode: Solo. Change')
       await ui.open()
       expect(ui.item('Solo')?.getAttribute('aria-checked')).toBe('true')
@@ -80,6 +81,7 @@ describe('ConversationModeControl — whether agents share the conversation', ()
   test('re-picking the current mode writes nothing', async () => {
     const ui = await mount('group')
     try {
+      expect(ui.trigger.querySelector('.lucide-users')).not.toBeNull()
       await ui.open()
       await ui.pick(ui.item('Group'))
       expect(ui.changes).toEqual([])

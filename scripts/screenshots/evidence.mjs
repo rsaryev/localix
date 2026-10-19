@@ -60,7 +60,7 @@ export async function verifyEvidence(page, scenario) {
     // A room of three is a group, and the strip says so before the names.
     await expect(
       roster.getByRole('button', { name: 'Conversation mode: Group. Change', exact: true }),
-    ).toHaveAttribute('data-slot', 'composer-chip')
+    ).toBeVisible()
     for (const handle of ['localix', 'frontend', 'qa'])
       await expect(roster.getByTitle(`Show @${handle}'s model`, { exact: true })).toBeVisible()
     await expect(

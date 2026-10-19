@@ -88,7 +88,7 @@ export const capturePlan = {
   'conversations/solo-mode': {
     guide: 'features/conversations.md',
     purpose:
-      'A solo conversation: one agent, with the mode chip leading the strip and opening Solo and Group with what each means',
+      'A solo conversation: one agent, with the mode icon leading the strip and opening Solo and Group with what each means',
     scenario: 'conversation-mode',
   },
   'conversations/apply-model-to-all': {

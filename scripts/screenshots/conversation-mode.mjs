@@ -38,11 +38,9 @@ export async function composeConversationMode(page) {
 
 export async function verifyConversationMode(page) {
   const roster = page.getByRole('group', { name: 'Conversation participants', exact: true })
-  // The mode leads the strip, as a composer chip, before the one participant it is about.
-  await expect(roster.getByRole('button', { name: /^Conversation mode:/ })).toHaveAttribute(
-    'data-slot',
-    'composer-chip',
-  )
+  // The mode leads the strip as an icon, like Add participant, before the participant it is about.
+  const mode = roster.getByRole('button', { name: 'Conversation mode: Solo. Change', exact: true })
+  await expect(mode.locator('.lucide-user')).toBeVisible()
   await expect(roster.locator('[data-slot="participant-chip"]')).toHaveCount(1)
   const menu = page.getByRole('menu')
   await expect(menu.getByRole('menuitemradio', { name: /^Solo/ })).toHaveAttribute(
