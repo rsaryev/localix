@@ -182,9 +182,16 @@ class PiLanguageModel implements LanguageModel {
     if (result.stopReason !== 'stop')
       throw new Error(result.errorMessage || `Decision request ${result.stopReason}`)
     const answers: DecisionResult['answers'] = {}
-    for (const [key, answer] of Object.entries(result.answers))
+    for (const [key, answer] of Object.entries(result.answers)) {
       if (answer.type === 'choice')
-        answers[key] = { choice: answer.choice, probabilities: { ...answer.probabilities } }
+        answers[key] = {
+          type: 'choice',
+          choice: answer.choice,
+          probabilities: { ...answer.probabilities },
+        }
+      else if (answer.type === 'bool')
+        answers[key] = { type: 'bool', probability: answer.probability }
+    }
     return { answers, ...(result.usage ? { usage: fromPiUsage(result.usage) } : {}) }
   }
 }

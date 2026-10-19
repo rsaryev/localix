@@ -182,8 +182,10 @@ function stream(item) {
 
 /**
  * A decision model's answer (group routing, OpenRouter's `/systemone`), scripted by the event: the
- * last transcript message may carry `ROUTE{"choice":"<option>","p":<probability>}` in a code span.
- * With none, the answer is unconfident (0.5), so the address rules decide as they would without it.
+ * last transcript message may carry `ROUTE{"choice":"<option>","p":<probability>}` in a code span,
+ * plus `"alone"` (the "can one participant do it alone?" probability) and `"which"` (the one
+ * picked, at `"pw"`, default 0.9) for a person's untagged message. With none, every answer is unconfident
+ * (0.5), so the address rules decide as they would without it.
  */
 function decision(body) {
   const transcript = Array.isArray(body.state?.transcript) ? body.state.transcript : []
@@ -193,6 +195,10 @@ function decision(body) {
   const options = Object.keys(body.questions?.next?.criteria ?? {})
   const choice = options.includes(routed?.choice) ? routed.choice : options[0]
   const p = typeof routed?.p === 'number' ? routed.p : 0.5
+  const specialists = Object.keys(body.questions?.which?.criteria ?? {})
+  const which = specialists.includes(routed?.which) ? routed.which : specialists[0]
+  const pw = typeof routed?.pw === 'number' ? routed.pw : routed?.which ? 0.9 : 0.5
+  const alone = typeof routed?.alone === 'number' ? routed.alone : 0.5
   if (logFile)
     appendFileSync(
       logFile,
@@ -200,12 +206,32 @@ function decision(body) {
         seq,
         at: new Date().toISOString(),
         sessionId: null,
-        decision: { author: last?.author, options, choice, p, model: body.model },
+        decision: {
+          author: last?.author,
+          options,
+          choice,
+          p,
+          model: body.model,
+          ...(body.questions?.alone ? { alone, which } : {}),
+        },
       })}\n`,
     )
   return Response.json({
     model: body.model,
-    answers: { next: { type: 'choice', choice, probabilities: { [choice]: p }, confidence: p } },
+    answers: {
+      next: { type: 'choice', choice, probabilities: { [choice]: p }, confidence: p },
+      ...(body.questions?.alone
+        ? {
+            alone: { type: 'noul', noul: alone },
+            which: {
+              type: 'choice',
+              choice: which,
+              probabilities: { [which]: pw },
+              confidence: pw,
+            },
+          }
+        : {}),
+    },
     usage: { input_tokens: 300, output_tokens: 30 },
   })
 }

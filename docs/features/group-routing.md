@@ -20,8 +20,10 @@ working once OpenRouter is connected and does nothing without a connection that 
 
 ## How it works
 
-A decision model writes no text. It reads structured state and answers a typed question with a
-probability for each option. Localix asks one question per event: who should take the floor next.
+A decision model writes no text. It reads structured state and answers typed questions with a
+probability for each option. Localix asks who should take the floor next; for a message of yours
+that names nobody, it asks two more questions in the same request (see
+[Your untagged messages](#your-untagged-messages)).
 
 1. **The window.** The last eight visible messages, the event's own included. Each message keeps its
    first and last 250 characters, because a reply states its result first and hands the floor on at
@@ -49,6 +51,39 @@ What the pick changes:
 On 1,814 labelled turns from synthetic group conversations in Russian and English, the address rules
 alone chose the right speaker 74% of the time, the model alone 80%, and the model above the 0.8 bar
 with the address rules below it 86%.
+
+### Your untagged messages
+
+The leader exists to coordinate: to split work that needs several participants, record what depends
+on what, and check the result. "Who of all of them" hides that judgment, and two participants with
+close fields can split the one answer below the bar even when the leader is plainly not the one. So
+the request adds:
+
+- **One participant alone?** Can one participant act on the message alone, without the leader
+  coordinating several of them? A whole feature, a question of who does what, small talk and general
+  questions count as "no".
+- **Which one?** The participant who can, chosen among everyone, the leader included.
+
+| Answer                                                                                 | Who answers               |
+| -------------------------------------------------------------------------------------- | ------------------------- |
+| "One participant alone?" below 0.4                                                     | The leader, to coordinate |
+| Otherwise, the main pick at 0.8 or more                                                | That participant          |
+| Otherwise, "one participant alone?" at 0.6 or more and a pick leading with 0.5 or more | The picked participant    |
+| Otherwise                                                                              | The leader                |
+
+The leader is whoever the conversation elects by leadership priority, so it may be a specialist: the
+questions name coordination, not a general assistant, and the leader can be the one picked for work
+in its own field. On the 445 untagged messages of the set, this took the share routed right from 73%
+to 81%: 76% of the messages meant for a specialist reached one, and 85% of those meant for the
+leader stayed with it (79% and 68% with the single question).
+
+## Decision log
+
+Every decision writes one `conversation.floor_advice` record to the API log, read with
+`bun run logs --source api`: the session, whether it followed your message or a reply, the model,
+the time taken, the probabilities of each question, the participant followed (or none) and why —
+`confident`, `alone`, `coordinate`, `unsure`, or the failure (`deadline_exceeded`,
+`provider_error`). It holds no message text.
 
 ## Configuration
 

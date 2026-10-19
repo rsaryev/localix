@@ -18,9 +18,10 @@ import {
 } from '../model-task-catalog'
 import type { RunnerDeps } from './agent-runner-types'
 import {
-  confidentFloor,
   floorDecisionRequest,
+  readFloor,
   type FloorAdvisor,
+  type FloorReading,
   type FloorScope,
 } from './floor-advice'
 import { resolveLanguageModel } from './model-resolution'
@@ -33,6 +34,15 @@ const ROUTE = AUX_MODEL_TASKS.find(
 const FLOOR_DEADLINE_MS = 3_000
 const FLOOR_TASK = { id: 'floor-advice', version: 1 } as const
 
+export type FloorDecisionRecord = {
+  sessionId: string
+  /** `message` for the person's words, `reply` for a participant's. */
+  on: 'message' | 'reply'
+  author?: string
+  model: string
+  ms: number
+} & (FloorReading | { pick: null; reason: 'deadline_exceeded' | 'provider_error' | 'cancelled' })
+
 export function createFloorAdvisor(deps: {
   runner: Pick<
     RunnerDeps,
@@ -42,6 +52,11 @@ export function createFloorAdvisor(deps: {
   usageRepo: UsageRepository
   /** How long the next turn may wait on the advice; tests shorten it. */
   deadlineMs?: number
+  /**
+   * One record per decision asked — what was asked, the probabilities, and what was followed —
+   * so a routing that surprised someone can be read back. No message text is in it.
+   */
+  log?: (record: FloorDecisionRecord) => void
 }) {
   const deadlineMs = deps.deadlineMs ?? FLOOR_DEADLINE_MS
   const advise = async (
@@ -49,6 +64,7 @@ export function createFloorAdvisor(deps: {
     asked: Parameters<FloorAdvisor>[0],
     deadlineAtMs: number,
   ): Promise<string | null> => {
+    const startedAt = Date.now()
     const { userId, sessionId } = scope
     if (!asked.text.trim() || asked.members.length < 2) return null
     const { agentSettings } = await loadUserSettingsContext(deps.userProfileRepo, userId)
@@ -96,7 +112,19 @@ export function createFloorAdvisor(deps: {
         return { output: result, usage: result.usage }
       },
     })
-    if (outcome.status !== 'success') return null
+    const record = {
+      sessionId,
+      on: asked.authorAgentId ? ('reply' as const) : ('message' as const),
+      ...(asked.authorAgentId
+        ? { author: asked.members.find((m) => m.agentId === asked.authorAgentId)?.handle }
+        : {}),
+      model: modelId,
+      ms: Date.now() - startedAt,
+    }
+    if (outcome.status !== 'success') {
+      deps.log?.({ ...record, pick: null, reason: outcome.status })
+      return null
+    }
     recordAuxCallUsage({
       usageRepo: deps.usageRepo,
       userId,
@@ -107,7 +135,9 @@ export function createFloorAdvisor(deps: {
       kind: 'routing',
       usage: outcome.response.output.usage,
     })
-    return confidentFloor(outcome.response.output, request)
+    const reading = readFloor(outcome.response.output, request)
+    deps.log?.({ ...record, ...reading })
+    return reading.pick
   }
   // Advice only: a failure anywhere is the grammar's turn, never a failed routing. The deadline
   // covers the whole advice — settings, connection refresh, directory and call — because the

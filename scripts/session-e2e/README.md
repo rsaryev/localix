@@ -60,8 +60,9 @@ Prepare the release. `SCRIPT{"localix":["@checker, verify the checkout.","Shippe
 - A new script in a later message restarts every agent's steps.
 - Group routing's decision model (OpenRouter `/systemone`, on a placeholder OpenRouter connection)
   is scripted by the event's own text: `` `ROUTE{"choice":"checker","p":0.95}` `` picks that option
-  with that probability. Without one the answer is unconfident (0.5), so routing follows the address
-  rules alone. Decision requests are logged with `decision` and no `sessionId`.
+  with that probability; for a person's untagged message `"alone"` and `"which"` (at `"pw"`) answer
+  the two coordination questions. Without one every answer is unconfident (0.5), so routing follows
+  the address rules alone. Decision requests are logged with `decision` and no `sessionId`.
 
 ## What the log records
 

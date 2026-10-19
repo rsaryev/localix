@@ -37,23 +37,41 @@ export interface DecisionChoiceQuestion {
   criteria: Record<string, string>
 }
 
+/** One question a decision model answers with the probability that its statement is true. */
+export interface DecisionBoolQuestion {
+  type: 'bool'
+  instructions: string
+  criteria: { true: string; false: string }
+}
+
+export type DecisionQuestion = DecisionChoiceQuestion | DecisionBoolQuestion
+
 /**
  * A typed decision over structured state, for models whose output is `decisions` (OpenRouter's
- * System One protocol): no text, one answer per question with its probabilities.
+ * System One protocol): no text, one answer per question with its probabilities. Every question
+ * reads the same state and is answered in the same pass.
  */
 export interface DecisionRequest {
   state: Record<string, unknown>
-  questions: Record<string, DecisionChoiceQuestion>
+  questions: Record<string, DecisionQuestion>
   signal?: AbortSignal
 }
 
 export interface DecisionChoiceAnswer {
+  type: 'choice'
   choice: string
   probabilities: Record<string, number>
 }
 
+export interface DecisionBoolAnswer {
+  type: 'bool'
+  probability: number
+}
+
+export type DecisionAnswer = DecisionChoiceAnswer | DecisionBoolAnswer
+
 export interface DecisionResult {
-  answers: Record<string, DecisionChoiceAnswer>
+  answers: Record<string, DecisionAnswer>
   usage?: Usage
 }
 

@@ -104,7 +104,12 @@ export function createAgentRunner(deps: RunnerDeps) {
   const leadership = (userId: string, projectId: string | null) =>
     rosterLeadership(deps.listRegistryAgents, userId, projectId)
   // Who speaks next where the grammar cannot tell: the `groupRouting` route's decision model.
-  const floorAdvisor = createFloorAdvisor({ runner: deps, userProfileRepo, usageRepo })
+  const floorAdvisor = createFloorAdvisor({
+    runner: deps,
+    userProfileRepo,
+    usageRepo,
+    log: (record) => deps.logger?.info?.({ event: 'conversation.floor_advice', ...record }),
+  })
   // A tag in the person's message brings an available agent in before the message is routed.
   const inviteAddressed = (userId: string, session: SessionRecord, text: string) =>
     inviteAddressedAgents(

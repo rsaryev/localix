@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { DecisionRequest } from '@localixai/agent/runtime'
-import { createFloorAdvisor } from './floor-advisor'
+import { createFloorAdvisor, type FloorDecisionRecord } from './floor-advisor'
 import type { FloorQuestion } from './floor-advice'
 
 const JEV = 'openrouter/~typesafe/jev-latest'
@@ -14,6 +14,7 @@ function harness(options: {
   const built: unknown[] = []
   const asked: DecisionRequest[] = []
   const ledger: unknown[] = []
+  const records: FloorDecisionRecord[] = []
   const connections = options.connections ?? [{ id: 'or-connection', providerId: 'openrouter' }]
   const catalog = {
     providers: [{ id: 'openrouter' }],
@@ -24,7 +25,9 @@ function harness(options: {
   const decide =
     options.decide ??
     (async () => ({
-      answers: { next: { choice: 'lawyer', probabilities: { lawyer: 0.93, localix: 0.07 } } },
+      answers: {
+        next: { type: 'choice', choice: 'lawyer', probabilities: { lawyer: 0.93, localix: 0.07 } },
+      },
       usage: { inputTokens: 400, outputTokens: 30, totalCost: 0.00002 },
     }))
   const advisor = createFloorAdvisor({
@@ -64,8 +67,9 @@ function harness(options: {
     } as never,
     usageRepo: { accumulateEvent: async (event: unknown) => void ledger.push(event) } as never,
     ...(options.deadlineMs ? { deadlineMs: options.deadlineMs } : {}),
+    log: (record) => records.push(record),
   })({ userId: 'u1', sessionId: 's1', projectId: null })
-  return { advisor, built, asked, ledger }
+  return { advisor, built, asked, ledger, records }
 }
 
 const question: FloorQuestion = {
@@ -83,7 +87,9 @@ describe('the group-routing advisor', () => {
     expect(await h.advisor(question)).toBe('lawyer')
     expect(h.built).toEqual([{ providerId: 'openrouter', modelId: '~typesafe/jev-latest' }])
     // Options are described from the agent directory, like the prompt describes them.
-    expect(h.asked[0]!.questions.next!.criteria.lawyer).toBe('Contracts and consent.')
+    expect((h.asked[0]!.questions.next!.criteria as Record<string, string>).lawyer).toBe(
+      'Contracts and consent.',
+    )
   })
 
   test('the spend lands in the ledger as group routing', async () => {
@@ -130,7 +136,7 @@ describe('the group-routing advisor', () => {
     expect(
       await harness({
         decide: async () => ({
-          answers: { next: { choice: 'lawyer', probabilities: { lawyer: 0.55 } } },
+          answers: { next: { type: 'choice', choice: 'lawyer', probabilities: { lawyer: 0.55 } } },
         }),
       }).advisor(question),
     ).toBeNull()
@@ -144,5 +150,37 @@ describe('the group-routing advisor', () => {
     const started = Date.now()
     expect(await h.advisor(question)).toBeNull()
     expect(Date.now() - started).toBeLessThan(1_000)
+  })
+
+  test('each decision is logged: what was followed, why, and the probabilities — no text', async () => {
+    const h = harness({})
+    await h.advisor(question)
+    expect(h.records).toEqual([
+      expect.objectContaining({
+        sessionId: 's1',
+        on: 'message',
+        model: JEV,
+        pick: 'lawyer',
+        reason: 'confident',
+        next: { lawyer: 0.93, localix: 0.07 },
+      }),
+    ])
+    expect(JSON.stringify(h.records)).not.toContain('photos')
+  })
+
+  test('a failed decision is logged with its cause', async () => {
+    const h = harness({
+      decide: async () => {
+        throw new Error('503')
+      },
+    })
+    await h.advisor(question)
+    expect(h.records).toEqual([expect.objectContaining({ pick: null, reason: 'provider_error' })])
+  })
+
+  test('the person’s untagged message carries the two coordination questions', async () => {
+    const h = harness({})
+    await h.advisor({ ...question, leaderAgentId: 'builtin:localix' })
+    expect(Object.keys(h.asked[0]!.questions)).toEqual(['next', 'alone', 'which'])
   })
 })

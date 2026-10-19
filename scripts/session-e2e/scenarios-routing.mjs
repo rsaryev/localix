@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 
 import { runs, script } from './scenario-helpers.mjs'
 
-const route = (choice, p) => `\`ROUTE${JSON.stringify({ choice, p })}\``
+const route = (choice, p, extra = {}) => `\`ROUTE${JSON.stringify({ choice, p, ...extra })}\``
 const decisions = (rt) => rt.requests().filter((entry) => entry.decision)
 const group = (rt, title) =>
   rt.createSession({ title, conversationMode: 'group', handles: ['localix', 'checker'] })
@@ -31,6 +31,26 @@ export const ROUTING_SCENARIOS = [
       assert.equal(asked?.decision.author, 'person')
       assert.deepEqual(asked?.decision.options, ['localix', 'checker'])
       assert.equal(asked?.decision.model, '~typesafe/jev-latest')
+    },
+  },
+  {
+    name: 'group routing: one participant’s job split between picks still reaches the leading one',
+    async run(rt) {
+      const session = await group(rt, 'Routing a split pick')
+      const before = decisions(rt).length
+      const steps = { checker: ['Checked: the tiles are all 100 px now.'] }
+      // The one question splits (0.55); "can one participant do it alone?" and the pick do not.
+      const after = await rt.say(
+        session.id,
+        `Make the tiles the same size. ${route('checker', 0.55, { alone: 0.82, which: 'checker', pw: 0.6 })} ${script(steps)}`,
+      )
+      assert.equal(rt.transcript(after).at(1)?.from, 'checker')
+      const [asked] = decisions(rt).slice(before)
+      assert.deepEqual(
+        [asked?.decision.alone, asked?.decision.which],
+        [0.82, 'checker'],
+        'the two coordination questions were asked',
+      )
     },
   },
   {

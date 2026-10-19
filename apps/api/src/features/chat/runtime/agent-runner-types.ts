@@ -63,7 +63,8 @@ export interface RunnerDeps {
   /** Engine-neutral factory for buffered auxiliary model calls. */
   languageModelFactory: LanguageModelFactory
   uiLocationCatalog?: UiLocationCatalogService
-  logger?: SkillDiscoveryLogger
+  /** The API's structured log; `info` carries records worth reading back (`bun run logs`). */
+  logger?: SkillDiscoveryLogger & { info?: (record: Record<string, unknown>) => void }
   lspManager?: LspManager
   /**
    * When set, background bash jobs run in a real PTY pane (terminal feature) the

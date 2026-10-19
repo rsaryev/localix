@@ -149,14 +149,15 @@ export const multiParticipantStrategy: ConversationStrategy = {
     if (direct.length) return direct
     // A message addressed to nobody belongs to the leader: only the leader hands work out —
     // unless a confident decision model names the one participant the message is for.
+    const leader = conversationLeader(session, await context.priorities())
     const advised = await context.advisor?.({
       members: session.agents,
       history: context.history,
+      ...(leader ? { leaderAgentId: leader.agentId } : {}),
       text: event.text,
     })
     const advisedMember = session.agents.find((member) => member.handle === advised)
     if (advisedMember) return [{ agentId: advisedMember.agentId, source: 'user-default' }]
-    const leader = conversationLeader(session, await context.priorities())
     return leader ? [{ agentId: leader.agentId, source: 'user-default' }] : []
   },
 }

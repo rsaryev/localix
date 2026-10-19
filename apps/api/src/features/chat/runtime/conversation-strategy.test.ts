@@ -123,11 +123,11 @@ describe('conversation leadership', () => {
   })
 
   test('a confident decision model names the participant an unaddressed message is for', async () => {
-    const asked: string[] = []
+    const asked: { text: string; leaderAgentId?: string }[] = []
     const advised = {
       ...context(),
-      advisor: async (question: { text: string }) => {
-        asked.push(question.text)
+      advisor: async (question: { text: string; leaderAgentId?: string }) => {
+        asked.push(question)
         return 'frontend'
       },
     }
@@ -137,7 +137,13 @@ describe('conversation leadership', () => {
         text: 'The submit button wraps on narrow screens',
       }),
     ).toEqual([{ agentId: 'builtin:frontend', source: 'user-default' }])
-    expect(asked).toEqual(['The submit button wraps on narrow screens'])
+    // The leader is named, so the model can tell a specialist's job from the leader's.
+    expect(asked).toEqual([
+      expect.objectContaining({
+        text: 'The submit button wraps on narrow screens',
+        leaderAgentId: 'builtin:lead',
+      }),
+    ])
   })
 
   test('no confident advice, or advice naming nobody here, leaves the message with the leader', async () => {

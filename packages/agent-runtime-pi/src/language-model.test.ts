@@ -243,9 +243,38 @@ describe('decision models', () => {
     expect(seen[0]!.url).toBe('https://openrouter.ai/api/v1/systemone')
     expect(seen[0]!.body).toMatchObject({ model: '~typesafe/jev-latest', state: request.state })
     expect(result.answers).toEqual({
-      next: { choice: 'frontend', probabilities: { frontend: 0.97, backend: 0.03 } },
+      next: {
+        type: 'choice',
+        choice: 'frontend',
+        probabilities: { frontend: 0.97, backend: 0.03 },
+      },
     })
     expect(result.usage?.inputTokens).toBe(341)
+  })
+
+  test('a yes/no question goes out as System One’s noul and comes back as a probability', async () => {
+    const { result, seen } = await withFetch(
+      () =>
+        Response.json({
+          answers: { specialist: { type: 'noul', noul: 0.81 } },
+          usage: { input_tokens: 120, output_tokens: 8 },
+        }),
+      () =>
+        jev.decide!({
+          state: request.state,
+          questions: {
+            specialist: {
+              type: 'bool',
+              instructions: 'Is it a specialist’s job?',
+              criteria: { true: 'A specialist’s field', false: 'The leader’s' },
+            },
+          },
+        }),
+    )
+    expect(
+      (seen[0]!.body as { questions: { specialist: { type: string } } }).questions.specialist.type,
+    ).toBe('noul')
+    expect(result.answers).toEqual({ specialist: { type: 'bool', probability: 0.81 } })
   })
 
   test('rejects a failed decision instead of answering nothing', async () => {
