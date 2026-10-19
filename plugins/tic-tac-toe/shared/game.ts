@@ -18,6 +18,14 @@ export type Cell = Mark | null
 export const PLAYERS = ['you', 'agent'] as const
 export type Player = (typeof PLAYERS)[number]
 
+/**
+ * Who plays O at this table: the agent in the chat (woken for each move, answering with its tool),
+ * or the host's decision model (asked by the plugin itself, one typed question per move). The seat
+ * is the same either way — a move by O is the `agent` player's — only who fills it differs.
+ */
+export const OPPONENTS = ['agent', 'decision'] as const
+export type Opponent = (typeof OPPONENTS)[number]
+
 const cellIndex = z.number().int().min(0).max(8)
 
 /**
@@ -58,6 +66,8 @@ export const gameSchema = z.object({
   moves: z.array(moveSchema).max(9),
   waiting: agentWaitSchema.nullable(),
   record: recordSchema,
+  /** Who plays O; carried from one game to the next. A board kept before the choice: the agent. */
+  opponent: z.enum(OPPONENTS).default('agent'),
   startedAt: z.string(),
 })
 export type Game = z.infer<typeof gameSchema>
@@ -108,6 +118,7 @@ export function newGame(input: {
   first: Mark
   now: string
   record?: GameRecord
+  opponent?: Opponent
 }): Game {
   return {
     id: input.id,
@@ -119,6 +130,7 @@ export function newGame(input: {
     moves: [],
     waiting: null,
     record: input.record ?? EMPTY_RECORD,
+    opponent: input.opponent ?? 'agent',
     startedAt: input.now,
   }
 }

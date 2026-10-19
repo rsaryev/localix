@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 
-import { gameSchema, owesAgentMove, type Mark } from '../../shared/game'
+import { gameSchema, owesAgentMove, type Mark, type Opponent } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
 import { useStoreSnapshot } from '../useStoreSnapshot'
 
 /**
- * The board's state and the three things a person can do to it.
+ * The board's state and the four things a person can do to it.
  *
  * Every request names the chat the board BELONGS to (`useWorkItemSessionId`) — never the chat
  * that happens to be active. A board kept mounted in the background after the person switched
@@ -50,5 +50,7 @@ export function useGame(active: boolean) {
     play: (cell: number) => act('move', { cell }),
     newGame: (first?: Mark) => act('new', first ? { first } : {}),
     remind: () => act('remind', {}),
+    /** Who plays O; the route answers with O's move when the new opponent owes one. */
+    setOpponent: (opponent: Opponent) => act('opponent', { opponent }),
   }
 }

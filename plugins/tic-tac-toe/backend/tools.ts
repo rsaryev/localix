@@ -82,9 +82,11 @@ export function createGameTools(ctx: PluginContext, games: GameService) {
       return {
         content: [
           'A new game is on this chat’s board.',
-          first === 'agent'
-            ? 'You move first: call tic_tac_toe with action "move" now.'
-            : 'The user moves first; the board wakes you after their move.',
+          game.opponent === 'decision'
+            ? 'The decision model plays O at this table, so the user moves first and you do not move.'
+            : first === 'agent'
+              ? 'You move first: call tic_tac_toe with action "move" now.'
+              : 'The user moves first; the board wakes you after their move.',
           recordLine(game.record),
           '',
           drawBoard(game),

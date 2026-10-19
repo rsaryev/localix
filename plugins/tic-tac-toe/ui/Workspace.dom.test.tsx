@@ -188,3 +188,14 @@ test('the arrow keys walk the board and stop at its edges', async () => {
     await view.unmount()
   }
 })
+
+test('the control row says who plays O, beside the new game', async () => {
+  const view = await mount('s1')
+  try {
+    expect(view.cell('Opponent: Chat agent')).not.toBeNull()
+    expect(view.cell('New game')).not.toBeNull()
+    expect(view.host.textContent).toContain('You play X · Agent plays O')
+  } finally {
+    await view.unmount()
+  }
+})

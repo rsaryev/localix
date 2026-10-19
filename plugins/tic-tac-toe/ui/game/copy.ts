@@ -9,19 +9,26 @@ import { cellName, type Game, type Move, type GameRecord } from '../../shared/ga
  * board can be in has a sentence a test can read.
  */
 
-const who = (move: Move) => (move.by === 'you' ? 'You' : 'The agent')
+/** Who plays O at this table, in the person's words. */
+export const opponentName = (game: Pick<Game, 'opponent'>) =>
+  game.opponent === 'decision' ? 'The decision model' : 'The agent'
+
+/** The opponent's label in the players line: "Agent plays O". */
+export const opponentLabel = (game: Pick<Game, 'opponent'>) =>
+  game.opponent === 'decision' ? 'Decision model' : 'Agent'
 
 /** "The agent played the top left (cell 1)." */
-export const moveSentence = (move: Move) => `${who(move)} played ${cellName(move.cell)}.`
+export const moveSentence = (move: Move, game: Pick<Game, 'opponent'>) =>
+  `${move.by === 'you' ? 'You' : opponentName(game)} played ${cellName(move.cell)}.`
 
 /** The headline beside the board. */
 export function headline(game: Game): string {
   if (game.status === 'won') return 'You won'
-  if (game.status === 'lost') return 'The agent won'
+  if (game.status === 'lost') return `${opponentName(game)} won`
   if (game.status === 'draw') return 'Draw'
   if (game.turn === 'X') return 'Your turn'
-  if (game.waiting?.status === 'unreachable') return 'The agent could not be reached'
-  return 'The agent is thinking'
+  if (game.waiting?.status === 'unreachable') return `${opponentName(game)} could not be reached`
+  return `${opponentName(game)} is thinking`
 }
 
 /** What a screen reader hears when the board changes: the last move, then what it means now. */
@@ -29,14 +36,14 @@ export function announcement(game: Game): string {
   const last = game.moves.at(-1)
   const line = game.line ? ` with ${lineName(game.line)}` : ''
   return [
-    last ? moveSentence(last) : 'New game.',
+    last ? moveSentence(last, game) : 'New game.',
     `${headline(game)}${game.status === 'playing' ? '' : line}.`,
   ].join(' ')
 }
 
 /** Who opens the next game — the side that did not open this one. */
 export const nextOpener = (game: Game): string =>
-  game.first === 'O' ? 'you start' : 'the agent starts'
+  game.first === 'O' ? 'you start' : `${opponentName(game).toLowerCase()} starts`
 
 /** " · Score 2–1, 3 draws" — the table's running score, empty before the first game ends. */
 export function scoreLine(record: GameRecord): string {

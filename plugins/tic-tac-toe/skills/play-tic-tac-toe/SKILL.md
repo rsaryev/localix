@@ -19,6 +19,13 @@ by your first move, set `first: "agent"` on the `new_game` step. It stops when a
 turn to the user, the game ends, or a step is refused. Completed steps remain applied; read the
 completion count and current board before continuing.
 
+## When the decision model plays O
+
+The user can choose, on the board, who plays O: you, or a decision model the board asks itself. When
+the board says the decision model plays O, you do not move — a move is refused — and the board never
+wakes you; a new game you open lets the user move first. You can still read the board and talk about
+the position. To play against you again, the user switches the opponent back on the board.
+
 ## When the board wakes you
 
 A message from the "tic-tac-toe" plugin, not typed by the user, means it is your move. It carries

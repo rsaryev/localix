@@ -5,7 +5,7 @@ import { cn } from '@localixai/plugin-sdk/ui/classes'
 
 import { lineName } from '../../shared/describe'
 import { owesAgentMove, type Game } from '../../shared/game'
-import { announcement, elapsed, headline, nextOpener, scoreLine } from './copy'
+import { announcement, elapsed, headline, nextOpener, opponentLabel, scoreLine } from './copy'
 import { Mark } from './Mark'
 
 /** After this long without the agent's move, the status offers to ask it again. */
@@ -59,7 +59,12 @@ export function TurnStatus({
           <span className="font-mono tabular-nums text-text-faint">{suffix}</span>
         )}
       </p>
-      <p className="text-xs text-text-faint">You play X · Agent plays O{scoreLine(game.record)}</p>
+      <p className="text-xs text-text-faint">
+        You play X · {opponentLabel(game)} plays O{scoreLine(game.record)}
+      </p>
+      {agentTurn && waiting?.status === 'unreachable' && waiting.reason && (
+        <p className="text-xs text-status-warning">{waiting.reason}</p>
+      )}
       {/* Heard, not seen: the move just played and what it means, once per change. */}
       <p aria-live="polite" className="sr-only">
         {announcement(game)}

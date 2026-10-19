@@ -34,6 +34,13 @@ visible separately; the opponent’s hidden fleet is not sent to the browser.
 Choose an empty cell to play X. The result appears on the board when the game ends, with the table’s
 score and a new game action.
 
+The menu beside **New game** chooses who plays O at this table. **Chat agent** is the conversation's
+agent: each move wakes it and it answers through the game's tool. **Decision model** plays without
+writing in the chat. Every move asks a decision model, Jev through OpenRouter, which free cell is
+best, and the board plays its pick within a few seconds. It needs a connected OpenRouter account,
+and its spend is recorded under **Decisions** for that conversation. Without a connection, the board
+says so and offers **Ask again**. The choice carries over to the next game.
+
 ![A finished tic-tac-toe game with a winning row and the result](../assets/screenshots/games/tic-tac-toe--2026-10-08.png)
 
 ## Rock Paper Scissors

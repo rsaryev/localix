@@ -10,12 +10,15 @@ import { StateNotice } from '@localixai/kit/state-notice'
 import { owesAgentMove } from '../shared/game'
 import { gameMessageContext } from './bindings'
 import { Board } from './game/Board'
+import { OpponentMenu } from './game/OpponentMenu'
 import { GameOver, TurnStatus } from './game/TurnPanel'
 import { useGame } from './game/useGame'
 import { useNow } from './useNow'
 
 /**
  * This chat's table: a compact control row, the board, and the result over it.
+ *
+ * The control row holds who plays O ({@link OpponentMenu}) beside the new game.
  *
  * The board follows the pane's width and stops at 34rem, where a 3×3 grid still reads as one object
  * rather than as nine far-apart tiles; a short pane scrolls rather than shrinking it. (Sizing by the
@@ -93,15 +96,22 @@ export function Workspace({
                 sending={state.sending}
                 onRemind={() => void state.remind()}
               />
-              <IconButton
-                aria-label="New game"
-                tooltip="New game"
-                size="lg"
-                disabled={state.sending || game.moves.length === 0}
-                onClick={() => void state.newGame()}
-              >
-                <RotateCcw />
-              </IconButton>
+              <div className="flex items-center gap-1">
+                <OpponentMenu
+                  value={game.opponent}
+                  disabled={state.sending}
+                  onChange={(opponent) => void state.setOpponent(opponent)}
+                />
+                <IconButton
+                  aria-label="New game"
+                  tooltip="New game"
+                  size="lg"
+                  disabled={state.sending || game.moves.length === 0}
+                  onClick={() => void state.newGame()}
+                >
+                  <RotateCcw />
+                </IconButton>
+              </div>
             </div>
             <div className="relative" style={{ width: BOARD_SIZE }}>
               <Board

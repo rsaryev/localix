@@ -1,8 +1,18 @@
 import { randomUUID } from 'node:crypto'
 
-import { applyMove, gameSchema, newGame, owesAgentMove, type Game, type Mark } from '../shared/game'
+import {
+  applyMove,
+  gameSchema,
+  MoveRefused,
+  newGame,
+  owesAgentMove,
+  type Game,
+  type Mark,
+  type Opponent,
+} from '../shared/game'
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
-import { openJsonStore } from '@localixai/plugin-sdk/backend'
+import { askDecision } from './ask-decision'
+import { openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
 
 /**
  * THE GAME AT EACH CHAT'S TABLE, and every way it changes.
@@ -17,12 +27,18 @@ import { openJsonStore } from '@localixai/plugin-sdk/backend'
  * view — a move, a new game, a reminder — and after that the agent may owe a move, so it is asked
  * (`askAgent`), in the chat the board belongs to. The AGENT acts through its tools and is never
  * asked for anything: a tool that woke the agent would wake it again on every move it made.
+ *
+ * Who answers O depends on the table's `opponent`: the agent is woken and moves with its tool
+ * later; the decision model is asked here and its move is played before the person's request
+ * answers. Either way the person's own move is written first, so the board shows it at once.
  */
 export function createGameService(input: {
   /** The session's folder for this plugin; rejects for a session the user does not own. */
   resolveDir?: (userId: string, sessionId: string) => Promise<string>
   /** `ctx.host.wake` — present on the backend load, where the routes live. */
   wake?: Wake
+  /** `ctx.host.decisions` — the decision model, on the backend load too. */
+  decisions?: DecisionHost
   now?: () => string
   newId?: () => string
 }) {
@@ -51,18 +67,32 @@ export function createGameService(input: {
   const summon = async (seat: Seat, game: Game, again = false): Promise<Game> => {
     if (!owesAgentMove(game) || (game.waiting?.status === 'thinking' && !again)) return game
     const key = positionKey(game)
-    const waiting = await askAgent(input.wake, seat, game, now())
-    return update(seat, (current) =>
+    const unchanged = (current: Game) =>
       positionKey(current) === key && current.status === 'playing'
-        ? { ...current, waiting }
-        : current,
-    )
+    if (game.opponent === 'decision') {
+      const answer = await askDecision(input.decisions, seat, game, now())
+      return update(seat, (current, at) =>
+        !unchanged(current) || current.opponent !== 'decision'
+          ? current
+          : 'cell' in answer
+            ? applyMove(current, answer.cell, 'agent', at)
+            : { ...current, waiting: answer.waiting },
+      )
+    }
+    const waiting = await askAgent(input.wake, seat, game, now())
+    return update(seat, (current) => (unchanged(current) ? { ...current, waiting } : current))
   }
 
   const other = (mark: Mark): Mark => (mark === 'X' ? 'O' : 'X')
   /** The next game at this table: the other side opens, and the score carries over. */
   const nextGame = (game: Game, at: string, first?: Mark) =>
-    newGame({ id: newId(), first: first ?? other(game.first), now: at, record: game.record })
+    newGame({
+      id: newId(),
+      first: first ?? other(game.first),
+      now: at,
+      record: game.record,
+      opponent: game.opponent,
+    })
 
   return {
     read: async (seat: Seat): Promise<Game> => (await storeFor(seat)).read(),
@@ -76,6 +106,15 @@ export function createGameService(input: {
       summon(seat, await update(seat, (game, at) => nextGame(game, at, first))),
     /** Ask the agent again for the move it owes. */
     remind: async (seat: Seat) => summon(seat, await (await storeFor(seat)).read(), true),
+    /** Who plays O from now on; a move O owes is asked of the new opponent at once. */
+    setOpponent: async (seat: Seat, opponent: Opponent) =>
+      summon(
+        seat,
+        await update(seat, (game) =>
+          game.opponent === opponent ? game : { ...game, opponent, waiting: null },
+        ),
+        true,
+      ),
 
     // ── What the agent does through its tools ──────────────────────────────────────────────
     /**
@@ -85,14 +124,21 @@ export function createGameService(input: {
     agentMove: async (seat: Seat, cell: number): Promise<{ game: Game; answered: boolean }> => {
       let answered = false
       const game = await update(seat, (current, at) => {
+        if (current.opponent === 'decision')
+          throw new MoveRefused(
+            'The decision model plays O at this table. The user can switch the opponent back to you on the board.',
+          )
         answered = current.waiting?.status === 'thinking'
         return applyMove(current, cell, 'agent', at)
       })
       return { game, answered }
     },
-    /** The next game at this table, with `first` moving first. */
+    /**
+     * The next game at this table, with `first` moving first. Against the decision model the user
+     * opens: only a person's action asks that model, and a tool call is never one.
+     */
     agentNewGame: (seat: Seat, first: Mark) =>
-      update(seat, (game, at) => nextGame(game, at, first)),
+      update(seat, (game, at) => nextGame(game, at, game.opponent === 'decision' ? 'X' : first)),
   }
 }
 

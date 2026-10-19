@@ -2,12 +2,13 @@ import { Hono, type Context } from 'hono'
 import { z } from 'zod'
 import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
 
-import { MoveRefused, type Game } from '../shared/game'
+import { MoveRefused, OPPONENTS, type Game } from '../shared/game'
 import type { Seat } from './ask-agent'
 import type { GameService } from './game-service'
 
 const moveBody = z.object({ cell: z.number().int().min(0).max(8) })
 const newGameBody = z.object({ first: z.enum(['X', 'O']).optional() })
+const opponentBody = z.object({ opponent: z.enum(OPPONENTS) })
 const emptyBody = z.object({})
 
 /**
@@ -43,4 +44,7 @@ export function createGameRoutes(games: GameService) {
       answer(c, (seat) => games.newGame(seat, c.req.valid('json').first)),
     )
     .post('/game/remind', jsonBody(emptyBody), (c) => answer(c, (seat) => games.remind(seat)))
+    .post('/game/opponent', jsonBody(opponentBody), (c) =>
+      answer(c, (seat) => games.setOpponent(seat, c.req.valid('json').opponent)),
+    )
 }

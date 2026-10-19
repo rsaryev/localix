@@ -113,6 +113,10 @@ export async function composeGame(page, scenario) {
       page.getByRole('button', { name: 'Cell 3, top right: empty', exact: true }).click(),
     )
     await expect(page.getByRole('heading', { name: 'You won', exact: true })).toBeVisible()
+    // Who plays O is part of the control row, named for the table's opponent.
+    await expect(
+      page.getByRole('button', { name: 'Opponent: Chat agent', exact: true }),
+    ).toBeVisible()
   } else if (scenario === 'rock-paper-scissors') {
     // The agent's sealed move is face down and its value never reached the browser.
     const before = await api(route(scenario, fixture))
