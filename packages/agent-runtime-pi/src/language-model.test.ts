@@ -5,6 +5,7 @@ import type {
 } from '@earendil-works/pi-ai'
 import {
   PiLanguageModelCompletionError,
+  createPiLanguageModelFactory,
   fromPiCompletion,
   normalizeCompletionMaxTokens,
   normalizeCompletionReasoning,
@@ -185,5 +186,85 @@ describe('Pi buffered completion contract', () => {
       message: 'Request was aborted',
       stopReason: 'aborted',
     })
+  })
+})
+
+describe('decision models', () => {
+  const jev = createPiLanguageModelFactory().create(
+    { providerId: 'openrouter', modelId: '~typesafe/jev-latest' },
+    { type: 'api-key', key: 'sk-test' },
+  )
+  const request = {
+    state: { transcript: [{ author: 'person', text: 'Make the button wrap' }] },
+    questions: {
+      next: {
+        type: 'choice' as const,
+        instructions: 'Who should take the floor?',
+        criteria: { frontend: 'The interface', backend: 'Server code' },
+      },
+    },
+  }
+
+  async function withFetch<T>(
+    respond: (url: string, body: unknown) => Response,
+    run: () => Promise<T>,
+  ) {
+    const original = globalThis.fetch
+    const seen: { url: string; body: unknown }[] = []
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input)
+      const body = JSON.parse(init?.body as string)
+      seen.push({ url, body })
+      return respond(url, body)
+    }) as typeof fetch
+    try {
+      return { result: await run(), seen }
+    } finally {
+      globalThis.fetch = original
+    }
+  }
+
+  test("decides through pi's System One call and returns the choice with its probabilities", async () => {
+    const { result, seen } = await withFetch(
+      () =>
+        Response.json({
+          answers: {
+            next: {
+              type: 'choice',
+              choice: 'frontend',
+              probabilities: { frontend: 0.97, backend: 0.03 },
+              confidence: 0.9,
+            },
+          },
+          usage: { input_tokens: 341, output_tokens: 31 },
+        }),
+      () => jev.decide!(request),
+    )
+    expect(seen[0]!.url).toBe('https://openrouter.ai/api/v1/systemone')
+    expect(seen[0]!.body).toMatchObject({ model: '~typesafe/jev-latest', state: request.state })
+    expect(result.answers).toEqual({
+      next: { choice: 'frontend', probabilities: { frontend: 0.97, backend: 0.03 } },
+    })
+    expect(result.usage?.inputTokens).toBe(341)
+  })
+
+  test('rejects a failed decision instead of answering nothing', async () => {
+    const { result } = await withFetch(
+      () => new Response('{"error":{"message":"overloaded"}}', { status: 503 }),
+      () =>
+        jev.decide!(request).then(
+          () => 'resolved',
+          () => 'rejected',
+        ),
+    )
+    expect(result).toBe('rejected')
+  })
+
+  test('a chat model is not a decision model', async () => {
+    const chat = createPiLanguageModelFactory().create(
+      { providerId: 'openrouter', modelId: 'typesafe/jev-router' },
+      { type: 'api-key', key: 'sk-test' },
+    )
+    await expect(chat.decide!(request)).rejects.toThrow('Unknown pi decision model')
   })
 })

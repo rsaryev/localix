@@ -1,7 +1,9 @@
-import type { Model as PiModel } from '@earendil-works/pi-ai'
+import type { JsonObject, Model as PiModel } from '@earendil-works/pi-ai'
 import { thinkingBudgetForLevel } from '@earendil-works/pi-ai/api/simple-options'
 
 import type {
+  DecisionRequest,
+  DecisionResult,
   LanguageModel,
   LanguageModelFactory,
   RuntimeCredential,
@@ -11,7 +13,7 @@ import type {
 import type { AssistantMessage, Usage } from '@localixai/agent'
 
 import { createPiModels } from './models'
-import { fromPiAssistant, toPiMessage } from './message-codec'
+import { fromPiAssistant, fromPiUsage, toPiMessage } from './message-codec'
 import { requestTuning, type PiRequestTuning } from './stream-options'
 import { resolveReasoningEffort } from './preflight'
 
@@ -163,6 +165,27 @@ class PiLanguageModel implements LanguageModel {
       },
     )
     return fromPiCompletion(response)
+  }
+
+  /** pi's classifier call: the model must be a `classifier` entry of the owning provider. */
+  async decide(request: DecisionRequest): Promise<DecisionResult> {
+    request.signal?.throwIfAborted()
+    const models = createPiModels(this.ref, this.credential, this.credentialStore)
+    const model = models.getModelOfType('classifier', this.ref.providerId, this.ref.modelId)
+    if (!model)
+      throw new Error(`Unknown pi decision model ${this.ref.providerId}/${this.ref.modelId}`)
+    const result = await models.classify(
+      model,
+      { state: request.state as JsonObject, questions: request.questions },
+      { signal: request.signal },
+    )
+    if (result.stopReason !== 'stop')
+      throw new Error(result.errorMessage || `Decision request ${result.stopReason}`)
+    const answers: DecisionResult['answers'] = {}
+    for (const [key, answer] of Object.entries(result.answers))
+      if (answer.type === 'choice')
+        answers[key] = { choice: answer.choice, probabilities: { ...answer.probabilities } }
+    return { answers, ...(result.usage ? { usage: fromPiUsage(result.usage) } : {}) }
   }
 }
 

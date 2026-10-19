@@ -25,10 +25,10 @@ export interface ModelCost extends ModelCostRates {
 
 /**
  * What a model is for. One catalog lists every kind, and each consumer asks for its own: chat
- * workloads for `chat`, semantic search for `embedding`. Absent means `chat` (every model a
- * runtime adapter lists).
+ * workloads for `chat`, semantic search for `embedding`, typed decisions (group routing) for
+ * `decision`. Absent means `chat`.
  */
-export type ModelKind = 'chat' | 'embedding'
+export type ModelKind = 'chat' | 'embedding' | 'decision'
 
 export interface CatalogModel {
   id: string

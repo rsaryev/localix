@@ -40,6 +40,7 @@ function harness(opts: { busy?: boolean } = {}) {
       isBusy: () => opts.busy === true,
       cancelAgentTurns: async () => {},
       leadership: () => noLeadership,
+      floorAdvisor: () => async () => null,
       wake: async (params: unknown) => {
         woken.push(params)
       },

@@ -1,5 +1,5 @@
 import useSWR from 'swr'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
   modelKindOf,
   type CatalogModel,
@@ -43,11 +43,16 @@ export function useModelsCatalog() {
     return out
   }, [all])
 
+  const modelsOfKind = useCallback(
+    (kind: ModelKind): CatalogModel[] => byKind.get(kind) ?? NO_MODELS,
+    [byKind],
+  )
+
   return {
     /** Chat models: what every chat surface lists. */
     models: byKind.get('chat') ?? NO_MODELS,
-    /** Models of one kind (`embedding` for semantic search). */
-    modelsOfKind: (kind: ModelKind): CatalogModel[] => byKind.get(kind) ?? NO_MODELS,
+    /** Models of one kind (`embedding` for semantic search, `decision` for group routing). */
+    modelsOfKind,
     providers: data?.providers ?? ([] as CatalogProvider[]),
     oauthProviderIds: data?.oauthProviderIds ?? ([] as string[]),
     oauthProviders: data?.oauthProviders ?? [],

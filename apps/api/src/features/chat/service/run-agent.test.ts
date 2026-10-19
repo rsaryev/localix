@@ -14,6 +14,7 @@ function harness(
     session: SessionRecord,
     text: string,
   ) => Promise<SessionRecord> = async (_userId, current) => current,
+  advised: string[] = [],
 ) {
   let currentSession: SessionRecord = initialSession
   const inserted: PersistedMessage[] = []
@@ -42,6 +43,10 @@ function harness(
     runner: {
       cancelAgentTurns: async () => {},
       leadership: () => noLeadership,
+      floorAdvisor: () => async (question: { text: string }) => {
+        advised.push(question.text)
+        return null
+      },
       // An invitation persists the roster, so the repository sees it from then on.
       inviteAddressed: async (userId: string, current: SessionRecord, text: string) => {
         currentSession = await inviteAddressed(userId, current, text)
@@ -212,5 +217,30 @@ describe('a tag in the person’s message', () => {
     await h.runAgent('u', 's', session, [], '@qa, check the login flow', '2026-01-01')
     expect(seen).toEqual(['@qa, check the login flow'])
     expect(h.runArgs?.scope.speakerAgentId).toBe('native:global:qa')
+  })
+})
+
+describe('group routing on the send path', () => {
+  const member = (agentId: string, handle: string) =>
+    ({
+      agentId,
+      handle,
+      providerConnectionId: null,
+      modelId: '',
+      reasoningEffort: 'medium',
+    }) as SessionRecord['agents'][number]
+  const room = {
+    ...session,
+    agents: [member('builtin:localix', 'localix'), member('native:global:qa', 'qa')],
+  } as SessionRecord
+
+  test("the person's own words are put to the decision model; a hidden prompt is not", async () => {
+    const advised: string[] = []
+    const h = harness(room, undefined, advised)
+    await h.runAgent('u', 's', room, [], 'Check the login flow', '2026-01-01')
+    await h.runAgent('u', 's', room, [], 'wake: nightly digest', '2026-01-01', undefined, {
+      isInternal: true,
+    })
+    expect(advised).toEqual(['Check the login flow'])
   })
 })

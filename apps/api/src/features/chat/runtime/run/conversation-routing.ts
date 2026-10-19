@@ -15,6 +15,10 @@
  *
  * The person is never addressed by a mention (a question for them goes through `ask`), so an
  * `@human` in a reply is plain text here. Every colleague hop counts against `MAX_HANDOFF_CHAIN`.
+ *
+ * In a group, the `groupRouting` decision model corrects the plan where it is confident
+ * (`floor-advice.ts`): an `@` that only credits a colleague assigns nobody, a handoff by name
+ * without one reaches that colleague. A report back to whoever assigned the turn always stands.
  */
 import { createHash } from 'node:crypto'
 
@@ -29,10 +33,12 @@ import { enqueueTurnTickets, resolveTurnRecipients } from '../conversation-dispa
 import { childExecutionContext, sessionExecutionContext } from '../execution-context'
 import { insertUiNote } from '../message-persistence'
 import { inviteAddressedAgents } from './conversation-invite'
+import { adviseHandoff } from '../floor-advice'
 import { conversationPolicy } from '../../policy/session-policy'
 import type { RunEnv, RunParams } from './types'
 
-type RoutingEnv = Pick<RunEnv, 'repo' | 'enqueueRun' | 'deps'> & Partial<Pick<RunEnv, 'state'>>
+type RoutingEnv = Pick<RunEnv, 'repo' | 'enqueueRun' | 'deps'> &
+  Partial<Pick<RunEnv, 'state' | 'floorAdvisor'>>
 
 /** The colleagues whose request started this turn, and whether that request was a report. */
 function trigger(params: RunParams): { requesters: string[]; report: boolean } {
@@ -87,6 +93,16 @@ function handoffExecutionContext(params: RunParams, session: SessionRecord) {
     : sessionExecutionContext(session)
 }
 
+/** The transcript before the settled reply, as it stands now; the run's own snapshot if unreadable. */
+async function currentHistory(env: RoutingEnv, params: RunParams) {
+  try {
+    const rows = await env.repo.listMessages(params.userId, params.session.id)
+    return rows.filter((row) => row.id !== params.assistantMessageId)
+  } catch {
+    return params.historyMessages
+  }
+}
+
 /** Queue whoever the settled reply hands the floor to. Never throws: the reply is already saved. */
 export async function routeConversationReply(
   env: RoutingEnv,
@@ -117,11 +133,33 @@ export async function routeConversationReply(
       text,
     )
     const speaker = params.scope.speakerAgentId
-    const plan = planHandoff(session, speaker, text, trigger(params))
-    if (plan.reports.length + plan.assignments.length === 0) return
-
     const assistantMessageId = params.assistantMessageId
     const handoffDepth = (params.scope.handoffDepth ?? 0) + 1
+    const grammar = planHandoff(session, speaker, text, trigger(params))
+    // The grammar's plan, corrected where a confident decision model reads the reply otherwise:
+    // an `@` that only credits a colleague, or a handoff by name without one. Not asked when its
+    // answer cannot change the plan: a report that stands, or a chain already at its limit.
+    const advisable =
+      room.withColleagues &&
+      env.floorAdvisor !== undefined &&
+      handoffDepth <= MAX_HANDOFF_CHAIN &&
+      (grammar.assignments.length > 0 || grammar.reports.length === 0)
+    const advice = advisable
+      ? await env.floorAdvisor!({
+          userId: params.userId,
+          sessionId: session.id,
+          projectId: session.projectId,
+        })({
+          members: session.agents,
+          // Read now, not the run's start: colleagues and the person may have spoken since.
+          history: await currentHistory(env, params),
+          authorAgentId: speaker,
+          text,
+        })
+      : null
+    const plan = adviseHandoff(grammar, advice)
+    if (plan.reports.length + plan.assignments.length === 0) return
+
     if (handoffDepth > MAX_HANDOFF_CHAIN) {
       const notice = `The participants handed the floor to each other ${MAX_HANDOFF_CHAIN} times without hearing from you, so the conversation is back with you.`
       await insertUiNote({

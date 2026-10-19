@@ -180,9 +180,41 @@ function stream(item) {
   return new Response(text, { headers: { 'content-type': 'text/event-stream' } })
 }
 
+/**
+ * A decision model's answer (group routing, OpenRouter's `/systemone`), scripted by the event: the
+ * last transcript message may carry `ROUTE{"choice":"<option>","p":<probability>}` in a code span.
+ * With none, the answer is unconfident (0.5), so the address rules decide as they would without it.
+ */
+function decision(body) {
+  const transcript = Array.isArray(body.state?.transcript) ? body.state.transcript : []
+  const last = transcript.at(-1)
+  const at = typeof last?.text === 'string' ? last.text.indexOf('ROUTE{') : -1
+  const routed = at >= 0 ? objectAt(last.text, at + 'ROUTE'.length)?.steps : undefined
+  const options = Object.keys(body.questions?.next?.criteria ?? {})
+  const choice = options.includes(routed?.choice) ? routed.choice : options[0]
+  const p = typeof routed?.p === 'number' ? routed.p : 0.5
+  if (logFile)
+    appendFileSync(
+      logFile,
+      `${JSON.stringify({
+        seq,
+        at: new Date().toISOString(),
+        sessionId: null,
+        decision: { author: last?.author, options, choice, p, model: body.model },
+      })}\n`,
+    )
+  return Response.json({
+    model: body.model,
+    answers: { next: { type: 'choice', choice, probabilities: { [choice]: p }, confidence: p } },
+    usage: { input_tokens: 300, output_tokens: 30 },
+  })
+}
+
 globalThis.fetch = Object.assign(async function scriptedFetch(input, init) {
   if (!isOurs(input, init)) return realFetch(input, init)
   const body = await bodyOf(input, init)
+  const url = String(input instanceof Request ? input.url : input)
+  if (url.endsWith('/systemone')) return decision(body)
   const system = systemPromptOf(body)
   const tools = (Array.isArray(body.tools) ? body.tools : []).flatMap((tool) =>
     tool?.name ? [tool.name] : [],

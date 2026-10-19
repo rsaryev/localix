@@ -27,11 +27,12 @@ const row = (id: string, from: string, content = ''): PersistedMessage =>
     payload: { id, role: from === USER_PARTICIPANT ? 'user' : 'assistant', from, content },
   }) as never
 
-function harness(options: { session?: typeof room } = {}) {
+function harness(options: { session?: typeof room; advice?: string | null } = {}) {
   let session = options.session ?? room
   const queued: Array<{ speaker: string; scope: Partial<RunScope>; triggers: readonly string[] }> =
     []
   const notices: unknown[] = []
+  const asked = { count: 0 }
   const env = {
     repo: {
       getSession: async () => session,
@@ -61,6 +62,14 @@ function harness(options: { session?: typeof room } = {}) {
       ],
       streamRegistry: { publish: () => {} },
     },
+    ...(options.advice !== undefined
+      ? {
+          floorAdvisor: () => async () => {
+            asked.count += 1
+            return options.advice ?? null
+          },
+        }
+      : {}),
   }
   const route = (
     speaker: string,
@@ -77,7 +86,7 @@ function harness(options: { session?: typeof room } = {}) {
       ),
       { content, ...extra },
     )
-  return { route, queued, notices, session: () => session }
+  return { route, queued, notices, asked, session: () => session }
 }
 
 const assignment = (): Partial<RunScope> => ({
@@ -218,4 +227,36 @@ test('past the handoff bound nobody is queued and the person is told', async () 
   await h.route('agent-a', '@beta, again.', { handoffDepth: MAX_HANDOFF_CHAIN })
   expect(h.queued).toEqual([])
   expect(h.notices).toHaveLength(1)
+})
+
+describe('a decision model corrects the grammar where it is confident', () => {
+  test('an @ that only credits a colleague hands the floor back to the person', async () => {
+    const h = harness({ advice: 'person' })
+    await h.route('agent-a', 'Done — the layout follows what @beta proposed earlier.')
+    expect(h.queued).toEqual([])
+  })
+
+  test('a handoff by name without an @ reaches that colleague', async () => {
+    const h = harness({ advice: 'gamma' })
+    await h.route('agent-a', 'The copy is ready. Gamma, please review the legal wording.')
+    expect(h.queued.map((turn) => turn.speaker)).toEqual(['agent-c'])
+  })
+
+  test('finished work still reports to whoever assigned it, whatever the advice', async () => {
+    const h = harness({ advice: 'person' })
+    await h.route('agent-b', 'Checked: it holds.', assignment(), askedBy('agent-a'))
+    expect(h.queued.map((turn) => turn.speaker)).toEqual(['agent-a'])
+  })
+
+  test('a report that stands is not put to the model, nor a chain at its limit', async () => {
+    const report = harness({ advice: 'gamma' })
+    await report.route('agent-b', 'Checked: it holds.', assignment(), askedBy('agent-a'))
+    expect(report.asked.count).toBe(0)
+    expect(report.queued.map((turn) => turn.speaker)).toEqual(['agent-a'])
+
+    const limited = harness({ advice: 'gamma' })
+    await limited.route('agent-a', 'Gamma, take it from here.', { handoffDepth: MAX_HANDOFF_CHAIN })
+    expect(limited.asked.count).toBe(0)
+    expect(limited.queued).toEqual([])
+  })
 })

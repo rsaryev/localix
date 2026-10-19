@@ -31,6 +31,7 @@ import {
   type LeadershipPriorities,
 } from './conversation-strategy'
 import type { EnqueueRun } from './agent-turn-ticket'
+import type { FloorAdvisor } from './floor-advice'
 import type { RunScope } from './run-contract'
 import type { RunCompletion } from './run-outcome'
 
@@ -43,8 +44,10 @@ export function resolveTurnRecipients(
   historyBeforeTrigger: readonly PersistedMessage[],
   event: ConversationEvent,
   priorities: LeadershipPriorities,
+  /** Consulted for a person's unaddressed message; the grammar decides without one. */
+  advisor?: FloorAdvisor,
 ): Promise<ConversationRecipient[]> {
-  const context = { session, history: historyBeforeTrigger, priorities }
+  const context = { session, history: historyBeforeTrigger, priorities, advisor }
   return resolveConversationStrategy(context).recipients(context, event)
 }
 
@@ -54,7 +57,8 @@ export function resolveTurnRecipients(
  *
  * Those commands used to take the FIRST participant, so in a conversation where @qa had been
  * answering, `/model` quietly changed @lead's model. The strategy already answers "who replies
- * to an unaddressed message", so this asks it rather than keeping a second rule.
+ * to an unaddressed message", so this asks it rather than keeping a second rule — without the
+ * group-routing advisor: a command has no words for it to read, so it is the leader's.
  */
 export async function speakingParticipant(
   session: Pick<SessionRecord, 'agents' | 'sessionKind'>,

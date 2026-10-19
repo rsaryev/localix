@@ -39,11 +39,15 @@ interface ConformanceSubject {
  * walk a whole catalog, so a model whose data disagrees fails here by name — for the generated
  * catalog and for one refreshed through `Models.refresh()` alike.
  */
+/** Chat entries by id. A decision model may share its chat sibling's id (OpenAI's Decisions). */
+const chatEntries = (catalog: EngineCatalog) =>
+  new Map(catalog.models.filter((model) => !model.kind).map((model) => [model.id, model]))
+
 function conformance(label: string, subject: ConformanceSubject) {
   describe(`catalog reasoning is pi’s answer (${label})`, () => {
     test('every model lists exactly pi’s supported levels', async () => {
       const catalog = await subject.catalog()
-      const byId = new Map(catalog.models.map((model) => [model.id, model]))
+      const byId = chatEntries(catalog)
       let checked = 0
       for (const model of subject.models()) {
         const entry = byId.get(`${model.provider}/${model.id}`)
@@ -59,7 +63,7 @@ function conformance(label: string, subject: ConformanceSubject) {
 
     test('the shared clamp gives pi’s clampThinkingLevel answer for every model and level', async () => {
       const catalog = await subject.catalog()
-      const byId = new Map(catalog.models.map((model) => [model.id, model]))
+      const byId = chatEntries(catalog)
       let checked = 0
       for (const model of subject.models()) {
         const entry = byId.get(`${model.provider}/${model.id}`)
@@ -82,7 +86,7 @@ function conformance(label: string, subject: ConformanceSubject) {
 
     test('the catalog lists off exactly where the request sends no reasoning', async () => {
       const catalog = await subject.catalog()
-      const byId = new Map(catalog.models.map((model) => [model.id, model]))
+      const byId = chatEntries(catalog)
       for (const model of subject.models()) {
         if (!model.reasoning) continue
         const entry = byId.get(`${model.provider}/${model.id}`)

@@ -38,6 +38,7 @@
             "features/configure.md",
             "features/sessions-and-projects.md",
             "features/conversations.md",
+            "features/group-routing.md",
             "features/conversation-history.md",
             "features/attachments.md",
             "features/answer-formatting.md",

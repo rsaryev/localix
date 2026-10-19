@@ -13,6 +13,7 @@ describe('shared model task catalog', () => {
       'inlineCompletion',
       'delegation',
       'semanticSearch',
+      'groupRouting',
     ])
     expect(MODEL_TASKS[0]).toMatchObject({ key: 'session', required: true })
   })
@@ -26,6 +27,7 @@ describe('shared model task catalog', () => {
       'inlineCompletion',
       'delegation',
       'semanticSearch',
+      'groupRouting',
     ])
   })
 
@@ -35,6 +37,13 @@ describe('shared model task catalog', () => {
       modelKind: 'embedding',
       defaultEnabled: false,
     })
+    // On by default: it runs only where a connection serves its model, so connecting OpenRouter
+    // turns it on and an explicit off keeps it off.
+    expect(kindOf('groupRouting')).toMatchObject({
+      modelKind: 'decision',
+      defaultModelId: 'openrouter/~typesafe/jev-latest',
+    })
+    expect(isModelRoutingTaskEnabled(undefined, 'groupRouting')).toBe(true)
     expect(kindOf('delegation')).not.toHaveProperty('modelKind')
   })
 

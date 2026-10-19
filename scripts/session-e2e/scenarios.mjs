@@ -8,6 +8,12 @@
  */
 import { MODE_SCENARIOS } from './scenarios-modes.mjs'
 import { QUEUE_SCENARIOS } from './scenarios-queue.mjs'
+import { ROUTING_SCENARIOS } from './scenarios-routing.mjs'
 import { RUN_SCENARIOS } from './scenarios-runs.mjs'
 
-export const SCENARIOS = [...MODE_SCENARIOS, ...RUN_SCENARIOS, ...QUEUE_SCENARIOS]
+export const SCENARIOS = [
+  ...MODE_SCENARIOS,
+  ...ROUTING_SCENARIOS,
+  ...RUN_SCENARIOS,
+  ...QUEUE_SCENARIOS,
+]

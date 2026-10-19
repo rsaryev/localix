@@ -27,7 +27,7 @@ export const catalogModelSchema = z.object({
   id: z.string(),
   name: z.string(),
   /** Absent: a chat model. */
-  kind: z.enum(['chat', 'embedding']).optional(),
+  kind: z.enum(['chat', 'embedding', 'decision']).optional(),
   providerId: z.string(),
   providerName: z.string(),
   contextLength: z.number().int().nonnegative().optional(),

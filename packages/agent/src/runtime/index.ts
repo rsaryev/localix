@@ -15,7 +15,7 @@ export * from './model'
 
 import type { RuntimeCredential, RuntimeCredentialStore } from './auth'
 import type { RuntimeModelRef } from './model'
-import type { AssistantMessage, Message, ReasoningEffort } from '../types'
+import type { AssistantMessage, Message, ReasoningEffort, Usage } from '../types'
 
 /** Provider-independent request for a single buffered model completion. */
 export interface LanguageModelRequest {
@@ -29,6 +29,34 @@ export interface LanguageModelRequest {
   sessionId?: string
 }
 
+/** One question a decision model answers with a pick among `criteria`'s keys. */
+export interface DecisionChoiceQuestion {
+  type: 'choice'
+  instructions: string
+  /** Option key → what the option means. */
+  criteria: Record<string, string>
+}
+
+/**
+ * A typed decision over structured state, for models whose output is `decisions` (OpenRouter's
+ * System One protocol): no text, one answer per question with its probabilities.
+ */
+export interface DecisionRequest {
+  state: Record<string, unknown>
+  questions: Record<string, DecisionChoiceQuestion>
+  signal?: AbortSignal
+}
+
+export interface DecisionChoiceAnswer {
+  choice: string
+  probabilities: Record<string, number>
+}
+
+export interface DecisionResult {
+  answers: Record<string, DecisionChoiceAnswer>
+  usage?: Usage
+}
+
 /**
  * Narrow application port for auxiliary LLM calls (summary, title, judge, classifier).
  * Provider transports, auth refresh, retries and response parsing remain adapter-owned.
@@ -36,6 +64,8 @@ export interface LanguageModelRequest {
 export interface LanguageModel {
   readonly ref: RuntimeModelRef
   complete(request: LanguageModelRequest): Promise<AssistantMessage>
+  /** Present when the adapter can run decision models; rejects when the model is not one. */
+  decide?(request: DecisionRequest): Promise<DecisionResult>
 }
 
 export interface LanguageModelFactory {

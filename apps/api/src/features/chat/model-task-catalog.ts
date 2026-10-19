@@ -22,8 +22,11 @@ interface ModelTaskDescriptor {
   /**
    * The kind of model the workload runs on. Absent: a chat model from the catalog. `embedding`:
    * an embedding model, chosen and switched by its own service (semantic search owns its state).
+   * `decision`: a decision model (typed answers, no text), routed like a chat workload.
    */
-  modelKind?: 'embedding'
+  modelKind?: 'embedding' | 'decision'
+  /** The catalog model the workload runs on while the route names none. */
+  defaultModelId?: string
 }
 
 /**
@@ -61,6 +64,15 @@ export const AUX_MODEL_TASKS = [
     toggleable: true,
     defaultEnabled: false,
     modelKind: 'embedding',
+  },
+  {
+    key: 'groupRouting',
+    label: 'Group routing',
+    hint: 'Picks who answers next in a group chat when nobody is tagged',
+    fallbackLabel: 'TypeSafe Jev (latest)',
+    toggleable: true,
+    modelKind: 'decision',
+    defaultModelId: 'openrouter/~typesafe/jev-latest',
   },
 ] as const satisfies readonly ({ key: string } & ModelTaskDescriptor)[]
 

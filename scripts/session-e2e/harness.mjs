@@ -125,6 +125,15 @@ async function setup(runtime) {
     authType: 'api-key',
     apiKey: PLACEHOLDER_KEY,
   })
+  // Group routing's decision model is served through OpenRouter; the placeholder key keeps its
+  // `/systemone` calls with the scripted provider, which answers unconfidently unless told.
+  await runtime.api('/provider-connections', {
+    providerId: 'openrouter',
+    providerName: 'OpenRouter',
+    label: 'Session E2E decisions',
+    authType: 'api-key',
+    apiKey: PLACEHOLDER_KEY,
+  })
   const agentIds = await createAgents(runtime.api, { marked: true })
   const route = { connectionId: connection.id, modelId: MODEL_ID }
   return { connectionId: connection.id, agentIds, ...sessionHelpers(runtime, route, agentIds) }

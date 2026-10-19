@@ -51,6 +51,23 @@ function projectPiCatalog(models: Models): EngineCatalog {
     // newest-first on it.
     ...(model.releaseDate ? { releaseDate: model.releaseDate } : {}),
   }))
+  // Decision models (pi's `classifier` type, OpenRouter's `output_modalities: decisions`): they
+  // answer typed questions and write no text, so they list as their own kind.
+  const decisionModels: CatalogModel[] = models.getModelsOfType('classifier').map((model) => ({
+    id: `${model.provider}/${model.id}`,
+    kind: 'decision',
+    providerId: model.provider,
+    providerName: providerNames.get(model.provider) ?? model.provider,
+    name: model.name,
+    supportsTools: false,
+    supportsReasoning: false,
+    api: model.api,
+    supportsAttachment: model.input.includes('image'),
+    inputModalities: [...model.input],
+    outputModalities: ['decisions'],
+    contextLength: model.contextWindow,
+    cost: { ...model.cost },
+  }))
   const oauthProviders = models.getProviders().flatMap((provider) =>
     provider.auth.oauth
       ? [
@@ -64,7 +81,7 @@ function projectPiCatalog(models: Models): EngineCatalog {
   )
   return {
     providers,
-    models: chatModels,
+    models: [...chatModels, ...decisionModels],
     oauthProviderIds: oauthProviders.map((provider) => provider.providerId),
     oauthProviders,
   }

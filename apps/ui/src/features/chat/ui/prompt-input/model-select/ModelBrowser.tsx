@@ -79,7 +79,7 @@ export function ModelBrowser({
   )
 
   const { providers: allProviders, oauthProviderIds, oauthProviders } = useModelsCatalog()
-  const { taskKind, models, allModels } = useWorkloadModels(chatModels, taskKey)
+  const { taskKind, models, modelsFor } = useWorkloadModels(chatModels, taskKey)
 
   const { providerCounts, oauthIdSet, unconnectedProviders, filteredUnconnectedProviders } =
     useModelSelectProviders({
@@ -121,7 +121,7 @@ export function ModelBrowser({
     // will actually run on rather than repeating whoever the picker has selected.
     useEmbeddingWorkload(
       useModelTaskRouting({
-        models: allModels,
+        modelsFor,
         connections,
         orderedConnections,
         taskKey,
@@ -263,10 +263,11 @@ export function ModelBrowser({
   const activeTaskMeta = MODEL_ROUTING_TASKS.find((task) => task.key === taskKey)
   const activeTaskEnabled = enabledForTask(taskKey)
   // A participant has nothing to reset TO: its fallback is the agent's own model, and clearing
-  // the conversation's choice is what the row's fallback label already offers.
+  // the conversation's choice is what the row's fallback label already offers. Semantic search
+  // owns its model in its own service, so it has no route to clear.
   const resettableWorkload = workloadKey(taskKey)
   const resetRow =
-    resettableWorkload && taskKind === 'chat' ? (
+    resettableWorkload && taskKind !== 'embedding' ? (
       <ResetRouteRow
         selected={!currentSlot}
         label={activeTaskMeta?.fallbackLabel ?? 'Use session model'}

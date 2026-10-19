@@ -104,6 +104,24 @@ describe('catalog store', () => {
   })
 })
 
+describe('catalog projection', () => {
+  test('decision models list as their own kind, never among the chat models', async () => {
+    const { models } = await catalogWith().list()
+    const jev = models.find((model) => model.id === 'openrouter/~typesafe/jev-latest')
+    expect(jev).toMatchObject({
+      kind: 'decision',
+      providerId: 'openrouter',
+      api: 'typesafe-system-one',
+      outputModalities: ['decisions'],
+      supportsTools: false,
+    })
+    // OpenRouter's Jev Router answers in text: a chat model, listed as one.
+    expect(
+      models.find((model) => model.id === 'openrouter/typesafe/jev-router'),
+    ).not.toHaveProperty('kind')
+  })
+})
+
 describe('catalog refresh', () => {
   test('an offline start restores the persisted catalog without a request', async () => {
     const host = memoryStore()

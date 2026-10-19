@@ -40,4 +40,21 @@ describe('LocalModelsEmpty — an empty Local list links to where models are got
       host.remove()
     }
   })
+
+  test('a decision workload has nothing to download: it points at a connected provider', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { LocalModelsEmpty } = await import('./LocalModelsEmpty')
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    try {
+      await act(async () => root.render(<LocalModelsEmpty kind="decision" />))
+      expect(host.textContent).toContain('connected provider such as OpenRouter')
+      expect(host.querySelector('button')).toBeNull()
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+    }
+  })
 })

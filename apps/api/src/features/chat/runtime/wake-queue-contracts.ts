@@ -13,6 +13,7 @@ import type { RunIdentity, RunParams } from './run-contract'
 import type { SessionStreamRegistry } from './session-stream-registry'
 import type { PendingTurn } from './wake-queue/entry'
 import type { WakeQueueStore } from './wake-queue-store'
+import type { FloorAdvisor, FloorScope } from './floor-advice'
 
 export interface WakeQueueContext {
   policy?: QueuePolicy
@@ -25,6 +26,8 @@ export interface WakeQueueContext {
   store?: WakeQueueStore<PendingTurn>
   /** Who leads a conversation that has not yet been answered; absent means party order. */
   leadership?: (userId: string, projectId: string | null) => LeadershipPriorities
+  /** A decision model's advice for an unaddressed message; absent means the grammar alone. */
+  floorAdvisor?: (scope: FloorScope) => FloorAdvisor
   /** Invite the available agents the person's words tag; the session unchanged when none. */
   inviteAddressed?: (userId: string, session: SessionRecord, text: string) => Promise<SessionRecord>
   /** Whether a delegator still waits on children at work; absent, a report never waits. */

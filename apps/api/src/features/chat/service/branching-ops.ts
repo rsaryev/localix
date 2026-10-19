@@ -199,6 +199,7 @@ export async function editMessage(
       historyMessages,
       { kind: 'user-message', text: content },
       runner.leadership(userId, session.projectId),
+      runner.floorAdvisor({ userId, sessionId, projectId: session.projectId }),
     )
     const first = recipients[0]
     if (!first) throw new ApiError(400, 'session_party_empty', 'Choose an agent first')

@@ -5,6 +5,7 @@ import { conversationLeader } from '../policy/axes/seat'
 import { conversationPolicy } from '../policy/session-policy'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
+import type { FloorAdvisor } from './floor-advice'
 
 export type AgentTurnSource =
   | 'user-address'
@@ -55,6 +56,8 @@ export interface ConversationContext {
   session: Pick<SessionRecord, 'agents' | 'sessionKind'>
   history: readonly PersistedMessage[]
   priorities: LeadershipPriorities
+  /** A decision model's pick for a message the grammar finds unaddressed (`floor-advice.ts`). */
+  advisor?: FloorAdvisor
 }
 
 export type ConversationEvent =
@@ -144,7 +147,15 @@ export const multiParticipantStrategy: ConversationStrategy = {
           ),
       ]
     if (direct.length) return direct
-    // A message addressed to nobody belongs to the leader: only the leader hands work out.
+    // A message addressed to nobody belongs to the leader: only the leader hands work out —
+    // unless a confident decision model names the one participant the message is for.
+    const advised = await context.advisor?.({
+      members: session.agents,
+      history: context.history,
+      text: event.text,
+    })
+    const advisedMember = session.agents.find((member) => member.handle === advised)
+    if (advisedMember) return [{ agentId: advisedMember.agentId, source: 'user-default' }]
     const leader = conversationLeader(session, await context.priorities())
     return leader ? [{ agentId: leader.agentId, source: 'user-default' }] : []
   },

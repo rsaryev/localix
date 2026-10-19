@@ -24,6 +24,13 @@ export function LocalModelsEmpty({
   /** Close the picker before Settings opens. */
   onNavigate?: () => void
 }) {
+  // Nothing to download: decision models are served by connected providers (OpenRouter).
+  if (kind === 'decision')
+    return (
+      <EmptyHint className="flex-1 text-xs">
+        Decision models run on a connected provider such as OpenRouter.
+      </EmptyHint>
+    )
   return (
     <EmptyHint className="flex-1 text-xs">
       {kind === 'embedding'

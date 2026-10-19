@@ -18,6 +18,7 @@ import type { createUserProfileRepository } from '../../../user/repository'
 import type { createProjectsRepository } from '../../../projects/repository'
 import type { createMcpRepository } from '../../../mcp/repository'
 import type { resolveAuxiliaryModel } from '../model-resolution'
+import type { FloorAdvisor, FloorScope } from '../floor-advice'
 import type { AgentRunRepository } from '../../../../db/agent-run-repository'
 import type { RunExecutionOutcome } from '../run-outcome'
 import type { RunParams } from '../run-contract'
@@ -62,6 +63,8 @@ export interface RunEnv {
       | undefined,
     catalog: RunCatalog,
   ) => ReturnType<typeof resolveAuxiliaryModel>
+  /** The `groupRouting` decision model's advice on who speaks next (`floor-advisor.ts`). */
+  floorAdvisor: (scope: FloorScope) => FloorAdvisor
   publishChildSummary: (parentSessionId: string, child: SessionRecord) => void
   markRuntimeSessionStatus: (
     userId: string,

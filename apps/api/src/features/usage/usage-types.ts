@@ -65,6 +65,7 @@ export const USAGE_AUXILIARY_KINDS = [
   'improve',
   'classify',
   'hook',
+  'routing',
 ] as const
 
 export type UsageKindKey = 'turn' | (typeof USAGE_AUXILIARY_KINDS)[number]
@@ -78,6 +79,7 @@ export const USAGE_KIND_LABELS: Readonly<Record<UsageKindKey, string>> = {
   improve: 'Prompt improvement (retired)',
   classify: 'Auto-mode classifier',
   hook: 'Hook policy checks',
+  routing: 'Group routing',
 }
 
 /** Grand totals for the dashboard summary cards. */

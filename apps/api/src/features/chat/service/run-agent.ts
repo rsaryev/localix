@@ -182,6 +182,8 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
       existing,
       routeEvent(words, prompt, undefined),
       runner.leadership(userId, session.projectId),
+      // Only the person's own words are advised on: a hidden prompt is a client's, not theirs.
+      speaks ? runner.floorAdvisor({ userId, sessionId, projectId: session.projectId }) : undefined,
     )
     if (speaks) await supersedeColleagueChains(runner.cancelAgentTurns, userId, sessionId)
     const firstSlot = recipients[0]?.agentId

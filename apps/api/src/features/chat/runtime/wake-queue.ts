@@ -119,6 +119,7 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     holdsOf,
     holdUntil,
     ...(ctx.leadership ? { leadership: ctx.leadership } : {}),
+    ...(ctx.floorAdvisor ? { floorAdvisor: ctx.floorAdvisor } : {}),
     ...(ctx.inviteAddressed ? { inviteAddressed: ctx.inviteAddressed } : {}),
   })
   scheduleDrain = drain.scheduleDrain

@@ -121,4 +121,49 @@ describe('conversation leadership', () => {
       agents[0],
     )
   })
+
+  test('a confident decision model names the participant an unaddressed message is for', async () => {
+    const asked: string[] = []
+    const advised = {
+      ...context(),
+      advisor: async (question: { text: string }) => {
+        asked.push(question.text)
+        return 'frontend'
+      },
+    }
+    expect(
+      await multiParticipantStrategy.recipients(advised, {
+        kind: 'user-message',
+        text: 'The submit button wraps on narrow screens',
+      }),
+    ).toEqual([{ agentId: 'builtin:frontend', source: 'user-default' }])
+    expect(asked).toEqual(['The submit button wraps on narrow screens'])
+  })
+
+  test('no confident advice, or advice naming nobody here, leaves the message with the leader', async () => {
+    for (const advice of [null, 'person', 'ghost'])
+      expect(
+        await multiParticipantStrategy.recipients(
+          { ...context(), advisor: async () => advice },
+          { kind: 'user-message', text: 'Build it' },
+        ),
+      ).toEqual([{ agentId: 'builtin:lead', source: 'user-default' }])
+  })
+
+  test('an explicit address is exact: the model is not asked', async () => {
+    let asked = 0
+    expect(
+      await multiParticipantStrategy.recipients(
+        {
+          ...context(),
+          advisor: async () => {
+            asked += 1
+            return 'frontend'
+          },
+        },
+        { kind: 'user-message', text: '@pm what is the scope?' },
+      ),
+    ).toEqual([{ agentId: 'builtin:pm', source: 'user-address' }])
+    expect(asked).toBe(0)
+  })
 })

@@ -91,6 +91,10 @@ export async function deliverBand(
     history,
     event,
     deps.leadership?.(head.userId, session.projectId) ?? noLeadership,
+    // Only the person's own words are advised on: a hidden webhook or wake text is not theirs.
+    speaks
+      ? deps.floorAdvisor?.({ userId: head.userId, sessionId, projectId: session.projectId })
+      : undefined,
   )
   // A delivery no current participant answers (its addressee left the conversation) is
   // dismissed BEFORE any row is minted: a slot created for it would stay an empty assistant

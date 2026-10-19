@@ -53,8 +53,8 @@ Without an address, the message goes to the leader: the participant with the hig
 priority, with ties keeping roster order. The election reads current agent settings, so changing an
 agent's priority changes who answers your next unaddressed message.
 
-Role matching is an agent instruction; the scheduler does not inspect a message's subject to choose
-a specialist automatically.
+With [group routing](group-routing.md), a confident decision model can send a message that names
+nobody to the participant it is for. `@handle` and `@all` are never second-guessed.
 
 ## Passing work between agents
 
@@ -88,6 +88,7 @@ order addressed, and reads that reply as its assignment.
   named in passing does not restart the exchange.
 - Every hop between agents counts toward the handoff limit; past it, the conversation returns to you
   with a notice.
+- [Group routing](group-routing.md) corrects these rules where an `@` only credits a colleague.
 
 Every turn is expected to end with a message: a result with its evidence, the decision the agent
 needs, or the blocker. A turn that does work without writing anything reaches its colleagues as one

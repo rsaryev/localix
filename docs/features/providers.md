@@ -93,11 +93,12 @@ charge. On Claude models with per-turn effort, that default is **high**.
 
 The model browser offers these optional workload settings:
 
-| Workload          | Current runtime behavior                                                                                                                                                                                              |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort uses **medium**, never the session effort.                                                     |
-| Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary.                                   |
-| Delegated agents  | The setting is persisted and displayed, but current delegated-session creation does not apply it. Children snapshot their assigned participants' effective parent routes. Tool availability follows capability rules. |
+| Workload          | Current runtime behavior                                                                                                                                                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort uses **medium**, never the session effort.                                                          |
+| Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary.                                        |
+| Delegated agents  | The setting is persisted and displayed, but current delegated-session creation does not apply it. Children snapshot their assigned participants' effective parent routes. Tool availability follows capability rules.      |
+| Group routing     | On by default. Lists decision models only. With no model picked it runs `~typesafe/jev-latest` through any OpenRouter connection, so it does nothing until OpenRouter is connected. See [Group routing](group-routing.md). |
 
 Each workload stores its own effort; picking a model for it starts at the level last chosen for that
 workload and model, otherwise the default.
@@ -130,6 +131,11 @@ shipped. Localix adds no metadata of its own.
 | Shortly after startup, then hourly   | A provider whose stored list is older than six hours is fetched again, while the app is idle. The rest answer from disk.                   |
 | **Settings → Models → Model list**   | **Check for new models** fetches every list now, including when automatic checks are off.                                                  |
 | A source is unreachable or malformed | The whole check fails and every provider keeps its current list; the server logs the cause. The setting row shows it after a manual check. |
+
+The same lists carry **decision models**, which answer typed questions instead of writing text
+(OpenRouter's models with `decisions` output, plus those of OpenAI, TypeSafe, Vercel AI Gateway,
+Cloudflare Workers AI and OpenCode). They appear only where a workload runs on them, never among
+chat models.
 
 A refresh adds models and updates their details; it does not remove a model the shipped baseline
 lists. After an app update, lists stored by the previous version are discarded and the new baseline
@@ -249,5 +255,6 @@ connections and selects the conversation's model.
 - [Key-selection policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/provider-keys.ts)
 - [Model browser](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/model-select/ModelBrowser.tsx)
 - [Workload route catalog](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/model-task-catalog.ts)
+- [Group routing workload](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-advisor.ts)
 - [Model route persistence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/model-select/useModelTaskRouting.ts)
 - [Per-model reasoning control](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/model-select/ModelReasoningControl.tsx)

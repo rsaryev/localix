@@ -41,6 +41,7 @@ import type { SessionRecord } from '../repository'
 import { rosterLeadership } from './conversation-strategy'
 import { createDatabaseWakeQueueStore } from './wake-queue-store'
 import { resolveAuxiliaryModel as resolveAuxiliarySlotModel } from './model-resolution'
+import { createFloorAdvisor } from './floor-advisor'
 import { executeRun } from './run/execute-run'
 import type { RunEnv, RunParams } from './run/types'
 import { createUsageRepository } from '../../usage/repository'
@@ -102,6 +103,8 @@ export function createAgentRunner(deps: RunnerDeps) {
   // Wake queue (push-a-session): callbacks avoid a module cycle.
   const leadership = (userId: string, projectId: string | null) =>
     rosterLeadership(deps.listRegistryAgents, userId, projectId)
+  // Who speaks next where the grammar cannot tell: the `groupRouting` route's decision model.
+  const floorAdvisor = createFloorAdvisor({ runner: deps, userProfileRepo, usageRepo })
   // A tag in the person's message brings an available agent in before the message is routed.
   const inviteAddressed = (userId: string, session: SessionRecord, text: string) =>
     inviteAddressedAgents(
@@ -121,6 +124,7 @@ export function createAgentRunner(deps: RunnerDeps) {
     state: { activeRuns, drainingSessions, sessionRunIdentity: state.sessionRunIdentity },
     store: createDatabaseWakeQueueStore(deps.db),
     leadership,
+    floorAdvisor,
     inviteAddressed,
     // Whether a delegator still waits on children at work, and word when that changes: the
     // delegation ledger's facts, which the queue only asks (`wake-queue/holds.ts`).
@@ -146,6 +150,7 @@ export function createAgentRunner(deps: RunnerDeps) {
     now,
     resolveAuxiliaryModel: (userId, slot, catalog) =>
       resolveAuxiliarySlotModel({ deps, userId, slot, catalog }),
+    floorAdvisor,
     publishChildSummary,
     markRuntimeSessionStatus,
     persistAndPublish,
@@ -171,6 +176,7 @@ export function createAgentRunner(deps: RunnerDeps) {
 
   const runner = {
     leadership,
+    floorAdvisor,
     inviteAddressed,
     ...createRunnerStatus(state),
     ...createRunnerQueue({ state, wakeQueue, stopCtx }),

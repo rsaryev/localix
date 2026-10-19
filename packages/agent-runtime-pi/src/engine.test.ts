@@ -25,9 +25,10 @@ describe('the pi engine — one adapter, every port', () => {
     const catalog = await createPiEngine().listCatalog()
     expect(catalog.providers.length).toBeGreaterThan(0)
     expect(catalog.models.length).toBeGreaterThan(0)
-    // The catalog is TEXT models only: pi reaches image models through a separate
-    // `ImagesModels` collection, and nothing in Localix drives it any more.
-    for (const model of catalog.models) expect(model.outputModalities).toEqual(['text'])
+    // Chat models write text and decision models answer typed questions; pi's image models
+    // are not listed, since nothing in Localix drives them any more.
+    for (const model of catalog.models)
+      expect(model.outputModalities).toEqual(model.kind === 'decision' ? ['decisions'] : ['text'])
     expect(Array.isArray(catalog.oauthProviderIds)).toBe(true)
     expect(Array.isArray(catalog.oauthProviders)).toBe(true)
     for (const provider of catalog.oauthProviders) {

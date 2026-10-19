@@ -21,16 +21,16 @@ export function hasProviderPrefix(modelId: string, providerId: string): boolean 
   return modelId.startsWith(`${providerId}/`)
 }
 
-/** A LanguageModel must be able to produce text. Catalog entries that explicitly
- * advertise only image/media output cannot answer a chat turn, so they are refused. */
-function supportsTextCompletion(
+/** A LanguageModel must produce text (`complete`) or typed decisions (`decide`). Catalog entries
+ * that explicitly advertise only image/media output can do neither, so they are refused. */
+function servesLanguageModel(
   providerId: string,
   modelId: string,
   catalog?: Pick<Catalog, 'models'>,
 ): boolean {
   const model = catalog ? findCatalogModel(catalog.models, providerId, modelId) : undefined
   const modalities = model?.outputModalities
-  return !modalities || modalities.includes('text')
+  return !modalities || modalities.includes('text') || modalities.includes('decisions')
 }
 
 /**
@@ -115,7 +115,7 @@ export async function resolveConnectionModel(params: {
     const entry = catalog.providers.find((p) => p.id === connection.providerId)
     if (!entry) return null
     if (!providerOwnsModel(entry.id, params.modelId, catalog)) return null
-    if (!supportsTextCompletion(entry.id, params.modelId, catalog)) return null
+    if (!servesLanguageModel(entry.id, params.modelId, catalog)) return null
     const key = firstEnabledKey(connection.keys)
     if (!key) return null
     const rawModelId = stripProviderPrefix(params.modelId, entry.id)

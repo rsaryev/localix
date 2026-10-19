@@ -16,18 +16,20 @@ export function modelKindForTarget(target: PickerTarget): ModelKind {
 }
 
 /**
- * The models a workload lists — the kind it runs on: chat, or embedding for semantic search —
- * and every kind together, so a row's label resolves whichever workload is open.
+ * The models a workload lists — the kind it runs on: chat, embedding for semantic search,
+ * decision for group routing — and, for every row, the models of that row's own kind, so each
+ * row's label resolves against its kind alone.
  */
 export function useWorkloadModels(chatModels: CatalogModel[], target: PickerTarget) {
   const { modelsOfKind } = useModelsCatalog()
-  const taskKind = modelKindForTarget(target)
-  const models = taskKind === 'chat' ? chatModels : modelsOfKind(taskKind)
-  const allModels = useMemo(
-    () => [...chatModels, ...modelsOfKind('embedding')],
+  const modelsFor = useCallback(
+    (key: PickerTarget) => {
+      const kind = modelKindForTarget(key)
+      return kind === 'chat' ? chatModels : modelsOfKind(kind)
+    },
     [chatModels, modelsOfKind],
   )
-  return { taskKind, models, allModels }
+  return { taskKind: modelKindForTarget(target), models: modelsFor(target), modelsFor }
 }
 
 /** The catalog id of semantic search's model: `local/<id>` on this computer. */
@@ -43,7 +45,11 @@ export const semanticCatalogId = (model: SemanticStatus['model']) =>
 export function useEmbeddingWorkload(
   routing: Routing,
   taskKey: PickerTarget,
-  connections: ReadonlyArray<{ id: string; providerId: string }>,
+  connections: ReadonlyArray<{
+    id: string
+    providerId: string
+    keys?: ReadonlyArray<{ enabled: boolean }>
+  }>,
 ): Routing {
   const { status, refresh } = useSemanticStatus()
   const isEmbedding = useCallback(
@@ -57,6 +63,26 @@ export function useEmbeddingWorkload(
       ? { providerConnectionId: connection.id, modelId: semanticCatalogId(status.model) }
       : null
   }, [connections, status])
+
+  // A workload with a catalog default runs it through any connection of its provider; with no
+  // such connection it runs nothing, and its row says what would turn it on.
+  const { modelsOfKind } = useModelsCatalog()
+  const unservedDefault = useCallback(
+    (key: PickerTarget): string | null => {
+      const task = MODEL_ROUTING_TASKS.find((entry) => entry.key === key)
+      const defaultId = task && 'defaultModelId' in task ? task.defaultModelId : undefined
+      if (!defaultId) return null
+      const model = modelsOfKind(modelKindForTarget(key)).find((entry) => entry.id === defaultId)
+      if (!model) return null
+      // Served the way the server serves it: a connection of the provider with an enabled key.
+      const served = connections.some(
+        (c) => c.providerId === model.providerId && (c.keys?.some((key) => key.enabled) ?? true),
+      )
+      if (served) return null
+      return `Connect ${model.providerName} to use`
+    },
+    [connections, modelsOfKind],
+  )
 
   const apply = useCallback(
     async (action: () => Promise<SemanticStatus>) => {
@@ -73,7 +99,9 @@ export function useEmbeddingWorkload(
       void apply(() => (enabled ? semanticApi.enable() : semanticApi.disable()))
     }
     const modelLabelFor = (key: PickerTarget) =>
-      isEmbedding(key) ? (status?.model.label ?? null) : routing.modelLabelFor(key)
+      isEmbedding(key)
+        ? (status?.model.label ?? null)
+        : (routing.modelLabelFor(key) ?? unservedDefault(key))
     const slotForTask = (key: PickerTarget) => (isEmbedding(key) ? slot : routing.slotForTask(key))
     const base = { ...routing, enabledForTask, setTaskEnabled, modelLabelFor, slotForTask }
     if (!isEmbedding(taskKey)) return base
@@ -86,5 +114,5 @@ export function useEmbeddingWorkload(
         live?.model.id === model.id && live.model.providerId === model.providerId,
       pickModel: async (_connectionId, modelId) => apply(() => semanticApi.setModel(modelId)),
     }
-  }, [apply, isEmbedding, routing, slot, status, taskKey])
+  }, [apply, isEmbedding, routing, slot, status, taskKey, unservedDefault])
 }

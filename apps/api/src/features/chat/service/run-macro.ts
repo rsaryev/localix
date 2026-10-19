@@ -138,6 +138,7 @@ export function createRunMacroCommand(deps: RunMacroDeps) {
       existing,
       { kind: 'user-message', text: visiblePrompt },
       runner.leadership(userId, session.projectId),
+      runner.floorAdvisor({ userId, sessionId, projectId: session.projectId }),
     )
     const first = recipients[0]!
     await supersedeColleagueChains(runner.cancelAgentTurns, userId, sessionId)

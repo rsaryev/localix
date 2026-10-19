@@ -23,7 +23,12 @@ import { useRowReasoning } from './useRowReasoning'
 type Connections = ReturnType<typeof useConnections>['connections']
 
 interface UseModelTaskRoutingOptions {
-  models: CatalogModel[]
+  /**
+   * The models a target runs on — its own kind's. One model id can name a chat model and a
+   * decision model of the same provider (OpenAI's `gpt-6-luna`), so a lookup across kinds is
+   * ambiguous and finds neither.
+   */
+  modelsFor: (target: PickerTarget) => CatalogModel[]
   connections: Connections
   orderedConnections: Connections
   /** What the picker is choosing for: a global workload, or one participant of the chat. */
@@ -64,7 +69,7 @@ interface UseModelTaskRoutingOptions {
  * owns settings reads/writes, stale-connection rebinding, per-model reasoning, and recent picks.
  */
 export function useModelTaskRouting({
-  models,
+  modelsFor,
   connections,
   orderedConnections,
   taskKey,
@@ -173,8 +178,9 @@ export function useModelTaskRouting({
   )
 
   const liveSlotFor = useCallback(
-    (slot: ModelRoutingSlot) => resolveLiveTaskModel(models, orderedConnections, slot),
-    [models, orderedConnections],
+    (slot: ModelRoutingSlot, target: PickerTarget = taskKey) =>
+      resolveLiveTaskModel(modelsFor(target), orderedConnections, slot),
+    [modelsFor, orderedConnections, taskKey],
   )
 
   const setTaskEnabled = useCallback(
@@ -197,7 +203,7 @@ export function useModelTaskRouting({
     (key: PickerTarget) => {
       const slot = slotForTask(key)
       if (!slot) return null
-      return liveSlotFor(slot)?.model.name ?? slot.modelId
+      return liveSlotFor(slot, key)?.model.name ?? slot.modelId
     },
     [liveSlotFor, slotForTask],
   )
@@ -238,6 +244,7 @@ export function useModelTaskRouting({
     async (pickedConnectionId: string, modelId: string) => {
       // The model's own provider decides the connection: a pick never pairs a model with a
       // connection of another provider (a `local/…` model routed through OpenRouter).
+      const models = modelsFor(taskKey)
       const live = resolveLiveCatalogModel(models, connections, modelId, pickedConnectionId)
       const connectionId = live?.connection.id ?? pickedConnectionId
       const nextModel =
@@ -264,7 +271,7 @@ export function useModelTaskRouting({
       connectionById,
       connections,
       isCurrentModel,
-      models,
+      modelsFor,
       onPickPartyModel,
       onPickSessionModel,
       reasoningFor,

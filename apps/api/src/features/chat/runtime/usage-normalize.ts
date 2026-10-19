@@ -1,4 +1,5 @@
 import type { UsageEventInput, UsageRepository } from '../../usage/repository'
+import type { USAGE_AUXILIARY_KINDS } from '../../usage/usage-types'
 
 /** Raw token totals accumulated across every turn; costs are priced per request separately. */
 export interface RunUsageTotals {
@@ -243,8 +244,9 @@ export function recordTitleGenUsage(args: {
 /** The auxiliary LLM calls whose spend accumulates onto one stable-keyed ledger
  *  row per (session, kind). The id doubles as the ledger's finish_reason bucket,
  *  so each surfaces in the dashboard's Kind breakdown. Most are high-frequency
- *  (autocomplete per keystroke-idle), so repeated calls share an accumulating row. */
-export type AuxCallKind = 'autocomplete' | 'inline-completion' | 'terminal' | 'classify' | 'hook'
+ *  (autocomplete per keystroke-idle), so repeated calls share an accumulating row.
+ *  Every ledger kind but `title` (its own writer above) and the retired `improve`. */
+export type AuxCallKind = Exclude<(typeof USAGE_AUXILIARY_KINDS)[number], 'title' | 'improve'>
 
 /**
  * Record an auxiliary LLM call (editor prediction, text-input completion)

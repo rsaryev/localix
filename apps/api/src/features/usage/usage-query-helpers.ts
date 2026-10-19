@@ -30,7 +30,8 @@ export const inclusiveFrom = (from: string): string =>
 // visible chat turns — session-title generation ('title'), inline autocomplete ('autocomplete'),
 // text-input completion ('inline-completion'), terminal command completion ('terminal'),
 // historical prompt-rewrite calls ('improve', retired),
-// the auto-mode permission classifier ('classify') and `prompt` CC-hook verdicts ('hook') —
+// the auto-mode permission classifier ('classify'), `prompt` CC-hook verdicts ('hook') and
+// group-chat floor decisions ('routing') —
 // so a "Kind" breakdown surfaces how much spend is background overhead vs actual
 // conversation. Everything else (the model's real stop reasons: end_turn /
 // tool_use / max_tokens / null / …) folds into the 'turn' bucket. The bucket ids

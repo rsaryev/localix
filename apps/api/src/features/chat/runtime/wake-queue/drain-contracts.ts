@@ -16,7 +16,15 @@ export interface DrainOptions {
 
 export interface DrainDependencies extends Pick<
   WakeQueueContext,
-  'repo' | 'streamRegistry' | 'now' | 'state' | 'run' | 'onError' | 'leadership' | 'inviteAddressed'
+  | 'repo'
+  | 'streamRegistry'
+  | 'now'
+  | 'state'
+  | 'run'
+  | 'onError'
+  | 'leadership'
+  | 'floorAdvisor'
+  | 'inviteAddressed'
 > {
   enqueueRun: (turn: AgentTurnAdmission, source: AgentTurnSource) => Promise<void>
   store?: WakeQueueStore<PendingTurn>

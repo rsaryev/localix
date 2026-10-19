@@ -20,6 +20,7 @@ import type {
   ThinkingContent,
   ToolCall,
   ToolResultMessage,
+  Usage,
 } from '@localixai/agent'
 
 export type PiContent = PiTextContent | PiImageContent
@@ -200,6 +201,21 @@ export function toPiMessage(message: Message): ConversationalPiMessage[] {
   return [result]
 }
 
+/** pi's usage in Localix's shape: input counts every prompt token, cached ones included. */
+export function fromPiUsage(usage: PiAssistantMessage['usage']): Usage {
+  return {
+    inputTokens: usage.input + usage.cacheRead + usage.cacheWrite,
+    outputTokens: usage.output,
+    cacheReadTokens: usage.cacheRead,
+    cacheWriteTokens: usage.cacheWrite,
+    cacheWrite1hTokens: usage.cacheWrite1h,
+    reasoningTokens: usage.reasoning,
+    totalTokens: usage.totalTokens,
+    totalCost: usage.cost.total,
+    cost: { ...usage.cost },
+  }
+}
+
 export function fromPiAssistant(message: PiAssistantMessage): AssistantMessage {
   return {
     role: 'assistant',
@@ -227,17 +243,7 @@ export function fromPiAssistant(message: PiAssistantMessage): AssistantMessage {
       ...diagnostic,
       ...(diagnostic.error?.message ? { message: diagnostic.error.message } : {}),
     })),
-    usage: {
-      inputTokens: message.usage.input + message.usage.cacheRead + message.usage.cacheWrite,
-      outputTokens: message.usage.output,
-      cacheReadTokens: message.usage.cacheRead,
-      cacheWriteTokens: message.usage.cacheWrite,
-      cacheWrite1hTokens: message.usage.cacheWrite1h,
-      reasoningTokens: message.usage.reasoning,
-      totalTokens: message.usage.totalTokens,
-      totalCost: message.usage.cost.total,
-      cost: { ...message.usage.cost },
-    },
+    usage: fromPiUsage(message.usage),
     stopReason: toStopReason(message.stopReason),
     errorMessage: message.errorMessage,
     timestamp: message.timestamp,
