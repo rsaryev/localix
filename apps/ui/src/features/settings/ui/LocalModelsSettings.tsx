@@ -123,8 +123,8 @@ export function LocalModelsSettings() {
     (e) => !here.has(e.spec.id) && !picked.has(e.spec.id) && (asked || matches(e)),
   )
   const badgeOf = (entry: LocalModelEntry) =>
-    entry.spec.kind === 'embedding'
-      ? 'Semantic search'
+    entry.spec.required
+      ? 'Built in'
       : entry.spec.id === picks[0]?.spec.id
         ? 'Best match'
         : 'Recommended'

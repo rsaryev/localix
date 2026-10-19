@@ -40,7 +40,7 @@ Each layer names only the one below it. `agent-runtime-pi` sees local chat model
 
 | Table                  | Holds                                                                                      |
 | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `semantic_settings`    | The one switch and the model id                                                            |
+| `semantic_settings`    | Legacy: an index left by the old off switch is compared in full once, then marked on       |
 | `semantic_collections` | Per collection: fingerprint (model + width + prompts + source version) and backfill cursor |
 | `semantic_items`       | One row per passage: key, chunk, owner, scope, parent, content hash, excerpt, vector       |
 | `semantic_outbox`      | Keys changed since embedding, deduplicated                                                 |
@@ -50,8 +50,8 @@ Each feature that owns an indexed kind declares a target (`embeddings/targets.ts
 an item's key from a notice's ref, and items the change may also have touched (a chat's change
 re-reads the message its run finalizes). `upserted` and `deleted` queue the key in the outbox,
 `resync` reconciles the collection, and a parent's deletion removes every item stored under it (a
-chat's messages name it as their `parent`), whether semantic search is on or off. Enabling the
-feature always runs one reconcile, which catches what changed while it was off.
+chat's messages name it as their `parent`). Semantic search has no off switch: an index left by the
+old one is reconciled in full once at start, which catches what changed while it was off.
 
 | Collection             | Source                                    | Category in the status bar |
 | ---------------------- | ----------------------------------------- | -------------------------- |

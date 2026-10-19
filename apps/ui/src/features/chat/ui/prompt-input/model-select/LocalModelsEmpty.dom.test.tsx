@@ -25,9 +25,9 @@ describe('LocalModelsEmpty — an empty Local list links to where models are got
     const root = createRoot(host)
     try {
       await act(async () =>
-        root.render(<LocalModelsEmpty kind="embedding" onNavigate={() => dismissed++} />),
+        root.render(<LocalModelsEmpty kind="chat" onNavigate={() => dismissed++} />),
       )
-      expect(host.textContent).toContain('No embedding models on this computer yet.')
+      expect(host.textContent).toContain('No models on this computer yet.')
       const button = [...host.querySelectorAll('button')].find((b) =>
         b.textContent?.includes('Get models'),
       )!

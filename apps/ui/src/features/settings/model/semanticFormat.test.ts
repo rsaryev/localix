@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import type { SemanticStatus } from '@/shared/api/semanticApi'
 import { indexActivity, indexLine } from './semanticFormat'
 
-const status = (index: Partial<SemanticStatus['index']>, enabled = true): SemanticStatus =>
+const status = (index: Partial<SemanticStatus['index']>): SemanticStatus =>
   ({
-    enabled,
+    model: { id: 'm', label: 'EmbeddingGemma 2', attribution: '', bytes: 1, installed: true },
     index: {
       phase: 'idle',
       items: 134,
@@ -60,11 +60,11 @@ describe('indexActivity', () => {
       ...extra,
     }) as SemanticStatus
 
-  test('at rest it reads indexed; switched off it says so; unsupported it says nothing', () => {
+  test('at rest it reads indexed; waiting for its model it says so; unsupported it says nothing', () => {
     expect(indexActivity(live({}))?.activity).toBe('idle')
-    expect(indexActivity({ ...live({ phase: 'reconciling' }), enabled: false })?.activity).toBe(
-      'off',
-    )
+    // Always on: a model not here yet is on its way, and search answers from words meanwhile.
+    const waiting = { ...live({}), model: { ...live({}).model, installed: false } }
+    expect(indexActivity(waiting)).toMatchObject({ activity: 'downloading', label: 'Search model' })
     expect(indexActivity({ ...live({}), supported: false })).toBeNull()
   })
 

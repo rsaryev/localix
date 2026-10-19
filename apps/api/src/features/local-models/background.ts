@@ -1,8 +1,9 @@
 /**
- * Models fetched ahead of need: each feature declares the local models it runs on while it is
- * on (semantic search, its embedding model), and every one of them not on this computer
- * downloads quietly — the way an operating system fetches its on-device models after setup.
- * Until one is here, its feature works without it (search answers from words alone).
+ * Models fetched ahead of need: an owner declares the local models it wants on this computer
+ * (local models itself, for the models Localix keeps — `REQUIRED_MODELS`), and every one of
+ * them not here downloads quietly — the way an operating system fetches its on-device models
+ * after setup. Consumers only read the installed list: until a model is here, they work without
+ * it (search answers from words alone).
  *
  * Reconciled, not remembered: a wanted model that was removed downloads again; one no longer
  * wanted (its feature turned off) pauses, keeping what it fetched for when it is wanted again.

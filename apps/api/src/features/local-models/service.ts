@@ -11,7 +11,9 @@ import { rm } from 'node:fs/promises'
 import path from 'node:path'
 import type { InstallJob, LocalModelKind, LocalModelSpec, LocalModelsStatus } from './contracts'
 import { labelOf } from './hf-catalog'
-import { PINNED_MODELS } from './pinned'
+import { PINNED_MODELS, REQUIRED_MODELS } from './pinned'
+import { requiredModels } from './required'
+import { whenInstalled } from './when-installed'
 import { createLocalCatalog } from './catalog'
 import { planFor } from './catalog-rank'
 import { readShape } from './gguf-header'
@@ -47,11 +49,14 @@ export interface LocalModelsDeps {
   runtimeBuild?: RuntimeBuild | null
   startServer?: (options: LlamaServerOptions) => Promise<LlamaServer>
   routerIdleMs?: number
+  /** The models kept on this computer; `REQUIRED_MODELS` in production. */
+  requiredModels?: readonly LocalModelSpec[]
 }
 
 export function createLocalModelsService(deps: LocalModelsDeps) {
   const paths = installPaths(deps.root)
   const build = deps.runtimeBuild === undefined ? runtimeBuildFor() : deps.runtimeBuild
+  const required = requiredModels(deps.requiredModels ?? REQUIRED_MODELS)
   let installed: LocalModelSpec[] = []
   let partial: PartialModel[] = []
   let runtimeInstalled = false
@@ -99,7 +104,9 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
 
   /** A manifest's name as the catalog names it today; the pinned model keeps its own. */
   const named = (spec: LocalModelSpec): LocalModelSpec =>
-    PINNED_MODELS.some((p) => p.id === spec.id) ? spec : { ...spec, label: labelOf(spec.repo) }
+    required.mark(
+      PINNED_MODELS.some((p) => p.id === spec.id) ? spec : { ...spec, label: labelOf(spec.repo) },
+    )
 
   async function refresh() {
     installed = (await listInstalledModels(paths)).map(named)
@@ -150,6 +157,10 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       for (const { spec, background: quiet } of partial.filter((p) => p.resume)) {
         void downloads.start(spec, { background: quiet })
       }
+      // The models Localix keeps here are wanted always, by local models itself: no consumer owns
+      // their download, and a missing one (a failed fetch, files gone) comes back on its own.
+      // Declared once what is installed and resuming is known, so nothing is fetched twice.
+      background.declare('required', () => required.models)
     },
 
     catalog,
@@ -207,34 +218,17 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
      * do when it is not coming — a paused or failed download, or none at all.
      */
     whenReady(modelId: string, label: string, signal?: AbortSignal): Promise<void> {
-      return new Promise<void>((resolve, reject) => {
-        let off = () => {}
-        const finish = (err?: Error) => {
-          off()
-          signal?.removeEventListener('abort', onAbort)
-          if (err) reject(err)
-          else resolve()
-        }
-        const onAbort = () => finish(new DOMException('Cancelled', 'AbortError'))
-        const check = () => {
-          if (installed.some((s) => s.id === modelId)) return finish()
-          const job = downloads.job(modelId)
-          if (job && job.phase !== 'failed') return
-          const stopped = partial.find((p) => p.spec.id === modelId)
-          finish(
-            new Error(
-              job?.phase === 'failed'
-                ? `${label} could not be downloaded (${job.error ?? 'the download failed'}). Try again in the model picker.`
-                : stopped
-                  ? `${label} is paused at ${Math.round((stopped.received / Math.max(1, stopped.spec.bytes)) * 100)}%. Resume its download in the model picker.`
-                  : `${label} is not downloaded. Pick it in the model picker to download it.`,
-            ),
-          )
-        }
-        off = this.subscribe(check)
-        signal?.addEventListener('abort', onAbort, { once: true })
-        check()
-      })
+      return whenInstalled(
+        {
+          isInstalled: (id) => installed.some((s) => s.id === id),
+          job: (id) => downloads.job(id),
+          paused: (id) => partial.find((p) => p.spec.id === id),
+          subscribe: (listener) => this.subscribe(listener),
+        },
+        modelId,
+        label,
+        signal,
+      )
     },
 
     /** Stop a download and keep what it fetched; `install` resumes it. */
@@ -244,6 +238,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
 
     /** Stop a download — running or paused — and delete what it fetched. */
     async cancel(modelId: string) {
+      required.keep(modelId)
       // A person cancelling a download fetched ahead of need has decided against it, for now.
       if (downloads.job(modelId)?.background) background.decline(modelId)
       if (await downloads.stop(modelId, 'cancel')) return
@@ -255,6 +250,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
     },
 
     async remove(modelId: string) {
+      required.keep(modelId)
       downloads.drop(modelId)
       await removeInstalledModel(paths, modelId)
       await refresh()

@@ -77,8 +77,13 @@ export function LocalModelRow({
             actions={{
               onPause: () => run(localModelsApi.pause(id)),
               onResume: () => run(localModelsApi.install(id)),
-              onCancel: () => run(localModelsApi.cancel(id)),
-              onRemove: () => run(localModelsApi.remove(id)),
+              // A model Localix keeps here can be paused, never dropped or removed.
+              ...(entry.spec.required
+                ? {}
+                : {
+                    onCancel: () => run(localModelsApi.cancel(id)),
+                    onRemove: () => run(localModelsApi.remove(id)),
+                  }),
             }}
           />
         )}

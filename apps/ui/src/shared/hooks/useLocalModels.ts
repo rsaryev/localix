@@ -51,7 +51,7 @@ export function useLocalModelDetails(id: string | null) {
   return { entry: data ?? null, isLoading }
 }
 
-/** Semantic search: the toggle, the embedding model's download and the index build. */
+/** Semantic search: the embedding model's download and the index build. */
 export function useSemanticStatus() {
   const visible = useWorkItemVisible()
   const { data, error, mutate } = useSWR(

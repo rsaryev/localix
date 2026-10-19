@@ -10,7 +10,6 @@ import type { EmbeddingModelSpec } from './models'
 const ACTIVE_JOB = new Set(['queued', 'downloading', 'verifying'])
 
 export function buildSemanticStatus(input: {
-  enabled: boolean
   model: EmbeddingModelSpec
   installed: boolean
   counts: Map<string, { items: number; chunks: number }>
@@ -29,13 +28,11 @@ export function buildSemanticStatus(input: {
   }
   return {
     supported: local.runtime.supported,
-    enabled: input.enabled,
     model: {
       id: model.id,
       label: model.label,
       attribution: model.attribution,
-      providerId: model.source.kind === 'local' ? 'local' : model.source.providerId,
-      bytes: model.source.kind === 'local' ? model.source.local.bytes : 0,
+      bytes: model.source.local.bytes,
       installed: input.installed,
     },
     runtime: local.runtime.tag

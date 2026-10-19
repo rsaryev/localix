@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import type { HfClient, HfRepoInfo } from './hf-client'
 import { startLlamaServer } from './llama-server'
 import type { RuntimeBuild } from './runtime'
+import type { LocalModelSpec } from './contracts'
 import { profileFrom } from './machine'
 import { createLocalModelsService } from './service'
 
@@ -119,10 +120,11 @@ const machine = profileFrom({
   devices: null,
 })
 
-async function setup(fileSha = sha(weights)) {
+async function setup(fileSha = sha(weights), requiredModels: readonly LocalModelSpec[] = []) {
   const root = await temp()
   const service = createLocalModelsService({
     root,
+    requiredModels,
     hf: hfWith(fileSha),
     runtimeBuild: build,
     detect: async () => machine,
@@ -296,5 +298,38 @@ describe('local models service', () => {
     } finally {
       slow = false
     }
+  }, 30_000)
+
+  test('a model Localix keeps is fetched at start by itself, and cannot be cancelled or removed', async () => {
+    const kept: LocalModelSpec = {
+      id: 'google/compact-GGUF:Q4_0',
+      repo: 'google/compact-GGUF',
+      revision: 'rev1',
+      variant: 'Q4_0',
+      kind: 'chat',
+      label: 'Compact',
+      license: null,
+      architecture: null,
+      contextLength: 4096,
+      vision: false,
+      files: [
+        {
+          name: 'tiny-Q4_0.gguf',
+          url: 'https://huggingface.co/google/compact-GGUF/resolve/rev1/tiny-Q4_0.gguf',
+          bytes: weights.length,
+          sha256: sha(weights),
+          role: 'weights',
+        },
+      ],
+      bytes: weights.length,
+    }
+    const { service } = await setup(sha(weights), [kept])
+    for (let i = 0; i < 100 && !service.isInstalled(kept.id); i++) await Bun.sleep(20)
+    expect(service.isInstalled(kept.id)).toBe(true)
+    expect((await service.status()).installed[0]).toMatchObject({ id: kept.id, required: true })
+    await expect(service.remove(kept.id)).rejects.toMatchObject({ status: 409 })
+    await expect(service.cancel(kept.id)).rejects.toMatchObject({ status: 409 })
+    expect(service.isInstalled(kept.id)).toBe(true)
+    await service.shutdown()
   }, 30_000)
 })

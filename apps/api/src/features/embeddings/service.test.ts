@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createMessagesSemanticSource } from '../chat/semantic-sources'
-import { createBackgroundDownloads } from '../local-models/background'
 import type { InstallJob } from '../local-models/contracts'
 import type { SemanticServiceDeps } from './service'
 import { createSemanticService } from './service'
@@ -10,56 +9,18 @@ import { createSemanticStore } from './store'
 import { FAKE_MODEL, fakeVector } from './testing/fake-engine'
 
 /**
- * Local models as the semantic service sees them: the real background reconciler over a fake
- * download that succeeds or fails after a moment, announcing an install to subscribers.
+ * Local models as the semantic service sees them: an installed flag a test flips (the model
+ * arriving), a job it can fail, and the retries search asks for. Downloads are theirs, not search's.
  */
-function fakeLocalModels(options: { installed: boolean; installSucceeds?: boolean }) {
+function fakeLocalModels(options: { installed: boolean; job?: InstallJob }) {
   let installed = options.installed
-  let job: InstallJob | null = null
+  const job: InstallJob | null = options.job ?? null
   const listeners = new Set<() => void>()
-  const announce = () => listeners.forEach((l) => l())
-  const downloads: string[] = []
-  const paused: string[] = []
-  const background = createBackgroundDownloads({
-    isInstalled: () => installed,
-    jobs: () => (job ? [job] : []),
-    start: async (spec) => {
-      downloads.push(spec.id)
-      job = {
-        modelId: spec.id,
-        label: spec.label,
-        background: true,
-        phase: 'downloading',
-        received: 1,
-        total: 3,
-        rate: null,
-        error: null,
-      }
-      await Bun.sleep(5)
-      // Paused meanwhile: the download ends without installing.
-      if (job?.phase !== 'downloading') return
-      if (options.installSucceeds) {
-        installed = true
-        job = null
-      } else {
-        job = { ...job, phase: 'failed', error: 'Could not reach huggingface.co' }
-      }
-      announce()
-    },
-    // A pause takes the job out of the queue, keeping its files.
-    pause: async (modelId) => {
-      paused.push(modelId)
-      job = null
-    },
-  })
+  const retries: unknown[] = []
   const local: SemanticServiceDeps['localModels'] = {
     isInstalled: () => installed,
-    background,
-    catalog: { resolve: async () => null, list: async () => [] },
+    background: { reconcile: (opts?: unknown) => void retries.push(opts) } as never,
     job: () => job,
-    remove: async () => {
-      installed = false
-    },
     router: {
       ensure: async () => {
         throw new Error('unused')
@@ -81,7 +42,12 @@ function fakeLocalModels(options: { installed: boolean; installSucceeds?: boolea
       }
     },
   }
-  return Object.assign(local, { downloads, paused })
+  /** The model arrived: what local models announce once a download installs it. */
+  const arrive = () => {
+    installed = true
+    listeners.forEach((l) => l())
+  }
+  return Object.assign(local, { arrive, retries })
 }
 
 async function setup(local: SemanticServiceDeps['localModels']) {
@@ -128,75 +94,67 @@ const settle = async (service: Awaited<ReturnType<typeof setup>>['service']) => 
 }
 
 describe('semantic service', () => {
-  test('on by default: indexes with the installed model and search fuses meaning', async () => {
+  test('always on: indexes with the installed model and search fuses meaning', async () => {
     const { service } = await setup(fakeLocalModels({ installed: true }))
     await service.boot()
     await settle(service)
-    expect(service.enabled()).toBe(true)
     expect(service.strategy().mode).toBe('hybrid')
     const [match] = await service.reader.query('u1', 'chat.messages', 'card payment')
     expect(match?.key).toBe('m1')
     await service.shutdown()
   })
 
-  test('without the model it is fetched in the background; words answer until it is here', async () => {
-    const local = fakeLocalModels({ installed: false, installSucceeds: true })
+  test('until the model is here words answer; the moment it arrives, indexing starts', async () => {
+    const local = fakeLocalModels({ installed: false })
     const { service } = await setup(local)
     await service.boot()
-    expect(local.downloads).toEqual([FAKE_MODEL.id])
     expect(service.strategy()).toEqual({ mode: 'lexical', reason: 'not-installed' })
-    await Bun.sleep(30)
+    local.arrive()
     await settle(service)
     expect(service.strategy().mode).toBe('hybrid')
     expect((await service.status()).index.items).toBe(1)
     await service.shutdown()
   })
 
-  test('a failed download is reported, search stays lexical, and retry fetches again', async () => {
-    const local = fakeLocalModels({ installed: false, installSucceeds: false })
+  test('a failed download is reported, search stays lexical, and retry asks local models again', async () => {
+    const local = fakeLocalModels({
+      installed: false,
+      job: {
+        modelId: FAKE_MODEL.id,
+        label: FAKE_MODEL.label,
+        background: true,
+        phase: 'failed',
+        received: 1,
+        total: 3,
+        rate: null,
+        error: 'Could not reach huggingface.co',
+      },
+    })
     const { service } = await setup(local)
     await service.boot()
-    await Bun.sleep(30)
     expect((await service.status()).install).toMatchObject({
       state: 'failed',
       error: 'Could not reach huggingface.co',
     })
     expect(service.strategy()).toEqual({ mode: 'lexical', reason: 'not-installed' })
     await service.retry()
-    expect(local.downloads).toHaveLength(2)
+    expect(local.retries).toEqual([{ retry: true }])
   })
 
-  test('turned off, the model is no longer wanted: its background download pauses', async () => {
-    const local = fakeLocalModels({ installed: false, installSucceeds: true })
-    const { service } = await setup(local)
+  test('an index left behind by the old off switch is compared in full once, then marked on', async () => {
+    const { db, service } = await setup(fakeLocalModels({ installed: true }))
+    const store = createSemanticStore(db)
+    await store.writeSettings({ ...(await store.readSettings()), enabled: false })
     await service.boot()
-    await service.disable()
-    expect(local.paused).toEqual([FAKE_MODEL.id])
-    expect(service.strategy()).toEqual({ mode: 'lexical', reason: 'off' })
-  })
-
-  test('enable with the model installed indexes and switches search to hybrid', async () => {
-    const { service } = await setup(fakeLocalModels({ installed: true }))
-    await service.disable()
-    await service.enable()
     await settle(service)
-    expect(service.strategy().mode).toBe('hybrid')
-    expect(await service.status()).toMatchObject({ enabled: true, index: { items: 1, chunks: 1 } })
-    await service.shutdown()
-  })
-
-  test('disable returns search to lexical and keeps the vectors for next time', async () => {
-    const { service } = await setup(fakeLocalModels({ installed: true }))
-    await service.enable()
-    await settle(service)
-    await service.disable()
-    expect(service.strategy()).toEqual({ mode: 'lexical', reason: 'off' })
+    expect((await store.readSettings()).enabled).toBe(true)
     expect((await service.status()).index.items).toBe(1)
+    await service.shutdown()
   })
 
   test('pause holds indexing and its changes until resume', async () => {
     const { db, service } = await setup(fakeLocalModels({ installed: true }))
-    await service.enable()
+    await service.boot()
     await settle(service)
     await service.pause()
     await db

@@ -51,7 +51,7 @@ export function useModelsCatalog() {
   return {
     /** Chat models: what every chat surface lists. */
     models: byKind.get('chat') ?? NO_MODELS,
-    /** Models of one kind (`embedding` for semantic search, `decision` for group routing). */
+    /** Models of one kind (`decision` for group routing). */
     modelsOfKind,
     providers: data?.providers ?? ([] as CatalogProvider[]),
     oauthProviderIds: data?.oauthProviderIds ?? ([] as string[]),

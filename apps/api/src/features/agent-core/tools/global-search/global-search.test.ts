@@ -106,7 +106,7 @@ describe('global_search', () => {
       response({
         groups: [],
         total: 0,
-        strategy: { mode: 'lexical', reason: 'off' },
+        strategy: { mode: 'lexical', reason: 'not-installed' },
         problems: [{ message: 'Docker could not be searched' }],
       }),
     )

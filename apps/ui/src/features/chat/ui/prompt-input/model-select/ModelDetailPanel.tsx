@@ -133,13 +133,6 @@ export function ModelDetailPanel({ model, providerDoc, settings }: ModelDetailPa
         )}
 
         <Group title="Overview">
-          {model.embedding && (
-            <Row label="Dimensions">
-              {model.embedding.storedDimensions < model.embedding.dimensions
-                ? `${model.embedding.dimensions} · stores ${model.embedding.storedDimensions}`
-                : model.embedding.dimensions}
-            </Row>
-          )}
           {model.contextLength ? (
             <Row label="Context">{thousands(model.contextLength)} tokens</Row>
           ) : null}

@@ -55,6 +55,8 @@ export interface LocalModelSpec {
   reasoning?: boolean
   /** The draft model shipped with this one (a `draft` file), and who published it. */
   draft?: { method: DraftMethod; repo: string } | null
+  /** Kept on this computer by Localix itself (`pinned.ts`): it cannot be cancelled or removed. */
+  required?: boolean
 }
 
 export interface ModelVariant {

@@ -17,7 +17,7 @@ downloaded from Hugging Face the first time you ask for one.
 | Add any other model        | Paste its Hugging Face id (`Qwen/Qwen3.8-Flash-Next`) into the list's field — chat or embedding models alike; **Browse Hugging Face** opens the GGUF models there         | An original model's id finds its GGUF builds; trusted converters first                     |
 | Download a model           | **Download**; progress, pause, resume and cancel in its row and above the composer                                                                                        | One download at a time; a download cut by quitting resumes at next start                   |
 | Use a model in a chat      | Connect **Local** in the model picker (no key); the downloaded models are listed there                                                                                    | A message sent while its model downloads is answered once it is here                       |
-| Remove a model             | **Remove** in its row under **On this computer** (chat and embedding models alike) or the picker's model details                                                          | Chats using it say it is not downloaded                                                    |
+| Remove a model             | **Remove** in its row under **On this computer** or the picker's model details                                                                                            | Chats using it say it is not downloaded. EmbeddingGemma 2 is built in and stays            |
 
 ## How it works
 
@@ -36,8 +36,11 @@ The slider weighs speed against intelligence. A model that fits only tightly los
 one at Balanced and barely matters at Smartest; the position is remembered in this browser. On a 24
 GB Mac, Balanced picks Gemma 4 12B and Smartest the 26B-A4B mixture of experts at Q3.
 
-The model picker lists a local model for a workload only once one of its kind is installed: chat
-models for agents, embedding models for semantic search.
+The model picker lists a local chat model for agents once one is installed.
+
+EmbeddingGemma 2 is built in: Localix downloads it quietly on first start and keeps it — its row
+says **Built in**, and it can be paused but not cancelled or removed. Semantic search, group routing
+and plugins use it from the list of installed models; none of them owns its download.
 
 Every model is pinned to the Hugging Face commit it was listed at, and each file is checked against
 its published SHA-256 before it counts as installed. An interrupted download is never mistaken for a

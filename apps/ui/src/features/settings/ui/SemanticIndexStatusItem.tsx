@@ -14,7 +14,6 @@ import { Spinner } from '@localixai/kit/spinner'
 import { WorkbenchStatusButton } from '@localixai/kit/workbench-statusbar'
 import { semanticApi, type SemanticStatus } from '@/shared/api/semanticApi'
 import { useSemanticStatus } from '@/shared/hooks/useLocalModels'
-import { openModelPicker } from '@/shared/lib/modelPickerBus'
 import { indexActivity, indexLine, type IndexActivity } from '../model/semanticFormat'
 import { SemanticIndexBreakdown } from './SemanticIndexBreakdown'
 
@@ -25,13 +24,10 @@ const ICONS: Partial<Record<IndexActivity, typeof Pause>> = {
   failed: AlertTriangle,
 }
 
-/** The model picker, open on semantic search: where it is switched on and its model chosen. */
-const openSemanticWorkload = () => openModelPicker({ workload: 'semanticSearch' })
-
 /**
  * The status bar's semantic-search segment, VS Code style: always at the trailing edge, saying
- * off, indexed, or the work in hand. Off, a click opens the model picker on semantic search to
- * switch it on; on, a click (or a right click) opens its menu — pause, resume, rebuild, the model.
+ * indexed, or the work in hand. A click (or a right click) opens its menu — pause, resume,
+ * rebuild, try again. Search is always on with one model: there is nothing to switch or choose.
  */
 export function SemanticIndexStatusItem({ className }: { className?: string }) {
   const { status, refresh } = useSemanticStatus()
@@ -55,30 +51,17 @@ export function SemanticIndexStatusItem({ className }: { className?: string }) {
         : indexLine(status).text
   const segment = (
     <WorkbenchStatusButton
-      className={cn(
-        'gap-1.5',
-        shown.activity === 'failed' && 'text-status-warning',
-        shown.activity === 'off' && 'text-text-faint',
-        className,
-      )}
-      title={shown.activity === 'off' ? 'Turn on semantic search' : detail}
-      onClick={shown.activity === 'off' ? openSemanticWorkload : undefined}
+      className={cn('gap-1.5', shown.activity === 'failed' && 'text-status-warning', className)}
+      title={detail}
       onContextMenu={(event) => {
         event.preventDefault()
-        if (shown.activity === 'off') openSemanticWorkload()
-        else setOpen(true)
+        setOpen(true)
       }}
     >
-      {Icon ? (
-        <Icon className="size-3" aria-hidden="true" />
-      ) : shown.activity === 'off' ? null : (
-        <Spinner size="xs" />
-      )}
+      {Icon ? <Icon className="size-3" aria-hidden="true" /> : <Spinner size="xs" />}
       <span className="tabular-nums">{text}</span>
     </WorkbenchStatusButton>
   )
-  if (shown.activity === 'off') return segment
-
   const working = shown.activity === 'building' || shown.activity === 'updating'
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -126,11 +109,6 @@ export function SemanticIndexStatusItem({ className }: { className?: string }) {
             Rebuild index
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onSelect={openSemanticWorkload}>Choose model…</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => act(() => semanticApi.disable())}>
-          Turn off
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

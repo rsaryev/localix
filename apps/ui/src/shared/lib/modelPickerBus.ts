@@ -5,7 +5,7 @@ export interface ModelPickerRequest {
   query?: string
   providerId?: string
   connectionId?: string
-  /** Open on this workload's row (`semanticSearch`, `inlineCompletion`…). */
+  /** Open on this workload's row (`inlineCompletion`, `groupRouting`…). */
   workload?: string
 }
 

@@ -1,35 +1,17 @@
 /**
- * The embedding models semantic search can use: one that runs on this computer (files, download
- * and serving owned by `features/local-models`) or a cloud provider's (an API key from the
- * person's connection) — each with what makes it an embedding model HERE: its family's prompts,
- * the width the index stores and its chunk size.
+ * The embedding model, with what makes it an embedding model HERE: its family's prompts, the
+ * width the index stores and its chunk size. It runs on this computer (files, download and
+ * serving owned by `features/local-models`); there is one — EmbeddingGemma 2 — and no choice.
  *
- * A choice is addressed by one id: a local model's own id (`<repo>:<variant>`), or
- * `<providerId>/<model>` for a provider's. The fingerprint stored beside every vector derives
- * from the model and these fields, so switching models re-embeds rather than mixing two vector
- * spaces in one collection.
+ * The fingerprint stored beside every vector derives from the model and these fields, so a model
+ * changed in code re-embeds rather than mixing two vector spaces in one collection.
  */
 import type { SemanticTask } from '@localixai/plugin-sdk/backend'
 import type { LocalModelSpec } from '../local-models/contracts'
 import { EMBEDDINGGEMMA_2_MODEL } from '../local-models/pinned'
-import {
-  familyOf,
-  MATRYOSHKA_INDEX_DIMENSIONS,
-  readableName,
-  type EmbeddingFamily,
-} from './families'
-import { providerEmbeddingsFor } from './provider-embeddings'
+import { familyOf, MATRYOSHKA_INDEX_DIMENSIONS, type EmbeddingFamily } from './families'
 
-export type EmbeddingSource =
-  | { kind: 'local'; local: LocalModelSpec }
-  | {
-      kind: 'provider'
-      providerId: string
-      model: string
-      baseUrl: string
-      /** Send the stored width as OpenAI's `dimensions` field. */
-      dimensionsField: boolean
-    }
+export type EmbeddingSource = { kind: 'local'; local: LocalModelSpec }
 
 export interface EmbeddingModelSpec {
   id: string
@@ -79,35 +61,6 @@ export function localEmbeddingModel(local: LocalModelSpec): EmbeddingModelSpec |
   }
 }
 
-/** A provider's embedding model (`<providerId>/<model>`), when provider and family are known. */
-export function providerEmbeddingModel(
-  choiceId: string,
-  releasedAt: string | null = null,
-  name: string | null = null,
-): EmbeddingModelSpec | null {
-  const slash = choiceId.indexOf('/')
-  if (slash < 0) return null
-  const providerId = choiceId.slice(0, slash)
-  const model = choiceId.slice(slash + 1)
-  const provider = providerEmbeddingsFor(providerId)
-  const family = familyOf(model)
-  if (!provider || !family) return null
-  return {
-    id: choiceId,
-    // The provider's own name, else the id read whole: each member of a family its own name.
-    label: name ?? readableName(model),
-    source: {
-      kind: 'provider',
-      providerId,
-      model,
-      baseUrl: provider.baseUrl,
-      dimensionsField: provider.dimensionsField,
-    },
-    releasedAt,
-    ...fromFamily(family, model),
-  }
-}
-
 /**
  * EmbeddingGemma 2: text, code, images, video and audio in one 768-wide space, 100+ languages.
  * 256 stored dimensions measure 60.41 on MTEB multilingual against 61.36 at 768, for a third of
@@ -118,7 +71,6 @@ export const DEFAULT_EMBEDDING_MODEL_ID = EMBEDDINGGEMMA_2.id
 
 /** Identity of a vector space: model (and revision), stored width and prompts. */
 export function modelFingerprint(model: EmbeddingModelSpec): string {
-  const revision =
-    model.source.kind === 'local' ? `@${model.source.local.revision.slice(0, 12)}` : ''
+  const revision = `@${model.source.local.revision.slice(0, 12)}`
   return `${model.id}${revision}/d${model.indexDimensions}/p${model.promptVersion}`
 }

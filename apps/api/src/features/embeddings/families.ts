@@ -1,12 +1,12 @@
 /**
  * Embedding model families semantic search knows how to use well.
  *
- * A model is offered only when its family is known here, because using one correctly takes more
- * than its weights: the prompts it was trained with on each side (a query is not phrased like a
- * passage), whether its vectors can be cut short (Matryoshka training) and how much text one
- * input may hold. A family matches local repositories and provider model ids alike, so the same
- * model behaves the same wherever it runs. Families are kept to multilingual retrieval models —
- * conversations here are not only in English.
+ * Search runs on one model, chosen in code (EmbeddingGemma 2); its family is what using it
+ * correctly takes beyond its weights: the prompts it was trained with on each side (a query is not
+ * phrased like a passage), whether its vectors can be cut short (Matryoshka training) and how much
+ * text one input may hold. The other families stay so the model can be changed here, in code,
+ * without relearning them. Families are kept to multilingual retrieval models — conversations
+ * here are not only in English.
  */
 import type { SemanticTask } from '@localixai/plugin-sdk/backend'
 
@@ -148,22 +148,4 @@ export const EMBEDDING_FAMILIES: readonly EmbeddingFamily[] = [
 
 export function familyOf(name: string): EmbeddingFamily | undefined {
   return EMBEDDING_FAMILIES.find((family) => family.match.test(name))
-}
-
-/**
- * A model id as a readable name, whole: `gemini-embedding-2-preview` → "Gemini Embedding 2
- * Preview", `qwen3-embedding-8b` → "Qwen3 Embedding 8B" — every member of a family its own name.
- */
-export function readableName(id: string): string {
-  return (id.split('/').pop() ?? id)
-    .replace(/:free$/i, '')
-    .split(/[-_]+/)
-    .map((word) =>
-      /^\d+(\.\d+)?[bm]$/i.test(word)
-        ? word.toUpperCase()
-        : /^[a-z]/.test(word)
-          ? word.charAt(0).toUpperCase() + word.slice(1)
-          : word,
-    )
-    .join(' ')
 }

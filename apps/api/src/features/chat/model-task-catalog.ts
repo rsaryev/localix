@@ -20,11 +20,10 @@ interface ModelTaskDescriptor {
   /** Behaviour before the user stores an explicit on/off choice. */
   defaultEnabled?: boolean
   /**
-   * The kind of model the workload runs on. Absent: a chat model from the catalog. `embedding`:
-   * an embedding model, chosen and switched by its own service (semantic search owns its state).
-   * `decision`: a decision model (typed answers, no text), routed like a chat workload.
+   * The kind of model the workload runs on. Absent: a chat model from the catalog. `decision`:
+   * a decision model (typed answers, no text), routed like a chat workload.
    */
-  modelKind?: 'embedding' | 'decision'
+  modelKind?: 'decision'
   /** The catalog model the workload runs on while the route names none. */
   defaultModelId?: string
 }
@@ -55,15 +54,6 @@ export const AUX_MODEL_TASKS = [
     hint: 'Runs delegated sub-agents',
     fallbackLabel: 'Use session model',
     toggleable: true,
-  },
-  {
-    key: 'semanticSearch',
-    label: 'Semantic search',
-    hint: 'Finds chats by meaning, for search and the agent',
-    fallbackLabel: 'EmbeddingGemma 2',
-    toggleable: true,
-    defaultEnabled: false,
-    modelKind: 'embedding',
   },
   {
     key: 'groupRouting',

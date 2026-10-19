@@ -22,13 +22,10 @@ export interface SemanticCollectionStatus {
 export interface SemanticStatus {
   /** False where no runtime build exists for this OS/CPU. */
   supported: boolean
-  enabled: boolean
   model: {
     id: string
     label: string
     attribution: string
-    /** `local` for a model on this computer, else the cloud provider indexing goes to. */
-    providerId: string
     bytes: number
     installed: boolean
   }
@@ -58,25 +55,7 @@ export interface SemanticStatus {
  */
 export interface SearchStrategyNote {
   mode: 'lexical' | 'hybrid'
-  reason?: 'off' | 'not-installed' | 'starting' | 'unavailable'
+  reason?: 'not-installed' | 'starting' | 'unavailable'
   /** Hybrid while the index is still being built: results may be incomplete. */
   indexing?: boolean
-}
-
-/** One embedding model semantic search can be set to, as the model picker lists it. */
-export interface EmbeddingChoice {
-  id: string
-  label: string
-  attribution: string
-  /** `local`, or the provider whose connection embeds with it. */
-  providerId: string
-  releasedAt: string | null
-  dimensions: number
-  indexDimensions: number
-  /** On this computer (a provider's is always ready). */
-  installed: boolean
-  /** Download size, for a local model. */
-  bytes: number | null
-  active: boolean
-  recommended: boolean
 }

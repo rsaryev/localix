@@ -8,8 +8,10 @@ import { jobLine, type LocalModelState } from '@/shared/lib/localModelsFormat'
 export interface LocalModelActions {
   onPause: () => void
   onResume: () => void
-  onCancel: () => void
-  onRemove: () => void
+  /** Absent for a model Localix keeps on this computer: its download cannot be dropped. */
+  onCancel?: () => void
+  /** Absent for a model Localix keeps on this computer: it cannot be removed. */
+  onRemove?: () => void
 }
 
 /** Controls inside a list row act on their own: the row's select must not fire under them. */
@@ -32,6 +34,7 @@ function Controls({ children }: { children: ReactNode }) {
 /**
  * A local model's state once a download was asked for: progress with pause and cancel, a paused
  * download to resume or drop, a failure to retry, and an installed model to remove (confirmed).
+ * A model Localix keeps here comes without cancel and remove.
  * Nothing for a model that is neither here nor coming — the row offers its download itself.
  */
 export function LocalModelStatus({
@@ -71,14 +74,16 @@ export function LocalModelStatus({
           >
             <Pause />
           </IconButton>
-          <IconButton
-            size="xs"
-            aria-label="Cancel download"
-            tooltip="Cancel and delete"
-            onClick={actions.onCancel}
-          >
-            <X />
-          </IconButton>
+          {actions.onCancel && (
+            <IconButton
+              size="xs"
+              aria-label="Cancel download"
+              tooltip="Cancel and delete"
+              onClick={actions.onCancel}
+            >
+              <X />
+            </IconButton>
+          )}
         </Controls>
       )
     case 'paused':
@@ -93,14 +98,16 @@ export function LocalModelStatus({
           >
             <Play />
           </IconButton>
-          <IconButton
-            size="xs"
-            aria-label="Cancel download"
-            tooltip="Cancel and delete"
-            onClick={actions.onCancel}
-          >
-            <X />
-          </IconButton>
+          {actions.onCancel && (
+            <IconButton
+              size="xs"
+              aria-label="Cancel download"
+              tooltip="Cancel and delete"
+              onClick={actions.onCancel}
+            >
+              <X />
+            </IconButton>
+          )}
         </Controls>
       )
     case 'failed':
@@ -123,26 +130,30 @@ export function LocalModelStatus({
       return (
         <Controls>
           {state.running && <span className="text-status-success">Running</span>}
-          <IconButton
-            size="xs"
-            aria-label={`Remove ${label}`}
-            tooltip="Remove from this computer"
-            onClick={() => setConfirmRemove(true)}
-          >
-            <Trash2 />
-          </IconButton>
-          <ConfirmDialog
-            open={confirmRemove}
-            title={`Remove ${label}?`}
-            description="Deletes its files from this computer. It can be downloaded again."
-            confirmLabel="Remove"
-            variant="destructive"
-            onConfirm={() => {
-              setConfirmRemove(false)
-              actions.onRemove()
-            }}
-            onClose={() => setConfirmRemove(false)}
-          />
+          {actions.onRemove && (
+            <>
+              <IconButton
+                size="xs"
+                aria-label={`Remove ${label}`}
+                tooltip="Remove from this computer"
+                onClick={() => setConfirmRemove(true)}
+              >
+                <Trash2 />
+              </IconButton>
+              <ConfirmDialog
+                open={confirmRemove}
+                title={`Remove ${label}?`}
+                description="Deletes its files from this computer. It can be downloaded again."
+                confirmLabel="Remove"
+                variant="destructive"
+                onConfirm={() => {
+                  setConfirmRemove(false)
+                  actions.onRemove?.()
+                }}
+                onClose={() => setConfirmRemove(false)}
+              />
+            </>
+          )}
         </Controls>
       )
   }

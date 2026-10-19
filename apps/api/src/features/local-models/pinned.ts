@@ -1,7 +1,8 @@
 /**
- * The one model pinned in code: semantic search's embedding model. Its vector space must never
- * move to a new commit, so its files and hashes live here in full. Chat models are not listed
- * anywhere in code — the catalog reads them from Hugging Face and plans them for this computer.
+ * The one model pinned in code: the default embedding model every consumer of vectors may use
+ * (semantic search, group routing, plugins). Its vector space must never move to a new commit,
+ * so its files and hashes live here in full. Chat models are not listed anywhere in code — the
+ * catalog reads them from Hugging Face and plans them for this computer.
  */
 import type { LocalModelSpec } from './contracts'
 import { HF_BASE } from './hf-client'
@@ -37,6 +38,19 @@ export const EMBEDDINGGEMMA_2_MODEL: LocalModelSpec = {
   bytes: 309_855_456,
   releasedAt: '2026-10-06',
   baseModel: 'google/embeddinggemma-2',
+  required: true,
 }
 
 export const PINNED_MODELS: readonly LocalModelSpec[] = [EMBEDDINGGEMMA_2_MODEL]
+
+/**
+ * Models Localix keeps on this computer: downloaded quietly when missing, and never removed — a
+ * person can neither cancel their download nor delete them. Consumers find them in the list of
+ * installed models like any other; none of them owns their download.
+ */
+export const REQUIRED_MODELS: readonly LocalModelSpec[] = PINNED_MODELS.filter(
+  (spec) => spec.required,
+)
+
+export const isRequiredModel = (modelId: string) =>
+  REQUIRED_MODELS.some((spec) => spec.id === modelId)

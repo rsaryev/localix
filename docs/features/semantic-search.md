@@ -5,23 +5,22 @@ language can find a chat written in another, and "the chat about slow external-a
 a conversation titled with different words. It works in the search palette, the search tab and for
 the agent, which searches through the same service.
 
-**Availability:** On by default, with EmbeddingGemma 2 (Google, Apache 2.0, about 300 MB). The model
-downloads quietly in the background on first start, the way an operating system fetches its
-on-device models; until it is here, search matches words alone. The model runs on this computer; no
-text leaves it.
+**Availability:** Always on, with EmbeddingGemma 2 (Google, Apache 2.0, about 300 MB). There is no
+switch and no model to choose. The model is built into Localix: it downloads quietly in the
+background on first start, the way an operating system fetches its on-device models, and it cannot
+be removed. Until it is here, or while it cannot run, search matches words alone. The model runs on
+this computer; no text leaves it.
 
 ## What you can do
 
-| Capability                   | Mechanism                                                                                            | Boundary                                                                     |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Get it ready                 | Nothing to do: while it is on, a missing model downloads in the background, even after a removal     | Needs a platform with a llama.cpp build (macOS, Linux, Windows on x64/arm64) |
-| Choose the model             | The workload's model list: installed local embedding models and connected providers' ones            | Other local models are downloaded in **Settings → Models → Local**           |
-| Search by meaning            | Type a description in the search palette or the search tab                                           | Chats and messages are matched by meaning; other domains match words         |
-| Let the agent find past work | The agent's `global_search` tool runs the same search                                                | It skips hits from the conversation it is in                                 |
-| Watch the index build        | The status bar shows the download and the index; its menu pauses, resumes and rebuilds it            | The first build indexes all history; later changes index within seconds      |
-| Rebuild the index            | **Rebuild index** re-embeds everything from scratch                                                  | Search answers from words alone while it runs                                |
-| Turn it off                  | The workload's switch in the model picker, or **Turn off** in the status bar menu (**Indexing off**) | Search is then words only, and a background download pauses                  |
-| Remove the model             | **Remove model** (while off) deletes the model and every vector                                      | Turning it on again downloads it again                                       |
+| Capability                   | Mechanism                                                                                 | Boundary                                                                     |
+| ---------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Get it ready                 | Nothing to do: a missing model downloads in the background by itself                      | Needs a platform with a llama.cpp build (macOS, Linux, Windows on x64/arm64) |
+| Search by meaning            | Type a description in the search palette or the search tab                                | Chats and messages are matched by meaning; other domains match words         |
+| Let the agent find past work | The agent's `global_search` tool runs the same search                                     | It skips hits from the conversation it is in                                 |
+| Watch the index build        | The status bar shows the download and the index; its menu pauses, resumes and rebuilds it | The first build indexes all history; later changes index within seconds      |
+| Rebuild the index            | **Rebuild index** re-embeds everything from scratch                                       | Search answers from words alone while it runs                                |
+| Retry after a failure        | **Try again** in the status bar menu restarts the model and a failed download             | Search answers from words alone until it works                               |
 
 ## How it works
 
@@ -70,4 +69,4 @@ and says so.
 
 - [Local models](local-models.md)
 - [Conversation history](conversation-history.md)
-- [Connect model providers](providers.md)
+- [Group routing](group-routing.md)

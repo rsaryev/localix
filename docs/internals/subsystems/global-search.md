@@ -17,16 +17,16 @@ grouping and pagination.
 
 ## What you can do
 
-| Operation                  | Mechanism                                                                       | Boundary                                                           |
-| -------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Open quick search          | Run `mod+shift+f` to open the grouped command-dialog surface                    | The chord is user-remappable through the shared keybinding catalog |
-| Keep a search tab open     | Open the global-search work item from the rail or **Open in Search**            | One tab per chat; it searches that chat's workspace                |
-| Narrow a query             | Choose a scope or type a recognized prefix such as `f:` or `msg:`               | Unknown prefixes remain literal query text                         |
-| Page one domain            | Select **Show all** and request 30-hit pages with an opaque offset cursor       | Pagination applies only to one backend domain                      |
-| Open a result              | Resolve its canonical resource or UI URI through `invokeUi`                     | Write commands require a user-selected `commands` hit              |
-| Contribute a plugin domain | Register a backend provider plus matching UI scope, icon, and activation anchor | The enabled plugin owns its lifecycle and must namespace its id    |
-| Search by meaning          | Turn on semantic search; providers with a collection receive `query.semantic`   | Chats and messages today; see [semantic index](semantic-index.md)  |
-| Search from the agent      | `global_search` calls the same service with the run's session and project       | Hits inside the agent's own conversation are left out              |
+| Operation                  | Mechanism                                                                              | Boundary                                                           |
+| -------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Open quick search          | Run `mod+shift+f` to open the grouped command-dialog surface                           | The chord is user-remappable through the shared keybinding catalog |
+| Keep a search tab open     | Open the global-search work item from the rail or **Open in Search**                   | One tab per chat; it searches that chat's workspace                |
+| Narrow a query             | Choose a scope or type a recognized prefix such as `f:` or `msg:`                      | Unknown prefixes remain literal query text                         |
+| Page one domain            | Select **Show all** and request 30-hit pages with an opaque offset cursor              | Pagination applies only to one backend domain                      |
+| Open a result              | Resolve its canonical resource or UI URI through `invokeUi`                            | Write commands require a user-selected `commands` hit              |
+| Contribute a plugin domain | Register a backend provider plus matching UI scope, icon, and activation anchor        | The enabled plugin owns its lifecycle and must namespace its id    |
+| Search by meaning          | Always on once its model is here; providers with a collection receive `query.semantic` | Chats and messages today; see [semantic index](semantic-index.md)  |
+| Search from the agent      | `global_search` calls the same service with the run's session and project              | Hits inside the agent's own conversation are left out              |
 
 The [UI anchors](ui-anchors.md) page owns activation grammar. The
 [workbench contribution](workbench-contributions.md) page owns plugin registration rules.

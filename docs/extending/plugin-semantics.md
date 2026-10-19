@@ -16,8 +16,8 @@ overwrite another's, and each is scored against itself alone.
 
 `query(userId, collection, text, { scope })` answers with matches carrying `z` and `gate`; a match
 counts when `z >= gate`. `embed` returns raw vectors for clustering or deduplication, and `status()`
-says whether semantic search is ready. While it is off, `query` returns nothing and `embed` returns
-`null`.
+says whether semantic search is ready. Semantic search is always on; until its model is here,
+`query` returns nothing and `embed` returns `null`.
 
 ## Follow your own changes
 

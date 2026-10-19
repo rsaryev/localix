@@ -16,7 +16,7 @@ import type { ParticipantRow } from './ModelTaskColumn'
 import { initialPickerTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
-import { useEmbeddingWorkload, useWorkloadModels } from './useEmbeddingWorkload'
+import { useWorkloadDefaults, useWorkloadModels } from './useWorkloadModels'
 import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'
 import { ResetRouteRow, WorkloadOffOverlay } from './ModelBrowserParts'
@@ -119,7 +119,7 @@ export function ModelBrowser({
   } = // Each participant answers for itself. The party arrives already resolved by the server
     // (conversation, then project, then the agent's card), so the column shows what each member
     // will actually run on rather than repeating whoever the picker has selected.
-    useEmbeddingWorkload(
+    useWorkloadDefaults(
       useModelTaskRouting({
         modelsFor,
         connections,
@@ -135,7 +135,6 @@ export function ModelBrowser({
         onPickPartyModel: party.onPickPartyModel,
         onPartyReasoningChange: party.onPartyReasoningChange,
       }),
-      taskKey,
       orderedConnections,
     )
 
@@ -263,17 +262,15 @@ export function ModelBrowser({
   const activeTaskMeta = MODEL_ROUTING_TASKS.find((task) => task.key === taskKey)
   const activeTaskEnabled = enabledForTask(taskKey)
   // A participant has nothing to reset TO: its fallback is the agent's own model, and clearing
-  // the conversation's choice is what the row's fallback label already offers. Semantic search
-  // owns its model in its own service, so it has no route to clear.
+  // the conversation's choice is what the row's fallback label already offers.
   const resettableWorkload = workloadKey(taskKey)
-  const resetRow =
-    resettableWorkload && taskKind !== 'embedding' ? (
-      <ResetRouteRow
-        selected={!currentSlot}
-        label={activeTaskMeta?.fallbackLabel ?? 'Use session model'}
-        onReset={() => setRouteSlot(resettableWorkload, null)}
-      />
-    ) : null
+  const resetRow = resettableWorkload ? (
+    <ResetRouteRow
+      selected={!currentSlot}
+      label={activeTaskMeta?.fallbackLabel ?? 'Use session model'}
+      onReset={() => setRouteSlot(resettableWorkload, null)}
+    />
+  ) : null
   const handleSearchChange = (value: string) => {
     setSearch(value)
     resetPaging()

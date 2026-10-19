@@ -33,9 +33,7 @@ export function LocalModelsEmpty({
     )
   return (
     <EmptyHint className="flex-1 text-xs">
-      {kind === 'embedding'
-        ? 'No embedding models on this computer yet.'
-        : 'No models on this computer yet.'}
+      No models on this computer yet.
       <span className="mt-3 block">
         <Button
           variant="outline"

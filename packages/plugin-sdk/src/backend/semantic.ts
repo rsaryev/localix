@@ -120,6 +120,7 @@ export interface SemanticQuery {
 
 /** Where the index stands, for a plugin deciding whether to offer meaning-based features. */
 export interface SemanticIndexStatus {
+  /** Always true: semantic search has no off switch. Kept for plugins that read it. */
   enabled: boolean
   ready: boolean
   model: { id: string; label: string; dimensions: number } | null
@@ -132,14 +133,14 @@ export interface SemanticIndexHost {
   registerSource(source: SemanticSource): () => void
   /** Tell the host these keys of the plugin's collection changed (or were deleted). */
   changed(collection: string, keys: readonly string[]): void
-  /** Query one of the plugin's own collections. Empty when semantic search is off. */
+  /** Query one of the plugin's own collections. Empty until the embedding model is ready. */
   query(
     userId: string,
     collection: string,
     text: string,
     options?: SemanticSimilarOptions & { task?: SemanticTask },
   ): Promise<SemanticMatch[]>
-  /** Raw vectors, for a plugin that needs them (clustering, dedupe). Null when off. */
+  /** Raw vectors, for a plugin that needs them (clustering, dedupe). Null until the model is ready. */
   embed(
     texts: readonly string[],
     options: { role: 'query' | 'document'; task?: SemanticTask },

@@ -28,12 +28,11 @@ export function createPluginSemanticHost(
     status() {
       const note = service.strategy()
       const model = service.model()
+      // Always on: `enabled` stays in the plugin contract, true; `ready` says when it embeds.
       return {
-        enabled: service.enabled(),
+        enabled: true,
         ready: note.mode === 'hybrid',
-        model: service.enabled()
-          ? { id: model.id, label: model.label, dimensions: model.indexDimensions }
-          : null,
+        model: { id: model.id, label: model.label, dimensions: model.indexDimensions },
       }
     },
     registerSource(source: SemanticSource) {

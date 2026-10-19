@@ -36,27 +36,20 @@ export function indexLine(status: SemanticStatus): { text: string; percent: numb
 /** Changes waiting before an update pass is worth showing. */
 const UPDATE_BACKLOG = 20
 
-export type IndexActivity =
-  | 'off'
-  | 'idle'
-  | 'downloading'
-  | 'building'
-  | 'updating'
-  | 'paused'
-  | 'failed'
+export type IndexActivity = 'idle' | 'downloading' | 'building' | 'updating' | 'paused' | 'failed'
 
 /**
- * What the status bar says about semantic search, in a word or two: off, indexed, or the work in
- * hand. Short changes are not worth a flicker, so an `updating` pass shows only with a backlog.
- * Null where it cannot run (no runtime for this computer).
+ * What the status bar says about semantic search, in a word or two: indexed, or the work in
+ * hand. It is always on: until its model is here it says so, and search answers from words.
+ * Short changes are not worth a flicker, so an `updating` pass shows only with a backlog. Null
+ * where it cannot run (no runtime for this computer).
  */
 export function indexActivity(
   status: SemanticStatus,
 ): { activity: IndexActivity; label: string; percent: number | null } | null {
   if (!status.supported) return null
-  if (!status.enabled) return { activity: 'off', label: 'Indexing off', percent: null }
   const { install, index, engine } = status
-  if (install.state === 'downloading') {
+  if (install.state === 'downloading' || (!status.model.installed && install.state !== 'failed')) {
     const percent = install.total > 0 ? Math.round((install.received / install.total) * 100) : null
     return { activity: 'downloading', label: 'Search model', percent }
   }

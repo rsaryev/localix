@@ -16,16 +16,6 @@ export interface CatalogSource {
   refresh?(options: EngineCatalogRefreshOptions): Promise<EngineCatalogRefreshResult>
 }
 
-/**
- * Models of another kind than the runtime's chat models (embedding models today), contributed
- * by the feature that runs them and listed in the same catalog: one list, every kind, each
- * consumer asking for its own. A source signals `invalidate` when its list changes.
- */
-export interface CatalogModelSource {
-  id: string
-  list(): Promise<CatalogResponse['models']>
-}
-
 export interface CatalogServiceDeps {
   source: CatalogSource
   /** Where a failed background warm-up is reported; the next read retries either way. */
@@ -62,37 +52,19 @@ export function createCatalogService(deps: CatalogServiceDeps) {
   let restoring: Promise<void> | undefined
   let checking: Promise<CatalogRefreshResponse> | undefined
 
-  const modelSources = new Map<string, CatalogModelSource>()
   const chatViews = new WeakMap<CatalogResponse, CatalogResponse>()
-
-  /** Contributed models, named by their provider; a failing source contributes nothing. */
-  const contributed = async (providers: CatalogResponse['providers']) => {
-    const names = new Map(providers.map((p) => [p.id, p.name]))
-    const lists = await Promise.all(
-      [...modelSources.values()].map((source) => source.list().catch(() => [])),
-    )
-    return lists.flat().map((model) => ({
-      ...model,
-      providerName: names.get(model.providerId) ?? model.providerName,
-    }))
-  }
 
   const build = (): Promise<CatalogResponse> =>
     // Through the executor so a source that THROWS rejects instead of escaping `warm()` uncaught.
-    new Promise<CatalogResponse>((resolve) => resolve(deps.source.list())).then(
-      async (catalog) => ({
-        ...catalog,
-        providers: sortProvidersOAuthFirst(
-          catalog.providers,
-          catalog.oauthProviderIds,
-          (provider) => provider.id,
-        ),
-        models: sortCatalogModelsNewestFirst([
-          ...catalog.models,
-          ...(await contributed(catalog.providers)),
-        ]),
-      }),
-    )
+    new Promise<CatalogResponse>((resolve) => resolve(deps.source.list())).then((catalog) => ({
+      ...catalog,
+      providers: sortProvidersOAuthFirst(
+        catalog.providers,
+        catalog.oauthProviderIds,
+        (provider) => provider.id,
+      ),
+      models: sortCatalogModelsNewestFirst(catalog.models),
+    }))
 
   const load = async (): Promise<CatalogResponse> => {
     if (restoring) await restoring
@@ -141,16 +113,6 @@ export function createCatalogService(deps: CatalogServiceDeps) {
     /** A host-owned provider's model list changed (local models): build again on next read. */
     invalidate(): void {
       loaded = undefined
-    },
-
-    /** Add models of another kind to the catalog (see {@link CatalogModelSource}). */
-    registerModelSource(source: CatalogModelSource): () => void {
-      modelSources.set(source.id, source)
-      loaded = undefined
-      return () => {
-        if (modelSources.get(source.id) === source) modelSources.delete(source.id)
-        loaded = undefined
-      }
     },
 
     /** Restore the persisted catalogs, without network access. Reads wait for it. */
