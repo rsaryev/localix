@@ -16,11 +16,3 @@ export const lastRun = (rt, session, speaker = 'localix') => {
   assert.ok(found, `no ${speaker} run in ${session.title}`)
   return found
 }
-
-const TEAM_LINES = ['Bring in a suitable agent', 'elected leader', '## Leadership', '## Your part']
-
-export function assertNoTeamProtocol(request) {
-  for (const line of TEAM_LINES) assert.ok(!request.system.includes(line), `prompt has "${line}"`)
-  assert.ok(!request.tools.includes('skip_answer'), 'holds skip_answer')
-  assert.ok(!request.contextHeadings.includes('# Agent directory'), 'carries the agent directory')
-}

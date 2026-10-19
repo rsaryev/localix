@@ -47,7 +47,6 @@ export function nativeHistoryRows(
           },
         ],
         permissionMode: 'default',
-        conversationMode: 'solo',
         closedAt: null,
         description: null,
         avatar: null,

@@ -1002,26 +1002,6 @@ describe('chat service', () => {
     await destroyDatabase(db)
   })
 
-  test('a new chat with one agent starts solo unless a group is asked for', async () => {
-    const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
-    await migrateToLatest(db)
-    const chatService = createChatService({
-      db,
-      work: testWork(db),
-      catalogService: createCatalogService(),
-      providerConnectionsService: createProviderConnectionsService({ db }),
-    })
-    const userId = 'user_modes'
-    expect((await chatService.createSession(userId, { title: 'Plain' })).conversationMode).toBe(
-      'solo',
-    )
-    expect(
-      (await chatService.createSession(userId, { title: 'Team', conversationMode: 'group' }))
-        .conversationMode,
-    ).toBe('group')
-    await destroyDatabase(db)
-  })
-
   test('forkSession copies history into an independent linked chat', async () => {
     const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
     await migrateToLatest(db)

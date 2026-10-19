@@ -38,8 +38,6 @@ interface ComposerHeaderStripsProps {
   participants?: readonly StripParticipantRef[]
   /** Which participant holds the floor and who is queued behind them, live. */
   conversationFloor?: ConversationFloor | null
-  /** Rendered before the first participant: how the conversation works (solo or group). */
-  modeControl?: React.ReactNode
   /** Rendered after the last participant; see ParticipantsStrip for why it is a node. */
   addParticipantControl?: React.ReactNode
   onRemoveParticipant?: (agentId: string) => void
@@ -64,7 +62,6 @@ export function ComposerHeaderStrips({
   loops,
   participants,
   conversationFloor,
-  modeControl,
   addParticipantControl,
   onRemoveParticipant,
   selectedParticipantId,
@@ -86,7 +83,6 @@ export function ComposerHeaderStrips({
           floor={conversationFloor}
           isGenerating={isGenerating}
           sessionId={activeSessionId}
-          modeControl={modeControl}
           addControl={addParticipantControl}
           onRemove={onRemoveParticipant}
           selectedAgentId={selectedParticipantId}

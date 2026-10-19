@@ -9,7 +9,6 @@
 import { chooseOn, type AxisChoice } from './axis'
 import {
   conversationAxis,
-  conversationDecision,
   type ConversationDecision,
   type ConversationFacts,
 } from './axes/conversation'
@@ -67,7 +66,7 @@ export function resolveSessionPolicy(session: SessionPolicyFacts): SessionPolicy
 
 /** The conversation decision alone — what dispatch and the membership writer need. */
 export function conversationPolicy(session: ConversationFacts): ConversationDecision {
-  return conversationDecision(session)
+  return chooseOn(conversationAxis, session).decision
 }
 
 /** The host decision alone, for infrastructure that holds only a session kind. */

@@ -690,6 +690,45 @@ describe('applyStreamEventToSession — message + session mutations', () => {
     expect(r.messages).toHaveLength(1)
   })
 
+  test('a notice written before the send echoes keeps its place above the claimed reply', () => {
+    // A session edit can land between Enter and the turn being written: its line is persisted
+    // first while the composer's placeholders are still on screen.
+    const session = makeSession({
+      isRunning: true,
+      messages: [
+        { id: 'optimistic-user', role: 'user', content: 'ship it', optimistic: true },
+        { id: 'optimistic-reply', role: 'assistant', optimistic: true },
+      ] as never,
+    })
+    const notice = {
+      ...msg('joined'),
+      payload: {
+        id: 'joined',
+        role: 'user',
+        from: 'system',
+        uiOnly: true,
+        content: 'qa joined the conversation.',
+        systemNotice: {
+          kind: 'participants_change',
+          tone: 'neutral',
+          text: 'qa joined the conversation.',
+        },
+      },
+    }
+    const user = { ...msg('user'), payload: { id: 'user', role: 'user', content: 'ship it' } }
+    let next = applyStreamEventToSession(
+      session,
+      ev({ type: 'message.created', sessionId: 'sess-1', message: notice }),
+    )
+    for (const message of [user, msg('reply')]) {
+      next = applyStreamEventToSession(
+        next,
+        ev({ type: 'message.created', sessionId: 'sess-1', message }),
+      )
+    }
+    expect(next.messages.map((message) => message.id)).toEqual(['joined', 'user', 'reply'])
+  })
+
   test('message.updated replaces the existing message by id (does not append)', () => {
     const r = applyStreamEventToSession(
       withMsgs(['m1']),
@@ -1456,12 +1495,13 @@ describe('applyStreamEventToSession — optimistic send reconciliation', () => {
       }),
     )
 
+    // The other tab's turn is already written; the local one is not, so it sorts first.
     expect(next.messages.map((message) => message.id)).toEqual([
+      'm-other-tab',
       'optimistic-local',
       'notice-local',
-      'm-other-tab',
     ])
-    expect(next.messages[1]?.afterMessageId).toBe('optimistic-local')
+    expect(next.messages[2]?.afterMessageId).toBe('optimistic-local')
   })
 
   test('an echo with no placeholder to claim still appends (settled transcript)', () => {
@@ -1584,10 +1624,11 @@ describe('applyStreamEventToSession — optimistic send reconciliation', () => {
     expect(claimed.messages.map((m) => m.id)).toEqual(['m-old', 'm-drained-user'])
   })
 
-  test('an internal/uiOnly user row never consumes the placeholder — it appends beside it', () => {
+  test('an internal/uiOnly user row never consumes the placeholder — it lands before it', () => {
     // Mode dividers (uiOnly) and wake/clear turns (isInternal) are user-role
     // rows that are NOT the echo; claiming would morph the typed text into a
-    // divider. They fall through to plain append; the real echo claims after.
+    // divider. The server wrote them before the pending turn, so they sit above
+    // its placeholders; the real echo claims after.
     const session = withPlaceholders()
     const divided = applyStreamEventToSession(
       session,
@@ -1602,9 +1643,9 @@ describe('applyStreamEventToSession — optimistic send reconciliation', () => {
     )
     expect(divided.messages.map((m) => m.id)).toEqual([
       'm-old',
+      'm-divider',
       'optimistic-user-1',
       'optimistic-assistant-1',
-      'm-divider',
     ])
     const claimed = applyStreamEventToSession(
       divided,
@@ -1616,9 +1657,9 @@ describe('applyStreamEventToSession — optimistic send reconciliation', () => {
     )
     expect(claimed.messages.map((m) => m.id)).toEqual([
       'm-old',
+      'm-divider',
       'm-real-user',
       'optimistic-assistant-1',
-      'm-divider',
     ])
   })
 

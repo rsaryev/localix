@@ -59,13 +59,6 @@ export interface StoredSystemNotice {
      */
     | 'permission_mode_change'
     /**
-     * THE CONVERSATION'S MODE CHANGED (`chat/conversation-modes.ts`): solo or group.
-     *
-     * Without it an agent whose conversation became solo saw only that its prompt stopped
-     * mentioning colleagues, and kept tagging agents a solo conversation never brings in.
-     */
-    | 'conversation_mode_change'
-    /**
      * A STEP OF THE CONVERSATION'S PLAN (`features/plans`): presented, changes requested,
      * approved, set aside, completed. One line per transition, written by the plans service, so
      * the person and every participant read the same history of the plan — a participant that

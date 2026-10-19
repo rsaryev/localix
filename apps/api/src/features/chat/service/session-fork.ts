@@ -77,8 +77,6 @@ export async function forkSession(
     // change there writes to every session of the tree. Born on the default instead, a fork of a
     // plan-mode conversation could write files until the root's mode next changed.
     ...(source.permissionMode ? { permissionMode: source.permissionMode } : {}),
-    // The same conversation with the same people works the same way: solo stays solo.
-    ...(source.conversationMode ? { conversationMode: source.conversationMode } : {}),
   }
   await repo.insertSession(forked)
 

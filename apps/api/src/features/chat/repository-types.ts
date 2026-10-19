@@ -1,4 +1,3 @@
-import type { ConversationMode } from './conversation-modes'
 import type { AgentSessionKind, ReasoningEffort } from '../../db'
 import type { PermissionMode } from '../capabilities/permission-modes'
 import type { SessionProvenance } from './session-provenance'
@@ -154,12 +153,6 @@ export interface SessionRecord {
    * record built in memory before it is stored, which is the default mode.
    */
   permissionMode?: PermissionMode
-  /**
-   * Whether agents share this conversation as a team (`conversation-modes.ts`). Meaningful for a
-   * chat; a delegated child or a job is isolated whatever it says. Absent on a record built in
-   * memory before it is stored, which is read as a group — how every chat behaved before modes.
-   */
-  conversationMode?: ConversationMode
   /** Optional conversation description. */
   description: string | null
   /** A group's avatar ref (media id or emoji); null = generated from the title. */

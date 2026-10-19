@@ -59,8 +59,6 @@ export async function compose(page, scenario) {
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).composeSessionDrag(page)
   if (scenario === 'party-route') return (await import('./party-route.mjs')).composePartyRoute(page)
-  if (scenario === 'conversation-mode')
-    return (await import('./conversation-mode.mjs')).composeConversationMode(page)
   if (scenario === 'model-command')
     return (await import('./model-command.mjs')).composeModelCommand(page)
   if (['local-models-settings', 'semantic-search'].includes(scenario))

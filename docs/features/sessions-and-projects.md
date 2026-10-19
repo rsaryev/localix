@@ -136,10 +136,10 @@ one. Editing a user message creates another sibling branch with the prior active
 continues from the edit.
 
 `/fork` creates a child session and copies the selected active message path in chronological order.
-The child inherits the project, participants, explicit provider/model choices, permission mode, solo
-or group mode, and pinned skills. Inherited model settings stay inherited rather than becoming a
-fixed choice. The copied messages receive new IDs; later transcript edits are independent, while
-files remain shared through the root conversation's working directory.
+The child inherits the project, participants, explicit provider/model choices, participant lock, and
+pinned skills. Inherited model settings stay inherited rather than becoming a fixed choice. The
+copied messages receive new IDs; later transcript edits are independent, while files remain shared
+through the root conversation's working directory.
 
 Generated fork titles use one suffix with the new conversation number, such as **Greeting
 (fork 42)**. Forking that conversation replaces the suffix with the next fork's number. Legacy

@@ -33,12 +33,11 @@ built-in Localix policy. Copying an existing agent copies that agent's definitio
 enabled choice.
 
 After creating a specialist, the assistant tags its handle in the reply with a concrete assignment:
-the tag invites it into the conversation and gives it the floor. A
-[solo conversation](conversations.md#solo-and-group), a delegated child and an automation run never
-invite by a tag. Child and automation runs do not receive the catalog-authoring tool. Parallel
-copies of the same agent remain the responsibility of [fork](delegation.md).
+the tag invites it into the conversation and gives it the floor. A fixed-membership conversation
+cannot invite a new colleague. Child and automation runs do not receive the catalog-authoring tool.
+Parallel copies of the same agent remain the responsibility of [fork](delegation.md).
 
-The elected leader of a group receives team-building instructions even while alone in it. It handles
+The elected leader receives team-building instructions even while alone in the chat. It handles
 small tasks directly; when distinct specialties are useful, it reuses existing definitions and
 creates all missing roles in one `agents` call. The `create` action takes an `agents` array of
 **1–8** definitions. Every entry must be valid and handles must be distinct before anything is

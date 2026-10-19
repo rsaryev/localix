@@ -20,7 +20,6 @@ import type {
   SessionPlan,
 } from '@localixai/api/client'
 import type { PermissionMode } from '@localixai/api/permission-modes'
-import type { ConversationMode } from '@localixai/api/conversation-modes'
 import type {
   LspDiagnostic,
   LspServerState,
@@ -118,8 +117,6 @@ export interface UiSession {
   modelChoices?: SessionModelChoicesView
   /** How the agent's rules are rewritten for this conversation (`@localixai/api/permission-modes`). */
   permissionMode: PermissionMode
-  /** Solo (one agent, no team protocol) or group (`@localixai/api/conversation-modes`). */
-  conversationMode: ConversationMode
   /** A delegated child its delegator closed; nothing wakes it, and its composer is read-only. */
   closedAt?: string | null
   /** Optional conversation description. */

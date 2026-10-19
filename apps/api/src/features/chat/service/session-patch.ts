@@ -10,7 +10,6 @@
  * participants writer (`runtime/conversation-participants.ts`), and what one of them runs on is
  * its own write. Archiving keeps the FIRST archive time rather than restamping it on every toggle.
  */
-import type { ConversationMode } from '../conversation-modes'
 import type { PermissionMode } from '../../capabilities/permission-modes'
 import type { SessionRecord } from '../repository'
 import { normalizeSessionTitle } from '../session-limits'
@@ -29,8 +28,6 @@ export function sessionFieldsPatch(
     runtimeStatus?: SessionRecord['runtimeStatus']
     /** Already cleared by the caller against the session being a delegated child. */
     permissionMode?: PermissionMode
-    /** Already checked by the caller against the membership it leaves. */
-    conversationMode?: ConversationMode
   },
   now: () => string,
 ): Partial<SessionRecord> | null {
@@ -52,7 +49,6 @@ export function sessionFieldsPatch(
     ...(patch.projectId !== undefined ? { projectId: patch.projectId } : {}),
     ...(patch.runtimeStatus !== undefined ? { runtimeStatus: patch.runtimeStatus } : {}),
     ...(patch.permissionMode !== undefined ? { permissionMode: patch.permissionMode } : {}),
-    ...(patch.conversationMode !== undefined ? { conversationMode: patch.conversationMode } : {}),
   }
   // Correlating or reopening a CLI only records identity; it is not conversation activity.
   const identity =

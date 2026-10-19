@@ -11,8 +11,7 @@ import { runs, script } from './scenario-helpers.mjs'
 
 const route = (choice, p, extra = {}) => `\`ROUTE${JSON.stringify({ choice, p, ...extra })}\``
 const decisions = (rt) => rt.requests().filter((entry) => entry.decision)
-const group = (rt, title) =>
-  rt.createSession({ title, conversationMode: 'group', handles: ['localix', 'checker'] })
+const group = (rt, title) => rt.createSession({ title, handles: ['localix', 'checker'] })
 
 export const ROUTING_SCENARIOS = [
   {

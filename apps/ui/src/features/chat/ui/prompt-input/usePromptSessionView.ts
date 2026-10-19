@@ -49,13 +49,7 @@ export function usePromptSessionView(
     waiting: (serverQueue ?? []).flatMap((item) => (item.agentId ? [item.agentId] : [])),
   }
 
-  const conversationMode =
-    useChatStore((state) => findSessionInState(state, activeSessionId)?.conversationMode) ?? 'group'
-  const participantsEditing = useParticipantsEditing(
-    activeSessionId,
-    participants,
-    conversationMode,
-  )
+  const participantsEditing = useParticipantsEditing(activeSessionId, participants)
 
   const setSkills = useCallback(
     (names: string[]) => {

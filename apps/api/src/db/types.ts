@@ -196,12 +196,11 @@ export interface AgentSessionsTable {
   description: string | null
   /** A group's avatar (an opaque ref: media id or emoji). Null = generated from the title. */
   avatar: string | null
+  /** 1 = the participants were fixed before the conversation started; see the 20260925 migration. */
   /** When a delegated child was closed (`fork` action close): nothing wakes it after. Null = open. */
   closed_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** The session's permission mode (`capabilities/permission-modes.ts`); see the 20261003 migration. */
   permission_mode: ColumnType<string, string | undefined, string | undefined>
-  /** `solo` or `group` (`chat/conversation-modes.ts`); see the 20261028 migration. */
-  conversation_mode: ColumnType<string, string | undefined, string | undefined>
   /** The session's model choices per agent and for all agents (`session-model-choices.ts`). */
   model_choices: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** User-visible chat-message branch leaf (`agent_messages.id`). THE message tree's tip — the

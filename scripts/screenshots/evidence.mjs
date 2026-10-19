@@ -14,8 +14,6 @@ export async function verifyEvidence(page, scenario) {
   if (scenario === 'session-window-drag')
     return (await import('./session-drag.mjs')).verifySessionDrag(page)
   if (scenario === 'party-route') return (await import('./party-route.mjs')).verifyPartyRoute(page)
-  if (scenario === 'conversation-mode')
-    return (await import('./conversation-mode.mjs')).verifyConversationMode(page)
   if (scenario === 'model-command')
     return (await import('./model-command.mjs')).verifyModelCommand(page)
   if (['local-models-settings', 'semantic-search'].includes(scenario))
@@ -57,10 +55,6 @@ export async function verifyEvidence(page, scenario) {
   } else if (scenario === 'participants') {
     const roster = page.getByRole('group', { name: 'Conversation participants', exact: true })
     await expect(roster.locator('[data-slot="participant-chip"]')).toHaveCount(3)
-    // A room of three is a group, and the strip says so before the names.
-    await expect(
-      roster.getByRole('button', { name: 'Conversation mode: Group. Change', exact: true }),
-    ).toBeVisible()
     for (const handle of ['localix', 'frontend', 'qa'])
       await expect(roster.getByTitle(`Show @${handle}'s model`, { exact: true })).toBeVisible()
     await expect(

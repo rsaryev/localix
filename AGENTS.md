@@ -67,7 +67,7 @@ Use `check:public` for suspicious files. Add migrations without editing existing
 
 For changes to how a run is assembled or routed (run policy axes in
 `apps/api/src/features/chat/policy`, prompt sections in `agent-core/prompt`, tool gating,
-membership, handoffs, conversation modes), run the end-to-end scenarios with
+membership, handoffs), run the end-to-end scenarios with
 `bun run test:sessions --grep '<behaviour>'`. They boot an isolated API with a scripted model and
 assert on the transcript and on the prompt and tools each model request carried. Use `--keep` and
 the request log to debug a conversation behaviour. Add a scenario for a new behaviour. See

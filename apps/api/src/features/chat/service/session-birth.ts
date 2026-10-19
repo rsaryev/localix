@@ -13,7 +13,6 @@
  * allocate, then write. Nothing is allocated before every refusal has had its chance — a
  * session ref spent on a request that then fails leaves a hole in a sequence the user reads.
  */
-import { bornConversationMode, type ConversationMode } from '../conversation-modes'
 import { ApiError } from '../../../lib/errors'
 import type { SessionDetail } from '../contracts'
 import { toSessionSummary, type SessionRecord } from '../repository'
@@ -84,8 +83,6 @@ export async function createSession(
     // it is not being asked to chat.
     ...(sessionKind === 'chat' ? { host: 'chat' } : {}),
   })
-  const conversationMode =
-    sessionKind === 'chat' ? bornMode(input.conversationMode, parent, agents.length) : undefined
   const externalAgentProvider =
     input.externalAgentProvider ??
     (sessionKind === 'chat' ? parent?.externalAgentProvider : undefined)
@@ -122,7 +119,6 @@ export async function createSession(
     // written to the whole tree): a worker delegated from a plan session must not be the one
     // call in that session able to write.
     ...(parent?.permissionMode ? { permissionMode: parent.permissionMode } : {}),
-    ...(conversationMode ? { conversationMode } : {}),
     description: input.description ?? null,
     avatar: input.avatar ?? null,
     pinnedSkills: input.pinnedSkills ?? [],
@@ -225,20 +221,4 @@ function bornProvenance(
   return input.provenance?.kind !== 'root'
     ? (input.provenance ?? { kind: 'unknown-origin' })
     : { kind: 'unknown-origin' }
-}
-
-/**
- * A chat's conversation mode at birth. Stated wins — but solo is one agent, so a solo chat born
- * with several is refused rather than quietly made a group. A thread continues its parent's way of
- * working; otherwise one agent starts solo and several start as the group they already are.
- */
-function bornMode(
-  stated: ConversationMode | undefined,
-  parent: SessionRecord | null,
-  participants: number,
-): ConversationMode {
-  if (stated === 'solo' && participants > 1) {
-    throw new ApiError(400, 'solo_needs_one_agent', 'A solo conversation has exactly one agent')
-  }
-  return stated ?? parent?.conversationMode ?? bornConversationMode(participants)
 }

@@ -27,7 +27,6 @@ function eventKey(notice: StoredSystemNotice): string {
   // before the participant rule below.
   if (notice.kind.startsWith('plan_')) return 'plan:latest-status'
   if (notice.kind === 'permission_mode_change') return 'session:permission-mode'
-  if (notice.kind === 'conversation_mode_change') return 'session:conversation-mode'
   return notice.participant
     ? `notice:${notice.kind}:participant:${notice.participant.toLocaleLowerCase()}`
     : `notice:${notice.kind}`

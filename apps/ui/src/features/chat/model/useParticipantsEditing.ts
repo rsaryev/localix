@@ -17,16 +17,13 @@ import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { backendClient } from '@/shared/api/client'
 import type { SessionAgentRoute } from '@/shared/api/contracts'
 import { useChatStore } from './store'
-import type { ConversationMode } from '@localixai/api/conversation-modes'
 
 export function useParticipantsEditing(
   sessionId: string | null,
   participants: readonly SessionAgentRoute[],
-  /** Solo holds one agent: adding to it makes the conversation a group in the same edit. */
-  conversationMode: ConversationMode = 'group',
 ) {
   const reseat = useCallback(
-    (agentIds: string[], extra: { conversationMode?: ConversationMode } = {}) => {
+    (agentIds: string[]) => {
       if (!sessionId) return
       // The list was built from what this client last saw; the server refuses it if the
       // conversation changed since (an agent invited someone), instead of erasing that change.
@@ -35,7 +32,6 @@ export function useParticipantsEditing(
         .updateSession(sessionId, {
           agentIds,
           ...(revision ? { expectedUpdatedAt: revision } : {}),
-          ...extra,
         })
         .then((updated) => useChatStore.getState()._replaceSession(updated))
         .catch((err: unknown) =>
@@ -51,14 +47,9 @@ export function useParticipantsEditing(
     (agentId: string) => {
       if (participants.some((participant) => participant.agentId === agentId)) return
       // Appended, so speaking order stays join order and nobody already here changes places.
-      // Adding someone is the person's explicit act, and in a solo chat it makes it a group:
-      // one edit, so the server never sees a solo conversation with two agents.
-      reseat(
-        [...participants.map((participant) => participant.agentId), agentId],
-        conversationMode === 'solo' ? { conversationMode: 'group' } : {},
-      )
+      reseat([...participants.map((participant) => participant.agentId), agentId])
     },
-    [conversationMode, participants, reseat],
+    [participants, reseat],
   )
 
   const removeParticipant = useCallback(

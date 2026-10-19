@@ -1,4 +1,3 @@
-import { CONVERSATION_MODES } from '../conversation-modes'
 import { z } from 'zod'
 
 import { REASONING_EFFORTS } from '../../../db/types'
@@ -45,11 +44,6 @@ export const createSessionRequestSchema = z
      * every window that lands at once converges on one chat instead of one each.
      */
     reuseEmptyDraft: z.boolean().optional(),
-    /**
-     * Solo or group. Absent: one agent starts solo and several start as a group; solo with
-     * several agents is refused.
-     */
-    conversationMode: z.enum(CONVERSATION_MODES).optional(),
   })
   .strict()
 
@@ -185,11 +179,6 @@ export const updateSessionRequestSchema = z.object({
   expectedUpdatedAt: z.string().min(1).max(64).optional(),
   /** The conversation's permission mode; accepted on a root conversation only (children inherit). */
   permissionMode: z.enum(PERMISSION_MODES).optional(),
-  /**
-   * Solo or group. Solo holds exactly one agent: a solo patch whose membership has more is
-   * refused with 409 `solo_needs_one_agent`, and adding a participant names `group` with it.
-   */
-  conversationMode: z.enum(CONVERSATION_MODES).optional(),
   isPinned: z.boolean().optional(),
   isArchived: z.boolean().optional(),
   projectId: z.string().nullable().optional(),

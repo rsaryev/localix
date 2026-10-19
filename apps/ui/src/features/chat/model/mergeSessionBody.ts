@@ -41,7 +41,6 @@ export function mergeSessionBody(prev: UiSession | undefined, next: UiSession): 
       agents: next.agents,
       ...(next.modelChoices ? { modelChoices: next.modelChoices } : {}),
       permissionMode: next.permissionMode,
-      conversationMode: next.conversationMode,
       isRunning: next.isRunning,
       projectId: next.projectId,
       parentSessionId: next.parentSessionId,

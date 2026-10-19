@@ -1,4 +1,3 @@
-import { conversationPolicy } from '../policy/session-policy'
 import { sessionRoute } from '../session-route'
 import { commandTarget } from './command-participant'
 import { toolOverrideOptions } from './tool-override-options'
@@ -85,16 +84,6 @@ export async function handlePluginCommand(
       cwd: projectDir,
     })
     const resolvedBindings = await resolveMessageBindings(deps, userId, session, bindings)
-    // A command whose work needs a team makes the conversation a group before it runs, the way
-    // the person adding a participant does — said in the conversation, never silently.
-    if (
-      match.command.conversationMode &&
-      conversationPolicy(session).kind !== 'isolated' &&
-      (session.conversationMode ?? 'group') !== match.command.conversationMode
-    ) {
-      await ctx.setConversationMode(userId, sessionId, match.command.conversationMode)
-      session.conversationMode = match.command.conversationMode
-    }
     if (match.command.activateTools?.length) {
       const tools = match.command.activateTools
       const stored = await repo.changeActivatedTools(userId, sessionId, (current) =>

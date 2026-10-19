@@ -202,14 +202,6 @@ describe('tags bring agents in', () => {
     expect(h.session().agents.map((agent) => agent.handle)).toContain('qa')
     expect(h.queued.map((entry) => entry.speaker)).toEqual(['agent-q'])
   })
-
-  test('in a solo conversation a tag is text: nobody joins and nobody is queued', async () => {
-    const solo = { ...room, agents: room.agents.slice(0, 1), conversationMode: 'solo' as const }
-    const h = harness({ session: solo })
-    await h.route('agent-a', '@qa, verify the checkout flow.')
-    expect(h.session().agents.map((agent) => agent.handle)).toEqual(['alpha'])
-    expect(h.queued).toEqual([])
-  })
 })
 
 test('a colleague’s turn in a channel conversation runs under the channel, not the root chat', async () => {

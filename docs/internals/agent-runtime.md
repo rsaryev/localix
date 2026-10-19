@@ -56,33 +56,9 @@ behaviour that needs the real loop is asserted in the adapter package.
 
 ### How a run is assembled
 
-`executeRun` (`chat/runtime/run/execute-run.ts`) runs the stages in order: admit, policy, turn,
-view, context, tools, prompt, intake, history, stream, then complete or fail. Each stage owns one
-concern; the stream stage hands everything to `AgentRuntime.run()`.
-
-The policy stage resolves the run's **policy** once (`chat/policy/`). Each dimension a run can vary
-along is an axis with ordered variants, and the first variant that applies decides:
-
-| Axis           | Variants                                                                   | Decides                                                               |
-| -------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `host`         | `chat`, `subagent`, `job`, `system`                                        | Remembered identity, runtime status, frozen prompt context, steering  |
-| `lineage`      | `conversation`, `branch`, `delegated`, `worker`                            | Delegation, registry authoring, plan ownership, reports to a parent   |
-| `conversation` | `isolated`, `solo`, `group`                                                | Who receives a message, tag invites, the directory, passes, handoffs  |
-| `delivery`     | `channel`, `transcript`                                                    | Whether the reply is relayed to a messaging channel                   |
-| `permission`   | `default`, `plan`, `bypass`, `autonomous`                                  | The rules rewrite, plan mode, whether a person is expected to answer  |
-| `invocation`   | `root`, `channel`, delegation, automation, `hook`, `isolated-continuation` | The admission host the agent is admitted under                        |
-| `seat`         | `solo`, `leader`, `member`                                                 | The elected leader and who owns the session topic                     |
-| `trigger`      | `continuation`, colleague report or request, `reaction`, `message`         | Silence for reactions and the colleague who handed over the floor     |
-| `human`        | `unreachable`, `not-expected`, `attended`                                  | Confirm cards, `interactive` for tools, tools withheld when unwatched |
-
-The first five are pure functions of the session record, so the wake queue, the session service and
-the composer read the same answer; the last four need the run. Stages read the resolved policy
-instead of the session record, and `run/policy-boundary.test.ts` keeps inline checks out of `run/`.
-The trace of which variant decided each axis is part of the composition snapshot.
-
-The prompt is a catalog of sections (`agent-core/prompt/catalog.ts`). Each section declares its
-cache tier and heading and renders from facts derived once per run; the catalog order is the render
-order.
+`executeRun` (`chat/runtime/run/execute-run.ts`) runs the stages in order: admit, turn, view,
+context, tools, prompt, intake, history, stream, then complete or fail. Each stage owns one concern;
+the stream stage hands everything to `AgentRuntime.run()`.
 
 | Layer           | What it carries                                                                                                                     | Owner                                                                       |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |

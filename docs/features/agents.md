@@ -10,10 +10,9 @@ Create specialists from a conversation and manage the registry with `/agents`; s
 ## Shipped assistant
 
 `localix` is the only shipped agent. It coordinates the requested outcome and handles
-straightforward work directly. Its default hierarchy priority is **2**. The elected leader of a
-[group conversation](conversations.md#solo-and-group) owns team assembly regardless of its handle:
-for work that needs distinct specialties, it reuses suitable definitions or creates the smallest
-useful team and invites it into the chat. A solo conversation has no team to assemble.
+straightforward work directly. Its default hierarchy priority is **2**. The elected leader in a chat
+owns team assembly regardless of its handle: for work that needs distinct specialties, it reuses
+suitable definitions or creates the smallest useful team and invites it into the chat.
 
 `localix` is built in: it cannot be deleted or disabled, and every conversation can fall back to it.
 
@@ -38,7 +37,7 @@ decides where a save lands:
 A chat reads the project card, then the installation card, then the shipped default. **Restore**
 removes the card of the current scope and returns to the next one.
 
-Every chat agent's prompt lists you under **Conversation participants**, in solo chats too, as
+Every agent's prompt lists you under **Conversation participants**, in solo chats too, as
 `@human (<title>): the person you work with — <description>`, with your notes on the next line. The
 entry is information about you, not instructions or an address. A board card may still be assigned
 to you ([Cards for you](task-board.md#cards-for-you)). `human` and `all` are reserved handles: an

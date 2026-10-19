@@ -1,4 +1,3 @@
-import { CONVERSATION_MODES } from '../chat/conversation-modes'
 import { z } from 'zod'
 import { PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
 
@@ -67,11 +66,6 @@ export const pluginCommandSchema = z.object({
    * if the agent had called `activate_tools` (e.g. a board tool for a command that plans on it).
    */
   activateTools: z.array(z.string().min(1)).max(8).optional(),
-  /**
-   * The conversation mode the command's work needs, set when it runs. A command that staffs a
-   * team states `group`: in a solo chat nobody joins by a tag, so its @mentions would reach no one.
-   */
-  conversationMode: z.enum(CONVERSATION_MODES).optional(),
   /**
    * CC `model` — preferred model alias/id for this command's macro run (e.g. "opus",
    * a full catalog id). Best-effort: applied as a per-run session model override; the

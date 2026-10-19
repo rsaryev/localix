@@ -65,25 +65,8 @@ export async function updateSession(
     )
   }
   // Only a chat's membership can change: a delegated child or a job IS its one agent's task.
-  if (
-    (patch.agents !== undefined || patch.conversationMode !== undefined) &&
-    !conversationPolicy(session).membershipEditable
-  ) {
+  if (patch.agents !== undefined && !conversationPolicy(session).membershipEditable) {
     throw new ApiError(409, 'membership_fixed', 'Only a chat conversation can change who is in it')
-  }
-  // The mode the conversation is in once this edit lands. Solo is one agent: switching a group
-  // with several to solo is refused rather than silently removing anyone.
-  const conversationMode = patch.conversationMode ?? session.conversationMode
-  if (
-    patch.conversationMode === 'solo' &&
-    patch.agents === undefined &&
-    session.agents.length > 1
-  ) {
-    throw new ApiError(
-      409,
-      'solo_needs_one_agent',
-      'A solo conversation has one agent; remove the others first',
-    )
   }
   // WHO is in the conversation: the one participants writer, which guards the active speaker,
   // refuses a stale list, cancels the leavers' queued turns and announces the change.
@@ -96,7 +79,6 @@ export async function updateSession(
       ...(patch.expectedUpdatedAt !== undefined
         ? { expectedUpdatedAt: patch.expectedUpdatedAt }
         : {}),
-      ...(conversationMode ? { conversationMode } : {}),
       decide: async (current) =>
         reseatParticipants(
           { ...current, userId, projectId: patch.projectId ?? current.projectId },
@@ -135,10 +117,6 @@ export async function updateSession(
   const modeBefore = afterMembership.permissionMode
   if (persisted.permissionMode !== undefined && persisted.permissionMode !== modeBefore)
     await ctx.onPermissionModeChanged?.(userId, id, modeBefore, persisted.permissionMode)
-  // A conversation that became solo has nobody to hand work to: a colleague chain queued while it
-  // was a group would answer a room that no longer exists.
-  if (persisted.conversationMode === 'solo' && afterMembership.conversationMode !== 'solo')
-    await ctx.cancelColleagueChains?.(userId, id)
   ctx.publishSession(persisted)
   return ctx.getSessionDetail(userId, id)
 }

@@ -6,13 +6,13 @@
  * whenever a change moves how a run is assembled or routed: the name says the behaviour, and a
  * failed assertion names the request or row that broke it.
  */
-import { MODE_SCENARIOS } from './scenarios-modes.mjs'
+import { GROUP_SCENARIOS } from './scenarios-group.mjs'
 import { QUEUE_SCENARIOS } from './scenarios-queue.mjs'
 import { ROUTING_SCENARIOS } from './scenarios-routing.mjs'
 import { RUN_SCENARIOS } from './scenarios-runs.mjs'
 
 export const SCENARIOS = [
-  ...MODE_SCENARIOS,
+  ...GROUP_SCENARIOS,
   ...ROUTING_SCENARIOS,
   ...RUN_SCENARIOS,
   ...QUEUE_SCENARIOS,

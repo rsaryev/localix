@@ -2,14 +2,13 @@ import type { ComponentProps } from 'react'
 
 import { AddParticipantMenu } from './AddParticipantMenu'
 import { ComposerHeaderStrips } from './ComposerHeaderStrips'
-import { SessionConversationModeChip } from './SessionConversationModeChip'
 import type { usePromptSessionView } from './usePromptSessionView'
 
 type HeaderStripsProps = ComponentProps<typeof ComposerHeaderStrips>
 
 type ComposerSessionStripsProps = Omit<
   HeaderStripsProps,
-  'conversationFloor' | 'addParticipantControl' | 'onRemoveParticipant' | 'modeControl'
+  'conversationFloor' | 'addParticipantControl' | 'onRemoveParticipant'
 > & {
   sessionView: ReturnType<typeof usePromptSessionView>
 }
@@ -21,7 +20,6 @@ export function ComposerSessionStrips({ sessionView, ...strips }: ComposerSessio
     <ComposerHeaderStrips
       {...strips}
       conversationFloor={sessionView.conversationFloor}
-      modeControl={<SessionConversationModeChip sessionId={strips.activeSessionId ?? null} />}
       addParticipantControl={
         <AddParticipantMenu
           seatedAgentIds={sessionView.participants.map((participant) => participant.agentId)}

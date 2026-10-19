@@ -7,9 +7,9 @@ runtime context, the tool roster), so a run's assembly is checked end to end wit
 credentials or cost.
 
 Use it when a change moves how a run is assembled or routed: a policy axis (`chat/policy`), a prompt
-section (`agent-core/prompt`), tool gating, membership, handoffs or conversation modes. It is also
-the quickest way to reproduce a reported conversation behaviour: script the exchange, keep the logs,
-and read exactly what each participant's model was given.
+section (`agent-core/prompt`), tool gating, membership or handoffs. It is also the quickest way to
+reproduce a reported conversation behaviour: script the exchange, keep the logs, and read exactly
+what each participant's model was given.
 
 It is not part of `bun run test` or CI, because it boots the whole API (about 30 seconds with plugin
 staging). The fast unit and integration tests remain the regression net; this is the end-to-end
@@ -17,8 +17,8 @@ check.
 
 ```bash
 bun run test:sessions                         # every scenario
-bun run test:sessions --grep 'solo'           # scenarios whose name matches (a regular expression)
-bun run test:sessions --grep 'mid-turn' --keep # keep the temporary root with its logs
+bun run test:sessions --grep 'group'          # scenarios whose name matches (a regular expression)
+bun run test:sessions --grep 'routing' --keep  # keep the temporary root with its logs
 bun run test:sessions --port 5262             # another port when 5261 is taken
 ```
 
@@ -94,15 +94,15 @@ bun run test:sessions --real --api http://127.0.0.1:5051 \
 - Nothing is isolated, so the run removes what it creates: its sessions, their delegated children,
   and the `checker` and `writer` agents. It refuses to start when an agent of either name already
   exists. `--keep` leaves them for inspection and prints their ids; remove them afterwards.
-- A scenario fails only on what the runtime guarantees (membership, mode, no pending card). What the
-  model chose is an expectation, printed with `·` (met) or `!` (unmet) beside the transcript, for a
-  person to judge: the same prompt can be answered by a tag one time and by a delegation the next.
-- It spends real tokens: the four scenarios take about ten model turns. Keep prompts short and ask
-  for no files.
+- A scenario fails only on what the runtime guarantees (membership, no pending card). What the model
+  chose is an expectation, printed with `·` (met) or `!` (unmet) beside the transcript, for a person
+  to judge: the same prompt can be answered by a tag one time and by a delegation the next.
+- It spends real tokens: the three scenarios take a handful of model turns. Keep prompts short and
+  ask for no files.
 
 ## Writing a scenario
 
-Add an entry to `scenarios-modes.mjs` (solo and group conversations) or `scenarios-runs.mjs` (what
+Add an entry to `scenarios-group.mjs` (agents sharing a conversation) or `scenarios-runs.mjs` (what
 else a run inherits); `scenario-helpers.mjs` holds the shared helpers. Each one opens its own
 sessions, so scenarios run in any order and alone. Name it after the behaviour it proves. Assert on
 the person's view and on the model's input:
@@ -111,7 +111,7 @@ the person's view and on the model's input:
 {
   name: 'group: the leader tags a colleague in, who answers and reports back',
   async run(rt) {
-    const session = await rt.createSession({ conversationMode: 'group' })
+    const session = await rt.createSession()
     const after = await rt.say(session.id, `Go. ${script({ localix: ['@checker, check it.'] })}`)
     assert.ok(after.agents.some((agent) => agent.handle === 'checker'))
     assert.ok(lastRun(rt, after, 'checker').system.includes('## Your part'))
@@ -119,11 +119,11 @@ the person's view and on the model's input:
 }
 ```
 
-The runtime handle (`rt`) offers `createSession({ handles, conversationMode, … })`, `say` (send and
-wait until every turn it started has settled), `send` and `waitRunning` (to act mid-turn), `detail`,
-`transcript`, `notices`, `requests({ session, speaker })`, `api` (throws on an error status) and
-`call` (returns `{ status, body }` for asserting a refusal). Every agent the harness knows is routed
-to the scripted model, including agents not yet seated, so an invited agent can answer.
+The runtime handle (`rt`) offers `createSession({ handles, … })`, `say` (send and wait until every
+turn it started has settled), `send` and `waitRunning` (to act mid-turn), `detail`, `transcript`,
+`notices`, `requests({ session, speaker })`, `api` (throws on an error status) and `call` (returns
+`{ status, body }` for asserting a refusal). Every agent the harness knows is routed to the scripted
+model, including agents not yet seated, so an invited agent can answer.
 
 The model is a script, not a reasoner: a scenario proves what the runtime does with a reply
 (routing, invitations, silence, notices) and what it sends the model, not how a real model would

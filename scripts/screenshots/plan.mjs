@@ -85,12 +85,6 @@ export const capturePlan = {
       'Three seeded participants, the selected one driving the composer model, and the per-participant usage in the session total',
     scenario: 'participants',
   },
-  'conversations/solo-mode': {
-    guide: 'features/conversations.md',
-    purpose:
-      'A solo conversation: one agent, with the mode icon leading the strip and opening Solo and Group with what each means',
-    scenario: 'conversation-mode',
-  },
   'conversations/apply-model-to-all': {
     guide: 'features/conversations.md',
     purpose:

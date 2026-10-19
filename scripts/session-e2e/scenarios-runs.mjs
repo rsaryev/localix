@@ -1,15 +1,14 @@
 /** Session E2E: what else a run inherits — commands, forks, permission modes, delegation. */
 import assert from 'node:assert/strict'
 
-import { assertNoTeamProtocol, lastRun, script } from './scenario-helpers.mjs'
+import { lastRun, script } from './scenario-helpers.mjs'
 
 export const RUN_SCENARIOS = [
   {
-    name: 'solo: /agents add makes the conversation a group first',
+    name: '/agents add seats the named agent',
     async run(rt) {
       const session = await rt.createSession({ title: 'Agents add' })
       const after = await rt.say(session.id, '/agents add @checker')
-      assert.equal(after.conversationMode, 'group')
       assert.deepEqual(
         after.agents.map((agent) => agent.handle),
         ['localix', 'checker'],
@@ -17,13 +16,12 @@ export const RUN_SCENARIOS = [
     },
   },
   {
-    name: 'a fork keeps the source’s conversation and permission modes',
+    name: 'a fork keeps the source’s permission mode',
     async run(rt) {
       const session = await rt.createSession({ title: 'Fork source' })
       await rt.api(`/sessions/${session.id}`, { permissionMode: 'plan' }, 'PATCH')
       await rt.say(session.id, `Look. ${script({ localix: ['Looked.'] })}`)
       const fork = await rt.api(`/sessions/${session.id}/fork`, {})
-      assert.equal(fork.conversationMode, 'solo')
       assert.equal(fork.permissionMode, 'plan')
     },
   },
@@ -39,15 +37,14 @@ export const RUN_SCENARIOS = [
     },
   },
   {
-    name: 'plan mode works the same in a solo chat',
+    name: 'plan mode works in a chat with one agent',
     async run(rt) {
-      const session = await rt.createSession({ title: 'Solo plan' })
+      const session = await rt.createSession({ title: 'Lone plan' })
       await rt.api(`/sessions/${session.id}`, { permissionMode: 'plan' }, 'PATCH')
       const after = await rt.say(session.id, `Plan it. ${script({ localix: ['Planning.'] })}`)
       const request = lastRun(rt, after)
       assert.ok(request.system.includes('# Plan mode'))
       assert.ok(request.tools.includes('plan'))
-      assertNoTeamProtocol(request)
     },
   },
   {
@@ -82,14 +79,13 @@ export const RUN_SCENARIOS = [
     },
   },
   {
-    name: 'solo: /workflows makes the conversation a group before it staffs a team',
+    name: '/workflows gives the agent the rule for bringing a team in',
     async run(rt) {
       const session = await rt.createSession({ title: 'Workflows' })
       const after = await rt.say(
         session.id,
         `/workflows ship a pricing page ${script({ localix: ['Breaking it down.'] })}`,
       )
-      assert.equal(after.conversationMode, 'group')
       assert.ok(lastRun(rt, after).system.includes('Bring in a suitable agent'))
     },
   },

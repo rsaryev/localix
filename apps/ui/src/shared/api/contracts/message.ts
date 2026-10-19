@@ -44,8 +44,6 @@ export type SystemNoticeKind =
   | 'context_checkpoint'
   /** The conversation's permission mode changed (the person, or a plan approval, switched it). */
   | 'permission_mode_change'
-  /** The conversation became solo or a group (the person, or a command that needs a team). */
-  | 'conversation_mode_change'
   /** A plan's lifecycle, as the agents read it too: presented, sent back, approved, put aside, done. */
   | 'plan_presented'
   | 'plan_changes_requested'

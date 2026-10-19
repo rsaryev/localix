@@ -1,4 +1,3 @@
-import { supersedeColleagueChains } from '../runtime/conversation-dispatch'
 import { ApiError } from '../../../lib/errors'
 import { readAvailability } from '../../capabilities/availability'
 import { createFileWatchService } from '../../fs-watch/service'
@@ -125,8 +124,6 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
       streamRegistry.publish(userId, '', { type: 'session.deleted', sessionIds }),
     activeAgentId: runner.activeAgentId,
     cancelAgentTurn: runner.cancelAgentTurn,
-    cancelColleagueChains: (userId, sessionId) =>
-      supersedeColleagueChains(runner.cancelAgentTurns, userId, sessionId),
     resolveSessionAgent: deps.resolveSessionAgent,
     repo,
     streamRegistry,

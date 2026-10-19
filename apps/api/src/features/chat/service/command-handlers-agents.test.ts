@@ -81,9 +81,6 @@ function harness(currentSession = session) {
       membership.push(args)
       return { invited: [agent], removed: [], session }
     },
-    setConversationMode: async (...args: unknown[]) => {
-      membership.push(['mode', ...args])
-    },
     repo: { listMessages: async () => [] },
     runner: { isBusy: () => false, isRunning: () => false },
     now: () => '2026-10-13T09:00:00.000Z',
@@ -197,17 +194,6 @@ describe('/agents management', () => {
     ])
     expect(h.writes).toEqual([])
     expect(h.replies[0]).toContain('to start work')
-  })
-  test('adding to a solo chat makes it a group first; a group is left as it is', async () => {
-    const solo = harness({ ...session, conversationMode: 'solo' })
-    await solo.run('/agents add @qa')
-    expect(solo.membership).toEqual([
-      ['mode', session.userId, session.id, 'group'],
-      [session.userId, session.id, { invite: ['native:qa'] }],
-    ])
-    const group = harness({ ...session, conversationMode: 'group' })
-    await group.run('/agents add @qa')
-    expect(group.membership).toEqual([[session.userId, session.id, { invite: ['native:qa'] }]])
   })
   test('deletion requires a preview and an unused exact identity', async () => {
     const h = harness()

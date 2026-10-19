@@ -42,7 +42,7 @@ export const GUIDANCE: Record<RunShape, readonly string[]> = {
     // session undoing it.
     // Every agent in a chat reads this, so it names no role: who leads is decided by priority and
     // said only to the leader (`# Collaboration`, `## Leadership`). Nor does it mention colleagues:
-    // a solo chat has none, and with colleagues present `# Collaboration` opens by saying whose
+    // a lone agent has none, and with colleagues present `# Collaboration` opens by saying whose
     // each part is.
     'You work with the user in this session. Own the work you take on through to a verified result.',
   ],

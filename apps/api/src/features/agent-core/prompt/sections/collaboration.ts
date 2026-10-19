@@ -72,9 +72,6 @@ export function buildCollaborationSection(
               ]),
         ]
       : []),
-    // Alone with no way to bring anyone in, the only other owner is a child the run delegated to.
-    withColleagues || canInvite
-      ? `- Work ${delegate ? 'already owned by a colleague or a running child' : 'a colleague has already taken on'} is theirs: ask for its status instead of starting it again.`
-      : '- Work a running child already owns is theirs: ask for its status instead of starting it again.',
+    `- Work ${delegate ? 'already owned by a colleague or a running child' : 'a colleague has already taken on'} is theirs: ask for its status instead of starting it again.`,
   ].join('\n')
 }

@@ -34,8 +34,6 @@ if (!fixture || fixture.projectId !== project.id) {
     title: 'Prepare the workspace update',
     projectId: project.id,
     agentIds: [demoAgents.localix, demoAgents.frontend, demoAgents.qa],
-    // Stated, not inferred: the room is a group, which the participants shots depict.
-    conversationMode: 'group',
   })
   fixture = { root, projectId: project.id, sessionId: session.id }
 }

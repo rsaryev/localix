@@ -28,6 +28,22 @@ export function needsSessionResync(session: UiSession, event: AgentStreamEvent):
   return false
 }
 
+/**
+ * A new durable row goes where the server put it: before any optimistic row still waiting for its
+ * echo. Those rows stand for messages the server has not written yet, so whatever it writes now —
+ * a membership line from an edit made after Enter, a hand-off reply landing while a send is
+ * queued — precedes them on the branch. Appending after them kept a notice under the agent's
+ * reply once the skeleton was claimed in place, until a reload restored the server order.
+ */
+function insertBeforePending(
+  messages: UiSession['messages'],
+  message: UiSession['messages'][number],
+): UiSession['messages'] {
+  const pending = messages.findIndex((existing) => existing.optimistic)
+  if (pending === -1) return [...messages, message]
+  return [...messages.slice(0, pending), message, ...messages.slice(pending)]
+}
+
 export const messageRowReducers: StreamReducers<
   'message.created' | 'message.updated' | 'message.removed'
 > = {
@@ -94,7 +110,7 @@ export const messageRowReducers: StreamReducers<
           ? session.messages.map((m, i) => (i === optimisticIdx ? claimed : m))
           : exists
             ? session.messages.map((existing) => (existing.id === message.id ? claimed : existing))
-            : [...session.messages, message]
+            : insertBeforePending(session.messages, message)
     const anchorRemap = new Map<string, string>()
     if (
       !message.isInternal &&

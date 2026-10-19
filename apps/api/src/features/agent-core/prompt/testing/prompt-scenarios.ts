@@ -40,28 +40,8 @@ function directory(present: readonly string[]): BuildAgentSystemPromptParams['ag
   ].map((row) => ({ ...row, inConversation: present.includes(row.handle), available: true }))
 }
 
-/**
- * A solo chat — what a new chat with one agent is: it owns the topic, nobody joins by a tag, and
- * there is no directory to tag from (`policy/axes/conversation.ts`, variant `solo`).
- */
+/** A chat with one agent: it leads, owns the topic, and has no colleague to pass to. */
 const SOLO_CHAT: Seat = {
-  shape: 'orchestrator',
-  params: {
-    conversation: {
-      self: 'localix',
-      participants: [{ handle: 'localix' }],
-      isLeader: true,
-      leader: 'localix',
-      membershipClosed: true,
-    },
-    canChangeTopic: true,
-    sessionTopic: TOPIC,
-  },
-  withoutPorts: ['skip_answer'],
-}
-
-/** A group chat its one agent has to itself: it leads, and may tag a colleague in. */
-const LONE_GROUP_CHAT: Seat = {
   shape: 'orchestrator',
   params: {
     conversation: {
@@ -98,7 +78,6 @@ function closedSeat(shape: PromptShapeKey): Seat {
 
 const SEATS: Record<string, Seat> = {
   'seat-chat-solo': SOLO_CHAT,
-  'seat-chat-group-alone': LONE_GROUP_CHAT,
   'seat-chat-group-leader': {
     shape: 'orchestrator',
     params: {
