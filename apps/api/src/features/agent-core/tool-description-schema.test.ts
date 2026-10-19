@@ -7,7 +7,7 @@ import { resolveRunProfile } from './run-shape'
 const RUN_PROFILES = (['chat', 'subagent', 'job'] as const).map((sessionKind) =>
   resolveRunProfile({ sessionKind }),
 )
-import { richRegistry } from './testing/prompt-harness'
+import { richRegistry } from './testing/prompt-render'
 
 /**
  * A tool's DESCRIPTION must not name a field or value its own SCHEMA rejects.

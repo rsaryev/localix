@@ -5,7 +5,7 @@ import {
   richRegistry,
   SHAPE_SESSION_KIND,
   type PromptShapeKey,
-} from './testing/prompt-harness'
+} from './testing/prompt-render'
 
 /**
  * The `# Available tools` roster and the registry the agent actually gets are built

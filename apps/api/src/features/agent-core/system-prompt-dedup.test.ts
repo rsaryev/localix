@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { resolveRunProfile } from './run-shape'
-import { renderLintMatrix, richRegistry, SHAPE_SESSION_KIND } from './testing/prompt-harness'
+import { renderLintMatrix } from './testing/prompt-harness'
+import { richRegistry, SHAPE_SESSION_KIND } from './testing/prompt-render'
 
 // Cross-section duplication lint: the machine-enforced form of "don't duplicate
 // pieces in the system prompt". Within a SINGLE assembled prompt no instruction may

@@ -52,6 +52,12 @@ export const PROMPT_SECTION_CACHE_TIERS: Readonly<Record<string, PromptCacheTier
   // leader changes — not when a colleague is invited or leaves (that is the roster, below).
   '# Conversation turn control': 'stable',
 
+  // How the transcript renders an answer: fixed by the shape and the delivery, never per turn.
+  '# Answer formatting': 'stable',
+  // The session objective changes only when the topic owner sets a new one, so it closes the
+  // cached prefix: a topic change rewrites the least of it.
+  '# Session objective': 'stable',
+
   // Persistent memory belongs in the stable prefix.
   '# Memory context': 'stable',
   // How to read the `<runtime-context>` rows the history carries — fixed text, never per turn.

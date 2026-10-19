@@ -1,1 +1,5 @@
-[]
+[
+  "tool :: seat-chat-solo :: Conversation turn control ⇎ agents :: with a concrete assignment it joins and answers",
+  "tool :: seat-chat-solo-channel :: Conversation turn control ⇎ agents :: with a concrete assignment it joins and answers",
+  "tool :: seat-chat-solo-plan :: Conversation turn control ⇎ agents :: with a concrete assignment it joins and answers"
+]

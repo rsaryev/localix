@@ -13,7 +13,8 @@ const SHAPE = {
   subagent: resolveRunProfile({ sessionKind: 'subagent' }),
   job: { ...resolveRunProfile({ sessionKind: 'job' }), toolExposure: {} },
 }
-import { renderCapabilityMatrix, richRegistry } from './testing/prompt-harness'
+import { renderCapabilityMatrix } from './testing/prompt-harness'
+import { richRegistry } from './testing/prompt-render'
 
 /** The runtime sections as the model reads them — in order, one block after another. */
 function partsOf(params: Parameters<typeof buildAgentSystemPromptParts>[0]) {

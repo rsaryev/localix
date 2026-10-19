@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { renderGoldenMatrix, fullPrompt } from './testing/prompt-harness'
+import { renderGoldenMatrix } from './testing/prompt-harness'
+import { fullPrompt } from './testing/prompt-render'
 import { buildBackgroundJobsSection } from './system-prompt-sections'
 import { resolveRunProfile } from './run-shape'
 

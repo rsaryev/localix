@@ -51,7 +51,16 @@ const registries = {
   bare: createRuntimeToolRegistry({}),
 }
 
-function renderWith(registry: (typeof registries)['full']): string {
+/**
+ * A channel and the transcript renderer are exclusive: a channel run has no `# Answer
+ * formatting`, a transcript run no `# Channel`. Both deliveries are probed.
+ */
+const deliveries = [{ deliveryContext: { channel: 'slack' } }, {}] as const
+
+function renderWith(
+  registry: (typeof registries)['full'],
+  delivery: (typeof deliveries)[number],
+): string {
   return buildAgentSystemPrompt({
     toolRegistry: registry,
     sessionId: 'sess',
@@ -67,13 +76,13 @@ function renderWith(registry: (typeof registries)['full']): string {
     pinnedSkills: [{ name: 'sql-review', content: 'review sql carefully' }],
     triggeredSkills: [{ name: 'deploy-guide', content: 'deploy carefully', keyword: 'deploy' }],
     pluginsContext: 'database — 1 tool',
-    delegateAgents: [{ fullName: 'impl', description: 'implements' }],
     mcpInventory: [{ server: 'acme', tools: ['ticket_search'] }],
     mcpInstructions: [{ server: 'acme', text: 'use tickets' }],
     backgroundJobs: [
       { jobId: 'j1', command: 'bun run build', running: true, startedAt: 0, output: 'ok' },
     ],
-    deliveryContext: { channel: 'slack' },
+    ...delivery,
+    sessionTopic: { title: 'Ship it', goal: 'Release is out' },
     // A conversation with a colleague: the turn protocol (stable) and the roster (volatile).
     conversation: { self: 'lead', participants: [{ handle: 'lead' }, { handle: 'qa' }] },
     agentDirectory: [
@@ -95,17 +104,18 @@ function renderWith(registry: (typeof registries)['full']): string {
 /** Every section header seen across all renders, with the side of the marker it landed on. */
 function observe(): Map<string, PromptCacheTier | 'inconsistent'> {
   const seen = new Map<string, PromptCacheTier | 'inconsistent'>()
-  for (const registry of Object.values(registries)) {
-    const prompt = renderWith(registry)
-    const boundary = prompt.indexOf(RUNTIME_CONTEXT_MARKER)
-    expect(boundary).toBeGreaterThan(-1)
-    for (const line of prompt.split('\n')) {
-      if (!line.startsWith('# ')) continue
-      const tier: PromptCacheTier = prompt.indexOf(line) < boundary ? 'stable' : 'volatile'
-      const previous = seen.get(line)
-      seen.set(line, previous && previous !== tier ? 'inconsistent' : tier)
+  for (const registry of Object.values(registries))
+    for (const delivery of deliveries) {
+      const prompt = renderWith(registry, delivery)
+      const boundary = prompt.indexOf(RUNTIME_CONTEXT_MARKER)
+      expect(boundary).toBeGreaterThan(-1)
+      for (const line of prompt.split('\n')) {
+        if (!line.startsWith('# ')) continue
+        const tier: PromptCacheTier = prompt.indexOf(line) < boundary ? 'stable' : 'volatile'
+        const previous = seen.get(line)
+        seen.set(line, previous && previous !== tier ? 'inconsistent' : tier)
+      }
     }
-  }
   return seen
 }
 

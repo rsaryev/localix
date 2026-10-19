@@ -3,7 +3,7 @@ import { estimateToolSchemaTokens } from '@localixai/agent/agents'
 
 import { CHAT_RUN_PROFILE } from './run-shape'
 import { TOOL } from './tool-names'
-import { richRegistry } from './testing/prompt-harness'
+import { richRegistry } from './testing/prompt-render'
 
 /**
  * The schemas of the tools that ride on EVERY request are a fixed tax paid before the first

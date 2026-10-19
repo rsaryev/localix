@@ -21,7 +21,8 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { CHAT_RUN_PROFILE } from './run-shape'
-import { renderLintMatrix, richRegistry } from './testing/prompt-harness'
+import { renderLintMatrix } from './testing/prompt-harness'
+import { richRegistry } from './testing/prompt-render'
 
 /**
  * Parameter names too generic to attribute to a tool: the prompt uses them as ordinary
