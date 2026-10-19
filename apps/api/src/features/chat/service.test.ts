@@ -1013,6 +1013,9 @@ describe('chat service', () => {
     }
     const session = await chatService.createSession(userId, { title: 'Original', ...topic })
     expect(session).toMatchObject(topic)
+    // The tree runs under one mode: a fork of a plan-mode conversation stays in plan mode. Set on
+    // the record directly, so the mode's own transcript line is not part of the copied history.
+    await repo.updateSession(userId, session.id, { permissionMode: 'plan' })
     const ts = new Date().toISOString()
     const insert = (id: string, role: 'user' | 'assistant', content: string) =>
       repo.insertMessage({
@@ -1040,6 +1043,7 @@ describe('chat service', () => {
     expect(fork.sessionKind).toBe('chat')
     expect(fork.title).toBe(`Original (fork ${fork.seq})`)
     expect(fork).toMatchObject(topic)
+    expect(fork.permissionMode).toBe('plan')
 
     const forkMsgs = await repo.listMessages(userId, fork.id)
     expect(forkMsgs.map((m) => m.payload.content)).toEqual(['one', 'two', 'three'])

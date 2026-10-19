@@ -8,9 +8,12 @@
  * a reply's `@handle` addresses decide who answers next, so these lines are the whole protocol.
  */
 
-/** A lone agent in an open chat: the one thing a turn that brings help in needs to know. */
-export const SOLO_TURN_CONTROL = `You are the only agent in this conversation.
-To bring in a colleague, @mention an available agent from the directory with a concrete assignment: it joins and answers next.`
+/**
+ * A lone agent in an open chat. How a tag brings a colleague in is `# Collaboration`'s invite rule,
+ * which renders for the same run; stating it here too restated the `agents` schema in a third
+ * place, and the duplication lint caught it once a golden rendered a production solo chat.
+ */
+export const SOLO_TURN_CONTROL = `You are the only agent in this conversation.`
 
 /**
  * The person is reached through `ask`, never by a mention. An `@human` address used to hand them
@@ -40,7 +43,7 @@ To hand someone the floor, @mention them with what they must do: scope, inputs a
 A reply that mentions nobody returns the floor: to the colleague who asked you, if one did, otherwise to the user.
 End every turn with a message: the result with its evidence, the decision you need, or the blocker. Never end silently or with only an acknowledgement.`
 
-/** The pass, for a run that holds `skip_answer` (a chat; never a delegated team's child). */
+/** The pass, for a run that holds `skip_answer` (a chat with colleagues; never a child). */
 export const SKIP_ANSWER_CONTROL = `If you are named but nothing is asked of you, or your part is already reported, call skip_answer instead of replying.`
 
 // Whether work waits for the person's approval is the chat's permission mode (Plan), not the

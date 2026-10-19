@@ -272,7 +272,7 @@ describe('human', () => {
       targetSessionId: 's1',
       routeReachable: true,
       canAnswer: true,
-      gateMayConfirm: true,
+      withheldTools: {},
     })
   })
   test('an autonomous session is reachable but not expected to answer', () => {
@@ -282,7 +282,8 @@ describe('human', () => {
       targetSessionId: 's1',
       routeReachable: true,
       canAnswer: false,
-      gateMayConfirm: false,
+      // Every call would be refused, and holding the tools told the model to use them.
+      withheldTools: { ask: 'human.answer', configure: 'human.answer' },
     })
   })
   test('a parentless job has no chat to show a card in', () => {
@@ -293,7 +294,12 @@ describe('human', () => {
           hitl: { targetSessionId: null, reachable: false },
         }),
       ).human,
-    ).toMatchObject({ canAnswer: false, gateMayConfirm: false })
+    ).toMatchObject({ canAnswer: false })
+  })
+  test('a chat whose ancestry cannot be verified never shows a card, so nobody "declines" it', () => {
+    expect(
+      resolveRunPolicy(run({ hitl: { targetSessionId: null, reachable: false } })).human.canAnswer,
+    ).toBe(false)
   })
 })
 

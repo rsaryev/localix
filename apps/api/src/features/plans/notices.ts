@@ -32,7 +32,7 @@ export const planNotice = {
     kind: 'plan_presented',
     tone: 'info',
     text: handle
-      ? `@${handle} presented plan v${plan.version}: ${plan.title}.`
+      ? `${handle} presented plan v${plan.version}: ${plan.title}.`
       : `Plan v${plan.version} presented: ${plan.title}.`,
   }),
 
@@ -68,11 +68,7 @@ export const planNotice = {
     tone: 'success',
     text:
       `Plan v${plan.version} approved — ${PERMISSION_MODE_COPY[mode].label} mode.` +
-      (!addressee
-        ? ''
-        : 'all' in addressee
-          ? ' Everyone starts.'
-          : ` @${addressee.handle} starts.`),
+      (!addressee ? '' : 'all' in addressee ? ' Everyone starts.' : ` ${addressee.handle} starts.`),
   }),
 
   dismissed: (plan: Plan): StoredSystemNotice => ({

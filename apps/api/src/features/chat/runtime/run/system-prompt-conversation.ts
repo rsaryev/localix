@@ -20,6 +20,8 @@ export interface ConversationPromptContext {
   leader?: string
   /** A tag cannot bring anybody in (`policy.conversation.tagInvites`). */
   membershipClosed: boolean
+  /** No conversation surrounds the run (`policy.conversation.kind === 'isolated'`). */
+  isolated?: true
 }
 
 /**
@@ -44,5 +46,6 @@ export function conversationPromptContext(
     isLeader: leader?.agentId === speaker.agentId,
     ...(leader ? { leader: leader.handle } : {}),
     membershipClosed: !policy.conversation.tagInvites,
+    ...(policy.conversation.kind === 'isolated' ? { isolated: true as const } : {}),
   }
 }

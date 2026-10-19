@@ -174,7 +174,7 @@ describe('who an approval reaches — the conversation’s addressing, not a pla
       const { wake, reached, lines } = await approveWith(room, 'backend')
       expect(reached).toEqual(['backend'])
       expect(wake.to).toBeUndefined()
-      expect(lines.at(-1)).toBe('plan_approved: Plan v1 approved — Default mode. @backend starts.')
+      expect(lines.at(-1)).toBe('plan_approved: Plan v1 approved — Default mode. backend starts.')
     })
 
     test('to all reaches every participant, as @all does for a message', async () => {

@@ -73,6 +73,10 @@ export async function forkSession(
     // be the first thing the model had to do otherwise.
     activatedTools: source.activatedTools,
     archivedAt: null,
+    // The fork joins its source's tree, and a tree runs under one mode: its root's, which a
+    // change there writes to every session of the tree. Born on the default instead, a fork of a
+    // plan-mode conversation could write files until the root's mode next changed.
+    ...(source.permissionMode ? { permissionMode: source.permissionMode } : {}),
   }
   await repo.insertSession(forked)
 

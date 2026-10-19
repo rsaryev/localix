@@ -26,7 +26,7 @@ import { MAX_HANDOFF_CHAIN } from '../../turn-budget'
 import type { ConversationRecipient } from '../conversation-strategy'
 import { rosterLeadership } from '../conversation-strategy'
 import { enqueueTurnTickets, resolveTurnRecipients } from '../conversation-dispatch'
-import { sessionExecutionContext } from '../execution-context'
+import { childExecutionContext, sessionExecutionContext } from '../execution-context'
 import { insertUiNote } from '../message-persistence'
 import { inviteAddressedAgents } from './conversation-invite'
 import { conversationPolicy } from '../../policy/session-policy'
@@ -73,6 +73,18 @@ export function planHandoff(
     reports: addressed.filter(isReport),
     assignments: addressed.filter((handle) => !isReport(handle)),
   }
+}
+
+/**
+ * The authority a colleague's turn runs under: the conversation's own, never more than the turn
+ * that handed it the floor. A channel conversation stays a channel conversation — rebuilt from
+ * the session record alone, a colleague's turn there ran as the root chat, admitted under the
+ * `chat` host's rules and holding root authority the person's own channel turns never get.
+ */
+function handoffExecutionContext(params: RunParams, session: SessionRecord) {
+  return params.scope.executionContext.invocation.kind === 'channel'
+    ? childExecutionContext({ kind: 'channel' })
+    : sessionExecutionContext(session)
 }
 
 /** Queue whoever the settled reply hands the floor to. Never throws: the reply is already saved. */
@@ -166,7 +178,7 @@ export async function routeConversationReply(
             ...(report ? { report: true } : {}),
           },
           handoffDepth,
-          executionContext: sessionExecutionContext(session),
+          executionContext: handoffExecutionContext(params, session),
         },
       })
     }

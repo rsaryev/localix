@@ -117,11 +117,10 @@ export async function assembleRunTools(
   // `required:true` servers fail startup. Servers removed/disabled since the last
   // gather get their clients disposed by the manager. Disabled tools are
   // filtered by the registry's allow-list, mirroring built-in tools.
-  // Only interactive/delegating profiles (chat/orchestrator, subagent) receive
-  // MCP tools. The automation profile is a CLOSED allowlist (focused unattended
-  // loop/job workers) — MCP tools would otherwise bypass its filter and bloat
-  // every worker's tool payload with servers it never uses. Skipping the gather
-  // also avoids the per-run MCP connect cost for workers.
+  // Only a chat's OPEN toolset receives MCP tools (`openToolset`, `run-shape.ts`). A
+  // delegated child and an automation run are CLOSED allowlists — MCP tools would otherwise
+  // bypass their filter and bloat every worker's tool payload with servers it never uses.
+  // Skipping the gather also avoids the per-run MCP connect cost for workers.
   const mcp = agentProfile.openToolset
     ? await resolveMcpTools({
         env,

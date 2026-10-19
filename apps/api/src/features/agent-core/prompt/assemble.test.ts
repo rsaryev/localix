@@ -123,11 +123,11 @@ describe('buildAgentSystemPrompt', () => {
     })
     expect(orchestratorRegistry.toolNames).toContain('agents')
     expect(orchestratorRegistry.toolNames).toContain('delegate')
-    expect(orchestratorPrompt).toContain('`fork` action:"list"')
+    expect(orchestratorPrompt).toContain('`delegate` action:"list"')
     expect(orchestratorPrompt).toContain('do not poll for completion')
     expect(orchestratorPrompt).toContain('results arrive automatically as new messages')
     // A child is reachable after its report: the prompt must say so, not call it one-shot.
-    expect(orchestratorPrompt).toContain('`fork` action:"message"')
+    expect(orchestratorPrompt).toContain('`delegate` action:"message"')
     expect(orchestratorPrompt).toContain('`agents`')
     expect(orchestratorPrompt).not.toContain('cannot receive follow-up instructions')
 

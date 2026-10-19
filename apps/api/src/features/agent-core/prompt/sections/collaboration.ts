@@ -26,7 +26,7 @@ export function buildCollaborationSection(
   // children the person could not see or redirect — which is why a colleague's part goes to them.
   room: {
     withColleagues: boolean
-    /** A conversation exists for this run (a chat or a delegated team). */
+    /** A conversation exists for this run. */
     inConversation?: boolean
     membershipClosed?: boolean
     isLeader?: boolean

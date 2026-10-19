@@ -65,10 +65,6 @@ export function resolveRunPolicy(facts: RunPolicyFacts): RunPolicy {
     priorities: facts.priorities,
   })
   const trigger = pick(triggerAxis, facts.trigger)
-  const human = pick(humanAxis, {
-    hitl: facts.hitl,
-    host: session.host,
-    permission: session.permission,
-  })
+  const human = pick(humanAxis, { hitl: facts.hitl, permission: session.permission })
   return { ...session, invocation, seat, trigger, human, trace }
 }

@@ -19,8 +19,9 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
   /** Session/project-level permission rules from prompt-context. */
   permissionRules: PermissionRule[]
   /**
-   * Whether a confirm card may be raised at all (`policy.human.gateMayConfirm`). When it may not,
-   * an `ask` verdict refuses with the unattended-run message instead of waiting out a deadline.
+   * Whether a confirm card may be raised at all (`policy.human.canAnswer`). When it may not, an
+   * `ask` verdict refuses with the unattended-run message instead of waiting out a deadline or
+   * reporting that a person declined a card nobody showed them.
    */
   mayConfirm: boolean
   /** Final dispatch descriptors, including MCP and deferred implementations. */
@@ -100,8 +101,8 @@ export function buildRunPermissionGate(
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.
     ownPlanDir: ownPlanDirForRun(session, defaultCwd),
-    // Nobody answers a card in two ways: a parentless automation job has no chat to show it in,
-    // and an autonomous session has a chat nobody is expected to watch (`policy/axes/human.ts`).
+    // Nobody answers a card when no verified chat can show it (a parentless job, broken ancestry)
+    // or when the session is autonomous and nobody watches it (`policy/axes/human.ts`).
     requestConfirm: options.mayConfirm ? requestConfirm : undefined,
     ...(options.refusalTracker ? { refusalTracker: options.refusalTracker } : {}),
   })

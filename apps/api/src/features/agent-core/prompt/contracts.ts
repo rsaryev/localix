@@ -76,6 +76,11 @@ export interface BuildAgentSystemPromptParams {
     leader?: string
     /** Nobody can be tagged in: it is not a chat. */
     membershipClosed?: boolean
+    /**
+     * No conversation surrounds the run: a delegated child or a job works for whoever started
+     * it, so there is no room to list — no roster, no `@human` beside a colleague.
+     */
+    isolated?: boolean
   }
   /** Scope-aware agent directory, rendered in the volatile tail so registry edits are immediate. */
   agentDirectory?: readonly {

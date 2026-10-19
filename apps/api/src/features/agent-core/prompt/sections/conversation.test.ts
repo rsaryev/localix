@@ -98,10 +98,10 @@ describe('the conversation roster', () => {
 })
 
 describe('the turn protocol', () => {
-  test('a solo run in an open chat learns only how a tag brings help in', () => {
+  test('a solo run in an open chat learns it is alone; the invite rule is Collaboration’s', () => {
     const solo = buildTurnControlSection({ multi: false, canInvite: true })!
     expect(solo).toContain(SOLO_TURN_CONTROL)
-    expect(solo).toContain('@mention an available agent')
+    expect(solo).not.toContain('@mention an available agent')
     // The full contract binds turns only once colleagues are present.
     expect(solo).not.toContain('Everyone here')
     expect(solo).not.toContain(TEAM_CONVERSATION)

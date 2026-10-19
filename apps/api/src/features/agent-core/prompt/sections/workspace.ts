@@ -11,7 +11,14 @@ import type { BuildAgentSystemPromptParams } from '../assemble'
 export function buildWorkspaceSection(
   workspaceRoot: string,
   agentProfile?: RunProfile,
-  toolNames: readonly string[] = [TOOL.read, TOOL.search, TOOL.write, TOOL.edit, TOOL.bash],
+  toolNames: readonly string[] = [
+    TOOL.ask,
+    TOOL.read,
+    TOOL.search,
+    TOOL.write,
+    TOOL.edit,
+    TOOL.bash,
+  ],
   /** `false` when the root is known not to be a git checkout; undefined = unknown, say nothing. */
   gitRepo?: boolean,
 ): string {
@@ -24,6 +31,7 @@ export function buildWorkspaceSection(
   // The outside-workspace line is permission-dependent, so it must match the run:
   //  - unattended worker: no human to approve → the request is auto-BLOCKED, never
   //    prompted (permission-engine.ts), so "you will be prompted" would be false;
+  //  - a chat nobody watches (no `ask`): its rules decide without a prompt;
   //  - everything else: prompt-gated by the baseline outside-workspace rule.
   const outsideLine = !canChangeWorkspace
     ? null
@@ -34,7 +42,11 @@ export function buildWorkspaceSection(
           ? // The approval is the permission system's, raised to the parent's human; the child
             // itself has no channel to the user, so the line names none.
             '- Stay inside this directory: reading, writing or running commands OUTSIDE it needs an approval — avoid it unless the task requires it.'
-          : '- Stay inside this directory: reading, writing or running commands OUTSIDE it asks the user to confirm (one approval can cover the whole session) — avoid it unless the user explicitly asked.'
+          : has(TOOL.ask)
+            ? '- Stay inside this directory: reading, writing or running commands OUTSIDE it asks the user to confirm (one approval can cover the whole session) — avoid it unless the user explicitly asked.'
+            : // Nobody answers a card in this session (`ask` is withheld): the call is decided by
+              // its rules alone, so promising a confirmation would be false.
+              '- Stay inside this directory: reading, writing or running commands OUTSIDE it is decided by this session’s rules, without asking anyone — avoid it unless the task requires it.'
       : agentProfile?.shape === 'automation'
         ? `- Using the available ${canRunCommands ? 'command' : 'file-mutation'} capability OUTSIDE this directory will be BLOCKED in this unattended run. Stay inside the workspace; if outside access is essential, say so in your final reply.`
         : `- Using the available ${canRunCommands ? 'command' : 'file-mutation'} capability OUTSIDE this directory needs an approval; avoid it unless the task requires it.`

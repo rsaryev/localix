@@ -12,6 +12,7 @@
  */
 import { TOOL } from '../../tool-names'
 import type { BuildAgentSystemPromptParams } from '../assemble'
+import type { OptionalToolPorts } from '../../tool-registry'
 import { fullPrompt, SHAPE_SESSION_KIND, type PromptShapeKey } from './prompt-render'
 import { renderSeatMatrix } from './prompt-scenarios'
 
@@ -31,8 +32,12 @@ const LEAN_ROSTER_DISABLED: readonly string[] = [
   TOOL.browser,
 ]
 
-/** A run that does not own the session topic: no `set_topic`, so no topic rules either. */
-const SOLO_ROSTER_DISABLED: readonly string[] = [TOOL.set_topic]
+/**
+ * A run that does not own the session topic. `set_topic` is a protocol tool no rule can switch
+ * off, so the cell drops the PORT, as a host does for a member's seat; disabling it by name left
+ * this cell byte-identical to the base one.
+ */
+const NO_TOPIC_PORTS: readonly (keyof OptionalToolPorts)[] = ['set_topic']
 
 /** A conversation with one colleague, from the leader's seat, with the registry beside it. */
 const CONVERSATION_CONTEXT: Partial<BuildAgentSystemPromptParams> = {
@@ -108,20 +113,24 @@ export function renderGoldenMatrix(): Record<string, string> {
  */
 export function renderCapabilityMatrix(): Record<string, string> {
   const out: Record<string, string> = {}
-  const rosters: Record<string, readonly string[] | undefined> = {
-    '': undefined,
-    '-lean': LEAN_ROSTER_DISABLED,
-    '-solo': SOLO_ROSTER_DISABLED,
+  const rosters: Record<
+    string,
+    { disabled?: readonly string[]; withoutPorts?: readonly (keyof OptionalToolPorts)[] }
+  > = {
+    '': {},
+    '-lean': { disabled: LEAN_ROSTER_DISABLED },
+    '-no-topic': { withoutPorts: NO_TOPIC_PORTS },
   }
   for (const profileKey of Object.keys(SHAPE_SESSION_KIND) as PromptShapeKey[]) {
-    for (const [suffix, disabled] of Object.entries(rosters)) {
-      out[`${profileKey}${suffix}`] = fullPrompt(profileKey, {}, disabled)
+    for (const [suffix, { disabled, withoutPorts }] of Object.entries(rosters)) {
+      out[`${profileKey}${suffix}`] = fullPrompt(profileKey, {}, disabled, withoutPorts)
       // The same cell inside a conversation with a colleague: the sections that name the
       // collaboration tools (turn control, roster, directory) render only here.
       out[`${profileKey}${suffix}-conversation`] = fullPrompt(
         profileKey,
         CONVERSATION_CONTEXT,
         disabled,
+        withoutPorts,
       )
     }
   }

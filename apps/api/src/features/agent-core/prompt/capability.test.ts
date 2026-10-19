@@ -83,6 +83,14 @@ const DENIALS = [
 const denies = (prose: string, tool: string) =>
   DENIALS.some((phrase) => prose.includes(phrase(tool)))
 
+/**
+ * Every tool the prose tells the model to CALL with an action. `names` only knows the catalog's
+ * names, so a call to a tool that exists nowhere passed it: the sub-agent roster told every chat
+ * to use `fork` action:"list", a tool renamed to `delegate` long before.
+ */
+export const calledTools = (prose: string) =>
+  [...prose.matchAll(/`([a-z][a-z0-9_]*)` action:/g)].map((match) => match[1]!)
+
 // The committed goldens PLUS every (profile × tool-surface) cell the product can render.
 // The goldens alone were structurally blind to surfaces nobody committed a file for, and
 // two shipped capability bugs hid in exactly that gap. Deduped: a golden and a generated
@@ -100,6 +108,8 @@ describe('system-prompt capability lint', () => {
       '# Available tools\n- read\n\n# Unavailable tools\n- vault — off\n\n# Other\nUse vault_x.',
     )
     expect(prose).not.toContain('vault — off')
+    expect(calledTools('Use `fork` action:"list" for your forks.')).toEqual(['fork'])
+    expect(calledTools('Use `fork` to split work.')).toEqual([])
   })
 
   test('the golden matrix is non-empty and every variant has a roster', () => {
@@ -119,6 +129,13 @@ describe('system-prompt capability lint', () => {
       )
       expect(`${variant} names absent tools: ${phantom.join(', ')}`).toBe(
         `${variant} names absent tools: `,
+      )
+    })
+
+    test(`${variant}: calls only tools in its roster`, () => {
+      const phantom = calledTools(prose).filter((tool) => !roster.has(tool))
+      expect(`${variant} calls absent tools: ${phantom.join(', ')}`).toBe(
+        `${variant} calls absent tools: `,
       )
     })
 

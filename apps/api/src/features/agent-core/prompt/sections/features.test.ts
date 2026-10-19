@@ -68,7 +68,7 @@ describe('aggregate extension prompt budgets', () => {
     )
 
     expect(out).toContain('aggregate prompt budget reached')
-    expect(out).toContain('`fork` action:"list"')
+    expect(out).toContain('`delegate` action:"list"')
     expect(out.length).toBeLessThan(ACTIVE_SUBAGENTS_TOTAL_MAX_CHARS + 1_000)
   })
 
@@ -79,13 +79,13 @@ describe('aggregate extension prompt budgets', () => {
       canListRuns: false,
     })
     expect(inspectOnly).toContain('`global_search`')
-    expect(inspectOnly).not.toContain('`fork`')
+    expect(inspectOnly).not.toContain('`delegate`')
 
     const listOnly = buildActiveSubAgentsSection(agents, {
       canInspectHistory: false,
       canListRuns: true,
     })
-    expect(listOnly).toContain('`fork` action:"list"')
+    expect(listOnly).toContain('`delegate` action:"list"')
     expect(listOnly).not.toContain('`agents`')
     expect(listOnly).not.toContain('`global_search`')
 
@@ -93,7 +93,7 @@ describe('aggregate extension prompt budgets', () => {
       canInspectHistory: false,
       canListRuns: false,
     })
-    expect(observeOnly).not.toContain('`fork`')
+    expect(observeOnly).not.toContain('`delegate`')
     expect(observeOnly).not.toContain('`global_search`')
     expect(observeOnly).toContain('Wait for its completion message')
   })
@@ -109,7 +109,7 @@ describe('aggregate extension prompt budgets', () => {
 
     expect(out).toContain('aggregate prompt budget reached')
     expect(out).not.toContain('`global_search`')
-    expect(out).toContain('`fork`')
+    expect(out).toContain('`delegate`')
   })
 
   test('caps pinned skill bodies without promising an unavailable retrieval tool', () => {

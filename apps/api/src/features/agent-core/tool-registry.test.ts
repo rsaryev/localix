@@ -479,3 +479,14 @@ describe('createRuntimeToolRegistry', () => {
     }
   })
 })
+
+test('a tool the host withholds is neither built into the roster nor silent', () => {
+  const registry = createRuntimeToolRegistry({
+    policy: { withheldByHost: { ask: 'human.answer' } },
+  })
+  expect(registry.toolNames).not.toContain('ask')
+  expect(registry.ledger.get('ask')).toEqual({
+    state: 'withheld',
+    reason: { layer: 'authority', kind: 'missing', capability: 'human.answer' },
+  })
+})

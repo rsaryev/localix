@@ -1,3 +1,4 @@
+import { conversationPolicy } from '../policy/session-policy'
 import { ApiError } from '../../../lib/errors'
 import { recordSessionChanges } from '../runtime/session-notice'
 import { changeParticipants } from '../runtime/conversation-participants'
@@ -62,6 +63,10 @@ export async function updateSession(
       'permission_mode_owned_by_root',
       "A delegated session runs under its root conversation's mode; change it there",
     )
+  }
+  // Only a chat's membership can change: a delegated child or a job IS its one agent's task.
+  if (patch.agents !== undefined && !conversationPolicy(session).membershipEditable) {
+    throw new ApiError(409, 'membership_fixed', 'Only a chat conversation can change who is in it')
   }
   // WHO is in the conversation: the one participants writer, which guards the active speaker,
   // refuses a stale list, cancels the leavers' queued turns and announces the change.

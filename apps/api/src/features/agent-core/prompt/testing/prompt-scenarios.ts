@@ -21,6 +21,8 @@ interface Seat {
   params: Partial<BuildAgentSystemPromptParams>
   /** Ports the host builds only for some seats (`skip_answer`, `set_topic`). */
   withoutPorts: readonly (keyof OptionalToolPorts)[]
+  /** Tools the host withholds from the run (`policy.human.withheldTools`). */
+  withheld?: Readonly<Record<string, string>>
 }
 
 const TOPIC = { title: 'Ship the release', goal: 'Release 1.4 is published' }
@@ -67,6 +69,7 @@ function closedSeat(shape: PromptShapeKey): Seat {
         isLeader: true,
         leader: 'localix',
         membershipClosed: true,
+        isolated: true,
       },
     },
     withoutPorts: ['skip_answer', 'set_topic'],
@@ -116,6 +119,12 @@ const SEATS: Record<string, Seat> = {
     ...SOLO_CHAT,
     params: { ...SOLO_CHAT.params, planMode: { draftPath: '/repo/.localix/plans/s1/PLAN.md' } },
   },
+  // An autonomous session: nobody is expected to answer, so the tools that only reach a person
+  // are withheld and the turn contract says to proceed on a stated assumption.
+  'seat-chat-solo-autonomous': {
+    ...SOLO_CHAT,
+    withheld: { ask: 'human.answer', configure: 'human.answer' },
+  },
   'seat-chat-solo-channel': {
     ...SOLO_CHAT,
     params: { ...SOLO_CHAT.params, deliveryContext: { channel: 'messenger' } },
@@ -129,7 +138,7 @@ export function renderSeatMatrix(): Record<string, string> {
   return Object.fromEntries(
     Object.entries(SEATS).map(([name, seat]) => [
       name,
-      fullPrompt(seat.shape, seat.params, undefined, seat.withoutPorts),
+      fullPrompt(seat.shape, seat.params, undefined, seat.withoutPorts, seat.withheld),
     ]),
   )
 }

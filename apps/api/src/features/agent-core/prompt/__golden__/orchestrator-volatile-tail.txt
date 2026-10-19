@@ -149,7 +149,7 @@ Files written here are NOT part of the user's workspace: a deliverable belongs i
 # Active sub-agents
 These sub-agents are STILL RUNNING. Their results arrive automatically as new messages; continue independent work or end your turn instead of checking their status repeatedly.
 - Do NOT edit files inside their task scope, run conflicting commands, or fork overlapping work until they finish.
-- Do NOT fork the same task again. Use `fork` action:"list" only when a report went missing or ownership is unclear; do not poll for completion. `fork` action:"message" amends a fork's task (a finished fork runs again and reports again), action:"stop" ends its current run, and action:"close" ends a fork you are done with for good.
+- Do NOT fork the same task again. Use `delegate` action:"list" only when a report went missing or ownership is unclear; do not poll for completion. `delegate` action:"message" amends a child's task (a finished child runs again and reports again), action:"stop" ends its current run, and action:"close" ends a child you are done with for good.
 - «child-agent» — do thing
 
 # Loops

@@ -34,6 +34,7 @@ export function richRegistry(
   profile: RunProfile,
   disabledTools?: readonly string[],
   withoutPorts: readonly (keyof OptionalToolPorts)[] = [],
+  withheldByHost?: Readonly<Record<string, string>>,
 ): RuntimeToolRegistry {
   const optional = productionOptionalPorts({ save: async () => {} })
   for (const port of withoutPorts) delete optional[port]
@@ -42,6 +43,7 @@ export function richRegistry(
       agentProfile: profile,
       extraTools: productionExtraTools(),
       ...(disabledTools ? { disabledTools } : {}),
+      ...(withheldByHost ? { withheldByHost } : {}),
     },
     core: productionCoreDeps(),
     optional,
@@ -80,6 +82,7 @@ export function fullPrompt(
   extra: Partial<BuildAgentSystemPromptParams> = {},
   disabledTools?: readonly string[],
   withoutPorts?: readonly (keyof OptionalToolPorts)[],
+  withheldByHost?: Readonly<Record<string, string>>,
 ): string {
   // Production parity: every run is dispatched WITH an agent, and the identity slot is that
   // agent's prompt — a chat with the shipped default, an unattended run with whatever its
@@ -100,7 +103,7 @@ export function fullPrompt(
   )
   // Production parity (runtime-tools.ts): a session with active loops keeps `loops`
   // direct — the loops section instructs dynamic loops to call `loops.reschedule`.
-  const registry = richRegistry(profile, disabledTools, withoutPorts)
+  const registry = richRegistry(profile, disabledTools, withoutPorts, withheldByHost)
   return buildAgentSystemPrompt({
     sessionId: 'session-1',
     modelId: 'openrouter/anthropic/claude-sonnet-4.5',

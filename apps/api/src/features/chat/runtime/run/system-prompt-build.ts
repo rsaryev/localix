@@ -133,7 +133,8 @@ export async function buildRunSystemPrompt(
     ? activeDescendantSubagents(
         options.descendantSessions,
         session.id,
-        session.agents?.length ? speaker : undefined,
+        // Attributed only where a colleague could own a child (`descendant-roster.ts`).
+        options.policy.conversation.withColleagues ? speaker : undefined,
       )
     : [...childRuntimeSessions.values()].flatMap((c) =>
         c.parentSessionId === session.id &&

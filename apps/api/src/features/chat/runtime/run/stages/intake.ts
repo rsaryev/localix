@@ -81,7 +81,7 @@ export async function intakeRunTurn(
     ccHooks,
     extraAllowedTools: params.scope.extraAllowedTools,
     permissionRules: inputs.permissionRules,
-    mayConfirm: turn.policy.human.gateMayConfirm,
+    mayConfirm: turn.policy.human.canAnswer,
     tools: toolset.dispatchTools,
     defaultCwd,
     hitlWaitedMs: turn.state.hitlWaitedMs,

@@ -139,6 +139,7 @@ export function buildRunToolRegistry(
       disabledTools,
       toolDenials,
       missingCapabilities: explainEmptyPorts(optional),
+      withheldByHost: params.policy.human.withheldTools,
       agentProfile,
       modelInput: params.modelInput,
       // Native plugin tools (in-process). They flow through the same disabledTools

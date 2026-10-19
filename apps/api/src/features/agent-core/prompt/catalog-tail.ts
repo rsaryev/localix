@@ -66,7 +66,10 @@ export const TAIL_SECTIONS: readonly PromptSection[] = [
     id: 'participants',
     tier: 'state',
     heading: '# Conversation participants',
-    render: (f) => (f.params.conversation ? buildParticipantsSection(f.params.conversation) : null),
+    render: (f) =>
+      f.params.conversation && !f.params.conversation.isolated
+        ? buildParticipantsSection(f.params.conversation)
+        : null,
   },
   {
     // The directory is who a tag can reach. A rule edit or a colleague joining changes a row,

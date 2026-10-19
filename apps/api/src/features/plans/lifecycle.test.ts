@@ -80,7 +80,7 @@ afterEach(() => destroyDatabase(db))
 describe('one notice per transition', () => {
   test('present', async () => {
     await plans.present(owner, 'lead', draft(1))
-    expect(notices).toEqual(['plan_presented|@lead presented plan v1: Plan 1.'])
+    expect(notices).toEqual(['plan_presented|lead presented plan v1: Plan 1.'])
     expect(signals).toEqual(['awaiting v1'])
   })
 
@@ -118,7 +118,7 @@ describe('one notice per transition', () => {
     const v1 = await plans.present(owner, 'lead', draft(1))
     notices = []
     await plans.approve(owner, v1.id, 'default', 'backend')
-    expect(notices).toEqual(['plan_approved|Plan v1 approved — Default mode. @backend starts.'])
+    expect(notices).toEqual(['plan_approved|Plan v1 approved — Default mode. backend starts.'])
   })
 
   test('approve to everyone — the line says so', async () => {

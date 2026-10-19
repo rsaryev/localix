@@ -50,6 +50,12 @@ export interface ToolRegistryPolicy {
    * the host did not explain is recorded as `host:<name>` — present, never silent.
    */
   missingCapabilities?: Readonly<Record<string, string>>
+  /**
+   * Built tools the host withholds from THIS run, each with the capability the run lacks — a
+   * person to answer `ask`, say, in a session nobody watches. Withheld like an empty port: the
+   * model is told the host does not provide it, and nothing in the prompt names it.
+   */
+  withheldByHost?: Readonly<Record<string, string>>
   /** Declarative role profile that decides which tools are visible before user/project disabledTools apply. */
   agentProfile?: RunProfile
   /** What this run's model reads; drives the ledger's `model` layer and each tool's `forModel`. */
@@ -192,8 +198,8 @@ export function createRuntimeToolRegistry(
 
   // Every built-in is a CANDIDATE, built or not: a port the host left empty still gets a row,
   // so "the tool is simply not there" is no longer a state the ledger can express.
-  // extraTools are an EXPLICIT injection (plugin native tools, and the two core-NAMED tools
-  // a host owns — `vault`, `mcp_resources`). On an OPEN profile the caller decided to expose
+  // extraTools are an EXPLICIT injection (plugin native tools, and the core-NAMED tools a
+  // host owns — `vault`, `external_agent_sessions`). On an OPEN profile the caller decided to expose
   // every enabled plugin tool; on a CLOSED profile (an unattended worker) a plugin tool
   // survives only when the role declared it — the ledger's shape layer applies exactly that
   // rule, reading each tool's own `exposure`.
@@ -201,13 +207,16 @@ export function createRuntimeToolRegistry(
   const built = new Map<string, AgentTool>()
   for (const entry of [...coreTools, ...namedOptionals]) built.set(entry.tool.name, entry.tool)
   for (const tool of extraTools) if (!built.has(tool.name)) built.set(tool.name, tool)
-  const candidates: ToolCandidate[] = BUILTIN_TOOL_NAMES.map((name) => ({
-    name,
-    ...(built.has(name) ? { tool: built.get(name)! } : {}),
-    ...(policy.missingCapabilities?.[name]
-      ? { missingCapability: policy.missingCapabilities[name] }
-      : {}),
-  }))
+  const withheld = policy.withheldByHost ?? {}
+  for (const name of Object.keys(withheld)) built.delete(name)
+  const candidates: ToolCandidate[] = BUILTIN_TOOL_NAMES.map((name) => {
+    const missingCapability = withheld[name] ?? policy.missingCapabilities?.[name]
+    return {
+      name,
+      ...(built.has(name) ? { tool: built.get(name)! } : {}),
+      ...(missingCapability ? { missingCapability } : {}),
+    }
+  })
   for (const tool of extraTools) candidates.push({ name: tool.name, tool })
 
   const ledger = resolveToolSurface(

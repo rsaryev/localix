@@ -60,7 +60,7 @@ export function buildTurnControlSection(input: {
   canChangeTopic?: boolean
   /** The run holds `skip_answer`. */
   canSkip?: boolean
-  /** A tag can bring an agent in: an open chat, not a fixed roster or a delegated team. */
+  /** A tag can bring an agent in: an open chat, not a delegated child or a job. */
   canInvite?: boolean
   /** The run holds a task board tool; board rules render only then. */
   hasBoard?: boolean

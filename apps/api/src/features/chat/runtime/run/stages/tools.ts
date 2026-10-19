@@ -154,12 +154,13 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     preflightTools.map((tool) => tool.name),
     { userId, projectId: session.projectId },
   )
-  // A reachable route: an `ask` on a required operation only stops a run nobody could answer.
+  // An `ask` on a required operation stops only a run nobody can answer — no route to a chat,
+  // or an autonomous session nobody watches; otherwise the gate's card is the answer.
   assertRunToolRequirements(
     preflightTools,
     inputs.permissionRules,
     params.scope.requiredTools,
-    policy.human.routeReachable,
+    policy.human.canAnswer,
   )
 
   return {

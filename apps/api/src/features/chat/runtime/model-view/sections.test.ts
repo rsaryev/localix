@@ -50,6 +50,28 @@ describe('modelViewSections', () => {
 
   // Once a checkpoint has placed the pin in its head it is in the view verbatim; repeating it
   // in the runtime context would send it twice.
+  test('a colleague’s pinned reply is theirs, not the reader’s', () => {
+    const colleague = persistedRow('a2', {
+      role: 'assistant',
+      from: 'agent:qa',
+      authorSnapshot: { handle: 'qa' },
+      content: 'Checkout verified',
+      pinned: true,
+    })
+    const own = persistedRow('a1', {
+      role: 'assistant',
+      from: 'agent:default',
+      content: 'Mine',
+      pinned: true,
+    })
+    const [pinned] = modelViewSections({
+      view: view(checkpoint()),
+      rows: [rows[0]!, own, rows[2]!, colleague, rows[4]!],
+    })
+    expect(pinned?.text).toContain("a2 (qa's reply): Checkout verified")
+    expect(pinned?.text).toContain('a1 (your reply): Mine')
+  })
+
   test('a pin the checkpoint keeps in its head is not repeated', () => {
     const record = checkpoint({ pinnedIds: ['u2'] })
     expect(keys(modelViewSections({ view: view(record), rows }))).toEqual([])

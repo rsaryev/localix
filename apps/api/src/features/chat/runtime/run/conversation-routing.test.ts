@@ -195,6 +195,16 @@ describe('tags bring agents in', () => {
   })
 })
 
+test('a colleague’s turn in a channel conversation runs under the channel, not the root chat', async () => {
+  const h = harness()
+  await h.route('agent-a', '@beta, check the order.', {
+    executionContext: { invocation: { kind: 'channel' }, authority: { capabilities: [] } },
+  })
+  expect(h.queued.map((entry) => entry.scope.executionContext)).toEqual([
+    { invocation: { kind: 'channel' }, authority: { capabilities: [] } },
+  ])
+})
+
 test('past the handoff bound nobody is queued and the person is told', async () => {
   const h = harness()
   await h.route('agent-a', '@beta, again.', { handoffDepth: MAX_HANDOFF_CHAIN })
