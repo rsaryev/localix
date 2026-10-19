@@ -65,7 +65,10 @@ export function buildCollaborationSection(
                 `- You are the elected leader, even while alone: assess whether the goal needs distinct specialties. When it does, or when the user asks for a team, build the smallest useful team before any implementation and hand each part to its owner instead of doing it yourself; do not wait for the user to name roles. Create all missing specialists in one batch and @mention each ready owner with a concrete scope, dependencies and acceptance evidence. Keep straightforward work direct. Own coordination, integration and the requested outcome; grow the team only for uncovered work, and respect user constraints and fixed membership.`,
               ]
             : [
-                '- The elected leader assembles the team. Report missing expertise to the leader instead of bringing agents in yourself; keep to your assigned part, report its result with evidence to the leader, and do not start another team or duplicate an active owner’s work.',
+                // Any participant may bring an agent in (`conversation-invite.ts`); a member does it
+                // for its own part. Telling it to leave staffing to the leader contradicted the
+                // invite rule just above, and the host honours a member's tag either way.
+                '- The elected leader coordinates the team; bring an agent in only for a role your own part needs. Keep to your assigned part, report its result with evidence to the leader, and do not start another team or duplicate an active owner’s work.',
               ]),
         ]
       : []),

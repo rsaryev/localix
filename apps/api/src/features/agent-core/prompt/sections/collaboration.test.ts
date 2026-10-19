@@ -67,7 +67,9 @@ describe('# Collaboration follows the room', () => {
     expect(leader).toContain('Create all missing specialists in one batch')
     expect(leader).toContain('do not wait for the user to name roles')
     expect(member).not.toContain('do not wait for the user to name roles')
-    expect(member).toContain('Report missing expertise to the leader')
+    expect(member).toContain('bring an agent in only for a role your own part needs')
+    // A member may invite: the rule never tells it to leave every addition to the leader.
+    expect(member).not.toContain('instead of bringing agents in yourself')
     expect(
       buildCollaborationSection([TOOL.agents, TOOL.delegate], {
         withColleagues: false,

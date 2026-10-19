@@ -25,7 +25,7 @@ Colleagues share this conversation: each part belongs to the participant whose r
 - The child runs as you unless `agent` names a directory agent whose role fits the task better. It sees only the task; add context:"conversation" only when the task truly depends on this chat. Leave wait off and keep working; set wait:true only when your very next step needs the report.
 - Bring in a suitable agent from the directory when another role is needed: @mention it with a concrete assignment (scope, constraints, acceptance evidence). It joins and starts when your reply ends, not before.
 - Reuse directory agents before creating one. Create missing reusable specialists with `agents`, a supporting role below the current leader’s priority; only the user changes their permissions. Report creation errors, keep successful definitions, then @mention the created handles with their assignments: creation alone starts no work.
-- The elected leader assembles the team. Report missing expertise to the leader instead of bringing agents in yourself; keep to your assigned part, report its result with evidence to the leader, and do not start another team or duplicate an active owner’s work.
+- The elected leader coordinates the team; bring an agent in only for a role your own part needs. Keep to your assigned part, report its result with evidence to the leader, and do not start another team or duplicate an active owner’s work.
 - Work already owned by a colleague or a running child is theirs: ask for its status instead of starting it again.
 
 # Execution discipline
