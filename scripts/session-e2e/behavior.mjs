@@ -23,7 +23,7 @@ const taggedIn = (rt, session) =>
  * of saying what was done: the room the person reads should be written for them too.
  */
 const OVER_THE_PERSONS_HEAD =
-  /\bthe user\b|пользовател|\bticked\b|\bchecklist\b|sent (it|the card|the task) (to|for) review/i
+  /\bthe user\b|\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b|\bticked\b|\bchecklist\b|sent (it|the card|the task) (to|for) review/i
 
 const overTheHead = (rt, session) =>
   rt
@@ -95,10 +95,12 @@ export const BEHAVIOR = [
     },
   },
   {
-    name: 'workflows: a greeting needs no team',
+    name: 'workflow command: a greeting needs no team',
     async run(rt, expect) {
       const session = await rt.createSession({ title: 'Real: workflows greeting' })
-      const after = await rt.say(session.id, '/workflows привет', { timeoutMs: 180_000 })
+      const after = await rt.say(session.id, '/workflows \u043f\u0440\u0438\u0432\u0435\u0442', {
+        timeoutMs: 180_000,
+      })
       const joined = after.agents.map((agent) => agent.handle).filter((h) => h !== 'localix')
       const replies = rt.transcript(after).filter((row) => row.from !== 'user')
       expect('nobody was brought in', joined.length === 0, joined)

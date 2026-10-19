@@ -60,14 +60,17 @@ export async function startRuntime({ port = 5261, keep = false } = {}) {
   child.stderr.pipe(out)
   const base = `http://127.0.0.1:${port}`
   const stop = async () => {
+    // No pid means the spawn failed; -undefined would be NaN, and 0 would signal our own group.
+    if (child.pid === undefined) return
+    const group = -child.pid
     try {
-      process.kill(-child.pid, 'SIGTERM')
+      process.kill(group, 'SIGTERM')
     } catch {
       /* already gone */
     }
     for (let i = 0; i < 50 && child.exitCode === null; i += 1) await sleep(100)
     try {
-      process.kill(-child.pid, 'SIGKILL')
+      process.kill(group, 'SIGKILL')
     } catch {
       /* exited on SIGTERM */
     }
