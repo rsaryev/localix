@@ -140,10 +140,18 @@ pass at startup re-sends the missing report of a child's latest run without reru
 to the participant that delegated, and bounds the text with a transcript link. Receipts are kept for
 seven days.
 
-When the parent is already running, an eligible report can join the delegating participant's next
-model request after a fully completed tool turn; disabling `LOCALIX_MID_RUN_INTERJECT` keeps reports
-on a separate turn. A completed child is not proof that the requested outcome is ready: the
-delegator reviews the report before it calls the work done.
+Reports to one delegator arrive together, so a delegator that handed out several tasks answers once.
+While it is idle, a finished child's report waits in its queue as long as the delegator's other
+children still owe a report. The composer lists it as "Waits for other reports". The last report
+releases them all as one message, with each child's report numbered.
+
+A child that is stopped or closed owes nothing and releases the others. A report waits five minutes
+at most, so a child that runs for an hour does not keep finished work from its delegator.
+
+When the parent is already running, the reports addressed to the delegating participant join its
+next model request together, after a fully completed tool turn. Disabling
+`LOCALIX_MID_RUN_INTERJECT` keeps them for a separate turn. A completed child is not proof that the
+requested outcome is ready: the delegator reviews the report before it calls the work done.
 
 ## Skills that run in a child session
 

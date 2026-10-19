@@ -11,6 +11,35 @@ beforeAll(() => {
 afterAll(() => teardown())
 
 describe('QueuePanel accessibility', () => {
+  test("says why a child's report is waiting instead of opening a turn", async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const { QueuePanel } = await import('./QueuePanel')
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    await act(async () => {
+      root.render(
+        React.createElement(QueuePanel, {
+          queue: [
+            {
+              id: 'report-1',
+              text: '[Delegated task finished] Draft notes',
+              queueKind: 'wake',
+              wakeSource: 'subagent',
+              delivery: 'held',
+            },
+          ],
+          onRemove: () => {},
+          onClear: () => {},
+        }),
+      )
+    })
+    const hint = host.querySelector('[data-slot="workbench-list-row-action-fallback"]')!
+    expect(hint.textContent).toBe('Waits for other reports')
+    await act(async () => root.unmount())
+  })
+
   test("names the list, the queue actions and each item's actions", async () => {
     const React = await import('react')
     const { act } = React

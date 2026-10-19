@@ -27,6 +27,8 @@ import {
   resolveTurnRecipients,
   supersedeColleagueChains,
 } from '../runtime/conversation-dispatch'
+import { createPendingTurn } from '../runtime/wake-queue/entry'
+import { personSpeaks, routeEvent } from '../runtime/wake-queue/kinds'
 import { createRunCompletion } from '../runtime/run-outcome'
 
 export interface RunAgentDeps {
@@ -166,16 +168,22 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
     // Authorship is fixed at insert and never patched, so resolve the strategy before creating
     // the first assistant placeholder. With no explicit address, the leader answers.
     const existing = await resolveExistingMessages(existingMessages, [userPayload.id])
-    // A tag in the message brings an available agent in, so the address below can reach it.
-    if (!opts?.isInternal) session = await runner.inviteAddressed(userId, session, prompt)
+    // The person's words, read by the rule the queue applies to them when the session is busy
+    // (`wake-queue/kinds.ts`): routed by their text; when they are visible, the agents they tag
+    // join first, so the address can reach them, and colleague chains in flight are dropped.
+    const words = createPendingTurn(
+      { userId, session, content: prompt, internal: Boolean(opts?.isInternal), person: true },
+      timestamp,
+    )
+    const speaks = personSpeaks(words)
+    if (speaks) session = await runner.inviteAddressed(userId, session, prompt)
     const recipients = await resolveTurnRecipients(
       session,
       existing,
-      { kind: 'user-message', text: prompt },
+      routeEvent(words, prompt, undefined),
       runner.leadership(userId, session.projectId),
     )
-    if (!opts?.isInternal)
-      await supersedeColleagueChains(runner.cancelAgentTurns, userId, sessionId)
+    if (speaks) await supersedeColleagueChains(runner.cancelAgentTurns, userId, sessionId)
     const firstSlot = recipients[0]?.agentId
     const asstPayload = emptyAssistantPayload(
       randomUUID(),

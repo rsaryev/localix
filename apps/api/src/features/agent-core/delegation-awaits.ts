@@ -23,20 +23,100 @@
  * delegator's run aborts the call and, through the stop cascade, the child: no report follows.
  *
  * In-process, like the lanes: a restart stops every child, and the recovery path reports those.
+ *
+ * WHO WAITS, as well as whether: the delegator — its session and its participant — is recorded
+ * with the wait, because a delegator that handed out several tasks is answered ONCE, when the last
+ * of them reports. The wake queue holds the earlier reports until then (`chat/runtime/wake-queue/
+ * holds.ts`) and asks this ledger whether anyone is still owed (`awaitsReports`). A report stays
+ * owed while it is on its way — from the moment its run is taken here to the moment it is queued
+ * (`settleReport`) — or a sibling's report would be released alone in that gap, just before it.
  */
-const expecting = new Set<string>()
 
-export function expectReport(childId: string): void {
-  expecting.add(childId)
+/** Who a child reports to: the session it was delegated from, and the participant who did it. */
+export interface Delegator {
+  sessionId: string
+  participant?: string
 }
 
-/** True once for a child whose delegator was waiting; the wait is consumed by the report. */
+interface Wait {
+  /** Absent for a wait no delegation recorded (a test's): it holds no sibling back. */
+  delegator?: Delegator
+  /** Taken: the run ended and its report is on its way, but not queued yet. */
+  reporting: boolean
+}
+
+const expecting = new Map<string, Wait>()
+const settledListeners = new Set<(sessionId: string) => void>()
+
+function settled(delegator: Delegator | undefined): void {
+  if (!delegator) return
+  for (const listener of settledListeners) {
+    try {
+      listener(delegator.sessionId)
+    } catch (error) {
+      console.warn('[delegate] report settle listener failed:', error)
+    }
+  }
+}
+
+export function expectReport(childId: string, delegator?: Delegator): void {
+  const known = expecting.get(childId)?.delegator
+  expecting.set(childId, { delegator: delegator ?? known, reporting: false })
+}
+
+/**
+ * True once for a child whose delegator was waiting; the wait is consumed by the report. The child
+ * stays owed until its report is queued or decided against: call `settleReport` then.
+ */
 export function takeExpectedReport(childId: string): boolean {
-  return expecting.delete(childId)
+  const wait = expecting.get(childId)
+  if (!wait || wait.reporting) return false
+  wait.reporting = true
+  return true
+}
+
+/** The child's report was queued, handed to a waiting call, or will not be sent. */
+export function settleReport(childId: string): void {
+  const wait = expecting.get(childId)
+  if (!wait?.reporting) return
+  expecting.delete(childId)
+  settled(wait.delegator)
 }
 
 export function dropExpectedReport(childId: string): void {
+  const wait = expecting.get(childId)
+  if (!wait) return
   expecting.delete(childId)
+  settled(wait.delegator)
+}
+
+/**
+ * Is `participant` of `sessionId` still owed a report by any child — other than `except`, the
+ * children whose reports are already queued?
+ */
+export function awaitsReports(
+  sessionId: string,
+  participant: string | undefined,
+  except: ReadonlySet<string> = new Set(),
+): boolean {
+  for (const [childId, wait] of expecting) {
+    if (except.has(childId) || !wait.delegator) continue
+    if (wait.delegator.sessionId === sessionId && wait.delegator.participant === participant)
+      return true
+  }
+  return false
+}
+
+/**
+ * Hear each time a child's report to a delegator of `sessionId` settles. A subscription, like the
+ * work registry's `onChange`, so the queue that holds reports is wired at boot without this module
+ * knowing it. Returns the unsubscribe.
+ */
+export function onReportSettled(listener: (sessionId: string) => void): () => void {
+  settledListeners.add(listener)
+  return () => {
+    settledListeners.delete(listener)
+  }
 }
 
 /** What a held report hands the delegating call: how the run ended, and its final text. */
@@ -85,4 +165,5 @@ export function deliverHeldReport(childId: string, report: HeldReport): boolean 
 export function __resetExpectedReports(): void {
   expecting.clear()
   held.clear()
+  settledListeners.clear()
 }

@@ -7,6 +7,7 @@
  * failed assertion names the request or row that broke it.
  */
 import { MODE_SCENARIOS } from './scenarios-modes.mjs'
+import { QUEUE_SCENARIOS } from './scenarios-queue.mjs'
 import { RUN_SCENARIOS } from './scenarios-runs.mjs'
 
-export const SCENARIOS = [...MODE_SCENARIOS, ...RUN_SCENARIOS]
+export const SCENARIOS = [...MODE_SCENARIOS, ...RUN_SCENARIOS, ...QUEUE_SCENARIOS]

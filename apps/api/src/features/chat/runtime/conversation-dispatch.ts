@@ -21,7 +21,6 @@
  * append, a branch sibling, a durable queue pair); the slot IDS of every recipient after the
  * first are this module's rule, so a retried fan-out addresses the same rows.
  */
-import { participantAgentId } from '../../../db/participant'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import {
@@ -47,29 +46,6 @@ export function resolveTurnRecipients(
 ): Promise<ConversationRecipient[]> {
   const context = { session, history: historyBeforeTrigger, priorities }
   return resolveConversationStrategy(context).recipients(context, event)
-}
-
-/**
- * THE EVENT A QUEUED TURN IS ROUTED AS — the one rule the drain applies and a host that records
- * wakes can replay.
- *
- * The person's typed message is routed by its text. A machine wake is routed by the runtime
- * rule: its named participant (`routedTo`), else the least recently dispatched one. A wake that
- * carries the PERSON'S words (`addressedAs`, a plan approval's `@handle`) is neither: routed by the
- * runtime rule, "@backend, take this" reached whoever was least recent and `@all` reached one
- * agent. So it is routed as the message those words are — mentions, `@all`, and the strategy's
- * default answerer when they name nobody.
- */
-export function queuedTurnEvent(
-  turn: { internal: boolean; content: string; addressedAs?: string },
-  routedTo: string | undefined,
-): ConversationEvent {
-  if (!turn.internal) return { kind: 'user-message', text: turn.content }
-  if (turn.addressedAs !== undefined) return { kind: 'user-message', text: turn.addressedAs }
-  return {
-    kind: 'runtime',
-    recipient: routedTo ? (participantAgentId(routedTo) ?? undefined) : undefined,
-  }
 }
 
 /**

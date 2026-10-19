@@ -19,24 +19,18 @@
  */
 import { reportBody } from '../../agent-core/tools/child-report'
 import { agentParticipant } from '../../../db/participant'
-import type { WakeRequest } from '../contracts'
+import type { DelegatedReport, WakeRequest } from '../contracts'
 
 export { childReport } from '../../agent-core/tools/child-report'
 
-export interface DelegationReportInput {
-  /** The child's label (the delegation title). */
-  label: string
-  childSessionId: string
-  /** The run being reported: its final assistant message id — the report's identity. */
-  runId: string
-  /** How the run ended; only `failed` and `stopped` change the wording. */
-  status: string | null
-  /** The run's final assistant text; empty or absent means it produced none. */
-  text: string | null | undefined
-}
+/** One run of a child, as its report states it (`DelegatedReport` on the wake). */
+export type DelegationReportInput = DelegatedReport
 
-/** The wake content the parent reads. */
-export function delegationReportMessage(input: DelegationReportInput): string {
+const REPORT_FOLLOW_UP =
+  'To change or extend this work, send the child `delegate` action:"message".'
+
+/** One child's part of a report: how its run ended, and its bounded final text. */
+function reportSection(input: DelegationReportInput): string {
   const outcome =
     input.status === 'failed'
       ? 'FAILED'
@@ -45,9 +39,29 @@ export function delegationReportMessage(input: DelegationReportInput): string {
         : 'finished'
   return (
     `[Delegated task ${outcome}] ${input.label} (id: ${input.childSessionId}) ${outcome}.\n\n` +
-    `${reportBody(input.text, input.childSessionId)}\n\n` +
-    'To change or extend this work, send the child `delegate` action:"message".'
+    reportBody(input.text, input.childSessionId)
   )
+}
+
+/** The wake content the parent reads for one child's run. */
+export function delegationReportMessage(input: DelegationReportInput): string {
+  return `${reportSection(input)}\n\n${REPORT_FOLLOW_UP}`
+}
+
+/**
+ * The content the parent reads for every report delivered together — the children one delegator
+ * handed work to, reporting as one batch once the last of them is done (`wake-queue/kinds.ts`).
+ * One report reads exactly as it does alone; several are numbered under one heading, with the
+ * follow-up hint once at the end rather than after each.
+ */
+export function delegationReportsMessage(reports: readonly DelegationReportInput[]): string {
+  if (reports.length === 1) return delegationReportMessage(reports[0]!)
+  const sections = reports.map((report, index) => `${index + 1}. ${reportSection(report)}`)
+  return [
+    `[${reports.length} delegated task reports] Each child's report follows; answer them together.`,
+    ...sections,
+    REPORT_FOLLOW_UP,
+  ].join('\n\n')
 }
 
 /**
@@ -110,6 +124,7 @@ export function delegationReportWake(
   },
 ): WakeRequest {
   const to = delegationReportRecipient(input.delegatingAgentId, input.handle)
+  const { label, childSessionId, runId, status, text } = input
   return {
     userId: input.userId,
     sessionId: delegationReportSession(input.parent),
@@ -117,6 +132,7 @@ export function delegationReportWake(
     source: 'subagent',
     deliveryKey: delegationReportKey(input.childSessionId, input.runId),
     receipt: true,
+    report: { label, childSessionId, runId, status, text },
     ...(to ? { to } : {}),
   }
 }

@@ -3,7 +3,9 @@ import type { AgentTurnSource } from '../conversation-strategy'
 import type { WakeQueueContext } from '../wake-queue-contracts'
 import type { WakeQueueStore } from '../wake-queue-store'
 import type { ContinuationOperations } from './continuations'
-import type { LeaseOperations, PendingTurn } from './leases'
+import type { PendingTurn } from './entry'
+import type { HeldEntries } from './holds'
+import type { LeaseOperations } from './leases'
 import type { AgentTurnFilter } from './agent-turns'
 
 export interface DrainOptions {
@@ -24,4 +26,8 @@ export interface DrainDependencies extends Pick<
   publishQueue: (userId: string, sessionId: string) => void
   ageWaitingAgentTurns: (userId: string, sessionId: string) => Promise<void>
   cancelAgentTurns: (userId: string, sessionId: string, filter: AgentTurnFilter) => Promise<void>
+  /** What may not open a turn yet (`holds.ts`). */
+  holdsOf: (sessionId: string) => HeldEntries
+  /** Drain `sessionId` again at `atMs`, when its earliest held entry is released by age. */
+  holdUntil: (sessionId: string, atMs: number) => void
 }

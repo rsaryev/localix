@@ -2,12 +2,10 @@ import type { QueueItem } from '../../../lib/priority-queue'
 import type { SessionQueueItem } from '../contracts'
 import { createContinuationOperations } from './wake-queue/continuations'
 import { createDrainOperations, type DrainOperations } from './wake-queue/drain'
-import {
-  createLeaseOperations,
-  createWakeQueueSharedState,
-  isBoundaryDeliverable,
-  type PendingTurn,
-} from './wake-queue/leases'
+import { ticketOf, type PendingTurn } from './wake-queue/entry'
+import { heldEntries, type HeldEntries } from './wake-queue/holds'
+import { joinPoint } from './wake-queue/kinds'
+import { createLeaseOperations, createWakeQueueSharedState } from './wake-queue/leases'
 import { createPromoteOperations } from './wake-queue/promote'
 import { createSteeringOperations } from './wake-queue/steering'
 import type { AgentTurnAdmission } from './agent-turn-ticket'
@@ -34,9 +32,17 @@ export function createWakeQueue(ctx: WakeQueueContext) {
   })
   const continuations = createContinuationOperations(shared)
 
-  const toPublic = (item: QueueItem<PendingTurn>): SessionQueueItem => {
+  const nowMs = () => {
+    const at = Date.parse(now())
+    return Number.isFinite(at) ? at : Date.now()
+  }
+  /** What may not open a turn yet — a child's report waiting for its siblings (`holds.ts`). */
+  const holdsOf = (sessionId: string): HeldEntries =>
+    heldEntries(sessionId, queues.get(sessionId)?.list() ?? [], ctx.reportBarrier, nowMs())
+
+  const toPublic = (item: QueueItem<PendingTurn>, held: HeldEntries): SessionQueueItem => {
     const turn = item.value
-    const agentTurn = turn.agentTurn
+    const agentTurn = ticketOf(turn)
     return {
       id: item.id,
       ...(turn.clientMessageId ? { clientMessageId: turn.clientMessageId } : {}),
@@ -48,17 +54,43 @@ export function createWakeQueue(ctx: WakeQueueContext) {
       preview: turn.content.slice(0, 140),
       queuedAt: turn.queuedAt,
       ...(turn.source ? { source: turn.source } : {}),
-      delivery: isBoundaryDeliverable(turn) ? 'next-tool' : 'next-turn',
+      delivery: held.ids.has(item.id)
+        ? 'held'
+        : joinPoint(turn) === 'boundary'
+          ? 'next-tool'
+          : 'next-turn',
     }
   }
 
   const publishQueue = (userId: string, sessionId: string): void => {
     const q = queues.get(sessionId)
+    const held = holdsOf(sessionId)
     streamRegistry.publish(userId, sessionId, {
       type: 'session_queue.updated',
       sessionId,
-      queue: q ? q.list().map(toPublic) : [],
+      queue: q ? q.list().map((item) => toPublic(item, held)) : [],
     })
+  }
+
+  /** Drain again when the earliest held entry is released by age; an earlier timer stands. */
+  const holdUntil = (sessionId: string, atMs: number): void => {
+    const armed = shared.holdTimers.get(sessionId)
+    if (shared.closed || (armed && armed.at <= atMs)) return
+    if (armed) clearTimeout(armed.timer)
+    const timer = setTimeout(
+      () => {
+        shared.holdTimers.delete(sessionId)
+        scheduleDrain(sessionId)
+      },
+      Math.max(0, atMs - nowMs()) + 5,
+    )
+    timer.unref?.()
+    shared.holdTimers.set(sessionId, { at: atMs, timer })
+  }
+  const clearHold = (sessionId: string): void => {
+    const armed = shared.holdTimers.get(sessionId)
+    if (armed) clearTimeout(armed.timer)
+    shared.holdTimers.delete(sessionId)
   }
 
   const agentTurns = createAgentTurnOperations({
@@ -84,10 +116,17 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     publishQueue,
     ageWaitingAgentTurns: agentTurns.ageWaiting,
     cancelAgentTurns: agentTurns.cancel,
+    holdsOf,
+    holdUntil,
     ...(ctx.leadership ? { leadership: ctx.leadership } : {}),
     ...(ctx.inviteAddressed ? { inviteAddressed: ctx.inviteAddressed } : {}),
   })
   scheduleDrain = drain.scheduleDrain
+  // A report that settled may release the reports held for it; re-reading is the drain's own
+  // business — a notification is a hint to look again, never a task (`partitioned-event-loop`).
+  const unsubscribeReports = ctx.reportBarrier?.subscribe((sessionId) => {
+    if (queues.get(sessionId)?.size()) scheduleDrain(sessionId)
+  })
 
   const steering = createSteeringOperations(shared, {
     store,
@@ -96,6 +135,7 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     continuations,
     publishQueue,
     toPublic,
+    holdsOf,
   })
 
   const { interruptAndPromote } = createPromoteOperations(shared, {
@@ -141,9 +181,9 @@ export function createWakeQueue(ctx: WakeQueueContext) {
       rateLimited: false,
     })
     queues.delete(sessionId)
+    clearHold(sessionId)
     selfWakeBudget.forget(sessionId)
-    shared.leasedSteeringIds.delete(sessionId)
-    shared.leasedDrainIds.delete(sessionId)
+    shared.leases.delete(sessionId)
   }
 
   const setPriority = async (
@@ -157,12 +197,7 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     if (shared.closed) return false
     const q = queues.get(sessionId)
     const item = q?.list().find((entry) => entry.id === id && entry.value.userId === userId)
-    if (
-      !item ||
-      shared.leasedDrainIds.get(sessionId)?.has(id) ||
-      shared.leasedSteeringIds.get(sessionId)?.has(id)
-    )
-      return false
+    if (!item || leases.isLeased(sessionId, id)) return false
     if (store && !(await store.setPriority(userId, sessionId, id, priority))) return false
     q!.setPriority(id, priority)
     publishQueue(userId, sessionId)
@@ -185,6 +220,8 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     shared.recoveryTimers.clear()
     for (const timer of shared.drainRetryTimers.values()) clearTimeout(timer)
     shared.drainRetryTimers.clear()
+    for (const sessionId of shared.holdTimers.keys()) clearHold(sessionId)
+    unsubscribeReports?.()
     // A recover/list query may already be in flight. Let it settle before the
     // caller destroys SQLite; closed checks above prevent another retry/query.
     await leases.ready.catch(() => {})

@@ -1,9 +1,4 @@
-import type { MessageBinding } from '@localixai/agent'
-import type { ToolSurface } from '@localixai/agent/agents'
-import type { WakeSource } from '../contracts'
-import type { SessionRecord } from '../repository'
 import type { RuntimeState } from './agent-runner-state'
-import type { RunExecutionContext } from './execution-context'
 import { runtimeRunAdmission } from './run-admission'
 import type { RunCompletion, RunExecutionOutcome } from './run-outcome'
 import { stopSession, type StopSessionContext } from './stop-session'
@@ -91,21 +86,9 @@ export function createRunnerQueue({ state, wakeQueue, stopCtx }: RunnerQueueDeps
      * terminal outcome. Scheduler integrations use this instead of treating
      * durable queue admission as successful agent work.
      */
-    async wakeAndWait(params: {
-      userId: string
-      session: SessionRecord
-      content: string
-      extraDisabledTools?: string[]
-      plugins?: string[]
-      internal?: boolean
-      source?: WakeSource
-      bindings?: MessageBinding[]
-      toolSurface?: ToolSurface
-      executionContext?: RunExecutionContext
-      deliveryKey?: string
-      to?: EnqueueParams['to']
-      addressedAs?: EnqueueParams['addressedAs']
-    }): Promise<RunExecutionOutcome> {
+    async wakeAndWait(
+      params: Omit<EnqueueParams, 'agentTurn' | 'command'>,
+    ): Promise<RunExecutionOutcome> {
       const outcome = await wakeQueue.wake(params, { waitForCompletion: true })
       if (!outcome) {
         return {

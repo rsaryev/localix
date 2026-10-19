@@ -17,7 +17,9 @@ import { defaultQueuePolicy } from '../queue-policy'
 import { createRunCompletion, type RunCompletion, type RunExecutionOutcome } from '../run-outcome'
 import type { EnqueueParams, WakeOptions, WakeQueueContext } from '../wake-queue-contracts'
 import type { ContinuationOperations } from './continuations'
-import type { LeaseOperations, PendingTurn, WakeQueueSharedState } from './leases'
+import { createPendingTurn, ticketOf, type PendingTurn, type TicketTurn } from './entry'
+import { queueSourceOf } from './kinds'
+import type { LeaseOperations, WakeQueueSharedState } from './leases'
 import { mergeAgentTicket, retireSupersededSlot } from './merge-ticket'
 import type { createSelfWakeBudget } from './self-wake-budget'
 
@@ -96,10 +98,11 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
       .list()
       .find(
         (entry) =>
-          entry.value.agentTurn?.speakerAgentId === speaker &&
+          ticketOf(entry.value)?.speakerAgentId === speaker &&
           !leases.isLeased(params.session.id, entry.id),
       )
-    return item?.value.agentTurn ? { item, ticket: item.value.agentTurn } : undefined
+    const ticket = item && ticketOf(item.value)
+    return item && ticket ? { item, ticket } : undefined
   }
 
   const foldIntoPending = async (
@@ -115,7 +118,10 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
     )
     if (!merge.changed) return
     const id = pending.item.id
-    const mergedValue = { ...pending.item.value, agentTurn: merge.ticket }
+    const mergedValue: TicketTurn = {
+      ...(pending.item.value as TicketTurn),
+      agentTurn: merge.ticket,
+    }
     if (
       store &&
       !(store.updatePending
@@ -174,41 +180,16 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
     }
   }
 
-  const pendingValue = (params: EnqueueParams, internal: boolean): PendingTurn => ({
-    userId: params.userId,
-    content: params.content,
-    ...(params.clientMessageId ? { clientMessageId: params.clientMessageId } : {}),
-    extraDisabledTools: params.extraDisabledTools,
-    ...(params.plugins?.length ? { plugins: params.plugins } : {}),
-    internal,
-    kind: internal ? 'wake' : 'user',
-    source: params.source,
-    bindings: params.bindings,
-    toolSurface: params.toolSurface,
-    executionContext: params.executionContext,
-    to: params.to,
-    ...(params.addressedAs !== undefined ? { addressedAs: params.addressedAs } : {}),
-    queuedAt: now(),
-    agentTurn: params.agentTurn,
-    ...(params.command ? { command: params.command } : {}),
-  })
-
   return async function wake(
     params: EnqueueParams,
     options?: WakeOptions,
   ): Promise<RunExecutionOutcome | void> {
     const sessionId = params.session.id
     const release = await enterIngress(sessionId)
-    const internal = params.internal ?? true
     const q = queueOf(sessionId)
     try {
-      const priority = (ctx.policy ?? defaultQueuePolicy).priority(
-        params.agentTurn
-          ? { kind: 'agent-turn', producer: params.agentTurn.source }
-          : params.source || internal
-            ? { kind: 'wake', producer: params.source }
-            : { kind: 'user' },
-      )
+      const value = createPendingTurn(params, now())
+      const priority = (ctx.policy ?? defaultQueuePolicy).priority(queueSourceOf(value))
 
       const pending = pendingTicketOf(q, params)
       if (pending) {
@@ -229,7 +210,6 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
           ? continuations.deliveryCompletion(id)?.promise
           : undefined
       }
-      const value = pendingValue(params, internal)
       const waiter = attachObservers(id, sessionId, options)
       if (!(await persistNewTurn(q, id, value, params, priority, release))) return undefined
       release()

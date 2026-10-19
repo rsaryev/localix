@@ -27,6 +27,7 @@ export function wireRunSteering(
 
   const steers = midRunInterjectEnabled() && policy.host.steers
   const accepts = (content: string) => addressedToSpeaker(content, session.agents, speakerAgentId)
+  const surface = frame.params.scope.executionContext.clientSurface
   // Where a delegated child's report may join this turn: a conversation that has children.
   const childReports = policy.conversation.childReports
   const steeringAddress = childReports
@@ -41,6 +42,7 @@ export function wireRunSteering(
         signal: abort.signal,
         steerCtxRef: frame.steerCtxRef,
         accepts,
+        ...(surface ? { surface } : {}),
         ...(steeringAddress
           ? {
               subagent: {
@@ -77,7 +79,7 @@ export function wireRunSteering(
           sessionId: session.id,
           signal: abort.signal,
           accepts,
-          ...(steeringAddress ? { address: steeringAddress } : {}),
+          ...(surface ? { surface } : {}),
         }),
       }
     : {}

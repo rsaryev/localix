@@ -7,6 +7,8 @@ describe('queue presentation policy', () => {
     expect(queueDeliveryLabel('next-turn')).toBe('Next turn')
     // Not-yet-acknowledged optimistic composer rows carry no server-derived hint.
     expect(queueDeliveryLabel(undefined)).toBe('Next turn')
+    // A child's report waiting for its siblings says why it has not opened a turn.
+    expect(queueDeliveryLabel('held')).toBe('Waits for other reports')
   })
 
   test('trusted wakes cannot be reinterpreted as operator-authored input', () => {

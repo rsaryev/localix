@@ -7,7 +7,6 @@
   "apps/api/src/features/agent-core/tools/web/research.ts": 545,
   "apps/api/src/features/agents/service.ts": 321,
   "apps/api/src/features/chat/runtime/session-stream-registry.ts": 364,
-  "apps/api/src/features/chat/runtime/wake-queue/drain.ts": 333,
   "apps/api/src/features/context-fabric/manager.ts": 545,
   "apps/api/src/features/context-fabric/plugin-contract-kit.ts": 399,
   "apps/api/src/features/external-agents/backend/service.ts": 416,

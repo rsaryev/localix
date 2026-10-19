@@ -13,6 +13,7 @@ import { releaseLane, requestLane } from '../../../agent-core/delegation-lanes'
 import {
   deliverHeldReport,
   expectReport,
+  settleReport,
   takeExpectedReport,
 } from '../../../agent-core/delegation-awaits'
 import { delegationPlace } from '../../session-provenance'
@@ -164,25 +165,27 @@ export function buildTaskDelegationOptions(
             // A launch that threw never became a run, so no run end will report it — and the
             // parent would wait for a report that never comes. Only that case reports from here:
             // to the delegating call when it waits (`wait: true`), as a wake otherwise.
-            if (
-              !launched &&
-              takeExpectedReport(sid) &&
-              !deliverHeldReport(sid, { status: 'failed', text })
-            ) {
-              const handle = session.agents.find((m) => m.agentId === input.agentId)?.handle
-              await wake(
-                delegationReportWake({
-                  userId: uid,
-                  parent: session,
-                  delegatingAgentId: input.agentId,
-                  handle,
-                  label: taskOpts.label,
-                  childSessionId: sid,
-                  runId: 'launch',
-                  status: status ?? 'failed',
-                  text,
-                }),
-              ).catch((err) => console.warn('[delegate] parent wake failed:', err))
+            if (!launched && takeExpectedReport(sid)) {
+              try {
+                if (!deliverHeldReport(sid, { status: 'failed', text })) {
+                  const handle = session.agents.find((m) => m.agentId === input.agentId)?.handle
+                  await wake(
+                    delegationReportWake({
+                      userId: uid,
+                      parent: session,
+                      delegatingAgentId: input.agentId,
+                      handle,
+                      label: taskOpts.label,
+                      childSessionId: sid,
+                      runId: 'launch',
+                      status: status ?? 'failed',
+                      text,
+                    }),
+                  ).catch((err) => console.warn('[delegate] parent wake failed:', err))
+                }
+              } finally {
+                settleReport(sid)
+              }
             }
           } finally {
             // Whatever happened, stop holding the lane and stop anyone waiting on the
@@ -201,7 +204,10 @@ export function buildTaskDelegationOptions(
         })().catch(() => {})
 
       // The delegator now waits for this task's outcome, however long the child queues for it.
-      expectReport(sid)
+      expectReport(sid, {
+        sessionId: session.id,
+        ...(input.agentId ? { participant: agentParticipant(input.agentId) } : {}),
+      })
       // Over the cap the child WAITS, and says so in this turn's result; it starts on its own.
       const lane = requestLane(session.id, sid, launch, taskOpts.priority)
       if (lane.state === 'queued') return { queued: lane.position }

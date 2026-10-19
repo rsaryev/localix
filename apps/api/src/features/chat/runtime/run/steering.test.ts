@@ -20,30 +20,7 @@ import type { SessionRecord } from '../../repository'
 import type { ChatRepository } from '../../repository'
 import type { PersistedMessage } from '../../contracts'
 import type { RunEnv } from './types'
-import type { SubagentSteeringAddress } from '../wake-queue/steering'
-import { isBoundaryDeliverable, type PendingTurn } from '../wake-queue/leases'
-
-describe('steering admission', () => {
-  const turn = (overrides: Partial<PendingTurn> = {}): PendingTurn =>
-    ({
-      kind: 'user',
-      userId: 'u1',
-      content: 'hello',
-      queuedAt: 't1',
-      internal: false,
-      ...overrides,
-    }) as PendingTurn
-
-  it('admits visible user interjections only', () => {
-    expect(isBoundaryDeliverable(turn())).toBe(true)
-    expect(isBoundaryDeliverable(turn({ kind: 'wake', internal: true, source: 'subagent' }))).toBe(
-      false,
-    )
-    expect(isBoundaryDeliverable(turn({ kind: 'wake', internal: true, source: 'external' }))).toBe(
-      false,
-    )
-  })
-})
+import type { JoinFilter, SubagentSteeringAddress } from '../wake-queue/steering'
 
 function makeHarness(opts?: {
   hitlPending?: boolean
@@ -76,16 +53,18 @@ function makeHarness(opts?: {
   const published: Array<{ type: string }> = []
   const errors: unknown[] = []
   let takeCalls = 0
-  const pending = (opts?.turns ?? []).map((turn, index) => ({ id: `q${index}`, ...turn }))
+  // As the queue reserves them (`wake-queue/steering.ts`): a machine source is hidden.
+  const pending = (opts?.turns ?? []).map(({ clientMessageId, ...turn }, index) => ({
+    id: `q${index}`,
+    ...turn,
+    internal: turn.internal ?? Boolean(turn.source && turn.source !== 'user-busy'),
+    ...(clientMessageId ? { clientMessageIds: [clientMessageId] } : {}),
+  }))
   const env = {
-    reserveSteerableTurns: (
-      _sessionId: string,
-      _accepts: unknown,
-      subagent?: SubagentSteeringAddress,
-    ) => {
+    reserveSteerableTurns: (_sessionId: string, filter: JoinFilter) => {
       takeCalls += 1
       if (opts?.abortDuringReserve) opts.abort?.abort()
-      if (pending[0]?.source === 'subagent' && opts?.subagent && !subagent) return []
+      if (pending[0]?.source === 'subagent' && opts?.subagent && !filter.reports) return []
       return pending.slice(0, 1)
     },
     ackSteerableTurn: (_userId: string, _sessionId: string, itemId: string) => {

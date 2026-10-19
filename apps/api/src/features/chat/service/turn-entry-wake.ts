@@ -92,8 +92,18 @@ function acceptsWake(session: SessionRecord, request: WakeRequest): boolean {
  * conversation's own strategy chooses who answers — the wake still lands.
  */
 function wakeParams(session: SessionRecord, request: WakeRequest) {
-  const { userId, content, source, to, addressedAs, deliveryKey, receipt, extraDisabledTools } =
-    request
+  const {
+    userId,
+    content,
+    source,
+    to,
+    addressedAs,
+    deliveryKey,
+    receipt,
+    extraDisabledTools,
+    coalesce,
+    report,
+  } = request
   const present =
     to !== undefined &&
     session.agents.some((member) => agentParticipant(member.agentId) === to.participant)
@@ -104,6 +114,8 @@ function wakeParams(session: SessionRecord, request: WakeRequest) {
     source,
     ...(extraDisabledTools ? { extraDisabledTools } : {}),
     ...(request.plugin ? { plugins: [request.plugin] } : {}),
+    ...(coalesce ? { coalesce } : {}),
+    ...(report ? { report } : {}),
     ...(deliveryKey ? { deliveryKey, ...(receipt ? { receipt } : {}) } : {}),
     ...(present ? { to } : to === undefined && addressedAs !== undefined ? { addressedAs } : {}),
   }

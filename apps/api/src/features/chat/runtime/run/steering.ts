@@ -11,10 +11,12 @@
  *  - PERSIST BEFORE THE WIRE: each taken message becomes a real user row (tagged
  *    `user-steer`) before its text reaches the model, so the transcript can never
  *    claim the model saw something it didn't — or miss something it did.
- *  - HUMAN INPUT ONLY: machine wakes and child reports drain as distinct runs. They must not
- *    split the response whose async tools produced them. The machine exceptions are a
- *    delegator's message to a child (`isDelegatorMessage`): it amends the brief the run is
- *    working from, and arrives already framed as such rather than as untrusted data.
+ *  - WHAT JOINS is the queue's to say (`wake-queue/kinds.ts`, `joins`): the person's message at
+ *    the next boundary, when it was sent from this run's surface; a delegator's message to its
+ *    child, which amends the brief the run works from and arrives already framed; and every
+ *    report to the running delegator, together, once a tool turn has completed — never mid-turn,
+ *    which would split the response whose async tools produced them. Other machine wakes drain
+ *    as distinct runs.
  *  - FRAME FOR THE WIRE: the in-flight model sees each message wrapped in the
  *    interjection envelope (agent-core/interjection.ts — grok-build pattern:
  *    "The user sent a message while you were working" + <user_query>), FIFO, one
@@ -44,7 +46,8 @@ import type { ChatRepository } from '../../repository'
 import type { RunEnv } from './types'
 import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
 import { addressedHandles } from '../../conversation-addressing'
-import type { SubagentSteeringAddress } from '../wake-queue/steering'
+import type { ToolSurface } from '@localixai/agent/agents'
+import type { JoinFilter, SubagentSteeringAddress } from '../wake-queue/steering'
 
 /**
  * May a message typed while `speakerAgentId` is running be handed to THAT run mid-flight?
@@ -68,6 +71,19 @@ export function addressedToSpeaker(
   return speaker !== undefined && named.includes(speaker.handle)
 }
 
+/** What a running turn may take, as the queue reads it. */
+function joinFilter(
+  accepts: ((content: string) => boolean) | undefined,
+  surface: ToolSurface | undefined,
+  reports?: SubagentSteeringAddress,
+): JoinFilter {
+  return {
+    ...(accepts ? { accepts } : {}),
+    ...(surface ? { surface } : {}),
+    ...(reports ? { reports } : {}),
+  }
+}
+
 export function createSteeringTaker(input: {
   env: RunEnv
   repo: ChatRepository
@@ -83,6 +99,8 @@ export function createSteeringTaker(input: {
   steerCtxRef: { current: TurnEventContext | null }
   /** Only messages this accepts are taken — see {@link addressedToSpeaker}. */
   accepts?: (content: string) => boolean
+  /** The run's client surface: a message sent from another surface opens its own turn. */
+  surface?: ToolSurface
   /** Only at a fully completed tool turn, and only for the delegating participant. */
   subagent?: {
     address: SubagentSteeringAddress
@@ -98,6 +116,7 @@ export function createSteeringTaker(input: {
     signal,
     steerCtxRef,
     accepts,
+    surface,
     subagent,
     onError = console.warn,
   } = input
@@ -116,8 +135,7 @@ export function createSteeringTaker(input: {
     if (signal.aborted) return []
     const taken = await env.reserveSteerableTurns(
       sessionId,
-      accepts,
-      subagent?.canDeliver() ? subagent.address : undefined,
+      joinFilter(accepts, surface, subagent?.canDeliver() ? subagent.address : undefined),
     )
     if (taken.length === 0) return []
     // The queue leases one row per poll. This makes the Pi callback failure-atomic:
@@ -132,8 +150,7 @@ export function createSteeringTaker(input: {
         return []
       }
       const ctx = steerCtxRef.current
-      const internal =
-        t.internal ?? Boolean(t.source && t.source !== 'user-busy' && t.source !== 'user-steer')
+      const internal = t.internal
       const ids = queueDeliveryMessageIds(t.id)
       const userParams = {
         repo,
@@ -143,7 +160,7 @@ export function createSteeringTaker(input: {
         sessionId,
         content: t.content,
         messageId: ids.userMessageId,
-        ...(t.clientMessageId ? { clientMessageIds: [t.clientMessageId] } : {}),
+        ...(t.clientMessageIds?.length ? { clientMessageIds: t.clientMessageIds } : {}),
       }
       // Even an empty response slot predates the interjection. Always place the
       // response that consumes it AFTER the user, and commit the pair atomically.
@@ -191,13 +208,13 @@ export function createToolCallDeferral(input: {
   sessionId: string
   signal: AbortSignal
   accepts?: (content: string) => boolean
-  address?: SubagentSteeringAddress
+  surface?: ToolSurface
 }): () => boolean {
-  const { env, sessionId, signal, accepts, address } = input
+  const { env, sessionId, signal, accepts, surface } = input
   let deferredFor: string | undefined
   return () => {
     if (signal.aborted || env.deps.hitlRegistry.getPendingInteraction(sessionId)) return false
-    const waiting = env.peekSteerableTurn(sessionId, accepts, address)
+    const waiting = env.peekSteerableTurn(sessionId, joinFilter(accepts, surface))
     if (!waiting || waiting === deferredFor) return false
     deferredFor = waiting
     return true

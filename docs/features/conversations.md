@@ -175,8 +175,9 @@ queues park their session dispatcher. They do not complete, archive or otherwise
 Pending rows and their ordering survive process restart.
 
 A visible user message can steer an already running response when it names nobody, the running
-agent, or `@all`. "@qa stop" typed while @backend works waits for its own turn with @qa. A parent's
-`delegate` message can also amend its running child's task at a step boundary.
+agent, or `@all`. "@qa stop" typed while @backend works waits for its own turn with @qa. Lines that
+wait for a turn are answered in one turn when they are for the same agents and carry no attachments.
+A parent's `delegate` message can also amend its running child's task at a step boundary.
 
 Your steering message outranks the tool calls the agent chose before it could read the message. A
 call that is already running finishes, but the calls of the same response that have not started yet
@@ -184,13 +185,12 @@ are returned unrun, with a note to re-issue them if they still apply. Your messa
 model at once instead of after the whole batch. Calls waiting on an approval prompt are not
 deferred, because your message may be the answer to it.
 
-An eligible child report can join the delegating agent's next model request after a fully completed
-tool turn, at most one report per tool boundary. A conversation with several agents requires the
-report to address the current speaker; one with a single agent can also take an unaddressed report.
-Other reports, webhooks and loops wait for a separate turn. The host waits for tool-checkpoint
-settlement before splitting the assistant row; see
-[Delegation](delegation.md#progress-and-report-delivery). Disabling `LOCALIX_MID_RUN_INTERJECT`
-keeps these queued messages and reports for later turns.
+The reports addressed to the delegating agent join its next model request together after a fully
+completed tool turn. A conversation with several agents requires them to address the current
+speaker; one with a single agent also takes an unaddressed report. Other reports, webhooks and loops
+wait for a separate turn. The host waits for tool-checkpoint settlement before splitting the
+assistant row; see [Delegation](delegation.md#progress-and-report-delivery). Disabling
+`LOCALIX_MID_RUN_INTERJECT` keeps these queued messages and reports for later turns.
 
 A slash command sent while the session is busy waits in the queue as a whole command — with its
 badge, model and tool grants — and runs as its own turn.

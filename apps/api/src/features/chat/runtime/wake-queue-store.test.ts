@@ -36,6 +36,7 @@ async function store() {
     .addColumn('lease_expires_at', 'text')
     .addColumn('delivery_key', 'text', (c) => c.notNull().unique())
     .addColumn('queued_at', 'text', (c) => c.notNull())
+    .addColumn('batch_id', 'text')
     .execute()
   return { db, queue: createDatabaseWakeQueueStore<{ content: string }>(db) }
 }
@@ -57,6 +58,35 @@ const queued = (id: string, kind: 'user' | 'wake', priority = 0) => ({
 })
 
 describe('database wake queue store', () => {
+  test('a band claimed together keeps its name through a release and an expired lease', async () => {
+    const { queue } = await store()
+    for (const id of ['a', 'b', 'c']) await queue.enqueue(queued(id, 'wake', 10))
+    const at = '2026-07-22T10:00:00.000Z'
+    const expires = '2026-07-22T10:01:00.000Z'
+    expect(await queue.claim('u', 's', ['a', 'b'], 'owner-1', at, expires, 'a')).toBe(true)
+    await queue.release('u', 's', ['a', 'b'], 'owner-1')
+    const named = (rows: Awaited<ReturnType<typeof queue.listSession>>) =>
+      rows.map((row) => [row.id, row.batchId ?? null])
+    expect(named(await queue.listSession('u', 's'))).toEqual([
+      ['a', 'a'],
+      ['b', 'a'],
+      ['c', null],
+    ])
+    // A lease that expired with its process: the band is still the band.
+    expect(await queue.claim('u', 's', ['a', 'b'], 'owner-2', at, expires)).toBe(true)
+    expect(await queue.recoverExpired('2026-07-22T10:02:00.000Z')).toBe(2)
+    expect(named(await queue.listAll())).toEqual([
+      ['a', 'a'],
+      ['b', 'a'],
+      ['c', null],
+    ])
+    expect(await queue.claim('u', 's', ['a', 'b'], 'owner-3', at, '2026-07-22T10:09:00.000Z')).toBe(
+      true,
+    )
+    expect(await queue.ack('u', 's', ['a', 'b'], 'owner-3')).toBe(true)
+    expect(named(await queue.listSession('u', 's'))).toEqual([['c', null]])
+  })
+
   test('duplicate deterministic delivery is an idempotent insert', async () => {
     const { queue } = await store()
     const item = queued('trg:t1:1', 'wake', 20)

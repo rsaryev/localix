@@ -1,22 +1,12 @@
 import type { QueueItem } from '../../../../lib/priority-queue'
-import { insertInternalTurn } from '../message-persistence'
-import { agentParticipant } from '../../../../db/participant'
-import {
-  enqueueTurnTickets,
-  queuedTurnEvent,
-  resolveTurnRecipients,
-  supersedeColleagueChains,
-} from '../conversation-dispatch'
-import { noLeadership } from '../conversation-strategy'
 import { dispatchAgentTicket } from './dispatch-agent'
-import { sessionExecutionContext } from '../execution-context'
-import { mergeIdentity } from '../run-params'
-import { createRunCompletion, type RunExecutionOutcome } from '../run-outcome'
-import { selectDrainBand, bandRecipient } from '../wake-queue-selection'
-import { queueDeliveryMessageIds } from '../wake-queue-store'
-import type { PendingTurn, WakeQueueSharedState } from './leases'
+import type { RunExecutionOutcome } from '../run-outcome'
 import type { DrainDependencies, DrainOptions } from './drain-contracts'
+import { deliverBand } from './drain-delivery'
 import { createDrainScheduler } from './drain-scheduler'
+import { ticketOf, type PendingTurn } from './entry'
+import { holdLeases, type WakeQueueSharedState } from './leases'
+import { selectDrainBand } from './selection'
 
 export type { DrainOptions } from './drain-contracts'
 
@@ -38,19 +28,15 @@ export function createDrainOperations(
     repo,
     streamRegistry,
     now,
-    state,
     run,
-    enqueueRun,
-    store,
     ready,
     onError = console.warn,
     leases,
     continuations,
     publishQueue,
     ageWaitingAgentTurns,
-    cancelAgentTurns,
-    leadership,
-    inviteAddressed,
+    holdsOf,
+    holdUntil,
   } = dependencies
 
   const drainPendingAndRunImpl = async (
@@ -81,20 +67,25 @@ export function createDrainOperations(
           preferredItemId = promotedId
           shared.pendingPromotions.delete(sessionId)
         }
-        // Reserve the top band so failed delivery remains visible and retryable.
-        const selectedBand = selectDrainBand(q.list(), {
+        // Reserve the top band so failed delivery remains visible and retryable. Held entries
+        // wait (`holds.ts`): when only they are left, this pass ends and wakes again by their
+        // deadline, or sooner when what they wait for settles.
+        const held = holdsOf(sessionId)
+        const band: QueueItem<PendingTurn>[] = selectDrainBand(q.list(), {
           preferredItemId,
-          durable: Boolean(store),
+          held: held.ids,
         })
         preferredItemId = undefined
-        const band: QueueItem<PendingTurn>[] = selectedBand
+        if (band.length === 0) {
+          if (held.releaseAt !== undefined) holdUntil(sessionId, held.releaseAt)
+          return
+        }
         // Lease synchronously BEFORE the first await. A remove/clear that reports
         // success must never race this snapshotted band into durable execution.
         const bandIds = band.map((item) => item.id)
-        const drainLeases = shared.leasedDrainIds.get(sessionId) ?? new Set<string>()
-        for (const id of bandIds) drainLeases.add(id)
-        shared.leasedDrainIds.set(sessionId, drainLeases)
-        const next = band[0]!.value // derive AFTER binding isolation
+        holdLeases(shared, sessionId, bandIds, 'drain')
+        const next = band[0]!.value
+        const stillQueued = () => bandIds.some((id) => q.list().some((item) => item.id === id))
         // Durable acknowledgement precedes this synchronous local retirement.
         const retireAcknowledgedBand = (): void => {
           for (const item of band) q.remove(item.id)
@@ -118,7 +109,7 @@ export function createDrainOperations(
             leases.releaseDrainBand(sessionId, bandIds)
             return
           }
-          let latestSession = await repo.getSession(next.userId, sessionId)
+          const latestSession = await repo.getSession(next.userId, sessionId)
           if (!latestSession) {
             continuations.settleCompletion(
               q.list().map((queued) => queued.id),
@@ -151,7 +142,8 @@ export function createDrainOperations(
             })
             continue
           }
-          if (next.agentTurn) {
+          const ticket = ticketOf(next)
+          if (ticket) {
             await ageWaitingAgentTurns(next.userId, sessionId)
             const completion = continuations.bandCompletion(bandIds, sessionId)
             let outcome: RunExecutionOutcome
@@ -160,7 +152,7 @@ export function createDrainOperations(
                 {
                   userId: next.userId,
                   session: latestSession,
-                  ticket: next.agentTurn,
+                  ticket,
                   completion,
                   consume: async () => {
                     if (!(await leases.ack(next.userId, sessionId, bandIds)))
@@ -174,142 +166,21 @@ export function createDrainOperations(
                 { repo, run, streamRegistry, now },
               )
             } catch (error) {
-              if (bandIds.some((id) => q.list().some((item) => item.id === id))) throw error
+              if (stillQueued()) throw error
               onError(error)
               outcome = fatalDrainOutcome(error)
             }
             continuations.settleCompletion(bandIds, outcome)
             continue
           }
-          const content =
-            band.length === 1
-              ? band[0]!.value.content
-              : band.map((item) => item.value.content).join('\n\n---\n\n')
-          const extraDisabledTools = band.some((item) => item.value.extraDisabledTools)
-            ? [...new Set(band.flatMap((item) => item.value.extraDisabledTools ?? []))]
-            : undefined
-          const bindings = band.flatMap((item) => item.value.bindings ?? [])
-          const plugins = [...new Set(band.flatMap((item) => item.value.plugins ?? []))]
-          const sources = new Set(band.map((item) => item.value.source).filter(Boolean))
-          const origin = sources.size === 1 ? [...sources][0] : undefined
-          const routedTo = bandRecipient(band.map((item) => item.value))
-          // Resolve recipients before creating the immutable assistant author slot. A wake that
-          // carries the person's words (`addressedAs`, alone in its band) is routed as their
-          // message with that text (`queuedTurnEvent`), and so — like one — supersedes the
-          // colleague chains queued before it.
-          const history = await repo.listMessages(next.userId, sessionId)
-          const personal = next.internal && next.addressedAs !== undefined
-          // The person's words may tag an agent who is not here yet: it joins before routing.
-          if (inviteAddressed && (!next.internal || personal))
-            latestSession = await inviteAddressed(
-              next.userId,
-              latestSession,
-              personal ? next.addressedAs! : content,
-            )
-          const recipients = await resolveTurnRecipients(
-            latestSession,
-            history,
-            queuedTurnEvent(
-              { internal: next.internal, content, addressedAs: next.addressedAs },
-              routedTo?.participant,
-            ),
-            leadership?.(next.userId, latestSession.projectId) ?? noLeadership,
-          )
-          // A delivery no current participant answers (its addressee left the conversation)
-          // is dismissed BEFORE any row is minted: a slot created for it would stay an empty
-          // assistant turn in the transcript.
-          if (recipients.length === 0) {
-            if (!(await leases.ack(next.userId, sessionId, bandIds)))
-              throw new Error('Delivery lost its durable lease')
-            retireAcknowledgedBand()
-            continuations.settleCompletion(bandIds, {
-              status: 'failed',
-              kind: 'dismissed',
-              message: 'No current participant matches this delivery.',
-              retryable: false,
-              rateLimited: false,
-            })
-            continue
-          }
-          if (!next.internal || personal)
-            await supersedeColleagueChains(cancelAgentTurns, next.userId, sessionId)
-          const firstSlot = recipients[0]!.agentId
-          const { userMessage, assistantMessage } = await insertInternalTurn({
-            agent: agentParticipant(firstSlot),
-            repo,
-            streamRegistry,
-            now,
-            userId: next.userId,
+          const step = await deliverBand(shared, dependencies, {
             sessionId,
-            content,
-            internal: next.internal,
-            ...(origin ? { origin } : {}),
-            ...(next.command?.origin ? { commandOrigin: next.command.origin } : {}),
-            ...(routedTo ? { to: routedTo } : {}),
-            ...(bindings.length > 0 ? { bindings } : {}),
-            ...(plugins.length > 0 ? { plugins } : {}),
-            clientMessageIds: band
-              .map((item) => item.value.clientMessageId)
-              .filter((id): id is string => Boolean(id)),
-            ...(store ? { messageIds: queueDeliveryMessageIds(band[0]!.id) } : {}),
+            band,
+            session: latestSession,
+            retire: retireAcknowledgedBand,
+            stillQueued,
           })
-          if (shared.closed) {
-            continuations.settleCompletion(bandIds, {
-              status: 'failed',
-              kind: 'abort',
-              message: 'Runtime shut down before the queued run started.',
-              retryable: true,
-              rateLimited: false,
-            })
-            await leases.release(next.userId, sessionId, bandIds).catch(onError)
-            leases.releaseDrainBand(sessionId, bandIds)
-            return
-          }
-          let outcome: RunExecutionOutcome
-          const completion =
-            continuations.bandCompletion(bandIds, sessionId) ?? createRunCompletion()
-          if (completion) {
-            // A continued physical segment returns immediately so this drain can
-            // admit its queued child. The shared completion resolves the original
-            // waiter only when that child (or a later descendant) is terminal.
-            void completion.promise.then(() => continuations.detachContinuations(bandIds))
-          }
-          // Convert the strategy's recipients into addressed tickets; the event loop consumes
-          // them one at a time through the same path as acknowledge and runtime producers.
-          try {
-            await enqueueTurnTickets(enqueueRun, {
-              userId: next.userId,
-              session: latestSession,
-              triggerMessageIds: [userMessage.id],
-              firstSlotId: assistantMessage.id,
-              recipients,
-              completion,
-              scope: {
-                // A remembered task identity can narrow this run, but the strategy owns its
-                // concrete participant address. Authority is always re-derived.
-                ...mergeIdentity(state.sessionRunIdentity.get(sessionId), {
-                  ...(extraDisabledTools ? { extraDisabledTools } : {}),
-                  ...next.command?.identity,
-                }),
-                executionContext:
-                  next.executionContext ??
-                  sessionExecutionContext(latestSession, next.toolSurface, origin),
-                conversationId: userMessage.id,
-              },
-            })
-            // Checkpoint delivery only after every execution ticket is durable. Retrying an
-            // interrupted fan-out uses the same assistant ids and cannot duplicate a ticket.
-            if (!(await leases.ack(next.userId, sessionId, bandIds)))
-              throw new Error('Delivery lost its durable lease')
-            retireAcknowledgedBand()
-            outcome = { status: 'continued' }
-          } catch (error) {
-            if (bandIds.some((id) => q.list().some((item) => item.id === id))) throw error
-            onError(error)
-            outcome = fatalDrainOutcome(error)
-          }
-          if (outcome.status !== 'continued') completion?.settle(outcome)
-          continuations.settleCompletion(bandIds, outcome)
+          if (step === 'stop') return
         } catch (error) {
           await leases.release(next.userId, sessionId, bandIds).catch(onError)
           leases.releaseDrainBand(sessionId, bandIds)
@@ -317,8 +188,7 @@ export function createDrainOperations(
           // Before the preamble is acknowledged the durable item remains
           // retryable, so its completion must remain pending. Once the item has
           // left the queue there is no retry owner and the failure is terminal.
-          const retryPending = bandIds.some((id) => q.list().some((item) => item.id === id))
-          if (!retryPending) {
+          if (!stillQueued()) {
             continuations.settleCompletion(bandIds, fatalDrainOutcome(error))
           }
           leases.scheduleDrainRetry(sessionId)

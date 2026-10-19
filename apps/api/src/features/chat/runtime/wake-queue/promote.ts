@@ -1,5 +1,6 @@
 import type { QueuePromoteResult } from '../../contracts'
-import type { LeaseOperations, PendingTurn, WakeQueueSharedState } from './leases'
+import type { PendingTurn } from './entry'
+import { holdLeases, type LeaseOperations, type WakeQueueSharedState } from './leases'
 
 interface PromoteDependencies {
   leases: LeaseOperations
@@ -63,9 +64,7 @@ export const createPromoteOperations = (
       if (item.value.kind === 'wake') return { promoted: false, reason: 'not_user' }
       if (leases.isLeased(sessionId, itemId)) return { promoted: false, reason: 'leased' }
 
-      const drainLeases = shared.leasedDrainIds.get(sessionId) ?? new Set<string>()
-      drainLeases.add(itemId)
-      shared.leasedDrainIds.set(sessionId, drainLeases)
+      holdLeases(shared, sessionId, [itemId], 'drain')
       if (!(await leases.claim(userId, sessionId, [itemId]))) {
         leases.releaseDrainBand(sessionId, [itemId])
         return { promoted: false, reason: 'leased' }

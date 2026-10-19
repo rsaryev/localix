@@ -39,10 +39,12 @@ export function queueItemCapabilities(kind: SessionQueueItem['kind']): QueueItem
  * `delivery` is derived live by the server on every queue publish, never stored:
  * `undefined` here is not old data but a CLIENT-LOCAL optimistic row the server has
  * not acknowledged yet (QueuePanel merges both). Such a row will drain as its own
- * turn unless the ack upgrades it, so "Next turn" is its truthful label.
+ * turn unless the ack upgrades it, so "Next turn" is its truthful label. `held` is a
+ * child's report waiting for its siblings, so their delegator answers them together.
  */
 export function queueDeliveryLabel(
   delivery: SessionQueueItem['delivery'],
-): 'Next tool' | 'Next turn' {
+): 'Next tool' | 'Next turn' | 'Waits for other reports' {
+  if (delivery === 'held') return 'Waits for other reports'
   return delivery === 'next-tool' ? 'Next tool' : 'Next turn'
 }

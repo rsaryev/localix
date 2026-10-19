@@ -117,7 +117,7 @@ export function createOpsTimersPhase({
   // monitor for (its `monitors` host service): each line used to wake every root chat of
   // the user, because nothing named the conversation a watcher was for. A line nobody
   // armed reaches nobody and is logged as undelivered. A BUSY armed session is woken too —
-  // the wake queue holds it at wake priority and coalesces a burst into one turn. A session
+  // the wake queue holds it, and one monitor's lines waiting together are one turn. A session
   // that can no longer take a wake (deleted, not a chat) is disarmed on its first miss, so
   // the miss is logged once rather than per line. Provenance 'external' reuses the existing
   // wake source (documented as "another agent, CI, a monitor").
@@ -127,10 +127,11 @@ export function createOpsTimersPhase({
     availabilityFor: (userId) => readAvailability(db, { userId, agentId: DEFAULT_AGENT_ID }),
     userId: channelUserId,
     deliver: (note) => {
-      const content = `[monitor:${note.pluginName}/${note.monitorName}] ${note.line}`
+      const coalesce = `monitor:${note.pluginName}/${note.monitorName}`
+      const content = `[${coalesce}] ${note.line}`
       for (const sessionId of note.sessionIds)
         hostRefs.wakes!.send(
-          { userId: channelUserId, sessionId, content, source: 'external' },
+          { userId: channelUserId, sessionId, content, source: 'external', coalesce },
           `plugin monitor ${note.pluginName}/${note.monitorName}`,
           (outcome) => {
             if (outcome.status === 'missed') monitorHost.disarmSession(sessionId)

@@ -4,9 +4,9 @@ import type { AgentTurnTicket } from '../agent-turn-ticket'
 import type { AgentTurnSource } from '../conversation-strategy'
 import { agedPriority } from '../queue-policy'
 import type { WakeQueueStore } from '../wake-queue-store'
-import type { PendingTurn } from './leases'
+import { ticketOf, type PendingTurn } from './entry'
 import type { createContinuationOperations } from './continuations'
-import type { createLeaseOperations, createWakeQueueSharedState } from './leases'
+import { leaseHolder, type createLeaseOperations, type createWakeQueueSharedState } from './leases'
 
 export interface AgentTurnFilter {
   conversationId?: string
@@ -33,8 +33,7 @@ export function createAgentTurnOperations(deps: AgentTurnOperationsDeps) {
     const queue = deps.shared.queues.get(sessionId)
     if (!queue) return
     const updates = queue.list().flatMap((item) => {
-      const turn =
-        item.value.kind === 'user' || item.value.kind === 'wake' ? item.value.agentTurn : undefined
+      const turn = ticketOf(item.value)
       if (
         !turn ||
         item.value.userId !== userId ||
@@ -73,8 +72,7 @@ export function createAgentTurnOperations(deps: AgentTurnOperationsDeps) {
     const queue = deps.shared.queues.get(sessionId)
     if (!queue) return
     for (const item of queue.list()) {
-      const turn =
-        item.value.kind === 'user' || item.value.kind === 'wake' ? item.value.agentTurn : undefined
+      const turn = ticketOf(item.value)
       if (
         !turn ||
         item.value.userId !== userId ||
@@ -83,7 +81,7 @@ export function createAgentTurnOperations(deps: AgentTurnOperationsDeps) {
         (source && turn.source !== source)
       )
         continue
-      if (deps.shared.leasedDrainIds.get(sessionId)?.has(item.id)) continue
+      if (leaseHolder(deps.shared, sessionId, item.id) === 'drain') continue
       if (deps.store && !(await deps.store.remove(userId, sessionId, item.id))) continue
       queue.remove(item.id)
       deps.continuations.settleCompletion([item.id], {

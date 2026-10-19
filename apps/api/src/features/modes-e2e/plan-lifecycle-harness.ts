@@ -30,7 +30,9 @@ import { startAgentNotifications } from '../notifications/producers'
 import type { InboxEntry } from '../notifications/contracts'
 import { createPlanRepository } from '../plans/repository'
 import { createPlanService } from '../plans/service'
-import { queuedTurnEvent, resolveTurnRecipients } from '../chat/runtime/conversation-dispatch'
+import { resolveTurnRecipients } from '../chat/runtime/conversation-dispatch'
+import { createPendingTurn } from '../chat/runtime/wake-queue/entry'
+import { routeEvent } from '../chat/runtime/wake-queue/kinds'
 import { noLeadership } from '../chat/runtime/conversation-strategy'
 import { createMemoryWorkRepository } from '../work/memory-repository'
 import { createWorkRegistry } from '../work/registry'
@@ -215,18 +217,16 @@ export async function createPlanLifecycle(handles?: readonly string[]) {
     modeOf: async (id: string) => (await chat.getSession(USER, id))?.permissionMode,
     session: (id: string) => requireSession(USER, id),
     /**
-     * The handles a recorded wake reaches, routed as the drain routes it: the same event rule
-     * (`queuedTurnEvent`) through the conversation's own strategy, over the stored transcript.
+     * The handles a recorded wake reaches, routed as the drain routes it: the queue's own rule for
+     * its kind (`wake-queue/kinds.ts`) through the conversation's strategy, over the transcript.
      */
     addressees: async (request: WakeRequest): Promise<string[]> => {
       const session = await requireSession(USER, request.sessionId)
+      const turn = createPendingTurn({ ...request, session }, '')
       const recipients = await resolveTurnRecipients(
         session,
         await chat.listMessages(USER, request.sessionId),
-        queuedTurnEvent(
-          { internal: true, content: request.content, addressedAs: request.addressedAs },
-          request.to?.participant,
-        ),
+        routeEvent(turn, request.content, request.to?.participant),
         noLeadership,
       )
       return recipients.map(

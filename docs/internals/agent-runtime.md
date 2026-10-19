@@ -182,11 +182,12 @@ successful turn with tool results, the completed tool-turn index. The host waits
 reach its transcript checkpoint before admitting a queued message into a new assistant row. A
 checkpoint wait expires after two seconds by default; timeout or abort leaves the queue untouched.
 
-User messages are filtered by the current speaker's address. A delegator's message can amend a
-running child's assignment. Chat runs also opt into one eligible child report per completed tool
-turn, addressed to the running delegator; only solo chats accept an unaddressed report. Reports with
-bindings, execution overrides, or an independent completion waiter remain on the standalone run
-path. Other machine wakes retain their own turns. `LOCALIX_MID_RUN_INTERJECT=0` disables this
+What a running turn may take is the queue's `joins` rule (`wake-queue/kinds.ts`). User messages are
+filtered by the current speaker's address and must come from the run's client surface. A delegator's
+message can amend a running child's assignment. After a completed tool turn, chat runs also take
+every report addressed to the running delegator, as one message; only solo chats accept an
+unaddressed report. An entry with an independent completion waiter remains on the standalone run
+path, and other machine wakes retain their own turns. `LOCALIX_MID_RUN_INTERJECT=0` disables this
 mid-run queue consumption.
 
 ### Tool deferral
@@ -361,7 +362,8 @@ scanner and containment checks. Personal foreign agent homes remain outside disc
 - [Prompt-cache TTL from the host's idle gap](../../packages/agent-runtime-pi/src/cache-retention.ts)
 - [Steering boundary](../../packages/agent/src/runtime/index.ts)
 - [Host checkpoint gate](../../apps/api/src/features/chat/runtime/run/tool-checkpoint-gate.ts)
-- [Addressed report eligibility](../../apps/api/src/features/chat/runtime/wake-queue/steering.ts)
+- [Queue entry kinds](../../apps/api/src/features/chat/runtime/wake-queue/kinds.ts) ·
+  [what a running turn takes](../../apps/api/src/features/chat/runtime/wake-queue/steerable.ts)
 - [Activation persistence](../../apps/api/src/features/chat/runtime/run/tool-deferral.ts)
 - [Initial prompt roster](../../apps/api/src/features/chat/runtime/run/system-prompt-build.ts)
 - [Activator input and partial name resolution](../../apps/api/src/features/agent-core/tools/activate-tools/activate-tools.ts)

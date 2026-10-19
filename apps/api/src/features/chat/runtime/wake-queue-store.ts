@@ -132,7 +132,7 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
       return mapQueueRows<TPayload>(rows)
     },
 
-    async claim(userId, sessionId, ids, leaseOwner, now, leaseExpiresAt) {
+    async claim(userId, sessionId, ids, leaseOwner, now, leaseExpiresAt, batchId) {
       if (ids.length === 0) return false
       return db
         .transaction()
@@ -153,7 +153,12 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
           if (eligible.length !== ids.length) return false
           const result = await trx
             .updateTable('agent_queue_items')
-            .set({ state: 'leased', lease_owner: leaseOwner, lease_expires_at: leaseExpiresAt })
+            .set({
+              state: 'leased',
+              lease_owner: leaseOwner,
+              lease_expires_at: leaseExpiresAt,
+              ...(batchId ? { batch_id: batchId } : {}),
+            })
             .where('user_id', '=', userId)
             .where('session_id', '=', sessionId)
             .where('id', 'in', [...ids])

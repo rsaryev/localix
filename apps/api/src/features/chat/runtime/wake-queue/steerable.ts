@@ -1,78 +1,81 @@
-import type { QueueItem } from '../../../../lib/priority-queue'
-import type { PendingTurn, WakeQueueSharedState } from './leases'
-import { isBoundaryDeliverable, isDelegatorMessage } from './leases'
-import { hasExecutionOverrides } from '../wake-queue-selection'
+import type { ToolSurface } from '@localixai/agent/agents'
 
-/** A completed child report may join its delegator's next model sample after a full tool turn.
- * Other machine wakes still own separate runs; this predicate never changes the public
- * next-turn delivery hint or the ordinary user-steering path. */
-const isSubagentReport = (turn: PendingTurn): boolean =>
-  turn.kind === 'wake' &&
-  turn.internal &&
-  turn.source === 'subagent' &&
-  !turn.agentTurn &&
-  !turn.bindings?.length &&
-  !hasExecutionOverrides(turn)
+import type { QueueItem } from '../../../../lib/priority-queue'
+import { leaseHolder, type WakeQueueSharedState } from './leases'
+import { sameSurface, type PendingTurn } from './entry'
+import { batchRule, joinPoint } from './kinds'
 
 export interface SubagentSteeringAddress {
   participant: string
   allowUnaddressed: boolean
 }
 
-/** Selection of the queued item a running model may take at its next boundary. */
-export const createSteerableSelection = (shared: WakeQueueSharedState) => {
-  /**
-   * The id of a person's message this run would take at its next boundary, if one waits. The
-   * loop asks before each tool call starts, so the message outranks calls chosen without it.
-   * Child reports are excluded: they join only at a completed tool turn.
-   */
-  const peekSteerable = (
-    sessionId: string,
-    accepts?: (content: string) => boolean,
-    address?: SubagentSteeringAddress,
-  ): string | undefined => nextSteerable(sessionId, accepts, address, false)?.id
+/** What a RUNNING turn may take from its session's queue at a boundary. */
+export interface JoinFilter {
+  /** The person's messages this speaker may take (`addressedToSpeaker`). */
+  accepts?: (content: string) => boolean
+  /** The running turn's client surface: a message sent from another one opens its own turn. */
+  surface?: ToolSurface
+  /** Whose children's reports may join — offered only once a tool turn has completed. */
+  reports?: SubagentSteeringAddress
+}
 
-  /** The one queued item the running model may take next, if any. Never leases. */
-  function nextSteerable(
+/** Selection of what a running model may take at its next boundary (`kinds.ts`, `joins`). */
+export const createSteerableSelection = (shared: WakeQueueSharedState) => {
+  const free = (sessionId: string, item: QueueItem<PendingTurn>) =>
+    leaseHolder(shared, sessionId, item.id) === undefined &&
+    // A caller awaiting the logical terminal outcome must keep this row on the standalone run
+    // path; steering is absorbed by another run and cannot provide an independent result.
+    !shared.continuationCompletions.has(item.id)
+
+  /**
+   * The band a running model may take next, if any. Never leases.
+   *
+   * One delivery per boundary: the person's message, a delegator's message, or every report to
+   * the running delegator at once — held or not, because a delegator that is working can use them
+   * now (`holds.ts`). Child reports are offered only when `withReports` (a completed tool turn).
+   */
+  function nextJoinable(
     sessionId: string,
-    accepts?: (content: string) => boolean,
-    subagent?: SubagentSteeringAddress,
-    reports = true,
-  ): QueueItem<PendingTurn> | undefined {
+    filter: JoinFilter,
+    withReports = true,
+  ): QueueItem<PendingTurn>[] | undefined {
     const q = shared.queues.get(sessionId)
     if (!q || q.size() === 0) return undefined
-    const leased = shared.leasedSteeringIds.get(sessionId)
-    const steerable = q
-      .list()
-      .filter(
-        (it) =>
-          !leased?.has(it.id) &&
-          !shared.leasedDrainIds.get(sessionId)?.has(it.id) &&
-          // A caller awaiting the logical terminal outcome must keep this row
-          // on the standalone run path; steering is absorbed by another run and
-          // cannot provide an independent completion result.
-          !shared.continuationCompletions.has(it.id) &&
-          // Deliver one eligible item per model-turn boundary. The extra report
-          // predicate is opt-in and never changes what the ordinary queue drains.
-          (isBoundaryDeliverable(it.value) || (reports && subagent && isSubagentReport(it.value))),
-      )
-      .slice(0, 1)
-    const first = steerable[0]
+    const reports = withReports ? filter.reports : undefined
+    const candidates = q.list().filter((item) => {
+      if (!free(sessionId, item)) return false
+      const point = joinPoint(item.value)
+      return point === 'boundary' || (point === 'tool-turn' && reports !== undefined)
+    })
+    const first = candidates[0]
     if (!first) return undefined
-    // A message the running participant is not addressed by is not taken — and nothing after
-    // it is either: skipping ahead would answer a later message before the earlier one, which
-    // then runs as its own turn once this run ends.
-    // A delegator's message is for the child's one agent, and taking it is its only way in.
-    if (first.value.kind === 'wake' && !isDelegatorMessage(first.value)) {
-      const recipient = first.value.to?.participant
-      if (
-        !subagent ||
-        (recipient ? recipient !== subagent.participant : !subagent.allowUnaddressed)
+    const turn = first.value
+    // A turn the running participant is not the one for is not taken — and nothing after it is
+    // either: skipping ahead would answer a later message before the earlier one, which then
+    // runs as its own turn once this run ends.
+    if (turn.entry === 'report') {
+      const recipient = turn.to?.participant
+      if (recipient ? recipient !== reports!.participant : !reports!.allowUnaddressed) return
+      if (turn.batch) return candidates.filter((item) => item.value.batch === turn.batch)
+      const key = batchRule(turn)!.key
+      return candidates.filter(
+        (item) =>
+          item.value.entry === 'report' && !item.value.batch && batchRule(item.value)?.key === key,
       )
-        return undefined
-    } else if (accepts && !accepts(first.value.content)) return undefined
-    return first
+    }
+    if (filter.accepts && !filter.accepts(turn.content)) return undefined
+    if (turn.entry === 'person' && !sameSurface(turn.toolSurface, filter.surface)) return undefined
+    return [first]
   }
 
-  return { nextSteerable, peekSteerable }
+  /**
+   * The id of what this run would take at its next boundary, if anything. The loop asks before
+   * each tool call starts, so a waiting message outranks calls chosen without it. Child reports
+   * are excluded: they join only at a completed tool turn.
+   */
+  const peekSteerable = (sessionId: string, filter: JoinFilter = {}): string | undefined =>
+    nextJoinable(sessionId, filter, false)?.[0]?.id
+
+  return { nextJoinable, peekSteerable }
 }

@@ -45,6 +45,14 @@ const parentOf = (session: SessionRecord): string =>
     ? session.provenance.parentSessionId
     : (session.parentSessionId ?? session.id)
 
+/** Who the child reports to: its delegator's session, and the participant who delegated. */
+const delegatorOf = (session: SessionRecord) => ({
+  sessionId: parentOf(session),
+  ...(session.provenance.kind === 'task-delegation' && session.provenance.parentParticipant
+    ? { participant: session.provenance.parentParticipant }
+    : {}),
+})
+
 /** The task's priority as delegated; a child from before priorities is `normal`. */
 const priorityOf = (session: SessionRecord): DelegationPriority =>
   (session.provenance.kind === 'task-delegation' && session.provenance.priority) || 'normal'
@@ -117,7 +125,7 @@ export async function messageSubagent(
   const framed = frameDelegatorMessage(content)
   // Whichever run answers this message — the one it joins, or one it opens — owes the delegator
   // a report, even a run a person started (`delegation-awaits.ts`).
-  expectReport(sessionId)
+  expectReport(sessionId, delegatorOf(found))
 
   // INTERRUPT: the current run is working from a brief that is now wrong, and its next step
   // boundary may be a long tool call away. The message waits in the buffer, the run is stopped,

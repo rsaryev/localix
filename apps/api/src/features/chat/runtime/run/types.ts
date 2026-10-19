@@ -11,7 +11,6 @@ import type { RunnerDeps } from '../agent-runner-types'
 import type { RuntimeState } from '../agent-runner-state'
 import type { ReasoningEffort } from '@localixai/agent'
 import type { ChatRepository, SessionRecord } from '../../repository'
-import type { WakeSource } from '../../contracts'
 import type { StoredMessagePayload } from '../../../../db'
 import type { createUsageRepository } from '../../../usage/repository'
 import type { createMemoryRepository } from '../../../memory/repository'
@@ -26,7 +25,7 @@ import type { CapabilitySourceRepository } from '../../../capabilities/source-re
 import type { EnqueueRun } from '../agent-turn-ticket'
 import type { AgentTurnFilter } from '../wake-queue/agent-turns'
 import type { ExecutionAddress } from '../../../agent-core/execution-address'
-import type { SubagentSteeringAddress } from '../wake-queue/steering'
+import type { JoinFilter, SteeringReservation } from '../wake-queue/steering'
 
 export type { RunChain, RunParams, RunScope, RunTurn } from '../run-contract'
 
@@ -108,32 +107,14 @@ export interface RunEnv {
   /** True if the session has queued turns waiting (drives the run's finally drain). */
   hasPendingQueue: (sessionId: string) => Promise<boolean>
   /**
-   * MID-RUN STEERING: lease content-only USER turns, and an eligible child report
-   * after a completed tool turn. Each lease
-   * is acknowledged only after its transcript row commits; failures release it.
+   * MID-RUN STEERING: lease what this run may take at a boundary (`wake-queue/steerable.ts`) — a
+   * person's message, a delegator's, or every report to the running delegator after a completed
+   * tool turn — as ONE reservation. It is acknowledged only after its transcript row commits;
+   * failures release it.
    */
-  reserveSteerableTurns: (
-    sessionId: string,
-    /** Only a message this returns true for may be taken (see `addressedToSpeaker`). */
-    accepts?: (content: string) => boolean,
-    subagent?: SubagentSteeringAddress,
-  ) => Promise<
-    Array<{
-      id: string
-      userId: string
-      content: string
-      queuedAt: string
-      source?: WakeSource
-      internal?: boolean
-      clientMessageId?: string
-    }>
-  >
-  /** The id of a message {@link reserveSteerableTurns} would take next, without leasing it. */
-  peekSteerableTurn: (
-    sessionId: string,
-    accepts?: (content: string) => boolean,
-    subagent?: SubagentSteeringAddress,
-  ) => string | undefined
+  reserveSteerableTurns: (sessionId: string, filter: JoinFilter) => Promise<SteeringReservation[]>
+  /** The id of what {@link reserveSteerableTurns} would take next, without leasing it. */
+  peekSteerableTurn: (sessionId: string, filter: JoinFilter) => string | undefined
   ackSteerableTurn: (userId: string, sessionId: string, itemId: string) => Promise<boolean>
   releaseSteerableTurn: (sessionId: string, itemId: string) => Promise<void>
 }

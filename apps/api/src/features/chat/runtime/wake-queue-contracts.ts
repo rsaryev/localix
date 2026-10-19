@@ -1,7 +1,7 @@
 import type { ToolSurface } from '@localixai/agent/agents'
 
 import type { ParticipantRef } from '../../../db'
-import type { MessageBinding, WakeSource } from '../contracts'
+import type { DelegatedReport, MessageBinding, WakeSource } from '../contracts'
 import type { ChatRepository, SessionRecord } from '../repository'
 import type { RuntimeState } from './agent-runner-state'
 import type { AgentTurnTicket } from './agent-turn-ticket'
@@ -11,7 +11,7 @@ import type { QueuePolicy } from './queue-policy'
 import type { RunExecutionOutcome, RunCompletion } from './run-outcome'
 import type { RunIdentity, RunParams } from './run-contract'
 import type { SessionStreamRegistry } from './session-stream-registry'
-import type { PendingTurn } from './wake-queue/leases'
+import type { PendingTurn } from './wake-queue/entry'
 import type { WakeQueueStore } from './wake-queue-store'
 
 export interface WakeQueueContext {
@@ -27,6 +27,25 @@ export interface WakeQueueContext {
   leadership?: (userId: string, projectId: string | null) => LeadershipPriorities
   /** Invite the available agents the person's words tag; the session unchanged when none. */
   inviteAddressed?: (userId: string, session: SessionRecord, text: string) => Promise<SessionRecord>
+  /** Whether a delegator still waits on children at work; absent, a report never waits. */
+  reportBarrier?: ReportBarrier
+}
+
+/**
+ * WHAT A CHILD'S REPORT WAITS FOR: the other children its delegator handed work to.
+ *
+ * A port, because the fact lives with delegation (`agent-core/delegation-awaits.ts`) and the queue
+ * only needs to ask it — and to hear when it changes, so a report held for a sibling is delivered
+ * the moment that sibling settles, not at the next unrelated wake.
+ */
+export interface ReportBarrier {
+  /**
+   * Is `participant` of `sessionId` still owed a report by a child other than `except` — the
+   * children whose reports are already queued?
+   */
+  awaits(sessionId: string, participant: string | undefined, except: ReadonlySet<string>): boolean
+  /** Called with the delegator's session each time one of its children's reports settles. */
+  subscribe(listener: (sessionId: string) => void): () => void
 }
 
 export interface EnqueueParams {
@@ -50,6 +69,16 @@ export interface EnqueueParams {
   /** Route as the person's message with this text (`WakeRequest.addressedAs`). */
   addressedAs?: string
   command?: QueuedCommand
+  /**
+   * The words are the PERSON'S — typed into a busy session, or a prompt a client sent for them —
+   * whatever `source` says. They are routed as a typed message is, by their own text, in the queue
+   * exactly as when the session is idle.
+   */
+  person?: true
+  /** Deliver together with the other queued wakes of this key (`WakeRequest.coalesce`). */
+  coalesce?: string
+  /** A delegated child's report (`WakeRequest.report`). */
+  report?: DelegatedReport
 }
 
 /**

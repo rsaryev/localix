@@ -30,6 +30,8 @@ export interface WakeShape<S extends string = string> {
   source: S
   to?: { participant: ParticipantRef; handle?: string }
   deliveryKey?: string
+  /** Delivered together with the other queued wakes of this key (a monitor's fires). */
+  coalesce?: string
 }
 
 /** What the host's wake primitive answers. `missed: 'unreadable'` is its store failing. */
@@ -112,7 +114,7 @@ export type WakeDelivery<R extends WakeShape = WakeShape> = ReturnType<typeof cr
  */
 export function triggerWake<S extends string>(
   trigger: Pick<TriggerRecord, 'userId' | 'sessionId' | 'owner'>,
-  wake: { content: string; source: S; deliveryKey: string },
+  wake: { content: string; source: S; deliveryKey: string; coalesce?: string },
 ): WakeShape<S> {
   return {
     userId: trigger.userId,
@@ -120,6 +122,7 @@ export function triggerWake<S extends string>(
     content: wake.content,
     source: wake.source,
     deliveryKey: wake.deliveryKey,
+    ...(wake.coalesce ? { coalesce: wake.coalesce } : {}),
     ...(trigger.owner.kind === 'agent' && trigger.owner.agentId
       ? { to: { participant: agentParticipant(trigger.owner.agentId) } }
       : {}),

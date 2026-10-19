@@ -73,7 +73,15 @@ export function createMonitorReport(deps: MonitorReportDeps) {
     deliveryKey: string,
   ): Promise<FireOutcome> =>
     fireOutcomeOf(
-      await deps.deliver(triggerWake(trigger, { content, source: 'bg-monitor', deliveryKey })),
+      await deps.deliver(
+        // Fires that queue while the session is busy are one turn, not one turn per fire.
+        triggerWake(trigger, {
+          content,
+          source: 'bg-monitor',
+          deliveryKey,
+          coalesce: `monitor:${trigger.id}`,
+        }),
+      ),
     )
 
   return {

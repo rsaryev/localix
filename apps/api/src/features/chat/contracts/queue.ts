@@ -182,6 +182,32 @@ export interface WakeRequest {
    * later request, long after the board was closed.
    */
   plugin?: string
+  /**
+   * WAKES OF ONE STREAM, ANSWERED ONCE: wakes that share this key and wait in the queue together
+   * open ONE turn, their contents in order. For a producer that fires in bursts — a monitor's
+   * lines, a feed's items — where a turn per item would answer the same thing many times.
+   */
+  coalesce?: string
+  /**
+   * A DELEGATED CHILD'S REPORT, as facts rather than text (`source: 'subagent'`). The queue words
+   * it when it is delivered, because reports to one delegator are delivered TOGETHER: a parent
+   * that handed out three tasks answers once, when the last of them reports
+   * (`runtime/wake-queue/kinds.ts`).
+   */
+  report?: DelegatedReport
+}
+
+/** One run of a delegated child, as its report reaches the participant who delegated. */
+export interface DelegatedReport {
+  /** The child's label (the delegation title). */
+  label: string
+  childSessionId: string
+  /** The run being reported: its final assistant message id — the report's identity. */
+  runId: string
+  /** How the run ended; only `failed` and `stopped` change the wording. */
+  status: string | null
+  /** The run's final assistant text; empty or absent means it produced none. */
+  text: string | null | undefined
 }
 
 /**
@@ -207,8 +233,11 @@ export interface SessionQueueItem {
   queuedAt: string
   /** Where this queued turn came from (provenance), for the composer chip. */
   source?: WakeSource
-  /** Runtime delivery seam: Pi steering at the next tool/model boundary, or a new turn. */
-  delivery?: 'next-tool' | 'next-turn'
+  /**
+   * Runtime delivery seam: Pi steering at the next tool/model boundary, a new turn, or HELD — a
+   * child's report waiting for its siblings, so their delegator answers them together.
+   */
+  delivery?: 'next-tool' | 'next-turn' | 'held'
 }
 
 export type QueueRemovalResult =

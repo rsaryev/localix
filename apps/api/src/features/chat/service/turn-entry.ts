@@ -185,6 +185,9 @@ export async function sendMessage(
         // client asked for hiding (a machine-composed prompt).
         internal: Boolean(origin) || isInternal === true,
         source: origin ?? 'user-busy',
+        // Hidden or not, these are the words the person (or their channel) sent: the queue
+        // routes them by their text, exactly as `runAgent` does when the session is idle.
+        person: true,
         toolSurface,
         ...(clientMessageId ? { clientMessageId } : {}),
         ...(bindings && bindings.length > 0 ? { bindings } : {}),

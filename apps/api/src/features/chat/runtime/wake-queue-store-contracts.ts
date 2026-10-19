@@ -15,6 +15,8 @@ export interface DurableQueueItem<TPayload = unknown> {
   leaseExpiresAt?: string
   deliveryKey: string
   queuedAt: string
+  /** The band it was claimed in with others; kept until acknowledgement (`claim`). */
+  batchId?: string
 }
 
 /**
@@ -23,7 +25,7 @@ export interface DurableQueueItem<TPayload = unknown> {
  */
 export type QueueAdmission<TPayload = unknown> = Omit<
   DurableQueueItem<TPayload>,
-  'sequence' | 'state'
+  'sequence' | 'state' | 'batchId'
 > & { receipt?: true }
 
 export interface WakeQueueStore<TPayload = unknown> {
@@ -31,6 +33,10 @@ export interface WakeQueueStore<TPayload = unknown> {
   enqueue(item: QueueAdmission<TPayload>): Promise<void | boolean>
   listAll(): Promise<DurableQueueItem<TPayload>[]>
   listSession(userId: string, sessionId: string): Promise<DurableQueueItem<TPayload>[]>
+  /**
+   * Lease every one of `ids` or none. `batchId` names a band of several: it is written with the
+   * lease and survives a release or an expired lease, so the band replays with exactly its rows.
+   */
   claim(
     userId: string,
     sessionId: string,
@@ -38,6 +44,7 @@ export interface WakeQueueStore<TPayload = unknown> {
     leaseOwner: string,
     now: string,
     leaseExpiresAt: string,
+    batchId?: string,
   ): Promise<boolean>
   ack(
     userId: string,
@@ -82,6 +89,7 @@ interface PersistedQueueRow {
   lease_expires_at: string | null
   delivery_key: string
   queued_at: string
+  batch_id: string | null
 }
 
 export function mapQueueRows<TPayload>(
@@ -104,6 +112,7 @@ export function mapQueueRows<TPayload>(
         ...(row.lease_expires_at ? { leaseExpiresAt: row.lease_expires_at } : {}),
         deliveryKey: row.delivery_key,
         queuedAt: row.queued_at,
+        ...(row.batch_id ? { batchId: row.batch_id } : {}),
       })
     } catch (error) {
       console.error(

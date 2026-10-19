@@ -19,13 +19,15 @@
  * (`delegation-lanes.ts`) → stop here if the child was CLOSED (its delegator closed it and needs
  * no report saying so) → skip the report for a stopped run, a run whose session still has work
  * going (a teammate's queued turn, a child of its own), or one nobody waits on → read the run's
- * final text → wake the ROOT chat → start the next run for any delegator messages no run took.
+ * final text → wake the delegator's session, where the report waits for the delegator's other
+ * children (`wake-queue/holds.ts`) → start the next run for any delegator messages no run took.
  * The record ends first so the parent's woken turn does not still list the child as running.
  */
 import { hasChildrenAtWork, releaseLane } from '../../../agent-core/delegation-lanes'
 import {
   deliverHeldReport,
   dropExpectedReport,
+  settleReport,
   takeExpectedReport,
 } from '../../../agent-core/delegation-awaits'
 import { participantAgentId } from '../../../../db/participant'
@@ -95,13 +97,34 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
   // And only while the delegator waits: a person's own dialog with the child answers the person
   // (`delegation-awaits.ts`).
   if (!takeExpectedReport(session.id)) return skip()
+  // Owed until it is queued or decided against: a sibling's report held for this one
+  // (`wake-queue/holds.ts`) is released by the settle, not by this run's end a moment before.
+  let sent = false
+  try {
+    sent = await sendReport(env, run, wake)
+  } finally {
+    settleReport(session.id)
+  }
+  if (!sent) return skip()
+  await svc.flushChildMessages?.(userId, session.id)
+}
 
+/**
+ * Hand the run's report to the delegator: to its open call when it waits (`wait: true`, no wake —
+ * false), or as a wake addressed to the delegating participant, by the handle it has in the
+ * session the report lands in — the delegator's own, which for a nested child is a team's.
+ */
+async function sendReport(
+  env: RunEnv,
+  run: EndedChildRun,
+  wake: NonNullable<NonNullable<ReturnType<typeof getAgentService>>['wakeSession']>,
+): Promise<boolean> {
+  const { session, userId } = run
+  if (session.provenance.kind !== 'task-delegation') return false
+  const provenance = session.provenance
   const message = await env.repo.getMessage(userId, session.id, run.runId).catch(() => null)
   const text = message?.payload.role === 'assistant' ? (message.payload.content ?? null) : null
-  // A delegating call that waits (`wait: true`) takes the report as its result: no wake.
-  if (deliverHeldReport(session.id, { status: run.outcome, text })) return skip()
-  // Addressed to the delegating participant, by the handle it has in the session the report
-  // lands in — the delegator's own session, which for a nested child is a team's.
+  if (deliverHeldReport(session.id, { status: run.outcome, text })) return false
   const delegatingAgentId = provenance.parentParticipant
     ? participantAgentId(provenance.parentParticipant)
     : null
@@ -109,7 +132,6 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
     ? await env.repo.getSession(userId, provenance.parentSessionId).catch(() => null)
     : null
   const handle = delegator?.agents.find((member) => member.agentId === delegatingAgentId)?.handle
-
   await wake(
     delegationReportWake({
       userId,
@@ -123,7 +145,7 @@ export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<v
       text,
     }),
   )
-  await svc.flushChildMessages?.(userId, session.id)
+  return true
 }
 
 /** Fire-and-forget at the seam: a report that fails to send must never fail the run it reports. */

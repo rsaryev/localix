@@ -401,6 +401,8 @@ export interface AgentQueueItemsTable {
   /** Stable seed for deterministic transcript message ids on retry/restart. */
   delivery_key: string
   queued_at: string
+  /** The band it was claimed in with other items; null when claimed alone. */
+  batch_id: ColumnType<string | null, string | null | undefined, string | null>
 }
 
 export interface SqliteMasterTable {

@@ -97,8 +97,8 @@ and stopping says so rather than hiding it. (A plugin's watch drops the excess i
 running; see `features/plugins/monitor-stream.ts` for why the two policies differ.) The fire then
 wakes the session through the triggers' one delivery path (`features/triggers/delivery.ts`) with the
 wake source `bg-monitor`, addressed to the participant that started it and keyed by the fire
-(`trg:<id>:<seq>`). A session that is busy does not lose the event: the wake queue holds it at wake
-priority and coalesces a burst into one turn.
+(`trg:<id>:<seq>`). A busy session does not lose the event: the wake queue holds it, and the fires
+that wait together are one turn.
 
 ### Where a monitor is visible
 

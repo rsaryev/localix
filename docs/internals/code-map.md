@@ -98,10 +98,23 @@ only while nobody works on the conversation. No plugin board wakes a session: th
 plugin records work and never starts a run.
 
 Every wake enters the durable priority queue (`features/chat/runtime/wake-queue.ts`, admission in
-`wake-queue/wake.ts`). User messages are priority 0 and pre-empt wakes at 10, the top band coalesces
-into one turn, and `SELF_CAUSED_WAKES` bounds agent-caused chains. A wake persists a hidden internal
-user row carrying its `WakeSource`, and `features/chat/wake-provenance.ts` lifts that onto the next
-visible assistant message, which is what renders the "via Loop" chip.
+`wake-queue/wake.ts`). An entry is typed by its kind (`wake-queue/entry.ts`): the person's words, a
+queued command, a machine event, a child's report, or an agent ticket. One table says what the queue
+does with each kind (`wake-queue/kinds.ts`): whether a running model may take it, which entries it
+is delivered with, and how a delivery is worded and routed. The person's words are priority 0 and
+pre-empt wakes at 10, and `SELF_CAUSED_WAKES` bounds agent-caused chains.
+
+Some entries are delivered together as one turn (`wake-queue/selection.ts`):
+
+- the reports to one delegator, held while its other children are still owed a report
+  (`wake-queue/holds.ts`, five minutes at most);
+- the wakes of one stream (`WakeRequest.coalesce`, such as a monitor's fires);
+- the person's lines typed in a row for the same agents.
+
+A band claimed together keeps its name (`batch_id`) until it is acknowledged, so a delivery that a
+crash interrupted replays with the same entries and transcript row. A wake persists a hidden
+internal user row carrying its `WakeSource`, and `features/chat/wake-provenance.ts` lifts that onto
+the next visible assistant message, which is what renders the "via Loop" chip.
 
 A trigger's fire and every producer that cannot await a turn (plugin backends and monitors, a
 finished child's report, a reaction) wake through one delivery, `features/triggers/delivery.ts`.

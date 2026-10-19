@@ -52,6 +52,7 @@ import { failedRun } from './run-outcome'
 import { classifyRunError } from './run/classify-run-error'
 import { createAgentRunRepository } from '../../../db/agent-run-repository'
 import { recordSessionChanges } from '../session-changes'
+import { awaitsReports, onReportSettled } from '../../agent-core/delegation-awaits'
 
 export function createAgentRunner(deps: RunnerDeps) {
   // Handed in, not built here: see `RunnerDeps.repo` for the turn that failed when it was.
@@ -121,6 +122,9 @@ export function createAgentRunner(deps: RunnerDeps) {
     store: createDatabaseWakeQueueStore(deps.db),
     leadership,
     inviteAddressed,
+    // Whether a delegator still waits on children at work, and word when that changes: the
+    // delegation ledger's facts, which the queue only asks (`wake-queue/holds.ts`).
+    reportBarrier: { awaits: awaitsReports, subscribe: onReportSettled },
     run: (p) => runner.run(p),
   })
 
@@ -156,10 +160,9 @@ export function createAgentRunner(deps: RunnerDeps) {
     drainMidRunReminders: (address) => drainMidRunReminders(state, address),
     drainPendingAndRun: wakeQueue.drainPendingAndRun,
     hasPendingQueue: (sessionId) => Promise.resolve(wakeQueue.hasPending(sessionId)),
-    reserveSteerableTurns: (sessionId, accepts, subagent) =>
-      Promise.resolve(wakeQueue.reserveSteerable(sessionId, accepts, subagent)),
-    peekSteerableTurn: (sessionId, accepts, subagent) =>
-      wakeQueue.peekSteerable(sessionId, accepts, subagent),
+    reserveSteerableTurns: (sessionId, filter) =>
+      Promise.resolve(wakeQueue.reserveSteerable(sessionId, filter)),
+    peekSteerableTurn: (sessionId, filter) => wakeQueue.peekSteerable(sessionId, filter),
     ackSteerableTurn: (userId, sessionId, itemId) =>
       Promise.resolve(wakeQueue.ackSteerable(userId, sessionId, itemId)),
     releaseSteerableTurn: (sessionId, itemId) =>

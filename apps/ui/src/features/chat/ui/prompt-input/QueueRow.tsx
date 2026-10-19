@@ -3,6 +3,7 @@ import {
   Check,
   Clock3,
   CornerDownRight,
+  Hourglass,
   LoaderCircle,
   MessageSquareText,
   SendHorizontal,
@@ -29,7 +30,7 @@ export interface QueuePanelItem {
   queueKind?: SessionQueueItem['kind']
   /** Backend items only: provenance of the queued wake (loop / plugin / …). */
   wakeSource?: WakeSource
-  /** Backend delivery boundary; next-tool is live steering, not a later turn. */
+  /** Backend delivery boundary; next-tool is live steering, held a report awaiting siblings. */
   delivery?: SessionQueueItem['delivery']
   /** A participant's queued turn: shown as who answers, not as the runtime's ticket text. */
   agent?: { handle: string; name: string }
@@ -73,11 +74,16 @@ export function QueueItemRow({
     : deletesInternalWake
       ? `${confirmDelete ? 'Confirm delete' : 'Delete'} queued item ${index + 1}: ${item.text}`
       : `Return to input queued item ${index + 1}: ${item.text}`
-  // Steering is the one delivery worth a word: everything else simply waits its turn.
+  // Two deliveries are worth a word: steering, and a report held until its siblings report.
+  // Everything else simply waits its turn.
   const steering =
-    item.delivery === 'next-tool' ? (
+    item.delivery === 'next-tool' || item.delivery === 'held' ? (
       <span className="flex items-center gap-1 text-2xs text-text-faint">
-        <CornerDownRight className="size-3" aria-hidden="true" />
+        {item.delivery === 'held' ? (
+          <Hourglass className="size-3" aria-hidden="true" />
+        ) : (
+          <CornerDownRight className="size-3" aria-hidden="true" />
+        )}
         {queueDeliveryLabel(item.delivery)}
       </span>
     ) : undefined

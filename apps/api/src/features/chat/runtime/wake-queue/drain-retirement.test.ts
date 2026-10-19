@@ -2,7 +2,8 @@ import { expect, test } from 'bun:test'
 import { createPriorityQueue } from '../../../../lib/priority-queue'
 import { sessionFixture } from '../../../../testing/session-fixture'
 import { createDrainOperations } from './drain'
-import { createWakeQueueSharedState, type PendingTurn } from './leases'
+import type { PendingTurn } from './entry'
+import { createWakeQueueSharedState } from './leases'
 import type { RunExecutionOutcome } from '../run-outcome'
 
 function fixture(failure?: 'ack' | 'remove' | 'publish') {
@@ -11,9 +12,13 @@ function fixture(failure?: 'ack' | 'remove' | 'publish') {
   const session = sessionFixture({ id: 's1', closedAt: '2026-10-09T00:00:00Z' })
   const shared = createWakeQueueSharedState({ activeRuns: new Map(), drainingSessions: new Set() })
   const q = createPriorityQueue<PendingTurn>()
+  // Two wakes of one stream: delivered as one band (`kinds.ts`, `coalesce`).
   for (const id of ['a', 'b'])
     q.enqueue(
       {
+        entry: 'event',
+        coalesce: 'feed',
+        source: 'bg-monitor',
         userId: session.userId,
         content: id,
         internal: true,
@@ -67,6 +72,8 @@ function fixture(failure?: 'ack' | 'remove' | 'publish') {
     onError: (error: unknown) => {
       trace.push(`error:${(error as Error).message}`)
     },
+    holdsOf: () => ({ ids: new Set() }),
+    holdUntil: () => {},
   } as never)
   return { trace, outcomes, q, shared, drain, session }
 }
