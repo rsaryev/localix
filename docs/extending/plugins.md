@@ -271,6 +271,8 @@ promotes compatibility and hygiene warnings to errors for review.
 | `argumentHint`                    | Adds composer placeholder text.                                  | Display only.                                                            |
 | `model`                           | Requests a model for this command run.                           | Best effort; the id must resolve through configured model connections.   |
 | `allowedTools`, `disallowedTools` | Auto-approves or removes tools for the command run.              | Uses engine tool names after compatibility normalization.                |
+| `activateTools`                   | Activates deferred tools the command's work needs for the chat.  | At most 8 names; activated as if the agent had called `activate_tools`.  |
+| `conversationMode`                | Makes the conversation `group` (or `solo`) before the run.       | A command that staffs a team states `group`; a solo chat invites nobody. |
 | `disableModelInvocation`          | Records a user-only command policy.                              | Plugin commands are not model-listed today, so the flag changes nothing. |
 
 Each arg accepts `name`, `type`, `description`, `placeholder`, `required`, static `options`, an

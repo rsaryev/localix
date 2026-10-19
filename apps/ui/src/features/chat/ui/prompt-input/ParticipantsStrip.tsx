@@ -5,7 +5,8 @@
  * like the active loops and the queued turns beside it: it belongs to this conversation, changes
  * while you are in it, and is worth a glance rather than a click.
  *
- * It is rendered for every conversation so participants can always be added or removed.
+ * It is rendered for every conversation so participants can always be added or removed. It opens
+ * with the conversation's mode (solo or group), the one setting about who may share it.
  *
  * It also carries the LIVE ORDER. A conversation answers one participant at a time and a turn
  * takes as long as a model call, so six participants with nothing drawn on them are a still list
@@ -60,6 +61,8 @@ export interface ParticipantsStripProps {
    * and the roster has no business holding either — it knows who is here and nothing else.
    */
   addControl?: React.ReactNode
+  /** The conversation's mode, rendered before the roster it governs. A node, like `addControl`. */
+  modeControl?: React.ReactNode
   /** Removes one participant. Absent makes the roster read-only. */
   onRemove?: (agentId: string) => void
   /**
@@ -91,6 +94,7 @@ export function ParticipantsStrip({
   floor,
   isGenerating = false,
   addControl,
+  modeControl,
   onRemove,
   sessionId,
   selectedAgentId,
@@ -127,6 +131,8 @@ export function ParticipantsStrip({
       aria-label="Conversation participants"
       className="flex min-w-0 items-center gap-1.5 px-1.5 py-0.5"
     >
+      {/* Before the names: whether others may join is the frame the roster is read in. */}
+      {modeControl}
       {/*
         ROOM FOR THE EFFECTS. `overflow-x-auto` clips on BOTH axes, and the speaker's beam sits
         two pixels outside its chip with a blurred pass outside that — so on a tight row the

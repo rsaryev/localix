@@ -52,11 +52,11 @@ previews, and format limits.
 
 ## Configuration
 
-| Control        | What it changes                                          | Boundary                                                          |
-| -------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
-| Model selector | The connection and model for a participant's route.      | The saved connection must still exist.                            |
-| Participants   | **Add participant** chooses agents for the conversation. | Available tools depend on the answering agent's effective policy. |
-| `/help`        | The built-in command list and command-specific help.     | Plugin and surface-specific commands can add to this catalog.     |
+| Control        | What it changes                                                                      | Boundary                                                      |
+| -------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Model selector | The connection and model for a participant's route.                                  | The saved connection must still exist.                        |
+| Participants   | **Solo** or **Group**, then **Add participant** chooses agents for the conversation. | Adding an agent to a solo chat makes it a group.              |
+| `/help`        | The built-in command list and command-specific help.                                 | Plugin and surface-specific commands can add to this catalog. |
 
 The [capabilities guide](../features/capabilities.md) owns policy details. The
 [commands guide](../features/hooks-and-commands.md) owns the current slash-command catalog. Use the

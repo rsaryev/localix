@@ -15,6 +15,7 @@ import {
   SquareTerminal,
   TriangleAlert,
   type LucideIcon,
+  Users,
 } from 'lucide-react'
 import { parseRecovery, recoveryLabel, recoveryUri } from '@localixai/api/recovery'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
@@ -48,6 +49,8 @@ const ICONS: Partial<Record<SystemNoticeKind, LucideIcon>> = {
   // Ordinary lines in the server's own tone (muted): the plan's decisions are acted on in the
   // strip and the plan tab, so these only mark WHEN in the conversation each one happened.
   permission_mode_change: ShieldCheck,
+  // One person or several: the same glyphs the composer's mode control draws.
+  conversation_mode_change: Users,
   plan_presented: ClipboardList,
   plan_changes_requested: ClipboardList,
   plan_approved: ClipboardCheck,

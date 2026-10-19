@@ -47,7 +47,10 @@ export async function composeLocalModels(page, scenario) {
   }
   await page.getByRole('button', { name: /^Search — everything across the workspace/ }).click()
   await page.getByRole('textbox', { name: 'Search everything…' }).fill(MEANING_QUERY)
-  await page.getByText(/desktop and mobile layouts are ready/).first().waitFor()
+  await page
+    .getByText(/desktop and mobile layouts are ready/)
+    .first()
+    .waitFor()
 }
 
 export async function verifyLocalModels(page, scenario) {

@@ -2,7 +2,8 @@
 
 `/workflows` hands a goal to a team. You describe what you want in your own words; the agent breaks
 it into cards on the chat's [Kanban board](task-board.md), picks the specialists it needs and
-coordinates them until the work is done.
+coordinates them until the work is done. Run in a solo chat, it first makes the conversation a
+[group](conversations.md#solo-and-group), because a solo conversation brings nobody in by a tag.
 
 ## Use it
 

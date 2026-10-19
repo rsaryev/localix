@@ -1,31 +1,56 @@
 # Conversations with several agents
 
-A conversation is one session with one shared public transcript. Its behavior follows its active
-participants: one agent uses direct conversation behavior, while two or more agents use the
-multi-participant strategy. Adding or removing an agent does not create another session or rewrite
-its history.
+A conversation is one session with one shared public transcript. It is either **solo** — you and one
+agent — or a **group**, where agents join, hand work to each other and coordinate as a team. Within
+a group, behavior follows its active participants: one agent uses direct conversation behavior,
+while two or more agents use the multi-participant strategy. Adding or removing an agent does not
+create another session or rewrite its history.
 
 ![Team Lead, Frontend and QA sharing a release review in one conversation](../assets/screenshots/conversations/participants--2026-10-15.png)
 
 _Demo workspace captured on 15 October 2026 with a seeded conversation. It shows the participant
 controls, not a recorded model run._
 
+## Solo and group
+
+A new chat with one agent starts **solo**. In a solo conversation:
+
+- A handle in your message or in the agent's reply is plain text: nobody is invited by a tag, and no
+  reply hands the floor to anyone.
+- The agent's prompt carries no team protocol, no leadership rules and no agent directory. It does
+  the work itself or [delegates](delegation.md) a self-contained side task to a child session.
+- The agent owns the [session objective](#session-objective-and-previous-topic-summary), and your
+  [permission mode](permission-modes.md), including **Plan**, works the same way it does in a group.
+
+A **group** keeps everything below: tags invite available agents, replies hand the floor on, a named
+participant may pass, and the elected leader assembles a team. Every conversation created before
+modes existed is a group, and a chat created with two or more agents starts as one.
+
+The mode chip comes first in the participants strip above the input. It shows **Solo** or **Group**;
+choose the other one from its menu. Adding a participant to a solo chat, with the composer or with
+`/agents add`, makes it a group in the same step. A group with several agents cannot become solo
+until you remove the others, so nobody is dropped behind your back. Leaving a group cancels the
+colleague handoffs it had queued. Plugin commands that staff a team, such as `/workflows`, make the
+conversation a group before they run.
+
+Each change writes one line in the conversation, which every participant also reads, so the agent
+knows whether it may bring colleagues in.
+
 ## Addressing
 
 In a message you send, `@handle` asks that active participant to respond. Handles are
-case-insensitive: `@QA` addresses `@qa`. Repeating a handle does not create duplicate turns, and
-naming an agent outside the conversation does not invite it. Several addresses select those
-participants in roster order, rather than the order of mentions in the message.
+case-insensitive: `@QA` addresses `@qa`. Repeating a handle does not create duplicate turns. In a
+group, naming an available agent outside the conversation invites it first (see
+[Changing participants](#changing-participants)); in a solo conversation a handle is plain text.
+Several addresses select those participants in roster order, rather than the order of mentions in
+the message.
 
 `@all` selects every active participant. If the message also names individual participants, those
 explicitly addressed agents are queued first; the remaining participants follow as broadcast turns.
 
-Without an address, the strategy chooses one participant from the public history. Before any
-participant has published a public answer, the highest leadership priority wins; ties keep roster
-order. That election reads current agent settings. Later unaddressed messages return to the last
-public answer's author when that author is still present and their answer is the last history row.
-Otherwise the participant whose latest assistant row is oldest answers; someone with no assistant
-row comes first. Changing leadership priority affects a future election, not this continuity rule.
+Without an address, the message goes to the leader: the participant with the highest leadership
+priority, with ties keeping roster order. The election reads current agent settings, so changing an
+agent's priority changes who answers your next unaddressed message.
 
 Role matching is an agent instruction; the scheduler does not inspect a message's subject to choose
 a specialist automatically.
@@ -79,20 +104,22 @@ agent is instructed to act, address the colleague who owns the next part with th
 or explain a concrete blocker. When nobody is addressed and nothing is queued or running, the
 conversation is idle; no timer automatically starts the backlog.
 
-A solo agent in an open chat is told only that tagging a directory agent brings it in. The full turn
-protocol applies from the first turn that starts with two or more agents. The protocol sits in the
-cached part of the system prompt and the participant roster in the per-turn tail, so an invitation
-does not rewrite the cached prefix. When to do the work yourself, delegate it or bring a colleague
-in is one `# Collaboration` rule.
+A lone agent in a group is told it is alone, and the `# Collaboration` rule tells it how a tag
+brings a colleague in; a solo conversation carries neither. The full turn protocol applies from the
+first turn that starts with two or more agents. The protocol sits in the cached part of the system
+prompt and the participant roster in the per-turn tail, so an invitation does not rewrite the cached
+prefix. When to do the work yourself, delegate it or bring a colleague in is one `# Collaboration`
+rule.
 
 For dependent work, the leader records the dependency and addresses only the next participant whose
 part is actionable. Results move through the chain one owner at a time; status broadcasts to the
 whole roster create redundant turns and are discouraged.
 
-The `# Collaboration` rule follows the conversation. Alone, an agent does the work itself and brings
-a suitable colleague in when another role is needed. An agent can also [delegate](delegation.md) a
-self-contained side task to a child session, run by itself or a directory agent; that is on by
-default. A role that owns a part of the goal joins the conversation as a participant instead.
+The `# Collaboration` rule follows the conversation. Alone in a group, an agent does the work itself
+and brings a suitable colleague in when another role is needed; in a solo conversation it does the
+work itself. An agent can also [delegate](delegation.md) a self-contained side task to a child
+session, run by itself or a directory agent; that is on by default. A role that owns a part of the
+goal joins the conversation as a participant instead.
 
 Once colleagues are present, every participant — not only the leader — does its own part and
 addresses a colleague's ready part to them, so the work happens where you can see and redirect it.
@@ -102,10 +129,11 @@ not made yet, such as approving a mockup, waits for it. A report the user alread
 restated: the leader adds only the decision or what is missing.
 
 Your change requests and any checks a report left unverified go back to the owner or QA. When you
-ask for the team in a one-agent conversation, the agent routes the parts to roles instead of
-finishing the work alone. For a new screen, flow or visible redesign the designer's first
-deliverable is a rendered mockup opened in the visible preview, and implementation starts after you
-approve it; a small change to an existing screen goes straight to the engineer.
+ask for the team in a group with one agent, the agent routes the parts to roles instead of finishing
+the work alone. In a solo conversation, switch it to **Group** first. For a new screen, flow or
+visible redesign the designer's first deliverable is a rendered mockup opened in the visible
+preview, and implementation starts after you approve it; a small change to an existing screen goes
+straight to the engineer.
 
 A turn needs no closing call, so a reply without tool work costs one model request. Earlier versions
 ended every group turn with a terminal `conversation_control` call that duplicated the reply as a
@@ -156,11 +184,12 @@ model at once instead of after the whole batch. Calls waiting on an approval pro
 deferred, because your message may be the answer to it.
 
 An eligible child report can join the delegating agent's next model request after a fully completed
-tool turn, at most one report per tool boundary. Group chats require the report to address the
-current speaker; a solo chat can also take an unaddressed report. Other reports, webhooks and loops
-wait for a separate turn. The host waits for tool-checkpoint settlement before splitting the
-assistant row; see [Delegation](delegation.md#progress-and-report-delivery). Disabling
-`LOCALIX_MID_RUN_INTERJECT` keeps these queued messages and reports for later turns.
+tool turn, at most one report per tool boundary. A conversation with several agents requires the
+report to address the current speaker; one with a single agent can also take an unaddressed report.
+Other reports, webhooks and loops wait for a separate turn. The host waits for tool-checkpoint
+settlement before splitting the assistant row; see
+[Delegation](delegation.md#progress-and-report-delivery). Disabling `LOCALIX_MID_RUN_INTERJECT`
+keeps these queued messages and reports for later turns.
 
 A slash command sent while the session is busy waits in the queue as a whole command — with its
 badge, model and tool grants — and runs as its own turn.
@@ -229,13 +258,13 @@ fields through the session, without access to that lane's reasoning or raw tool 
 
 ## Changing participants
 
-The composer can add participants to any existing chat; there is no separate group-creation flow. In
-an open chat, the runtime context includes the scope-aware agent directory: one line per agent with
-its handle, leadership priority, `participant` / `available` / `unavailable` state and description.
-Tagging an available agent invites it; only you can remove participants. Adding a second agent
-changes the strategy of the existing session; removing agents until one remains restores direct
-conversation behavior. The session ID, title and transcript stay the same. The application imposes
-no numeric group-size ceiling.
+The composer can add participants to any existing chat; there is no separate group-creation flow,
+and adding one to a solo chat makes it a group. In a group, the runtime context includes the
+scope-aware agent directory: one line per agent with its handle, leadership priority, `participant`
+/ `available` / `unavailable` state and description. Tagging an available agent invites it; only you
+can remove participants. Adding a second agent changes the strategy of the existing session;
+removing agents until one remains restores direct conversation behavior. The session ID, title and
+transcript stay the same. The application imposes no numeric group-size ceiling.
 
 Assigning a [Kanban](task-board.md) card to an agent records an owner and nothing else: it does not
 add that agent to the conversation, start work or enqueue a turn. To bring the owner in, tag it in a

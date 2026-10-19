@@ -42,8 +42,7 @@ export const capturePlan = {
   },
   'local-models/settings': {
     guide: 'features/local-models.md',
-    purpose:
-      'The installed models and the labs’ models to download, each sized for this computer',
+    purpose: 'The installed models and the labs’ models to download, each sized for this computer',
     scenario: 'local-models-settings',
     requires: 'LOCALIX_CAPTURE_LOCAL_MODELS',
     start: 'home',
@@ -85,6 +84,12 @@ export const capturePlan = {
     purpose:
       'Three seeded participants, the selected one driving the composer model, and the per-participant usage in the session total',
     scenario: 'participants',
+  },
+  'conversations/solo-mode': {
+    guide: 'features/conversations.md',
+    purpose:
+      'A solo conversation: one agent, with the mode chip leading the strip and opening Solo and Group with what each means',
+    scenario: 'conversation-mode',
   },
   'conversations/apply-model-to-all': {
     guide: 'features/conversations.md',
