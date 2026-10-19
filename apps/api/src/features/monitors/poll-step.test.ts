@@ -43,6 +43,17 @@ describe('pollStep', () => {
     expect(step!.events[0]).toContain('success')
   })
 
+  test('an exit_zero wait wakes with what the deciding poll printed, not only its exit code', () => {
+    // Live-observed: the wake said "check exited 0", so the agent re-ran the same check to read
+    // the pipeline statuses it had been woken for.
+    const stdout = ['2026-10-19T07:24:50Z', ...Array.from({ length: 14 }, (_, i) => `job ${i}`)]
+    const [step] = run([{ stdout: stdout.join('\n') }], { kind: 'exit_zero' }, 'once')
+    expect(step!.end?.reason).toBe('condition-met')
+    expect(step!.events).toEqual(stdout.slice(-12))
+    const [quiet] = run([{}], { kind: 'exit_zero' }, 'once')
+    expect(quiet!.events).toEqual(['check exited 0'])
+  })
+
   test('emit "once" reports exactly once, after N quiet polls', () => {
     const steps = run(
       [{ stdout: 'running' }, { stdout: 'running' }, { stdout: 'failed' }],

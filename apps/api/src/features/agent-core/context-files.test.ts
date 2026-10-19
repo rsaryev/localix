@@ -57,6 +57,18 @@ describe('discoverContextFiles', () => {
     ])
   })
 
+  test('reads CLAUDE.md as the workspace contract only where a directory has no AGENTS.md', async () => {
+    const leaf = join(root, 'services', 'api')
+    await fs.mkdir(leaf, { recursive: true })
+    await fs.writeFile(join(root, 'CLAUDE.md'), 'workspace CLIs and auth')
+    await fs.writeFile(join(leaf, 'AGENTS.md'), 'service contract')
+    await fs.writeFile(join(leaf, 'CLAUDE.md'), 'service claude layer')
+    expect((await discover(leaf)).map((file) => file.content)).toEqual([
+      'workspace CLIs and auth',
+      'service contract',
+    ])
+  })
+
   test('keeps AGENTS.md directory scope in root-to-leaf order', async () => {
     const leaf = join(root, 'apps', 'landing')
     await fs.mkdir(leaf, { recursive: true })

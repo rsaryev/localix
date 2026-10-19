@@ -39,9 +39,19 @@ export function fileRoutingLine(has: Has): string | null {
     ? ' Write source one rule or statement per line, never minified, so later edits can target it.'
     : ''
   const shell = has(TOOL.bash)
-    ? ' Reserve `bash` for process work (installs, builds, tests, git).'
+    ? ' Reserve `bash` for process work (installs, builds, tests, git) and the project’s own CLIs, never hand-written API calls they cover.'
     : ''
   return `- Prefer the dedicated file tools: ${routes.join(', ')}.${readFirst}${layout}${shell}`
+}
+
+/**
+ * A failure explained by its symptom gets a fix for the symptom. Live-observed: a branch deploy
+ * died on `image not found`; one agent proposed picking new image tags, the other compared the
+ * branch with main, found the commit that moved the chart on, and proposed a rebase.
+ */
+export function failureDiagnosisLine(has: Has): string | null {
+  if (!has(TOOL.bash)) return null
+  return '- Diagnose a failure (CI, deploy, test) down to what changed: compare with the last passing run and the default branch, and name the differing commit or config. A symptom (`not found`, a timeout) is not a root cause; fix at the cause.'
 }
 
 /**

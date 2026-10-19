@@ -46,7 +46,7 @@ export function buildCollaborationSection(
       : 'Handle straightforward work directly.',
     ...(delegate
       ? [
-          '- Keep this context for deciding and doing. Investigation goes to `delegate`: searches, reading code or documents to understand them, comparisons, and checking work you did not do. Give the child a precise, self-contained task and act on its short report; read directly only what you are about to change or must quote exactly. Long independent work goes to a child too; keep the critical path here.',
+          '- Keep this context for deciding and doing. Broad investigation goes to `delegate`: sweeps across many files, repos or sources, comparisons, and checking work you did not do. Do a focused lookup yourself — a few calls, a status, a failure to diagnose, or details (ids, commands, paths) you act on next: a child starts cold and waiting on it adds latency. Give a child a precise, self-contained task, and check its conclusion against its evidence before relaying it. Long independent work goes to a child too; keep the critical path here.',
           '- The child runs as you unless `agent` names a directory agent whose role fits the task better. It sees only the task; add context:"conversation" only when the task truly depends on this chat. Leave wait off and keep working; set wait:true only when your very next step needs the report.',
         ]
       : []),

@@ -47,6 +47,11 @@ export interface UntilWaitContext {
   pathPrefix?: string[]
 }
 
+function commandLabel(command: string): string {
+  const [first = ''] = command.trim().split('\n')
+  return first.length > 120 ? `${first.slice(0, 120)}…` : first
+}
+
 export async function runUntilWait(
   wait: UntilWaitContext,
   toolCallId: string,
@@ -71,7 +76,8 @@ export async function runUntilWait(
   )
   const everySeconds = Math.min(input.until!, maxInterval)
   const spec: MonitorSpec = {
-    description: input.description?.trim() || command,
+    // The description heads every wake; a multi-line script there buries the news under it.
+    description: input.description?.trim() || commandLabel(command),
     cwd,
     until: { check: command, everySeconds, when: { kind: 'exit_zero' }, emit: 'once' },
     timeoutMs,

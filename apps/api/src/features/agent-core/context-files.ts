@@ -20,8 +20,8 @@ import { discoverRules } from './context-rules'
  *   scopes a rule to a project subtree);
  * - `@path` imports are expanded inline (see {@link expandImports}).
  *
- * Workspace AGENTS.md files share this bounded root-to-cwd path. Foreign agent homes
- * and product-specific instruction conventions are not scanned.
+ * Workspace AGENTS.md files (or CLAUDE.md where a directory has no AGENTS.md) share this
+ * bounded root-to-cwd path. Foreign agent homes (`.claude/`, `.cursorrules`) are not scanned.
  */
 export interface ContextFile {
   /** Absolute path to the discovered file. */
@@ -34,6 +34,9 @@ export const MAX_CHARS_PER_FILE = 20_000
 export const MAX_CONTEXT_FILES = 8
 export const MAX_RULE_FILES = 20
 export const TOTAL_CONTEXT_BUDGET = 60_000
+
+/** Per directory, the first that exists is the workspace contract. */
+const WORKSPACE_CONTRACT_FILES = ['AGENTS.md', 'CLAUDE.md'] as const
 
 const TRUNCATION_MARKER = '\n[... truncated: file exceeds the 20,000 character context budget]'
 const BUDGET_MARKER = '\n[... truncated: total project-context budget exhausted]'
@@ -128,16 +131,22 @@ async function collectDir(
   projectRoot: string,
   collector: ContextCollector,
 ): Promise<void> {
-  // AGENTS.md is a workspace contract shared by coding agents. A checkout must not
-  // use a symlink to pull instructions from an unrelated directory into the prompt.
-  try {
-    const [root, agents] = await Promise.all([
-      fs.realpath(projectRoot),
-      fs.realpath(join(dir, 'AGENTS.md')),
-    ])
-    if (isPathWithin(root, agents)) await collector.add(join(dir, 'AGENTS.md'), 'context')
-  } catch {
-    // An absent AGENTS.md leaves native Localix context discovery intact.
+  // AGENTS.md is a workspace contract shared by coding agents. A directory without one may
+  // keep the same contract in CLAUDE.md alone (its CLIs, auth, conventions); without it the
+  // agent rediscovers by hand what the workspace already wrote down. Never both: a CLAUDE.md
+  // beside AGENTS.md is that product's own layer. A checkout must not use a symlink to pull
+  // instructions from an unrelated directory into the prompt.
+  for (const name of WORKSPACE_CONTRACT_FILES) {
+    try {
+      const [root, contract] = await Promise.all([
+        fs.realpath(projectRoot),
+        fs.realpath(join(dir, name)),
+      ])
+      if (isPathWithin(root, contract)) await collector.add(join(dir, name), 'context')
+      break
+    } catch {
+      // Absent: try the next name; none leaves native Localix context discovery intact.
+    }
   }
   const localixDir = join(dir, '.localix')
   await collector.add(join(localixDir, 'context.md'), 'context')
@@ -150,7 +159,8 @@ async function collectDir(
  * Load order (broadest → nearest):
  * 1. user-global `~/.localix/context.md`, then `~/.localix/rules/**\/*.md`;
  * 2. the directory hierarchy from the git root DOWN to `cwd` (root-first), each
- *    level contributing `AGENTS.md`, `.localix/context.md` and `.localix/rules/**\/*.md`.
+ *    level contributing `AGENTS.md` (else `CLAUDE.md`), `.localix/context.md` and
+ *    `.localix/rules/**\/*.md`.
  *
  * `@path` imports are expanded inline. Caps: {@link MAX_CHARS_PER_FILE} per file,
  * {@link MAX_CONTEXT_FILES} context files, {@link MAX_RULE_FILES} rules, and a

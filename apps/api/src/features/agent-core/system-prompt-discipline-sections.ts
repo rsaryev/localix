@@ -7,6 +7,7 @@ import {
   fileRoutingLine,
   lspDiagnosticsLine,
   editorBufferLine,
+  failureDiagnosisLine,
   previewVerificationLine,
 } from './system-prompt-discipline-lines'
 
@@ -102,6 +103,7 @@ function buildSubagentExecutionDiscipline(toolNames: readonly string[] = []): st
 
   pushPresent(
     lines,
+    failureDiagnosisLine(has),
     fileRoutingLine(has),
     batchLine(has),
     lspDiagnosticsLine(has),
@@ -136,6 +138,7 @@ export function buildExecutionDiscipline(
   lines.push(
     '- Complete your part of the requested outcome and verify what you did — format, evidence and side effects — before replying; do not stop at planning or assignment. Act, hand off, or report a concrete blocker. Evidence in a report you receive counts: build on it instead of repeating its checks.',
   )
+  pushPresent(lines, failureDiagnosisLine(has))
 
   // The role-invariant behavioral rules (verify-don't-recall, honesty,
   // pragmatism, reasoning-channel, language, system-reminder handling) are NOT here —

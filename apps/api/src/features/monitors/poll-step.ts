@@ -30,6 +30,8 @@ const MAX_CHECK_FAILURES = 5
 /** A check gets at most this long, and never longer than its own interval. */
 const CHECK_TIMEOUT_FLOOR_MS = 5_000
 const CHECK_TIMEOUT_CEILING_MS = 30_000
+/** Output lines of the poll that met the condition carried into the wake. */
+const FINAL_OUTPUT_LINES = 12
 
 export interface PollState {
   polls: number
@@ -63,6 +65,15 @@ function firstLine(text: string): string {
   return line.length > 300 ? `${line.slice(0, 300)}…` : line
 }
 
+/** The tail of the deciding poll's output: where a check prints its summary. */
+function finalLines(text: string): string[] {
+  return text
+    .split('\n')
+    .filter((line) => line.trim())
+    .slice(-FINAL_OUTPUT_LINES)
+    .map(firstLine)
+}
+
 export function pollStep(input: {
   sample: MonitorSample
   state: PollState
@@ -94,7 +105,9 @@ export function pollStep(input: {
   // One poll, one event. When the change was already reported, the raw line IS the news
   // ("test: failed"); adding the predicate's own phrasing would say the same thing twice, and
   // the ending carries that phrasing anyway.
-  if (!reportedChange) events.push(verdict.detail)
+  // The ending names the predicate; what the check printed is the news. A wake without it sent
+  // the agent to run the same check once more just to read the result it was woken for.
+  if (!reportedChange) events.push(...(text ? finalLines(text) : [verdict.detail]))
   return { events, end: { reason: 'condition-met', detail: verdict.detail }, state }
 }
 

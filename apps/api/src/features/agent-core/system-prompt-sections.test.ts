@@ -48,6 +48,18 @@ describe('buildCorePrinciples', () => {
   })
 })
 
+describe('failure diagnosis', () => {
+  it('sends a parent and a child holding a shell past the symptom to what changed', () => {
+    for (const out of [
+      buildExecutionDiscipline(['bash']),
+      buildExecutionDiscipline(['bash'], SHAPE.subagent),
+    ]) {
+      expect(out).toContain('compare with the last passing run and the default branch')
+    }
+    expect(buildExecutionDiscipline(['read'])).not.toContain('Diagnose a failure')
+  })
+})
+
 describe('buildRoleSection', () => {
   it('builds a "# Runtime role" section with the role and bulleted guidance', () => {
     const out = buildRoleSection({
@@ -389,7 +401,7 @@ describe('buildExecutionDiscipline — the batching rule reaches a read-only ros
 describe('# Collaboration — one rule for who does the work', () => {
   it('tells a role with `delegate` how delegating works', () => {
     const out = buildCollaborationSection(['read', 'search', 'delegate'])!
-    expect(out).toContain('Investigation goes to `delegate`')
+    expect(out).toContain('Broad investigation goes to `delegate`')
     expect(out).toContain('context:"conversation"')
     // `agents` authors specialists; it starts no child work.
     expect(buildCollaborationSection(['read', 'search', 'agents'])).toBeNull()
