@@ -1,3 +1,4 @@
+import type { ConversationMode } from '../conversation-modes'
 import type { z } from 'zod'
 
 import type { ChatUsagePayload } from '@localixai/agent'
@@ -73,6 +74,8 @@ export interface SessionSummary {
   closedAt: string | null
   /** How the agent's rules are rewritten for this conversation's runs; a child shows its root's. */
   permissionMode: PermissionMode
+  /** Solo (one agent, no team protocol) or group (`conversation-modes.ts`). */
+  conversationMode: ConversationMode
   /** Optional conversation description. */
   description: string | null
   /** A group's avatar ref (media id or emoji); null = generated from the title. */

@@ -21,6 +21,7 @@
  * effort set to low" in a conversation with three agents does not say whose — which is also true
  * of a private chat the moment its transcript is read by someone who was not there.
  */
+import { CONVERSATION_MODE_NOTICE, type ConversationMode } from '../conversation-modes'
 import { randomUUID } from 'node:crypto'
 
 import { SYSTEM_PARTICIPANT } from '../../../db'
@@ -170,12 +171,14 @@ export async function recordSessionChanges(
 ): Promise<void> {
   const change = participantsChangeText(before.agents, after.agents)
   const mode = permissionModeChangeNotice(before.permissionMode, after.permissionMode)
+  const room = conversationModeChangeNotice(before.conversationMode, after.conversationMode)
   const notices: StoredSystemNotice[] = [
     ...(change
       ? [{ kind: 'participants_change' as const, tone: 'neutral' as const, text: change }]
       : []),
     ...routeChangeNotices(before.agents, after.agents),
     ...(mode ? [mode] : []),
+    ...(room ? [room] : []),
   ]
   for (const notice of notices) await recordSessionNotice(io, userId, sessionId, notice)
 }
@@ -196,12 +199,22 @@ export function permissionModeChangeNotice(
   }
 }
 
+/** The conversation-mode line, or nothing when the mode did not move. */
+export function conversationModeChangeNotice(
+  before: ConversationMode | undefined,
+  after: ConversationMode | undefined,
+): StoredSystemNotice | null {
+  if (after === undefined || (before ?? 'group') === after) return null
+  return { kind: 'conversation_mode_change', tone: 'info', text: CONVERSATION_MODE_NOTICE[after] }
+}
+
 /**
  * The fact about a conversation that a session edit can change and the participants must hear:
- * who is in it, on what each of them runs, and under which permission mode. A `SessionRecord`
- * satisfies it, so the caller passes the record before and after the write.
+ * who is in it, on what each of them runs, under which permission mode, and whether it is a group.
+ * A `SessionRecord` satisfies it, so the caller passes the record before and after the write.
  */
 export interface ConversationShape {
   agents: readonly SessionAgentRoute[]
   permissionMode?: PermissionMode
+  conversationMode?: ConversationMode
 }

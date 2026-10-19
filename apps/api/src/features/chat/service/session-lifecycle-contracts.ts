@@ -1,3 +1,4 @@
+import type { ConversationMode } from '../conversation-modes'
 import type { ReasoningModel } from '@localixai/agent'
 import type { AgentSessionKind, ReasoningEffort } from '../../../db/types'
 import type { PermissionMode } from '../../capabilities/permission-modes'
@@ -15,6 +16,8 @@ type RuntimeStatus = 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
 export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'> {
   activeAgentId?: (sessionId: string) => string | undefined
   cancelAgentTurn?: (userId: string, sessionId: string, agentId: string) => Promise<void>
+  /** Drop the colleague handoffs queued in a conversation (`supersedeColleagueChains`). */
+  cancelColleagueChains?: (userId: string, sessionId: string) => Promise<void>
   resolveSessionAgent?: ResolveSessionAgent
   repo: SessionDeletionContext['repo'] & {
     listSessions: (userId: string) => Promise<SessionRecord[]>
@@ -165,6 +168,8 @@ export interface CreateSessionInput {
    * participant instead of minting another one (see session-draft-reuse.ts).
    */
   reuseEmptyDraft?: boolean
+  /** Solo or group; absent picks by the participants (`bornConversationMode`). */
+  conversationMode?: ConversationMode
 }
 
 export interface UpdateSessionPatch {
@@ -175,6 +180,8 @@ export interface UpdateSessionPatch {
   previousTopicSummary?: string | null
   /** The conversation's permission mode — a root's only; written to its whole tree. */
   permissionMode?: PermissionMode
+  /** Solo or group — this conversation's own; solo holds exactly one agent. */
+  conversationMode?: ConversationMode
   /**
    * Re-route ONE participant — a model belongs to an agent inside a conversation, not to the
    * conversation. Omitting the id means the session's own participant: the only one in a private

@@ -34,6 +34,7 @@ export const sessionStateReducers: StreamReducers<
       // An approved plan switches the mode on the server; without this the composer kept
       // showing Plan until the next reload.
       permissionMode: event.session.permissionMode,
+      conversationMode: event.session.conversationMode,
       description: event.session.description,
       avatar: event.session.avatar,
       projectId: event.session.projectId,

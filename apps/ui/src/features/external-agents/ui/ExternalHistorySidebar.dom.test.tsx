@@ -119,6 +119,7 @@ test('Unified history shows owned Localix and external sessions together within 
       seq: 1,
       closedAt: null,
       permissionMode: 'default',
+      conversationMode: 'solo',
       description: null,
       avatar: null,
       sessionTiming: null,

@@ -87,3 +87,48 @@ describe('the one participants writer', () => {
     ).rejects.toThrow('Stop the active agent')
   })
 })
+
+describe('a solo conversation', () => {
+  async function soloFixture() {
+    const base = await fixture()
+    const solo = sessionFixture({
+      id: 's-solo',
+      updatedAt: '2026-09-23T00:00:00.000Z',
+      conversationMode: 'solo',
+      agents: routedParticipants({ agentId: 'lead', handle: 'lead' }),
+    })
+    await base.repo.insertSession(solo)
+    return { ...base, solo }
+  }
+  const plus = (agentId: string) => (current: SessionRecord) => [
+    ...current.agents,
+    ...routedParticipants({ agentId, handle: agentId }),
+  ]
+
+  test('is stored and read back as solo; a record from before modes reads as a group', async () => {
+    const { repo, session, solo } = await soloFixture()
+    expect((await repo.getSession(solo.userId, solo.id))!.conversationMode).toBe('solo')
+    expect((await repo.getSession(session.userId, session.id))!.conversationMode).toBe('group')
+  })
+
+  test('never grows past one agent through any door', async () => {
+    const { repo, io, solo } = await soloFixture()
+    await expect(
+      changeParticipants(io, { userId: solo.userId, sessionId: solo.id, decide: plus('qa') }),
+    ).rejects.toMatchObject({ status: 409, code: 'solo_needs_one_agent' })
+    const stored = await repo.getSession(solo.userId, solo.id)
+    expect(stored!.agents.map((member) => member.agentId)).toEqual(['lead'])
+  })
+
+  test('grows when the same edit makes it a group', async () => {
+    const { repo, io, solo } = await soloFixture()
+    await changeParticipants(io, {
+      userId: solo.userId,
+      sessionId: solo.id,
+      conversationMode: 'group',
+      decide: plus('qa'),
+    })
+    const stored = await repo.getSession(solo.userId, solo.id)
+    expect(stored!.agents.map((member) => member.agentId)).toEqual(['lead', 'qa'])
+  })
+})

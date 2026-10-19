@@ -48,6 +48,7 @@ const session = (id: string) =>
     seq: 1,
     closedAt: null,
     permissionMode: 'default',
+    conversationMode: 'solo',
     description: null,
     avatar: null,
     sessionTiming: null,

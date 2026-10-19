@@ -1,3 +1,4 @@
+import type { ConversationMode } from '@localixai/api/conversation-modes'
 import type { ReasoningEffort } from '@localixai/agent'
 import type { PermissionMode } from '@localixai/api/permission-modes'
 import type { HistorySearchHit, JoinRoutesView, Message, UiSession } from '../contracts'
@@ -80,6 +81,8 @@ export const sessionsApi = {
     agentIds?: string[]
     /** A landing: the server answers with the project's newest untouched chat when it has one. */
     reuseEmptyDraft?: boolean
+    /** Solo or group; absent starts one agent solo and several as a group. */
+    conversationMode?: ConversationMode
   }): Promise<UiSession> {
     const json = await unwrap(await client.rpc.sessions.$post({ json: input ?? {} }))
     return toUiSession(json)
@@ -130,6 +133,8 @@ export const sessionsApi = {
       expectedUpdatedAt?: string
       /** The conversation's permission mode; a delegated child refuses it (409). */
       permissionMode?: PermissionMode
+      /** Solo or group; solo holds one agent, so adding a participant sends `group` with it. */
+      conversationMode?: ConversationMode
       isPinned?: boolean
       isArchived?: boolean
       projectId?: string | null

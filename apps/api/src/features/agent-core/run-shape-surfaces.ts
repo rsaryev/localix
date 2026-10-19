@@ -41,8 +41,10 @@ export const GUIDANCE: Record<RunShape, readonly string[]> = {
     // "let us do it as a team", then had the team rework its prototype, and the person spent the
     // session undoing it.
     // Every agent in a chat reads this, so it names no role: who leads is decided by priority and
-    // said only to the leader (`# Collaboration`, `## Leadership`).
-    'You work with the user in this session. Own your part through to a verified result; when colleagues share this conversation, leave their parts to them.',
+    // said only to the leader (`# Collaboration`, `## Leadership`). Nor does it mention colleagues:
+    // a solo chat has none, and with colleagues present `# Collaboration` opens by saying whose
+    // each part is.
+    'You work with the user in this session. Own the work you take on through to a verified result.',
   ],
   subagent: [
     // No word about the user: a child has no channel to them (no `ask`), and "never ask the

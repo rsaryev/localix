@@ -53,7 +53,7 @@ export function createDraftReuse(ctx: SessionLifecycleCtx) {
 
 /**
  * The one participant a reusable draft must have, or null when the request is not a plain
- * landing (a title, a group, a stated route, a child or an external CLI is a specific chat).
+ * landing (a title, a group, a stated mode or route, a child or an external CLI is a specific chat).
  */
 function reusableParticipant(input: CreateSessionInput): string | null {
   if (
@@ -67,6 +67,7 @@ function reusableParticipant(input: CreateSessionInput): string | null {
     input.reasoningEffort ||
     input.goal ||
     input.previousTopicSummary ||
+    input.conversationMode !== undefined ||
     (input.agents?.length ?? 0) > 1
   ) {
     return null

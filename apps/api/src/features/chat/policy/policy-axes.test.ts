@@ -147,6 +147,31 @@ describe('conversation', () => {
       childReports: { allowUnaddressed: false },
     })
   })
+  test('a solo chat is one agent with the person: no invites, no directory, no handoffs', () => {
+    expect(conversationPolicy(session({ conversationMode: 'solo' }))).toEqual({
+      kind: 'solo',
+      withColleagues: false,
+      routing: 'direct',
+      tagInvites: false,
+      membershipEditable: true,
+      showsDirectory: false,
+      canPass: false,
+      silentEmptyTurns: false,
+      routesReplies: false,
+      childReports: { allowUnaddressed: true },
+    })
+    // A group with one agent is the lone open chat every conversation was before modes.
+    expect(conversationPolicy(session({ conversationMode: 'group' })).kind).toBe('group')
+    // A mode on a delegated child changes nothing: it has no conversation around it.
+    expect(
+      conversationPolicy(session({ sessionKind: 'subagent', conversationMode: 'solo' })).kind,
+    ).toBe('isolated')
+  })
+  test('a solo chat’s lone agent owns the topic', () => {
+    expect(
+      resolveRunPolicy(run({ session: session({ conversationMode: 'solo' }) })).seat,
+    ).toMatchObject({ role: 'solo', ownsTopic: true })
+  })
   test('a non-chat session is isolated: fixed membership, no directory, no pass', () => {
     expect(conversationPolicy(session({ sessionKind: 'subagent' }))).toEqual({
       kind: 'isolated',

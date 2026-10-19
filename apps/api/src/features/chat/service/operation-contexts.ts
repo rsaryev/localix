@@ -1,3 +1,4 @@
+import { updateSession } from './session-lifecycle'
 import { createWakeDelivery } from '../../triggers/delivery'
 import { resolveDefaultProject } from '../../projects/default-project'
 import type { WakeRequest } from '../contracts'
@@ -133,6 +134,9 @@ export function createOperationContexts(
   ) => (await deps.loadSkillOverrides?.(...args)) ?? {}
 
   const commandCtx: CommandHandlerContext = {
+    setConversationMode: async (userId, sessionId, mode) => {
+      await updateSession(sessionLifecycleCtx, userId, sessionId, { conversationMode: mode })
+    },
     changeAgentMembership: (userId, sessionId, change) =>
       updateConversationMembership(
         {

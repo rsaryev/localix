@@ -36,6 +36,7 @@ export function uiSessionSummary(session: UiSession): UiSession {
     agents: session.agents,
     ...(session.modelChoices ? { modelChoices: session.modelChoices } : {}),
     permissionMode: session.permissionMode,
+    conversationMode: session.conversationMode,
     closedAt: session.closedAt ?? null,
     description: session.description,
     avatar: session.avatar,

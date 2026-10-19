@@ -26,6 +26,8 @@
     "./external-agent-history-stream": "./src/features/external-agents/shared/history-stream.ts",
     "./external-agent-resource": "./src/features/external-agents/shared/resource-provider-id.ts",
     "./context-refs": "./src/features/chat/context-refs.ts",
+    "./conversation-modes": "./src/features/chat/conversation-modes.ts",
+    "./conversation-policy": "./src/features/chat/policy/axes/conversation.ts",
     "./item-format": "./src/features/chat/item-format.ts",
     "./loops-format": "./src/features/loops/format.ts",
     "./lsp-edits": "./src/features/lsp/lsp-edits.ts",

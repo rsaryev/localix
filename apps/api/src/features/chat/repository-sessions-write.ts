@@ -58,6 +58,7 @@ export function createSessionWriteQueries(db: Kysely<AppDatabase>) {
         description: record.description,
         avatar: record.avatar,
         ...(record.permissionMode ? { permission_mode: record.permissionMode } : {}),
+        ...(record.conversationMode ? { conversation_mode: record.conversationMode } : {}),
         activated_tools: record.activatedTools?.length
           ? JSON.stringify(record.activatedTools)
           : null,

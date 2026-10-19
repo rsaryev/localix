@@ -5,6 +5,7 @@
  * (command-handlers-{settings,loop,macros,listings,plugins,providers}). Kept in its
  * own leaf so the dispatcher file (command-handlers.ts) stays focused on dispatch.
  */
+import type { ConversationMode } from '../conversation-modes'
 import type { ChatServiceDeps } from './context'
 import type { SkillRecord } from './skills'
 import type { createChatRepository, SessionRecord } from '../repository'
@@ -52,6 +53,11 @@ export interface CommandHandlerContext {
     sessionId: string,
     change: { invite?: string[]; remove?: string[] },
   ) => Promise<ConversationMembershipChange>
+  /**
+   * Make the conversation a group (or solo) the way the composer does: the mode is written, the
+   * participants read the line saying so, and a colleague chain left from a group is dropped.
+   */
+  setConversationMode: (userId: string, sessionId: string, mode: ConversationMode) => Promise<void>
   deps: ChatServiceDeps
   repo: ReturnType<typeof createChatRepository>
   usageRepo: ReturnType<typeof createUsageRepository>

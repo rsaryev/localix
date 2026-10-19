@@ -8,17 +8,22 @@
  * the run stages and the browser all read the same decision (`@localixai/api/conversation-policy`).
  *
  * A non-chat session (a delegated child, a job) is `isolated`: it has one agent and a fixed
- * membership. Every chat is a `group` conversation, open to whoever a tag or the person brings
- * in — with one participant it is a lone agent that may still bring colleagues in.
+ * membership. A chat is `solo` when the person made it one (`conversation-modes.ts`): one agent,
+ * no team protocol, nobody brought in by a tag. Every other chat is a `group`, open to whoever a
+ * tag or the person brings in — with one participant it is a lone agent that may still bring
+ * colleagues in, which is how every chat behaved before modes existed.
  */
-import { defineAxis, type AxisVariant } from '../axis'
+import { chooseOn, defineAxis, type AxisVariant } from '../axis'
+import type { ConversationMode } from '../../conversation-modes'
 
 export interface ConversationFacts {
   sessionKind: string
   agents: readonly unknown[]
+  /** Absent reads as a group: a record from before modes, or one built in memory. */
+  conversationMode?: ConversationMode
 }
 
-export type ConversationKind = 'isolated' | 'group'
+export type ConversationKind = 'isolated' | 'solo' | 'group'
 
 export interface ConversationDecision {
   kind: ConversationKind
@@ -28,7 +33,10 @@ export interface ConversationDecision {
   routing: 'direct' | 'multi-participant'
   /** An @tag in the person's message or an agent's reply invites an available agent. */
   tagInvites: boolean
-  /** Who is in the conversation can change at all. */
+  /**
+   * Who is in the conversation can change at all. A solo chat can: adding a participant is the
+   * person's act, and it makes the conversation a group.
+   */
   membershipEditable: boolean
   /** The prompt lists the registry: who a tag can reach. */
   showsDirectory: boolean
@@ -82,6 +90,19 @@ export const conversationAxis = defineAxis<ConversationFacts, ConversationDecisi
       }),
     ),
     conversation(
+      'solo',
+      (facts) => facts.conversationMode === 'solo',
+      () => ({
+        tagInvites: false,
+        membershipEditable: true,
+        showsDirectory: false,
+        canPass: false,
+        silentEmptyTurns: false,
+        routesReplies: false,
+        childReports: { allowUnaddressed: true },
+      }),
+    ),
+    conversation(
       'group',
       () => true,
       (facts, withColleagues) => ({
@@ -96,3 +117,11 @@ export const conversationAxis = defineAxis<ConversationFacts, ConversationDecisi
     ),
   ],
 )
+
+/**
+ * The conversation decision for one session record — the browser's entry point
+ * (`@localixai/api/conversation-policy`), so the composer and the server read one answer.
+ */
+export function conversationDecision(facts: ConversationFacts): ConversationDecision {
+  return chooseOn(conversationAxis, facts).decision
+}

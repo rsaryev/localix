@@ -22,6 +22,7 @@ export function mergeSessionListSummary(current: UiSession, summary: UiSession):
     agents: summary.agents,
     ...(summary.modelChoices ? { modelChoices: summary.modelChoices } : {}),
     permissionMode: summary.permissionMode,
+    conversationMode: summary.conversationMode,
     isRunning: summary.isRunning,
     projectId: summary.projectId,
     parentSessionId: summary.parentSessionId,

@@ -79,7 +79,7 @@ describe('buildRoleSection', () => {
   it('derives the orchestrator capability line from the tools the run holds', () => {
     const full = buildRoleSection(SHAPE.orchestrator) ?? ''
     expect(full).toContain('Do focused work directly with the capabilities listed for this run')
-    expect(full).toContain('Own your part through to a verified result')
+    expect(full).toContain('Own the work you take on through to a verified result')
     // Every agent in a chat runs this shape; only the leader is told it leads.
     expect(full).not.toMatch(/orchestrat/i)
 

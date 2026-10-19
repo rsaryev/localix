@@ -10,13 +10,15 @@
  *
  * So every membership change comes here, and the steps are fixed:
  *
- *   read the current session → decide the new list → refuse removing the active speaker →
+ *   read the current session → decide the new list → keep a solo conversation to one agent →
+ *   refuse removing the active speaker →
  *   write only if unchanged since the read → cancel the removed participants' queued turns →
  *   announce who came and went → publish.
  *
  * Routes are never written here: a participant who stays keeps what it runs on
  * (`writeMembership`), and a re-route is its own verb.
  */
+import type { ConversationMode } from '../conversation-modes'
 import { ApiError } from '../../../lib/errors'
 import type { AgentStreamEvent, PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
@@ -61,6 +63,11 @@ export async function changeParticipants(
     decide: (current: SessionRecord) => SessionAgentRoute[] | Promise<SessionAgentRoute[]>
     /** The `updatedAt` the caller's view was built from; a newer session refuses the write. */
     expectedUpdatedAt?: string
+    /**
+     * The mode the conversation is in once this change lands — the session's own unless the same
+     * edit switches it. Solo holds exactly one agent.
+     */
+    conversationMode?: ConversationMode
   },
 ): Promise<ParticipantsChange> {
   const before = await io.repo.getSession(input.userId, input.sessionId)
@@ -71,6 +78,15 @@ export async function changeParticipants(
       400,
       'session_party_empty',
       'A conversation must keep at least one participant',
+    )
+
+  // One agent is what solo MEANS: every door — the composer, `/agents add`, an agent's tag —
+  // meets it here, so a solo conversation cannot grow by one door the others guard.
+  if ((input.conversationMode ?? before.conversationMode) === 'solo' && next.length > 1)
+    throw new ApiError(
+      409,
+      'solo_needs_one_agent',
+      'A solo conversation has one agent; make it a group to add participants',
     )
 
   const kept = new Set(next.map((member) => member.agentId))

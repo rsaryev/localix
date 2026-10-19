@@ -1,3 +1,4 @@
+import { conversationPolicy } from '../policy/session-policy'
 import { agentAuthoredBlueprintSchema, agentHandleSchema } from '@localixai/agent/agents'
 import { localixUiUri } from '@localixai/plugin-sdk/navigation'
 import { ApiError, errorMessage } from '../../../lib/errors'
@@ -170,6 +171,11 @@ export async function handleAgentsControlCommand(
       )
     }
     if (action === 'add') {
+      // Adding a participant is the person's explicit act: in a solo chat it makes the
+      // conversation a group first, which is the only way solo ever grows.
+      const present = session.agents.some((member) => member.agentId === id)
+      if (!present && conversationPolicy(session).kind === 'solo')
+        await ctx.setConversationMode(userId, session.id, 'group')
       const changed = await ctx.changeAgentMembership(userId, session.id, { invite: [id] })
       return directReply(
         changed.invited.length

@@ -2,6 +2,7 @@ import type { AgentSessionKind } from '../../db'
 import { asStringArray } from '../../lib/coerce'
 import { safeJsonParse } from '../../lib/json'
 import { DEFAULT_PERMISSION_MODE, parsePermissionMode } from '../capabilities/permission-modes'
+import { parseConversationMode } from './conversation-modes'
 import { deserializeMessagePayload } from '../../db'
 import type { PersistedMessage, SessionSummary } from './contracts'
 import type { SessionRecord } from './repository'
@@ -43,6 +44,7 @@ export const mapSession = (row: {
   agents_json?: string | null
   closed_at?: string | null
   permission_mode?: string | null
+  conversation_mode?: string | null
   model_choices?: string | null
   description?: string | null
   avatar?: string | null
@@ -77,6 +79,7 @@ export const mapSession = (row: {
   modelChoices: unstampedChoices(parseModelChoices(row.model_choices)),
   closedAt: row.closed_at ?? null,
   permissionMode: parsePermissionMode(row.permission_mode),
+  conversationMode: parseConversationMode(row.conversation_mode),
   description: row.description ?? null,
   avatar: row.avatar ?? null,
   pinnedSkills: parsePinnedSkills(row.pinned_skills),
@@ -132,6 +135,7 @@ export const toSessionSummary = (record: SessionRecord): SessionSummary => ({
   modelChoices: record.modelChoices ?? emptyModelChoices(),
   closedAt: record.closedAt ?? null,
   permissionMode: record.permissionMode ?? DEFAULT_PERMISSION_MODE,
+  conversationMode: record.conversationMode ?? parseConversationMode(undefined),
   description: record.description,
   avatar: record.avatar,
   runtimeStatus: record.runtimeStatus,
