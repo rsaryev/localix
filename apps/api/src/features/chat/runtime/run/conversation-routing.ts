@@ -29,6 +29,7 @@ import { enqueueTurnTickets, resolveTurnRecipients } from '../conversation-dispa
 import { sessionExecutionContext } from '../execution-context'
 import { insertUiNote } from '../message-persistence'
 import { inviteAddressedAgents } from './conversation-invite'
+import { conversationPolicy } from '../../policy/session-policy'
 import type { RunEnv, RunParams } from './types'
 
 type RoutingEnv = Pick<RunEnv, 'repo' | 'enqueueRun' | 'deps'> & Partial<Pick<RunEnv, 'state'>>
@@ -85,8 +86,10 @@ export async function routeConversationReply(
   if (payload.passed) return
   try {
     const text = payload.isInternal ? '' : (payload.content ?? '')
+    const room = conversationPolicy(params.session)
+    if (!room.routesReplies) return
     // A lone agent hands the floor to nobody unless its reply tags someone to invite.
-    if (params.session.agents.length <= 1 && !text.includes('@')) return
+    if (!room.withColleagues && !text.includes('@')) return
     const current = await env.repo.getSession(params.userId, params.session.id)
     if (!current) return
     const session = await inviteAddressedAgents(

@@ -1,10 +1,9 @@
 /** Silence hides an empty turn, never the work recorded in its items. */
-import { isMultiParticipant } from '../../session-route'
 import { isTranscriptItemHidden } from '../../item-format'
+import type { ConversationDecision } from '../../policy/axes/conversation'
 import { TOOL } from '../../../agent-core/tool-names'
 import type { AgentStreamEvent } from '../../contracts'
 import type { StoredMessagePayload } from '../../../../db'
-import type { SessionRecord } from '../../repository'
 
 /**
  * Whether this turn ends with the agent staying out of the conversation.
@@ -15,7 +14,7 @@ import type { SessionRecord } from '../../repository'
  * and hidden protocol calls (`set_topic`) follow the same per-item suppression rule as the UI.
  */
 export function isSilentConversationTurn(
-  session: Pick<SessionRecord, 'agents'>,
+  room: Pick<ConversationDecision, 'silentEmptyTurns'>,
   payload: Pick<StoredMessagePayload, 'content' | 'items'>,
   /** The turn answers something that needs no reply — a reaction — even with one agent. */
   silenceAllowed = false,
@@ -31,7 +30,7 @@ export function isSilentConversationTurn(
     return false
   if (payload.items?.some((item) => item.status === 'completed' && isTranscriptItemHidden(item)))
     return true
-  return silenceAllowed || isMultiParticipant(session)
+  return silenceAllowed || room.silentEmptyTurns
 }
 
 /** The silent turn was the participant's explicit pass (`skip_answer`), not tool-only work. */

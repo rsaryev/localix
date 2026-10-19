@@ -23,12 +23,7 @@ export function buildAgentsOptions(
 ): AgentsToolPort | undefined {
   const { userId, session, agentId, agentProfile } = params
   const service = ctx.deps.agentManagement
-  if (
-    !service ||
-    session.sessionKind !== 'chat' ||
-    session.provenance.kind !== 'root' ||
-    !isToolDirect(agentProfile, TOOL.agents)
-  )
+  if (!service || !params.policy.lineage.managesAgents || !isToolDirect(agentProfile, TOOL.agents))
     return undefined
   const operationPrefix = params.currentMessageId?.() ?? crypto.randomUUID()
   return {

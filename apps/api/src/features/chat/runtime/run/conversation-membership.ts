@@ -4,6 +4,7 @@ import { toSessionSummary } from '../../repository'
 import { changeParticipants } from '../conversation-participants'
 import { choiceFor } from '../../session-model-choices'
 import type { RunEnv } from './types'
+import { conversationPolicy } from '../../policy/session-policy'
 
 /**
  * What a membership change needs from its host. The run-state guards are optional ports: a
@@ -106,7 +107,7 @@ async function decideMembership(
   invited: AvailableAgent[]
   removed: SessionAgentRoute[]
 }> {
-  if (current.sessionKind !== 'chat') {
+  if (!conversationPolicy(current).membershipEditable) {
     throw new Error('Conversation membership is available only in chat sessions')
   }
 

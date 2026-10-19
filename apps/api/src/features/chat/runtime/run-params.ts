@@ -16,6 +16,7 @@ import type { SessionRecord } from '../repository'
 import type { RunCompletion } from './run-outcome'
 import type { RunChain, RunIdentity, RunParams, RunScope, RunTurn } from './run-contract'
 import type { ToolRequirement } from '../../agent-core/required-tools'
+import { hostPolicy } from '../policy/session-policy'
 
 function mergeToolRequirements(requirements: readonly ToolRequirement[]): ToolRequirement[] {
   const byName = new Map<string, Set<string>>()
@@ -113,7 +114,7 @@ export function reenterParams(
  * them would let a later wake inherit `allowed-tools` it was never granted.
  */
 export function identityOutlivesRun(session: Pick<SessionRecord, 'sessionKind'>): boolean {
-  return session.sessionKind !== 'chat'
+  return hostPolicy(session).remembersRunIdentity
 }
 
 /** The identity half of a scope, without the authority (which every wake re-derives). */

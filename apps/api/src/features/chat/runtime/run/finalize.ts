@@ -23,6 +23,7 @@ import { findUsedKey, maskKey } from './key-meta'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import { maybeStartContinuation } from './run-continuations'
 import type { RunParams } from './types'
+import type { RunPolicy } from '../../policy/run-policy'
 import { routeConversationReply } from './conversation-routing'
 import { publishedText } from '../spoken-text'
 export { finalizeFailedRun, rateLimitBackoffMs } from './finalize-failure'
@@ -36,6 +37,7 @@ export async function finalizeSuccessfulRun(args: {
   loadedPlugins: LoadedPlugins
   ccHooks: CcHooksRuntime
   promptMessage: PersistedMessage | undefined
+  policy: RunPolicy
   publishRuntimeSession: (status: SessionRecord['runtimeStatus']) => Promise<void>
 }): Promise<boolean> {
   const { ctx, params, abort } = args
@@ -78,9 +80,9 @@ export async function finalizeSuccessfulRun(args: {
 
   // A mark asks for a turn the agent may decline: an empty answer to it is silence, not failure.
   const silentInConversation = isSilentConversationTurn(
-    session,
+    args.policy.conversation,
     state.currentPayload,
-    args.promptMessage?.payload.origin === 'reaction',
+    args.policy.trigger.answersReaction,
   )
 
   // A run that produced nothing at all — no text, no tool call — is said as the system, like

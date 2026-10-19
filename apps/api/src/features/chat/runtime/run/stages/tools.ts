@@ -4,12 +4,11 @@
  * A tool the model is shown but the dispatcher cannot run (or the reverse) fails mid-turn with
  * an error the model cannot act on, so exposure and dispatch are derived from ONE descriptor
  * surface here and every later stage — prompt, permission gate, stream — reads this result.
- * The agent directory determines topic authority before descriptors are built; MCP gather and
- * the session snapshot then run together.
+ * Which seat-bound protocol ports the run holds (`set_topic`, `skip_answer`) is its policy's
+ * answer (`stages/policy.ts`); MCP gather and the session snapshot then run together.
  */
 import { mkdirSync } from 'node:fs'
 
-import { conversationLeader } from '../../conversation-strategy'
 import { TOOL } from '../../../../agent-core/tool-names'
 import { sessionScratchDir } from '../../../../agent-core/tools/workspace'
 import { recordComposition } from '../../../../effective-config/composition-store'
@@ -42,15 +41,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     inputs.disabledTools,
     params.scope.extraDisabledTools,
   )
-  const agentDirectory = (await deps.listRegistryAgents?.(userId, session.projectId)) ?? []
-  const priorities = new Map(
-    agentDirectory.map((agent) => [agent.agentId, agent.leadershipPriority ?? 0]),
-  )
-  // Topic exposure and the prompt use the same current registry priorities: the leader of a chat,
-  // or its sole participant, owns the session topic.
-  const canChangeTopic =
-    session.sessionKind === 'chat' &&
-    conversationLeader(session, priorities)?.agentId === params.scope.speakerAgentId
+  const { policy } = turn
   const runtimeTools = buildRunToolRegistry(
     {
       deps,
@@ -66,7 +57,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       userId,
       session,
       agentId: inputs.agent.id,
-      setTopic: canChangeTopic ? createSetTopicPort(env, params) : undefined,
+      policy,
+      setTopic: policy.seat.ownsTopic ? createSetTopicPort(env, params) : undefined,
       currentMessageId: () => currentAssistantMessageId(frame),
       env: inputs.env,
       defaultCwd,
@@ -143,7 +135,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   // Answers "why can the model not see my tool" with the values the roster was built from.
   // Failure-proof by construction: a snapshot must never affect the run that produced it.
   void assembledPromise.then(
-    (assembled) => recordComposition(session.id, { assembled, loadedPlugins }),
+    (assembled) =>
+      recordComposition(session.id, { assembled, loadedPlugins, policy: policy.trace }),
     () => {},
   )
 
@@ -161,12 +154,12 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     preflightTools.map((tool) => tool.name),
     { userId, projectId: session.projectId },
   )
-  // `hitl.reachable`: an `ask` on a required operation only stops a run nobody could answer.
+  // A reachable route: an `ask` on a required operation only stops a run nobody could answer.
   assertRunToolRequirements(
     preflightTools,
     inputs.permissionRules,
     params.scope.requiredTools,
-    frame.hitl.reachable,
+    policy.human.routeReachable,
   )
 
   return {
@@ -181,7 +174,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     mcpInstructions,
     mcpInventory,
     descendantSessions,
-    agentDirectory,
+    agentDirectory: turn.registry,
     scratchDir,
     recoveryToolAvailable: tools.some((tool) => tool.name === TOOL.tool_output),
   }

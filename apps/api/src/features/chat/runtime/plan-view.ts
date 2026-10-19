@@ -11,13 +11,20 @@ import type { PlanService } from '../../plans/service'
 import { planRef } from '../../plans/plan-files'
 import { planDraftDir, planDraftPath } from '../../plans/plan-paths'
 import type { SessionRecord } from '../repository'
+import { lineagePolicy, permissionPolicy } from '../policy/session-policy'
+
+/** The record fields a run's plan is decided from: where the session sits, and its mode. */
+type PlanSession = Pick<
+  SessionRecord,
+  'id' | 'seq' | 'sessionKind' | 'parentSessionId' | 'rootSessionId' | 'provenance'
+>
 
 export async function approvedPlanForRun(
   plans: Pick<PlanService, 'approved'> | undefined,
   userId: string,
-  session: Pick<SessionRecord, 'id' | 'parentSessionId'>,
+  session: Omit<PlanSession, 'seq'>,
 ): Promise<ApprovedPlanPrompt | undefined> {
-  if (!plans || session.parentSessionId !== null) return undefined
+  if (!plans || !lineagePolicy(session).ownsPlan) return undefined
   const plan = await plans.approved({ userId, sessionId: session.id }).catch(() => null)
   return plan
     ? { version: plan.version, title: plan.title, body: plan.body, path: plan.filePath }
@@ -31,19 +38,16 @@ export async function approvedPlanForRun(
  * file is not its to write, and the permission gate judges any plan-shaped write it makes as an
  * ordinary file write (`file-call-class.ts`).
  */
-export function ownPlanDirForRun(
-  session: Pick<SessionRecord, 'id' | 'seq' | 'parentSessionId'>,
-  defaultCwd: string,
-): string | undefined {
-  return session.parentSessionId === null ? planDraftDir(defaultCwd, planRef(session)) : undefined
+export function ownPlanDirForRun(session: PlanSession, defaultCwd: string): string | undefined {
+  return lineagePolicy(session).ownsPlan ? planDraftDir(defaultCwd, planRef(session)) : undefined
 }
 
 /** `# Plan mode` for a run admitted in it, naming the conversation's plan file. */
 export function planModeForRun(
-  session: Pick<SessionRecord, 'id' | 'seq' | 'parentSessionId' | 'permissionMode'>,
+  session: PlanSession & Pick<SessionRecord, 'permissionMode'>,
   defaultCwd: string,
 ): { draftPath?: string } | undefined {
-  if (session.permissionMode !== 'plan') return undefined
+  if (!permissionPolicy(session).planning) return undefined
   const dir = ownPlanDirForRun(session, defaultCwd)
   return dir ? { draftPath: planDraftPath(dir) } : {}
 }

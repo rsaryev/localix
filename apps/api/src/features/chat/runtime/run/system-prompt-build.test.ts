@@ -7,7 +7,9 @@ import { createRuntimeToolRegistry, onTheWire } from '../../../agent-core/tool-r
 import type { SessionRecord } from '../../repository'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunSessionSnapshotRow } from './session-snapshot'
-import { buildRunSystemPrompt, channelNameFromSourceKey } from './system-prompt-build'
+import { buildRunSystemPrompt } from './system-prompt-build'
+import { channelNameFromSourceKey } from '../../policy/axes/delivery'
+import { runPolicyFixture } from '../../../../testing/run-policy-fixture'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
 import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
 
@@ -204,6 +206,7 @@ describe('buildRunSystemPrompt pinned skills', () => {
         userId: current.userId,
         session: current,
         speakerAgentId,
+        policy: runPolicyFixture(current, speakerAgentId),
         providerId: 'test',
         agentProfile,
         runtimeTools,
@@ -245,17 +248,21 @@ describe('buildRunSystemPrompt pinned skills', () => {
       agents: [],
     } as unknown as LoadedPlugins
     const agents = routedParticipants()
+    const session = {
+      id: 'sub',
+      sessionKind: 'subagent',
+      projectId: null,
+      modelId: null,
+      sourceToolCallId: null,
+      parentSessionId: 'root',
+      provenance: { kind: 'unknown-origin' },
+      agents,
+    } as unknown as SessionRecord
     const built = await buildRunSystemPrompt({
       userId: 'u',
-      session: {
-        id: 'sub',
-        sessionKind: 'subagent',
-        projectId: null,
-        modelId: null,
-        sourceToolCallId: null,
-        agents,
-      } as unknown as SessionRecord,
+      session,
       speakerAgentId: agents[0].agentId,
+      policy: runPolicyFixture(session),
       providerId: 'test',
       agentProfile: SHAPE.subagent,
       runtimeTools,

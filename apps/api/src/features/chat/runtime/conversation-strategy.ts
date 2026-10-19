@@ -1,7 +1,8 @@
 import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
 import { mentionedHandles } from '../agent-mentions'
-import { isMultiParticipant } from '../session-route'
 import { participantAgentId } from '../../../db/participant'
+import { conversationLeader } from '../policy/axes/seat'
+import { conversationPolicy } from '../policy/session-policy'
 import type { PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 
@@ -51,7 +52,7 @@ export function rosterLeadership(
 export const noLeadership: LeadershipPriorities = async () => new Map()
 
 export interface ConversationContext {
-  session: Pick<SessionRecord, 'agents'>
+  session: Pick<SessionRecord, 'agents' | 'sessionKind'>
   history: readonly PersistedMessage[]
   priorities: LeadershipPriorities
 }
@@ -105,21 +106,9 @@ function leastRecent({ session, history }: ConversationContext): string | undefi
   )[0]?.agentId
 }
 
-/** Highest priority wins; party order is the stable tie-break and remains presentation order. */
-export function conversationLeader(
-  session: Pick<SessionRecord, 'agents'>,
-  priorities: ReadonlyMap<string, number>,
-): SessionRecord['agents'][number] | undefined {
-  const rank = (member: SessionRecord['agents'][number]) => priorities.get(member.agentId) ?? 0
-  return session.agents.reduce<SessionRecord['agents'][number] | undefined>(
-    (leader, member) => (!leader || rank(member) > rank(leader) ? member : leader),
-    undefined,
-  )
-}
-
 export const directConversationStrategy: ConversationStrategy = {
   id: 'direct',
-  accepts: ({ session }) => !isMultiParticipant(session),
+  accepts: ({ session }) => conversationPolicy(session).routing === 'direct',
   async recipients(context, event) {
     if (event.kind !== 'user-message') return explicitRecipients(context, event)
     const member = context.session.agents[0]
@@ -129,7 +118,7 @@ export const directConversationStrategy: ConversationStrategy = {
 
 export const multiParticipantStrategy: ConversationStrategy = {
   id: 'multi-participant',
-  accepts: ({ session }) => isMultiParticipant(session),
+  accepts: ({ session }) => conversationPolicy(session).routing === 'multi-participant',
   async recipients(context, event) {
     if (event.kind !== 'user-message') return explicitRecipients(context, event)
     const { session } = context

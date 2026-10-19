@@ -1,9 +1,9 @@
 import type { TaskDelegationOptions } from '../../../agent-core/tools/task-delegation'
 import { isToolDirect, type RunProfile } from '../../../agent-core/run-shape'
-import { isDelegationParent } from '../../../agent-core/delegation-policy'
 import { TOOL } from '../../../agent-core/tool-names'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { SessionRecord } from '../../repository'
+import type { LineageDecision } from '../../policy/axes/lineage'
 import { getAgentService } from '../agent-service-binding'
 import type { RunnerDeps } from '../agent-runner-types'
 import type { EarlyDelegationOutcome } from '../../../agent-core/tools/task-delegation-contracts'
@@ -15,7 +15,6 @@ import {
   expectReport,
   takeExpectedReport,
 } from '../../../agent-core/delegation-awaits'
-import { delegatesAt } from '../../../agent-core/delegation-hierarchy'
 import { delegationPlace } from '../../session-provenance'
 import { endSubagentWork, type SubagentWorkDeps } from './subagent-work'
 import { releaseChildSurfaces, type ChildSurfaceDeps } from './child-surfaces'
@@ -36,6 +35,8 @@ const DELEGATION_SETTLE_MS = 1_200
 export interface TaskDelegationOptionsInput {
   userId: string
   session: SessionRecord
+  /** Where the session sits in its tree: only the original conversation creates children. */
+  lineage: LineageDecision
   agentId?: string
   /** The run's effective cwd — a memory-backed sub-agent resolves its memory dir from it. */
   defaultCwd: string
@@ -62,10 +63,9 @@ export function buildTaskDelegationOptions(
 ): TaskDelegationOptions | undefined {
   const { userId, session, agentProfile, ccHooks } = input
 
-  if (!isDelegationParent(session) || !isToolDirect(agentProfile, TOOL.delegate)) return undefined
   // Persisted nested sessions remain readable, but only the root can create new child work.
+  if (!input.lineage.mayDelegate || !isToolDirect(agentProfile, TOOL.delegate)) return undefined
   const place = delegationPlace(session.provenance)
-  if (!delegatesAt(place.depth)) return undefined
   // The `delegation` model route is a ROUTE, never a switch for the tool. With the route off
   // a child simply runs on the session model (the picker's own "Use session model" promise);
   // gating the port on it once removed delegation from a chat whose user had merely not

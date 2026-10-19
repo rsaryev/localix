@@ -19,7 +19,12 @@ const root = '/tmp/workspace'
 function unattendedGate(
   tools: readonly AgentTool[],
   rules: PermissionRule[] = [],
-  session = { id: 'job', sessionKind: 'job' } as SessionRecord,
+  session = {
+    id: 'job',
+    sessionKind: 'job',
+    parentSessionId: null,
+    provenance: { kind: 'unknown-origin' },
+  } as SessionRecord,
 ) {
   return buildRunPermissionGate({
     tools,
@@ -35,6 +40,7 @@ function unattendedGate(
     hookRunOptions: { sessionId: 'job', logger: { warn: () => {} } },
     extraAllowedTools: undefined,
     permissionRules: rules,
+    mayConfirm: false,
     defaultCwd: root,
   })
 }
@@ -103,7 +109,13 @@ describe('the run’s own plan directory', () => {
     toolName: 'write',
     input: { path, content: '# Plan' },
   })
-  const rootRun = { id: 'r', seq: 7, parentSessionId: null, sessionKind: 'job' } as SessionRecord
+  const rootRun = {
+    id: 'r',
+    seq: 7,
+    parentSessionId: null,
+    sessionKind: 'job',
+    provenance: { kind: 'unknown-origin' },
+  } as SessionRecord
   const childRun = { ...rootRun, id: 'c', seq: 8, parentSessionId: 'r' } as SessionRecord
 
   test('a root run writes its own conversation’s plan, never another’s', async () => {

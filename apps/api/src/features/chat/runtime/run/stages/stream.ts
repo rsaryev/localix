@@ -14,7 +14,7 @@ import { TOOL } from '../../../../agent-core/tool-names'
 import { buildExternalizeAfterToolCall } from '../../../../context-store/externalize'
 import { createContextStoreRepository } from '../../../../context-store/repository'
 import { agentRoute } from '../../../session-route'
-import { speakerPlace } from '../session-topic'
+import { speakerPlace } from '../../../policy/axes/seat'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
@@ -77,7 +77,7 @@ export async function streamRun(
       backgroundAccumulator?.patchToolItem(toolCallId, patch)
     },
   })
-  const { takeSteering, deferral } = wireRunSteering(frame, state, toolCheckpoint.waitFor)
+  const { takeSteering, deferral } = wireRunSteering(frame, turn, toolCheckpoint.waitFor)
   const speakerRoute = agentRoute(session, speakerAgentId)
   const toolExecutionContext = buildRuntimeToolContext({
     deps,
@@ -88,15 +88,15 @@ export async function streamRun(
           speaker: {
             agentId: speakerRoute.agentId,
             handle: speakerRoute.handle,
-            ...(await speakerPlace(env, userId, session, speakerRoute.agentId)),
+            ...speakerPlace(turn.policy.seat),
           },
         }
       : {}),
     asyncRegistry,
     scratchDir: toolset.scratchDir,
     // A prompt reaches a person only when one can be shown AND the session expects one to answer
-    // — an autonomous session is the second "no" (`permission-mode-policy.ts`).
-    interactive: frame.hitl.reachable && inputs.humanReachable,
+    // — an autonomous session is the second "no" (`policy/axes/human.ts`).
+    interactive: turn.policy.human.canAnswer,
   })
 
   // Ties the next persisted usage measurement to the exact static request envelope about to

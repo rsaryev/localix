@@ -8,6 +8,7 @@ import {
   type TaskDelegationOptionsInput,
 } from './task-delegation-options'
 import { setAgentService } from '../agent-service-binding'
+import { lineagePolicy } from '../../policy/session-policy'
 
 beforeEach(() => {
   setAgentService({ resolveDelegateAgent: async () => null, wakeSession: async () => {} } as never)
@@ -17,6 +18,7 @@ afterEach(() => setAgentService(null as never))
 const input = {
   userId: 'user-a',
   session: sessionFixture(),
+  lineage: lineagePolicy(sessionFixture()),
   agentProfile: CHAT_RUN_PROFILE,
   deps: {},
   repo: {},
@@ -49,7 +51,9 @@ test('no subsession receives a delegation host even when the setting and profile
     sessionFixture({ rootSessionId: 'other' }),
     sessionFixture({ provenance: { kind: 'unknown-origin' } }),
   ]) {
-    expect(buildTaskDelegationOptions({ ...input, session })).toBeUndefined()
+    expect(
+      buildTaskDelegationOptions({ ...input, session, lineage: lineagePolicy(session) }),
+    ).toBeUndefined()
   }
 })
 

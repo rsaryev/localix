@@ -16,6 +16,7 @@ import { consoleWarnLogger } from './plugin-hook-logger'
 import { resolvePromptSnapshot } from './prompt-snapshot'
 import { resolvePinnedSkills } from './prompt-pinned-skills'
 import { resolveTriggeredSkills } from './prompt-skill-triggers'
+import { hostPolicy } from '../policy/session-policy'
 
 /** Agent-local selection is refreshed; notes stay frozen only while that selection is unchanged. */
 export async function resolveAgentPromptContext(input: {
@@ -79,7 +80,7 @@ export async function resolveAgentPromptContext(input: {
     // than importing the selected name from another application's settings.
   }
   let frozenContext = freshContext
-  if (session.sessionKind === 'chat') {
+  if (hostPolicy(session).freezesPromptContext) {
     frozenContext = await resolvePromptSnapshot({
       cache: contextSnapshots,
       store: laneSnapshots,

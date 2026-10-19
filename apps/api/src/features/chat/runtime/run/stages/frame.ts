@@ -1,7 +1,7 @@
 /**
  * The state one admitted run shares across its stages.
  *
- * A run is a chain of stages (admit → turn → context → tools → prompt → intake → history →
+ * A run is a chain of stages (admit → policy → turn → context → tools → prompt → intake → history →
  * stream → complete | fail), but three readers sit OUTSIDE that chain and see whatever the
  * chain got to before it stopped: the failure path, the checkpoint/transient reruns it
  * starts, and teardown. Each of them needs the CURRENT value of something a stage changed —

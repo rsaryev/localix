@@ -12,6 +12,7 @@ import { isHitlTimeout } from '../../../agent-core/tools/hitl/decision-deadline'
 import { reachableHitlTarget } from './hitl-reachable'
 import { grantedScopes, grantScope as recordGrant } from '../session-grants'
 import { confirmTitle, readConfirmAnswer, wireGrants } from './confirm-answer'
+import { hostPolicy } from '../../policy/session-policy'
 
 /**
  * Builds the per-run "request a tool-approval confirm" function: tracks the
@@ -59,7 +60,7 @@ export function createConfirmRequester(
     }
     const sourceTitle =
       confirmArgs.sourceTitle?.trim() ||
-      (session.sessionKind === 'subagent' ? session.title : undefined)
+      (hostPolicy(session).presentsAsSubagent ? session.title : undefined)
     const toolName = sourceTitle ? `sub-agent · ${confirmArgs.toolName}` : confirmArgs.toolName
     // The act and its object ("Read useTheme.ts"); who asked is the line under it.
     const title = confirmTitle(confirmArgs)

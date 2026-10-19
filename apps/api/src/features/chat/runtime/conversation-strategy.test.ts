@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { PersistedMessage } from '../contracts'
+import { conversationLeader } from '../policy/axes/seat'
 import {
-  conversationLeader,
   multiParticipantStrategy,
   rosterLeadership,
   type ConversationContext,
@@ -33,7 +33,7 @@ const context = (
   history: PersistedMessage[] = [],
   roster: LeadershipRoster = registry().roster,
 ): ConversationContext => ({
-  session: { agents },
+  session: { agents, sessionKind: 'chat' },
   history,
   priorities: rosterLeadership(roster, 'u1', null),
 })

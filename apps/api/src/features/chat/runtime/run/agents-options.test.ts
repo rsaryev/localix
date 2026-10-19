@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { runPolicyFixture } from '../../../../testing/run-policy-fixture'
 import { sessionFixture } from '../../../../testing/session-fixture'
 import { CHAT_RUN_PROFILE, resolveRunProfile } from '../../../agent-core/run-shape'
 import { createAgentsTool } from '../../../agent-core/tools/agents'
@@ -53,6 +54,7 @@ test('host binds creation to the speaker and registry, then a tag invites and sc
     userId: session.userId,
     agentId: actor.agentId,
     session,
+    policy: runPolicyFixture(session, actor.agentId),
     agentProfile: CHAT_RUN_PROFILE,
     currentMessageId: () => 'reply-1',
   } as Parameters<typeof buildRunToolRegistry>[1]
@@ -116,9 +118,10 @@ test('host binds creation to the speaker and registry, then a tag invites and sc
 test('child, automation and non-root hosts never acquire registry authoring', () => {
   const ctx = { deps: { agentManagement: {} } } as unknown as RuntimeToolWiringContext
   for (const sessionKind of ['subagent', 'job', 'chat'] as const) {
-    const session = sessionFixture({ sessionKind })
+    const session = { ...sessionFixture({ sessionKind }), provenance: { kind: 'delegated' } }
     const params = {
-      session: { ...session, provenance: { kind: 'delegated' } },
+      session,
+      policy: runPolicyFixture(session as never),
       agentProfile: resolveRunProfile({ sessionKind }),
     } as unknown as Parameters<typeof buildRunToolRegistry>[1]
     expect(buildAgentsOptions(ctx, params)).toBeUndefined()

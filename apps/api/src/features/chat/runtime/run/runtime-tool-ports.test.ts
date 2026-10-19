@@ -1,4 +1,6 @@
 import { expect, test } from 'bun:test'
+import { runPolicyFixture } from '../../../../testing/run-policy-fixture'
+import { sessionFixture } from '../../../../testing/session-fixture'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -9,6 +11,9 @@ import type { PluginAuthoring } from '../../../plugins/authoring/service'
 import type { SessionRecord } from '../../repository'
 import { buildOptionalToolPorts } from './runtime-tool-ports'
 import type { RuntimeToolWiringContext } from './runtime-tools'
+
+/** A root chat with one agent: the run every case here is about. */
+const ROOT_CHAT_POLICY = runPolicyFixture(sessionFixture())
 
 test('plugin_build suggests browser verification only when browser survives the run policy', async () => {
   const authoring = {
@@ -43,6 +48,7 @@ test('plugin_build suggests browser verification only when browser survives the 
       toolExposure: { [TOOL.browser]: 'direct', [TOOL.plugin_build]: 'direct' },
     },
     loadedPlugins: { skills: [] },
+    policy: ROOT_CHAT_POLICY,
   } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
   const { optional, ledgerRef } = buildOptionalToolPorts(ctx, params, {} as never)
   expect(optional.browser).toBeDefined()
@@ -85,6 +91,7 @@ test('the skill tool announces its save through the host capability port', async
       disabledTools: [],
       agentProfile: { ...CHAT_RUN_PROFILE, toolExposure: { [TOOL.skill]: 'direct' } },
       loadedPlugins: { skills: [] },
+      policy: ROOT_CHAT_POLICY,
     } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
     const { optional } = buildOptionalToolPorts(ctx, params, {} as never)
     const input = { action: 'save', name: 'zz-port-skill', description: 'd', content: 'c' }
@@ -114,6 +121,7 @@ test('set_topic is offered exactly when the host built its port', () => {
       agentProfile: CHAT_RUN_PROFILE,
       loadedPlugins: { skills: [] },
       setTopic,
+      policy: ROOT_CHAT_POLICY,
     } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
     const { optional } = buildOptionalToolPorts(ctx, params, {} as never)
     expect(optional.set_topic).toBe(setTopic)

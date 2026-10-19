@@ -6,7 +6,7 @@
  * session's participants are. Here they become a roster and election context, including a solo chat.
  */
 import { agentRoute } from '../../session-route'
-import { conversationLeader } from '../conversation-strategy'
+import type { RunPolicy } from '../../policy/run-policy'
 import type { SessionRecord } from '../../repository'
 import type { HumanProfile } from '../../../agent-core/system-prompt-conversation-section'
 
@@ -18,31 +18,31 @@ export interface ConversationPromptContext {
   isLeader: boolean
   /** The elected leader's handle (no `@`); the roster marks it, so every agent knows whom to report to. */
   leader?: string
-  /** Nobody here can be invited or removed: it is not a chat. */
+  /** A tag cannot bring anybody in (`policy.conversation.tagInvites`). */
   membershipClosed: boolean
 }
 
 /**
  * The roster and election from the speaker's point of view, including a solo chat.
  *
- * `self` is the run's current participant, selected by the execution contract.
+ * `self` is the run's current participant, selected by the execution contract; the leader is
+ * the one its policy elected (`policy/axes/seat.ts`), from the registry the run read once.
  */
 export function conversationPromptContext(
   session: SessionRecord,
   speakerAgentId: string,
-  /** From the registry roster the run already read — the same rank dispatch elects by. */
-  priorities: ReadonlyMap<string, number>,
+  policy: Pick<RunPolicy, 'seat' | 'conversation'>,
   human?: HumanProfile,
 ): ConversationPromptContext | undefined {
   const speaker = agentRoute(session, speakerAgentId)
   if (!speaker) return undefined
-  const leader = conversationLeader(session, priorities)
+  const { leader } = policy.seat
   return {
     self: speaker.handle,
     participants: (session.agents ?? []).map((participant) => ({ handle: participant.handle })),
     ...(human ? { human } : {}),
     isLeader: leader?.agentId === speaker.agentId,
     ...(leader ? { leader: leader.handle } : {}),
-    membershipClosed: session.sessionKind !== 'chat',
+    membershipClosed: !policy.conversation.tagInvites,
   }
 }

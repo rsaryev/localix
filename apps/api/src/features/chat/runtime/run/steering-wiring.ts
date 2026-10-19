@@ -16,23 +16,22 @@ import { takeSteeringAtCheckpoint } from './tool-checkpoint-gate'
  */
 export function wireRunSteering(
   frame: RunFrame,
-  state: ResolvedTurn['state'],
+  turn: Pick<ResolvedTurn, 'state' | 'policy'>,
   waitForCheckpoint: (index: number) => Promise<boolean>,
 ) {
   const { env, session, speakerAgentId, abort } = frame
+  const { state, policy } = turn
   const { repo, now } = env
   let requestedToolTurnIndex: number | undefined
   let deliveredToolTurnIndex: number | undefined
 
-  const steers = midRunInterjectEnabled() && session.sessionKind !== 'system'
+  const steers = midRunInterjectEnabled() && policy.host.steers
   const accepts = (content: string) => addressedToSpeaker(content, session.agents, speakerAgentId)
-  const steeringAddress =
-    session.sessionKind === 'chat'
-      ? {
-          participant: agentParticipant(speakerAgentId),
-          allowUnaddressed: session.agents.length === 1,
-        }
-      : undefined
+  // Where a delegated child's report may join this turn: a conversation that has children.
+  const childReports = policy.conversation.childReports
+  const steeringAddress = childReports
+    ? { participant: agentParticipant(speakerAgentId), ...childReports }
+    : undefined
   const takeFromQueue = steers
     ? createSteeringTaker({
         env,

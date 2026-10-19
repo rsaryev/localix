@@ -15,7 +15,6 @@ import { createParticipantLaneSnapshotRepository } from '../../../participant-la
 import { consoleWarnLogger } from '../../plugin-hook-logger'
 import { prepareRunContext } from '../../prompt-context'
 import { capabilitiesInMode } from '../../../../capabilities/permission-mode-policy'
-import { DEFAULT_PERMISSION_MODE } from '../../../../capabilities/permission-modes'
 import { pluginProblemNotice } from '../../plugin-problem-notice'
 import { resolvePluginSessionDataDir } from '../../../../plugins/session-storage'
 import { createPluginAgentDirectory } from '../../../../plugins/agent-directory'
@@ -35,10 +34,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   if (!frame.isContinuation) frame.publishPhase('preparing-context')
   // The session's mode rewrites the admitted agent's rules before anything reads them, so every
   // consumer below — plugin narrowing, the tool projection, the gate — sees one answer.
-  const mode = capabilitiesInMode(
-    turn.admittedAgent.capabilities,
-    session.permissionMode ?? DEFAULT_PERMISSION_MODE,
-  )
+  const mode = capabilitiesInMode(turn.admittedAgent.capabilities, turn.policy.permission.mode)
   const human = (user: string, projectId: string | null) =>
     deps.resolveHuman?.(user, projectId) ?? Promise.resolve(undefined)
   // Observer hooks (HITL, subagent stop, a card assigned to `@human`) are fire-and-forget: no loop latency. The
@@ -165,7 +161,6 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   return {
     ...context,
     ...(humanProfile ? { human: humanProfile } : {}),
-    humanReachable: mode.humanReachable,
     hookRunOptions,
     ccHooks,
     ccSessionStartContext,

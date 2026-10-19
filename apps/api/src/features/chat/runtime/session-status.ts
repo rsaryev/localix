@@ -4,6 +4,7 @@ import type { LiveItemResolver } from './agent-runner-state'
 import { toSessionSummary, type ChatRepository, type SessionRecord } from '../repository'
 import type { SessionStreamRegistry } from './session-stream-registry'
 import type { ChildRuntimeSession } from './agent-runner-state'
+import { hostPolicy } from '../policy/session-policy'
 
 export function publishChildSummary(params: {
   streamRegistry: SessionStreamRegistry
@@ -109,7 +110,7 @@ export async function markRuntimeSessionStatus(params: {
   /** Registry of live item resolvers keyed by toolCallId (from RuntimeState). */
   liveItemResolvers: Map<string, LiveItemResolver>
 }): Promise<SessionRecord> {
-  if (params.session.sessionKind === 'chat') return params.session
+  if (!hostPolicy(params.session).persistsRuntimeStatus) return params.session
   const timestamp = params.now()
   const patch = { runtimeStatus: params.status, updatedAt: timestamp, lastMessageAt: timestamp }
   // Only the status is ours to write. `params.session` is the record read when the run was

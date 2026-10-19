@@ -15,7 +15,6 @@ import { toSessionSummary } from '../../../repository'
 import { agentRoute } from '../../../session-route'
 import { loadUserSettingsContext } from '../../../../user/runtime-settings'
 import { getAgentService } from '../../agent-service-binding'
-import { invocationHost } from '../../execution-context'
 import { sessionAgent } from '../../message-envelope'
 import { invocationApprovalRequester } from '../invocation-approval'
 import {
@@ -26,10 +25,11 @@ import {
 import { prepareTurnState } from '../prepare-turn-state'
 import { requireRunAgent } from '../require-run-agent'
 import type { RunFrame } from './frame'
+import type { RunStanding } from './policy'
 
 export type ResolvedTurn = Awaited<ReturnType<typeof resolveRunTurn>>
 
-export async function resolveRunTurn(frame: RunFrame) {
+export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
   const { env, params, userId, speakerAgentId, assistantMessageId } = frame
   const { deps, repo, now } = env
   const initialSession = frame.session
@@ -37,7 +37,7 @@ export async function resolveRunTurn(frame: RunFrame) {
     throw new AgentRunError('AGENT_UNAVAILABLE', 'Session has no valid agent assignment')
   }
   const speaker = sessionAgent(initialSession, speakerAgentId)
-  const invocation = invocationHost(params.scope.executionContext.invocation)
+  const invocation = standing.policy.invocation.admissionHost
   const admittedAgent = await requireRunAgent(
     getAgentService()?.resolveRunAgent,
     userId,
@@ -119,6 +119,7 @@ export async function resolveRunTurn(frame: RunFrame) {
   // Per-million-token pricing for the usage rows this run writes.
   const catalogModel = findCatalogModel(catalog.models, model.providerId, model.effectiveModelId)
   return {
+    ...standing,
     admittedAgent,
     state,
     turnIdleMs,

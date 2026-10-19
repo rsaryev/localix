@@ -8,6 +8,7 @@
 import type { SessionRecord } from '../../repository'
 import { addressedHandles } from '../../conversation-addressing'
 import { updateConversationMembership } from './conversation-membership'
+import { conversationPolicy } from '../../policy/session-policy'
 import type { RunEnv } from './types'
 
 export type InviteEnv = {
@@ -23,7 +24,7 @@ export async function inviteAddressedAgents(
   session: SessionRecord,
   text: string,
 ): Promise<SessionRecord> {
-  if (session.sessionKind !== 'chat' || !text.includes('@')) return session
+  if (!conversationPolicy(session).tagInvites || !text.includes('@')) return session
   const available =
     (await env.deps.listInvocableRegistryAgents?.(userId, 'chat', session.projectId)) ?? []
   const present = new Set(session.agents.map((member) => member.agentId))

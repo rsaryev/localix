@@ -1,5 +1,6 @@
 /**
  * One agent run, as a chain of stages — `stages/`, one file per stage, in the order below.
+ * The run's policy (`stages/policy.ts`) is resolved first and travels on the resolved turn.
  *
  * The run used to be one 1100-line function in which a stage's inputs could only be found by
  * reading everything above it. Each stage now receives exactly the earlier results it reads,
@@ -17,6 +18,7 @@ import { teardownRun } from './run-teardown'
 import { admitRun } from './stages/admit'
 import { completeRun } from './stages/complete'
 import { prepareRunInputs } from './stages/context'
+import { resolveRunStanding } from './stages/policy'
 import { failRun } from './stages/fail'
 import { materializeRunHistory } from './stages/history'
 import { intakeRunTurn } from './stages/intake'
@@ -44,7 +46,7 @@ async function executeAdmittedRun(
   // Admission releases its own slot when it fails; from here on teardown owns it.
   const frame = await admitRun(env, params, assertAdmitted)
   try {
-    const turn = await resolveRunTurn(frame)
+    const turn = await resolveRunTurn(frame, await resolveRunStanding(frame))
     const view = await resolveRunView(frame, turn)
     const inputs = await prepareRunInputs(frame, turn, view)
     const toolset = await assembleRunToolset(frame, turn, inputs)

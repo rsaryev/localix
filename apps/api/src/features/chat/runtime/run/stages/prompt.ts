@@ -50,6 +50,7 @@ export async function buildRunPrompt(
     userId,
     session,
     speakerAgentId,
+    policy: turn.policy,
     providerId,
     agentProfile: toolset.agentProfile,
     runtimeTools: toolset.runtimeTools,

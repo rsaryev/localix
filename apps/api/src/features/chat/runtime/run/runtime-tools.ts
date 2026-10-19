@@ -27,6 +27,7 @@ import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { ToolDenial } from '../../../capabilities/resolve'
 import type { SetTopicPort } from '../../../agent-core/tools/set-topic'
 import type { MemoryScope } from '../../../memory/scope-policy'
+import type { RunPolicy } from '../../policy/run-policy'
 
 export interface RuntimeToolWiringContext {
   deps: RunnerDeps
@@ -50,6 +51,8 @@ export function buildRunToolRegistry(
   ctx: RuntimeToolWiringContext,
   params: {
     userId: string
+    /** The run's policy: which host it runs in, which seat it holds, who may be invited. */
+    policy: RunPolicy
     /** Present for the leader or sole participant of a chat. */
     setTopic?: SetTopicPort
     /** The run's live assistant row (a steering split re-points it). */
@@ -121,9 +124,9 @@ export function buildRunToolRegistry(
   // must survive `disabledTools` (a scope can switch `jobs` off). Without this the
   // model could launch a job it can't list, read, or stop — an orphaned,
   // unmanageable process. Pair the launcher with its manager.
-  // (`job`-kind runs never get background regardless — no host is watching.)
+  // (A job's own runs never get background regardless — no host is watching.)
   const jobsManageable =
-    session.sessionKind !== 'job' && isToolLive(agentProfile, 'jobs', disabledTools)
+    params.policy.host.supervisesJobs && isToolLive(agentProfile, 'jobs', disabledTools)
 
   const { optional, ledgerRef } = buildOptionalToolPorts(ctx, params, jobsTool)
   const toolDenials = new Map<string, PolicyDenial>(

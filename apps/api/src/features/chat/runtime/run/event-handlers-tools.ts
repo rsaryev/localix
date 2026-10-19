@@ -16,6 +16,7 @@ import {
   type EventOf,
   type TurnEventContext,
 } from './event-handlers'
+import { hostPolicy } from '../../policy/session-policy'
 
 /**
  * At most one `child_session.activity` frame per child session per this window.
@@ -93,7 +94,7 @@ function forwardChildActivity(ctx: TurnEventContext, activity: string) {
   const parentSessionId = ctx.session.parentSessionId
   if (
     !parentSessionId ||
-    (ctx.session.sessionKind !== 'subagent' && ctx.session.sessionKind !== 'job') ||
+    !hostPolicy(ctx.session).mirrorsActivityToParent ||
     !env.deps.streamRegistry.hasWatchers(ctx.userId, parentSessionId)
   ) {
     return

@@ -88,6 +88,7 @@ export async function completeRun(
     loadedPlugins: inputs.loadedPlugins,
     ccHooks,
     promptMessage: intake.turnFrame.promptMessage,
+    policy: turn.policy,
     publishRuntimeSession: frame.publishRuntimeSession,
   })
   if (continued) return continuedRun()

@@ -3,12 +3,16 @@ import {
   ORCHESTRATION_DELEGATE_TASK,
   executionToolSurface,
   invocationOrigin,
-  invocationHost,
   continuationExecutionContext,
   childExecutionContext,
   rootExecutionContext,
   sessionExecutionContext,
 } from './execution-context'
+import { chooseOn } from '../policy/axis'
+import { invocationAxis } from '../policy/axes/invocation'
+
+const invocationHost = (invocation: Parameters<typeof invocationOrigin>[0]) =>
+  chooseOn(invocationAxis, { invocation }).decision.admissionHost
 
 describe('run execution context', () => {
   test('continuations cannot restore authority removed from the preceding run', () => {

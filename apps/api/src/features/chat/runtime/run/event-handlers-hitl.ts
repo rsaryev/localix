@@ -7,6 +7,7 @@
 import type { HumanInLoopRequestBase } from '@localixai/agent/agents'
 import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../plugins/hooks'
 import type { EventOf, TurnEventContext } from './event-handlers'
+import { hostPolicy } from '../../policy/session-policy'
 
 export function handleHitlRequest(ctx: TurnEventContext, event: EventOf<'human_in_loop_request'>) {
   const { env, state, session } = ctx
@@ -26,15 +27,14 @@ export function handleHitlRequest(ctx: TurnEventContext, event: EventOf<'human_i
   const requestTitle =
     request.title?.trim() ||
     (request.kind === 'ask' ? 'The agent asks' : `${event.toolName} needs input`)
-  const toolName =
-    session.sessionKind === 'subagent' ? `sub-agent · ${event.toolName}` : event.toolName
-  const surfacedRequest =
-    session.sessionKind === 'subagent'
-      ? {
-          ...request,
-          title: `Sub-agent "${session.title}" needs input: ${requestTitle}`,
-        }
-      : { ...request, title: requestTitle }
+  const asSubagent = hostPolicy(session).presentsAsSubagent
+  const toolName = asSubagent ? `sub-agent · ${event.toolName}` : event.toolName
+  const surfacedRequest = asSubagent
+    ? {
+        ...request,
+        title: `Sub-agent "${session.title}" needs input: ${requestTitle}`,
+      }
+    : { ...request, title: requestTitle }
   // `shown` carries the shielded payload; `surfacedRequest` still holds the raw one, which only the
   // awaiting tool may see. Everything that leaves this process reads `shown`.
   const shown = env.deps.hitlRegistry.trackRequest(

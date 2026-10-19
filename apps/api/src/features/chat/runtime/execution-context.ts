@@ -27,26 +27,6 @@ export interface RunExecutionContext {
   clientSurface?: ToolSurface
 }
 
-/** Translate host-owned execution provenance into native invocation policy actions. */
-export function invocationHost(invocation: RunInvocation): string {
-  switch (invocation.kind) {
-    case 'root':
-      return 'chat'
-    case 'channel':
-      return 'channel'
-    case 'task-delegation':
-    case 'skill-fork':
-      return 'delegation'
-    case 'loop-subsession':
-      return 'automation'
-    case 'hook':
-      return 'verification'
-    case 'isolated-continuation':
-      // Missing provenance cannot acquire the privileges of a known execution host.
-      return 'unknown'
-  }
-}
-
 const PROTECTED_CAPABILITIES = new Set<string>([ORCHESTRATION_DELEGATE_TASK])
 
 /**

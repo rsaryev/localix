@@ -20,6 +20,7 @@ import type { WorkRegistry } from '../../../work/registry'
 import type { SessionRecord } from '../../repository'
 import type { ActionRegistryEntry } from '../agent-runner-state'
 import { getAgentService } from '../agent-service-binding'
+import { lineagePolicy } from '../../policy/session-policy'
 
 export interface SubagentWorkDeps {
   work: WorkRegistry
@@ -88,7 +89,7 @@ export function trackSubagent(deps: SubagentWorkDeps, input: TrackSubagent) {
  */
 export function trackChildRun(deps: SubagentWorkDeps, userId: string, session: SessionRecord) {
   const { provenance } = session
-  if (session.sessionKind !== 'subagent' || provenance.kind !== 'task-delegation') return
+  if (!lineagePolicy(session).reportsToDelegator || provenance.kind !== 'task-delegation') return
   if (session.closedAt || deps.work.get(subagentWorkKey(session.id))) return
   trackSubagent(deps, {
     owner: { userId, sessionId: provenance.parentSessionId },

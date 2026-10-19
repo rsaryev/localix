@@ -26,14 +26,13 @@ import type { RuntimeToolWiringContext } from './runtime-tools'
 import type { buildRunToolRegistry } from './runtime-tools'
 import { createContextStoreRepository } from '../../../context-store/repository'
 import { createSkipAnswerTool } from '../../../agent-core/tools/skip-answer'
-import { isMultiParticipant } from '../../session-route'
 
 type RegistryParams = Parameters<typeof buildRunToolRegistry>[1]
 
 /**
  * Why a port may be EMPTY, by tool name — the host capability the run turned out not to
- * have. Only host reasons: a tool the profile hides never reaches the port builder's own
- * check, and the ledger's shape layer has already said so.
+ * have, or the policy decision that withheld it. A tool the profile hides never reaches the
+ * port builder's own check, and the ledger's shape layer has already said so.
  */
 const EMPTY_PORT_CAPABILITY: Readonly<Record<string, string>> = {
   [TOOL.context_budget]: 'context.budget',
@@ -44,6 +43,9 @@ const EMPTY_PORT_CAPABILITY: Readonly<Record<string, string>> = {
   [TOOL.tool_output]: 'context.store',
   [TOOL.plugin_build]: 'plugins.authoring',
   [TOOL.plan]: 'plans',
+  // Seat-bound protocol ports (`chat/policy`): a pass needs a colleague, a topic needs its owner.
+  [TOOL.skip_answer]: 'conversation.colleagues',
+  [TOOL.set_topic]: 'conversation.topic-owner',
 }
 
 export function explainEmptyPorts(optional: OptionalToolPorts): Record<string, string> {
@@ -68,6 +70,7 @@ export function buildOptionalToolPorts(
   const taskDelegation = buildTaskDelegationOptions({
     userId,
     session,
+    lineage: params.policy.lineage,
     agentId: params.agentId,
     defaultCwd,
     agentProfile,
@@ -95,10 +98,7 @@ export function buildOptionalToolPorts(
       : undefined,
     set_topic: params.setTopic,
     // Only a colleague can name this participant without asking it anything.
-    skip_answer:
-      session.sessionKind === 'chat' && isMultiParticipant(session)
-        ? createSkipAnswerTool()
-        : undefined,
+    skip_answer: params.policy.conversation.canPass ? createSkipAnswerTool() : undefined,
     ...buildDirectToolInstances({
       agentProfile,
       disabledTools,

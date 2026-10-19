@@ -18,8 +18,11 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
   extraAllowedTools: string[] | undefined
   /** Session/project-level permission rules from prompt-context. */
   permissionRules: PermissionRule[]
-  /** False when the session's mode expects nobody to answer (`permission-mode-policy.ts`). */
-  humanReachable?: boolean
+  /**
+   * Whether a confirm card may be raised at all (`policy.human.gateMayConfirm`). When it may not,
+   * an `ask` verdict refuses with the unattended-run message instead of waiting out a deadline.
+   */
+  mayConfirm: boolean
   /** Final dispatch descriptors, including MCP and deferred implementations. */
   tools: readonly AgentTool[]
   defaultCwd: string
@@ -97,16 +100,9 @@ export function buildRunPermissionGate(
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.
     ownPlanDir: ownPlanDirForRun(session, defaultCwd),
-    // Two ways nobody answers a card: a parentless automation job has no chat to show it in,
-    // and an autonomous session has a chat nobody is expected to watch. Either way an `ask` must
-    // refuse with the unattended-run message rather than wait out a deadline. (A parented job
-    // routes to its verified root chat.)
-    requestConfirm:
-      options.humanReachable === false ||
-      (session.sessionKind === 'job' &&
-        (!hitlTargetSessionId || hitlTargetSessionId === session.id))
-        ? undefined
-        : requestConfirm,
+    // Nobody answers a card in two ways: a parentless automation job has no chat to show it in,
+    // and an autonomous session has a chat nobody is expected to watch (`policy/axes/human.ts`).
+    requestConfirm: options.mayConfirm ? requestConfirm : undefined,
     ...(options.refusalTracker ? { refusalTracker: options.refusalTracker } : {}),
   })
 }

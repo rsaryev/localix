@@ -1,4 +1,3 @@
-import { conversationLeader } from '../conversation-strategy'
 import { agentRoute } from '../../session-route'
 /**
  * Per-run system-prompt assembly: gathers the volatile prompt sections
@@ -22,6 +21,7 @@ import type { PreparedRunContext } from '../prompt-context'
 import type { buildRunToolRegistry } from './runtime-tools'
 import type { SessionRecord } from '../../repository'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
+import type { RunPolicy } from '../../policy/run-policy'
 import { activeDescendantSubagents } from './descendant-roster'
 import { getAgentService } from '../agent-service-binding'
 import { buildReactionContext } from './reaction-context'
@@ -35,17 +35,12 @@ import type { McpInventoryEntry } from './mcp-tools'
 import type { RunSessionSnapshotRow } from './session-snapshot'
 
 /** Live descendant view for orchestration context; statuses come from durable sessions. */
-/** Extract the channel name from `channel:<plugin>:<channel>:<conversation>` provenance. */
-export function channelNameFromSourceKey(sourceToolCallId: string | null | undefined) {
-  if (!sourceToolCallId?.startsWith('channel:')) return undefined
-  const [, pluginName, channelName] = sourceToolCallId.split(':', 4)
-  return pluginName && channelName ? channelName : undefined
-}
-
 export interface BuildRunSystemPromptOptions {
   userId: string
   session: SessionRecord
   speakerAgentId: string
+  /** The run's policy: the speaker's seat, the room, where the reply goes. */
+  policy: RunPolicy
   providerId: string
   agentProfile: RunProfile
   runtimeTools: ReturnType<typeof buildRunToolRegistry>
@@ -171,13 +166,10 @@ export async function buildRunSystemPrompt(
   // Marks placed since this agent last spoke. Not a multi-participant-only fact: a person marks a
   // message in a one-to-one chat too, and there the mark is the whole of what they said. It rides
   // the tail rather than rewriting the rows that were marked — see `reaction-context`.
-  const priorities = new Map(
-    (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent.leadershipPriority ?? 0]),
-  )
   const conversation = conversationPromptContext(
     session,
     speakerRoute.agentId,
-    priorities,
+    options.policy,
     options.human,
   )
   // A session with no participant has nobody to tell — and `sessionAgent` refuses to guess one.
@@ -188,10 +180,9 @@ export async function buildRunSystemPrompt(
   // True only when the tool survived BOTH the profile and disabledTools — the
   // authoritative "can the model call this" signal for prompt-context gating.
   const hasRuntimeTool = (name: string) => runtimeTools.toolNames.includes(name)
-  // Channel-origin sessions are keyed `channel:<plugin>:<channel>:<conversationId>`
-  // (see resolveExternalSession). Surface the channel to the model so it knows
-  // its reply is relayed back automatically — agnostic across channel plugins.
-  const channelOrigin = channelNameFromSourceKey(session.sourceToolCallId)
+  // A channel session's reply is relayed back automatically (`policy/axes/delivery.ts`), so the
+  // model must not reach for a send tool to answer the person it is already talking to.
+  const channelOrigin = options.policy.delivery.channel
 
   // Light loop awareness: tell the model which loops are active in this session
   // (id + cadence + task) so a loop fire isn't mistaken for a one-off request and
@@ -203,9 +194,7 @@ export async function buildRunSystemPrompt(
     sessionId: session.id,
     modelId: speakerRoute.modelId,
     sessionTopic: session,
-    canChangeTopic:
-      session.sessionKind === 'chat' &&
-      conversationLeader(session, priorities)?.agentId === speakerAgentId,
+    canChangeTopic: options.policy.seat.ownsTopic,
     providerId,
     webhookUrl: WEBHOOK_URL,
     deliveryContext: channelOrigin ? { channel: channelOrigin } : undefined,
@@ -239,9 +228,9 @@ export async function buildRunSystemPrompt(
     projectStructure,
     projectInstructions: frozenContext.projectInstructions,
     conversation,
-    // Only where a tag can invite: a delegated team is all in `conversation`.
+    // Only where a tag can reach someone: the directory is who an @mention would bring in.
     agentDirectory: (() => {
-      if (session.sessionKind !== 'chat') return undefined
+      if (!options.policy.conversation.showsDirectory) return undefined
       const available = new Map(
         (options.agentDirectory ?? []).map((agent) => [agent.agentId, agent]),
       )

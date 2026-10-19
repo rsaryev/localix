@@ -54,6 +54,8 @@ export interface CompositionReport {
   /** Wrapper order, innermost-first, as applied — read from the assembly, not restated. */
   wrappers: readonly string[]
   mcp: { server: string; tools: number }[]
+  /** Which variant decided each axis of the run's policy (`chat/policy`), in resolution order. */
+  policy: readonly { axis: string; variant: string }[]
 }
 
 /** Classify one tool from the provenance the split recorded. */
@@ -75,6 +77,7 @@ export function describeComposition(input: {
     'wireToolNames' | 'deferredToolNames' | 'sourceByTool' | 'mcpInventory'
   >
   loadedPlugins: Pick<LoadedPlugins, 'loaded'>
+  policy?: readonly { axis: string; variant: string }[]
 }): CompositionReport {
   const { assembled, loadedPlugins } = input
 
@@ -111,5 +114,6 @@ export function describeComposition(input: {
       server,
       tools: Array.isArray(entry) ? entry.length : 0,
     })),
+    policy: input.policy ?? [],
   }
 }

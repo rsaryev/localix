@@ -1,6 +1,8 @@
 import { sessionTopicSchema, type SessionTopic } from '../../../agent-core/session-topic'
 import { toSessionSummary, type SessionRecord } from '../../repository'
-import { conversationLeader, rosterLeadership } from '../conversation-strategy'
+import { conversationLeader } from '../../policy/axes/seat'
+import { conversationPolicy } from '../../policy/session-policy'
+import { rosterLeadership } from '../conversation-strategy'
 import type { RunEnv } from './types'
 
 type TopicEnv = Pick<RunEnv, 'repo' | 'deps'>
@@ -11,7 +13,11 @@ export async function assertTopicAuthor(
   session: SessionRecord,
   agentId: string,
 ): Promise<void> {
-  if (session.sessionKind !== 'chat') throw new Error('Only chat sessions can change their topic.')
+  // Checked again at call time, against the registry as it is now: a run's seat was decided
+  // when it started, and a colleague who outranks it may have joined since.
+  if (conversationPolicy(session).kind === 'isolated') {
+    throw new Error('Only chat sessions can change their topic.')
+  }
   const priorities = await rosterLeadership(
     env.deps.listRegistryAgents,
     userId,
@@ -21,27 +27,6 @@ export async function assertTopicAuthor(
   if (leader?.agentId !== agentId) {
     throw new Error('Only the conversation leader or sole participant can change the topic.')
   }
-}
-
-/**
- * The speaker's role plus, for a member, the elected leader's handle — so a tool's refusal can
- * name who to ask instead of "the leader".
- */
-export async function speakerPlace(
-  env: TopicEnv,
-  userId: string,
-  session: Pick<SessionRecord, 'agents' | 'projectId'>,
-  agentId: string,
-): Promise<{ role: 'leader' | 'member' | 'solo'; leader?: string }> {
-  if (session.agents.length <= 1) return { role: 'solo' }
-  const priorities = await rosterLeadership(
-    env.deps.listRegistryAgents,
-    userId,
-    session.projectId,
-  )()
-  const leader = conversationLeader(session, priorities)
-  if (leader?.agentId === agentId) return { role: 'leader' }
-  return { role: 'member', ...(leader ? { leader: leader.handle } : {}) }
 }
 
 /** Save shared fields and cut history together. No colleague tool output or private lane is loaded. */

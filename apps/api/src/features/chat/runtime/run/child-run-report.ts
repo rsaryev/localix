@@ -39,6 +39,7 @@ import {
 import { recordDecidedDelivery } from '../delivery-receipts'
 import { endSubagentWork } from './subagent-work'
 import type { RunEnv } from './types'
+import { lineagePolicy } from '../../policy/session-policy'
 
 export interface EndedChildRun {
   userId: string
@@ -49,8 +50,7 @@ export interface EndedChildRun {
 }
 
 /** Is this session a child whose runs report to a delegator? */
-const reportsToParent = (session: SessionRecord) =>
-  session.sessionKind === 'subagent' && session.provenance.kind === 'task-delegation'
+const reportsToParent = (session: SessionRecord) => lineagePolicy(session).reportsToDelegator
 
 export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<void> {
   const { session, userId } = run

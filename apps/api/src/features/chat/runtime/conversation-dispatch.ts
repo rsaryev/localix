@@ -40,7 +40,7 @@ import type { RunCompletion } from './run-outcome'
  * the strategy reads the transcript's last row as "who answered the user last".
  */
 export function resolveTurnRecipients(
-  session: Pick<SessionRecord, 'agents'>,
+  session: Pick<SessionRecord, 'agents' | 'sessionKind'>,
   historyBeforeTrigger: readonly PersistedMessage[],
   event: ConversationEvent,
   priorities: LeadershipPriorities,
@@ -81,7 +81,7 @@ export function queuedTurnEvent(
  * to an unaddressed message", so this asks it rather than keeping a second rule.
  */
 export async function speakingParticipant(
-  session: Pick<SessionRecord, 'agents'>,
+  session: Pick<SessionRecord, 'agents' | 'sessionKind'>,
   history: readonly PersistedMessage[],
   priorities: LeadershipPriorities,
 ): Promise<SessionRecord['agents'][number] | undefined> {

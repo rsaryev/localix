@@ -3,11 +3,13 @@ import type { AgentItem, ToolCallItem } from '@localixai/agent/agents'
 import type { StoredMessagePayload } from '../../../../db'
 import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
 import { isPass, isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
+import { conversationPolicy } from '../../policy/session-policy'
 
-const CONVERSATION = sessionFixture({
+const room = sessionFixture({
   agents: [...routedParticipants({ handle: 'localix' }), ...routedParticipants({ handle: 'lead' })],
 })
-const PRIVATE = { agents: CONVERSATION.agents.slice(0, 1) }
+const CONVERSATION = conversationPolicy(room)
+const PRIVATE = conversationPolicy({ ...room, agents: room.agents.slice(0, 1) })
 
 const ack: ToolCallItem = {
   id: 'call_1',
