@@ -152,7 +152,7 @@ describe('buildDiagnostics', () => {
     const input = baseInput({
       values: {
         modelRouting: {
-          delegation: { providerConnectionId: 'gone', modelId: 'dead/model' },
+          inlineCompletion: { enabled: true, providerConnectionId: 'gone', modelId: 'dead/model' },
         },
       },
       resolvedModels: { session: RESOLVED },
@@ -160,10 +160,10 @@ describe('buildDiagnostics', () => {
     const { diagnostics, consumers } = buildDiagnostics(input)
     expect(
       diagnostics.find(
-        (d) => d.code === 'model_route_unresolved' && d.field === 'modelRouting.delegation',
+        (d) => d.code === 'model_route_unresolved' && d.field === 'modelRouting.inlineCompletion',
       )?.severity,
     ).toBe('warning')
-    const c = consumers.find((x) => x.id === 'modelRouting.delegation')!
+    const c = consumers.find((x) => x.id === 'modelRouting.inlineCompletion')!
     expect(c.source).toBe('session')
     expect(c.usable).toBe(true)
   })

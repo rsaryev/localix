@@ -103,7 +103,7 @@ describe('All agents row', () => {
     const ui = await mountRoot()
     function Harness({ shared }: { shared: boolean }) {
       const routing = useModelTaskRouting({
-        modelsFor: () => [strong],
+        models: [strong],
         connections: connections as never,
         orderedConnections: connections as never,
         taskKey: 'party',

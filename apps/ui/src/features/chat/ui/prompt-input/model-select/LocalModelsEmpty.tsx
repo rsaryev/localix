@@ -1,5 +1,4 @@
 import { Download } from 'lucide-react'
-import type { ModelKind } from '@localixai/agent/catalog'
 import { Button } from '@localixai/kit/button'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { inspector } from '@/shared/lib/inspectorBus'
@@ -13,24 +12,15 @@ export function openLocalModelsSettings(): void {
 }
 
 /**
- * The Local provider's list with nothing of the workload's kind downloaded: the picker lists
- * only what is on this computer, so the empty list says where models are got, and links there.
+ * The Local provider's list with nothing downloaded: the picker lists only what is on this
+ * computer, so the empty list says where models are got, and links there.
  */
 export function LocalModelsEmpty({
-  kind,
   onNavigate,
 }: {
-  kind: ModelKind
   /** Close the picker before Settings opens. */
   onNavigate?: () => void
 }) {
-  // Nothing to download: decision models are served by connected providers (OpenRouter).
-  if (kind === 'decision')
-    return (
-      <EmptyHint className="flex-1 text-xs">
-        Decision models run on a connected provider such as OpenRouter.
-      </EmptyHint>
-    )
   return (
     <EmptyHint className="flex-1 text-xs">
       No models on this computer yet.

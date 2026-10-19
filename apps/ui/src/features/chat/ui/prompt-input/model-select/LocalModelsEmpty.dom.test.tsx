@@ -24,9 +24,7 @@ describe('LocalModelsEmpty — an empty Local list links to where models are got
     document.body.append(host)
     const root = createRoot(host)
     try {
-      await act(async () =>
-        root.render(<LocalModelsEmpty kind="chat" onNavigate={() => dismissed++} />),
-      )
+      await act(async () => root.render(<LocalModelsEmpty onNavigate={() => dismissed++} />))
       expect(host.textContent).toContain('No models on this computer yet.')
       const button = [...host.querySelectorAll('button')].find((b) =>
         b.textContent?.includes('Get models'),
@@ -36,23 +34,6 @@ describe('LocalModelsEmpty — an empty Local list links to where models are got
       expect(tabs.at(-1)).toBe('models')
     } finally {
       unsubscribe()
-      await act(async () => root.unmount())
-      host.remove()
-    }
-  })
-
-  test('a decision workload has nothing to download: it points at a connected provider', async () => {
-    const { act } = await import('react')
-    const { createRoot } = await import('react-dom/client')
-    const { LocalModelsEmpty } = await import('./LocalModelsEmpty')
-    const host = document.createElement('div')
-    document.body.append(host)
-    const root = createRoot(host)
-    try {
-      await act(async () => root.render(<LocalModelsEmpty kind="decision" />))
-      expect(host.textContent).toContain('connected provider such as OpenRouter')
-      expect(host.querySelector('button')).toBeNull()
-    } finally {
       await act(async () => root.unmount())
       host.remove()
     }

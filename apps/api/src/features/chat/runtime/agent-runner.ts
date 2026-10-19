@@ -42,6 +42,9 @@ import { rosterLeadership } from './conversation-strategy'
 import { createDatabaseWakeQueueStore } from './wake-queue-store'
 import { resolveAuxiliaryModel as resolveAuxiliarySlotModel } from './model-resolution'
 import { createFloorAdvisor } from './floor-advisor'
+import { decisionFloorStrategy } from './floor-decision'
+import { similarityFloorStrategy } from './floor-similarity'
+import { EMBEDDINGGEMMA_2_MODEL } from '../../local-models/pinned'
 import { executeRun } from './run/execute-run'
 import type { RunEnv, RunParams } from './run/types'
 import { createUsageRepository } from '../../usage/repository'
@@ -103,11 +106,17 @@ export function createAgentRunner(deps: RunnerDeps) {
   // Wake queue (push-a-session): callbacks avoid a module cycle.
   const leadership = (userId: string, projectId: string | null) =>
     rosterLeadership(deps.listRegistryAgents, userId, projectId)
-  // Who speaks next where the grammar cannot tell: the `groupRouting` route's decision model.
+  // Who speaks next where the grammar cannot tell (`floor-advisor.ts`).
   const floorAdvisor = createFloorAdvisor({
-    runner: deps,
-    userProfileRepo,
-    usageRepo,
+    // Who can answer decides, in this order: Jev through OpenRouter, the embedding model, none.
+    strategies: [
+      decisionFloorStrategy({ runner: deps, usageRepo }),
+      similarityFloorStrategy({
+        embedder: () => deps.routingEmbedder?.() ?? null,
+        model: EMBEDDINGGEMMA_2_MODEL.id,
+      }),
+    ],
+    listRegistryAgents: deps.listRegistryAgents,
     log: (record) => deps.logger?.info?.({ event: 'conversation.floor_advice', ...record }),
   })
   // A tag in the person's message brings an available agent in before the message is routed.

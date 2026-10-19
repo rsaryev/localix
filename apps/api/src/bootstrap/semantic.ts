@@ -12,6 +12,7 @@ import {
   createMessagesSemanticSource,
   createSessionsSemanticSource,
 } from '../features/chat/semantic-sources'
+import type { SemanticService } from '../features/embeddings/service'
 import type { LocalModelsService } from '../features/local-models/service'
 import type { createLogger } from '../lib/logger'
 
@@ -29,4 +30,13 @@ export function buildSemanticService(deps: {
   service.registerSource(createMessagesSemanticSource(deps.db))
   service.registerSource(createSessionsSemanticSource(deps.db))
   return service
+}
+
+/** Group routing's embedding model: classification vectors from search's engine, the moment it
+ * can run; null until then (downloading, failed). */
+export function routingEmbedderOf(service: Pick<SemanticService, 'engine'>) {
+  return () => {
+    const engine = service.engine()
+    return engine ? (text: string) => engine.embedQuery(text, 'classification') : null
+  }
 }

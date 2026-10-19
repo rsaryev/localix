@@ -136,6 +136,7 @@ export async function bootstrap(
     resourceRefsRegistry,
   })
   const { chatService } = createChatServicePhase({
+    semanticService,
     externalAgents: externalAgents.port,
     db,
     work,

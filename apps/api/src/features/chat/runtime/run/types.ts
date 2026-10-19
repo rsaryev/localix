@@ -63,7 +63,7 @@ export interface RunEnv {
       | undefined,
     catalog: RunCatalog,
   ) => ReturnType<typeof resolveAuxiliaryModel>
-  /** The `groupRouting` decision model's advice on who speaks next (`floor-advisor.ts`). */
+  /** Group routing's advice on who speaks next (`floor-advisor.ts`). */
   floorAdvisor: (scope: FloorScope) => FloorAdvisor
   publishChildSummary: (parentSessionId: string, child: SessionRecord) => void
   markRuntimeSessionStatus: (

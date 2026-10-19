@@ -98,9 +98,9 @@ describe('agentSettingsSchema — only executable settings are advertised', () =
   test('accepts per-route reasoning effort and rejects unknown values', () => {
     const input = {
       modelRouting: {
-        delegation: {
-          providerConnectionId: 'delegate-conn',
-          modelId: 'delegate-model',
+        inlineCompletion: {
+          providerConnectionId: 'inline-conn',
+          modelId: 'inline-model',
           reasoningEffort: 'low',
         },
         titleGeneration: {

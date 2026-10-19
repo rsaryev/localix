@@ -56,7 +56,7 @@ describe('useModelTaskRouting direct picks', () => {
     const root = createRoot(host)
     function Harness() {
       const routing = useModelTaskRouting({
-        modelsFor: () => [reasoningModel],
+        models: [reasoningModel],
         connections: connections as never,
         orderedConnections: connections as never,
         taskKey: 'titleGeneration',
@@ -122,7 +122,7 @@ describe('useModelTaskRouting direct picks', () => {
     const root = createRoot(host)
     function Harness() {
       const routing = useModelTaskRouting({
-        modelsFor: () => [running, remembered, fresh],
+        models: [running, remembered, fresh],
         connections: connections as never,
         orderedConnections: connections as never,
         taskKey: 'session',
@@ -191,7 +191,7 @@ describe('useModelTaskRouting direct picks', () => {
       }
       function Harness() {
         const routing = useModelTaskRouting({
-          modelsFor: () => [reasoningModel],
+          models: [reasoningModel],
           connections: connections as never,
           orderedConnections: connections as never,
           taskKey: 'agent:builtin:reviewer',
@@ -238,7 +238,7 @@ describe('useModelTaskRouting direct picks', () => {
 
     function Harness() {
       const routing = useModelTaskRouting({
-        modelsFor: () => [model],
+        models: [model],
         connections: connections as never,
         orderedConnections: connections as never,
         taskKey,
@@ -281,7 +281,7 @@ describe('useModelTaskRouting direct picks', () => {
 
     function Harness() {
       const routing = useModelTaskRouting({
-        modelsFor: () => [model],
+        models: [model],
         connections: connections as never,
         orderedConnections: connections as never,
         taskKey: 'titleGeneration',
@@ -318,53 +318,6 @@ describe('useModelTaskRouting direct picks', () => {
       await act(async () => root.unmount())
       host.remove()
       updateSettings.mockClear()
-    }
-  })
-
-  test('a chat model and a decision model sharing one id each resolve within their own kind', async () => {
-    const { act } = await import('react')
-    const { createRoot } = await import('react-dom/client')
-    const { useModelTaskRouting } = await import('./useModelTaskRouting')
-    // OpenAI lists `gpt-6-luna` as a chat model AND as a decision model.
-    const chat = { ...model, id: 'openai/gpt-6-luna', name: 'GPT-6 Luna' }
-    const decision = { ...chat, kind: 'decision' as const, name: 'GPT-6 Luna Decisions' }
-    const modelsFor = (target: string) => (target === 'groupRouting' ? [decision] : [chat])
-    settingsState.settings.agentSettings = {
-      modelRouting: {
-        titleGeneration: { providerConnectionId: 'conn-openai', modelId: chat.id, enabled: true },
-      },
-    }
-    const host = document.createElement('div')
-    document.body.append(host)
-    const root = createRoot(host)
-    function Harness() {
-      const routing = useModelTaskRouting({
-        modelsFor,
-        connections: connections as never,
-        orderedConnections: connections as never,
-        taskKey: 'groupRouting',
-        sessionModelId: '',
-        sessionConnectionId: null,
-        onPickSessionModel: () => {},
-      })
-      return (
-        <button type="button" onClick={() => void routing.pickModel('conn-openai', decision.id)}>
-          {routing.modelLabelFor('titleGeneration')}
-        </button>
-      )
-    }
-    try {
-      await act(async () => root.render(<Harness />))
-      expect(host.textContent).toBe('GPT-6 Luna')
-      await act(async () => host.querySelector('button')!.click())
-      expect(updateSettings).toHaveBeenCalledTimes(1)
-      const written = updateSettings.mock.calls[0]![0] as {
-        agentSettings: { modelRouting: Record<string, { modelId?: string }> }
-      }
-      expect(written.agentSettings.modelRouting.groupRouting?.modelId).toBe(decision.id)
-    } finally {
-      await act(async () => root.unmount())
-      host.remove()
     }
   })
 })

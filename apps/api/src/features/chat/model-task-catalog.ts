@@ -19,13 +19,6 @@ interface ModelTaskDescriptor {
   toggleable?: boolean
   /** Behaviour before the user stores an explicit on/off choice. */
   defaultEnabled?: boolean
-  /**
-   * The kind of model the workload runs on. Absent: a chat model from the catalog. `decision`:
-   * a decision model (typed answers, no text), routed like a chat workload.
-   */
-  modelKind?: 'decision'
-  /** The catalog model the workload runs on while the route names none. */
-  defaultModelId?: string
 }
 
 /**
@@ -47,22 +40,6 @@ export const AUX_MODEL_TASKS = [
     fallbackLabel: 'Use session model',
     toggleable: true,
     defaultEnabled: false,
-  },
-  {
-    key: 'delegation',
-    label: 'Delegated agents',
-    hint: 'Runs delegated sub-agents',
-    fallbackLabel: 'Use session model',
-    toggleable: true,
-  },
-  {
-    key: 'groupRouting',
-    label: 'Group routing',
-    hint: 'Picks who answers next in a group chat when nobody is tagged',
-    fallbackLabel: 'TypeSafe Jev (latest)',
-    toggleable: true,
-    modelKind: 'decision',
-    defaultModelId: 'openrouter/~typesafe/jev-latest',
   },
 ] as const satisfies readonly ({ key: string } & ModelTaskDescriptor)[]
 

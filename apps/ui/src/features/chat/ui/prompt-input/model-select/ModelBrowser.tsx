@@ -16,7 +16,6 @@ import type { ParticipantRow } from './ModelTaskColumn'
 import { initialPickerTarget, targetAgentId, workloadKey, type PickerTarget } from './pickerTarget'
 import { MODEL_ROUTING_TASKS } from '@localixai/api/model-task-catalog'
 import { useModelTaskRouting } from './useModelTaskRouting'
-import { useWorkloadDefaults, useWorkloadModels } from './useWorkloadModels'
 import { participantSlot } from './participantSlot'
 import { selectedTaskModelId } from './taskReasoning'
 import { ResetRouteRow, WorkloadOffOverlay } from './ModelBrowserParts'
@@ -79,7 +78,7 @@ export function ModelBrowser({
   )
 
   const { providers: allProviders, oauthProviderIds, oauthProviders } = useModelsCatalog()
-  const { taskKind, models, modelsFor } = useWorkloadModels(chatModels, taskKey)
+  const models = chatModels
 
   const { providerCounts, oauthIdSet, unconnectedProviders, filteredUnconnectedProviders } =
     useModelSelectProviders({
@@ -119,24 +118,21 @@ export function ModelBrowser({
   } = // Each participant answers for itself. The party arrives already resolved by the server
     // (conversation, then project, then the agent's card), so the column shows what each member
     // will actually run on rather than repeating whoever the picker has selected.
-    useWorkloadDefaults(
-      useModelTaskRouting({
-        modelsFor,
-        connections,
-        orderedConnections,
-        taskKey,
-        sessionModelId,
-        sessionConnectionId,
-        participantRoute: participants.length > 0 ? participantRoute : undefined,
-        reasoningEffort,
-        onReasoningEffortChange,
-        onPickSessionModel,
-        partyRoute: party.partyRoute,
-        onPickPartyModel: party.onPickPartyModel,
-        onPartyReasoningChange: party.onPartyReasoningChange,
-      }),
+    useModelTaskRouting({
+      models,
+      connections,
       orderedConnections,
-    )
+      taskKey,
+      sessionModelId,
+      sessionConnectionId,
+      participantRoute: participants.length > 0 ? participantRoute : undefined,
+      reasoningEffort,
+      onReasoningEffortChange,
+      onPickSessionModel,
+      partyRoute: party.partyRoute,
+      onPickPartyModel: party.onPickPartyModel,
+      onPartyReasoningChange: party.onPartyReasoningChange,
+    })
 
   // Initialize the sidebar selection ONCE per mount (render-time adjust — the
   // selection is derived from the first data that arrives). We must not re-sync
@@ -407,7 +403,6 @@ export function ModelBrowser({
                 setRenameLabel={setRenameLabel}
                 onAddApiKey={handleAddApiKey}
                 onAddOAuth={handleAddOAuth}
-                modelKind={taskKind}
                 onDismiss={onDismiss}
               />
 

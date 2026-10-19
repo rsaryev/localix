@@ -2,26 +2,32 @@
 
 In a group conversation, `@handle` decides exactly who answers. It cannot see a message that plainly
 belongs to one participant without naming them, an agent that hands work on by name ("Lawyer, check
-the wording"), or an `@handle` that only credits a colleague. Group routing asks a decision model
-who should speak next in those cases, and follows it only when the model is sure.
+the wording"), or an `@handle` that only credits a colleague. Group routing asks a model who should
+speak next in those cases, and follows it only when the model is sure.
 
-**Availability:** On by default. It runs `~typesafe/jev-latest` through OpenRouter, so it starts
-working once OpenRouter is connected and does nothing without a connection that serves its model.
+**Availability:** Always on, with nothing to set. What answers depends on what is available:
+
+| What is available                           | Who decides                                                                                   |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| An OpenRouter connection                    | The decision model `~typesafe/jev-latest` (Jev)                                               |
+| No OpenRouter, the embedding model ready    | EmbeddingGemma 2 by similarity, for your untagged messages only; replies by the address rules |
+| Neither, or the one chosen fails or is late | The address rules (`@handle`), as before                                                      |
+
+Every miss is silent: the conversation goes on by the address rules, and nothing is shown.
 
 ## What you can do
 
-| Capability                   | Mechanism                                                           | Boundary                                                          |
-| ---------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Turn it on                   | Connect OpenRouter; the workload is already on                      | Group conversations only; a solo conversation has nobody to route |
-| Turn it off                  | The **Group routing** switch in the model browser's workload column | Routing then follows `@handle` alone, as before                   |
-| Choose the model             | The workload's model list, which shows decision models only         | Any connected provider's decision model                           |
-| Go back to the default model | The list's reset row                                                | The default is `~typesafe/jev-latest`                             |
-| See what it costs            | **Group routing** in the cost workbench's kind breakdown            | About $0.00004 per decision with the default model                |
+| Capability          | Mechanism                                                                              | Boundary                                                          |
+| ------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Use Jev             | Connect OpenRouter                                                                     | Group conversations only; a solo conversation has nobody to route |
+| Stop sending to Jev | Disconnect OpenRouter; routing falls back to the embedding model and the address rules | There is no separate switch                                       |
+| See what it costs   | **Group routing** in the cost workbench's kind breakdown                               | About $0.00004 per decision with Jev; the embedding model is free |
 
 ## How it works
 
-A decision model writes no text. It reads structured state and answers typed questions with a
-probability for each option. Localix asks who should take the floor next; for a message of yours
+The strategies form a chain: each says whether it can answer right now, and the first that can
+decides. A decision model writes no text. It reads structured state and answers typed questions with
+a probability for each option. Localix asks who should take the floor next; for a message of yours
 that names nobody, it asks two more questions in the same request (see
 [Your untagged messages](#your-untagged-messages)).
 
@@ -77,27 +83,29 @@ in its own field. On the 445 untagged messages of the set, this took the share r
 to 81%: 76% of the messages meant for a specialist reached one, and 85% of those meant for the
 leader stayed with it (79% and 68% with the single question).
 
+### Without OpenRouter
+
+EmbeddingGemma 2, the model Localix keeps for search, compares the last three messages with each
+participant's description. The nearest one takes your untagged message when it leads the next by a
+clear margin; otherwise the leader does. Replies stay with the address rules: similarity sees what a
+reply is about, not whether it reports or hands work on. Nothing leaves this computer. It is a
+modest gain — measured, it routes an untagged message right a few points more often than the address
+rules alone, against about twenty for Jev.
+
 ## Decision log
 
 Every decision writes one `conversation.floor_advice` record to the API log, read with
-`bun run logs --source api`: the session, whether it followed your message or a reply, the model,
-the time taken, the probabilities of each question, the participant followed (or none) and why —
-`confident`, `alone`, `coordinate`, `unsure`, or the failure (`deadline_exceeded`,
-`provider_error`). It holds no message text.
-
-## Configuration
-
-The workload is stored like every other one, in `agentSettings.modelRouting.groupRouting`: `enabled`
-(absent means on) and an optional `providerConnectionId` with `modelId`. With no model picked, any
-live connection of OpenRouter serves the default. Decision models come from the same provider
-catalogs as chat models; see [Providers](providers.md#how-the-model-list-stays-current).
+`bun run logs --source api`: the session, whether it followed your message or a reply, the strategy
+and model, the time taken, the scores or probabilities, the participant followed (or none) and why —
+`confident`, `alone`, `coordinate`, `similar`, `unsure`, or `none`, `deadline`, `error`. It holds no
+message text.
 
 ## Limits
 
 - Each decision adds about 0.3 s before the next turn starts, and at most three seconds.
 - A decision cut off at three seconds may still be billed by the provider, but its cost is not
   recorded, because no usage came back.
-- Only decision models served by a connected provider are offered; none run on this computer yet.
+- Jev is the only decision model used; it runs through OpenRouter, not on this computer.
 - The model sees eight messages, so a handoff that depends on older context goes by the address
   rules.
 - Every hop still counts toward the handoff limit described in
@@ -112,7 +120,9 @@ catalogs as chat models; see [Providers](providers.md#how-the-model-list-stays-c
 ## Source of truth
 
 - [Advice: window, request, threshold](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-advice.ts)
-- [The workload's settings and call](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-advisor.ts)
+- [The chain of strategies](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-advisor.ts)
+- [Jev through OpenRouter](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-decision.ts)
+- [The embedding model by similarity](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-similarity.ts)
 - [Unaddressed messages](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/conversation-strategy.ts)
 - [Reply handoffs](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/conversation-routing.ts)
 - [Decision models in the catalog](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/catalog.ts)

@@ -175,6 +175,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       persistPermissionRule: deps.persistPermissionRule,
       listInvocableRegistryAgents: deps.listInvocableRegistryAgents,
       listRegistryAgents: deps.listRegistryAgents,
+      ...(deps.routingEmbedder ? { routingEmbedder: deps.routingEmbedder } : {}),
       resolveHuman: deps.resolveHuman,
       agentManagement: deps.agentManagement,
       now: deps.now,

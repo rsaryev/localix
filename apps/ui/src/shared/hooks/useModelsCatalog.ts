@@ -1,11 +1,6 @@
 import useSWR from 'swr'
-import { useCallback, useMemo } from 'react'
-import {
-  modelKindOf,
-  type CatalogModel,
-  type CatalogProvider,
-  type ModelKind,
-} from '@localixai/agent/catalog'
+import { useMemo } from 'react'
+import { modelKindOf, type CatalogModel, type CatalogProvider } from '@localixai/agent/catalog'
 
 import { backendClient } from '@/shared/api/client'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
@@ -33,26 +28,13 @@ export function useModelsCatalog() {
   )
 
   const all = data?.models
-  // One catalog lists every kind; chat surfaces (most of them) read `models`, others ask by kind.
-  const byKind = useMemo(() => {
-    const out = new Map<ModelKind, CatalogModel[]>()
-    for (const model of all ?? []) {
-      const kind = modelKindOf(model)
-      out.set(kind, [...(out.get(kind) ?? []), model])
-    }
-    return out
-  }, [all])
-
-  const modelsOfKind = useCallback(
-    (kind: ModelKind): CatalogModel[] => byKind.get(kind) ?? NO_MODELS,
-    [byKind],
-  )
+  // One catalog lists every kind (decision models for group routing); every client surface lists
+  // chat models.
+  const chat = useMemo(() => (all ?? []).filter((model) => modelKindOf(model) === 'chat'), [all])
 
   return {
     /** Chat models: what every chat surface lists. */
-    models: byKind.get('chat') ?? NO_MODELS,
-    /** Models of one kind (`decision` for group routing). */
-    modelsOfKind,
+    models: all ? chat : NO_MODELS,
     providers: data?.providers ?? ([] as CatalogProvider[]),
     oauthProviderIds: data?.oauthProviderIds ?? ([] as string[]),
     oauthProviders: data?.oauthProviders ?? [],

@@ -34,6 +34,8 @@ export interface SemanticServiceDeps {
 }
 
 const HOUSEKEEPING_MS = 60_000
+/** A failed engine is tried again this long after it parked: nobody is asked to press a button. */
+const ENGINE_RETRY_MS = 5 * 60_000
 
 export function createSemanticService(deps: SemanticServiceDeps) {
   const { store, localModels } = deps
@@ -41,6 +43,7 @@ export function createSemanticService(deps: SemanticServiceDeps) {
   /** Set by `boot()`, post-listen: nothing is embedded before the API serves. */
   let booted = false
   let engine: EmbeddingEngine | null = null
+  let engineRetry: ReturnType<typeof setTimeout> | null = null
   const sources = new Map<string, SemanticSource>()
   const listeners = new Set<() => void>()
   const notify = () => listeners.forEach((l) => l())
@@ -77,13 +80,26 @@ export function createSemanticService(deps: SemanticServiceDeps) {
     return engine
   }
 
+  /** A parked engine starts again on its own; search answers from words until it does. */
+  function onEngineState() {
+    if (engine?.state().state === 'error' && !engineRetry) {
+      engineRetry = setTimeout(() => {
+        engineRetry = null
+        engine?.reset()
+        indexer.kick()
+      }, ENGINE_RETRY_MS)
+      engineRetry.unref?.()
+    }
+    notify()
+  }
+
   function activate() {
     if (!booted || engine || !installed()) return
     const spec = model
     const backend = backendFor(spec)
     engine = createEmbeddingEngine(
       { model: spec, start: async () => backend },
-      { onStateChange: notify },
+      { onStateChange: onEngineState },
     )
     indexer.start(engine)
     notify()
@@ -201,6 +217,7 @@ export function createSemanticService(deps: SemanticServiceDeps) {
 
     async shutdown() {
       clearInterval(housekeeping)
+      if (engineRetry) clearTimeout(engineRetry)
       await deactivate()
     },
 

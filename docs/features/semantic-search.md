@@ -13,14 +13,14 @@ this computer; no text leaves it.
 
 ## What you can do
 
-| Capability                   | Mechanism                                                                                 | Boundary                                                                     |
-| ---------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Get it ready                 | Nothing to do: a missing model downloads in the background by itself                      | Needs a platform with a llama.cpp build (macOS, Linux, Windows on x64/arm64) |
-| Search by meaning            | Type a description in the search palette or the search tab                                | Chats and messages are matched by meaning; other domains match words         |
-| Let the agent find past work | The agent's `global_search` tool runs the same search                                     | It skips hits from the conversation it is in                                 |
-| Watch the index build        | The status bar shows the download and the index; its menu pauses, resumes and rebuilds it | The first build indexes all history; later changes index within seconds      |
-| Rebuild the index            | **Rebuild index** re-embeds everything from scratch                                       | Search answers from words alone while it runs                                |
-| Retry after a failure        | **Try again** in the status bar menu restarts the model and a failed download             | Search answers from words alone until it works                               |
+| Capability                   | Mechanism                                                                                         | Boundary                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Get it ready                 | Nothing to do: a missing model downloads in the background by itself                              | Needs a platform with a llama.cpp build (macOS, Linux, Windows on x64/arm64) |
+| Search by meaning            | Type a description in the search palette or the search tab                                        | Chats and messages are matched by meaning; other domains match words         |
+| Let the agent find past work | The agent's `global_search` tool runs the same search                                             | It skips hits from the conversation it is in                                 |
+| Watch the index build        | The status bar shows the download and the index; its menu pauses, resumes and rebuilds it         | The first build indexes all history; later changes index within seconds      |
+| Rebuild the index            | **Rebuild index** re-embeds everything from scratch                                               | Search answers from words alone while it runs                                |
+| Nothing to fix               | A failure (the download, the model) is retried on its own; the status bar shows nothing meanwhile | Search answers from words alone until it works                               |
 
 ## How it works
 

@@ -8,12 +8,7 @@ import {
 
 describe('shared model task catalog', () => {
   test('keeps every runtime auxiliary role visible to the model picker', () => {
-    expect(AUX_MODEL_TASKS.map((task) => task.key)).toEqual([
-      'titleGeneration',
-      'inlineCompletion',
-      'delegation',
-      'groupRouting',
-    ])
+    expect(AUX_MODEL_TASKS.map((task) => task.key)).toEqual(['titleGeneration', 'inlineCompletion'])
     expect(MODEL_TASKS[0]).toMatchObject({ key: 'session', required: true })
   })
 
@@ -24,21 +19,15 @@ describe('shared model task catalog', () => {
       'session',
       'titleGeneration',
       'inlineCompletion',
-      'delegation',
-      'groupRouting',
     ])
   })
 
-  test('a workload names the kind of model it runs on; chat when it does not say', () => {
-    const kindOf = (key: string) => AUX_MODEL_TASKS.find((t) => t.key === key)
-    // On by default: it runs only where a connection serves its model, so connecting OpenRouter
-    // turns it on and an explicit off keeps it off.
-    expect(kindOf('groupRouting')).toMatchObject({
-      modelKind: 'decision',
-      defaultModelId: 'openrouter/~typesafe/jev-latest',
-    })
-    expect(isModelRoutingTaskEnabled(undefined, 'groupRouting')).toBe(true)
-    expect(kindOf('delegation')).not.toHaveProperty('modelKind')
+  test('delegated runs and group routing have no route: agents and availability decide', () => {
+    // A delegated run runs on its agent's own model (Settings → Agents); group routing on Jev
+    // where OpenRouter is connected, else the embedding model (`floor-advisor.ts`).
+    const keys: readonly string[] = AUX_MODEL_TASKS.map((task) => task.key)
+    expect(keys).not.toContain('delegation')
+    expect(keys).not.toContain('groupRouting')
   })
 
   test('reads availability from the same record as the saved model assignment', () => {

@@ -68,7 +68,7 @@ describe('indexActivity', () => {
     expect(indexActivity({ ...live({}), supported: false })).toBeNull()
   })
 
-  test('a build, a pause and a failure each have their own state', () => {
+  test('a build and a pause each have their own state', () => {
     const building = {
       phase: 'reconciling' as const,
       collections: [
@@ -89,7 +89,13 @@ describe('indexActivity', () => {
       percent: 25,
     })
     expect(indexActivity(live({ ...building, phase: 'paused' }))?.activity).toBe('paused')
-    expect(indexActivity(live({ phase: 'retrying' }))?.activity).toBe('failed')
+  })
+
+  test('a failure shows nothing: the server retries on its own and search answers from words', () => {
+    expect(indexActivity(live({ phase: 'retrying' }))).toBeNull()
+    expect(indexActivity({ ...live({}), engine: { state: 'error', error: 'crashed' } })).toBeNull()
+    const download = { state: 'failed' as const, received: 0, total: 0, error: 'offline' }
+    expect(indexActivity({ ...live({}), install: download })).toBeNull()
   })
 
   test('a few changes do not flicker the bar; a backlog does', () => {

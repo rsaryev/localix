@@ -18,6 +18,8 @@ import type { createSecretsStore } from '../features/secrets/store'
 import { createVaultTool } from '../features/secrets/agent-tool'
 import { createChatService } from '../features/chat/service'
 import type { MonitorService } from '../features/monitors/service'
+import type { SemanticService } from '../features/embeddings/service'
+import { routingEmbedderOf } from './semantic'
 import type { ExitNotices } from '../features/chat/runtime/exit-notices'
 import type { ConfigProposalService } from '../features/config-proposals/service'
 import type { PlanService } from '../features/plans/service'
@@ -84,6 +86,8 @@ export interface ChatServicePhaseInput extends Pick<
   contextManager: ReturnType<typeof createContextManager>
   agentsService: ReturnType<typeof createAgentsService>
   serviceRefs: BootstrapServiceRefs
+  /** Semantic search's engine, built from infra before chat: group routing's embedding model. */
+  semanticService: Pick<SemanticService, 'engine'>
 }
 
 export interface ChatServicePhase {
@@ -91,6 +95,7 @@ export interface ChatServicePhase {
 }
 
 export function createChatServicePhase({
+  semanticService,
   externalAgents,
   db,
   work,
@@ -288,6 +293,7 @@ export function createChatServicePhase({
       return serviceRefs.lspDocumentService?.openBufferText
     },
     // Who may be seated in a session, and whether this session is a conversation.
+    routingEmbedder: routingEmbedderOf(semanticService),
     resolveSessionAgent: createSessionSeatResolver(agentsService),
     loadAgentModelDefaults: agentModelDefaultsPort(agentsService),
     ...createAgentDirectoryPorts(agentsService),

@@ -53,10 +53,14 @@ export interface LocalModelsDeps {
   requiredModels?: readonly LocalModelSpec[]
 }
 
+/** How often failed background downloads (the models Localix keeps) are tried again. */
+const BACKGROUND_RETRY_MS = 15 * 60_000
+
 export function createLocalModelsService(deps: LocalModelsDeps) {
   const paths = installPaths(deps.root)
   const build = deps.runtimeBuild === undefined ? runtimeBuildFor() : deps.runtimeBuild
   const required = requiredModels(deps.requiredModels ?? REQUIRED_MODELS)
+  let retryTimer: ReturnType<typeof setInterval> | null = null
   let installed: LocalModelSpec[] = []
   let partial: PartialModel[] = []
   let runtimeInstalled = false
@@ -161,6 +165,9 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       // their download, and a missing one (a failed fetch, files gone) comes back on its own.
       // Declared once what is installed and resuming is known, so nothing is fetched twice.
       background.declare('required', () => required.models)
+      // A failed background download is tried again on its own, quietly: no one is asked to.
+      retryTimer = setInterval(() => background.reconcile({ retry: true }), BACKGROUND_RETRY_MS)
+      retryTimer.unref?.()
     },
 
     catalog,
@@ -282,6 +289,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
     },
 
     async shutdown() {
+      if (retryTimer) clearInterval(retryTimer)
       // A download cut by quitting is paused, not lost: its files resume next time.
       downloads.pauseAll()
       await router.stop()

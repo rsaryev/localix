@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { PanelHeader } from '@localixai/kit/panel-header'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
-import type { ModelKind, ProviderEntry } from '@localixai/agent/catalog'
+import type { ProviderEntry } from '@localixai/agent/catalog'
 import type { ProviderConnection } from '@/shared/api/contracts'
 import type { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import type { useConnections } from '../useConnections'
@@ -58,8 +58,6 @@ export interface ModelBrowserMainPanelProps {
     provider: ProviderEntry,
     label: string,
   ) => ReturnType<ReturnType<typeof useConnections>['addOAuthConnection']>
-  /** The kind of model the open workload runs on (an empty Local list names it). */
-  modelKind: ModelKind
   onDismiss?: () => void
 }
 
@@ -145,7 +143,7 @@ export function ModelBrowserMainPanel(props: ModelBrowserMainPanelProps) {
           empty={
             selectedConn.providerId === LOCAL_PROVIDER_ID &&
             paging.connectionModels.length === 0 ? (
-              <LocalModelsEmpty kind={props.modelKind} onNavigate={props.onDismiss} />
+              <LocalModelsEmpty onNavigate={props.onDismiss} />
             ) : undefined
           }
         />

@@ -4,8 +4,8 @@
  * The addressing grammar (`conversation-addressing.ts`) is exact about what it can see: a person's
  * `@handle`, a reply's `@handle`. It is blind to the rest — "Lawyer, have a look" with no `@`, an
  * `@design` that only credits a colleague, a person's untagged message that plainly belongs to one
- * specialist. A decision model (`groupRouting` route, OpenRouter's System One protocol) reads the
- * transcript window and answers one typed question: who speaks next (two more for a person’s untagged message).
+ * specialist. A decision model (Jev through OpenRouter, System One protocol) reads the transcript
+ * window and answers one typed question: who speaks next — two more for a person's untagged one.
  *
  * The grammar stays the floor. The model's pick replaces it only when the model is confident
  * (`FLOOR_ADVICE_CONFIDENCE`); measured on 1814 labelled group turns, that hybrid answered 86%
@@ -72,7 +72,7 @@ export type FloorAdvisor = (question: FloorQuestion) => Promise<string | null>
 /** What the answer said and why it was or was not followed — the decision's log record. */
 export interface FloorReading {
   pick: string | null
-  reason: 'confident' | 'alone' | 'coordinate' | 'unsure'
+  reason: 'confident' | 'alone' | 'coordinate' | 'similar' | 'unsure'
   next: Record<string, number>
   /** "Can one participant act on it alone?" — a person's untagged message only. */
   alone?: number
@@ -100,7 +100,8 @@ export function floorTranscript(question: FloorQuestion): { author: string; text
   ]
 }
 
-const describe = (member: FloorMember) =>
+/** An option's description: the agent's own, else its handle read as a specialist's name. */
+export const describeMember = (member: FloorMember) =>
   member.description?.trim() || `The ${member.handle.replace(/[_-]/g, ' ')} specialist.`
 
 /** One `choice` question over every option; after a person's untagged message, two more. */
@@ -109,7 +110,7 @@ export function floorDecisionRequest(question: FloorQuestion): Omit<DecisionRequ
   const criteria = Object.fromEntries(
     question.members
       .filter((member) => member !== author)
-      .map((member) => [member.handle, describe(member)]),
+      .map((member) => [member.handle, describeMember(member)]),
   )
   if (author)
     criteria[FLOOR_PERSON] =

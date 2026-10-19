@@ -54,15 +54,10 @@ const ROUTE_CONSUMERS: {
         {
           slot: task.key,
           label: task.label,
-          fallsBackToSession: task.key !== 'titleGeneration' && task.key !== 'groupRouting',
+          fallsBackToSession: task.key !== 'titleGeneration',
           ...(task.key === 'titleGeneration'
             ? { deterministicFallback: 'first-message truncation' }
-            : task.key === 'groupRouting'
-              ? {
-                  deterministicFallback:
-                    'its default decision model where a connection serves it, else the @-addressing grammar',
-                }
-              : {}),
+            : {}),
         },
       ],
 )

@@ -156,6 +156,11 @@ export interface RunnerDeps {
   /** The search palette's service — the agent's `global_search` (forward-held, built after chat). */
   globalSearch?: GlobalSearchPort
   /**
+   * The embedding model's vector for a text, while it can run — null while it is downloading or
+   * failed. Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).
+   */
+  routingEmbedder?: () => ((text: string) => Promise<Float32Array>) | null
+  /**
    * The text of `file` as an editor this user holds it open (possibly unsaved), or undefined.
    * Lets the file tools tell the model when its write lands under the person's unsaved edits.
    */

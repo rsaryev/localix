@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, Check, Download, Pause } from 'lucide-react'
+import { Check, Download, Pause } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import {
   DropdownMenu,
@@ -21,13 +21,13 @@ const ICONS: Partial<Record<IndexActivity, typeof Pause>> = {
   idle: Check,
   downloading: Download,
   paused: Pause,
-  failed: AlertTriangle,
 }
 
 /**
  * The status bar's semantic-search segment, VS Code style: always at the trailing edge, saying
  * indexed, or the work in hand. A click (or a right click) opens its menu — pause, resume,
- * rebuild, try again. Search is always on with one model: there is nothing to switch or choose.
+ * rebuild. Search is always on with one model: there is nothing to switch or choose, and nothing
+ * to fix — a failure hides the segment while the server retries and search answers from words.
  */
 export function SemanticIndexStatusItem({ className }: { className?: string }) {
   const { status, refresh } = useSemanticStatus()
@@ -40,18 +40,10 @@ export function SemanticIndexStatusItem({ className }: { className?: string }) {
   }
   const Icon = ICONS[shown.activity]
   const text = shown.percent === null ? shown.label : `${shown.label} ${shown.percent}%`
-  const detail =
-    shown.activity === 'downloading'
-      ? 'Downloading the model'
-      : shown.activity === 'failed'
-        ? (status.install.error ??
-          status.engine.error ??
-          status.index.lastError ??
-          'Indexing failed')
-        : indexLine(status).text
+  const detail = shown.activity === 'downloading' ? 'Downloading the model' : indexLine(status).text
   const segment = (
     <WorkbenchStatusButton
-      className={cn('gap-1.5', shown.activity === 'failed' && 'text-status-warning', className)}
+      className={cn('gap-1.5', className)}
       title={detail}
       onContextMenu={(event) => {
         event.preventDefault()
@@ -97,11 +89,6 @@ export function SemanticIndexStatusItem({ className }: { className?: string }) {
         {shown.activity === 'paused' && (
           <DropdownMenuItem onSelect={() => act(() => semanticApi.resume())}>
             Resume indexing
-          </DropdownMenuItem>
-        )}
-        {shown.activity === 'failed' && (
-          <DropdownMenuItem onSelect={() => act(() => semanticApi.retry())}>
-            Try again
           </DropdownMenuItem>
         )}
         {shown.activity !== 'downloading' && (

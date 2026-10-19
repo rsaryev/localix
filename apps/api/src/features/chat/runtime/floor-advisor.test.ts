@@ -1,25 +1,38 @@
 import { describe, expect, test } from 'bun:test'
 import type { DecisionRequest } from '@localixai/agent/runtime'
-import { createFloorAdvisor, type FloorDecisionRecord } from './floor-advisor'
+import { createFloorAdvisor, type FloorDecisionRecord, type FloorStrategy } from './floor-advisor'
 import type { FloorQuestion } from './floor-advice'
+import { decisionFloorStrategy, FLOOR_DECISION_MODEL } from './floor-decision'
+import { similarityFloorStrategy } from './floor-similarity'
 
-const JEV = 'openrouter/~typesafe/jev-latest'
+const question: FloorQuestion = {
+  members: [
+    { agentId: 'builtin:localix', handle: 'localix' },
+    { agentId: 'builtin:lawyer', handle: 'lawyer' },
+  ],
+  history: [],
+  text: 'Can we reuse photos from other shops for the product cards?',
+  leaderAgentId: 'builtin:localix',
+}
+const scope = { userId: 'u1', sessionId: 's1', projectId: null }
 
-function harness(options: {
-  settings?: unknown
+/** The decision strategy over a fake OpenRouter connection (or none) and a scripted model. */
+function decision(options: {
   connections?: { id: string; providerId: string }[]
   decide?: (request: DecisionRequest) => Promise<unknown>
-  deadlineMs?: number
 }) {
-  const built: unknown[] = []
   const asked: DecisionRequest[] = []
   const ledger: unknown[] = []
-  const records: FloorDecisionRecord[] = []
   const connections = options.connections ?? [{ id: 'or-connection', providerId: 'openrouter' }]
   const catalog = {
     providers: [{ id: 'openrouter' }],
     models: [
-      { id: JEV, providerId: 'openrouter', kind: 'decision', outputModalities: ['decisions'] },
+      {
+        id: FLOOR_DECISION_MODEL,
+        providerId: 'openrouter',
+        kind: 'decision',
+        outputModalities: ['decisions'],
+      },
     ],
   }
   const decide =
@@ -30,7 +43,7 @@ function harness(options: {
       },
       usage: { inputTokens: 400, outputTokens: 30, totalCost: 0.00002 },
     }))
-  const advisor = createFloorAdvisor({
+  const strategy = decisionFloorStrategy({
     runner: {
       catalogService: { getFullCatalog: async () => catalog, getCatalog: async () => catalog },
       providerConnectionsService: {
@@ -44,143 +57,150 @@ function harness(options: {
         credentialStoreFor: async () => ({}),
       },
       languageModelFactory: {
-        create: (ref: unknown) => {
-          built.push(ref)
-          return {
-            ref,
-            decide: (request: DecisionRequest) => {
-              asked.push(request)
-              return decide(request)
-            },
-          }
-        },
+        create: (ref: unknown) => ({
+          ref,
+          decide: (request: DecisionRequest) => {
+            asked.push(request)
+            return decide(request)
+          },
+        }),
       },
-      listRegistryAgents: async () => [
-        { agentId: 'builtin:lawyer', name: 'lawyer', description: 'Contracts and consent.' },
-      ],
-    } as never,
-    userProfileRepo: {
-      getRaw: async () =>
-        options.settings === undefined
-          ? null
-          : { agent_settings: JSON.stringify(options.settings) },
     } as never,
     usageRepo: { accumulateEvent: async (event: unknown) => void ledger.push(event) } as never,
-    ...(options.deadlineMs ? { deadlineMs: options.deadlineMs } : {}),
+  })
+  return { strategy, asked, ledger }
+}
+
+/** A strategy that always answers `pick`, or is unavailable. */
+const fixed = (pick: string | null, available = true): FloorStrategy => ({
+  prepare: async () =>
+    available
+      ? {
+          strategy: 'similarity',
+          model: 'fixed',
+          advise: async () => ({ pick, reason: pick ? 'similar' : 'unsure', next: {} }),
+        }
+      : null,
+})
+
+function advisor(strategies: FloorStrategy[], deadlineMs?: number) {
+  const records: FloorDecisionRecord[] = []
+  const advise = createFloorAdvisor({
+    strategies,
+    listRegistryAgents: async () => [
+      {
+        agentId: 'builtin:lawyer',
+        name: 'lawyer',
+        description: 'Contracts and consent.',
+        enabled: true,
+        canJoinConversation: true,
+      },
+    ],
+    ...(deadlineMs ? { deadlineMs } : {}),
     log: (record) => records.push(record),
-  })({ userId: 'u1', sessionId: 's1', projectId: null })
-  return { advisor, built, asked, ledger, records }
+  })(scope)
+  return { advise, records }
 }
 
-const question: FloorQuestion = {
-  members: [
-    { agentId: 'builtin:localix', handle: 'localix' },
-    { agentId: 'builtin:lawyer', handle: 'lawyer' },
-  ],
-  history: [],
-  text: 'Can we reuse photos from other shops for the product cards?',
-}
-
-describe('the group-routing advisor', () => {
-  test('with no choice made, runs the default decision model through the provider’s connection', async () => {
-    const h = harness({})
-    expect(await h.advisor(question)).toBe('lawyer')
-    expect(h.built).toEqual([{ providerId: 'openrouter', modelId: '~typesafe/jev-latest' }])
+describe('the chain of group-routing strategies', () => {
+  test('with OpenRouter connected, Jev answers, and its spend lands in the ledger', async () => {
+    const jev = decision({})
+    const { advise, records } = advisor([jev.strategy, fixed('localix')])
+    expect(await advise(question)).toBe('lawyer')
     // Options are described from the agent directory, like the prompt describes them.
-    expect((h.asked[0]!.questions.next!.criteria as Record<string, string>).lawyer).toBe(
+    expect((jev.asked[0]!.questions.next!.criteria as Record<string, string>).lawyer).toBe(
       'Contracts and consent.',
     )
-  })
-
-  test('the spend lands in the ledger as group routing', async () => {
-    const h = harness({})
-    await h.advisor(question)
     await Bun.sleep(0)
-    expect(h.ledger).toEqual([
-      expect.objectContaining({ finishReason: 'routing', modelId: JEV, sessionId: 's1' }),
+    expect(jev.ledger).toEqual([
+      expect.objectContaining({ finishReason: 'routing', modelId: FLOOR_DECISION_MODEL }),
+    ])
+    expect(records).toEqual([
+      expect.objectContaining({ strategy: 'decision', pick: 'lawyer', reason: 'confident' }),
     ])
   })
 
-  test('switched off in the model picker, it asks nothing', async () => {
-    const h = harness({ settings: { modelRouting: { groupRouting: { enabled: false } } } })
-    expect(await h.advisor(question)).toBeNull()
-    expect(h.built).toEqual([])
+  test('without a connection serving Jev, the next strategy answers', async () => {
+    const jev = decision({ connections: [] })
+    const { advise, records } = advisor([jev.strategy, fixed('lawyer')])
+    expect(await advise(question)).toBe('lawyer')
+    expect(jev.asked).toEqual([])
+    expect(records[0]).toMatchObject({ strategy: 'similarity', model: 'fixed' })
   })
 
-  test('the model chosen for the route is the one asked', async () => {
-    const h = harness({
-      settings: {
-        modelRouting: {
-          groupRouting: { providerConnectionId: 'or-connection', modelId: 'openrouter/liquid/d1' },
-        },
-      },
-    })
-    await h.advisor(question)
-    expect(h.built).toEqual([{ providerId: 'openrouter', modelId: 'liquid/d1' }])
+  test('with nothing available, the grammar decides and the log says why', async () => {
+    const { advise, records } = advisor([decision({ connections: [] }).strategy, fixed('x', false)])
+    expect(await advise(question)).toBeNull()
+    expect(records).toEqual([expect.objectContaining({ strategy: null, reason: 'none' })])
   })
 
-  test('without a connection serving the model it is off, and the grammar decides', async () => {
-    const h = harness({ connections: [] })
-    expect(await h.advisor(question)).toBeNull()
-    expect(h.asked).toEqual([])
-  })
-
-  test('a failed or unconfident decision is no advice', async () => {
-    expect(
-      await harness({
-        decide: async () => {
-          throw new Error('503')
-        },
-      }).advisor(question),
-    ).toBeNull()
-    expect(
-      await harness({
-        decide: async () => ({
-          answers: { next: { type: 'choice', choice: 'lawyer', probabilities: { lawyer: 0.55 } } },
-        }),
-      }).advisor(question),
-    ).toBeNull()
-  })
-
-  test('a slow decision is cut at the deadline: the next turn does not wait on it', async () => {
-    const h = harness({
-      deadlineMs: 50,
-      decide: () => new Promise((resolve) => setTimeout(resolve, 5_000)),
-    })
-    const started = Date.now()
-    expect(await h.advisor(question)).toBeNull()
-    expect(Date.now() - started).toBeLessThan(1_000)
-  })
-
-  test('each decision is logged: what was followed, why, and the probabilities — no text', async () => {
-    const h = harness({})
-    await h.advisor(question)
-    expect(h.records).toEqual([
-      expect.objectContaining({
-        sessionId: 's1',
-        on: 'message',
-        model: JEV,
-        pick: 'lawyer',
-        reason: 'confident',
-        next: { lawyer: 0.93, localix: 0.07 },
-      }),
-    ])
-    expect(JSON.stringify(h.records)).not.toContain('photos')
-  })
-
-  test('a failed decision is logged with its cause', async () => {
-    const h = harness({
+  test('a strategy that fails leaves the turn to the grammar, not to the next strategy', async () => {
+    const jev = decision({
       decide: async () => {
         throw new Error('503')
       },
     })
-    await h.advisor(question)
-    expect(h.records).toEqual([expect.objectContaining({ pick: null, reason: 'provider_error' })])
+    const { advise, records } = advisor([jev.strategy, fixed('lawyer')])
+    expect(await advise(question)).toBeNull()
+    expect(records).toEqual([expect.objectContaining({ strategy: 'decision', reason: 'error' })])
   })
 
-  test('the person’s untagged message carries the two coordination questions', async () => {
-    const h = harness({})
-    await h.advisor({ ...question, leaderAgentId: 'builtin:localix' })
-    expect(Object.keys(h.asked[0]!.questions)).toEqual(['next', 'alone', 'which'])
+  test('an unconfident answer is no advice', async () => {
+    const jev = decision({
+      decide: async () => ({
+        answers: { next: { type: 'choice', choice: 'lawyer', probabilities: { lawyer: 0.55 } } },
+      }),
+    })
+    expect(await advisor([jev.strategy]).advise(question)).toBeNull()
+  })
+
+  test('a slow answer is cut at the deadline: the next turn does not wait on it', async () => {
+    const jev = decision({ decide: () => new Promise((resolve) => setTimeout(resolve, 5_000)) })
+    const { advise, records } = advisor([jev.strategy], 50)
+    const started = Date.now()
+    expect(await advise(question)).toBeNull()
+    expect(Date.now() - started).toBeLessThan(1_000)
+    expect(records).toEqual([expect.objectContaining({ reason: 'deadline' })])
+  })
+
+  test('the log names who answered and why, without message text', async () => {
+    const { advise, records } = advisor([decision({}).strategy])
+    await advise(question)
+    expect(JSON.stringify(records)).not.toContain('photos')
+  })
+})
+
+describe('the similarity strategy', () => {
+  // A toy embedder: each text's vector says which of a few topics it mentions.
+  const TOPICS = ['photos', 'contract', 'hello', 'tiles']
+  const embed = async (text: string) =>
+    Float32Array.from(TOPICS.map((t) => (text.toLowerCase().includes(t) ? 1 : 0.01)))
+  const members = [
+    { agentId: 'builtin:localix', handle: 'localix', description: 'Says hello and coordinates.' },
+    { agentId: 'builtin:lawyer', handle: 'lawyer', description: 'Contracts, photos and licences.' },
+  ]
+  const strategy = similarityFloorStrategy({ embedder: () => embed, model: 'gemma' })
+
+  test('unavailable while the embedding model cannot run', async () => {
+    const none = similarityFloorStrategy({ embedder: () => null, model: 'gemma' })
+    expect(await none.prepare(scope)).toBeNull()
+  })
+
+  test('the person’s untagged message goes to the participant it is clearly nearest to', async () => {
+    const runner = (await strategy.prepare(scope))!
+    const reading = await runner.advise(
+      { ...question, members, text: 'May we reuse these photos?' },
+      new AbortController().signal,
+    )
+    expect(reading).toMatchObject({ pick: 'lawyer', reason: 'similar' })
+  })
+
+  test('a reply is never advised on: similarity cannot tell a report from a handoff', async () => {
+    const runner = (await strategy.prepare(scope))!
+    const reading = await runner.advise(
+      { ...question, members, authorAgentId: 'builtin:lawyer', text: 'The photos are fine.' },
+      new AbortController().signal,
+    )
+    expect(reading.pick).toBeNull()
   })
 })

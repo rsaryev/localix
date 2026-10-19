@@ -1,158 +1,126 @@
 /**
- * The `groupRouting` route made callable: the person's settings, the route's decision model, one
- * bounded call. Every miss — the route off, no connection serving its model, a slow or failed
- * call, an unconfident answer — is `null`, and the grammar decides as it always did.
+ * WHO SPEAKS NEXT, ASKED OF THE FIRST STRATEGY THAT CAN ANSWER — a chain of responsibility.
  *
- * On by default (`model-task-catalog.ts`): with no model chosen the route runs the catalog's
- * default (`openrouter/~typesafe/jev-latest`) through ANY live connection of its provider, so
- * connecting OpenRouter turns it on and switching the route off in the model picker keeps it off.
+ * The strategies, in order (`agent-runner.ts`): a decision model through OpenRouter (Jev) where a
+ * connection serves it (`floor-decision.ts`); else the embedding model by similarity, for the
+ * person's untagged messages (`floor-similarity.ts`); else none, and the address grammar decides.
+ * Nothing is configured: availability chooses. A strategy that answers and then fails, is late or
+ * is unsure also leaves the turn to the grammar — silently for the person; each decision writes
+ * one record to the API log, without message text.
  */
-import { executeModelTask } from '../../model-task-runtime'
-import { loadUserSettingsContext } from '../../user/runtime-settings'
-import type { UserProfileRepository } from '../../user/repository'
-import type { UsageRepository } from '../../usage/repository'
-import {
-  AUX_MODEL_TASKS,
-  isModelRoutingTaskEnabled,
-  type AuxModelTask,
-} from '../model-task-catalog'
 import type { RunnerDeps } from './agent-runner-types'
-import {
-  floorDecisionRequest,
-  readFloor,
-  type FloorAdvisor,
-  type FloorReading,
-  type FloorScope,
-} from './floor-advice'
-import { resolveLanguageModel } from './model-resolution'
-import { recordAuxCallUsage } from './usage-normalize'
+import type { FloorAdvisor, FloorQuestion, FloorReading, FloorScope } from './floor-advice'
 
-const ROUTE = AUX_MODEL_TASKS.find(
-  (task): task is Extract<AuxModelTask, { key: 'groupRouting' }> => task.key === 'groupRouting',
-)!
-/** Routing waits on this call before the next turn starts; past it the grammar answers. */
+/** Routing waits on the advice before the next turn starts; past this the grammar answers. */
 const FLOOR_DEADLINE_MS = 3_000
-const FLOOR_TASK = { id: 'floor-advice', version: 1 } as const
+
+/** One prepared way to answer, for one scope. */
+export interface FloorRunner {
+  /** Which strategy and model answer: what the decision's log record names. */
+  readonly strategy: 'decision' | 'similarity'
+  readonly model: string
+  advise(question: FloorQuestion, signal: AbortSignal): Promise<FloorReading>
+}
+
+/** A link of the chain: a runner when it can answer for `scope` right now, else null. */
+export interface FloorStrategy {
+  prepare(scope: FloorScope): Promise<FloorRunner | null>
+}
+
+type Missed = { pick: null; reason: 'none' | 'deadline' | 'error' }
 
 export type FloorDecisionRecord = {
   sessionId: string
   /** `message` for the person's words, `reply` for a participant's. */
   on: 'message' | 'reply'
   author?: string
-  model: string
+  /** The strategy that answered; null when none could. */
+  strategy: FloorRunner['strategy'] | null
+  model?: string
   ms: number
-} & (FloorReading | { pick: null; reason: 'deadline_exceeded' | 'provider_error' | 'cancelled' })
+} & (FloorReading | Missed)
 
 export function createFloorAdvisor(deps: {
-  runner: Pick<
-    RunnerDeps,
-    'providerConnectionsService' | 'catalogService' | 'languageModelFactory' | 'listRegistryAgents'
-  >
-  userProfileRepo: UserProfileRepository
-  usageRepo: UsageRepository
+  strategies: readonly FloorStrategy[]
+  listRegistryAgents?: RunnerDeps['listRegistryAgents']
   /** How long the next turn may wait on the advice; tests shorten it. */
   deadlineMs?: number
-  /**
-   * One record per decision asked — what was asked, the probabilities, and what was followed —
-   * so a routing that surprised someone can be read back. No message text is in it.
-   */
   log?: (record: FloorDecisionRecord) => void
 }) {
   const deadlineMs = deps.deadlineMs ?? FLOOR_DEADLINE_MS
-  const advise = async (
-    scope: FloorScope,
-    asked: Parameters<FloorAdvisor>[0],
-    deadlineAtMs: number,
-  ): Promise<string | null> => {
-    const startedAt = Date.now()
-    const { userId, sessionId } = scope
-    if (!asked.text.trim() || asked.members.length < 2) return null
-    const { agentSettings } = await loadUserSettingsContext(deps.userProfileRepo, userId)
-    if (!isModelRoutingTaskEnabled(agentSettings, 'groupRouting')) return null
-    const slot = agentSettings?.modelRouting?.groupRouting
-    const modelId = slot?.modelId ?? ROUTE.defaultModelId
-    // Decision models live in the full catalog only, and are looked up among their own kind: a
-    // decision model may share its id with a chat model of the same provider (OpenAI's).
-    const full = await deps.runner.catalogService.getFullCatalog()
-    const resolved = await resolveLanguageModel({
-      deps: deps.runner,
-      userId,
-      modelId,
-      preferredConnectionId: slot?.providerConnectionId,
-      catalog: { ...full, models: full.models.filter((model) => model.kind === 'decision') },
-    })
-    const decide = resolved?.model.decide?.bind(resolved.model)
-    if (!resolved || !decide) return null
-    // Each option is described the way the prompt's directory describes the agent.
+
+  /** The first strategy that can answer; null leaves the turn to the grammar. */
+  async function firstRunner(scope: FloorScope): Promise<FloorRunner | null> {
+    for (const strategy of deps.strategies) {
+      const runner = await strategy.prepare(scope).catch(() => null)
+      if (runner) return runner
+    }
+    return null
+  }
+
+  /** Each option described the way the prompt's directory describes the agent. */
+  async function described(scope: FloorScope, question: FloorQuestion): Promise<FloorQuestion> {
     const directory = new Map(
-      (await deps.runner.listRegistryAgents?.(userId, scope.projectId))?.map((agent) => [
+      (await deps.listRegistryAgents?.(scope.userId, scope.projectId))?.map((agent) => [
         agent.agentId,
         agent.description,
       ]) ?? [],
     )
-    const request = floorDecisionRequest({
-      ...asked,
-      members: asked.members.map((member) => ({
+    return {
+      ...question,
+      members: question.members.map((member) => ({
         ...member,
         description: member.description ?? directory.get(member.agentId),
       })),
-    })
-    const outcome = await executeModelTask({
-      request: {
-        task: FLOOR_TASK,
-        system: '',
-        input: request,
-        // Bounded where it is assembled: FLOOR_WINDOW messages of FLOOR_MESSAGE_CHARS each.
-        budget: { inputTokens: 4_096, outputTokens: 64 },
-        capabilities: { structuredOutput: true, streaming: false },
-        deadlineAtMs,
-      },
-      execute: async (task, signal) => {
-        const result = await decide({ ...task.input, signal })
-        return { output: result, usage: result.usage }
-      },
-    })
-    const record = {
-      sessionId,
-      on: asked.authorAgentId ? ('reply' as const) : ('message' as const),
-      ...(asked.authorAgentId
-        ? { author: asked.members.find((m) => m.agentId === asked.authorAgentId)?.handle }
-        : {}),
-      model: modelId,
-      ms: Date.now() - startedAt,
     }
-    if (outcome.status !== 'success') {
-      deps.log?.({ ...record, pick: null, reason: outcome.status })
-      return null
-    }
-    recordAuxCallUsage({
-      usageRepo: deps.usageRepo,
-      userId,
-      sessionId,
-      modelId,
-      providerConnectionId: resolved.providerConnectionId,
-      providerId: resolved.entry.id,
-      kind: 'routing',
-      usage: outcome.response.output.usage,
-    })
-    const reading = readFloor(outcome.response.output, request)
-    deps.log?.({ ...record, ...reading })
-    return reading.pick
   }
-  // Advice only: a failure anywhere is the grammar's turn, never a failed routing. The deadline
-  // covers the whole advice — settings, connection refresh, directory and call — because the
-  // next turn waits on it.
+
   return (scope: FloorScope): FloorAdvisor =>
-    (question) => {
-      const deadlineAtMs = Date.now() + deadlineMs
+    async (question) => {
+      if (!question.text.trim() || question.members.length < 2) return null
+      const startedAt = Date.now()
+      let runner: FloorRunner | null = null
+      const record = (outcome: FloorReading | Missed) =>
+        deps.log?.({
+          sessionId: scope.sessionId,
+          on: question.authorAgentId ? 'reply' : 'message',
+          ...(question.authorAgentId
+            ? { author: question.members.find((m) => m.agentId === question.authorAgentId)?.handle }
+            : {}),
+          strategy: runner?.strategy ?? null,
+          ...(runner ? { model: runner.model } : {}),
+          ms: Date.now() - startedAt,
+          ...outcome,
+        })
+
+      const controller = new AbortController()
       let timer: ReturnType<typeof setTimeout> | undefined
-      const late = new Promise<null>((resolve) => {
-        timer = setTimeout(() => resolve(null), deadlineMs)
+      const late = new Promise<'late'>((resolve) => {
+        timer = setTimeout(() => resolve('late'), deadlineMs)
       })
-      const advice = advise(scope, question, deadlineAtMs).catch((error: unknown) => {
+      const advice = (async (): Promise<FloorReading | null> => {
+        runner = await firstRunner(scope)
+        return runner ? runner.advise(await described(scope, question), controller.signal) : null
+      })()
+      advice.catch(() => {})
+
+      // Advice only: a failure anywhere is the grammar's turn, never a failed routing. The deadline
+      // covers the whole advice — connection, directory and call — because the next turn waits.
+      try {
+        const reading = await Promise.race([advice, late])
+        if (reading === 'late') {
+          controller.abort()
+          record({ pick: null, reason: 'deadline' })
+          return null
+        }
+        record(reading ?? { pick: null, reason: 'none' })
+        return reading?.pick ?? null
+      } catch (error) {
         console.warn('[conversation] floor advice failed', error)
+        record({ pick: null, reason: 'error' })
         return null
-      })
-      return Promise.race([advice, late]).finally(() => clearTimeout(timer))
+      } finally {
+        clearTimeout(timer)
+      }
     }
 }

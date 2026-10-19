@@ -176,6 +176,11 @@ export interface ChatServiceDeps {
   /** Global search, the one the search palette uses — the agent's `global_search` tool. */
   globalSearch?: GlobalSearchPort
   /**
+   * The embedding model's vector for a text, while it can run — null while it is downloading or
+   * failed. Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).
+   */
+  routingEmbedder?: () => ((text: string) => Promise<Float32Array>) | null
+  /**
    * The editor's open-buffer text for a file (possibly unsaved), from the LSP document service.
    * Same forward-holder shape as `monitors`: the service is composed after chat.
    */

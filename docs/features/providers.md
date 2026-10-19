@@ -1,7 +1,7 @@
 # Connect model providers
 
 Use the model picker to connect a provider and choose the model for the current session. The same
-connection path supplies chat, auxiliary model tasks, and delegated agents.
+connection path supplies chat and auxiliary model tasks.
 
 **Availability:** Providers and models come from the active runtime catalog. API-key connections
 need a catalog entry, and sign-in appears only when that runtime reports an OAuth flow.
@@ -21,7 +21,7 @@ need a catalog entry, and sign-in appears only when that runtime reports an OAut
 | Narrow the model list     | Search models, or filter by tools, reasoning, vision, priced caching, or free                  | A facet appears only when some model in the list matches it          |
 | Find a provider           | Search the provider column; it filters connections and providers to add                        | It never narrows the model list                                      |
 | Choose reasoning effort   | Pick a level in the model details panel's Settings, remembered per agent and model             | A model that publishes none offers only "off"                        |
-| Route auxiliary work      | Select model slots for session titles, inline completion, and delegated agents                 | Each unset route uses its documented fallback                        |
+| Route auxiliary work      | Select model slots for session titles and inline completion                                    | Each unset route uses its documented fallback                        |
 | Get new models            | The model list refreshes in the background; **Settings → System → Model list** checks now      | Only providers whose models come from the generated catalog          |
 | Run models locally        | Connect **Local** (no key); picking a model downloads it — see [Local models](local-models.md) | The model runs on this computer's memory and processor               |
 
@@ -93,12 +93,10 @@ charge. On Claude models with per-turn effort, that default is **high**.
 
 The model browser offers these optional workload settings:
 
-| Workload          | Current runtime behavior                                                                                                                                                                                                   |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort uses **medium**, never the session effort.                                                          |
-| Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary.                                        |
-| Delegated agents  | The setting is persisted and displayed, but current delegated-session creation does not apply it. Children snapshot their assigned participants' effective parent routes. Tool availability follows capability rules.      |
-| Group routing     | On by default. Lists decision models only. With no model picked it runs `~typesafe/jev-latest` through any OpenRouter connection, so it does nothing until OpenRouter is connected. See [Group routing](group-routing.md). |
+| Workload          | Current runtime behavior                                                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session titles    | Requires an enabled route with an assigned model; otherwise keeps the simple title and objective. Missing route effort uses **medium**, never the session effort.                   |
+| Inline completion | Disabled by default. When enabled, tries the assigned model, then the session model if resolution fails. Always requests effort `off`, clamped to the model's minimum if necessary. |
 
 Each workload stores its own effort; picking a model for it starts at the level last chosen for that
 workload and model, otherwise the default.
@@ -175,20 +173,19 @@ retained in `~/.localix/oauth-device-id` across restarts and projects. `OpenAI C
 remains a separate provider using the older ChatGPT backend transport; existing connections keep
 their provider identity.
 
-| Control or value     | Contract                                                                                |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| Provider source      | Runtime catalog projected by the engine's `listCatalog()`                               |
-| Catalog refresh      | `LOCALIX_MODEL_CATALOG_REFRESH=0` turns off the automatic checks; manual checks remain  |
-| API-key connection   | Requires at least one non-empty key                                                     |
-| OAuth connection     | Uses the runtime-reported browser, loopback-server, or device-code interaction          |
-| Connection label     | User-editable; does not change provider identity                                        |
-| Key display          | Masked to the final four characters                                                     |
-| Key selection        | Enabled keys ordered by ascending numeric priority                                      |
-| Model identity       | Stored as `<providerId>/<modelId>`                                                      |
-| Required route       | Chat sessions                                                                           |
-| Context routes       | Session titles, inline completion                                                       |
-| Worker route         | Delegated-agent setting is saved; current child creation uses parent participant routes |
-| Reasoning preference | Stored for the workload plus provider/model pair when supported                         |
+| Control or value     | Contract                                                                               |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| Provider source      | Runtime catalog projected by the engine's `listCatalog()`                              |
+| Catalog refresh      | `LOCALIX_MODEL_CATALOG_REFRESH=0` turns off the automatic checks; manual checks remain |
+| API-key connection   | Requires at least one non-empty key                                                    |
+| OAuth connection     | Uses the runtime-reported browser, loopback-server, or device-code interaction         |
+| Connection label     | User-editable; does not change provider identity                                       |
+| Key display          | Masked to the final four characters                                                    |
+| Key selection        | Enabled keys ordered by ascending numeric priority                                     |
+| Model identity       | Stored as `<providerId>/<modelId>`                                                     |
+| Required route       | Chat sessions                                                                          |
+| Context routes       | Session titles, inline completion                                                      |
+| Reasoning preference | Stored for the workload plus provider/model pair when supported                        |
 
 There is no separate setup flow: the model picker under a chat composer creates API-key or OAuth
 connections and selects the conversation's model.
@@ -255,6 +252,6 @@ connections and selects the conversation's model.
 - [Key-selection policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/provider-keys.ts)
 - [Model browser](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/model-select/ModelBrowser.tsx)
 - [Workload route catalog](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/model-task-catalog.ts)
-- [Group routing workload](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-advisor.ts)
+- [Group routing strategies](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-advisor.ts)
 - [Model route persistence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/model-select/useModelTaskRouting.ts)
 - [Per-model reasoning control](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/model-select/ModelReasoningControl.tsx)

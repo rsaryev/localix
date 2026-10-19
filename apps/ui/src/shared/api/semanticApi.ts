@@ -16,9 +16,6 @@ export const semanticApi = {
   async rebuild(): Promise<SemanticStatus> {
     return unwrap(await client.rpc.semantic.rebuild.$post())
   },
-  async retry(): Promise<SemanticStatus> {
-    return unwrap(await client.rpc.semantic.retry.$post())
-  },
   /** Search opened: start the engine so the first query does not wait for it. */
   async prewarm(): Promise<void> {
     await client.rpc.semantic.prewarm.$post()

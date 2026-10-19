@@ -16,7 +16,7 @@
  * The person is never addressed by a mention (a question for them goes through `ask`), so an
  * `@human` in a reply is plain text here. Every colleague hop counts against `MAX_HANDOFF_CHAIN`.
  *
- * In a group, the `groupRouting` decision model corrects the plan where it is confident
+ * In a group, group routing (`floor-advisor.ts`) corrects the plan where it is confident
  * (`floor-advice.ts`): an `@` that only credits a colleague assigns nobody, a handoff by name
  * without one reaches that colleague. A report back to whoever assigned the turn always stands.
  */
