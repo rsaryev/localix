@@ -7,6 +7,7 @@ import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
 import { createPluginHostServices } from './plugin-host-services'
 import type { SemanticService } from '../features/embeddings/service'
+import type { DecisionService } from '../features/decisions/service'
 import { createProjectsRepository } from '../features/projects/repository'
 import type { createSecretsStore } from '../features/secrets/store'
 import type { createSecretExposureShield } from '../features/secrets/exposure-shield'
@@ -50,6 +51,7 @@ export interface PluginHostsPhaseInput
   secretExposureShield: ReturnType<typeof createSecretExposureShield>
   mediaStore: ReturnType<typeof createMediaStore>
   semanticService: SemanticService
+  decisionService: DecisionService
 }
 
 export interface PluginHostsPhase {
@@ -78,6 +80,7 @@ export function createPluginHostsPhase({
   textInputSurfaceRegistry,
   notifications,
   semanticService,
+  decisionService,
   changes,
 }: PluginHostsPhaseInput): PluginHostsPhase {
   const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
@@ -103,6 +106,7 @@ export function createPluginHostsPhase({
     hostRefs,
     serviceRefs,
     semanticService,
+    decisionService,
     changes: changes.plugins,
     secretsStore,
     secretExposureShield,

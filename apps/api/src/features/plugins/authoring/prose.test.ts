@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 
 import type { PluginKit } from './kit'
 import type { PluginKitManifest } from './kit-layout'
-import { agentInstruction, agentsMd, LIVE_DATA_CONTRACT } from './prose'
+import { agentInstruction, agentsMd, HOST_JUDGMENT_CONTRACT, LIVE_DATA_CONTRACT } from './prose'
 import { loadTemplateScaffold } from './template-layout'
 
 const repoRoot = resolve(import.meta.dir, '../../../../../..')
@@ -62,6 +62,18 @@ describe('the authoring guidance teaches push before polling', () => {
     expect(instruction).toContain(LIVE_DATA_CONTRACT)
   })
 
+  // The host's two models are what core search and group routing use; a copy that must pick by
+  // itself is pointed at them, with a fallback, instead of wiring a model or a key of its own.
+  test.each([
+    ['the instruction', instruction],
+    ['AGENTS.md', guide],
+  ])('%s teaches the host models for the plugin’s own small picks', (_, text) => {
+    expect(text).toContain(HOST_JUDGMENT_CONTRACT)
+    for (const phrase of ['ctx.host.semantic.rank', 'ctx.host.decisions.decide', 'fallback']) {
+      expect(text, phrase).toContain(phrase)
+    }
+  })
+
   test('every module and export the guidance names exists', () => {
     const sdk = JSON.parse(
       readFileSync(join(repoRoot, 'packages', 'plugin-sdk', 'package.json'), 'utf8'),
@@ -74,6 +86,10 @@ describe('the authoring guidance teaches push before polling', () => {
     expect(source('ui/realtime-feed.ts')).toMatch(/export function useRealtimeFeed\b/)
     expect(source('ui/runtime-hooks.ts')).toMatch(/export function usePluginWorkspaceChanges\b/)
     expect(source('backend/context.ts')).toMatch(/\bwatchPath\?: PluginPathWatch\b/)
+    expect(source('backend/host-services.ts')).toMatch(/\bsemantic\?: SemanticIndexHost\b/)
+    expect(source('backend/host-services.ts')).toMatch(/\bdecisions\?: DecisionHost\b/)
+    expect(source('backend/semantic.ts')).toMatch(/\brank\(/)
+    expect(source('backend/decision.ts')).toMatch(/export function confidentChoice\b/)
     for (const file of ['ui/useStoreSnapshot.ts', 'backend/store-feed.ts']) {
       expect(existsSync(join(templateDir, file)), file).toBe(true)
     }

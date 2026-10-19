@@ -168,8 +168,9 @@ push a change to an open view, use [a live stream](plugin-ui.md#a-live-stream-of
 
 ### Search by meaning and follow your own changes
 
-A backend can index its own items by meaning with `ctx.host.semantic` and record and read its own
-change notices with `ctx.host.changes`. See [Semantic index and change feed](plugin-semantics.md).
+A backend can index its own items by meaning and compare texts with `ctx.host.semantic`, ask a
+decision model typed questions with `ctx.host.decisions`, and record and read its own change notices
+with `ctx.host.changes`. See [Semantic index and change feed](plugin-semantics.md).
 
 ### Bundled executables on PATH
 

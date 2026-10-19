@@ -17,6 +17,7 @@ import { createAppServicesPhase } from './bootstrap/app-services'
 import { createAppPhase } from './bootstrap/create-app'
 import { createOpsTimersPhase } from './bootstrap/ops-timers'
 import { buildSemanticService } from './bootstrap/semantic'
+import { buildDecisionService } from './bootstrap/decisions'
 import { migrateLegacyPluginInstalls } from './features/plugins/legacy-install-migration'
 import { userHome } from './lib/env'
 import { loadLoginShellEnv, loginShellEnvSource } from './lib/login-shell-env'
@@ -69,6 +70,8 @@ export async function bootstrap(
   } = infra
   // Semantic search, built from infra alone; every later phase that consumes it gets this one.
   const semanticService = buildSemanticService(infra)
+  // Decisions, built from infra alone too: group routing and every plugin host ask through it.
+  const decisionService = buildDecisionService(infra)
   // Before any discovery: convert pre-native plugin installs once (idempotent, logged).
   await migrateLegacyPluginInstalls({ db, homeDir: userHome(), logger })
   const {
@@ -95,6 +98,7 @@ export async function bootstrap(
       env,
       logger,
       semanticService,
+      decisionService,
       changes: infra.changes,
       notifications,
       serviceRefs,
@@ -137,6 +141,7 @@ export async function bootstrap(
   })
   const { chatService } = createChatServicePhase({
     semanticService,
+    decisionService,
     externalAgents: externalAgents.port,
     db,
     work,

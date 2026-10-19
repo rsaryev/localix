@@ -261,7 +261,7 @@ export type AuxCallKind = Exclude<(typeof USAGE_AUXILIARY_KINDS)[number], 'title
  * usage / no billed tokens.
  */
 export function recordAuxCallUsage(args: {
-  usageRepo: UsageRepository
+  usageRepo: Pick<UsageRepository, 'accumulateEvent'>
   userId: string
   sessionId: string
   modelId: string

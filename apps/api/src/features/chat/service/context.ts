@@ -1,3 +1,5 @@
+import type { SemanticVectors } from '@localixai/plugin-sdk/backend'
+import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { Kysely } from 'kysely'
 import type { AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
@@ -176,10 +178,12 @@ export interface ChatServiceDeps {
   /** Global search, the one the search palette uses — the agent's `global_search` tool. */
   globalSearch?: GlobalSearchPort
   /**
-   * The embedding model's vector for a text, while it can run — null while it is downloading or
-   * failed. Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).
+   * The embedding model on demand (`embeddings/semantic-vectors.ts`), null while it cannot run.
+   * Group routing's fallback when no decision model is reachable (`floor-advisor.ts`).
    */
-  routingEmbedder?: () => ((text: string) => Promise<Float32Array>) | null
+  vectors?: SemanticVectors
+  /** The decision model (`features/decisions`): group routing's first strategy. */
+  decisions?: DecisionService
   /**
    * The editor's open-buffer text for a file (possibly unsaved), from the LSP document service.
    * Same forward-holder shape as `monitors`: the service is composed after chat.

@@ -1,52 +1,35 @@
 /**
- * Group routing's first strategy: a decision model through OpenRouter — Jev, the one measured best
- * at "who speaks next". Available wherever a live connection serves it, so connecting OpenRouter is
- * what turns it on; nothing else configures it. The three questions and their reading are pure
- * (`floor-advice.ts`); this runs them and records the spend as `routing`.
+ * Group routing's first strategy: the decision model (`features/decisions` — Jev, the one measured
+ * best at "who speaks next"). Available wherever a live connection serves it, so connecting
+ * OpenRouter is what turns it on; nothing else configures it. The three questions and their
+ * reading are pure (`floor-advice.ts`); the decision service runs them, records the spend as
+ * `routing` and writes its own log record beside the floor's.
  */
-import type { UsageRepository } from '../../usage/repository'
-import type { RunnerDeps } from './agent-runner-types'
+import type { DecisionService } from '../../decisions/service'
 import { floorDecisionRequest, readFloor } from './floor-advice'
 import type { FloorStrategy } from './floor-advisor'
-import { resolveLanguageModel } from './model-resolution'
-import { recordAuxCallUsage } from './usage-normalize'
 
-export const FLOOR_DECISION_MODEL = 'openrouter/~typesafe/jev-latest'
-
-export function decisionFloorStrategy(deps: {
-  runner: Pick<RunnerDeps, 'providerConnectionsService' | 'catalogService' | 'languageModelFactory'>
-  usageRepo: UsageRepository
-}): FloorStrategy {
+export function decisionFloorStrategy(
+  decisions: Pick<DecisionService, 'available' | 'decide'>,
+): FloorStrategy {
   return {
     async prepare(scope) {
-      // Decision models live in the full catalog only, and are looked up among their own kind: a
-      // decision model may share its id with a chat model of the same provider (OpenAI's).
-      const full = await deps.runner.catalogService.getFullCatalog()
-      const resolved = await resolveLanguageModel({
-        deps: deps.runner,
-        userId: scope.userId,
-        modelId: FLOOR_DECISION_MODEL,
-        catalog: { ...full, models: full.models.filter((model) => model.kind === 'decision') },
-      })
-      const decide = resolved?.model.decide?.bind(resolved.model)
-      if (!resolved || !decide) return null
+      const available = await decisions.available(scope.userId)
+      if (!available) return null
       return {
         strategy: 'decision',
-        model: FLOOR_DECISION_MODEL,
+        model: available.model,
         async advise(question, signal) {
           const request = floorDecisionRequest(question)
-          const result = await decide({ ...request, signal })
-          recordAuxCallUsage({
-            usageRepo: deps.usageRepo,
-            userId: scope.userId,
+          const outcome = await decisions.decide(scope.userId, request, {
+            purpose: 'routing',
+            usageKind: 'routing',
             sessionId: scope.sessionId,
-            modelId: FLOOR_DECISION_MODEL,
-            providerConnectionId: resolved.providerConnectionId,
-            providerId: resolved.entry.id,
-            kind: 'routing',
-            usage: result.usage,
+            signal,
           })
-          return readFloor(result, request)
+          // Anything but answers is the grammar's turn: the advisor records it as an error.
+          if (outcome.status !== 'answered') throw new Error(`decision ${outcome.status}`)
+          return readFloor({ answers: outcome.answers }, request)
         },
       }
     },

@@ -11,8 +11,8 @@ import type {
   SemanticQuery,
   SemanticSimilarOptions,
   SemanticTask,
+  SemanticVectors,
 } from '@localixai/plugin-sdk/backend'
-import type { EmbeddingEngine } from './engine'
 import type { SemanticStore } from './store'
 import type { VectorCache } from './vector-cache'
 
@@ -33,7 +33,7 @@ export interface SemanticReader {
     vector: Float32Array,
     options?: SemanticSimilarOptions,
   ): Promise<SemanticMatch[]>
-  /** One query's semantic strategy. `null` engine → null (lexical only). */
+  /** One query's semantic strategy. No vectors → null (lexical only). */
   queryFor(userId: string, text: string, task?: SemanticTask): SemanticQuery | null
   query(
     userId: string,
@@ -46,8 +46,8 @@ export interface SemanticReader {
 export function createSemanticReader(deps: {
   store: Pick<SemanticStore, 'excerpts'>
   cache: VectorCache
-  /** The engine when semantic search is on and installed; null otherwise. */
-  engine: () => EmbeddingEngine | null
+  /** The vectors port (`semantic-vectors.ts`): the query's vector, like every other consumer's. */
+  vectors: Pick<SemanticVectors, 'ready' | 'embed'>
   /** Test seam; default {@link QUERY_VECTOR_BUDGET_MS}. */
   queryBudgetMs?: number
 }): SemanticReader {
@@ -81,11 +81,14 @@ export function createSemanticReader(deps: {
     }))
   }
 
+  /** The query's vector, or null when the model cannot embed now. */
+  const queryVector = async (text: string, task: SemanticTask) =>
+    (await deps.vectors.embed([text], { role: 'query', task }))?.vectors[0] ?? null
+
   return {
     similar,
     queryFor(userId, text, task = 'search') {
-      const engine = deps.engine()
-      if (!engine) return null
+      if (!deps.vectors.ready()) return null
       let vector: Promise<Float32Array | null> | null = null
       let missed = false
       const vectorOnce = () =>
@@ -95,9 +98,10 @@ export function createSemanticReader(deps: {
             resolve(null)
           }, budgetMs)
           timer.unref?.()
-          engine.embedQuery(text, task).then(
+          queryVector(text, task).then(
             (v) => {
               clearTimeout(timer)
+              if (!v) missed = true
               resolve(v)
             },
             () => {
@@ -119,10 +123,8 @@ export function createSemanticReader(deps: {
       }
     },
     async query(userId, collection, text, options = {}) {
-      const engine = deps.engine()
-      if (!engine) return []
-      const vector = await engine.embedQuery(text, options.task ?? 'search')
-      return similar(userId, collection, vector, options)
+      const vector = await queryVector(text, options.task ?? 'search')
+      return vector ? similar(userId, collection, vector, options) : []
     },
   }
 }

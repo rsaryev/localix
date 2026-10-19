@@ -4,8 +4,13 @@ import { migrateToLatest } from '../../db/migrator'
 import { ingestItems } from './ingest'
 import { createSemanticReader } from './semantic-index'
 import { createSemanticStore } from './store'
+import { createSemanticVectors } from './semantic-vectors'
 import { createFakeEngine, FAKE_DIMENSIONS } from './testing/fake-engine'
 import { createVectorCache } from './vector-cache'
+
+/** The vectors port over one engine, as the semantic service builds it. */
+const vectorsOf = (engine: ReturnType<typeof createFakeEngine>) =>
+  createSemanticVectors({ strategy: () => ({ mode: 'hybrid' }), engine: () => engine })
 
 async function setup() {
   const db = createDatabase()
@@ -14,7 +19,7 @@ async function setup() {
   const cache = createVectorCache(store, () => FAKE_DIMENSIONS)
   const calls: string[][] = []
   const engine = createFakeEngine({ calls })
-  const reader = createSemanticReader({ store, cache, engine: () => engine })
+  const reader = createSemanticReader({ store, cache, vectors: vectorsOf(engine) })
   return { db, store, cache, engine, reader, calls }
 }
 
@@ -114,7 +119,12 @@ describe('semantic index', () => {
     const { store, cache, engine } = await setup()
     await ingestItems({ store, cache, engine }, 'c', [item('a', 'webhook retry')])
     const slow = { ...engine, embedQuery: () => new Promise<Float32Array>(() => {}) }
-    const reader = createSemanticReader({ store, cache, engine: () => slow, queryBudgetMs: 20 })
+    const reader = createSemanticReader({
+      store,
+      cache,
+      vectors: vectorsOf(slow),
+      queryBudgetMs: 20,
+    })
     const query = reader.queryFor('u1', 'retry')!
     expect(await query.similar('c')).toEqual([])
     expect(query.missed).toBe(true)

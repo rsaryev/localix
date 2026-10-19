@@ -14,6 +14,7 @@ import {
 import { createIndexer } from '../embeddings/indexer'
 import { removeKeys } from '../embeddings/ingest'
 import { semanticHandlers } from '../embeddings/targets'
+import { createSemanticVectors } from '../embeddings/semantic-vectors'
 import { createSemanticReader } from '../embeddings/semantic-index'
 import { createSemanticStore } from '../embeddings/store'
 import { createFakeEngine, FAKE_DIMENSIONS } from '../embeddings/testing/fake-engine'
@@ -64,7 +65,11 @@ async function setup() {
   const engine = createFakeEngine()
   const sources = [createMessagesSemanticSource(db), createSessionsSemanticSource(db)]
   const indexer = createIndexer({ store, cache, sources: () => sources })
-  const reader = createSemanticReader({ store, cache, engine: () => engine })
+  const vectors = createSemanticVectors({
+    strategy: () => ({ mode: 'hybrid' }),
+    engine: () => engine,
+  })
+  const reader = createSemanticReader({ store, cache, vectors })
   const run = async () => {
     indexer.kick()
     await indexer.idle()

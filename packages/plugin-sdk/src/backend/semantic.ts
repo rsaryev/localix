@@ -126,8 +126,44 @@ export interface SemanticIndexStatus {
   model: { id: string; label: string; dimensions: number } | null
 }
 
+/** One candidate {@link SemanticVectors.rank} compares the query with. */
+export interface SemanticCandidate {
+  key: string
+  text: string
+}
+
+/** Candidates nearest first, with the cosine of each to the query. */
+export interface SemanticRanking {
+  model: string
+  ranked: { key: string; cosine: number }[]
+}
+
+/**
+ * Vectors without an index: the embedding model on demand, for a consumer that compares a few
+ * texts now (routing, a picker, dedupe) rather than searching a stored collection. Null while the
+ * model cannot run (downloading, failed) — the caller falls back to its own way.
+ */
+export interface SemanticVectors {
+  /** The model that would embed now, or null while it cannot. */
+  ready(): { model: string; dimensions: number } | null
+  /** Raw vectors, for a consumer that needs them (clustering, dedupe). */
+  embed(
+    texts: readonly string[],
+    options: { role: 'query' | 'document'; task?: SemanticTask },
+  ): Promise<{ model: string; dimensions: number; vectors: Float32Array[] } | null>
+  /**
+   * `candidates` nearest to `query` first. `task` picks the prompts: `similarity` and
+   * `classification` embed both sides alike; the retrieval tasks embed candidates as documents.
+   */
+  rank(
+    query: string,
+    candidates: readonly SemanticCandidate[],
+    options?: { task?: SemanticTask },
+  ): Promise<SemanticRanking | null>
+}
+
 /** The host capability a plugin backend receives as `host.semantic`. */
-export interface SemanticIndexHost {
+export interface SemanticIndexHost extends Omit<SemanticVectors, 'ready'> {
   status(): SemanticIndexStatus
   /** Register a source of the plugin's own items. Returns the unregister disposer. */
   registerSource(source: SemanticSource): () => void
@@ -140,9 +176,4 @@ export interface SemanticIndexHost {
     text: string,
     options?: SemanticSimilarOptions & { task?: SemanticTask },
   ): Promise<SemanticMatch[]>
-  /** Raw vectors, for a plugin that needs them (clustering, dedupe). Null until the model is ready. */
-  embed(
-    texts: readonly string[],
-    options: { role: 'query' | 'document'; task?: SemanticTask },
-  ): Promise<{ model: string; dimensions: number; vectors: Float32Array[] } | null>
 }

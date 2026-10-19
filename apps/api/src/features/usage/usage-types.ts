@@ -66,6 +66,7 @@ export const USAGE_AUXILIARY_KINDS = [
   'classify',
   'hook',
   'routing',
+  'decision',
 ] as const
 
 export type UsageKindKey = 'turn' | (typeof USAGE_AUXILIARY_KINDS)[number]
@@ -80,6 +81,7 @@ export const USAGE_KIND_LABELS: Readonly<Record<UsageKindKey, string>> = {
   classify: 'Auto-mode classifier',
   hook: 'Hook policy checks',
   routing: 'Group routing',
+  decision: 'Decisions',
 }
 
 /** Grand totals for the dashboard summary cards. */

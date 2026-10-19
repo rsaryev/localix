@@ -17,6 +17,7 @@ import { removeKeys } from './ingest'
 import { EMBEDDINGGEMMA_2, type EmbeddingModelSpec } from './models'
 import { routerEmbeddingBackend } from './router-backend'
 import { createSemanticReader } from './semantic-index'
+import { createSemanticVectors } from './semantic-vectors'
 import type { SemanticStore } from './store'
 import { buildSemanticStatus } from './semantic-status'
 import { createVectorCache } from './vector-cache'
@@ -64,7 +65,9 @@ export function createSemanticService(deps: SemanticServiceDeps) {
     onProgress: notify,
     log: deps.log,
   })
-  const reader = createSemanticReader({ store, cache, engine: () => usableEngine() })
+  // The one vectors port: search's own queries read through it like every other consumer.
+  const vectors = createSemanticVectors({ strategy, engine: () => usableEngine() })
+  const reader = createSemanticReader({ store, cache, vectors })
   const housekeeping = setInterval(() => cache.releaseIdle(), HOUSEKEEPING_MS)
   housekeeping.unref?.()
 
@@ -78,6 +81,14 @@ export function createSemanticService(deps: SemanticServiceDeps) {
   function usableEngine(): EmbeddingEngine | null {
     if (!engine || engine.state().state === 'error') return null
     return engine
+  }
+
+  /** What the next search will use, and why when it is not meaning-aware. */
+  function strategy(): SearchStrategyNote {
+    if (!installed()) return { mode: 'lexical', reason: 'not-installed' }
+    if (!usableEngine()) return { mode: 'lexical', reason: 'unavailable' }
+    const progress = indexer.progress()
+    return { mode: 'hybrid', ...(progress.phase === 'reconciling' ? { indexing: true } : {}) }
   }
 
   /** A parked engine starts again on its own; search answers from words until it does. */
@@ -185,13 +196,9 @@ export function createSemanticService(deps: SemanticServiceDeps) {
 
     reader,
 
-    /** What the next search will use, and why when it is not meaning-aware. */
-    strategy(): SearchStrategyNote {
-      if (!installed()) return { mode: 'lexical', reason: 'not-installed' }
-      if (!usableEngine()) return { mode: 'lexical', reason: 'unavailable' }
-      const progress = indexer.progress()
-      return { mode: 'hybrid', ...(progress.phase === 'reconciling' ? { indexing: true } : {}) }
-    },
+    strategy,
+    /** Vectors on demand: search's queries, group routing and plugins all embed through it. */
+    vectors,
 
     model: () => model,
     /** The engine search may use right now, or null. */

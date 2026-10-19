@@ -15,6 +15,8 @@ import type { PluginHostRefs } from './plugin-host-refs'
 import type { PluginChangeHosts } from '../features/changes/plugin-host'
 import type { SemanticService } from '../features/embeddings/service'
 import { createPluginSemanticHost } from '../features/embeddings/plugin-host'
+import type { DecisionService } from '../features/decisions/service'
+import { createPluginDecisionHost } from '../features/decisions/plugin-host'
 
 type HostForPlugin = Parameters<typeof loadPluginBackends>[0]['hostForPlugin']
 
@@ -35,6 +37,7 @@ export function createPluginHostServices(deps: {
   mediaStore: ReturnType<typeof createMediaStore>
   pluginWakes: ReturnType<typeof createPluginWakes>
   semanticService: SemanticService
+  decisionService: DecisionService
   /** Each plugin's own change feed (`host.changes`). */
   changes: PluginChangeHosts
 }): HostForPlugin {
@@ -83,6 +86,10 @@ export function createPluginHostServices(deps: {
     agents: bootAgentDirectory(hostRefs),
     // Confined to the plugin's own `plugin:<name>:*` collections.
     semantic: createPluginSemanticHost(deps.semanticService, pluginName),
+    // Attributed to the plugin, billed to a session the user owns (the same check as above).
+    decisions: createPluginDecisionHost(deps.decisionService, pluginName, (...args) =>
+      hostRefs.chatService!.resolveSessionCwd(...args),
+    ),
     // The plugin's own stream, `plugin:<name>`: record notices, read them at a durable cursor.
     changes: deps.changes.forPlugin(pluginName),
     // The native watcher only the host bundles; a plugin's own `fs.watch` drops bursts on macOS.

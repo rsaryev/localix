@@ -17,6 +17,7 @@
 
 import type { PluginAgentDirectory, PluginPathWatch, PluginScreenSnapshot } from './context'
 import type { ChangeFeedHost } from './changes'
+import type { DecisionHost } from './decision'
 import type { SemanticIndexHost } from './semantic'
 
 /** Host-side terminal reader: the same three calls, with the user the host resolves. */
@@ -207,7 +208,10 @@ export interface PluginHostServices {
   sessionStorage?: { resolveDataDir(userId: string, sessionId: string): Promise<string> }
   /** The enabled agents of a session's scope, read-only (see {@link PluginAgentDirectory}). */
   agents?: PluginAgentDirectory
+  /** The embedding seam: the index of the plugin's own collections, and vectors on demand. */
   semantic?: SemanticIndexHost
+  /** The decision-model seam (see {@link DecisionHost}); spend is recorded per session. */
+  decisions?: DecisionHost
   changes?: ChangeFeedHost
   /**
    * Provider-neutral desktop file intents. Plugins may prepare an artifact, while

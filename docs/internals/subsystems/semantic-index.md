@@ -9,32 +9,38 @@ engine. The user-facing pages are [Semantic search](../../features/semantic-sear
 ```text
 features/local-models   one runtime, one model router, downloads, catalog       (any model kind)
         ↑                         ↑
-features/embeddings      engine → ingest/indexer → store/vector cache → reader   (embedding kind)
+features/embeddings      engine → vectors port → reader; engine → ingest/indexer → store/vector cache   (embedding kind)
         ↑                         ↑
 features/search          hybrid fusion; SearchQuery.semantic per query           (the strategy)
         ↑                         ↑
 providers (chat, plugins)   UI search · agent `global_search` · plugin `host.semantic`
 ```
 
+Vectors on demand go through one port, `semanticService.vectors` (`semantic-vectors.ts`): the
+reader's query vectors, group routing's `rank` and a plugin's `host.semantic.embed`/`rank`. Only the
+index's write path (`ingest.ts`) calls the engine itself. The model is named once, in
+`embeddings/models.ts`; decision models live beside it in `features/decisions` (`models.ts`).
+
 Each layer names only the one below it. `agent-runtime-pi` sees local chat models through the
 `LocalProviderHost` port and knows nothing of the router.
 
 ## Module contracts
 
-| Module                                                                                        | Mechanism and invariant                                                                       | Failure when violated                                             |
-| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [`local-models/runtime.ts`](../../../apps/api/src/features/local-models/runtime.ts)           | One pinned llama.cpp build per platform: URL, size, sha256                                    | A floating build changes model behaviour under the person         |
-| [`local-models/download.ts`](../../../apps/api/src/features/local-models/download.ts)         | Streams to `.part`, hashes while streaming, renames only on a match                           | A truncated or tampered file looks installed                      |
-| [`local-models/installer.ts`](../../../apps/api/src/features/local-models/installer.ts)       | Files first, `manifest.json` last; installed = manifest + every file at its size              | A half-downloaded model is served                                 |
-| [`local-models/hf-catalog.ts`](../../../apps/api/src/features/local-models/hf-catalog.ts)     | Repo metadata → variants pinned to the commit sha; split models need every shard              | A spec points at files that can change                            |
-| [`local-models/router.ts`](../../../apps/api/src/features/local-models/router.ts)             | One `llama-server --models-preset`; presets rewritten on install/remove, reloaded in place    | Two processes, or a stale model list                              |
-| [`local-models/stale-server.ts`](../../../apps/api/src/features/local-models/stale-server.ts) | A recorded router pid is killed only when its command names our presets file                  | An API killed hard leaves gigabytes resident, or kills a stranger |
-| [`embeddings/engine.ts`](../../../apps/api/src/features/embeddings/engine.ts)                 | Query lane never waits behind indexing; query vectors LRU-cached; non-finite vectors rejected | Typing stalls behind a backfill; NaN reaches the index            |
-| [`embeddings/ingest.ts`](../../../apps/api/src/features/embeddings/ingest.ts)                 | Content hash per item; unchanged items cost a read; empty text removes                        | A reconcile re-embeds everything                                  |
-| [`embeddings/indexer.ts`](../../../apps/api/src/features/embeddings/indexer.ts)               | Reconcile (full scan, prunes unseen keys) then outbox; failures keep work queued              | Deleted rows keep vectors; a crash drops changes                  |
-| [`embeddings/vector-cache.ts`](../../../apps/api/src/features/embeddings/vector-cache.ts)     | One float32 matrix per collection and user; appends in place, reloads after replace/remove    | Results from a vector space the collection left                   |
-| [`embeddings/vectors.ts`](../../../apps/api/src/features/embeddings/vectors.ts)               | Hub penalty, per-query standardization, population-sized gate                                 | Generic messages match every query                                |
-| [`search/hybrid.ts`](../../../apps/api/src/features/search/hybrid.ts)                         | Words and meaning fused; one formula for every provider                                       | Two providers rank the same item differently                      |
+| Module                                                                                            | Mechanism and invariant                                                                                             | Failure when violated                                                              |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`local-models/runtime.ts`](../../../apps/api/src/features/local-models/runtime.ts)               | One pinned llama.cpp build per platform: URL, size, sha256                                                          | A floating build changes model behaviour under the person                          |
+| [`local-models/download.ts`](../../../apps/api/src/features/local-models/download.ts)             | Streams to `.part`, hashes while streaming, renames only on a match                                                 | A truncated or tampered file looks installed                                       |
+| [`local-models/installer.ts`](../../../apps/api/src/features/local-models/installer.ts)           | Files first, `manifest.json` last; installed = manifest + every file at its size                                    | A half-downloaded model is served                                                  |
+| [`local-models/hf-catalog.ts`](../../../apps/api/src/features/local-models/hf-catalog.ts)         | Repo metadata → variants pinned to the commit sha; split models need every shard                                    | A spec points at files that can change                                             |
+| [`local-models/router.ts`](../../../apps/api/src/features/local-models/router.ts)                 | One `llama-server --models-preset`; presets rewritten on install/remove, reloaded in place                          | Two processes, or a stale model list                                               |
+| [`local-models/stale-server.ts`](../../../apps/api/src/features/local-models/stale-server.ts)     | A recorded router pid is killed only when its command names our presets file                                        | An API killed hard leaves gigabytes resident, or kills a stranger                  |
+| [`embeddings/engine.ts`](../../../apps/api/src/features/embeddings/engine.ts)                     | Query lane never waits behind indexing; query vectors LRU-cached; non-finite vectors rejected                       | Typing stalls behind a backfill; NaN reaches the index                             |
+| [`embeddings/semantic-vectors.ts`](../../../apps/api/src/features/embeddings/semantic-vectors.ts) | One port for every consumer's vectors; null while search answers from words; symmetric tasks rank on the query lane | A consumer keeps its own cosine or names the model, and a model change rewrites it |
+| [`embeddings/ingest.ts`](../../../apps/api/src/features/embeddings/ingest.ts)                     | Content hash per item; unchanged items cost a read; empty text removes                                              | A reconcile re-embeds everything                                                   |
+| [`embeddings/indexer.ts`](../../../apps/api/src/features/embeddings/indexer.ts)                   | Reconcile (full scan, prunes unseen keys) then outbox; failures keep work queued                                    | Deleted rows keep vectors; a crash drops changes                                   |
+| [`embeddings/vector-cache.ts`](../../../apps/api/src/features/embeddings/vector-cache.ts)         | One float32 matrix per collection and user; appends in place, reloads after replace/remove                          | Results from a vector space the collection left                                    |
+| [`embeddings/vectors.ts`](../../../apps/api/src/features/embeddings/vectors.ts)                   | Hub penalty, per-query standardization, population-sized gate                                                       | Generic messages match every query                                                 |
+| [`search/hybrid.ts`](../../../apps/api/src/features/search/hybrid.ts)                             | Words and meaning fused; one formula for every provider                                                             | Two providers rank the same item differently                                       |
 
 ## Data
 

@@ -24,6 +24,8 @@ export function createPluginSemanticHost(
   pluginName: string,
 ): SemanticIndexHost {
   const own = (collection: string) => pluginCollection(pluginName, collection)
+  // Vectors on demand carry no collection: the same port every core consumer uses.
+  const { vectors } = service
   return {
     status() {
       const note = service.strategy()
@@ -53,15 +55,7 @@ export function createPluginSemanticHost(
       if (service.strategy().mode !== 'hybrid') return Promise.resolve([])
       return service.reader.query(userId, own(collection), text, options)
     },
-    async embed(texts, options) {
-      const engine = service.strategy().mode === 'hybrid' ? service.engine() : null
-      if (!engine) return null
-      const task = options.task ?? 'search'
-      const vectors =
-        options.role === 'query'
-          ? await Promise.all(texts.map((t) => engine.embedQuery(t, task)))
-          : await engine.embedDocuments(texts.map((text) => ({ text, task })))
-      return { model: engine.fingerprint, dimensions: engine.model.indexDimensions, vectors }
-    },
+    embed: (texts, options) => vectors.embed(texts, options),
+    rank: (query, candidates, options) => vectors.rank(query, candidates, options),
   }
 }
