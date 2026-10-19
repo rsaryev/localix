@@ -82,6 +82,7 @@ project rules
 
 # Conversation turn control
 Everyone here — the user and every participant — reads your reply; nobody sees your reasoning or tool calls.
+Write for the user too: plainly, to them, not about them.
 To hand someone the floor, @mention them with what they must do: scope, inputs and the evidence you expect. Each participant you @mention answers once, in the order mentioned.
 @mention only those who must act now; name anyone else without @. Never @mention yourself; mentions in code or quotes do not count.
 A reply that mentions nobody returns the floor: to the colleague who asked you, if one did, otherwise to the user.

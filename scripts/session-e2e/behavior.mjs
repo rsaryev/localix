@@ -18,6 +18,19 @@ const taggedIn = (rt, session) =>
       [...row.text.matchAll(/(?:^|\s)@([a-z0-9_-]+)/gi)].map((m) => m[1].toLowerCase()),
     )
 
+/**
+ * Replies that talk ABOUT the person in front of them, or recount the board's bookkeeping, instead
+ * of saying what was done: the room the person reads should be written for them too.
+ */
+const OVER_THE_PERSONS_HEAD =
+  /\bthe user\b|пользовател|\bticked\b|\bchecklist\b|sent (it|the card|the task) (to|for) review/i
+
+const overTheHead = (rt, session) =>
+  rt
+    .transcript(session)
+    .filter((row) => row.from !== 'user' && OVER_THE_PERSONS_HEAD.test(row.text))
+    .map((row) => `${row.from}: ${row.text.slice(0, 160)}`)
+
 /** The agents a session's delegated children run as. */
 async function delegatedTo(rt, session) {
   const listed = await rt.api('/sessions')
@@ -73,6 +86,23 @@ export const BEHAVIOR = [
         joined.includes('checker') || children.includes('checker'),
         { joined, children },
       )
+      expect(
+        'the replies speak to the person, not over their head',
+        !overTheHead(rt, after).length,
+        overTheHead(rt, after),
+      )
+      return after
+    },
+  },
+  {
+    name: 'workflows: a greeting needs no team',
+    async run(rt, expect) {
+      const session = await rt.createSession({ title: 'Real: workflows greeting' })
+      const after = await rt.say(session.id, '/workflows привет', { timeoutMs: 180_000 })
+      const joined = after.agents.map((agent) => agent.handle).filter((h) => h !== 'localix')
+      const replies = rt.transcript(after).filter((row) => row.from !== 'user')
+      expect('nobody was brought in', joined.length === 0, joined)
+      expect('answered in one reply', replies.length === 1, replies)
       return after
     },
   },

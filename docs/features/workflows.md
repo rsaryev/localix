@@ -11,12 +11,13 @@ coordinates them until the work is done. Run in a solo chat, it first makes the 
 /workflows ship a pricing page with a working checkout
 ```
 
-| Step       | What the agent does                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------ |
-| Break down | Creates one epic with 3–8 tasks, checklists and dependencies on the board.                 |
-| Staff      | Reuses [specialists](agents.md), creates one only for a missing role (≤ 4), assigns cards. |
-| Run        | @mentions each ready owner with its card, independent cards together.                      |
-| Close      | Verifies cards in review, completes the epic and summarizes the result.                    |
+| Step       | What the agent does                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| Size       | Answers itself, with no board and no team, when the goal has no parts (a greeting, a question). |
+| Break down | Creates one epic with only the tasks the goal needs (at most 8), checklists and dependencies.   |
+| Staff      | Reuses [specialists](agents.md), creates one only for a missing role (≤ 4), assigns cards.      |
+| Run        | @mentions each ready owner with its card, independent cards together.                           |
+| Close      | Verifies cards in review, completes the epic and summarizes the result.                         |
 
 The coordinator is the chat's leader: it sees the whole board and keeps its own context small by
 sending reading and checking to forks. Every other agent sees only the cards assigned to it, and its
