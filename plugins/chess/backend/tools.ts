@@ -92,13 +92,15 @@ export function createGameTools(ctx: PluginContext, games: GameService) {
       return {
         content: [
           'A new game is on this chat’s board.',
-          agentFirst
-            ? 'You play white and move first: call chess with action "move" now.'
-            : 'The user plays white and moves first; the board wakes you after their move.',
+          game.opponent === 'decision'
+            ? 'The decision model plays the other colour at this table, so the user plays white and moves first, and you do not move.'
+            : agentFirst
+              ? 'You play white and move first: call chess with action "move" now.'
+              : 'The user plays white and moves first; the board wakes you after their move.',
           recordLine(game.record),
           '',
           drawBoard(game),
-          ...(agentFirst ? ['', legalLine(game)] : []),
+          ...(agentFirst && game.opponent !== 'decision' ? ['', legalLine(game)] : []),
         ]
           .filter((line) => line !== null)
           .join('\n'),

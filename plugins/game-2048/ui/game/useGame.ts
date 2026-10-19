@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 
-import { agentPlays, gameSchema, type Direction, type Mode } from '../../shared/game'
+import { agentPlays, gameSchema, type Direction, type Mode, type Opponent } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
 import { useStoreSnapshot } from '../useStoreSnapshot'
 
@@ -49,5 +49,9 @@ export function useGame(active: boolean) {
     newGame: (mode: Mode) => act('new', { mode }),
     setMode: (mode: Mode) => act('mode', { mode }),
     remind: () => act('remind', {}),
+    /** Pause whoever plays the board until Continue. */
+    stop: () => act('stop', {}),
+    /** Who plays the board while the person watches. */
+    setOpponent: (opponent: Opponent) => act('opponent', { opponent }),
   }
 }

@@ -13,10 +13,6 @@ import { cellName, type Game, type Move, type GameRecord } from '../../shared/ga
 export const opponentName = (game: Pick<Game, 'opponent'>) =>
   game.opponent === 'decision' ? 'The decision model' : 'The agent'
 
-/** The opponent's label in the players line: "Agent plays O". */
-export const opponentLabel = (game: Pick<Game, 'opponent'>) =>
-  game.opponent === 'decision' ? 'Decision model' : 'Agent'
-
 /** "The agent played the top left (cell 1)." */
 export const moveSentence = (move: Move, game: Pick<Game, 'opponent'>) =>
   `${move.by === 'you' ? 'You' : opponentName(game)} played ${cellName(move.cell)}.`
@@ -24,11 +20,11 @@ export const moveSentence = (move: Move, game: Pick<Game, 'opponent'>) =>
 /** The headline beside the board. */
 export function headline(game: Game): string {
   if (game.status === 'won') return 'You won'
-  if (game.status === 'lost') return `${opponentName(game)} won`
+  if (game.status === 'lost') return 'You lost'
   if (game.status === 'draw') return 'Draw'
   if (game.turn === 'X') return 'Your turn'
-  if (game.waiting?.status === 'unreachable') return `${opponentName(game)} could not be reached`
-  return `${opponentName(game)} is thinking`
+  if (game.waiting?.status === 'unreachable') return 'No answer'
+  return 'Thinking'
 }
 
 /** What a screen reader hears when the board changes: the last move, then what it means now. */

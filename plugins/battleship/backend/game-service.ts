@@ -8,11 +8,14 @@ import {
   opponentOf,
   owesAgentShot,
   type Game,
+  type Opponent,
   type Player,
 } from '../shared/game'
-import { placeFleet } from '../shared/rules'
+import { SIZE, placeFleet } from '../shared/rules'
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
-import { openJsonStore } from '@localixai/plugin-sdk/backend'
+import { askDecision } from './ask-decision'
+import { openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
+import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/plugin-sdk/opponent'
 
 /**
  * THE GAME AT EACH CHAT'S TABLE, and every way it changes.
@@ -30,12 +33,19 @@ import { openJsonStore } from '@localixai/plugin-sdk/backend'
  * view — a shot, a new game, a new fleet, a reminder — and after that the agent may owe a shot, so
  * it is asked (`askAgent`), in the chat the board belongs to. The AGENT acts through its tools and
  * is never asked for anything: a tool that woke the agent would wake it again on every shot.
+ *
+ * Who fires from the agent's side depends on the table's `opponent`: the agent is woken and fires
+ * with its tool later; the decision model is asked here, shot after shot while its hits keep the
+ * turn, before the person's request answers. Each shot is written as it lands, so the board shows
+ * them one by one, and the person's own shot is written first.
  */
 export function createGameService(input: {
   /** The session's folder for this plugin; rejects for a session the user does not own. */
   resolveDir?: (userId: string, sessionId: string) => Promise<string>
   /** `ctx.host.wake` — present on the backend load, where the routes live. */
   wake?: Wake
+  /** `ctx.host.decisions` — the decision model, on the backend load too. */
+  decisions?: DecisionHost
   now?: () => string
   newId?: () => string
   /** A number in [0, 1) — the fleets' dice. Seeded in tests so a fleet is the same every run. */
@@ -62,12 +72,48 @@ export function createGameService(input: {
     (await storeFor(seat)).update((current) => change(current, now()))
 
   /**
+   * A table whose opponent is not settled takes the default now: the decision model when it can
+   * answer, else the agent. Only the backend load can ask (`decisions`); a tool call leaves it.
+   */
+  const settle = async (seat: Seat, game: Game): Promise<Game> => {
+    if (game.opponent !== null || !input.decisions) return game
+    const opponent = await defaultOpponent(input.decisions, seat.userId)
+    return update(seat, (current) =>
+      current.opponent === null ? { ...current, opponent } : current,
+    )
+  }
+
+  /**
+   * The decision model's shots while it owes one — a hit earns another — each written as it
+   * lands, and only while the board still shows the position it was asked about.
+   */
+  const decide = async (seat: Seat, game: Game): Promise<Game> => {
+    let current = game
+    for (let shot = 0; shot < SIZE * SIZE && owesAgentShot(current); shot++) {
+      const key = positionKey(current)
+      const answer = await askDecision(input.decisions, seat, current, now())
+      const next = await update(seat, (latest, at) =>
+        positionKey(latest) !== key || latest.status !== 'playing' || latest.opponent !== 'decision'
+          ? latest
+          : 'cell' in answer
+            ? applyShot(latest, 'agent', answer.cell, at)
+            : { ...latest, waiting: answer.waiting },
+      )
+      if (!('cell' in answer) || positionKey(next) === key) return next
+      current = next
+    }
+    return current
+  }
+
+  /**
    * After a person's action: ask the agent for the shot it now owes, unless it has been asked for
    * this position already (`again` is the reminder that asks anyway). The answer is recorded only
    * while the board still shows that position — the agent may have fired before it arrived.
    */
-  const summon = async (seat: Seat, game: Game, again = false): Promise<Game> => {
+  const summon = async (seat: Seat, settled: Game, again = false): Promise<Game> => {
+    const game = await settle(seat, settled)
     if (!owesAgentShot(game) || (game.waiting?.status === 'thinking' && !again)) return game
+    if (game.opponent === 'decision') return decide(seat, game)
     const key = positionKey(game)
     const waiting = await askAgent(input.wake, seat, game, now())
     return update(seat, (current) =>
@@ -85,10 +131,11 @@ export function createGameService(input: {
       fleets: fleets(),
       now: at,
       record: game.record,
+      opponent: game.opponent,
     })
 
   return {
-    read: async (seat: Seat): Promise<Game> => (await storeFor(seat)).read(),
+    read: async (seat: Seat): Promise<Game> => settle(seat, await (await storeFor(seat)).read()),
 
     // ── What a person does in the view ─────────────────────────────────────────────────────
     /** Fire at `cell` (0–99) on the agent's board. */
@@ -106,6 +153,15 @@ export function createGameService(input: {
       summon(seat, await update(seat, (game, at) => nextGame(game, at, first))),
     /** Ask the agent again for the shot it owes. */
     remind: async (seat: Seat) => summon(seat, await (await storeFor(seat)).read(), true),
+    /** Who fires from the agent's side from now on; a shot it owes is asked of it at once. */
+    setOpponent: async (seat: Seat, opponent: Opponent) =>
+      summon(
+        seat,
+        await update(seat, (game) =>
+          game.opponent === opponent ? game : { ...game, opponent, waiting: null },
+        ),
+        true,
+      ),
 
     // ── What the agent does through its tools ──────────────────────────────────────────────
     /**
@@ -115,14 +171,18 @@ export function createGameService(input: {
     agentShot: async (seat: Seat, cell: number): Promise<{ game: Game; answered: boolean }> => {
       let answered = false
       const game = await update(seat, (current, at) => {
+        if (current.opponent === 'decision') throw new ShotRefused(DECISION_HOLDS_SEAT)
         answered = current.waiting?.status === 'thinking'
         return applyShot(current, 'agent', cell, at)
       })
       return { game, answered }
     },
-    /** The next game at this table, with `first` firing first. */
+    /**
+     * The next game at this table, with `first` firing first. Against the decision model the user
+     * opens: only a person's action asks that model, and a tool call is never one.
+     */
     agentNewGame: (seat: Seat, first: Player) =>
-      update(seat, (game, at) => nextGame(game, at, first)),
+      update(seat, (game, at) => nextGame(game, at, game.opponent === 'decision' ? 'you' : first)),
   }
 }
 

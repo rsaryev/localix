@@ -10,6 +10,7 @@ export function register(ctx: PluginContext): PluginRegistration {
   const games = createGameService({
     ...(storage ? { resolveDir: (...args) => storage.resolveDataDir(...args) } : {}),
     ...(ctx.host?.wake ? { wake: ctx.host.wake } : {}),
+    ...(ctx.host?.decisions ? { decisions: ctx.host.decisions } : {}),
   })
   // The open board hears every write to its chat's game — the agent's moves included — instead
   // of polling for them. The folder is the host's, resolved with the socket's own user.

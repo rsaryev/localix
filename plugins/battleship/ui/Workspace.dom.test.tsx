@@ -135,7 +135,7 @@ test('a hit keeps the shot, a miss wakes the board’s own chat, and the agent�
     expect(view.host.textContent).toContain('Your shot')
 
     await view.act(async () => view.enemy('J10')!.click())
-    expect(view.host.textContent).toContain('The agent is aiming')
+    expect(view.host.textContent).toContain('Aiming')
     expect(view.enemy('B2')?.getAttribute('aria-disabled')).toBe('true')
     // Every request names the board's chat, never the active one.
     expect(view.backend.requests.every(({ path }) => path.endsWith('sessionId=s1'))).toBe(true)
@@ -180,6 +180,16 @@ test('a board that belongs to no chat says so, and asks the server nothing', asy
   try {
     expect(view.host.textContent).toContain('Open the board from a chat')
     expect(view.backend.requests).toEqual([])
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('the control row says who fires at the person’s fleet, beside the new game', async () => {
+  const view = await mount('s1')
+  try {
+    expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')).not.toBeNull()
+    expect(view.host.querySelector('[aria-label="New game"]')).not.toBeNull()
   } finally {
     await view.unmount()
   }

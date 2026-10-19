@@ -5,7 +5,7 @@ import { cn } from '@localixai/plugin-sdk/ui/classes'
 
 import { lineName } from '../../shared/describe'
 import { owesAgentMove, type Game } from '../../shared/game'
-import { announcement, elapsed, headline, nextOpener, opponentLabel, scoreLine } from './copy'
+import { announcement, elapsed, headline, nextOpener, scoreLine } from './copy'
 import { Mark } from './Mark'
 
 /** After this long without the agent's move, the status offers to ask it again. */
@@ -45,11 +45,11 @@ export function TurnStatus({
 
   return (
     // Reserve space for recovery actions before they appear, so the board does not move on a stall.
-    <div className="flex min-h-20 min-w-40 flex-1 flex-col items-start justify-center gap-1">
+    <div className="flex min-h-20 flex-auto flex-col items-start justify-center gap-1">
       <p
         role={error ? 'alert' : undefined}
         className={cn(
-          'flex items-center gap-2 text-base font-medium',
+          'flex items-center gap-2 text-base font-medium whitespace-nowrap',
           error ? 'text-status-warning' : 'text-text-soft',
         )}
       >
@@ -59,9 +59,7 @@ export function TurnStatus({
           <span className="font-mono tabular-nums text-text-faint">{suffix}</span>
         )}
       </p>
-      <p className="text-xs text-text-faint">
-        You play X · {opponentLabel(game)} plays O{scoreLine(game.record)}
-      </p>
+      <p className="text-xs text-text-faint">You play X{scoreLine(game.record)}</p>
       {agentTurn && waiting?.status === 'unreachable' && waiting.reason && (
         <p className="text-xs text-status-warning">{waiting.reason}</p>
       )}

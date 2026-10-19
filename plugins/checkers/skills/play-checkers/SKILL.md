@@ -26,6 +26,14 @@ game followed by your first move, set `userPlays: "black"` on the `new_game` ste
 mutation hands the turn to the user, the game ends, you resign, or a step is refused. Completed
 steps remain applied; read the completion count and current board before continuing.
 
+## When the decision model plays the other colour
+
+The user can choose, on the board, who plays the other colour: you, or a decision model the board
+asks itself. When the board says the decision model plays it, you do not move or resign — both are
+refused — and the board never wakes you; a new game you open gives the user white to move first. You
+can still read the board and talk about the position. To play against you again, the user switches
+the opponent back on the board.
+
 ## When the board wakes you
 
 A message from the "checkers" plugin, not typed by the user, means it is your move. It carries the

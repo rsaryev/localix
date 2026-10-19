@@ -110,9 +110,11 @@ export function createGameTools(ctx: PluginContext, games: GameService) {
       return {
         content: [
           'A new game is on this chat’s board. Both fleets are placed.',
-          first === 'agent'
-            ? 'You fire first: call battleship with action "fire" now.'
-            : 'The user fires first; the board wakes you when it is your shot.',
+          game.opponent === 'decision'
+            ? 'The decision model fires from your side at this table, so the user fires first and you do not fire.'
+            : first === 'agent'
+              ? 'You fire first: call battleship with action "fire" now.'
+              : 'The user fires first; the board wakes you when it is your shot.',
           recordLine(game.record),
         ]
           .filter((line) => line !== null)

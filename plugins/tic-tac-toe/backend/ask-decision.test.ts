@@ -108,8 +108,26 @@ describe('against the decision model', () => {
     expect((await games.remind(SEAT)).board[8]).toBe('O')
   })
 
+  test('a new table plays the decision model when one can answer, else the agent', async () => {
+    expect((await setup(decisions(() => '5').host).games.read(SEAT)).opponent).toBe('decision')
+    const none: DecisionHost = {
+      available: async () => null,
+      decide: async () => ({ status: 'unavailable', ms: 0 }),
+    }
+    expect((await setup(none).games.read(SEAT)).opponent).toBe('agent')
+    // A tool call cannot ask, and leaves the table to settle on the next look from the board.
+    expect((await setup().games.read(SEAT)).opponent).toBeNull()
+  })
+
+  test('a chosen opponent stays chosen', async () => {
+    const { games } = setup(decisions(() => '5').host)
+    await games.setOpponent(SEAT, 'agent')
+    expect((await games.newGame(SEAT)).opponent).toBe('agent')
+  })
+
   test('switching while O owes a move asks the new opponent at once', async () => {
     const { games, woke } = setup(decisions(() => '1').host)
+    await games.setOpponent(SEAT, 'agent')
     await games.personMove(SEAT, 4)
     expect(woke).toHaveLength(1)
     const game = await games.setOpponent(SEAT, 'decision')
@@ -122,7 +140,7 @@ describe('against the decision model', () => {
     await games.setOpponent(SEAT, 'decision')
     await games.personMove(SEAT, 4)
     expect((await games.newGame(SEAT)).opponent).toBe('decision')
-    await expect(games.agentMove(SEAT, 0)).rejects.toThrow('The decision model plays O')
+    await expect(games.agentMove(SEAT, 0)).rejects.toThrow('The decision model plays your side')
   })
 
   test('a new game the agent opens against the model lets the user move first', async () => {

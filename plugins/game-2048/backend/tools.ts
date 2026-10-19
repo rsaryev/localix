@@ -81,6 +81,8 @@ function planOf(input: PlanInput): Plan | null {
 function nextLine(game: Game): string {
   if (game.status !== 'playing') return GAME_OVER_ASK
   if (game.mode === 'user') return 'The user is playing; move only if they hand you the board.'
+  if (game.opponent === 'decision')
+    return 'The decision model plays this board, so do not move; the user starts it from the board.'
   return PLAY_ON
 }
 

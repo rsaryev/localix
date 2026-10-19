@@ -56,11 +56,11 @@ export function TurnStatus({
 
   return (
     // Reserve space for recovery actions before they appear, so the board does not move on a stall.
-    <div className="flex min-h-20 min-w-40 flex-1 flex-col items-start justify-center gap-1">
+    <div className="flex min-h-20 flex-auto flex-col items-start justify-center gap-1">
       <p
         role={error ? 'alert' : undefined}
         className={cn(
-          'flex items-center gap-2 text-base font-medium',
+          'flex items-center gap-2 text-base font-medium whitespace-nowrap',
           error ? 'text-status-warning' : 'text-text-soft',
         )}
       >
@@ -74,9 +74,11 @@ export function TurnStatus({
         )}
       </p>
       <p className="text-xs text-text-faint">
-        You play {colour(game.you)} ({countPieces(game.board, game.you)}) · Agent plays{' '}
-        {colour(them)} ({countPieces(game.board, them)}){scoreLine(game.record)}
+        {`You play ${colour(game.you)} (${countPieces(game.board, game.you)}) · ${colour(them)} (${countPieces(game.board, them)})${scoreLine(game.record)}`}
       </p>
+      {agentTurn && waiting?.status === 'unreachable' && waiting.reason && (
+        <p className="text-xs text-status-warning">{waiting.reason}</p>
+      )}
       {/* Heard, not seen: the move just played and what it means, once per change. */}
       <p aria-live="polite" className="sr-only">
         {announcement(game)}

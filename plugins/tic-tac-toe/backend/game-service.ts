@@ -13,6 +13,7 @@ import {
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
 import { askDecision } from './ask-decision'
 import { openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
+import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/plugin-sdk/opponent'
 
 /**
  * THE GAME AT EACH CHAT'S TABLE, and every way it changes.
@@ -60,11 +61,24 @@ export function createGameService(input: {
     (await storeFor(seat)).update((current) => change(current, now()))
 
   /**
+   * A table whose opponent is not settled takes the default now: the decision model when it can
+   * answer, else the agent. Only the backend load can ask (`decisions`); a tool call leaves it.
+   */
+  const settle = async (seat: Seat, game: Game): Promise<Game> => {
+    if (game.opponent !== null || !input.decisions) return game
+    const opponent = await defaultOpponent(input.decisions, seat.userId)
+    return update(seat, (current) =>
+      current.opponent === null ? { ...current, opponent } : current,
+    )
+  }
+
+  /**
    * After a person's action: ask the agent for the move it now owes, unless it has been asked for
    * this position already (`again` is the reminder that asks anyway). The answer is recorded only
    * while the board still shows that position — the agent may have moved before it arrived.
    */
-  const summon = async (seat: Seat, game: Game, again = false): Promise<Game> => {
+  const summon = async (seat: Seat, current: Game, again = false): Promise<Game> => {
+    const game = await settle(seat, current)
     if (!owesAgentMove(game) || (game.waiting?.status === 'thinking' && !again)) return game
     const key = positionKey(game)
     const unchanged = (current: Game) =>
@@ -95,7 +109,7 @@ export function createGameService(input: {
     })
 
   return {
-    read: async (seat: Seat): Promise<Game> => (await storeFor(seat)).read(),
+    read: async (seat: Seat): Promise<Game> => settle(seat, await (await storeFor(seat)).read()),
 
     // ── What a person does in the view ─────────────────────────────────────────────────────
     /** Play X at `cell` (0–8). */
@@ -124,10 +138,7 @@ export function createGameService(input: {
     agentMove: async (seat: Seat, cell: number): Promise<{ game: Game; answered: boolean }> => {
       let answered = false
       const game = await update(seat, (current, at) => {
-        if (current.opponent === 'decision')
-          throw new MoveRefused(
-            'The decision model plays O at this table. The user can switch the opponent back to you on the board.',
-          )
+        if (current.opponent === 'decision') throw new MoveRefused(DECISION_HOLDS_SEAT)
         answered = current.waiting?.status === 'thinking'
         return applyMove(current, cell, 'agent', at)
       })

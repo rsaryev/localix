@@ -7,6 +7,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
+import { OpponentMenu } from '@localixai/kit/opponent-menu'
 
 import { agentPlays, type Mode } from '../shared/game'
 import { gameMessageContext } from './bindings'
@@ -23,7 +24,9 @@ import { useNow } from './useNow'
  * target and the board still reads as one object; a short pane scrolls rather than shrinking it.
  * (Sizing by the pane's HEIGHT needs a size container, and a size container whose host gives it
  * no definite height collapses to nothing.) The status shares a row with the controls — who
- * plays, and a new game — so the board stays close to what is needed to play it.
+ * plays, and a new game — so the board stays close to what is needed to play it. Who plays is two
+ * steps, never two competing switches: **I play** or **Watch**, and while watching, the menu beside
+ * it says WHICH player holds the board — the chat agent or the decision model.
  *
  * It publishes EXACTLY the game on screen as message context, and clears it the moment the
  * surface goes inactive, so a question typed beside the board is about this position.
@@ -32,7 +35,7 @@ const BOARD_SIZE = 'min(100%, 36rem)'
 
 const WHO_PLAYS = [
   { value: 'user', label: 'I play' },
-  { value: 'agent', label: 'Agent plays' },
+  { value: 'agent', label: 'Watch' },
 ] as const
 
 export function Workspace({
@@ -99,6 +102,7 @@ export function Workspace({
                 error={state.error}
                 sending={state.sending}
                 onRemind={() => void state.remind()}
+                onStop={() => void state.stop()}
               />
               <div className="flex items-center gap-2">
                 <SegmentedRadioGroup<Mode>
@@ -109,6 +113,15 @@ export function Workspace({
                   disabled={state.sending}
                   onValueChange={(mode) => void state.setMode(mode)}
                 />
+                {game.mode === 'agent' && (
+                  <OpponentMenu
+                    heading="Who plays the board"
+                    size="sm"
+                    value={game.opponent ?? 'agent'}
+                    disabled={state.sending}
+                    onChange={(opponent) => void state.setOpponent(opponent)}
+                  />
+                )}
                 <IconButton
                   aria-label="New game"
                   tooltip="New game"

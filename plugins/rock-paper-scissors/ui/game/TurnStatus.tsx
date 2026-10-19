@@ -50,6 +50,9 @@ export function TurnStatus({
           </span>
         )}
       </p>
+      {agentTurn && waiting?.status === 'unreachable' && waiting.reason && (
+        <p className="text-xs text-status-warning">{waiting.reason}</p>
+      )}
       <p aria-live="polite" className="sr-only">
         {announcement(view)}
       </p>

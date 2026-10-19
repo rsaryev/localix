@@ -27,6 +27,13 @@ reasoning. So:
 - Never name, hint at or rule out your move in a reply before the round is revealed.
 - After a sealed move that answers a wake, your turn ends on its own. Add nothing.
 
+## When the decision model plays
+
+The user can choose, on the table, who plays against them: you, or a decision model the table asks
+itself. When the table says the decision model plays, you do not play — a move is refused — and the
+table never wakes you; a round you open lets the user open. You can still read the score and talk
+about revealed rounds. To play against you again, the user switches the opponent back on the table.
+
 ## When the table wakes you
 
 A message from the "rock-paper-scissors" plugin, not typed by the user, means you owe a move. If the

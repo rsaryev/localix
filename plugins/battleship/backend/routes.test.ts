@@ -82,6 +82,15 @@ describe('the view’s routes', () => {
     expect((await post('/game/fire', { cell: 0 })).status).toBe(404)
   })
 
+  test('the opponent route switches who fires from the agent’s side, and refuses one it does not know', async () => {
+    const { post, woke } = routes()
+    const response = await post('/game/opponent', { opponent: 'decision' })
+    expect(response.status).toBe(200)
+    expect(playerViewSchema.parse(await response.json()).opponent).toBe('decision')
+    expect((await post('/game/opponent', { opponent: 'someone' })).status).toBe(400)
+    expect(woke).toEqual([])
+  })
+
   test('a refused shot answers 409 with the rules’ own sentence', async () => {
     const { post } = routes()
     await post('/game/fire', { cell: 0 })

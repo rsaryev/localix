@@ -113,7 +113,7 @@ test('the agent opens sealed: the person sees a digest, picks, and the reveal ch
     await view.poll()
 
     expect(view.hand('Agent')?.getAttribute('aria-label')).toBe('Agent: sealed')
-    expect(view.host.textContent).toContain('The agent has sealed its move — your turn')
+    expect(view.host.textContent).toContain('Sealed — your turn')
     // Nothing the view received names the agent's move before the reveal.
     expect(view.backend.bodies.some((body) => body.includes('scissors'))).toBe(false)
 
@@ -140,7 +140,7 @@ test('the person opens: their move shows to them, and stays out of what the agen
 
     expect(view.hand('You')?.getAttribute('aria-label')).toBe('You: Paper')
     expect(view.host.textContent).toContain('Hidden from the agent')
-    expect(view.host.textContent).toContain('The agent is choosing')
+    expect(view.host.textContent).toContain('Choosing')
     expect(view.button('Rock')?.disabled).toBe(true)
     const context = JSON.stringify(view.context())
     expect(context).toContain('The user has chosen (sealed).')
@@ -155,6 +155,17 @@ test('a table that belongs to no chat says so, and asks the server nothing', asy
   try {
     expect(view.host.textContent).toContain('Open the table from a chat')
     expect(view.backend.requests).toEqual([])
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('the table says who plays against the person, under the score', async () => {
+  const view = await mount('s1', 'you')
+  try {
+    expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')?.textContent).toContain(
+      'Chat agent',
+    )
   } finally {
     await view.unmount()
   }

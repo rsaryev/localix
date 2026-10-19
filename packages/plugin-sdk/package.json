@@ -211,6 +211,10 @@
       "types": "./dist/agent-wait.d.ts",
       "import": "./dist/agent-wait.js"
     },
+    "./opponent": {
+      "types": "./dist/opponent.d.ts",
+      "import": "./dist/opponent.js"
+    },
     "./secret-shapes": {
       "types": "./dist/secret-shapes.d.ts",
       "import": "./dist/secret-shapes.js"

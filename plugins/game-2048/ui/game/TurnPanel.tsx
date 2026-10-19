@@ -1,10 +1,18 @@
-import { CircleAlert, CircleX, Play, RotateCcw, Trophy, User } from 'lucide-react'
+import { CircleAlert, CircleX, Play, RotateCcw, Square, Trophy, User } from 'lucide-react'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 
 import { agentPlays, type Game } from '../../shared/game'
-import { announcement, elapsed, headline, mayRemind, resultLine, scoreLine } from './copy'
+import {
+  announcement,
+  elapsed,
+  headline,
+  mayRemind,
+  resultLine,
+  shortScoreLine,
+  spokenHeadline,
+} from './copy'
 
 /**
  * After this long without an agent move, the status offers to ask it again. Longer than the other
@@ -29,22 +37,30 @@ export function TurnStatus({
   error,
   sending,
   onRemind,
+  onStop,
 }: {
   game: Game
   now: number
   error: string | null
   sending: boolean
   onRemind: () => void
+  onStop: () => void
 }) {
-  const playing = agentPlays(game) && game.waiting?.status === 'thinking'
+  const running = agentPlays(game) && game.waiting?.status === 'thinking'
+  // The chat agent may take a while per call; the decision model moves every second or so, so a
+  // running clock beside it would only flicker.
+  const playing =
+    agentPlays(game) && game.opponent !== 'decision' && game.waiting?.status === 'thinking'
   const suffix = playing ? ` · ${elapsed(now - Date.parse(game.waiting!.since))}` : ''
   return (
     // Reserve space for the recovery action before it appears, so the board does not move.
-    <div className="flex min-h-20 min-w-40 flex-1 flex-col items-start justify-center gap-1">
+    // Sized by its content (`flex-auto`), so a narrow pane wraps the controls below it rather
+    // than letting them run over the text.
+    <div className="flex min-h-20 flex-auto flex-col items-start justify-center gap-1">
       <p
         role={error ? 'alert' : undefined}
         className={cn(
-          'flex items-center gap-2 text-base font-medium',
+          'flex items-center gap-2 text-base font-medium whitespace-nowrap',
           error ? 'text-status-warning' : 'text-text-soft',
         )}
       >
@@ -54,11 +70,19 @@ export function TurnStatus({
           <span className="font-mono tabular-nums text-text-faint">{suffix}</span>
         )}
       </p>
-      <p className="font-mono text-xs tabular-nums text-text-faint">{scoreLine(game)}</p>
+      <p className="font-mono text-xs whitespace-nowrap tabular-nums text-text-faint">
+        {shortScoreLine(game)}
+      </p>
       {/* Heard, not seen: the move just made and what it means, once per change. */}
       <p aria-live="polite" className="sr-only">
         {announcement(game)}
       </p>
+      {running && !mayRemind(game, now, PATIENCE_MS) && (
+        <Button size="sm" variant="secondary" onClick={onStop} disabled={sending}>
+          <Square data-icon="inline-start" />
+          Stop
+        </Button>
+      )}
       {mayRemind(game, now, PATIENCE_MS) && (
         <Button size="sm" variant="secondary" onClick={onRemind} disabled={sending}>
           <Play data-icon="inline-start" />
@@ -89,7 +113,7 @@ export function GameOver({
   if (game.status === 'playing') return null
   const won = game.status === 'won'
   const Icon = won ? Trophy : CircleX
-  const title = headline(game)
+  const title = spokenHeadline(game)
   return (
     <div className="game-2048-over pointer-events-none absolute inset-0 z-(--z-raised) flex items-center justify-center">
       <div

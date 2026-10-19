@@ -1,4 +1,5 @@
 import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
 import { z } from 'zod'
 
 /**
@@ -15,6 +16,14 @@ export const directions = ['up', 'down', 'left', 'right'] as const
 export type Direction = (typeof directions)[number]
 export const modes = ['user', 'agent'] as const
 export type Mode = (typeof modes)[number]
+
+/**
+ * Who plays when the board is not the person's (`mode: 'agent'`), from
+ * `@localixai/plugin-sdk/opponent`: the agent in the chat, woken and moving with its tool, or the
+ * host's decision model, which the board asks itself one move at a time. Null until the board
+ * settles it (the decision model when one can answer, else the agent).
+ */
+export { OPPONENTS, type Opponent }
 
 /**
  * The most moves one call plays. The agent plans them without seeing the tiles that spawn, so a
@@ -67,6 +76,8 @@ export const gameSchema = z.object({
   moves: z.number().int().min(0),
   lastTurn: turnSchema.nullable(),
   waiting: agentWaitSchema.nullable(),
+  /** Who plays in `agent` mode; carried from one game to the next. */
+  opponent: opponentSchema,
   startedAt: z.string(),
 })
 export type Game = z.infer<typeof gameSchema>
@@ -96,6 +107,7 @@ export function newGame(input: {
   mode: Mode
   now: string
   best?: number
+  opponent?: Opponent | null
   random: () => number
 }): Game {
   const empty = Array<number>(CELLS).fill(0)
@@ -110,6 +122,7 @@ export function newGame(input: {
     moves: 0,
     lastTurn: null,
     waiting: null,
+    opponent: input.opponent ?? null,
     startedAt: input.now,
   }
 }
@@ -181,3 +194,14 @@ export const statusOf = (board: readonly number[]): Game['status'] =>
 /** Whether the agent is the one playing now. */
 export const agentPlays = (game: Pick<Game, 'mode' | 'status'> | null): boolean =>
   game?.mode === 'agent' && game.status === 'playing'
+
+/** The wait a person's Stop leaves: whoever plays the board pauses until Continue. */
+export const STOPPED_REASON = 'Stopped by you.'
+
+/** Whether a person stopped the play on this board (Continue resumes it). */
+export const stopped = (game: Pick<Game, 'waiting'>): boolean =>
+  game.waiting?.status === 'unreachable' && game.waiting.reason === STOPPED_REASON
+
+/** Whether the decision model is the one playing now (an `agent` board it holds). */
+export const decisionPlays = (game: Pick<Game, 'mode' | 'status' | 'opponent'> | null): boolean =>
+  agentPlays(game) && game?.opponent === 'decision'

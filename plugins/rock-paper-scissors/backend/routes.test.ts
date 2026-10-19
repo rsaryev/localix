@@ -110,6 +110,15 @@ describe('the view’s routes', () => {
     expect(await verifySealed(after.round.theirs!)).toBe(true)
   })
 
+  test('the opponent route switches who plays the other seat, and refuses one it does not know', async () => {
+    const { post, woke } = table()
+    const response = await post('/game/opponent', { opponent: 'decision' })
+    expect(response.status).toBe(200)
+    expect(playerViewSchema.parse(await response.json()).opponent).toBe('decision')
+    expect((await post('/game/opponent', { opponent: 'someone' })).status).toBe(400)
+    expect(woke).toEqual([])
+  })
+
   test('without a verified chat there is no table', async () => {
     const { post, app, scope } = table(null)
     expect((await post('/game/play', { move: 'rock' })).status).toBe(404)

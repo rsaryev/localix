@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 
-import { gameSchema, owesAgentMove, type Side } from '../../shared/game'
+import { gameSchema, owesAgentMove, type Opponent, type Side } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
 import { useStoreSnapshot } from '../useStoreSnapshot'
 
@@ -51,5 +51,7 @@ export function useGame(active: boolean) {
     play: (move: string) => act('move', { move }),
     newGame: (you?: Side) => act('new', you ? { you } : {}),
     remind: () => act('remind', {}),
+    /** Who plays the other colour; the route answers with its move when the new opponent owes one. */
+    setOpponent: (opponent: Opponent) => act('opponent', { opponent }),
   }
 }

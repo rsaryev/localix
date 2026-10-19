@@ -25,6 +25,7 @@ export function Hand({
   unreachable = false,
   verified = null,
   result,
+  hiddenFrom = 'the agent',
 }: {
   title: string
   side: 'left' | 'right'
@@ -39,6 +40,8 @@ export function Hand({
   /** The browser's own check of a revealed digest; `null` when there is nothing to check. */
   verified?: boolean | null
   result?: 'winner' | 'loser' | 'draw'
+  /** Who a sealed own move is hidden from: the other seat, in the person's words. */
+  hiddenFrom?: string
 }) {
   const faceDown = !move && digest !== undefined
   const label = move
@@ -82,7 +85,7 @@ export function Hand({
           {move ? MOVE_LABEL[move] : faceDown ? 'Sealed' : thinking ? 'Choosing…' : 'Waiting'}
         </span>
         {sealedFromOpponent && (
-          <span className="text-2xs text-text-faint">Hidden from the agent</span>
+          <span className="text-2xs text-text-faint">Hidden from {hiddenFrom}</span>
         )}
         {digest !== undefined && <DigestPill digest={digest} verified={verified} />}
       </figcaption>

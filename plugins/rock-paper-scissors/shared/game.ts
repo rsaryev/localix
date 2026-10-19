@@ -1,4 +1,5 @@
 import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
 import {
   revealSealed,
   sealedSchema,
@@ -30,6 +31,13 @@ export const PLAYERS = ['you', 'agent'] as const
 export type Player = (typeof PLAYERS)[number]
 
 export { agentWaitSchema, type AgentWait }
+
+/**
+ * Who fills the `agent` seat at this table (`@localixai/plugin-sdk/opponent`): the agent in the
+ * chat, or the host's decision model. The seat — its sealed move, its side of the score — is the
+ * same either way; only who chooses differs.
+ */
+export { OPPONENTS, type Opponent }
 
 /** From the person's side, like the score. */
 export const outcomeSchema = z.enum(['won', 'lost', 'draw'])
@@ -67,6 +75,8 @@ export const gameSchema = z.object({
   history: z.array(roundSchema).max(HISTORY_LIMIT),
   waiting: agentWaitSchema.nullable(),
   record: recordSchema,
+  /** Who plays the other seat; carried from round to round; null until the table settles it. */
+  opponent: opponentSchema,
   startedAt: z.string(),
 })
 export type Game = z.infer<typeof gameSchema>
@@ -91,6 +101,7 @@ export const playerViewSchema = z.object({
   waiting: agentWaitSchema.nullable(),
   /** From the person's side, whoever is looking. */
   record: recordSchema,
+  opponent: opponentSchema,
 })
 export type PlayerView = z.infer<typeof playerViewSchema>
 
@@ -115,13 +126,20 @@ export function newRound(input: { id: string; number: number; first: Player; now
   return { ...input, you: null, agent: null, outcome: null, startedAt: input.now }
 }
 
-export function newGame(input: { id: string; roundId: string; first: Player; now: string }): Game {
+export function newGame(input: {
+  id: string
+  roundId: string
+  first: Player
+  now: string
+  opponent?: Opponent | null
+}): Game {
   return {
     id: input.id,
     round: newRound({ id: input.roundId, number: 1, first: input.first, now: input.now }),
     history: [],
     waiting: null,
     record: EMPTY_RECORD,
+    opponent: input.opponent ?? null,
     startedAt: input.now,
   }
 }
@@ -219,6 +237,7 @@ export function viewFor(game: Game, viewer: Player): PlayerView {
     history: game.history.map((round) => roundFor(round, viewer)),
     waiting: game.waiting,
     record: game.record,
+    opponent: game.opponent,
   }
 }
 

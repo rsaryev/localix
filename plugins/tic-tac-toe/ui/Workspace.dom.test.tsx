@@ -120,7 +120,7 @@ test('a click plays X, wakes the board’s own chat, and the agent’s move land
       { path: '/rpc/tic-tac-toe/game/move?sessionId=s1', body: { cell: 4 } },
     ])
     expect(view.backend.requests.every(({ path }) => path.endsWith('sessionId=s1'))).toBe(true)
-    expect(view.host.textContent).toContain('The agent is thinking')
+    expect(view.host.textContent).toContain('Thinking')
     // While the agent owes a move no cell takes a click, and every one stays reachable by keyboard.
     expect(view.cell('Cell 1, top left: empty')?.getAttribute('aria-disabled')).toBe('true')
 
@@ -159,7 +159,7 @@ test('an initial read failure offers a retry that restores the board', async () 
     expect(retry).toBeDefined()
     await view.act(async () => retry!.click())
     expect(view.cell('Cell 5, centre: empty')).not.toBeNull()
-    expect(view.host.textContent).toContain('You play X · Agent plays O')
+    expect(view.host.textContent).toContain('You play X')
   } finally {
     await view.unmount()
   }
@@ -194,7 +194,7 @@ test('the control row says who plays O, beside the new game', async () => {
   try {
     expect(view.cell('Opponent: Chat agent')).not.toBeNull()
     expect(view.cell('New game')).not.toBeNull()
-    expect(view.host.textContent).toContain('You play X · Agent plays O')
+    expect(view.host.textContent).toContain('You play X')
   } finally {
     await view.unmount()
   }

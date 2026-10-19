@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 
-import { owesAgentShot, playerViewSchema, type Player } from '../../shared/game'
+import { owesAgentShot, playerViewSchema, type Opponent, type Player } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
 import { useStoreSnapshot } from '../useStoreSnapshot'
 
@@ -52,5 +52,7 @@ export function useGame(active: boolean) {
     reshuffle: () => act('reshuffle', {}),
     newGame: (first?: Player) => act('new', first ? { first } : {}),
     remind: () => act('remind', {}),
+    /** Who fires from the agent's side; the route answers after its shots when it owes one. */
+    setOpponent: (opponent: Opponent) => act('opponent', { opponent }),
   }
 }

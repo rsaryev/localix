@@ -14,8 +14,15 @@ import { other } from './position'
  *
  * Written from the agent's seat: it plays the user's opposite colour. The board is drawn from
  * White's side with files and ranks, the way the notation reads, and the FEN is given too — the
- * notation models are best at reading a chess position in.
+ * notation models are best at reading a chess position in. When the table's opponent is the
+ * decision model, it plays that colour and the agent only watches.
  */
+
+/** Who plays the user's opposite colour, from the agent's seat: itself, or the decision model. */
+const themSeat = (game: Pick<Game, 'opponent'>) =>
+  game.opponent === 'decision'
+    ? { who: 'The decision model', whose: 'The decision model’s' }
+    : { who: 'You', whose: 'Your' }
 
 const GLYPH: { [type: string]: string } = { p: 'p', n: 'n', b: 'b', r: 'r', q: 'q', k: 'k' }
 
@@ -48,11 +55,11 @@ export function statusLine(game: Game): string {
   const how = game.ending ? ENDING[game.ending] : ''
   if (game.ending === 'resign') return 'The user won — you resigned.'
   if (game.status === 'won') return `The user won by ${how}.`
-  if (game.status === 'lost') return `You won by ${how}.`
+  if (game.status === 'lost') return `${themSeat(game).who} won by ${how}.`
   if (game.status === 'draw') return `Draw by ${how}.`
   const check = positionOfGame(game).inCheck ? ' — in check' : ''
   if (turnOf(game) === game.you) return `The user’s turn (${game.you})${check}.`
-  return `Your turn (${other(game.you)})${check}.`
+  return `${themSeat(game).whose} turn (${other(game.you)})${check}.`
 }
 
 /**
@@ -65,12 +72,12 @@ export function recordLine(record: GameRecord): string | null {
 }
 
 /** "The user played Nf3." */
-export const moveLine = (move: Move) =>
-  `${move.by === 'you' ? 'The user' : 'You'} played ${move.san}.`
+export const moveLine = (move: Move, game: Pick<Game, 'opponent'>) =>
+  `${move.by === 'you' ? 'The user' : themSeat(game).who} played ${move.san}.`
 
 export const lastMoveLine = (game: Game): string | null => {
   const move = game.moves.at(-1)
-  return move ? moveLine(move) : null
+  return move ? moveLine(move, game) : null
 }
 
 /** The moves so far as numbered pairs: "1. e4 e5 2. Nf3 Nc6". */
@@ -95,7 +102,9 @@ export function legalLine(game: Game): string | null {
 export function describeGame(game: Game): string {
   const { fen } = positionOfGame(game)
   return [
-    `Chess — the user plays ${game.you} against you, as ${other(game.you)}.`,
+    game.opponent === 'decision'
+      ? `Chess — the user plays ${game.you} against the decision model (${other(game.you)}). You do not move at this table; the user can switch the opponent back to you on the board.`
+      : `Chess — the user plays ${game.you} against you, as ${other(game.you)}.`,
     recordLine(game.record),
     lastMoveLine(game),
     statusLine(game),

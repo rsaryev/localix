@@ -24,6 +24,14 @@ The board enforces castling, en passant, promotion, check, and the draws by stal
 repetition, the fifty-move rule and insufficient material. You never need to work out whether a move
 is legal: the legal moves are listed for you.
 
+## When the decision model plays your side
+
+The user can choose, on the board, who plays the colour opposite theirs: you, or a decision model
+the board asks itself. When the board says the decision model plays it, you do not move or resign —
+both are refused — and the board never wakes you; a new game you open gives the user white. You can
+still read the board and talk about the position. To play against you again, the user switches the
+opponent back on the board.
+
 ## When the board wakes you
 
 A message from the "chess" plugin, not typed by the user, means it is your move. It carries the last

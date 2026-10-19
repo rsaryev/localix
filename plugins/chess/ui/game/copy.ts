@@ -18,18 +18,22 @@ export function scoreLine(record: GameRecord): string {
   return ` · Score ${record.won}–${record.lost}, ${draws}`
 }
 
+/** Who plays the other colour at this table, in the person's words. */
+export const opponentName = (game: Pick<Game, 'opponent'>) =>
+  game.opponent === 'decision' ? 'The decision model' : 'The agent'
+
 /** "The agent played Nf3." */
-export const moveSentence = (move: Move) =>
-  `${move.by === 'you' ? 'You' : 'The agent'} played ${move.san}.`
+export const moveSentence = (move: Move, game: Pick<Game, 'opponent'>) =>
+  `${move.by === 'you' ? 'You' : opponentName(game)} played ${move.san}.`
 
 /** The headline beside the board. */
 export function headline(game: Game): string {
   if (game.status === 'won') return 'You won'
-  if (game.status === 'lost') return 'The agent won'
+  if (game.status === 'lost') return 'You lost'
   if (game.status === 'draw') return 'Draw'
   if (turnOf(game) === game.you) return 'Your turn'
-  if (game.waiting?.status === 'unreachable') return 'The agent could not be reached'
-  return 'The agent is thinking'
+  if (game.waiting?.status === 'unreachable') return 'No answer'
+  return 'Thinking'
 }
 
 const ENDING: { [ending in GameEnding]: string } = {
@@ -47,7 +51,7 @@ export const endingSentence = (game: Game): string => (game.ending ? ENDING[game
 /** What a screen reader hears when the board changes: the last move, then what it means now. */
 export function announcement(game: Game): string {
   const last = game.moves.at(-1)
-  return [last ? moveSentence(last) : 'New game.', `${headline(game)}.`].join(' ')
+  return [last ? moveSentence(last, game) : 'New game.', `${headline(game)}.`].join(' ')
 }
 
 /** Which colour the person plays next game — the other one. */

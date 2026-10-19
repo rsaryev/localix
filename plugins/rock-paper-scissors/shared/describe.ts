@@ -47,8 +47,29 @@ export function roundLine(view: PlayerView): string {
   return `Round ${round.number}: the user opens. The board wakes you after they have chosen.`
 }
 
-/** Everything the agent needs to act. */
+/** Who fills the other seat, in the third person: "the agent", "the decision model". */
+const opponentOf = (view: Pick<PlayerView, 'opponent'>) =>
+  view.opponent === 'decision' ? 'the decision model' : 'the agent'
+
+/** The score in neutral words, for a reader who does not play at this table. */
+function neutralScore(view: PlayerView, them: string): string | null {
+  const { won, lost, draw } = view.record
+  if (won + lost + draw === 0) return null
+  return `Score: the user ${won}, ${them} ${lost}, draws ${draw}.`
+}
+
+/**
+ * Everything the agent needs to act. While the decision model holds the seat, the agent does not
+ * play: it is told so, with the score, and nothing about the round in play.
+ */
 export function describeForAgent(view: PlayerView): string {
+  if (view.opponent === 'decision')
+    return [
+      'Rock Paper Scissors — the user against the decision model. You do not play at this table; the user can switch the opponent back to you on the table.',
+      neutralScore(view, 'the decision model'),
+    ]
+      .filter((line) => line !== null)
+      .join('\n')
   const previous = view.round.outcome === null ? view.history.at(-1) : undefined
   return [
     'Rock Paper Scissors — the user against you.',
@@ -68,20 +89,21 @@ export function describeForChat(view: PlayerView): string {
   const round = view.round
   const revealed = round.outcome !== null
   const theirs = theirMove(round)
-  const lines = [`Rock Paper Scissors — round ${round.number}, the user against the agent.`]
+  const them = opponentOf(view)
+  const lines = [`Rock Paper Scissors — round ${round.number}, the user against ${them}.`]
   if (revealed && round.mine && theirs) {
     const verdict =
-      round.outcome === 'draw'
-        ? 'a draw'
-        : round.outcome === 'won'
-          ? 'the user won'
-          : 'the agent won'
-    lines.push(`The user played ${round.mine}, the agent played ${theirs} — ${verdict}.`)
+      round.outcome === 'draw' ? 'a draw' : round.outcome === 'won' ? 'the user won' : `${them} won`
+    lines.push(`The user played ${round.mine}, ${them} played ${theirs} — ${verdict}.`)
   } else {
     lines.push(round.mine ? 'The user has chosen (sealed).' : 'The user has not chosen yet.')
-    lines.push(round.theirs ? 'The agent’s move is sealed.' : 'The agent has not moved yet.')
+    lines.push(
+      round.theirs ? `${capital(them)}’s move is sealed.` : `${capital(them)} has not moved yet.`,
+    )
   }
-  const { won, lost, draw } = view.record
-  if (won + lost + draw > 0) lines.push(`Score: the user ${won}, the agent ${lost}, draws ${draw}.`)
+  const score = neutralScore(view, them)
+  if (score) lines.push(score)
   return lines.join('\n')
 }
+
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)

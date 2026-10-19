@@ -1,4 +1,5 @@
 import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
 import { z } from 'zod'
 
 import { SIDES, findPlay, other, positionOf, type Ending, type Side } from './position'
@@ -18,6 +19,13 @@ export { SIDES, type Side } from './position'
 
 export const PLAYERS = ['you', 'agent'] as const
 export type Player = (typeof PLAYERS)[number]
+
+/**
+ * Who plays the person's opposite colour at this table (`@localixai/plugin-sdk/opponent`): the
+ * agent in the chat, or the host's decision model. The seat is the same either way — a move by
+ * that colour is the `agent` player's — only who fills it differs.
+ */
+export { OPPONENTS, type Opponent }
 
 /**
  * While the agent owes a move: when it was asked, and whether it can answer. Everything that counts
@@ -60,11 +68,19 @@ export const gameSchema = z.object({
     .nullable(),
   waiting: agentWaitSchema.nullable(),
   record: recordSchema,
+  /** Who plays the other colour; carried from one game to the next; null until the table settles it. */
+  opponent: opponentSchema,
   startedAt: z.string(),
 })
 export type Game = z.infer<typeof gameSchema>
 
-export function newGame(input: { id: string; you: Side; now: string; record?: GameRecord }): Game {
+export function newGame(input: {
+  id: string
+  you: Side
+  now: string
+  record?: GameRecord
+  opponent?: Opponent | null
+}): Game {
   return {
     id: input.id,
     moves: [],
@@ -73,6 +89,7 @@ export function newGame(input: { id: string; you: Side; now: string; record?: Ga
     ending: null,
     waiting: null,
     record: input.record ?? EMPTY_RECORD,
+    opponent: input.opponent ?? null,
     startedAt: input.now,
   }
 }

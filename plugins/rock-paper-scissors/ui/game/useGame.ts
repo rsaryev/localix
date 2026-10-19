@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 
-import { playerViewSchema, viewOwesAgentMove, type Move, type Player } from '../../shared/game'
+import {
+  playerViewSchema,
+  viewOwesAgentMove,
+  type Move,
+  type Opponent,
+  type Player,
+} from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
 import { useStoreSnapshot } from '../useStoreSnapshot'
 
 /**
- * The table as the person may see it, and the three things they can do at it.
+ * The table as the person may see it, and the four things they can do at it.
  *
  * Every request names the chat the table BELONGS to (`useWorkItemSessionId`), never the active
  * one. The routes answer with the person's view only — the agent's sealed move arrives as its
@@ -45,5 +51,7 @@ export function useGame(active: boolean) {
     play: (move: Move) => act('play', { move }),
     nextRound: (first?: Player) => act('next', first ? { first } : {}),
     remind: () => act('remind', {}),
+    /** Who fills the other seat; the route answers with its move when the new opponent owes one. */
+    setOpponent: (opponent: Opponent) => act('opponent', { opponent }),
   }
 }

@@ -35,17 +35,24 @@ export function verdictLine(round: RoundView): string | null {
   return `${HOW[round.outcome === 'won' ? round.mine : theirs]}.`
 }
 
+/** Who fills the other seat, in the person's words. */
+export const opponentName = (view: Pick<PlayerView, 'opponent'>) =>
+  view.opponent === 'decision' ? 'The decision model' : 'The agent'
+
+/** The other seat's short name, over its hand and on the scoreboard. */
+export const opponentTitle = (view: Pick<PlayerView, 'opponent'>) =>
+  view.opponent === 'decision' ? 'Model' : 'Agent'
+
 /** The headline beside the table. */
 export function headline(view: PlayerView): string {
   const round = view.round
   if (round.outcome === 'won') return 'You won the round'
-  if (round.outcome === 'lost') return 'The agent won the round'
+  if (round.outcome === 'lost') return 'You lost the round'
   if (round.outcome === 'draw') return 'Draw'
-  if (viewerMayMove(view))
-    return round.theirs ? 'The agent has sealed its move — your turn' : 'You open — choose'
+  if (viewerMayMove(view)) return round.theirs ? 'Sealed — your turn' : 'You open — choose'
   if (viewOwesAgentMove(view)) {
-    if (view.waiting?.status === 'unreachable') return 'The agent could not be reached'
-    return 'The agent is choosing'
+    if (view.waiting?.status === 'unreachable') return 'No answer'
+    return 'Choosing'
   }
   return 'Waiting'
 }
@@ -69,7 +76,7 @@ export function scoreLine(record: GameRecord): string {
 
 /** Who opens the next round — the side that did not open this one. */
 export const nextOpener = (view: PlayerView): string =>
-  view.round.first === 'agent' ? 'you open' : 'the agent opens'
+  view.round.first === 'agent' ? 'you open' : `${opponentName(view).toLowerCase()} opens`
 
 /** "12s", "1m 05s" — how long the agent has been choosing. */
 export function elapsed(ms: number): string {

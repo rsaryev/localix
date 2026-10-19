@@ -43,11 +43,11 @@ export function TurnStatus({
 
   return (
     // Reserve space for recovery actions before they appear, so the boards do not move on a stall.
-    <div className="flex min-h-20 min-w-40 flex-1 flex-col items-start justify-center gap-1">
+    <div className="flex min-h-20 flex-auto flex-col items-start justify-center gap-1">
       <p
         role={error ? 'alert' : undefined}
         className={cn(
-          'flex items-center gap-2 text-base font-medium',
+          'flex items-center gap-2 text-base font-medium whitespace-nowrap',
           error ? 'text-status-warning' : 'text-text-soft',
         )}
       >
@@ -59,13 +59,16 @@ export function TurnStatus({
       </p>
       {/* The last thing that happened, so a glance tells the story; the tallies show the rest. */}
       <p className="text-xs text-text-faint">
-        {last ? shotSentence(last) : 'Fleets are placed — fire at the agent’s waters.'}
+        {last ? shotSentence(last, view) : 'Fleets are placed — fire at the agent’s waters.'}
         {scoreLine(view.record)}
       </p>
       {/* Heard, not seen: the shot just fired and what it means, once per change. */}
       <p aria-live="polite" className="sr-only">
         {announcement(view)}
       </p>
+      {agentTurn && waiting?.status === 'unreachable' && waiting.reason && (
+        <p className="text-xs text-status-warning">{waiting.reason}</p>
+      )}
       {stuck && (
         <Button size="sm" variant="secondary" onClick={onRemind} disabled={sending}>
           <RefreshCw data-icon="inline-start" />

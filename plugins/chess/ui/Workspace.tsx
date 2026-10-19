@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { ChessKnight, MessageSquareOff, RotateCcw } from 'lucide-react'
 import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
 import { useElementVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { OpponentMenu } from '@localixai/kit/opponent-menu'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -11,6 +12,7 @@ import { gameMessageContext } from './bindings'
 import { Board } from './game/Board'
 import { GameOver, TurnStatus } from './game/TurnPanel'
 import { owesAgentMove, turnOf } from '../shared/game'
+import { other } from '../shared/position'
 import { useGame } from './game/useGame'
 import { useNow } from './useNow'
 
@@ -94,15 +96,23 @@ export function Workspace({
                 sending={state.sending}
                 onRemind={() => void state.remind()}
               />
-              <IconButton
-                aria-label="New game"
-                tooltip="New game"
-                size="lg"
-                disabled={state.sending || game.moves.length === 0}
-                onClick={() => void state.newGame()}
-              >
-                <RotateCcw />
-              </IconButton>
+              <div className="flex items-center gap-1">
+                <OpponentMenu
+                  heading={`Who plays ${other(game.you)}`}
+                  value={game.opponent ?? 'agent'}
+                  disabled={state.sending}
+                  onChange={(opponent) => void state.setOpponent(opponent)}
+                />
+                <IconButton
+                  aria-label="New game"
+                  tooltip="New game"
+                  size="lg"
+                  disabled={state.sending || game.moves.length === 0}
+                  onClick={() => void state.newGame()}
+                >
+                  <RotateCcw />
+                </IconButton>
+              </div>
             </div>
             <div className="relative" style={{ width: BOARD_SIZE }}>
               <Board

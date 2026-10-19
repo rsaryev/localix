@@ -181,7 +181,9 @@ test('handing the board to the agent shows it playing, and its batch lands move 
         path.startsWith('/rpc/game-2048/game/mode?sessionId=s1'),
       ),
     ).toBe(true)
-    expect(view.host.textContent).toContain('The agent is playing')
+    expect(view.host.textContent).toContain('Playing')
+    // While the person watches, the row says who plays the board.
+    expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')).not.toBeNull()
 
     view.backend.agentPlays(['right', 'down', 'left'])
     await view.poll()

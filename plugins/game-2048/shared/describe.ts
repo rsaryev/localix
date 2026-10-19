@@ -17,7 +17,11 @@ export function drawBoard(game: Pick<Game, 'board'>): string {
 
 /** Who controls the board, in the agent's words. */
 export const controlLine = (game: Game): string =>
-  game.mode === 'agent' ? 'You control the board.' : 'The user controls the board.'
+  game.mode === 'user'
+    ? 'The user controls the board.'
+    : game.opponent === 'decision'
+      ? 'The decision model plays the board; you do not move. The user can switch the player back to you on the board.'
+      : 'You control the board.'
 
 /** How the game ended, or null while it goes on. */
 export function endLine(game: Game): string | null {

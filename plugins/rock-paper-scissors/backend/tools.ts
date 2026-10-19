@@ -69,9 +69,11 @@ export function createGameTools(ctx: PluginContext, games: GameService) {
       return {
         content: [
           `Round ${game.round.number} is on this chat’s table.`,
-          first === 'agent'
-            ? 'You open: call rock_paper_scissors with action "play" now.'
-            : 'The user opens; the table wakes you after they have chosen.',
+          game.opponent === 'decision'
+            ? 'The decision model plays the other seat at this table, so the user opens and you do not play.'
+            : first === 'agent'
+              ? 'You open: call rock_paper_scissors with action "play" now.'
+              : 'The user opens; the table wakes you after they have chosen.',
           recordLine(game.record),
         ]
           .filter((line) => line !== null)

@@ -5,10 +5,11 @@ import { useElementVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
+import { OpponentMenu } from '@localixai/kit/opponent-menu'
 
 import { theirMove, viewerMayMove, viewOwesAgentMove, type Outcome } from '../shared/game'
 import { gameMessageContext } from './bindings'
-import { nextOpener, verdictLine } from './game/copy'
+import { nextOpener, opponentName, opponentTitle, verdictLine } from './game/copy'
 import { Hand } from './game/Hand'
 import { MovePicker } from './game/MovePicker'
 import { Scoreboard } from './game/Scoreboard'
@@ -19,7 +20,7 @@ import { useNow } from './useNow'
 import './game/table.css'
 
 /**
- * This chat's table, top to bottom: the score, what the round waits for, the two hands facing each
+ * This chat's table, top to bottom: the score and who plays the other seat, what the round waits for, the two hands facing each
  * other, and the person's three choices — or, once revealed, why the round went as it did.
  *
  * The agent's hand shows only what the person may see — nothing, a sealed card with its digest,
@@ -96,7 +97,15 @@ export function Workspace({
         className="mx-auto flex min-h-full flex-col items-center justify-center gap-6 px-4 py-8"
         style={{ maxWidth: TABLE_WIDTH }}
       >
-        <Scoreboard record={view.record} round={round.number} />
+        <div className="flex flex-col items-center gap-1">
+          <Scoreboard record={view.record} round={round.number} opponent={opponentTitle(view)} />
+          <OpponentMenu
+            heading="Who plays against you"
+            value={view.opponent ?? 'agent'}
+            disabled={state.sending}
+            onChange={(opponent) => void state.setOpponent(opponent)}
+          />
+        </div>
         <TurnStatus
           view={view}
           now={now}
@@ -110,6 +119,7 @@ export function Workspace({
             side="left"
             move={round.mine}
             sealedFromOpponent={round.mine !== null && round.outcome === null}
+            hiddenFrom={opponentName(view).toLowerCase()}
             {...(sides ? { result: sides.you } : {})}
           />
           <span
@@ -119,7 +129,7 @@ export function Workspace({
             VS
           </span>
           <Hand
-            title="Agent"
+            title={opponentTitle(view)}
             side="right"
             move={theirMove(round)}
             {...(round.theirs ? { digest: round.theirs.digest } : {})}

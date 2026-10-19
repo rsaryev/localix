@@ -6,6 +6,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
+import { OpponentMenu } from '@localixai/kit/opponent-menu'
 
 import { owesAgentShot } from '../shared/game'
 import { gameMessageContext } from './bindings'
@@ -97,6 +98,12 @@ export function Workspace({
                     New fleet
                   </Button>
                 )}
+                <OpponentMenu
+                  heading="Who fires at your fleet"
+                  value={view.opponent ?? 'agent'}
+                  disabled={state.sending}
+                  onChange={(opponent) => void state.setOpponent(opponent)}
+                />
                 <IconButton
                   aria-label="New game"
                   tooltip="New game"

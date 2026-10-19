@@ -102,6 +102,15 @@ export const CONTROLS: readonly KitCatalogEntry[] = [
     not: 'Not a hand-made <label> plus a red <p>.',
   },
   {
+    specifier: k('opponent-menu'),
+    category: 'controls',
+    provider: 'kit',
+    exports: ['OpponentMenu', 'OPPONENT_CHOICES'],
+    summary: 'Who plays the other side of a game: the chat agent or a decision model.',
+    use: "A game's control row, beside New game. The table keeps the choice (`@localixai/plugin-sdk/opponent`); the backend answers a `decision` turn with `askDecisionForTurn`.",
+    not: 'Any other choice is Select or MenuEntries in a menu.',
+  },
+  {
     specifier: k('select'),
     category: 'controls',
     provider: 'kit',

@@ -89,13 +89,16 @@ export function createGameTools(ctx: PluginContext, games: GameService) {
     },
     async new_game(seat: Seat, userPlays: 'white' | 'black'): Promise<Result> {
       const game = await games.agentNewGame(seat, userPlays)
-      const agentFirst = userPlays === 'black'
+      const decision = game.opponent === 'decision'
+      const agentFirst = !decision && userPlays === 'black'
       return {
         content: [
           'A new game is on this chat’s board.',
-          agentFirst
-            ? 'You play white and move first: call checkers with action "move" now.'
-            : 'The user plays white and moves first; the board wakes you after their move.',
+          decision
+            ? 'The decision model plays the other colour at this table, so the user plays white and moves first, and you do not move.'
+            : agentFirst
+              ? 'You play white and move first: call checkers with action "move" now.'
+              : 'The user plays white and moves first; the board wakes you after their move.',
           recordLine(game.record),
           '',
           drawBoard(game),

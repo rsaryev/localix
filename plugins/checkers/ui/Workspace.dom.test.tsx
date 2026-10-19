@@ -127,7 +127,7 @@ test('two clicks play a move, wake the board’s own chat, and the agent’s mov
     ])
     // Every request names the board's chat, never the active one.
     expect(view.backend.requests.every(({ path }) => path.endsWith('sessionId=s1'))).toBe(true)
-    expect(view.host.textContent).toContain('The agent is thinking')
+    expect(view.host.textContent).toContain('Thinking')
     // While the agent owes a move no square takes a click.
     expect(view.square('e3')?.getAttribute('aria-disabled')).toBe('true')
 
@@ -169,7 +169,7 @@ test('an initial read failure offers a retry that restores the board', async () 
     expect(retry).toBeDefined()
     await view.act(async () => retry!.click())
     expect(view.square('c3')).not.toBeNull()
-    expect(view.host.textContent).toContain('You play White (12) · Agent plays Black (12)')
+    expect(view.host.textContent).toContain('You play White (12) · Black (12)')
   } finally {
     await view.unmount()
   }
@@ -194,6 +194,16 @@ test('the arrow keys walk the board and stop at its edges', async () => {
     await press('ArrowLeft')
     await press('ArrowLeft')
     expect(focused()).toBe('Square a8')
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('the control row says who plays the other colour, beside the new game', async () => {
+  const view = await mount('s1')
+  try {
+    expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')).not.toBeNull()
+    expect(view.host.querySelector('[aria-label="New game"]')).not.toBeNull()
   } finally {
     await view.unmount()
   }

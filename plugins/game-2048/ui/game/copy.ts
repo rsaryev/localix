@@ -1,4 +1,4 @@
-import { agentPlays, type Game } from '../../shared/game'
+import { agentPlays, stopped, type Game } from '../../shared/game'
 
 /**
  * The game in the PERSON's words — the view's headline and what a screen reader announces.
@@ -8,14 +8,29 @@ import { agentPlays, type Game } from '../../shared/game'
  * board can be in has a sentence a test can read.
  */
 
-/** The headline beside the board. */
+/** Who plays an `agent` board, in the person's words. */
+export const playerName = (game: Pick<Game, 'opponent'>) =>
+  game.opponent === 'decision' ? 'The decision model' : 'The agent'
+
+/**
+ * The headline beside the board — a word or two, because who plays is already in the control row
+ * beside it. {@link spokenHeadline} is the full sentence a screen reader hears.
+ */
 export function headline(game: Game): string {
-  if (game.status === 'won')
-    return game.mode === 'agent' ? 'The agent reached 2048' : 'You reached 2048'
+  if (game.status === 'won') return 'Reached 2048'
   if (game.status === 'over') return 'No moves left'
   if (game.mode === 'user') return 'Your move'
-  if (game.waiting?.status === 'unreachable') return 'The agent could not be reached'
-  return 'The agent is playing'
+  if (game.waiting?.status === 'unreachable') return stopped(game) ? 'Paused' : 'Stopped'
+  return 'Playing'
+}
+
+/** The headline as a sentence that names who plays. */
+export function spokenHeadline(game: Game): string {
+  if (game.status === 'won')
+    return game.mode === 'agent' ? `${playerName(game)} reached 2048` : 'You reached 2048'
+  if (game.status === 'over' || game.mode === 'user') return headline(game)
+  if (game.waiting?.status === 'unreachable') return `${playerName(game)} could not be reached`
+  return `${playerName(game)} is playing`
 }
 
 /** "Score 1,204 · Best 2,380 · 96 moves" — the numbers under the headline. */
@@ -25,17 +40,23 @@ export function scoreLine(game: Game): string {
   return `Score ${number(game.score)} · Best ${number(game.best)} · ${moves}`
 }
 
+/** "Score 1,204 · Best 2,380" — the short line the view shows under the headline. */
+export function shortScoreLine(game: Game): string {
+  const number = (value: number) => value.toLocaleString('en')
+  return `Score ${number(game.score)} · Best ${number(game.best)}`
+}
+
 /** What a screen reader hears when the board changes: the move just made, then the state. */
 export function announcement(game: Game): string {
   const steps = game.lastTurn?.steps ?? []
-  const who = game.mode === 'agent' ? 'The agent' : 'You'
+  const who = game.mode === 'agent' ? playerName(game) : 'You'
   const moved =
     steps.length === 0
       ? 'New game.'
       : steps.length === 1
         ? `${who} moved ${steps[0]!.direction}.`
         : `${who} made ${steps.length} moves.`
-  return `${moved} ${headline(game)}. ${scoreLine(game)}.`
+  return `${moved} ${spokenHeadline(game)}. ${scoreLine(game)}.`
 }
 
 /** The result card's line under its title. */

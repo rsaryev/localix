@@ -8,7 +8,10 @@ description: >-
 
 # Play 2048
 
-Each chat has one board, and the user chooses who controls it: **I play** or **Agent plays**.
+Each chat has one board, and the user chooses who controls it: **I play** or **Watch**. While the
+user watches, the board says who plays it: you, or a decision model the board asks itself. When the
+decision model plays, do not move — a move is refused, and the board never hands you the game; you
+can still read the board and talk about it. The user switches the player back to you on the board.
 Everything goes through one tool, `game_2048`, and its `action`: `move`, `state`, `new_game`.
 
 ## When the board is yours

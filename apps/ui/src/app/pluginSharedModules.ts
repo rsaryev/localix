@@ -88,6 +88,7 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
   '@localixai/plugin-sdk/store-changes': () => import('@localixai/plugin-sdk/store-changes'),
   '@localixai/plugin-sdk/document-layout': () => import('@localixai/plugin-sdk/document-layout'),
   '@localixai/plugin-sdk/agent-wait': () => import('@localixai/plugin-sdk/agent-wait'),
+  '@localixai/plugin-sdk/opponent': () => import('@localixai/plugin-sdk/opponent'),
   '@localixai/plugin-sdk/sealed': () => import('@localixai/plugin-sdk/sealed'),
   '@localixai/plugin-sdk/secret-shapes': () => import('@localixai/plugin-sdk/secret-shapes'),
   '@localixai/plugin-sdk/navigation': () => import('@localixai/plugin-sdk/navigation'),

@@ -78,7 +78,8 @@ export function recordLine(record: GameRecord): string | null {
 export function statusLine(view: PlayerView): string {
   if (view.status === 'won') return 'The user won — your whole fleet is sunk.'
   if (view.status === 'lost') return 'You won — the user’s whole fleet is sunk.'
-  return view.turn === 'agent' ? 'Your shot.' : 'The user’s shot.'
+  if (view.turn === 'you') return 'The user’s shot.'
+  return view.opponent === 'decision' ? 'The decision model’s shot.' : 'Your shot.'
 }
 
 /**
@@ -130,7 +131,9 @@ export function describeGame(view: PlayerView): string {
   const suggested = suggestedCells(view)
   const shotsAtAgent = shotsBy(view, 'you')
   return [
-    'Battleship — you play against the user. Each side fires in turn; a hit earns another shot.',
+    view.opponent === 'decision'
+      ? 'Battleship — the decision model fires from your side against the user. You do not fire at this table; the user can switch the opponent back to you on the board.'
+      : 'Battleship — you play against the user. Each side fires in turn; a hit earns another shot.',
     ...(recordLine(view.record) ? [recordLine(view.record)!] : []),
     ...sinceLastTurn(view),
     statusLine(view),

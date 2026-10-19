@@ -6,11 +6,11 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
+import { OpponentMenu } from '@localixai/kit/opponent-menu'
 
 import { owesAgentMove } from '../shared/game'
 import { gameMessageContext } from './bindings'
 import { Board } from './game/Board'
-import { OpponentMenu } from './game/OpponentMenu'
 import { GameOver, TurnStatus } from './game/TurnPanel'
 import { useGame } from './game/useGame'
 import { useNow } from './useNow'
@@ -98,7 +98,8 @@ export function Workspace({
               />
               <div className="flex items-center gap-1">
                 <OpponentMenu
-                  value={game.opponent}
+                  heading="Who plays O"
+                  value={game.opponent ?? 'agent'}
                   disabled={state.sending}
                   onChange={(opponent) => void state.setOpponent(opponent)}
                 />

@@ -3,7 +3,7 @@
     "bytes": 365
   },
   "./backend": {
-    "bytes": 45508,
+    "bytes": 46500,
     "shake": {
       "export": "ASSISTANT_BINDINGS_MAX",
       "bytes": 31
@@ -23,6 +23,9 @@
   },
   "./navigation": {
     "bytes": 4073
+  },
+  "./opponent": {
+    "bytes": 469
   },
   "./prerequisite": {
     "bytes": 1994
@@ -152,7 +155,7 @@
     "bytes": 900
   },
   "./ui/store-resource": {
-    "bytes": 3829
+    "bytes": 3834
   },
   "./ui/store-snapshot": {
     "bytes": 9119

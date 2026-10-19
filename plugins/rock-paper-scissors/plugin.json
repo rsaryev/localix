@@ -6,7 +6,7 @@
   "apiVersion": 1,
   "license": "MIT",
   "author": "Localix",
-  "description": "Rock paper scissors against the agent, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
+  "description": "Rock paper scissors against the agent or a decision model, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
   "defaultEnabled": true,
   "surfaces": ["agent", "workbench"],
   "keywords": ["game", "rock paper scissors", "roshambo", "play"],

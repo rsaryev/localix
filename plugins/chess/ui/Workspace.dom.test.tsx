@@ -112,7 +112,7 @@ test('two clicks play a move, wake the board’s own chat, and the agent’s rep
       { path: '/rpc/chess/game/move?sessionId=s1', body: { move: 'e2e4' } },
     ])
     expect(view.backend.requests.every(({ path }) => path.endsWith('sessionId=s1'))).toBe(true)
-    expect(view.host.textContent).toContain('The agent is thinking')
+    expect(view.host.textContent).toContain('Thinking')
 
     view.backend.agentPlays('e5')
     await view.poll()
@@ -132,6 +132,18 @@ test('a board that belongs to no chat says so, and asks the server nothing', asy
   try {
     expect(view.host.textContent).toContain('Open the board from a chat')
     expect(view.backend.requests).toEqual([])
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('the control row says who plays the other colour, beside the new game', async () => {
+  const view = await mount('s1')
+  try {
+    expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')).not.toBeNull()
+    expect(view.host.querySelector('[aria-label="New game"]')).not.toBeNull()
+    expect(view.host.textContent).toContain('You play White')
+    expect(view.host.textContent).not.toContain('Agent plays')
   } finally {
     await view.unmount()
   }

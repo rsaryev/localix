@@ -1,4 +1,5 @@
 import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
 import { z } from 'zod'
 
 import {
@@ -26,6 +27,13 @@ import {
 export const PLAYERS = ['you', 'agent'] as const
 export type Player = (typeof PLAYERS)[number]
 export const opponentOf = (player: Player): Player => (player === 'you' ? 'agent' : 'you')
+
+/**
+ * Who fires from the agent's side at this table (`@localixai/plugin-sdk/opponent`): the agent in
+ * the chat, or the host's decision model. The side is the same either way — a shot from it is the
+ * `agent` player's — only who aims it differs.
+ */
+export { OPPONENTS, type Opponent }
 
 const cell = z
   .number()
@@ -72,6 +80,8 @@ export const gameSchema = z.object({
   shots: z.array(shotSchema).max(SIZE * SIZE * 2),
   waiting: agentWaitSchema.nullable(),
   record: recordSchema,
+  /** Who fires from the agent's side; carried from one game to the next; null until settled. */
+  opponent: opponentSchema,
   startedAt: z.string(),
 })
 export type Game = z.infer<typeof gameSchema>
@@ -86,6 +96,7 @@ export function newGame(input: {
   fleets: { you: Ship[]; agent: Ship[] }
   now: string
   record?: GameRecord
+  opponent?: Opponent | null
 }): Game {
   return {
     id: input.id,
@@ -96,6 +107,7 @@ export function newGame(input: {
     shots: [],
     waiting: null,
     record: input.record ?? EMPTY_RECORD,
+    opponent: input.opponent ?? null,
     startedAt: input.now,
   }
 }
@@ -154,6 +166,7 @@ export const playerViewSchema = z.object({
   shots: z.array(shotSchema),
   waiting: agentWaitSchema.nullable(),
   record: recordSchema,
+  opponent: opponentSchema,
   startedAt: z.string(),
   /** The viewer's own fleet. */
   fleet: z.array(shipSchema),
@@ -172,6 +185,7 @@ export function viewFor(game: Game, viewer: Player): PlayerView {
     shots: game.shots,
     waiting: game.waiting,
     record: game.record,
+    opponent: game.opponent,
     startedAt: game.startedAt,
     fleet: game.fleets[viewer],
     enemySeen: game.status === 'playing' ? sunkShips(enemy, shotsBy(game, viewer)) : enemy,

@@ -22,6 +22,14 @@ step is refused. Earlier completed actions remain applied. Read the completed co
 even when `isError` is absent; re-read the board before planning another batch. Single shots let you
 adjust your aim after each result.
 
+## When the decision model fires from your side
+
+The user can choose, on the board, who fires from your side: you, or a decision model the board asks
+itself. When the board says the decision model fires from your side, you do not fire — a shot is
+refused — and the board never wakes you; a new game you open lets the user fire first. You can still
+read the board and talk about the game. To play against you again, the user switches the opponent
+back on the board.
+
 ## When the board wakes you
 
 A message from the "battleship" plugin, not typed by the user, means it is your shot. It carries

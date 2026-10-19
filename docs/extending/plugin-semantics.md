@@ -46,6 +46,11 @@ does not own. `available(userId)` says whether a decision would be answered now.
 `confidentChoice(answer, 0.8)` returns a `choice` answer's pick when it reaches that probability,
 else `null`.
 
+A game whose other side can be the decision model keeps the choice with its table
+(`@localixai/plugin-sdk/opponent`), asks for a turn with `askDecisionForTurn` (one `choice` question
+over the legal moves; a miss comes back as the reason the board shows), and offers the choice with
+`OpponentMenu` from `@localixai/kit/opponent-menu`. The bundled games are the examples.
+
 ## Follow your own changes
 
 `ctx.host.changes` records thin notices on your stream, `plugin:<name>`: `upserted`, `deleted`, or

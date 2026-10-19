@@ -11,28 +11,32 @@ import { cellName } from '../../shared/rules'
 
 const RESULT = { miss: 'missed', hit: 'hit a ship', sunk: 'sank a ship' } as const
 
+/** Who fires from the agent's side at this table, in the person's words. */
+export const opponentName = (view: Pick<PlayerView, 'opponent'>) =>
+  view.opponent === 'decision' ? 'The decision model' : 'The agent'
+
 /** "The agent fired at E5 and hit a ship." */
-export const shotSentence = (shot: Shot) =>
-  `${shot.by === 'you' ? 'You' : 'The agent'} fired at ${cellName(shot.cell)} and ${RESULT[shot.result]}.`
+export const shotSentence = (shot: Shot, view: Pick<PlayerView, 'opponent'>) =>
+  `${shot.by === 'you' ? 'You' : opponentName(view)} fired at ${cellName(shot.cell)} and ${RESULT[shot.result]}.`
 
 /** The headline beside the boards. */
 export function headline(view: PlayerView): string {
   if (view.status === 'won') return 'You won'
-  if (view.status === 'lost') return 'The agent won'
+  if (view.status === 'lost') return 'You lost'
   if (view.turn === 'you') return 'Your shot'
-  if (view.waiting?.status === 'unreachable') return 'The agent could not be reached'
-  return 'The agent is aiming'
+  if (view.waiting?.status === 'unreachable') return 'No answer'
+  return 'Aiming'
 }
 
 /** What a screen reader hears when the board changes: the last shot, then what it means now. */
 export function announcement(view: PlayerView): string {
   const last = view.shots.at(-1)
-  return [last ? shotSentence(last) : 'New game.', `${headline(view)}.`].join(' ')
+  return [last ? shotSentence(last, view) : 'New game.', `${headline(view)}.`].join(' ')
 }
 
 /** Who fires first next game — the side that did not this time. */
 export const nextOpener = (view: PlayerView) =>
-  view.first === 'agent' ? 'you fire first' : 'the agent fires first'
+  view.first === 'agent' ? 'you fire first' : `${opponentName(view).toLowerCase()} fires first`
 
 /** " · Score 2–1" — the table's running score, empty before the first game ends. */
 export const scoreLine = (record: GameRecord) =>
