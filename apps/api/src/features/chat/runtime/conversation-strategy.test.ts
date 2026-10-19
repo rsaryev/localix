@@ -96,6 +96,15 @@ describe('conversation leadership', () => {
 
   // Only the leader hands work out, so a message to nobody in particular is the leader's even
   // after a colleague spoke last.
+  test('a handle in code is a reference: the message still goes to the leader', async () => {
+    expect(
+      await multiParticipantStrategy.recipients(context(), {
+        kind: 'user-message',
+        text: 'Run `@frontend deploy` when the build is green.',
+      }),
+    ).toEqual([{ agentId: 'builtin:lead', source: 'user-default' }])
+  })
+
   test('a message addressed to nobody goes to the leader, whoever answered last', async () => {
     expect(
       await multiParticipantStrategy.recipients(context([answer('builtin:frontend')]), {

@@ -43,7 +43,7 @@ import type { TurnEventContext } from './event-handlers'
 import type { ChatRepository } from '../../repository'
 import type { RunEnv } from './types'
 import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
-import { mentionedHandles } from '../../agent-mentions'
+import { addressedHandles } from '../../conversation-addressing'
 import type { SubagentSteeringAddress } from '../wake-queue/steering'
 
 /**
@@ -59,7 +59,7 @@ export function addressedToSpeaker(
   participants: readonly { agentId: string; handle: string }[],
   speakerAgentId: string,
 ): boolean {
-  const named = mentionedHandles(content, [
+  const named = addressedHandles(content, [
     ...participants.map((participant) => participant.handle),
     ALL_MENTION_HANDLE,
   ])

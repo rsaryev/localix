@@ -469,6 +469,12 @@ describe('steering follows the address', () => {
     // "@qa stop" typed while @backend works used to land in @backend's run.
     expect(addressedToSpeaker('@qa stop', participants, 'builtin:backend')).toBe(false)
   })
+
+  it('reads a handle in code as a reference, the way dispatch does', () => {
+    expect(addressedToSpeaker('see `@qa stop` in the log', participants, 'builtin:backend')).toBe(
+      true,
+    )
+  })
 })
 
 describe('tool-call deferral', () => {

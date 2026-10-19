@@ -26,12 +26,12 @@ A **group** keeps everything below: tags invite available agents, replies hand t
 participant may pass, and the elected leader assembles a team. Every conversation created before
 modes existed is a group, and a chat created with two or more agents starts as one.
 
-The mode chip comes first in the participants strip above the input. It shows **Solo** or **Group**;
-choose the other one from its menu. Adding a participant to a solo chat, with the composer or with
-`/agents add`, makes it a group in the same step. A group with several agents cannot become solo
-until you remove the others, so nobody is dropped behind your back. Leaving a group cancels the
-colleague handoffs it had queued. Plugin commands that staff a team, such as `/workflows`, make the
-conversation a group before they run.
+The mode icon comes first in the participants strip above the input: one figure for **Solo**, two
+for **Group**. Its menu offers the other mode. Adding a participant to a solo chat, with the
+composer or with `/agents add`, makes it a group in the same step. A group with several agents
+cannot become solo until you remove the others, so nobody is dropped behind your back. Leaving a
+group cancels the colleague handoffs it had queued. Plugin commands that staff a team, such as
+`/workflows`, make the conversation a group before they run.
 
 Each change writes one line in the conversation, which every participant also reads, so the agent
 knows whether it may bring colleagues in.
@@ -43,7 +43,8 @@ case-insensitive: `@QA` addresses `@qa`. Repeating a handle does not create dupl
 group, naming an available agent outside the conversation invites it first (see
 [Changing participants](#changing-participants)); in a solo conversation a handle is plain text.
 Several addresses select those participants in roster order, rather than the order of mentions in
-the message.
+the message. A handle inside code, a block quote or a link target is a reference, in your messages
+as in agents' replies: ``run `@qa deploy` `` asks nobody to answer.
 
 `@all` selects every active participant. If the message also names individual participants, those
 explicitly addressed agents are queued first; the remaining participants follow as broadcast turns.

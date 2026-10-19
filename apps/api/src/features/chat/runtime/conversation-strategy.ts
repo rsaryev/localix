@@ -1,5 +1,5 @@
 import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
-import { mentionedHandles } from '../agent-mentions'
+import { addressedHandles } from '../conversation-addressing'
 import { participantAgentId } from '../../../db/participant'
 import { conversationLeader } from '../policy/axes/seat'
 import { conversationPolicy } from '../policy/session-policy'
@@ -122,7 +122,9 @@ export const multiParticipantStrategy: ConversationStrategy = {
   async recipients(context, event) {
     if (event.kind !== 'user-message') return explicitRecipients(context, event)
     const { session } = context
-    const named = mentionedHandles(event.text, [
+    // The same grammar a reply and an invitation are read by: a handle in code, a quote or a
+    // link target is a reference, so `run \`@qa deploy\`` asks nobody to answer.
+    const named = addressedHandles(event.text, [
       ...session.agents.map((member) => member.handle),
       ALL_MENTION_HANDLE,
     ])
