@@ -6,7 +6,7 @@
  * context its delegator already distilled. A read failure leaves the section out rather than
  * failing the run — the plan is guidance, and the run can still proceed from its history.
  */
-import type { ApprovedPlanPrompt } from '../../agent-core/system-prompt-plan-sections'
+import type { ApprovedPlanPrompt } from '../../agent-core/prompt/sections/plan'
 import type { PlanService } from '../../plans/service'
 import { planRef } from '../../plans/plan-files'
 import { planDraftDir, planDraftPath } from '../../plans/plan-paths'

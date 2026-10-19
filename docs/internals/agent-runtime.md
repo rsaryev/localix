@@ -60,12 +60,12 @@ behaviour that needs the real loop is asserted in the adapter package.
 context, tools, prompt, intake, history, stream, then complete or fail. Each stage owns one concern;
 the stream stage hands everything to `AgentRuntime.run()`.
 
-| Layer           | What it carries                                                                                                                     | Owner                                                                      |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Stable prompt   | Identity, core principles, runtime role, collaboration, execution discipline, workspace, conversation protocol, skills, formatting. | `agent-core/system-prompt.ts`; goldens in `agent-core/__prompts__/`.       |
-| Runtime context | Date and model, project tree, participants, agent directory, jobs, loops, reactions, the current-turn line.                         | `agent-core/system-prompt-tail.ts`, sent as a changed-sections-only block. |
-| History         | Participant view, turn contexts, media, checkpoint, budget admission.                                                               | `chat/runtime/history/chat-strategy.ts`.                                   |
-| Tools           | Shape and policy resolution, deferral behind `activate_tools`, the wrapper chain.                                                   | `chat/runtime/run/tool-assembly.ts`.                                       |
+| Layer           | What it carries                                                                                                                     | Owner                                                                       |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Stable prompt   | Identity, core principles, runtime role, collaboration, execution discipline, workspace, conversation protocol, skills, formatting. | `agent-core/prompt/catalog.ts`; goldens in `agent-core/prompt/__golden__/`. |
+| Runtime context | Date and model, project tree, participants, agent directory, jobs, loops, reactions, the current-turn line.                         | `agent-core/prompt/catalog-tail.ts`, sent as a changed-sections-only block. |
+| History         | Participant view, turn contexts, media, checkpoint, budget admission.                                                               | `chat/runtime/history/chat-strategy.ts`.                                    |
+| Tools           | Shape and policy resolution, deferral behind `activate_tools`, the wrapper chain.                                                   | `chat/runtime/run/tool-assembly.ts`.                                        |
 
 Every agent in a conversation receives the same prompt for the same run shape. The only
 seat-specific parts are the leadership block and session-topic control (`set_topic`), both given to

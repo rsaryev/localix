@@ -7,7 +7,7 @@
 import type { PersistedMessage } from '../../contracts'
 import { resolveContextBudgetFrame } from '../context-budget'
 import type { ContextAnchorProof } from '../context-token-estimate'
-import type { RuntimeSection } from '../../../agent-core/system-prompt-tail'
+import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 import type { ModelView } from '../model-view/view'
 import { createChatHistoryRun, type ChatHistoryRunContext } from './chat-strategy'
 import type { ChatTurnFrame } from './frame'

@@ -16,7 +16,7 @@
  */
 import type { MessageContextBinding } from '@localixai/agent'
 
-import type { RuntimeSection } from '../../../agent-core/system-prompt-tail'
+import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 
 export interface StoredTurnContext {
   /** A complete render: the state is exactly `changes`, whatever came before. */

@@ -14,7 +14,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { ContextCheckpoint } from '@localixai/agent'
 
-import type { RuntimeSection } from '../../../agent-core/system-prompt-tail'
+import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 import type { PersistedMessage } from '../../contracts'
 import { turnContextState, type StoredTurnContext } from '../model-view/turn-context'
 import type { ModelView } from '../model-view/view'

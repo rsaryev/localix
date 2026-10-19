@@ -7,7 +7,7 @@ import { classifyConfigureCall, createConfigureTool } from './configure'
 import type { ConfigureHost, ProposalCard } from './configure-contracts'
 import { resolveRunProfile } from '../../run-shape'
 import { createRuntimeToolRegistry } from '../../tool-registry'
-import { buildAgentSystemPrompt } from '../../system-prompt'
+import { buildAgentSystemPrompt } from '../../prompt/assemble'
 import { TOOL } from '../../tool-names'
 
 const card: ProposalCard = {

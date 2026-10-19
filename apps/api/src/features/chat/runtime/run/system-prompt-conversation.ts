@@ -8,7 +8,7 @@
 import { agentRoute } from '../../session-route'
 import type { RunPolicy } from '../../policy/run-policy'
 import type { SessionRecord } from '../../repository'
-import type { HumanProfile } from '../../../agent-core/system-prompt-conversation-section'
+import type { HumanProfile } from '../../../agent-core/prompt/sections/conversation'
 
 export interface ConversationPromptContext {
   self: string

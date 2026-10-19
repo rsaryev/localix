@@ -244,4 +244,4 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
 - [Dynamic command expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-commands.ts)
 - [File-reference expansion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/file-references.ts)
 - [Tool override mapping](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/tool-override-options.ts)
-- [Model roster and pinned-skill prompt sections](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/system-prompt-feature-sections.ts)
+- [Model roster and pinned-skill prompt sections](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/features.ts)

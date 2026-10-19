@@ -11,7 +11,7 @@ import type { AgentRecordInput } from './contracts'
  * conversation can start with.
  *
  * Instructions say who the role is and what its report contains. How a turn hands work on is the
- * conversation protocol's (`system-prompt-team-contract.ts`), stated once for every agent.
+ * conversation protocol's (`agent-core/prompt/sections/team-contract.ts`), stated once for every agent.
  */
 export const STARTER_TEAM: readonly Required<
   Pick<AgentRecordInput, 'handle' | 'label' | 'description' | 'instructions' | 'leadershipPriority'>

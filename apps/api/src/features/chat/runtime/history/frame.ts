@@ -13,7 +13,7 @@
 import type { TurnFrame } from '@localixai/agent/history'
 import type { MessageContextBinding } from '@localixai/agent'
 
-import type { RuntimeSection } from '../../../agent-core/system-prompt-tail'
+import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 import type { PersistedMessage } from '../../contracts'
 
 export interface ChatTurnFrame extends TurnFrame<PersistedMessage> {

@@ -35,7 +35,7 @@ import type { AgentNotifications } from '../../notifications/producers'
 import type { ModelRoute } from '../repository-types'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentManagementPort } from '../../agents/service-contract'
-import type { HumanProfile } from '../../agent-core/system-prompt-conversation-section'
+import type { HumanProfile } from '../../agent-core/prompt/sections/conversation'
 
 export const DEFAULT_TITLE = 'New Chat'
 

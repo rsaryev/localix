@@ -2,7 +2,7 @@ import { errorMessage } from '../../../lib/errors'
 import { admitDelegation, DEFAULT_DELEGATION_BUDGET } from '../delegation-budget'
 import { holdReport, type HeldReport } from '../delegation-awaits'
 import { delegatesAt, delegationNote } from '../delegation-hierarchy'
-import { ONE_SHOT_EXECUTION } from '../system-prompt-team-contract'
+import { ONE_SHOT_EXECUTION } from '../prompt/sections/team-contract'
 import { reportBody } from './child-report'
 import type { DelegateRequest } from './delegate'
 import {

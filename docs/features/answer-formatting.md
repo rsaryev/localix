@@ -127,10 +127,10 @@ item's `[ ]` to `[x]` in the element's Markdown, and undo takes it back.
 source-line prefix. The agent prompt, workspace and documentation share that grammar. The API's
 `answer-markdown.ts` re-exports the contract for existing consumers.
 
-`system-prompt-answer-format-section.ts` renders `# Answer formatting` in the cached prompt prefix.
-It also sets the shape rules: plain prose for a short reply, a heading per thread for a long one, a
-tab per compared option and a table for exact values. It sits before the user's response style
-preferences, which override it.
+`agent-core/prompt/sections/answer-format.ts` renders `# Answer formatting` in the cached prompt
+prefix. It also sets the shape rules: plain prose for a short reply, a heading per thread for a long
+one, a tab per compared option and a table for exact values. It sits before the user's response
+style preferences, which override it.
 
 ### Rendering
 
@@ -216,7 +216,7 @@ examples and package entry points.
 ## Source of truth
 
 - [The answer dialect](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/dialect.ts)
-- [The prompt section and its gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/system-prompt-answer-format-section.ts)
+- [The prompt section and its gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/answer-format.ts)
 - [Callout, source and figure parsing](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerBlocks.ts)
 - [Steps, tabs, figures and for/against](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/remarkAnswerContainers.ts)
 - [File trees](https://github.com/rsaryev/localix/blob/main/packages/markdown/src/fileTreeParse.ts)

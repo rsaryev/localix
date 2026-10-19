@@ -119,4 +119,4 @@ curl --request POST http://127.0.0.1:5051/rpc/webhook/messages \
 - [Queue priority policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/queue-policy.ts)
 - [Chat turn admission and busy queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
 - [Wake provenance projection](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/wake-provenance.ts)
-- [Runtime context line](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/system-prompt-sections.ts)
+- [Runtime context line](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/prompt/sections/workspace.ts)

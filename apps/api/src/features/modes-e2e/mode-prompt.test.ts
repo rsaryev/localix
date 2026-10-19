@@ -2,12 +2,12 @@ import { describe, expect, test } from 'bun:test'
 
 import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
 import { resolveRunProfile, type AgentSessionKind } from '../agent-core/run-shape'
-import { buildAgentSystemPrompt } from '../agent-core/system-prompt'
+import { buildAgentSystemPrompt } from '../agent-core/prompt/assemble'
 import {
   APPROVED_PLAN_HEADER,
   PLAN_MODE_HEADER,
   type ApprovedPlanPrompt,
-} from '../agent-core/system-prompt-plan-sections'
+} from '../agent-core/prompt/sections/plan'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES, type PermissionMode } from '../capabilities/permission-modes'
@@ -40,7 +40,7 @@ function render(mode: PermissionMode, kind: AgentSessionKind, approvedPlan?: App
   return { prompt, roster: new Set(registry.toolNames) }
 }
 
-/** The capability lint's detector (`system-prompt-capability.test.ts`), restated: a test file
+/** The capability lint's detector (`agent-core/prompt/capability.test.ts`), restated: a test file
  *  cannot import another's helpers without registering its tests twice. */
 const names = (prose: string, tool: string) =>
   new RegExp('`' + tool + '`').test(prose) ||

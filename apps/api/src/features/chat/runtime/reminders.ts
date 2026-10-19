@@ -1,4 +1,4 @@
-import type { RuntimeSection } from '../../agent-core/system-prompt-tail'
+import type { RuntimeSection } from '../../agent-core/prompt/runtime-sections'
 import { buildTurnBudgetReminder } from './turn-budget-reminder'
 
 export { buildTurnBudgetReminder } from './turn-budget-reminder'

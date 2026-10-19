@@ -1,7 +1,7 @@
 import { defaultProjectDir, normalizeProjectDir } from '../../../projects/default-project'
 import { sandboxCwd } from '../../session-cwd'
 import type { SessionRecord } from '../../repository'
-import type { RuntimeSection } from '../../../agent-core/system-prompt-tail'
+import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 
 export interface RunningChatWorkspace {
   id: string

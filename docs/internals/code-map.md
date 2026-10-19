@@ -72,7 +72,8 @@ feeds `createRuntimeToolRegistry` (`tool-registry-core.ts`, `tool-registry-optio
 `extraTools`), and then the filters apply: the client's `toolSurface`, `interactiveOnly` for
 non-chat runs, and the effective `disabledTools` (the capability rules of the global, project and
 agent chain). The system prompt ships only the roster of names. Per-tool semantics stay in the
-schema, and prompt sections gate on `hasTool(...)` (`system-prompt-*.ts`).
+schema, and prompt sections gate on `hasTool(...)` (`agent-core/prompt/sections/`, ordered by
+`prompt/catalog.ts`).
 
 ## Wakes: one primitive, many producers
 

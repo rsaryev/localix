@@ -9,7 +9,7 @@
  */
 import { truncateMiddle, type ContextCheckpoint } from '@localixai/agent'
 
-import type { RuntimeSection } from '../../../agent-core/system-prompt-tail'
+import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 import type { PersistedMessage } from '../../contracts'
 
 /** One pinned message may take this much of the context; the rest is one recall away. */

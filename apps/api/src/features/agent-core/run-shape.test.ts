@@ -188,11 +188,11 @@ describe('elision recovery is reachable from every compressed run', () => {
 /**
  * `prompt.roleGuidance` is STATIC: it is emitted for every run of that shape, whatever the
  * tool registry ended up holding. Naming a tool there is the capability-overclaim defect
- * `system-prompt-capability.test.ts` guards — except that test renders the goldens, and a
+ * `prompt/capability.test.ts` guards — except that test renders the goldens, and a
  * golden can only show one registry. Sub-agent guidance must not describe the chat's
  * `fork` tool; an unattended run may not hold `jobs` at all.
  *
- * Tool-conditional guidance belongs in `system-prompt-sections.ts`, behind a `has(TOOL.x)`.
+ * Tool-conditional guidance belongs in a `prompt/sections/` section, behind a `has(TOOL.x)`.
  */
 describe('roleGuidance never names a tool', () => {
   const NAMES = BUILTIN_TOOL_NAMES.filter((n) => n.length > 4) // 'ask' is also an English word

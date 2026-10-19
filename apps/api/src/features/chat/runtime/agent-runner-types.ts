@@ -31,7 +31,7 @@ import type { UiLocationCatalogService } from '../../ui-locations/service'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentNotifications } from '../../notifications/producers'
 import type { AgentManagementPort } from '../../agents/service-contract'
-import type { HumanProfile } from '../../agent-core/system-prompt-conversation-section'
+import type { HumanProfile } from '../../agent-core/prompt/sections/conversation'
 
 export interface RunnerDeps {
   agentManagement?: AgentManagementPort

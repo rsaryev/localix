@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { sessionFixture } from '../../../../testing/session-fixture'
-import { buildParticipantsSection } from '../../../agent-core/system-prompt-conversation-section'
+import { buildParticipantsSection } from '../../../agent-core/prompt/sections/conversation'
 import { conversationPromptContext } from './system-prompt-conversation'
 import { runPolicyFixture } from '../../../../testing/run-policy-fixture'
 import type { SessionRecord } from '../../repository'

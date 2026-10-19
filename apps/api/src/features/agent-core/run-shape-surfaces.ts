@@ -34,7 +34,7 @@ export const GUIDANCE: Record<RunShape, readonly string[]> = {
   chat: [
     // Role FRAMING only — this line must not NAME a tool (`run-shape.test.ts` pins that:
     // guidance survives a roster the tool is missing from); the capability line beside it is
-    // derived from the roster (`system-prompt-role-sections.ts`).
+    // derived from the roster (`prompt/sections/role.ts`).
     // WHEN work goes to a child or a colleague is `# Collaboration`'s one rule; this line used to
     // carry a second copy of it ("do trivial work inline"), which is how the two drifted. What
     // stays here is the exception to "do it yourself": a leader once built the whole game alone on

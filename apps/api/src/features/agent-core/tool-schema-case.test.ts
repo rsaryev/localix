@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 
 import { resolveRunProfile } from './run-shape'
-import { richRegistry, SHAPE_SESSION_KIND } from './testing/prompt-render'
+import { richRegistry, SHAPE_SESSION_KIND } from './prompt/testing/prompt-render'
 
 /**
  * Every model-facing field is snake_case.

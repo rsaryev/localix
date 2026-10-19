@@ -210,7 +210,7 @@ export async function discoverContextFiles(
 /**
  * Renders the "# Project context" system-prompt section, or null when no
  * context files were discovered. Session-stable — placed right after
- * "# Workspace" (see the cache-order contract in system-prompt.ts).
+ * "# Workspace" (the order is the prompt catalog's, `prompt/catalog.ts`).
  * The preamble labels the block as project-provided so model instructions
  * from repo files never masquerade as user input (prompt-injection hygiene).
  */
