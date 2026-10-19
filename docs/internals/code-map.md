@@ -14,6 +14,7 @@ bun run test:repo            # repository contract tests only (guards, boundarie
 bun run type-check           # tsc across workspaces (`check:tests` covers test files)
 bun run lint:changed         # oxlint on files that differ from main, the fast local loop
 bun run format               # oxfmt --write
+bun run test:sessions        # end-to-end conversations against an isolated API (scripts/session-e2e)
 ```
 
 Run one test from the repository root so `bunfig.toml`'s preload and vendor ignore apply:

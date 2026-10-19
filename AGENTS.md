@@ -63,6 +63,16 @@ Never commit secrets, `.env`, `.localix/`, generated output, private data, or lo
 Use `check:public` for suspicious files. Add migrations without editing existing ones. Document
 `vendor/` synchronizations. Report vulnerabilities via `SECURITY.md`.
 
+## Live session checks
+
+For changes to how a run is assembled or routed (run policy axes in
+`apps/api/src/features/chat/policy`, prompt sections in `agent-core/prompt`, tool gating,
+membership, handoffs, conversation modes), run the end-to-end scenarios with
+`bun run test:sessions --grep '<behaviour>'`. They boot an isolated API with a scripted model and
+assert on the transcript and on the prompt and tools each model request carried. Use `--keep` and
+the request log to debug a conversation behaviour. Add a scenario for a new behaviour. See
+[scripts/session-e2e/README.md](scripts/session-e2e/README.md). Not part of the normal suite or CI.
+
 ## UI evidence and screenshots
 
 Maintain the optional capture tests with visible feature changes. Read
