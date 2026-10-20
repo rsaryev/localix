@@ -8,7 +8,7 @@ individual controls across sections and opens the owning group, including advanc
 
 | Group       | Section                         | Controls and destinations                                                                                | Applies to                                                                          |
 | ----------- | ------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Personal    | Preferences → Appearance        | Theme, interface font, code font, font size, live code preview                                           | Theme stays on this device; font preferences use synchronized UI settings           |
+| Personal    | Preferences → Appearance        | Theme, window transparency, interface font, code font, font size, live code preview                      | Theme and transparency stay on this device; fonts use synchronized UI settings      |
 | Personal    | Preferences → Recent views      | Recent views: collapsed, expanded, hidden                                                                | This browser or desktop webview                                                     |
 | Personal    | Preferences → Notifications     | Interruption condition, waiting count or Windows taskbar indicator; terminal protocol under Advanced     | This browser or desktop webview; app icon indicators require desktop support        |
 | Personal    | Preferences → Spend alerts      | Session spend threshold in US dollars                                                                    | Local advisory alert; wholly subscription sessions are skipped                      |
@@ -80,6 +80,12 @@ retaining UI and runtime settings.
 Provider connections, model defaults and workload routing are owned by the
 [model selection and details panel](providers.md). Credentials live in the [Vault](secrets.md).
 Theme selection is available in Preferences → Appearance.
+
+**Window transparency** sets how much of the desktop shows through the workspace: Off, Low, Standard
+or High. Off makes the window opaque, and menus and dialogs keep their frosted glass at every level.
+The operating system's Reduce transparency setting makes the window opaque whatever level is chosen.
+On macOS the desktop shows through the native window material; in a browser and on Windows and Linux
+it is a painted backdrop.
 
 ## Access and context
 

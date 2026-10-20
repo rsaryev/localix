@@ -5,6 +5,9 @@ import { applyPlatformDataset, isDesktop } from '@localixai/kit/environment'
 import { hasNativeWindowMaterial } from '@localixai/kit/environment'
 import { tauriInvoke } from '../lib/tauri'
 import { readNativeHeaderTint } from './nativeHeaderTint'
+// Imported before the boot block below runs, so the transparency level is on <html> by the time
+// that block samples --sidebar for the native header.
+import { onWindowTransparencyApplied } from './windowTransparency'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 import {
   applyThemeChangeInstantly,
@@ -203,6 +206,12 @@ if (typeof window !== 'undefined') {
   snapshot = { themeMode: currentMode, resolvedTheme: currentResolved }
   updateSystemListener()
   syncNativeTheme(currentMode, currentResolved)
+  // A new transparency level changes --sidebar, which the native header is tinted from, while the
+  // theme stays the same — so forget the last sync instead of letting it dedupe this one away.
+  onWindowTransparencyApplied(() => {
+    currentNativePreference = null
+    syncNativeTheme(currentMode, currentResolved)
+  })
   // Each webview has its own JS store. Mirror the persisted selection so an older webview
   // cannot put AppKit back in dark mode after another switches to light.
   const onStoredTheme = (event: StorageEvent) => {

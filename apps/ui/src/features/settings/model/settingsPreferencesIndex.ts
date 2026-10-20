@@ -66,6 +66,15 @@ export const PREFERENCES_SETTINGS_INDEX: SettingsIndexEntry[] = [
     anchor: 'prefs-typography',
   },
   {
+    id: 'prefs.window-transparency',
+    tab: 'preferences',
+    tabLabel: 'Preferences',
+    title: 'Window transparency',
+    description: 'How much of the desktop shows through the workspace, or an opaque window.',
+    keywords: ['transparency', 'glass', 'opacity', 'opaque', 'vibrancy', 'blur', 'wallpaper'],
+    anchor: 'prefs-typography',
+  },
+  {
     id: 'prefs.interface-font',
     tab: 'preferences',
     tabLabel: 'Preferences',

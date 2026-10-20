@@ -288,6 +288,12 @@ floating material as context menus.
 When a desktop window loses focus, the titlebar dims its contents only. Its sidebar ground keeps the
 same opacity as the native header, so the two bars remain aligned over the shared material.
 
+The person's window transparency level (`data-window-transparency` on `<html>`, written by
+`apps/ui/src/shared/theme/windowTransparency.ts` and by the `index.html` boot script) scales the two
+ground coats through `--coat-scale` and `--coat-lift`; it never restates a density. Tune a theme's
+look through its `--*-density` tokens and every level follows. A level changes `--sidebar`, so it
+re-sends the native header tint. The OS Reduce transparency preference still wins.
+
 The glass theme is macOS-only: the `@supports` blocks are scoped to `[data-desktop][data-os='mac']`,
 and every other platform gets the opaque tokens, which is why a fill can look correct in a browser
 and wrong in the app. The guards are static — they read class strings, so a class assembled at

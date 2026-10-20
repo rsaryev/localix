@@ -6,7 +6,15 @@ import { TypographySection } from './typography/TypographySection'
 import { Input } from '@localixai/kit/input'
 import { getSpendThreshold, setSpendThreshold } from '@/shared/lib/spendAlert'
 import { useTheme, type ThemeMode } from '@/shared/theme/useTheme'
+import {
+  DEFAULT_WINDOW_TRANSPARENCY,
+  WINDOW_TRANSPARENCY_LEVELS,
+  setWindowTransparency,
+  useWindowTransparency,
+  type WindowTransparency,
+} from '@/shared/theme/windowTransparency'
 import { Select, type SelectOption } from '@localixai/kit/select'
+import { Slider } from '@localixai/kit/slider'
 import {
   setRailRecentsMode,
   useRailRecentsMode,
@@ -117,6 +125,33 @@ function ThemeField() {
   )
 }
 
+const TRANSPARENCY_LABELS: Record<WindowTransparency, string> = {
+  off: 'Off',
+  low: 'Low',
+  standard: 'Standard',
+  high: 'High',
+}
+
+function TransparencyField() {
+  const level = useWindowTransparency()
+  return (
+    <SettingsControlRow
+      title="Window transparency"
+      description="How much of the desktop shows through the workspace. Menus and dialogs keep their frosted glass. Reduce transparency in the system settings makes the window opaque at any level."
+    >
+      <Slider
+        aria-label="Window transparency"
+        className="w-full @xl:w-56"
+        steps={WINDOW_TRANSPARENCY_LEVELS.map((step) => TRANSPARENCY_LABELS[step])}
+        value={WINDOW_TRANSPARENCY_LEVELS.indexOf(level)}
+        onValueChange={(index) =>
+          setWindowTransparency(WINDOW_TRANSPARENCY_LEVELS[index] ?? DEFAULT_WINDOW_TRANSPARENCY)
+        }
+      />
+    </SettingsControlRow>
+  )
+}
+
 export function PreferencesSettings() {
   return (
     <SettingsPage
@@ -128,7 +163,14 @@ export function PreferencesSettings() {
         title="Appearance"
         description="Choose your theme, interface font, and code appearance."
       >
-        <TypographySection leading={<ThemeField />} />
+        <TypographySection
+          leading={
+            <>
+              <ThemeField />
+              <TransparencyField />
+            </>
+          }
+        />
       </SettingsSection>
 
       <RailRecentsField />

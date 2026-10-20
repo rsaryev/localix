@@ -54,15 +54,21 @@
 
   :root:is([data-theme='dark'], [data-theme='light']) {
     background: var(--window-backdrop) fixed;
-    --background: color-mix(in oklch, var(--window-ground) var(--work-density), transparent);
-    --sidebar: color-mix(
-      in oklch,
-      var(--window-ground-sidebar) var(--sidebar-density),
-      transparent
+    /* The person's transparency choice scales both coats toward clear (`--coat-scale` below 1) or
+       toward opaque (`--coat-lift`), so each theme and platform keeps its own tuned densities and
+       the choice stays one relative step. Declared on the root beside the attribute that sets
+       them: a custom property resolves its `var()`s where it is declared. */
+    --work-coat: calc(
+      min(100%, var(--work-density) * var(--coat-scale, 1) + 100% * var(--coat-lift, 0))
     );
+    --sidebar-coat: calc(
+      min(100%, var(--sidebar-density) * var(--coat-scale, 1) + 100% * var(--coat-lift, 0))
+    );
+    --background: color-mix(in oklch, var(--window-ground) var(--work-coat), transparent);
+    --sidebar: color-mix(in oklch, var(--window-ground-sidebar) var(--sidebar-coat), transparent);
     --surface-raised: color-mix(
       in oklch,
-      var(--window-ground-raised) var(--work-density),
+      var(--window-ground-raised) var(--work-coat),
       transparent
     );
     --background-solid: var(--window-ground);
@@ -141,6 +147,33 @@
   :root:not([data-desktop='true'][data-os='mac'])[data-theme='light'] {
     --work-density: 78%;
     --sidebar-density: 60%;
+  }
+
+  /* Window transparency, chosen in Preferences (`shared/theme/windowTransparency.ts`). Standard is
+     no attribute at all. `off` lifts both coats to 100% and paints the root, which the macOS rule
+     above clears for the native material, so no wallpaper shows between panes either. Floating
+     panels keep their frost: over an opaque ground it blurs only the app's own content. The OS
+     "Reduce transparency" block below still wins whatever is chosen here. */
+  :root[data-window-transparency='low'] {
+    --coat-scale: 0.5;
+    --coat-lift: 0.5;
+  }
+
+  :root[data-window-transparency='high'] {
+    --coat-scale: 0.7;
+  }
+
+  :root[data-window-transparency='off'] {
+    --coat-scale: 0;
+    --coat-lift: 1;
+  }
+
+  :root[data-window-transparency='off']:is([data-theme='dark'], [data-theme='light']),
+  :root[data-desktop='true'][data-os='mac'][data-window-transparency='off']:is(
+    [data-theme='dark'],
+    [data-theme='light']
+  ) {
+    background: var(--window-ground);
   }
 
   /* Paint a region's ground once, not once per nested container. */

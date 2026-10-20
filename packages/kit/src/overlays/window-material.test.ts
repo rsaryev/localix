@@ -21,6 +21,21 @@ describe('shared window material', () => {
     expect(material).toContain('backdrop-filter: blur(24px) saturate(1.1)')
   })
 
+  test('scales the tuned coats by the transparency level instead of restating them', () => {
+    expect(material).toContain('var(--work-density) * var(--coat-scale, 1)')
+    expect(material).toContain('var(--sidebar-density) * var(--coat-scale, 1)')
+    expect(material).toContain('var(--window-ground) var(--work-coat)')
+    expect(material).toContain('var(--window-ground-sidebar) var(--sidebar-coat)')
+    // Off must out-rank the rule that clears the macOS root for the native material.
+    expect(material).toContain(
+      ":root[data-desktop='true'][data-os='mac'][data-window-transparency='off']",
+    )
+    // The OS preference is declared after the levels, so it still wins over any of them.
+    expect(material.indexOf("[data-window-transparency='off']")).toBeLessThan(
+      material.indexOf('(prefers-reduced-transparency: reduce), (forced-colors: active)'),
+    )
+  })
+
   test('requires compositing and respects accessibility preferences', () => {
     expect(material).toContain('@supports (background: color-mix')
     expect(material).toContain(

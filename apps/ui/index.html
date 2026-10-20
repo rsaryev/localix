@@ -73,6 +73,13 @@
                 : 'dark'
           document.documentElement.dataset.theme = theme
           document.documentElement.style.colorScheme = theme
+          // The transparency level scales the window coats; stamp it before the first paint
+          // too, so a reload does not show the standard coat first. Same key and levels as
+          // shared/theme/windowTransparency.ts; `standard` is the absent attribute.
+          var transparency = localStorage.getItem('localix.window.transparency')
+          if (transparency === 'off' || transparency === 'low' || transparency === 'high') {
+            document.documentElement.dataset.windowTransparency = transparency
+          }
           // Paint the real --background NOW: before index.css parses the webview
           // shows its default white otherwise. Exact hexes of index.css tokens;
           // applyThemeModeToDom (useTheme.ts) keeps this inline style fresh on
