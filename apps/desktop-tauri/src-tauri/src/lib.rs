@@ -109,6 +109,7 @@ mod menu;
 mod native_browser;
 #[cfg(target_os = "linux")]
 mod native_browser_gtk;
+mod native_browser_idle;
 mod native_browser_lifecycle;
 mod native_browser_state;
 #[cfg(target_os = "macos")]

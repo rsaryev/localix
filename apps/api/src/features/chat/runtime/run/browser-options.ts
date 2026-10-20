@@ -25,6 +25,8 @@ import type { SessionRecord } from '../../repository'
 import type { RunnerDeps } from '../agent-runner-types'
 
 export function buildBrowserOptions(input: {
+  /** Whether a decision model answers for this user now (the `goal` action's model). */
+  decisionsAvailable?: boolean
   deps: RunnerDeps
   userId: string
   session: SessionRecord
@@ -64,6 +66,20 @@ export function buildBrowserOptions(input: {
           )
       return opened
     },
+    // The `goal` action's decision model, billed to this session (`features/decisions`).
+    // Bound only when a decision model can answer for this user now: without it the tool does not
+    // offer `goal` at all (`browserInputSchemaFor`).
+    ...(deps.decisions && input.decisionsAvailable
+      ? {
+          decide: (ask, options) =>
+            deps.decisions!.decide(userId, ask, {
+              purpose: 'browser.goal',
+              usageKind: 'decision',
+              sessionId: session.id,
+              ...(options.signal ? { signal: options.signal } : {}),
+            }),
+        }
+      : {}),
     closePreview: (previewIds) => {
       deps.streamRegistry.publish(userId, session.id, {
         type: 'preview.closed',

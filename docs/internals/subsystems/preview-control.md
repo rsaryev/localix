@@ -146,6 +146,7 @@ remain visible, but Visual Feedback and agent control cannot connect.
 | `console`         | None                   | None                                 | Returns the captured ring-buffer contents                                 |
 | `evaluate`        | Non-empty `expression` | `snapshot_after` defaults to `false` | Runs in the page realm and can mutate page state                          |
 | `steps`           | Non-empty `steps`      | `snapshot_after` defaults to `false` | Interactions plus snapshot, evaluate, and console                         |
+| `goal`            | Non-empty `goal`       | `values`: the only strings it types  | A decision model drives up to 20 actions; returns a trace and the page    |
 
 Interactions are step shapes inside `steps`, not top-level actions:
 
@@ -194,6 +195,33 @@ Synthesized key events are untrusted, so the browser runs no default action for 
 therefore performs Tab's sequential focus move itself when the page did not prevent it; a focus trap
 that handles Tab keeps control. Without this, every focus check read `document.activeElement` as the
 body.
+
+### Goal-driven actions
+
+`goal` hands a short sub-goal on the current tab to the decision service (`features/decisions`),
+following [Jev Ultrafast](https://github.com/browser-use/jev-ultrafast)'s operation-and-target
+design. Each step reads one snapshot and asks one request with speculative heads: an `operation`
+among those available now (CLICK, TYPE_TEXT, PRESS_ENTER right after typing, SCROLL_DOWN, SCROLL_UP,
+WAIT, DONE, BLOCKED), and a target head for each operation over the snapshot's `elements`
+(`click_target`, `type_target`, and `type_value` over the agent's `values`). Only the head of the
+chosen operation executes, through the same relay commands `steps` uses. Disabled controls are never
+offered as targets, and the model types only one of the supplied `values`. Page text is data for the
+model, never instructions.
+
+The loop stops on DONE or BLOCKED, a decision without answers, a relay error, the same action twice
+with no visible change, 20 actions, or 40 decision requests. A target gone since the snapshot is
+read again and decided again once per step. It returns one trace line per action and a fresh
+snapshot. DONE is the model's judgement, not proof: the agent verifies the page itself. Spend is
+recorded under **Decisions** with the purpose `browser.goal`. Without a decision model, or when a
+probe returns no `elements`, the action says to use `steps`. The pure parts live in
+`browser-goal-ask.ts`; the loop is `browser-goal.ts`.
+
+The snapshot gives every field its label and its current value separately. For example,
+`textbox "Where to?" = "London"`. Labels come from `aria-label`, `aria-labelledby`, an associated or
+wrapping `<label>`, then placeholder, title and name. A password value is never read. States include
+`expanded`/`collapsed`, `selected`, `required` and `readonly`. Beside the tree, the snapshot carries
+`elements`: the interactive nodes in tree order (at most 250), with role, name, value, states, and
+whether the node takes typing (`packages/visual-feedback/src/snapshot/field.ts`).
 
 ### Background hosts and command ownership
 

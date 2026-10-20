@@ -9,6 +9,7 @@
  */
 
 import { getSemanticRole } from '../core/identify'
+import { extraStates, fieldLabel, isEditableRoot, isField } from './field'
 
 const NATIVE_INTERACTIVE = new Set([
   'a',
@@ -38,6 +39,42 @@ const INTERACTIVE_ROLES = new Set([
   'switch',
   'option',
 ])
+/**
+ * Interactive roles whose CHILDREN are the choices: a listbox's options, a menu's items, a
+ * grid's cells. Treated as a leaf, a container hid every choice inside it — an autocomplete's
+ * suggestions read as one bare `listbox`, and a click landed on the container instead of an
+ * option. A native `<select>` stays a leaf: its options are its value.
+ */
+const CONTAINER_ROLES = new Set([
+  'listbox',
+  'menu',
+  'menubar',
+  'grid',
+  'treegrid',
+  'tree',
+  'tablist',
+  'radiogroup',
+])
+
+/** Whether an interactive node holds its choices as children, so the walk goes on inside it. */
+export function holdsChoices(el: Element): boolean {
+  if (el.tagName.toLowerCase() === 'select') return false
+  const role = el.getAttribute('role')
+  return role !== null && CONTAINER_ROLES.has(role)
+}
+
+/**
+ * A name for a control that has none of its own: its whole text, else the first labelled node
+ * inside it. A calendar day is often a `gridcell` whose number sits in a child, or whose label is
+ * on an inner element; without this every day read as a bare `gridcell`.
+ */
+export function innerName(el: Element): string {
+  const text = collapse(el.textContent ?? '')
+  if (text) return clip(text)
+  const labelled = el.querySelector('[aria-label]')
+  return clip(collapse(labelled?.getAttribute('aria-label') ?? ''))
+}
+
 const LANDMARK_ROLES = new Set([
   'navigation',
   'main',
@@ -89,6 +126,7 @@ export function isInteractive(el: Element, cs: CSSStyleDeclaration | null): bool
   const role = el.getAttribute('role')
   if (role && INTERACTIVE_ROLES.has(role)) return true
   if (el.hasAttribute('onclick')) return true
+  if (isEditableRoot(el)) return true
   const ti = el.getAttribute('tabindex')
   if (ti != null && Number(ti) >= 0) return true
   // Custom controls: a non-native element with a pointer cursor (e.g. `<div onClick>`).
@@ -119,22 +157,8 @@ function accessibleName(el: Element): string {
   if (aria) return clip(collapse(aria))
   const tag = el.tagName.toLowerCase()
   if (tag === 'img') return clip(collapse(el.getAttribute('alt') ?? ''))
-  if (tag === 'input') {
-    const inp = el as HTMLInputElement
-    // Prefer the CURRENT value so the agent can verify what it typed; fall back to the
-    // placeholder/name for an empty field. Never surface a password's value.
-    const type = (el.getAttribute('type') ?? 'text').toLowerCase()
-    const value = type === 'password' ? '' : (inp.value ?? '').trim()
-    return clip(collapse(value || el.getAttribute('placeholder') || el.getAttribute('name') || ''))
-  }
-  if (tag === 'textarea') {
-    const ta = el as HTMLTextAreaElement
-    return clip(
-      collapse(
-        (ta.value ?? '').trim() || el.getAttribute('placeholder') || el.getAttribute('name') || '',
-      ),
-    )
-  }
+  // A form field is named by its label; its value is shown apart (`fieldValue`, `= "…"`).
+  if (isField(el)) return fieldLabel(el)
   // Controls/headings get their full text; everything else only its own text node.
   const leafish =
     NATIVE_INTERACTIVE.has(tag) ||
@@ -176,6 +200,7 @@ export function stateSuffix(el: Element): string {
     const checked = inp.checked ?? el.getAttribute('aria-checked') === 'true'
     bits.push(checked ? 'checked' : 'unchecked')
   }
+  bits.push(...extraStates(el))
   return bits.length ? ` [${bits.join(', ')}]` : ''
 }
 
@@ -187,7 +212,7 @@ export function stateSuffix(el: Element): string {
 export function shouldEmit(el: Element, interactive: boolean): { emit: boolean; name: string } {
   const tag = el.tagName.toLowerCase()
   const name = accessibleName(el)
-  if (interactive) return { emit: true, name }
+  if (interactive) return { emit: true, name: name || (holdsChoices(el) ? '' : innerName(el)) }
   if (tag === 'img') return { emit: true, name }
   if (LANDMARK_ROLES.has(getSemanticRole(el) ?? '')) return { emit: true, name }
   // ANY element carrying its OWN text is a content node — a heading, a table cell,

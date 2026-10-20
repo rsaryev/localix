@@ -42,6 +42,10 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     params.scope.extraDisabledTools,
   )
   const { policy } = turn
+  // Asked once per run: whether the browser offers `goal` (a decision model can answer now).
+  const decisionsAvailable = deps.decisions
+    ? !!(await deps.decisions.available(userId).catch(() => null))
+    : false
   const runtimeTools = buildRunToolRegistry(
     {
       deps,
@@ -72,6 +76,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       agentProfile,
       loadedPlugins,
       toolSurface,
+      decisionsAvailable,
       // CC SubagentStart/SubagentStop hooks fire around delegate sub-agent runs.
       ccHooks,
       fileMtimes: frame.stores.fileMtimes,

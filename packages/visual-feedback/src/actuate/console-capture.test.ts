@@ -96,3 +96,26 @@ describe('installConsoleCapture', () => {
     }
   })
 })
+
+describe('a logged value costs at most what the entry keeps', () => {
+  it('a huge object is previewed by its top-level keys, never serialized whole', async () => {
+    const { previewArg } = await import('./console-capture')
+    let reads = 0
+    const deep = {
+      inner: {
+        get secret() {
+          reads++
+          return 1
+        },
+      },
+    }
+    const huge = Object.fromEntries(Array.from({ length: 10_000 }, (_, i) => [`k${i}`, i]))
+    expect(previewArg(deep)).toBe('{"inner":{…}}')
+    expect(reads).toBe(0)
+    const text = previewArg(huge)
+    expect(text.length).toBeLessThanOrEqual(500)
+    expect(text.startsWith('{"k0":0,"k1":1')).toBe(true)
+    expect(previewArg([1, 'a', [2, 3], null])).toBe('[1,"a",[2],null]')
+    expect(previewArg(new TypeError('boom'))).toBe('TypeError: boom')
+  })
+})

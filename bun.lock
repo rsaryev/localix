@@ -723,6 +723,21 @@
         "react-dom": "^19.3.1",
       },
     },
+    "plugins/snake": {
+      "name": "@localix-plugin/snake",
+      "version": "0.1.0",
+      "dependencies": {
+        "hono": "^4.12.30",
+        "lucide-react": "^1.57.0",
+        "react": "^19.3.1",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "@localixai/plugin-sdk": "workspace:*",
+        "@types/react": "^19.3.0",
+        "react-dom": "^19.3.1",
+      },
+    },
     "plugins/template": {
       "name": "@localix-plugin/template",
       "version": "0.1.0",
@@ -1232,6 +1247,8 @@
     "@localix-plugin/review": ["@localix-plugin/review@workspace:plugins/review"],
 
     "@localix-plugin/rock-paper-scissors": ["@localix-plugin/rock-paper-scissors@workspace:plugins/rock-paper-scissors"],
+
+    "@localix-plugin/snake": ["@localix-plugin/snake@workspace:plugins/snake"],
 
     "@localix-plugin/template": ["@localix-plugin/template@workspace:plugins/template"],
 

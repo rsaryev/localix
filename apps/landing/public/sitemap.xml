@@ -21,6 +21,7 @@
   <url><loc>https://localix.ai/docs/features--sessions-and-projects</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--conversations</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--group-routing</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--decision-models</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--conversation-history</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--attachments</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--answer-formatting</loc><priority>0.7</priority></url>
@@ -54,6 +55,7 @@
   <url><loc>https://localix.ai/docs/features--trading</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--task-board</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--game-2048</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--game-snake</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--games</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--providers</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--local-models</loc><priority>0.7</priority></url>

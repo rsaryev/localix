@@ -257,6 +257,7 @@ fn page(app: &AppHandle, caller: &Webview, tab_id: &str) -> Result<Webview, Stri
 /// Hide a page. On Linux the page layer is also repainted: it has no window of its own, so a
 /// hidden or closed page otherwise left its last frame painted over the app view.
 fn hide_page(view: &Webview) -> Result<(), String> {
+    crate::native_browser_idle::page_hidden(view, true);
     #[cfg(target_os = "linux")]
     return crate::native_browser_gtk::hide(view);
     #[cfg(not(target_os = "linux"))]
@@ -367,7 +368,7 @@ fn open_page(
     let view = match window.add_child(
         builder,
         LogicalPosition::new(0.0, 0.0),
-        LogicalSize::new(1.0, 1.0),
+        crate::native_browser_idle::hidden_page_size(&window),
     ) {
         Ok(view) => view,
         Err(_) if app.get_webview(&view_label).is_some() => return Ok(()),
@@ -479,6 +480,7 @@ fn apply_browser_bounds(
         size: LogicalSize::new(width, height).into(),
     })
     .map_err(|error| error.to_string())?;
+    crate::native_browser_idle::page_hidden(&view, false);
     view.show().map_err(|error| error.to_string())
 }
 
@@ -696,6 +698,7 @@ pub(crate) async fn browser_close_many(
             crate::native_browser_state::forget(&view_label);
             if let Some(view) = app.get_webview(&view_label) {
                 let _ = hide_page(&view);
+                crate::native_browser_idle::forget(&view_label);
                 if let Err(error) = view.close() {
                     failure = Some(error.to_string());
                 }

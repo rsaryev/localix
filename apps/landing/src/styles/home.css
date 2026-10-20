@@ -149,10 +149,10 @@ body {
 /* Lede — the intro paragraph under a heading. Constrained measure (~54ch),
    relaxed leading, softened color so the heading stays dominant. */
 .lede {
-  max-width: 54ch;
+  max-width: 48ch;
   line-height: 1.6;
   color: var(--text-soft);
-  text-wrap: pretty;
+  text-wrap: balance;
 }
 
 /* Body copy in feature/capability blocks. */

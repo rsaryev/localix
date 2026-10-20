@@ -12,12 +12,12 @@ const read = (rel: string) => readFileSync(join(repoRoot, rel), 'utf8').replaceA
  * files"). Change them here and in every carrier below, or this test names the one left behind.
  */
 const TITLE = 'Localix — One workspace for you and a team of agents'
-const HEADLINE = 'Everything is context'
+const HEADLINE = 'The Agentic Development Environment'
 const DESCRIPTION =
-  'Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.'
+  'Localix is an open source Agentic Development Environment: agent teams, a fast Browser, and plugins you build in minutes on embeddings and decision models.'
 /** The same sentence without the product name, for fields that already sit under it. */
 const REPO_SHORT =
-  'Open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.'
+  'Open source Agentic Development Environment: agent teams, a fast Browser, and plugins you build in minutes on embeddings and decision models.'
 
 describe('product positioning', () => {
   test('the short form is the description without the product name', () => {
@@ -39,7 +39,7 @@ describe('product positioning', () => {
       'README.md',
       [
         HEADLINE,
-        'Localix is a desktop development environment built around agents. The editor, terminals, browser, databases, plugins, and coding agents like Claude Code and Codex are parts of one app, so anything you open can become context for an agent, and anything an agent does shows up where you work.',
+        'Your editor, terminals, Browser and a team of agents in one desktop app — fast where it matters, open where it counts.',
       ],
     ],
   ])('%s states the positioning', (file, expected) => {

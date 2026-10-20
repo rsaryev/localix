@@ -89,7 +89,8 @@ export async function ensureNativeProbe(tab: PreviewEntry): Promise<void> {
   await invoke('browser_open', { tabId, url: tab.url })
   const script = await probeSource()
   let lastState = 'No response from the page'
-  const initialized = await pollAttempts(60, 100, async (attempt) => {
+  // Every 25 ms (six seconds in all, as before): the probe is usually ready within a few polls.
+  const initialized = await pollAttempts(240, 25, async (attempt) => {
     const navigation = await invoke('browser_navigation_state', { tabId }).then(
       (state) => state as { loading?: boolean; url?: string },
       () => null,

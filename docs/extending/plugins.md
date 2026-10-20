@@ -322,12 +322,13 @@ native entrypoint and point `tools` at the generated self-contained file.
 
 Each row is a `plugin.json`: `surfaces` decides whether it adds a visible workbench or only agent
 capability, and `defaultEnabled` whether it starts on. Native code in a bundled plugin still runs in
-the trusted API process; review it as you would any dependency. Fourteen workbenches complement the
+the trusted API process; review it as you would any dependency. Fifteen workbenches complement the
 four [games](../features/games.md):
 
 | Plugin              | Guide                                           | What the workbench shows                                                              |
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
 | **2048**            | [2048](../features/game-2048.md)                | A tile puzzle with human-play and agent-play modes                                    |
+| **Snake**           | [Snake](../features/game-snake.md)              | A snake steered by the person or by a decision model                                  |
 | **API Client**      | [API client](../features/api.md)                | Saved requests, environments, imports, parameters, responses, vault-backed references |
 | **Code Graph**      | [Code Graph](../features/code-graph.md)         | Directories, files and symbols with imports, calls, inheritance, impact and cycles    |
 | **Database**        | [Database](../features/database.md)             | Connections, schemas, SQL and non-SQL consoles, tables, diagrams, result sets         |

@@ -39,10 +39,15 @@ The left rail and top bar stay visible, and the default project is selected. Ope
 a tab works as usual and is remembered, so later launches restore the layout you left.
 
 A new chat with no model selected, and any editor group with nothing open, shows a carousel of
-workspace tips in setup order: appearance, the agent island, connecting a model, approvals and
-permission modes, project folders, `@` references, base keymaps, the command palette, agents in one
-chat, and handing a whole goal to a team. Each tip animates the real surface; five carry the control
-itself.
+workspace tips in setup order: appearance, the agent island, connecting a model, connecting
+OpenRouter for decision models, approvals and permission modes, project folders, `@` references,
+base keymaps, the command palette, agents in one chat, and handing a whole goal to a team. Each tip
+animates the real surface; seven carry the control itself.
+
+The OpenRouter tip opens the model picker on OpenRouter's **Sign in with OpenRouter**, the same
+sign-in the picker uses. With OpenRouter connected, Localix uses small, inexpensive decision models
+to route group chats, drive the Browser toward a goal, and play games and plugins. Once a connection
+exists, the tip shows **Connected**.
 
 The goal tip appears only while an enabled plugin features a command, such as the bundled
 `/workflows`, and shows that command. The agent island tip appears only in the macOS desktop app;
@@ -185,9 +190,17 @@ the platform browser. A local dev server opens framed, which is what lets
 [Visual Feedback](visual-feedback.md) reach into it. A page that cannot be opened is reported in the
 Event Center rather than over the page.
 
+The agent reads a page as a list of its controls, each with its label and current value. For
+multi-step work on a page, such as filling a search form and picking a suggestion, the agent can
+hand a short goal to the decision model. The model then clicks and types step by step, using only
+the text the agent supplied. The agent checks the page it ends on. That needs a connected OpenRouter
+account. Its spend is recorded under **Decisions**.
+
 Native pages follow the visible bounds of their pane and step aside for app overlays and tab drags.
 Switching pages or hiding a Browser keeps its page state; closing the Browser releases its native
-pages while retaining the saved addresses for reopening.
+pages while retaining the saved addresses for reopening. A page an agent opened closes on its own
+when it is not on screen and either its run failed or nothing has driven it for ten minutes. A page
+you opened, or one on screen, stays open. The visit remains in History.
 
 ### Search across the workspace
 

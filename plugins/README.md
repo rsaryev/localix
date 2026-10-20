@@ -42,6 +42,7 @@ details, use the [plugin authoring guide](../docs/extending/plugins.md).
 | [Checkers](checkers/)                       | Legal moves and agent-opponent play.               |
 | [Chess](chess/)                             | Legal moves and agent-opponent play.               |
 | [Rock Paper Scissors](rock-paper-scissors/) | Sealed moves against the agent, checked by digest. |
+| [Snake](snake/)                             | A per-chat board steered by the user or a model.   |
 | [Tic-Tac-Toe](tic-tac-toe/)                 | A per-chat board and agent-opponent play.          |
 
 [System Overview](template/) doubles as the workbench reference: retain its registration entry, host

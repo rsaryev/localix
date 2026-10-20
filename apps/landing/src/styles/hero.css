@@ -131,18 +131,17 @@
   }
 }
 @media (min-width: 64rem) {
+  /* The heading takes the full measure on two deliberate lines; the description and actions
+     sit under it on the left and the bird flies beside them, so the hero reads as one block. */
   .hero-layout {
-    --bird-size: 9rem;
+    --bird-size: 7.5rem;
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    grid-template-areas: 'copy bird';
+    grid-template-areas: 'heading heading' 'description bird' 'action bird';
     column-gap: 3.5rem;
   }
   .hero-copy {
-    display: block;
-    grid-area: copy;
-    position: relative;
-    z-index: var(--z-raised);
+    display: contents;
   }
   .hero-copy > h1 {
     margin-bottom: 0;
@@ -151,16 +150,17 @@
     display: inline-flex;
   }
   #intro .hero-copy > .lede {
-    margin-top: 1.5rem;
+    margin-top: 1.75rem;
   }
   .hero-bird-slot {
-    --hero-bird-height: 18rem;
+    --hero-bird-height: 11rem;
     height: var(--hero-bird-height);
+    align-self: end;
   }
 }
 @media (min-width: 80rem) {
   .hero-bird-slot {
-    --hero-bird-height: 20rem;
+    --hero-bird-height: 12rem;
   }
 }
 .hero-bird {

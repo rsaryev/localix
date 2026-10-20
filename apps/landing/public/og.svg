@@ -3,7 +3,7 @@
   <!-- Kept in sync with the product sentence in index.html / README. The card mirrors the
        homepage: the headline with the bird beside it, and the demo's app window rising from the
        bottom edge. `og.png` is rendered from this file with the landing's own fonts. -->
-  <desc id="description">Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.</desc>
+  <desc id="description">Localix is an open source Agentic Development Environment: agent teams, a fast Browser, and plugins you build in minutes on embeddings and decision models.</desc>
   <defs>
     <clipPath id="window">
       <rect x="80" y="292" width="1040" height="420" rx="18" />
@@ -14,8 +14,9 @@
     </linearGradient>
   </defs>
   <rect width="1200" height="630" fill="#070707" />
-  <g font-family="Localix Landing Heading, DM Sans Variable, DM Sans, Inter, Helvetica Neue, Arial, sans-serif" fill="#f4f4f5" font-weight="600" font-size="72" letter-spacing="-2">
-    <text x="80" y="174">Everything is context</text>
+  <g font-family="Localix Landing Heading, DM Sans Variable, DM Sans, Inter, Helvetica Neue, Arial, sans-serif" fill="#f4f4f5" font-weight="600" font-size="64" letter-spacing="-2">
+    <text x="80" y="140">The Agentic</text>
+    <text x="80" y="216">Development Environment</text>
   </g>
   <image href="logo.svg" x="980" y="70" width="140" height="140" />
   <g clip-path="url(#window)">

@@ -98,22 +98,22 @@ describe('landing page shell', () => {
     // The one-sentence description is repeated in the hero, the page metadata, the structured
     // data and the social card. Each carrier once said something different.
     const appRoot = join(srcDir, '..')
-    const sentence = 'editor, terminals, preview, and databases'
+    const sentence = 'agent teams, a fast Browser, and plugins'
     const carriers = [
       readFileSync(join(appRoot, 'index.html'), 'utf8'),
       readFileSync(join(appRoot, 'public/og.svg'), 'utf8'),
       read('lib/structuredData.ts'),
     ]
     for (const carrier of carriers) expect(carrier).toContain(sentence)
-    // The hero states the product's short form: everything you open can become context.
+    // The hero states the product's short form.
     expect(read('pages/HomePage.tsx').replaceAll(/\s+/g, ' ')).toContain(
-      'Anything you open can become context, and anything an agent does shows up where you work',
+      'Your editor, terminals, Browser and a team of agents in one desktop app',
     )
     // llms.txt is hand-maintained and wraps its copy inside a blockquote, so unwrap first.
     const llms = readFileSync(join(appRoot, 'public/llms.txt'), 'utf8')
       .replaceAll(/^>\s?/gmu, '')
       .replaceAll(/\s+/gu, ' ')
-    expect(llms).toContain('share the editor, terminals, preview, and databases')
+    expect(llms).toContain('agent teams, a fast Browser, and plugins you build in minutes')
     // No claim of a download until a release exists: the action that works today is a build.
     expect(read('components/DownloadChooser.tsx')).toContain('/docs/getting-started--installation')
   })

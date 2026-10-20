@@ -62,7 +62,7 @@ export function DemoFilm() {
         <Button asChild variant="mono" size="xl" className="demo-play rounded-full">
           <span>
             <Play className="fill-current" />
-            {started ? 'Resume' : 'Watch demo'}
+            {started ? 'Resume' : 'Watch the demo'}
           </span>
         </Button>
       </div>

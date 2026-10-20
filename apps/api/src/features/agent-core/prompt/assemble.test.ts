@@ -205,7 +205,9 @@ describe('buildAgentSystemPrompt', () => {
       // patterns (~85 chars); the conversation variant sat 1 char under its old ceiling, and one
       // batched call replaces a round-trip per file, which is worth far more than the line.
       // Team authoring adds explicit priority and leader-owned proactive assembly (~1k chars).
-      const ceiling = variant.endsWith('-conversation') ? 16_600 : 13_700
+      // 17.4k/14.5k, not 16.6k/13.7k: `# About Localix` (~790 chars) names the app's source and
+      // logs, so a run can diagnose the host it runs in instead of guessing about it.
+      const ceiling = variant.endsWith('-conversation') ? 17_400 : 14_500
       expect(prompt.length, variant).toBeLessThan(ceiling)
     }
   })

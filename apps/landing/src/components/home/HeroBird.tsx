@@ -68,7 +68,7 @@ export function HeroBird() {
         windRight={desktop ? '25%' : '15%'}
         windIntensity={desktop ? 1.2 : 1.4}
         lineCount={reduced ? 0 : desktop ? 12 : 8}
-        spread={260}
+        spread={desktop ? 150 : 260}
         cycles={reduced ? 1 : Infinity}
       />
     </div>

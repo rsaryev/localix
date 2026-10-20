@@ -68,6 +68,8 @@ export function buildRunToolRegistry(
     agentProfile: RunProfile
     loadedPlugins: LoadedPlugins
     toolSurface?: ToolSurface
+    /** Whether a decision model answers for this user now: the browser offers `goal` only then. */
+    decisionsAvailable?: boolean
     /** Resolved user settings for this run — supplies keyless research safety policy. */
     agentSettings?: Awaited<ReturnType<typeof loadUserSettingsContext>>['agentSettings']
     /**

@@ -79,8 +79,25 @@ export interface PreviewCommand {
   historyUrls?: string[]
 }
 
+/** One interactive node of a snapshot, in tree order: what a decision model chooses among. */
+export interface PreviewSnapshotElement {
+  ref: string
+  role: string
+  name: string
+  /** The control's current value (never a password's). */
+  value?: string
+  /** `disabled`, `checked`, `expanded`, `selected`… */
+  states?: string[]
+  /** Takes typed text (a text field, a textarea, an editable combobox). */
+  editable?: boolean
+  /** Inside an open dialog. */
+  dialog?: boolean
+}
+
 export interface PreviewSnapshot {
   tree: string
+  /** The interactive nodes, ≤250, when the probe lists them (the `goal` action reads these). */
+  elements?: PreviewSnapshotElement[]
   stats: { nodes: number; interactive: number; chars: number }
   url: string
   title: string

@@ -18,7 +18,7 @@ const DRIVE = new Set(['click', 'hover', 'press', 'scroll', 'steps', 'type'])
 export const drivesPage = (action: string): boolean => DRIVE.has(action)
 
 /** How long a finished action waits for a navigation it started to replace the document. */
-const NAVIGATION_WAIT = { attempts: 50, delayMs: 100 }
+const NAVIGATION_WAIT = { attempts: 200, delayMs: 25 }
 
 /**
  * Run one command through the page's bridge. `replaced` when the document that took the command
@@ -35,7 +35,9 @@ export async function runInPage(
     script: `window.__localixBrowser.run(${JSON.stringify(commandId)}, ${JSON.stringify(command)})`,
   })
   let outcome: PageOutcome | 'replaced' | null = null
-  await pollAttempts(100, 100, async () => {
+  // A command answers in tens of milliseconds; polling every 100 ms added up to that to every
+  // browser action (and to each step of a goal run). Ten seconds in all, as before.
+  await pollAttempts(400, 25, async () => {
     const raw = decodeEvalResult(
       await invoke('browser_eval', {
         tabId,

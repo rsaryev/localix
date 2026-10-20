@@ -89,6 +89,7 @@ export function buildOptionalToolPorts(
     session,
     defaultCwd,
     agentProfile,
+    decisionsAvailable: params.decisionsAvailable,
   })
 
   const optional: OptionalToolPorts = {

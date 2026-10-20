@@ -23,21 +23,21 @@
     {
       "name": "battleship",
       "source": "./battleship",
-      "description": "Battleship against the agent, one game per chat: each side fires in turn, and the agent answers every shot with its own tool without ever seeing your fleet.",
+      "description": "Battleship against the agent or a decision model, one game per chat: each side fires in turn, and the agent answers every shot with its own tool, or the board asks a decision model, without either ever seeing your fleet.",
       "version": "0.1.0",
       "author": "Localix"
     },
     {
       "name": "checkers",
       "source": "./checkers",
-      "description": "Checkers (Russian draughts) against the agent, one board per chat: the agent in that chat answers each move with its own tool, and the board goes when the chat does.",
+      "description": "Checkers (Russian draughts) against the agent or a decision model, one board per chat: the agent in that chat answers each move with its own tool, or the board asks a decision model, and the board goes when the chat does.",
       "version": "0.1.0",
       "author": "Localix"
     },
     {
       "name": "chess",
       "source": "./chess",
-      "description": "Chess against the agent, one board per chat: the agent in that chat answers each move with its own tool, and the board goes when the chat does.",
+      "description": "Chess against the agent or a decision model, one board per chat: the agent in that chat answers each move with its own tool, or the board asks a decision model, and the board goes when the chat does.",
       "version": "0.1.0",
       "author": "Localix"
     },
@@ -80,6 +80,13 @@
       "name": "game-2048",
       "source": "./game-2048",
       "description": "Play 2048 in a chat, or choose the agent to play the same board with its own tool.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "snake",
+      "source": "./snake",
+      "description": "Play Snake in a chat with the arrow keys, or watch a decision model steer the same board one move at a time.",
       "version": "0.1.0",
       "author": "Localix"
     },
@@ -136,7 +143,7 @@
     {
       "name": "rock-paper-scissors",
       "source": "./rock-paper-scissors",
-      "description": "Rock paper scissors against the agent, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
+      "description": "Rock paper scissors against the agent or a decision model, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
       "version": "0.1.0",
       "author": "Localix"
     },
@@ -150,7 +157,7 @@
     {
       "name": "tic-tac-toe",
       "source": "./tic-tac-toe",
-      "description": "Tic-tac-toe against the agent, one board per chat: the agent in that chat answers each move with its own tool, and the board goes when the chat does.",
+      "description": "Tic-tac-toe against the agent or a decision model, one board per chat: the agent in that chat answers each move with its own tool, or the board asks a decision model, and the board goes when the chat does.",
       "version": "0.1.0",
       "author": "Localix"
     },

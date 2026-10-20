@@ -19,6 +19,8 @@ export const ACTIONS = [
   'evaluate',
   'history',
   'steps',
+  // The decision model drives the tab toward a stated sub-goal (`browser-goal.ts`).
+  'goal',
 ] as const
 
 /** The interactions, which exist only as steps. */

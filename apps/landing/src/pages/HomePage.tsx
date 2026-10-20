@@ -8,6 +8,7 @@ import { HomeMotion } from '@/components/home/motion'
 import { Section } from '@/components/home/Reveal'
 import { RevealHeading } from '@/components/home/RevealHeading'
 import { DemoFilm } from '@/components/home/DemoFilm'
+import { Features } from '@/components/home/Features'
 import '../components/home/films.css'
 
 /** The page's two actions. */
@@ -37,12 +38,13 @@ export function HomePage() {
         <div className="hero-layout relative">
           <div className="hero-copy min-w-0">
             <RevealHeading
-              text="Everything is context"
-              className="display text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem] xl:text-[4.25rem]"
+              text="The Agentic Development Environment"
+              breakAfter={2}
+              className="display text-[2.5rem] sm:text-[3.25rem] lg:text-[4rem] xl:text-[4.75rem]"
             />
             <p className="lede hero-rise text-lg">
-              A desktop development environment built around agents. Anything you open can become
-              context, and anything an agent does shows up where you work
+              Your editor, terminals, Browser and a team of agents in one desktop app — fast where
+              it matters, open where it counts.
             </p>
             <HomeActions className="hero-actions hero-rise" />
           </div>
@@ -57,6 +59,7 @@ export function HomePage() {
         </div>
         <DemoFilm />
       </Section>
+      <Features />
     </HomeMotion>
   )
 }

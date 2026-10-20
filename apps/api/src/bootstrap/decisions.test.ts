@@ -25,7 +25,7 @@ function composed(connections = [{ id: 'or-connection', providerId: 'openrouter'
   const decisions = buildDecisionService({
     db: {} as never,
     logger: { info: () => {} } as never,
-    usageRepo: { accumulateEvent: async (event: unknown) => void ledger.push(event) },
+    usageRepo: { accumulateEvent: async (...events: unknown[]) => void ledger.push(...events) },
     catalogService: { getFullCatalog: async () => catalog, getCatalog: async () => catalog },
     providerConnectionsService: {
       listConnections: async () => ({ connections }),
@@ -40,8 +40,8 @@ function composed(connections = [{ id: 'or-connection', providerId: 'openrouter'
     languageModelFactory: {
       create: (ref: unknown) => ({
         ref,
-        decide: async (request: DecisionRequest) => {
-          asked.push(request)
+        decide: async (...requests: DecisionRequest[]) => {
+          asked.push(...requests)
           return {
             answers: { next: { type: 'choice', choice: 'a', probabilities: { a: 0.9 } } },
             usage: { input: 400, output: 30, totalTokens: 430, cost: { total: 0.00002 } },

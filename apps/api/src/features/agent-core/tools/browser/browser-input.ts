@@ -54,7 +54,7 @@ const stepSchema = z
  * interaction vocabulary ONCE (in the step shape) instead of twice — the largest single saving
  * in the whole tool roster (~1,900 → <900 tokens per request).
  */
-const advertisedObject = z.object({
+export const advertisedObject = z.object({
   preview_id: z.string().min(1).optional().describe('Browser tab ID.'),
   preview_ids: z.array(z.string().min(1)).min(1).max(100).optional().describe('close: tab IDs.'),
   background: z.boolean().optional().describe('open: keep hidden.'),
@@ -66,16 +66,13 @@ const advertisedObject = z.object({
     .strict()
     .nullable()
     .optional()
-    .describe(
-      'Omit: pages stay responsive (fit the pane). A size is only for checking one width; reset with null.',
-    ),
+    .describe('A fixed size; null resets.'),
   action: z
     .enum(ACTIONS)
     // Optional so an unambiguous call missing `action` (e.g. only `expression`) is
     // INFERRED at execute time instead of hard-rejected (a wasted round-trip). Set it
     // explicitly — inference only covers the single-signal cases.
-    .optional()
-    .describe('open/close/viewport/snapshot/steps/take_screenshot/console/evaluate/history.'),
+    .optional(),
   url: z.string().optional().describe("open: page URL, or plugin:<name> for a plugin's view."),
   file_path: z
     .string()
@@ -91,10 +88,9 @@ const advertisedObject = z.object({
     .string()
     .optional()
     .describe('evaluate: page JS expression; returns the awaited value.'),
-  history_operation: z
-    .enum(['list', 'search', 'open', 'remove', 'clear'])
-    .optional()
-    .describe('history: list/search/open/remove/clear.'),
+  goal: z.string().optional().describe('goal: the sub-goal.'),
+  values: z.array(z.string()).max(20).optional().describe('goal: texts to type.'),
+  history_operation: z.enum(['list', 'search', 'open', 'remove', 'clear']).optional(),
   history_query: z.string().max(200).optional().describe('history search: text.'),
   history_urls: z
     .array(z.string().url())
@@ -111,16 +107,15 @@ const advertisedSchema = refineBrowserInput(advertisedObject)
  * its `ref` target. Offering a picture to a text-only model spends a call on an image the
  * provider will not show it, so the action is not advertised at all (`forModel` in browser.ts).
  */
-const textOnlyObject = advertisedObject.omit({ ref: true }).extend({
+export const textOnlyObject = advertisedObject.omit({ ref: true }).extend({
   action: z
     .enum(
       ACTIONS.filter((action) => action !== TAKE_SCREENSHOT) as [BrowserAction, ...BrowserAction[]],
     )
-    .optional()
-    .describe('open/close/viewport/snapshot/steps/console/evaluate/history.'),
+    .optional(),
 })
 
-function refineBrowserInput<T extends z.ZodObject>(object: T) {
+export function refineBrowserInput<T extends z.ZodObject>(object: T) {
   return object.strict().superRefine((raw, ctx) => {
     const input = raw as BrowserInput
     const action = inferAction(input)
@@ -147,6 +142,12 @@ function refineBrowserInput<T extends z.ZodObject>(object: T) {
         code: 'custom',
         path: ['viewport'],
         message: 'Use action="viewport" or "open" to set dimensions.',
+      })
+    if (input.values !== undefined && action !== 'goal')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['values'],
+        message: 'values is only for goal.',
       })
     if (input.background !== undefined && action !== 'open')
       ctx.addIssue({
@@ -190,6 +191,7 @@ export type ResolvedInput = BrowserInput & {
 export function inferAction(input: BrowserInput): BrowserInput['action'] {
   if (input.action) return input.action
   if (input.expression != null) return 'evaluate'
+  if (input.goal != null) return 'goal'
   if (input.steps?.length) return 'steps'
   if (input.file_path != null || input.url != null) return 'open'
   if (input.viewport !== undefined) return 'viewport'
@@ -197,7 +199,7 @@ export function inferAction(input: BrowserInput): BrowserInput['action'] {
 }
 
 export const MISSING_ACTION_MESSAGE =
-  'browser needs an "action" (one of: open, close, viewport, snapshot, take_screenshot, console, evaluate, steps, history — interactions go inside steps, e.g. {"action":"steps","steps":[{"action":"click","ref":"e3"}]}). Set it explicitly.'
+  'browser needs an "action" (one of: open, close, viewport, snapshot, take_screenshot, console, evaluate, steps, goal, history — interactions go inside steps, e.g. {"action":"steps","steps":[{"action":"click","ref":"e3"}]}). Set it explicitly.'
 
 type Step = NonNullable<BrowserInput['steps']>[number]
 
@@ -237,6 +239,8 @@ export function missingFieldMessage(input: ResolvedInput): string | null {
   if (input.action === 'evaluate' && !input.expression?.trim()) {
     return 'action="evaluate" needs an "expression" — a JS expression to run in the page, e.g. "window.score" or "document.querySelector(\'#board\').textContent".'
   }
+  if (input.action === 'goal' && !input.goal?.trim())
+    return 'action="goal" needs a "goal": a short sub-goal on this tab, e.g. "search flights from Zurich to London"; put every text it may type in "values".'
   if (input.action === 'steps' && !input.steps?.length)
     return 'action="steps" needs a non-empty "steps" array, e.g. [{"action":"click","ref":"e3"}].'
   for (const [index, step] of (input.steps ?? []).entries()) {
@@ -290,4 +294,4 @@ export function buildPreviewCommand(input: ResolvedInput): PreviewCommand {
  * holds this tool. This says how the tool behaves.
  */
 export const BROWSER_DESCRIPTION =
-  'Drive local and remote Browser tabs in the connected desktop app; relay-only. Reuse preview_id from open or Browser context. Local files: open file_path, which serves its folder with relative assets; never start a server just to view static files. Tabs stay responsive (fit the pane): leave viewport unset; set it only to check a specific width, then reset with viewport null. history manages shared visits without a tab ID. Errors and auto-dismissed dialogs during an action are attached. Reload invalidates refs: re-snapshot. Reopen file_path after editing.'
+  'Drive Browser tabs in the desktop app (relay-only); reuse preview_id from open or Browser context. Multi-step page work (a form, a search, a date picker): prefer goal — a decision model clicks and types only your values toward it, fast; then verify the page it returns. steps: single precise actions. Local files: open file_path (serves its folder); never start a server for static files. Leave viewport unset unless checking a width, then reset with null. history: shared visits. Errors and auto-dismissed dialogs during an action are attached; a reload invalidates refs: re-snapshot.'

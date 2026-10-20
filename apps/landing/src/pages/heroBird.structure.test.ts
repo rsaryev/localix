@@ -39,8 +39,8 @@ test('the deferred hero reserves its final geometry before the bird mounts', () 
   expect(readLandingStyles()).toMatch(
     /\.hero-bird-slot \{\s*grid-area: bird;\s*height: var\(--bird-slot-height\);\s*overflow: visible;/u,
   )
-  expect(readLandingStyles()).toContain('--hero-bird-height: 18rem')
-  expect(readLandingStyles()).toContain('--hero-bird-height: 20rem')
+  expect(readLandingStyles()).toContain('--hero-bird-height: 11rem')
+  expect(readLandingStyles()).toContain('--hero-bird-height: 12rem')
   expect(read('../components/home/HeroBird.tsx')).toContain('stageClassName="h-full w-full"')
   expect(read('../components/home/HeroBird.tsx')).toContain(
     "const desktopQuery = '(min-width: 64rem)'",
@@ -68,7 +68,8 @@ test('wind extends behind hero copy without intercepting actions or clipping at 
   expect(css).toMatch(/\.hero-bird-slot \{[^}]*pointer-events: none;/u)
   expect(bird).not.toContain('[mask-image:linear-gradient')
   expect(css).not.toContain('hero-wind-sweep')
-  expect(bird).toContain('spread={260}')
+  // On desktop the wind stays within the bird's row beside the description, clear of the heading.
+  expect(bird).toContain('spread={desktop ? 150 : 260}')
   expect(bird).toContain("observer.observe(element.closest('.hero-layout') ?? element)")
 })
 

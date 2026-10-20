@@ -7,6 +7,7 @@ import type { PreviewsBySession } from '../model/preview'
 import { browserEngine } from '../model/browserUrl'
 import { decodeEvalResult, ensureNativeProbe } from './nativeProbe'
 import { drivesPage, navigatedAfter, navigatedResult, runInPage } from './nativeCommand'
+import { elementShot } from './nativeShot'
 
 /**
  * Claim a command once, then drive the exact native tab ID with the shared actuator.
@@ -37,6 +38,27 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
         if (!claimed) return
         try {
           await ensureNativeProbe(tab)
+          // An element's picture is cut from the WebView's own capture (`nativeShot.ts`).
+          if (
+            event.command.action === 'screenshot' &&
+            (event.command.ref || event.command.selector)
+          ) {
+            const shot = await elementShot(
+              invoke,
+              runInPage,
+              tab.previewId,
+              event.commandId,
+              event.command as unknown as Record<string, unknown>,
+            )
+            if (shot) {
+              await backendClient.previewResult(event.commandId, {
+                ok: true,
+                hostId,
+                result: { ...shot, action: 'screenshot', previewId: tab.previewId },
+              })
+              return
+            }
+          }
           if (
             event.command.action === 'screenshot' &&
             !event.command.ref &&

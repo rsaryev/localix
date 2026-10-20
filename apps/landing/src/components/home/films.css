@@ -3,8 +3,7 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 1680 / 946;
-  max-width: 72rem;
-  margin: 2.5rem auto 0;
+  margin: 4rem auto 0;
   border-radius: clamp(0.625rem, 1.4vw, 1rem);
   background-color: #000;
   box-shadow:
@@ -26,25 +25,29 @@
   border-radius: inherit;
   cursor: pointer;
 }
+/* The action sits in the frame's corner on a short scrim, so the product stays readable behind it
+   instead of being dimmed and covered in the middle. */
 .demo-cover {
   position: absolute;
   inset: 0;
   z-index: 2;
   display: grid;
-  place-items: center;
-  background: rgb(0 0 0 / 0.35);
+  place-items: end start;
+  padding: clamp(0.875rem, 2.2vw, 1.5rem);
+  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent 32%);
   pointer-events: none;
   transition:
     opacity var(--dur-moderate) var(--ease-standard),
     background-color var(--dur-moderate) var(--ease-standard);
 }
-.demo-toggle:hover + .demo-cover {
-  background: rgb(0 0 0 / 0.2);
+.demo-toggle:hover + .demo-cover .demo-play {
+  transform: translateY(-1px);
 }
 .demo-film[data-playing] .demo-cover {
   opacity: 0;
 }
 .demo-play {
   padding-inline: 1.25rem;
+  transition: transform var(--dur-fast) var(--ease-soft);
   box-shadow: 0 0.75rem 2rem -0.5rem rgb(0 0 0 / 0.5);
 }

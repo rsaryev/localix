@@ -1,3 +1,4 @@
+import { noteAgentActivity } from '@/features/inspector/model/agentPageCleanup'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
 import { publishFsChange } from '@/shared/lib/fsChangeBus'
 import type { AgentStreamEvent } from '@/shared/api/contracts'
@@ -87,8 +88,10 @@ export function routePreviewCommand(
   parsed: Extract<AgentStreamEvent, { type: 'preview.command' }>,
 ): void {
   // A command to a tab whose renderer was released brings it back off screen to answer.
-  if (parsed.command.previewId)
+  if (parsed.command.previewId) {
     usePreviewHosts.getState().opened(previewHostKey(sessionId, parsed.command.previewId))
+    noteAgentActivity(parsed.command.previewId)
+  }
   previewControlBus.publish({ sessionId, commandId: parsed.commandId, command: parsed.command })
 }
 
@@ -177,6 +180,7 @@ export function routePreviewUpdated(
   sessionId: string,
   parsed: Extract<AgentStreamEvent, { type: 'preview.updated' }>,
 ): void {
+  noteAgentActivity(parsed.previewId ?? originOf(parsed.url))
   revealPreview(sessionId, {
     background: parsed.background,
     viewport: parsed.viewport,

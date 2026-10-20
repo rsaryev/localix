@@ -11,17 +11,19 @@
  */
 
 import { VF_IGNORE_ATTR } from '../protocol/index'
-import type { VfSnapshot } from '../protocol/index'
+import type { VfElement, VfSnapshot } from '../protocol/index'
 import { generateSelector } from '../core/identify'
 import {
   SKIP_TAGS,
   viewOf,
   isHidden,
+  holdsChoices,
   isInteractive,
   roleLabel,
   stateSuffix,
   shouldEmit,
 } from './classify'
+import { fieldValue, isEditable, isField } from './field'
 
 // The per-mount `eN` ref registry lives in its own leaf; re-exported here so the
 // snapshot module's public surface is unchanged.
@@ -39,6 +41,47 @@ interface WalkCtx {
   nodes: number
   interactive: number
   truncated: boolean
+  /** Every interactive node, structured; {@link pickElements} keeps {@link MAX_ELEMENTS}. */
+  elements: VfElement[]
+  /** Whether each of `elements` is on screen now. */
+  inView: boolean[]
+}
+
+/** Structured interactive nodes kept per snapshot; the tree keeps its own node cap. */
+const MAX_ELEMENTS = 250
+
+/** An open dialog: what a person acts in while it is up — a date picker, a menu sheet, a modal. */
+const DIALOG = '[role="dialog"], [role="alertdialog"], dialog[open], [aria-modal="true"]'
+
+/** Whether any part of `el` is inside the viewport. */
+function inViewport(el: Element): boolean {
+  const rect = el.getBoundingClientRect()
+  const view = el.ownerDocument?.defaultView
+  if (!view) return true
+  return (
+    rect.bottom > 0 && rect.right > 0 && rect.top < view.innerHeight && rect.left < view.innerWidth
+  )
+}
+
+/** Roles that come by the hundred — a calendar's days, a long list's rows — and crowd out the rest. */
+const REPEATED_ROLES = new Set(['gridcell', 'option', 'row', 'treeitem', 'listitem', 'menuitem'])
+
+/**
+ * At most {@link MAX_ELEMENTS}, kept in tree order. Chosen by tier: on-screen controls, then
+ * off-screen ones that are not one of many (a button, a field, a link), then the repeated rest. A
+ * page with more controls than that used to lose its LAST ones — a date picker's Done button
+ * after 300 calendar days (Google Flights, 2026-10-20) — so a caller choosing among them could
+ * only scroll.
+ */
+function pickElements(elements: VfElement[], inView: boolean[]): VfElement[] {
+  if (elements.length <= MAX_ELEMENTS) return elements
+  const tier = (element: VfElement, i: number) =>
+    inView[i] ? 0 : REPEATED_ROLES.has(element.role) ? 2 : 1
+  const ranked = elements
+    .map((element, i) => ({ element, i, tier: tier(element, i) }))
+    .sort((a, b) => a.tier - b.tier || a.i - b.i)
+  const keep = new Set(ranked.slice(0, MAX_ELEMENTS).map((entry) => entry.element))
+  return elements.filter((element) => keep.has(element))
 }
 
 function walk(el: Element, depth: number, ctx: WalkCtx): void {
@@ -73,13 +116,30 @@ function walk(el: Element, depth: number, ctx: WalkCtx): void {
       interactive ? { selector: generateSelector(el).selector, role, name } : undefined,
     )
     const label = name ? `${role} "${name}"` : role
+    // A field's value is shown apart from its label, so an empty field reads as empty.
+    const value = isField(el) ? fieldValue(el) : ''
+    const states = stateSuffix(el)
     ctx.lines.push(
-      `${'  '.repeat(Math.min(depth, ctx.maxDepth))}- ${label}${stateSuffix(el)} [ref=${ref}]`,
+      `${'  '.repeat(Math.min(depth, ctx.maxDepth))}- ${label}${value ? ` = "${value}"` : ''}${states} [ref=${ref}]`,
     )
+    if (interactive) {
+      const stateList = states ? states.slice(2, -1).split(', ') : []
+      ctx.inView.push(inViewport(el))
+      ctx.elements.push({
+        ref,
+        role,
+        name,
+        ...(value ? { value } : {}),
+        ...(stateList.length ? { states: stateList } : {}),
+        ...(isEditable(el) ? { editable: true } : {}),
+        ...(el.closest(DIALOG) ? { dialog: true } : {}),
+      })
+    }
     childDepth = depth + 1
     // An interactive control is a leaf: its inner text IS its accessible name, so
     // descending would re-emit that text as duplicate child "text" nodes.
-    if (interactive) return
+    // A listbox, menu or grid is the exception: its children are the choices to act on.
+    if (interactive && !holdsChoices(el)) return
   }
 
   if (depth >= ctx.maxDepth) return
@@ -116,6 +176,8 @@ export function buildSnapshot(reg: RefRegistry, opts: SnapshotOptions = {}): VfS
     nodes: 0,
     interactive: 0,
     truncated: false,
+    elements: [],
+    inView: [],
   }
   const start = opts.root ?? document.body ?? document.documentElement
   if (start) for (const child of Array.from(start.children)) walk(child, 0, ctx)
@@ -131,5 +193,6 @@ export function buildSnapshot(reg: RefRegistry, opts: SnapshotOptions = {}): VfS
     stats: { nodes: ctx.nodes, interactive: ctx.interactive, chars: tree.length },
     url: location.href,
     title: opts.root?.getAttribute('aria-label') ?? document.title,
+    ...(ctx.elements.length ? { elements: pickElements(ctx.elements, ctx.inView) } : {}),
   }
 }

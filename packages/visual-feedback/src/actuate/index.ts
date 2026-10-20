@@ -144,6 +144,21 @@ async function dispatch(cmd: VfCommand, deps: ActuateDeps): Promise<ActuateResul
       if (target !== pageRoot && target !== document.documentElement) {
         target.scrollIntoView?.({ block: 'center', inline: 'center' })
       }
+      // The host captures the pixels itself: answer where the target is, at once.
+      if (cmd.locateOnly) {
+        // Instantly: a page-wide `scroll-behavior: smooth` would leave the rect mid-flight.
+        if (target !== pageRoot && target !== document.documentElement)
+          target.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'instant' })
+        return {
+          ok: true,
+          result: {
+            action: 'screenshot',
+            rect: getViewportRect(target),
+            target: getElementSummary(target),
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+          },
+        }
+      }
       // Rasterize IN-PAGE (same origin) — no screen-share permission, works headless.
       // A whole-view shot is OF the view, so it takes no context margin. The margin makes a small
       // element readable among its neighbours; around a scoped root (a plugin panel inside the app)

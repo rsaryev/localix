@@ -10,23 +10,22 @@ import type {
 } from '../preview/preview-control'
 import type { OpenPreviewCoreInput, OpenPreviewCoreResult } from '../preview/open-preview'
 import {
-  BROWSER_DESCRIPTION,
   MISSING_ACTION_MESSAGE,
   TAKE_SCREENSHOT,
   buildPreviewCommand,
-  browserInputSchema,
-  textOnlyBrowserInputSchema,
   inferAction,
   missingFieldMessage,
   prepareBrowserArguments,
   type BrowserInput,
   type ResolvedInput,
 } from './browser-input'
+import { browserDescription, browserInputSchemaFor } from './browser-input-variants'
 import { classifyBrowserCall } from './browser-classify'
 import { RELOAD_NOTICE, snapshotContent } from './browser-format'
 import { openPreviewAndSnapshot } from './browser-open'
 import { formatReply } from './browser-reply'
 import { createViewportMemory } from './browser-viewport'
+import { runGoal, type GoalDeps } from './browser-goal'
 
 /**
  * `browser` — lets the agent DRIVE the Browser tabs the user has open, local previews and
@@ -50,7 +49,7 @@ export interface BrowserDetails {
   previewId?: string
   ready?: boolean
   viewport?: { width: number; height: number }
-  action: PreviewAction | 'open' | 'close'
+  action: PreviewAction | 'open' | 'close' | 'goal'
   snapshot?: PreviewSnapshot
   console?: PreviewConsoleEntry[]
   rect?: { x: number; y: number; width: number; height: number } | null
@@ -72,6 +71,8 @@ export interface BrowserToolDeps {
    * dep; agent-core stays agnostic of the stream registry behind it).
    */
   closePreview(previewIds: string[]): void
+  /** The decision model the `goal` action asks, bound to this run; absent without one. */
+  decide?: GoalDeps['decide']
 }
 
 type ToolResult = AgentToolResult<BrowserDetails>
@@ -132,7 +133,19 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
   }
 
   /** One resolved action, start to finish (open/close are tool-only; the rest relay). */
-  async function runAction(input: ResolvedInput): Promise<ActionOutcome> {
+  async function runAction(input: ResolvedInput, signal?: AbortSignal): Promise<ActionOutcome> {
+    if (input.action === 'goal') {
+      const missing = missingFieldMessage(input)
+      if (missing) return { result: { content: missing, isError: true } }
+      return {
+        result: await runGoal(deps, {
+          goal: input.goal!.trim(),
+          values: input.values ?? [],
+          previewId: input.preview_id,
+          signal,
+        }),
+      }
+    }
     const outcome = await relayAction(input)
     const { result } = outcome
     if (result.isError) return outcome
@@ -187,6 +200,7 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     }
   }
 
+  const goal = !!deps.decide
   const tool: AgentTool<BrowserInput, BrowserDetails> = defineAgentTool({
     name: TOOL.browser,
     label: 'Browser',
@@ -194,23 +208,27 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
     // The injected preview port owns availability. Engine-created sessions have no client
     // descriptor; requiring one hid the tool even when their preview was open and connected.
     // A missing UI probe is reported by the bounded relay, never as successful validation.
-    description: BROWSER_DESCRIPTION,
+    // `goal` is offered only when a decision model can answer for this run (`deps.decide`).
+    description: browserDescription(goal),
     // The schema is the whole contract: the runtime input is exactly what it declares.
-    inputSchema: browserInputSchema as unknown as z.ZodType<BrowserInput>,
+    inputSchema: browserInputSchemaFor({
+      images: true,
+      goal,
+    }) as unknown as z.ZodType<BrowserInput>,
     prepareArguments: prepareBrowserArguments,
     // The drive actions reach the user's running app and history pruning is durable, so the
     // static flag says "writes"; `classifyBrowserCall` answers per call, by what will run.
     mutates: true,
     classify: classifyBrowserCall,
     executionMode: 'sequential',
-    async execute(_toolCallId, rawInput: BrowserInput): Promise<ToolResult> {
+    async execute(_toolCallId, rawInput: BrowserInput, signal?: AbortSignal): Promise<ToolResult> {
       // Lenient action inference: when a call omits `action` but its payload names
       // exactly one action's required field (e.g. only `expression` → evaluate), infer
       // it instead of hard-rejecting the whole call (a wasted round-trip).
       const action = rawInput.action ?? inferAction(rawInput)
       if (!action) return { content: MISSING_ACTION_MESSAGE, isError: true }
 
-      const { result, reloaded } = await runAction({ ...rawInput, action })
+      const { result, reloaded } = await runAction({ ...rawInput, action }, signal)
 
       // Prepend a reload notice (DOM was reset since the agent's last command) to
       // whatever the action returned, and flag an INFERRED action so the model learns
@@ -229,7 +247,10 @@ export function createBrowserTool(hostDeps: BrowserToolDeps) {
         ? tool
         : {
             ...tool,
-            inputSchema: textOnlyBrowserInputSchema as unknown as z.ZodType<BrowserInput>,
+            inputSchema: browserInputSchemaFor({
+              images: false,
+              goal,
+            }) as unknown as z.ZodType<BrowserInput>,
           },
   })
   return tool

@@ -78,7 +78,9 @@ export function installResourceErrorCapture(): ResourceErrorCapture {
   const seen = new Set<string>()
   const items: string[] = []
   const add = (label: string | null) => {
-    if (!label || seen.has(label)) return
+    // Full: nothing more is kept, so nothing more is remembered — a page that keeps failing to
+    // load images must not grow this set for as long as it stays open.
+    if (!label || items.length >= MAX_ITEMS || seen.has(label)) return
     seen.add(label)
     if (items.length < MAX_ITEMS) items.push(label)
   }

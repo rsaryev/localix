@@ -174,3 +174,20 @@ describe('snapshot_after on a step', () => {
     ])
   })
 })
+
+describe('goal is offered only with a decision model', () => {
+  test('without one the schema and the description leave goal out', async () => {
+    const { browserDescription, browserInputSchemaFor } = await import('./browser-input-variants')
+    for (const images of [true, false]) {
+      const without = browserInputSchemaFor({ images, goal: false })
+      expect(without.safeParse({ action: 'goal', goal: 'search' }).success).toBe(false)
+      expect(without.safeParse({ action: 'snapshot' }).success).toBe(true)
+      const withGoal = browserInputSchemaFor({ images, goal: true })
+      expect(withGoal.safeParse({ action: 'goal', goal: 'search', values: ['x'] }).success).toBe(
+        true,
+      )
+    }
+    expect(browserDescription(false)).not.toContain('goal')
+    expect(browserDescription(true)).toContain('prefer goal')
+  })
+})

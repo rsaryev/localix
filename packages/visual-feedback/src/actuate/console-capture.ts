@@ -49,23 +49,52 @@ export function createConsoleBuffer(limit = 50): ConsoleBuffer {
   }
 }
 
+/** What one logged value costs at most: the entry keeps 500 characters anyway. */
+const ARG_CHARS = 500
+
+/**
+ * One logged value as text, never costing more than the entry keeps. `JSON.stringify` of
+ * whatever a site logs ran on every `console.*` call the page made — a large state object
+ * serialized in full, again and again, only for 499 characters of it to be kept.
+ */
+export function previewArg(value: unknown, room = ARG_CHARS): string {
+  if (typeof value === 'string') return value.slice(0, room)
+  if (value === null || typeof value !== 'object') return String(value)
+  if (value instanceof Error) return `${value.name}: ${value.message}`.slice(0, room)
+  const parts: string[] = []
+  let used = 0
+  const isArray = Array.isArray(value)
+  for (const key of Object.keys(value)) {
+    if (used >= room) {
+      parts.push('…')
+      break
+    }
+    let item: unknown
+    try {
+      item = (value as Record<string, unknown>)[key]
+    } catch {
+      item = '?'
+    }
+    const text =
+      item !== null && typeof item === 'object'
+        ? Array.isArray(item)
+          ? `[${item.length}]`
+          : '{…}'
+        : typeof item === 'string'
+          ? JSON.stringify(item.slice(0, 80))
+          : String(item)
+    const part = isArray ? text : `${JSON.stringify(key)}:${text}`
+    parts.push(part)
+    used += part.length + 1
+  }
+  return (isArray ? `[${parts.join(',')}]` : `{${parts.join(',')}}`).slice(0, room)
+}
+
 /** Install a small ring buffer over `console.*` + window errors at probe mount. */
 export function installConsoleCapture(limit = 50): ConsoleCapture {
   const buffer = createConsoleBuffer(limit)
   const push = (level: VfConsoleEntry['level'], args: unknown[]) => {
-    buffer.record(
-      level,
-      args
-        .map((a) => {
-          if (typeof a === 'string') return a
-          try {
-            return JSON.stringify(a)
-          } catch {
-            return String(a)
-          }
-        })
-        .join(' '),
-    )
+    buffer.record(level, args.map((a) => previewArg(a)).join(' '))
   }
 
   const levels: VfConsoleEntry['level'][] = ['log', 'info', 'warn', 'error', 'debug']

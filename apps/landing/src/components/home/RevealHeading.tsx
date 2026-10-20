@@ -13,11 +13,14 @@ export function RevealHeading({
   className,
   delay = 0,
   as: Tag = 'h1',
+  breakAfter,
 }: {
   text: string
   className?: string
   delay?: number
   as?: 'h1' | 'h2'
+  /** On wide screens, end the first line after this many words (a deliberate two-line set). */
+  breakAfter?: number
 }) {
   const words = text.split(' ')
   return (
@@ -30,6 +33,7 @@ export function RevealHeading({
             </span>
           </span>
           {index < words.length - 1 ? ' ' : null}
+          {breakAfter === index + 1 ? <br className="max-lg:hidden" /> : null}
         </Fragment>
       ))}
     </Tag>

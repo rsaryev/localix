@@ -55,4 +55,5 @@ only a digest until it has chosen too. When the agent opens, its card stays face
 shows its move as `[sealed]`. After your pick, both moves are revealed, and the table checks the
 agent's move against the digest it showed you. Openers alternate from round to round.
 
-For a tile puzzle with a separate human-play mode, see [2048](game-2048.md).
+For a tile puzzle with a separate human-play mode, see [2048](game-2048.md); for Snake, played by
+you or by a decision model, see [Snake](game-snake.md).

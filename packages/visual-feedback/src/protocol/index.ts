@@ -131,6 +131,12 @@ export interface VfCommand {
   amount?: number
   /** `snapshot`: only interactive nodes (buttons/links/inputs/…). */
   interactiveOnly?: boolean
+  /**
+   * `screenshot`: bring the target into view and answer with its `rect` and the `viewport`,
+   * without rendering a picture. A host that can capture the real pixels (the native WebView)
+   * crops its own capture to that rect instead of the slow in-page rasterizer.
+   */
+  locateOnly?: boolean
   /** `snapshot`: max tree depth. */
   maxDepth?: number
   /** For a state-changing action (click/type/press/scroll/hover): also return a
@@ -153,6 +159,26 @@ export interface VfSnapshotStats {
   chars: number
 }
 
+/**
+ * One INTERACTIVE node of a snapshot, structured: what a caller choosing among the page's
+ * controls (a decision model, a test) reads instead of parsing the tree's lines.
+ */
+export interface VfElement {
+  /** The node's `eN` ref, as in the tree. */
+  ref: string
+  role: string
+  /** Accessible name; for a form field its label, never its value. */
+  name: string
+  /** A form field's current value (never a password's); absent when empty. */
+  value?: string
+  /** `disabled`, `checked`/`unchecked`, `expanded`/`collapsed`, `selected`, `required`, `readonly`. */
+  states?: string[]
+  /** Inside an open dialog (role dialog/alertdialog, or an open `<dialog>`): it holds the page. */
+  dialog?: boolean
+  /** Takes typed text: what a `type` step can fill. */
+  editable?: boolean
+}
+
 /** A structured, accessibility-flavored read of the page (the primary channel). */
 export interface VfSnapshot {
   /** Indented text tree, e.g. `- button "Submit" [ref=e3]`. */
@@ -165,6 +191,8 @@ export interface VfSnapshot {
    *  Surfaces silent page-side breakage (e.g. a 404'd theme stylesheet) so the agent
    *  stops blaming a control that actually works. */
   failedResources?: string[]
+  /** The interactive nodes in tree order, structured (at most 250); absent when there are none. */
+  elements?: VfElement[]
 }
 
 export interface VfConsoleEntry {
@@ -199,6 +227,8 @@ export interface VfCommandResult {
   note?: string
   /** `screenshot`: the JPEG the probe rendered in-page (no permission needed). */
   image?: VfImage
+  /** `screenshot` with `locateOnly`: the viewport, in the CSS px `rect` is measured in. */
+  viewport?: { width: number; height: number }
   /** `evaluate`: the serialized result of the page-realm expression (string/JSON, capped). */
   value?: string
   /**

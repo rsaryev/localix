@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { ApprovalScene } from './scenes/ApprovalScene'
+import { DecisionAction, DecisionScene } from './scenes/DecisionScene'
 import { AppearanceAction, AppearanceScene } from './scenes/AppearanceScene'
 import { GoalAction, GoalScene } from './scenes/GoalScene'
 import { IslandAction, IslandScene } from './scenes/IslandScene'
@@ -29,7 +30,8 @@ export interface WorkspaceTip {
 
 /**
  * Ranked by what a new user sets up first: how the app looks and whether the agent island
- * is on, then the model nothing sends without; what the agent may do on its own and where
+ * is on, then the model nothing sends without and the OpenRouter sign-in that turns on decision
+ * models; what the agent may do on its own and where
  * it works come next; then how to point it at things, how to move fast and what else it
  * can do. Choices alternate with how-it-works
  * slides so the carousel never reads as a settings form. Every scene draws a surface
@@ -59,6 +61,13 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
     rest: 'Sign in or paste an API key, then pick what new chats start on —',
     Scene: ModelScene,
     Action: ModelAction,
+  },
+  {
+    id: 'decisions',
+    lead: 'Connect OpenRouter for decisions.',
+    rest: 'Small decision models, a fraction of a cent each, route group chats, drive the Browser and play games and plugins —',
+    Scene: DecisionScene,
+    Action: DecisionAction,
   },
   {
     id: 'approvals',

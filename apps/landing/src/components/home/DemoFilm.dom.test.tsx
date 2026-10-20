@@ -23,7 +23,7 @@ test('the demo waits on its poster, loads on request, and plays without player c
     expect(video.getAttribute('src')).toBeNull()
     expect(video.getAttribute('poster')).toBe('/films/demo.jpg')
     expect(video.hasAttribute('controls')).toBe(false)
-    expect(host.querySelector('.demo-cover')?.textContent).toBe('Watch demo')
+    expect(host.querySelector('.demo-cover')?.textContent).toBe('Watch the demo')
 
     const toggle = host.querySelector<HTMLButtonElement>('.demo-toggle')!
     expect(toggle.getAttribute('aria-label')).toBe('Play demo')

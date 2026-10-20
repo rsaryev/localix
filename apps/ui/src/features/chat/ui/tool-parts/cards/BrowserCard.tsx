@@ -27,6 +27,7 @@ const ACTION_VERB = {
   steps: 'Steps',
   evaluate: 'Evaluate',
   history: 'History',
+  goal: 'Goal',
 } satisfies Record<BrowserAction, string>
 
 const clip = (s: string, max = 24) => (s.length > max ? `${s.slice(0, max - 1)}…` : s)
@@ -71,6 +72,7 @@ export function BrowserCard({ item }: { item: ToolCallItem }) {
   // expression, or the target — so the collapsed card is legible at a glance.
   const stepsVal = input?.steps
   const expression = strField(input, 'expression')
+  const goal = strField(input, 'goal')
   const detail =
     action === 'steps' && Array.isArray(stepsVal)
       ? clip(stepsVal.map((step) => stepLabel(asRecord(step))).join(' → '), 48)
@@ -78,7 +80,11 @@ export function BrowserCard({ item }: { item: ToolCallItem }) {
         ? expression != null
           ? clip(expression, 32)
           : undefined
-        : (strField(input, 'ref') ?? strField(input, 'selector'))
+        : action === 'goal'
+          ? goal != null
+            ? `"${clip(goal, 40)}"`
+            : undefined
+          : (strField(input, 'ref') ?? strField(input, 'selector'))
   const title = detail ? `${verb} ${detail}` : verb
 
   const subtitle = streaming ? 'Working…' : hasError ? 'Failed' : 'Browser'

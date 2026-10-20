@@ -5,11 +5,11 @@
 <h1 align="center">Localix</h1>
 
 <p align="center">
-  <strong>Everything is context</strong>
+  <strong>The Agentic Development Environment</strong>
 </p>
 
 <p align="center">
-  Localix is a desktop development environment built around agents. The editor, terminals, browser, databases, plugins, and coding agents like Claude Code and Codex are parts of one app, so anything you open can become context for an agent, and anything an agent does shows up where you work.
+  Your editor, terminals, Browser and a team of agents in one desktop app — fast where it matters, open where it counts.
 </p>
 
 <p align="center">
@@ -23,6 +23,43 @@
     <img src="docs/assets/films/demo.png" alt="Watch the Localix demo: a /workflows prompt fills the board, agents build and test a 2048 game in the browser, and a comment gets the cells resized" width="880">
   </a>
 </p>
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <strong>Agent teams</strong><br>
+      Specialists share one chat; a clear request goes straight to the right one.<br>
+      <a href="docs/features/group-routing.md">Group routing →</a>
+    </td>
+    <td width="33%" valign="top">
+      <strong>A fast Browser</strong><br>
+      Agents drive any page step by step and check the result.<br>
+      <a href="docs/features/workspace.md#the-browser">The Browser →</a>
+    </td>
+    <td width="33%" valign="top">
+      <strong>Decision models</strong><br>
+      Small, cheap models make the quick calls across the app.<br>
+      <a href="docs/features/decision-models.md">Decision models →</a>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <strong>Plugins, built by the agent</strong><br>
+      Describe one with <code>/plugin create</code> — from a game to an API client.<br>
+      <a href="docs/extending/build-with-the-agent.md">Build a plugin →</a>
+    </td>
+    <td valign="top">
+      <strong>Your coding agents</strong><br>
+      Claude Code, Codex, Gemini CLI and more, linked to your chats.<br>
+      <a href="docs/features/external-agents.md">External agents →</a>
+    </td>
+    <td valign="top">
+      <strong>Any model</strong><br>
+      Sign in or bring a key, or run models on this computer.<br>
+      <a href="docs/features/providers.md">Providers →</a> · <a href="docs/features/local-models.md">Local models →</a>
+    </td>
+  </tr>
+</table>
 
 ## On this computer
 

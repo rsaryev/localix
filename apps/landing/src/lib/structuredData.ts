@@ -3,7 +3,7 @@ import { REPOSITORY_URL, SITE_ORIGIN } from './site'
 const HOME_URL = `${SITE_ORIGIN}/`
 
 export const HOME_DESCRIPTION =
-  'Localix is an open source Agentic Development Environment: one workspace where you and a team of agents share the editor, terminals, preview, and databases.'
+  'Localix is an open source Agentic Development Environment: agent teams, a fast Browser, and plugins you build in minutes on embeddings and decision models.'
 
 /**
  * The homepage's schema.org graph. `index.html` ships the same JSON for the first paint, and the

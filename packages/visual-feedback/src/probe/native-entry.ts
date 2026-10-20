@@ -18,6 +18,12 @@ interface NativeBridge {
  */
 const LEAVING_MS = 3000
 
+/**
+ * Results held for the host to take. A command whose host gave up (a timeout) is never taken;
+ * the oldest are dropped past this many, so an open page does not keep them forever.
+ */
+const MAX_RESULTS = 64
+
 declare global {
   interface Window {
     __localixBrowser?: NativeBridge
@@ -40,6 +46,7 @@ if (!window.__localixBrowser) {
     run(id, command) {
       if (results.has(id)) return
       results.set(id, null)
+      while (results.size > MAX_RESULTS) results.delete(results.keys().next().value as string)
       void runCommand(command, deps).then(
         (result) => results.set(id, result),
         (error) =>

@@ -20,6 +20,7 @@ import {
 } from './sections/features'
 import { buildApprovedPlanSection, buildPlanModeSection } from './sections/plan'
 import { buildRoleSection } from './sections/role'
+import { buildSelfSection } from './sections/self'
 import { buildWithheldToolsSection } from './sections/withheld'
 import {
   buildMemoryContextSection,
@@ -79,6 +80,13 @@ export const CACHED_SECTIONS: readonly PromptSection[] = [
     tier: 'stable',
     heading: '# Available tools',
     render: (f) => f.registry.promptSection,
+  },
+  {
+    // The host application and its source: fixed for the life of a deployment.
+    id: 'self',
+    tier: 'stable',
+    heading: '# About Localix',
+    render: () => buildSelfSection(),
   },
   // Workspace and project. Fixed per project, and shared by every session in it.
   {

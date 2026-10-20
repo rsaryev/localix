@@ -99,6 +99,7 @@ Each recipe walks through one task from setup to a visible result.
 | [Research public markets](features/trading.md)        | Inspect public market data through read-only tools.                     |
 | [Kanban board](features/task-board.md)                | Track tasks, owners, epics, and dependencies on a chat’s board.         |
 | [2048](features/game-2048.md)                         | Play 2048 with the bundled workbench.                                   |
+| [Snake](features/game-snake.md)                       | Play Snake, or watch a decision model play it.                          |
 | [Games with your agent](features/games.md)            | Play the bundled board games with an agent.                             |
 
 ### Models & context

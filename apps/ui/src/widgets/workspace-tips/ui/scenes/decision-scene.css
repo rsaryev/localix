@@ -1,0 +1,86 @@
+/* One typed question, three probability bars filling, the leading option picked. */
+.wt-decision {
+  --loop: 6s;
+  position: absolute;
+  inset: 0;
+}
+.wt-dc-card {
+  left: 0;
+  right: 0;
+  bottom: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.625rem 0.5rem 1rem;
+  background: var(--card);
+}
+.wt-dc-question {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0 0.4375rem 0.375rem;
+  color: var(--foreground);
+  font-size: 0.6875rem;
+}
+.wt-dc-option {
+  color: var(--text-soft);
+}
+.wt-dc-label {
+  width: 4.5rem;
+}
+.wt-dc-track {
+  flex: 1;
+  height: 0.25rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tip-veil);
+}
+.wt-dc-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tip-ink);
+  transform-origin: left;
+  transform: scaleX(var(--share));
+  animation: wt-dc-fill var(--loop) var(--ease-emphasized) infinite both;
+  animation-delay: calc(var(--i) * 80ms);
+}
+.wt-dc-value {
+  width: 1.75rem;
+  text-align: right;
+  font-family: var(--font-mono);
+  color: var(--text-faint);
+}
+.wt-dc-picked .wt-dc-bar {
+  background: var(--primary);
+}
+
+@keyframes wt-dc-fill {
+  0%,
+  12% {
+    transform: scaleX(0);
+  }
+  40%,
+  100% {
+    transform: scaleX(var(--share));
+  }
+}
+.wt-dc-picked {
+  animation: wt-dc-chosen var(--loop) var(--ease-soft) infinite both;
+}
+@keyframes wt-dc-chosen {
+  0%,
+  48% {
+    background: transparent;
+    color: var(--text-soft);
+  }
+  56%,
+  92% {
+    background: var(--tip-veil-strong);
+    color: var(--foreground);
+  }
+  100% {
+    background: transparent;
+    color: var(--text-soft);
+  }
+}
