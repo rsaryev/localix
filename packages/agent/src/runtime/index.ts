@@ -12,6 +12,7 @@ import type {
 export * from './auth'
 export * from './engine'
 export * from './model'
+export * from './scripts'
 
 import type { RuntimeCredential, RuntimeCredentialStore } from './auth'
 import type { RuntimeModelRef } from './model'

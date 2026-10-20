@@ -50,6 +50,10 @@ const maximalRegistryOptions = {
     plugin_build: { run: async () => ({ text: '', ok: true }) },
     set_topic: { save: async () => {} },
     skip_answer: createSkipAnswerTool(),
+    codemode: {
+      run: async () => ({ ok: true, value: undefined, output: [] }),
+      declare: () => '',
+    },
     configure: {
       sessionId: 'sess',
       host: { changeSchema: z.object({ kind: z.literal('noop') }) } as never,

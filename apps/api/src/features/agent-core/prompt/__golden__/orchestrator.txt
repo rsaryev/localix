@@ -61,6 +61,7 @@ Handle straightforward work directly.
 - skip_answer
 - set_topic
 - configure
+- codemode
 - vault
 - external_agent_sessions
 

@@ -78,7 +78,23 @@ export type ToolCommandReplyOutcome =
   | { ok: true; result: unknown }
   | { ok: false; error: string; noReply?: boolean }
 
+/** How a tool call made on another tool's behalf ({@link AgentToolExecutionContext.callTool}) ended. */
+export interface NestedToolCallOutcome {
+  result: AgentToolResult
+  isError: boolean
+}
+
 export interface AgentToolExecutionContext {
+  /**
+   * Run another of this run's tools on this tool's behalf, through the pipeline a call the model
+   * makes goes through: input validation, the permission gate and the host's before/after hooks.
+   * A tool that calls tools (`codemode`) must use this rather than call an implementation directly,
+   * or its calls would skip every rule the person set.
+   *
+   * Never rejects for the nested tool's failure: an unknown tool, invalid input, a blocked call or
+   * a thrown error come back with `isError: true`. Absent where the runtime cannot run nested calls.
+   */
+  callTool?(name: string, input: unknown, signal?: AbortSignal): Promise<NestedToolCallOutcome>
   humanInLoop?: HumanInLoopController
   /** Available when agent-runner supports kill / background-process tracking. */
   asyncRegistry?: AsyncToolRegistry

@@ -43,6 +43,7 @@ const EMPTY_PORT_CAPABILITY: Readonly<Record<string, string>> = {
   [TOOL.tool_output]: 'context.store',
   [TOOL.plugin_build]: 'plugins.authoring',
   [TOOL.plan]: 'plans',
+  [TOOL.codemode]: 'scripts',
   // Seat-bound protocol ports (`chat/policy`): a pass needs a colleague, a topic needs its owner.
   [TOOL.skip_answer]: 'conversation.colleagues',
   [TOOL.set_topic]: 'conversation.topic-owner',
@@ -153,6 +154,8 @@ export function buildOptionalToolPorts(
             agentId: params.agentId,
           })
         : undefined,
+    // Scripts run in the engine's sandbox; an engine without one has no `codemode`.
+    codemode: deps.scripts,
   }
   return { optional, ledgerRef }
 }

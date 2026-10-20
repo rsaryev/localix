@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { estimateToolSchemaTokens } from '@localixai/agent/agents'
+import { createPiScriptSandbox } from '@localixai/agent-runtime-pi'
 
 import { CHAT_RUN_PROFILE } from './run-shape'
 import { TOOL } from './tool-names'
@@ -30,12 +31,17 @@ import { richRegistry } from './prompt/testing/prompt-render'
 // (measured total 7,744).
 // `history_search` became modes of `global_search` (320): the palette's search over every
 // domain, by meaning too, plus the conversation reads, in one tool (measured total 7,789).
-const WIRE_BUDGET_TOKENS = 7_800
+// `codemode` (1,669), as pi's first version builds it: its description declares `read`, `bash`,
+// `edit` and `write` again as the TypeScript a script calls (measured total 9,358).
+const WIRE_BUDGET_TOKENS = 9_400
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
+/** `codemode` restates four tools' schemas by design; it answers to the total, not the ceiling. */
+const OVER_CEILING_BY_DESIGN = new Set<string>([TOOL.codemode])
 
 describe('default wire schema budget', () => {
-  const registry = richRegistry(CHAT_RUN_PROFILE)
+  // The engine's real sandbox, so `codemode` is measured with the declarations it ships.
+  const registry = richRegistry(CHAT_RUN_PROFILE, undefined, [], undefined, createPiScriptSandbox())
   const wire = registry.tools
   const rows = wire
     .map((tool) => ({ name: tool.name, tokens: estimateToolSchemaTokens([tool]) }))
@@ -67,6 +73,7 @@ describe('default wire schema budget', () => {
       TOOL.global_search,
       TOOL.external_agent_sessions,
       TOOL.tool_output,
+      TOOL.codemode,
     ])
       expect(names.has(name)).toBe(true)
     // `skip_answer` is the production tool, and argument-free by design: small is its real size.
@@ -94,7 +101,9 @@ describe('default wire schema budget', () => {
   })
 
   test(`no single tool exceeds ${PER_TOOL_CEILING_TOKENS} tokens`, () => {
-    const heavy = rows.filter((row) => row.tokens > PER_TOOL_CEILING_TOKENS)
+    const heavy = rows.filter(
+      (row) => row.tokens > PER_TOOL_CEILING_TOKENS && !OVER_CEILING_BY_DESIGN.has(row.name),
+    )
     expect(heavy).toEqual([])
   })
 })

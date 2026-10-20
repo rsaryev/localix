@@ -63,6 +63,7 @@ Colleagues share this conversation: each part belongs to the participant whose r
 - browser
 - skip_answer
 - configure
+- codemode
 - vault
 - external_agent_sessions
 

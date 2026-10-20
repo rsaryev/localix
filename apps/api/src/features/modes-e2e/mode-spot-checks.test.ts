@@ -65,6 +65,8 @@ const ROWS: Row[] = [
   ['browser', { action: 'evaluate', expression: '1' }, [A, D, A, A]],
   ['set_topic', { title: 'T', goal: 'G', previousTopicSummary: 'None.' }, [A, A, A, A]],
   ['skip_answer', {}, [A, A, A, A]],
+  // Allowed in every mode: each call the script makes is decided on its own.
+  ['codemode', { code: 'return 1' }, [A, A, A, A]],
   ['agents', { action: 'list' }, [A, A, A, A]],
   [
     'agents',

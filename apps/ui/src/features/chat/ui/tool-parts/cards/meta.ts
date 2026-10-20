@@ -22,6 +22,7 @@ import {
   KeyRound,
   ClipboardList,
   Bot,
+  SquareCode,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { TOOL, type ToolName } from '@localixai/api/tool-names'
@@ -250,6 +251,14 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     noun: 'plans',
     verb: 'Presenting plan',
     icon: ClipboardList,
+    stackable: false,
+  },
+  // A script is its own unit of work: its card shows the calls it made, so it never folds away.
+  codemode: {
+    label: 'Ran a script',
+    noun: 'scripts',
+    verb: 'Running a script',
+    icon: SquareCode,
     stackable: false,
   },
 }

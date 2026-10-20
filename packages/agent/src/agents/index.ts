@@ -81,6 +81,7 @@ export type {
   AgentToolExecutionContext,
   AgentToolResult,
   AgentToolUpdateCallback,
+  NestedToolCallOutcome,
   AsyncToolRegistry,
   AgentToolPresentation,
   AgentToolSealing,

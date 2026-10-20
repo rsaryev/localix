@@ -27,6 +27,12 @@ import { createHash } from 'node:crypto'
 import { basename, join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
+import { createRequire } from 'node:module'
+import {
+  SCRIPT_WASM_FILE,
+  SCRIPT_WORKER_ENTRY,
+  SCRIPT_WORKER_FILE,
+} from '../../../packages/agent-runtime-pi/src/script-assets.ts'
 import {
   stageSidecarBun,
   binariesDir,
@@ -139,6 +145,8 @@ const runtimeReady =
   cache.runtime === runtimeKey &&
   cache.runtimeVariant === runtimeVariant &&
   existsSync(join(resources, 'server.js')) &&
+  existsSync(join(resources, SCRIPT_WORKER_FILE)) &&
+  existsSync(join(resources, SCRIPT_WASM_FILE)) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
   existsSync(join(resources, 'plugins', STAGED_DROPINS_MARKER)) &&
@@ -195,6 +203,26 @@ if (!runtimeReady) {
     for (const message of bundled.logs) console.error(message)
     throw new Error('bundling the API failed')
   }
+  // ── 1b. the script sandbox (`codemode`): its VM starts in a worker thread from a file beside the
+  //        module that creates it, and reads the QuickJS binary from disk. server.js has neither
+  //        beside it, so both are staged here, where `bundledScriptSandboxOptions` finds them. ──
+  const scriptWorker = await Bun.build({
+    entrypoints: [join(repo, 'packages', 'agent-runtime-pi', SCRIPT_WORKER_ENTRY)],
+    target: 'bun',
+    outdir: resources,
+    naming: { entry: SCRIPT_WORKER_FILE },
+    minify: { syntax: true, whitespace: true, identifiers: false },
+  })
+  if (!scriptWorker.success) {
+    for (const message of scriptWorker.logs) console.error(message)
+    throw new Error('bundling the script sandbox worker failed')
+  }
+  copyFileSync(
+    createRequire(join(repo, 'vendor', 'pi', 'packages', 'codemode', 'package.json')).resolve(
+      'quickjs-wasi/quickjs.wasm',
+    ),
+    join(resources, SCRIPT_WASM_FILE),
+  )
   buildVisualFeedbackProbe({
     repoRoot: repo,
     outFile: join(resources, 'visual-feedback-probe.js'),

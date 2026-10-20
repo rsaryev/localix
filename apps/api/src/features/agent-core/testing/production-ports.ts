@@ -14,6 +14,7 @@
  * union, `tool_output`'s action set) gets the host shape production gives it.
  */
 import type { AgentTool } from '@localixai/agent/agents'
+import type { ScriptSandbox } from '@localixai/agent/runtime'
 import { createRemedyRegistry } from '../../config-proposals/registry'
 import { createVaultTool } from '../../secrets/agent-tool'
 import { createExternalAgentSessionsTool } from '../../external-agents/backend/agent-tool'
@@ -38,9 +39,19 @@ const inert = <T>(): T =>
     },
   ) as T
 
+/**
+ * A sandbox that declares nothing and runs nothing: enough for a roster, which reads `codemode`'s
+ * name. A test that measures the schema passes the engine's real sandbox instead.
+ */
+const inertScripts: ScriptSandbox = {
+  run: () => Promise.reject(new Error('production-ports: inert script sandbox')),
+  declare: () => '',
+}
+
 /** The optional bag a chat run holds when every host capability is composed. */
 export function productionOptionalPorts(
   setTopic: OptionalToolPorts['set_topic'],
+  scripts: ScriptSandbox = inertScripts,
 ): OptionalToolPorts {
   return {
     context_budget: createContextBudgetTool(() => undefined),
@@ -69,6 +80,7 @@ export function productionOptionalPorts(
       ledgerRef: {},
       declined: new Set<string>(),
     },
+    codemode: scripts,
   }
 }
 

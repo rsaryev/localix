@@ -63,6 +63,7 @@ Handle straightforward work directly.
 - browser
 - set_topic
 - configure
+- codemode
 - vault
 - external_agent_sessions
 

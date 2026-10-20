@@ -133,6 +133,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       streamRegistry,
       agentRuntime: deps.agentRuntime,
       languageModelFactory: deps.languageModelFactory,
+      ...(deps.scripts ? { scripts: deps.scripts } : {}),
       uiLocationCatalog: deps.uiLocationCatalog,
       logger: deps.logger,
       lspManager: deps.lspManager,

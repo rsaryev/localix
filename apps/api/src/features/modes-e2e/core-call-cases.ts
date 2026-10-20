@@ -236,6 +236,8 @@ export const CORE_CALL_CASES: readonly CallCase[] = [
   ),
 
   row('skip_answer', 'pass the turn', {}, READ),
+  // The script reads nothing itself: every call it makes reaches the gate as its own call.
+  row('codemode', 'a script', { code: 'return 1' }, READ),
 
   row('agents', 'list', { action: 'list' }, READ),
   row(

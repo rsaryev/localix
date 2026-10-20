@@ -89,6 +89,14 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'filesystem',
     exposure: EVERYWHERE,
   },
+  codemode: {
+    name: 'codemode',
+    label: 'Codemode',
+    description:
+      'Run JavaScript that calls read, bash, edit and write: chain calls, run them in parallel, or filter large results.',
+    category: 'core',
+    exposure: EVERYWHERE,
+  },
   research: {
     name: 'research',
     label: 'Research',

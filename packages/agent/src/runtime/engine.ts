@@ -14,6 +14,7 @@
  * ROOT wires, not what each consumer sees.
  */
 import type { AgentRuntime, LanguageModelFactory } from './index'
+import type { ScriptSandbox } from './scripts'
 import type { AgentRuntimeAuth, RuntimeCredentialStore } from './auth'
 import type { CatalogModel, CatalogProvider } from '../catalog/types'
 
@@ -64,6 +65,11 @@ export interface AgentEngine {
   readonly runtime: AgentRuntime
   /** Buffered single completions for the auxiliary calls (summary, title, judge). */
   readonly languageModels: LanguageModelFactory
+  /**
+   * Runs model-written scripts whose only capability is calling the tools handed to them
+   * (`./scripts`). Absent when the engine has no sandbox; the tool that needs it is then absent too.
+   */
+  readonly scripts?: ScriptSandbox
   /** OAuth login/refresh over the host's credential store. */
   createAuth(credentialStore: RuntimeCredentialStore): AgentRuntimeAuth
   /** The catalog of providers and models this engine can serve, with the adapter's metadata. */

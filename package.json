@@ -16,6 +16,7 @@
     "prepare": "git config core.hooksPath .githooks",
     "vendor:sync": "bun scripts/vendor-pi/cli.ts sync",
     "vendor:sync:continue": "bun scripts/vendor-pi/cli.ts continue",
+    "vendor:carry": "bun scripts/vendor-pi/cli.ts carry",
     "vendor:sync:abort": "bun scripts/vendor-pi/cli.ts abort",
     "build:desktop": "bunx turbo build --filter=@localixai/api && cd apps/desktop-tauri && bun run tauri:build",
     "release:desktop": "bunx turbo build --filter=@localixai/api && cd apps/desktop-tauri && bun run tauri:release",

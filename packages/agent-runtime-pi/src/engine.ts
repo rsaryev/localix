@@ -1,5 +1,5 @@
 /**
- * The Pi ENGINE: the four adapter constructors as one `AgentEngine`, so the host's composition
+ * The Pi ENGINE: the adapter constructors as one `AgentEngine`, so the host's composition
  * root names the adapter once and every phase after it is typed by the neutral ports.
  *
  * Tuning that every provider request shares (retries, the per-request deadline) is given
@@ -15,6 +15,7 @@ import { createPiCatalog } from './catalog'
 import { createLocalProvider, type LocalProviderHost } from './local-provider'
 import { registerPiProvider } from './providers'
 import { createPiAgentRuntime } from './runtime'
+import { createPiScriptSandbox, type PiScriptSandboxOptions } from './scripts'
 import { requestTuning, type PiRequestTuning } from './stream-options'
 
 export interface PiEngineOptions extends PiRequestTuning {
@@ -28,6 +29,8 @@ export interface PiEngineOptions extends PiRequestTuning {
   onCatalogEntryDropped?: (providerId: string, reason: string) => void
   /** Models on this computer, served by the host: registered as the `local` provider. */
   localProvider?: LocalProviderHost
+  /** Where the script sandbox finds its wasm and worker when the host is bundled (`./scripts`). */
+  scripts?: PiScriptSandboxOptions
 }
 
 export function createPiEngine(options: PiEngineOptions = {}): AgentEngine {
@@ -47,6 +50,7 @@ export function createPiEngine(options: PiEngineOptions = {}): AgentEngine {
     version: runtime.adapter.version,
     runtime,
     languageModels: createPiLanguageModelFactory(shared),
+    scripts: createPiScriptSandbox(options.scripts),
     createAuth: (credentialStore) =>
       createPiAuthRuntime({ credentialStore, getDeviceId: options.getDeviceId }),
     listCatalog: () => catalog.list(),

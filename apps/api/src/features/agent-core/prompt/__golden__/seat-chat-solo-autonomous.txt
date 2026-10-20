@@ -61,6 +61,7 @@ Handle straightforward work directly.
 - jobs
 - browser
 - set_topic
+- codemode
 - vault
 - external_agent_sessions
 

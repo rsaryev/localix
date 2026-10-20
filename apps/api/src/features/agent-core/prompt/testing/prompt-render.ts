@@ -5,6 +5,7 @@
  * Everything here is pure and side-effect-free: tool deps are faked (the builders never
  * execute), `now` is fixed, and ids are constant — so a render is byte-stable.
  */
+import type { ScriptSandbox } from '@localixai/agent/runtime'
 import { resolveRunProfile, type RunProfile } from '../../run-shape'
 import { DEFAULT_AGENT_HANDLE } from '../../../../db/participant'
 import { builtinAgentRecord } from '../../../agents/builtin'
@@ -35,8 +36,10 @@ export function richRegistry(
   disabledTools?: readonly string[],
   withoutPorts: readonly (keyof OptionalToolPorts)[] = [],
   withheldByHost?: Readonly<Record<string, string>>,
+  /** The engine's sandbox, for a measure of `codemode`'s real schema; inert by default. */
+  scripts?: ScriptSandbox,
 ): RuntimeToolRegistry {
-  const optional = productionOptionalPorts({ save: async () => {} })
+  const optional = productionOptionalPorts({ save: async () => {} }, scripts)
   for (const port of withoutPorts) delete optional[port]
   return createRuntimeToolRegistry({
     policy: {

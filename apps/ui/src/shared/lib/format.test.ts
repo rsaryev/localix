@@ -42,6 +42,11 @@ describe('formatDuration', () => {
     expect(formatDuration(450)).toBe('450ms')
     expect(formatDuration(1_500)).toBe('1.5s')
   })
+  test('a measured fraction rounds, and one that rounds to a second reads in seconds', () => {
+    expect(formatDuration(4.823333999956958)).toBe('5ms')
+    expect(formatDuration(0.4)).toBe('<1ms')
+    expect(formatDuration(999.6)).toBe('1.0s')
+  })
   test('minutes, with the 1m60s rounding edge collapsing to 2m', () => {
     expect(formatDuration(125_000)).toBe('2m 5s')
     expect(formatDuration(120_000)).toBe('2m')

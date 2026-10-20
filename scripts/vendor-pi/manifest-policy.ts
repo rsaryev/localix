@@ -77,6 +77,31 @@ export function ownership(ours: string, upstreamBase: string): Ownership {
   return { scripts: ownedScripts(ours, upstreamBase), removedDependencies }
 }
 
+/**
+ * The fork's standing decisions for a package it starts to carry (`carry.ts`), applied once to the
+ * upstream manifest: `private`, so it can never be published from here; a `type-check` script after
+ * `build`, which the monorepo graph runs; and upstream's `test` renamed `test:upstream`, because
+ * pi's suites are vitest and the repository's `bun test` must not discover them. From then on
+ * these are owned lines like every other vendored package's, measured against upstream's base.
+ */
+export function adoptManifest(upstream: string): string {
+  const theirs = JSON.parse(upstream) as Manifest & Record<string, unknown>
+  const scripts: Scripts = {}
+  for (const [key, value] of Object.entries(theirs.scripts ?? {})) {
+    if (key === 'test') {
+      scripts['test:upstream'] = value
+      continue
+    }
+    scripts[key] = value
+    if (key === 'build' && theirs.scripts?.['type-check'] === undefined)
+      scripts['type-check'] = 'tsc --noEmit -p tsconfig.build.json'
+  }
+  const ours = `${JSON.stringify({ ...theirs, private: true, scripts }, null, '\t')}\n`
+  return applyManifestPolicy(upstream, ours, {
+    ownership: { scripts: ownedScripts(ours, upstream), removedDependencies: {} },
+  })
+}
+
 /** Rewrite an upstream manifest to carry the fork's decisions. Returns it unchanged when none apply. */
 export function applyManifestPolicy(
   upstream: string,

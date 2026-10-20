@@ -105,9 +105,15 @@ export function formatTimeAgo(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString()
 }
 
+/**
+ * A duration for a person: `<1ms`, `37ms`, `1.5s`, `2m 5s`. Measured durations arrive as fractions
+ * (`performance.now()` deltas), so the millisecond bucket rounds — `4.823333999956958ms` was shown
+ * verbatim — and a value that rounds up to a full second moves to the seconds bucket.
+ */
 export function formatDuration(milliseconds: number | null | undefined): string {
   if (milliseconds == null || milliseconds <= 0) return '—'
-  if (milliseconds < 1000) return `${milliseconds}ms`
+  if (milliseconds < 1) return '<1ms'
+  if (Math.round(milliseconds) < 1000) return `${Math.round(milliseconds)}ms`
   if (milliseconds < 60_000) return `${(milliseconds / 1000).toFixed(1)}s`
   const totalSeconds = Math.round(milliseconds / 1000)
   const minutes = Math.floor(totalSeconds / 60)

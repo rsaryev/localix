@@ -159,6 +159,7 @@ class PiAgentRuntime implements AgentRuntime {
             afterToolCall: runTools.afterToolCall,
           },
           async (event) => {
+            runTools.observe(event)
             if (event.type === 'turn_start') {
               completedToolTurnIndex = undefined
               completedTurnIndex = undefined

@@ -11,8 +11,17 @@ export const UPSTREAM_BRANCH = 'main'
 export const VENDOR_DIR = 'vendor/pi'
 export const UPSTREAM_DOC = `${VENDOR_DIR}/UPSTREAM.md`
 
-/** The four packages this repository vendors; everything else upstream ships is not ours. */
-export const PACKAGES = ['packages/ai', 'packages/agent', 'packages/chord', 'packages/telemetry']
+/**
+ * The packages this repository vendors; everything else upstream ships is not ours. A package added
+ * here arrives with `bun run vendor:carry` (at the merged upstream), never with a sync.
+ */
+export const PACKAGES = [
+  'packages/ai',
+  'packages/agent',
+  'packages/chord',
+  'packages/codemode',
+  'packages/telemetry',
+]
 
 /**
  * Upstream paths the snapshot does NOT carry, whatever arrives under them.

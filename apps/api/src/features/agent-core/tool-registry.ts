@@ -1,5 +1,6 @@
 import type { SetTopicPort } from './tools/set-topic'
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
+import type { ScriptSandbox } from '@localixai/agent/runtime'
 import type { BrowserToolDeps } from './tools/browser/browser'
 import type { FileMtimeStore } from './tools/file/file-utils'
 import type { DocumentTextExtractor } from './tools/file/document-ports'
@@ -17,7 +18,8 @@ import type { TerminalToolDeps } from './tools/terminal/terminal'
 import type { ExecutionEnvironment } from './tools/environment'
 import type { SpawnTerminalJob } from './tools/terminal/terminal-job'
 import type { RunProfile } from './run-shape'
-import { BUILTIN_TOOL_NAMES } from './tool-names'
+import { BUILTIN_TOOL_NAMES, TOOL } from './tool-names'
+import { createCodemodeTool } from './tools/codemode/codemode'
 import { buildCoreTools, buildRegistryContext, type RegistryEntry } from './tool-registry-core'
 import { buildNamedOptionals } from './tool-registry-optionals'
 import {
@@ -141,6 +143,8 @@ export interface OptionalToolPorts {
   configure?: ConfigureToolOptions
   /** The conversation's plan — present / read / complete, stored by the host's plans. */
   plan?: PlanToolOptions
+  /** The engine's script sandbox (`AgentEngine.scripts`), which `codemode` runs scripts in. */
+  codemode?: ScriptSandbox
 }
 
 /**
@@ -246,7 +250,13 @@ export function createRuntimeToolRegistry(
         : entry,
     )
 
-  const tools = entries.map((e) => e.tool)
+  // `codemode` declares the tools its scripts call, so it is built from the live ones: a tool this
+  // run does not have is never declared.
+  const live = entries.map((e) => e.tool)
+  const scripts = options.optional?.codemode
+  const tools = scripts
+    ? live.map((tool) => (tool.name === TOOL.codemode ? createCodemodeTool(scripts, live) : tool))
+    : live
   return {
     tools,
     toolNames: tools.map((tool) => tool.name),

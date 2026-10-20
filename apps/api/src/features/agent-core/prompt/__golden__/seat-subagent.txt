@@ -39,6 +39,7 @@ Role: subagent
 - tool_output
 - skill
 - browser
+- codemode
 - vault
 - external_agent_sessions
 

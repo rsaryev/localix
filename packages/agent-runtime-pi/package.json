@@ -28,6 +28,7 @@
   "dependencies": {
     "@earendil-works/pi-agent-core": "workspace:*",
     "@earendil-works/pi-ai": "workspace:*",
+    "@earendil-works/pi-codemode": "workspace:*",
     "@localixai/agent": "workspace:*"
   },
   "devDependencies": {

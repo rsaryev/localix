@@ -1,6 +1,6 @@
 # Vendored pi runtime
 
-This directory contains the four pi packages used by Localix's pi runtime adapter.
+This directory contains the five pi packages used by Localix's pi runtime adapter.
 They remain isolated behind `@localixai/agent-runtime-pi`; Localix application code
 must depend on the engine-neutral contracts in `@localixai/agent` instead of importing
 these packages directly.
@@ -8,8 +8,15 @@ these packages directly.
 - Upstream: <https://github.com/earendil-works/pi>
 - Base commit: `06a466935536f8c9bcacb2d5efc0fc021be1bdff`
 - Upstream version: `1.2.0` (tag `v1.2.0`)
-- Vendored packages: `packages/ai`, `packages/agent`, `packages/chord`, `packages/telemetry`
+- Vendored packages: `packages/ai`, `packages/agent`, `packages/chord`, `packages/codemode`,
+  `packages/telemetry`
 - License: MIT; see [`LICENSE`](./LICENSE)
+
+`codemode` is the QuickJS sandbox behind the agent's `codemode` tool: model-written JavaScript whose
+only capability is calling the run's own tools. The adapter alone imports it
+(`packages/agent-runtime-pi/src/scripts.ts`); it has no pi dependencies and carries no Localix delta.
+It was added with `bun run vendor:carry` at the base commit above, so it moves with every other
+package on the next sync.
 
 `chord` and `telemetry` are not used by Localix directly. They are vendored because
 `packages/agent` imports both (`harness/context.ts`, `harness/session/types.ts`,

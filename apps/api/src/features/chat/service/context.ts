@@ -2,7 +2,7 @@ import type { SemanticVectors } from '@localixai/plugin-sdk/backend'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { Kysely } from 'kysely'
-import type { AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
+import type { AgentRuntime, LanguageModelFactory, ScriptSandbox } from '@localixai/agent/runtime'
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 import type { ExternalAgentsPort } from '../../external-agents/contracts'
 
@@ -80,6 +80,8 @@ export interface ChatServiceDeps {
   runner?: AgentRunner
   agentRuntime: AgentRuntime
   languageModelFactory: LanguageModelFactory
+  /** The engine's script sandbox, for the `codemode` tool; absent where the engine has none. */
+  scripts?: ScriptSandbox
   /**
    * The host's plugin service. Supply it and the chat graph uses THAT one; omit it and
    * the graph builds its own (tests, and any consumer with no host).

@@ -8,7 +8,14 @@
  * bounds SILENCE rather than the whole request, so a long answer that keeps streaming is
  * untouched while a stalled one fails in minutes.
  */
-import { createPiEngine, streamIdleWatchdog } from '@localixai/agent-runtime-pi'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import {
+  bundledScriptSandboxOptions,
+  createPiEngine,
+  streamIdleWatchdog,
+} from '@localixai/agent-runtime-pi'
 import { createModelCatalogStore } from '../features/catalog/models-store'
 import { createDeviceIdGetter } from '../features/provider-connections/device-id'
 import type { loadEnv } from '../lib/env'
@@ -34,6 +41,9 @@ export function buildAgentEngine(deps: {
     catalogStore: createModelCatalogStore(),
     onCatalogEntryDropped: (providerId, reason) =>
       logger.info({ event: 'catalog.entry_dropped', providerId, reason }),
+    // The packaged sidecar writes the sandbox's worker and VM beside its `server.js`; from source
+    // they come from the installed package and nothing is passed.
+    scripts: bundledScriptSandboxOptions(dirname(fileURLToPath(import.meta.url))),
   })
   return { localModels, engine }
 }

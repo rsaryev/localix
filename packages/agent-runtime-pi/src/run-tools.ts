@@ -5,7 +5,13 @@ import type {
   AgentEvent,
 } from '@localixai/agent/agents'
 import type { AgentRuntimeRunInput } from '@localixai/agent/runtime'
+import type {
+  AgentEvent as PiAgentEvent,
+  AgentTool as PiAgentTool,
+} from '@earendil-works/pi-agent-core'
+import type { AssistantMessage as PiAssistantMessage } from '@earendil-works/pi-ai'
 
+import { createNestedToolCalls } from './nested-tool-calls'
 import { toPiTool } from './tool-bridge'
 import { applyAfterToolCall, applyBeforeToolCall } from './tool-call-hooks'
 
@@ -44,9 +50,6 @@ export function createRunTools(
   const completedTools = new Map<string, AgentToolResult>()
   const gateDecisions = new Map<string, BeforeToolCallResult>()
   const toolsByName = new Map(dispatch.map((tool) => [tool.name, tool]))
-  const tools = dispatch.map((tool) =>
-    toPiTool(tool, input.toolExecutionContext, completedTools, push),
-  )
   const toModelTool = (tool: AgentTool) =>
     toPiTool(tool, input.toolExecutionContext, completedTools, push, {
       modelSchema: true,
@@ -58,30 +61,32 @@ export function createRunTools(
     })
   const modelTools = input.tools.map(toModelTool)
   const modelToolNames = new Set(input.tools.map((tool) => tool.name))
+  const settled = (toolCallId: string) => gateDecisions.delete(toolCallId)
 
-  return {
-    tools,
-    modelTools,
-    completedTools,
-    settled: (toolCallId: string) => gateDecisions.delete(toolCallId),
-    beforeToolCall: ({
+  // pi hands each hook the signal of the call it guards: the run's for a call the model made, the
+  // script's for a nested one — so an approval a stopped script was waiting on is withdrawn with it.
+  const beforeToolCall = (
+    {
       toolCall,
       args,
     }: {
       toolCall: { id: string; name: string }
       args: unknown
-    }) =>
-      applyBeforeToolCall({
-        tool: toolsByName.get(toolCall.name),
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        args,
-        signal,
-        beforeToolCall: input.beforeToolCall,
-        completedTools,
-        gateDecisions,
-      }),
-    afterToolCall: async ({
+    },
+    callSignal?: AbortSignal,
+  ) =>
+    applyBeforeToolCall({
+      tool: toolsByName.get(toolCall.name),
+      toolCallId: toolCall.id,
+      toolName: toolCall.name,
+      args,
+      signal: callSignal ?? signal,
+      beforeToolCall: input.beforeToolCall,
+      completedTools,
+      gateDecisions,
+    })
+  const afterToolCall = async (
+    {
       toolCall,
       args,
       result,
@@ -91,27 +96,58 @@ export function createRunTools(
       args: unknown
       result: Parameters<typeof applyAfterToolCall>[0]['result']
       isError: boolean
-    }) => {
-      const patch = await applyAfterToolCall({
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        args,
-        result,
-        isError,
-        signal,
-        afterToolCall: input.afterToolCall,
-        completedTools,
-        gateDecisions,
-      })
-      revealActivatedModelTools({
-        activator: toolsByName.get(toolCall.name),
-        result: completedTools.get(toolCall.id),
-        dispatchToolsByName: toolsByName,
-        modelToolNames,
-        modelTools,
-        toModelTool,
-      })
-      return patch
     },
+    callSignal?: AbortSignal,
+  ) => {
+    const patch = await applyAfterToolCall({
+      toolCallId: toolCall.id,
+      toolName: toolCall.name,
+      args,
+      result,
+      isError,
+      signal: callSignal ?? signal,
+      afterToolCall: input.afterToolCall,
+      completedTools,
+      gateDecisions,
+    })
+    revealActivatedModelTools({
+      activator: toolsByName.get(toolCall.name),
+      result: completedTools.get(toolCall.id),
+      dispatchToolsByName: toolsByName,
+      modelToolNames,
+      modelTools,
+      toModelTool,
+    })
+    return patch
+  }
+
+  // The assistant message whose calls are running: what a nested call's hooks see as its issuer.
+  let issuer: PiAssistantMessage | undefined
+  const callToolFor = createNestedToolCalls({
+    tools: () => tools,
+    hooks: { beforeToolCall, afterToolCall },
+    completedTools,
+    issuer: () => issuer,
+    settled,
+    signal,
+  })
+  const tools: PiAgentTool[] = dispatch.map((tool) =>
+    toPiTool(tool, input.toolExecutionContext, completedTools, push, {
+      callToolFor,
+    }),
+  )
+
+  return {
+    tools,
+    modelTools,
+    completedTools,
+    settled,
+    /** Feed every agent-loop event, so nested calls know the message that issued them. */
+    observe: (event: PiAgentEvent) => {
+      if (event.type === 'message_end' && event.message.role === 'assistant')
+        issuer = event.message as PiAssistantMessage
+    },
+    beforeToolCall,
+    afterToolCall,
   }
 }

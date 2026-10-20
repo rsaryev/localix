@@ -4,9 +4,11 @@ The tool roster is the set of model-facing tools available to a run. Core tools 
 plugin and MCP tool schemas are deferred until activated, unless the turn's linked workbench brings
 them onto the request.
 
-The schema-budget test caps the fully composed core chat registry at an estimated 7,650 tokens, with
-an 800-token ceiling per tool. This is a test ceiling, not a measurement of every request: agent
-rules, host services, model compatibility, and activated extensions change the actual roster.
+The schema-budget test caps the fully composed core chat registry at an estimated 9,400 tokens, with
+an 800-token ceiling per tool; `codemode` is exempt from the per-tool ceiling because it restates
+the schemas of the tools its scripts call. This is a test ceiling, not a measurement of every
+request: agent rules, host services, model compatibility, and activated extensions change the actual
+roster.
 
 ## What you can do
 
@@ -19,6 +21,7 @@ rules, host services, model compatibility, and activated extensions change the a
 | Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Capabilities.                                                            | Applies to the next run; see [Manage the tool budget](tool-budget.md).                                                 |
 | Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                                                                            | The activation is remembered on the session and survives a context checkpoint.                                         |
 | Use an open plugin's tools    | Link the plugin's tab to the message (open tabs link by default), or let it wake the chat.                                                       | Uses the message's linked context; tab/chip changes take effect when you send.                                         |
+| Run a script over tools       | `codemode` runs JavaScript that calls `read`, `bash`, `edit` and `write` as `await tools.<name>(args)`.                                          | Only the script's output and return value reach the model; see [Run a script over tools](#run-a-script-over-tools).    |
 | Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.                                                           | Read-only; requires `configure` in the run. Known withheld tools report their reasons.                                 |
 | Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.                                                          | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).                                        |
 | Plan before building          | The Kanban plugin's `kanban` tool: put the work on the chat's board before starting.                                                             | A deferred plugin tool on a passive board; see the [Kanban guide](task-board.md).                                      |
@@ -92,6 +95,39 @@ including its retries, and the results are grouped under a `### "<pattern>"` hea
 up to eight patterns and returns up to 64 KB of results; the rest are named back to run separately.
 A repeated search returns its full results again. The tool card shows a row per file or per pattern.
 
+### Run a script over tools
+
+`codemode` lets the model write one script that chains calls, runs them in parallel, or filters a
+large result down to what it needs, instead of spending a model round trip on each call. It follows
+pi's codemode: the script is the body of an async function in a QuickJS sandbox with no Node, file
+system, network or timers. It calls `read`, `bash`, `edit` and `write` (those the run has) as
+`await tools.<name>(args)`; a call resolves to the tool's text result and rejects with its error.
+
+`text(value)`, `console.log()` and the returned value are what the model reads; the results of the
+calls stay in the script. The tool's description asks the model to use JavaScript to turn those
+results into a concise answer and to make the script fault-tolerant, so a whole file or listing
+never reaches the context when a count or a few lines would do, and one failed call does not lose
+the others.
+
+```js
+const [readme, status] = await Promise.allSettled([
+  tools.read({ path: 'README.md' }),
+  tools.bash({ command: 'git status --short' }),
+])
+const changed = status.status === 'fulfilled' ? status.value.split('\n').filter(Boolean) : []
+return {
+  title: readme.status === 'fulfilled' ? readme.value.split('\n')[0] : readme.reason.message,
+  changed: changed.length,
+  modified: changed.filter((line) => line.startsWith(' M')).map((line) => line.slice(3)),
+}
+```
+
+Each call a script makes goes through the same validation, permission rules, approvals and hooks as
+a call the model makes directly, so a script reaches exactly what the run allows. An approval the
+script was waiting on is withdrawn when the script stops. The script stops after 120 seconds. The
+tool card shows the script, then one row per call with its files or command, outcome and time, then
+the script's report.
+
 ### One verdict per tool
 
 Run assembly records a verdict for each known tool in the tool ledger. The initial schemas and
@@ -151,10 +187,10 @@ the system prompt with per-section sizes and every tool's schema size.
 ### Schema budget
 
 `tool-schema-budget.test.ts` builds the core chat registry from real factories, including `vault`,
-`configure`, and Bash terminal fields. It rejects a total above 7,650 estimated tokens, any tool
-above 800, missing host-injected tools, and name-only stubs. The separate `tool-schema-case.test.ts`
-checks snake_case field names. Plugin and MCP schemas added during a run are outside this
-core-registry ceiling.
+`configure`, `codemode`, and Bash terminal fields. It rejects a total above 9,400 estimated tokens,
+any tool above 800 except `codemode`, missing host-injected tools, and name-only stubs. The separate
+`tool-schema-case.test.ts` checks snake_case field names. Plugin and MCP schemas added during a run
+are outside this core-registry ceiling.
 
 ## Configuration
 

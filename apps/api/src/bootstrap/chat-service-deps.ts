@@ -70,6 +70,7 @@ export interface ChatServicePhaseInput extends Pick<
   | 'mediaStore'
   | 'agentRuntime'
   | 'languageModelFactory'
+  | 'scripts'
   | 'pluginService'
   | 'announceCapabilityChange'
   | 'externalAgents'
@@ -118,6 +119,7 @@ export function createChatServicePhase({
   contextManager,
   agentRuntime,
   languageModelFactory,
+  scripts,
   agentsService,
   pluginService,
   announceCapabilityChange,
@@ -265,6 +267,7 @@ export function createChatServicePhase({
         new AbortController().signal,
       ),
     agentRuntime,
+    ...(scripts ? { scripts } : {}),
     languageModelFactory,
     // The terminal service is forward-held (built after chat); its ports read it at call time.
     ...createTerminalPorts(serviceRefs, work),

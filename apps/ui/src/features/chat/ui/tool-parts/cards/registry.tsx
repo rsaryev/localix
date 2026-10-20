@@ -7,6 +7,7 @@ import { MemoryCard, SkillCard, JobsCard } from './actionCards'
 import { TerminalToolCard } from './TerminalToolCard'
 import { BrowserCard } from './BrowserCard'
 import { PlanToolCard } from './PlanToolCard'
+import { CodemodeCard } from './CodemodeCard'
 import { isCoreToolMetaName, type PresentableToolName } from './meta'
 import { toolCardFor } from '@/shared/contrib/toolCards'
 
@@ -37,6 +38,7 @@ export const TOOL_CARDS: Partial<Record<PresentableToolName, ToolCardComponent>>
   bash: TerminalToolCard,
   browser: BrowserCard,
   plan: PlanToolCard,
+  codemode: CodemodeCard,
 }
 
 /**

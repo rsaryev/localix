@@ -54,6 +54,8 @@ export function toPiTool(
   options: {
     /** Compact the model-facing copy only; dispatch copies retain the full validation schema. */
     modelSchema?: boolean
+    /** This run's nested calls (`nested-tool-calls.ts`), bound to the call they are handed to. */
+    callToolFor?: (toolCallId: string) => NonNullable<AgentToolExecutionContext['callTool']>
     onSchemaCompacted?: (diagnostic: ToolSchemaCompactionDiagnostic) => void
   } = {},
 ): PiAgentTool {
@@ -88,16 +90,19 @@ export function toPiTool(
         }
       : {}),
     async execute(toolCallId, params, signal, onUpdate) {
-      const toolContext: AgentToolExecutionContext | undefined = executionContext?.humanInLoop
+      const runContext: AgentToolExecutionContext | undefined = options.callToolFor
+        ? { ...executionContext, callTool: options.callToolFor(toolCallId) }
+        : executionContext
+      const toolContext: AgentToolExecutionContext | undefined = runContext?.humanInLoop
         ? {
-            ...executionContext,
+            ...runContext,
             humanInLoop: {
-              ...executionContext.humanInLoop,
+              ...runContext.humanInLoop,
               async request<
                 TRequest extends HumanInLoopRequestBase,
                 TResponse extends HumanInLoopResponseBase,
               >(request: TRequest, requestSignal?: AbortSignal): Promise<TResponse> {
-                const pending = executionContext.humanInLoop!.request<TRequest, TResponse>(
+                const pending = runContext.humanInLoop!.request<TRequest, TResponse>(
                   request,
                   signal && requestSignal
                     ? AbortSignal.any([signal, requestSignal])
@@ -123,7 +128,7 @@ export function toPiTool(
               },
             },
           }
-        : executionContext
+        : runContext
       let rawResult: AgentToolResult
       try {
         rawResult = await tool.execute(

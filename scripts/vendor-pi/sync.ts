@@ -35,6 +35,7 @@ import {
   type Snapshot,
 } from './snapshot'
 import { runTripwires, type Tripwire } from './tripwires'
+import { uncarriedPackages } from './carry'
 import { deltaNotesFor, recordedUpstream, recordUpstream } from './upstream-doc'
 
 export interface SyncContext {
@@ -81,6 +82,15 @@ async function unmergedPaths(ctx: SyncContext): Promise<string[]> {
 async function register(ctx: SyncContext): Promise<Snapshot> {
   const recorded = await recordedUpstream(ctx.root)
   const snapshot = await buildSnapshot({ root: ctx.root, url: ctx.url, upstream: recorded })
+  // `-s ours` keeps the tree as it is: a listed package the snapshot holds and the tree does not
+  // would be recorded as one Localix deleted, and every later sync would keep it deleted.
+  const uncarried = await uncarriedPackages(ctx.root, snapshot.commit)
+  if (uncarried.length > 0) {
+    throw new SyncFailure(
+      `vendor/pi does not carry ${uncarried.join(', ')} yet`,
+      'Carry it at the merged upstream first (`bun run vendor:carry`), commit, then sync.',
+    )
+  }
   const merged = await git(ctx, [
     'merge',
     '-s',

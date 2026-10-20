@@ -7,6 +7,7 @@ import {
   messageBindingToken,
   setMessageBindingDrag,
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { formatDuration } from '@localixai/plugin-sdk/ui/utilities'
 import { useToolDuration } from './toolTimingStore'
 import { useToolCallDragRef } from './toolCallDragContext'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
@@ -103,7 +104,7 @@ export function ToolLine({
       wasLoadingRef.current = false
       if (startRef.current && !hasError) {
         const elapsed = Date.now() - startRef.current
-        if (elapsed > 200) setDuration(`${(elapsed / 1000).toFixed(1)}s`)
+        if (elapsed > 200) setDuration(formatDuration(elapsed))
         setShowDone(true)
         const t = setTimeout(() => setShowDone(false), 1500)
         return () => clearTimeout(t)
@@ -117,7 +118,7 @@ export function ToolLine({
   const contextDuration = useToolDuration()
   const persistedMs = durationMs ?? contextDuration
   const displayDuration =
-    persistedMs !== undefined && persistedMs > 0 ? `${(persistedMs / 1000).toFixed(1)}s` : duration
+    persistedMs !== undefined && persistedMs > 0 ? formatDuration(persistedMs) : duration
 
   const canToggle = Boolean(children)
   const canClick = canToggle || Boolean(onClick)

@@ -1,7 +1,7 @@
 import type { SemanticVectors } from '@localixai/plugin-sdk/backend'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
-import type { AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
+import type { AgentRuntime, LanguageModelFactory, ScriptSandbox } from '@localixai/agent/runtime'
 import type { AgentTool } from '@localixai/agent/agents'
 import type { ExternalAgentsPort } from '../../external-agents/contracts'
 import type { AgentToolResult } from '@localixai/agent/agents'
@@ -164,6 +164,8 @@ export interface RunnerDeps {
   vectors?: SemanticVectors
   /** The decision model (`features/decisions`): group routing's first strategy. */
   decisions?: DecisionService
+  /** The engine's script sandbox (`AgentEngine.scripts`): what the `codemode` tool runs on. */
+  scripts?: ScriptSandbox
   /**
    * The text of `file` as an editor this user holds it open (possibly unsaved), or undefined.
    * Lets the file tools tell the model when its write lands under the person's unsaved edits.

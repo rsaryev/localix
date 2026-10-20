@@ -49,6 +49,7 @@ export type {
   ToolSessionContext,
   ToolCommandReplyOutcome,
   AgentToolExecutionContext,
+  NestedToolCallOutcome,
 } from './tool-execution-context'
 
 export { DEFAULT_TOOL_EXPOSURE } from './tool-exposure'

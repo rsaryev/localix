@@ -64,6 +64,7 @@ Colleagues share this conversation: each part belongs to the participant whose r
 - skip_answer
 - set_topic
 - configure
+- codemode
 - vault
 - external_agent_sessions
 

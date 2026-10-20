@@ -161,6 +161,7 @@ export async function bootstrap(
     contextManager,
     agentRuntime,
     languageModelFactory,
+    ...(infra.engine.scripts ? { scripts: infra.engine.scripts } : {}),
     agentsService,
     // ONE plugin service for the process. Without this the chat graph built a second,
     // whose `onChanged` bumped the revision but reconciled none of the live hosts.

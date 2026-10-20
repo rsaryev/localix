@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { fauxAssistantMessage, fauxProvider, fauxToolCall } from '@earendil-works/pi-ai'
+import { fauxAssistantMessage, fauxToolCall } from '@earendil-works/pi-ai'
 import { defineAgentTool, type AgentEvent } from '@localixai/agent/agents'
 
+import { collect, scripted, scriptedBaseInput } from './__fixtures__/scripted-run'
 import { createPiAgentRuntime } from './runtime'
 import type { PiModelMiddleware } from './middleware'
 
@@ -15,22 +16,8 @@ import type { PiModelMiddleware } from './middleware'
  * every real turn takes had no test at all, and the seams verified individually had never
  * been verified composed.
  *
- * Keyless, because the middleware seam is a full substitute for the provider: a middleware
- * that answers from a script instead of calling `doStreamSimple` never reaches the network,
- * and pi's own faux provider emits the event sequence a real one would rather than a
- * hand-rolled approximation of it. This is the foundation a recorded-scenario harness would
- * build on; what it needs beyond this is recording and normalization, not a different seam.
+ * The script runs through `__fixtures__/scripted-run.ts`, the keyless seam other suites share.
  */
-function scripted(responses: Parameters<ReturnType<typeof fauxProvider>['setResponses']>[0]) {
-  const faux = fauxProvider()
-  faux.setResponses(responses)
-  const middleware: PiModelMiddleware = {
-    // Deliberately does NOT call `doStreamSimple`: the script IS the provider here.
-    wrapStreamSimple: async ({ params }) =>
-      faux.provider.streamSimple(faux.getModel(), params.context, params.options),
-  }
-  return { middleware, callCount: () => faux.state.callCount }
-}
 
 const echo = defineAgentTool({
   name: 'echo',
@@ -40,25 +27,7 @@ const echo = defineAgentTool({
   execute: async (_id, input) => ({ content: `echoed:${input.text ?? ''}` }),
 })
 
-async function collect(input: Record<string, unknown> & { middleware: PiModelMiddleware }) {
-  const { middleware, ...rest } = input
-  const run = createPiAgentRuntime().run({ ...rest, middleware: [middleware] } as never)
-  const events: AgentEvent[] = []
-  for await (const event of run) events.push(event)
-  return { events, result: await run.result }
-}
-
-const baseInput = {
-  sessionId: 'scripted-run',
-  systemPrompt: 'be brief',
-  messages: [{ role: 'user' as const, content: 'go' }],
-  // A real catalog pair, because model resolution is a gate the run passes before it streams.
-  // No key is ever used: the middleware answers from the script instead of calling through.
-  model: { providerId: 'anthropic', modelId: 'claude-sonnet-4-5' },
-  credential: { type: 'api-key' as const, key: 'unused' },
-  tools: [echo],
-  dispatchTools: [echo],
-}
+const baseInput = { ...scriptedBaseInput, tools: [echo], dispatchTools: [echo] }
 
 describe('a scripted end-to-end run', () => {
   test('a later middleware failure retains the completed tool turn in the result', async () => {
