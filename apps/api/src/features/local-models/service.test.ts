@@ -196,6 +196,25 @@ describe('local models service', () => {
     expect(changes).toBe(1)
   }, 30_000)
 
+  test('boot announces what is installed, so a list read before it shows the model', async () => {
+    const { service, root } = await setup()
+    const id = 'google/compact-GGUF:Q4_0'
+    await service.install(id)
+    for (let i = 0; i < 100 && !service.isInstalled(id); i++) await Bun.sleep(20)
+    expect(service.isInstalled(id)).toBe(true)
+
+    // An app restart: a listener (the catalog) attached before boot hears the list at boot.
+    const again = createLocalModelsService({ root, hf: hfWith(sha(weights)), runtimeBuild: build })
+    let announced = 0
+    again.onListChanged(() => (announced += 1))
+    expect(again.installed('chat')).toEqual([])
+    await again.boot()
+    expect(announced).toBe(1)
+    expect(again.installed('chat').map((spec) => spec.id)).toEqual([id])
+    await again.shutdown()
+    await service.shutdown()
+  }, 30_000)
+
   test('an unknown model id is refused before anything downloads', async () => {
     const { service } = await setup()
     await expect(service.install('nobody/none-GGUF:Q4_0')).rejects.toThrow('Unknown local model')

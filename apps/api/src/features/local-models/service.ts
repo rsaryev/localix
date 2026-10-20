@@ -32,6 +32,7 @@ import type { LlamaServer, LlamaServerOptions } from './llama-server'
 import { detectMachine, type MachineProfile } from './machine'
 import { createBackgroundDownloads, type BackgroundDownloads } from './background'
 import { createInstallQueue } from './install-queue'
+import { createSignal } from './signal'
 import type { ModelPlan } from './planner'
 import { createModelRouter } from './router'
 import { buildStatus } from './status'
@@ -66,11 +67,11 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
   let runtimeInstalled = false
   let machine: MachineProfile | null = null
   const plans = new Map<string, ModelPlan | null>()
-  const listeners = new Set<() => void>()
-  const notify = () => listeners.forEach((l) => l())
+  const progress = createSignal()
+  const notify = progress.emit
   // Rarer than `notify` (every progress tick): the set of listable models changed.
-  const listListeners = new Set<() => void>()
-  const listChanged = () => listListeners.forEach((l) => l())
+  const list = createSignal()
+  const listChanged = list.emit
 
   const catalog = createLocalCatalog({
     root: deps.root,
@@ -155,6 +156,8 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       await rm(path.join(deps.root, 'catalog-cache.json'), { force: true })
       await router.reapStale()
       await refresh()
+      // What is installed is known only now; a catalog read before boot listed nothing local.
+      listChanged()
       await profileMachine()
       // Downloads quitting cut short go on — quietly when they were fetched ahead of need —
       // and the ones a person paused wait for them.
@@ -277,16 +280,10 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       })
     },
 
-    subscribe(listener: () => void): () => void {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
+    subscribe: progress.on,
 
     /** Installed or listable models changed — what a provider's model list reads. */
-    onListChanged(listener: () => void): () => void {
-      listListeners.add(listener)
-      return () => listListeners.delete(listener)
-    },
+    onListChanged: list.on,
 
     async shutdown() {
       if (retryTimer) clearInterval(retryTimer)
