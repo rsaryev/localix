@@ -10,7 +10,8 @@ chat, and **New game** starts again.
 Choose **Model plays** to hand the board to a decision model (Jev through OpenRouter). The board
 asks it for one move at a time, without writing in the chat, and shows each move as it lands. Its
 spend is recorded under **Decisions** for the conversation. **Stop** pauses it before the next move,
-and **Continue** goes on from the same board. Without a connected OpenRouter account, the board says
-so; there is no other player to fall back on.
+and **Continue** goes on from the same board; both are the same button beside **New game**. When the
+model stops on its own, for example without a connected OpenRouter account, a card over the board
+says why and offers **Try again** or **Play it yourself**.
 
 The chat's agent does not steer the snake. It can read the board and start a game for you.

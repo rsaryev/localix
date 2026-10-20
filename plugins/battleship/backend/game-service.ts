@@ -14,7 +14,7 @@ import {
 import { SIZE, placeFleet } from '../shared/rules'
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
 import { askDecision } from './ask-decision'
-import { openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
+import { decisionTurns, openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
 import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/plugin-sdk/opponent'
 
 /**
@@ -36,8 +36,9 @@ import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/plugin-sdk/oppo
  *
  * Who fires from the agent's side depends on the table's `opponent`: the agent is woken and fires
  * with its tool later; the decision model is asked here, shot after shot while its hits keep the
- * turn, before the person's request answers. Each shot is written as it lands, so the board shows
- * them one by one, and the person's own shot is written first.
+ * turn, after the person's request has answered with the model thinking (`decisionTurns`). Each
+ * shot is written as it lands and reaches the board through the store feed, one by one; the
+ * person's own shot is written and returned first.
  */
 export function createGameService(input: {
   /** The session's folder for this plugin; rejects for a session the user does not own. */
@@ -83,13 +84,20 @@ export function createGameService(input: {
     )
   }
 
+  const turns = decisionTurns('battleship')
+
   /**
-   * The decision model's shots while it owes one — a hit earns another — each written as it
-   * lands, and only while the board still shows the position it was asked about.
+   * The decision model's shots while the table owes one — a hit earns another — each written as it
+   * lands, and only while the board still shows the position it was asked about. Read fresh: a
+   * turn queued behind another finds the table as it is now.
    */
-  const decide = async (seat: Seat, game: Game): Promise<Game> => {
-    let current = game
-    for (let shot = 0; shot < SIZE * SIZE && owesAgentShot(current); shot++) {
+  const decisionTurn = async (seat: Seat): Promise<void> => {
+    let current = await (await storeFor(seat)).read()
+    for (
+      let shot = 0;
+      shot < SIZE * SIZE && current.opponent === 'decision' && owesAgentShot(current);
+      shot++
+    ) {
       const key = positionKey(current)
       const answer = await askDecision(input.decisions, seat, current, now())
       const next = await update(seat, (latest, at) =>
@@ -99,10 +107,9 @@ export function createGameService(input: {
             ? applyShot(latest, 'agent', answer.cell, at)
             : { ...latest, waiting: answer.waiting },
       )
-      if (!('cell' in answer) || positionKey(next) === key) return next
+      if (!('cell' in answer) || positionKey(next) === key) return
       current = next
     }
-    return current
   }
 
   /**
@@ -113,8 +120,19 @@ export function createGameService(input: {
   const summon = async (seat: Seat, settled: Game, again = false): Promise<Game> => {
     const game = await settle(seat, settled)
     if (!owesAgentShot(game) || (game.waiting?.status === 'thinking' && !again)) return game
-    if (game.opponent === 'decision') return decide(seat, game)
     const key = positionKey(game)
+    if (game.opponent === 'decision') {
+      // Answer the person now, with the model thinking; its shots land through the store feed.
+      const thinking = await update(seat, (current, at) =>
+        positionKey(current) === key &&
+        current.status === 'playing' &&
+        current.opponent === 'decision'
+          ? { ...current, waiting: { since: at, status: 'thinking' } }
+          : current,
+      )
+      turns.start(seat, () => decisionTurn(seat))
+      return thinking
+    }
     const waiting = await askAgent(input.wake, seat, game, now())
     return update(seat, (current) =>
       positionKey(current) === key && current.status === 'playing'
@@ -135,6 +153,8 @@ export function createGameService(input: {
     })
 
   return {
+    /** Resolves once the decision model's turns started so far have landed — for tests. */
+    settled: turns.idle,
     read: async (seat: Seat): Promise<Game> => settle(seat, await (await storeFor(seat)).read()),
 
     // ── What a person does in the view ─────────────────────────────────────────────────────

@@ -32,10 +32,14 @@ export async function askAgentForTurn(
   return { since: now, status: 'unreachable', reason: outcome.reason }
 }
 
-/** Why a decision came back without a turn, in the words a board shows. */
+/**
+ * Why a decision came back without a turn, in the words a board shows. Only the cause: the board's
+ * problem card offers the way out (ask again, or another player), and not every game has the chat
+ * agent to switch to.
+ */
 const DECISION_MISSED: Record<Exclude<DecisionOutcome['status'], 'answered'>, string> = {
   unavailable:
-    'No decision model is connected. Connect OpenRouter, or switch the opponent to the chat agent.',
+    'No decision model is connected. Connect OpenRouter from the model picker to use one.',
   deadline: 'The decision model did not answer in time.',
   cancelled: 'The decision model was stopped before it answered.',
   failed: 'The decision model could not answer.',
@@ -69,4 +73,34 @@ export async function askDecisionForTurn(
   if (answer?.type !== 'choice' || !(answer.choice in options))
     return missed(DECISION_MISSED.failed)
   return { answer }
+}
+
+/**
+ * The decision model's turns, played after the person's request has answered. A person's move used
+ * to wait for the model's pick before its own request returned, so their own piece appeared only
+ * together with the reply, a second or more after the click. Now the route records "thinking" and
+ * answers at once; the turn runs here and lands through the store feed like the agent's move.
+ *
+ * Turns at one table run one after another, never side by side, and each `run` reads the table
+ * fresh: a turn queued behind another finds the position it owes now, or nothing to do. A turn that
+ * throws is logged; the board's own patience offers Ask again.
+ */
+export function decisionTurns(plugin: string) {
+  const runs = new Map<string, Promise<void>>()
+  return {
+    start(seat: Seat, run: () => Promise<void>): void {
+      const key = `${seat.userId}:${seat.sessionId}`
+      const turn = (runs.get(key) ?? Promise.resolve())
+        .then(run)
+        .catch((error) => console.warn(`[${plugin}] the decision model's turn failed`, error))
+      runs.set(key, turn)
+      void turn.finally(() => {
+        if (runs.get(key) === turn) runs.delete(key)
+      })
+    },
+    /** Resolves once every turn started so far has landed — for tests. */
+    idle: async (): Promise<void> => {
+      while (runs.size > 0) await Promise.all(runs.values())
+    },
+  }
 }

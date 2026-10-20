@@ -41,7 +41,7 @@ const FLEET: Ship[] = [
  * only. The ACTIVE session the runtime reports is a different chat from the board's own: the
  * board must never address it.
  */
-function fakeBackend() {
+function fakeBackend(unreachable?: string) {
   let game: Game = newGame({
     id: 'g1',
     first: 'you',
@@ -54,11 +54,19 @@ function fakeBackend() {
     request: async (path, init) => {
       const body = init?.body ? JSON.parse(init.body as string) : undefined
       requests.push({ path, ...(body ? { body } : {}) })
+      if (path.startsWith('/rpc/battleship/game/opponent')) {
+        game = { ...game, opponent: (body as { opponent: Game['opponent'] }).opponent }
+      }
       if (path.startsWith('/rpc/battleship/game/fire')) {
         const fired = applyShot(game, 'you', (body as { cell: number }).cell, AT)
         game =
           fired.turn === 'agent'
-            ? { ...fired, waiting: { since: new Date().toISOString(), status: 'thinking' } }
+            ? {
+                ...fired,
+                waiting: unreachable
+                  ? { since: new Date().toISOString(), status: 'unreachable', reason: unreachable }
+                  : { since: new Date().toISOString(), status: 'thinking' },
+              }
             : fired
       }
       return Response.json(viewFor(game, 'you'))
@@ -79,11 +87,11 @@ function fakeBackend() {
   }
 }
 
-async function mount(sessionId: string | null) {
+async function mount(sessionId: string | null, unreachable?: string) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { Workspace } = await import('./Workspace')
-  const backend = fakeBackend()
+  const backend = fakeBackend(unreachable)
   let context: PublishedMessageContext | null = null
   const host = document.createElement('div')
   document.body.append(host)
@@ -190,6 +198,28 @@ test('the control row says who fires at the person’s fleet, beside the new gam
   try {
     expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')).not.toBeNull()
     expect(view.host.querySelector('[aria-label="New game"]')).not.toBeNull()
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('an opponent that did not fire says why over the boards, not in the control row', async () => {
+  const view = await mount('s1', 'This app cannot wake a chat.')
+  try {
+    await view.act(async () => view.enemy('J10')!.click())
+
+    const row = view.host.querySelector('[data-slot="game-control-row"]')!
+    const problem = view.host.querySelector('[data-slot="game-problem"]')!
+    expect(problem.getAttribute('role')).toBe('alert')
+    expect(problem.textContent).toContain('The agent did not fire')
+    expect(problem.textContent).toContain('This app cannot wake a chat.')
+    expect(row.contains(problem)).toBe(false)
+
+    const button = (label: string) =>
+      Array.from(problem.querySelectorAll('button')).find((b) => b.textContent?.includes(label))
+    expect(button('Ask again')).toBeDefined()
+    await view.act(async () => button('Use the decision model')!.click())
+    expect(view.backend.requests.some(({ path }) => path.includes('/game/opponent'))).toBe(true)
   } finally {
     await view.unmount()
   }

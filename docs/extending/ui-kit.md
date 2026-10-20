@@ -45,6 +45,7 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 | A value in a form saved with others      | `select` (a few) / `combobox` (many, searchable)                               |
 | A pick in chrome (a mode, an agent)      | `menu-entries` rows with `selected` in a `dropdown-menu`                       |
 | Who plays a game's other side            | `opponent-menu`: `OpponentMenu`, the chat agent or a decision model            |
+| A game's status row and what stopped it  | `game-status`: `GameControlRow`, `GameStatus`, `GameProblem` over the board    |
 | Switching what a pane shows (2–4 views)  | `@localixai/plugin-sdk/ui/segmented-control`                                   |
 | A status tone on a menu row's icon       | `tonedIcon` from `@localixai/plugin-sdk/ui`                                    |
 | An agent or person in a menu row         | `monogramIcon` from `@localixai/kit/avatar`                                    |

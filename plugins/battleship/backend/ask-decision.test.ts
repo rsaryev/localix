@@ -127,7 +127,7 @@ describe('the question the decision model is asked', () => {
 })
 
 describe('against the decision model', () => {
-  test('the person’s miss is answered by the model’s shots, a hit earning another', async () => {
+  test('the person’s miss answers at once, and the model’s shots land after it, a hit earning another', async () => {
     let game: Game | null = null
     const picks: number[] = []
     const model = decisions((ask) => {
@@ -143,8 +143,14 @@ describe('against the decision model', () => {
     const { games, woke } = setup(model.host)
     await games.setOpponent(SEAT, 'decision')
     game = await games.read(SEAT)
-    const after = await games.personShot(SEAT, missFor(game))
-    const theirs = after.shots.filter((shot) => shot.by === 'agent')
+    // The request does not wait for the model: the person's shot is back with the model thinking.
+    const shot = await games.personShot(SEAT, missFor(game))
+    expect(shot.shots.filter((at) => at.by === 'you')).toHaveLength(1)
+    expect(shot.shots.filter((at) => at.by === 'agent')).toEqual([])
+    expect(shot.waiting).toMatchObject({ status: 'thinking' })
+    await games.settled()
+    const after = await games.read(SEAT)
+    const theirs = after.shots.filter((at) => at.by === 'agent')
     expect(theirs.map((shot) => shot.result === 'miss')).toEqual([false, true])
     expect(after.turn).toBe('you')
     expect(after.waiting).toBeNull()
@@ -157,14 +163,18 @@ describe('against the decision model', () => {
     const { games } = setup(decisions(() => answer).host)
     await games.setOpponent(SEAT, 'decision')
     const game = await games.read(SEAT)
-    const missed = await games.personShot(SEAT, missFor(game))
+    await games.personShot(SEAT, missFor(game))
+    await games.settled()
+    const missed = await games.read(SEAT)
     expect(missed.turn).toBe('agent')
     expect(missed.waiting).toMatchObject({
       status: 'unreachable',
       reason: expect.stringContaining('No decision model is connected'),
     })
     answer = cellName(water(missed))
-    expect((await games.remind(SEAT)).turn).toBe('you')
+    await games.remind(SEAT)
+    await games.settled()
+    expect((await games.read(SEAT)).turn).toBe('you')
   })
 
   test('switching while the agent side owes a shot asks the new opponent at once', async () => {
@@ -174,7 +184,9 @@ describe('against the decision model', () => {
     game = await games.read(SEAT)
     await games.personShot(SEAT, missFor(game))
     expect(woke).toHaveLength(1)
-    const after = await games.setOpponent(SEAT, 'decision')
+    await games.setOpponent(SEAT, 'decision')
+    await games.settled()
+    const after = await games.read(SEAT)
     expect(after.opponent).toBe('decision')
     expect(after.turn).toBe('you')
   })

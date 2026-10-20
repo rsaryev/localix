@@ -14,6 +14,16 @@ export const FEEDBACK: readonly KitCatalogEntry[] = [
     not: 'A centred placeholder with an icon and an action is StateNotice.',
   },
   {
+    specifier: k('game-status'),
+    category: 'feedback',
+    provider: 'kit',
+    exports: ['GameControlRow', 'GameStatus', 'GameProblem'],
+    summary:
+      "A game board's control row, its two-line status, and the problem card over the board.",
+    use: 'Every game view: the row above the board (status left, OpponentMenu and New game right), and GameProblem inside the board wrapper for a failure, an unreachable opponent or a slow move, with its recovery actions.',
+    not: 'Not for the end of a game, which is the game’s own result card; not a pane-level failure, which is StateNotice.',
+  },
+  {
     specifier: k('state-notice'),
     category: 'feedback',
     provider: 'kit',

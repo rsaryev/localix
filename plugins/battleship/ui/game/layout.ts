@@ -15,8 +15,11 @@ import { useEffect, useState, type RefObject } from 'react'
 export const BOARD_GAP = 40
 export const LABEL = 22
 export const HEADING = 34
-/** The status row above the pair — the same place Tic-Tac-Toe and Checkers put theirs. */
-export const STATUS_ROW = 92
+/**
+ * The control row above the pair — the same place Tic-Tac-Toe and Checkers put theirs. Its status
+ * is two fixed lines and problems float over the boards, so the row needs no room to grow.
+ */
+export const STATUS_ROW = 60
 /** A cell never shrinks below a tap target, nor grows past where a board stops reading as one. */
 export const MIN_CELL = 22
 export const MAX_CELL = 60

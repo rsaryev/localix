@@ -21,7 +21,7 @@ afterAll(async () => {
 })
 
 /** A backend made of the real rules: saved headings are replayed like the route does. */
-function fakeBackend() {
+function fakeBackend(unreachable?: string) {
   let game: Game = newGame({ id: 'g1', mode: 'user', now: 'now', seed: 3 })
   const requests: { path: string; body?: unknown }[] = []
   const unbindTransport = bindPluginUiTransport({
@@ -35,7 +35,9 @@ function fakeBackend() {
         game = {
           ...game,
           mode: (body as { mode: Mode }).mode,
-          waiting: { since: 'now', status: 'thinking' },
+          waiting: unreachable
+            ? { since: 'now', status: 'unreachable', reason: unreachable }
+            : { since: 'now', status: 'thinking' },
         }
       return Response.json(game)
     },
@@ -53,11 +55,11 @@ function fakeBackend() {
   }
 }
 
-async function mount() {
+async function mount(unreachable?: string) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { Workspace } = await import('./Workspace')
-  const backend = fakeBackend()
+  const backend = fakeBackend(unreachable)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -136,6 +138,34 @@ test('Model plays hands the board to the decision model', async () => {
       { path: '/rpc/snake/game/mode?sessionId=s1', body: { mode: 'model' } },
     ])
     expect(view.host.textContent).toContain('Playing')
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('a model that cannot play says why over the board, and offers the board back', async () => {
+  const view = await mount('No decision model is connected.')
+  try {
+    const label = Array.from(view.host.querySelectorAll('label')).find((element) =>
+      element.textContent?.includes('Model plays'),
+    )
+    await view.act(async () =>
+      label!.querySelector<HTMLInputElement>('input[type="radio"]')!.click(),
+    )
+    const problem = view.host.querySelector('[data-slot="game-problem"]')!
+    expect(problem.textContent).toContain('The decision model stopped')
+    expect(problem.textContent).toContain('No decision model is connected.')
+    // The reason is never written into the row above the board, where it pushed the board down.
+    const row = view.host.querySelector('[data-slot="game-control-row"]')!
+    expect(row.textContent).not.toContain('No decision model is connected.')
+    expect(row.querySelector('[aria-label="Continue"]')).not.toBeNull()
+
+    const yourself = Array.from(problem.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Play it yourself'),
+    )
+    await view.act(async () => yourself!.click())
+    const modes = view.backend.requests.filter(({ path }) => path.includes('/game/mode'))
+    expect(modes.at(-1)?.body).toEqual({ mode: 'user' })
   } finally {
     await view.unmount()
   }

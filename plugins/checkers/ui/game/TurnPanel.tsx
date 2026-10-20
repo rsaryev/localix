@@ -1,9 +1,10 @@
 import { CircleAlert, Equal, Flag, RefreshCw, RotateCcw, Trophy } from 'lucide-react'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
+import { GameProblem, GameStatus } from '@localixai/kit/game-status'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 
-import { movesNow, owesAgentMove, type Game } from '../../shared/game'
+import { movesNow, owesAgentMove, type Game, type Opponent } from '../../shared/game'
 import { countPieces, other } from '../../shared/rules'
 import {
   announcement,
@@ -12,84 +13,127 @@ import {
   endingSentence,
   headline,
   nextColour,
+  opponentName,
   scoreLine,
 } from './copy'
 import { Piece } from './Piece'
 
-/** After this long without the agent's move, the status offers to ask it again. */
+/** After this long without the agent's move, the board offers to ask it again. */
 export const PATIENCE_MS = 30_000
 
 /**
- * Two surfaces for the game's state, so nothing sits under the board:
+ * Three surfaces for the game's state, none of them under the board and none that moves it:
  *
- * - {@link TurnStatus} — the status beside the new-game control: whose turn, each side's colour
- *   and pieces left, the score at this table, a compulsory capture, how long the agent has been
- *   thinking, and the way out of a wait that stalled.
+ * - {@link TurnStatus} — the two lines beside the controls: whose turn, a compulsory capture, how
+ *   long the agent has been thinking, and each side's colour and pieces left with the score.
+ * - {@link TurnProblem} — what stopped the game, over the top of the board: a failed request, an
+ *   opponent that did not answer, a move that is taking too long, each with its way out.
  * - {@link GameOver} — the card that rises over the board when a game ends, with the result and
  *   the next game. The board stays visible behind it, so the final position is part of the result.
  *
  * Nothing here counts: the time the agent has been thinking is `now` against the moment it was
  * asked, so a hidden pane loses nothing.
  */
-export function TurnStatus({
+export function TurnStatus({ game, now }: { game: Game; now: number }) {
+  const waiting = game.waiting
+  const thinking = owesAgentMove(game) && (waiting === null || waiting.status === 'thinking')
+  const yourTurn = game.status === 'playing' && game.turn === game.you
+  const mustCapture = yourTurn && (movesNow(game)[0]?.captured.length ?? 0) > 0
+  const them = other(game.you)
+  return (
+    <>
+      <GameStatus
+        icon={game.status === 'playing' && <StateIcon game={game} thinking={thinking} />}
+        title={headline(game)}
+        suffix={
+          thinking && waiting ? (
+            `· ${elapsed(now - Date.parse(waiting.since))}`
+          ) : mustCapture ? (
+            <span className="text-status-warning">· capture is compulsory</span>
+          ) : undefined
+        }
+        detail={`You play ${colour(game.you)} (${countPieces(game.board, game.you)}) · ${colour(them)} (${countPieces(game.board, them)})${scoreLine(game.record)}`}
+      />
+      {/* Heard, not seen: the move just played and what it means, once per change. */}
+      <p aria-live="polite" className="sr-only">
+        {announcement(game)}
+      </p>
+    </>
+  )
+}
+
+const OTHER_OPPONENT: Record<Opponent, { opponent: Opponent; label: string }> = {
+  agent: { opponent: 'decision', label: 'Use the decision model' },
+  decision: { opponent: 'agent', label: 'Use the chat agent' },
+}
+
+export function TurnProblem({
   game,
   now,
   error,
   sending,
+  onRetry,
   onRemind,
+  onOpponent,
 }: {
   game: Game
   now: number
   error: string | null
   sending: boolean
+  onRetry: () => void
   onRemind: () => void
+  onOpponent: (opponent: Opponent) => void
 }) {
-  const agentTurn = owesAgentMove(game)
+  if (error)
+    return (
+      <GameProblem
+        title={error}
+        actions={
+          <Button size="sm" variant="secondary" onClick={onRetry}>
+            <RefreshCw data-icon="inline-start" />
+            Retry
+          </Button>
+        }
+      />
+    )
+  if (!owesAgentMove(game)) return null
   const waiting = game.waiting
-  const thinkingFor = waiting ? now - Date.parse(waiting.since) : 0
-  const thinking = agentTurn && (waiting === null || waiting.status === 'thinking')
-  const stuck = agentTurn && (!thinking || thinkingFor >= PATIENCE_MS)
-  const suffix = thinking && waiting ? ` · ${elapsed(thinkingFor)}` : ''
-  const yourTurn = game.status === 'playing' && game.turn === game.you
-  const mustCapture = yourTurn && (movesNow(game)[0]?.captured.length ?? 0) > 0
-  const them = other(game.you)
-
+  const askAgain = (
+    <Button size="sm" variant="secondary" onClick={onRemind} disabled={sending}>
+      <RefreshCw data-icon="inline-start" />
+      Ask again
+    </Button>
+  )
+  if (waiting?.status === 'unreachable') {
+    const switchTo = OTHER_OPPONENT[game.opponent ?? 'agent']
+    return (
+      <GameProblem
+        title={`${opponentName(game)} did not move`}
+        description={waiting.reason}
+        actions={
+          <>
+            {askAgain}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onOpponent(switchTo.opponent)}
+              disabled={sending}
+            >
+              {switchTo.label}
+            </Button>
+          </>
+        }
+      />
+    )
+  }
+  if (waiting === null || now - Date.parse(waiting.since) < PATIENCE_MS) return null
   return (
-    // Reserve space for recovery actions before they appear, so the board does not move on a stall.
-    <div className="flex min-h-20 flex-auto flex-col items-start justify-center gap-1">
-      <p
-        role={error ? 'alert' : undefined}
-        className={cn(
-          'flex items-center gap-2 text-base font-medium whitespace-nowrap',
-          error ? 'text-status-warning' : 'text-text-soft',
-        )}
-      >
-        {!error && game.status === 'playing' && <StateIcon game={game} thinking={thinking} />}
-        <span className={cn(!error && 'text-foreground')}>{error ?? headline(game)}</span>
-        {!error && suffix && (
-          <span className="font-mono tabular-nums text-text-faint">{suffix}</span>
-        )}
-        {!error && mustCapture && (
-          <span className="text-sm font-normal text-status-warning">· capture is compulsory</span>
-        )}
-      </p>
-      <p className="text-xs text-text-faint">
-        {`You play ${colour(game.you)} (${countPieces(game.board, game.you)}) · ${colour(them)} (${countPieces(game.board, them)})${scoreLine(game.record)}`}
-      </p>
-      {agentTurn && waiting?.status === 'unreachable' && waiting.reason && (
-        <p className="text-xs text-status-warning">{waiting.reason}</p>
-      )}
-      {/* Heard, not seen: the move just played and what it means, once per change. */}
-      <p aria-live="polite" className="sr-only">
-        {announcement(game)}
-      </p>
-      {stuck && (
-        <Button size="sm" variant="secondary" onClick={onRemind} disabled={sending}>
-          <RefreshCw data-icon="inline-start" />
-          Ask again
-        </Button>
-      )}
-    </div>
+    <GameProblem
+      role="status"
+      title={`${opponentName(game)} is taking a while`}
+      description="Ask again to wake it, or keep waiting."
+      actions={askAgain}
+    />
   )
 }
 

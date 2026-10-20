@@ -7,11 +7,12 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
+import { GameControlRow } from '@localixai/kit/game-status'
 
 import { TICK_MS, type Mode } from '../shared/game'
 import { gameMessageContext } from './bindings'
 import { Board } from './game/Board'
-import { GameOver, TurnStatus } from './game/TurnPanel'
+import { GameOver, PlayToggle, TurnProblem, TurnStatus } from './game/TurnPanel'
 import { useGame } from './game/useGame'
 import { useHumanRun } from './game/useHumanRun'
 import { useStepPace } from './game/useStepPace'
@@ -51,6 +52,8 @@ export function Workspace({
     saveTurns: state.saveTurns,
   })
   const game = human.game
+  // A save of the person's own run is not a request they wait on.
+  const busy = state.sending && !human.running
   // The person's snake glides over a whole tick; the model's over the pace its steps arrive at.
   const modelPace = useStepPace(
     game?.tick ?? 0,
@@ -99,44 +102,51 @@ export function Workspace({
           </div>
         ) : (
           <>
-            <div
-              className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2"
+            <GameControlRow
               style={{ maxWidth: BOARD_SIZE }}
-            >
-              <TurnStatus
-                game={game}
-                running={human.running}
-                error={state.error}
-                sending={state.sending && !human.running}
-                onContinue={() => void state.remind()}
-                onStop={() => void state.stop()}
-              />
-              <div className="flex items-center gap-2">
-                <SegmentedRadioGroup<Mode>
-                  aria-label="Who plays"
-                  size="sm"
-                  value={game.mode}
-                  options={WHO_PLAYS}
-                  disabled={state.sending && !human.running}
-                  onValueChange={(mode) => void state.setMode(mode)}
-                />
-                <IconButton
-                  aria-label="New game"
-                  tooltip="New game"
-                  size="lg"
-                  disabled={(state.sending && !human.running) || game.tick === 0}
-                  onClick={() => void state.newGame(game.mode)}
-                >
-                  <RotateCcw />
-                </IconButton>
-              </div>
-            </div>
+              status={<TurnStatus game={game} running={human.running} />}
+              controls={
+                <>
+                  <SegmentedRadioGroup<Mode>
+                    aria-label="Who plays"
+                    size="sm"
+                    value={game.mode}
+                    options={WHO_PLAYS}
+                    disabled={busy}
+                    onValueChange={(mode) => void state.setMode(mode)}
+                  />
+                  <PlayToggle
+                    game={game}
+                    sending={busy}
+                    onContinue={() => void state.remind()}
+                    onStop={() => void state.stop()}
+                  />
+                  <IconButton
+                    aria-label="New game"
+                    tooltip="New game"
+                    size="lg"
+                    disabled={busy || game.tick === 0}
+                    onClick={() => void state.newGame(game.mode)}
+                  >
+                    <RotateCcw />
+                  </IconButton>
+                </>
+              }
+            />
             <div className="relative" style={{ width: BOARD_SIZE }}>
               <Board
                 game={game}
                 playable={active && visible && game.mode === 'user' && game.status === 'playing'}
                 glideMs={human.running ? TICK_MS : modelPace}
                 onSteer={human.steer}
+              />
+              <TurnProblem
+                game={game}
+                error={state.error}
+                sending={busy}
+                onRetry={() => state.refresh()}
+                onContinue={() => void state.remind()}
+                onPlayYourself={() => void state.setMode('user')}
               />
               <GameOver
                 game={game}

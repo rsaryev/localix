@@ -7,17 +7,19 @@ import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { OpponentMenu } from '@localixai/kit/opponent-menu'
+import { GameControlRow } from '@localixai/kit/game-status'
 
 import { owesAgentShot } from '../shared/game'
 import { gameMessageContext } from './bindings'
 import { Boards } from './game/Boards'
-import { GameOver, TurnStatus } from './game/TurnPanel'
+import { GameOver, TurnProblem, TurnStatus } from './game/TurnPanel'
 import { useGame } from './game/useGame'
 import { useNow } from './useNow'
 
 /**
  * This chat's table: a status row, then the two boards side by side, filling the rest of the pane
- * (`Boards` measures it and sizes the tiles to fit).
+ * (`Boards` measures it and sizes the tiles to fit). The row keeps one height whatever the state,
+ * and what stopped the game floats over the boards ({@link TurnProblem}), so the boards never move.
  *
  * Before the first shot the person may place their fleet anew; after it the fleet is set. The
  * view only ever holds the person's side of the game — the agent's fleet is not in the browser —
@@ -78,46 +80,57 @@ export function Workspace({
           playable={view.status === 'playing' && view.turn === 'you' && !state.sending}
           onFire={(cell) => void state.fire(cell)}
           status={
+            <GameControlRow
+              status={<TurnStatus view={view} now={now} />}
+              controls={
+                <>
+                  {view.shots.length === 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={state.sending}
+                      onClick={() => void state.reshuffle()}
+                    >
+                      <Shuffle data-icon="inline-start" />
+                      New fleet
+                    </Button>
+                  )}
+                  <OpponentMenu
+                    heading="Who fires at your fleet"
+                    value={view.opponent ?? 'agent'}
+                    disabled={state.sending}
+                    onChange={(opponent) => void state.setOpponent(opponent)}
+                  />
+                  <IconButton
+                    aria-label="New game"
+                    tooltip="New game"
+                    size="lg"
+                    disabled={state.sending || view.shots.length === 0}
+                    onClick={() => void state.newGame()}
+                  >
+                    <RotateCcw />
+                  </IconButton>
+                </>
+              }
+            />
+          }
+          overlay={
             <>
-              <TurnStatus
+              <TurnProblem
                 view={view}
                 now={now}
                 error={state.error}
                 sending={state.sending}
+                onRetry={() => state.refresh()}
                 onRemind={() => void state.remind()}
+                onOpponent={(opponent) => void state.setOpponent(opponent)}
               />
-              <div className="flex items-center gap-2">
-                {view.shots.length === 0 && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={state.sending}
-                    onClick={() => void state.reshuffle()}
-                  >
-                    <Shuffle data-icon="inline-start" />
-                    New fleet
-                  </Button>
-                )}
-                <OpponentMenu
-                  heading="Who fires at your fleet"
-                  value={view.opponent ?? 'agent'}
-                  disabled={state.sending}
-                  onChange={(opponent) => void state.setOpponent(opponent)}
-                />
-                <IconButton
-                  aria-label="New game"
-                  tooltip="New game"
-                  size="lg"
-                  disabled={state.sending || view.shots.length === 0}
-                  onClick={() => void state.newGame()}
-                >
-                  <RotateCcw />
-                </IconButton>
-              </div>
+              <GameOver
+                view={view}
+                sending={state.sending}
+                onNewGame={() => void state.newGame()}
+              />
             </>
-          }
-          overlay={
-            <GameOver view={view} sending={state.sending} onNewGame={() => void state.newGame()} />
           }
         />
       )}

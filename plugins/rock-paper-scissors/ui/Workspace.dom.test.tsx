@@ -24,7 +24,7 @@ afterAll(async () => {
 const AT = '2026-10-18T10:00:00.000Z'
 
 /** A backend made of the real rules, answering with the person's view as the routes do. */
-function fakeBackend(first: Player) {
+function fakeBackend(first: Player, unreachable?: string) {
   let game: Game = newGame({ id: 't1', roundId: 'r1', first, now: AT })
   const requests: { path: string; body?: unknown }[] = []
   const bodies: string[] = []
@@ -33,10 +33,18 @@ function fakeBackend(first: Player) {
     request: async (path, init) => {
       const body = init?.body ? JSON.parse(init.body as string) : undefined
       requests.push({ path, ...(body ? { body } : {}) })
+      if (path.startsWith('/rpc/rock-paper-scissors/game/opponent'))
+        game = { ...game, opponent: (body as { opponent: Game['opponent'] }).opponent }
       if (path.startsWith('/rpc/rock-paper-scissors/game/play')) {
         game = applyMove(game, seal((body as { move: Move }).move, 'you', AT), AT)
+        const since = new Date().toISOString()
         if (game.round.outcome === null)
-          game = { ...game, waiting: { since: new Date().toISOString(), status: 'thinking' } }
+          game = {
+            ...game,
+            waiting: unreachable
+              ? { since, status: 'unreachable', reason: unreachable }
+              : { since, status: 'thinking' },
+          }
       }
       const text = JSON.stringify(viewFor(game, 'you'))
       bodies.push(text)
@@ -59,11 +67,11 @@ function fakeBackend(first: Player) {
   }
 }
 
-async function mount(sessionId: string | null, first: Player = 'you') {
+async function mount(sessionId: string | null, first: Player = 'you', unreachable?: string) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { Workspace } = await import('./Workspace')
-  const backend = fakeBackend(first)
+  const backend = fakeBackend(first, unreachable)
   let context: PublishedMessageContext | null = null
   const host = document.createElement('div')
   document.body.append(host)
@@ -166,6 +174,27 @@ test('the table says who plays against the person, under the score', async () =>
     expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')?.textContent).toContain(
       'Chat agent',
     )
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('an opponent that did not choose says why over the hands, outside the control row', async () => {
+  const view = await mount('s1', 'you', 'This app cannot wake a chat.')
+  try {
+    await view.act(async () => view.button('Rock')!.click())
+
+    const problem = view.host.querySelector('[data-slot="game-problem"]')!
+    expect(problem.getAttribute('role')).toBe('alert')
+    expect(problem.textContent).toContain('The agent did not choose')
+    expect(problem.textContent).toContain('This app cannot wake a chat.')
+    expect(view.host.querySelector('[data-slot="game-control-row"]')!.contains(problem)).toBe(false)
+
+    const action = (label: string) =>
+      Array.from(problem.querySelectorAll('button')).find((b) => b.textContent?.includes(label))
+    expect(action('Ask again')).toBeDefined()
+    await view.act(async () => action('Use the decision model')!.click())
+    expect(view.backend.requests.some(({ path }) => path.includes('/game/opponent'))).toBe(true)
   } finally {
     await view.unmount()
   }

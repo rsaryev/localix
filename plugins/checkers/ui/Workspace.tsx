@@ -7,10 +7,11 @@ import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { OpponentMenu } from '@localixai/kit/opponent-menu'
+import { GameControlRow } from '@localixai/kit/game-status'
 
 import { gameMessageContext } from './bindings'
 import { Board } from './game/Board'
-import { GameOver, TurnStatus } from './game/TurnPanel'
+import { GameOver, TurnProblem, TurnStatus } from './game/TurnPanel'
 import { owesAgentMove } from '../shared/game'
 import { other } from '../shared/rules'
 import { useGame } from './game/useGame'
@@ -23,8 +24,9 @@ import { useNow } from './useNow'
  * target and the board still reads as one object; a short pane scrolls rather than shrinking it.
  * (Sizing by the pane's HEIGHT needs a size container, and a size container whose host gives it
  * no definite height collapses to nothing.) The status shares a row with the new-game control, so
- * the board stays close to the information needed to play it. The status reserves room for
- * recovery actions.
+ * the board stays close to the information needed to play it. The row keeps one height whatever
+ * the state, and what stopped the game floats over the board ({@link TurnProblem}), so the board
+ * never moves.
  *
  * It publishes EXACTLY the game on screen as message context, and clears it the moment the
  * surface goes inactive, so a question typed beside the board is about this position.
@@ -85,40 +87,43 @@ export function Workspace({
           </div>
         ) : (
           <>
-            <div
-              className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2"
+            <GameControlRow
               style={{ maxWidth: BOARD_SIZE }}
-            >
-              <TurnStatus
-                game={game}
-                now={now}
-                error={state.error}
-                sending={state.sending}
-                onRemind={() => void state.remind()}
-              />
-              <div className="flex items-center gap-1">
-                <OpponentMenu
-                  heading={`Who plays ${other(game.you)}`}
-                  value={game.opponent ?? 'agent'}
-                  disabled={state.sending}
-                  onChange={(opponent) => void state.setOpponent(opponent)}
-                />
-                <IconButton
-                  aria-label="New game"
-                  tooltip="New game"
-                  size="lg"
-                  disabled={state.sending || game.moves.length === 0}
-                  onClick={() => void state.newGame()}
-                >
-                  <RotateCcw />
-                </IconButton>
-              </div>
-            </div>
+              status={<TurnStatus game={game} now={now} />}
+              controls={
+                <>
+                  <OpponentMenu
+                    heading={`Who plays ${other(game.you)}`}
+                    value={game.opponent ?? 'agent'}
+                    disabled={state.sending}
+                    onChange={(opponent) => void state.setOpponent(opponent)}
+                  />
+                  <IconButton
+                    aria-label="New game"
+                    tooltip="New game"
+                    size="lg"
+                    disabled={state.sending || game.moves.length === 0}
+                    onClick={() => void state.newGame()}
+                  >
+                    <RotateCcw />
+                  </IconButton>
+                </>
+              }
+            />
             <div className="relative" style={{ width: BOARD_SIZE }}>
               <Board
                 game={game}
                 playable={game.status === 'playing' && game.turn === game.you && !state.sending}
                 onPlay={(squares) => void state.play(squares)}
+              />
+              <TurnProblem
+                game={game}
+                now={now}
+                error={state.error}
+                sending={state.sending}
+                onRetry={() => state.refresh()}
+                onRemind={() => void state.remind()}
+                onOpponent={(opponent) => void state.setOpponent(opponent)}
               />
               <GameOver
                 game={game}

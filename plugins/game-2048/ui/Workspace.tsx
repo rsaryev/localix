@@ -8,11 +8,12 @@ import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { OpponentMenu } from '@localixai/kit/opponent-menu'
+import { GameControlRow } from '@localixai/kit/game-status'
 
 import { agentPlays, type Mode } from '../shared/game'
 import { gameMessageContext } from './bindings'
 import { Board } from './game/Board'
-import { GameOver, TurnStatus } from './game/TurnPanel'
+import { GameOver, PlayToggle, TurnProblem, TurnStatus } from './game/TurnPanel'
 import { useGame } from './game/useGame'
 import { useNow } from './useNow'
 
@@ -24,7 +25,9 @@ import { useNow } from './useNow'
  * target and the board still reads as one object; a short pane scrolls rather than shrinking it.
  * (Sizing by the pane's HEIGHT needs a size container, and a size container whose host gives it
  * no definite height collapses to nothing.) The status shares a row with the controls — who
- * plays, and a new game — so the board stays close to what is needed to play it. Who plays is two
+ * plays, Stop or Continue, and a new game — so the board stays close to what is needed to play it.
+ * The row keeps one height whatever the state, and what stopped the game floats over the board
+ * ({@link TurnProblem}), so the board never moves. Who plays is two
  * steps, never two competing switches: **I play** or **Watch**, and while watching, the menu beside
  * it says WHICH player holds the board — the chat agent or the decision model.
  *
@@ -92,47 +95,47 @@ export function Workspace({
           </div>
         ) : (
           <>
-            <div
-              className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2"
+            <GameControlRow
               style={{ maxWidth: BOARD_SIZE }}
-            >
-              <TurnStatus
-                game={game}
-                now={now}
-                error={state.error}
-                sending={state.sending}
-                onRemind={() => void state.remind()}
-                onStop={() => void state.stop()}
-              />
-              <div className="flex items-center gap-2">
-                <SegmentedRadioGroup<Mode>
-                  aria-label="Who plays"
-                  size="sm"
-                  value={game.mode}
-                  options={WHO_PLAYS}
-                  disabled={state.sending}
-                  onValueChange={(mode) => void state.setMode(mode)}
-                />
-                {game.mode === 'agent' && (
-                  <OpponentMenu
-                    heading="Who plays the board"
+              status={<TurnStatus game={game} now={now} />}
+              controls={
+                <>
+                  <SegmentedRadioGroup<Mode>
+                    aria-label="Who plays"
                     size="sm"
-                    value={game.opponent ?? 'agent'}
+                    value={game.mode}
+                    options={WHO_PLAYS}
                     disabled={state.sending}
-                    onChange={(opponent) => void state.setOpponent(opponent)}
+                    onValueChange={(mode) => void state.setMode(mode)}
                   />
-                )}
-                <IconButton
-                  aria-label="New game"
-                  tooltip="New game"
-                  size="lg"
-                  disabled={state.sending || game.moves === 0}
-                  onClick={() => void state.newGame(game.mode)}
-                >
-                  <RotateCcw />
-                </IconButton>
-              </div>
-            </div>
+                  {game.mode === 'agent' && (
+                    <OpponentMenu
+                      heading="Who plays the board"
+                      size="sm"
+                      value={game.opponent ?? 'agent'}
+                      disabled={state.sending}
+                      onChange={(opponent) => void state.setOpponent(opponent)}
+                    />
+                  )}
+                  <PlayToggle
+                    game={game}
+                    now={now}
+                    sending={state.sending}
+                    onContinue={() => void state.remind()}
+                    onStop={() => void state.stop()}
+                  />
+                  <IconButton
+                    aria-label="New game"
+                    tooltip="New game"
+                    size="lg"
+                    disabled={state.sending || game.moves === 0}
+                    onClick={() => void state.newGame(game.mode)}
+                  >
+                    <RotateCcw />
+                  </IconButton>
+                </>
+              }
+            />
             <div className="relative" style={{ width: BOARD_SIZE }}>
               <Board
                 game={game}
@@ -144,6 +147,14 @@ export function Workspace({
                   !state.sending
                 }
                 onMove={(direction) => void state.play(direction)}
+              />
+              <TurnProblem
+                game={game}
+                error={state.error}
+                sending={state.sending}
+                onRetry={() => state.refresh()}
+                onContinue={() => void state.remind()}
+                onOpponent={(opponent) => void state.setOpponent(opponent)}
               />
               <GameOver
                 game={game}

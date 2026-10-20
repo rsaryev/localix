@@ -1,95 +1,171 @@
-import { CircleAlert, CircleX, Play, RotateCcw, Square, Trophy, User } from 'lucide-react'
+import {
+  CircleAlert,
+  CircleX,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Square,
+  Trophy,
+  User,
+} from 'lucide-react'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
+import { GameProblem, GameStatus } from '@localixai/kit/game-status'
+import { IconButton } from '@localixai/kit/icon-button'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 
-import { agentPlays, type Game } from '../../shared/game'
+import { agentPlays, stopped, type Game, type Opponent } from '../../shared/game'
 import {
   announcement,
   elapsed,
   headline,
   mayRemind,
+  playerName,
   resultLine,
   shortScoreLine,
   spokenHeadline,
 } from './copy'
 
 /**
- * After this long without an agent move, the status offers to ask it again. Longer than the other
+ * After this long without an agent move, the board offers to ask it again. Longer than the other
  * games' 20s: the agent plays many calls in one turn, and one slow model call is not a stall.
  */
 export const PATIENCE_MS = 45_000
 
 /**
- * Two surfaces for the game's state, so nothing sits under the board — the same pair as the other
- * games:
+ * The game's state on the same surfaces as the other games, none of them under the board and none
+ * that moves it:
  *
- * - {@link TurnStatus} — beside the controls: who is playing, the score, how long since the
- *   agent's last move, and the way back into a game the agent stopped playing.
+ * - {@link TurnStatus} — two lines beside the controls: who is playing, how long since the chat
+ *   agent's last move, and the score.
+ * - {@link PlayToggle} — Stop or Continue in the control row, while the agent holds the board.
+ * - {@link TurnProblem} — over the top of the board: a failed request, or a player that stopped
+ *   without being asked to, with the way out.
  * - {@link GameOver} — the card that rises over the board when a game ends. The board stays
  *   visible behind it, so the final position is part of the result.
  *
  * Nothing here counts: the time since the agent's last move is `now` against the moment it moved.
  */
-export function TurnStatus({
-  game,
-  now,
-  error,
-  sending,
-  onRemind,
-  onStop,
-}: {
-  game: Game
-  now: number
-  error: string | null
-  sending: boolean
-  onRemind: () => void
-  onStop: () => void
-}) {
-  const running = agentPlays(game) && game.waiting?.status === 'thinking'
+export function TurnStatus({ game, now }: { game: Game; now: number }) {
   // The chat agent may take a while per call; the decision model moves every second or so, so a
   // running clock beside it would only flicker.
   const playing =
     agentPlays(game) && game.opponent !== 'decision' && game.waiting?.status === 'thinking'
-  const suffix = playing ? ` · ${elapsed(now - Date.parse(game.waiting!.since))}` : ''
   return (
-    // Reserve space for the recovery action before it appears, so the board does not move.
-    // Sized by its content (`flex-auto`), so a narrow pane wraps the controls below it rather
-    // than letting them run over the text.
-    <div className="flex min-h-20 flex-auto flex-col items-start justify-center gap-1">
-      <p
-        role={error ? 'alert' : undefined}
-        className={cn(
-          'flex items-center gap-2 text-base font-medium whitespace-nowrap',
-          error ? 'text-status-warning' : 'text-text-soft',
-        )}
-      >
-        {!error && game.status === 'playing' && <StateIcon game={game} />}
-        <span className={cn(!error && 'text-foreground')}>{error ?? headline(game)}</span>
-        {!error && suffix && (
-          <span className="font-mono tabular-nums text-text-faint">{suffix}</span>
-        )}
-      </p>
-      <p className="font-mono text-xs whitespace-nowrap tabular-nums text-text-faint">
-        {shortScoreLine(game)}
-      </p>
+    <>
+      <GameStatus
+        icon={game.status === 'playing' && <StateIcon game={game} />}
+        title={headline(game)}
+        suffix={playing ? `· ${elapsed(now - Date.parse(game.waiting!.since))}` : undefined}
+        detail={shortScoreLine(game)}
+      />
       {/* Heard, not seen: the move just made and what it means, once per change. */}
       <p aria-live="polite" className="sr-only">
         {announcement(game)}
       </p>
-      {running && !mayRemind(game, now, PATIENCE_MS) && (
-        <Button size="sm" variant="secondary" onClick={onStop} disabled={sending}>
-          <Square data-icon="inline-start" />
-          Stop
-        </Button>
-      )}
-      {mayRemind(game, now, PATIENCE_MS) && (
-        <Button size="sm" variant="secondary" onClick={onRemind} disabled={sending}>
-          <Play data-icon="inline-start" />
-          Continue
-        </Button>
-      )}
-    </div>
+    </>
+  )
+}
+
+/**
+ * Stop or Continue the player, one control in one place: present for as long as the agent holds
+ * the board, so the row keeps its width as it starts, stops and finishes. Continue also asks again
+ * once a move is overdue.
+ */
+export function PlayToggle({
+  game,
+  now,
+  sending,
+  onContinue,
+  onStop,
+}: {
+  game: Game
+  now: number
+  sending: boolean
+  onContinue: () => void
+  onStop: () => void
+}) {
+  if (game.mode !== 'agent') return null
+  const remind = mayRemind(game, now, PATIENCE_MS)
+  if (agentPlays(game) && game.waiting?.status === 'thinking' && !remind)
+    return (
+      <IconButton aria-label="Stop" tooltip="Stop" size="lg" onClick={onStop} disabled={sending}>
+        <Square />
+      </IconButton>
+    )
+  return (
+    <IconButton
+      aria-label="Continue"
+      tooltip="Continue"
+      size="lg"
+      onClick={onContinue}
+      disabled={sending || !remind}
+    >
+      <Play />
+    </IconButton>
+  )
+}
+
+const OTHER_OPPONENT: Record<Opponent, { opponent: Opponent; label: string }> = {
+  agent: { opponent: 'decision', label: 'Use the decision model' },
+  decision: { opponent: 'agent', label: 'Use the chat agent' },
+}
+
+/**
+ * A failed request, or a player that stopped without being asked to, with the way out. A stop the
+ * person pressed is only "Paused" in the status: nothing went wrong.
+ */
+export function TurnProblem({
+  game,
+  error,
+  sending,
+  onRetry,
+  onContinue,
+  onOpponent,
+}: {
+  game: Game
+  error: string | null
+  sending: boolean
+  onRetry: () => void
+  onContinue: () => void
+  onOpponent: (opponent: Opponent) => void
+}) {
+  if (error)
+    return (
+      <GameProblem
+        title={error}
+        actions={
+          <Button size="sm" variant="secondary" onClick={onRetry}>
+            <RefreshCw data-icon="inline-start" />
+            Retry
+          </Button>
+        }
+      />
+    )
+  const waiting = game.waiting
+  if (!agentPlays(game) || waiting?.status !== 'unreachable' || stopped(game)) return null
+  const other = OTHER_OPPONENT[game.opponent ?? 'agent']
+  return (
+    <GameProblem
+      title={`${playerName(game)} stopped`}
+      description={waiting.reason}
+      actions={
+        <>
+          <Button size="sm" variant="secondary" onClick={onContinue} disabled={sending}>
+            <Play data-icon="inline-start" />
+            Try again
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onOpponent(other.opponent)}
+            disabled={sending}
+          >
+            {other.label}
+          </Button>
+        </>
+      }
+    />
   )
 }
 

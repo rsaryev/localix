@@ -14,7 +14,7 @@ import {
 import { other } from '../shared/rules'
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
 import { askDecision } from './ask-decision'
-import { openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
+import { decisionTurns, openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
 import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/plugin-sdk/opponent'
 
 /**
@@ -32,8 +32,9 @@ import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/plugin-sdk/oppo
  * asked for anything: a tool that woke the agent would wake it again on every move it made.
  *
  * Who answers the other colour depends on the table's `opponent`: the agent is woken and moves
- * with its tool later; the decision model is asked here and its move is played before the person's
- * request answers. Either way the person's own move is written first, so the board shows it at once.
+ * with its tool later; the decision model is asked here, after the person's request has answered
+ * with the model thinking (`decisionTurns`), and its move lands through the store feed. Either way
+ * the person's own move is written and returned first, so the board shows it at once.
  */
 export function createGameService(input: {
   /** The session's folder for this plugin; rejects for a session the user does not own. */
@@ -74,6 +75,26 @@ export function createGameService(input: {
     )
   }
 
+  const turns = decisionTurns('checkers')
+
+  /**
+   * The decision model's move for the position the table owes now, if it still owes one. A
+   * multi-jump capture is one move (`squares` visits every landing), so one turn plays it whole.
+   */
+  const decisionTurn = async (seat: Seat) => {
+    const game = await (await storeFor(seat)).read()
+    if (game.opponent !== 'decision' || !owesAgentMove(game)) return
+    const key = positionKey(game)
+    const answer = await askDecision(input.decisions, seat, game, now())
+    await update(seat, (latest, at) =>
+      positionKey(latest) !== key || latest.status !== 'playing' || latest.opponent !== 'decision'
+        ? latest
+        : 'squares' in answer
+          ? applyMove(latest, answer.squares, 'agent', at)
+          : { ...latest, waiting: answer.waiting },
+    )
+  }
+
   /**
    * After a person's action: ask the agent for the move it now owes, unless it has been asked for
    * this position already (`again` is the reminder that asks anyway). The answer is recorded only
@@ -85,14 +106,14 @@ export function createGameService(input: {
     const key = positionKey(game)
     const unchanged = (latest: Game) => positionKey(latest) === key && latest.status === 'playing'
     if (game.opponent === 'decision') {
-      const answer = await askDecision(input.decisions, seat, game, now())
-      return update(seat, (latest, at) =>
-        !unchanged(latest) || latest.opponent !== 'decision'
-          ? latest
-          : 'squares' in answer
-            ? applyMove(latest, answer.squares, 'agent', at)
-            : { ...latest, waiting: answer.waiting },
+      // Answer the person now, with the model thinking; its move lands through the store feed.
+      const thinking = await update(seat, (latest, at) =>
+        unchanged(latest) && latest.opponent === 'decision'
+          ? { ...latest, waiting: { since: at, status: 'thinking' } }
+          : latest,
       )
+      turns.start(seat, () => decisionTurn(seat))
+      return thinking
     }
     const waiting = await askAgent(input.wake, seat, game, now())
     return update(seat, (latest) => (unchanged(latest) ? { ...latest, waiting } : latest))
@@ -109,6 +130,8 @@ export function createGameService(input: {
     })
 
   return {
+    /** Resolves once the decision model's turns started so far have landed — for tests. */
+    settled: turns.idle,
     read: async (seat: Seat): Promise<Game> => settle(seat, await (await storeFor(seat)).read()),
 
     // ── What a person does in the view ─────────────────────────────────────────────────────

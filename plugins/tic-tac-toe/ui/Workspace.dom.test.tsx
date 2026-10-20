@@ -28,7 +28,7 @@ const AT = '2026-09-25T10:00:00.000Z'
  * runtime reports is deliberately a different chat from the board's own: the board must never
  * address it.
  */
-function fakeBackend(failFirstRead = false) {
+function fakeBackend(failFirstRead = false, unreachable?: string) {
   let game: Game = newGame({ id: 'g1', first: 'X', now: AT })
   let readFailed = false
   const requests: { path: string; body?: unknown }[] = []
@@ -41,9 +41,18 @@ function fakeBackend(failFirstRead = false) {
         readFailed = true
         throw new Error('Temporary read failure')
       }
+      if (path.startsWith('/rpc/tic-tac-toe/game/opponent')) {
+        game = { ...game, opponent: (body as { opponent: Game['opponent'] }).opponent }
+      }
       if (path.startsWith('/rpc/tic-tac-toe/game/move')) {
         const moved = applyMove(game, (body as { cell: number }).cell, 'you', AT)
-        game = { ...moved, waiting: { since: new Date().toISOString(), status: 'thinking' } }
+        const since = new Date().toISOString()
+        game = {
+          ...moved,
+          waiting: unreachable
+            ? { since, status: 'unreachable', reason: unreachable }
+            : { since, status: 'thinking' },
+        }
       }
       return Response.json(game)
     },
@@ -63,11 +72,11 @@ function fakeBackend(failFirstRead = false) {
   }
 }
 
-async function mount(sessionId: string | null, failFirstRead = false) {
+async function mount(sessionId: string | null, failFirstRead = false, unreachable?: string) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { Workspace } = await import('./Workspace')
-  const backend = fakeBackend(failFirstRead)
+  const backend = fakeBackend(failFirstRead, unreachable)
   let context: PublishedMessageContext | null = null
   const publish = (next: PublishedMessageContext | null) => {
     context = next
@@ -195,6 +204,29 @@ test('the control row says who plays O, beside the new game', async () => {
     expect(view.cell('Opponent: Chat agent')).not.toBeNull()
     expect(view.cell('New game')).not.toBeNull()
     expect(view.host.textContent).toContain('You play X')
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('an opponent that did not move says why over the board, without moving the control row', async () => {
+  const view = await mount('s1', false, 'This app cannot wake a chat.')
+  try {
+    const row = view.host.querySelector('[data-slot="game-control-row"]')!
+    await view.act(async () => view.cell('Cell 5, centre: empty')!.click())
+
+    const problem = view.host.querySelector('[data-slot="game-problem"]')!
+    expect(problem.getAttribute('role')).toBe('alert')
+    expect(problem.textContent).toContain('The agent did not move')
+    expect(problem.textContent).toContain('This app cannot wake a chat.')
+    // The card sits over the board, never in the row above it.
+    expect(row.contains(problem)).toBe(false)
+
+    const button = (label: string) =>
+      Array.from(problem.querySelectorAll('button')).find((b) => b.textContent?.includes(label))
+    expect(button('Ask again')).toBeDefined()
+    await view.act(async () => button('Use the decision model')!.click())
+    expect(view.backend.requests.some(({ path }) => path.includes('/game/opponent'))).toBe(true)
   } finally {
     await view.unmount()
   }

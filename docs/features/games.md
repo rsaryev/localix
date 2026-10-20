@@ -14,8 +14,10 @@ The menu beside **New game** chooses who plays against you at this table:
 - **Chat agent**: each move asks the conversation's agent, which answers through the game's tool.
 
 A new table plays the decision model when a connected OpenRouter account can serve it, and the chat
-agent otherwise. Your choice stays with the table from game to game. When the decision model cannot
-answer, the board says why and offers **Ask again**.
+agent otherwise. Your choice stays with the table from game to game. When the opponent cannot
+answer, a card over the top of the board says why and offers **Ask again** or the other opponent; a
+move that takes too long gets the same card. A failed request shows there too, with **Retry**. The
+row above the board keeps its height in every state, so the board does not move.
 
 These captures show legal saved demo positions in the actual workbenches. They demonstrate the board
 and its controls; no model was called to produce the opponent’s moves.

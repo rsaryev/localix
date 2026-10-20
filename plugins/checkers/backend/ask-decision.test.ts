@@ -98,11 +98,17 @@ describe('the question the decision model is asked', () => {
 })
 
 describe('against the decision model', () => {
-  test('the person’s move is answered by the model’s pick before the request returns', async () => {
+  test('the person’s move answers at once, and the model’s pick lands after it', async () => {
     const model = decisions(firstOption)
     const { games, woke } = setup(model.host)
     await games.setOpponent(SEAT, 'decision')
-    const game = await games.personMove(SEAT, OPEN)
+    // The request does not wait for the model: the person's move is back with the model thinking.
+    const moved = await games.personMove(SEAT, OPEN)
+    expect(moved.moves).toHaveLength(1)
+    expect(moved.turn).toBe('black')
+    expect(moved.waiting).toMatchObject({ status: 'thinking' })
+    await games.settled()
+    const game = await games.read(SEAT)
     expect(game.moves).toHaveLength(2)
     expect(game.moves[1]).toMatchObject({ by: 'agent', side: 'black' })
     expect(game.turn).toBe('white')
@@ -117,14 +123,18 @@ describe('against the decision model', () => {
       decisions((ask) => (typeof answer === 'function' ? answer(ask) : answer)).host,
     )
     await games.setOpponent(SEAT, 'decision')
-    const missed = await games.personMove(SEAT, OPEN)
+    await games.personMove(SEAT, OPEN)
+    await games.settled()
+    const missed = await games.read(SEAT)
     expect(missed.turn).toBe('black')
     expect(missed.waiting).toMatchObject({
       status: 'unreachable',
       reason: expect.stringContaining('No decision model is connected'),
     })
     answer = firstOption
-    expect((await games.remind(SEAT)).turn).toBe('white')
+    await games.remind(SEAT)
+    await games.settled()
+    expect((await games.read(SEAT)).turn).toBe('white')
   })
 
   test('a new table plays the decision model when one can answer, else the agent', async () => {
@@ -149,7 +159,9 @@ describe('against the decision model', () => {
     await games.setOpponent(SEAT, 'agent')
     await games.personMove(SEAT, OPEN)
     expect(woke).toHaveLength(1)
-    const game = await games.setOpponent(SEAT, 'decision')
+    await games.setOpponent(SEAT, 'decision')
+    await games.settled()
+    const game = await games.read(SEAT)
     expect(game.moves).toHaveLength(2)
     expect(game.opponent).toBe('decision')
   })

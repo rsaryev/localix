@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { openJsonStore, seal, type DecisionHost } from '@localixai/plugin-sdk/backend'
+import {
+  decisionTurns,
+  openJsonStore,
+  seal,
+  type DecisionHost,
+} from '@localixai/plugin-sdk/backend'
 import { DECISION_HOLDS_SEAT, defaultOpponent, type Opponent } from '@localixai/plugin-sdk/opponent'
 
 import {
@@ -29,8 +34,9 @@ import { askDecision } from './ask-decision'
  * is never asked for anything.
  *
  * Who fills the agent's seat depends on the table's `opponent`: the agent is woken and moves with
- * its tool later; the decision model is asked here — from the finished rounds only — and its move
- * is sealed and played before the person's request answers.
+ * its tool later; the decision model is asked here — from the finished rounds only — after the
+ * person's request has answered with the model thinking (`decisionTurns`), and its move is sealed
+ * and played when it lands, reaching the view through the store feed.
  */
 export function createGameService(input: {
   /** The session's folder for this plugin; rejects for a session the user does not own. */
@@ -74,6 +80,23 @@ export function createGameService(input: {
   const play = (seat: Seat, player: Player, move: Move) =>
     update(seat, (game, at) => applyMove(game, seal(move, player, at), at))
 
+  const turns = decisionTurns('rock-paper-scissors')
+
+  /** The decision model's sealed move for the round the table owes now, if it still owes one. */
+  const decisionTurn = async (seat: Seat) => {
+    const game = await (await storeFor(seat)).read()
+    if (game.opponent !== 'decision' || !owesAgentMove(game)) return
+    const key = roundKey(game)
+    const answer = await askDecision(input.decisions, seat, game, now())
+    await update(seat, (latest, at) =>
+      roundKey(latest) !== key || !owesAgentMove(latest) || latest.opponent !== 'decision'
+        ? latest
+        : 'move' in answer
+          ? applyMove(latest, seal(answer.move, 'agent', at), at)
+          : { ...latest, waiting: answer.waiting },
+    )
+  }
+
   /**
    * After a person's action: ask the agent for the move it now owes, unless it was asked for this
    * round already (`again` is the reminder that asks anyway). The answer is recorded only while
@@ -85,20 +108,22 @@ export function createGameService(input: {
     const key = roundKey(game)
     const unchanged = (latest: Game) => roundKey(latest) === key && owesAgentMove(latest)
     if (game.opponent === 'decision') {
-      const answer = await askDecision(input.decisions, seat, game, now())
-      return update(seat, (latest, at) =>
-        !unchanged(latest) || latest.opponent !== 'decision'
-          ? latest
-          : 'move' in answer
-            ? applyMove(latest, seal(answer.move, 'agent', at), at)
-            : { ...latest, waiting: answer.waiting },
+      // Answer the person now, with the model thinking; its sealed move lands through the feed.
+      const thinking = await update(seat, (latest, at) =>
+        unchanged(latest) && latest.opponent === 'decision'
+          ? { ...latest, waiting: { since: at, status: 'thinking' } }
+          : latest,
       )
+      turns.start(seat, () => decisionTurn(seat))
+      return thinking
     }
     const waiting = await askAgent(input.wake, seat, game, now())
     return update(seat, (latest) => (unchanged(latest) ? { ...latest, waiting } : latest))
   }
 
   return {
+    /** Resolves once the decision model's turns started so far have landed — for tests. */
+    settled: turns.idle,
     read: async (seat: Seat): Promise<Game> => settle(seat, await (await storeFor(seat)).read()),
 
     // ── What a person does in the view ─────────────────────────────────────────────────────

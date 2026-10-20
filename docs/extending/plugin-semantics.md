@@ -49,7 +49,11 @@ else `null`.
 A game whose other side can be the decision model keeps the choice with its table
 (`@localixai/plugin-sdk/opponent`), asks for a turn with `askDecisionForTurn` (one `choice` question
 over the legal moves; a miss comes back as the reason the board shows), and offers the choice with
-`OpponentMenu` from `@localixai/kit/opponent-menu`. The bundled games are the examples.
+`OpponentMenu` from `@localixai/kit/opponent-menu`. Show the miss with `GameProblem` from
+`@localixai/kit/game-status`, over the board, with Ask again and the other opponent as its actions.
+The bundled games are the examples. Ask after the person's request has answered, with
+`decisionTurns` from `@localixai/plugin-sdk/backend`: the route records the model as thinking and
+returns the person's move at once, and the model's move lands through the store feed.
 
 ## Follow your own changes
 

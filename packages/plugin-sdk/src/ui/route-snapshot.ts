@@ -77,10 +77,15 @@ export function usePolledSnapshot<T>({
       scope.current.epoch++
     }
   }, [path])
+  // The last snapshot shown, as JSON. A read that brings back the same data keeps the object it
+  // already rendered: every poll and every store nudge used to hand the view a new object, so a board
+  // re-rendered whole and republished its message context while nothing on it had changed.
+  const shownJson = useRef<string | null>(null)
   const [pending, setPending] = useState(0)
   const tickets = useMemo(() => ({ path, issued: 0, shown: 0, sending: 0 }), [path])
   useEffect(() => {
     setPending(0)
+    shownJson.current = null
     setState({ snapshot: null, error: null, loading: true })
   }, [path])
 
@@ -88,7 +93,18 @@ export function usePolledSnapshot<T>({
     (ticket: number, snapshot: T) => {
       if (ticket < tickets.shown) return
       tickets.shown = ticket
-      setState({ snapshot, error: null, loading: false })
+      const json = JSON.stringify(snapshot)
+      const same = json === shownJson.current
+      shownJson.current = json
+      setState((current) =>
+        same && current.snapshot !== null && current.error === null && !current.loading
+          ? current
+          : {
+              snapshot: same && current.snapshot !== null ? current.snapshot : snapshot,
+              error: null,
+              loading: false,
+            },
+      )
     },
     [tickets],
   )

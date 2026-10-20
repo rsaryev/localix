@@ -30,7 +30,7 @@ const first = () => 0
  * The ACTIVE session the runtime reports is deliberately a different chat from the board's own:
  * the board must never address it.
  */
-function fakeBackend() {
+function fakeBackend(unreachable?: string) {
   let game: Game = {
     ...newGame({ id: 'g1', mode: 'user', now: AT, random: first }),
     board: [2, ...Array<number>(15).fill(0)],
@@ -47,8 +47,12 @@ function fakeBackend() {
         game = {
           ...game,
           mode: (body as { mode: Mode }).mode,
-          waiting: { since: new Date().toISOString(), status: 'thinking' },
+          waiting: unreachable
+            ? { since: new Date().toISOString(), status: 'unreachable', reason: unreachable }
+            : { since: new Date().toISOString(), status: 'thinking' },
         }
+      if (path.startsWith('/rpc/game-2048/game/opponent'))
+        game = { ...game, opponent: (body as { opponent: Game['opponent'] }).opponent }
       return Response.json(game)
     },
   })
@@ -67,11 +71,11 @@ function fakeBackend() {
   }
 }
 
-async function mount(sessionId: string | null) {
+async function mount(sessionId: string | null, unreachable?: string) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { Workspace } = await import('./Workspace')
-  const backend = fakeBackend()
+  const backend = fakeBackend(unreachable)
   let context: PublishedMessageContext | null = null
   const host = document.createElement('div')
   document.body.append(host)
@@ -182,8 +186,9 @@ test('handing the board to the agent shows it playing, and its batch lands move 
       ),
     ).toBe(true)
     expect(view.host.textContent).toContain('Playing')
-    // While the person watches, the row says who plays the board.
+    // While the person watches, the row says who plays the board, and offers to stop it.
     expect(view.host.querySelector('[aria-label="Opponent: Chat agent"]')).not.toBeNull()
+    expect(view.host.querySelector('[aria-label="Stop"]')).not.toBeNull()
 
     view.backend.agentPlays(['right', 'down', 'left'])
     await view.poll()
@@ -206,6 +211,31 @@ test('a board that belongs to no chat says so, and asks the server nothing', asy
   try {
     expect(view.host.textContent).toContain('Open 2048 from a chat')
     expect(view.backend.requests).toEqual([])
+  } finally {
+    await view.unmount()
+  }
+})
+
+test('a player that stopped on its own says why over the board, with the ways out', async () => {
+  const view = await mount('s1', 'This app cannot wake a chat.')
+  try {
+    const agent = view.host.querySelector<HTMLInputElement>('input[type="radio"][value="agent"]')!
+    await view.act(async () => agent.click())
+
+    const problem = view.host.querySelector('[data-slot="game-problem"]')!
+    expect(problem.getAttribute('role')).toBe('alert')
+    expect(problem.textContent).toContain('The agent stopped')
+    expect(problem.textContent).toContain('This app cannot wake a chat.')
+    // The card sits over the board, never in the row above it, which offers Continue instead.
+    const row = view.host.querySelector('[data-slot="game-control-row"]')!
+    expect(row.contains(problem)).toBe(false)
+    expect(row.querySelector<HTMLButtonElement>('[aria-label="Continue"]')?.disabled).toBe(false)
+
+    const button = (label: string) =>
+      Array.from(problem.querySelectorAll('button')).find((b) => b.textContent?.includes(label))
+    expect(button('Try again')).toBeDefined()
+    await view.act(async () => button('Use the decision model')!.click())
+    expect(view.backend.requests.some(({ path }) => path.includes('/game/opponent'))).toBe(true)
   } finally {
     await view.unmount()
   }

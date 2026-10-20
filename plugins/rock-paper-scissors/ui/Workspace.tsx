@@ -6,6 +6,7 @@ import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { OpponentMenu } from '@localixai/kit/opponent-menu'
+import { GameControlRow } from '@localixai/kit/game-status'
 
 import { theirMove, viewerMayMove, viewOwesAgentMove, type Outcome } from '../shared/game'
 import { gameMessageContext } from './bindings'
@@ -13,15 +14,17 @@ import { nextOpener, opponentName, opponentTitle, verdictLine } from './game/cop
 import { Hand } from './game/Hand'
 import { MovePicker } from './game/MovePicker'
 import { Scoreboard } from './game/Scoreboard'
-import { TurnStatus } from './game/TurnStatus'
+import { TurnProblem, TurnStatus } from './game/TurnStatus'
 import { useGame } from './game/useGame'
 import { useVerified } from './game/useVerified'
 import { useNow } from './useNow'
 import './game/table.css'
 
 /**
- * This chat's table, top to bottom: the score and who plays the other seat, what the round waits for, the two hands facing each
- * other, and the person's three choices — or, once revealed, why the round went as it did.
+ * This chat's table, top to bottom: the control row every game shares (what the round waits for,
+ * and who plays the other seat), the score, the two hands facing each other, and the person's three
+ * choices — or, once revealed, why the round went as it did. Nothing in the column changes height
+ * with the state: what stopped the round floats over the hands ({@link TurnProblem}).
  *
  * The agent's hand shows only what the person may see — nothing, a sealed card with its digest,
  * or the revealed move with the browser's own digest check. The view publishes exactly the round
@@ -97,46 +100,53 @@ export function Workspace({
         className="mx-auto flex min-h-full flex-col items-center justify-center gap-6 px-4 py-8"
         style={{ maxWidth: TABLE_WIDTH }}
       >
-        <div className="flex flex-col items-center gap-1">
-          <Scoreboard record={view.record} round={round.number} opponent={opponentTitle(view)} />
-          <OpponentMenu
-            heading="Who plays against you"
-            value={view.opponent ?? 'agent'}
-            disabled={state.sending}
-            onChange={(opponent) => void state.setOpponent(opponent)}
-          />
-        </div>
-        <TurnStatus
-          view={view}
-          now={now}
-          error={state.error}
-          sending={state.sending}
-          onRemind={() => void state.remind()}
+        <GameControlRow
+          status={<TurnStatus view={view} now={now} />}
+          controls={
+            <OpponentMenu
+              heading="Who plays against you"
+              value={view.opponent ?? 'agent'}
+              disabled={state.sending}
+              onChange={(opponent) => void state.setOpponent(opponent)}
+            />
+          }
         />
-        <div className="flex w-full items-start gap-2">
-          <Hand
-            title="You"
-            side="left"
-            move={round.mine}
-            sealedFromOpponent={round.mine !== null && round.outcome === null}
-            hiddenFrom={opponentName(view).toLowerCase()}
-            {...(sides ? { result: sides.you } : {})}
-          />
-          <span
-            className="mt-[3.6rem] shrink-0 font-mono text-2xs tracking-widest text-text-faint"
-            aria-hidden
-          >
-            VS
-          </span>
-          <Hand
-            title={opponentTitle(view)}
-            side="right"
-            move={theirMove(round)}
-            {...(round.theirs ? { digest: round.theirs.digest } : {})}
-            thinking={agentTurn && view.waiting?.status !== 'unreachable'}
-            unreachable={agentTurn && view.waiting?.status === 'unreachable'}
-            verified={verified}
-            {...(sides ? { result: sides.agent } : {})}
+        <Scoreboard record={view.record} opponent={opponentTitle(view)} />
+        <div className="relative w-full">
+          <div className="flex w-full items-start gap-2">
+            <Hand
+              title="You"
+              side="left"
+              move={round.mine}
+              sealedFromOpponent={round.mine !== null && round.outcome === null}
+              hiddenFrom={opponentName(view).toLowerCase()}
+              {...(sides ? { result: sides.you } : {})}
+            />
+            <span
+              className="mt-[3.6rem] shrink-0 font-mono text-2xs tracking-widest text-text-faint"
+              aria-hidden
+            >
+              VS
+            </span>
+            <Hand
+              title={opponentTitle(view)}
+              side="right"
+              move={theirMove(round)}
+              {...(round.theirs ? { digest: round.theirs.digest } : {})}
+              thinking={agentTurn && view.waiting?.status !== 'unreachable'}
+              unreachable={agentTurn && view.waiting?.status === 'unreachable'}
+              verified={verified}
+              {...(sides ? { result: sides.agent } : {})}
+            />
+          </div>
+          <TurnProblem
+            view={view}
+            now={now}
+            error={state.error}
+            sending={state.sending}
+            onRetry={() => state.refresh()}
+            onRemind={() => void state.remind()}
+            onOpponent={(opponent) => void state.setOpponent(opponent)}
           />
         </div>
         <div className="flex min-h-28 w-full flex-col items-center justify-center gap-3">

@@ -14,8 +14,8 @@ import { BOARD_GAP, HEADING, STATUS_ROW, pairWidth, useBoardLayout } from './lay
  * (`useBoardLayout`), so the tiles grow with the pane instead of sitting small in its middle.
  *
  * The board where the action is carries a quiet outline: the agent's waters on the person's turn,
- * their own fleet while the agent aims. `overlay` (the result card) sits over the pair, so the
- * final position stays visible behind it.
+ * their own fleet while the agent aims. `overlay` (the problem and result cards) sits over the
+ * pair, so the position stays visible behind it.
  */
 export function Boards({
   view,
@@ -28,7 +28,7 @@ export function Boards({
   /** Whether the person may fire now. */
   playable: boolean
   onFire: (cell: number) => void
-  /** The status row, set right above the pair and as wide as it — as in the other games. */
+  /** The control row, set right above the pair and as wide as it — as in the other games. */
   status: ReactNode
   overlay?: ReactNode
 }) {
@@ -62,10 +62,7 @@ export function Boards({
 
   return (
     <div ref={space} className="flex min-h-0 w-full flex-1 flex-col items-center justify-center">
-      <div
-        className="flex items-center justify-between gap-x-3"
-        style={{ width: pairWidth(cell), minHeight: STATUS_ROW }}
-      >
+      <div className="flex items-center" style={{ width: pairWidth(cell), height: STATUS_ROW }}>
         {status}
       </div>
       <div className="relative flex items-start justify-center" style={{ gap: BOARD_GAP }}>

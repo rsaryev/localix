@@ -1,67 +1,134 @@
-import { CircleAlert, CircleX, Keyboard, Play, RotateCcw, Square, Trophy } from 'lucide-react'
+import {
+  CircleAlert,
+  CircleX,
+  Keyboard,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Square,
+  Trophy,
+} from 'lucide-react'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
+import { GameProblem, GameStatus } from '@localixai/kit/game-status'
+import { IconButton } from '@localixai/kit/icon-button'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 
-import { modelPlays, type Game } from '../../shared/game'
+import { modelPlays, stopped, type Game } from '../../shared/game'
 import { announcement, headline, mayContinue, resultLine, scoreLine, spokenHeadline } from './copy'
 
 /**
- * Two surfaces for the game's state, so nothing sits under the board — the same pair as the other
- * games: {@link TurnStatus} beside the controls (the state, the score, Stop or Continue while the
- * model plays) and {@link GameOver}, the card that rises over the board when the game ends.
+ * The game's state on the same surfaces as the other games, none of them under the board and none
+ * that moves it: {@link TurnStatus} (the state and the score) and {@link PlayToggle} in the control
+ * row, {@link TurnProblem} over the top of the board when the model stopped on its own, and
+ * {@link GameOver}, the card that rises over the board when the game ends.
  */
 export function TurnStatus({
   game,
   running,
-  error,
+}: {
+  game: Game
+  /** The person's snake is moving now. */
+  running: boolean
+}) {
+  return (
+    <>
+      <GameStatus
+        icon={game.status === 'playing' && <StateIcon game={game} />}
+        title={headline(game, running)}
+        detail={scoreLine(game)}
+      />
+      <p aria-live="polite" className="sr-only">
+        {running ? '' : announcement(game)}
+      </p>
+    </>
+  )
+}
+
+/**
+ * Stop or Continue the model, one control in one place: present for as long as the model holds the
+ * board, so the row keeps its width as the model starts, stops and finishes.
+ */
+export function PlayToggle({
+  game,
   sending,
   onContinue,
   onStop,
 }: {
   game: Game
-  /** The person's snake is moving now. */
-  running: boolean
-  error: string | null
   sending: boolean
   onContinue: () => void
   onStop: () => void
 }) {
-  const playing = modelPlays(game) && game.waiting?.status === 'thinking'
-  const reason = modelPlays(game) && game.waiting?.status === 'unreachable' && game.waiting.reason
+  if (game.mode !== 'model') return null
+  if (modelPlays(game) && game.waiting?.status === 'thinking')
+    return (
+      <IconButton aria-label="Stop" tooltip="Stop" size="lg" onClick={onStop} disabled={sending}>
+        <Square />
+      </IconButton>
+    )
   return (
-    // Sized by its content, so a narrow pane wraps the controls below it instead of over it.
-    <div className="flex min-h-20 flex-auto flex-col items-start justify-center gap-1">
-      <p
-        role={error ? 'alert' : undefined}
-        className={cn(
-          'flex items-center gap-2 text-base font-medium whitespace-nowrap',
-          error ? 'text-status-warning' : 'text-foreground',
-        )}
-      >
-        {!error && game.status === 'playing' && <StateIcon game={game} />}
-        <span>{error ?? headline(game, running)}</span>
-      </p>
-      <p className="font-mono text-xs whitespace-nowrap tabular-nums text-text-faint">
-        {scoreLine(game)}
-      </p>
-      {reason && <p className="text-xs text-status-warning">{reason}</p>}
-      <p aria-live="polite" className="sr-only">
-        {running ? '' : announcement(game)}
-      </p>
-      {playing && (
-        <Button size="sm" variant="secondary" onClick={onStop} disabled={sending}>
-          <Square data-icon="inline-start" />
-          Stop
-        </Button>
-      )}
-      {mayContinue(game) && (
-        <Button size="sm" variant="secondary" onClick={onContinue} disabled={sending}>
-          <Play data-icon="inline-start" />
-          Continue
-        </Button>
-      )}
-    </div>
+    <IconButton
+      aria-label="Continue"
+      tooltip="Continue"
+      size="lg"
+      onClick={onContinue}
+      disabled={sending || !mayContinue(game)}
+    >
+      <Play />
+    </IconButton>
+  )
+}
+
+/**
+ * A failed request, or a model that stopped without being asked to, with the way out. A stop the
+ * person pressed is only "Paused" in the status: nothing went wrong.
+ */
+export function TurnProblem({
+  game,
+  error,
+  sending,
+  onRetry,
+  onContinue,
+  onPlayYourself,
+}: {
+  game: Game
+  error: string | null
+  sending: boolean
+  onRetry: () => void
+  onContinue: () => void
+  onPlayYourself: () => void
+}) {
+  if (error)
+    return (
+      <GameProblem
+        title={error}
+        actions={
+          <Button size="sm" variant="secondary" onClick={onRetry}>
+            <RefreshCw data-icon="inline-start" />
+            Retry
+          </Button>
+        }
+      />
+    )
+  const waiting = game.waiting
+  if (!modelPlays(game) || waiting?.status !== 'unreachable' || stopped(game)) return null
+  return (
+    <GameProblem
+      title="The decision model stopped"
+      description={waiting.reason}
+      actions={
+        <>
+          <Button size="sm" variant="secondary" onClick={onContinue} disabled={sending}>
+            <Play data-icon="inline-start" />
+            Try again
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onPlayYourself} disabled={sending}>
+            Play it yourself
+          </Button>
+        </>
+      }
+    />
   )
 }
 

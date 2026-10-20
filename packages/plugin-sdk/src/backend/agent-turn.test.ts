@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { askAgentForTurn, askDecisionForTurn, type Wake } from './agent-turn'
+import { askAgentForTurn, askDecisionForTurn, decisionTurns, type Wake } from './agent-turn'
 import type { DecisionHost, DecisionOutcome } from './decision'
 
 const seat = { userId: 'me', sessionId: 's1' }
@@ -83,4 +83,51 @@ test('a decision without a playable pick shows why, like an undelivered wake', a
   expect(await askDecisionForTurn(host(outside), seat, decisionTurn, 'T')).toMatchObject({
     waiting: { reason: 'The decision model could not answer.' },
   })
+})
+
+test('decision turns at one table run one after another, and idle waits for all of them', async () => {
+  const turns = decisionTurns('test')
+  const log: string[] = []
+  let release = () => {}
+  const first = new Promise<void>((resolve) => (release = resolve))
+  turns.start(seat, async () => {
+    log.push('first:start')
+    await first
+    log.push('first:end')
+  })
+  turns.start(seat, async () => {
+    log.push('second')
+  })
+  // Another table is not held up by this one.
+  turns.start({ ...seat, sessionId: 's2' }, async () => {
+    log.push('other')
+  })
+  await Promise.resolve()
+  await Promise.resolve()
+  expect(log).toEqual(['first:start', 'other'])
+  const idle = turns.idle()
+  release()
+  await idle
+  expect(log).toEqual(['first:start', 'other', 'first:end', 'second'])
+})
+
+test('a decision turn that throws is logged, and the next one still runs', async () => {
+  const turns = decisionTurns('test')
+  const warn = console.warn
+  const warned: unknown[] = []
+  console.warn = (...args: unknown[]) => void warned.push(args[0])
+  try {
+    let ran = false
+    turns.start(seat, async () => {
+      throw new Error('store failed')
+    })
+    turns.start(seat, async () => {
+      ran = true
+    })
+    await turns.idle()
+    expect(ran).toBe(true)
+    expect(warned).toEqual(["[test] the decision model's turn failed"])
+  } finally {
+    console.warn = warn
+  }
 })
