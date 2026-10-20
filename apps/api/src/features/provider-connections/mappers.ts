@@ -25,6 +25,7 @@ export const toDto = (record: ProviderConnectionRecord): ProviderConnection => {
     hasApiKey: keys.length > 0,
     keyCount: keys.length,
     keys,
+    ...(record.keys[0]?.settings ? { settings: { ...record.keys[0].settings } } : {}),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   }

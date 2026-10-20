@@ -10,7 +10,9 @@ import type { ReasoningEffort } from '@localixai/agent'
 
 import type { CatalogEntry } from '../catalog/catalog'
 import { CODEX_PROVIDER_ID } from '../catalog/normalize'
+import { fillTemplate } from '../catalog/settings'
 import type { WireProfile } from '../wire/prompt'
+import { CLOUD_FAMILIES, cloudModelFor, cloudProfile } from './clouds'
 
 /** How a request reaches the provider for this run: credential, address, headers. */
 export interface ProviderAccess {
@@ -20,6 +22,8 @@ export interface ProviderAccess {
   baseURL?: string
   headers?: Record<string, string>
   fetch?: typeof globalThis.fetch
+  /** What the connection names besides its key (`AWS_REGION`, `AZURE_RESOURCE_NAME`, …). */
+  settings?: Readonly<Record<string, string>>
 }
 
 const reasons = (entry: CatalogEntry) => entry.model.reasoning.length > 0
@@ -35,7 +39,8 @@ function openrouterEffort(effort: ReasoningEffort): string {
  * with it.
  */
 export function addressOf(entry: CatalogEntry, access: ProviderAccess): string | undefined {
-  const route = entry.route.baseURL
+  // An address naming the connection's settings (`https://${AZURE_RESOURCE_NAME}…`) is filled first.
+  const route = entry.route.baseURL && fillTemplate(entry.route.baseURL, access.settings)
   if (!access.baseURL) return route
   const base = entry.provider.baseURL
   if (route && base && route !== base && route.startsWith(base))
@@ -43,24 +48,31 @@ export function addressOf(entry: CatalogEntry, access: ProviderAccess): string |
   return access.baseURL
 }
 
+/**
+ * OpenAI's requests: nothing is stored there, so the history travels with every request,
+ * reasoning as encrypted items so the next request can continue it. The session id keys the cache.
+ */
+function openaiOptions(entry: CatalogEntry): WireProfile['requestOptions'] {
+  return ({ sessionId, reasoningEffort }) => ({
+    store: false,
+    promptCacheKey: sessionId,
+    ...(reasons(entry) && reasoningEffort !== 'off'
+      ? { include: ['reasoning.encrypted_content'], reasoningSummary: 'auto' }
+      : {}),
+  })
+}
+
 /** How requests to one provider family are shaped. */
 export function profileFor(entry: CatalogEntry): WireProfile {
   const temperature = entry.model.temperature
+  if (CLOUD_FAMILIES.has(entry.route.family)) return cloudProfile(entry, openaiOptions(entry))
   switch (entry.route.family) {
     case 'openai':
       return {
         namespace: 'openai',
         cacheBreakpoints: false,
         temperature,
-        // Nothing is stored at OpenAI: the history travels with every request, reasoning as
-        // encrypted items so the next request can continue it. The session id keys the cache.
-        requestOptions: ({ sessionId, reasoningEffort }) => ({
-          store: false,
-          promptCacheKey: sessionId,
-          ...(reasons(entry) && reasoningEffort !== 'off'
-            ? { include: ['reasoning.encrypted_content'], reasoningSummary: 'auto' }
-            : {}),
-        }),
+        requestOptions: openaiOptions(entry),
         // The ChatGPT backend refuses a requested output limit.
         ...(entry.provider.id === CODEX_PROVIDER_ID ? { refusesOutputLimit: true } : {}),
       }
@@ -87,7 +99,8 @@ export function profileFor(entry: CatalogEntry): WireProfile {
       }
     case 'gateway':
       return { namespace: 'gateway', cacheBreakpoints: false, temperature }
-    case 'openai-compatible':
+    default:
+      // The OpenAI-compatible wire: the clouds were shaped above.
       return entry.provider.local
         ? {
             namespace: entry.provider.id,
@@ -117,6 +130,7 @@ export async function languageModelFor(
 ): Promise<LanguageModelV4> {
   const { apiKey, headers, fetch } = access
   const baseURL = addressOf(entry, access)
+  if (CLOUD_FAMILIES.has(entry.route.family)) return cloudModelFor(entry, access, baseURL)
   const common = {
     ...(baseURL ? { baseURL } : {}),
     ...(headers ? { headers } : {}),
@@ -150,7 +164,8 @@ export async function languageModelFor(
       const { createGateway } = await import('@ai-sdk/gateway')
       return createGateway({ ...common, ...(apiKey ? { apiKey } : {}) }).languageModel(id)
     }
-    case 'openai-compatible': {
+    default: {
+      // The OpenAI-compatible wire: the clouds were served above.
       const { createOpenAICompatible } = await import('@ai-sdk/openai-compatible')
       if (!baseURL) throw new Error(`${entry.provider.name} has no address to send requests to`)
       return createOpenAICompatible({

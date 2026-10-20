@@ -1,9 +1,9 @@
 import { LOCAL_PROVIDER_ID, LocalConnectPanel } from './LocalConnectPanel'
 import { useState, type ReactNode } from 'react'
-import { Check, Copy, ExternalLink, KeyRound, LogIn, Plus, X } from 'lucide-react'
+import { ExternalLink, KeyRound, LogIn, Plus, X } from 'lucide-react'
 import type { ProviderEntry } from '@localixai/agent/catalog'
+import type { ApiKeyConnectionOptions } from '../useConnections'
 import { toast } from '@/shared/lib/notify'
-import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Input } from '@localixai/kit/input'
@@ -14,7 +14,9 @@ import { Spinner } from '@localixai/kit/spinner'
 import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { ExternalAnchor } from '@/shared/ui/external-anchor'
+import { DeviceAuthorizationStatus, type DeviceInfo } from './DeviceAuthorizationStatus'
 import { PickerPanelTitle } from './PickerPanelTitle'
+import { ConnectionSettingsFields, useConnectionSettings } from './ConnectionSettingsFields'
 
 interface AddConnectionFormProps {
   /** The narrow layout's workload/provider switcher; it takes the title's place below md. */
@@ -27,7 +29,7 @@ interface AddConnectionFormProps {
   /** One-line explanation of what the OAuth login uses / how it's billed. */
   oauthDescription?: string
   onAdded: () => void
-  onAddApiKey: (label: string, apiKey: string, opts?: { extraKeys?: string[] }) => void
+  onAddApiKey: (label: string, apiKey: string, opts?: ApiKeyConnectionOptions) => void
   onAddOAuth: (
     label: string,
   ) => void | Promise<void | { mode: string; userCode?: string; verificationUri?: string }>
@@ -37,56 +39,6 @@ interface AddConnectionFormProps {
  *  node (and its focus) to the wrong value when a middle row is removed. */
 let nextKeyRowId = 0
 const emptyKeyRow = () => ({ id: `key-${nextKeyRowId++}`, value: '' })
-
-interface DeviceInfo {
-  userCode?: string
-  verificationUri?: string
-}
-
-export function DeviceAuthorizationStatus({
-  deviceInfo,
-  copied,
-  onCopy,
-}: {
-  deviceInfo: DeviceInfo
-  copied: boolean
-  onCopy: () => void
-}) {
-  return (
-    <div className="mt-2 flex flex-col gap-2 border-y border-border-faint py-3">
-      <span className="text-2xs leading-snug text-text-soft">
-        1. Open{' '}
-        {deviceInfo.verificationUri ? (
-          <ExternalAnchor
-            href={deviceInfo.verificationUri}
-            systemBrowser
-            className="text-foreground underline underline-offset-2"
-          >
-            {deviceInfo.verificationUri}
-          </ExternalAnchor>
-        ) : (
-          'the provider verification page'
-        )}{' '}
-        and enter this code:
-      </span>
-      <div className="flex items-center gap-2">
-        {/* Foreground veil, not `bg-background`: that is the WINDOW ground — denser than the
-            popover this form lives in, so the device code read as a black plate on it. */}
-        <span className="select-all rounded-md border border-border-soft bg-foreground/[0.06] px-3 py-1.5 font-mono text-base tracking-[0.3em] text-foreground">
-          {deviceInfo.userCode}
-        </span>
-        <Button variant="outline" size="lg" onClick={onCopy}>
-          {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
-      </div>
-      <span className="inline-flex items-center gap-1.5 text-2xs leading-snug text-text-soft">
-        <ActivityOrb className="size-3 text-status-info" />
-        Waiting for authorization. The connection appears here automatically once approved.
-      </span>
-    </div>
-  )
-}
 
 export function AddConnectionForm({
   nav,
@@ -103,6 +55,7 @@ export function AddConnectionForm({
   const [busy, setBusy] = useState(false)
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null)
   const { copied, copy } = useCopied()
+  const cloud = useConnectionSettings(provider)
 
   const trimmedKeys = keys.map((k) => k.value.trim()).filter(Boolean)
 
@@ -110,10 +63,11 @@ export function AddConnectionForm({
     e.preventDefault()
     if (trimmedKeys.length === 0) return
     const [first, ...rest] = trimmedKeys
-    onAddApiKey(label.trim(), first, { extraKeys: rest })
+    onAddApiKey(label.trim(), first, { extraKeys: rest, settings: cloud.settings })
     onAdded()
     setLabel('')
     setKeys([emptyKeyRow()])
+    cloud.reset()
   }
 
   const updateKey = (id: string, value: string) =>
@@ -241,6 +195,7 @@ export function AddConnectionForm({
           {isOAuth && <LabelDivider role="presentation">or</LabelDivider>}
 
           <form onSubmit={handleApiKey} className="flex flex-col gap-3">
+            <ConnectionSettingsFields {...cloud} onChange={cloud.setValue} />
             <div className="flex flex-col gap-1.5">
               <SectionLabel as="span" weight="semibold">
                 {isOAuth ? 'API Key(s) (manual)' : 'API Key(s)'}
@@ -250,7 +205,11 @@ export function AddConnectionForm({
                   <Input
                     type="password"
                     size="lg"
-                    placeholder={index === 0 ? 'Enter API key' : `Additional key ${index + 1}`}
+                    placeholder={
+                      index === 0
+                        ? (provider.keyLabel ?? 'Enter API key')
+                        : `Additional key ${index + 1}`
+                    }
                     value={key.value}
                     onChange={(e) => updateKey(key.id, e.target.value)}
                     className="flex-1"
@@ -282,7 +241,7 @@ export function AddConnectionForm({
               type="submit"
               variant="mono"
               size="lg"
-              disabled={trimmedKeys.length === 0}
+              disabled={trimmedKeys.length === 0 || cloud.missing}
               className="w-full rounded-lg px-4 font-semibold"
             >
               Add Connection

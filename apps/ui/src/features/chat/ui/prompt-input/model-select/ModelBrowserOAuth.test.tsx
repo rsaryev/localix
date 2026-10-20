@@ -26,6 +26,7 @@ test('returning from OAuth previews the exact connection among two accounts at t
     addOAuthConnection: async () => ({ mode: 'local-server' }),
     remove: async () => {},
     updateLabel: async () => {},
+    updateSettings: async () => {},
     addKey: async () => {},
     removeKey: async () => {},
     updateKey: async () => {},

@@ -3,6 +3,7 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 import { PanelHeader } from '@localixai/kit/panel-header'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import type { ProviderEntry } from '@localixai/agent/catalog'
+import type { ApiKeyConnectionOptions } from '../useConnections'
 import type { ProviderConnection } from '@/shared/api/contracts'
 import type { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import type { useConnections } from '../useConnections'
@@ -52,7 +53,7 @@ export interface ModelBrowserMainPanelProps {
     provider: ProviderEntry,
     label: string,
     apiKey: string,
-    opts?: { extraKeys?: string[] },
+    opts?: ApiKeyConnectionOptions,
   ) => Promise<void>
   onAddOAuth: (
     provider: ProviderEntry,
@@ -161,6 +162,7 @@ export function ModelBrowserMainPanel(props: ModelBrowserMainPanelProps) {
             renameLabel={props.renameLabel}
             setRenameLabel={props.setRenameLabel}
             updateLabel={connectionsState.updateLabel}
+            updateSettings={connectionsState.updateSettings}
             addKey={connectionsState.addKey}
             removeKey={connectionsState.removeKey}
             updateKey={connectionsState.updateKey}

@@ -14,9 +14,10 @@ import type { Model, ProviderMap } from '@opencode-ai/models'
 
 import { DECISION_FAMILIES, routeOf, wireOf, type Route } from './families'
 import { contextWindowOf, costOf, reasoningLevels } from './model-facts'
+import { settingsOf, type ProviderSetting } from './settings'
 
 /** Bumped whenever normalization changes what it keeps, so a stored copy is normalized again. */
-export const DOCUMENT_SCHEMA = 2
+export const DOCUMENT_SCHEMA = 3
 
 export interface ServedModel {
   id: string
@@ -47,6 +48,8 @@ export interface ServedProvider {
   name: string
   /** API-key variables; none means it is reached by signing in. */
   env: string[]
+  /** What a connection names besides its key (a region, a resource, a project). */
+  settings: ProviderSetting[]
   doc?: string
   /** The provider's own route, shown on its card; a model may take another. */
   route: Route
@@ -139,6 +142,7 @@ function codexProvider(openai: ServedProvider | undefined): ServedProvider | und
     id: CODEX_PROVIDER_ID,
     name: 'ChatGPT Plus/Pro (Codex)',
     env: [],
+    settings: [],
     route,
     chat,
     decision: {},
@@ -162,7 +166,9 @@ export function normalize(providers: ProviderMap | unknown): CatalogDocument {
       continue
     const npm = provider.npm
     const api = typeof provider.api === 'string' ? provider.api : undefined
-    const route = routeOf(npm, api)
+    const settings = settingsOf(strings(provider.env))
+    const settable = settings.map((setting) => setting.name)
+    const route = routeOf(npm, api, undefined, settable)
     const chat: Record<string, ServedModel> = {}
     const decision: Record<string, ServedModel> = {}
     for (const [modelId, value] of Object.entries(provider.models)) {
@@ -173,7 +179,7 @@ export function normalize(providers: ProviderMap | unknown): CatalogDocument {
         : undefined
       const modelRoute =
         own?.npm || own?.api || own?.shape
-          ? routeOf(own.npm ?? npm, own.api ?? api, own.shape)
+          ? routeOf(own.npm ?? npm, own.api ?? api, own.shape, settable)
           : route
       if (!modelRoute) continue
       const kind = model.type ?? 'chat'
@@ -194,6 +200,7 @@ export function normalize(providers: ProviderMap | unknown): CatalogDocument {
       id,
       name: provider.name,
       env: strings(provider.env),
+      settings,
       ...(typeof provider.doc === 'string' ? { doc: provider.doc } : {}),
       // A provider served only through its models' own routes shows the first of them.
       route: route ?? (Object.values(chat)[0] ?? Object.values(decision)[0])!.route,
@@ -214,7 +221,8 @@ export function readDocument(value: unknown): CatalogDocument | undefined {
       !isRecord(provider) ||
       !isRecord(provider.chat) ||
       !isRecord(provider.decision) ||
-      !isRecord(provider.route)
+      !isRecord(provider.route) ||
+      !Array.isArray(provider.settings)
     )
       return undefined
   }

@@ -25,6 +25,7 @@ import {
   type ProviderConnectionKeyRecord,
   type ProviderConnectionRecord,
 } from './repository'
+import { apiKeyCredential, cleanSettings } from './connection-settings'
 import { toDto } from './mappers'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { createOAuthFlowManager } from './oauth-flow-manager'
@@ -220,6 +221,17 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     })
   }
 
+  /** The settings a connection's keys carry: read from its first key, which every key shares. */
+  const settingsOfKeys = async (
+    userId: string,
+    keys: readonly { id: string }[],
+  ): Promise<Record<string, string> | undefined> => {
+    const first = keys[0]
+    if (!first) return undefined
+    const credential = await readCredential(userId, first.id).catch(() => undefined)
+    return credential?.type === 'api-key' ? credential.env : undefined
+  }
+
   const hydrateConnection = async (
     record: ProviderConnectionRecord,
   ): Promise<ProviderConnectionRecord> => {
@@ -229,7 +241,12 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
           const credential = await readCredential(record.userId, key.id)
           if (!credential) return null
           return credential.type === 'api-key'
-            ? { ...key, apiKey: credential.key ?? '', authType: 'api-key' as const }
+            ? {
+                ...key,
+                apiKey: credential.key ?? '',
+                authType: 'api-key' as const,
+                ...(credential.env ? { settings: { ...credential.env } } : {}),
+              }
             : {
                 ...key,
                 apiKey: credential.accessToken,
@@ -438,6 +455,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     const timestamp = now()
     const id = randomUUID()
     const seedKeys = [...(input.apiKey ? [input.apiKey] : []), ...(input.apiKeys ?? [])]
+    const settings = cleanSettings(input.settings)
     if (seedKeys.length === 0) {
       throw new ApiError(400, 'provider_connection_no_key', 'At least one API key is required')
     }
@@ -464,7 +482,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
         timestamp,
       })
       await repo.insertKey(key)
-      await writeCredential(userId, key.id, { type: 'api-key', key: apiKey })
+      await writeCredential(userId, key.id, apiKeyCredential(apiKey, settings))
       priority += 1
     }
 
@@ -489,11 +507,25 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       const updatedAt = now()
       await repo.update(userId, id, { label: patch.label, updatedAt })
 
+      // New settings replace the old on every key; otherwise each key keeps what it has.
+      const settings =
+        patch.settings !== undefined
+          ? cleanSettings(patch.settings)
+          : await settingsOfKeys(userId, existing.keys)
+      if (patch.settings !== undefined) {
+        for (const key of existing.keys) {
+          const credential = await readCredential(userId, key.id).catch(() => undefined)
+          if (credential?.type !== 'api-key' || !credential.key) continue
+          await writeCredential(userId, key.id, apiKeyCredential(credential.key, settings))
+          await repo.updateKey(userId, id, key.id, { updatedAt })
+        }
+      }
+
       // Legacy single-key patch: route to the first key so the existing PATCH contract works.
       if (patch.apiKey !== undefined) {
         const first = existing.keys[0]
         if (first) {
-          await writeCredential(userId, first.id, { type: 'api-key', key: patch.apiKey })
+          await writeCredential(userId, first.id, apiKeyCredential(patch.apiKey, settings))
           await repo.updateKey(userId, id, first.id, { updatedAt })
         } else {
           const key = staticKey({
@@ -505,7 +537,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
             timestamp: updatedAt,
           })
           await repo.insertKey(key)
-          await writeCredential(userId, key.id, { type: 'api-key', key: patch.apiKey })
+          await writeCredential(userId, key.id, apiKeyCredential(patch.apiKey, settings))
         }
       }
 
@@ -530,7 +562,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       id: string,
       input: AddProviderKeyRequest,
     ): Promise<ProviderConnection> {
-      await requireRawConnectionRecord(userId, id)
+      const existing = await requireRawConnectionRecord(userId, id)
       const timestamp = now()
       const nextPriority = (await repo.maxKeyPriority(id)) + 1
       const key = staticKey({
@@ -542,7 +574,9 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
         timestamp,
       })
       await repo.insertKey(key)
-      await writeCredential(userId, key.id, { type: 'api-key', key: input.apiKey })
+      // A key added later reaches the same region, resource or project as the others.
+      const settings = await settingsOfKeys(userId, existing.keys)
+      await writeCredential(userId, key.id, apiKeyCredential(input.apiKey, settings))
       return loadDto(userId, id)
     },
 

@@ -290,8 +290,10 @@ message; synthetic reminders do not consume its one-shot instruction.
   next model request.
 - Package boundaries are checked through source-import rules and TypeScript contracts. They are not
   a runtime isolation boundary.
-- Providers models.dev routes through an SDK the engine does not carry (Bedrock, Azure, Vertex,
-  Cohere) or through a templated address are not listed.
+- Providers models.dev routes through an SDK the engine does not carry (Cohere, SAP AI Core, Bedrock
+  Mantle) are not listed, nor models whose address names a value no connection sets.
+- Cloud connections (Bedrock, Azure, Vertex) are covered by tests of the requests they build, not
+  yet by a session on a real account.
 
 ## Auditing a session tree
 

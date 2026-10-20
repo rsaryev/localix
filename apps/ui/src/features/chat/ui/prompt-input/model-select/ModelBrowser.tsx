@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useDeferredValue, type React
 import { Command } from '@localixai/kit/command'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { sortProvidersOAuthFirst, type ProviderEntry } from '@localixai/agent/catalog'
+import type { ApiKeyConnectionOptions } from '../useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import type { ModelBrowserProps } from './modelBrowserProps'
 import { useModelHoverDetails } from './useModelHoverDetails'
@@ -218,7 +219,7 @@ export function ModelBrowser({
     provider: ProviderEntry,
     label: string,
     apiKey: string,
-    opts?: { extraKeys?: string[] },
+    opts?: ApiKeyConnectionOptions,
   ) => {
     const connection = await addApiKeyConnection(provider.id, provider.name, label, apiKey, opts)
     showConnectionModels(connection.id)

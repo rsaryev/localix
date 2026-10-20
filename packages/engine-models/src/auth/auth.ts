@@ -116,7 +116,14 @@ export async function accessFor(
   options: { store?: RuntimeCredentialStore; signal: AbortSignal; sessionId?: string },
 ): Promise<{ access: ProviderAccess; subscription: boolean }> {
   if (credential.type === 'api-key') {
-    return { access: credential.key ? { apiKey: credential.key } : {}, subscription: false }
+    const settings =
+      credential.env && Object.keys(credential.env).length > 0
+        ? { settings: { ...credential.env } }
+        : {}
+    return {
+      access: { ...(credential.key ? { apiKey: credential.key } : {}), ...settings },
+      subscription: false,
+    }
   }
   const flow = flowFor(entry.provider.id)
   if (!flow)

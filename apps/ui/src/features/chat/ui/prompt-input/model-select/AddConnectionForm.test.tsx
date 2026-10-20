@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { DeviceAuthorizationStatus } from './AddConnectionForm'
+import { DeviceAuthorizationStatus } from './DeviceAuthorizationStatus'
 
 describe('DeviceAuthorizationStatus presentation', () => {
   test('renders authorization progress as a flat activity row', () => {

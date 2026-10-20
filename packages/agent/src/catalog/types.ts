@@ -66,6 +66,16 @@ export interface CatalogModel {
   family?: string
 }
 
+/** A value a connection names besides its key: a cloud region, resource or project. */
+export interface CatalogProviderSetting {
+  /** The name it is stored under on the connection (`AWS_REGION`, `AZURE_RESOURCE_NAME`). */
+  name: string
+  label: string
+  placeholder?: string
+  /** A request cannot be made without it. */
+  required: boolean
+}
+
 /** Catalog metadata needed to display and configure a model provider. */
 export interface CatalogProvider {
   id: string
@@ -79,6 +89,10 @@ export interface CatalogProvider {
   usageSources?: ProviderUsageSource[]
   dashboardUrl?: string
   statusUrl?: string
+  /** What a connection names besides its key; absent for a provider that needs only a key. */
+  settings?: CatalogProviderSetting[]
+  /** What the key field asks for, where it is not a plain API key. */
+  keyLabel?: string
 }
 
 export type ProviderEntry = CatalogProvider

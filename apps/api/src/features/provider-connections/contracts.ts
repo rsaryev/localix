@@ -20,6 +20,8 @@ export const providerConnectionSchema = z.object({
   hasApiKey: z.boolean(),
   keyCount: z.number(),
   keys: z.array(providerConnectionKeySchema),
+  /** What the connection names besides its key (a cloud region, resource or project). */
+  settings: z.record(z.string(), z.string()).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -36,6 +38,8 @@ export const createProviderConnectionRequestSchema = z.object({
   apiKey: z.string().min(1).optional(),
   /** Additional keys to seed the pool with (beyond `apiKey`). */
   apiKeys: z.array(z.string().min(1)).optional(),
+  /** What the connection names besides its key (a cloud region, resource or project). */
+  settings: z.record(z.string(), z.string().max(500)).optional(),
 })
 
 export const addProviderKeyRequestSchema = z.object({
@@ -66,6 +70,8 @@ export const updateProviderConnectionParamsSchema = z.object({
 export const updateProviderConnectionRequestSchema = z.object({
   label: z.string().min(1).optional(),
   apiKey: z.string().min(1).optional(),
+  /** Replaces the connection's settings on every key. */
+  settings: z.record(z.string(), z.string().max(500)).optional(),
 })
 
 export const initiateOAuthRequestSchema = z.object({

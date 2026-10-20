@@ -22,6 +22,7 @@ export const providerConnectionsApi = {
     label: string
     apiKey: string
     apiKeys?: string[]
+    settings?: Record<string, string>
     authType?: 'api-key' | 'oauth-pkce'
   }): Promise<ProviderConnection> {
     return unwrap(
@@ -32,6 +33,7 @@ export const providerConnectionsApi = {
           label: input.label,
           apiKey: input.apiKey,
           ...(input.apiKeys && input.apiKeys.length > 0 ? { apiKeys: input.apiKeys } : {}),
+          ...(input.settings ? { settings: input.settings } : {}),
           authType: input.authType ?? 'api-key',
         },
       }),
@@ -40,7 +42,7 @@ export const providerConnectionsApi = {
 
   async updateConnection(
     id: string,
-    patch: { label?: string; apiKey?: string },
+    patch: { label?: string; apiKey?: string; settings?: Record<string, string> },
   ): Promise<ProviderConnection> {
     return unwrap(
       await client.rpc['provider-connections'][':id'].$patch({

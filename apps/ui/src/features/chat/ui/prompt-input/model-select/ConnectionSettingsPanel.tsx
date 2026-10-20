@@ -14,6 +14,7 @@ import { ConnectionKeysPanel } from './ConnectionKeysPanel'
 import { PickerPanelTitle } from './PickerPanelTitle'
 import type { SelectedItem } from './ModelSelectSidebar'
 import type { useConnections } from '../useConnections'
+import { ConnectionSettingsEditor } from './ConnectionSettingsFields'
 
 type ConnectionsState = ReturnType<typeof useConnections>
 
@@ -62,6 +63,7 @@ interface ConnectionSettingsPanelProps {
   renameLabel: string
   setRenameLabel: (label: string) => void
   updateLabel: ConnectionsState['updateLabel']
+  updateSettings: ConnectionsState['updateSettings']
   addKey: ConnectionsState['addKey']
   removeKey: ConnectionsState['removeKey']
   updateKey: ConnectionsState['updateKey']
@@ -83,6 +85,7 @@ export function ConnectionSettingsPanel({
   renameLabel,
   setRenameLabel,
   updateLabel,
+  updateSettings,
   addKey,
   removeKey,
   updateKey,
@@ -90,6 +93,7 @@ export function ConnectionSettingsPanel({
   onExitEdit,
   setSelectedItem,
 }: ConnectionSettingsPanelProps) {
+  const settingFields = allProviders.find((p) => p.id === selectedConn.providerId)?.settings ?? []
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <PanelHeader
@@ -159,6 +163,13 @@ export function ConnectionSettingsPanel({
           <ConnectionAuthStatus
             authType={selectedConn.authType}
             credentialAvailable={selectedConn.hasApiKey}
+          />
+
+          <ConnectionSettingsEditor
+            key={selectedConn.id}
+            fields={settingFields}
+            saved={selectedConn.settings ?? {}}
+            onSave={(settings) => updateSettings(selectedConn.id, settings)}
           />
 
           <ConnectionKeysPanel

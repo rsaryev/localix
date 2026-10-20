@@ -8,6 +8,19 @@ export const catalogProviderSchema = z.object({
   modelCount: z.number().int().nonnegative(),
   authType: z.enum(['api-key', 'oauth-pkce']),
   doc: z.string().optional(),
+  /** What a connection names besides its key: a cloud region, resource or project. */
+  settings: z
+    .array(
+      z.object({
+        name: z.string(),
+        label: z.string(),
+        placeholder: z.string().optional(),
+        required: z.boolean(),
+      }),
+    )
+    .optional(),
+  /** What the key field asks for, where it is not a plain API key. */
+  keyLabel: z.string().optional(),
 })
 
 const modelCostRatesSchema = z.object({

@@ -14,6 +14,8 @@ export interface ProviderConnectionKeyRecord {
   /** ISO timestamp; null for static keys. */
   expiresAt: string | null
   credentialExtra: Record<string, unknown>
+  /** What an API key's connection names besides it (`AWS_REGION`, …); never a secret. */
+  settings?: Record<string, string>
   vaultItemId: string | null
   priority: number
   enabled: boolean

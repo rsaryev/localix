@@ -192,4 +192,54 @@ describe('normalizing models.dev', () => {
       contextWindow: 272_000,
     })
   })
+
+  test('a cloud lists what its connection names besides the key, and keeps only addresses it can fill', () => {
+    const clouds = normalize({
+      azure: {
+        id: 'azure',
+        name: 'Azure',
+        npm: '@ai-sdk/azure',
+        env: ['AZURE_RESOURCE_NAME', 'AZURE_API_KEY'],
+        doc: 'https://docs',
+        models: {
+          'gpt-x': model('gpt-x'),
+          'claude-x': model('claude-x', {
+            provider: {
+              npm: '@ai-sdk/anthropic',
+              api: 'https://${AZURE_RESOURCE_NAME}.services.ai.azure.com/anthropic/v1',
+            },
+          }),
+        },
+      },
+      'google-vertex': {
+        id: 'google-vertex',
+        name: 'Vertex',
+        npm: '@ai-sdk/google-vertex',
+        env: ['GOOGLE_VERTEX_PROJECT', 'GOOGLE_VERTEX_LOCATION', 'GOOGLE_APPLICATION_CREDENTIALS'],
+        doc: 'https://docs',
+        models: {
+          'gemini-x': model('gemini-x'),
+          // An address naming a variable the connection never sets cannot be reached.
+          'mistral-x': model('mistral-x', {
+            provider: {
+              npm: '@ai-sdk/openai-compatible',
+              api: 'https://${GOOGLE_VERTEX_ENDPOINT}/v1/models',
+            },
+          }),
+        },
+      },
+    })
+    expect(clouds.azure?.settings.map((setting) => setting.name)).toEqual(['AZURE_RESOURCE_NAME'])
+    expect(clouds.azure?.chat['claude-x']?.route).toEqual({
+      family: 'anthropic',
+      baseURL: 'https://${AZURE_RESOURCE_NAME}.services.ai.azure.com/anthropic/v1',
+    })
+    expect(
+      clouds['google-vertex']?.settings.map((setting) => [setting.name, setting.required]),
+    ).toEqual([
+      ['GOOGLE_VERTEX_PROJECT', false],
+      ['GOOGLE_VERTEX_LOCATION', false],
+    ])
+    expect(Object.keys(clouds['google-vertex']?.chat ?? {})).toEqual(['gemini-x'])
+  })
 })

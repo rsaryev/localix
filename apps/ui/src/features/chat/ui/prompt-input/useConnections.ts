@@ -10,6 +10,12 @@ import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { startOAuthConnectionPoll } from './oauthConnectionPolling'
 import { returnToOAuthModels } from './oauthConnectionReturn'
 
+/** A key connection's extras: more keys for its pool, and what a cloud names besides its key. */
+export interface ApiKeyConnectionOptions {
+  extraKeys?: string[]
+  settings?: Record<string, string>
+}
+
 const OAUTH_STATE_KEY = 'localix_oauth_state'
 const OAUTH_SESSION_KEY = 'localix_oauth_session_id'
 
@@ -97,7 +103,7 @@ export function useConnections(sessionId: string | null) {
       providerName: string,
       label: string,
       apiKey: string,
-      opts?: { extraKeys?: string[] },
+      opts?: ApiKeyConnectionOptions,
     ) => {
       const connection = await backendClient.createConnection({
         providerId,
@@ -105,6 +111,7 @@ export function useConnections(sessionId: string | null) {
         label: label || providerName,
         apiKey,
         apiKeys: opts?.extraKeys,
+        ...(opts?.settings ? { settings: opts.settings } : {}),
       })
       await refreshConnections()
       if (activeSessionId) {
@@ -284,6 +291,14 @@ export function useConnections(sessionId: string | null) {
     [replaceConnection],
   )
 
+  /** A cloud connection's settings, replaced on every key; the connection is patched in place. */
+  const updateSettings = useCallback(
+    async (id: string, settings: Record<string, string>) => {
+      replaceConnection(await backendClient.updateConnection(id, { settings }))
+    },
+    [replaceConnection],
+  )
+
   // Memoized: this object is passed WHOLE into the composer's model picker, so a
   // fresh literal per render would defeat every `memo()` downstream of it. Every
   // member is either a store value or a `useCallback`, so the identity changes
@@ -297,6 +312,7 @@ export function useConnections(sessionId: string | null) {
       addOAuthConnection,
       remove,
       updateLabel,
+      updateSettings,
       addKey,
       removeKey,
       updateKey,
@@ -309,6 +325,7 @@ export function useConnections(sessionId: string | null) {
       addOAuthConnection,
       remove,
       updateLabel,
+      updateSettings,
       addKey,
       removeKey,
       updateKey,

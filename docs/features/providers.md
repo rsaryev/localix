@@ -121,8 +121,25 @@ The model list is [models.dev](https://models.dev)'s, normalized for the provide
 serve. Localix adds no metadata of its own: context windows, prices and their long-context tiers,
 reasoning levels, and capabilities are models.dev's. A provider is listed when its models are served
 through a provider package the engine carries (OpenAI, Anthropic, Google, OpenRouter, Vercel AI
-Gateway, and the OpenAI-compatible wire); Bedrock, Azure and Vertex, whose addresses are configured
-per account, are not.
+Gateway, Amazon Bedrock, Azure, Google Vertex, and the OpenAI-compatible wire).
+
+### Cloud connections
+
+Amazon Bedrock, Azure and Google Vertex serve the same models through a cloud account, so a
+connection names where in that account its requests go beside its key. The connection form asks for
+exactly that:
+
+| Provider         | Key                                              | Settings                                                     |
+| ---------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| Amazon Bedrock   | A Bedrock API key                                | AWS region (required)                                        |
+| Azure            | The resource's API key                           | Azure resource name (required)                               |
+| Google Vertex    | A service account key (JSON) or a Vertex API key | Project (defaults to the key's own) and location (optional)  |
+| Claude on Vertex | A service account key (JSON)                     | Project and location (optional; location defaults to global) |
+
+Settings are stored with every key of the connection, so a key added later reaches the same place,
+and they show in the connection's settings; a secret is refused as a setting. Requests use only what
+the connection holds: the server's own `AWS_*` or `GOOGLE_*` variables are never read. A model whose
+address needs a value no connection can set (a Vertex endpoint of its own) is not listed.
 
 | When                                   | What happens                                                                                                      |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
