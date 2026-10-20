@@ -48,11 +48,11 @@ fn transition(label: &str, suspended: bool) -> bool {
 /// The page left the screen (`true`) or came back (`false`): suspend or resume its media.
 /// Best effort — a page without media is unaffected.
 pub(crate) fn page_hidden(view: &Webview, hidden: bool) {
-    if !transition(view.label(), hidden) {
-        return;
-    }
+    let changed = transition(view.label(), hidden);
+    #[cfg(not(target_os = "macos"))]
+    let _ = changed;
     #[cfg(target_os = "macos")]
-    {
+    if changed {
         use objc2_web_kit::WKWebView;
         let _ = view.with_webview(move |platform| {
             let webview: &WKWebView = unsafe { &*platform.inner().cast() };

@@ -100,16 +100,24 @@ test('an arrow key starts the snake in the view, and leaving saves exactly what 
     await view.press('ArrowDown')
     await view.settle(500)
     expect(view.head()).not.toBe(start)
-    expect(view.backend.requests.some(({ path }) => path.includes('/game/turns'))).toBe(false)
     await view.unmount()
     saved = true
     await new Promise((resolve) => setTimeout(resolve, 0))
-    const save = view.backend.requests.find(({ path }) => path.includes('/game/turns'))
-    expect(save?.path).toBe('/rpc/snake/game/turns?sessionId=s1')
-    const { fromTick, headings } = save!.body as { fromTick: number; headings: Direction[] }
-    expect(fromTick).toBe(0)
-    expect(headings[0]).toBe('down')
-    expect(view.backend.game().tick).toBe(headings.length)
+    // On a slow machine a periodic save may land before leaving: whatever the batches, together
+    // they are exactly what was played, from the first tick on, in order.
+    const saves = view.backend.requests
+      .filter(({ path }) => path.includes('/game/turns'))
+      .map(({ path, body }) => ({ path, ...(body as { fromTick: number; headings: Direction[] }) }))
+    expect(saves.length).toBeGreaterThan(0)
+    expect(saves.every(({ path }) => path === '/rpc/snake/game/turns?sessionId=s1')).toBe(true)
+    expect(saves[0]!.fromTick).toBe(0)
+    expect(saves[0]!.headings[0]).toBe('down')
+    let tick = 0
+    for (const save of saves) {
+      expect(save.fromTick).toBe(tick)
+      tick += save.headings.length
+    }
+    expect(view.backend.game().tick).toBe(tick)
   } finally {
     if (!saved) await view.unmount()
   }

@@ -11,7 +11,7 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use tauri::menu::{ContextMenu, Menu, MenuItem, PredefinedMenuItem};
 use tauri::webview::{NewWindowResponse, PageLoadEvent, WebviewBuilder};
-use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Url, Webview, WebviewUrl};
+use tauri::{AppHandle, Emitter, LogicalPosition, Manager, Url, Webview, WebviewUrl};
 
 static BROWSER_THEME: Mutex<Option<String>> = Mutex::new(None);
 
@@ -477,7 +477,7 @@ fn apply_browser_bounds(
     #[cfg(not(target_os = "linux"))]
     view.set_bounds(tauri::Rect {
         position: LogicalPosition::new(x, y).into(),
-        size: LogicalSize::new(width, height).into(),
+        size: tauri::LogicalSize::new(width, height).into(),
     })
     .map_err(|error| error.to_string())?;
     crate::native_browser_idle::page_hidden(&view, false);
