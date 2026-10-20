@@ -79,7 +79,7 @@ describe('runtime catalog facade', () => {
     expect((await service.getCatalog()).models).toEqual(sourceModels)
   })
 
-  test('orders OAuth-capable providers first without changing newest-first model order', async () => {
+  test('orders providers most popular first and models newest first', async () => {
     const baseProvider = catalog.providers[0]
     const baseModel = catalog.models[0]
     const service = createCatalogService({
@@ -91,6 +91,12 @@ describe('runtime catalog facade', () => {
               ...baseProvider,
               id: 'key-only',
               name: 'Key only',
+              authType: 'api-key',
+            },
+            {
+              ...baseProvider,
+              id: 'anthropic',
+              name: 'Anthropic',
               authType: 'api-key',
             },
             {
@@ -121,7 +127,7 @@ describe('runtime catalog facade', () => {
     })
 
     const result = await service.getCatalog()
-    expect(result.providers.map(({ id }) => id)).toEqual(['mixed', 'oauth', 'key-only'])
+    expect(result.providers.map(({ id }) => id)).toEqual(['anthropic', 'key-only', 'mixed', 'oauth'])
     expect(result.models.map(({ id }) => id)).toEqual(['key-only/newer', 'oauth/older'])
   })
 

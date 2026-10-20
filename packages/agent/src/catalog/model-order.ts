@@ -7,7 +7,10 @@ export const modelKindOf = (model: Pick<CatalogModel, 'kind'>): ModelKind => mod
 export const ON_DEVICE_PROVIDER_IDS: ReadonlySet<string> = new Set(['local'])
 
 /** On-device providers first, source order kept within each band. */
-export function onDeviceFirst<T>(providers: readonly T[], providerId: (provider: T) => string): T[] {
+export function onDeviceFirst<T>(
+  providers: readonly T[],
+  providerId: (provider: T) => string,
+): T[] {
   return [...providers].sort(
     (left, right) =>
       Number(ON_DEVICE_PROVIDER_IDS.has(providerId(right))) -
@@ -16,21 +19,70 @@ export function onDeviceFirst<T>(providers: readonly T[], providerId: (provider:
 }
 
 /**
- * Sort provider-like values for display: on-device providers first, then by OAuth capability,
- * preserving source order within each band. `oauthProviderIds` is authoritative because a
- * provider may support both OAuth and API keys while exposing `api-key` as its default auth type.
+ * The providers people use most, most used first: the first-party labs and their subscriptions,
+ * the routers and clouds most keys come from, then the inference hosts. models.dev carries no
+ * usage figures, so this is curated; a provider it does not name follows, alphabetically.
  */
-export function sortProvidersOAuthFirst<T>(
+export const POPULAR_PROVIDER_IDS: readonly string[] = [
+  'openai',
+  'openai-codex',
+  'anthropic',
+  'google',
+  'openrouter',
+  'github-copilot',
+  'xai',
+  'deepseek',
+  'mistral',
+  'amazon-bedrock',
+  'azure',
+  'google-vertex',
+  'google-vertex-anthropic',
+  'vercel',
+  'groq',
+  'moonshotai',
+  'zai',
+  'alibaba',
+  'minimax',
+  'togetherai',
+  'fireworks-ai',
+  'cerebras',
+  'perplexity-agent',
+  'cohere',
+  'huggingface',
+  'deepinfra',
+  'ollama-cloud',
+  'lmstudio',
+  'nvidia',
+  'opencode',
+  'cloudflare-workers-ai',
+  'cloudflare-ai-gateway',
+  'sambanova',
+  'novita-ai',
+  'nebius',
+  'siliconflow',
+  'baseten',
+]
+
+const POPULARITY: ReadonlyMap<string, number> = new Map(
+  POPULAR_PROVIDER_IDS.map((id, rank) => [id, rank]),
+)
+
+/**
+ * Sort provider-like values for display: on-device providers first, then the popular ones in
+ * {@link POPULAR_PROVIDER_IDS} order, then the rest by id. Entries of one provider (several
+ * connections) keep their source order.
+ */
+export function sortProvidersByPopularity<T>(
   providers: readonly T[],
-  oauthProviderIds: ReadonlySet<string> | readonly string[],
   providerId: (provider: T) => string,
 ): T[] {
-  const oauthIds = oauthProviderIds instanceof Set ? oauthProviderIds : new Set(oauthProviderIds)
-  const band = (provider: T) => {
-    const id = providerId(provider)
-    return ON_DEVICE_PROVIDER_IDS.has(id) ? 0 : oauthIds.has(id) ? 1 : 2
-  }
-  return [...providers].sort((left, right) => band(left) - band(right))
+  const rank = (id: string) =>
+    ON_DEVICE_PROVIDER_IDS.has(id) ? -1 : (POPULARITY.get(id) ?? POPULAR_PROVIDER_IDS.length)
+  return [...providers].sort((left, right) => {
+    const a = providerId(left)
+    const b = providerId(right)
+    return rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0)
+  })
 }
 
 function releaseTimestamp(model: CatalogModel): number | undefined {

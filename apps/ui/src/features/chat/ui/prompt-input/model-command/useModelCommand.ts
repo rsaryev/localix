@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react'
-import { sortProvidersOAuthFirst } from '@localixai/agent/catalog'
+import { sortProvidersByPopularity } from '@localixai/agent/catalog'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { useUserSettings } from '@/features/settings/model/useUserSettings'
 import { backendClient } from '@/shared/api/client'
@@ -46,7 +46,6 @@ export function useModelCommand(
   const context = useCallback((): ModelCommandContext => {
     const state = useChatStore.getState()
     const session = findSessionInState(state, sessionId)
-    const oauth = new Set(catalog.current.oauthProviderIds)
     const agentSettings = useUserSettings.getState().settings.agentSettings
     return {
       participants: participantRows(
@@ -60,7 +59,7 @@ export function useModelCommand(
             }
           : undefined,
       ),
-      connections: sortProvidersOAuthFirst(state.connections, oauth, (row) => row.providerId),
+      connections: sortProvidersByPopularity(state.connections, (row) => row.providerId),
       models: catalog.current.models,
       sessionConnectionId,
       agentModelSettings: agentSettings?.agentModelSettings,

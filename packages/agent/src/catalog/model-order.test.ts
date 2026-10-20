@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 
-import { sortCatalogModelsNewestFirst, sortProvidersOAuthFirst } from './model-order'
+import {
+  POPULAR_PROVIDER_IDS,
+  sortCatalogModelsNewestFirst,
+  sortProvidersByPopularity,
+} from './model-order'
 import type { CatalogModel } from './types'
 
 function model(
@@ -89,7 +93,7 @@ describe('catalog model ordering', () => {
     ])
   })
 
-  test('preserves OAuth bands and dated ordering across seeded mixed fixtures', () => {
+  test('keeps dated ordering across seeded mixed fixtures', () => {
     let seed = 0x51_7a_2026
     const random = () => {
       seed = (Math.imul(seed, 1_664_525) + 1_013_904_223) >>> 0
@@ -97,19 +101,6 @@ describe('catalog model ordering', () => {
     }
 
     for (let run = 0; run < 64; run += 1) {
-      const source = Array.from({ length: 40 }, (_, index) => ({
-        id: `provider-${index}`,
-        oauth: random() < 0.4,
-      }))
-      const oauthIds = source.filter(({ oauth }) => oauth).map(({ id }) => id)
-      const providers = sortProvidersOAuthFirst(source, oauthIds, ({ id }) => id)
-      const firstKeyOnly = providers.findIndex(({ oauth }) => !oauth)
-      expect(firstKeyOnly < 0 || providers.slice(firstKeyOnly).every(({ oauth }) => !oauth)).toBe(
-        true,
-      )
-      expect(providers.filter(({ oauth }) => oauth)).toEqual(source.filter(({ oauth }) => oauth))
-      expect(providers.filter(({ oauth }) => !oauth)).toEqual(source.filter(({ oauth }) => !oauth))
-
       const models = Array.from({ length: 40 }, (_, index) =>
         model(`model-${index}`, {
           releaseDate:
@@ -142,21 +133,24 @@ describe('catalog model ordering', () => {
 })
 
 describe('provider catalog ordering', () => {
-  test('uses the OAuth capability list instead of a provider default auth type', () => {
-    const source = [
-      { id: 'key-only', authType: 'api-key' as const },
-      { id: 'mixed', authType: 'api-key' as const },
-      { id: 'oauth', authType: 'oauth-pkce' as const },
-    ]
-
-    expect(sortProvidersOAuthFirst(source, ['mixed', 'oauth'], (provider) => provider.id)).toEqual([
-      source[1],
-      source[2],
-      source[0],
+  test('on-device first, then the popular providers in their order, then the rest by id', () => {
+    const ids = ['zenmux', 'groq', 'local', 'anthropic', 'abacus', 'openrouter', 'openai']
+    expect(sortProvidersByPopularity(ids, (id) => id)).toEqual([
+      'local',
+      'openai',
+      'anthropic',
+      'openrouter',
+      'groq',
+      'abacus',
+      'zenmux',
     ])
   })
 
-  test('preserves source order for duplicate providers and colliding OAuth connections', () => {
+  test('names each popular provider once', () => {
+    expect(new Set(POPULAR_PROVIDER_IDS).size).toBe(POPULAR_PROVIDER_IDS.length)
+  })
+
+  test('keeps source order for several connections of one provider, without mutating', () => {
     const source = [
       { id: 'proxy-1', providerId: 'proxy' },
       { id: 'openai-key', providerId: 'openai' },
@@ -164,11 +158,12 @@ describe('provider catalog ordering', () => {
       { id: 'proxy-2', providerId: 'proxy' },
     ]
 
-    expect(sortProvidersOAuthFirst(source, ['openai'], (entry) => entry.providerId)).toEqual([
+    expect(sortProvidersByPopularity(source, (entry) => entry.providerId)).toEqual([
       source[1],
       source[2],
       source[0],
       source[3],
     ])
+    expect(source.map(({ id }) => id)).toEqual(['proxy-1', 'openai-key', 'openai-oauth', 'proxy-2'])
   })
 })

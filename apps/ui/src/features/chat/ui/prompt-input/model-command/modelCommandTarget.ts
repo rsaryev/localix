@@ -18,7 +18,7 @@ export const ALL_AGENTS = 'all'
 export interface ModelCommandContext {
   /** The picker's Agents column: the participants, then the agents that could join. */
   participants: readonly ParticipantRow[]
-  /** Ordered as the picker's provider column orders them (OAuth first). */
+  /** Ordered as the picker's provider column orders them (most popular first). */
   connections: readonly { id: string; providerId: string; label: string }[]
   models: readonly CatalogModel[]
   sessionConnectionId: string | null

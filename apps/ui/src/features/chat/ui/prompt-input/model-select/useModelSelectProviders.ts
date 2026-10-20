@@ -16,7 +16,7 @@ export interface ModelSelectProviders {
   /** providerId → number of catalog models it offers. */
   providerCounts: Record<string, number>
   oauthIdSet: ReadonlySet<string>
-  /** Providers with no connection yet, OAuth-capable first, else catalog order. */
+  /** Providers with no connection yet, in catalog order. */
   unconnectedProviders: ProviderEntry[]
   /** unconnectedProviders narrowed by the current search query. */
   filteredUnconnectedProviders: ProviderEntry[]
@@ -26,7 +26,7 @@ export interface ModelSelectProviders {
  * The providers "Add Provider" offers: not yet connected, and able to serve a chat model.
  *
  * A provider with no chat models (a classifier-only one) used to be offered, took a key, and then
- * showed an empty model list. The catalog service owns OAuth-first ordering; filtering is stable,
+ * showed an empty model list. The catalog service owns provider ordering; filtering is stable,
  * so this never duplicates that policy.
  */
 export function connectableProviders(
@@ -39,8 +39,8 @@ export function connectableProviders(
 
 /**
  * Derives the model-picker's provider lists: per-provider model counts, the
- * OAuth-capable id set, and the unconnected-provider list (OAuth-first, catalog
- * order otherwise) filtered by search. Pure projection — extracted from
+ * OAuth-capable id set, and the unconnected-provider list (in catalog
+ * order) filtered by search. Pure projection — extracted from
  * ModelSearchSelect so the component keeps selection/UI state.
  */
 export function useModelSelectProviders({

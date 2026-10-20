@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useDeferredValue, type ReactNode } from 'react'
 import { Command } from '@localixai/kit/command'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { sortProvidersOAuthFirst, type ProviderEntry } from '@localixai/agent/catalog'
+import { sortProvidersByPopularity, type ProviderEntry } from '@localixai/agent/catalog'
 import type { ApiKeyConnectionOptions } from '../useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import type { ModelBrowserProps } from './modelBrowserProps'
@@ -90,8 +90,8 @@ export function ModelBrowser({
       deferredSearch: deferredProviderSearch,
     })
   const orderedConnections = useMemo(
-    () => sortProvidersOAuthFirst(connections, oauthIdSet, (connection) => connection.providerId),
-    [connections, oauthIdSet],
+    () => sortProvidersByPopularity(connections, (connection) => connection.providerId),
+    [connections],
   )
   // "All agents": one model and level for every listed agent and for agents invited later.
   const party = usePartyRoute({

@@ -6,7 +6,7 @@ import type { CatalogRefreshResponse, CatalogResponse } from './contracts'
 import {
   modelKindOf,
   sortCatalogModelsNewestFirst,
-  sortProvidersOAuthFirst,
+  sortProvidersByPopularity,
 } from '@localixai/agent/catalog'
 
 /** Engine-neutral model catalog source supplied by the runtime adapter. */
@@ -39,7 +39,7 @@ function summarize(result: EngineCatalogRefreshResult): CatalogRefreshResponse {
  * Read-only catalog facade. Provider discovery, model metadata and OAuth
  * capabilities belong to the runtime adapter, not to the application layer.
  *
- * This is the ONE place the catalog is ordered: providers OAuth-first, models newest-first by the
+ * This is the ONE place the catalog is ordered: providers most popular first, models newest-first by the
  * adapter's release date (undated last, in source order). Every surface — the picker, its search
  * and filter results, the per-connection lists, `/model` — reads this order and keeps it.
  *
@@ -58,11 +58,7 @@ export function createCatalogService(deps: CatalogServiceDeps) {
     // Through the executor so a source that THROWS rejects instead of escaping `warm()` uncaught.
     new Promise<CatalogResponse>((resolve) => resolve(deps.source.list())).then((catalog) => ({
       ...catalog,
-      providers: sortProvidersOAuthFirst(
-        catalog.providers,
-        catalog.oauthProviderIds,
-        (provider) => provider.id,
-      ),
+      providers: sortProvidersByPopularity(catalog.providers, (provider) => provider.id),
       models: sortCatalogModelsNewestFirst(catalog.models),
     }))
 
