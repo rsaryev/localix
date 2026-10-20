@@ -231,3 +231,44 @@ test('the island slide shows only in the macOS desktop app, and its switch drive
   __resetIslandSetting(false)
   delete desktop.__TAURI__
 })
+
+test('the appearance slide ends in the theme and the glass, and the glass pick sets the level', async () => {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { AppearanceAction } = await import('./scenes/AppearanceScene')
+  const { getWindowTransparency, setWindowTransparency } =
+    await import('@/shared/theme/windowTransparency')
+  setWindowTransparency('standard')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const trigger = (label: string) =>
+    host.querySelector<HTMLButtonElement>(`[aria-label^="${label}: "]`)!
+  try {
+    await act(async () => root.render(<AppearanceAction />))
+    expect(trigger('Theme')).not.toBeNull()
+    expect(trigger('Window transparency').getAttribute('aria-label')).toBe(
+      'Window transparency: Standard. Change',
+    )
+
+    await act(async () => {
+      trigger('Window transparency').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+    })
+    const high = [...document.querySelectorAll('[role="menuitemradio"], [role="menuitem"]')].find(
+      (item) => item.textContent?.trim() === 'High',
+    ) as HTMLElement | undefined
+    expect(high).toBeDefined()
+    await act(async () => high!.click())
+    expect(getWindowTransparency()).toBe('high')
+    expect(document.documentElement.dataset.windowTransparency).toBe('high')
+    expect(trigger('Window transparency').getAttribute('aria-label')).toBe(
+      'Window transparency: High. Change',
+    )
+  } finally {
+    await act(async () => setWindowTransparency('standard'))
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})

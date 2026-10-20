@@ -127,6 +127,31 @@
 .wt-ws[data-tone='dark'] .wt-set-row:first-of-type .wt-set-select {
   animation: wt-a-press var(--loop) var(--ease-soft) infinite both;
 }
+/* Window transparency's slider, resting on Standard (the third of four stops). */
+.wt-set-slider {
+  position: relative;
+  flex-shrink: 0;
+  width: 5.5rem;
+  height: 0.1875rem;
+  border-radius: 9999px;
+  background: var(--ws-line);
+}
+.wt-set-slider-fill {
+  position: absolute;
+  inset: 0 33% 0 0;
+  border-radius: inherit;
+  background: var(--ws-strong);
+}
+.wt-set-slider-thumb {
+  position: absolute;
+  top: 50%;
+  left: 67%;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--ws-strong);
+  transform: translate(-50%, -50%);
+}
 /* The select's menu, opened under the Theme select in the dark page. */
 .wt-set-menu {
   position: absolute;

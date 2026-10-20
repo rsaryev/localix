@@ -1,5 +1,11 @@
 import { Check, ChevronDown, Monitor, Moon, Sun } from 'lucide-react'
 import { useTheme, type ThemeMode } from '@/shared/theme/useTheme'
+import {
+  WINDOW_TRANSPARENCY_LABELS,
+  WINDOW_TRANSPARENCY_LEVELS,
+  setWindowTransparency,
+  useWindowTransparency,
+} from '@/shared/theme/windowTransparency'
 import { TipPick } from '../TipPick'
 import './appearance-scene.css'
 
@@ -10,7 +16,7 @@ const NAV = [
   { group: 'Application', items: ['System'] },
 ]
 
-/** Settings → Preferences → Appearance → Theme, drawn in one fixed appearance. */
+/** Settings → Preferences → Appearance → Theme and Window transparency, in one fixed appearance. */
 function SettingsMiniature({ tone }: { tone: 'dark' | 'light' }) {
   return (
     <div className="wt-ws" data-tone={tone}>
@@ -41,6 +47,16 @@ function SettingsMiniature({ tone }: { tone: 'dark' | 'light' }) {
           </span>
           <span className="wt-set-select">
             {tone === 'dark' ? 'Dark' : 'Light'} <ChevronDown className="size-2.5" />
+          </span>
+        </div>
+        <div className="wt-set-row">
+          <span className="wt-set-row-text">
+            <b>Window transparency</b>
+            <span>How much of the desktop shows through the workspace.</span>
+          </span>
+          <span className="wt-set-slider">
+            <span className="wt-set-slider-fill" />
+            <span className="wt-set-slider-thumb" />
           </span>
         </div>
         <div className="wt-set-row">
@@ -87,20 +103,37 @@ const MODES = [
   { id: 'light', label: 'Light', icon: Sun },
 ] as const satisfies readonly { id: ThemeMode; label: string; icon: typeof Monitor }[]
 
-/** The same setting as Preferences → Theme, one click away. */
+/**
+ * The same two settings as Preferences → Appearance, one click away: the theme, then how much of
+ * the desktop shows through ("the glass"). The sentence ends in both values.
+ */
 export function AppearanceAction() {
   const { themeMode, setThemeMode } = useTheme()
+  const transparency = useWindowTransparency()
   return (
-    <TipPick
-      label="Theme"
-      value={MODES.find((m) => m.id === themeMode)?.label ?? 'System'}
-      entries={MODES.map((m) => ({
-        id: m.id,
-        label: m.label,
-        icon: m.icon,
-        selected: m.id === themeMode,
-        onSelect: () => setThemeMode(m.id),
-      }))}
-    />
+    <>
+      <TipPick
+        label="Theme"
+        value={MODES.find((m) => m.id === themeMode)?.label ?? 'System'}
+        entries={MODES.map((m) => ({
+          id: m.id,
+          label: m.label,
+          icon: m.icon,
+          selected: m.id === themeMode,
+          onSelect: () => setThemeMode(m.id),
+        }))}
+      />
+      <span className="text-text-faint">, the glass —</span>{' '}
+      <TipPick
+        label="Window transparency"
+        value={WINDOW_TRANSPARENCY_LABELS[transparency]}
+        entries={WINDOW_TRANSPARENCY_LEVELS.map((level) => ({
+          id: level,
+          label: WINDOW_TRANSPARENCY_LABELS[level],
+          selected: level === transparency,
+          onSelect: () => setWindowTransparency(level),
+        }))}
+      />
+    </>
   )
 }

@@ -8,10 +8,10 @@ import { getSpendThreshold, setSpendThreshold } from '@/shared/lib/spendAlert'
 import { useTheme, type ThemeMode } from '@/shared/theme/useTheme'
 import {
   DEFAULT_WINDOW_TRANSPARENCY,
+  WINDOW_TRANSPARENCY_LABELS,
   WINDOW_TRANSPARENCY_LEVELS,
   setWindowTransparency,
   useWindowTransparency,
-  type WindowTransparency,
 } from '@/shared/theme/windowTransparency'
 import { Select, type SelectOption } from '@localixai/kit/select'
 import { Slider } from '@localixai/kit/slider'
@@ -125,13 +125,6 @@ function ThemeField() {
   )
 }
 
-const TRANSPARENCY_LABELS: Record<WindowTransparency, string> = {
-  off: 'Off',
-  low: 'Low',
-  standard: 'Standard',
-  high: 'High',
-}
-
 function TransparencyField() {
   const level = useWindowTransparency()
   return (
@@ -142,7 +135,7 @@ function TransparencyField() {
       <Slider
         aria-label="Window transparency"
         className="w-full @xl:w-56"
-        steps={WINDOW_TRANSPARENCY_LEVELS.map((step) => TRANSPARENCY_LABELS[step])}
+        steps={WINDOW_TRANSPARENCY_LEVELS.map((step) => WINDOW_TRANSPARENCY_LABELS[step])}
         value={WINDOW_TRANSPARENCY_LEVELS.indexOf(level)}
         onValueChange={(index) =>
           setWindowTransparency(WINDOW_TRANSPARENCY_LEVELS[index] ?? DEFAULT_WINDOW_TRANSPARENCY)

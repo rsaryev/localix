@@ -20,6 +20,14 @@ export type WindowTransparency = (typeof WINDOW_TRANSPARENCY_LEVELS)[number]
 
 export const DEFAULT_WINDOW_TRANSPARENCY: WindowTransparency = 'standard'
 
+/** Each level's name wherever it is offered: the Preferences slider and the welcome tip. */
+export const WINDOW_TRANSPARENCY_LABELS: Record<WindowTransparency, string> = {
+  off: 'Off',
+  low: 'Low',
+  standard: 'Standard',
+  high: 'High',
+}
+
 /** Narrow an unknown persisted value; anything foreign falls back to the default. */
 export function parseWindowTransparency(raw: string | null): WindowTransparency {
   return WINDOW_TRANSPARENCY_LEVELS.includes(raw as WindowTransparency)
