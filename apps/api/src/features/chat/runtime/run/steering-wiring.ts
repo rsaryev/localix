@@ -6,19 +6,15 @@ import { buildRuntimeSteering } from './runtime-execution'
 import type { RunFrame } from './stages/frame'
 import type { ResolvedTurn } from './stages/turn'
 import { addressedToSpeaker, createSteeringTaker, createToolCallDeferral } from './steering'
-import { takeSteeringAtCheckpoint } from './tool-checkpoint-gate'
 
 /**
  * Mid-run steering for the stream stage: the `takeSteering` callback and, when the session
  * steers at all, the tool-call deferral that lets a waiting person's message outrank calls
- * chosen without it. A completed child report joins only once per settled tool turn, after the
- * host transcript has caught up with the turn the loop announced.
+ * chosen without it. A completed child report joins only once per settled tool turn. The engine
+ * asks only once this host has handled every event it emitted, so the transcript has already
+ * caught up with the turn the boundary names.
  */
-export function wireRunSteering(
-  frame: RunFrame,
-  turn: Pick<ResolvedTurn, 'state' | 'policy'>,
-  waitForCheckpoint: (index: number) => Promise<boolean>,
-) {
+export function wireRunSteering(frame: RunFrame, turn: Pick<ResolvedTurn, 'state' | 'policy'>) {
   const { env, session, speakerAgentId, abort } = frame
   const { state, policy } = turn
   const { repo, now } = env
@@ -61,15 +57,10 @@ export function wireRunSteering(
     : undefined
   const takeSteering = buildRuntimeSteering({
     takeUserMessages: takeFromQueue
-      ? (boundary?: SteeringBoundary) =>
-          takeSteeringAtCheckpoint({
-            boundary,
-            waitFor: waitForCheckpoint,
-            take: takeFromQueue,
-            onToolBoundary: (index) => {
-              requestedToolTurnIndex = index
-            },
-          })
+      ? (boundary?: SteeringBoundary) => {
+          requestedToolTurnIndex = boundary?.completedToolTurnIndex
+          return takeFromQueue()
+        }
       : undefined,
   })
   const deferral = steers

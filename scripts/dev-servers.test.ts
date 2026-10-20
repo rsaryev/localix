@@ -115,7 +115,7 @@ describe('development Turbo orchestration', () => {
       '--filter=@localixai/api',
       '--filter=@localixai/ui',
       '--filter=@localixai/agent',
-      '--filter=@localixai/agent-runtime-pi',
+      '--filter=@localixai/engine...',
     ])
     expect(commands.api).toEqual(['x', 'turbo', 'dev', '--only', '--filter=@localixai/api'])
     expect(commands.frontend).toContain('--only')

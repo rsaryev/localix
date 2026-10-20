@@ -21,7 +21,7 @@ reader's query vectors, group routing's `rank` and a plugin's `host.semantic.emb
 index's write path (`ingest.ts`) calls the engine itself. The model is named once, in
 `embeddings/models.ts`; decision models live beside it in `features/decisions` (`models.ts`).
 
-Each layer names only the one below it. `agent-runtime-pi` sees local chat models through the
+Each layer names only the one below it. The engine's model access sees local chat models through the
 `LocalProviderHost` port and knows nothing of the router.
 
 ## Module contracts
@@ -127,5 +127,5 @@ share the downloader, catalog, router and status; a new kind adds only its flags
   [semantic-pipeline.test.ts](../../../apps/api/src/features/chat/semantic-pipeline.test.ts)
 - [Chat sources](../../../apps/api/src/features/chat/semantic-sources.ts) ·
   [hybrid providers](../../../apps/api/src/features/chat/search-provider-hybrid.ts)
-- [Local provider](../../../packages/agent-runtime-pi/src/local-provider.ts)
+- [Local provider port](../../../packages/agent/src/runtime/local-models.ts)
 - [Agent tool](../../../apps/api/src/features/agent-core/tools/global-search/global-search.ts)

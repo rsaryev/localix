@@ -98,9 +98,8 @@ export function resolveEffectiveContextWindow(
   return Math.min(window, contextWindowCapAt(depth))
 }
 
-// The prompt-cache TTL policy that used to live here is now the ADAPTER's
-// (`packages/agent-runtime-pi/src/cache-retention.ts`): the host reports the observed idle gap
-// as `promptCacheIdleMs` and the provider's own cost model decides what that gap is worth.
+// The prompt-cache TTL policy that used to live here belongs to the engine: the host reports
+// the observed idle gap as `promptCacheIdleMs` and model access decides what that gap is worth.
 // A TTL chosen here was Anthropic's price list written into a provider-neutral module.
 
 // How often the in-flight assistant payload is flushed to the DB during a

@@ -21,7 +21,8 @@ const NOTICE_FILES = [
     'vendor/monaco-editor-runtime/THIRD_PARTY_NOTICES.localix.txt',
     'monaco-editor-bundled-dependencies-NOTICES.txt',
   ],
-  ['vendor/pi/LICENSE', 'pi-LICENSE.txt'],
+  // The agent loop, its sign-in flows and the script sandbox started as ports of pi (MIT).
+  ['packages/engine/licenses/pi-LICENSE.txt', 'pi-LICENSE.txt'],
 ]
 
 const GENERATED_RUNTIME_NOTICES = 'npm-runtime-THIRD_PARTY_NOTICES.txt'

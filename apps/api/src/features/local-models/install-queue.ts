@@ -25,6 +25,10 @@ type Job = InstallJob & {
   done: Promise<void>
   /** Why it is being stopped: a pause keeps the files, a cancel deletes them. */
   stop?: 'pause' | 'cancel'
+  /** Its turn in the queue has come: it is fetching, or sizing up what to fetch. */
+  started?: boolean
+  /** Its stop has been dealt with; the queue's later turn for it does nothing. */
+  settled?: boolean
 }
 
 export function createInstallQueue(deps: {
@@ -75,6 +79,8 @@ export function createInstallQueue(deps: {
   }
 
   async function settleStopped(job: Job) {
+    if (job.settled) return
+    job.settled = true
     jobs.delete(job.modelId)
     if (job.stop === 'cancel') await discardDownload(paths, job.modelId)
     await deps.stopped()
@@ -120,6 +126,7 @@ export function createInstallQueue(deps: {
       deps.notify()
       job.done = (queue = queue.then(async () => {
         if (controller.signal.aborted) return settleStopped(job)
+        job.started = true
         try {
           job.total =
             (await pendingModelBytes(paths, spec)) +
@@ -156,7 +163,11 @@ export function createInstallQueue(deps: {
       if (!job) return false
       job.stop = how
       job.controller.abort()
-      await job.done
+      // A job still waiting behind the download ahead of it would settle only when that one
+      // finishes, so a pause or cancel looked like nothing for as long. It leaves now instead; a
+      // started one is waited for, so a cancel never deletes files it is still writing.
+      if (!job.started) await settleStopped(job)
+      else await job.done
       return true
     },
 

@@ -5,7 +5,7 @@
  * router starts on the first request, and `boot()` only reads what is installed.
  */
 import path from 'node:path'
-import type { LocalProviderHost } from '@localixai/agent-runtime-pi'
+import type { LocalProviderHost } from '@localixai/agent/runtime'
 import { createLocalModelsService, type LocalModelsService } from '../features/local-models/service'
 import { CHAT_CONTEXT_FALLBACK } from '../features/local-models/router'
 import { localixHome } from '../lib/env'

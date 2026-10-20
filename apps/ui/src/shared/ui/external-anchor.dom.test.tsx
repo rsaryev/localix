@@ -63,6 +63,29 @@ describe('ExternalAnchor', () => {
     }
   })
 
+  test('inside the desktop shell a link carries no target, so the shell shim never claims it', async () => {
+    const React = await import('react')
+    const { act } = React
+    const { createRoot } = await import('react-dom/client')
+    const { ExternalAnchor } = await import('./external-anchor')
+    const desktop = window as unknown as { __TAURI_INTERNALS__?: unknown }
+    desktop.__TAURI_INTERNALS__ = {}
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    try {
+      await act(async () =>
+        root.render(<ExternalAnchor href="https://example.com/docs">Docs</ExternalAnchor>),
+      )
+      const link = host.querySelector<HTMLAnchorElement>('a')!
+      expect(link.hasAttribute('target')).toBe(false)
+      expect(link.getAttribute('href')).toBe('https://example.com/docs')
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+      Reflect.deleteProperty(desktop, '__TAURI_INTERNALS__')
+    }
+  })
+
   test('honours caller cancellation and supports protocol-handler semantics', async () => {
     const React = await import('react')
     const { act } = React

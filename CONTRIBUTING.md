@@ -44,9 +44,6 @@ One development dependency is not OSI-licensed: `oxlint-plugin-react-doctor`, us
 optional `bun run lint:react-doctor`, ships under a modified MIT license that restricts some uses of
 its own source. It is never bundled into Localix artifacts.
 
-Maintainers can opt into the additional vendored `vendor/pi` synchronization and model catalog
-refresh through `LOCALIX_MAINTAINER=1`.
-
 Runnable applications live in `apps/`, shared TypeScript libraries in `packages/`, installable
 extensions in `plugins/`, repository automation in `scripts/`, shared configuration in `config/`,
 documentation in `docs/`, and static media in `assets/`. Keep feature-specific code inside its

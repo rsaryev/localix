@@ -19,7 +19,7 @@ import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
 import { handleAgentEvent, type TurnEventContext } from '../event-handlers'
-import { createToolCheckpointGate } from '../tool-checkpoint-gate'
+import { persistNow } from '../event-handlers-flush'
 import { buildRuntimeToolContext } from '../runtime-execution'
 import { requireCompletedRuntime } from '../runtime-result'
 import { wireRunSteering } from '../steering-wiring'
@@ -56,11 +56,6 @@ export async function streamRun(
   const { connection, credential, credentialStore, providerId, rawModelId } = turn.model
   const { dispatchTools, tools } = toolset
 
-  // Pi can announce a settled turn before the bounded stream's writer commits it.
-  const toolCheckpoint = createToolCheckpointGate({
-    signal: abort.signal,
-    completedIndex: () => state.completedTurnIndex,
-  })
   let backgroundAccumulator: ReturnType<typeof createItemAccumulator> | undefined
 
   const asyncRegistry = createRunAsyncRegistry({
@@ -77,7 +72,7 @@ export async function streamRun(
       backgroundAccumulator?.patchToolItem(toolCallId, patch)
     },
   })
-  const { takeSteering, deferral } = wireRunSteering(frame, turn, toolCheckpoint.waitFor)
+  const { takeSteering, deferral } = wireRunSteering(frame, turn)
   const speakerRoute = agentRoute(session, speakerAgentId)
   const toolExecutionContext = buildRuntimeToolContext({
     deps,
@@ -218,12 +213,13 @@ export async function streamRun(
   try {
     for await (const event of stream) {
       await handleAgentEvent(eventCtx, event)
-      if (event.type === 'turn_end' && state.completedTurnIndex === event.turnIndex) {
-        toolCheckpoint.notify(event.turnIndex)
-      }
     }
     const runtimeResult = await stream.result
     await history.runRecord.finish(runtimeResult)
+    // A run that did not complete is finalized from its STORED row, which the stream writes only
+    // on a cadence. Store what the run reached first — above all a tool call that ended after
+    // the stop — or finalizing rewinds that call to running, and it spins in the transcript.
+    if (runtimeResult.terminal !== 'completed') await persistNow(eventCtx, state.payload)
     requireCompletedRuntime(runtimeResult)
   } catch (error) {
     await history.runRecord.fail(error)

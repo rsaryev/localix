@@ -20,7 +20,7 @@ const inputSchema = z.object({
 })
 
 /**
- * `codemode`, as pi's codemode example builds it (`vendor/pi/packages/agent/examples/mcp-codemode`):
+ * `codemode`, as pi's codemode example builds it (github.com/earendil-works/pi, `mcp-codemode`):
  * the model writes JavaScript, and the script calls `tools.<name>(args)` for the run's `read`,
  * `bash`, `edit` and `write`. Only the script's output and return value reach the model, not the
  * results of the calls.

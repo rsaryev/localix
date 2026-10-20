@@ -152,8 +152,8 @@ describe('a tool call shows shielded arguments, never the executed ones', () => 
 /**
  * The ORDER a review proved wrong in the first version of this fix.
  *
- * pi emits `message_end` with the final assistant message BEFORE it emits any `tool_execution_start`
- * (`vendor/pi/.../agent-loop.ts`), and `message_end` runs `syncAssistantParts` → `acc.streamTool`,
+ * The loop emits `message_end` with the final assistant message BEFORE it emits any
+ * `tool_execution_start` (`packages/engine-loop/src/turn.ts`), and `message_end` runs `syncAssistantParts` → `acc.streamTool`,
  * which takes `input` straight from `toolCall.arguments`. So the FIRST persisted + streamed copy of a
  * command is written by that path, not by the shielded handler — the handler only overwrote it on a
  * later flush, and if the run aborted in between, the raw value was what stayed in `agent_messages`.

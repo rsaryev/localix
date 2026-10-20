@@ -22,7 +22,7 @@ need a catalog entry, and sign-in appears only when that runtime reports an OAut
 | Find a provider           | Search the provider column; it filters connections and providers to add                        | It never narrows the model list                                      |
 | Choose reasoning effort   | Pick a level in the model details panel's Settings, remembered per agent and model             | A model that publishes none offers only "off"                        |
 | Route auxiliary work      | Select model slots for session titles and inline completion                                    | Each unset route uses its documented fallback                        |
-| Get new models            | The model list refreshes in the background; **Settings → System → Model list** checks now      | Only providers whose models come from the generated catalog          |
+| Get new models            | The model list refreshes in the background; **Settings → System → Model list** checks now      | Only providers listed on models.dev                                  |
 | Run models locally        | Connect **Local** (no key); picking a model downloads it — see [Local models](local-models.md) | The model runs on this computer's memory and processor               |
 
 ## How it works
@@ -112,33 +112,32 @@ replacement before removing it. OAuth refresh runs through a connection-scoped c
 refresh updates for one key are serialized so concurrent runs do not overwrite rotating tokens.
 
 Every model list shows the newest models first: the picker's per-connection lists, its search and
-filter results, and the `/model` command's Model step. Release dates come from the runtime's catalog
-(models.dev release dates, OpenRouter and Vercel AI Gateway listing dates); models without a date
-follow in catalog order.
+filter results, and the `/model` command's Model step. Release dates come from models.dev; models
+without a date follow in catalog order.
 
 ### How the model list stays current
 
-The catalog shipped with the app is a baseline. The server refreshes it from the same public sources
-the runtime's catalog generator reads, and converts them with the same code, so a refreshed model
-has exactly the context window, prices, reasoning levels, and capabilities a new release would have
-shipped. Localix adds no metadata of its own.
+The model list is [models.dev](https://models.dev)'s, normalized for the providers Localix can
+serve. Localix adds no metadata of its own: context windows, prices and their long-context tiers,
+reasoning levels, and capabilities are models.dev's. A provider is listed when its models are served
+through a provider package the engine carries (OpenAI, Anthropic, Google, OpenRouter, Vercel AI
+Gateway, and the OpenAI-compatible wire); Bedrock, Azure and Vertex, whose addresses are configured
+per account, are not.
 
-| When                                 | What happens                                                                                                                               |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Startup                              | The last refreshed lists are restored from `~/.localix/model-catalog/` before the first catalog answer. No request is sent.                |
-| Shortly after startup, then hourly   | A provider whose stored list is older than six hours is fetched again, while the app is idle. The rest answer from disk.                   |
-| **Settings → Models → Model list**   | **Check for new models** fetches every list now, including when automatic checks are off.                                                  |
-| A source is unreachable or malformed | The whole check fails and every provider keeps its current list; the server logs the cause. The setting row shows it after a manual check. |
+| When                                   | What happens                                                                                                      |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| First launch                           | The snapshot shipped with the app is used and stored, and the first check fetches the current list.               |
+| Startup                                | The stored list is restored from `~/.localix/model-catalog/` before the first catalog answer. No request is sent. |
+| Shortly after startup, then hourly     | One conditional request to models.dev; an unchanged list answers `304 Not Modified` and costs no download.        |
+| **Settings → Models → Model list**     | **Check for new models** asks now, including when automatic checks are off.                                       |
+| models.dev is unreachable or malformed | The current list stays; the server logs the cause. The setting row shows it after a manual check.                 |
 
-The same lists carry **decision models**, which answer typed questions instead of writing text
-(OpenRouter's models with `decisions` output, plus those of OpenAI, TypeSafe, Vercel AI Gateway,
-Cloudflare Workers AI and OpenCode). They appear only where a workload runs on them, never among
-chat models.
+The same list carries **decision models**, which answer typed questions instead of writing text
+(models.dev's `decision` models on OpenRouter and Vercel AI Gateway, and OpenAI's Decisions API).
+They appear only where a workload runs on them, never among chat models.
 
-A refresh adds models and updates their details; it does not remove a model the shipped baseline
-lists. After an app update, lists stored by the previous version are discarded and the new baseline
-is used until the next check. Radius, whose list depends on the signed-in account, is not refreshed
-this way. See [Privacy](../getting-started/privacy.md) for exactly what is requested.
+A model that leaves models.dev leaves the list at the next check. See
+[Privacy](../getting-started/privacy.md) for exactly what is requested.
 
 ### Sign-in lifecycle
 
@@ -232,13 +231,13 @@ connections and selects the conversation's model.
 
 ## Source of truth
 
-- [Runtime catalog projection and refresh](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/catalog.ts)
-- [Persisted catalog validation](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/catalog-store.ts)
+- [Catalog projection and refresh](https://github.com/rsaryev/localix/blob/main/packages/engine-models/src/catalog/catalog.ts)
+- [models.dev normalization](https://github.com/rsaryev/localix/blob/main/packages/engine-models/src/catalog/normalize.ts)
 - [Catalog refresh schedule](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/catalog/refresh-schedule.ts)
-- [Provider transports and metadata](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/providers.ts)
+- [Provider transports and request shaping](https://github.com/rsaryev/localix/blob/main/packages/engine-models/src/providers/connect.ts)
 - [Newest-first catalog order](https://github.com/rsaryev/localix/blob/main/packages/agent/src/catalog/model-order.ts)
 - [Unresolved model reasons](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/model-resolution-miss.ts)
-- [Runtime authentication bridge](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/auth.ts)
+- [Sign-in and credential refresh](https://github.com/rsaryev/localix/blob/main/packages/engine-models/src/auth/auth.ts)
 - [Connection API and DTOs](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/contracts.ts)
 - [Credential storage and refresh](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/service.ts)
 - [OAuth flow lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/provider-connections/oauth-flow-manager.ts)

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { estimateToolSchemaTokens } from '@localixai/agent/agents'
-import { createPiScriptSandbox } from '@localixai/agent-runtime-pi'
+import { createScriptSandbox } from '@localixai/engine-scripts'
 
 import { CHAT_RUN_PROFILE } from './run-shape'
 import { TOOL } from './tool-names'
@@ -41,7 +41,7 @@ const OVER_CEILING_BY_DESIGN = new Set<string>([TOOL.codemode])
 
 describe('default wire schema budget', () => {
   // The engine's real sandbox, so `codemode` is measured with the declarations it ships.
-  const registry = richRegistry(CHAT_RUN_PROFILE, undefined, [], undefined, createPiScriptSandbox())
+  const registry = richRegistry(CHAT_RUN_PROFILE, undefined, [], undefined, createScriptSandbox())
   const wire = registry.tools
   const rows = wire
     .map((tool) => ({ name: tool.name, tokens: estimateToolSchemaTokens([tool]) }))

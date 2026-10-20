@@ -32,7 +32,7 @@ import {
   SCRIPT_WASM_FILE,
   SCRIPT_WORKER_ENTRY,
   SCRIPT_WORKER_FILE,
-} from '../../../packages/agent-runtime-pi/src/script-assets.ts'
+} from '../../../packages/engine-scripts/src/assets.ts'
 import {
   stageSidecarBun,
   binariesDir,
@@ -117,7 +117,6 @@ const runtimeKey = fingerprint([
   join(repo, 'apps', 'api'),
   join(repo, 'packages'),
   join(repo, 'plugins'),
-  join(repo, 'vendor', 'pi', 'packages'),
   join(desktop, 'scripts'),
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
   join(repo, 'scripts', 'stage-dropins.mjs'),
@@ -131,7 +130,6 @@ const runtimeKey = fingerprint([
   join(repo, 'scripts', 'rust-third-party-notices.mjs'),
   join(desktop, 'licenses'),
   join(desktop, 'src-tauri', 'Cargo.lock'),
-  join(repo, 'vendor', 'pi', 'LICENSE'),
   join(repo, 'vendor', 'monaco-editor-runtime'),
   join(repo, 'bun.lock'),
   join(repo, 'LICENSE'),
@@ -207,7 +205,7 @@ if (!runtimeReady) {
   //        module that creates it, and reads the QuickJS binary from disk. server.js has neither
   //        beside it, so both are staged here, where `bundledScriptSandboxOptions` finds them. ──
   const scriptWorker = await Bun.build({
-    entrypoints: [join(repo, 'packages', 'agent-runtime-pi', SCRIPT_WORKER_ENTRY)],
+    entrypoints: [join(repo, 'packages', 'engine-scripts', SCRIPT_WORKER_ENTRY)],
     target: 'bun',
     outdir: resources,
     naming: { entry: SCRIPT_WORKER_FILE },
@@ -218,7 +216,7 @@ if (!runtimeReady) {
     throw new Error('bundling the script sandbox worker failed')
   }
   copyFileSync(
-    createRequire(join(repo, 'vendor', 'pi', 'packages', 'codemode', 'package.json')).resolve(
+    createRequire(join(repo, 'packages', 'engine-scripts', 'package.json')).resolve(
       'quickjs-wasi/quickjs.wasm',
     ),
     join(resources, SCRIPT_WASM_FILE),

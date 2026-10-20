@@ -125,4 +125,4 @@ message text.
 - [The embedding model by similarity](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/floor-similarity.ts)
 - [Unaddressed messages](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/conversation-strategy.ts)
 - [Reply handoffs](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/conversation-routing.ts)
-- [Decision models in the catalog](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/catalog.ts)
+- [Decision models in the catalog](https://github.com/rsaryev/localix/blob/main/packages/engine-models/src/catalog/normalize.ts)

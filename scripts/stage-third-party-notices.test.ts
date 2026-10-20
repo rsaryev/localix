@@ -89,7 +89,7 @@ function fixture(): string {
     join(root, 'vendor/monaco-editor-runtime/THIRD_PARTY_NOTICES.localix.txt'),
     'monaco bundled-dependency notices\n',
   )
-  write(join(root, 'vendor/pi/LICENSE'), 'pi license\n')
+  write(join(root, 'packages/engine/licenses/pi-LICENSE.txt'), 'pi license\n')
   return root
 }
 

@@ -302,9 +302,8 @@ describe('pruneWireMessages budgetTokens', () => {
  * in production while every test here passed on the string form — a 27-read history came back
  * byte-identical. These pin both shapes to the same decisions.
  *
- * `packages/agent` cannot import `packages/agent-runtime-pi` (base package, dependency runs
- * the other way), so the array shape is constructed here and the CODEC side is pinned
- * separately in `packages/agent-runtime-pi/src/message-codec.test.ts`.
+ * `packages/agent` cannot import the engine (base package, dependency runs the other way),
+ * so the array shape is constructed here, as the engine's tool results carry it.
  */
 describe('pruneWireMessages content-shape parity', () => {
   /** The same history with every tool result expressed as content PARTS. */

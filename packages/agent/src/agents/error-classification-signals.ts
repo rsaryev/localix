@@ -35,8 +35,7 @@ export function isContextOverflowMessage(message: string): boolean {
     m.includes('too long for the model') ||
     m.includes('max input tokens') ||
     m.includes('input tokens exceed') ||
-    // Provider shapes the runtime's overflow corpus knows and we missed (the drift test in
-    // agent-runtime-pi pins the shared corpus):
+    // Provider shapes an overflow corpus knows and we missed:
     // xAI "maximum prompt length is N", llama.cpp "exceeds the available context
     // size" / DS4 "configured context size", GitHub Copilot "prompt token count
     // of X exceeds the limit of Y".

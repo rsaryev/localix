@@ -107,8 +107,7 @@ export function providerResponseOf(error: unknown): ProviderResponseFacts | unde
  * Every header name a rate-limit delay can be read from, in the order they are trusted.
  *
  * `retry-after-ms` first: it is the millisecond extension both Anthropic's and OpenAI's SDKs
- * send, it is more precise than the integer `retry-after`, and pi's own codex transport reads
- * it first for that reason (`vendor/pi/packages/ai/src/api/openai-codex-responses.ts`).
+ * send, and it is more precise than the integer `retry-after`.
  * Then `retry-after` (RFC 9110 §10.2.3 — delta-seconds or an HTTP-date).
  *
  * The `*-reset` headers are the fallback for a provider that reports WHEN the window

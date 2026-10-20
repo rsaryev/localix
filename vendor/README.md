@@ -5,12 +5,6 @@ code. Root formatting, lint, and dead-code scans exclude the entire tree so peri
 do not acquire unrelated Localix style changes. Root type-check, build, and test tasks still exercise
 vendored packages that are Bun workspaces.
 
-## Pi
-
-`pi/` is a committed source snapshot, not a nested Git checkout. Update it from a reviewed upstream
-commit using the procedure and Localix delta recorded in [`pi/UPSTREAM.md`](./pi/UPSTREAM.md). Keep
-upstream formatting intact; do not run the root formatter over the copied files.
-
 ## Monaco Editor
 
 `monaco-editor-runtime/` is the committed, generated browser runtime consumed by the UI. Its source

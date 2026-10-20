@@ -111,4 +111,6 @@ and [troubleshooting](docs/getting-started/troubleshooting.md) for startup probl
 ## Contributing
 
 Localix is in beta. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
-[the code map](docs/internals/code-map.md).
+[the code map](docs/internals/code-map.md). Report vulnerabilities as [SECURITY.md](SECURITY.md)
+describes; participation follows the [Code of Conduct](CODE_OF_CONDUCT.md). Localix is released
+under the [MIT License](LICENSE).

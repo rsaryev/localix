@@ -300,6 +300,54 @@ describe('local models service', () => {
     }
   }, 30_000)
 
+  test('a download queued behind another pauses and cancels at once, not when that one ends', async () => {
+    const ahead: LocalModelSpec = {
+      id: 'google/ahead-GGUF:Q4_0',
+      repo: 'google/ahead-GGUF',
+      revision: 'rev1',
+      variant: 'Q4_0',
+      kind: 'chat',
+      label: 'Ahead',
+      license: null,
+      architecture: null,
+      contextLength: 4096,
+      vision: false,
+      files: [
+        {
+          name: 'ahead-Q4_0.gguf',
+          url: 'https://huggingface.co/google/ahead-GGUF/resolve/rev1/ahead-Q4_0.gguf',
+          bytes: weights.length,
+          sha256: sha(weights),
+          role: 'weights',
+        },
+      ],
+      bytes: weights.length,
+    }
+    slow = true
+    try {
+      // The kept model downloads first, slowly; the person's pick waits behind it.
+      const { service } = await setup(sha(weights), [ahead])
+      const id = 'google/compact-GGUF:Q4_0'
+      await service.install(id)
+      expect(service.job(id)).toMatchObject({ phase: 'queued' })
+
+      const started = performance.now()
+      await service.pause(id)
+      expect(performance.now() - started).toBeLessThan(500)
+      expect(service.job(id)).toBeNull()
+
+      await service.install(id)
+      await service.cancel(id)
+      expect(performance.now() - started).toBeLessThan(1_000)
+      expect(service.job(id)).toBeNull()
+      // The download ahead was never touched.
+      expect(service.job(ahead.id)).toMatchObject({ modelId: ahead.id, error: null })
+      await service.shutdown()
+    } finally {
+      slow = false
+    }
+  }, 30_000)
+
   test('a model Localix keeps is fetched at start by itself, and cannot be cancelled or removed', async () => {
     const kept: LocalModelSpec = {
       id: 'google/compact-GGUF:Q4_0',

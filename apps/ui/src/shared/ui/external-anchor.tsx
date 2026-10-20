@@ -1,4 +1,5 @@
 import { forwardRef, type ComponentPropsWithoutRef, type MouseEvent } from 'react'
+import { isDesktopRuntime } from '@localixai/kit/environment'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 
 export type ExternalAnchorProps = Omit<
@@ -35,6 +36,14 @@ export const ExternalAnchor = forwardRef<HTMLAnchorElement, ExternalAnchorProps>
      * body, so not letting the event travel further is what keeps that shim out
      * of a click this component has fully handled.
      */
+    /**
+     * NO `target="_blank"` IN THE DESKTOP SHELL. Stopping propagation is not enough there: a link
+     * inside a portal (the model picker, every dialog) sits in a container mounted on `body`, so
+     * React's listener and the shell shim's share that node, and the shim, registered first,
+     * runs first — the click raised "shell.open not allowed" and opened nothing. The shim and the
+     * opener's equivalent only act on `target="_blank"`, and this anchor opens every link itself.
+     */
+    const newTabTarget = newTab && !isDesktopRuntime()
     const handled = (event: MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault()
       event.stopPropagation()
@@ -56,8 +65,8 @@ export const ExternalAnchor = forwardRef<HTMLAnchorElement, ExternalAnchorProps>
         ref={ref}
         data-slot="external-anchor"
         href={href}
-        target={newTab ? '_blank' : undefined}
-        rel={newTab ? 'noopener noreferrer' : undefined}
+        target={newTabTarget ? '_blank' : undefined}
+        rel={newTabTarget ? 'noopener noreferrer' : undefined}
         onClick={activate}
         onAuxClick={activateAux}
         {...props}

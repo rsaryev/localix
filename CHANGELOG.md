@@ -133,10 +133,9 @@ An entry is therefore written when a tag is prepared, not when a commit merges:
   Replace the draft label with the publication date only after the release is public.
 - Group its lines under `Added`, `Changed`, `Fixed`, and `Removed`.
 - The release body is written by `scripts/build-release-notes.mjs` when the release is published:
-  this version's section becomes **Highlights**, GitHub's generated list (grouped by the labels in
-  [`.github/release.yml`](.github/release.yml)) becomes **What's changed**, and the download table
-  lists only the installers that reached the release. `SHA256SUMS.txt` and build-provenance
-  attestations are published with it.
+  this version's section becomes **Highlights**, GitHub's generated list of merged pull requests
+  becomes **What's changed**, and the download table lists only the installers that reached the
+  release. `SHA256SUMS.txt` and build-provenance attestations are published with it.
 - Platforms: only macOS on Apple silicon is built. The Linux x64, Linux ARM64 and macOS Intel legs
   are parked in a comment in the workflow's leg list, to be re-enabled once their packaging works.
 - Keep the calm, factual register the rest of the repository uses; see

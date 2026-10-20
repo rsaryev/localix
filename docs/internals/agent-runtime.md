@@ -1,41 +1,52 @@
 # Agent runtime boundary
 
 The agent runtime converts a Localix session into one provider-backed run and returns Localix
-events. Use this boundary to change providers or loop behavior without coupling the API to one
-runtime library.
+events. Localix runs its own engine behind this boundary: an agent loop, model access over the
+`@ai-sdk/*` provider packages and the models.dev catalog, and a script sandbox.
 
 ## Terminology
 
-| Term            | Meaning                                                          | Boundary                                              |
-| --------------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
-| Session         | Durable Localix messages, configuration, and execution metadata. | One session can contain multiple runs.                |
-| Run             | One invocation of `AgentRuntime.run()` for a session.            | A retry starts another invocation.                    |
-| Runtime port    | Provider-neutral interfaces in `packages/agent`.                 | The port contains no Pi types.                        |
-| Runtime adapter | The implementation translating the port to a loop engine.        | Pi is the only production adapter.                    |
-| Context policy  | A host callback applied before each model request.               | It changes model-facing messages, not the transcript. |
-| Agent event     | A Localix lifecycle, message, tool, usage, or error event.       | Delivery uses a bounded adapter buffer.               |
+| Term           | Meaning                                                          | Boundary                                              |
+| -------------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| Session        | Durable Localix messages, configuration, and execution metadata. | One session can contain multiple runs.                |
+| Run            | One invocation of `AgentRuntime.run()` for a session.            | A retry starts another invocation.                    |
+| Runtime port   | Provider-neutral interfaces in `packages/agent`.                 | The port names no provider SDK.                       |
+| Engine         | The implementation behind the port, in `packages/engine*`.       | Localix's own engine is the only production engine.   |
+| Model session  | One model bound to its credential for one run.                   | The seam between the loop and model access.           |
+| Context policy | A host callback applied before each model request.               | It changes model-facing messages, not the transcript. |
+| Agent event    | A Localix lifecycle, message, tool, usage, or error event.       | Delivery uses a bounded buffer.                       |
 
 ## Ownership contract
 
-| Layer          | Owns                                                                                          | Boundary                                                               |
-| -------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Localix host   | Session state, modes, tools, permissions, context policy, persistence, and event publication. | It depends on the `AgentRuntime` interface, not Pi types.              |
-| Runtime port   | `run()`, event iteration, terminal result, abort, and session disposal.                       | It models one run; retries can start another run.                      |
-| Pi adapter     | Message conversion, tool bridging, credential access, stream mapping, and adapter buffering.  | Production uses this adapter; the port permits another implementation. |
-| Pi loop engine | Provider requests, streamed model output, and loop-level tool dispatch.                       | Provider-specific events do not cross the adapter boundary.            |
+The engine is four packages. Each may import only the packages listed for it; the architecture check
+enforces this.
+
+| Package                     | Owns                                                                                                         | May import                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `@localixai/engine-loop`    | Turns, the tool batch scheduler, argument coercion, hooks, nested calls, steering, follow-ups, event buffer. | `@localixai/agent` only; no provider SDK. |
+| `@localixai/engine-models`  | The models.dev catalog, provider SDKs (`@ai-sdk/*`), sign-in flows, credentials, wire shaping, usage, retry. | `@localixai/agent` and provider packages. |
+| `@localixai/engine-scripts` | The `codemode` sandbox: a QuickJS VM in a worker thread per script, and the tool declarations it reads.      | `@localixai/agent` and `quickjs-wasi`.    |
+| `@localixai/engine`         | Composition: `createEngine()` binds a run's model session and hands it to the loop.                          | `@localixai/agent` and the three layers.  |
+
+The Localix host owns session state, modes, tools, permissions, context policy, persistence, and
+event publication. It depends on the `AgentRuntime` port, not on the engine's types. Only the
+composition root (`apps/api/src/bootstrap/`) imports `@localixai/engine`.
 
 ## How it works
-
-The composition root injects one runtime implementation into the chat service:
 
 ```text
 session runner
   -> AgentRuntime.run(request, policy, hooks)
-  -> Pi adapter
-  -> Pi loop and provider
+  -> engine-loop: turn -> ModelSession.turn() -> tool batch -> turn boundary -> ...
+       ModelSession (engine-models): catalog entry -> credential -> LanguageModelV4.doStream()
   -> ordered Localix event stream
   -> API handlers, transcript, and clients
 ```
+
+The loop sees one model response at a time through `ModelSession`; it never sees a wire format, a
+provider, or an SDK. Model access sees exactly those and nothing about turns or tools. A run opens
+its session lazily: the catalog lookup, the image preflight, an OAuth refresh or a local model's
+download happen before the first request, and a failure there becomes the first turn's failure.
 
 ### Run contract
 
@@ -43,16 +54,16 @@ session runner
 | ---------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `events`         | An async iterable emits ordered Localix events while the run progresses. | Progress updates for one tool call can be coalesced under buffer pressure. |
 | `result`         | A promise resolves to `completed`, `aborted`, or `failed`.               | A failed run can contain settled work from earlier turns.                  |
-| `abort()`        | Stops the active adapter run through its abort signal.                   | The host still finalizes its durable run record.                           |
+| `abort()`        | Stops the run; the events that say how it ended are still delivered.     | The host still finalizes its durable run record.                           |
 | `beforeToolCall` | The host can block or rewrite a tool call before dispatch.               | Permission policy remains a host responsibility.                           |
 | `afterToolCall`  | The host receives the settled result after dispatch.                     | Publication and persistence remain host responsibilities.                  |
-| `takeSteering`   | The adapter requests queued steering messages between loop steps.        | Delivery timing follows loop checkpoints.                                  |
+| `takeSteering`   | The loop requests queued steering messages between turns.                | The loop first waits until the host has handled every event emitted.       |
 
-The production API names the Pi adapter in exactly one expression: `createPiEngine(...)` in
-`bootstrap/infra.ts`. The result is an `AgentEngine` — the agent loop, the buffered completion
-factory, the image runtime, the OAuth runtime and the model catalog behind one adapter id — and
-every phase after it is typed by the neutral ports. Test files are not exempt from the seam; a
-behaviour that needs the real loop is asserted in the adapter package.
+The production API constructs the engine in one expression: `createEngine(...)` in
+`bootstrap/agent-engine.ts`. The result is an `AgentEngine` — the agent loop, the buffered
+completion and decision factory, the script sandbox, the OAuth runtime and the model catalog — and
+every phase after it is typed by the neutral ports. A behaviour that needs the real loop is asserted
+in the engine packages against a scripted model session.
 
 ### How a run is assembled
 
@@ -86,77 +97,68 @@ compared by its answers as well.
 ### Reasoning level
 
 The speaker's stored route supplies `reasoningEffort` to `AgentRuntime.run()`; a delegated child
-snapshots its parent's route. The Pi adapter resolves the level with pi's own `clampThinkingLevel`
-before the first request (`preflight.ts`); Localix adds no rule of its own:
+snapshots its parent's route. Model access resolves the level on every request against the levels
+the catalog lists for the model:
 
-| Requested                      | Sent                                                         |
-| ------------------------------ | ------------------------------------------------------------ |
-| A level pi lists for the model | That level.                                                  |
-| A level pi does not list       | The nearest listed level, searching upward first.            |
-| `off`, pi lists `off`          | No reasoning.                                                |
-| `off`, pi does not list `off`  | The model's lowest listed level, not the provider's default. |
-| Any level, non-reasoning model | No reasoning request.                                        |
+| Requested                        | Sent                                                  |
+| -------------------------------- | ----------------------------------------------------- |
+| A level the model lists          | That level.                                           |
+| A level the model does not list  | The nearest listed level, searching upward first.     |
+| Any level, model lists no levels | Nothing: the model reasons, or not, on its own terms. |
+| Any level, non-reasoning model   | No reasoning request.                                 |
 
-The list is pi's `getSupportedThinkingLevels`, read from the model's `thinkingLevelMap` — generated,
-or refreshed by the same conversion (below). The catalog publishes the same list as
-`reasoningEfforts`, and the shared clamp in `@localixai/agent` (`reasoning-levels.ts`) applies pi's
-algorithm to it, so the picker, `/model` and the server store the level the request will carry.
-`catalog-reasoning.test.ts` pins both against pi for every generated model and for a catalog
-refreshed from fixture documents. Where pi's data is wrong for a model, the fix belongs in pi's
-generator (see `vendor/pi/UPSTREAM.md`), not in Localix.
+The levels come from models.dev's `reasoning_options`, read by its authoring rules: an `effort`
+option names the levels and `none` among them is `off`; a `toggle` adds `off`; a `budget_tokens`
+option offers `low`, `medium`, `high`, and `off` unless its budget has a floor above zero. `off` is
+offered only where models.dev says reasoning can be switched off, because sending `none` to a model
+that cannot comply is what fails a request. The Anthropic wire always accepts `off`: its SDK
+disables thinking, or keeps it as low as the model allows. The catalog publishes the same list as
+`reasoningEfforts`, and the shared clamp in `@localixai/agent` (`reasoning-levels.ts`) applies the
+same rule, so the picker, `/model` and the server store the level the request will carry.
 
 Buffered completions such as titles and inline completion use the same rule.
 
-### Model catalog refresh
+### Model catalog
 
-The model list updates without a release through pi's own `Models.refresh()`. Localix guesses no
-metadata: there is no id pattern, overlay, or fallback of its own, and nothing is synthesized from a
-bare `/v1/models` id list.
+The model list is models.dev's (`https://models.dev/api.json?type=all`), normalized once into a
+compact document of Localix's own (`engine-models/src/catalog/normalize.ts`). Localix guesses no
+metadata: there is no id pattern or overlay of its own.
 
-| Layer      | Owns                                                                                                                                                                                                                   |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| pi         | `src/generated-catalog/`: the generator's conversion (`buildGeneratedCatalog`), its sources, and `GeneratedCatalogRefresher`. `scripts/generate-models.ts` writes the same function's result to `src/providers/data/`. |
-| Pi adapter | `providers.ts` wraps every static built-in with `withGeneratedCatalogRefresh`; `catalog.ts` owns the long-lived collection, its projection, and `refresh()`; `catalog-store.ts` validates persisted entries.           |
-| API        | `features/catalog/`: the file store, the cached ordered catalog, the startup restore, the hourly check, and `POST /rpc/models/catalog/refresh`.                                                                        |
+| Mechanism   | Behavior                                                                                                                                                                                                                           |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Routing     | Each model takes its own `provider.npm`, `provider.api` and `provider.shape` over its provider's (Copilot serves Claude through the Anthropic wire, GPT through Responses). Templated addresses are left out.                      |
+| Kinds       | Chat models and, where the provider SDK has a decision model (OpenAI, OpenRouter, AI Gateway), decision models — in separate maps, so one id can be both. Embeddings, images, speech and the rest are left out.                    |
+| Context     | The model's input limit, capped at its first long-context price tier, so a growing history is never billed at the higher rate unnoticed.                                                                                           |
+| Derived     | The ChatGPT plan through Codex (`openai-codex`), from OpenAI's records with the plan's window; the host's `local` provider, read on every listing.                                                                                 |
+| Baseline    | The stored copy; with none, the snapshot shipped in `@opencode-ai/models`, imported only then and stored at once as stale.                                                                                                         |
+| Refresh     | A conditional request with the stored `ETag`: an unchanged catalog answers `304` with no body. A fetched one that normalizes to the same document (by digest) changes nothing, so the host hears `changed` only when the list did. |
+| Freshness   | A copy checked within 50 minutes is not asked about again; `force` (the manual check) skips that. Concurrent refreshes share one request.                                                                                          |
+| Persistence | One entry, `models.dev`, under `~/.localix/model-catalog/`, written atomically: `{ schema, fetchedAt, etag, digest, document }`. An entry of another schema is dropped and rebuilt.                                                |
+| Failure     | A failed or malformed fetch keeps the current list and reports the error; an aborted one reports only that.                                                                                                                        |
 
 ```text
 startup     catalogService.restore() -> engine.refreshCatalog({ allowNetwork: false })
-            -> Models.refresh: each provider restores its stored entry, no request
+            -> stored document, or the shipped snapshot
 idle, hourly catalogService.check() -> engine.refreshCatalog({ allowNetwork: true })
-            -> providers older than 6 h fetch: one shared build from all sources
-            -> publish { persist: { models, checkedAt }, update } per provider
-any refresh  result.updated non-empty -> projection and API cache dropped -> next read rebuilds
+            -> If-None-Match: 304 -> fresh again, nothing changed
+                              200 -> normalize -> digest differs -> projection dropped -> next read rebuilds
 ```
 
-| Mechanism       | Behavior                                                                                                                                                                                                                                                     |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Sources         | models.dev (`api.json`, decision models), OpenRouter (chat, image, decision listings), Vercel AI Gateway, NVIDIA NIM — exactly the generator's, minus Radius.                                                                                                |
-| Conversion      | `buildGeneratedCatalog(sources, { strict: true })`, the generator's code moved into `src/`. A refreshed model equals what `generate-models --strict` would write today.                                                                                      |
-| Sharing         | One build serves every provider of a refresh (concurrent callers, or within 60 s). The catalog is public, so providers refresh with `refreshWithoutAuth` and no credential is read.                                                                          |
-| Freshness       | A provider whose stored `checkedAt` is under six hours old is not fetched; `force` (the manual check) skips that.                                                                                                                                            |
-| Conditional GET | A document whose response had an `ETag` or `Last-Modified` (models.dev) is kept in memory and revalidated; all `304`s reuse the previous build. Documents without a validator are not kept.                                                                  |
-| Persistence     | One file per provider under `~/.localix/model-catalog/`, written atomically, wrapped as `{ build, entry }`. A read that fails pi's `ModelsStoreEntrySchema`, or belongs to another catalog build (`getBuiltinModelDataGeneratedAt`), is dropped and deleted. |
-| Failure         | Any source failing fails the build; every provider keeps its previous list (baseline plus last persisted entry) and the error is logged.                                                                                                                     |
-| Merge           | pi's `createProvider` overlay: refreshed models replace the baseline by type and id, new ones are appended, none are removed. Newest-first ordering stays in the API's catalog service.                                                                      |
-| Runs            | The refreshed state lives on the shared provider definitions, so a run's request-scoped collection resolves a refreshed model too. Radius stays isolated per collection and is not refreshed by the host.                                                    |
+### Provider state across turns
 
-Persisted entries are not trusted across builds: after an update the shipped baseline wins until the
-next check. ETags are not persisted. A build needs every document's body, and OpenRouter, AI Gateway
-and NVIDIA send no validator, so a `304` after a restart could not avoid the download; the six-hour
-`checkedAt` window is what avoids requests across restarts.
-
-Some providers bind signed reasoning to the level it was generated at. Anthropic's per-turn-effort
-models are one example. The adapter records that level on the assistant message as
-`providerThinkingLevel`, and the host stores it on the turn's items. Both the per-request
-context-policy round trip and a later run's rebuilt history replay it, so pi can send the historical
-effort marker. Without the marker, the provider rejects or drops the earlier thinking blocks.
+Providers return state the next request must carry back: signed or encrypted reasoning, OpenAI's
+item ids, Google's thought signatures. Model access stores the provider SDK's `providerMetadata` for
+each part in the message's existing opaque signature fields (`aisdk:` followed by JSON), and replays
+it only to the provider namespace that wrote it. Messages stored by earlier runtimes are translated
+on the way back. A reasoning part written by one provider is not sent to another.
 
 ### Steering and tool checkpoints
 
-The adapter passes `SteeringBoundary` to `takeSteering`: the completed turn index and, only after a
-successful turn with tool results, the completed tool-turn index. The host waits for that turn to
-reach its transcript checkpoint before admitting a queued message into a new assistant row. A
-checkpoint wait expires after two seconds by default; timeout or abort leaves the queue untouched.
+The loop passes `SteeringBoundary` to `takeSteering`: the completed turn index and, only after a
+successful turn with tool results, the completed tool-turn index. The loop asks only once the host
+has handled every event emitted so far, however long its persistence takes, so the turn the boundary
+names is already in the transcript when a queued message opens a new assistant row. A stopped run
+asks nothing, and the queue stays untouched.
 
 What a running turn may take is the queue's `joins` rule (`wake-queue/kinds.ts`). User messages are
 filtered by the current speaker's address and must come from the run's client surface. A delegator's
@@ -175,7 +177,7 @@ name.
 | Surface            | Mechanism                                                                                                              | Boundary                                                                                              |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Core toolkit       | Assembled core tools remain on the wire after policy and run-shape filtering.                                          | Run shape can still exclude a tool that the host cannot support, such as human-only UI in automation. |
-| Deferred tools     | `activate_tools` advertises them; the adapter appends an activated schema before the next model turn.                  | A deferred implementation stays dispatchable, so deferral is a wire decision only.                    |
+| Deferred tools     | `activate_tools` advertises them; the loop appends an activated schema before the next model turn.                     | A deferred implementation stays dispatchable, so deferral is a wire decision only.                    |
 | Session activation | An activated name is remembered on the session and promoted onto the wire at the start of every later run.             | Bounded per session; the oldest activation is released and the model is told which.                   |
 | Surface tools      | A plugin whose tab the person's latest message links, or whose wake the turn answers, brings every tool it registered. | Per turn and never stored; appended after the session's activations, sorted by name.                  |
 | The loader itself  | Stays present while any external tool exists, with an empty-catalog description once all are active.                   | Names resolve through the run's own registry, never through the remembered list.                      |
@@ -189,8 +191,8 @@ run's tool list.
 The activator accepts at most eight exact names per call. Unknown names are reported without
 preventing known names from activating. Persistence is best-effort: a failed storage write leaves
 activation available in the current run, but a later run may need to activate again. Releasing an
-old name from the remembered set affects later assembly; the Pi adapter only appends revealed
-schemas and does not remove them from a run already in progress.
+old name from the remembered set affects later assembly; the loop only appends revealed schemas and
+does not remove them from a run already in progress.
 
 The prompt is assembled once per run from its initial wire roster, including remembered and surface
 promotions. Mid-run activation reveals schemas without rebuilding that prompt. The next run builds
@@ -224,7 +226,7 @@ changed, as an appended update, so new files appear without rewriting any earlie
 | Mechanism                  | Behavior                                                                                                       | Boundary                                                                          |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Per-request context policy | Localix checks the estimated request budget before each provider call and prunes only near the ceiling.        | A prune asks the next turn for a checkpoint; the stored transcript is unchanged.  |
-| Pre-stream retry           | The Pi adapter passes its retry settings to the loop engine before a stream opens.                             | Production configures two retries with a 60-second maximum delay.                 |
+| Pre-stream retry           | Model access retries a retryable failure before the response has produced any content.                         | Two retries with a 60-second maximum delay, honouring `Retry-After`.              |
 | Mid-stream retry           | The host can replay a retryable interrupted response up to two times.                                          | It excludes aborts, rate limits, and context overflow; this is a separate budget. |
 | Context-overflow retry     | An overflow or a silently empty run takes a context checkpoint and reruns the turn once, without a model call. | A second failure becomes visible.                                                 |
 
@@ -242,7 +244,7 @@ interrupted between an external side effect and its recorded result.
 
 ### Persistence
 
-Messages are stored as the durable session transcript. A separate run row records the active adapter
+Messages are stored as the durable session transcript. A separate run row records the active engine
 invocation and its terminal status so startup can reclassify a run interrupted by process death.
 Streaming events are published to clients; they are not maintained as a second durable event
 journal.
@@ -251,48 +253,45 @@ journal.
 
 Runtime settings are assembled in the API bootstrap, not in user settings.
 
-| Setting             | Production value      | Purpose                                              |
-| ------------------- | --------------------- | ---------------------------------------------------- |
-| `maxRetries`        | `2`                   | Pre-stream retry count passed to the Pi loop engine. |
-| `maxRetryDelayMs`   | `60_000`              | Upper retry delay passed to the Pi loop engine.      |
-| `maxBufferedEvents` | Adapter default `256` | Capacity of the Localix event buffer.                |
+| Setting             | Production value                        | Purpose                                                                  |
+| ------------------- | --------------------------------------- | ------------------------------------------------------------------------ |
+| `retry`             | `{ maxRetries: 2, maxDelayMs: 60_000 }` | Retries before a response produces content.                              |
+| `silence`           | 300 s first byte, 120 s between         | A provider that goes quiet fails the request (`StreamIdleTimeoutError`). |
+| `maxBufferedEvents` | `256`                                   | Capacity of the Localix event buffer.                                    |
+| `scripts`           | Bundled worker and wasm, when present   | Where the `codemode` sandbox finds its files in a packaged app.          |
 
 Context-policy round trips preserve prompt-cache anchors on user, assistant, and tool messages. At
 the client/service boundary, failed-retry recovery snapshots cannot overwrite newer stream state.
 Authoritative message updates replace corrected tool payloads even when their terminal status is
 unchanged.
 
-Cancellation releases producers blocked by a full event queue; an attached consumer can drain
-already-buffered events, but cancellation does not promise delivery of pending events. Thrown
-middleware failures retain messages through the last fully settled turn in the runtime result. The
-stream silence watchdog interrupts a pending iterator on caller cancellation and releases the
-provider connection when a consumer stops iteration early.
+Stopping a run lifts the event buffer's backpressure rather than discarding what is left: the
+consumer still receives the end of every tool call, the turn and the run. A tool gets two seconds to
+wind down after a stop; a call still open then is closed with a cancellation result, so no call
+outlives its run. A run that does not complete stores its current message before it is finalized.
 
-Post-tool processing keeps the stored text and content parts aligned with the effective Pi result,
-so shortened output cannot be replaced by stale pre-hook parts. Human-in-loop requests inherit
-tool-run cancellation, including when a tool supplies an additional request signal. Without an
-explicit invocation trigger ID, binding materialization selects the last non-internal, non-UI-only
-user message; synthetic reminders do not consume its one-shot instruction.
-
-The agent loop and buffered completions share transport retry settings. A configured `timeoutMs`
-also reaches buffered completions, such as title generation; production bootstrap currently leaves
-that setting unset, so provider transport defaults apply. The loop's stream-idle watchdog is
-separate from this transport timeout.
+Post-tool processing keeps the stored text and content parts aligned with the effective result, so
+shortened output cannot be replaced by stale pre-hook parts. Human-in-loop requests inherit tool-run
+cancellation, including when a tool supplies an additional request signal. Without an explicit
+invocation trigger ID, binding materialization selects the last non-internal, non-UI-only user
+message; synthetic reminders do not consume its one-shot instruction.
 
 ## Limits
 
-- Pi is the only production `AgentRuntime` adapter in this repository. The neutral port is an
-  architectural seam, not evidence of multiple installed loop engines.
+- Localix's engine is the only production `AgentRuntime` implementation. The neutral port is an
+  architectural seam, not evidence of multiple installed engines.
 - Event buffering is bounded. Repeated progress updates coalesce, and a producer that fills the
   buffer before consumption can displace the oldest buffered event.
-- Provider refusal headers are captured only on transports that expose the response before raising
-  an error. The adapter cannot recover headers it never receives.
+- Provider refusal headers are captured where the provider SDK exposes the response with its error.
+  The engine cannot recover headers it never receives.
 - Pre-stream retries, mid-stream retries, and checkpoint reruns have separate gates and counters.
   They do not form one shared attempt budget.
 - Context pruning and checkpoints preserve the durable transcript but can remove detail from the
   next model request.
-- Adapter neutrality is checked through source-import rules and TypeScript contracts. It is not a
-  runtime isolation boundary.
+- Package boundaries are checked through source-import rules and TypeScript contracts. They are not
+  a runtime isolation boundary.
+- Providers models.dev routes through an SDK the engine does not carry (Bedrock, Azure, Vertex,
+  Cohere) or through a templated address are not listed.
 
 ## Auditing a session tree
 
@@ -323,27 +322,35 @@ scanner and containment checks. Personal foreign agent homes remain outside disc
 
 ## Source of truth
 
-- [Runtime interfaces](../../packages/agent/src/runtime/index.ts)
-- [Pi adapter](../../packages/agent-runtime-pi/src/runtime.ts)
-- [Per-run tool assembly](../../packages/agent-runtime-pi/src/run-tools.ts)
-- [Event mapping](../../packages/agent-runtime-pi/src/event-codec.ts)
-- [Production runtime assembly](../../apps/api/src/bootstrap/infra.ts)
+- [Runtime interfaces](../../packages/agent/src/runtime/index.ts) ·
+  [model session](../../packages/agent/src/runtime/model-session.ts) ·
+  [engine descriptor](../../packages/agent/src/runtime/engine.ts)
+- [Engine composition](../../packages/engine/src/engine.ts) ·
+  [production assembly](../../apps/api/src/bootstrap/agent-engine.ts)
+- [Agent loop](../../packages/engine-loop/src/loop.ts) ·
+  [tool batch scheduler](../../packages/engine-loop/src/tools/schedule.ts) ·
+  [one call](../../packages/engine-loop/src/tools/call.ts) ·
+  [run handle and event buffer](../../packages/engine-loop/src/run-handle.ts)
+- [Model session: streaming, retry, silence](../../packages/engine-models/src/session.ts) ·
+  [request shaping](../../packages/engine-models/src/wire/prompt.ts) ·
+  [provider state](../../packages/engine-models/src/wire/provider-state.ts) ·
+  [provider SDKs and profiles](../../packages/engine-models/src/providers/connect.ts)
+- [Catalog](../../packages/engine-models/src/catalog/catalog.ts) ·
+  [normalization](../../packages/engine-models/src/catalog/normalize.ts) ·
+  [models.dev source](../../packages/engine-models/src/catalog/source.ts)
+- [Script sandbox](../../packages/engine-scripts/src/sandbox.ts)
 - [Run execution](../../apps/api/src/features/chat/runtime/run/execute-run.ts) — one stage per file
   under [`run/stages/`](../../apps/api/src/features/chat/runtime/run/stages/frame.ts)
 - [Run persistence](../../apps/api/src/features/chat/runtime/run/run-record.ts)
 - [Chat history strategy](../../apps/api/src/features/chat/runtime/history/chat-strategy.ts)
-- [Engine descriptor (port)](../../packages/agent/src/runtime/engine.ts) ·
-  [Pi engine](../../packages/agent-runtime-pi/src/engine.ts)
-- [Cache anchor → `cache_control` (pi adapter)](../../packages/agent-runtime-pi/src/cache-anchor.test.ts)
-- [Prompt-cache TTL from the host's idle gap](../../packages/agent-runtime-pi/src/cache-retention.ts)
-- [Steering boundary](../../packages/agent/src/runtime/index.ts)
-- [Host checkpoint gate](../../apps/api/src/features/chat/runtime/run/tool-checkpoint-gate.ts)
+- [Steering boundary](../../packages/agent/src/runtime/index.ts) ·
+  [steering placement](../../packages/engine-loop/src/steering.test.ts)
+- [Host steering wiring](../../apps/api/src/features/chat/runtime/run/steering-wiring.ts)
 - [Queue entry kinds](../../apps/api/src/features/chat/runtime/wake-queue/kinds.ts) ·
   [what a running turn takes](../../apps/api/src/features/chat/runtime/wake-queue/steerable.ts)
 - [Activation persistence](../../apps/api/src/features/chat/runtime/run/tool-deferral.ts)
 - [Initial prompt roster](../../apps/api/src/features/chat/runtime/run/system-prompt-build.ts)
 - [Activator input and partial name resolution](../../apps/api/src/features/agent-core/tools/activate-tools/activate-tools.ts)
-- [Steering placement](../../packages/agent-runtime-pi/src/steering.test.ts)
 - [Per-request context policy](../../apps/api/src/features/chat/runtime/history/request-transform.ts)
 - [Retry and checkpoint recovery](../../apps/api/src/features/chat/runtime/run/recovery.ts)
 - [Wire token estimate (media as flat allowances)](../../packages/agent/src/context/wire-media-tokens.test.ts)

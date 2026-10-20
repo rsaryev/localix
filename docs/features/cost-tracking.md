@@ -62,9 +62,9 @@ to one request's input size instead of the session total.
 
 ### Price source
 
-Runtime estimates use the `cost` fields in the runtime's model catalog. Its generator loads
-models.dev metadata, provider catalogs, and explicit corrections when the catalog is built, and the
-background model-list check rebuilds it from the same sources with the same code (see
+Runtime estimates use the `cost` fields in the runtime's model catalog, which comes from models.dev,
+including its long-context price tiers; OpenRouter's billed cost replaces the estimate when
+OpenRouter reports one. The background model-list check keeps it current (see
 [Providers](providers.md#how-the-model-list-stays-current)).
 
 Prices, release dates, and reasoning levels all come from that catalog; Localix adds none of its
@@ -157,9 +157,8 @@ whole multiple of its threshold after dismissal.
 
 ## Source of truth
 
-- [Runtime usage mapping](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/message-codec.ts)
-- [Runtime catalog projection and release metadata](https://github.com/rsaryev/localix/blob/main/packages/agent-runtime-pi/src/models.ts)
-- [Vendored catalog generator](https://github.com/rsaryev/localix/blob/main/vendor/pi/packages/ai/scripts/generate-models.ts)
+- [Runtime usage and pricing](https://github.com/rsaryev/localix/blob/main/packages/engine-models/src/usage.ts)
+- [Catalog normalization and release metadata](https://github.com/rsaryev/localix/blob/main/packages/engine-models/src/catalog/normalize.ts)
 - [Request pricing and cost-source classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run-accounting.ts)
 - [Turn aggregation and persistence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/event-handlers.ts)
 - [Auxiliary ledger writers](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/usage-normalize.ts)

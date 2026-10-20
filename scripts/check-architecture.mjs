@@ -124,6 +124,34 @@ const pluginPublicWorkspacePackages = new Set([
   '@localixai/plugin-sdk',
 ])
 
+/**
+ * THE ENGINE'S LAYERS, bottom to top. Each layer reaches only the workspace packages listed for
+ * it (its own files aside), so the loop cannot learn a provider, model access cannot learn a
+ * turn, and only the composition root sees them all. A layer below the root that needed a
+ * sibling would have to say so here — which is the point.
+ */
+const ENGINE_LAYERS = [
+  {
+    root: 'packages/engine-loop/',
+    name: 'agent loop',
+    workspace: ['@localixai/agent'],
+    forbidden: [/^@ai-sdk\//u, /^ai(\/|$)/u, /^@opencode-ai\//u],
+    why: 'the loop talks to models only through the ModelSession port',
+  },
+  { root: 'packages/engine-models/', name: 'model access', workspace: ['@localixai/agent'] },
+  { root: 'packages/engine-scripts/', name: 'script sandbox', workspace: ['@localixai/agent'] },
+  {
+    root: 'packages/engine/',
+    name: 'engine composition',
+    workspace: [
+      '@localixai/agent',
+      '@localixai/engine-loop',
+      '@localixai/engine-models',
+      '@localixai/engine-scripts',
+    ],
+  },
+]
+
 async function sourceFiles(directory, extensions = sourceExtensions) {
   const files = []
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -1397,18 +1425,29 @@ for (const file of files) {
       if (target && !target.startsWith('packages/agent/')) {
         problems.push(`${path}: the agnostic agent crosses its package boundary into ${target}`)
       }
-      if (specifier.startsWith('@localixai/') || specifier.startsWith('@earendil-works/pi-')) {
+      if (specifier.startsWith('@localixai/')) {
         problems.push(`${path}: the agnostic agent imports engine/host module ${specifier}`)
       }
     }
 
-    if (path.startsWith('packages/agent-runtime-pi/')) {
-      if (target && !target.startsWith('packages/agent-runtime-pi/')) {
-        problems.push(`${path}: the pi adapter crosses its package boundary into ${target}`)
+    const engineLayer = ENGINE_LAYERS.find((layer) => path.startsWith(layer.root))
+    if (engineLayer) {
+      if (target && !target.startsWith(engineLayer.root)) {
+        problems.push(
+          `${path}: the ${engineLayer.name} layer crosses its package boundary into ${target}`,
+        )
       }
       const importedPackage = localWorkspacePackageName(specifier)
-      if (importedPackage && importedPackage !== '@localixai/agent') {
-        problems.push(`${path}: the pi adapter imports host/sibling module ${specifier}`)
+      if (importedPackage && !engineLayer.workspace.includes(importedPackage)) {
+        problems.push(
+          `${path}: the ${engineLayer.name} layer may import ${engineLayer.workspace.join(', ')} only, not ${specifier}`,
+        )
+      }
+      const banned = engineLayer.forbidden?.find((pattern) => pattern.test(specifier))
+      if (banned) {
+        problems.push(
+          `${path}: the ${engineLayer.name} layer must not know ${specifier} (${engineLayer.why})`,
+        )
       }
     }
 
@@ -1455,16 +1494,15 @@ for (const file of files) {
       path.startsWith('apps/api/src/') &&
       !path.endsWith('.test.ts') &&
       !path.endsWith('.integration.test.ts') &&
-      (specifier.startsWith('@localixai/agent-runtime-pi') ||
-        specifier.startsWith('@earendil-works/pi-')) &&
+      specifier.startsWith('@localixai/engine') &&
       // The composition root is `bootstrap.ts` PLUS the `bootstrap/` phase modules it
-      // was split into — that split is about file size, not about who may wire the pi
-      // implementation. Everything else under apps/api/src/ must go through the
-      // runtime-agnostic seam, which is what this rule is actually protecting.
+      // was split into — that split is about file size, not about who may wire the engine.
+      // Everything else under apps/api/src/ must go through the runtime-agnostic seam
+      // (`@localixai/agent/runtime`), which is what this rule is actually protecting.
       path !== 'apps/api/src/bootstrap.ts' &&
       !path.startsWith('apps/api/src/bootstrap/')
     ) {
-      problems.push(`${path}: only the API composition root may import the pi implementation`)
+      problems.push(`${path}: only the API composition root may import the engine`)
     }
 
     // A relative path that LEAVES apps/ui/src. The FSD rule below cannot see this

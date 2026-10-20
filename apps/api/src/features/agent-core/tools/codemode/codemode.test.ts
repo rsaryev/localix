@@ -5,7 +5,7 @@ import {
   type AgentTool,
   type AgentToolExecutionContext,
 } from '@localixai/agent/agents'
-import { createPiScriptSandbox } from '@localixai/agent-runtime-pi'
+import { createScriptSandbox } from '@localixai/engine-scripts'
 
 import { createCodemodeTool } from './codemode'
 
@@ -13,7 +13,7 @@ import { createCodemodeTool } from './codemode'
  * `codemode` on the engine's real sandbox: it declares the run's `read`/`bash`/`edit`/`write` and
  * nothing else, every call goes through `context.callTool`, and only the script's output returns.
  */
-const scripts = createPiScriptSandbox()
+const scripts = createScriptSandbox()
 
 const tool = (name: string): AgentTool =>
   defineAgentTool({

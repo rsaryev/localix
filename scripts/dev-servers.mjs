@@ -156,11 +156,7 @@ export function resolveDevTurboCommands(workspace) {
   const apiFilter = '--filter=@localixai/api'
   const frontendFilters = workspace
     ? ['--filter=!@localixai/api']
-    : [
-        '--filter=@localixai/ui',
-        '--filter=@localixai/agent',
-        '--filter=@localixai/agent-runtime-pi',
-      ]
+    : ['--filter=@localixai/ui', '--filter=@localixai/agent', '--filter=@localixai/engine...']
 
   return {
     prepare: ['x', 'turbo', 'dev:prepare', '--output-logs=new-only', apiFilter, ...frontendFilters],

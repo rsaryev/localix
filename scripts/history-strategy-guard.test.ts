@@ -117,7 +117,12 @@ const importsPrimitive = (src: string): string[] =>
   )
 
 describe('history strategy — compression primitives have one policy owner', () => {
-  const roots = ['apps/api/src', 'packages/agent/src', 'packages/agent-runtime-pi/src']
+  const roots = [
+    'apps/api/src',
+    'packages/agent/src',
+    'packages/engine-loop/src',
+    'packages/engine-models/src',
+  ]
 
   test('no module outside history/ imports a compression primitive', () => {
     const offenders: string[] = []

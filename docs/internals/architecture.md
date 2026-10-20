@@ -18,17 +18,17 @@ record before changing it.
 
 ## Ownership contract
 
-| Path                        | Owns                                                                          | Boundary                                                              |
-| --------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `apps/api`                  | Hono routes, domain services, agent execution, persistence, and plugin hosts. | Feature code reaches the agent loop through the runtime port.         |
-| `apps/ui`                   | React workspaces, typed panes, settings, and API/event clients.               | It requests state from the API; it does not own durable domain state. |
-| `apps/desktop-tauri`        | Native window, release sidecar lifecycle, and desktop capabilities.           | Development scripts start the API instead of the Rust shell.          |
-| `apps/landing`              | Documentation site and generated navigation.                                  | It is not part of the desktop runtime.                                |
-| `packages/agent`            | Provider-neutral agent types, tools, messages, and runtime interfaces.        | It cannot import Localix API features or the Pi adapter.              |
-| `packages/agent-runtime-pi` | Production adapter from the runtime port to Pi.                               | Production API imports are limited to the bootstrap composition root. |
-| `packages/plugin-sdk`       | Plugin manifests and host contribution contracts.                             | A contribution exists only when its plugin is installed and enabled.  |
-| `packages/cli`              | The `localix` launcher: it hands a path to the running desktop app.           | It opens a deep link; it never starts a runtime or renders a session. |
-| `plugins`                   | Bundled tool, provider, hook, workbench, and UI contributions.                | Each manifest declares its own capabilities and default state.        |
+| Path                  | Owns                                                                          | Boundary                                                              |
+| --------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `apps/api`            | Hono routes, domain services, agent execution, persistence, and plugin hosts. | Feature code reaches the agent loop through the runtime port.         |
+| `apps/ui`             | React workspaces, typed panes, settings, and API/event clients.               | It requests state from the API; it does not own durable domain state. |
+| `apps/desktop-tauri`  | Native window, release sidecar lifecycle, and desktop capabilities.           | Development scripts start the API instead of the Rust shell.          |
+| `apps/landing`        | Documentation site and generated navigation.                                  | It is not part of the desktop runtime.                                |
+| `packages/agent`      | Provider-neutral agent types, tools, messages, and runtime interfaces.        | It cannot import Localix API features or the engine.                  |
+| `packages/engine*`    | The engine behind the runtime port: loop, model access, script sandbox.       | Production API imports are limited to the bootstrap composition root. |
+| `packages/plugin-sdk` | Plugin manifests and host contribution contracts.                             | A contribution exists only when its plugin is installed and enabled.  |
+| `packages/cli`        | The `localix` launcher: it hands a path to the running desktop app.           | It opens a deep link; it never starts a runtime or renders a session. |
+| `plugins`             | Bundled tool, provider, hook, workbench, and UI contributions.                | Each manifest declares its own capabilities and default state.        |
 
 ## How it works
 
@@ -98,8 +98,7 @@ that reached it.
 ### Agent execution
 
 The chat service assembles session context, effective configuration, tools, permissions, and
-persistence around the `AgentRuntime` port. The production composition root supplies the Pi adapter.
-The
+persistence around the `AgentRuntime` port. The production composition root supplies the engine. The
 [agent runtime boundary](https://github.com/rsaryev/localix/blob/main/docs/internals/agent-runtime.md)
 owns that interface and its event contract.
 
@@ -117,7 +116,7 @@ Architecture checks are repository commands, not runtime settings.
 
 | Command                               | Checks                                                                     |
 | ------------------------------------- | -------------------------------------------------------------------------- |
-| `bun run check:architecture`          | Package import boundaries and the production Pi composition-root rule.     |
+| `bun run check:architecture`          | Package import boundaries, engine layers, and the composition-root rule.   |
 | `bun run check:docs`                  | Internal subsystem references documented by the architecture checker.      |
 | `bun run --cwd apps/landing docs:gen` | Documentation metadata, links, repository paths, and generated navigation. |
 

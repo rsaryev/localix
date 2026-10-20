@@ -133,10 +133,8 @@ export function providerRetryDelayMs(
 
 /**
  * Some providers put the window in the BODY, and by the time an error reaches us the body is
- * only a sentence. The one that matters here is the ChatGPT/codex usage cap: pi renders
- * `error.resets_at` as "Try again in ~47 min." and throws that as the message
- * (`vendor/pi/packages/ai/src/api/openai-codex-responses.ts`), with no header carrying the
- * same number. A regex over the error text (`try again in N s|ms`) is therefore the only place
+ * only a sentence. The one that matters here is the ChatGPT/codex usage cap: its refusal
+ * reads "Try again in ~47 min.", with no header carrying the same number. A regex over the error text (`try again in N s|ms`) is therefore the only place
  * that delay can be read from.
  *
  * Only ever a fallback: a real header always wins, because text is the least reliable

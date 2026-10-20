@@ -126,7 +126,7 @@ describe('classifyAgentError', () => {
     // The reachability defect this closes. `retryAfterMs` used to be set inside the
     // `FetchError` branch only, and in production nothing mints that name: every provider
     // failure reaches the classifier as a bare `Error` re-minted from a message string
-    // (`packages/agent-runtime-pi/src/runtime.ts` flattens the terminal assistant). So the
+    // (the runtime flattened the terminal assistant). So the
     // cooldown was ALWAYS an invented constant, however precisely the server had stated its
     // window. The runtime adapter now re-attaches the refusal, and the delay is read once for
     // every branch rather than in the one branch that never runs.

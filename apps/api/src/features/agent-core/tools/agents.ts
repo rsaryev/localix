@@ -52,7 +52,7 @@ const authoredAgentWire = z.strictObject({
 
 // One flat object, not a union: providers flatten `oneOf` badly and models then send wrong shapes.
 // A batch sent as a JSON string is parsed by the runtime's argument coercion, which needs a plain
-// object schema (`vendor/pi` delta); a union defeated it.
+// object schema (`packages/engine-loop/src/tools/coerce.ts`); a union defeated it.
 export const agentsToolInputSchema = z.strictObject({
   action: z.enum(['list', 'create']),
   agents: z
