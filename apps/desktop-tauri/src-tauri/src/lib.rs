@@ -92,6 +92,8 @@ mod app_bundle_commands;
 #[cfg(target_os = "macos")]
 mod app_bundle_host;
 #[cfg(target_os = "macos")]
+mod app_bundle_names;
+#[cfg(target_os = "macos")]
 mod app_icon;
 #[cfg(target_os = "macos")]
 mod app_runner;
@@ -101,6 +103,8 @@ mod app_runner_glass;
 mod app_runner_host;
 #[cfg(target_os = "macos")]
 mod app_runner_menu;
+#[cfg(target_os = "macos")]
+mod app_runner_page;
 #[cfg(target_os = "macos")]
 mod app_runner_scheme;
 #[cfg(target_os = "macos")]

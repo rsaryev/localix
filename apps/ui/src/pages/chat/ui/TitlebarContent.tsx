@@ -1,4 +1,7 @@
 import { useRef } from 'react'
+import { SquarePen } from 'lucide-react'
+import { IconButton } from '@localixai/kit/icon-button'
+import { CMD, useChordHint } from '@/shared/lib/keybindings'
 
 import { UnifiedBreadcrumb } from '@/entities/chat/ui/UnifiedBreadcrumb'
 import { BreadcrumbTrailingActions } from './BreadcrumbTrailingActions'
@@ -18,9 +21,33 @@ import { useElementWidth } from '@localixai/kit/lib'
  * measured itself to decide how many glyphs to show would be reading back its own answer. Measured
  * once, here, and handed down.
  */
-export function TitlebarContent() {
+export function TitlebarContent({
+  app,
+}: { app?: { name: string; projectId: string | null; onNewChat: () => void } } = {}) {
   const rowRef = useRef<HTMLDivElement>(null)
   const titlebarWidth = useElementWidth(rowRef)
+  const hint = useChordHint()
+
+  // A plugin app (`shared/lib/pluginApp.ts`): its own project is the root of the path, the
+  // conversation crumb is the app's history, and New chat is the one way in to a new one there,
+  // since the app has no rail or sidebar.
+  if (app) {
+    return (
+      <div data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-2">
+        <UnifiedBreadcrumb app={app} />
+        <IconButton
+          size="sm"
+          className="ml-auto shrink-0"
+          aria-label="New chat"
+          tooltip={hint('New chat', CMD.newChat)}
+          tooltipSide="bottom"
+          onClick={() => app.onNewChat()}
+        >
+          <SquarePen />
+        </IconButton>
+      </div>
+    )
+  }
 
   return (
     <div

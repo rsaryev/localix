@@ -37,6 +37,8 @@ pub(crate) mod keys {
     pub(crate) const ENDPOINT: &str = "LocalixEndpoint";
     /// The host's `.app`, or its bare binary in development.
     pub(crate) const HOST: &str = "LocalixHost";
+    /// The app's own project folder: its conversations are that project's.
+    pub(crate) const PROJECT: &str = "LocalixProject";
 }
 
 /// How long a cold Localix may take to answer before the app says it could not start it.
@@ -56,6 +58,7 @@ pub(crate) struct Config {
     pub(crate) ui: Ui,
     pub(crate) endpoint: PathBuf,
     pub(crate) host: PathBuf,
+    pub(crate) project: PathBuf,
 }
 
 /// Run as a plugin app when this bundle is one. False for Localix itself.
@@ -86,10 +89,18 @@ fn config() -> Option<Config> {
         ui,
         endpoint: PathBuf::from(read(keys::ENDPOINT)?),
         host: PathBuf::from(read(keys::HOST)?),
+        project: PathBuf::from(read(keys::PROJECT)?),
     })
 }
 
 fn run(mtm: MainThreadMarker, config: Config) {
+    // The project is found by its folder, so the folder has to exist before the page asks.
+    if let Err(error) = std::fs::create_dir_all(&config.project) {
+        crate::log::logln(format!(
+            "plugin app: cannot create {}: {error}",
+            config.project.display()
+        ));
+    }
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Regular);
     let name = config.name.clone();
@@ -123,6 +134,8 @@ fn open_window(mtm: MainThreadMarker, controller: &Retained<Controller>, name: &
     window.setTitle(&NSString::from_str(name));
     window.setMinSize(NSSize::new(420.0, 320.0));
     window.setTabbingMode(NSWindowTabbingMode::Disallowed);
+    // The page draws the title row itself, beside the window buttons, as the workspace does.
+    window.setTitleVisibility(objc2_app_kit::NSWindowTitleVisibility::Hidden);
     window.setTitlebarAppearsTransparent(true);
     window.setOpaque(false);
     window.setBackgroundColor(Some(&NSColor::clearColor()));
@@ -154,6 +167,7 @@ fn open_window(mtm: MainThreadMarker, controller: &Retained<Controller>, name: &
         web_view.setInspectable(true)
     };
     let glass = crate::app_runner_glass::attach(mtm, &window, &web_view);
+    window.setDelegate(Some(ProtocolObject::from_ref(&**controller)));
     window.makeKeyAndOrderFront(None);
     let state = controller.ivars();
     let _ = state.glass.set(glass);

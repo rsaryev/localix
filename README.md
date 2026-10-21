@@ -87,10 +87,10 @@
   [semantic index and change feed](docs/extending/plugin-semantics.md).
 - **Its own Mac app.** **Install _Plugin_ as App**, from the plugin's tab, its rail button or the
   command palette, makes `~/Applications/Localix Apps/<Plugin>.app`: its own Dock icon, menu bar,
-  Cmd+Tab entry and window, found by Spotlight and Launchpad. It opens the plugin's screen in its
-  own conversation, with the agent's chat beside it. Localix stays the host and starts in the
-  background if it is not running. macOS only; plugins stay tabs unless you choose this. See
-  [plugin apps](docs/features/plugin-apps.md).
+  Cmd+Tab entry and window, found by Spotlight and Launchpad. It opens the plugin's screen in a
+  project of its own, with the agent beside it and its conversations as the app's history. Localix
+  stays the host and starts in the background if it is not running. macOS only; plugins stay tabs
+  unless you choose this. See [plugin apps](docs/features/plugin-apps.md).
 
 ## On this computer
 

@@ -12,6 +12,8 @@ pub(crate) struct Host {
     pub(crate) location: PathBuf,
     pub(crate) ui: String,
     pub(crate) endpoint: PathBuf,
+    /// Where each app's project folder goes (`apps/<plugin>` under the Localix home).
+    pub(crate) projects: PathBuf,
     pub(crate) version: String,
     pub(crate) build: String,
 }
@@ -51,6 +53,7 @@ pub(crate) fn host(app: &AppHandle) -> Result<Host, String> {
     let version = app.package_info().version.to_string();
     Ok(Host {
         endpoint: crate::instance::data_dir().join("localix.db.api-runtime.json"),
+        projects: crate::instance::data_dir().join("apps"),
         build: format!("{version}+{stamp}"),
         executable,
         location,
@@ -60,6 +63,7 @@ pub(crate) fn host(app: &AppHandle) -> Result<Host, String> {
 }
 
 pub(crate) fn info_plist(id: &str, name: &str, plugin: &str, host: &Host) -> String {
+    let project = host.projects.join(plugin).to_string_lossy().into_owned();
     let strings = [
         ("CFBundleDevelopmentRegion", "en"),
         ("CFBundleExecutable", EXECUTABLE),
@@ -79,6 +83,7 @@ pub(crate) fn info_plist(id: &str, name: &str, plugin: &str, host: &Host) -> Str
         (keys::UI, &host.ui),
         (keys::ENDPOINT, &host.endpoint.to_string_lossy()),
         (keys::HOST, &host.location.to_string_lossy()),
+        (keys::PROJECT, &project),
         (HOST_BUILD, &host.build),
     ];
     let mut plist = String::from(
@@ -124,6 +129,7 @@ mod tests {
             location: PathBuf::from("/Applications/Localix.app"),
             ui: "/Applications/Localix.app/Contents/Resources/resources/ui".into(),
             endpoint: PathBuf::from("/Users/me/.localix/localix.db.api-runtime.json"),
+            projects: PathBuf::from("/Users/me/.localix/apps"),
             version: "1.2.3".into(),
             build: "1.2.3+42".into(),
         }
@@ -152,6 +158,10 @@ mod tests {
         assert_eq!(
             plist_string(&plist, keys::HOST).as_deref(),
             Some("/Applications/Localix.app")
+        );
+        assert_eq!(
+            plist_string(&plist, keys::PROJECT).as_deref(),
+            Some("/Users/me/.localix/apps/kanban")
         );
         assert!(
             !plist.contains("Q&A <board>"),

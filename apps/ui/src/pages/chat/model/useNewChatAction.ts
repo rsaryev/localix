@@ -114,10 +114,9 @@ export function useNewChatAction(options: NewChatActionOptions) {
     () =>
       subscribeChatChrome((event) => {
         if (event === 'project-switcher') setProjectSwitcher(true)
-        else if (event === 'session-switcher') setSessionSwitcher(true)
-        else startNewChat()
+        else setSessionSwitcher(true)
       }),
-    [setProjectSwitcher, setSessionSwitcher, startNewChat],
+    [setProjectSwitcher, setSessionSwitcher],
   )
 
   const paletteCommands = useChatPagePalette({ ...options, startNewChat })

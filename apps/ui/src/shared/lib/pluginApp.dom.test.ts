@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
+const CHESS = { plugin: 'chess', name: 'Chess', projectDir: '/h/.localix/apps/chess' }
 
 beforeAll(() => {
   teardown = registerDom()
@@ -28,21 +29,35 @@ describe('pluginApp', () => {
 
   test('a malformed plugin name is not a plugin app', async () => {
     const { pluginApp } = await import('./pluginApp')
-    window.__LOCALIX_APP = { plugin: '../kanban', name: 'Kanban' }
+    window.__LOCALIX_APP = { ...CHESS, plugin: '../kanban' }
+    expect(pluginApp()).toBeNull()
+  })
+
+  test('a window without its project folder is not a plugin app', async () => {
+    const { pluginApp } = await import('./pluginApp')
+    window.__LOCALIX_APP = { ...CHESS, projectDir: '' }
     expect(pluginApp()).toBeNull()
   })
 
   test('an app window names its plugin and title', async () => {
     const { pluginApp } = await import('./pluginApp')
-    window.__LOCALIX_APP = { plugin: 'game-2048', name: '2048' }
-    expect(pluginApp()).toEqual({ plugin: 'game-2048', name: '2048' })
+    window.__LOCALIX_APP = {
+      plugin: 'game-2048',
+      name: '2048',
+      projectDir: '/h/.localix/apps/game-2048',
+    }
+    expect(pluginApp()).toEqual({
+      plugin: 'game-2048',
+      name: '2048',
+      projectDir: '/h/.localix/apps/game-2048',
+    })
   })
 })
 
 describe('applyPluginAppStartRoute', () => {
   test('starts on the remembered conversation instead of the home page', async () => {
     const { applyPluginAppStartRoute, rememberPluginAppSession } = await import('./pluginApp')
-    window.__LOCALIX_APP = { plugin: 'chess', name: 'Chess' }
+    window.__LOCALIX_APP = CHESS
     rememberPluginAppSession('chess', 'abc_123')
     applyPluginAppStartRoute()
     expect(window.location.hash).toBe('#/chat/abc_123')
@@ -53,7 +68,7 @@ describe('applyPluginAppStartRoute', () => {
     rememberPluginAppSession('chess', 'abc_123')
     applyPluginAppStartRoute()
     expect(window.location.hash).toBe('')
-    window.__LOCALIX_APP = { plugin: 'chess', name: 'Chess' }
+    window.__LOCALIX_APP = CHESS
     window.location.hash = '#/chat/other'
     applyPluginAppStartRoute()
     expect(window.location.hash).toBe('#/chat/other')
@@ -65,7 +80,7 @@ describe('stampPluginAppDataset', () => {
     const { stampPluginAppDataset } = await import('./pluginApp')
     stampPluginAppDataset()
     expect(document.documentElement.dataset.desktop).toBeUndefined()
-    window.__LOCALIX_APP = { plugin: 'chess', name: 'Chess' }
+    window.__LOCALIX_APP = CHESS
     stampPluginAppDataset()
     expect(document.documentElement.dataset.desktop).toBe('true')
     expect(document.documentElement.dataset.pluginApp).toBe('true')

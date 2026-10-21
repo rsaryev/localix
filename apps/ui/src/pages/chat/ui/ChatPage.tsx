@@ -344,7 +344,8 @@ export function ChatPage() {
     routeProjectId,
     isLegacyRoute,
     isHomeRoute,
-    isColdIndex: routePathname === '/',
+    // A plugin app opens its own conversation (`usePluginApp`), never the last workspace.
+    isColdIndex: !PLUGIN_APP && routePathname === '/',
     activeSessionId,
     isMobile,
     sidebarOpen,
@@ -531,7 +532,19 @@ export function ChatPage() {
       // Rail, shortcut, palette, breadcrumb and sidebar all enter the same page-owned action.
       // Their scope/participant/draft differences are data (`ConversationStartStrategy`).
       onCreateChat={hasHydrated ? startNewChat : () => undefined}
-      titlebarContent={<TitlebarContent />}
+      titlebarContent={
+        <TitlebarContent
+          app={
+            PLUGIN_APP
+              ? {
+                  name: PLUGIN_APP.name,
+                  projectId: pluginAppChat.projectId,
+                  onNewChat: startNewChat,
+                }
+              : undefined
+          }
+        />
+      }
       headerStatus={
         <WorkspaceConnectionStatus
           hasHydrated={hasHydrated}

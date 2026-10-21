@@ -42,8 +42,14 @@ const CURRENT_CRUMB = 'flex min-w-0 shrink-0 items-center'
  *
  * Navigation flows through the URL. Modal switchers remain available through each
  * dropdown's "Search all…" footer.
+ *
+ * `app`: the window is a plugin app (`shared/lib/pluginApp.ts`). The app's name is the root of
+ * the path, not a project switch, and the conversation segment lists the app's project, which is
+ * the app's history, wherever the person has gone.
  */
-export function UnifiedBreadcrumb() {
+export function UnifiedBreadcrumb({
+  app,
+}: { app?: { name: string; projectId: string | null } } = {}) {
   const { activeProjectId, activeSessionId, projects } = useChatStore(
     useShallow((s) => ({
       activeProjectId: s.activeProjectId,
@@ -85,7 +91,7 @@ export function UnifiedBreadcrumb() {
     | undefined
   const { sessionItems } = useBreadcrumbNav({
     allSessions,
-    activeProjectId,
+    activeProjectId: app ? app.projectId : activeProjectId,
     activeSessionId: sessionSeg?.session.id ?? activeSessionId,
     goToSession: goToRuntimeSession,
   })
@@ -128,22 +134,32 @@ export function UnifiedBreadcrumb() {
             so a label-click nav would be a dead end. The whole segment opens the
             workspace switcher. */}
         <li className={sessionSeg ? ANCESTOR_CRUMB : CURRENT_CRUMB}>
-          <BreadcrumbSelect
-            label={scope.label}
-            icon={<Folder className="size-3.5" />}
-            items={scopeItems}
-            onSearchAll={openProjectSwitcher}
-            searchAllLabel="Search all workspaces…"
-            ariaLabel="Switch workspace"
-            ariaCurrent={!sessionSeg ? 'page' : undefined}
-            className={cn(
-              'text-text-soft hover:text-foreground',
-              // An ancestor gets a tighter cap than the leaf: on a narrow path the project name is
-              // the crumb a person needs least, because it is the one thing the window as a whole
-              // already tells them.
-              sessionSeg ? 'max-w-[10rem]' : 'max-w-[14rem]',
-            )}
-          />
+          {app ? (
+            <span
+              data-tauri-drag-region
+              className="max-w-[10rem] truncate px-1.5 text-text-soft"
+              aria-current={!sessionSeg ? 'page' : undefined}
+            >
+              {app.name}
+            </span>
+          ) : (
+            <BreadcrumbSelect
+              label={scope.label}
+              icon={<Folder className="size-3.5" />}
+              items={scopeItems}
+              onSearchAll={openProjectSwitcher}
+              searchAllLabel="Search all workspaces…"
+              ariaLabel="Switch workspace"
+              ariaCurrent={!sessionSeg ? 'page' : undefined}
+              className={cn(
+                'text-text-soft hover:text-foreground',
+                // An ancestor gets a tighter cap than the leaf: on a narrow path the project name is
+                // the crumb a person needs least, because it is the one thing the window as a whole
+                // already tells them.
+                sessionSeg ? 'max-w-[10rem]' : 'max-w-[14rem]',
+              )}
+            />
+          )}
         </li>
 
         {/* Session segment — the root chat; inline dropdown + Search-all.

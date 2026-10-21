@@ -1,4 +1,9 @@
+import { PLUGIN_NAME_RE } from '@localixai/plugin-sdk/manifest'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+
+/** A manifest's plugin name, bounded as the shell bounds it (`app_bundle::valid_plugin`). */
+const validPluginName = (name: unknown): name is string =>
+  typeof name === 'string' && name.length <= 64 && PLUGIN_NAME_RE.test(name)
 
 /**
  * A plugin installed as its own Mac app (`apps/desktop-tauri/src-tauri/src/app_runner.rs`).
@@ -11,6 +16,8 @@ import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 export interface PluginAppContext {
   plugin: string
   name: string
+  /** The app's own project folder (`~/.localix/apps/<plugin>`); its conversations live there. */
+  projectDir: string
 }
 
 export type PluginAppMessage =
@@ -25,13 +32,16 @@ declare global {
   }
 }
 
-const PLUGIN_NAME = /^[a-z0-9][a-z0-9-]{0,63}$/u
-
 export function pluginApp(): PluginAppContext | null {
   if (typeof window === 'undefined') return null
   const app = window.__LOCALIX_APP
-  if (!app || typeof app.plugin !== 'string' || !PLUGIN_NAME.test(app.plugin)) return null
-  return { plugin: app.plugin, name: typeof app.name === 'string' ? app.name : app.plugin }
+  if (!app || !validPluginName(app.plugin)) return null
+  if (typeof app.projectDir !== 'string' || !app.projectDir) return null
+  return {
+    plugin: app.plugin,
+    name: typeof app.name === 'string' ? app.name : app.plugin,
+    projectDir: app.projectDir,
+  }
 }
 
 /** Tell the app's native window something; a no-op anywhere else. */

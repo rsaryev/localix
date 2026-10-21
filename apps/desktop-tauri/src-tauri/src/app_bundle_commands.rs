@@ -27,7 +27,7 @@ pub(crate) fn plugin_apps(caller: Webview) -> Result<Vec<InstalledApp>, String> 
     Ok(crate::app_bundle::installed())
 }
 
-/// Install (or reinstall) a plugin as its own app, then open it.
+/// Install (or reinstall) a plugin as its own app. The workspace makes its project, then opens it.
 #[tauri::command]
 pub(crate) async fn plugin_app_install(
     app: AppHandle,
@@ -47,9 +47,7 @@ pub(crate) async fn plugin_app_install(
         .collect::<Result<Vec<_>, _>>()?;
     let icon = crate::app_icon::icns(&renditions)?;
     tauri::async_runtime::spawn_blocking(move || {
-        let installed = crate::app_bundle::install(&app, &request.plugin, &request.name, &icon)?;
-        crate::app_bundle::open(&installed.plugin)?;
-        Ok(installed)
+        crate::app_bundle::install(&app, &request.plugin, &request.name, &icon)
     })
     .await
     .map_err(|error| error.to_string())?

@@ -49,7 +49,8 @@ A [plugin app](plugin-apps.md) is a plugin installed as its own macOS app: a gen
 executable is a clone of the desktop binary. `app_runner*.rs` is that binary's app mode (window,
 glass, menu, the page served from the host's UI build); `app_bundle*.rs` and `app_icon.rs` install,
 refresh and remove the bundles. The page is the workspace with `chrome="app"`, driven by
-`shared/lib/pluginApp.ts` and `pages/chat/model/usePluginApp.ts`; install actions and icons live in
+`shared/lib/pluginApp.ts` and `pages/chat/model/usePluginApp.ts`; each app's conversations live in a
+project of its own (`shared/lib/pluginAppProject.ts`). Install actions and icons live in
 `features/plugin-apps/`.
 
 ## Boot is phased, and the phases exist because of cycles

@@ -7,13 +7,12 @@ use objc2::runtime::{AnyObject, NSObject, NSObjectProtocol, ProtocolObject};
 use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceNameAqua, NSAppearanceNameDarkAqua, NSApplication,
-    NSApplicationDelegate, NSWindow,
+    NSApplicationDelegate, NSWindow, NSWindowDelegate,
 };
-use objc2_foundation::{NSString, NSURLRequest, NSURL};
+use objc2_foundation::{NSString, NSURL};
 use objc2_web_kit::{
     WKNavigationAction, WKNavigationActionPolicy, WKNavigationDelegate, WKScriptMessage,
-    WKScriptMessageHandler, WKUserContentController, WKUserScript, WKUserScriptInjectionTime,
-    WKWebView, WKWebViewConfiguration,
+    WKScriptMessageHandler, WKUserContentController, WKWebView, WKWebViewConfiguration,
 };
 
 use crate::app_runner::{Config, Ui, PAGE_ORIGIN, SCHEME};
@@ -68,6 +67,18 @@ define_class!(
         #[unsafe(method(applicationShouldTerminateAfterLastWindowClosed:))]
         fn terminate_after_last_window(&self, _app: &NSApplication) -> bool {
             true
+        }
+    }
+
+    unsafe impl NSWindowDelegate for Controller {
+        #[unsafe(method(windowDidEnterFullScreen:))]
+        fn did_enter_full_screen(&self, _notification: &objc2_foundation::NSNotification) {
+            self.lay_out_title_row();
+        }
+
+        #[unsafe(method(windowDidExitFullScreen:))]
+        fn did_exit_full_screen(&self, _notification: &objc2_foundation::NSNotification) {
+            self.lay_out_title_row();
         }
     }
 
@@ -151,49 +162,6 @@ impl Controller {
         }
     }
 
-    /// Load the plugin's page against the runtime on `port`, replacing whatever is shown.
-    pub(crate) fn load_page(&self, mtm: MainThreadMarker, port: u16) {
-        let Some(web_view) = self.ivars().web_view.get() else {
-            return;
-        };
-        let config = &self.ivars().config;
-        let content = unsafe { web_view.configuration().userContentController() };
-        let source = NSString::from_str(&host::page_globals(&config.plugin, &config.name, port));
-        let script = unsafe {
-            WKUserScript::initWithSource_injectionTime_forMainFrameOnly(
-                WKUserScript::alloc(mtm),
-                &source,
-                WKUserScriptInjectionTime::AtDocumentStart,
-                true,
-            )
-        };
-        unsafe {
-            content.removeAllUserScripts();
-            content.addUserScript(&script);
-        }
-        let address = match &config.ui {
-            Ui::Directory(_) => format!("{PAGE_ORIGIN}/index.html"),
-            Ui::Url(base) => base.clone(),
-        };
-        if let Some(url) = NSURL::URLWithString(&NSString::from_str(&address)) {
-            unsafe { web_view.loadRequest(&NSURLRequest::requestWithURL(&url)) };
-        }
-    }
-
-    /// A short native-styled notice while Localix starts, or when it cannot.
-    pub(crate) fn show_notice(&self, text: &str) {
-        let Some(web_view) = self.ivars().web_view.get() else {
-            return;
-        };
-        let text = text.replace('&', "&amp;").replace('<', "&lt;");
-        let html = format!(
-            "<!doctype html><meta name=color-scheme content='light dark'><body style=\"margin:0;\
-             height:100vh;display:grid;place-items:center;font:13px -apple-system,system-ui;\
-             color:GrayText;background:transparent\">{text}</body>"
-        );
-        unsafe { web_view.loadHTMLString_baseURL(&NSString::from_str(&html), None) };
-    }
-
     fn handle_message(&self, text: &str) {
         let Ok(message) = serde_json::from_str::<serde_json::Value>(text) else {
             return;
@@ -202,6 +170,19 @@ impl Controller {
             return;
         };
         match message.get("type").and_then(|kind| kind.as_str()) {
+            // The page's title row (`DRAG_SCRIPT`): move the window with the press, or zoom it.
+            Some("drag") => {
+                let app = NSApplication::sharedApplication(mtm);
+                if let (Some(window), Some(event)) = (self.ivars().window.get(), app.currentEvent())
+                {
+                    window.performWindowDragWithEvent(&event);
+                }
+            }
+            Some("zoom") => {
+                if let Some(window) = self.ivars().window.get() {
+                    window.performZoom(None);
+                }
+            }
             Some("badge") => {
                 let label = message.get("text").and_then(|value| value.as_str());
                 let label =
@@ -227,20 +208,13 @@ impl Controller {
             }
             Some("session") => {
                 let id = message.get("id").and_then(|value| value.as_str());
-                *self.ivars().session.borrow_mut() =
-                    id.filter(|id| valid_id(id)).map(str::to_string);
+                *self.ivars().session.borrow_mut() = id
+                    .filter(|id| crate::companion_destination::valid_session_id(id))
+                    .map(str::to_string);
             }
             _ => {}
         }
     }
-}
-
-/// The ids the API mints; a session id ends up in a `localix://` URL.
-fn valid_id(id: &str) -> bool {
-    (1..=64).contains(&id.len())
-        && id
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
 fn absolute(url: &NSURL) -> Option<String> {

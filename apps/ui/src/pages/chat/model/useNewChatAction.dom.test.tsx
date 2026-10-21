@@ -63,21 +63,21 @@ describe('useNewChatAction DOM boundary', () => {
     }
   })
 
-  test("the chat header's New chat runs the page's action, and a plugin app's own instead", async () => {
+  test("a plugin app's New chat starts the app's conversation, not a workspace chat", async () => {
     const React = await import('react')
     const { act, useRef } = React
     const { createRoot } = await import('react-dom/client')
     const { useNewChatAction } = await import('./useNewChatAction')
-    const { requestNewChat } = await import('@/shared/lib/chatChromeBus')
     const createSession = mock(async () => ({ id: 'session-new', projectId: null }))
     const appConversation = mock(() => {})
     const host = document.createElement('div')
     document.body.append(host)
     const root = createRoot(host)
+    let start: () => void = () => {}
 
     function Harness({ app }: { app: boolean }) {
       const startNewChatRef = useRef<() => void>(() => {})
-      useNewChatAction({
+      start = useNewChatAction({
         isMobile: false,
         setSidebarOpen: () => {},
         routeProjectId: null,
@@ -87,17 +87,17 @@ describe('useNewChatAction DOM boundary', () => {
         setProjectSwitcher: () => {},
         setSessionSwitcher: () => {},
         replaceNewChat: app ? appConversation : null,
-      } as never)
+      } as never).startNewChat
       return null
     }
 
     try {
       await act(async () => root.render(<Harness app={false} />))
-      await act(async () => requestNewChat())
+      await act(async () => start())
       expect(createSession).toHaveBeenCalledTimes(1)
 
       await act(async () => root.render(<Harness app />))
-      await act(async () => requestNewChat())
+      await act(async () => start())
       expect(appConversation).toHaveBeenCalledTimes(1)
       expect(createSession).toHaveBeenCalledTimes(1)
     } finally {

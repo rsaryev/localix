@@ -14,8 +14,8 @@ use objc2_web_kit::WKWebView;
 
 use crate::window_material::{material_for, Appearance};
 
-/// Make the glass the window's content and place the page in the area below the titlebar, which
-/// stays AppKit's: it shows the title and moves the window.
+/// Make the glass the window's content and lay the page over all of it, titlebar included: the
+/// page draws the title row beside the window buttons, as the workspace does.
 pub(crate) fn attach(
     mtm: MainThreadMarker,
     window: &NSWindow,
@@ -31,8 +31,7 @@ pub(crate) fn attach(
     glass.setMaterial(material_for(system_appearance(window)));
     window.setContentView(Some(&glass));
 
-    // In the glass view's own coordinates; height-sizable keeps the titlebar's margin on top.
-    web_view.setFrame(window.contentLayoutRect());
+    web_view.setFrame(bounds);
     web_view.setAutoresizingMask(
         NSAutoresizingMaskOptions::ViewWidthSizable | NSAutoresizingMaskOptions::ViewHeightSizable,
     );

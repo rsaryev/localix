@@ -129,14 +129,14 @@ fn reserve_loopback_port() -> std::io::Result<u16> {
     Ok(socket.local_addr()?.port())
 }
 
-fn runtime_port(base_url: &str) -> Result<u16, Box<dyn std::error::Error>> {
-    let authority = base_url
-        .strip_prefix("http://")
-        .ok_or("runtime endpoint is not HTTP loopback")?;
-    let (_, port) = authority
-        .rsplit_once(':')
-        .ok_or("runtime endpoint has no port")?;
-    Ok(port.parse()?)
+/// The port of a runtime endpoint's `baseUrl`, which must be plain HTTP on a loopback name. Also
+/// what a plugin app reads the runtime's descriptor with (`app_runner_host.rs`).
+pub(crate) fn runtime_port(base_url: &str) -> Result<u16, Box<dyn std::error::Error>> {
+    let url = tauri::Url::parse(base_url)?;
+    if url.scheme() != "http" || !matches!(url.host_str(), Some("127.0.0.1" | "localhost")) {
+        return Err("runtime endpoint is not HTTP loopback".into());
+    }
+    Ok(url.port().ok_or("runtime endpoint has no port")?)
 }
 
 /// The status handoff script.

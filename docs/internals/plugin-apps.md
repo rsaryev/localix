@@ -18,7 +18,7 @@ Kanban.app (bundle id ai.localix.tauri.app.kanban; a clone of the Localix binary
   │ 2. reads the runtime endpoint; none live → open -g Localix.app --args --background
   ▼
 NSWindow + NSVisualEffectView + WKWebView ─ localix-app://app/index.html (the host's UI build)
-  │ __LOCALIX_APP = {plugin, name}, __LOCALIX_API_PORT = <port>
+  │ __LOCALIX_APP = {plugin, name, projectDir}, __LOCALIX_API_PORT = <port>
   ▼
 Localix (runtime, plugins, data; workspaces held back until Localix itself is asked for)
 ```
@@ -36,21 +36,27 @@ Localix (runtime, plugins, data; workspaces held back until Localix itself is as
 4. **One binary, one version.** The app's executable is an APFS clone of the host binary and its
    page is the host bundle's UI build, so the app never runs a UI older than its host. A host build
    that differs from the one recorded in the bundle (`LocalixHostBuild`) re-clones on launch.
-5. **The app is the ordinary client.** The page is the web workspace with `chrome="app"`: no rail,
-   sidebar, top bar or status bar, the plugin's main screen in the app's conversation. It adds no
-   endpoint, store or notification producer.
+5. **One plugin, one project.** An app's conversations live in a project of its own
+   (`~/.localix/apps/<plugin>`), so its history, rules, agent and mode are a project's, served by
+   the projects and sessions features as they are. No membership table, no new API.
+6. **The app is the ordinary client.** The page is the web workspace with `chrome="app"`: the title
+   row and the grid, no rail, sidebar or status bar. It adds no endpoint, store or notification
+   producer, and reuses the workspace's own parts (the breadcrumb, the title-row measurement, the
+   new-chat action) rather than copies of them.
 
 ## Native host
 
 | Concern                                    | Owner                                                              |
 | ------------------------------------------ | ------------------------------------------------------------------ |
 | Install, refresh, open, remove, quit       | `app_bundle.rs`; Info.plist and host paths in `app_bundle_host.rs` |
+| Plugin name, Finder name, bundle id        | `app_bundle_names.rs` (the manifest's `PLUGIN_NAME_RE`, bounded)   |
 | Workspace commands (`plugin_app_*`)        | `app_bundle_commands.rs`, trusted workspaces only                  |
 | `.icns` from the page's PNG renditions     | `app_icon.rs`                                                      |
 | Runner entry, window, host wait            | `app_runner.rs`                                                    |
 | Endpoint, host launch, paths, MIME, CSP    | `app_runner_host.rs` (pure, unit-tested)                           |
 | Serving the UI build                       | `app_runner_scheme.rs` (`localix-app://app`)                       |
 | Page messages, navigation, Open in Localix | `app_runner_web.rs`                                                |
+| Loading the page, scripts run before paint | `app_runner_page.rs`                                               |
 | File panel, alert, confirm, links out      | `app_runner_ui.rs`                                                 |
 | Menu bar                                   | `app_runner_menu.rs`                                               |
 | Glass                                      | `app_runner_glass.rs`, materials from `window_material.rs`         |
@@ -67,27 +73,55 @@ Localix (runtime, plugins, data; workspaces held back until Localix itself is as
   host.
 - **One change at a time.** Install, refresh and removal share a lock; a launch's refresh can meet
   an install from the workspace.
+- **Install.** `install` makes the project folder, stages and signs the bundle, then swaps it in
+  whole. It returns the folder, and the workspace finds or creates the project before it opens the
+  app (`ensurePluginAppProject`), so an app always opens into its own project.
+- **Title row.** The page lies under a transparent titlebar with the title hidden. Before every load
+  the runner injects the workspace's own measurement (`native_chrome::measure` and `apply_script`:
+  `--titlebar-height`, `--native-window-button-gap`, `data-fullscreen`) and re-measures on entering
+  and leaving fullscreen, for the page on screen and the next load. A press on an element that
+  itself carries `data-tauri-drag-region` posts `drag` (or `zoom` on a double press), and the runner
+  calls `performWindowDragWithEvent` or `performZoom`: Tauri's contract, without Tauri.
 - **Signing.** `codesign --force --sign -` over the finished bundle. A bundle made on the Mac has no
   quarantine, so Gatekeeper runs it. LaunchServices is told at once (`lsregister -f`).
 
 ## The page
 
 - **Entry.** `app/main.tsx` applies the app's remembered conversation as the first route before the
-  router loads (`applyPluginAppStartRoute`), so the home route never mints a draft.
-  `stampPluginAppDataset` sets `data-desktop` for the stylesheet only: the kit's glass coats and
-  system font apply, while the JavaScript `isDesktop` stays false because there is no shell to
-  invoke. `useTheme` and the anti-FOUC script in `index.html` skip the inline fill for the same
-  reason the macOS workspace does.
-- **Conversation.** `usePluginApp` restores the conversation recorded in view state (`surface`, key
-  `plugin-app:<plugin>`) or creates one named after the app, then opens the plugin's main screen
-  (the rail viewlet it contributes) in it. **New chat** replaces the page's new-chat action
-  (`replaceNewChat`) with a new app conversation.
+  router loads (`applyPluginAppStartRoute`). The page passes `isColdIndex: false` to the URL sync,
+  so neither the home draft nor the last-workspace restore runs: either would land in another
+  project and mint a draft there. `stampPluginAppDataset` sets `data-desktop` for the stylesheet
+  only: the kit's glass coats and system font apply, while the JavaScript `isDesktop` stays false
+  because there is no shell to invoke. `useTheme` and the anti-FOUC script in `index.html` skip the
+  inline fill for the same reason the macOS workspace does.
+- **Conversation.** `usePluginApp` finds the app's project, then opens the conversation recorded in
+  view state (`surface`, key `plugin-app:<plugin>`) while it is still one of the project's, else the
+  project's newest, else a new one (`pluginAppConversation.ts`, read from the hydrated roster). Any
+  conversation of the project the person opens becomes the remembered one; one elsewhere is visited,
+  not adopted. The plugin's main screen (the rail viewlet it contributes) opens once in each. **New
+  chat** in the title row and every other entry run the page's new-chat action, which the app
+  replaces (`replaceNewChat`) with a new conversation in its project.
+- **Title row.** `TitlebarContent` with `app` draws the workspace's `UnifiedBreadcrumb` with the
+  app's name as its root, not a project switch, and the conversation crumb listing the app's
+  project: the app's history. New chat sits at the right of the row.
+- **Plugin turned off.** One standing problem in the Event Center (`pluginAppProblem.ts`,
+  `toast.problems`), keyed to the app and settled when the plugin is back. A `toast.warning` would
+  write a new durable row on every launch.
 - **Window messages.** The page posts JSON to `window.webkit.messageHandlers.localixApp`: `theme`
   (material and appearance), `session` (for **Open in Localix**) and `badge` (attention items in the
   app's conversation). The runner validates each one.
 - **Origin.** The API accepts `localix-app://app` beside `tauri://localhost`
   (`apps/api/src/lib/local-origin-guard.ts`). No web page can claim that origin; a local process can
   already call the API directly.
+
+## Change feed
+
+The app writes nothing of its own. Its project and conversations are created and renamed through the
+projects and sessions endpoints, whose repositories record their change notices in the same
+transaction (C1), and every window re-reads on the poke (C6). Nothing in another feature has to
+react to an app, so there is no consumer: deleting a conversation removes it from the app's history
+through the session's own notice, and deleting the project soft-deletes it until the app's next
+`resolve-path` revives it, which is that endpoint's documented behaviour.
 
 ## Install actions
 
@@ -104,6 +138,7 @@ with Localix's tile (896 points, radius 196, `#121215` to `#09090b`) and the plu
 | Endpoint, paths, MIME, CSP, plist, icon     | `cargo test --lib app_` in `apps/desktop-tauri/src-tauri`                                |
 | Start route, dataset, window messages, icon | `bun test apps/ui/src/shared/lib/pluginApp.dom.test.ts apps/ui/src/features/plugin-apps` |
 | New chat in an app                          | `bun test apps/ui/src/pages/chat/model/useNewChatAction.dom.test.tsx`                    |
+| Which conversation an app opens             | `bun test apps/ui/src/pages/chat/model/pluginAppConversation.test.ts`                    |
 | Origin                                      | `bun test apps/api/src/lib/local-origin-guard.test.ts`                                   |
 
 The native window, the background launch and the Dock need a feel check on a Mac after a build:

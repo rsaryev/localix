@@ -10,9 +10,9 @@ Changes land on `main`.
 
 - **Plugin apps** (macOS): install a plugin as its own Mac app from its tab's menu, the app button
   at the right of the tab strip, its rail button or the command palette. The app has its own Dock
-  icon, window and menu bar, shows the plugin with its agent chat beside it, and starts Localix in
-  the background when it is not running. See [Plugin apps](docs/features/plugin-apps.md).
-- **New chat** button at the top of a conversation.
+  icon, window, menu bar and project, shows the plugin with the agent beside it, keeps its
+  conversations as its history, and starts Localix in the background when it is not running. See
+  [Plugin apps](docs/features/plugin-apps.md).
 
 ### Changed
 

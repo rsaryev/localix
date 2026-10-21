@@ -7,6 +7,8 @@ use std::process::Command;
 use tauri::AppHandle;
 
 use crate::app_bundle_host::{host, info_plist, plist_string, Host};
+pub(crate) use crate::app_bundle_names::valid_plugin;
+use crate::app_bundle_names::{bundle_id_part, bundle_name};
 use crate::app_runner::keys;
 
 /// The executable inside every plugin app: a clone of the host binary (`app_runner.rs`).
@@ -19,33 +21,14 @@ pub(crate) const HOST_BUILD: &str = "LocalixHostBuild";
 /// launch runs, and both stage, remove and rename the same bundle paths.
 static CHANGES: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-/// Plugin names as manifests spell them (`game-2048`, `kanban`); nothing else reaches a path or
-/// a bundle id.
-pub(crate) fn valid_plugin(name: &str) -> bool {
-    (1..=64).contains(&name.len())
-        && name.starts_with(|first: char| first.is_ascii_lowercase() || first.is_ascii_digit())
-        && name
-            .bytes()
-            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
-}
-
-/// A Finder name for the bundle: the plugin's title without path separators or a leading dot.
-fn bundle_name(title: &str) -> Option<String> {
-    let cleaned: String = title
-        .chars()
-        .filter(|char| !char.is_control() && !matches!(char, '/' | ':' | '\\'))
-        .take(64)
-        .collect();
-    let cleaned = cleaned.trim().trim_start_matches('.').trim();
-    (!cleaned.is_empty()).then(|| cleaned.to_string())
-}
-
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InstalledApp {
     pub(crate) plugin: String,
     pub(crate) name: String,
     pub(crate) path: PathBuf,
+    /// The app's project folder; the workspace makes the project for it at install.
+    pub(crate) project_dir: Option<PathBuf>,
     #[serde(skip)]
     pub(crate) bundle_id: String,
     #[serde(skip)]
@@ -70,7 +53,11 @@ fn bundle_id(app: &AppHandle, plugin: &str) -> String {
     } else {
         "app"
     };
-    format!("{}.{flavour}.{plugin}", app.config().identifier)
+    format!(
+        "{}.{flavour}.{}",
+        app.config().identifier,
+        bundle_id_part(plugin)
+    )
 }
 
 /// Every plugin app in the folder, read back from the bundles themselves.
@@ -94,6 +81,7 @@ fn read_bundle(path: &Path) -> Option<InstalledApp> {
         name: read("CFBundleName").unwrap_or_else(|| plugin.clone()),
         bundle_id: read("CFBundleIdentifier")?,
         host_build: read(HOST_BUILD),
+        project_dir: read(keys::PROJECT).map(PathBuf::from),
         path: path.to_path_buf(),
         plugin,
     })
@@ -125,6 +113,10 @@ pub(crate) fn install(
         target = dir.join(format!("{name} ({plugin}).app"));
     }
     let host = host(app)?;
+    // The app's project lives in this folder; the workspace finds or creates the project for it
+    // right after, so the app always opens into a project of its own.
+    let project = host.projects.join(plugin);
+    std::fs::create_dir_all(&project).map_err(|error| format!("{}: {error}", project.display()))?;
     let id = bundle_id(app, plugin);
     let staged = dir.join(format!(".{plugin}.{}.app", std::process::id()));
     let _ = std::fs::remove_dir_all(&staged);

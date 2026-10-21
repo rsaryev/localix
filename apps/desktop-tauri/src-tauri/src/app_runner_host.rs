@@ -18,14 +18,10 @@ pub(crate) fn live_port(endpoint_file: &Path) -> Option<u16> {
     Some(port)
 }
 
-/// The loopback port the descriptor's `baseUrl` names; anything else is not a local runtime.
+/// The loopback port the descriptor's `baseUrl` names, read as the shell reads a ready frame.
 fn descriptor_port(descriptor: &str) -> Option<u16> {
     let value: serde_json::Value = serde_json::from_str(descriptor).ok()?;
-    let url = tauri::Url::parse(value.get("baseUrl")?.as_str()?).ok()?;
-    if url.scheme() != "http" || !matches!(url.host_str(), Some("127.0.0.1" | "localhost")) {
-        return None;
-    }
-    url.port()
+    crate::sidecar::runtime_port(value.get("baseUrl")?.as_str()?).ok()
 }
 
 /// Start the host without showing it; `open -g` leaves the app the person launched in front.
@@ -82,13 +78,18 @@ pub(crate) fn show_host(host: &Path) {
     let _ = command.stdin(Stdio::null()).spawn();
 }
 
-/// What the page reads before any of its code runs: the plugin it hosts and the runtime's port.
-pub(crate) fn page_globals(plugin: &str, name: &str, port: u16) -> String {
-    let app = serde_json::json!({ "plugin": plugin, "name": name });
+/// What the page reads before any of its code runs: the plugin it hosts, the app's project folder
+/// and the runtime's port.
+pub(crate) fn page_globals(plugin: &str, name: &str, project: &Path, port: u16) -> String {
+    let app = serde_json::json!({ "plugin": plugin, "name": name, "projectDir": project });
     format!(
         "window.__LOCALIX_APP={app};window.__LOCALIX_API_PORT={port};window.__LOCALIX_OAUTH_PORT={port};"
     )
 }
+
+/// Tauri's title-row contract, for a page with no Tauri: a press on an element that itself carries
+/// `data-tauri-drag-region` moves the window, and a double press zooms it (`chrome.css`).
+pub(crate) const DRAG_SCRIPT: &str = "document.addEventListener('mousedown',(e)=>{if(e.button!==0||!(e.target instanceof Element)||!e.target.hasAttribute('data-tauri-drag-region'))return;e.preventDefault();window.webkit.messageHandlers.localixApp.postMessage(JSON.stringify({type:e.detail===2?'zoom':'drag'}))},true);";
 
 /// The file a `localix-app://app/<path>` request names inside the UI build. A path that climbs out
 /// of it is refused; a route without an extension is the single-page app's own `index.html`.
@@ -181,8 +182,14 @@ mod tests {
 
     #[test]
     fn page_globals_are_json_not_interpolated_text() {
-        let script = page_globals("kanban", "Board \"Q3\"</script>", 4321);
+        let script = page_globals(
+            "kanban",
+            "Board \"Q3\"</script>",
+            Path::new("/h/.localix/apps/kanban"),
+            4321,
+        );
         assert!(script.contains(r#""plugin":"kanban""#));
+        assert!(script.contains(r#""projectDir":"/h/.localix/apps/kanban""#));
         assert!(script.contains(r#"Board \"Q3\"</script>"#));
         assert!(script.contains("window.__LOCALIX_API_PORT=4321;"));
     }

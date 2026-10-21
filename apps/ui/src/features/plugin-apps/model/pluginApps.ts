@@ -3,6 +3,7 @@ import { IS_MAC, isDesktop } from '@localixai/kit/environment'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import { toast } from '@/shared/lib/notify'
+import { ensurePluginAppProject } from '@/shared/lib/pluginAppProject'
 import type { IconComponent } from './appIcon'
 
 /**
@@ -15,6 +16,8 @@ export interface InstalledPluginApp {
   plugin: string
   name: string
   path: string
+  /** The app's project folder; null for a bundle made before apps had projects. */
+  projectDir: string | null
 }
 
 export interface PluginAppSource {
@@ -70,9 +73,12 @@ export async function installPluginApp(source: PluginAppSource): Promise<void> {
     // Drawn only here, so the renderer it needs stays out of the workspace's startup.
     const { renderAppIcon } = await import('./appIcon')
     const icons = await renderAppIcon(source.Icon)
-    await invoke('plugin_app_install', {
+    const installed = (await invoke('plugin_app_install', {
       request: { plugin: source.plugin, name: source.title, icons },
-    })
+    })) as InstalledPluginApp
+    // The app opens into a project of its own: make it now, before the app's first launch.
+    if (installed.projectDir) await ensurePluginAppProject(installed.projectDir, source.title)
+    await invoke('plugin_app_open', { plugin: source.plugin })
     toast.success(`${source.title} is now an app`, {
       description: 'Find it in Applications, Launchpad and Spotlight, or keep it in the Dock.',
     })

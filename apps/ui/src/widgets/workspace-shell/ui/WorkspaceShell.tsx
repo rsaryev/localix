@@ -299,10 +299,10 @@ export function WorkspaceShell({
             attribute, not the CSS -webkit-app-region property); double-click zooms.
           - everywhere else (browser + Windows/Linux, which keep their native OS
             titlebar): a plain, non-draggable bar with no traffic-light gap. */}
-        {frame &&
-          !isMobile &&
+        {!isMobile &&
           titlebarContent &&
-          (isDesktop && IS_MAC ? (
+          // A plugin app's page sits under its own window's macOS titlebar, like the desktop's.
+          ((isDesktop && IS_MAC) || !frame ? (
             <div
               data-tauri-drag-region
               className="app-titlebar flex h-[var(--titlebar-height)] shrink-0 items-center gap-1 border-b border-border-soft bg-sidebar pr-2 max-sm:hidden lg:pr-1"

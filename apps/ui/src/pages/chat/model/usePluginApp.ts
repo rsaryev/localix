@@ -1,8 +1,4 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { backendClient } from '@/shared/api/client'
-import { ApiError } from '@/shared/api/failure'
-import { findSessionInState } from '@/entities/chat/model/findSession'
-import { applyServerSession } from '@/entities/chat/model/sessionSync'
 import { useChatStore } from '@/entities/chat/model/store'
 import { useAttentionStore } from '@/entities/chat/model/attention/store'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
@@ -11,6 +7,7 @@ import {
   subscribePluginActivation,
 } from '@/shared/contrib/pluginActivation'
 import { viewStateStore } from '@/shared/lib/view-state/store'
+import { ensurePluginAppProject } from '@/shared/lib/pluginAppProject'
 import { toast } from '@/shared/lib/notify'
 import {
   pluginAppViewState,
@@ -20,46 +17,15 @@ import {
 } from '@/shared/lib/pluginApp'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { openPageWorkItem } from './openPageWorkItem'
-
-const isMissingSession = (error: unknown) =>
-  error instanceof ApiError && error.code === 'session_not_found'
-
-/**
- * The conversation a plugin app shows: the one it remembers while that still exists, otherwise a
- * new one named after the app. Plugins are built around a chat ("the chat is the table"), so the
- * app gets its own rather than borrowing whichever one the workspace has open.
- */
-async function appConversation(app: PluginAppContext): Promise<string> {
-  const address = pluginAppViewState(app.plugin)
-  const selected = await viewStateStore.ready(address)
-  const remembered =
-    selected.value && 'sessionId' in selected.value ? selected.value.sessionId : null
-  if (remembered) {
-    if (findSessionInState(useChatStore.getState(), remembered)) return remembered
-    try {
-      applyServerSession(await backendClient.getSession(remembered))
-      return remembered
-    } catch (error) {
-      if (!isMissingSession(error)) throw error
-    }
-  }
-  return startConversation(app)
-}
-
-/** A new conversation for the app, remembered as the one it shows from now on. */
-async function startConversation(app: PluginAppContext): Promise<string> {
-  const session = await backendClient.createSession({ title: app.name, projectId: null })
-  applyServerSession(session)
-  viewStateStore.set(pluginAppViewState(app.plugin), { sessionId: session.id })
-  return session.id
-}
+import { appConversation, startConversation } from './pluginAppConversation'
+import { reportPluginAppAvailable, reportPluginAppUnavailable } from './pluginAppProblem'
 
 interface PluginAppOptions {
   hasHydrated: boolean
   /** The enabled plugins once the capability snapshot is known; null before. */
   enabledPluginNames: ReadonlySet<string> | null
   activeSessionId: string | null
-  goToSession: (id: string) => void
+  goToSession: (id: string, options?: { project?: string }) => void
   resolvedTheme: ResolvedTheme
 }
 
@@ -77,16 +43,23 @@ export function usePluginApp(
     goToSession,
     resolvedTheme,
   }: PluginAppOptions,
-): { newConversation: (() => void) | null } {
+): { newConversation: (() => void) | null; projectId: string | null } {
+  const [projectId, setProjectId] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const activeSessionIdRef = useRef(activeSessionId)
+  activeSessionIdRef.current = activeSessionId
   useEffect(() => {
     if (!app || !hasHydrated) return
     let live = true
-    appConversation(app)
-      .then((id) => {
+    ensurePluginAppProject(app.projectDir, app.name)
+      .then(async (project) => {
+        const conversation = await appConversation(app, project)
         if (!live) return
-        rememberPluginAppSession(app.plugin, id)
-        setSessionId(id)
+        setProjectId(project)
+        // Arrive once; afterwards the app follows wherever the person goes in its project.
+        if (activeSessionIdRef.current !== conversation) {
+          goToSession(conversation, { project })
+        } else setSessionId(conversation)
       })
       .catch(() => {
         if (live) toast.error(`Could not open ${app.name}`)
@@ -94,37 +67,43 @@ export function usePluginApp(
     return () => {
       live = false
     }
+    // Resolved once per page: the project and its first conversation do not depend on later navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app, hasHydrated])
 
-  // Once: the app's conversation is where it starts. Links inside it may still go elsewhere.
-  const arrived = useRef(false)
+  // The conversation on screen is the app's when it is one of its project's: it becomes the one
+  // the app shows and reopens on. One elsewhere (a link, the folder chip) is visited, not adopted.
+  const activeProjectId = useChatStore(
+    (state) => state.allSessions.find((session) => session.id === activeSessionId)?.projectId,
+  )
   useEffect(() => {
-    if (!sessionId || arrived.current) return
-    arrived.current = true
-    if (activeSessionId !== sessionId) goToSession(sessionId)
-  }, [sessionId, activeSessionId, goToSession])
+    if (!app || !projectId || !activeSessionId || activeProjectId !== projectId) return
+    setSessionId(activeSessionId)
+    rememberPluginAppSession(app.plugin, activeSessionId)
+    viewStateStore.set(pluginAppViewState(app.plugin), { sessionId: activeSessionId })
+  }, [app, projectId, activeSessionId, activeProjectId])
 
   // The plugin's screen is the rail entry it contributes; it registers when its UI has loaded.
+  // Each of the app's conversations gets it once; closing it there is the person's choice.
   const activation = useSyncExternalStore(subscribePluginActivation, pluginActivationVersion)
-  const opened = useRef<string | null>(null)
+  const opened = useRef(new Set<string>())
   useEffect(() => {
-    if (!app || !sessionId || activeSessionId !== sessionId || opened.current === sessionId) return
+    if (!app || !sessionId || activeSessionId !== sessionId || opened.current.has(sessionId)) return
     void activation
     const screen = railViewletRegistry.list().find((viewlet) => viewlet.pluginName === app.plugin)
     if (!screen) return
-    opened.current = sessionId
+    opened.current.add(sessionId)
     openPageWorkItem(sessionId, { workKind: screen.kind, id: screen.kind, title: screen.title })
   }, [app, sessionId, activeSessionId, activation])
 
-  // A plugin turned off or removed in Localix leaves the app with only its chat; say why, once.
-  const unavailable = Boolean(app && enabledPluginNames && !enabledPluginNames.has(app.plugin))
+  // A plugin turned off or removed in Localix leaves the app with only its chat: one standing
+  // problem while that lasts, settled when the plugin is back.
+  const available = app && enabledPluginNames ? enabledPluginNames.has(app.plugin) : null
   useEffect(() => {
-    if (app && unavailable) {
-      toast.warning(`${app.name} is turned off in Localix`, {
-        description: 'Turn the plugin on in Localix to use this app.',
-      })
-    }
-  }, [app, unavailable])
+    if (!app || available === null) return
+    if (available) reportPluginAppAvailable(app)
+    else reportPluginAppUnavailable(app)
+  }, [app, available])
 
   // Requests waiting on the person in the app's conversation badge its Dock icon.
   const waiting = useAttentionStore((state) =>
@@ -134,23 +113,19 @@ export function usePluginApp(
     if (app) postToPluginApp({ type: 'badge', text: waiting > 0 ? String(waiting) : null })
   }, [app, waiting])
 
-  // New chat in an app starts the app over in a fresh conversation (a new game, an empty board),
-  // and the app keeps that one from now on.
+  // New chat in an app starts it over in a new conversation of its project (a new game, an empty
+  // board); arriving there makes it the app's.
   const starting = useRef(false)
   const newConversation = useCallback(() => {
-    if (!app || starting.current) return
+    if (!app || !projectId || starting.current) return
     starting.current = true
-    startConversation(app)
-      .then((id) => {
-        rememberPluginAppSession(app.plugin, id)
-        setSessionId(id)
-        goToSession(id)
-      })
+    startConversation(projectId)
+      .then((id) => goToSession(id, { project: projectId }))
       .catch(() => toast.error('Could not start a new conversation'))
       .finally(() => {
         starting.current = false
       })
-  }, [app, goToSession])
+  }, [app, projectId, goToSession])
 
   useEffect(() => {
     if (app) postToPluginApp({ type: 'theme', dark: resolvedTheme === 'dark' })
@@ -158,5 +133,5 @@ export function usePluginApp(
   useEffect(() => {
     if (app) postToPluginApp({ type: 'session', id: sessionId })
   }, [app, sessionId])
-  return { newConversation: app ? newConversation : null }
+  return { newConversation: app ? newConversation : null, projectId }
 }

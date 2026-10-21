@@ -133,18 +133,27 @@ pub(crate) fn remove(label: &str) {
     });
 }
 
+/// The page side of a measurement: the kit's titlebar strip reads these (`chrome.css`). Shared by
+/// the workspace and plugin apps (`app_runner.rs`), so both lay the strip out the same way.
+pub(crate) fn apply_script(geometry: Geometry) -> String {
+    format!(
+        "(()=>{{const apply=()=>{{const r=document.documentElement;r.dataset.fullscreen='{}';const s=r.style;s.setProperty('--titlebar-height','{}px');s.setProperty('--native-tabbar-height','{}px');s.setProperty('--native-window-button-gap','{}px');}};if(document.documentElement)apply();else document.addEventListener('DOMContentLoaded',apply,{{once:true}});}})()",
+        geometry.fullscreen, geometry.titlebar_height, geometry.tabbar_height, geometry.button_gap,
+    )
+}
+
 pub(crate) fn synchronize(window: &Window) {
     OBSERVERS.with(|observers| {
         let observers = observers.borrow();
-        let Some(observer) = observers.get(window.label()) else { return };
+        let Some(observer) = observers.get(window.label()) else {
+            return;
+        };
         let state = observer.ivars();
-        let Some(geometry) = measure(&state.native) else { return };
+        let Some(geometry) = measure(&state.native) else {
+            return;
+        };
         if let Some(view) = state.app.get_webview(&state.label) {
-            let script = format!(
-                "(()=>{{const apply=()=>{{const r=document.documentElement;r.dataset.fullscreen='{}';const s=r.style;s.setProperty('--titlebar-height','{}px');s.setProperty('--native-tabbar-height','{}px');s.setProperty('--native-window-button-gap','{}px');}};if(document.documentElement)apply();else document.addEventListener('DOMContentLoaded',apply,{{once:true}});}})()",
-                geometry.fullscreen, geometry.titlebar_height, geometry.tabbar_height, geometry.button_gap,
-            );
-            let _ = view.eval(script);
+            let _ = view.eval(apply_script(geometry));
         }
     });
 }
