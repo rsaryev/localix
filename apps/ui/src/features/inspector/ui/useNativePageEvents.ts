@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { tauriListen } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { toast } from '@/shared/lib/notify'
@@ -60,7 +60,7 @@ export function readPageEvent(payload: unknown): PageEvent | null {
 export function useNativePageEvents(tabId: string, handlers: NativePageEventHandlers): void {
   const latest = useLatestRef(handlers)
   useEffect(() => {
-    const listen = tauriListen()
+    const listen = platformCapabilities().desktop.listener()
     if (!listen) return
     const lease = nativePageRendererLease.last(tabId)
     let disposed = false

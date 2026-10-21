@@ -1299,6 +1299,15 @@ for (const file of files) {
   ) {
     problems.push(`${path}: direct reload bypasses platformCapabilities`)
   }
+  // The inspector's native browser and the companion island reach the shell through the
+  // capability port, so a host or test can supply the bridge.
+  if (
+    uiProductionSource &&
+    /^apps\/ui\/src\/(?:features\/(?:inspector|companion)|pages\/companion)\//u.test(path) &&
+    /from\s+['"]@\/shared\/lib\/tauri['"]/u.test(sourceWithoutComments)
+  ) {
+    problems.push(`${path}: desktop bridge import bypasses platformCapabilities().desktop`)
+  }
 
   let moduleLoads
   try {

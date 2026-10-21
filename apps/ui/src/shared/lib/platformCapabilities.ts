@@ -1,5 +1,5 @@
 import { confirmAndOpenExternal, confirmExternalHandoff } from './externalLink'
-import { tauriInvoke } from './tauri'
+import { tauriInvoke, tauriListen, type InvokeFn, type ListenFn } from './tauri'
 
 export interface PlatformCapabilities {
   clipboard: {
@@ -16,6 +16,10 @@ export interface PlatformCapabilities {
   }
   desktop: {
     invoke: <T = unknown>(command: string, args?: Record<string, unknown>) => Promise<T> | null
+    /** The native command bridge, for a caller that issues several commands; none on the web. */
+    invoker: () => InvokeFn | undefined
+    /** The native event bridge; none on the web. */
+    listener: () => ListenFn | undefined
   }
 }
 
@@ -73,6 +77,8 @@ const defaults: PlatformCapabilities = {
       const invoke = tauriInvoke()
       return invoke ? (invoke(command, args) as Promise<T>) : null
     },
+    invoker: tauriInvoke,
+    listener: tauriListen,
   },
 }
 

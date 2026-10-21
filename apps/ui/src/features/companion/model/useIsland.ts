@@ -7,7 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import type { AttentionItem } from '@localixai/api/client'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { useTauriEvent } from '@/shared/hooks/useTauriEvent'
 import { useReducedMotion } from '@localixai/kit/environment'
 import { ISLAND } from './geometry'
@@ -118,7 +118,7 @@ export function useIsland(
       .catch(() => {})
       .then(() => {
         if (disposed || current !== revision.current) return
-        return tauriInvoke()?.('companion_set_expanded', {
+        return platformCapabilities().desktop.invoker()?.('companion_set_expanded', {
           layout: {
             expanded: state.expanded,
             height,

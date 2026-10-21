@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { tauriListen } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { usePreviewStore } from '../model/previewStore'
 import type { PreviewEntry } from '../model/preview'
 import { readPageEvent, WEB_URL, type PageEvent } from './useNativePageEvents'
@@ -36,7 +36,7 @@ function followAddress(event: PageEvent): void {
  */
 export function useNativePageSync(): void {
   useEffect(() => {
-    const listen = tauriListen()
+    const listen = platformCapabilities().desktop.listener()
     if (!listen) return
     let disposed = false
     const unsubscribers: Array<() => void> = []

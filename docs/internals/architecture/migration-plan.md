@@ -45,7 +45,7 @@ scheduling, terminal lifecycle and the session event stream.
 - [ ] `apps/api/src/db/payload.ts` imports no feature module.
 - [ ] Cross-feature cycles in the API shrink to zero (A6).
 - [ ] UI slices stop importing each other and gain public entries (A8).
-- [ ] Desktop calls go through `platformCapabilities`.
+- [x] Desktop calls go through `platformCapabilities` (the inspector and companion are guarded).
 
 ## Client synchronization
 

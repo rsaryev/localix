@@ -1,4 +1,4 @@
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { browserEngine } from './browserUrl'
 import type { PreviewEntry } from './preview'
 
@@ -21,5 +21,7 @@ export function navigateReopenedNativePage(
 ): void {
   if (!previous || previous.previewId !== next.previewId) return
   if (next.version <= previous.version || browserEngine(previous, desktop) !== 'native') return
-  void tauriInvoke()?.('browser_navigate', { tabId: next.previewId, url: next.url }).catch(() => {})
+  void platformCapabilities()
+    .desktop.invoker()?.('browser_navigate', { tabId: next.previewId, url: next.url })
+    .catch(() => {})
 }

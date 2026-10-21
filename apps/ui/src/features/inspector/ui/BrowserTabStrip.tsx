@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Clock3, Code, Globe2, Pin, Plus } from 'lucide-react'
 import { hostLabel } from '@/shared/lib/url'
-import { tauriInvoke, tauriListen } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { IconButton } from '@localixai/kit/icon-button'
@@ -50,9 +50,9 @@ function runTabMenuAction(sessionId: string, tabId: string, action: string): voi
   switch (action) {
     case 'reload':
       if (browserEngine(tab) === 'native')
-        void tauriInvoke()?.('browser_reload', { tabId }).catch(
-          reportNative('Could not reload the page'),
-        )
+        void platformCapabilities()
+          .desktop.invoker()?.('browser_reload', { tabId })
+          .catch(reportNative('Could not reload the page'))
       else if (browserEngine(tab) === 'frame')
         store.updateBrowserTab(sessionId, tabId, { version: tab.version + 1 })
       break
@@ -117,7 +117,7 @@ export function BrowserTabStrip({
 }) {
   const transfer = useBrowserTabTransferState()
   useEffect(() => {
-    const listen = tauriListen()
+    const listen = platformCapabilities().desktop.listener()
     if (!listen) return
     let disposed = false
     let off: (() => void) | undefined
@@ -147,19 +147,21 @@ export function BrowserTabStrip({
       onAuxClose: (id: string) => closeBrowserTabs([id]),
       onContextMenu: (_id: string, event: React.MouseEvent) => {
         event.preventDefault()
-        void tauriInvoke()?.('browser_tab_menu', {
-          tabId: tab.previewId,
-          state: {
-            pinned: !!tab.pinned,
-            canCloseLeft: !!unpinned(tabs.slice(0, index)).length,
-            canCloseRight: !!unpinned(tabs.slice(index + 1)).length,
-            canCloseAll: !!unpinned(tabs).length,
-          },
-        }).catch((error: unknown) =>
-          toast.error('Could not open the browser tab menu', {
-            description: errorMessage(error, '') || undefined,
-          }),
-        )
+        void platformCapabilities()
+          .desktop.invoker()?.('browser_tab_menu', {
+            tabId: tab.previewId,
+            state: {
+              pinned: !!tab.pinned,
+              canCloseLeft: !!unpinned(tabs.slice(0, index)).length,
+              canCloseRight: !!unpinned(tabs.slice(index + 1)).length,
+              canCloseAll: !!unpinned(tabs).length,
+            },
+          })
+          .catch((error: unknown) =>
+            toast.error('Could not open the browser tab menu', {
+              description: errorMessage(error, '') || undefined,
+            }),
+          )
       },
       ...tabIds.item(tab.previewId),
     }

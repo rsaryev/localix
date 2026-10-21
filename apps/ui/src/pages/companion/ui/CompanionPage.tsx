@@ -7,7 +7,7 @@ import { useTheme } from '@/shared/theme/useTheme'
 import { useFontFamily } from '@/features/settings/model/useFontFamily'
 import { startSettingsBootstrap } from '@/features/settings/model/settingsBootstrap'
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { openCompanionSession } from '@/shared/lib/companionWindow'
 import { useCompanionState } from '@/features/companion/model/useCompanionState'
 import { useIsland } from '@/features/companion/model/useIsland'
@@ -88,9 +88,9 @@ export function CompanionPage() {
   useEffect(() => startSettingsBootstrap(loadSettings), [loadSettings])
   useEffect(() => {
     document.documentElement.dataset.companion = 'true'
-    void tauriInvoke()?.('companion_ready').catch(() =>
-      setActionError('Could not show the island.'),
-    )
+    void platformCapabilities()
+      .desktop.invoker()?.('companion_ready')
+      .catch(() => setActionError('Could not show the island.'))
     return () => {
       delete document.documentElement.dataset.companion
     }
