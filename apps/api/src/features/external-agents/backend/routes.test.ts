@@ -91,11 +91,11 @@ describe('/items reads the end of a session when asked', () => {
 
 describe('the roster wire carries what its readers read', () => {
   /**
-   * Measured on a real local history: a 200-row page was 245 KB and `usage` was 145 KB of it — 59% — because
-   * every row carried a per-day, per-model token breakdown that nothing reading this response looks at.
-   * The workspace row shows a title, a mark, a state and a time; the tool's row shows the same plus an
-   * event count; the statistics have their own endpoint that folds server-side. Dropping it took the
-   * page to 98.6 KB, on every filter change.
+   * A roster page was mostly `usage` — more than half its bytes — because every row carried a
+   * per-day, per-model token breakdown that nothing reading this response looks at. The workspace
+   * row shows a title, a mark, a state and a time; the tool's row shows the same plus an event
+   * count; the statistics have their own endpoint that folds server-side. Dropping it cut the page
+   * to well under half, on every filter change.
    */
   function rosterApp(row: Record<string, unknown>) {
     const service = {

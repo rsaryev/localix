@@ -87,10 +87,10 @@ export interface TranscriptRequest {
   /**
    * Start the window at this ordinal instead of at the session's start.
    *
-   * Head and tail together still leave a hole: 10 of a real history's 279 counted sessions exceed the
-   * 2,000-event cap, and 13.8% of all history here sits beyond both a head and a tail read of its own
-   * session. Positions are the ones every surface already reports, so this is addressable from what a
-   * reader was already shown.
+   * Head and tail together still leave a hole: in a long history some sessions exceed the
+   * 2,000-event cap, and their middles sit beyond both a head and a tail read of their own session.
+   * Positions are the ones every surface already reports, so this is addressable from what a reader
+   * was already shown.
    */
   readonly from?: number
 }

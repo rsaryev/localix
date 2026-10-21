@@ -67,7 +67,6 @@ export function localEmbeddingModel(local: LocalModelSpec): EmbeddingModelSpec |
  * the memory. The default: it runs here, and nothing leaves the computer.
  */
 export const EMBEDDINGGEMMA_2: EmbeddingModelSpec = localEmbeddingModel(EMBEDDINGGEMMA_2_MODEL)!
-export const DEFAULT_EMBEDDING_MODEL_ID = EMBEDDINGGEMMA_2.id
 
 /** Identity of a vector space: model (and revision), stored width and prompts. */
 export function modelFingerprint(model: EmbeddingModelSpec): string {

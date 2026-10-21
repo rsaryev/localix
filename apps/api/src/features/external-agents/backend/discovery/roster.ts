@@ -24,7 +24,7 @@ export interface RosterInput {
   readonly summaries: readonly SessionSummary[]
   readonly live: LiveStore
   readonly query: RosterQuery
-  /** Sub-agent transcripts are hidden by default: in a real local history they outnumber roots 4:1. */
+  /** Sub-agent transcripts are hidden by default: they can outnumber roots several to one. */
   readonly includeChildren?: boolean
 }
 
@@ -50,10 +50,10 @@ function matchesText(row: SessionSummary, needle: string): boolean {
 /**
  * A NAME for a delegation that has not correlated to a transcript yet.
  *
- * It used to be `entry.launchCommand` verbatim, and that command is 1,719 characters in a real local history:
- * the launch line carries the whole rendered report protocol as one `--append-system-prompt` argument.
- * So an uncorrelated delegation put 1.7 KB into a roster row title — printed on its own line by the
- * tool, whose entire 40-row answer measures 8.4 KB.
+ * It used to be `entry.launchCommand` verbatim, and that command runs to about 1.7 KB: the launch
+ * line carries the whole rendered report protocol as one `--append-system-prompt` argument. So an
+ * uncorrelated delegation put more into a roster row title — printed on its own line by the tool —
+ * than several ordinary rows of the answer take together.
  *
  * The pieces for a real name are already declared: `LOCALIX_AGENT_CWD` exists so correlation can tell
  * two delegations of one provider apart, and the directory is what a reader tells them apart by too.

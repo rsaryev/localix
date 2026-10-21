@@ -6,11 +6,11 @@ import { join } from 'node:path'
 import { jsonlRecords, streamJsonlRecords } from './fs-read'
 
 /**
- * The cap used to stop the stream in silence, and every JSONL adapter counts what it sees and reports
- * that as `total`. So a capped read presented a truncated session as a complete one — and a TAIL read
- * presented its middle as the end. Measured on a real local history: 7 files exceed the 32 MB transcript cap,
- * and on the largest (47.72 MB, 21,220 lines) the "tail" ended 7h40m before the session did while
- * reporting `total: 8596`.
+ * The cap used to stop the stream in silence, and every JSONL adapter counts what it sees and
+ * reports that as `total`. So a capped read presented a truncated session as a complete one — and a
+ * TAIL read presented its middle as the end. Transcripts past the 32 MB cap occur in a long
+ * history, and on one the "tail" ended hours before the session did while reporting a confident
+ * `total`.
  */
 async function jsonl(lines: number): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'jsonl-'))
@@ -67,11 +67,11 @@ describe('a capped stream says that it stopped short', () => {
 
 describe('a tail read of an oversized file reaches its actual end', () => {
   /**
-   * A forward stream cannot: it stops at the cap having read the FRONT. Measured on a real local history's
-   * largest transcript (47.72 MB, 21,220 lines), the forward "tail" ended 7h40m before the session's
-   * last conversational record; reading backwards ends on it exactly. The backward path costs memory
-   * the forward one avoids — 13 ms to read the last 32 MB there, 35 ms to parse — so it is taken only
-   * when the tail is what was asked for.
+   * A forward stream cannot: it stops at the cap having read the FRONT. On a transcript well past
+   * the cap, the forward "tail" ended hours before the session's last conversational record;
+   * reading backwards ends on it exactly. The backward path costs memory the forward one avoids —
+   * tens of milliseconds to read and parse the last 32 MB — so it is taken only when the tail is
+   * what was asked for.
    */
   test('the last records are the ones yielded, and the cut is still reported', async () => {
     const path = await jsonl(500)

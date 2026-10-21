@@ -119,11 +119,3 @@ export function buildCorpusScorer(candidates: readonly (readonly PreparedField[]
       return scores
     })
 }
-
-export function corpusFullTextScores(
-  candidates: readonly (readonly PreparedField[])[],
-  queries: readonly string[],
-  requireAllTerms: boolean,
-): readonly ReadonlyMap<number, number>[] {
-  return buildCorpusScorer(candidates)(queries, requireAllTerms)
-}

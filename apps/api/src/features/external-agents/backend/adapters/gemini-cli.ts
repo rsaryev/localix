@@ -54,9 +54,8 @@ function geminiHome(env: AdapterEnv): string {
 /**
  * Which absolute directory a chat was recorded in.
  *
- * The recording does not say — this adapter reported no cwd at all for that reason, and on this
- * machine that was 29 of the 48 sessions in the statistics' "no working directory recorded" bucket.
- * But Gemini keeps the answer beside the recordings: `~/.gemini/projects.json` maps ABSOLUTE PATH →
+ * The recording does not say — this adapter reported no cwd at all for that reason, which put every
+ * Gemini session in the statistics' "no working directory recorded" bucket. But Gemini keeps the answer beside the recordings: `~/.gemini/projects.json` maps ABSOLUTE PATH →
  * the short directory name under `tmp`, which is the name a chat is filed under. Inverting its own
  * file is not a guess.
  *
@@ -66,8 +65,8 @@ function geminiHome(env: AdapterEnv): string {
  *    attribution is worse here than none: `cwdPrefix` is a prefix filter, and a wrong prefix quietly
  *    moves sessions into another project's bar.
  *  - older recordings sit under a 64-hex directory instead. That is `sha256(absolutePath)` —
- *    verified with a synthetic fixture, where `193a59a1…` is the digest of
- *    `/Users/dev/Documents/ai-gateway`
+ *    verified with a synthetic fixture, where `5465db9e…` is the digest of
+ *    `/Users/dev/Documents/sample-project`
  *    — so it is resolved by hashing the paths the map already lists, never by inverting a hash. A
  *    digest naming a path no longer in the map stays unresolved.
  */

@@ -61,7 +61,7 @@ export function summaryOf(row: SessionRow, path: string): SessionSummary {
     key: linkKeyOf({ provider: ID, nativeSessionId: row.id }),
     provider: ID,
     nativeSessionId: row.id,
-    // 13 of a real history's 19 sessions have a title; the id is the honest fallback for the rest.
+    // Not every session has a title; the id is the honest fallback for the rest.
     title: firstText(title, TITLE_CHARS) ?? row.id,
     ...(startedAt ? { startedAt } : {}),
     ...(row.model ? { model: row.model } : {}),

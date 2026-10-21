@@ -1,15 +1,16 @@
 /**
  * Which directory a Gemini chat was recorded in.
  *
- * The recording does not say, so this adapter reported no working directory at all — honest, and on
- * this machine it was 29 of the 48 sessions in the statistics' "no working directory recorded"
- * bucket, none of which any project filter could reach. Gemini keeps the answer beside the
- * recordings in `~/.gemini/projects.json`, a map of ABSOLUTE PATH → the short directory name a chat
- * is filed under, so the attribution comes from the provider's own file rather than from a guess.
+ * The recording does not say, so this adapter reported no working directory at all — honest, but
+ * every such session landed in the statistics' "no working directory recorded" bucket, out of reach
+ * of any project filter. Gemini keeps the answer beside the recordings in `~/.gemini/projects.json`,
+ * a map of ABSOLUTE PATH → the short directory name a chat is filed under, so the attribution comes
+ * from the provider's own file rather than from a guess.
  *
- * Measured after wiring it: all 29 resolve — 28 to `/Users/dev/Documents/ai-gateway` and one to
- * `.../ai-gateway/packages/frontend` — that project's bar goes 40 → 68 sessions (the prefix folds
- * the subpath in), and the unattributed bucket falls 48 → 19.
+ * With the map wired in, a chat filed under `sample-project` resolves to
+ * `/Users/dev/Documents/sample-project`, one filed under `frontend` to
+ * `.../sample-project/packages/frontend`, and the project's bar counts both (the prefix folds the
+ * subpath in) while the unattributed bucket shrinks accordingly.
  *
  * What these cases hold is the refusals. `cwdPrefix` is a PREFIX filter: a wrong path does not read
  * as wrong, it quietly moves sessions into another project's bar.
@@ -54,10 +55,12 @@ async function cwdOf(env: AdapterEnv, dir: string): Promise<string | undefined> 
 
 describe("a chat is attributed from Gemini's own map, or not at all", () => {
   test('a directory name the map names once resolves to that absolute path', async () => {
-    const root = await home(['ai-gateway'], { '/Users/dev/Documents/ai-gateway': 'ai-gateway' })
+    const root = await home(['sample-project'], {
+      '/Users/dev/Documents/sample-project': 'sample-project',
+    })
 
-    expect(await cwdOf({ env: {}, homeDir: root }, 'ai-gateway')).toBe(
-      '/Users/dev/Documents/ai-gateway',
+    expect(await cwdOf({ env: {}, homeDir: root }, 'sample-project')).toBe(
+      '/Users/dev/Documents/sample-project',
     )
   })
 
@@ -65,7 +68,7 @@ describe("a chat is attributed from Gemini's own map, or not at all", () => {
     // Gemini derives the short name from the last path segment, so two checkouts of one repo
     // collide. Picking either would file half the sessions under the wrong project.
     const root = await home(['frontend'], {
-      '/Users/dev/Documents/ai-gateway/packages/frontend': 'frontend',
+      '/Users/dev/Documents/sample-project/packages/frontend': 'frontend',
       '/Users/dev/Documents/other/packages/frontend': 'frontend',
     })
 
@@ -73,50 +76,50 @@ describe("a chat is attributed from Gemini's own map, or not at all", () => {
   })
 
   test('an older 64-hex directory resolves by hashing the paths the map lists', async () => {
-    // Synthetic fixture: `193a59a1…` is sha256 of `/Users/dev/Documents/ai-gateway`. The
+    // Synthetic fixture: `5465db9e…` is sha256 of `/Users/dev/Documents/sample-project`. The
     // digest is matched forward, never inverted.
-    const path = '/Users/dev/Documents/ai-gateway'
+    const path = '/Users/dev/Documents/sample-project'
     const digest = createHash('sha256').update(path).digest('hex')
-    const root = await home([digest], { [path]: 'ai-gateway' })
+    const root = await home([digest], { [path]: 'sample-project' })
 
     expect(await cwdOf({ env: {}, homeDir: root }, digest)).toBe(path)
   })
 
   test('a digest naming a path the map no longer lists stays unresolved', async () => {
     const digest = createHash('sha256').update('/Users/dev/Documents/deleted').digest('hex')
-    const root = await home([digest], { '/Users/dev/Documents/ai-gateway': 'ai-gateway' })
+    const root = await home([digest], { '/Users/dev/Documents/sample-project': 'sample-project' })
 
     expect(await cwdOf({ env: {}, homeDir: root }, digest)).toBeUndefined()
   })
 
   test('a directory the map does not mention keeps no working directory', async () => {
-    const root = await home(['bin'], { '/Users/dev/Documents/ai-gateway': 'ai-gateway' })
+    const root = await home(['bin'], { '/Users/dev/Documents/sample-project': 'sample-project' })
 
     expect(await cwdOf({ env: {}, homeDir: root }, 'bin')).toBeUndefined()
   })
 
   test('no map at all is the honest silence this adapter had before', async () => {
-    const root = await home(['ai-gateway'])
+    const root = await home(['sample-project'])
 
-    expect(await cwdOf({ env: {}, homeDir: root }, 'ai-gateway')).toBeUndefined()
+    expect(await cwdOf({ env: {}, homeDir: root }, 'sample-project')).toBeUndefined()
     // And the session is still listed: attribution is a field, not a filter on what exists.
     expect(await geminiCliAdapter.listSources({ env: {}, homeDir: root })).toHaveLength(1)
   })
 
   test('a malformed map is ignored rather than throwing the scan away', async () => {
-    const root = await home(['ai-gateway'])
+    const root = await home(['sample-project'])
     await writeFile(join(root, '.gemini', 'projects.json'), '{ not json', 'utf8')
 
-    expect(await cwdOf({ env: {}, homeDir: root }, 'ai-gateway')).toBeUndefined()
+    expect(await cwdOf({ env: {}, homeDir: root }, 'sample-project')).toBeUndefined()
   })
 
   test('GEMINI_CLI_HOME moves the map with the recordings it describes', async () => {
     // The map lives beside `tmp`, so a replaced root has to take both or the chats resolve against
     // the developer's own home.
-    const root = await home(['ai-gateway'], { '/work/app': 'ai-gateway' })
+    const root = await home(['sample-project'], { '/work/app': 'sample-project' })
 
     expect(
-      await cwdOf({ env: { GEMINI_CLI_HOME: root }, homeDir: '/nonexistent' }, 'ai-gateway'),
+      await cwdOf({ env: { GEMINI_CLI_HOME: root }, homeDir: '/nonexistent' }, 'sample-project'),
     ).toBe('/work/app')
   })
 })

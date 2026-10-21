@@ -20,9 +20,7 @@
  * `GenericToolCard` renders IN from `item.input` and OUT from `item.resultText`, and both are
  * filled. This block used to say only OUT could be, and listed a follow-up for each of the four
  * adapters; all five are done, and `TranscriptEvent` carries `toolName`, `toolCallId` and
- * `toolInput`. Measured against this machine — newest session per provider, first 400 events:
- * claude-code 192 calls, codex 185, opencode 158, gemini-cli 126, each with the arguments the
- * provider itself recorded.
+ * `toolInput`. Every provider's tool calls arrive with the arguments the provider itself recorded.
  *
  * What has NOT changed is the rule that got there: arguments are read from the structured field the
  * provider wrote, and never parsed back out of flattened prose. Parsing would invent structure the
@@ -65,10 +63,10 @@ const UNNAMED_TOOL = 'tool'
  * A result whose CALL is outside the window that was read.
  *
  * A tail read keeps the last N events, and a window boundary does not respect a call/result pair —
- * measured across a real local history, roughly half of all tail windows open on a result whose call was
- * evicted (claude-code 21/39, codex 21/50, opencode 13/24, gemini-cli 8/16). Before this it rendered
- * as an ordinary tool card named `tool` with no IN row, which reads as "something ran and we do not
- * know what" rather than "the call is earlier than what you asked for".
+ * whatever the provider, roughly half of tail windows can open on a result whose call was evicted.
+ * Before this it rendered as an ordinary tool card named `tool` with no IN row, which reads as
+ * "something ran and we do not know what" rather than "the call is earlier than what you asked
+ * for".
  *
  * `ordinal` is what makes the difference visible: it is the event's position in the SESSION, so a
  * first event with a non-zero ordinal proves the window starts partway in.
@@ -78,13 +76,12 @@ const CALL_BEFORE_WINDOW = 'tool (call precedes this window)'
 /**
  * Items one assistant message may carry before the next event opens another.
  *
- * A turn ends when the reader speaks, and a coding agent can work for a very long time without being
- * spoken to: measured over 32 real sessions read at 2000 events, four produced a single message with
- * more than 500 items and the worst held 1,169, while the MEDIAN message held one. The transcript
- * list virtualizes messages, so one such message is a single row that mounts its whole run — and the
- * chat's folding cannot help, because it keys on our own tool registry and a foreign tool name falls
- * through to a fallback that is neither read-only nor stackable (1,169 identical `Bash` calls
- * measured as 1,169 groups).
+ * A turn ends when the reader speaks, and a coding agent can work for a very long time without
+ * being spoken to: a single message can hold hundreds or more than a thousand items, while the
+ * MEDIAN message holds one. The transcript list virtualizes messages, so one such message is a
+ * single row that mounts its whole run — and the chat's folding cannot help, because it keys on our
+ * own tool registry and a foreign tool name falls through to a fallback that is neither read-only
+ * nor stackable (a thousand identical `Bash` calls render as a thousand groups).
  *
  * Splitting is a rendering decision and changes nothing about the content: order is preserved, no
  * item is dropped, and consecutive assistant messages are what a long reply already looks like. The
@@ -178,13 +175,13 @@ function resultsByCallId(ordered: readonly TranscriptEvent[]): Map<string, numbe
  * matching by name across a gap attaches a result to the wrong call the moment two calls to the same
  * tool are open at once.
  *
- * Measured on a real local history when the id path was adjacency-bound too, counting cards left with NO call
- * attached (the one unambiguous signal — `resultText` falls back to the call's own text, and
- * `completedAt` is absent whenever the paired result carries no timestamp): Copilot, which really does
- * run tools in parallel, produced 2,054 such cards out of 5,501, and Claude Code 7. Afterwards both
- * are 0, and Copilot's card count falls to 3,447 as each result folds into its call. Codex, opencode
- * and Gemini CLI were already 0 — their results happen to arrive adjacent, which is why the rule read
- * as a general design while being a bet on one event order.
+ * When the id path was adjacency-bound too, counting cards left with NO call attached (the one
+ * unambiguous signal — `resultText` falls back to the call's own text, and `completedAt` is absent
+ * whenever the paired result carries no timestamp): Copilot, which really does run tools in
+ * parallel, left over a third of its cards unattached, and Claude Code a few. Afterwards both are
+ * 0, and Copilot's card count drops as each result folds into its call. Codex, opencode and Gemini
+ * CLI were already 0 — their results happen to arrive adjacent, which is why the rule read as a
+ * general design while being a bet on one event order.
  *
  * Anything unpaired stays two items. Two cards that were really one call is a cosmetic loss;
  * one card whose OUT belongs to a different call is a lie.

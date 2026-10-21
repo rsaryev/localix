@@ -149,7 +149,6 @@ const KINDS: KindTable = {
 
 const policy = <T extends PendingTurn>(turn: T) => KINDS[turn.entry] as unknown as KindPolicy<T>
 
-export const opensWhen = (turn: PendingTurn): 'now' | 'settled' => policy(turn).opens
 export const joinPoint = (turn: PendingTurn): JoinPoint => policy(turn).joins(turn)
 export const batchRule = (turn: PendingTurn): BatchRule | undefined => policy(turn).batch(turn)
 export const personSpeaks = (turn: PendingTurn): boolean => policy(turn).speaks(turn)

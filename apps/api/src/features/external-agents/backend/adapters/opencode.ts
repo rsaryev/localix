@@ -176,8 +176,8 @@ async function readTranscript(req: TranscriptRequest, env: AdapterEnv): Promise<
     // A message's parts are its turn broken into what actually happened: prose, reasoning, and the
     // tool calls between them. The previous reader joined every part's `.text` into a single blob,
     // which dropped the tool parts entirely — they carry no `.text`, only `tool`, `callID` and a
-    // `state` holding the input and the output. In a real local history that is 868 of 3000 sampled parts:
-    // the majority of the session, and all of the work.
+    // `state` holding the input and the output. In a working session those are a large share of all
+    // parts, and all of the work.
     const parts = partsFor.all(req.ref.nativeSessionId)
     return transcriptFromOpencodeRows(messages, parts, req)
   } finally {
@@ -190,14 +190,13 @@ async function readTranscript(req: TranscriptRequest, env: AdapterEnv): Promise<
  * database, one row per message — so the answer is the NEWEST message row rather than a file's last
  * bytes.
  *
- * Measured on a real local history's store: taking the newest message of each session gives
- * `assistant` with `time.completed` set in 5 sessions and `assistant` still open in 3. A completed
- * assistant message is the turn handed back; an open one is a model mid-stream, and a `user` row is
- * a model about to be called.
+ * Taking the newest message of each session gives either `assistant` with `time.completed` set or
+ * `assistant` still open. A completed assistant message is the turn handed back; an open one is a
+ * model mid-stream, and a `user` row is a model about to be called.
  *
  * NOT read from the JSON tree beside the database, even though the same messages are there: the
- * newest file by name is the newest by mtime in only 3 of 11 sessions, so answering from it would
- * mean stat-ing every message of a session — 173 files in the largest here — to sort them.
+ * newest file by name is often not the newest by mtime, so answering from it would mean stat-ing
+ * every message file of a session to sort them.
  */
 async function readTurnState(
   ref: SourceRef,

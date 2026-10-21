@@ -171,11 +171,11 @@ async function readTranscript(req: TranscriptRequest, env: AdapterEnv): Promise<
  * See `ProviderAdapter.readTurnState`. Hermes keeps no append-only log, but it does not need one: it
  * WRITES DOWN that a session ended.
  *
- * Measured on a real local history's store: 18 of 19 sessions carry `ended_at`, with `end_reason` split
- * `cli_close` (14) and `new_session` (4); the one that does not has an assistant message from 1,392
- * hours ago. So an ended session is idle outright, and for the open one the last message's role is
- * the same question the appending formats answer — a `user` or `tool` row is the model being called,
- * an `assistant` row is the turn handed back.
+ * In a Hermes store most sessions carry `ended_at`, with an `end_reason` such as `cli_close` or
+ * `new_session`, and one that does not may have been abandoned long ago. So an ended session is
+ * idle outright, and for the open one the last message's role is the same question the appending
+ * formats answer — a `user` or `tool` row is the model being called, an `assistant` row is the turn
+ * handed back.
  */
 async function readTurnState(
   ref: SourceRef,

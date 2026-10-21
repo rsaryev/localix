@@ -89,8 +89,9 @@ For one query and one collection of `n` passages:
 
 Fusion (`search/hybrid.ts`, after DigUp): an item is a candidate when `z ≥ gate` or word coverage
 `≥ 0.5`; its score is `max(z, 0) + 2·coverage^1.5`, with meaning halved and words doubled for a
-query of only codes and numbers. Measured on a 134-message history: off-topic queries returned
-nothing, and the right chat ranked first for every descriptive query tried in Russian and English.
+query of only codes and numbers. On a chat history of a hundred-odd messages, off-topic queries
+returned nothing, and the right chat ranked first for every descriptive query tried in Russian and
+English.
 
 ## Adding a semantic source
 

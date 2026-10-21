@@ -170,10 +170,10 @@ describe('roster — an unobserved state says so', () => {
 
 describe('roster — an uncorrelated delegation gets a NAME, not its launch command', () => {
   /**
-   * The title was `entry.launchCommand` verbatim. That command is 1,719 characters in a real local history —
-   * the launch line carries the whole rendered report protocol as one `--append-system-prompt`
-   * argument — so one uncorrelated delegation put 1.7 KB into a row title that the tool prints on its
-   * own line, in an answer whose 40 rows measure 8.4 KB in total.
+   * The title was `entry.launchCommand` verbatim. That command runs to about 1.7 KB — the launch
+   * line carries the whole rendered report protocol as one `--append-system-prompt` argument — so
+   * one uncorrelated delegation put more into a row title, printed on its own line by the tool,
+   * than several ordinary rows of the answer take together.
    */
   const LAUNCH = `LOCALIX_AGENT=claude-code LOCALIX_AGENT_CWD=/work/app claude --append-system-prompt '${'x'.repeat(1_600)}'`
 
@@ -378,9 +378,9 @@ describe('roster — filtering', () => {
 
 describe('a parent selects the sub-agents it spawned', () => {
   /**
-   * The fan-out axis names a session and a number — "208 sub-agents" — and the only way to act on
-   * it was a text search for that key, which returns the PARENT. Measured on a real local history: the bar
-   * said 208, the search returned 1, and `parentKey` returns 208.
+   * The fan-out axis names a session and a number — "200 sub-agents" — and the only way to act on
+   * it was a text search for that key, which returns the PARENT: one row where the bar promised
+   * hundreds. `parentKey` returns them all.
    */
   const parent = summary('claude-code', 'p1')
   const kids = Array.from({ length: 3 }, (_, i) =>

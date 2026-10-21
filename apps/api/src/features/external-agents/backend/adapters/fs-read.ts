@@ -93,9 +93,9 @@ export async function* streamJsonlRecords(
    *
    * It used to stop in silence, and silence is the wrong answer here: the caller counts the records
    * it sees and reports that count as `total`, so a capped read presents a truncated session as a
-   * complete one — and a TAIL read presents the middle of it as the end. Measured on a real local history:
-   * 7 files exceed the 32 MB transcript cap, and on the largest (47.72 MB, 21,220 lines) the "tail"
-   * ended 7h40m before the session did while reporting `total: 8596`.
+   * complete one — and a TAIL read presents the middle of it as the end. On a transcript well past
+   * the 32 MB cap, the "tail" ended hours before the session did while reporting a confident
+   * `total`.
    */
   onTruncated?: () => void,
 ): AsyncGenerator<Record<string, unknown>> {
@@ -214,11 +214,11 @@ export async function readMark(path: string, offset: number, bytes = 64): Promis
 /**
  * Records for a transcript read, from whichever END the caller asked for.
  *
- * A forward stream cannot reach the end of a file larger than its cap, and that is not a theoretical
- * limit: seven files in a real history exceed the 32 MB transcript cap, and on the largest (47.72 MB,
- * 21,220 lines) a "tail" read used to stop 7h40m before the session ended. Reading BACKWARDS costs
- * memory the forward path avoids, so it is taken only when the tail is what was asked for — measured
- * on that file at 13 ms to read the last 32 MB and 35 ms to parse it, for a single on-demand read.
+ * A forward stream cannot reach the end of a file larger than its cap, and that is not a
+ * theoretical limit: long sessions do exceed the 32 MB transcript cap, and on one a "tail" read
+ * used to stop hours before the session ended. Reading BACKWARDS costs memory the forward path
+ * avoids, so it is taken only when the tail is what was asked for — tens of milliseconds to read
+ * and parse the last 32 MB, for a single on-demand read.
  *
  * `onTruncated` still fires when the file was larger than the window, because the count the caller
  * derives is a floor either way; what changes is WHICH end of the session it counted.

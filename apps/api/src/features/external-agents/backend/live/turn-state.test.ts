@@ -6,16 +6,16 @@
  * screen: its working state is read from the terminal's OSC title and the host's snapshot has
  * no title. The agent's own append-only log does have the answer, in the shape of its last record.
  *
- * Measured against 87 real Claude Code transcripts while writing it: the one being
- * written to (0.2 minutes old) read `working`; two finished 2 minutes earlier read `idle`; every
- * older one read `idle`. That is the discrimination the screen could not make.
+ * Checked against real Claude Code transcripts while writing it: the one being written to read
+ * `working`, while sessions finished minutes earlier read `idle`, as did every older one. That is
+ * the discrimination the screen could not make.
  */
 
 import { describe, expect, test } from 'bun:test'
 
 import { turnStateOf, turnStateAt, TURN_EVIDENCE_MS } from './turn-state'
 
-/** claude-code shapes, copied from a real `~/.claude/projects/**.jsonl`. */
+/** claude-code shapes, as written to `~/.claude/projects/**.jsonl`. */
 const cc = {
   toolUse: { type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use' }] } },
   toolResult: { type: 'user', message: { role: 'user', content: [{ type: 'tool_result' }] } },
@@ -26,7 +26,7 @@ const cc = {
   snapshot: { type: 'file-history-snapshot', messageId: 'm1' },
 }
 
-/** Codex shapes, copied from real rollout JSONL: every conversational item is enveloped. */
+/** Codex shapes, as written to rollout JSONL: every conversational item is enveloped. */
 const responseItem = (payload: Record<string, unknown>) => ({ type: 'response_item', payload })
 const codex = {
   call: responseItem({ type: 'function_call', name: 'shell', call_id: 'c1' }),
@@ -74,10 +74,10 @@ describe('the last record says whether the turn is over', () => {
   })
 
   test('codex says when a turn is over, and that is the last thing it writes', () => {
-    // Measured across the 60 newest rollouts of a real history: the final record is `task_complete`
-    // in 44 and `turn_aborted` in 7. They arrive as `event_msg`, which this reader used to skip —
-    // so it walked back PAST the terminator to the call before it and reported 44 finished
-    // sessions as working. A wait on one of them would have run to its timeout.
+    // Codex ends a turn with `task_complete` or `turn_aborted` as its final record. They arrive as
+    // `event_msg`, which this reader used to skip — so it walked back PAST the terminator to the
+    // call before it and reported finished sessions as working. A wait on one of them would have
+    // run to its timeout.
     expect(turnStateOf([codex.call, codex.output, codexEvent.complete])).toBe('idle')
     expect(turnStateOf([codex.call, codexEvent.aborted])).toBe('idle')
   })
@@ -96,7 +96,7 @@ describe('the last record says whether the turn is over', () => {
   })
 })
 
-/** GitHub Copilot events, copied from a real `~/.copilot/session-state/<uuid>/events.jsonl`. */
+/** GitHub Copilot events, as written to `~/.copilot/session-state/<uuid>/events.jsonl`. */
 const copilot = {
   turnStart: { type: 'assistant.turn_start', data: { turnId: '3' } },
   turnEnd: { type: 'assistant.turn_end', data: { turnId: '3' } },
@@ -111,10 +111,10 @@ const copilot = {
 
 describe('copilot brackets its turns, so the reading is exact', () => {
   /**
-   * Measured across 34 real logs: 560 turn_start against 563 turn_end, and as a
-   * final record session.shutdown (12), assistant.turn_end (10), abort (8), subagent.failed (2),
-   * session.error (2). None of those names matched anything before, so every Copilot delegation
-   * kept the manifest's degraded guess — 34 of 34 produced no reading at all; 33 read idle now.
+   * Copilot logs pair turn_start with turn_end, and end on records such as session.shutdown,
+   * assistant.turn_end, abort, subagent.failed or session.error. None of those names matched
+   * anything before, so every Copilot delegation kept the manifest's degraded guess and produced no
+   * reading at all.
    */
   test('an ended turn is the turn being over', () => {
     expect(turnStateOf([copilot.ask, copilot.turnStart, copilot.turnEnd])).toBe('idle')

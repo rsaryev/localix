@@ -18,10 +18,10 @@ function iso(ms: number | undefined): string {
 /**
  * WHICH events a section holds, not merely how many.
  *
- * Measured on a real local history: pulling context for the five largest sessions delivered 175 of 23,147
- * events — 0.76%. At that ratio the window IS the answer, and "49 shown of 8596" describes it no
- * better than silence does. Derived from the payload's own ordinals rather than from the caller's
- * `tail` request, so it stays true when the character budget lands the window at neither end.
+ * Pulling context for a handful of large sessions delivers well under 1% of their events. At that
+ * ratio the window IS the answer, and "49 shown of 8596" describes it no better than silence does.
+ * Derived from the payload's own ordinals rather than from the caller's `tail` request, so it stays
+ * true when the character budget lands the window at neither end.
  */
 function windowOf(section: ComposeSection): string {
   /**

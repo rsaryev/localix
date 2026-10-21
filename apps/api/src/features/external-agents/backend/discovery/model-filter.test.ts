@@ -1,11 +1,11 @@
 /**
  * The model filter, run through BOTH folds from one set of sessions.
  *
- * A session names its model in one of two places and never in both. Measured on a real local history when
- * this was written: 22 of 283 rows carry `SessionSummary.model` — Copilot writes `selectedModel`
- * once at the top of its log, Hermes keeps a `model` column — while the other 261 carry no such
- * field and attribute per-model token usage instead. A predicate that checked either alone would
- * answer for a twelfth of the corpus or for the rest of it.
+ * A session names its model in one of two places and never in both. Only a minority of rows carry
+ * `SessionSummary.model` — Copilot writes `selectedModel` once at the top of its log, Hermes keeps
+ * a `model` column — while the rest carry no such field and attribute per-model token usage
+ * instead. A predicate that checked either alone would answer for a small slice of the corpus or
+ * for the rest of it.
  *
  * Both surfaces read that predicate from `shared/contracts`, which is what this file protects: the
  * same question asked of the statistics and of the roster has to select the same sessions, or a

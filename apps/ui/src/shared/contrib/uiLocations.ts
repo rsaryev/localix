@@ -25,8 +25,6 @@ import {
   type ErasedLocation,
 } from './uiLocationRecord'
 
-export { uiLocationIconId } from './uiLocationRecord'
-
 export { parseUiLocationArgs }
 
 export interface UiLocationAccess {

@@ -33,12 +33,7 @@ export type {
   RailLayoutState,
 } from './railLayoutTypes'
 
-export {
-  RAIL_LAYOUT_VERSION,
-  RAIL_LAYOUT_STORAGE_KEY,
-  parseRailLayout,
-  serializeRailLayout,
-} from './railLayoutStorage'
+export { RAIL_LAYOUT_STORAGE_KEY, parseRailLayout, serializeRailLayout } from './railLayoutStorage'
 
 /** The page-level "Reset layout" action broadcasts this window event (it already
  *  nudges the sidebar-width hook the same way) — the rail-layout hook listens too,

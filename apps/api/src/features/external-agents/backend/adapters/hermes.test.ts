@@ -12,12 +12,11 @@ import type { AdapterEnv } from './types'
  * Schema and shapes copied from the real `~/.hermes/state.db`, columns we ignore included, so a
  * change to the ones we read fails here rather than in the workspace.
  *
- * Measured against that store when this was written: 19 sessions listed in 6 ms and summarized in
- * 1 ms — no message scan is needed because the session row already carries `message_count` and every
- * token column — 13 of 19 titled, 28.3 M tokens, and in the largest session 109 tool cards of which
- * all 109 pair with their result.
+ * Listing and summarizing take milliseconds — no message scan is needed because the session row
+ * already carries `message_count` and every token column — and every tool card pairs with its
+ * result.
  */
-const SECONDS = 1_781_127_002.19827
+const SECONDS = 1_767_225_600.25
 
 async function store(): Promise<AdapterEnv> {
   const home = await mkdtemp(join(tmpdir(), 'hermes-home-'))
@@ -39,25 +38,25 @@ async function store(): Promise<AdapterEnv> {
     `INSERT INTO sessions (id, source, model, started_at, ended_at, message_count, input_tokens,
        output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, api_call_count,
        actual_cost_usd, title)
-     VALUES ('20260611_003001_eece44', 'cli', 'deepseek/deepseek-v4-pro', ?, ?, 4, 1000, 200, 5000,
-       300, 50, 7, 0.42, '  Choosing an npm provider  ')`,
+     VALUES ('20260101_000000_aaaaaa', 'cli', 'deepseek/deepseek-v4-pro', ?, ?, 4, 1000, 200, 5000,
+       300, 50, 7, 0.42, '  Sample session  ')`,
     [SECONDS, SECONDS + 600],
   )
-  // A session with no title at all: 6 of the 19 real ones are like this.
+  // A session with no title at all, as some real ones are.
   db.run(
     `INSERT INTO sessions (id, source, model, started_at, message_count, api_call_count)
-     VALUES ('20260611_010000_untitled', 'cli', 'deepseek/deepseek-v4-flash', ?, 1, 1)`,
+     VALUES ('20260101_010000_untitled', 'cli', 'deepseek/deepseek-v4-flash', ?, 1, 1)`,
     [SECONDS + 3600],
   )
   const insert = db.prepare(
     `INSERT INTO messages (session_id, role, content, tool_call_id, tool_calls, tool_name, timestamp)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
   )
-  insert.run('20260611_003001_eece44', 'user', 'find the controller', null, null, null, SECONDS)
+  insert.run('20260101_000000_aaaaaa', 'user', 'find the controller', null, null, null, SECONDS)
   // An assistant turn whose prose is empty but which carries TWO calls: the work lives in the row,
   // not beside it, so skipping on empty text would drop both.
   insert.run(
-    '20260611_003001_eece44',
+    '20260101_000000_aaaaaa',
     'assistant',
     '',
     null,
@@ -80,7 +79,7 @@ async function store(): Promise<AdapterEnv> {
   )
   // Results come back reversed, as parallel tools do.
   insert.run(
-    '20260611_003001_eece44',
+    '20260101_000000_aaaaaa',
     'tool',
     JSON.stringify({ content: 'export class Controller {}' }),
     'call_B',
@@ -89,7 +88,7 @@ async function store(): Promise<AdapterEnv> {
     SECONDS + 2,
   )
   insert.run(
-    '20260611_003001_eece44',
+    '20260101_000000_aaaaaa',
     'tool',
     'raw, not an envelope',
     'call_A',
@@ -97,7 +96,7 @@ async function store(): Promise<AdapterEnv> {
     'read_file',
     SECONDS + 3,
   )
-  insert.run('20260611_003001_eece44', 'assistant', 'Found it.', null, null, null, SECONDS + 4)
+  insert.run('20260101_000000_aaaaaa', 'assistant', 'Found it.', null, null, null, SECONDS + 4)
   db.close()
   return { env: {}, homeDir: home }
 }
@@ -107,12 +106,12 @@ describe('a hermes session is summarized from its own row', () => {
     const env = await store()
     const refs = await hermesAdapter.listSources(env)
     const summaries = await hermesAdapter.readSummaries(refs, env)
-    const titled = summaries.find((s) => s.nativeSessionId === '20260611_003001_eece44')
+    const titled = summaries.find((s) => s.nativeSessionId === '20260101_000000_aaaaaa')
 
     expect(refs).toHaveLength(2)
     expect(titled?.messageCount).toBe(4)
     // Whitespace trimmed, and the row's own title preferred over any first-message guess.
-    expect(titled?.title).toBe('Choosing an npm provider')
+    expect(titled?.title).toBe('Sample session')
     // Seconds → ms, and `ended_at` is what "updated" means for a finished session.
     expect(titled?.startedAt).toBe(Math.round(SECONDS * 1000))
     expect(titled?.updatedAt).toBe(Math.round((SECONDS + 600) * 1000))
@@ -126,9 +125,9 @@ describe('a hermes session is summarized from its own row', () => {
     const env = await store()
     const refs = await hermesAdapter.listSources(env)
     const summaries = await hermesAdapter.readSummaries(refs, env)
-    const usage = summaries.find((s) => s.nativeSessionId === '20260611_003001_eece44')?.usage
+    const usage = summaries.find((s) => s.nativeSessionId === '20260101_000000_aaaaaa')?.usage
 
-    // Measured on the real store: input 676,662 against cache_read 2,013,952, so the columns sit
+    // On a real store input is smaller than cache_read (e.g. 1 M against 2 M), so the columns sit
     // beside each other. Treating input as cache-inclusive would subtract a bigger number from a
     // smaller one and report 0.
     expect(usage).toMatchObject({
@@ -176,9 +175,9 @@ describe('a hermes session is summarized from its own row', () => {
     const env = await store()
     const refs = await hermesAdapter.listSources(env)
     const summaries = await hermesAdapter.readSummaries(refs, env)
-    const untitled = summaries.find((s) => s.nativeSessionId === '20260611_010000_untitled')
+    const untitled = summaries.find((s) => s.nativeSessionId === '20260101_010000_untitled')
 
-    expect(untitled?.title).toBe('20260611_010000_untitled')
+    expect(untitled?.title).toBe('20260101_010000_untitled')
   })
 
   test('an absent database is a provider that is not installed, not an error', async () => {
@@ -193,7 +192,7 @@ describe('a hermes transcript carries calls that live inside the assistant row',
   test('an empty assistant turn still yields its calls, with parsed arguments', async () => {
     const env = await store()
     const target = (await hermesAdapter.listSources(env)).find(
-      (r) => r.nativeSessionId === '20260611_003001_eece44',
+      (r) => r.nativeSessionId === '20260101_000000_aaaaaa',
     )!
     const { events, total } = await hermesAdapter.readTranscript(
       { ref: target, maxEvents: 100, maxCharsPerEvent: 4000 },
@@ -212,7 +211,7 @@ describe('a hermes transcript carries calls that live inside the assistant row',
   test('a result unwraps its envelope, and a raw one is kept verbatim', async () => {
     const env = await store()
     const target = (await hermesAdapter.listSources(env)).find(
-      (r) => r.nativeSessionId === '20260611_003001_eece44',
+      (r) => r.nativeSessionId === '20260101_000000_aaaaaa',
     )!
     const { events } = await hermesAdapter.readTranscript(
       { ref: target, maxEvents: 100, maxCharsPerEvent: 4000 },
@@ -228,7 +227,7 @@ describe('a hermes transcript carries calls that live inside the assistant row',
   test('the projection folds both calls despite the reversed results', async () => {
     const env = await store()
     const target = (await hermesAdapter.listSources(env)).find(
-      (r) => r.nativeSessionId === '20260611_003001_eece44',
+      (r) => r.nativeSessionId === '20260101_000000_aaaaaa',
     )!
     const { events } = await hermesAdapter.readTranscript(
       { ref: target, maxEvents: 100, maxCharsPerEvent: 4000 },
@@ -245,9 +244,8 @@ describe('a hermes transcript carries calls that live inside the assistant row',
 
 describe('hermes says whether a session is still running, from its own row', () => {
   /**
-   * Measured on the real store: 18 of 19 sessions carry `ended_at` — `cli_close` (14) and
-   * `new_session` (4) — and the one that does not has an assistant message from 1,392 hours ago.
-   * So the row answers outright for almost every session, and the last message's role answers for
+   * On a real store nearly every session carries `ended_at` — `cli_close` or `new_session` — and
+   * the rest typically end on an old assistant message. So the row answers outright for almost every session, and the last message's role answers for
    * the rest. No append-only log exists here, which is why this adapter answers it its own way.
    */
   test('a session with an end time is over, whatever its last message was', async () => {
@@ -313,7 +311,7 @@ describe('hermes says whether a session is still running, from its own row', () 
   test('an open session whose last word was the assistant is idle, however old', async () => {
     const env = await store()
     const ref = (await hermesAdapter.listSources(env)).find(
-      (r) => r.nativeSessionId === '20260611_010000_untitled',
+      (r) => r.nativeSessionId === '20260101_010000_untitled',
     )
 
     // No `ended_at`, no messages at all: nothing to read, so nothing is claimed.

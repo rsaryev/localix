@@ -11,7 +11,7 @@ import {
 
 describe("token calibration — learning the heuristic's error from provider usage", () => {
   test('a text-only request teaches the text scale; the first sample is taken as is', () => {
-    // Measured on a real session: the byte heuristic said ~103k for a request the provider billed at ~48k.
+    // The byte heuristic can say ~103k for a request a provider bills at ~48k.
     const learned = observeTokenCalibration(
       DEFAULT_TOKEN_CALIBRATION,
       { textTokens: 100_000, images: 0 },

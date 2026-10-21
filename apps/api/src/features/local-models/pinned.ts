@@ -51,6 +51,3 @@ export const PINNED_MODELS: readonly LocalModelSpec[] = [EMBEDDINGGEMMA_2_MODEL]
 export const REQUIRED_MODELS: readonly LocalModelSpec[] = PINNED_MODELS.filter(
   (spec) => spec.required,
 )
-
-export const isRequiredModel = (modelId: string) =>
-  REQUIRED_MODELS.some((spec) => spec.id === modelId)

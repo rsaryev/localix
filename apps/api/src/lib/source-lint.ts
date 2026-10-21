@@ -157,7 +157,7 @@ export function assertNotVoid(subject: string, matches: number, hint = ''): void
 // 4. Exemptions — with a stale half, and keyed by SHAPE
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { KEY_SEP, exemptionKey, auditExemptions, staleReport } from './source-exemptions'
+export { exemptionKey, auditExemptions, staleReport } from './source-exemptions'
 export type { Exemption, Exemptions, ExemptionAudit } from './source-exemptions'
 
 // ─────────────────────────────────────────────────────────────────────────────

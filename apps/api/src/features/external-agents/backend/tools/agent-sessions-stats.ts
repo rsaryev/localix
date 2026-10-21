@@ -93,10 +93,10 @@ function modelLines(stats: ExternalAgentStats): string[] {
 /**
  * Agents the window excluded entirely.
  *
- * The same blindness the workspace had: `By agent` listed two of a real history's six providers, and a
- * model reading it concludes the other four have no history. They hold 105 sessions. The suggested
- * `days` is the smallest range that would reach the newest of them, so the next call is one number
- * away rather than a guess.
+ * The same blindness the workspace had: `By agent` listed only the providers active in the window,
+ * and a model reading it concludes the others have no history, however many sessions they hold. The
+ * suggested `days` is the smallest range that would reach the newest of them, so the next call is
+ * one number away rather than a guess.
  */
 function outsideRangeLines(stats: ExternalAgentStats, now: number): string[] {
   // `?? []` because a service result crosses a boundary the type cannot police — a stub, or a
@@ -135,8 +135,8 @@ export function renderAgentSessionStats(
           : `No sessions in the last ${input.days ?? DEFAULT_STATS_DAYS} day(s), though history here starts ${iso(stats.firstAt)}. Retry with a larger "days".`,
     }
   }
-  // A summary is the point: it answers "where has external work happened" without paging a
-  // roster that is hundreds of rows long on a real machine.
+  // A summary is the point: it answers "where has external work happened" without paging a roster
+  // that runs to hundreds of rows in a busy history.
   const span =
     stats.firstAt !== undefined && stats.lastAt !== undefined
       ? `${iso(stats.firstAt)} → ${iso(stats.lastAt)}`

@@ -18,11 +18,7 @@ import { buildChartDrawing, drawProblem, foldUnixSeconds } from './manage-chart-
 
 import type { ManageChartInput } from './manage-chart-input'
 
-export {
-  MANAGE_CHART_ACTIONS,
-  manageChartInputSchema,
-  type ManageChartInput,
-} from './manage-chart-input'
+export { manageChartInputSchema, type ManageChartInput } from './manage-chart-input'
 
 /** `1h` / `15m` / `1M` / `3d` — a count and a unit letter. Loose on purpose: the venue's own
  *  list is the real gate (the UI validates against it); this only catches obvious non-timeframes. */

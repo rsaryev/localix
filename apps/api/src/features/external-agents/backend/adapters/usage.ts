@@ -108,10 +108,10 @@ function mutableUsage(): MutableUsage {
  * A provider's PLACEHOLDER for "no model was called" — not a model.
  *
  * Claude Code writes `"model":"<synthetic>"` on messages it fabricates locally (an interruption
- * notice, a cancellation), with every usage counter at zero. Verified in a real transcript:
- * `{"model":"<synthetic>","stop_reason":"stop_sequence","usage":{"input_tokens":0,…}}`. Measured
- * across this machine, it appeared in 30 sessions — third by session count in the model
- * distribution — while contributing nothing to any total.
+ * notice, a cancellation), with every usage counter at zero:
+ * `{"model":"<synthetic>","stop_reason":"stop_sequence","usage":{"input_tokens":0,…}}`. Across a
+ * long history it can rank high by session count in the model distribution while contributing
+ * nothing to any total.
  *
  * The angle brackets are the rule rather than a list of names: a model id does not contain them, so
  * a provider that marks something this way is telling us it is not an id. Recognising the SHAPE

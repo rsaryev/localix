@@ -5,7 +5,7 @@ describe('link identity', () => {
   it('keeps the SAME native id in two providers apart', () => {
     // The whole reason the key is a pair. If these collapsed, linking a Codex session would show
     // a Claude Code transcript, silently and with no error anywhere.
-    const shared = '019fb705-2736-7e51-8f51-bcc0587804c2'
+    const shared = '00000000-0000-7000-8000-000000000002'
     const a = linkKeyOf({ provider: 'claude-code', nativeSessionId: shared })
     const b = linkKeyOf({ provider: 'codex', nativeSessionId: shared })
     expect(a).not.toBe(b)
@@ -19,10 +19,10 @@ describe('link identity', () => {
 
   it('round-trips every provider’s real id shape', () => {
     const cases = [
-      { provider: 'claude-code', nativeSessionId: '0c61aa4b-2d91-4864-8511-8d812c644a04' },
-      { provider: 'codex', nativeSessionId: '019fb705-2736-7e51-8f51-bcc0587804c2' },
+      { provider: 'claude-code', nativeSessionId: '22222222-2222-4222-8222-222222222222' },
+      { provider: 'codex', nativeSessionId: '00000000-0000-7000-8000-000000000002' },
       { provider: 'opencode', nativeSessionId: 'ses_2adab60c7ffexaCef1crdavEmA' },
-      { provider: 'gemini-cli', nativeSessionId: 'ab07eb04-fbae-432e-ab39-204cd29da87b' },
+      { provider: 'gemini-cli', nativeSessionId: '33333333-3333-4333-8333-333333333333' },
     ]
     for (const original of cases) {
       expect(parseLinkKey(linkKeyOf(original))).toEqual(original)

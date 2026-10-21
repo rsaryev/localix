@@ -8,10 +8,10 @@ import type { AdapterEnv, ProviderAdapter, SourceRef } from '../adapters/types'
 import type { SessionSummary } from '../../shared/contracts'
 
 /**
- * The index is what makes this plugin openable: a cold scan of this machine costs 380 ms and a warm
- * one 12 ms, and the whole difference is here. Its claims are strong — invalidation on a real change
- * signal rather than a clock, concurrent scans coalescing, deleted revisions evicted rather than
- * accumulating — and none of them were witnessed.
+ * The index is what makes this plugin openable: on a large history a cold scan costs hundreds of
+ * milliseconds and a warm one a few, and the whole difference is here. Its claims are strong —
+ * invalidation on a real change signal rather than a clock, concurrent scans coalescing, deleted
+ * revisions evicted rather than accumulating — and none of them were witnessed.
  */
 const ENV: AdapterEnv = { env: {}, homeDir: '/nonexistent' }
 

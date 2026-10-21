@@ -48,12 +48,11 @@ export function uniqueContextKeys(keys: readonly string[]): string[] {
   // ONE section per session, however many times it was named.
   //
   // A repeated key used to be read again, rendered again, and charged against the budget again:
-  // measured on a real session, passing one key three times produced three identical sections and
-  // 10,665 characters where 3,435 were warranted. Assembling `keys` from two places is the
-  // ordinary way that happens, and the cost falls on the OTHER sessions, whose fair share shrinks
-  // to pay for a copy. The FIRST occurrence is the one kept; where its section then lands is
-  // `compose`'s business, which orders by recency and breaks ties on the key so the text a model
-  // sees is stable across calls.
+  // passing one key three times produced three identical sections and three times the characters
+  // warranted. Assembling `keys` from two places is the ordinary way that happens, and the cost
+  // falls on the OTHER sessions, whose fair share shrinks to pay for a copy. The FIRST occurrence
+  // is the one kept; where its section then lands is `compose`'s business, which orders by recency
+  // and breaks ties on the key so the text a model sees is stable across calls.
   const seen = new Set<string>()
   return keys.filter((key) => (seen.has(key) ? false : (seen.add(key), true)))
 }

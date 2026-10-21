@@ -53,8 +53,8 @@ export function computeStats(
   const since = now - days * DAY_MS
   const sinceDay = dayKey(since)
 
-  // Sub-agent transcripts outnumber their parents several to one on a real machine, so counting
-  // them by default would report a session volume nobody recognises as their own.
+  // Sub-agent transcripts can outnumber their parents several to one in a history that delegates,
+  // so counting them by default would report a session volume nobody recognises as their own.
   const topLevel = query.includeChildren
     ? summaries
     : summaries.filter((row) => !row.parentNativeSessionId)

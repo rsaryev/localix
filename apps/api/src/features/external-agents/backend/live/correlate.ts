@@ -16,15 +16,15 @@
  *
  * WHY `startedAt` AND NOT `updatedAt`. It was `updatedAt`, which is the wrong question: a session
  * that has been running for hours is touched every few seconds, so every long-lived agent in the
- * directory is a candidate forever. Measured on a real local history mid-session — two Claude Code agents
- * working in one project, started 9,564 s and 75,190 s ago — correlation was ambiguous at every
- * window size and would have refused for as long as they both ran. Concurrent agents in one project
- * is not an edge case here; it is what this plugin is FOR.
+ * directory is a candidate forever. With two Claude Code agents working in one project, started
+ * hours apart, correlation was ambiguous at every window size and would have refused for as long as
+ * they both ran. Concurrent agents in one project is not an edge case here; it is what this plugin
+ * is FOR.
  *
  * A session that began hours before the terminal opened cannot be that terminal's agent, and
- * `startedAt` says so directly. Coverage is near-total (1,471 of 1,476 Claude Code sessions, and
- * every Codex, opencode and Gemini one), and where a provider records no start the old
- * last-touched test still applies rather than making the session uncorrelatable.
+ * `startedAt` says so directly. Coverage is near-total (almost every Claude Code session, and every
+ * Codex, opencode and Gemini one), and where a provider records no start the old last-touched test
+ * still applies rather than making the session uncorrelatable.
  *
  * A cwd match is required when both sides know their cwd. That constraint removes the remaining
  * ambiguity: two agents of the same kind STARTING within seconds of each other in the SAME

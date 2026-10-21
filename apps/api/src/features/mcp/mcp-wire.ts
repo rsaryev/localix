@@ -22,7 +22,6 @@ export {
   resolveConnectTimeoutMs,
   filterToolDefs,
   modelVisibleToolDefs,
-  readMaxResultChars,
   disambiguate,
   namespacedName,
   buildToolForServer,

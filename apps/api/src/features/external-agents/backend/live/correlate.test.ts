@@ -64,10 +64,10 @@ describe('a long-running session is not a candidate', () => {
    * been running for hours is touched every few seconds, so on `updatedAt` every long-lived agent in
    * the directory stayed a candidate forever.
    *
-   * Measured on a real local history mid-session: two Claude Code agents working in one project, started
-   * 9,564 s and 75,190 s ago, both touched within the window. Correlation was ambiguous at every
-   * window size and would have refused for as long as they both ran — and concurrent agents in one
-   * project is what this plugin is FOR, not an edge case.
+   * Two Claude Code agents working in one project, started hours apart and both touched within the
+   * window, made correlation ambiguous at every window size: it would have refused for as long as
+   * they both ran — and concurrent agents in one project is what this plugin is FOR, not an edge
+   * case.
    */
   const HOURS_AGO = NOW - 3 * 60 * 60 * 1000
 

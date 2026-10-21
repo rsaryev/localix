@@ -12,9 +12,9 @@ import type { AdapterEnv } from './types'
  *
  * A turn that only called tools records `content: ""` and everything else in `toolCalls`, and this
  * reader used to skip a message the moment its text was empty — so the tool half of every session
- * was dropped before anything else was read. Measured on a real recording under
- * ~/.gemini/tmp/<project>/chats: 148 of 193 messages carry `toolCalls`, and the largest session on
- * this machine went from 637 events of pure prose to 1773 once they were read.
+ * was dropped before anything else was read. In a recording under ~/.gemini/tmp/<project>/chats
+ * most messages can carry `toolCalls`, and reading them multiplies a session's events several times
+ * over what the prose alone yields.
  */
 async function fixture(): Promise<AdapterEnv> {
   const home = await mkdtemp(join(tmpdir(), 'gemini-home-'))
@@ -90,9 +90,9 @@ describe('the size ceiling is a disclaimer, so it is at least witnessed', () => 
    * pinning: an oversized recording is not truncated, it never appears — the session is absent from
    * the roster with nothing saying why, and `ProviderStatus` has no channel for an omission.
    *
-   * Measured on a real local history when the sweep was written: 29 recordings, largest 7.73 MB, none
-   * skipped. The README lists this among the bounds that report nothing; this keeps the behaviour
-   * from changing silently in either direction.
+   * Recordings seen in practice sit well under the ceiling, so none is skipped today. The README
+   * lists this among the bounds that report nothing; this keeps the behaviour from changing
+   * silently in either direction.
    */
   test('a recording past the ceiling is absent, and a normal one beside it still lists', async () => {
     const env = await fixture()
@@ -176,11 +176,11 @@ describe('a Gemini transcript carries the work, not only the prose', () => {
 
 describe('gemini says whether a turn is running, from its document', () => {
   /**
-   * Measured across 29 real recordings: the final message is `info` in 20, and every
-   * `info` seen was "Request cancelled." Reading past those notices, the last real message is `user`
-   * in 15, `gemini` in 8, `gemini` with tool calls in 4 and `error` in 2 — and of the four with
-   * calls, NONE had a call still missing its result. This format records a call together with its
-   * result, so a call is evidence of a running turn only while one is unfinished.
+   * In recordings the final message is often `info`, and every `info` observed was "Request
+   * cancelled." Reading past those notices, the last real message may be `user`, `gemini`, `gemini`
+   * with tool calls or `error` — and of those with calls, NONE had a call still missing its result.
+   * This format records a call together with its result, so a call is evidence of a running turn
+   * only while one is unfinished.
    */
   async function withMessages(messages: unknown[], mtimeMs = Date.now()) {
     const home = await mkdtemp(join(tmpdir(), 'gemini-turn-'))

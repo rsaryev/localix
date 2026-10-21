@@ -68,10 +68,9 @@ function measuredUsage(): SessionTokenUsage {
 
 describe('the heaviest sessions are their own axis', () => {
   /**
-   * Every other axis AGGREGATES, which hides how concentrated the spend is. Measured on a real local history:
-   * 10 sessions out of 212 account for 53% of every token, the single heaviest for 14.9%, while
-   * `byProject` folds 151 of those sessions into one bar. "Which runs cost the most" is a question no
-   * other axis can answer.
+   * Every other axis AGGREGATES, which hides how concentrated the spend is: a handful of sessions
+   * can account for most of the tokens while `byProject` folds them into one bar with everything
+   * else. "Which runs cost the most" is a question no other axis can answer.
    */
   const withTokens = (id: string, total: number, title?: string) =>
     session({
@@ -264,8 +263,9 @@ describe('provider counts match what the roster shows', () => {
 
 describe('the window scopes every figure, not only the trend', () => {
   test('a distribution counts the window rather than all of history', () => {
-    // Found by probing this machine: on the 7d view the tile read 61 sessions while the bars
-    // directly beside it summed to 382, because only the trend and one tile obeyed the range.
+    // Found by probing a real install: on the 7d view the tile counted the window while the bars
+    // directly beside it summed all of history, because only the trend and one tile obeyed the
+    // range.
     const rows = [
       session({ nativeSessionId: 'recent', cwd: '/work/app', updatedAt: NOW - DAY }),
       session({ nativeSessionId: 'old', cwd: '/work/old', updatedAt: NOW - 200 * DAY }),
@@ -349,9 +349,9 @@ describe('trend bucket size', () => {
 
 describe('agents the window excluded entirely', () => {
   /**
-   * The figure both surfaces need and neither can derive: an agent with nothing in range leaves no bar
-   * and no row, so its absence looks identical to never having existed. Measured on a real local history with
-   * the 30-day default, four of six providers land here holding 105 sessions.
+   * The figure both surfaces need and neither can derive: an agent with nothing in range leaves no
+   * bar and no row, so its absence looks identical to never having existed. With the 30-day
+   * default, agents used less often land here, along with every session the window hides.
    */
   const DAY = 86_400_000
   const now = Date.parse('2026-08-04T00:00:00.000Z')
@@ -492,10 +492,10 @@ describe('usageSessions is the honesty figure, so it counts only what was measur
 describe('activeDays says how much of the window is not empty', () => {
   /**
    * The trend draws every bucket in the window, empty ones included, which is right — a gap is
-   * information. What it leaves out is the divisor: a reader forming "sessions per day" from the total
-   * uses the window's LENGTH. Measured on a real local history, 29 of 30 days at the default range and 37 of 90
-   * at the widest, so the same total is 2.4x denser than the axis suggests. Named after CodexBar's
-   * `coveredDayCount`, which carries the figure for the same reason.
+   * information. What it leaves out is the divisor: a reader forming "sessions per day" from the
+   * total uses the window's LENGTH. In a history with idle stretches only part of a wide range
+   * holds anything, so the same total can be several times denser than the axis suggests. Named
+   * after CodexBar's `coveredDayCount`, which carries the figure for the same reason.
    */
   const DAY = 86_400_000
   const now = Date.parse('2026-08-04T12:00:00.000Z')
@@ -579,10 +579,10 @@ describe('the model axis is not derived from tokens alone', () => {
 
 describe('a project drill narrows the statistics, as an agent drill does', () => {
   /**
-   * `RosterQuery.cwdPrefix` existed from the start, was validated by the route and implemented in the
-   * fold — and nothing ever sent one. `StatsQuery` did not have it at all, so the project axis could
-   * not drill the way the agent axis does. Verified on a real local history: selecting
-   * `/Users/dev/Documents/sample-project` narrows 282 sessions to 151 and 21 projects to 1.
+   * `RosterQuery.cwdPrefix` existed from the start, was validated by the route and implemented in
+   * the fold — and nothing ever sent one. `StatsQuery` did not have it at all, so the project axis
+   * could not drill the way the agent axis does. Selecting a project now narrows the sessions to
+   * that project's and the project count to one.
    */
   const now = Date.parse('2026-08-05T00:00:00.000Z')
 
@@ -643,9 +643,9 @@ describe('a project drill narrows the statistics, as an agent drill does', () =>
 
 describe('the fan-out axis answers what a session delegated', () => {
   /**
-   * Measured on a real local history: 1,283 of 1,535 sessions are children, and they belong to just 55
-   * parents — the widest spawned 208, the median parent 8. Every other axis answers what a session
-   * COST; this one answers what it fanned out to, which is the question an orchestrator has.
+   * In a history that delegates, most sessions are children, and they belong to comparatively few
+   * parents — some spawning hundreds. Every other axis answers what a session COST; this one
+   * answers what it fanned out to, which is the question an orchestrator has.
    *
    * The counting population is the load-bearing part. Children are hidden by default, so folding
    * over the window's selection would report a fan-out of zero for every parent on the screen.

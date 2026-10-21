@@ -54,12 +54,11 @@ export function packSections(
    * Per-plan fill state, so the budget's REMAINDER can be spent after every section has taken its
    * share.
    *
-   * The loop below stops at the first event that does not fit, which leaves whatever is left of that
-   * section's allocation unspent — and nothing was collecting it. Measured on a real local history, four
-   * real sessions against a 12,000-character budget rendered 5,133 characters, 43% of what was
-   * asked for, while 9,842 events were withheld for want of room. The dip is worst in the middle:
-   * 79% at 4,000, 43% at 12,000, 92% at 48,000, because a large budget makes each remainder small
-   * next to the whole.
+   * The loop below stops at the first event that does not fit, which leaves whatever is left of
+   * that section's allocation unspent — and nothing was collecting it. With several sessions
+   * against a mid-sized budget, well under half of what was asked for was rendered while thousands
+   * of events were withheld for want of room. The dip is worst in the middle, because a large
+   * budget makes each remainder small next to the whole.
    */
   const fills = planned.map((plan) => {
     // A slice read from the END is trimmed from the end too — see the note below.

@@ -95,10 +95,9 @@ describe('compose — which END of a session a section holds', () => {
   /**
    * A slice read from the END must be trimmed from the end.
    *
-   * Measured on a real session before this held: a tail read of 3,893 events delivered positions
-   * 3,494–3,564. The adapter kept the last 400 as asked, then the budget loop kept the OLDEST of
-   * those — so "the latest" stopped 329 events short of it. Nothing in the output said so, because
-   * a count ("71 of 3893") cannot.
+   * Before this held, a tail read of a few thousand events kept the last 400 as asked, then the
+   * budget loop kept the OLDEST of those — so "the latest" stopped hundreds of events short of it.
+   * Nothing in the output said so, because a count ("71 of 3893") cannot.
    */
   it('keeps the newest events of a tail slice, still in reading order', () => {
     const tail = slice('codex:s1', 'codex', many(900, 100), 1_000, 900)
@@ -139,9 +138,9 @@ describe('compose — which END of a session a section holds', () => {
 
   it('a source cut by the byte cap names its END but not its positions', () => {
     /**
-     * Measured on a real local history's largest transcript: 47.72 MB and 21,220 lines against a 32 MB cap.
-     * A tail read of it reads BACKWARDS and finishes exactly where the session finishes, so "the
-     * latest" is true — while the positions are not, because `total` counts only what fitted.
+     * A transcript past the 32 MB cap, read from the tail, reads BACKWARDS and finishes exactly
+     * where the session finishes, so "the latest" is true — while the positions are not, because
+     * `total` counts only what fitted.
      *
      * This asserted that NEITHER could be claimed, which was right while a "tail" was really the front
      * of the file and became an under-claim the day tail reads started reading backwards.
@@ -323,11 +322,10 @@ describe('the budget is a ceiling on the WHOLE answer, headers included', () => 
 describe('the budget is spent, not merely respected', () => {
   /**
    * Each section stopped at the first event too large for what was left of its share, and that tail
-   * of its allocation belonged to nobody. Measured on a real local history's real history, four sessions
-   * against a 12,000-character budget rendered 5,133 characters — 43% of what was asked for — while
-   * 9,842 events were withheld for want of room. The dip was worst in the middle: 79% at 4,000, 43%
-   * at 12,000, 92% at 48,000, since a large budget makes each remainder small next to the whole.
-   * After the remainder pass: 100%, 68% and 100%.
+   * of its allocation belonged to nobody. With several sessions against a mid-sized budget, well
+   * under half of what was asked for was rendered while thousands of events were withheld for want
+   * of room. The dip was worst in the middle, since a large budget makes each remainder small next
+   * to the whole; the remainder pass recovers most of it.
    */
   function slice(key: string, events: number, size: number) {
     return {
@@ -514,10 +512,9 @@ describe('a section that can afford nothing still shows something', () => {
   /**
    * A single event may cost up to MAX_EVENT_CHARS while a share is bodyBudget / sections, so a
    * section whose FIRST event is larger than its share renders nothing at all — and still pays for
-   * its header. Measured on a real local history's real history: four sessions at a 9,000-character budget
-   * produced two sections of zero events, one of them a nine-event session that showed none of them
-   * at any budget from 7,000 to 11,000. Usage across that range was 71–79%; with a foothold it is
-   * 90–98%, and every section carries content.
+   * its header. With a few sessions at a modest budget, a short session's section could show none
+   * of its events across a wide range of budgets while a sizeable part of the budget went unspent;
+   * with a foothold nearly all of it is used, and every section carries content.
    */
   function chunky(key: string, size: number, count = 6) {
     return {

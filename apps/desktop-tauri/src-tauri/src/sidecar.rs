@@ -257,7 +257,7 @@ fn report_error(app: &tauri::AppHandle, message: impl Into<String>) {
 
 /// How long a LOCAL process gets to bind its port before it is treated as stuck.
 ///
-/// Measured on this machine, a healthy start is 0.6s warm and 4.5s on a cold page
+/// Measured on a development machine, a healthy start is 0.6s warm and 4.5s on a cold page
 /// cache. The old budget was 45 seconds, which is not patience — it is the whole
 /// user-visible failure: three quarters of a minute of nothing, then a kill and a
 /// dead app. See [`READY_ATTEMPTS`] for what replaced the giving-up half.

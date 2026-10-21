@@ -12,6 +12,6 @@ export {
   type DocFile,
   type DocRun,
 } from './document/diffDocument'
-export { diffDocumentFromPatch, parsePatchText } from './document/parsePatchText'
+export { diffDocumentFromPatch } from './document/parsePatchText'
 
 export { firstChangedLine, languageFromPath } from './parseUnifiedDiff'

@@ -9,9 +9,9 @@ export interface ProviderStatus {
   /**
    * TOP-LEVEL sessions — the same population the roster and the statistics count.
    *
-   * It deliberately excludes sub-agent transcripts. In a real local history Claude Code has 123 top-level
-   * sessions and 1581 sub-agent files beneath them, so counting every file made the providers strip
-   * say "1706" beside a list showing 123: two different quantities wearing one name.
+   * It deliberately excludes sub-agent transcripts. Claude Code can hold many times more sub-agent
+   * files than top-level sessions, so counting every file made the providers strip show a figure
+   * many times the length of the list beside it: two different quantities wearing one name.
    */
   readonly sessionCount: number
   /** Sub-agent transcripts nested under those sessions, when the provider nests any. */

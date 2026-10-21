@@ -19,7 +19,6 @@ export {
   bottomScrollTop,
   contentChangeAction,
   isNearBottom,
-  isViewportScrollable,
   needsBottomScroll,
   shouldScheduleBottomReapply,
   type ScrollGeometry,

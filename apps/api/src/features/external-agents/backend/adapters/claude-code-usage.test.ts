@@ -72,7 +72,7 @@ async function fixture(): Promise<AdapterEnv> {
     },
   ]
   await writeFile(
-    join(project, '019fbea7-a356-75a0-8d14-c3362752cc71.jsonl'),
+    join(project, '00000000-0000-7000-8000-000000000003.jsonl'),
     rows.map((row) => JSON.stringify(row)).join('\n'),
     'utf8',
   )

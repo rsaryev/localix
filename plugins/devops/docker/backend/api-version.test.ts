@@ -33,7 +33,7 @@ describe('compareApiVersions', () => {
 
 describe('negotiateApiVersion', () => {
   test('a newer daemon is met at OUR maximum', () => {
-    // This machine: daemon serves 1.55, we speak 1.44. Every newer daemon understands it.
+    // E.g. a daemon serving 1.55 while we speak 1.44. Every newer daemon understands it.
     expect(negotiateApiVersion({ apiVersion: '1.55', minApiVersion: '1.40', os: 'linux' })).toEqual(
       {
         version: MAX_API_VERSION,

@@ -70,10 +70,9 @@ export interface ExternalAgentStats {
   /**
    * The heaviest individual sessions in the window, bounded by `STATS_SESSION_LIMIT`.
    *
-   * Every other axis AGGREGATES, which hides how concentrated the spend is: measured on this
-   * machine, 10 sessions out of 212 account for 53% of all tokens and the single heaviest for 14.9%,
-   * while `byProject` folds 151 of those sessions into one bar. "Which runs cost the most" is a
-   * question none of the other axes can answer.
+   * Every other axis AGGREGATES, which hides how concentrated the spend is: a handful of sessions
+   * can account for most of all tokens while `byProject` folds them into one bar. "Which runs cost
+   * the most" is a question none of the other axes can answer.
    *
    * Each bucket's `key` is the session key, so it addresses the same session every other surface
    * does, and its `label` is the title a reader recognises.
@@ -82,10 +81,10 @@ export interface ExternalAgentStats {
   /**
    * The sessions that delegated most, by how many sub-agent transcripts name them as parent.
    *
-   * Measured on a real local history: 1,283 of 1,535 sessions are children, and they belong to just 55
-   * parents — the widest spawned 208, the median parent 8. Every other axis here answers "what did
-   * this cost"; this one answers "what did it FAN OUT to", which is the question an orchestrator
-   * has and the one figure the screen could not produce.
+   * In a history that delegates, most sessions are children, and they belong to comparatively few
+   * parents — some spawning hundreds. Every other axis here answers "what did this cost"; this one
+   * answers "what did it FAN OUT to", which is the question an orchestrator has and the one figure
+   * the screen could not produce.
    *
    * Counted over every child on disk, not over the window's selection: a parent inside the window
    * whose children are older would otherwise read as having delegated nothing. `sessions` on each
@@ -98,8 +97,8 @@ export interface ExternalAgentStats {
    * neither can derive it from a windowed result: an agent with nothing in range leaves no bar and no
    * row, so its absence is indistinguishable from never having existed.
    *
-   * Measured on a real local history with the 30-day default: four of six providers land here, holding 105
-   * sessions. It respects the provider filter, like every figure here except the agent axis.
+   * With the 30-day default, agents used less often land here along with every session the window
+   * hides. It respects the provider filter, like every figure here except the agent axis.
    */
   readonly outsideRange: readonly StatBucket[]
   /**

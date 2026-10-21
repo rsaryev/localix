@@ -30,10 +30,10 @@ describe('reap-strays: what counts as left behind', () => {
 
   test('only a HEADLESS Chrome on a scratch profile, never the user’s own browser or its helpers', () => {
     const rows = ps([
-      ` 20 1 58:07 ${CHROME} --headless=new --remote-debugging-port=9444 --user-data-dir=/private/tmp/claude-501/x/chrome-live`,
+      ` 20 1 58:07 ${CHROME} --headless=new --remote-debugging-port=9444 --user-data-dir=/private/tmp/claude-scratch/x/chrome-live`,
       ` 21 1 58:07 ${CHROME} --user-data-dir=/Users/me/Library/Chrome`,
-      ` 22 20 58:07 /Applications/Google Chrome.app/Contents/Frameworks/X/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --headless --user-data-dir=/private/tmp/claude-501/x`,
-      ` 23 1 05:00 ${CHROME} --headless --user-data-dir=/private/tmp/claude-501/y`,
+      ` 22 20 58:07 /Applications/Google Chrome.app/Contents/Frameworks/X/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --headless --user-data-dir=/private/tmp/claude-scratch/x`,
+      ` 23 1 05:00 ${CHROME} --headless --user-data-dir=/private/tmp/claude-scratch/y`,
     ])
     expect(rules(rows)).toEqual([[20, 'abandoned headless browser']])
   })

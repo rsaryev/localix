@@ -17,11 +17,10 @@
  *   codex         `{type:"response_item",payload:{type:"function_call"}}`       → mid-turn
  *                 `{type:"response_item",payload:{type:"message",role:"assistant"}}` → ended
  *
- * Measured on a real local history while writing it: of 87 Claude Code transcripts exactly one had been
- * written to within 60 seconds — the session doing the writing — and the next was 56 minutes old. So
- * recency alone separates a running session sharply; what it cannot separate is "still working" from
- * "answered a moment ago", which is why the last record's SHAPE decides and recency only bounds how
- * long an answer is worth trusting.
+ * Recency alone separates a running session sharply: the session doing the writing was written to
+ * seconds ago, and the next most recent is usually minutes or hours old. What it cannot separate is
+ * "still working" from "answered a moment ago", which is why the last record's SHAPE decides and
+ * recency only bounds how long an answer is worth trusting.
  *
  * Deliberately NOT a manifest: a manifest matches rendered text, and this reads structure. Mixing
  * them would put a file format inside a screen grammar.
@@ -81,11 +80,11 @@ export function turnStateOf(records: readonly unknown[]): TurnState | undefined 
     /**
      * Codex SAYS when a turn is over, and it is the last thing it writes.
      *
-     * Measured across the 60 newest rollouts of a real history: the final record is `task_complete`
-     * in 44 of them and `turn_aborted` in 7. Those arrive as `event_msg`, which this reader used to
-     * skip — so it walked back past the terminator to the `function_call` before it and reported a
-     * finished session as WORKING. That is the expensive direction of the error: a wait on a
-     * delegation that had already answered would have run to its timeout.
+     * A rollout's final record is usually `task_complete` or `turn_aborted`. Those arrive as
+     * `event_msg`, which this reader used to skip — so it walked back past the terminator to the
+     * `function_call` before it and reported a finished session as WORKING. That is the expensive
+     * direction of the error: a wait on a delegation that had already answered would have run to
+     * its timeout.
      */
     if (type === 'task_complete' || type === 'turn_aborted') return 'idle'
 
@@ -93,11 +92,10 @@ export function turnStateOf(records: readonly unknown[]): TurnState | undefined 
      * GitHub Copilot brackets its turns explicitly, which makes it the least ambiguous of the three
      * formats that can be read at all.
      *
-     * Measured across 34 real `events.jsonl`: 560 `assistant.turn_start` against 563
-     * `assistant.turn_end`, and as a FINAL record `session.shutdown` (12), `assistant.turn_end`
-     * (10), `abort` (8), `subagent.failed` (2), `session.error` (2). None of those names matched
-     * anything here before, so a Copilot delegation got no reading at all — every one of them fell
-     * back to the manifest's degraded guess.
+     * `assistant.turn_start` and `assistant.turn_end` come in near-exact pairs, and a FINAL record
+     * is one of `session.shutdown`, `assistant.turn_end`, `abort`, `subagent.failed` or
+     * `session.error`. None of those names matched anything here before, so a Copilot delegation
+     * got no reading at all — every one of them fell back to the manifest's degraded guess.
      *
      * `subagent.failed` is deliberately NOT an ending: a child failing leaves the parent's turn
      * running, and the record beneath it says what that turn is doing.

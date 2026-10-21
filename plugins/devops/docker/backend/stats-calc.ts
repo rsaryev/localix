@@ -8,8 +8,7 @@
  * Why compute at all instead of reading Docker's pre-formatted `docker stats` output: the CLI
  * (and `stats?stream=false`) makes the DAEMON wait two full sample cycles, ~2s per read.
  * `stats?stream=false&one-shot=true` answers in ~2ms but returns no `precpu_stats`, so the
- * deltas must come from the caller's own previous sample. Measured on a real local setup:
- * 2011ms → 2ms.
+ * deltas must come from the caller's own previous sample. That turns a ~2 s read into ~2 ms.
  */
 
 /** The subset of the API's stats body these formulas need. Everything is optional: the

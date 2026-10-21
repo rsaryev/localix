@@ -20,12 +20,7 @@ import type { OperationSupport, Ticker } from './contracts'
 import { normalizeTicker } from './normalize'
 import { tickerScope, hip3Scope, planScopedTickerReads } from './ccxt-read-plan'
 
-export {
-  hip3Scope,
-  MAX_SCOPED_TICKER_READS,
-  planScopedTickerReads,
-  type ScopedTickerRead,
-} from './ccxt-read-plan'
+export { hip3Scope, planScopedTickerReads, type ScopedTickerRead } from './ccxt-read-plan'
 
 /**
  * Read ONE symbol's ticker as cheaply as the venue allows: a scoped read when `tickerScope` can

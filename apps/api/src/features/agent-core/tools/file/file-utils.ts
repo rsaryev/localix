@@ -70,17 +70,6 @@ export function appendEditorBufferNote(content: string, note: string | undefined
 }
 
 /**
- * Extract `path` + optional `cwd` from a tool's raw input for `parallelScopePaths`,
- * which runs before zod validation (input is `unknown`). Returns null when there is
- * no usable string path, so callers fall back to an empty scope list.
- */
-export function scopePathInput(input: unknown): { path: string; cwd?: string } | null {
-  const i = input as { path?: unknown; cwd?: unknown }
-  if (typeof i?.path !== 'string') return null
-  return { path: i.path, cwd: typeof i.cwd === 'string' ? i.cwd : undefined }
-}
-
-/**
  * Resolve a (possibly relative) file path to an absolute one: an absolute
  * `filePath` is returned as-is; otherwise it's resolved against `cwd` (itself
  * resolved against `defaultCwd` when relative), falling back to `~/.localix/workspace`

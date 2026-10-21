@@ -13,8 +13,8 @@
  *
  * The one legitimate difference is pinned rather than hidden: `byProject` buckets by EXACT working
  * directory while `cwdPrefix` selects a subtree, so a project with a sub-project under it drills
- * into more rows than its own bar shows. Measured on a real local history: an axis bucket of 68 and a drill
- * of 69, the extra row being a session recorded under `<project>/packages/frontend`.
+ * into more rows than its own bar shows — a session recorded under `<project>/packages/frontend`,
+ * for example.
  */
 
 import { describe, expect, it, beforeEach } from 'bun:test'
@@ -142,8 +142,8 @@ describe('every axis returns the count it printed', () => {
 
 describe('the one place the two legitimately differ says so', () => {
   it('a project with a sub-project drills wider than its own bar', () => {
-    // The axis buckets by EXACT cwd; `cwdPrefix` selects the subtree. Measured on a real local history as
-    // 68 against 69 — one session recorded under `<project>/packages/frontend`.
+    // The axis buckets by EXACT cwd; `cwdPrefix` selects the subtree, so a session recorded under
+    // `<project>/packages/frontend` drills in but sits outside the bar.
     const bucket = stats().byProject.find((entry) => entry.key === '/work/app')
 
     expect(bucket?.sessions).toBe(4)

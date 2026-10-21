@@ -2,9 +2,9 @@
  * The session index: a memoized, persisted map from a session's `(id, revision)` to its parsed
  * `SessionSummary`.
  *
- * WHY THIS EXISTS. `listSources()` is cheap (readdir+stat: 1-4 ms per provider in a real local history).
- * `readSummaries()` is not: summarizing all 694 discovered sessions cold costs ~119 ms of parsing.
- * That is tolerable once and intolerable per keystroke or per render. So:
+ * WHY THIS EXISTS. `listSources()` is cheap (readdir+stat: a few ms per provider).
+ * `readSummaries()` is not: summarizing hundreds of sessions cold costs on the order of a hundred
+ * ms of parsing. That is tolerable once and intolerable per keystroke or per render. So:
  *
  *   scan() = listSources()  →  diff against the cache by that key  →  readSummaries() ONLY for
  *            the misses  →  persist.

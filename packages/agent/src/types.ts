@@ -67,8 +67,8 @@ export interface UserMessage {
    * no this-run thinking). Explicit-breakpoint providers (Anthropic `cache_control`)
    * place an extra breakpoint here so the rebuilt-history prefix stays readable
    * across runs; without it the only matching entry is the system+tools segment and
-   * the whole history is re-WRITTEN to cache every run (measured on a real session:
-   * 10.5M cache-write tokens). Set once per run on the last stable history message.
+   * the whole history is re-WRITTEN to cache every run, millions of cache-write
+   * tokens over a long session. Set once per run on the last stable history message.
    */
   cacheAnchor?: boolean
 }

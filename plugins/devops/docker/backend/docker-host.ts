@@ -3,11 +3,12 @@ import { createHash } from 'node:crypto'
 /**
  * Resolve WHERE the Docker daemon is, the way the `docker` CLI itself does.
  *
- * This machine is the argument for doing it properly: `~/.docker/config.json` names the
- * `desktop-linux` context, whose endpoint is `unix:///Users/<me>/.docker/run/docker.sock`.
- * A hardcoded `/var/run/docker.sock` only works here because Docker Desktop happened to
- * create a root-owned symlink to that user socket — and it does not create one under
- * colima, Rancher Desktop, podman, a rootless daemon, or a plain `docker context use`.
+ * A stock Docker Desktop install is the argument for doing it properly: `~/.docker/config.json`
+ * names the `desktop-linux` context, whose endpoint is
+ * `unix:///Users/<me>/.docker/run/docker.sock`. A hardcoded `/var/run/docker.sock` only works there
+ * because Docker Desktop happened to create a root-owned symlink to that user socket — and it does
+ * not create one under colima, Rancher Desktop, podman, a rootless daemon, or a plain
+ * `docker context use`.
  *
  * Resolution follows Docker CLI precedence: an explicit environment setting, then the
  * selected context, then the platform default.

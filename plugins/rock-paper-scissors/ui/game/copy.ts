@@ -63,11 +63,6 @@ export function announcement(view: PlayerView): string {
   return [headline(view), verdict].filter(Boolean).join('. ').concat('.')
 }
 
-/** "Round 3 · Score 2–1, 1 draw" — the round and the table's running score. */
-export function roundLine(view: PlayerView): string {
-  return `Round ${view.round.number}${scoreLine(view.record)}`
-}
-
 export function scoreLine(record: GameRecord): string {
   if (record.won + record.lost + record.draw === 0) return ''
   const draws = record.draw === 1 ? '1 draw' : `${record.draw} draws`

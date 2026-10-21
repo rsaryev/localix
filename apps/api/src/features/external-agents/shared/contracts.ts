@@ -134,20 +134,19 @@ export const MAX_ROSTER_LIMIT = 1_000
  * The most events one `transcript` read may return.
  *
  * Also the ceiling on how far a single read sees. Every adapter reads from EITHER end, and
- * `transcript`'s `from` starts the window at an ordinal, so the middle is reachable too — measured as
- * 14,189 events in a real local history, 13.8% of all history, sitting inside the 10 sessions that exceed
- * this cap. What remains true is that no ONE read returns a long session whole.
+ * `transcript`'s `from` starts the window at an ordinal, so the middle of a session past this cap
+ * is reachable too. What remains true is that no ONE read returns a long session whole.
  */
 export const MAX_TRANSCRIPT_EVENTS = 2_000
 
 /**
  * Did this session run on `model`?
  *
- * A session names its model in one of two places and never in both. Measured on a real local history: 22 of
- * 283 rows carry `SessionSummary.model` — GitHub Copilot writes `selectedModel` once at the head of
- * its log, Hermes keeps a `model` column, and neither reports token usage — while the other 261
- * carry no such field and attribute per-model usage instead. A filter that checked either alone
- * would answer for a twelfth of the corpus or for the rest of it.
+ * A session names its model in one of two places and never in both. Only a minority of rows carry
+ * `SessionSummary.model` — GitHub Copilot writes `selectedModel` once at the head of its log,
+ * Hermes keeps a `model` column, and neither reports token usage — while the rest carry no such
+ * field and attribute per-model usage instead. A filter that checked either alone would answer for
+ * a small slice of the corpus or for the rest of it.
  *
  * It lives here rather than in either fold because the roster and the statistics must not disagree
  * about what "used this model" means: to a reader, a bar of 17 that drills into a list of 4 is an
@@ -162,9 +161,9 @@ export function sessionUsedModel(session: SessionSummary, model: string): boolea
  * Is this session a child of `parentKey`?
  *
  * Composed rather than compared raw: a native id is unique only within its provider, so two agents
- * can hold the same parent id and a bare comparison would mix their trees. Measured on this
- * machine, parentage exists for three providers — claude-code (1,090 children), codex (158) and
- * opencode (35) — which is exactly the population where a collision is possible.
+ * can hold the same parent id and a bare comparison would mix their trees. Parentage exists for
+ * several providers — claude-code, codex and opencode — which is exactly the population where a
+ * collision is possible.
  */
 export function sessionHasParent(session: SessionSummary, parentKey: string): boolean {
   if (!session.parentNativeSessionId) return false
@@ -194,10 +193,10 @@ export interface RosterQuery {
   /**
    * Include sub-agent transcripts, which the roster hides by default.
    *
-   * `StatsQuery` declared it and `RosterQuery` did not, so the service read it off the query through a
-   * cast — a field the type denied and the code relied on. It is 84% of what a real local history holds: 282
-   * top-level sessions against 1,822 with children, so 1,540 rows the workspace could not reach while
-   * the tool could.
+   * `StatsQuery` declared it and `RosterQuery` did not, so the service read it off the query
+   * through a cast — a field the type denied and the code relied on. In a history that delegates,
+   * children are most of what is held, so those were rows the workspace could not reach while the
+   * tool could.
    */
   readonly includeChildren?: boolean
   readonly offset?: number
@@ -238,10 +237,10 @@ export interface TranscriptSlice {
   /**
    * The SOURCE was cut short by the adapter's byte cap, so `total` counts only what fitted.
    *
-   * Distinct from `withheld`, which is a number we know. This says the number itself is a floor: the
-   * file held more and we never read it. Load-bearing for any claim about which END a window sits
-   * at — a tail read of a capped file returns the middle of the session, and in a real local history's
-   * largest transcript (47.72 MB, 21,220 lines) that middle ended 7h40m before the session did.
+   * Distinct from `withheld`, which is a number we know. This says the number itself is a floor:
+   * the file held more and we never read it. Load-bearing for any claim about which END a window
+   * sits at — a tail read of a capped file used to return the middle of the session, which can end
+   * hours before the session did.
    */
   readonly sourceTruncated?: boolean
   /**

@@ -52,11 +52,6 @@ export function useIslandEnabled(): boolean | null {
   return value
 }
 
-/** Whether this window can show the island switch at all (the macOS desktop app). */
-export function islandSupported(): boolean {
-  return supported
-}
-
 /** Test seam: pretend to be (or not be) the macOS desktop app, and forget the mirrored value. */
 export function __resetIslandSetting(platformSupported = isDesktop && IS_MAC): void {
   supported = platformSupported

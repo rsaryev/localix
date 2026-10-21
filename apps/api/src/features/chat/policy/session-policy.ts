@@ -83,8 +83,3 @@ export function lineagePolicy(session: LineageFacts): LineageDecision {
 export function permissionPolicy(session: PermissionFacts): PermissionDecision {
   return chooseOn(permissionAxis, session).decision
 }
-
-/** The delivery decision alone: the channel a reply is relayed through, if any. */
-export function deliveryPolicy(session: DeliveryFacts): DeliveryDecision {
-  return chooseOn(deliveryAxis, session).decision
-}

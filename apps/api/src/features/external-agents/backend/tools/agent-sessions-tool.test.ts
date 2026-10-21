@@ -62,7 +62,7 @@ describe('a malformed call is answered with the fix', () => {
   test('a bare native id is refused with the reason, not just rejected', () => {
     // Ids are only unique within a provider, so accepting one would eventually attach an action to
     // the wrong agent's session — the failure this key format exists to prevent.
-    const problem = agentSessionsProblem(input({ action: 'transcript', key: '0c61aa4b' }))
+    const problem = agentSessionsProblem(input({ action: 'transcript', key: 'a1b2c3d4' }))
     expect(problem).toContain('<provider>:<nativeSessionId>')
     expect(problem).toContain('only unique within one provider')
   })
@@ -388,8 +388,7 @@ describe('the model half can drill by project too', () => {
 
 describe('a position reaches the middle of a session', () => {
   /**
-   * Head and tail together leave 13.8% of a real history unreachable — 14,189 events inside
-   * the 10 sessions that exceed the 2,000-event cap.
+   * Head and tail together leave the middle of every session past the 2,000-event cap unreachable.
    */
   test('"from" and "tail" ask for opposite things and are refused with the fix', async () => {
     const svc = service({} as Partial<AgentSessionsService>)
@@ -414,8 +413,8 @@ describe('a position reaches the middle of a session', () => {
 
 describe('the stats answer says how much of the range is empty', () => {
   test('the headline counts active days, not the range length', async () => {
-    // A reader dividing a total by "the last 90 days" is out by 2.4x in a real local history, where 37 of
-    // those 90 hold anything.
+    // A reader dividing a total by "the last 90 days" is out by a wide factor when only some of
+    // those days hold anything.
     const svc = service({
       async stats() {
         return {
@@ -447,9 +446,9 @@ describe('the stats answer says how much of the range is empty', () => {
 
 describe('the stats answer names the agents its range hides', () => {
   /**
-   * The same blindness the workspace used to have: `By agent` listed two of a real history's six
-   * providers and a model reading it concludes the other four have no history. They hold 105 sessions.
-   * The figure comes from the fold, so the screen and this answer cannot disagree.
+   * The same blindness the workspace used to have: `By agent` listed only the providers active in
+   * the range, and a model reading it concludes the others have no history. The figure comes from
+   * the fold, so the screen and this answer cannot disagree.
    */
   test('the excluded agents are listed with a days suggestion that reaches them', async () => {
     const day = 86_400_000

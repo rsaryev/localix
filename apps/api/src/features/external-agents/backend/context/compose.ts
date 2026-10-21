@@ -46,9 +46,9 @@ export type { ComposeResult } from './compose-types'
 export const DEFAULT_BUDGET_CHARS = 120_000
 export const MAX_BUDGET_CHARS = 400_000
 /**
- * What one section's header costs before a single event is rendered: key, cwd, source path, time range
- * and the events line. Measured against real sections rather than guessed — the longest here run to
- * roughly 300 characters, and the figure is the budget's own accounting unit.
+ * What one section's header costs before a single event is rendered: key, cwd, source path, time
+ * range and the events line. Measured against real sections rather than guessed — the longest run
+ * to roughly 300 characters, and the figure is the budget's own accounting unit.
  */
 export const PER_SECTION_RESERVE = 320
 
@@ -202,9 +202,8 @@ export function compose(slices: readonly TranscriptSlice[], budgetChars: number)
    *
    * A single event may cost up to `MAX_EVENT_CHARS` while a share is `bodyBudget / sections`, so a
    * section whose first event is larger than its share renders NOTHING and still pays for its
-   * header. Measured on a real local history: four real sessions at a 9,000-character budget produced two
-   * sections of zero events, one of them a nine-event session that showed none of them at any budget
-   * from 7,000 to 11,000.
+   * header. A few sessions at a modest budget readily produce sections of zero events, including a
+   * short session that shows none of its events across a wide range of budgets.
    *
    * It runs LAST because it lost when it ran first: footholds sized against the shares spent the
    * whole body budget, the real headers pushed the answer past its ceiling, and the trim took them

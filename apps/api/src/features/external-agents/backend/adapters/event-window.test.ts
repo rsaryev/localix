@@ -65,10 +65,10 @@ describe('the bounded event window', () => {
 
 describe('an offset reaches what neither end does', () => {
   /**
-   * Head and tail together still leave a hole. Measured on a real local history: 10 of 279 counted sessions
-   * exceed the 2,000-event cap, and 14,189 events — 13.8% of all history here — sit beyond both a head
-   * and a tail read of their own session. Verified against the largest of them: `from: 4000` returns
-   * ordinals 4000-4004 of an 8,596-event session, which no head or tail read can produce.
+   * Head and tail together still leave a hole: in a long history some sessions exceed the
+   * 2,000-event cap, and their middles sit beyond both a head and a tail read of their own session.
+   * On a session of more than 4,000 events, `from: 4000` returns ordinals 4000-4004, which no head
+   * or tail read can produce.
    */
   test('the window starts at the ordinal asked for', () => {
     const window = eventWindow(3, false, 10)

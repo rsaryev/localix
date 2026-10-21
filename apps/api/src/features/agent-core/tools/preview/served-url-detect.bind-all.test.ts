@@ -1,7 +1,7 @@
 /**
  * The bind-all banners. Both addresses mean "every interface" and answer at `localhost`;
  * a detector that normalizes one and rejects the other misses whichever half the server
- * prints — measured on a real session: Python's `http.server` on macOS advertised
+ * prints. For example, Python's `http.server` on macOS advertised
  * `http://[::]:4173/`, nothing latched, and the preview never opened.
  */
 import { describe, expect, test } from 'bun:test'

@@ -20,7 +20,7 @@ const DIGEST_TARGET_CHARS = 3_000
  * Adapters used to bound a read from the head only, so a session longer than this window showed its
  * MIDDLE while looking like its end. They now take either end for the same cost — `total` already
  * forces a full walk of the source, so stopping early never saved the I/O (adapters/event-window.ts).
- * Measured on the largest session per provider: 39 ms head vs 37 ms tail on a 53 MB codex rollout.
+ * On a rollout of tens of megabytes, a head read and a tail read cost the same few tens of ms.
  *
  * The window stays bounded because each event is clipped and the digest only prints a handful of
  * turns from it; what it does not show is stated in the range line rather than implied.

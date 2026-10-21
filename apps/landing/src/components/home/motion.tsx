@@ -1,8 +1,5 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
-
-/** The page's strong ease-out, the same curve as `--ease-soft`. */
-export const EASE_OUT = [0.22, 1, 0.36, 1] as const
 
 /**
  * Motion for the homepage only: the DOM feature bundle loads with the page, and `reducedMotion`
@@ -15,23 +12,6 @@ export function HomeMotion({ children }: { children: ReactNode }) {
     </LazyMotion>
   )
 }
-
-/** A media query as state. The server and the first client render answer `false`. */
-export function useMedia(query: string) {
-  return useSyncExternalStore(
-    (listener) => {
-      const media = window.matchMedia(query)
-      media.addEventListener('change', listener)
-      return () => media.removeEventListener('change', listener)
-    },
-    () => window.matchMedia(query).matches,
-    () => false,
-  )
-}
-
-/** Fine pointer, room for the effect, and no reduced-motion request. */
-export const RICH_MOTION =
-  '(min-width: 48rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
 
 /**
  * Whether the element is on screen. Without an observer (old browsers, tests) it reports

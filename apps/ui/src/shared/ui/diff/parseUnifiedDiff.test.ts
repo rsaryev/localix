@@ -127,9 +127,7 @@ describe('languageFromPath', () => {
   })
   test('maps C-family, Java, and Ruby files to loaded Monaco grammars', () => {
     expect(
-      languageFromPath(
-        '/Users/dev/Documents/agent-harnesses/pi/packages/tui/native/win32/src/win32-console-mode.c',
-      ),
+      languageFromPath('/Users/dev/Documents/sample-project/native/win32/console-mode.c'),
     ).toBe('c')
     expect(languageFromPath('include/widget.h')).toBe('c')
     expect(languageFromPath('src/widget.cc')).toBe('cpp')

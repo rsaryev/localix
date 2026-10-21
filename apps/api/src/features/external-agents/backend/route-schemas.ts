@@ -55,8 +55,8 @@ export const itemsBodySchema = z.object({
   /**
    * Read the session's END rather than its opening. There is no `/transcript` route, so without
    * this the whole UI half of the plugin could only ever see openings while the model half chose
-   * freely. Measured on a real local history: 10 of 230 sessions exceed the event cap, and those ten hold
-   * 29,339 unreachable events — 30.6% of every event in the roster, all of it the recent end.
+   * freely. In a long history the sessions past the event cap hold a large share of every event in
+   * the roster, and the part that was unreachable is all of it the recent end.
    */
   tail: z.boolean().optional(),
 })

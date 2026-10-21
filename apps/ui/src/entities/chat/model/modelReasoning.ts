@@ -10,6 +10,5 @@ export {
   defaultModelReasoning,
   initialModelReasoning,
   modelReasoningOptions,
-  reasoningForModel,
   reasoningOnModel,
 } from '@localixai/agent'

@@ -12,8 +12,7 @@ import type { AdapterEnv } from './types'
  *
  * The reader used to join every part's `.text` into one blob per message, which dropped tool parts
  * entirely: they carry no `.text`, only `tool`, `callID` and a `state` holding the input and the
- * output. In a real local history that is 868 of 3000 sampled parts — the majority of the session, and all
- * of the work.
+ * output. In a working session those are a large share of all parts, and all of the work.
  */
 async function fixture(): Promise<AdapterEnv> {
   const dir = await mkdtemp(join(tmpdir(), 'opencode-db-'))
@@ -176,11 +175,10 @@ describe('opencode session titles', () => {
 
 describe('opencode says whether a turn is running, from its newest message row', () => {
   /**
-   * Measured on a real local history's database: the newest message of each session is an `assistant` row
-   * with `time.completed` set in 5 sessions and an open one in 3. No append-only log exists here,
-   * and the JSON tree beside the database is no help — its newest file BY NAME is the newest by
-   * mtime in only 3 of 11 sessions, so answering from it would mean stat-ing every message of a
-   * session (173 files in the largest here) to sort them.
+   * No append-only log exists here, so the answer is the newest message of each session: an
+   * `assistant` row with `time.completed` set is a finished turn, an open one is not. The JSON tree
+   * beside the database is no help — its newest file BY NAME is often not the newest by mtime, so
+   * answering from it would mean stat-ing every message file of a session to sort them.
    */
   async function withNewest(message: Record<string, unknown>, createdMs: number) {
     const env = await fixture()

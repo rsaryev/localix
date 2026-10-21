@@ -3,14 +3,14 @@
  * sessions of the same agent share one window, so the newest reading is the current one and an older
  * session's figure says nothing about now.
  *
- * Only Codex records this. Measured on a real local history: 207 of 208 rollouts carry `rate_limits` on the
- * `token_count` event the summary walk already visits, so reading it costs no extra I/O. Forty
- * Claude Code transcripts carry no counterpart in any usage record, which is why this is optional
- * rather than a field every provider owes.
+ * Only Codex records this. Nearly every rollout carries `rate_limits` on the `token_count` event
+ * the summary walk already visits, so reading it costs no extra I/O. Claude Code transcripts carry
+ * no counterpart in any usage record, which is why this is optional rather than a field every
+ * provider owes.
  *
- * An account can have SEVERAL windows at once, and `primary` does not name a fixed one. In 206 of
- * a real history's 207 readings `primary` is the weekly window and `secondary` is absent; in the one
- * that carries both, `primary` is a 5-HOUR window at 45% and the weekly sits in `secondary` at 7%.
+ * An account can have SEVERAL windows at once, and `primary` does not name a fixed one. Usually
+ * `primary` is the weekly window and `secondary` is absent; in a reading that carries both,
+ * `primary` can be a 5-HOUR window (e.g. 40%) while the weekly sits in `secondary` (e.g. 10%).
  * So a reading is identified by its LENGTH, never by the slot it arrived in — comparing a 5-hour
  * percentage against a weekly one under a single label is comparing different quantities.
  */

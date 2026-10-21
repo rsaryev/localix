@@ -49,8 +49,9 @@ async function geminiFixture(): Promise<AdapterEnv> {
 /**
  * Claude Code nests transcripts under a session directory, and not every `.jsonl` down there is a
  * transcript. A workflow writes its own `journal.jsonl` — `{type, key, agentId, result}` rows, no
- * roles and no turns — one per workflow directory, and the id used to be the bare filename stem.
- * In a real local history that put 33 distinct files under the single key `claude-code:journal`.
+ * roles and no turns — one per workflow directory, and the id used to be the bare filename stem. A
+ * history with several workflows therefore put many distinct files under the single key
+ * `claude-code:journal`.
  */
 async function claudeFixture(): Promise<AdapterEnv> {
   const home = await mkdtemp(join(tmpdir(), 'claude-identity-'))

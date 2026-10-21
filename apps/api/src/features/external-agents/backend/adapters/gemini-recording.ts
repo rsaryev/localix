@@ -131,9 +131,9 @@ export function transcriptFromGeminiDoc(
      *
      * A turn that only called tools records `content: ""` and puts everything in `toolCalls`, so
      * skipping empty-text messages — which this loop used to do before reading any further —
-     * dropped the tool half of the session outright. Measured on a real recording: 148 of 193
-     * messages carry `toolCalls`, and the transcript this adapter produced for them contained
-     * nothing but user and assistant prose.
+     * dropped the tool half of the session outright. In a tool-heavy session most messages carry
+     * `toolCalls`, and the transcript this adapter produced for them contained nothing but user and
+     * assistant prose.
      */
     for (const entry of Array.isArray(rec.toolCalls) ? rec.toolCalls : []) {
       const call = asRecord(entry)

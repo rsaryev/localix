@@ -15,7 +15,7 @@ import { buildFilter } from './runners/build'
 const pad = (n: number, line = 'noise line from a console.log in a test body') =>
   Array.from({ length: n }, (_, i) => `${line} ${i}`).join('\n')
 
-// ── fixtures (captured from real runs, see plan validation) ─────────────
+// ── fixtures (captured from real runs) ──────────────
 
 const BUN_PASS = `bun test v1.3.14 (0d9b296a)
 

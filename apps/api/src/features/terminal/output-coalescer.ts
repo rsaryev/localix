@@ -2,8 +2,8 @@
  * Coalesces a PTY's output chunks into whole WebSocket frames.
  *
  * A PTY does not hand out data in the sizes a terminal produces it — it hands out
- * whatever fits its read buffer, which Bun caps at 1 KB. Measured on a real PTY here:
- * `ls -R apps` emitted 12,942 chunks for 1.18 MB (median 76 bytes), and even a dense
+ * whatever fits its read buffer, which Bun caps at 1 KB. A recursive `ls` arrives as thousands of
+ * chunks of a few dozen bytes each, and even a dense
  * `cat` of two large files was 1,024 bytes per chunk, every chunk. In both, ~100% of
  * chunks arrived within 2 ms of the previous one. The stream layer sent one JSON frame
  * per chunk, so a megabyte of build log cost the client roughly a thousand WebSocket

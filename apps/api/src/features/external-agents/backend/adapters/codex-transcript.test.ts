@@ -128,7 +128,7 @@ async function fixture(): Promise<{ env: AdapterEnv }> {
   await mkdir(dir, { recursive: true })
   await writeFile(
     // Real rollout names carry the full session UUID; the adapter keys on that tail.
-    join(dir, 'rollout-2026-08-01T21-48-05-019fbea7-a356-75a0-8d14-c3362752cc71.jsonl'),
+    join(dir, 'rollout-2026-08-01T21-48-05-00000000-0000-7000-8000-000000000003.jsonl'),
     ROLLOUT.map((r) => JSON.stringify(r)).join('\n'),
     'utf8',
   )

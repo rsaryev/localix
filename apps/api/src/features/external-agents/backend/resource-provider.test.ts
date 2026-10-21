@@ -396,11 +396,11 @@ describe('external agent resource provider', () => {
 
   test('a shown result is named by a call that was read but not shown', async () => {
     /**
-     * A result carries the call's ID and not its name — that is the adapters' convention, because the
-     * id is what pairing is decided on. The digest prints six turns out of a thousand-event window,
-     * so the call naming a shown result is almost always read and almost never shown, and the line
-     * came out as a bare `[tool]`: output with nothing saying what ran. Measured on a real local history's
-     * long sessions, two of four digests opened exactly that way.
+     * A result carries the call's ID and not its name — that is the adapters' convention, because
+     * the id is what pairing is decided on. The digest prints six turns out of a thousand-event
+     * window, so the call naming a shown result is almost always read and almost never shown, and
+     * the line came out as a bare `[tool]`: output with nothing saying what ran. On long sessions
+     * that is a common way for a digest to open.
      */
     const base = transcript({ read: 30, total: 30 })
     const events = [...base.events]
@@ -468,11 +468,11 @@ describe('external agent resource provider', () => {
 
 describe('the digest tells the truth about how far one read gets', () => {
   /**
-   * The footer said "Full transcript: external_agent_sessions { action: transcript … }" for every session. One
-   * read returns at most `MAX_TRANSCRIPT_EVENTS`, so on the largest session of a real history — 8,753
-   * events — that pointer promised 8,753 and delivers 2,000. The same overclaim was corrected in the
-   * transcript answer and the import note; this is the third surface, and the one a person uses most,
-   * since it is what an `@`-inserted chip expands into.
+   * The footer said "Full transcript: external_agent_sessions { action: transcript … }" for every
+   * session. One read returns at most `MAX_TRANSCRIPT_EVENTS`, so on a session of several thousand
+   * events that pointer promised all of them and delivers 2,000. The same overclaim was corrected
+   * in the transcript answer and the import note; this is the third surface, and the one a person
+   * uses most, since it is what an `@`-inserted chip expands into.
    */
   const uri = 'localix://resource/external-agent/claude-code/abc'
 

@@ -9,7 +9,7 @@ import { githubCopilotAdapter } from './github-copilot'
 import { foldJsonlFrom, revisionOf } from './fs-read'
 import type { FoldedSummary, SourceRef } from './types'
 
-const SESSION = '019fbea7-a356-75a0-8d14-c3362752cc71'
+const SESSION = '00000000-0000-7000-8000-000000000003'
 
 async function file(text: string): Promise<string> {
   const path = join(await mkdtemp(join(tmpdir(), 'summary-fold-')), `${SESSION}.jsonl`)

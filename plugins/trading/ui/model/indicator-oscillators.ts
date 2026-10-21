@@ -274,4 +274,4 @@ export function fisher(candles: Candle[], period: number): LineData[] {
   return out
 }
 
-export { AO_UP, AO_DOWN, ao, bullBearPower, elderRay } from './indicator-price-momentum'
+export { ao, bullBearPower, elderRay } from './indicator-price-momentum'

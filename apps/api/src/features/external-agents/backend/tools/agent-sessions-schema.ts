@@ -173,7 +173,7 @@ export function agentSessionsProblem(input: AgentSessionsInput): string | null {
   const needsKeys: AgentSessionsAction[] = ['wait', 'context']
 
   if (needsKey.includes(input.action) && !input.key) {
-    return `The "${input.action}" action needs a "key". Run { action: "roster" } first and copy a row's "key" field (it looks like "claude-code:0c61aa4b-...").`
+    return `The "${input.action}" action needs a "key". Run { action: "roster" } first and copy a row's "key" field (it looks like "claude-code:a1b2c3d4-...").`
   }
   if (needsKeys.includes(input.action) && (!input.keys || input.keys.length === 0)) {
     return `The "${input.action}" action needs a non-empty "keys" array. Run { action: "roster" } and copy the "key" of every session you mean.`

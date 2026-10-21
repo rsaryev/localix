@@ -16,7 +16,7 @@ import type { ToolMeta } from './meta'
  * run at three or more. It was false, and a foreign transcript is where that stopped being harmless —
  * folding keys on this table, so a repeated foreign tool folded nowhere.
  *
- * Measured on a real foreign-agent run of 1,169 consecutive `Bash` calls, mounting the chain:
+ * Mounting a foreign-agent run of 1,169 consecutive `Bash` calls:
  *
  *   foreign name, unstackable   1,169 groups · 12,875 DOM nodes · 96 ms
  *   registered read-only name       1 group  ·      34 nodes    ·  2 ms

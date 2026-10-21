@@ -49,7 +49,7 @@ function callArguments(input: unknown): string {
  * The SIZE is here because this list is how a key gets chosen, and the next call spends context in
  * proportion to it: reading a 3,000-event session to answer a question the 12-event one beside it
  * would have answered is the mistake this row exists to prevent. `messageCount` falls out of the
- * summary pass at no extra cost and is present on 1,964 of a real history's 1,965 sessions.
+ * summary pass at no extra cost and is present on nearly every session.
  *
  * `unconfirmed` says the state is the manifest's no-match fallback rather than a reading. It rides
  * on the row because the alternative is a second `explain` call per row just to learn whether the
@@ -113,7 +113,7 @@ export async function runAgentSessions(
         // listed: with two open, the weekly can read 7% while the 5-hour one reads 45%, and a single
         // figure would be whichever the provider happened to list first.
         // Only windows still running: an expired reading describes our own staleness, not the
-        // account, and this machine keeps a 5-hour reading from three weeks ago.
+        // account, and a stored 5-hour reading can be weeks old.
         const quota = (p.quotas ?? [])
           .filter((reading) => quotaIsCurrent(reading, Date.now()))
           .map((reading) => `\n    quota: ${formatQuota(reading, Date.now())}`)

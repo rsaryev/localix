@@ -87,8 +87,8 @@ describe('tool meta ↔ card registry (client-internal contract)', () => {
     // MUTATION: set `stackable: false` on FALLBACK_META → red.
     //
     // Foreign transcripts are what made this matter. Folding keys on this table, so a repeated
-    // foreign tool folded nowhere. Measured on a real foreign-agent run of 1,169 consecutive `Bash`
-    // calls, mounting the chain: 1,169 groups / 12,875 DOM nodes / 96 ms before, 1 group / 30 nodes
+    // foreign tool folded nowhere. Mounting a foreign-agent run of 1,169 consecutive `Bash` calls:
+    // 1,169 groups / 12,875 DOM nodes / 96 ms before, 1 group / 30 nodes
     // / 1 ms after. `readOnly` stays absent on purpose — read-only runs fold at TWO, and claiming
     // that for a tool we cannot classify would fold a run of writes on a guess.
     expect(toolMeta('Bash').stackable).toBe(true)

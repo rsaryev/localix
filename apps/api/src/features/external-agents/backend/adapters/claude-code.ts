@@ -48,19 +48,20 @@ function decodeCwdHint(dirName: string): string | undefined {
 }
 
 /**
- * Real layout under `projects/<slug>/`, confirmed by walking a real history of 410 transcripts:
+ * Real layout under `projects/<slug>/`:
  *
- *   <uuid>.jsonl                                        top-level session          (86 here)
- *   <uuid>/subagents/agent-<hex>.jsonl                   sub-agent transcript      (220 here)
- *   <uuid>/subagents/workflows/<wf>/agent-<hex>.jsonl    nested sub-agent          (104 here)
+ *   <uuid>.jsonl                                        top-level session
+ *   <uuid>/subagents/agent-<hex>.jsonl                   sub-agent transcript
+ *   <uuid>/subagents/workflows/<wf>/agent-<hex>.jsonl    nested sub-agent
  *   <uuid>/subagents/workflows/<wf>/journal.jsonl        NOT a transcript
  *   <uuid>/tool-results/…                                NOT transcripts
  *   memory/…                                             NOT transcripts
  *
- * A depth-1 readdir — the obvious implementation — silently finds only the 86 and loses 79% of the
- * history. This provider records parent/child session edges, and these child files
- * are the edges. They are indexed as real sessions carrying `parentNativeSessionId`, so the roster
- * can fold them under their parent instead of either dropping or drowning in them.
+ * A depth-1 readdir — the obvious implementation — silently finds only the top-level sessions and
+ * loses every sub-agent, which in a history that delegates is most of it. This provider records
+ * parent/child session edges, and these child files are the edges. They are indexed as real
+ * sessions carrying `parentNativeSessionId`, so the roster can fold them under their parent instead
+ * of either dropping or drowning in them.
  */
 const NON_TRANSCRIPT_DIRS = new Set(['tool-results', 'memory'])
 /**
@@ -80,9 +81,9 @@ const SUBAGENT_STEM = /^agent-[0-9a-z]+$/i
  *
  * For the two shapes above the filename is already unique, so the stem is the id and stays the id —
  * every key already minted has to keep resolving. Anything else is qualified with its directory,
- * because a bare stem is unique only by convention and this machine already had 33 files answering
- * to `claude-code:journal`. `findSource` takes the first match, so opening any of them opened
- * whichever the walk happened to reach first.
+ * because a bare stem is unique only by convention: every workflow writes a `journal.jsonl`, so a
+ * history with several workflows has many files answering to `claude-code:journal`. `findSource`
+ * takes the first match, so opening any of them opened whichever the walk happened to reach first.
  */
 function sessionIdFor(name: string, full: string): string {
   const stem = name.slice(0, -'.jsonl'.length)

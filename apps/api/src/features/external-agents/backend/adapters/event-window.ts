@@ -22,10 +22,10 @@
  *
  * ── `from` reaches what neither end does ──────────────────────────────────────────────────────
  *
- * Head and tail together still leave a hole. Measured on a real local history: 10 of 279 counted sessions
- * exceed the 2,000-event cap, and 14,189 events — 13.8% of all history here — sit beyond both a head
- * and a tail read of their own session. `from` starts the window at an ordinal instead of at zero, so
- * the middle is addressable by the same positions every surface already reports.
+ * Head and tail together still leave a hole: in a long history some sessions exceed the 2,000-event
+ * cap, and the middle of each sits beyond both a head and a tail read of its own session. `from`
+ * starts the window at an ordinal instead of at zero, so the middle is addressable by the same
+ * positions every surface already reports.
  *
  * ── `ordinal` is a position, not an index ─────────────────────────────────────────────────────
  *

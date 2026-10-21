@@ -107,8 +107,8 @@ export function scoreRows(
 /**
  * The z a match must reach in a population of `n`: about where the best of `n` unrelated items
  * lands (√(2·ln n), the expected maximum of n standard normals), less half a deviation, kept
- * between 2 and 3. Measured on a real history of 134 messages: the top unrelated message sat
- * at z 2.3–2.5 for every off-topic query, while a fixed gate of 2 let it through each time.
+ * between 2 and 3. On a chat history of a hundred-odd messages the top unrelated message sat at z
+ * 2.3–2.5 for every off-topic query, while a fixed gate of 2 let it through each time.
  */
 export function standoutGate(n: number): number {
   if (n < 2) return 2
@@ -119,8 +119,8 @@ export function standoutGate(n: number): number {
  * Hubness correction (CSLS-style): a vector near the collection's centroid — short, generic
  * text like "ok, run it again" — is close to EVERY query. Subtracting how far an item's own
  * centroid similarity sits above the average turns "similar to everything" into "similar to
- * nothing in particular". Measured on the same history: an off-topic query's top match fell
- * from z 2.28 to 1.6, while the real matches kept their lead.
+ * nothing in particular". On the same history an off-topic query's top match fell from z 2.28 to
+ * 1.6, while the real matches kept their lead.
  */
 export function correctHubness(cosines: Float32Array, hubs: Float32Array): void {
   let mean = 0

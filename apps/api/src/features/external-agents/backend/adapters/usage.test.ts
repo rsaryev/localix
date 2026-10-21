@@ -82,9 +82,9 @@ describe('provider token normalization', () => {
 
   test("a provider's placeholder is counted but not named as a model", () => {
     // Claude Code writes `"model":"<synthetic>"` on messages it fabricates locally, with every
-    // counter at zero. Measured across a real local history it reached 30 sessions — third by session count
-    // in the model distribution — while contributing nothing, so the tile said 24 models where only
-    // 23 had been used. The angle brackets are the rule, not the name: no model id contains them.
+    // counter at zero. Across a long history it can rank high by session count in the model
+    // distribution while contributing nothing, so the tile counted one model more than had been
+    // used. The angle brackets are the rule, not the name: no model id contains them.
     const usage = new SessionUsageAccumulator()
     usage.add(normalizeTokenSample({ inputTokens: 10, outputTokens: 2 }), 'model-a')
     usage.add(normalizeTokenSample({ inputTokens: 5, outputTokens: 1 }), '<synthetic>')
@@ -104,10 +104,10 @@ describe('reasoning is a SUBSET of output, and stays one', () => {
    * separately", and `Math.min` is what makes that true of the value rather than only of the comment.
    * A mutation sweep found nothing testing it: removing the cap left every test in this plugin green.
    *
-   * It is DEFENSIVE, and measured as such rather than assumed: across 30,602 raw Codex token rows on
-   * this machine there is no record where reasoning exceeds output, and none with zero output and
-   * non-zero reasoning. So the cap never fires today — which is exactly why it would be deleted by a
-   * tidy-up with no signal, leaving a later provider free to render "reasoning 500 of output 200".
+   * It is DEFENSIVE, and checked as such rather than assumed: Codex token rows seen so far never
+   * report reasoning above output, nor zero output with non-zero reasoning. So the cap never fires
+   * today — which is exactly why it would be deleted by a tidy-up with no signal, leaving a later
+   * provider free to render "reasoning 500 of output 200".
    */
   test('a record claiming more reasoning than output is capped, not reported as given', () => {
     const usage = normalizeTokenSample({

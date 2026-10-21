@@ -16,12 +16,12 @@ function event(partial: Partial<TranscriptEvent> & { ordinal: number }): Transcr
 
 describe('one assistant turn is not one unbounded message', () => {
   /**
-   * A turn ends when the reader speaks, and a coding agent works for a long time without being spoken
-   * to. Measured over 32 real sessions at 2000 events: four produced a single message with more than
-   * 500 items, the worst held 1,169, and the MEDIAN message held one. The list virtualizes messages,
-   * so such a message is one row that mounts its whole run — and the chat's folding cannot help,
-   * because it keys on our tool registry and a foreign name falls through to a fallback that is
-   * neither read-only nor stackable (1,169 identical `Bash` calls measured as 1,169 groups).
+   * A turn ends when the reader speaks, and a coding agent works for a long time without being
+   * spoken to. In long sessions a single message can hold hundreds or more than a thousand items,
+   * while the MEDIAN message holds one. The list virtualizes messages, so such a message is one row
+   * that mounts its whole run — and the chat's folding cannot help, because it keys on our tool
+   * registry and a foreign name falls through to a fallback that is neither read-only nor stackable
+   * (a thousand identical `Bash` calls render as a thousand groups).
    */
   test('a long assistant run is split into bounded messages, in order and losing nothing', () => {
     const turns = toTranscriptTurns(
@@ -63,11 +63,10 @@ describe('one assistant turn is not one unbounded message', () => {
 
 describe('a window that opens mid-pair says so', () => {
   /**
-   * A tail read keeps the last N events, and that boundary does not respect a call/result pair.
-   * Measured across a real local history, roughly half of all tail windows open on a result whose call was
-   * evicted: claude-code 21/39, codex 21/50, opencode 13/24, gemini-cli 8/16. It used to render as
-   * an ordinary card named `tool` with no IN row — "something ran and we do not know what" instead
-   * of "its call is earlier than what you asked for".
+   * A tail read keeps the last N events, and that boundary does not respect a call/result pair. For
+   * every provider, roughly half of tail windows can open on a result whose call was evicted. It
+   * used to render as an ordinary card named `tool` with no IN row — "something ran and we do not
+   * know what" instead of "its call is earlier than what you asked for".
    */
   test('a leading result whose call was evicted is named as such', () => {
     const items = toAgentItems(
@@ -236,9 +235,9 @@ describe('toAgentItems — call/result pairing', () => {
     /**
      * The case parallel tool use actually produces: two calls issued, then both results, in the
      * reverse order. Requiring the result to be the NEXT event made the id useless exactly where it
-     * was needed. Measured on a real local history when it did: Copilot folded 62% of 5,501 tool cards and
-     * left 2,054 with no call attached, while the four providers whose results happen to arrive
-     * adjacent folded 100% — so the rule read as a general design and was a bet on one event order.
+     * was needed: Copilot, which runs tools in parallel, left over a third of its tool cards with
+     * no call attached, while the providers whose results happen to arrive adjacent folded all of
+     * them — so the rule read as a general design and was a bet on one event order.
      */
     const items = toAgentItems(
       [

@@ -25,14 +25,13 @@ import { shellQuote } from '@localixai/plugin-sdk/backend'
  * That also means an `assistant.message` whose prose is empty carries nothing we lose by skipping it,
  * unlike Gemini CLI, where the calls live inside the message.
  *
- * NO TOKEN USAGE IS REPORTED, deliberately. Copilot records `outputTokens` per assistant message and
- * no input count anywhere — checked across eight real sessions: 1,805 messages with `outputTokens`,
- * zero fields matching an input count. `session.shutdown` reports `conversationTokens` /
- * `systemTokens` / `toolDefinitionsTokens`, which describe the context at exit, not what was
- * consumed. An output-only total would land in the same "Tokens processed" tile as providers that
- * report input, cache reads and writes, making Copilot look an order of magnitude cheaper than it
- * was. `usageSessions` already says "measured for N of M", so leaving it out is a figure withheld,
- * not a figure lost.
+ * NO TOKEN USAGE IS REPORTED, deliberately. Copilot records `outputTokens` per assistant message
+ * and no input count anywhere: no field in its session logs matches one. `session.shutdown` reports
+ * `conversationTokens` / `systemTokens` / `toolDefinitionsTokens`, which describe the context at
+ * exit, not what was consumed. An output-only total would land in the same "Tokens processed" tile
+ * as providers that report input, cache reads and writes, making Copilot look an order of magnitude
+ * cheaper than it was. `usageSessions` already says "measured for N of M", so leaving it out is a
+ * figure withheld, not a figure lost.
  *
  * `COPILOT_HOME` replaces the root rather than being searched beside it — same rule as `CODEX_HOME`;
  * the name is read from the installed binary's own strings. `sourceFormat` is our own token.

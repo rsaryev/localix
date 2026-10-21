@@ -77,3 +77,6 @@ skills-lock.json
 
 # Written into the cwd by a bash read-only test that runs `touch`
 probe-mutation.txt
+
+# A plugin preview run writes per-user sample data next to the plugin.
+**/.preview-data/

@@ -130,12 +130,6 @@ export async function awaitAgentService(timeoutMs = 30_000): Promise<AgentServic
   return current
 }
 
-/** Tests only: forget the binding, as a fresh process would. */
-export function resetAgentServiceForTests(): void {
-  current = null
-  ready = new Promise<void>((resolve) => (bound = resolve))
-}
-
 export function getAgentService(): AgentServiceBinding | null {
   return current
 }
