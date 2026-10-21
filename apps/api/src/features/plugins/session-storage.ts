@@ -1,4 +1,4 @@
-import { mkdir, readdir, rm } from 'node:fs/promises'
+import { mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 import { defaultDbFile, localixHome, resolveDbFile } from '../../lib/env'
@@ -117,4 +117,34 @@ export async function sweepOrphanSessionData(input: {
   const orphans = ids.filter((id) => !live.has(id))
   await discardSessionData(orphans, root)
   return orphans
+}
+
+/**
+ * The folders `pluginName` already has, one per session, without creating any: what a plugin's
+ * cross-chat cleanup walks (a deleted agent unassigned from every board).
+ */
+export async function listPluginSessionDataDirs(
+  pluginName: string,
+  root = sessionDataRoot(),
+): Promise<{ sessionId: string; dir: string }[]> {
+  if (!SAFE_PLUGIN_NAME.test(pluginName)) throw new Error('Invalid plugin name')
+  const entries = await readdir(root, { withFileTypes: true }).catch(() => [])
+  const found = await Promise.all(
+    entries.map(async (entry) => {
+      if (!entry.isDirectory()) return []
+      let sessionId: string
+      try {
+        sessionId = decodeURIComponent(entry.name)
+      } catch {
+        return []
+      }
+      const dir = join(root, entry.name, pluginName)
+      const present = await stat(dir).then(
+        (info) => info.isDirectory(),
+        () => false,
+      )
+      return present ? [{ sessionId, dir }] : []
+    }),
+  )
+  return found.flat()
 }

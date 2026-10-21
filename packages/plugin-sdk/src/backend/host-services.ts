@@ -15,7 +15,12 @@
  * `PluginContext` should not mean reading all of that first.
  */
 
-import type { PluginAgentDirectory, PluginPathWatch, PluginScreenSnapshot } from './context'
+import type {
+  PluginAgentDirectory,
+  PluginContext,
+  PluginPathWatch,
+  PluginScreenSnapshot,
+} from './context'
 import type { ChangeFeedHost } from './changes'
 import type { DecisionHost } from './decision'
 import type { SemanticIndexHost } from './semantic'
@@ -203,9 +208,10 @@ export interface PluginHostServices {
    *
    * The host binds this capability to the plugin name and verifies that `userId`
    * owns `sessionId` before returning a directory. Plugins never construct
-   * `~/.localix` paths themselves, and one session can never enumerate another.
+   * `~/.localix` paths themselves; a request for one session never reaches another's folder.
+   * Only the backend's own cleanup lists the folders it already has (`listDataDirs`).
    */
-  sessionStorage?: { resolveDataDir(userId: string, sessionId: string): Promise<string> }
+  sessionStorage?: PluginContext['sessionStorage']
   /** The enabled agents of a session's scope, read-only (see {@link PluginAgentDirectory}). */
   agents?: PluginAgentDirectory
   /** The embedding seam: the index of the plugin's own collections, and vectors on demand. */

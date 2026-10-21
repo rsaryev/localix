@@ -19,7 +19,7 @@ export function createChangeFeeds(
   const log = (event: string, detail: Record<string, unknown>) => logger.warn({ event, ...detail })
   setChangeLog(log)
   const core = createCoreChangeFeed(db, log)
-  const plugins = createPluginChangeHosts({ db, log })
+  const plugins = createPluginChangeHosts({ db, core, log })
   return {
     core,
     plugins,

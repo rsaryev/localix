@@ -2,7 +2,8 @@
  * `host.changes` for one plugin: the change feed on the plugin's own stream (`plugin:<name>`).
  * The core's registry is typed and closed; a plugin's kinds are its own, so its stream takes any
  * kind with a valid name and any JSON object as a ref — the plugin types its notices itself.
- * Every plugin feed is kept here so their retention runs with the core's.
+ * Every plugin feed is kept here so their retention runs with the core's. A plugin also follows
+ * the core's deletions read-only (`core-deletions.ts`); it can never record on the core stream.
  */
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
@@ -17,6 +18,8 @@ import {
 } from '@localixai/change-feed'
 import type { AppDatabase } from '../../db/types'
 import { changeRetryDelayMs } from './retry'
+import type { CoreChangeFeed } from './core-entities'
+import { createCoreDeletionFollower } from './core-deletions'
 
 const NAME = /^[a-z0-9][a-z0-9._-]{0,63}$/
 const ANY_REF = z.record(z.string(), z.unknown())
@@ -31,7 +34,13 @@ const openRegistry: EntityRegistry<RefSchemas, Record<string, never>> = {
 
 type Log = (event: string, detail: Record<string, unknown>) => void
 
-export function createPluginChangeHosts(deps: { db: Kysely<AppDatabase>; log?: Log }) {
+export function createPluginChangeHosts(deps: {
+  db: Kysely<AppDatabase>
+  /** The core stream a plugin follows deletions on (read-only). */
+  core: CoreChangeFeed
+  log?: Log
+}) {
+  const followCore = createCoreDeletionFollower({ db: deps.db, core: deps.core })
   const feeds = new Map<string, ChangeFeed<RefSchemas, Record<string, never>>>()
   const feedFor = (stream: string) => {
     let feed = feeds.get(stream)
@@ -70,6 +79,10 @@ export function createPluginChangeHosts(deps: { db: Kysely<AppDatabase>; log?: L
           // A plugin's handler acts on its own data; it is never rebuilt by the host.
           const started = await feedFor(stream).subscribe(consumer, handlers, { kind: 'reactor' })
           return () => started.stop()
+        },
+        async followCoreDeletions(consumer, handler) {
+          if (!NAME.test(consumer)) throw new Error(`invalid change consumer name "${consumer}"`)
+          return followCore(pluginName, consumer, handler)
         },
       }
     },
