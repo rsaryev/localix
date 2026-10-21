@@ -78,8 +78,10 @@ const IDIOMS = {
 const EXEMPTIONS: Record<string, string> = {
   'apps/api/src/features/chat/runtime/model-resolution.ts::sep-template':
     'Owns the namespaced MODEL ID check (`hasProviderPrefix`) other model code calls. Not a path.',
-  'apps/api/src/features/usage/usage-reconciliation.ts::sep-template':
-    'Removes a provider namespace from a MODEL ID before usage aggregation. Not a path.',
+  'apps/api/src/features/capabilities/cleanup.ts::sep-template':
+    'Matches an MCP rule name `mcp:<server>/<tool>` of a removed server. Not a path.',
+  'packages/agent/src/catalog/route-readiness.ts::sep-template':
+    'Tests the `<providerId>/` namespace of a MODEL ID to find its owner. Not a path.',
   'packages/agent/src/catalog/model-lookup.ts::sep-template':
     'Matches namespaced MODEL IDs against provider ids during catalog lookup. Not a path.',
   'apps/ui/src/features/chat/ui/useTranscriptJumps.ts::sep-template':
