@@ -33,7 +33,7 @@ describe('release workflow contract', () => {
     expect(
       unscheduledTests(
         files,
-        `${rootPackage.scripts['test:repo']} ${rootPackage.scripts['check:release']}`,
+        `${rootPackage.scripts['test:repo']} ${rootPackage.scripts['test:repo:slow']} ${rootPackage.scripts['check:release']}`,
       ),
     ).toEqual([])
   })

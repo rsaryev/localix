@@ -58,7 +58,11 @@ export async function runConcurrently(commands, options = {}) {
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const concurrency = process.env.TURBO_CONCURRENCY || '50%'
   const failed = await runConcurrently([
-    { label: 'packages', command: 'bunx', args: ['turbo', 'test', `--concurrency=${concurrency}`] },
+    {
+      label: 'packages',
+      command: 'bunx',
+      args: ['turbo', 'test', 'test:repo:slow', `--concurrency=${concurrency}`],
+    },
     { label: 'repository', command: 'bun', args: ['run', 'test:repo'] },
   ])
   if (failed.length) {
