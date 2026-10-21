@@ -1,11 +1,8 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ChevronUp } from 'lucide-react'
-import {
-  findCatalogModelForConnection,
-  resolveLiveCatalogModel,
-  type CatalogModel,
-} from '@localixai/agent/catalog'
+import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
+import { liveRouteModel } from './model-select/taskReasoning'
 import type { useConnections } from './useConnections'
 import type { ReasoningEffort } from '../../model/reasoning'
 import type { SessionAgentRoute, SessionModelChoicesView } from '@/shared/api/contracts'
@@ -151,8 +148,7 @@ export const ModelSearchSelect = memo(function ModelSearchSelect({
         shownConnection?.id ?? null,
         shownValue,
       ) ??
-      resolveLiveCatalogModel(models, connectionsState.connections, shownValue, shownConnection?.id)
-        ?.model,
+      liveRouteModel(models, connectionsState.connections, shownValue, shownConnection?.id)?.model,
     [connectionsState.connections, models, shownConnection?.id, shownValue],
   )
   const modelLabel = modelTriggerLabel({

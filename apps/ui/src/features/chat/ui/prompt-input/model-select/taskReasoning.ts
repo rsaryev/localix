@@ -1,5 +1,5 @@
 import type { ReasoningEffort } from '../../../model/reasoning'
-import { resolveLiveCatalogModel, type CatalogModel } from '@localixai/agent/catalog'
+import { findCatalogModel, routeReadiness, type CatalogModel } from '@localixai/agent/catalog'
 
 export type ModelRoutingSlot = {
   providerConnectionId: string
@@ -18,10 +18,28 @@ export function assignTaskModel(
 }
 
 /**
- * Resolve a stored route against today's connections. Exact connection wins;
- * a namespaced model can recover its provider after that connection is deleted
- * and use another live connection of the same provider.
+ * The connection and catalog model a stored route resolves to today, by the one route rule
+ * (`routeReadiness`): the stored connection while it owns the model, else another account of the
+ * model's provider; an id several providers offer resolves to none. Key health is not asked here —
+ * this names the model a route shows, and the composer's send gate asks it separately.
  */
+export function liveRouteModel<
+  TModel extends Pick<CatalogModel, 'id' | 'providerId'>,
+  TConnection extends { id: string; providerId: string },
+>(
+  models: readonly TModel[],
+  connections: readonly TConnection[],
+  modelId: string | null | undefined,
+  connectionId?: string | null,
+): { connection: TConnection; model: TModel } | null {
+  const route = routeReadiness({ modelId, providerConnectionId: connectionId }, connections, models)
+  if (route.status !== 'ready') return null
+  const connection = connections.find((candidate) => candidate.id === route.connectionId)
+  const model = findCatalogModel(models, route.providerId, modelId)
+  return connection && model ? { connection, model } : null
+}
+
+/** A workload's stored route resolved by {@link liveRouteModel}. */
 export function resolveLiveTaskModel<
   TModel extends Pick<CatalogModel, 'id' | 'providerId'>,
   TConnection extends { id: string; providerId: string },
@@ -31,7 +49,7 @@ export function resolveLiveTaskModel<
   slot: ModelRoutingSlot,
 ): { connection: TConnection; model: TModel } | null {
   if (!slot) return null
-  return resolveLiveCatalogModel(models, connections, slot.modelId, slot.providerConnectionId)
+  return liveRouteModel(models, connections, slot.modelId, slot.providerConnectionId)
 }
 
 /** The checkmark in one connection's list follows the active target, not the party's first row. */

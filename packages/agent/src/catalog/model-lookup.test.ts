@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { CatalogModel } from './types'
-import {
-  findCatalogModel,
-  findCatalogModelForConnection,
-  resolveLiveCatalogModel,
-} from './model-lookup'
+import { findCatalogModel, findCatalogModelForConnection } from './model-lookup'
 
 const model = (providerId: string, name: string): CatalogModel => ({
   id: 'shared-model',
@@ -68,22 +64,5 @@ describe('connection-scoped catalog lookup', () => {
     expect(findCatalogModel(models, 'missing', 'shared-model')).toBeUndefined()
     expect(findCatalogModel(models, null, 'shared-model')).toBeUndefined()
     expect(findCatalogModel(models, null, 'openai/shared-model')).toBe(openai)
-  })
-
-  test('rebinds a deleted connection by provider while ambiguous bare ids fail closed', () => {
-    const models = [model('proxy', 'Proxy model'), model('openai', 'OpenAI model')]
-    const connections = [
-      { id: 'proxy-key', providerId: 'proxy' },
-      { id: 'openai-new', providerId: 'openai' },
-    ]
-
-    expect(
-      resolveLiveCatalogModel(models, connections, 'openai/shared-model', 'openai-deleted'),
-    ).toEqual({ connection: connections[1], model: models[1] })
-    expect(resolveLiveCatalogModel(models, connections, 'shared-model', 'deleted')).toBeNull()
-    expect(resolveLiveCatalogModel(models, [connections[1]!], 'shared-model', 'deleted')).toEqual({
-      connection: connections[1],
-      model: models[1],
-    })
   })
 })

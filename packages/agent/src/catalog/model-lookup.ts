@@ -60,35 +60,3 @@ export function findCatalogModelForConnection(
   if (!providerId) return undefined
   return findCatalogModel(models, providerId, modelId)
 }
-
-/**
- * Resolve a durable route against the connections that exist now. The exact
- * connection wins; when it was deleted/re-added, a namespaced (or globally
- * unambiguous) model may rebind to another connection of the same provider.
- * Ambiguous bare ids fail closed instead of crossing providers arbitrarily.
- */
-export function resolveLiveCatalogModel<
-  TModel extends Pick<CatalogModel, 'id' | 'providerId'>,
-  TConnection extends CatalogModelConnection,
->(
-  models: readonly TModel[],
-  connections: readonly TConnection[],
-  modelId: string | null | undefined,
-  preferredConnectionId?: string | null,
-): { connection: TConnection; model: TModel } | null {
-  if (!modelId) return null
-  const exactConnection = connections.find((connection) => connection.id === preferredConnectionId)
-  const exactModel = exactConnection
-    ? findCatalogModel(models, exactConnection.providerId, modelId)
-    : undefined
-  if (exactConnection && exactModel) return { connection: exactConnection, model: exactModel }
-
-  const candidates = connections.flatMap((connection) => {
-    const model = findCatalogModel(models, connection.providerId, modelId)
-    return model ? [{ connection, model }] : []
-  })
-  const providerIds = new Set(candidates.map(({ model }) => model.providerId))
-  // Several accounts for the SAME provider are equivalent recovery targets; a
-  // bare id exposed by multiple live providers remains ambiguous and fails closed.
-  return providerIds.size === 1 ? (candidates[0] ?? null) : null
-}
