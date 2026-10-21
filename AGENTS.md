@@ -24,6 +24,24 @@ in `packages/`, extensions in `plugins/`, automation in `scripts/`, configuratio
 in `docs/`, and media in `assets/`. Keep feature code within its owner; use typed ports for
 cross-feature behavior.
 
+## Architecture
+
+Read [docs/internals/architecture/README.md](docs/internals/architecture/README.md) before changing
+how features, packages or surfaces depend on each other. Its rules have ids (A1–A8, C1–C7); cite the
+id when a change touches one, and record any exception in the audit rather than in code.
+
+- Keep the core agnostic: no provider SDK, UI framework, transport or storage engine in
+  `packages/agent` or `packages/engine-loop`; adapters live at the edge.
+- Dependencies point inward. Only `apps/api/src/bootstrap/` builds another feature's repository or
+  service; Kysely belongs in repositories; domain code throws domain errors, routes map them to
+  HTTP.
+- Owners announce, consumers react: a write records its change notice in its own transaction, and a
+  follow-up in another feature runs in a change-feed consumer unless it is a documented command.
+- Consumers are idempotent and reconcilable; derived data can be rebuilt from its owners.
+- Store identities that survive recreation; a provider connection id is a hint for a model route.
+- UI: no imports between slices of the same layer; clients re-read on a poke, and a write never
+  patches another surface's store.
+
 ## Common Commands
 
 - `bun install --frozen-lockfile`: install dependencies when needed.

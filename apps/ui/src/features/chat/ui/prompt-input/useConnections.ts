@@ -3,7 +3,12 @@ import { toast } from '@/shared/lib/notify'
 import { useChatStore } from '@/features/chat/model/store'
 import { backendClient } from '@/shared/api/client'
 import { WS_BASE_URL } from '@/shared/api/internal'
-import { selectSessionConnectionId } from './connectionScope'
+import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
+import {
+  runnableConnectionId,
+  selectSessionConnectionId,
+  selectSessionModelId,
+} from './connectionScope'
 import { isDesktop, getDesktopOAuthPort } from '@localixai/kit/environment'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
@@ -34,13 +39,22 @@ export function useConnections(sessionId: string | null) {
   // selector still checks both the working list and the full roster, matching the
   // surface resolver during cross-scope New Chat transitions.
   const activeSessionId = sessionId
-  const activeId = useChatStore((state) => selectSessionConnectionId(state, activeSessionId))
+  const storedId = useChatStore((state) => selectSessionConnectionId(state, activeSessionId))
+  const modelId = useChatStore((state) => selectSessionModelId(state, activeSessionId))
+  const { models } = useModelsCatalog()
   const replaceSession = useChatStore((state) => state._replaceSession)
   // Connection mutations only change the connections list — refetch ONLY
   // /rpc/provider-connections, never the whole workspace (sessions + projects +
   // getSession). The old `mutate('workspace')` pulled all four endpoints.
   const refreshConnections = useChatStore((state) => state.refreshConnections)
 
+  // The connection the route RUNS on, by the server's rule (`routeReadiness`): the stored id is a
+  // hint, and a route whose account was deleted and signed in again runs on the new one. Before
+  // the session has a model, or while the catalog is still loading, the stored id is all there is.
+  const activeId = useMemo(
+    () => runnableConnectionId({ storedId, modelId, connections, models }),
+    [connections, modelId, models, storedId],
+  )
   const selectedConnection = connections.find((connection) => connection.id === activeId) ?? null
   // Stored metadata can outlive an unreadable vault payload. Keep that connection
   // in the management list, but never tell the composer it is runnable.

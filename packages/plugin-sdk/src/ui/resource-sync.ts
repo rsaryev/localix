@@ -154,10 +154,20 @@ export function createResourceSync<Resource extends string = string>(
         if (!set.size) listeners.delete(resource)
       }
     },
-    connected(): void {
+    /**
+     * The transport is up. By default every resource is read again: what changed while the client
+     * was away is unknown. When the transport says it `replayed` every frame missed since the last
+     * one seen, those frames have already invalidated what changed, so only the reads the outage
+     * interrupted run again.
+     */
+    connected(options: { replayed?: boolean } = {}): void {
       connected = true
       for (const set of tasks.values()) for (const task of set) task.failures = 0
-      invalidate([...new Set([...tasks.keys(), ...listeners.keys()])])
+      if (!options.replayed) {
+        invalidate([...new Set([...tasks.keys(), ...listeners.keys()])])
+        return
+      }
+      for (const set of tasks.values()) for (const task of set) if (task.dirty) schedule(task)
     },
     disconnected(): void {
       connected = false
@@ -169,7 +179,8 @@ export function createResourceSync<Resource extends string = string>(
           task.generation++
           for (const done of task.waiters) done()
           task.waiters.clear()
-          task.dirty = true
+          // A read the outage cut off must run again; settled data stays settled until told.
+          task.dirty = task.dirty || task.running
           task.controller?.abort()
           if (task.timer) clearTimeout(task.timer)
           task.timer = null

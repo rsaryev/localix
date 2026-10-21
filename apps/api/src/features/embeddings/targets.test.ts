@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import type { ConsumerHandlers } from '../changes/contracts'
+import type { ConsumerHandlers } from '@localixai/change-feed'
 import { createScopedCatalogSource } from './list-source'
 import { semanticHandlers } from './targets'
 

@@ -81,6 +81,7 @@
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",
     "@localixai/agent": "workspace:*",
+    "@localixai/change-feed": "workspace:*",
     "@localixai/engine": "workspace:*",
     "@localixai/markdown": "workspace:*",
     "@localixai/notifications": "workspace:*",

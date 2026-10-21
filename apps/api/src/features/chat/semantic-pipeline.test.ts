@@ -140,6 +140,7 @@ describe('semantic pipeline over chat', () => {
           },
         },
       ),
+      { kind: 'projector' },
     )
     await addMessage(db, 'm-new', 's-hooks', 'docker compose fails on the container port')
     await recordCoreChanges(db, {

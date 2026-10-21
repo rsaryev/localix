@@ -140,6 +140,7 @@ Plugin enablement changes which tools, providers, hooks, and workbench panes the
 
 ## Related guides
 
+- [Architecture principles, rules and audit](https://github.com/rsaryev/localix/blob/main/docs/internals/architecture/README.md)
 - [Agent runtime boundary](https://github.com/rsaryev/localix/blob/main/docs/internals/agent-runtime.md)
 - [Environment and configuration](environment.md)
 - [Workspace](../features/workspace.md)

@@ -7,7 +7,7 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
 import { createCoreChangeFeed } from '../features/changes/core-entities'
 import { createPluginChangeHosts } from '../features/changes/plugin-host'
-import { setChangeLog } from '../features/changes/record'
+import { setChangeLog } from '@localixai/change-feed'
 import type { createLogger } from '../lib/logger'
 
 const PRUNE_EVERY_MS = 60 * 60_000

@@ -10,6 +10,7 @@ import {
 import { useConnections } from '@/features/chat/ui/prompt-input/useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { providerIcon } from '@/shared/ui/providerPresentation'
+import { applyModelPickToOpenChat } from '../../model/applyModelPick'
 import { TipPickTrigger } from '../TipPick'
 import './model-scene.css'
 
@@ -129,9 +130,13 @@ export function ModelAction() {
 
   const pick = async (providerConnectionId: string, modelId: string) => {
     if (!project) return
-    const updated = await saveDefaultModel(project.id, { providerConnectionId, modelId })
-    const store = useChatStore.getState()
-    store._hydrateProjects(store.projects.map((p) => (p.id === updated.id ? updated : p)))
+    // The project's `projects` topic brings the saved default back to every surface.
+    await saveDefaultModel(project.id, { providerConnectionId, modelId })
+    await applyModelPickToOpenChat(useChatStore.getState(), {
+      providerConnectionId,
+      modelId,
+      reasoningEffort: effort,
+    })
   }
 
   return (

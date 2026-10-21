@@ -37,6 +37,8 @@ export function subscribeSemanticToChanges(deps: {
   return deps.feed.subscribe(
     'semantic-index',
     semanticHandlers<CoreRefs, CoreCascades>(coreSemanticTargets(deps.db), deps.semantic),
+    // The index is derived data: it can be dropped and rebuilt from the owners.
+    { kind: 'projector' },
   )
 }
 

@@ -15,7 +15,7 @@ import type {
   EntityKind,
   EntityRef,
   RefSchemas,
-} from '../changes/contracts'
+} from '@localixai/change-feed'
 import type { SemanticService } from './service'
 
 export interface SemanticTarget<Ref> {

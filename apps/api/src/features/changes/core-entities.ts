@@ -9,10 +9,14 @@
  */
 import type { Kysely, Transaction } from 'kysely'
 import { z } from 'zod'
+import {
+  createChangeFeed,
+  recordChanges,
+  type Change,
+  type EntityRegistry,
+} from '@localixai/change-feed'
 import type { AppDatabase } from '../../db/types'
-import type { Change, EntityRegistry } from './contracts'
-import { createChangeFeed } from './feed'
-import { recordChanges } from './record'
+import { changeRetryDelayMs } from './retry'
 
 /** Where a capability lives: `global`, or the project it belongs to. */
 const scope = z.string().min(1)
@@ -43,12 +47,12 @@ export type CoreChange = Change<CoreRefs>
 /** The core registry's stream. */
 export const CORE_STREAM = 'core'
 
-/** Record core changes in the producer's transaction. Never throws (`record.ts`). */
+/** Record core changes in the producer's transaction. Never throws (`@localixai/change-feed`). */
 export function recordCoreChanges(
   writer: Kysely<AppDatabase> | Transaction<AppDatabase>,
   changes: CoreChange | readonly CoreChange[],
 ): Promise<void> {
-  return recordChanges<CoreRefs>(writer, CORE_STREAM, changes)
+  return recordChanges<CoreRefs, AppDatabase>(writer, CORE_STREAM, changes)
 }
 
 /** The core stream's consumers (one per process, made by bootstrap). */
@@ -56,7 +60,13 @@ export function createCoreChangeFeed(
   db: Kysely<AppDatabase>,
   log?: (event: string, detail: Record<string, unknown>) => void,
 ) {
-  return createChangeFeed({ db, stream: CORE_STREAM, registry: CORE_ENTITIES, log })
+  return createChangeFeed({
+    db,
+    stream: CORE_STREAM,
+    registry: CORE_ENTITIES,
+    retryDelayMs: changeRetryDelayMs,
+    log,
+  })
 }
 
 export type CoreChangeFeed = ReturnType<typeof createCoreChangeFeed>

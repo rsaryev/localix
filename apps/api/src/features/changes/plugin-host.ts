@@ -7,10 +7,16 @@
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import type { ChangeFeedHost, PluginChange } from '@localixai/plugin-sdk/backend'
+import {
+  createChangeFeed,
+  recordChanges,
+  type ChangeFeed,
+  type ConsumerHandlers,
+  type EntityRegistry,
+  type RefSchemas,
+} from '@localixai/change-feed'
 import type { AppDatabase } from '../../db/types'
-import type { ConsumerHandlers, EntityRegistry, RefSchemas } from './contracts'
-import { createChangeFeed, type ChangeFeed } from './feed'
-import { recordChanges } from './record'
+import { changeRetryDelayMs } from './retry'
 
 const NAME = /^[a-z0-9][a-z0-9._-]{0,63}$/
 const ANY_REF = z.record(z.string(), z.unknown())
@@ -30,7 +36,13 @@ export function createPluginChangeHosts(deps: { db: Kysely<AppDatabase>; log?: L
   const feedFor = (stream: string) => {
     let feed = feeds.get(stream)
     if (!feed) {
-      feed = createChangeFeed({ db: deps.db, stream, registry: openRegistry, log: deps.log })
+      feed = createChangeFeed({
+        db: deps.db,
+        stream,
+        registry: openRegistry,
+        retryDelayMs: changeRetryDelayMs,
+        log: deps.log,
+      })
       feeds.set(stream, feed)
     }
     return feed
@@ -55,7 +67,8 @@ export function createPluginChangeHosts(deps: { db: Kysely<AppDatabase>; log?: L
           const handlers = new Proxy({} as ConsumerHandlers<RefSchemas, Record<string, never>>, {
             get: () => (delivery: PluginChange) => handler(delivery),
           })
-          const started = await feedFor(stream).subscribe(consumer, handlers)
+          // A plugin's handler acts on its own data; it is never rebuilt by the host.
+          const started = await feedFor(stream).subscribe(consumer, handlers, { kind: 'reactor' })
           return () => started.stop()
         },
       }

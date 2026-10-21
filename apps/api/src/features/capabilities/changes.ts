@@ -7,7 +7,7 @@
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db/types'
 import { recordCoreChanges, type CoreRefs } from '../changes/core-entities'
-import type { EntityKind } from '../changes/contracts'
+import type { EntityKind } from '@localixai/change-feed'
 import { createDebouncer } from '../../lib/debounce'
 import { onCapabilityRevision } from './revision'
 

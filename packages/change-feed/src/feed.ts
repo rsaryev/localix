@@ -7,24 +7,47 @@
  * and the stream's signal wakes the feed. `record` and `publish` here are the same call for a
  * holder of the feed (tests, a plugin host).
  */
-import type { Kysely, Transaction } from 'kysely'
-import type { AppDatabase } from '../../db/types'
+import type { Kysely } from 'kysely'
 import { startConsumer, type ChangeConsumer } from './consumer'
-import type { Cascades, Change, ConsumerHandlers, EntityRegistry, RefSchemas } from './contracts'
+import { headOf } from './cursor'
+import type {
+  Cascades,
+  Change,
+  ConsumerHandlers,
+  ConsumerHealth,
+  ConsumerOptions,
+  EntityRegistry,
+  RefSchemas,
+} from './contracts'
 import { onRecorded, recordChanges } from './record'
+import { feedTables, type ChangeFeedTables, type ChangeFeedWriter } from './tables'
 
 /** Notices every consumer has read are kept this long before they go. */
 const RETENTION_MS = 24 * 60 * 60_000
 /** A cursor not moved for this long belongs to a consumer that no longer exists. */
 const ABANDONED_CURSOR_MS = 30 * 24 * 60 * 60_000
 
-export function createChangeFeed<R extends RefSchemas, C extends Cascades<R>>(deps: {
-  db: Kysely<AppDatabase>
+interface FeedDeps<R extends RefSchemas, C extends Cascades<R>> {
   /** `core`, or `plugin:<name>` for a plugin's own registry. */
   stream: string
   registry: EntityRegistry<R, C>
+  /** The wait before retry number `attempt` (0-based) of a failed delivery. */
+  retryDelayMs: (attempt: number) => number
   log?: (event: string, detail: Record<string, unknown>) => void
-}) {
+}
+
+/** One stream's feed over any database that has the feed's tables. */
+export function createChangeFeed<
+  R extends RefSchemas,
+  C extends Cascades<R>,
+  DB extends ChangeFeedTables,
+>(deps: FeedDeps<R, C> & { db: Kysely<DB> }) {
+  return feedOver<R, C>({ ...deps, db: feedTables(deps.db) })
+}
+
+function feedOver<R extends RefSchemas, C extends Cascades<R>>(
+  deps: FeedDeps<R, C> & { db: Kysely<ChangeFeedTables> },
+) {
   const { db, stream, registry } = deps
   const consumers = new Map<string, ChangeConsumer>()
   const log = (event: string, detail: Record<string, unknown>) => {
@@ -42,24 +65,24 @@ export function createChangeFeed<R extends RefSchemas, C extends Cascades<R>>(de
     stream,
 
     /** Record changes in the caller's transaction. Never throws; the caller's write stands. */
-    record: (
-      trx: Kysely<AppDatabase> | Transaction<AppDatabase>,
+    record: <DB extends ChangeFeedTables>(
+      trx: ChangeFeedWriter<DB>,
       changes: Change<R> | readonly Change<R>[],
-    ) => recordChanges<R>(trx, stream, changes),
+    ) => recordChanges<R, DB>(trx, stream, changes),
 
     /** Announce changes with no transaction of the owner's to join (files). Fire-and-forget. */
     publish(changes: Change<R> | readonly Change<R>[]): void {
-      void recordChanges<R>(db, stream, changes)
+      void recordChanges<R, ChangeFeedTables>(db, stream, changes)
     },
 
     /**
      * Start reading as `name`; resolves once its cursor is placed. A new consumer starts past
-     * what is already recorded (its own reconcile covers the past) unless `from: 'start'`.
+     * what is already recorded, and its reconcile covers the past, unless `from: 'start'`.
      */
     async subscribe(
       name: string,
       handlers: ConsumerHandlers<R, C>,
-      options: { from?: 'now' | 'start' } = {},
+      options: ConsumerOptions,
     ): Promise<ChangeConsumer> {
       if (consumers.has(name)) throw new Error(`change consumer "${name}" is already subscribed`)
       const consumer = startConsumer({
@@ -68,7 +91,8 @@ export function createChangeFeed<R extends RefSchemas, C extends Cascades<R>>(de
         name,
         registry,
         handlers,
-        from: options.from ?? 'now',
+        options,
+        retryDelayMs: deps.retryDelayMs,
         log,
       })
       consumers.set(name, consumer)
@@ -76,14 +100,45 @@ export function createChangeFeed<R extends RefSchemas, C extends Cascades<R>>(de
       return consumer
     },
 
-    /** Drop notices every consumer here has read, and cursors no consumer has moved in a month. */
+    /** Every consumer here, with how far it is behind the newest notice. */
+    async health(): Promise<Array<ConsumerHealth & { lag: number | null }>> {
+      const newest = await headOf(db, stream)
+      return Promise.all(
+        [...consumers.values()].map(async (consumer) => {
+          const state = await consumer.health()
+          return {
+            ...state,
+            lag: state.position === null ? null : Math.max(0, newest - state.position),
+          }
+        }),
+      )
+    },
+
+    /**
+     * Drop notices every consumer has read, and the cursor and dead letters of a consumer that is
+     * not running here and has not moved in a month.
+     */
     async prune(now = Date.now()): Promise<number> {
-      const abandoned = new Date(now - ABANDONED_CURSOR_MS).toISOString()
-      await db
-        .deleteFrom('change_cursors')
-        .where('stream', '=', stream)
-        .where('updated_at', '<', abandoned)
-        .execute()
+      const abandonedSince = new Date(now - ABANDONED_CURSOR_MS).toISOString()
+      const abandoned = (
+        await db
+          .selectFrom('change_cursors')
+          .select('consumer')
+          .where('stream', '=', stream)
+          .where('updated_at', '<', abandonedSince)
+          .execute()
+      )
+        .map((row) => row.consumer)
+        .filter((name) => !consumers.has(name))
+      if (abandoned.length > 0) {
+        for (const table of ['change_cursors', 'change_dead_letters'] as const) {
+          await db
+            .deleteFrom(table)
+            .where('stream', '=', stream)
+            .where('consumer', 'in', abandoned)
+            .execute()
+        }
+      }
       const cursors = await db
         .selectFrom('change_cursors')
         .select('seq')
@@ -115,5 +170,5 @@ export function createChangeFeed<R extends RefSchemas, C extends Cascades<R>>(de
 }
 
 export type ChangeFeed<R extends RefSchemas, C extends Cascades<R>> = ReturnType<
-  typeof createChangeFeed<R, C>
+  typeof feedOver<R, C>
 >

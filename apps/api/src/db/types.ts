@@ -1,4 +1,8 @@
-import type { ChangeCursorsTable, ChangeEventsTable } from './change-types'
+import type {
+  ChangeCursorsTable,
+  ChangeDeadLettersTable,
+  ChangeEventsTable,
+} from '@localixai/change-feed'
 import type { ColumnType, Generated } from 'kysely'
 
 import type { ReasoningEffort } from './enums'
@@ -579,6 +583,7 @@ export interface AppDatabase {
   semantic_collections: SemanticCollectionsTable
   change_events: ChangeEventsTable
   change_cursors: ChangeCursorsTable
+  change_dead_letters: ChangeDeadLettersTable
   semantic_items: SemanticItemsTable
   semantic_outbox: SemanticOutboxTable
   user_profiles: UserProfilesTable

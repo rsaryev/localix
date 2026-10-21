@@ -8,17 +8,15 @@
  * consumers' reconcile. After the write, the stream's in-process signal wakes its feed; the
  * consumers' read waits behind the producer's transaction, so they see the notice once committed.
  */
-import type { Kysely, Transaction } from 'kysely'
-import type { AppDatabase } from '../../db/types'
 import type { Change, RefSchemas } from './contracts'
+import { feedTables, type ChangeFeedTables, type ChangeFeedWriter } from './tables'
 
-type Writer = Kysely<AppDatabase> | Transaction<AppDatabase>
 type Log = (event: string, detail: Record<string, unknown>) => void
 
 const signals = new Map<string, Set<() => void>>()
 let log: Log | undefined
 
-/** Where record failures are reported (bootstrap sets the server log). */
+/** Where record failures are reported (the host sets its server log). */
 export function setChangeLog(sink: Log | undefined): void {
   log = sink
 }
@@ -44,15 +42,15 @@ function signal(stream: string) {
 }
 
 /** Record `changes` to `stream` with `writer` (the producer's transaction). Never throws. */
-export async function recordChanges<R extends RefSchemas>(
-  writer: Writer,
+export async function recordChanges<R extends RefSchemas, DB extends ChangeFeedTables>(
+  writer: ChangeFeedWriter<DB>,
   stream: string,
   changes: Change<R> | readonly Change<R>[],
 ): Promise<void> {
   const list = (Array.isArray(changes) ? changes : [changes]) as readonly Change<R>[]
   if (list.length === 0) return
   try {
-    await writer
+    await feedTables(writer)
       .insertInto('change_events')
       .values(
         list.map((change) => ({

@@ -4,7 +4,7 @@
  * reconciled when the kind changes.
  */
 import type { CoreRefs } from '../changes/core-entities'
-import type { EntityRef } from '../changes/contracts'
+import type { EntityRef } from '@localixai/change-feed'
 import { catalogKey, createScopedCatalogSource } from '../embeddings/list-source'
 import type { SemanticTarget } from '../embeddings/targets'
 import type { McpService } from './service'

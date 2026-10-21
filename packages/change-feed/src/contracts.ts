@@ -67,3 +67,36 @@ export interface EntityRegistry<R extends RefSchemas, C extends Cascades<R>> {
   refs: R
   cascades: C
 }
+
+/**
+ * What a consumer is for. A projector maintains derived data (an index, a ledger, client topics)
+ * that can be dropped and rebuilt from the owners; a reactor performs a follow-up action (a repair,
+ * a cleanup, a notification) and is never rebuilt.
+ */
+export type ConsumerKind = 'projector' | 'reactor'
+
+export interface ConsumerOptions {
+  kind: ConsumerKind
+  /** Where a consumer with no cursor yet starts: past everything (`now`, the default) or at 0. */
+  from?: 'now' | 'start'
+  /**
+   * Re-derive from the owners what the notices would have said. Runs once when the consumer is
+   * new, after a notice is given up on, and in a rebuild. It must be idempotent.
+   */
+  reconcile?: () => Promise<void> | void
+  /** A projector's derived data, dropped at the start of a rebuild. */
+  reset?: () => Promise<void> | void
+}
+
+/** One consumer's state, for diagnostics. */
+export interface ConsumerHealth {
+  name: string
+  kind: ConsumerKind
+  /** The last seq handled, or null before the cursor is placed. */
+  position: number | null
+  /** Failed attempts on the notice at the cursor; 0 when healthy. */
+  attempts: number
+  lastError: { message: string; seq: number | null; at: string } | null
+  /** Notices given up on and not yet replayed. */
+  deadLetters: number
+}
