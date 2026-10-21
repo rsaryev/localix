@@ -74,10 +74,12 @@ function harness(opts: { busy?: boolean } = {}) {
     })
     settleReport(childSessionId)
   }
+  // The in-memory repo answers in microtasks and the drain loop yields with `setImmediate`, so
+  // event-loop turns (not wall-clock time) are what a drain needs to finish.
+  const turn = () => new Promise((resolve) => setImmediate(resolve))
   const settle = async (count: number) => {
-    for (let i = 0; i < 200 && runs.length < count; i++)
-      await new Promise((resolve) => setTimeout(resolve, 5))
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    for (let i = 0; i < 200 && runs.length < count; i++) await turn()
+    for (let i = 0; i < 20; i++) await turn()
   }
   const delivered = () =>
     messages.filter((message) => message.payload.role === 'user').map((m) => m.payload.content)

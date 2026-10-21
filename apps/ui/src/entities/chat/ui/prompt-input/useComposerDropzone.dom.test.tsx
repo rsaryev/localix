@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { DragEvent } from 'react'
 import { STALE_DRAG_MS, useComposerDropzone, type ComposerDropzone } from './useComposerDropzone'
@@ -9,6 +9,9 @@ beforeAll(() => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => teardown())
+afterEach(() => {
+  jest.useRealTimers()
+})
 
 // An OS file drag as the composer sees it on dragenter.
 const fileDragEnter = {
@@ -52,19 +55,20 @@ test('pointer movement clears a drag that ended outside the window without any e
 
 test('a drag silent for longer than the stale window clears, while dragover keeps it alive', async () => {
   const { React, state, enter, unmount } = await mountDropzone()
+  jest.useFakeTimers()
   try {
     await enter()
     await React.act(async () => {
-      await Bun.sleep(STALE_DRAG_MS - 300)
+      jest.advanceTimersByTime(STALE_DRAG_MS - 300)
       window.dispatchEvent(new window.Event('dragover'))
-      await Bun.sleep(400)
+      jest.advanceTimersByTime(400)
     })
     expect(state.current!.dragKind).not.toBeNull()
     await React.act(async () => {
-      await Bun.sleep(STALE_DRAG_MS + 100)
+      jest.advanceTimersByTime(STALE_DRAG_MS + 100)
     })
     expect(state.current!.dragKind).toBeNull()
   } finally {
     await unmount()
   }
-}, 10_000)
+})

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { RAIL_LAYOUT_STORAGE_KEY } from '../model/railLayout'
 import { RAIL_RECENTS_STORAGE_KEY } from '../model/railRecents'
@@ -7,6 +7,9 @@ let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+})
+afterEach(() => {
+  jest.useRealTimers()
 })
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -26,9 +29,10 @@ test('clicked rail menus switch on hover without overlapping or losing their per
   const button = (label: string) =>
     host.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!
   const menus = () => [...document.querySelectorAll<HTMLElement>('[role="menu"]')]
+  // Past the rail's hover open/close delays, on the faked clock.
   const pause = () =>
     act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 250))
+      jest.advanceTimersByTime(250)
     })
   const hover = (target: HTMLElement, entering: boolean) =>
     act(async () => {
@@ -45,6 +49,7 @@ test('clicked rail menus switch on hover without overlapping or losing their per
         }),
       ),
     )
+  jest.useFakeTimers()
   try {
     await act(async () =>
       root.render(

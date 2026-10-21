@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, expect, jest, test } from 'bun:test'
 import { createRequire } from 'node:module'
 import { registerDom } from '@localixai/kit/testing/dom'
 
@@ -8,6 +8,9 @@ beforeAll(() => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => teardown())
+afterEach(() => {
+  jest.useRealTimers()
+})
 
 test('drawer and confirmation share one modal and focus-scope registry', () => {
   const require = createRequire(import.meta.url)
@@ -72,10 +75,12 @@ test('declining an external link inside a drawer releases all modal input locks'
     return found
   }
   const click = async (label: string) => act(async () => button(label).click())
+  // Past vaul's 500 ms open/close timers, on the faked clock.
   const wait = async () =>
     act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 600))
+      jest.advanceTimersByTime(600)
     })
+  jest.useFakeTimers()
   try {
     await act(async () => root.render(<Host />))
     for (let attempt = 0; attempt < 2; attempt++) {

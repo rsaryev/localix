@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from 'bun:test'
 import { act, type ReactNode } from 'react'
 import { useContextRefs } from '@/entities/chat/model/useContextRefs'
 import { useVoiceRecorder, type VoiceRecorder } from '@/entities/chat/model/useVoiceRecorder'
@@ -17,7 +17,14 @@ afterAll(async () => {
   await teardown()
 })
 
-const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms))
+/** Advance the faked clock in small steps, draining the promise chains each fired timer starts,
+ *  so a timer re-armed after a fetch settles still comes due inside the same window. */
+async function tick(ms: number) {
+  for (let elapsed = 0; elapsed < ms; elapsed += 50) {
+    jest.advanceTimersByTime(Math.min(50, ms - elapsed))
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+  }
+}
 
 /** Module-level, like the real caller's memoized list: a fresh `[]` per render would reset the
  *  debounced preflight timer on every render and the fetch would never fire. */
@@ -57,6 +64,13 @@ function ContextRefsHarness() {
 }
 
 describe('warm-hidden composer effects', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
   test('defers reference preflight and resource browsing until focused', async () => {
     const originalExpand = backendClient.expandContextRefs.bind(backendClient)
     const originalBrowse = backendClient.browseResources.bind(backendClient)

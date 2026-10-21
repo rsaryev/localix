@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, jest, mock, test } from 'bun:test'
 import { installTestLocalStorage, removeTestLocalStorage } from '@localixai/kit/testing/dom'
 
 import type { useSettingsStore as UseSettingsStore } from './settingsStore'
@@ -51,7 +51,11 @@ await mock.module('@/shared/api/client', () => ({
 
 const LS_KEY = 'localix_user_settings_v2'
 const DEBOUNCE_MS = 800
-const tick = (ms: number) => new Promise((r) => setTimeout(r, ms))
+/** Advance the faked clock, then drain the promise chains the fired timers started. */
+async function tick(ms: number) {
+  jest.advanceTimersByTime(ms)
+  for (let i = 0; i < 20; i++) await Promise.resolve()
+}
 const isAgentSettingsMutation = (patch: Record<string, unknown>) =>
   'agentSettings' in patch || 'agentSettingsPatch' in patch
 const isUiSettingsMutation = (patch: Record<string, unknown>) =>
@@ -85,8 +89,10 @@ beforeEach(() => {
   getUserProfile.mockClear()
   updateUserProfile.mockClear()
   installTestLocalStorage(new FakeStorage())
+  jest.useFakeTimers()
 })
 afterEach(() => {
+  jest.useRealTimers()
   removeTestLocalStorage()
 })
 
@@ -188,7 +194,7 @@ describe('a stale local blob never overwrites newer server agentSettings', () =>
     // barrier decides its fate once the server actually answers.
     const store = await freshStore({ agentSettings: { gitBlame: { enabled: true } } })
     getUserProfile.mockImplementation(async () => {
-      await tick(DEBOUNCE_MS + 300) // slower than the debounce
+      await new Promise((r) => setTimeout(r, DEBOUNCE_MS + 300)) // slower than the debounce
       return { agentSettings: { contextExclusions: ['**/.env'] } }
     })
 
@@ -203,6 +209,7 @@ describe('a stale local blob never overwrites newer server agentSettings', () =>
       .filter((p) => p && isAgentSettingsMutation(p))
     expect(sentWhileUnsynced).toStrictEqual([]) // held, not sent
 
+    await tick(300) // the slow GET answers
     await load
     await tick(50)
 

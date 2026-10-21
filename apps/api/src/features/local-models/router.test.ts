@@ -17,6 +17,10 @@ describe('model router', () => {
     const root = await mkdtemp(path.join(tmpdir(), 'localix-router-'))
     dirs.push(root)
     let release!: () => void
+    // Resolves the moment the router asks for a server: the stop below must land mid-start, and
+    // waiting on the call itself (not on a guessed delay) is what makes that true on any machine.
+    let startCalled!: () => void
+    const starting = new Promise<void>((resolve) => (startCalled = resolve))
     let stopped = 0
     const server: LlamaServer = {
       pid: 1,
@@ -35,10 +39,11 @@ describe('model router', () => {
       start: () =>
         new Promise((resolve) => {
           release = () => resolve(server)
+          startCalled()
         }),
     })
     const ensured = router.ensure()
-    await Bun.sleep(5)
+    await starting
     const stopping = router.stop()
     release()
     await ensured

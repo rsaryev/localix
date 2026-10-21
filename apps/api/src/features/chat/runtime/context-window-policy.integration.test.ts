@@ -1,7 +1,11 @@
 // The emulated session is deterministic and its window policy ordered (see the harness).
 import { describe, expect, test } from 'bun:test'
 
-import { runSession, sessionDatabasePerFile, type TurnLog } from './context-window-session.harness'
+import {
+  runSession,
+  sessionDatabasePerFile,
+  type TurnLog,
+} from './context-window-session.test-harness'
 
 sessionDatabasePerFile()
 

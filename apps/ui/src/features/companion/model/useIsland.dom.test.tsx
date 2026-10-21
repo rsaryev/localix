@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { ISLAND_TIMING, useIsland } from './useIsland'
 
@@ -8,6 +8,9 @@ beforeAll(() => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => teardown())
+afterEach(() => {
+  jest.useRealTimers()
+})
 
 test('a portaled island menu keeps the island open; a real outside click folds it', async () => {
   const React = await import('react')
@@ -50,7 +53,10 @@ test('folding cancels delayed hover and requires leaving before hover can reopen
   }
   const root = createRoot(document.createElement('div'))
   const enter = () => island.onPointerEnter({ pointerType: 'mouse' } as never)
-  const wait = () => new Promise((resolve) => setTimeout(resolve, ISLAND_TIMING.hoverEnterMs + 40))
+  const wait = async () => {
+    jest.advanceTimersByTime(ISLAND_TIMING.hoverEnterMs + 40)
+  }
+  jest.useFakeTimers()
   try {
     await React.act(async () => root.render(<Host />))
     await React.act(async () => {
@@ -87,6 +93,7 @@ test('a waiting question opens fully once, while manual folding remains respecte
     return null
   }
   const root = createRoot(document.createElement('div'))
+  jest.useFakeTimers()
   try {
     await React.act(async () => root.render(<Host waiting={false} />))
     await React.act(async () => root.render(<Host waiting />))
@@ -95,7 +102,7 @@ test('a waiting question opens fully once, while manual folding remains respecte
     expect(island.focusComposer).toBe(false)
     await React.act(async () => {
       island.onPointerLeave()
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      jest.advanceTimersByTime(500)
     })
     expect(island.expanded).toBe(true)
     await React.act(async () => island.collapse())
@@ -172,8 +179,10 @@ test('an untouched focused preview folds after exit, but interaction cancels tha
     return null
   }
   const root = createRoot(document.createElement('div'))
-  const leaveDelay = () =>
-    new Promise((resolve) => setTimeout(resolve, ISLAND_TIMING.hoverLeaveMs + 40))
+  const leaveDelay = async () => {
+    jest.advanceTimersByTime(ISLAND_TIMING.hoverLeaveMs + 40)
+  }
+  jest.useFakeTimers()
   try {
     await React.act(async () => root.render(<Host />))
     await React.act(async () => island.dispatch({ type: 'hover' }))

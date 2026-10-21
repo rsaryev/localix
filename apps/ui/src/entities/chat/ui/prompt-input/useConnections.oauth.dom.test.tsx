@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ProviderConnection } from '@/shared/api/contracts'
 
@@ -9,6 +9,9 @@ beforeAll(() => {
 })
 afterAll(async () => {
   await teardown()
+})
+afterEach(() => {
+  jest.useRealTimers()
 })
 
 test('retrying an abandoned browser sign-in returns once to the exact connection', async () => {
@@ -30,6 +33,9 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
   document.body.append(host)
   const root = createRoot(host)
   const events: unknown[] = []
+  // The flow ends by bringing the app back; that call is the signal the sign-in finished.
+  let focused!: () => void
+  const appFocused = new Promise<void>((resolve) => (focused = resolve))
   const connection: ProviderConnection = {
     id: 'openai-work',
     providerId: 'openai',
@@ -51,6 +57,7 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
     desktop: {
       invoke: <T,>(command: string) => {
         events.push(command)
+        if (command === 'focus_app') focused()
         return Promise.resolve(undefined as T)
       },
     },
@@ -102,9 +109,12 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
         events.push(`abandoned:${id}`),
       )
     })
+    jest.useFakeTimers()
     await act(async () => {
       await state.addOAuthConnection('openai', 'OpenAI', 'Work', (id) => events.push(id))
-      await new Promise((resolve) => setTimeout(resolve, 3200))
+      // One 3 s poll interval on the faked clock, then the flow's own completion signal.
+      jest.advanceTimersByTime(3200)
+      await appFocused
     })
     expect(document.hidden).toBe(true)
     expect(events).toEqual([
@@ -135,4 +145,4 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
       else sessionStorage.setItem(key, value)
     }
   }
-}, 15_000)
+})

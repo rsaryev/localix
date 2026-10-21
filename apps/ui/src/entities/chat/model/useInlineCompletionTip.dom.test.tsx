@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
@@ -10,7 +10,17 @@ afterAll(async () => {
   await teardown()
 })
 
-const waitForTip = () => new Promise((resolve) => setTimeout(resolve, 2100))
+beforeEach(() => {
+  jest.useFakeTimers()
+})
+afterEach(() => {
+  jest.useRealTimers()
+})
+
+// Past the stream tips' 2 s show delay, on the faked clock.
+const waitForTip = async () => {
+  jest.advanceTimersByTime(2100)
+}
 
 describe('inline completion in the rotating tip strip', () => {
   test('the action enables the live routing settings, preserves overrides, and removes the tip', async () => {
