@@ -66,4 +66,5 @@ scheduling, terminal lifecycle and the session event stream.
 
 ## Checks
 
-- [ ] A deterministic check, with a shrinking baseline, for each rule A1–A8 and C1–C7.
+- [x] A deterministic check, with a shrinking baseline, for each rule A1–A8 and C1–C7 (C2 and C3 are
+      held by the registry types; C5 stays with review).
