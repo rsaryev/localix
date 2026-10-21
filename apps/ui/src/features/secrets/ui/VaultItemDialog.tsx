@@ -24,7 +24,7 @@ import { Select } from '@localixai/kit/select'
 import type { SelectOption } from '@localixai/kit/select'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
-import { SECRET_KEY_MAX_LENGTH } from '@/features/settings/model/secretDraft'
+import { SECRET_KEY_MAX_LENGTH } from '@/features/secrets/model/secretDraft'
 import { VAULT_PROBLEM_SCOPE } from '../model/vaultProblem'
 import { VAULT_TYPE_PRESENTATION } from '../model/vaultTypePresentation'
 import {

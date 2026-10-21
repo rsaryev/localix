@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { openFileInGrid } from '@/features/inspector/model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { usePeekDefinition, type PeekTarget } from './usePeekDefinition'
 
 /** Go-to-definition / cross-reference navigation plus the inline Peek Definition panel. */

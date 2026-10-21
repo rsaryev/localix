@@ -3,7 +3,7 @@ import { KeyRound } from 'lucide-react'
 
 import type { PluginUiHost, UiAnchorNode } from '@localixai/plugin-sdk/ui'
 import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { vaultKeyFromResourceUri } from './model/vaultResource'
 

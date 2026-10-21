@@ -1,6 +1,6 @@
 import { Puzzle, Settings, SlidersHorizontal, Wrench } from 'lucide-react'
 import type { PluginUiHost, UiAnchorNode } from '@localixai/plugin-sdk/ui'
-import { SETTINGS_INDEX } from './model/settingsIndex'
+import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import {
   settingsTargetUri,
   parseSettingsAnchorUri,

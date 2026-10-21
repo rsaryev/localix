@@ -10,7 +10,7 @@ import {
   InputGroupInput,
 } from '@localixai/kit/input-group'
 import { SectionLabel } from '@localixai/kit/section-label'
-import { openFileInGrid } from '../../model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import type { SearchDirRow, SearchFileRow, SearchMatchRow, SearchRow } from './searchTreeRows'
 
 /** A small square icon-toggle (match case / whole word / regex / details).

@@ -1,7 +1,7 @@
 // The pure "what does this group show right now" selector — React-free so the
 // per-session visibility + warm keep-alive logic is unit-testable in isolation.
 // GroupView is a thin renderer over this.
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import { isPathBacked } from './capabilities'
 import {
   type GridNode,

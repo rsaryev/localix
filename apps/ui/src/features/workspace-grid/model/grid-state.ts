@@ -1,4 +1,4 @@
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { EditorState } from './editor-state'
 import { leaves, mapLeaves, type GridNode, type LeafNode } from './tree'
 import { pushMru } from '@/shared/lib/mru'

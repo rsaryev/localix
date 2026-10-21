@@ -11,7 +11,7 @@ import {
   activeWorkItemContribution,
   capsOf,
 } from './capabilities'
-import type { WorkItem, WorkItemKind } from './workItem'
+import type { WorkItem, WorkItemKind } from '@/shared/lib/workItem'
 import { pluginUiHostFor } from '@/shared/contrib/host'
 import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
 

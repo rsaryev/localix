@@ -7,7 +7,7 @@
  * `searchResultActivate` routes. Pure + unit-tested.
  */
 import type { SearchGroup, SearchHit } from '@localixai/api/client'
-import { SETTINGS_INDEX } from '@/features/settings/model/settingsIndex'
+import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import { settingsTargetUri } from '@/shared/lib/settingsAnchors'
 import { ALL_SCOPE, type ScopeDef } from './scopes'
 import { uiCommandUri, type UiCommandEntry } from '@/shared/contrib/uiCommands'

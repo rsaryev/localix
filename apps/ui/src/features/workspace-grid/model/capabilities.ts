@@ -1,7 +1,7 @@
 // Per-kind metadata the pure reducers consult — React-free, so it lives in the
 // model layer. The actual renderer (React component) + reviver (deserialize)
 // bind in the widget layer's registry; this holds only the structural rules.
-import type { CoreWorkItemKind, WorkItem, WorkItemKind } from './workItem'
+import type { CoreWorkItemKind, WorkItem, WorkItemKind } from '@/shared/lib/workItem'
 import { workItemKindRegistry, type WorkItemKindContribution } from '@/shared/contrib/uiContrib'
 import {
   arePluginContributionsPending,

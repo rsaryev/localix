@@ -11,7 +11,7 @@ import {
 import { TrendChart, DistributionChart } from '@localixai/plugin-sdk/ui/stats-charts'
 import { LogsTable } from './LogsTable'
 import { agentLabel, formatTokens, formatUsd, kindLabel, providerLabel, shortKey } from './format'
-import { cacheHitRate } from '@/features/chat/model/usageMath'
+import { cacheHitRate } from '@localixai/agent'
 import { BreakdownTable } from './StatsControls'
 import { StatsFilterBar } from './StatsFilterBar'
 import { StateNotice } from '@localixai/kit/state-notice'

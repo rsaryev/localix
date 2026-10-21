@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { toast } from '@/shared/lib/notify'
 import { composerBus } from '@/shared/lib/composerBus'
-import { openFileInGrid } from '@/features/inspector/model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import type { EditorDiagnostic, EditorSelectionRange } from '@/shared/ui/code-editor/CodeEditor'
 import { useCommentBatch } from '@/shared/ui/comments/useCommentBatch'
 import { useComments, useScopeComments, type Comment } from '@localixai/plugin-sdk/ui/comments'

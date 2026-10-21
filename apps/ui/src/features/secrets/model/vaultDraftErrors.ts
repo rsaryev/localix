@@ -2,7 +2,7 @@ import {
   canSubmitSecret,
   secretKeyError,
   secretValueError,
-} from '@/features/settings/model/secretDraft'
+} from '@/features/secrets/model/secretDraft'
 import type { FieldErrors } from '@/shared/lib/forms/fieldErrors'
 
 /**

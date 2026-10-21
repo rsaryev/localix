@@ -5,7 +5,9 @@ import { WorkItemVisibilityProvider, useWorkItemVisible } from '@localixai/plugi
 import { DataSourceTabs, type DataSource } from '@/shared/ui/DataSourceTabs'
 
 const LocalixStats = lazy(() =>
-  import('./LocalixStatsPanel').then((module) => ({ default: module.LocalixStatsPanel })),
+  import('@/features/stats/ui/LocalixStatsPanel').then((module) => ({
+    default: module.LocalixStatsPanel,
+  })),
 )
 const AgentStats = lazy(() => import('@/features/external-agents/ui/ExternalStatsPanel'))
 

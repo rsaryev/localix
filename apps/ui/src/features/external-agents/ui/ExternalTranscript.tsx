@@ -1,4 +1,4 @@
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 import { TranscriptTab } from '@/features/chat/ui/TranscriptTab'
 import { readTranscript } from '@/features/chat/model/openTranscript'
 import { LoadingHint, EmptyHint } from '@localixai/kit/empty-hint'

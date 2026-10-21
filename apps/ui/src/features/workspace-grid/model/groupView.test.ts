@@ -9,7 +9,7 @@ import {
   leafHasVisibleTab,
 } from './groupView'
 import { makeLeaf, insertSplit, leafIds } from './tree'
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { ScopeActiveTab } from './warm'
 
 const item = (id: string, scope?: string): WorkItem => ({

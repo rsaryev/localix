@@ -10,7 +10,7 @@ import {
   publishLiveTabMessageContext,
 } from './liveTabMessageContext'
 import { workItemToMessageBindings } from './tabMessageBinding'
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 
 const file: WorkItem = {
   id: 'file-1',

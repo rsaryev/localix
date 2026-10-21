@@ -4,18 +4,10 @@
   "features/companion -> features/chat",
   "features/external-agents -> features/chat",
   "features/external-agents -> features/terminal",
-  "features/external-agents -> features/workspace-grid",
   "features/inspector -> features/chat",
   "features/inspector -> features/workspace-grid",
   "features/search -> features/chat",
-  "features/search -> features/settings",
-  "features/secrets -> features/settings",
-  "features/secrets -> features/workspace-grid",
   "features/settings -> features/chat",
   "features/settings -> features/workspace-grid",
-  "features/stats -> features/chat",
-  "features/stats -> features/external-agents",
-  "features/terminal -> features/inspector",
-  "features/terminal -> features/workspace-grid",
-  "widgets/editor-grid -> widgets/chat-workspace"
+  "features/terminal -> features/workspace-grid"
 ]

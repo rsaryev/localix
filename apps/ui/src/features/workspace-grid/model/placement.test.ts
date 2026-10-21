@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { resolveOpenTarget, roleForKind, existingLegacyGroup } from './placement'
 import { makeLeaf, findLeafByRole, leaves, type GridNode } from './tree'
 import { WORK_ITEM_CAPS } from './capabilities'
-import type { WorkItemKind } from './workItem'
+import type { WorkItemKind } from '@/shared/lib/workItem'
 
 const ALL_KINDS = Object.keys(WORK_ITEM_CAPS) as WorkItemKind[]
 const ROLES = ['editor', 'aux'] // `preview` + `bottom` are legacy-only — never policy targets

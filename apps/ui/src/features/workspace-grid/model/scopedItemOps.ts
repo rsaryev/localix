@@ -21,7 +21,7 @@ import {
   pruneScopeActive,
   forgetScope,
 } from './warm'
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { ScopedEditorState } from './store-contracts'
 
 export function openScopedItemState(s: ScopedEditorState, stamped: WorkItem, opts?: OpenOptions) {

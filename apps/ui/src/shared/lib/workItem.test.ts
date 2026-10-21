@@ -6,7 +6,7 @@ import {
   TAB_IDENTITY_CONTENT_CAP,
   type TabIdentity,
   type WorkItem,
-} from './workItem'
+} from '@/shared/lib/workItem'
 
 const file = (path?: string, title = 'x', content?: string): TabIdentity => ({
   kind: 'file',

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 import {
   readMessageBindingDrag,
   setMessageBindingDrag,

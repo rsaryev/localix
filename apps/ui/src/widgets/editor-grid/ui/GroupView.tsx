@@ -27,7 +27,7 @@ import {
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { EmptyState } from '@/features/chat/ui/EmptyState'
 import { sessionOfScope } from '@/features/workspace-grid/model'
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 import { WorkItemBody } from './registry'
 import { workItemIcon } from './workItemIcon'
 

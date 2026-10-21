@@ -6,7 +6,7 @@ import { loadGrid, type PersistedGrid } from './persistence'
 import { __resetGridForTests, hydrateGrid, useGridStore } from './store'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
-import type { WorkItemKind } from './workItem'
+import type { WorkItemKind } from '@/shared/lib/workItem'
 
 const KIND = 'db-console' as WorkItemKind
 const TAB = 'db-console:conn1'
