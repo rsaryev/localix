@@ -29,7 +29,7 @@ describe('session action chrome', () => {
   test('keeps both session menu entry points inside the sidebar', () => {
     const row = readSource('SessionItem.tsx')
     const actions = readSource('SessionItemActions.tsx')
-    const sidebar = readSource('ChatSidebar.tsx')
+    const sidebar = readSource('../../../widgets/chat-sidebar/ui/ChatSidebar.tsx')
 
     // A native browser pane can begin immediately beside the sidebar. Both menu entry points
     // share one action list; the right-click path must use Radix's pane collision boundary.

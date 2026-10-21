@@ -3,7 +3,7 @@ import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
 import type { UiSession } from '@/shared/api/contracts'
 import { useExternalHistory } from '@/features/external-agents/model/useExternalHistory'
 import { nativeHistoryRows } from '@/features/external-agents/model/unifiedHistory'
-import { sortSessionsList, type SortMode } from '../model/useSidebarSessions'
+import { sortSessionsList, type SortMode } from '@/features/chat/model/useSidebarSessions'
 
 /** Which history the sidebar lists: Localix chats, or native coding-agent CLI sessions. */
 export type HistorySource = 'localix' | 'external'

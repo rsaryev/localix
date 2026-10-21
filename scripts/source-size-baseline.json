@@ -29,7 +29,7 @@
   "apps/ui/src/features/chat/model/sessionActionsSlice.ts": 311,
   "apps/ui/src/features/chat/model/store.ts": 556,
   "apps/ui/src/features/chat/model/useContextRefs.ts": 361,
-  "apps/ui/src/features/chat/ui/ChatSidebar.tsx": 414,
+  "apps/ui/src/widgets/chat-sidebar/ui/ChatSidebar.tsx": 414,
   "apps/ui/src/features/chat/ui/MessageCard.tsx": 327,
   "apps/ui/src/features/chat/ui/MessageList.tsx": 334,
   "apps/ui/src/features/chat/ui/SessionItem.tsx": 333,
