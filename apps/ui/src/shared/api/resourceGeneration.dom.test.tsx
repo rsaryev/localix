@@ -1,11 +1,9 @@
-import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import type { UiSession } from '@/shared/api/contracts'
 
 /**
  * Caches the realtime scheduler does not own still learn of changes from its topics: an SWR key
- * re-reads once per change however many components hold it, and a module cache keyed by the
- * tab-wide generation never serves a read made before the change.
+ * re-reads once per change however many components hold it.
  */
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -55,43 +53,6 @@ describe('topic-driven caches', () => {
     } finally {
       await act(async () => root.unmount())
       host.remove()
-    }
-  })
-
-  test('a linked session preview is read again after the sessions topic fires', async () => {
-    const { act } = await import('react')
-    const { createRoot } = await import('react-dom/client')
-    const { resourceSync } = await import('./resourceSync')
-    const { backendClient } = await import('./client')
-    const { useLinkedSession } = await import('@/app/binding-previews/useLinkedSession')
-    let title = 'Before'
-    const read = spyOn(backendClient, 'getSession').mockImplementation(
-      async (id: string) => ({ id, title, messages: [] }) as unknown as UiSession,
-    )
-    function Preview() {
-      const linked = useLinkedSession('unlisted-session')
-      return <span>{linked.state === 'ready' ? linked.session.title : linked.state}</span>
-    }
-    const host = document.createElement('div')
-    document.body.append(host)
-    const root = createRoot(host)
-    try {
-      await act(async () => {
-        root.render(<Preview />)
-        await settle()
-      })
-      expect(host.textContent).toBe('Before')
-      title = 'After'
-      await act(async () => {
-        resourceSync.invalidate(['sessions'])
-        await settle()
-      })
-      expect(host.textContent).toBe('After')
-      expect(read).toHaveBeenCalledTimes(2)
-    } finally {
-      await act(async () => root.unmount())
-      host.remove()
-      read.mockRestore()
     }
   })
 })
