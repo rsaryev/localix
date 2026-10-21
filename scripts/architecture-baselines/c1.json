@@ -1,0 +1,5 @@
+[
+  "apps/api/src/features/chat/repository-activated-tools.ts writes agent_sessions",
+  "apps/api/src/features/chat/repository-model-choices.ts writes agent_sessions",
+  "apps/api/src/features/chat/repository-tree.ts writes agent_sessions"
+]

@@ -59,11 +59,12 @@ scheduling, terminal lifecycle and the session event stream.
 
 ## Dead code and legacy
 
-- [ ] Enabling an agent bumps the capability revision once.
-- [ ] Remove the `localStorage` exemption for a file that does not exist.
-- [ ] Drop the unread `agent_sessions.worktree_session_id` column with a new migration.
-- [ ] Rename one of the two `recordSessionChanges` functions.
+- [x] Enabling an agent bumps the capability revision once.
+- [x] Remove the `localStorage` exemption for a file that does not exist.
+- [x] Drop the unread `agent_sessions.worktree_session_id` column with a new migration.
+- [x] Rename one of the two `recordSessionChanges` functions.
 
 ## Checks
 
-- [ ] A deterministic check, with a shrinking baseline, for each rule A1–A8 and C1–C7.
+- [x] A deterministic check, with a shrinking baseline, for each rule A1–A8 and C1–C7 (C2 and C3 are
+      held by the registry types; C5 stays with review).

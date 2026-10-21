@@ -21,7 +21,7 @@ import { ApiError } from '../../../lib/errors'
 import type { AgentStreamEvent, PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import type { SessionAgentRoute } from '../repository-types'
-import { recordSessionChanges } from './session-notice'
+import { announceSessionChanges } from './session-notice'
 
 export interface ParticipantsIo {
   repo: {
@@ -107,7 +107,7 @@ export async function changeParticipants(
   const after = (await io.repo.getSession(input.userId, input.sessionId)) ?? before
   // After the write is durable, so a failed change never announces something that did not
   // happen. The lines are model-visible on purpose: see `session-notice.ts`.
-  await recordSessionChanges(io, input.userId, input.sessionId, before, after)
+  await announceSessionChanges(io, input.userId, input.sessionId, before, after)
   io.publishSession(after)
   return { before, after, joined, left }
 }

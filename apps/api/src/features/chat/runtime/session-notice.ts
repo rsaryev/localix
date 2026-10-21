@@ -161,7 +161,7 @@ export async function recordSessionNotice(
  * with. One call site (`updateSession`), so the two halves cannot be announced by different
  * writers or drift into different sentences.
  */
-export async function recordSessionChanges(
+export async function announceSessionChanges(
   io: SessionNoticeIo,
   userId: string,
   sessionId: string,

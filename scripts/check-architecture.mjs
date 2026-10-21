@@ -1220,10 +1220,11 @@ for (const file of files) {
   // and gives desktop-backed persistence one replacement seam.
   if (
     uiProductionSource &&
-    path !== 'apps/ui/src/shared/lib/storage.ts' &&
     /\blocalStorage\.(?:getItem|setItem|removeItem|clear)\s*\(/u.test(sourceWithoutComments)
   ) {
-    problems.push(`${path}: direct localStorage access bypasses shared/lib/storage`)
+    problems.push(
+      `${path}: direct localStorage access; persist through a fail-soft storage adapter`,
+    )
   }
 
   // OS detection has exactly two sources: the keybinding detector and its

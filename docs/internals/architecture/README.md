@@ -91,25 +91,26 @@ home that both the API and the UI import, so a new package would only have moved
 ## Rules
 
 Each rule has an id that checks and reviews refer to. A rule marked Planned has no check yet; the
-[audit](audit.md) lists today's exceptions.
+number beside an enforced rule is the size of its baseline today, and the [audit](audit.md) lists
+the exceptions in prose.
 
-| Id  | Rule                                                                                        | Check                                  |
-| --- | ------------------------------------------------------------------------------------------- | -------------------------------------- |
-| A1  | No package imports `apps/*`, `@/` or a plugin; no cycle between workspace packages.         | Partly enforced; cycles planned        |
-| A2  | The core imports no React, Hono, Kysely, `bun:sqlite`, `node:*` or provider SDK.            | Provider SDK on `engine-loop` only     |
-| A3  | Provider SDKs and model-catalog packages are imported only in `packages/engine-models`.     | Planned (today only `engine-loop`)     |
-| A4  | Only `apps/api/src/bootstrap/` constructs another feature's repository or service.          | Planned, with a baseline               |
-| A5  | Kysely is imported only by repository modules and migrations.                               | Planned, with a baseline               |
-| A6  | No value-import cycle between API features.                                                 | Planned, with a baseline               |
-| A7  | Domain and service code throws domain errors; only routes produce HTTP errors.              | Planned, with a baseline               |
-| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Layer order enforced; the rest planned |
-| C1  | A write to an owned entity records its notice in the same transaction.                      | Planned, with a baseline               |
-| C2  | A notice names identity only: entity, op and ref.                                           | Enforced by the registry types         |
-| C3  | Every consumer handles every kind or ignores it explicitly.                                 | Enforced by the registry types         |
-| C4  | Every consumer has tests for a duplicate, a gap with reconcile, and a parent deletion.      | Planned                                |
-| C5  | A follow-up in another feature runs in a consumer, unless it is a documented command.       | Planned, with a baseline               |
-| C6  | Clients learn of changes from the relay; a write does not patch another surface's store.    | Planned, with a baseline               |
-| C7  | Whether a route can run is decided once, by `routeReadiness` in `@localixai/agent/catalog`. | Planned                                |
+| Id  | Rule                                                                                        | Check                                |
+| --- | ------------------------------------------------------------------------------------------- | ------------------------------------ |
+| A1  | No package imports `apps/*`, `@/` or a plugin; no cycle between workspace packages.         | Enforced; cycles with a baseline (0) |
+| A2  | The core imports no React, Hono, Kysely, `bun:sqlite`, `node:*` or provider SDK.            | Enforced with a baseline (0)         |
+| A3  | Provider SDKs and model-catalog packages are imported only in `packages/engine-models`.     | Enforced with a baseline (0)         |
+| A4  | Only `apps/api/src/bootstrap/` constructs another feature's repository or service.          | Enforced with a baseline (33)        |
+| A5  | Kysely is imported only by repository modules and migrations.                               | Enforced with a baseline (10)        |
+| A6  | No value-import cycle between API features.                                                 | Enforced with a baseline (89)        |
+| A7  | Domain and service code throws domain errors; only routes produce HTTP errors.              | Enforced with a baseline (69)        |
+| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (23)        |
+| C1  | A write to an owned entity records its notice in the same transaction.                      | Enforced with a baseline (3)         |
+| C2  | A notice names identity only: entity, op and ref.                                           | Enforced by the registry types       |
+| C3  | Every consumer handles every kind or ignores it explicitly.                                 | Enforced by the registry types       |
+| C4  | Every consumer has tests for a duplicate, a gap with reconcile, and a parent deletion.      | Enforced with a baseline (1)         |
+| C5  | A follow-up in another feature runs in a consumer, unless it is a documented command.       | Planned, with a baseline             |
+| C6  | Clients learn of changes from the relay; a write does not patch another surface's store.    | Enforced with a baseline (20)        |
+| C7  | Whether a route can run is decided once, by `routeReadiness` in `@localixai/agent/catalog`. | Enforced with a baseline (2)         |
 
 ## Enforcement
 
@@ -117,6 +118,23 @@ Rules become deterministic checks in `scripts/check-architecture.mjs` and source
 rule that the code already breaks starts with a baseline: a committed list of today's exceptions in
 `scripts/` that may only shrink. A new exception fails with the rule id and how to fix it; a fixed
 one must be removed from the list. This is the same ratchet the UI token guards use.
+
+The rule checks are `scripts/architecture-rules.test.ts` (A1 cycles, A2–A7) and
+`scripts/architecture-flow-rules.test.ts` (A8, C1, C4, C6, C7), both run by `bun run test:repo`.
+Their detectors live in `scripts/architecture/` and their baselines in
+`scripts/architecture-baselines/<rule>.json`. Each key names a file or an edge, never a line, so an
+unrelated edit does not churn it, and each rule has a positive control that proves it still fires.
+After a fix, rewrite the baselines with `ARCHITECTURE_BASELINE=write` set on the same `bun test`
+command and check that the diff only removes entries. Scope notes:
+
+- A5 counts value imports of `kysely`; an `import type { Kysely }` handle passed into a module is
+  allowed.
+- A6 records every edge inside a cycle of value imports between features; type-only imports are
+  excluded.
+- C1 knows the tables of registered entities from `FEED_TABLES` in
+  `scripts/architecture/flow-rules.ts`; a new registry kind adds its tables there.
+- C6 allows the private store writers in `apps/ui/src/app/workspaceResourceSync.ts` and in the store
+  that defines them.
 
 Checks that hold today and back these rules:
 
