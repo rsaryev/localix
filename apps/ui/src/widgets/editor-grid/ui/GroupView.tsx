@@ -15,6 +15,11 @@ import {
   nativeTabTransferAvailable,
 } from '../model/windowTransfer'
 import { canTransferWorkItem } from '../model/windowTransferPayload'
+import {
+  pluginAppActions,
+  pluginAppSourceForKind,
+  useInstalledPluginApps,
+} from '@/features/plugin-apps'
 import { revealInTree } from '@/shared/lib/explorerBus'
 import {
   useGridStore,
@@ -100,6 +105,12 @@ export const GroupView = memo(function GroupView({
   // Strip icons and tints come from each tab kind's registration, read during render: subscribe
   // to exactly these kinds, or a plugin that registers after first paint keeps a generic icon.
   useWorkItemKindContributions(visibleTabs.flatMap((id) => (items[id] ? [items[id].kind] : [])))
+  // Each plugin tab offers its plugin's Mac app; a group can hold several plugins' tabs.
+  const pluginApps = useInstalledPluginApps()
+  const appActionsFor = (item: WorkItem | undefined) => {
+    const source = item ? pluginAppSourceForKind(item.kind) : null
+    return source ? pluginAppActions(source, pluginApps) : []
+  }
 
   // A chat tab closes like every other workspace tab. The session is preserved in history and
   // can be deliberately reopened later; close must not create or navigate to a fresh chat.
@@ -202,6 +213,12 @@ export const GroupView = memo(function GroupView({
               },
             ]
           : []),
+        // A plugin tab: make its plugin an app, or open and remove the one it has.
+        ...appActionsFor(item).map((action, index) => ({
+          label: action.label,
+          separatorBefore: index === 0,
+          onSelect: action.run,
+        })),
         // Path / location actions for file & diff tabs. "Reveal
         // in Tree" focuses this tab so the Explorer's auto-reveal locks onto it,
         // then asks the sidebar to open Files + scroll/select the path.
@@ -270,7 +287,7 @@ export const GroupView = memo(function GroupView({
             edgeFade
             aria-label="Group tabs"
             actionsLabel="Panel actions"
-            actions={<GroupActions groupId={leaf.id} />}
+            actions={<GroupActions groupId={leaf.id} app={appActionsFor(activeItem)[0]} />}
             className="h-[var(--editor-tab-height)] shrink-0 border-b border-border-soft"
             tabClassName="max-w-44"
             activeTabClassName={isFocused ? undefined : 'text-text-soft'}

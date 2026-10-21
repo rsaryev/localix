@@ -96,10 +96,12 @@
           var uaData = navigator.userAgentData
           var platformText =
             (uaData && uaData.platform) || navigator.platform || navigator.userAgent || ''
+          // A plugin installed as its own Mac app (shared/lib/pluginApp.ts) has the same backing.
           var nativeMaterial =
-            (window.__LOCALIX_DESKTOP === true ||
+            Boolean(window.__LOCALIX_APP) ||
+            ((window.__LOCALIX_DESKTOP === true ||
               typeof window.__TAURI_INTERNALS__ !== 'undefined') &&
-            /mac|iphone|ipad/.test(platformText.toLowerCase())
+              /mac|iphone|ipad/.test(platformText.toLowerCase()))
           if (!nativeMaterial) {
             document.documentElement.style.backgroundColor =
               theme === 'dark' ? '#070707' : '#f8f8f8'

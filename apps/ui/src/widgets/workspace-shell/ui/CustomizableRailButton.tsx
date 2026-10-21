@@ -115,6 +115,10 @@ export function CustomizableRailButton({
   // Described, not hand-rolled: the walker owns the seams, so the leading/doubled rules a recent
   // slot's shorter list would otherwise leave behind never reach the screen.
   const menu: MenuEntry[] = [
+    // What the button's owner adds (a plugin's app actions) leads, above the rail's own rows.
+    ...(entry.extraMenu?.length
+      ? [...entry.extraMenu.map((item) => ({ ...item })), { separator: true } as const]
+      : []),
     ...((entry.plugin || entry.toolCategory !== undefined) && !isRecent && onUnpin
       ? [{ id: 'unpin', label: 'Unpin from rail', onSelect: () => onUnpin(entry.id) }]
       : []),

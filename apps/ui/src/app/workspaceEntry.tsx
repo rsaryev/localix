@@ -4,6 +4,7 @@ import App from './App.tsx'
 import { router } from './routing/router'
 import { RootErrorBoundary } from './RootErrorBoundary'
 import { applyPlatformDataset } from '@localixai/kit/environment'
+import { pluginApp, stampPluginAppDataset } from '@/shared/lib/pluginApp'
 import { installNativeContextMenu } from '@/shared/lib/nativeContextMenu'
 import { installLocationLedger } from '@/entities/chat/model/locationLedger'
 import { installWindowChromeState } from '@/shared/lib/windowChrome'
@@ -41,9 +42,11 @@ tauriFrontendLog(
 // Stamp data-os / data-desktop on <html> so CSS can key native-feel styling off
 // the platform (native scrollbars, font stacks, chrome) before first paint.
 applyPlatformDataset()
+// A plugin installed as its own Mac app draws on the same glass as the macOS workspace.
+stampPluginAppDataset()
 // Native-app chrome: suppress the browser's right-click menu in the desktop shell
 // (kept over editable fields + selections). No-op in a plain browser.
-installNativeContextMenu(isDesktop)
+installNativeContextMenu(isDesktop || pluginApp() !== null)
 // Desktop window-chrome state: stamp data-window-inactive / data-fullscreen on
 // <html> so the custom titlebar dims when unfocused and drops the traffic-light
 // padding in native fullscreen. No-op in a plain browser.

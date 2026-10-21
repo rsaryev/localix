@@ -64,6 +64,10 @@
 //   ✓ macOS tray template icon   → inverts with the menu-bar theme.
 //   ✓ Titlebar strip is macOS-only → win/linux keep the native OS titlebar (no
 //                                   double bar); gated IS_MAC in WorkspaceShell.
+//   ✓ Plugin apps (macOS)         → app_bundle*.rs installs a plugin as its own .app
+//                                   (a clone of this binary); main() runs app_runner
+//                                   for such a bundle; `--background` holds the
+//                                   workspaces back until Localix itself is asked for.
 //
 // Still to port (need the user — keys/endpoint or a visual pass):
 //
@@ -81,6 +85,28 @@ pub(crate) const SITE_URL: &str = "https://localix.ai";
 /// The public source repository; Help links to its docs, issues and releases.
 pub(crate) const REPOSITORY_URL: &str = "https://github.com/rsaryev/localix";
 
+#[cfg(target_os = "macos")]
+mod app_bundle;
+#[cfg(target_os = "macos")]
+mod app_bundle_commands;
+#[cfg(target_os = "macos")]
+mod app_bundle_host;
+#[cfg(target_os = "macos")]
+mod app_icon;
+#[cfg(target_os = "macos")]
+mod app_runner;
+#[cfg(target_os = "macos")]
+mod app_runner_glass;
+#[cfg(target_os = "macos")]
+mod app_runner_host;
+#[cfg(target_os = "macos")]
+mod app_runner_menu;
+#[cfg(target_os = "macos")]
+mod app_runner_scheme;
+#[cfg(target_os = "macos")]
+mod app_runner_ui;
+#[cfg(target_os = "macos")]
+mod app_runner_web;
 mod commands;
 #[cfg_attr(not(target_os = "macos"), path = "companion_unsupported.rs")]
 mod companion;
@@ -185,6 +211,13 @@ use crate::sidecar::{
 };
 
 use crate::updater::{updater_check, updater_install, PendingUpdate};
+
+/// A plugin app bundle (`app_runner.rs`) runs its own window instead of the shell. False for
+/// Localix itself, which then calls [`run`].
+#[cfg(target_os = "macos")]
+pub fn run_plugin_app() -> bool {
+    app_runner::run_if_app()
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Auto-updater: checks the `latest.json` endpoint and verifies the download's minisign signature
@@ -398,6 +431,14 @@ pub fn run() {
             crate::workspace_drag::workspace_drag_cancel,
             crate::workspace_drag::workspace_transfer_presented,
             crate::workspace_tab_drop::workspace_tab_drop_destination,
+            #[cfg(target_os = "macos")]
+            crate::app_bundle_commands::plugin_apps,
+            #[cfg(target_os = "macos")]
+            crate::app_bundle_commands::plugin_app_install,
+            #[cfg(target_os = "macos")]
+            crate::app_bundle_commands::plugin_app_open,
+            #[cfg(target_os = "macos")]
+            crate::app_bundle_commands::plugin_app_uninstall,
             #[cfg(all(debug_assertions, target_os = "macos"))]
             crate::workspace_probe::workspace_probe
         ])
@@ -485,6 +526,11 @@ pub fn run() {
 
             app.state::<crate::workspace_windows::WorkspaceWindows>()
                 .set_init_script(init_script.clone());
+            // A plugin app launched Localix to host it: start everything, show nothing.
+            #[cfg(target_os = "macos")]
+            if std::env::args_os().any(|arg| arg == crate::app_runner::BACKGROUND_ARG) {
+                crate::workspace_windows::workspaces(app.handle()).held = true;
+            }
             #[cfg(target_os = "macos")]
             let saved_session = crate::workspace_session::load(app.handle());
             #[cfg(target_os = "macos")]
@@ -544,6 +590,12 @@ pub fn run() {
             restore_zoom(app.handle());
             #[cfg(target_os = "macos")]
             crate::workspace_session::restore(app.handle());
+            // Apps made by an older build of this host get its current binary and UI.
+            #[cfg(target_os = "macos")]
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || crate::app_bundle::refresh(&handle));
+            }
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -586,7 +638,11 @@ pub fn run() {
                 // `ExitRequested` (Dock Quit, logout, WM_QUIT) — the runtime gets its
                 // `shutdown` and a bounded wait, then is killed; it never outlives the
                 // shell. A no-op after the before-quit handshake already stopped it.
-                RunEvent::Exit => stop_api_blocking(app, EXIT_GRACE),
+                RunEvent::Exit => {
+                    #[cfg(target_os = "macos")]
+                    crate::app_bundle::quit_running();
+                    stop_api_blocking(app, EXIT_GRACE)
+                }
                 _ => {}
             }
         });

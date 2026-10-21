@@ -67,6 +67,9 @@ interface WorkspaceShellProps {
    *  browser / Windows / Linux it renders in a plain non-draggable top bar. Hidden
    *  on mobile widths. When omitted, no top bar is drawn. */
   titlebarContent?: ReactNode
+  /** `app`: a plugin installed as its own app (`shared/lib/pluginApp.ts`). Its window is the
+   *  plugin, so the workspace's own frame (rail, sidebar, top bar, status bar) is not drawn. */
+  chrome?: 'workspace' | 'app'
   children: ReactNode
 }
 
@@ -102,8 +105,10 @@ export function WorkspaceShell({
   statusSessionId,
   headerStatus,
   titlebarContent,
+  chrome = 'workspace',
   children,
 }: WorkspaceShellProps) {
+  const frame = chrome === 'workspace'
   useBrowserHistoryAgent()
   // Contributed status items are session-scoped (`statusSessionId`), and whether any exist decides
   // whether the status row is worth mounting at all when nothing else claims it.
@@ -294,7 +299,8 @@ export function WorkspaceShell({
             attribute, not the CSS -webkit-app-region property); double-click zooms.
           - everywhere else (browser + Windows/Linux, which keep their native OS
             titlebar): a plain, non-draggable bar with no traffic-light gap. */}
-        {!isMobile &&
+        {frame &&
+          !isMobile &&
           titlebarContent &&
           (isDesktop && IS_MAC ? (
             <div
@@ -314,7 +320,7 @@ export function WorkspaceShell({
         <div className="app-native-tabbar-space" aria-hidden="true" />
 
         {/* Mobile header */}
-        {isMobile && (
+        {frame && isMobile && (
           <header className="relative z-(--z-overlay) flex h-[var(--mobile-header-height)] shrink-0 items-center gap-2.5 border-b border-sidebar-border bg-background px-2">
             <IconButton
               size="touch"
@@ -332,7 +338,7 @@ export function WorkspaceShell({
         {/* Body */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Desktop: rail + inline sidebar panel */}
-          {!isMobile && (
+          {frame && !isMobile && (
             <div className="flex h-full shrink-0 flex-row">
               <nav
                 className="flex h-full w-[var(--workbench-rail-width)] shrink-0 flex-col border-r border-sidebar-border bg-sidebar"
@@ -404,7 +410,7 @@ export function WorkspaceShell({
 
         {/* The full-width status bar is the fourth placement zone. Host status
           segments stay on the left; compact customizable controls occupy the right. */}
-        {(footer || statusEntries.length > 0 || hasStatusItems) && (
+        {frame && (footer || statusEntries.length > 0 || hasStatusItems) && (
           <div
             data-status-rail-drop-zone
             data-drop-active={railDnd.drag.overZone === 'status' ? 'true' : undefined}
@@ -465,7 +471,7 @@ export function WorkspaceShell({
         )}
 
         {/* Mobile: backdrop + drawer */}
-        {isMobile && (
+        {frame && isMobile && (
           <>
             <div
               aria-hidden="true"

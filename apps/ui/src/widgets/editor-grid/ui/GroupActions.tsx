@@ -1,4 +1,4 @@
-import { PanelRight, PanelRightDashed, RotateCcw } from 'lucide-react'
+import { AppWindow, PanelRight, PanelRightDashed, RotateCcw } from 'lucide-react'
 import { leafIds, useGridStore } from '@/entities/workspace-grid/model'
 import { CMD } from '@/shared/lib/keybindings/catalog'
 import { useChordHint } from '@localixai/kit/keybindings'
@@ -16,8 +16,18 @@ import { IconButton } from '@localixai/kit/icon-button'
  *
  * A plain icon button with a panel glyph, like the app's other frame controls; maximized, the other
  * side of the glyph turns dashed — that panel is hidden.
+ *
+ * `app` is the shown tab's own action when that tab is a plugin's: install the plugin as its own
+ * Mac app, or open the one it has. It names its plugin, because a group can hold several plugins'
+ * tabs and the button speaks only for the one on screen; every tab's menu offers the same.
  */
-export function GroupActions({ groupId }: { groupId: string }) {
+export function GroupActions({
+  groupId,
+  app,
+}: {
+  groupId: string
+  app?: { label: string; run: () => void }
+}) {
   const maximized = useGridStore((s) => s.maximizedGroup === groupId)
   const split = useGridStore((s) => leafIds(s.root).length > 1)
   const hint = useChordHint()
@@ -29,6 +39,17 @@ export function GroupActions({ groupId }: { groupId: string }) {
       : 'Maximize panel — the only panel'
   return (
     <>
+      {app && (
+        <IconButton
+          aria-label={app.label}
+          tooltip={app.label}
+          tooltipSide="bottom"
+          size="sm"
+          onClick={app.run}
+        >
+          <AppWindow />
+        </IconButton>
+      )}
       <IconButton
         aria-label="Arrange panels"
         tooltip="Arrange panels · keep all tabs open"

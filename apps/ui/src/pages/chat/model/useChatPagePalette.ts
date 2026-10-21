@@ -13,6 +13,7 @@ import { buildThirdPartyViewCommands } from '@/shared/contrib/thirdPartyViewComm
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
 import { setUiCommands, type PaletteCommand } from '@/shared/contrib/uiCommands'
 import { useUiLocationCommands } from '@/shared/contrib/useUiLocationCommands'
+import { pluginAppActions, useInstalledPluginApps } from '@/features/plugin-apps'
 import { openPageWorkItem } from './openPageWorkItem'
 
 interface ChatPagePaletteOptions {
@@ -84,22 +85,41 @@ export function useChatPagePalette({
   }, [enabledPluginNames, setSidebarOpen, switchSection])
 
   // Palette opens are page commands: a view opens in the chat the page has open.
+  const pluginApps = useInstalledPluginApps()
   const contributedViewletCommands = useMemo<PaletteCommand[]>(() => {
     void enabledPluginNames
-    return railViewletRegistry.list().map((viewlet) => ({
-      id: `view.${viewlet.kind}`,
-      label: `Open ${viewlet.title}`,
-      group: 'View',
-      effect: 'read',
-      keywords: viewlet.keywords ?? [],
-      run: () =>
-        openPageWorkItem(openSessionId, {
-          workKind: viewlet.kind,
-          id: viewlet.kind,
-          title: viewlet.title,
-        }),
-    }))
-  }, [enabledPluginNames, openSessionId])
+    return railViewletRegistry.list().flatMap((viewlet) => [
+      {
+        id: `view.${viewlet.kind}`,
+        label: `Open ${viewlet.title}`,
+        group: 'View',
+        effect: 'read' as const,
+        keywords: viewlet.keywords ?? [],
+        run: () =>
+          openPageWorkItem(openSessionId, {
+            workKind: viewlet.kind,
+            id: viewlet.kind,
+            title: viewlet.title,
+          }),
+      },
+      // A plugin's screen can also be its own Mac app (`features/plugin-apps`).
+      ...(viewlet.pluginName
+        ? pluginAppActions(
+            {
+              plugin: viewlet.pluginName,
+              title: viewlet.title,
+              Icon: viewlet.Icon,
+            },
+            pluginApps,
+          ).map((action) => ({
+            ...action,
+            group: 'App',
+            effect: 'write' as const,
+            keywords: [...(viewlet.keywords ?? []), 'app', 'dock', 'window'],
+          }))
+        : []),
+    ])
+  }, [enabledPluginNames, openSessionId, pluginApps])
 
   const thirdPartyViewCommands = useMemo<PaletteCommand[]>(() => {
     // The builder reads the runtime store directly; this version is its invalidation token.

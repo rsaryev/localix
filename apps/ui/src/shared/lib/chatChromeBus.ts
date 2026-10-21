@@ -12,7 +12,7 @@ import { createEventChannel } from './eventChannel'
  * threading callbacks through the grid registry.
  */
 
-type ChromeEvent = 'project-switcher' | 'session-switcher'
+type ChromeEvent = 'project-switcher' | 'session-switcher' | 'new-chat'
 type ChromeListener = (event: ChromeEvent) => void
 
 const channel = createEventChannel<[event: ChromeEvent]>()
@@ -25,6 +25,9 @@ function emit(event: ChromeEvent): void {
 export const openProjectSwitcher = (): void => emit('project-switcher')
 /** Open the full session switcher modal (Search all…). */
 export const openSessionSwitcher = (): void => emit('session-switcher')
+
+/** Start a new conversation the way the page does (the chat header's New chat). */
+export const requestNewChat = (): void => emit('new-chat')
 
 /** Subscribe to chat-chrome requests; returns an unsubscribe for teardown/HMR. */
 export function subscribeChatChrome(listener: ChromeListener): () => void {

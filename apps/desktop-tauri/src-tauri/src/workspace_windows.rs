@@ -76,6 +76,9 @@ pub(crate) struct WindowData {
     pub(crate) init_script: String,
     #[cfg(target_os = "macos")]
     pub(crate) hidden_groups: Vec<crate::workspace_session_model::SavedGroup>,
+    /// A plugin app started this launch (`--background`): workspaces get ready without showing
+    /// until something asks for Localix itself. Never saved, so the next launch shows as usual.
+    pub(crate) held: bool,
 }
 
 impl WindowData {

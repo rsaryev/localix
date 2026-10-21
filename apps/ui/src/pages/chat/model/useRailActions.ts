@@ -8,6 +8,7 @@ import {
 } from '@/entities/workspace-grid/model'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
+import { pluginAppActions, useInstalledPluginApps } from '@/features/plugin-apps'
 import { openPageWorkItem } from './openPageWorkItem'
 import { pluginViewRailAction } from './pluginViewRailAction'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
@@ -162,6 +163,15 @@ export function useRailActions({
   )
   const viewlets: ViewletDef[] = [...coreViewlets(openSessionId), ...contributedViewlets]
 
+  // A plugin's rail button also offers its screen as a Mac app (`features/plugin-apps`).
+  const pluginApps = useInstalledPluginApps()
+  const appMenu = (pluginName: string | undefined, title: string, Icon: ViewletDef['icon']) =>
+    pluginName
+      ? pluginAppActions({ plugin: pluginName, title, Icon }, pluginApps).map(
+          ({ id, label, run }) => ({ id, label, onSelect: run }),
+        )
+      : undefined
+
   const runWorkspaceViewAction = (action: () => void) => {
     // A workspace view renders in the editor grid, not in the mobile drawer. Close the drawer in
     // the same gesture so the newly opened tab is immediately visible; sidebar sections (Files,
@@ -200,6 +210,7 @@ export function useRailActions({
           toolCategory,
           pluginName,
           resourceUri,
+          extraMenu: appMenu(pluginName, label, icon),
           onClick: () =>
             runWorkspaceViewAction(() =>
               isActive && focusedActiveId ? closeGridTab(focusedActiveId) : open(),

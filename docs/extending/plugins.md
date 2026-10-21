@@ -19,6 +19,7 @@ entrypoints run as trusted code in the API process.
 | Register native agents          | Declare typed `contributions` in the manifest.                                                 | Source availability, agent availability, invocation policy and review remain separate. |
 | Add portable UI                 | Declare sandboxed HTML views; each opens as a work-item tab.                                   | A sandboxed view cannot use the host kit or native React registrations.                |
 | Add a native workbench          | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                     | Bundled plugins, and your own under `~/.localix/plugins` once you enable them.         |
+| Run as its own Mac app          | The person installs the plugin as an app; see [Plugin apps](../features/plugin-apps.md).       | macOS only; the plugin needs a rail viewlet, its main screen.                          |
 
 ## How it works
 
@@ -369,6 +370,7 @@ Three add agent capability with no workbench of their own:
 ## Related guides
 
 - [Build workbench UI](plugin-ui.md)
+- [Plugin apps](../features/plugin-apps.md)
 - [Install Claude Code plugins](claude-code-plugins.md)
 - [Connect MCP](../features/mcp.md)
 

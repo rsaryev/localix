@@ -163,6 +163,7 @@ test('homepage claims stay assigned to their owning guides', () => {
     'A board your repository can hold': 'features--project-space',
     'Photograph a meal, and the agent logs it': 'extending--build-with-the-agent',
     'Interface and tools in one pass': 'extending--build-with-the-agent',
+    'A plugin uses the models Localix already has': 'extending--plugin-semantics',
     'The product’s own workbenches are plugins': 'extending--plugins',
     'Play against the agent': 'features--game-2048',
     'The app and its plugins draw from one design system': 'extending--ui-kit',

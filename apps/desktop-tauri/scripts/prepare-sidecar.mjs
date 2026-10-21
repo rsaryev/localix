@@ -17,6 +17,7 @@ import {
   mkdirSync,
   rmSync,
   copyFileSync,
+  cpSync,
   existsSync,
   readFileSync,
   readdirSync,
@@ -365,6 +366,14 @@ if (buildUi) {
   }
   if (!existsSync(join(repo, 'apps', 'ui', 'dist', 'index.html'))) {
     throw new Error('UI build did not produce apps/ui/dist/index.html')
+  }
+  // A plugin installed as its own Mac app is a separate process: it cannot read the UI Tauri
+  // embeds in the shell binary, so it serves this copy from the bundle (`app_runner_scheme.rs`).
+  if (process.platform === 'darwin') {
+    const staged = join(resources, 'ui')
+    rmSync(staged, { recursive: true, force: true })
+    cpSync(join(repo, 'apps', 'ui', 'dist'), staged, { recursive: true })
+    log('UI staged for plugin apps')
   }
   log('UI ready')
 }

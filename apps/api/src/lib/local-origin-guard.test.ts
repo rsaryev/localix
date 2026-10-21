@@ -67,11 +67,12 @@ describe('Host (DNS rebinding)', () => {
 })
 
 describe('Origin', () => {
-  test('the packaged app and the configured dev UI may write', () => {
+  test('the packaged app, its plugin apps and the configured dev UI may write', () => {
     for (const origin of [
       'tauri://localhost',
       'http://tauri.localhost',
       'https://tauri.localhost',
+      'localix-app://app',
       DEV_UI,
     ]) {
       expect(verdictCode({ origin })).toBe('ok')

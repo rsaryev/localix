@@ -44,6 +44,14 @@ export interface RailEntry {
   /** The plugin's package name, set alongside `plugin: true`. */
   pluginName?: string
   resourceUri?: string
+  /** Extra rows for the button's context menu, after the rail's own (an app action, …). */
+  extraMenu?: readonly RailMenuItem[]
+}
+
+export interface RailMenuItem {
+  id: string
+  label: string
+  onSelect: () => void
 }
 
 /** A plain action button in the rail — fires a callback instead of toggling a panel/view. */
@@ -69,6 +77,7 @@ export interface RailAction {
   /** The plugin's package name, set alongside `plugin: true`. */
   pluginName?: string
   resourceUri?: string
+  extraMenu?: readonly RailMenuItem[]
   /** Keybinding-registry command id — its live chord is appended to the tooltip. */
   chordId?: string
   /** When set, this button represents a relocated inspector SECTION: it becomes

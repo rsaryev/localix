@@ -6,6 +6,19 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
+### Added
+
+- **Plugin apps** (macOS): install a plugin as its own Mac app from its tab's menu, the app button
+  at the right of the tab strip, its rail button or the command palette. The app has its own Dock
+  icon, window and menu bar, shows the plugin with its agent chat beside it, and starts Localix in
+  the background when it is not running. See [Plugin apps](docs/features/plugin-apps.md).
+- **New chat** button at the top of a conversation.
+
+### Changed
+
+- **Context chips** above the message box stay on one line and scroll sideways instead of wrapping
+  into a second row.
+
 ## v0.1.0-beta.15 — 2026-10-21
 
 Localix now tells you what is new: each update is announced in a dialog with its release notes,

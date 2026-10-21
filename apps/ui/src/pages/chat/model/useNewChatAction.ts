@@ -37,6 +37,8 @@ interface NewChatActionOptions {
   focusAdjacentGroup: (direction: 1 | -1) => void
   cycleFocusedTab: (direction: 1 | -1) => void
   reopenClosedTab: () => void
+  /** A plugin app starts its own next conversation instead (`usePluginApp`). */
+  replaceNewChat?: (() => void) | null
 }
 
 export function useNewChatAction(options: NewChatActionOptions) {
@@ -49,6 +51,7 @@ export function useNewChatAction(options: NewChatActionOptions) {
     startNewChatRef,
     setProjectSwitcher,
     setSessionSwitcher,
+    replaceNewChat,
   } = options
   // Start a new chat in the CURRENT scope — the rail "+" button, the ⌘⌥N and the
   // palette "New chat" command all run this. The scope is the active project (URL
@@ -96,8 +99,8 @@ export function useNewChatAction(options: NewChatActionOptions) {
   // DOM handlers always receive an event argument. Keep the public chrome callback truly
   // zero-argument so a MouseEvent can never be mistaken for a ConversationStartStrategy.
   const startNewChat = useCallback(
-    () => runNewChat(scopedNewConversation(routeProjectId)),
-    [routeProjectId, runNewChat],
+    () => (replaceNewChat ? replaceNewChat() : runNewChat(scopedNewConversation(routeProjectId))),
+    [replaceNewChat, routeProjectId, runNewChat],
   )
   // `startNewChatRef` is created once by useEditorGridCommands.
   useEffect(() => {
@@ -111,9 +114,10 @@ export function useNewChatAction(options: NewChatActionOptions) {
     () =>
       subscribeChatChrome((event) => {
         if (event === 'project-switcher') setProjectSwitcher(true)
-        else setSessionSwitcher(true)
+        else if (event === 'session-switcher') setSessionSwitcher(true)
+        else startNewChat()
       }),
-    [setProjectSwitcher, setSessionSwitcher],
+    [setProjectSwitcher, setSessionSwitcher, startNewChat],
   )
 
   const paletteCommands = useChatPagePalette({ ...options, startNewChat })

@@ -1,7 +1,8 @@
-import { Search } from 'lucide-react'
+import { Search, SquarePen } from 'lucide-react'
 import type { ChatUsagePayload } from '@localixai/agent'
 import { SessionUsageIndicator } from '@/entities/chat/ui/prompt-input/SessionUsageIndicator'
 import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
+import { requestNewChat } from '@/shared/lib/chatChromeBus'
 import { CMD, useChordHint } from '@/shared/lib/keybindings'
 import { IconButton } from '@localixai/kit/icon-button'
 
@@ -16,7 +17,8 @@ interface ChatHeaderActionsProps {
  * Right-hand rail of the chat header. The Source Control / Terminal
  * shortcuts moved to the left activity rail (`useRailActions`) so every panel
  * opens from one consistent place. The Find button opens the in-conversation
- * search — the direct pointer path on touch devices without a hardware keyboard.
+ * search — the direct pointer path on touch devices without a hardware keyboard. New chat is the
+ * page's own action (the rail "+", the shortcut), reached here where a plugin app has no rail.
  */
 export function ChatHeaderActions({
   activeSessionId,
@@ -41,6 +43,14 @@ export function ChatHeaderActions({
         tooltip={chordHint('Find in conversation', CMD.findInChat)}
       >
         <Search className="size-4" />
+      </IconButton>
+      <IconButton
+        size="md"
+        onClick={requestNewChat}
+        aria-label="New chat"
+        tooltip={chordHint('New chat', CMD.newChat)}
+      >
+        <SquarePen className="size-4" />
       </IconButton>
     </div>
   )

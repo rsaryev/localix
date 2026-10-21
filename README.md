@@ -45,7 +45,7 @@
   <tr>
     <td valign="top">
       <strong>Plugins, built by the agent</strong><br>
-      Describe one with <code>/plugin create</code> — from a game to an API client.<br>
+      Describe one with <code>/plugin create</code>; it plugs into the agent, decision models and Localix’s APIs.<br>
       <a href="docs/extending/build-with-the-agent.md">Build a plugin →</a>
     </td>
     <td valign="top">
@@ -59,7 +59,38 @@
       <a href="docs/features/providers.md">Providers →</a> · <a href="docs/features/local-models.md">Local models →</a>
     </td>
   </tr>
+  <tr>
+    <td colspan="3" valign="top">
+      <strong>Plugins as Mac apps</strong><br>
+      Install a plugin as its own app: a Dock icon, a window of its own, and the agent beside it.<br>
+      <a href="docs/features/plugin-apps.md">Plugin apps →</a>
+    </td>
+  </tr>
 </table>
+
+## Plugins
+
+- **Built with the agent.** Run `/plugin create <what it should do>`. The agent writes the interface
+  from the app's own components and the tools that go with it. Each build is checked — style, types,
+  builds and the plugin's tests — and replaces the working one only when every check passes; the
+  agent can then open the plugin in its browser and try it. See
+  [build a plugin with the agent](docs/extending/build-with-the-agent.md).
+- **Part of the agent.** A plugin's tools register with the agent with no glue code, so the chat
+  beside it does the understanding: attach a meal photo and, with a model that reads images, the
+  agent logs it through the plugin's own tool. A move in the plugin's screen can start an agent
+  turn, as the bundled games do. See [wake the agent from a plugin](docs/extending/plugin-wakes.md).
+- **Localix's APIs.** A plugin's backend can ask a
+  [decision model](docs/features/decision-models.md) typed questions (`ctx.host.decisions`), index
+  its own items and search them by meaning with the embedding model on this computer
+  (`ctx.host.semantic`) and follow its own changes (`ctx.host.changes`). Its interface draws from
+  the same kit as the app. See [build a plugin](docs/extending/plugins.md) and
+  [semantic index and change feed](docs/extending/plugin-semantics.md).
+- **Its own Mac app.** **Install _Plugin_ as App**, from the plugin's tab, its rail button or the
+  command palette, makes `~/Applications/Localix Apps/<Plugin>.app`: its own Dock icon, menu bar,
+  Cmd+Tab entry and window, found by Spotlight and Launchpad. It opens the plugin's screen in its
+  own conversation, with the agent's chat beside it. Localix stays the host and starts in the
+  background if it is not running. macOS only; plugins stay tabs unless you choose this. See
+  [plugin apps](docs/features/plugin-apps.md).
 
 ## On this computer
 
@@ -69,9 +100,6 @@
 - **Search by meaning.** On by default: an embedding model downloads in the background, and search
   then finds chats, messages, skills, plugins, MCP servers and agents by what they mean, in any
   language. See [semantic search](docs/features/semantic-search.md).
-- **For plugins.** A plugin can index its own items and follow its own changes through
-  `ctx.host.semantic` and `ctx.host.changes`. See
-  [semantic index and change feed](docs/extending/plugin-semantics.md).
 
 ## Download
 

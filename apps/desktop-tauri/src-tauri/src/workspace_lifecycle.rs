@@ -111,6 +111,9 @@ pub(crate) fn reveal(app: &AppHandle, label: &str) {
             return;
         };
         entry.ready = true;
+        if data.held {
+            return;
+        }
         let mut pending = Vec::new();
         loop {
             let next = data
@@ -156,6 +159,27 @@ pub(crate) fn reveal(app: &AppHandle, label: &str) {
             }
         }
     }
+}
+
+/// End a background launch's hold and reveal the workspaces it kept back, the way first paint
+/// would have. False when nothing was held back, so the caller reopens as usual.
+pub(crate) fn release_hold(app: &AppHandle) -> bool {
+    let ready = {
+        let mut data = crate::workspace_windows::workspaces(app);
+        if !std::mem::take(&mut data.held) {
+            return false;
+        }
+        data.entries
+            .iter()
+            .find(|(_, entry)| entry.allows_reveal())
+            .map(|(label, _)| label.clone())
+    };
+    // Not painted yet: first paint reveals it now that the hold is gone.
+    let Some(label) = ready else {
+        return false;
+    };
+    reveal(app, &label);
+    true
 }
 
 pub(crate) fn close(app: &AppHandle, label: &str) {

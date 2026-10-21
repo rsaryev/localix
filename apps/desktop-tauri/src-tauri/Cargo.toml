@@ -66,7 +66,22 @@ objc2-foundation = { version = "0.3", features = [
   "NSData",
 ] }
 objc2-web-kit = { version = "0.3", default-features = false, features = [
+  "objc2-app-kit",
   "WKWebView",
+  # A plugin app's own window (`app_runner*.rs`): its page, scheme, delegates and messages.
+  "WKWebViewConfiguration",
+  "WKURLSchemeHandler",
+  "WKURLSchemeTask",
+  "WKUserContentController",
+  "WKUserScript",
+  "WKScriptMessage",
+  "WKScriptMessageHandler",
+  "WKNavigationDelegate",
+  "WKNavigationAction",
+  "WKUIDelegate",
+  "WKFrameInfo",
+  "WKWindowFeatures",
+  "WKPreferences",
   "WKSnapshotConfiguration",
   "WKWebsiteDataStore",
   "block2",

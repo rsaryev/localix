@@ -40,11 +40,16 @@ import { dialableRuntimeHost } from './runtime-address'
  * and the preview probe (`/vf/probe.js`) and media are loaded by tags on other origins.
  */
 
-/** The packaged desktop page's origin: `tauri://localhost` on macOS/Linux, `http(s)://tauri.localhost` on Windows. */
+/**
+ * The packaged desktop page's origin: `tauri://localhost` on macOS/Linux, `http(s)://tauri.localhost`
+ * on Windows. `localix-app://app` is a plugin installed as its own Mac app, which serves the same UI
+ * build from Localix.app under its own scheme (`app_runner_scheme.rs`); no web page can claim it.
+ */
 export const PACKAGED_APP_ORIGINS: readonly string[] = [
   'tauri://localhost',
   'http://tauri.localhost',
   'https://tauri.localhost',
+  'localix-app://app',
 ]
 
 const LOOPBACK_HOSTNAMES: readonly string[] = ['127.0.0.1', 'localhost', '[::1]']

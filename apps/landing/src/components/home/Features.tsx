@@ -7,6 +7,7 @@ import {
   DecisionScene,
   ExternalScene,
   ModelsScene,
+  PluginAppScene,
   PluginScene,
   TeamScene,
 } from './FeatureScenes'
@@ -19,11 +20,14 @@ interface Feature {
   line: string
   docs: string
   Scene: ComponentType
+  /** Spans the whole row, under the 3×2 grid, at every width. */
+  wide?: boolean
 }
 
 /**
- * What Localix is, in six short claims, each shown working in a miniature and linked to the guide
- * that backs it. Every line is held to its page: nothing here says more than the docs do.
+ * What Localix is, in six short claims and one full-width row, each shown working in a miniature
+ * and linked to the guide that backs it. Every line is held to its page: nothing here says more
+ * than the docs do.
  */
 export const FEATURES: readonly Feature[] = [
   {
@@ -46,7 +50,7 @@ export const FEATURES: readonly Feature[] = [
   },
   {
     title: 'Plugins, built by the agent',
-    line: 'Describe one with /plugin create — from a game to an API client.',
+    line: 'Describe one with /plugin create; it plugs into the agent, decision models and Localix’s APIs.',
     docs: '/docs/extending--build-with-the-agent',
     Scene: PluginScene,
   },
@@ -62,15 +66,22 @@ export const FEATURES: readonly Feature[] = [
     docs: '/docs/features--providers',
     Scene: ModelsScene,
   },
+  {
+    title: 'Plugins as Mac apps',
+    line: 'Install a plugin as its own app: a Dock icon, a window of its own, and the agent beside it.',
+    docs: '/docs/features--plugin-apps',
+    Scene: PluginAppScene,
+    wide: true,
+  },
 ]
 
 export function Features() {
   return (
     <Section id="features" className="py-16 md:py-24">
       <ul className="features-grid">
-        {FEATURES.map(({ title, line, docs, Scene }) => (
+        {FEATURES.map(({ title, line, docs, Scene, wide }) => (
           // The whole card is the link to its guide: one target, named by its title and line.
-          <li key={title}>
+          <li key={title} className={wide ? 'feature-wide' : undefined}>
             <Link to={docs} className="feature-card group/cue focus-ring">
               <div className="feature-stage">
                 <Scene />

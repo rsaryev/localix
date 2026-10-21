@@ -23,6 +23,13 @@ export const PLUGIN_FEATURES: FeatureRow[] = [
     anchor: 'how-it-works',
   },
   {
+    kicker: 'Built on the host',
+    title: 'A plugin uses the models Localix already has',
+    body: 'A plugin can ask a decision model a typed question, and rank a few texts or index its own items with the embedding model on this computer. When no model answers, the plugin keeps its own fallback.',
+    slug: 'extending--plugin-semantics',
+    anchor: 'ask-a-decision-model',
+  },
+  {
     kicker: 'Same contract',
     title: 'The product’s own workbenches are plugins',
     body: 'The Kanban board, DevOps, Project Space, Code Graph, Database, and Git are plugins on the contract you get, and the larger ones run to tens of thousands of lines.',

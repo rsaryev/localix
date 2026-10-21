@@ -106,6 +106,49 @@ export function PluginScene() {
   )
 }
 
+/** A plugin installed as its own Mac app: its icon joins the Dock, then its window opens with the
+ *  plugin's screen and the agent's chat beside it. */
+export function PluginAppScene() {
+  return (
+    <div aria-hidden className="fs fs-app">
+      <div className="fs-app-window">
+        <div className="fs-chrome">
+          <span className="fs-dot" />
+          <span className="fs-dot" />
+          <span className="fs-dot" />
+          <span className="fs-app-title">Chess</span>
+        </div>
+        <div className="fs-app-body">
+          <div className="fs-app-board">
+            {Array.from({ length: 32 }, (_, i) => (
+              <span
+                key={i}
+                className={`fs-app-tile ${(i + Math.floor(i / 8)) % 2 ? 'fs-tile-dark' : ''}`}
+              />
+            ))}
+          </div>
+          <div className="fs-app-chat">
+            <span className="fs-app-you">e4</span>
+            <span className="fs-app-reply">
+              <span className="fs-avatar">L</span>
+              e5 — your move.
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="fs-dock">
+        <span className="fs-dock-icon" />
+        <span className="fs-dock-icon" />
+        <span className="fs-dock-icon" />
+        <span className="fs-dock-icon fs-dock-new">
+          ♞
+          <span className="fs-dock-dot" />
+        </span>
+      </div>
+    </div>
+  )
+}
+
 const CLIS = ['Claude Code', 'Codex', 'Gemini CLI', 'opencode']
 
 /** A coding CLI linked to a chat: the agent pill, and its terminal beside the conversation. */

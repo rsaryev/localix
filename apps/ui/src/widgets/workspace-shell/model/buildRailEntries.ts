@@ -75,6 +75,7 @@ export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries
         toolCategory: a.toolCategory,
         pluginName: a.pluginName,
         resourceUri: a.resourceUri,
+        extraMenu: a.extraMenu,
       },
       a.defaultArea ?? (a.overflowGroup ? 'overflow' : 'bar'),
     ),

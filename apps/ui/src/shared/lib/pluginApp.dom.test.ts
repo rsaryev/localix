@@ -1,0 +1,84 @@
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import { registerDom } from '@localixai/kit/testing/dom'
+
+let teardown: () => Promise<void>
+
+beforeAll(() => {
+  teardown = registerDom()
+})
+
+afterAll(async () => {
+  await teardown()
+})
+
+afterEach(() => {
+  delete window.__LOCALIX_APP
+  delete window.webkit
+  localStorage.clear()
+  window.location.hash = ''
+  delete document.documentElement.dataset.desktop
+  delete document.documentElement.dataset.pluginApp
+})
+
+describe('pluginApp', () => {
+  test('the workspace is not a plugin app', async () => {
+    const { pluginApp } = await import('./pluginApp')
+    expect(pluginApp()).toBeNull()
+  })
+
+  test('a malformed plugin name is not a plugin app', async () => {
+    const { pluginApp } = await import('./pluginApp')
+    window.__LOCALIX_APP = { plugin: '../kanban', name: 'Kanban' }
+    expect(pluginApp()).toBeNull()
+  })
+
+  test('an app window names its plugin and title', async () => {
+    const { pluginApp } = await import('./pluginApp')
+    window.__LOCALIX_APP = { plugin: 'game-2048', name: '2048' }
+    expect(pluginApp()).toEqual({ plugin: 'game-2048', name: '2048' })
+  })
+})
+
+describe('applyPluginAppStartRoute', () => {
+  test('starts on the remembered conversation instead of the home page', async () => {
+    const { applyPluginAppStartRoute, rememberPluginAppSession } = await import('./pluginApp')
+    window.__LOCALIX_APP = { plugin: 'chess', name: 'Chess' }
+    rememberPluginAppSession('chess', 'abc_123')
+    applyPluginAppStartRoute()
+    expect(window.location.hash).toBe('#/chat/abc_123')
+  })
+
+  test('leaves a route the window already has, and the workspace, alone', async () => {
+    const { applyPluginAppStartRoute, rememberPluginAppSession } = await import('./pluginApp')
+    rememberPluginAppSession('chess', 'abc_123')
+    applyPluginAppStartRoute()
+    expect(window.location.hash).toBe('')
+    window.__LOCALIX_APP = { plugin: 'chess', name: 'Chess' }
+    window.location.hash = '#/chat/other'
+    applyPluginAppStartRoute()
+    expect(window.location.hash).toBe('#/chat/other')
+  })
+})
+
+describe('stampPluginAppDataset', () => {
+  test('marks an app page for the macOS glass styles only', async () => {
+    const { stampPluginAppDataset } = await import('./pluginApp')
+    stampPluginAppDataset()
+    expect(document.documentElement.dataset.desktop).toBeUndefined()
+    window.__LOCALIX_APP = { plugin: 'chess', name: 'Chess' }
+    stampPluginAppDataset()
+    expect(document.documentElement.dataset.desktop).toBe('true')
+    expect(document.documentElement.dataset.pluginApp).toBe('true')
+  })
+})
+
+describe('postToPluginApp', () => {
+  test('sends JSON to the native window, and is silent without one', async () => {
+    const { postToPluginApp } = await import('./pluginApp')
+    expect(() => postToPluginApp({ type: 'session', id: 'abc' })).not.toThrow()
+    const sent: string[] = []
+    window.webkit = { messageHandlers: { localixApp: { postMessage: (body) => sent.push(body) } } }
+    postToPluginApp({ type: 'theme', dark: true })
+    expect(sent.map((body) => JSON.parse(body))).toEqual([{ type: 'theme', dark: true }])
+  })
+})

@@ -2,6 +2,7 @@ import './index.css'
 import './inlineFonts'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import { isCompanionWindow } from '@/shared/lib/companionWindow'
+import { applyPluginAppStartRoute } from '@/shared/lib/pluginApp'
 
 // Choose the entry before importing the workspace shell, so the island never loads it.
 if (isCompanionWindow()) {
@@ -11,4 +12,8 @@ if (isCompanionWindow()) {
   window.addEventListener('error', (event) => report(event.message))
   window.addEventListener('unhandledrejection', (event) => report(String(event.reason)))
   void import('./companionEntry').catch((error) => report(String(error)))
-} else void import('./workspaceEntry')
+} else {
+  // Before the router module reads the location.
+  applyPluginAppStartRoute()
+  void import('./workspaceEntry')
+}

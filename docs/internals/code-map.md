@@ -45,6 +45,13 @@ under `features/companion/` and render the shared `PromptInput` (`layout="embedd
 `companion::geometry`. Durable draft and surface state lives in API `features/user/view-state-*` and
 UI `shared/lib/view-state`; `useComposerDraft` is shared by the main composer and island.
 
+A [plugin app](plugin-apps.md) is a plugin installed as its own macOS app: a generated bundle whose
+executable is a clone of the desktop binary. `app_runner*.rs` is that binary's app mode (window,
+glass, menu, the page served from the host's UI build); `app_bundle*.rs` and `app_icon.rs` install,
+refresh and remove the bundles. The page is the workspace with `chrome="app"`, driven by
+`shared/lib/pluginApp.ts` and `pages/chat/model/usePluginApp.ts`; install actions and icons live in
+`features/plugin-apps/`.
+
 ## Boot is phased, and the phases exist because of cycles
 
 `apps/api/src/bootstrap.ts` composes the `bootstrap/*` phases in order: infra, registries,

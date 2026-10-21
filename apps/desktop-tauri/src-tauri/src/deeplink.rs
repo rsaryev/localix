@@ -105,7 +105,10 @@ pub(crate) fn is_loopback(url: &tauri::Url) -> bool {
 }
 
 /// Reveal + focus the main window (from tray click, menu, or a second launch).
-pub(crate) fn show_main_window<R: tauri::Runtime>(app: &AppHandle<R>) {
+pub(crate) fn show_main_window(app: &AppHandle) {
+    if crate::workspace_lifecycle::release_hold(app) {
+        return;
+    }
     #[cfg(target_os = "macos")]
     crate::workspace_visibility::reopen(app);
     #[cfg(not(target_os = "macos"))]
@@ -150,8 +153,8 @@ pub(crate) fn open_path_deep_link(path: &std::path::Path) -> String {
 /// `cwd` is the directory of the launch that PASSED the arguments. A second launch
 /// hands its argv to the running instance, and resolving `localix src/app.ts`
 /// against the running instance's own directory opened the wrong file, or nothing.
-pub(crate) fn open_path_args<R: tauri::Runtime, S: AsRef<std::ffi::OsStr>>(
-    app: &AppHandle<R>,
+pub(crate) fn open_path_args<S: AsRef<std::ffi::OsStr>>(
+    app: &AppHandle,
     args: &[S],
     cwd: &std::path::Path,
 ) {
@@ -198,7 +201,7 @@ fn eval_deep_link<R: tauri::Runtime>(app: &AppHandle<R>, url: &str) {
 /// Open File, Save, Toggle Sidebar, the panel openers, etc. The id is JSON-encoded
 /// so it can never break out of the string literal (injection-safe). No-op if the
 /// UI hasn't installed the handler yet.
-pub(crate) fn forward_menu_command<R: tauri::Runtime>(app: &AppHandle<R>, id: &str) {
+pub(crate) fn forward_menu_command(app: &AppHandle, id: &str) {
     if let Some(w) = crate::workspace_windows::active_view(app) {
         show_main_window(app);
         let arg = serde_json::to_string(id).unwrap_or_else(|_| "\"\"".into());

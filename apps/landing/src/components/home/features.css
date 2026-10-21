@@ -1,6 +1,6 @@
-/* Six claims in a 3×2 grid (2×3 on tablets, one column on phones). Each card is a stage with a
-   live miniature, a title, one line and its guide — hairline borders and the product's own
-   surfaces, nothing ornamental. */
+/* Six claims in a 3×2 grid (2×3 on tablets, one column on phones), then one wide row across the
+   whole grid. Each card is a stage with a live miniature, a title, one line and its guide —
+   hairline borders and the product's own surfaces, nothing ornamental. */
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -23,6 +23,9 @@
 .features-grid > li {
   display: flex;
   min-width: 0;
+}
+.features-grid > li.feature-wide {
+  grid-column: 1 / -1;
 }
 .feature-card {
   display: flex;

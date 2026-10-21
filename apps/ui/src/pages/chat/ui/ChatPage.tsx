@@ -43,6 +43,8 @@ import { AttentionDialog } from '@/entities/chat/ui/attention/AttentionDialog'
 import { SetupAnnouncement } from '@/widgets/workspace-tips/ui/SetupAnnouncement'
 import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
+import { pluginApp } from '@/shared/lib/pluginApp'
+import { usePluginApp } from '../model/usePluginApp'
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
 import { useSystemToggle } from '@/shared/hooks/useSystemToggle'
 import { useIsMobile, isMobileViewport } from '@/shared/hooks/useIsMobile'
@@ -140,6 +142,9 @@ hydrateGrid()
 
 const NO_RUNTIME_STATUS = () => undefined
 
+/** Set when this page is a plugin installed as its own app; fixed for the page's life. */
+const PLUGIN_APP = pluginApp()
+
 function useRuntimeStatus(): RuntimeStatus | undefined {
   return useSyncExternalStore(subscribeRuntimeStatus, runtimeStatus, NO_RUNTIME_STATUS)
 }
@@ -191,6 +196,7 @@ export function ChatPage() {
   // A neutral landing that mints a fresh GLOBAL draft: the bare index ("/") OR
   // "/global" with no session. We do NOT resurrect the last chat there.
   const isHomeRoute =
+    !PLUGIN_APP &&
     !isLegacyRoute &&
     routeProjectId === null &&
     !routeSessionId &&
@@ -213,6 +219,13 @@ export function ChatPage() {
   }, [sidebarOpen, isMobile])
 
   const { resolvedTheme } = useTheme()
+  const pluginAppChat = usePluginApp(PLUGIN_APP, {
+    hasHydrated,
+    enabledPluginNames,
+    activeSessionId,
+    goToSession: nav.goToSession,
+    resolvedTheme,
+  })
   const workspace = useWorkspace()
   useChatPageBuses({ hasHydrated })
   // Host-level "keep this machine awake" control (rail toggle below).
@@ -374,6 +387,7 @@ export function ChatPage() {
     setSidebarOpen,
     setWorkspaceSymbols,
     startNewChatRef,
+    replaceNewChat: pluginAppChat.newConversation,
     switchSection,
     thirdPartyViewsVersion: thirdPartyViewsV,
     toggleSidebar,
@@ -442,6 +456,7 @@ export function ChatPage() {
 
   return (
     <WorkspaceShell
+      chrome={PLUGIN_APP ? 'app' : 'workspace'}
       isMobile={isMobile}
       sidebarOpen={sidebarOpen}
       activeSectionId={activeSectionId}
@@ -647,7 +662,7 @@ export function ChatPage() {
           request, a plan, a mention — raised one at a time from the shared attention roster. */}
           <AttentionDialog />
           {/* Setup over the chat the launch opened: on a first run, and from the palette. */}
-          <SetupAnnouncement />
+          {!PLUGIN_APP && <SetupAnnouncement />}
           <ConfirmDialog
             open={confirmKeepAwake}
             variant="default"
