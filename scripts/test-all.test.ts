@@ -43,3 +43,23 @@ test('a command that cannot start fails instead of hanging', async () => {
   )
   expect(failed).toEqual(['missing'])
 })
+
+test('the unit and system slices together run exactly what the whole suite runs', async () => {
+  const { suiteCommands } = await import('./test-all.mjs')
+  const tasks = (slice: 'all' | 'unit' | 'system') =>
+    suiteCommands(slice).flatMap((command) => command.args.filter((arg) => !arg.startsWith('--')))
+  expect([...tasks('unit'), ...tasks('system')].sort()).toEqual([...tasks('all'), 'turbo'].sort())
+  expect(suiteCommands('unit').map((command) => command.label)).toEqual(['packages'])
+  expect(suiteCommands('system', { filter: ['--affected'] })[0]?.args).toContain('--affected')
+  expect(() => suiteCommands('everything' as never)).toThrow('Unknown test slice')
+})
+
+test('a sharded run gives every shard the same arguments and its own slice', async () => {
+  const { shardCommands } = await import('./test-shards.mjs')
+  expect(shardCommands(3, ['--no-orphans', 'src']).map((command) => command.args)).toEqual([
+    ['test', '--shard=1/3', '--no-orphans', 'src'],
+    ['test', '--shard=2/3', '--no-orphans', 'src'],
+    ['test', '--shard=3/3', '--no-orphans', 'src'],
+  ])
+  expect(() => shardCommands(0, [])).toThrow('Invalid shard count')
+})

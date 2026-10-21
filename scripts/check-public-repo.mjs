@@ -365,7 +365,12 @@ assert(
   'Shared setup must use a frozen install',
 )
 assert(ci.includes('uses: ./.github/actions/setup-workspace'), 'CI must use shared workspace setup')
-const requiredCiGates = requiredValidationCommands
+// CI runs `bun run test` as its two slices, in parallel jobs (see scripts/test-all.mjs).
+const requiredCiGates = [
+  ...requiredValidationCommands.filter((command) => command !== 'bun run test'),
+  'bun run test:unit',
+  'bun run test:system',
+]
 for (const gate of requiredCiGates) {
   assert(ci.includes(gate), `CI must run: ${gate}`)
 }

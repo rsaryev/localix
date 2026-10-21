@@ -55,25 +55,42 @@ export async function runConcurrently(commands, options = {}) {
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const concurrency = process.env.TURBO_CONCURRENCY || '50%'
-  // `--affected` (set by pre-push and pull-request CI) runs only the packages a change reaches.
-  const filter = (process.env.TURBO_FILTER ?? '').split(' ').filter(Boolean)
-  const failed = await runConcurrently([
+/**
+ * The commands for one slice of the suite. `unit` is every package's `test` (fast, parallel);
+ * `system` is what drives real processes or walks the repository: each package's
+ * `test:integration`, the cached slow repository tests and the repository guards. CI runs the
+ * two slices as separate jobs; a local `bun run test` runs both at once.
+ *
+ * @param {'all' | 'unit' | 'system'} slice
+ * @param {{ concurrency?: string, filter?: string[] }} [options]
+ */
+export function suiteCommands(slice, { concurrency = '50%', filter = [] } = {}) {
+  const tasks = {
+    all: ['test', 'test:integration', 'test:repo:slow'],
+    unit: ['test'],
+    system: ['test:integration', 'test:repo:slow'],
+  }[slice]
+  if (!tasks) throw new Error(`Unknown test slice "${slice}": use unit, system or all`)
+  const commands = [
     {
       label: 'packages',
       command: 'bunx',
-      args: [
-        'turbo',
-        'test',
-        'test:integration',
-        'test:repo:slow',
-        `--concurrency=${concurrency}`,
-        ...filter,
-      ],
+      args: ['turbo', ...tasks, `--concurrency=${concurrency}`, ...filter],
     },
-    { label: 'repository', command: 'bun', args: ['run', 'test:repo'] },
-  ])
+  ]
+  if (slice !== 'unit')
+    commands.push({ label: 'repository', command: 'bun', args: ['run', 'test:repo'] })
+  return commands
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  // `--affected` (set by pre-push and pull-request CI) runs only the packages a change reaches.
+  const failed = await runConcurrently(
+    suiteCommands(/** @type {'all' | 'unit' | 'system'} */ (process.argv[2] ?? 'all'), {
+      concurrency: process.env.TURBO_CONCURRENCY || '50%',
+      filter: (process.env.TURBO_FILTER ?? '').split(' ').filter(Boolean),
+    }),
+  )
   if (failed.length) {
     console.error(`[test] Failed: ${failed.join(', ')}`)
     process.exit(1)

@@ -72,20 +72,21 @@ bun run check:bundle
 ```
 
 Build first when reproducing CI locally: type checks read workspace declarations from built output.
-`check:release` runs the release and workflow contract tests. `check:tests` type-checks test files,
-while `test` executes them. `check:bundle` stages the desktop bundle and starts its API outside the
-checkout.
+CI runs `bun run test` as two parallel slices, `bun run test:unit` (every package's unit tests) and
+`bun run test:system` (integration tests and repository guards). `check:release` runs the release
+and workflow contract tests. `check:tests` type-checks test files, while `test` executes them.
+`check:bundle` stages the desktop bundle and starts its API outside the checkout.
 
 The workflows have separate responsibilities:
 
 | Workflow          | Trigger                                                | Result                                                                                     |
 | ----------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `Checks`          | Pull requests, pushes to main, manual runs             | `App (build, types, tests)` and `Desktop (Rust)` validate the source.                      |
+| `Checks`          | Pull requests, pushes to main, manual runs             | Four parallel `App` jobs and `Desktop (Rust)` validate the source.                         |
 | `Desktop Release` | Manual run from main                                   | Prepare → validate source and signing → create draft → build selected platforms → publish. |
 | `Website Deploy`  | Website input changes, published releases, manual runs | Build the website and deploy a preview or production site.                                 |
 
 A push can therefore start both checks and a website deployment. It does not build a desktop
-release. New pushes cancel older automatic runs for the same ref.
+release. A new push to a pull request cancels its older run; every commit on main keeps its own.
 
 Pushes to main and manual checks run pinned Rust formatting, Clippy, and tests. A PR can skip the
 Rust steps only when its merge diff changes none of the desktop sources, root manifest, Bun

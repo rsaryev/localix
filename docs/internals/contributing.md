@@ -119,21 +119,25 @@ reproduces native validation, including the full Rust test suite.
 
 ### Workflows and releases
 
-| Workflow          | Runs when                                            | Jobs and result                                                                                                           |
-| ----------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `Checks`          | PR, merge queue, push to main, manual run            | `App (build, types, tests)` and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
-| `Desktop Release` | Manual run from main                                 | Prepare release → validate source and signing → create draft → build selected platforms → publish release.                |
-| `Website Deploy`  | Website input changes, published release, manual run | Build and deploy the website; same-repository PRs get previews. Production requires `LANDING_PRODUCTION=true`.            |
+| Workflow          | Runs when                                            | Jobs and result                                                                                                        |
+| ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Checks`          | PR, merge queue, push to main, manual run            | Four parallel `App` jobs and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
+| `Desktop Release` | Manual run from main                                 | Prepare release → validate source and signing → create draft → build selected platforms → publish release.             |
+| `Website Deploy`  | Website input changes, published release, manual run | Build and deploy the website; same-repository PRs get previews. Production requires `LANDING_PRODUCTION=true`.         |
 
 A push can start both `Checks` and `Website Deploy`, because source validation and website delivery
-have separate outcomes. It never starts a desktop release. New pushes cancel unfinished automatic
-runs for the same ref; manual runs remain independent.
+have separate outcomes. It never starts a desktop release. A new push to a pull request cancels its
+unfinished run; every commit on main and every merge-queue group keeps a run of its own, because a
+release needs the run for its exact commit.
 
-`Checks passed` fails when either job fails or is cancelled, so branch protection needs to require
-only that status. The app job builds, type-checks, and tests the workspace and smoke-tests the
-desktop bundle. The other job scans the history for secrets with gitleaks, lints every workflow with
-actionlint and zizmor, and checks the Rust shell. PRs can skip the Rust steps when the merge diff
-changes no desktop sources, root manifest, Bun lockfile, Node version, or shared CI setup.
+`Checks passed` fails when any job fails or is cancelled and names each job's result, so branch
+protection needs to require only that status. The app jobs run in parallel, each building from its
+own Turbo archive: `types` (source and test types), `unit tests` (`bun run test:unit`),
+`integration and repository tests` (`check:release` and `bun run test:system`) and `desktop bundle`
+(a smoke test of the staged bundle). One failing job does not stop the others. The other job scans
+the history for secrets with gitleaks, lints every workflow with actionlint and zizmor, and checks
+the Rust shell. PRs can skip the Rust steps when the merge diff changes no desktop sources, root
+manifest, Bun lockfile, Node version, or shared CI setup.
 
 Every job runs on a GitHub-hosted runner: `ubuntu-latest`, with the Rust job and the Linux release
 leg on `ubuntu-22.04` for an older glibc baseline, and the macOS release leg on `macos-15`.

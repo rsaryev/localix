@@ -13,25 +13,54 @@ permissions: {}
 env:
   RUST_TOOLCHAIN: 1.96.1
 
-# Check the newest tree for each ref; superseded pushes and pull requests stop consuming minutes.
-# A manual run remains independent and is never cancelled by a push.
+# A pull request keeps only its newest run: a new push cancels the one in progress. Every commit
+# on main and every merge-queue group gets a run of its own (a group per sha) that nothing cancels:
+# a release needs the run for its exact commit, and a cancelled one would also skip the cache save.
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Two jobs run side by side on GitHub-hosted runners: `app` builds and tests the JavaScript
-# workspace, `desktop` scans the repository and checks the Rust shell. `checks` is the one result
-# branch protection requires.
+# `app` checks the JavaScript workspace as four parallel jobs (types, unit tests, integration and
+# repository tests, desktop bundle); each builds from its own Turbo cache rather than waiting on a
+# shared build job, which would only lengthen the critical path. `desktop` scans the repository and
+# checks the Rust shell. `checks` is the one result branch protection requires.
 jobs:
   app:
-    name: App (build, types, tests)
+    name: App (${{ matrix.check }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
     permissions:
       contents: read
-    # A pull request checks and tests only the packages it changes and their dependents
-    # (Turbo's --affected against the base commit; a global input selects everything). The merge
-    # queue and main check the whole tree, so nothing unchecked reaches main.
+    strategy:
+      # Every slice reports: one failing slice must not hide what the others found.
+      fail-fast: false
+      matrix:
+        include:
+          - check: types
+            cache: types
+            run: |
+              bun run type-check
+              bun run check:tests
+          - check: unit tests
+            cache: unit
+            run: bun run test:unit
+          # Real processes, PTYs and watchers (each package's test:integration), the repository
+          # guards and the release-tooling tests.
+          - check: integration and repository tests
+            cache: system
+            run: |
+              bun run check:release
+              bun run test:system
+          # Stages the desktop bundle and starts its API from a copy outside the checkout, the way
+          # the packaged app does: a missing resource or an unresolved vendored module shows up
+          # here instead of in a release leg that has already been signed and notarized.
+          - check: desktop bundle
+            cache: bundle
+            run: bun run check:bundle
+    # A pull request checks and tests only the packages it changes and their dependents (Turbo's
+    # --affected against its base; a global input selects everything). The merge queue and main
+    # check the whole tree, so nothing unchecked reaches main. The build is never filtered: the
+    # repository tests import built packages, and Turbo replays what main already built.
     env:
       TURBO_FILTER: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
@@ -43,6 +72,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install test tools
+        if: matrix.cache == 'unit' || matrix.cache == 'system'
         run: |
           for attempt in 1 2 3; do
             sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
@@ -53,47 +83,34 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
 
-      # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
-      # this key only picks which archive to start from. Saved with `always()`: a failing run still
-      # leaves the tasks that passed warm for the next push.
+      # One archive per slice, so a slice restores the task outputs it replays. An entry is keyed on
+      # the task's input hash inside Turbo, so a stale one is never replayed; this key only picks
+      # which archive to start from.
       - name: Restore Turbo cache
         id: turbo-cache
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
-          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          key:
+            turbo-${{ matrix.cache }}-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha
+            }}
           restore-keys: |
-            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-js-${{ runner.os }}-
+            turbo-${{ matrix.cache }}-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-${{ matrix.cache }}-${{ runner.os }}-
 
-      # Type checking reads workspace declarations from the build output.
+      # Type checks and tests read workspace declarations and bundles from the build output.
       - name: Build app
         run: bun run build
 
-      - name: Test release tooling
-        run: bun run check:release
-
-      - name: Check source types
-        run: bun run type-check
-
-      - name: Check test types
-        run: bun run check:tests
-
-      # Package suites and repository tests side by side (scripts/test-all.mjs).
-      - name: Run tests
-        run: bun run test
-
-      # Stages the desktop bundle and starts its API from a copy outside the checkout, the way the
-      # packaged app does. A missing resource or an unresolved vendored module shows up here on the
-      # pull request instead of in a release leg that has already been signed and notarized.
       - name: Setup desktop bundle tools
+        if: matrix.cache == 'bundle'
         uses: ./.github/actions/setup-desktop
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           build-native: 'false'
 
-      - name: Test desktop bundle
-        run: bun run check:bundle
+      - name: Check ${{ matrix.check }}
+        run: ${{ matrix.run }}
 
       # The archive is restored and saved again on every main push, so without a bound it only
       # grows. Entries untouched for two weeks are dropped; a task that still needs one rebuilds it.
@@ -105,7 +122,8 @@ jobs:
           du -sh .turbo/cache
 
       # Only main writes an archive, as with the Rust cache: pull requests restore main's and
-      # cannot evict it from the repository's 10 GB cache quota with per-commit entries.
+      # cannot evict it from the repository's 10 GB cache quota with per-commit entries. Saved with
+      # `always()`: a failing run still leaves the tasks that passed warm for the next push.
       - name: Save Turbo cache
         if: >-
           always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
@@ -113,12 +131,14 @@ jobs:
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
-          key: turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          key:
+            turbo-${{ matrix.cache }}-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha
+            }}
 
   desktop:
     name: Desktop (Rust) and repository scans
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -206,12 +226,8 @@ jobs:
     steps:
       - name: Require every check
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          echo "Results: $RESULTS"
-          for result in $RESULTS; do
-            case "$result" in
-              success | skipped) ;;
-              *) exit 1 ;;
-            esac
-          done
+          # Name each job and its result, so a red check says which job to open.
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"$NEEDS"
+          jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<<"$NEEDS" >/dev/null

@@ -9,7 +9,7 @@ import { scratchGitEnv } from './scratch-git-env.mjs'
 
 describe('commit identity guard', () => {
   test('accepts a real identity', () => {
-    expect(identityProblem('rsaryev <rsaryev@yahoo.com> 1700000000 +0300')).toBeNull()
+    expect(identityProblem('Ada Lovelace <ada@example.com> 1700000000 +0300')).toBeNull()
   })
 
   test('refuses the leaked fixture identity and other scratch domains', () => {

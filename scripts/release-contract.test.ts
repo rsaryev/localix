@@ -87,7 +87,10 @@ describe('release workflow contract', () => {
   })
 
   test('builds workspace declarations before checking source and test types', () => {
-    expect(ci.indexOf('run: bun run type-check')).toBeGreaterThan(ci.indexOf('run: bun run build'))
+    // Every app slice builds, then runs its own commands (type checks among them).
+    expect(ci).toContain('bun run type-check')
+    expect(ci.indexOf('run: ${{ matrix.run }}')).toBeGreaterThan(ci.indexOf('run: bun run build'))
+    expect(ci.indexOf('run: bun run build')).toBeGreaterThan(-1)
   })
 
   test('publishes to this repository with the workflow token, scoped per job', () => {

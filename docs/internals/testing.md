@@ -5,16 +5,16 @@ test, when a suite is slow or flaky, or when you add a package that has tests.
 
 ## Terminology
 
-| Term             | Meaning                                                                                     | Boundary                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Unit test        | A `*.test.ts` or `*.test.tsx` file. One process, no real time, shell, watcher or network.   | Runs in parallel workers, each file in a fresh global object (`--parallel`, `--isolate`). |
-| DOM test         | A `*.dom.test.tsx` file: a unit test that renders into happy-dom.                           | Registers its own DOM; queries by role or label.                                          |
-| Integration test | A `*.integration.test.ts` file. Drives real processes, PTYs, file watchers or long replays. | Runs in the package's `test:integration` script, never in `test`.                         |
-| Test helper      | `@localixai/testing`: temp dirs, deadline-bound processes, git environment, network guard.  | Shared by every workspace; package fixtures stay in that package's `src/testing/`.        |
+| Term             | Meaning                                                                                     | Boundary                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Unit test        | A `*.test.ts` or `*.test.tsx` file. One process, no real time, shell, watcher or network.   | Large suites run as shards: N `bun test --shard` processes, each loading the module graph once. |
+| DOM test         | A `*.dom.test.tsx` file: a unit test that renders into happy-dom.                           | Registers its own DOM; queries by role or label.                                                |
+| Integration test | A `*.integration.test.ts` file. Drives real processes, PTYs, file watchers or long replays. | Runs in the package's `test:integration` script, never in `test`.                               |
+| Test helper      | `@localixai/testing`: temp dirs, deadline-bound processes, git environment, network guard.  | Shared by every workspace; package fixtures stay in that package's `src/testing/`.              |
 
 These follow the small and medium test sizes of
 [Software Engineering at Google](https://abseil.io/resources/swe-book/html/ch11.html): a unit test
-never waits on the machine, so the parallel run stays fast and deterministic.
+never waits on the machine, so the sharded run stays fast and deterministic.
 
 ## Where tests run
 
@@ -46,7 +46,7 @@ variables and makes a request to a non-loopback host fail at once, naming the UR
    identity.
 6. Stub `fetch` (`apps/api/src/testing/fetch-stub.ts`). A server in an integration test binds to
    `127.0.0.1` on port `0`. Wrap a deliberately live call in `allowNetwork()`.
-7. Make each file pass alone, in random order and under `--parallel`: register the DOM, call
+7. Make each file pass alone, in random order and isolated (`--isolate`): register the DOM, call
    `mock.module` and reset stores in that file. Never rely on another file's setup.
 8. Leave nothing on `globalThis`; `scripts/test-globals-guard.ts` fails the run otherwise.
 9. Build data with the package's fixtures (`makeX(overrides)` in `src/testing/`). Add a builder
@@ -59,19 +59,24 @@ variables and makes a request to a non-loopback host fail at once, naming the UR
     that has one when `CI` is set. Use `test.todo` or `test.skipIf(condition)` with a reason.
 13. A regression test fails without its fix. Name the test after the behaviour it pins.
 
-Before you finish, run the file alone and with `bun test --parallel --randomize <file>`.
+Before you finish, run the file alone and with `bun test --isolate --randomize <file>`.
 
 ## Adding a package with tests
 
 | Need                  | Mechanism                                                                                        |
 | --------------------- | ------------------------------------------------------------------------------------------------ |
-| Unit tests            | `"test": "bun test src"`; add `--parallel=N` when the suite takes more than a few seconds.       |
+| Unit tests            | `"test": "bun test src"`; past a few seconds, `bun ../../scripts/test-shards.mjs N src`.         |
 | Integration tests     | `"test:integration": "bun test integration.test"`, and `--path-ignore-patterns` on `test`.       |
 | Preloads              | A `bunfig.toml` whose `[test] preload` lists `scripts/test-deadline.ts` and the testing preload. |
 | Inputs outside itself | `$TURBO_ROOT$/…` globs in the package's `turbo.json`, so the cache misses when they change.      |
 
 `scripts/test-tiers.test.ts` fails when a package's integration files are not split this way or its
 `bunfig.toml` does not list the preload.
+
+Do not use `bun test --parallel` for a whole suite. It isolates every file, so each one loads and
+transpiles the module graph again: on apps/api's chat tests four isolated workers spent four times
+the CPU of a serial run, while four shards finished 2.5 times faster than serial at 1.4 times its
+CPU.
 
 ## Finding a slow test
 

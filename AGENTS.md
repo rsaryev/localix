@@ -66,8 +66,9 @@ colocated `*.test.ts`; `*.dom.test.tsx` for interaction or accessibility evidenc
 `*.integration.test.ts` for real processes, PTYs, watchers or long replays (never in `test`). Unit
 tests never sleep: inject the delay, clock or window as an option. Use `@localixai/testing` for temp
 dirs (`tempDirPerTest`), processes (`run`, deadline + SIGKILL), git (`scratchGitEnv`) and network
-(stub `fetch`; real hosts fail). Each file passes alone and under `--parallel`. Add a regression
-test that fails without the fix. No coverage threshold.
+(stub `fetch`; real hosts fail). Each file passes alone and under `--isolate`; run big suites as
+shards (`scripts/test-shards.mjs`), never `--parallel`. Add a regression test that fails without the
+fix. No coverage threshold.
 
 ## Commits and Pull Requests
 

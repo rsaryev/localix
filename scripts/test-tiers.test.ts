@@ -56,7 +56,9 @@ describe('test tiers', () => {
   for (const dir of packages) {
     test(`${dir} runs its integration files in test:integration, not in test`, () => {
       const { scripts = {} } = JSON.parse(readFileSync(join(root, dir, 'package.json'), 'utf8'))
-      expect(scripts['test:integration']).toMatch(/^bun test .*\bintegration\.test$/u)
+      expect(scripts['test:integration']).toMatch(
+        /^bun (test|\.\.\/\.\.\/scripts\/test-shards\.mjs \d+) .*\bintegration\.test$/u,
+      )
       expect(scripts.test).toContain("--path-ignore-patterns='**/*.integration.test.ts'")
     })
   }

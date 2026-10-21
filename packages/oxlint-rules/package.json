@@ -10,7 +10,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "bun test --parallel=2 src",
+    "test": "bun test src",
     "type-check": "tsc --noEmit",
     "clean": "shx rm -rf .turbo"
   },

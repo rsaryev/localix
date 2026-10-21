@@ -12,7 +12,18 @@ type Step = {
   'continue-on-error'?: boolean
   with?: Record<string, string>
 }
-type Job = { steps: Step[]; needs?: string[]; if?: string; 'runs-on': string | string[] }
+type Job = {
+  steps: Step[]
+  needs?: string[]
+  if?: string
+  'runs-on': string | string[]
+  'timeout-minutes'?: number
+  env?: Record<string, string>
+  strategy?: {
+    'fail-fast'?: boolean
+    matrix: { include: { check: string; cache: string; run: string }[] }
+  }
+}
 type Workflow = {
   env?: Record<string, string>
   jobs: Record<string, Job>
@@ -21,36 +32,22 @@ type Workflow = {
 const ci = Bun.YAML.parse(read('.github/workflows/ci.yml')) as Workflow
 const release = Bun.YAML.parse(read('.github/workflows/release.yml')) as Workflow
 const landing = Bun.YAML.parse(read('.github/workflows/landing.yml')) as Workflow
-const gates = ['check:release', 'type-check', 'check:tests', 'test', 'check:bundle']
-
-function errors(steps: Step[]): string[] {
-  const failures: string[] = []
-  if (steps.filter((step) => step.run === 'bun run build').length !== 1) {
-    failures.push('Expected one workspace build')
-  }
-  if (
-    steps.filter(
-      (step) => step.uses === './.github/actions/setup-workspace' && step.with?.install !== 'false',
-    ).length !== 1
-  ) {
-    failures.push('Expected one dependency install')
-  }
-  const build = steps.findIndex((step) => step.run === 'bun run build')
-  for (const gate of gates) {
-    const index = steps.findIndex((step) => step.run === `bun run ${gate}`)
-    if (index <= build || steps[index]?.if || steps[index]?.['continue-on-error']) {
-      failures.push(`Missing required gate after build: ${gate}`)
-    }
-  }
-  const bundle = steps.findIndex((step) => step.run === 'bun run check:bundle')
-  const rustTools = steps.findIndex(
-    (step) =>
-      step.uses === './.github/actions/setup-desktop' && step.with?.['build-native'] === 'false',
-  )
-  if (rustTools < 0 || rustTools >= bundle)
-    failures.push('Missing Rust tools before desktop bundle')
-  return failures
-}
+const gates = [
+  'check:release',
+  'type-check',
+  'check:tests',
+  'test:unit',
+  'test:system',
+  'check:bundle',
+]
+const slices = ci.jobs.app.strategy?.matrix.include ?? []
+/** Every `bun run <script>` the app matrix runs, slice by slice. */
+const sliceCommands = slices.flatMap((slice) =>
+  slice.run
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean),
+)
 
 describe('CI minute budget contract', () => {
   test('runs every job on GitHub-hosted runners', () => {
@@ -107,101 +104,10 @@ describe('CI minute budget contract', () => {
     expect(JSON.parse(read('turbo.json')).globalDependencies).toContain('.nvmrc')
   })
 
-  test('sets up bundle metadata tools independently of the parallel Rust job', () => {
-    expect(ci.env?.RUST_TOOLCHAIN).toBe('1.96.1')
-    const steps = ci.jobs.app.steps
-    const setup = steps.find((step) => step.name === 'Setup desktop bundle tools')!
-    expect(setup.with?.toolchain).toBe('${{ env.RUST_TOOLCHAIN }}')
-    expect(errors(steps.filter((step) => step !== setup))).toContain(
-      'Missing Rust tools before desktop bundle',
-    )
-    expect(errors([...steps.filter((step) => step !== setup), setup])).toContain(
-      'Missing Rust tools before desktop bundle',
-    )
-    const desktop = Bun.YAML.parse(read('.github/actions/setup-desktop/action.yml'))
-    expect(
-      desktop.runs.steps.find((step: Step) => step.name === 'Install Linux build dependencies').if,
-    ).toContain("inputs.build-native == 'true'")
-    expect(
-      desktop.runs.steps.find((step: Step) => step.name === 'Cache Rust compilation').if,
-    ).toContain("inputs.build-native == 'true'")
-  })
-
   test('gives checks, desktop releases, and website deployments distinct names', () => {
     expect(Bun.YAML.parse(read('.github/workflows/ci.yml')).name).toBe('Checks')
     expect(Bun.YAML.parse(read('.github/workflows/release.yml')).name).toBe('Desktop Release')
     expect(Bun.YAML.parse(read('.github/workflows/landing.yml')).name).toBe('Website Deploy')
-  })
-
-  test('runs every JavaScript gate with one install and build', () => {
-    expect(errors(ci.jobs.app.steps)).toEqual([])
-    expect(ci.jobs.app.steps.flatMap((step) => step.run?.match(/^bun run .+$/gmu) ?? [])).toEqual(
-      ['build', ...gates].map((gate) => `bun run ${gate}`),
-    )
-    const builds = Object.values(ci.jobs).flatMap((job) =>
-      job.steps.filter((step) => step.run === 'bun run build'),
-    )
-    expect(builds).toHaveLength(1)
-  })
-
-  test('release verification requires green CI instead of repeating its gates', () => {
-    const steps = release.jobs.verify.steps
-    const verify = steps.map((step) => step.run ?? '').join('\n')
-    expect(verify).toContain('bun scripts/require-green-ci.mjs')
-    // Release tooling tests are part of that CI run; verification adds only the signing check.
-    expect(verify.match(/^\s*bun run .+$/gmu)).toBeNull()
-    // CI must keep running every gate on push to main, since the release relies on that run.
-    for (const gate of gates) {
-      expect(ci.jobs.app.steps.some((step) => step.run === `bun run ${gate}`)).toBe(true)
-    }
-  })
-
-  test('rejects a repeated build, missing test gate or optional test gate', () => {
-    const steps = ci.jobs.app.steps
-    expect(errors([...steps, { run: 'bun run build' }])).toContain('Expected one workspace build')
-    expect(errors(steps.filter((step) => step.run !== 'bun run test'))).toContain(
-      'Missing required gate after build: test',
-    )
-    expect(
-      errors(
-        steps.map((step) =>
-          step.run === 'bun run test' ? { ...step, 'continue-on-error': true } : step,
-        ),
-      ),
-    ).toContain('Missing required gate after build: test')
-  })
-
-  test('runs two jobs, scans secrets and workflows beside Rust, and reports one status', () => {
-    expect(Object.keys(ci.jobs)).toEqual(['app', 'desktop', 'checks'])
-    expect(ci.jobs.desktop.needs).toBeUndefined()
-    expect(ci.jobs.desktop.if).toBeUndefined()
-    const steps = ci.jobs.desktop.steps
-    expect(steps[0]?.with?.['fetch-depth']).toBe(0)
-    const install = steps.find((step) => step.name === 'Install pinned scanners')
-    expect(install?.run).toContain('sha256sum -c -')
-    for (const tool of ['gitleaks', 'actionlint', 'zizmor']) expect(install?.run).toContain(tool)
-    const scan = steps.find((step) => step.name === 'Scan history for secrets')
-    expect(scan?.run).toContain('--config .gitleaks.toml')
-    const lint = steps.find((step) => step.name === 'Lint workflows')
-    expect(lint?.run).toContain('"$RUNNER_TEMP/actionlint"')
-    expect(lint?.run).toContain('"$RUNNER_TEMP/zizmor" --offline --min-severity medium .github')
-    for (const step of [scan, lint]) {
-      expect(step?.if).toBeUndefined()
-      expect(steps.indexOf(step!)).toBeLessThan(
-        steps.findIndex((s) => s.name === 'Detect desktop changes'),
-      )
-    }
-    const rustCheck = steps.find((step) => step.run === 'bun run check:rust')
-    expect(rustCheck?.if).toBe("steps.filter.outputs.rust == 'true'")
-  })
-
-  test('requires every job through one status that fails on anything but success or skip', () => {
-    const checks = ci.jobs.checks
-    expect(checks.needs).toEqual(['app', 'desktop'])
-    expect(checks.if).toBe('always()')
-    const run = checks.steps.map((step) => step.run ?? '').join('\n')
-    expect(run).toContain('success | skipped) ;;')
-    expect(run).toContain('*) exit 1 ;;')
   })
 
   test('restores dependencies from a GitHub cache archive keyed by the lockfile', () => {
@@ -228,12 +134,88 @@ describe('CI minute budget contract', () => {
     expect(existsSync(join(root, '.github/dependabot.yml'))).toBe(false)
   })
 
-  test('runs the package and repository suites side by side', () => {
+  test('cancels superseded landing pushes and PRs independently of manual deployments', () => {
+    expect(landing.concurrency.group).toBe('landing-${{ github.event_name }}-${{ github.ref }}')
+    expect(landing.concurrency['cancel-in-progress']).toBe(
+      "${{ github.event_name == 'push' || github.event_name == 'pull_request' }}",
+    )
+  })
+
+  test('checks the workspace as parallel slices that together run every gate', () => {
+    const app = ci.jobs.app
+    expect(app.strategy?.['fail-fast']).toBe(false)
+    expect(slices.map((slice) => slice.cache)).toEqual(['types', 'unit', 'system', 'bundle'])
+    expect([...sliceCommands].sort()).toEqual(gates.map((gate) => `bun run ${gate}`).sort())
+    // One install and one build per slice, the build before the slice's own commands.
+    const runs = app.steps.map((step) => step.run ?? step.uses ?? '')
+    expect(runs.filter((run) => run === './.github/actions/setup-workspace')).toHaveLength(1)
+    expect(runs.filter((run) => run === 'bun run build')).toHaveLength(1)
+    const build = runs.indexOf('bun run build')
+    const check = app.steps.findIndex((step) => step.run === '${{ matrix.run }}')
+    expect(check).toBeGreaterThan(build)
+    expect(app.steps[check]?.if).toBeUndefined()
+    expect(app.steps[check]?.['continue-on-error']).toBeUndefined()
+    // The bundle slice needs the Rust bundle tools; no other slice pays for them.
+    const tools = app.steps.find((step) => step.name === 'Setup desktop bundle tools')
+    expect(tools?.if).toBe("matrix.cache == 'bundle'")
+    expect(tools?.with?.['build-native']).toBe('false')
+    expect(tools?.with?.toolchain).toBe('${{ env.RUST_TOOLCHAIN }}')
+    expect(ci.env?.RUST_TOOLCHAIN).toBe('1.96.1')
+    expect(app.steps.indexOf(tools!)).toBeLessThan(check)
+  })
+
+  test('the slices run what a local bun run test runs, split in two', () => {
     const scripts = JSON.parse(read('package.json')).scripts as Record<string, string>
     expect(scripts.test).toBe('bun scripts/test-all.mjs')
-    const runner = read('scripts/test-all.mjs')
-    expect(runner).toMatch(/args: \[\s*'turbo',\s*'test',/u)
-    expect(runner).toContain("args: ['run', 'test:repo']")
+    expect(scripts['test:unit']).toBe('bun scripts/test-all.mjs unit')
+    expect(scripts['test:system']).toBe('bun scripts/test-all.mjs system')
+  })
+
+  test('release verification requires green CI instead of repeating its gates', () => {
+    const verify = release.jobs.verify.steps.map((step) => step.run ?? '').join('\n')
+    expect(verify).toContain('bun scripts/require-green-ci.mjs')
+    expect(verify.match(/^\s*bun run .+$/gmu)).toBeNull()
+  })
+
+  test('scans secrets and workflows beside Rust, and reports one status', () => {
+    expect(Object.keys(ci.jobs)).toEqual(['app', 'desktop', 'checks'])
+    expect(ci.jobs.desktop.needs).toBeUndefined()
+    expect(ci.jobs.desktop.if).toBeUndefined()
+    const steps = ci.jobs.desktop.steps
+    expect(steps[0]?.with?.['fetch-depth']).toBe(0)
+    const install = steps.find((step) => step.name === 'Install pinned scanners')
+    expect(install?.run).toContain('sha256sum -c -')
+    for (const tool of ['gitleaks', 'actionlint', 'zizmor']) expect(install?.run).toContain(tool)
+    const scan = steps.find((step) => step.name === 'Scan history for secrets')
+    expect(scan?.run).toContain('--config .gitleaks.toml')
+    const lint = steps.find((step) => step.name === 'Lint workflows')
+    expect(lint?.run).toContain('"$RUNNER_TEMP/actionlint"')
+    expect(lint?.run).toContain('"$RUNNER_TEMP/zizmor" --offline --min-severity medium .github')
+    for (const step of [scan, lint]) {
+      expect(step?.if).toBeUndefined()
+      expect(steps.indexOf(step!)).toBeLessThan(
+        steps.findIndex((s) => s.name === 'Detect desktop changes'),
+      )
+    }
+    const rustCheck = steps.find((step) => step.run === 'bun run check:rust')
+    expect(rustCheck?.if).toBe("steps.filter.outputs.rust == 'true'")
+  })
+
+  test('requires every job through one status that names each result', () => {
+    const checks = ci.jobs.checks
+    expect(checks.needs).toEqual(['app', 'desktop'])
+    expect(checks.if).toBe('always()')
+    const run = checks.steps.map((step) => step.run ?? '').join('\n')
+    expect(run).toContain('.result == "success" or .result == "skipped"')
+    expect(run).toContain('"\\(.key): \\(.value.result)"')
+  })
+
+  test('every job has a deadline sized for a hosted runner', () => {
+    for (const [name, job] of Object.entries(ci.jobs))
+      expect({ name, minutes: job['timeout-minutes'] }).toEqual({
+        name,
+        minutes: name === 'checks' ? 5 : name === 'desktop' ? 30 : 25,
+      })
   })
 
   test('a pull request checks what it changes; the merge queue and main check everything', () => {
@@ -250,32 +232,26 @@ describe('CI minute budget contract', () => {
     expect(read('scripts/test-all.mjs')).toContain('...filter')
   })
 
-  test('cancels superseded pushes without cancelling a manual run', () => {
-    expect(ci.concurrency.group).toBe('ci-${{ github.event_name }}-${{ github.ref }}')
-    expect(ci.concurrency['cancel-in-progress']).toBe(
-      "${{ github.event_name != 'workflow_dispatch' }}",
+  test('cancels a superseded pull-request run, never a run for a commit on main', () => {
+    expect(ci.concurrency.group).toBe(
+      'ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}',
     )
+    expect(ci.concurrency['cancel-in-progress']).toBe("${{ github.event_name == 'pull_request' }}")
   })
 
-  test('cancels superseded landing pushes and PRs independently of manual deployments', () => {
-    expect(landing.concurrency.group).toBe('landing-${{ github.event_name }}-${{ github.ref }}')
-    expect(landing.concurrency['cancel-in-progress']).toBe(
-      "${{ github.event_name == 'push' || github.event_name == 'pull_request' }}",
+  test('each slice restores its own Turbo archive before building, and only main saves it', () => {
+    const steps = ci.jobs.app.steps
+    const restore = steps.findIndex((step) => step.name === 'Restore Turbo cache')
+    const build = steps.findIndex((step) => step.run === 'bun run build')
+    expect(restore).toBeGreaterThan(-1)
+    expect(build).toBeGreaterThan(restore)
+    expect(steps[restore]?.with?.key).toContain('turbo-${{ matrix.cache }}-')
+    expect(steps[restore]?.with?.['restore-keys']).toBe(
+      "turbo-${{ matrix.cache }}-${{ runner.os }}-${{ hashFiles('bun.lock') }}-\nturbo-${{ matrix.cache }}-${{ runner.os }}-\n",
     )
-  })
-
-  test('CI reuses the Turbo cache before building', () => {
-    for (const job of [ci.jobs.app]) {
-      const restore = job.steps.findIndex((step) => step.name === 'Restore Turbo cache')
-      const build = job.steps.findIndex((step) => step.run === 'bun run build')
-      expect(restore).toBeGreaterThan(-1)
-      expect(build).toBeGreaterThan(restore)
-      expect(job.steps[restore]?.with?.['restore-keys']).toBe(
-        "turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-\nturbo-js-${{ runner.os }}-\n",
-      )
-      const save = job.steps.find((step) => step.name === 'Save Turbo cache')
-      expect(save?.with?.key).toBe(job.steps[restore]?.with?.key)
-      expect(save?.if).toContain('always()')
-    }
+    const save = steps.find((step) => step.name === 'Save Turbo cache')
+    expect(save?.with?.key).toBe(steps[restore]?.with?.key)
+    expect(save?.if).toContain('always()')
+    expect(save?.if).toContain("github.ref == 'refs/heads/main'")
   })
 })

@@ -1,3 +1,7 @@
 [test]
 # Bun reads bunfig.toml only from the directory a run starts in: list the shared preloads here.
-preload = ["../../scripts/test-deadline.ts", "../../packages/testing/src/preload/index.ts"]
+preload = [
+  "../../scripts/test-deadline.ts",
+  "../../packages/testing/src/preload/index.ts",
+  "./src/testing/preload.ts",
+]
