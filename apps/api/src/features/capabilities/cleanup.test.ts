@@ -21,7 +21,7 @@ async function setup() {
   })
   const rules = createCapabilityRuleRepository(db)
   await rules.replace('u1', 'a1', [
-    { action: 'plugin:kanban', resource: '*', effect: 'allow' },
+    { action: 'plugin:acme-board', resource: '*', effect: 'allow' },
     { action: 'mcp:github', resource: '*', effect: 'allow' },
     { action: 'mcp:github/create_issue', resource: '*', effect: 'deny' },
     { action: 'mcp:github', resource: 'repo:x', effect: 'ask' },
@@ -52,7 +52,7 @@ describe('capability cleanup', () => {
     await feed.settle()
     await t.cleanup.removed('mcp', 'github', server.id)
     expect((await t.rules.read('u1', 'a1')).map((r) => `${r.action} ${r.resource}`)).toEqual([
-      'plugin:kanban *',
+      'plugin:acme-board *',
       // The person's own rule about particular arguments stays.
       'mcp:github repo:x',
       'mcp:gitlab *',
@@ -64,17 +64,17 @@ describe('capability cleanup', () => {
   test('a plugin removed from one scope but installed in another keeps everything', async () => {
     const t = await setup()
     const plugins = createCapabilitySourceRepository(t.db, 'plugin')
-    await plugins.upsert('u1', '', 'kanban', { source: 'local' })
-    await plugins.upsert('u1', 'p1', 'kanban', { source: 'local' })
+    await plugins.upsert('u1', '', 'acme-board', { source: 'local' })
+    await plugins.upsert('u1', 'p1', 'acme-board', { source: 'local' })
     const feed = createCoreChangeFeed(t.db)
     await feed.subscribe('capability-cleanup', t.cleanup.handlers, { kind: 'reactor' })
-    await plugins.remove('u1', 'p1', 'kanban')
+    await plugins.remove('u1', 'p1', 'acme-board')
     await feed.settle()
     expect(t.unbound).toEqual([])
-    await plugins.remove('u1', '', 'kanban')
+    await plugins.remove('u1', '', 'acme-board')
     await feed.settle()
-    expect(t.unbound).toEqual(['plugin:kanban'])
-    expect((await t.rules.read('u1', 'a1')).some((r) => r.action === 'plugin:kanban')).toBe(false)
+    expect(t.unbound).toEqual(['plugin:acme-board'])
+    expect((await t.rules.read('u1', 'a1')).some((r) => r.action === 'plugin:acme-board')).toBe(false)
     await feed.close()
   })
 })

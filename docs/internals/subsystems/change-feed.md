@@ -25,6 +25,36 @@ cascades: a chat's deletion takes its messages. A consumer's handlers are typed 
 registry, so a kind added to it fails to compile until every consumer gives it a handler or
 `'ignore'`.
 
+## Kinds and consumers
+
+| Kind                  | Owner records it                                                   | Consumers                                     |
+| --------------------- | ------------------------------------------------------------------ | --------------------------------------------- |
+| `chat.session`        | Chat writers; deletion of a tree, one notice per id                | Semantic index, usage ledger, session residue |
+| `chat.message`        | Inserts; edits, a turn's usage moving, the final flush             | Semantic index, usage ledger                  |
+| `provider.connection` | Every connection or key change, deletion in its transaction        | Route repair, notifications cleanup, relay    |
+| `project`             | Created, moved, renamed, deleted, restored (not settings writes)   | Plugin backends                               |
+| `agent`               | Rename and deletion by handle, with the stable `agentId`; `resync` | Semantic index, agent seats                   |
+| `plugin`, `mcp`       | Removal from `capability_source`, by name; `resync`                | Semantic index, capability cleanup            |
+| `skill`               | `resync` after a capability bump                                   | Semantic index                                |
+| `capability.rule`     | Every rule-list write, by agent, in its transaction                | Relay                                         |
+| `local.model`         | Installed or removed by id; `resync` at boot                       | Route repair                                  |
+
+The consumers besides the semantic index are wired in `apps/api/src/bootstrap/core-reactors.ts`:
+
+- `route-repair` (`features/chat/route-repair/`) rebinds seats, choice maps, project models and
+  workload routes whose connection is gone, to the account `routeReadiness` calls ready, and
+  surfaces loops whose chat no account can serve.
+- `notifications-cleanup` settles the provider condition rows of a deleted connection.
+- `agent-seats` (`features/chat/agent-seats/`) follows a renamed agent's handle; a deleted agent
+  leaves shared rooms and its picks are forgotten.
+- `capability-cleanup` (`features/capabilities/cleanup.ts`) drops a removed plugin's or server's
+  switches, MCP sign-in and vault bindings.
+- `session-residue` (`features/chat/session-residue.ts`) reaps monitors, loops, inbox rows and the
+  scratch directory of every id of a deleted chat tree.
+- `plugin-backends` refreshes the plugin backend host when a project's scope moves.
+- `relay` (`features/realtime/relay.ts`) pokes client topics; `usage-ledger`
+  (`features/usage/ledger-projector.ts`) derives chat-turn ledger rows from their messages.
+
 ## Producing
 
 `recordChanges(trx, stream, changes)` (`packages/change-feed/src/record.ts`) writes inside the
@@ -33,7 +63,9 @@ It never throws — a failure is logged, SQLite undoes that one statement, the p
 commits, and the consumer's reconcile closes the gap. Core producers call `recordCoreChanges`; chat
 writers use `chat/session-changes.ts`. Capability mutations all pass the capability revision, which
 announces `resync` for skills, plugins, MCP servers and agents once a burst settles
-(`capabilities/changes.ts`).
+(`capabilities/changes.ts`). A rule write bumps the revision itself, once, after its transaction;
+`capabilitiesChanged()` is the one entry point a service mutation uses, and it does not bump again
+inside a mutation that already did.
 
 ## Consuming
 
