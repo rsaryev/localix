@@ -19,19 +19,22 @@ concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
-# Two jobs share the two self-hosted runners and finish at about the same time: `app` builds and
-# tests the JavaScript workspace, `desktop` scans the repository and checks the Rust shell. Fork pull
-# requests run on GitHub-hosted runners. `checks` is the one result branch protection requires.
+# Two jobs run side by side on GitHub-hosted runners: `app` builds and tests the JavaScript
+# workspace, `desktop` scans the repository and checks the Rust shell. `checks` is the one result
+# branch protection requires.
 jobs:
   app:
     name: App (build, types, tests)
-    runs-on: >-
-      ${{ fromJSON(github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-latest"' ||
-      '["self-hosted","Linux","X64","localix-linux"]') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read
+    # A pull request builds, checks and tests only the packages it changes and their dependents
+    # (Turbo's --affected against the base commit; a global input selects everything). The merge
+    # queue and main check the whole tree, so nothing unchecked reaches main.
+    env:
+      TURBO_FILTER: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -40,7 +43,6 @@ jobs:
           fetch-depth: 0
 
       - name: Install test tools
-        if: runner.environment != 'self-hosted'
         run: |
           for attempt in 1 2 3; do
             sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break
@@ -51,13 +53,11 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
 
-      # Hosted runners only; a self-hosted runner keeps its Turbo cache on disk (setup-workspace).
       # An entry is keyed on the task's input hash inside Turbo, so a stale one is never replayed;
       # this key only picks which archive to start from. Saved with `always()`: a failing run still
       # leaves the tasks that passed warm for the next push.
       - name: Restore Turbo cache
         id: turbo-cache
-        if: runner.environment != 'self-hosted'
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
@@ -95,10 +95,21 @@ jobs:
       - name: Test desktop bundle
         run: bun run check:bundle
 
+      # The archive is restored and saved again on every main push, so without a bound it only
+      # grows. Entries untouched for two weeks are dropped; a task that still needs one rebuilds it.
+      - name: Prune Turbo cache
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          [ -d .turbo/cache ] || exit 0
+          find .turbo/cache -type f -mtime +14 -delete
+          du -sh .turbo/cache
+
+      # Only main writes an archive, as with the Rust cache: pull requests restore main's and
+      # cannot evict it from the repository's 10 GB cache quota with per-commit entries.
       - name: Save Turbo cache
         if: >-
-          always() && runner.environment != 'self-hosted' && steps.turbo-cache.outputs.cache-hit !=
-          'true'
+          always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          steps.turbo-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
@@ -106,10 +117,7 @@ jobs:
 
   desktop:
     name: Desktop (Rust) and repository scans
-    runs-on: >-
-      ${{ fromJSON(github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-22.04"' ||
-      '["self-hosted","Linux","X64","localix-linux"]') }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 45
     permissions:
       contents: read
@@ -182,7 +190,6 @@ jobs:
         uses: ./.github/actions/setup-desktop
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
-          persistent-target: 'true'
 
       - name: Check and test Rust
         if: steps.filter.outputs.rust == 'true'
@@ -194,10 +201,7 @@ jobs:
     name: Checks passed
     if: always()
     needs: [app, desktop]
-    runs-on: >-
-      ${{ fromJSON(github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-latest"' ||
-      '["self-hosted","Linux","X64","localix-linux"]') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Require every check

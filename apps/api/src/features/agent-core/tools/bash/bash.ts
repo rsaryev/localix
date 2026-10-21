@@ -57,6 +57,7 @@ export function createBashTool(
     spawnTerminalJob,
     pluginBinDirs: options.pluginBinDirs,
     waitHost: options.waitHost,
+    backgroundSettle: options.backgroundSettle,
   }
   // The WAIT rule (use `until`, never a sleep loop) is stated once, on the `until` field, which
   // is where the model is looking when it reaches for one. It used to be here, on the field,

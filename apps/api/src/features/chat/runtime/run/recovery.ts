@@ -44,6 +44,8 @@ export interface RecoveryArgs extends RetryCheckpoint {
 
 export interface FailedRunRecoveryArgs extends RecoveryArgs {
   error: unknown
+  /** The pre-retry wait; tests pass an instant one instead of sleeping the real backoff. */
+  wait?: (ms: number, signal: AbortSignal) => Promise<void>
 }
 
 /**
@@ -202,6 +204,7 @@ function backoffDelay(ms: number, signal: AbortSignal): Promise<void> {
  */
 export async function attemptTransientRetry({
   error,
+  wait = backoffDelay,
   ...rest
 }: FailedRunRecoveryArgs): Promise<boolean> {
   const info = classifyRunError(rest.env.deps, rest.userId, error)
@@ -212,7 +215,7 @@ export async function attemptTransientRetry({
   console.warn(
     `[agent-runner] transient provider failure in session ${rest.session.id} — retrying in ${backoff}ms (attempt ${retryCount + 1}/${MAX_TRANSIENT_RETRIES}): ${info.userMessage}`,
   )
-  await backoffDelay(backoff, rest.abort.signal)
+  await wait(backoff, rest.abort.signal)
   if (rest.abort.signal.aborted) return false
 
   const { env, userId, session, assistantMessageId, params, abort } = rest

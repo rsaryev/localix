@@ -22,6 +22,7 @@ const ROOT = join(import.meta.dir, '..')
 const WORKSPACE_ROOTS = ['apps', 'plugins']
 const DEADLINE = '../../scripts/test-deadline.ts'
 const KIT_PRELOAD = '../../packages/kit/test-preload.ts'
+const UI_PRELOAD = './src/testing/preload.ts'
 
 /** What is wrong with a plugin's `bunfig.toml` text, or `[]` when its preload chain is right. */
 export function preloadViolations(bunfig: string | undefined): string[] {
@@ -31,7 +32,8 @@ export function preloadViolations(bunfig: string | undefined): string[] {
   const preload = Array.isArray(raw) ? raw : typeof raw === 'string' ? [raw] : []
   const problems: string[] = []
   if (preload[0] !== DEADLINE) problems.push(`[test].preload must start with ${DEADLINE}`)
-  const kit = preload.indexOf(KIT_PRELOAD)
+  // apps/ui warms Radix synchronously in its own preload, which also works under `--isolate`.
+  const kit = preload.findIndex((entry) => entry === KIT_PRELOAD || entry === UI_PRELOAD)
   if (kit === -1) problems.push(`[test].preload must include ${KIT_PRELOAD}`)
   else if (preload.slice(1, kit).some((entry) => entry !== DEADLINE))
     problems.push(`${KIT_PRELOAD} must run before the plugin's own preload`)

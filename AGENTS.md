@@ -13,7 +13,7 @@ Localix uses Bun 1.3.14 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) docume
 - For requested commits, stage intended changes and commit. Pre-commit checks formatting, lint,
   affected source/test types, focused tests, and applicable Rust formatting/Clippy; do not duplicate
   those checks manually or bypass failures.
-- Pre-push runs the CI gates over the whole tree from the Turbo cache; commit or stash first. Full
+- Pre-push runs the CI gates for affected packages (`--affected`); commit or stash first. Full
   builds belong to CI. Run optional architecture, documentation, and audit gates when relevant or
   explicitly requested. Report verification accurately; stop servers and browsers you started.
 
@@ -61,9 +61,13 @@ skills.
 
 ## Testing
 
-Use Bun Test with colocated `*.test.ts`/`*.test.tsx`; use `*.dom.test.tsx` for interaction or
-accessibility evidence. Add meaningful regression tests for behavior changes and failure cases for
-guards. No coverage threshold. Child-process tests require a timeout and `killSignal: 'SIGKILL'`.
+Read [docs/internals/testing.md](docs/internals/testing.md) before writing tests. Use Bun Test with
+colocated `*.test.ts`; `*.dom.test.tsx` for interaction or accessibility evidence;
+`*.integration.test.ts` for real processes, PTYs, watchers or long replays (never in `test`). Unit
+tests never sleep: inject the delay, clock or window as an option. Use `@localixai/testing` for temp
+dirs (`tempDirPerTest`), processes (`run`, deadline + SIGKILL), git (`scratchGitEnv`) and network
+(stub `fetch`; real hosts fail). Each file passes alone and under `--parallel`. Add a regression
+test that fails without the fix. No coverage threshold.
 
 ## Commits and Pull Requests
 

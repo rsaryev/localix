@@ -87,7 +87,18 @@ if (plan.typed.length) {
 }
 if (plan.tests.length) {
   console.log(`[pre-commit] Running ${plan.tests.length} changed or co-located test files`)
-  run('bun', ['test', ...plan.tests.map((path) => `./${path}`)], { timeout: 300_000 })
+  // Each workspace runs its own files from its own directory: Bun reads bunfig.toml only where a
+  // run starts, so a package's preloads (DOM warm-up, mocks, guards) apply only from there.
+  const workspaces = readWorkspaces(process.cwd()).sort((a, b) => b.path.length - a.path.length)
+  const byOwner = new Map()
+  for (const path of plan.tests) {
+    const owner = workspaces.find((workspace) => isInWorkspace(workspace, path))?.path ?? '.'
+    byOwner.set(owner, [...(byOwner.get(owner) ?? []), path])
+  }
+  for (const [owner, files] of byOwner) {
+    const local = files.map((path) => `./${owner === '.' ? path : path.slice(owner.length + 1)}`)
+    run('bun', ['test', ...local], { cwd: join(process.cwd(), owner), timeout: 300_000 })
+  }
 }
 if (plan.rust) {
   const cargo = spawnSync('cargo', ['--version'], { timeout: 5000, killSignal: 'SIGKILL' })

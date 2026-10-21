@@ -142,6 +142,7 @@
         "internals/architecture.md",
         "internals/environment.md",
         "internals/contributing.md",
+        "internals/testing.md",
         "internals/shared-view-state.md"
       ]
     }

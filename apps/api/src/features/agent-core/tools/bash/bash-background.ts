@@ -24,15 +24,14 @@ import {
 import { childBgProc, ptyBgProc, type BgProc, type BackgroundInputPayload } from './bash-process'
 import { classifyBgExit, type BashToolInput, type BashToolDetails } from './bash-types'
 import type { BashRunContext } from './bash-run'
+import type { BackgroundSettleWindow } from './bash-run-context'
 
 const BACKGROUND_STREAM_THROTTLE_MS = 120
 // Before returning from a background spawn, briefly watch its output so the model
 // sees the early lines that matter (e.g. a dev server's "Local: http://localhost:XXXX",
 // a compile error, an immediate crash) in the SAME turn — instead of moving on blind
 // and wasting tool calls hunting for the port / status. The job keeps running after.
-const BACKGROUND_SETTLE_MIN_MS = 2_000
-const BACKGROUND_SETTLE_MAX_MS = 3_000
-const BACKGROUND_SETTLE_QUIET_MS = 350
+const BACKGROUND_SETTLE: BackgroundSettleWindow = { minMs: 2_000, maxMs: 3_000, quietMs: 350 }
 
 type Updater = AgentToolUpdateCallback<BashToolDetails>
 type Ctx = AgentToolExecutionContext
@@ -261,6 +260,7 @@ export async function runBackgroundCommand(
   // An adopted job already spent its whole foreground budget waiting — far longer
   // than this window would — so watching for early output again would only delay
   // the answer the model is waiting for. Return with what the foreground captured.
+  const settle = ctx.backgroundSettle ?? BACKGROUND_SETTLE
   if (!adopted)
     await awaitBackgroundSettle(
       {
@@ -272,11 +272,7 @@ export async function runBackgroundCommand(
         hasOutput: () => bgOutput() !== '',
         lastChunkAt: () => bgLastChunkAt,
       },
-      {
-        minMs: BACKGROUND_SETTLE_MIN_MS,
-        maxMs: BACKGROUND_SETTLE_MAX_MS,
-        quietMs: BACKGROUND_SETTLE_QUIET_MS,
-      },
+      settle,
       startMs,
     )
 
@@ -290,7 +286,7 @@ export async function runBackgroundCommand(
     earlyExited,
     exitCode: bgExitCode,
     ...(adopted ? { adoptedAfterSecs: adopted.foregroundSecs } : {}),
-    settleMaxMs: BACKGROUND_SETTLE_MAX_MS,
+    settleMaxMs: settle.maxMs,
   })
   return { content, details: initialDetails }
 }

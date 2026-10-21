@@ -28,12 +28,16 @@ export function touchesCollection(change: Pick<PluginWorkspaceChange, 'paths'>):
  * the sidebar kept the old requests for up to a poll. The host's workspace watcher hears those
  * writes; healthy lists need no poll; unsupported or failed watchers retain a fallback.
  */
-export function useCollectionChanges(sessionId: string, refresh: () => void): boolean | null {
+export function useCollectionChanges(
+  sessionId: string,
+  refresh: () => void,
+  options: { windowMs?: number } = {},
+): boolean | null {
   const onChange = useCallback(
     (change: PluginWorkspaceChange) => {
       if (touchesCollection(change)) refresh()
     },
     [refresh],
   )
-  return usePluginWorkspaceChanges(sessionId, onChange)
+  return usePluginWorkspaceChanges(sessionId, onChange, { windowMs: options.windowMs })
 }

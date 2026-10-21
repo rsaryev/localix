@@ -16,6 +16,11 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"],
       "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"],
+      "outputs": []
     }
   }
 }

@@ -66,7 +66,7 @@ env:
 jobs:
   deploy:
     name: Deploy website
-    runs-on: [self-hosted, Linux, X64, localix-linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     # A pull request from a fork has no access to secrets, so it cannot deploy.
     if:
@@ -151,7 +151,7 @@ jobs:
           TARGET_ENVIRONMENT: ${{ steps.target.outputs.environment }}
 
       - name: Build website
-        run: vercel build $TARGET_FLAG --token "$VERCEL_TOKEN"
+        run: vercel build ${TARGET_FLAG:+"$TARGET_FLAG"} --token "$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           TARGET_FLAG: ${{ steps.target.outputs.flag }}
@@ -164,7 +164,7 @@ jobs:
         run: |
           # The CLI prints plain text here and JSON when it detects an agent, so the address is
           # read with a pattern that works for both, and readiness is asked of the API instead.
-          vercel deploy --prebuilt $TARGET_FLAG --token "$VERCEL_TOKEN" > deploy.out
+          vercel deploy --prebuilt ${TARGET_FLAG:+"$TARGET_FLAG"} --token "$VERCEL_TOKEN" > deploy.out
           url=$(grep -Eo 'https://[A-Za-z0-9.-]+\.vercel\.app' deploy.out | tail -n 1)
           test -n "$url" || { cat deploy.out >&2; echo "No deployment address in the CLI output" >&2; exit 1; }
           host="${url#https://}"

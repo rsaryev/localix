@@ -72,6 +72,8 @@ export async function runRule(
       cwd: root,
       stdout: 'pipe',
       stderr: 'pipe',
+      timeout: 30_000,
+      killSignal: 'SIGKILL',
     })
     const stdout = await new Response(child.stdout).text()
     await child.exited

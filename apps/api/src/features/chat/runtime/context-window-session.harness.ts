@@ -1,3 +1,4 @@
+// The emulated session both context-window integration suites replay.
 /**
  * A LONG CODING SESSION, EMULATED TURN BY TURN against the real context stack: the migrated
  * schema and model-context repository, `loadModelView` (the durable-fact decision), the chat
@@ -9,7 +10,7 @@
  * changes (when a checkpoint fires, how far it cuts, how big a request can get) is read off one
  * table. Everything is seeded and clockless: two runs produce the same log.
  */
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll } from 'bun:test'
 import { estimateChatMessageTokens, type ContextLimit } from '@localixai/agent'
 import { sql, type Kysely } from 'kysely'
 
@@ -25,23 +26,35 @@ import { bareFrame, freshLane, persistedRow, TEST_IDENTITY } from './history/tes
 import { checkpointAtTokens } from './model-view/checkpoint-policy'
 import { loadModelView } from './model-view/view'
 
-const VIEWER = 'agent:default'
-const SESSION = 's'
-const OVERHEAD = 12_000
+export const VIEWER = 'agent:default'
+export const SESSION = 's'
+export const OVERHEAD = 12_000
 
 let db: Kysely<AppDatabase>
-beforeAll(async () => {
-  db = createDatabase()
-  await migrateToLatest(db)
-  await sql`INSERT INTO agent_sessions (id, project_id, user_id, title) VALUES (${SESSION}, 'PRJ-1', 'u', 't')`.execute(
-    db,
-  )
-})
-afterAll(() => destroyDatabase(db))
+let users = 0
+
+/**
+ * Open the migrated database for the calling test file and close it after its last test. Files
+ * that share one process (a focused run of several files) share the database; it closes when the
+ * last of them is done.
+ */
+export function sessionDatabasePerFile(): void {
+  beforeAll(async () => {
+    if (users++ > 0) return
+    db = createDatabase()
+    await migrateToLatest(db)
+    await sql`INSERT INTO agent_sessions (id, project_id, user_id, title) VALUES (${SESSION}, 'PRJ-1', 'u', 't')`.execute(
+      db,
+    )
+  })
+  afterAll(async () => {
+    if (--users === 0) await destroyDatabase(db)
+  })
+}
 
 let sequence = 0
 let runs = 0
-async function store(row: PersistedMessage) {
+export async function store(row: PersistedMessage) {
   const next = (sequence += 1)
   await sql`INSERT INTO agent_messages (id, session_id, user_id, sequence, role, parent_id, payload_json)
     VALUES (${row.id}, ${SESSION}, 'u', ${next}, ${row.payload.role}, NULL, ${JSON.stringify(row.payload)})`.execute(
@@ -49,12 +62,12 @@ async function store(row: PersistedMessage) {
   )
 }
 
-const bytesOf = (wire: readonly unknown[]) =>
+export const bytesOf = (wire: readonly unknown[]) =>
   wire.map((m) =>
     JSON.stringify(m, (k, v) => (k === 'timestamp' || k === 'cacheAnchor' ? undefined : v)),
   )
 
-interface TurnLog {
+export interface TurnLog {
   turn: number
   /** Request size the provider measured for this turn's final request. */
   measured: number
@@ -70,13 +83,13 @@ interface TurnLog {
   appendOnly?: boolean
 }
 
-interface Options {
+export interface Options {
   window: number
   limit?: ContextLimit
   depth?: number
 }
 
-async function runSession({ window, limit, depth }: Options): Promise<TurnLog[]> {
+export async function runSession({ window, limit, depth }: Options): Promise<TurnLog[]> {
   const id = `${window}-${limit ?? 'auto'}-${depth ?? 0}-${String(++runs).padStart(4, '0')}`
   const repo = createModelContextRepository(db)
   const frame = resolveContextBudgetFrame({
@@ -182,9 +195,9 @@ async function runSession({ window, limit, depth }: Options): Promise<TurnLog[]>
   return logs
 }
 
-const fmt = (n: number) => n.toLocaleString('en-US')
+export const fmt = (n: number) => n.toLocaleString('en-US')
 
-function report(label: string, options: Options, logs: TurnLog[]) {
+export function report(label: string, options: Options, logs: TurnLog[]) {
   const frame = resolveContextBudgetFrame({
     contextWindow: options.window,
     fixedOverheadTokens: OVERHEAD,
@@ -204,7 +217,7 @@ function report(label: string, options: Options, logs: TurnLog[]) {
   console.log(lines.join('\n'))
 }
 
-const WINDOWS: [string, Options][] = [
+export const WINDOWS: [string, Options][] = [
   ['128k model', { window: 128_000 }],
   ['200k model', { window: 200_000 }],
   ['272k model (Codex-class input limit)', { window: 272_000 }],
@@ -214,61 +227,3 @@ const WINDOWS: [string, Options][] = [
   ['1M model, 128k limit (cost saver)', { window: 1_000_000, limit: 128_000 }],
   ['1M delegated child (depth 1)', { window: 1_000_000, depth: 1 }],
 ]
-
-describe('a 100-turn coding session across model windows', () => {
-  const results = new Map<string, TurnLog[]>()
-
-  for (const [label, options] of WINDOWS) {
-    test(
-      label,
-      async () => {
-        const logs = await runSession(options)
-        results.set(label, logs)
-        report(label, options, logs)
-        const frame = resolveContextBudgetFrame({
-          contextWindow: options.window,
-          fixedOverheadTokens: OVERHEAD,
-          depth: options.depth,
-          contextLimit: options.limit,
-        })
-
-        // Every request the strategy ADMITS fits under the ceiling.
-        for (const log of logs) expect(log.startEstimate).toBeLessThanOrEqual(frame.trigger)
-        // A checkpoint is taken only when the measured size said so (or the view overflowed).
-        for (const [i, log] of logs.entries()) {
-          if (!log.checkpoint) continue
-          const before = logs[i - 1]?.measured ?? 0
-          expect(before >= checkpointAtTokens(frame) || log.checkpoint.reason !== 'threshold').toBe(
-            true,
-          )
-          expect(log.checkpoint.requestAfter).toBeLessThan(checkpointAtTokens(frame))
-          expect(log.checkpoint.requestAfter).toBeLessThan(before || Number.POSITIVE_INFINITY)
-        }
-        // However the turn's own traffic grows, a request never outgrows the physical window.
-        for (const log of logs) expect(log.measured).toBeLessThanOrEqual(frame.rawWindow)
-        // Between checkpoints the request is an exact byte prefix of the next: the cache stays warm.
-        for (const log of logs) if (log.appendOnly !== undefined) expect(log.appendOnly).toBe(true)
-      },
-      120_000,
-    )
-  }
-})
-
-describe('the emulation is deterministic and the policy is ordered', () => {
-  test('two replays of the same session produce the same log', async () => {
-    const first = await runSession({ window: 272_000 })
-    const second = await runSession({ window: 272_000 })
-    expect(second).toEqual(first)
-  }, 120_000)
-
-  test('a 1M model on Auto lives in the same budget as a 400k one', async () => {
-    const [large, mid] = [
-      await runSession({ window: 1_000_000 }),
-      await runSession({ window: 400_000 }),
-    ]
-    const turns = (logs: TurnLog[]) => logs.filter((l) => l.checkpoint).map((l) => l.turn)
-    // 300k vs 299.2k policy windows: the same marks within a turn, never a 700k free-for-all.
-    expect(turns(large).length).toBe(turns(mid).length)
-    expect(Math.max(...large.map((l) => l.measured))).toBeLessThan(300_000)
-  }, 120_000)
-})

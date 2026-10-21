@@ -12,6 +12,9 @@
  * grandchild holding stdout, a real clock.
  */
 import { describe, expect, test } from 'bun:test'
+import { rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { readProcessOutput, readProcessOutputWithTimeout } from './process-output'
 
 /**
@@ -34,7 +37,9 @@ const waitForWitness = async (path: string, capMs = 4_000): Promise<string> => {
 /** Exits AT ONCE, but leaves a grandchild holding stdout for 3s (the daemon stand-in). */
 const LEAVES_A_SURVIVOR = ['bash', '-c', 'echo hello; sleep 3 &']
 
-const spawn = (cmd: string[]) => Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' })
+// The bound is a backstop well past every test's own deadline; the tests' timeouts still decide.
+const spawn = (cmd: string[]) =>
+  Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe', timeout: 10_000, killSignal: 'SIGKILL' })
 
 describe('readProcessOutput waits for the process, not for pipes someone else holds', () => {
   test('a child that leaves a survivor holding stdout does NOT hold the wait', async () => {
@@ -49,9 +54,13 @@ describe('readProcessOutput waits for the process, not for pipes someone else ho
   })
 
   test('the survivor is left alive — we drain to nowhere, never EPIPE it', async () => {
-    const witness = `/tmp/localix-sdk-survivor-${Bun.randomUUIDv7()}`
-    await readProcessOutput(spawn(['bash', '-c', `(sleep 0.6; echo alive > ${witness}) &`]))
-    expect(await waitForWitness(witness)).toBe('alive\n')
+    const witness = join(tmpdir(), `localix-sdk-survivor-${Bun.randomUUIDv7()}`)
+    try {
+      await readProcessOutput(spawn(['bash', '-c', `(sleep 0.6; echo alive > ${witness}) &`]))
+      expect(await waitForWitness(witness)).toBe('alive\n')
+    } finally {
+      rmSync(witness, { force: true })
+    }
   })
 
   test('an ordinary command pays no drain and loses no output', async () => {

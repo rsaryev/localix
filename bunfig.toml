@@ -4,10 +4,10 @@
 # cleanup is a failure that appears and disappears on its own — see the guard's header.
 # `test-deadline` FIRST: a wall-clock kill switch and a lower CPU priority for this test
 # process, armed before anything else can hang — see the file's header.
-# `test-git-env` drops the GIT_* variables a hook exports, so no test reaches the real repository.
+# `packages/testing` drops the GIT_* variables a hook exports and blocks the real network.
 preload = [
   "./scripts/test-deadline.ts",
-  "./scripts/test-git-env.ts",
+  "./packages/testing/src/preload/index.ts",
   "./packages/kit/test-preload.ts",
   "./scripts/test-globals-guard.ts",
 ]

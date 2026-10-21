@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
 import type { DbSchemas } from '../../dbClient'
 import type { SchemaState } from '../../model/useSchema'
@@ -61,7 +61,9 @@ describe('useSchemaFilter — a name search reads no columns', () => {
       state = useSchemaFilter(schema)
       return null
     }
-    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+    // Fake timers: the debounces are waited out by advancing the clock, not by sleeping on it.
+    jest.useFakeTimers()
+    const wait = (ms: number) => jest.advanceTimersByTime(ms)
     const root = createRoot(document.createElement('div'))
     try {
       await act(async () => root.render(<Reader />))
@@ -78,6 +80,7 @@ describe('useSchemaFilter — a name search reads no columns', () => {
       expect(state!.columnSearchScope).toBe(COLUMN_SEARCH_CAP)
     } finally {
       await act(async () => root.unmount())
+      jest.useRealTimers()
     }
   })
 })

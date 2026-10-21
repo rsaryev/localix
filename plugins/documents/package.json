@@ -6,7 +6,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "test": "bun test .",
+    "test": "bun test --path-ignore-patterns='**/*.integration.test.ts' .",
+    "test:integration": "bun test integration.test",
     "type-check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

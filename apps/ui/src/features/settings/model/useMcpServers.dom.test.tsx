@@ -40,7 +40,7 @@ describe('MCP runtime availability mutations', () => {
     // The rows arrive in the scope's ONE capability document, not from a list endpoint
     // of their own — the toggle's runtime barrier is what this test pins, and it is
     // unchanged by where the row came from.
-    const list = spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue({
+    const document1 = {
       revision: 1,
       scope: { projectId: '', sessionId: null },
       plugins: [],
@@ -60,7 +60,10 @@ describe('MCP runtime availability mutations', () => {
       skills: [],
       grammar: { kinds: [], effects: [], classes: [], examples: [] },
       themes: [],
-    } as never)
+    }
+    const list = spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue(
+      document1 as never,
+    )
     let release!: () => void
     // The rule write answers with the scope's new document — there is no separate
     // "set enabled" call any more, and no follow-up read.
@@ -68,11 +71,7 @@ describe('MCP runtime availability mutations', () => {
       () =>
         new Promise((resolve) => {
           release = () =>
-            resolve({
-              revision: 2,
-              scope: { projectId: '', sessionId: null },
-              mcp: [{ ...server, enabled: true }],
-            } as never)
+            resolve({ ...document1, revision: 2, mcp: [{ ...server, enabled: true }] } as never)
         }),
     )
     const probe = spyOn(backendClient, 'testMcpServer').mockResolvedValue({

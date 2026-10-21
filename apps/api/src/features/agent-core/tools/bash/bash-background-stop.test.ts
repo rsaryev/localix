@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createBashTool } from './bash'
 import type { SpawnTerminalJob } from '../terminal/terminal-job'
+import { FAST_SETTLE } from './test-settle'
 
 /** A PTY job that prints one line, stays up, and exits 130 when killed — as a closed pane does. */
 function fakeServerHost() {
@@ -50,7 +51,10 @@ describe('a background job outlives its call', () => {
   test('ignores `timeout` — a server is not stopped when the call budget runs out', async () => {
     const host = fakeServerHost()
     const reg = fakeRegistry()
-    const tool = createBashTool(undefined, undefined, { spawnTerminalJob: host.spawn })
+    const tool = createBashTool(undefined, undefined, {
+      backgroundSettle: FAST_SETTLE,
+      spawnTerminalJob: host.spawn,
+    })
     await tool.execute(
       'bg-timeout',
       { command: 'python3 -m http.server 4173', background: true, timeout: 60 },
@@ -74,7 +78,10 @@ describe('a background job outlives its call', () => {
     const host = fakeServerHost()
     const reg = fakeRegistry()
     const run = new AbortController()
-    const tool = createBashTool(undefined, undefined, { spawnTerminalJob: host.spawn })
+    const tool = createBashTool(undefined, undefined, {
+      backgroundSettle: FAST_SETTLE,
+      spawnTerminalJob: host.spawn,
+    })
     await tool.execute(
       'bg-run',
       { command: 'python3 -m http.server 4173', background: true },
@@ -91,7 +98,10 @@ describe('a background job outlives its call', () => {
   test("the person's Stop button reads as stopped by the person", async () => {
     const host = fakeServerHost()
     const reg = fakeRegistry()
-    const tool = createBashTool(undefined, undefined, { spawnTerminalJob: host.spawn })
+    const tool = createBashTool(undefined, undefined, {
+      backgroundSettle: FAST_SETTLE,
+      spawnTerminalJob: host.spawn,
+    })
     await tool.execute(
       'bg-person',
       { command: 'npm run dev', background: true },

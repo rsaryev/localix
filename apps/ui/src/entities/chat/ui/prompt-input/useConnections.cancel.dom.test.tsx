@@ -26,6 +26,8 @@ test('declining provider sign-in clears OAuth state, releases the form, and allo
   })
   const update = spyOn(backendClient, 'updateSession')
   const refresh = spyOn(backendClient, 'listConnections').mockResolvedValue([])
+  // The form reads the model catalog on mount; answer it here instead of the network.
+  const catalog = spyOn(backendClient, 'getCatalog').mockResolvedValue({} as never)
   const added = mock(() => {})
   useChatStore.setState({ connections: [] })
   const host = document.createElement('div')
@@ -72,6 +74,7 @@ test('declining provider sign-in clears OAuth state, releases the form, and allo
     resetConfirmationsForTests()
     initiate.mockRestore()
     update.mockRestore()
+    catalog.mockRestore()
     restorePlatform()
     useChatStore.setState(previousStore, true)
     await teardown()

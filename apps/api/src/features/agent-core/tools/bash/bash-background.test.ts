@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { createBashTool } from './bash'
+import { FAST_SETTLE } from './test-settle'
 
 describe('bash background settle window', () => {
   test('surfaces early output of a still-running background job in the result', async () => {
-    const tool = createBashTool()
+    const tool = createBashTool(undefined, undefined, { backgroundSettle: FAST_SETTLE })
     // Prints a line immediately (like a dev server announcing its port), then
     // stays alive — the settle window should capture the early line and return.
     const result = await tool.execute(
@@ -17,7 +18,7 @@ describe('bash background settle window', () => {
   }, 10_000)
 
   test('reports a background command that exits immediately as exited early', async () => {
-    const tool = createBashTool()
+    const tool = createBashTool(undefined, undefined, { backgroundSettle: FAST_SETTLE })
     const result = await tool.execute(
       'bg-2',
       { command: 'echo done; exit 0', background: true },
@@ -28,14 +29,17 @@ describe('bash background settle window', () => {
   }, 10_000)
 
   test('does not mistake an early launcher banner for successful startup', async () => {
-    const tool = createBashTool()
+    // The production window scaled down 5×: the minimum grace still outlasts the delayed failure.
+    const tool = createBashTool(undefined, undefined, {
+      backgroundSettle: { minMs: 400, maxMs: 600, quietMs: 70 },
+    })
     // Nested launchers (Tauri, Turbo, package scripts) commonly print their own
     // command first, then fail asynchronously. The old 350 ms quiet-gap return
     // hid this failure from the model until a later turn.
     const result = await tool.execute(
       'bg-delayed-failure',
       {
-        command: 'echo "$ tauri dev"; sleep 1; echo "beforeDevCommand failed" >&2; exit 1',
+        command: 'echo "$ tauri dev"; sleep 0.2; echo "beforeDevCommand failed" >&2; exit 1',
         background: true,
       },
       undefined,

@@ -38,6 +38,8 @@ export interface LoopInput extends Omit<
   session: ModelSession
   /** Reports a tool whose schema had to be shortened for the model. */
   onSchemaCompacted?: (toolName: string, diagnostic: unknown) => void
+  /** How long a stopped tool may wind down before its call is closed as cancelled (default 2 s). */
+  stopGraceMs?: number
 }
 
 export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentRuntimeResult> {
@@ -52,6 +54,7 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
     beforeToolCall: input.beforeToolCall,
     afterToolCall: input.afterToolCall,
     callToolFor: createNestedCalls(() => env, signal, emit, input.shouldDeferToolCalls),
+    stopGraceMs: input.stopGraceMs,
   }
   const conversation: AgentMessage[] = [...input.messages]
   const boundary: SteeringBoundary = {}

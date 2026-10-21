@@ -214,7 +214,10 @@ describe('a run of the loop', () => {
       inputSchema: z.object({}),
       execute: () => new Promise(() => {}),
     }) as AgentTool
-    const { run } = start([call('stubborn', {}, 'c1')], { tools: [stubborn] })
+    const { run } = start([call('stubborn', {}, 'c1')], {
+      tools: [stubborn],
+      stopGraceMs: 20,
+    })
     setTimeout(() => run.abort('stop'), 30)
     const { events, result } = await collect(run)
     expect(result).toMatchObject({ terminal: 'aborted' })

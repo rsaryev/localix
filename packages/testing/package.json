@@ -1,0 +1,23 @@
+{
+  "name": "@localixai/testing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Test helpers shared by every workspace: self-cleaning temp dirs, deadline-bound processes, a hermetic git environment and a network guard.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "./src/preload/*.ts"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./preload/*": "./src/preload/*.ts"
+  },
+  "scripts": {
+    "test": "bun test src",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "typescript": "^7.0.2"
+  }
+}

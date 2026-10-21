@@ -57,6 +57,8 @@ export interface CallEnvironment {
   afterToolCall: AgentRuntimeRunInput['afterToolCall']
   /** Binds `callTool` to the call it is handed to; absent where tools may not call tools. */
   callToolFor?: (parent: ToolCallRequest) => NonNullable<AgentToolExecutionContext['callTool']>
+  /** How long a stopped tool may wind down before its call is closed; defaults to `STOP_GRACE_MS`. */
+  stopGraceMs?: number
 }
 
 /**
@@ -187,11 +189,11 @@ const STOP_GRACE_MS = 2_000
  * period: then the call is closed as cancelled, so no call outlives its run. The tool may still
  * finish in the background; its late result has nowhere to go.
  */
-function settleOrCancel<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+function settleOrCancel<T>(work: Promise<T>, signal: AbortSignal, graceMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     let timer: ReturnType<typeof setTimeout> | undefined
     const cancel = () => {
-      timer = setTimeout(() => reject(new Error('Cancelled: the run was stopped')), STOP_GRACE_MS)
+      timer = setTimeout(() => reject(new Error('Cancelled: the run was stopped')), graceMs)
     }
     if (signal.aborted) cancel()
     else signal.addEventListener('abort', cancel, { once: true })
@@ -242,6 +244,7 @@ export async function executeCall(
         tool.execute(call.id, args, signal, (details) => progress.report(details), context),
       ),
       signal,
+      env.stopGraceMs ?? STOP_GRACE_MS,
     )
     await progress.settle()
     result = context?.sanitizeResult?.(raw) ?? raw

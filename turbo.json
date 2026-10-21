@@ -34,13 +34,17 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
     "//#test:repo:slow": {
       "inputs": [
         "scripts/plugin-kit*",
         "scripts/stage-plugin-kit*",
         "scripts/test-deadline*",
         "scripts/test-globals-guard.ts",
-        "scripts/test-git-env.ts",
+        "packages/testing/src/**",
         "scripts/scratch-git-env.mjs",
         "scripts/lib/**",
         "apps/api/src/**",

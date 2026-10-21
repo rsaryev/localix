@@ -57,11 +57,20 @@ export async function runConcurrently(commands, options = {}) {
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const concurrency = process.env.TURBO_CONCURRENCY || '50%'
+  // `--affected` (set by pre-push and pull-request CI) runs only the packages a change reaches.
+  const filter = (process.env.TURBO_FILTER ?? '').split(' ').filter(Boolean)
   const failed = await runConcurrently([
     {
       label: 'packages',
       command: 'bunx',
-      args: ['turbo', 'test', 'test:repo:slow', `--concurrency=${concurrency}`],
+      args: [
+        'turbo',
+        'test',
+        'test:integration',
+        'test:repo:slow',
+        `--concurrency=${concurrency}`,
+        ...filter,
+      ],
     },
     { label: 'repository', command: 'bun', args: ['run', 'test:repo'] },
   ])

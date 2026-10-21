@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'bun:test'
+import { afterEach, beforeEach, expect, jest, test } from 'bun:test'
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -6,7 +6,13 @@ import { z } from 'zod'
 import { createJsonStoreFeed as createStoreFeed, openJsonStore } from './json-store'
 
 const roots: string[] = []
+// The feed coalesces a burst of writes behind a timer. Fake timers make "one burst" mean "every
+// write awaited before the window is advanced", instead of racing the disk against wall time.
+beforeEach(() => {
+  jest.useFakeTimers()
+})
 afterEach(() => {
+  jest.useRealTimers()
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
@@ -18,9 +24,13 @@ function folders() {
 
 const counter = (dir: string) =>
   openJsonStore({ dir, file: 'count.json', schema: z.object({ n: z.number() }), initial: { n: 0 } })
-// Wide enough that three queued writes land inside one window on a loaded machine.
 const WINDOW_MS = 150
-const settle = () => new Promise((resolve) => setTimeout(resolve, WINDOW_MS * 3))
+/** Let pending promise work land, then let any open coalescing window close. */
+const settle = async () => {
+  for (let i = 0; i < 5; i++) await Promise.resolve()
+  jest.advanceTimersByTime(WINDOW_MS)
+  for (let i = 0; i < 5; i++) await Promise.resolve()
+}
 
 function start(dirs: Record<string, string>) {
   const feed = createStoreFeed({

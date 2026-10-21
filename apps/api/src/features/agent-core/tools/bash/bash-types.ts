@@ -7,6 +7,7 @@ import type { SpawnTerminalJob } from '../terminal/terminal-job'
 import { MONITOR_MIN_INTERVAL_SECONDS } from './monitor-wait'
 import type { BashWaitHost } from './bash-until'
 import { terminalActionFields, type TerminalToolDeps } from '../terminal/terminal'
+import type { BackgroundSettleWindow } from './bash-run-context'
 
 export const bashToolInputSchema = z.object({
   command: z
@@ -199,4 +200,9 @@ export interface BashToolOptions {
    * Bound to user + session at wiring time. Absent → `until` reports unavailable.
    */
   waitHost?: BashWaitHost
+  /**
+   * The background settle window. Production keeps the default (2–3 s); a test that is not
+   * about the window passes a short one instead of sleeping it on every spawn.
+   */
+  backgroundSettle?: BackgroundSettleWindow
 }

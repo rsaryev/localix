@@ -256,6 +256,7 @@ describe('attemptTransientRetry — a failed relaunch must not be fatal', () => 
     let launched = false
     try {
       const retried = await attemptTransientRetry({
+        wait: async () => {},
         // A 5xx classifies as transient-retryable (rate-limited would forbid the retry).
         error: Object.assign(new Error('upstream 503'), { status: 503 }),
         env: {

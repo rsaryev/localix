@@ -23,6 +23,15 @@ export interface BashRunContext {
   pluginBinDirs?: string[]
   /** Host for `until` waits (see {@link BashToolOptions.waitHost}). */
   waitHost?: BashWaitHost
+  /** Background settle window (see {@link BashToolOptions.backgroundSettle}). */
+  backgroundSettle?: BackgroundSettleWindow
+}
+
+/** How long a background spawn watches its early output before the call returns. */
+export interface BackgroundSettleWindow {
+  minMs: number
+  maxMs: number
+  quietMs: number
 }
 
 /**

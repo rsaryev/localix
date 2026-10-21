@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import { adoptChildBgProc, childBgProc } from './bash-process'
 import { spawnToResult } from '../environments/spawn'
 import { createBashTool } from './bash'
+import { FAST_SETTLE } from './test-settle'
 
 /**
  * A background bash job is over when THE COMMAND is over.
@@ -77,7 +78,7 @@ describe('background job: settled by the command, not by whoever holds its pipes
   test('the background job reports done — even when a daemon keeps the pipe open', async () => {
     // The job-level consequence: `emitBackground(..., done: true)` is what removes the
     // job from the jobs list, fires `notify`, and returns the final output to the model.
-    const tool = createBashTool()
+    const tool = createBashTool(undefined, undefined, { backgroundSettle: FAST_SETTLE })
     let doneAt: number | null = null
     const started = Date.now()
     const context = {

@@ -70,7 +70,7 @@ jobs:
   # ── prepare: validate the tag and pin it to one source commit ─────────────────
   prepare:
     name: Prepare release
-    runs-on: [self-hosted, Linux, X64, localix-linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
@@ -143,7 +143,7 @@ jobs:
     name: Validate source and signing
     environment: release
     needs: prepare
-    runs-on: [self-hosted, Linux, X64, localix-linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
@@ -193,7 +193,7 @@ jobs:
   draft-release:
     name: Create draft
     needs: [prepare, verify]
-    runs-on: [self-hosted, Linux, X64, localix-linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: release
     permissions:
@@ -237,9 +237,7 @@ jobs:
     name: Build ${{ matrix.name }}
     needs: [prepare, verify, draft-release]
     # Preserve the hosted macOS leg and route Linux packaging to Ubuntu 22.04.
-    runs-on: >-
-      ${{ matrix.name == 'linux-x64' && fromJSON('["self-hosted","Linux","X64","localix-linux"]') ||
-      matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 50
     environment: release
     # An experimental leg may fail without holding the release back (see RELEASE_EXPERIMENTAL_PLATFORMS).
@@ -276,7 +274,6 @@ jobs:
 
       - name: Restore Turbo cache
         id: turbo-cache
-        if: runner.environment != 'self-hosted'
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
@@ -302,7 +299,7 @@ jobs:
 
       # Saved here, not after the signing steps: a later failure should not cost the next attempt.
       - name: Save Turbo cache
-        if: runner.environment != 'self-hosted' && steps.turbo-cache.outputs.cache-hit != 'true'
+        if: steps.turbo-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .turbo/cache
@@ -356,6 +353,8 @@ jobs:
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH" | \
             grep -F -- "$APPLE_SIGNING_IDENTITY"
+          # Keychain paths contain no spaces; splitting the list into arguments is intended.
+          # shellcheck disable=SC2046
           security list-keychains -d user -s "$KEYCHAIN_PATH" \
             $(security list-keychains -d user | tr -d '"')
 
@@ -608,7 +607,7 @@ jobs:
   publish-desktop:
     name: Publish release
     needs: [prepare, build-desktop]
-    runs-on: [self-hosted, Linux, X64, localix-linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: release
     permissions:

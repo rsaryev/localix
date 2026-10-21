@@ -81,6 +81,10 @@ function harness() {
     error: Object.assign(new Error('upstream 503'), { status: 503 }),
     completedTurnCheckpoint: { payload: completed.payload, createdAt: timestamp },
     checkpointState,
+    waits: [] as number[],
+    wait: async (ms: number) => {
+      args.waits.push(ms)
+    },
   }
   return { env, args, rows, launched, events, order, completed, checkpointState, abort }
 }
@@ -89,6 +93,7 @@ describe('transient recovery preserves completed work', () => {
   test('checkpoints before reload and resumes on a fresh row with settled history', async () => {
     const h = harness()
     expect(await attemptTransientRetry(h.args)).toBe(true)
+    expect(h.args.waits).toEqual([2_000])
     expect(h.order).toEqual(['checkpoint', 'read', 'insert', 'run'])
     const retry = h.launched[0]!
     expect(retry.assistantMessageId).not.toBe('a')

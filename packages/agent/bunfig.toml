@@ -1,4 +1,5 @@
 [test]
+preload = ["../../scripts/test-deadline.ts", "../../packages/testing/src/preload/index.ts"]
 # Stale compiled *.test.js in dist/ (tsconfig.build excludes tests, so they never
 # refresh and fail against current src). Scope bun test to sources.
 root = "src"

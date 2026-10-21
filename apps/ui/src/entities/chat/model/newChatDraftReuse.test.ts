@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
+// Enter through the store like the app does: the slices sit on an import cycle
+// (sessionSync -> store), so loading a slice first evaluates store.ts too early.
+import './store'
 import type { UiSession } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { composerDrafts } from '@/shared/lib/composerDrafts'

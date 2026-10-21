@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { act, type ReactNode } from 'react'
 import { useContextRefs } from '@/entities/chat/model/useContextRefs'
 import { useVoiceRecorder, type VoiceRecorder } from '@/entities/chat/model/useVoiceRecorder'
@@ -6,8 +6,11 @@ import { backendClient } from '@/shared/api/client'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useAtRefAutocomplete } from './useAtRefAutocomplete'
 
-let teardown = registerDom()
-;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+let teardown: () => Promise<void>
+beforeAll(() => {
+  teardown = registerDom()
+  ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+})
 
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))

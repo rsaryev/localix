@@ -66,9 +66,14 @@ test('a collection file changed on disk re-reads; any other file does not', asyn
   let reads = 0
   let live = null as boolean | null
   function Probe() {
-    live = useCollectionChanges('chat-1', () => {
-      reads += 1
-    })
+    // A short coalescing window: the test waits it out, not the production default.
+    live = useCollectionChanges(
+      'chat-1',
+      () => {
+        reads += 1
+      },
+      { windowMs: 10 },
+    )
     return null
   }
   const element = document.createElement('div')
@@ -78,12 +83,12 @@ test('a collection file changed on disk re-reads; any other file does not', asyn
     expect(live).toBe(true)
     await act(async () => {
       emit(['/w/src/index.ts'])
-      await new Promise((resolve) => setTimeout(resolve, 700))
+      await new Promise((resolve) => setTimeout(resolve, 60))
     })
     expect(reads).toBe(0)
     await act(async () => {
       emit(['/w/.localix/api/users/list.request.json'])
-      await new Promise((resolve) => setTimeout(resolve, 700))
+      await new Promise((resolve) => setTimeout(resolve, 60))
     })
     expect(reads).toBe(1)
   } finally {

@@ -1,0 +1,17 @@
+# Pinned action SHAs are the only dependencies updated automatically: one grouped pull request a
+# week, for releases at least a week old. Workspace packages and crates are updated by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: build(ci)

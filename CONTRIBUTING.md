@@ -37,10 +37,10 @@ available; missing Clippy or rustfmt then blocks the commit. Native CI also chec
 
 The hook does not rewrite or stage tracked files. Unstaged changes in packages being checked must be
 staged or stashed first, so the checks cannot validate an unstaged repair instead of the commit.
-Type checks may generate ignored build output. Every push runs the CI gates over the whole tree
-through `.githooks/pre-push`, replaying unchanged packages from the Turbo cache; commit or stash
-tracked changes first. Full builds remain in CI; optional architecture, documentation, and
-dependency audits run when relevant.
+Type checks may generate ignored build output. Every push runs the CI gates for the packages it
+changes and their dependents through `.githooks/pre-push`; commit or stash tracked changes first.
+The merge queue and `main` check the whole tree. Full builds remain in CI; optional architecture,
+documentation, and dependency audits run when relevant.
 
 One development dependency is not OSI-licensed: `oxlint-plugin-react-doctor`, used only by the
 optional `bun run lint:react-doctor`, ships under a modified MIT license that restricts some uses of
@@ -90,8 +90,9 @@ release. New pushes cancel older automatic runs for the same ref.
 Pushes to main and manual checks run pinned Rust formatting, Clippy, and tests. A PR can skip the
 Rust steps only when its merge diff changes none of the desktop sources, root manifest, Bun
 lockfile, Node version, or shared CI setup; an unavailable merge diff keeps them enabled. Use
-`bun run check:rust` locally when diagnosing native failures. Linux work uses the two self-hosted
-runners; macOS release builds stay on `macos-15`. Fork checks use GitHub-hosted runners.
+`bun run check:rust` locally when diagnosing native failures. All jobs run on GitHub-hosted runners:
+Linux on `ubuntu-latest` (the Rust job and Linux packaging on `ubuntu-22.04`), macOS release builds
+on `macos-15`.
 
 Local composite actions in `.github/actions/` own Node/Bun installation, frozen dependency installs,
 Linux native dependencies, and Rust compilation caching. They keep checks and release toolchains

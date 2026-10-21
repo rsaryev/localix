@@ -1,4 +1,4 @@
-import { afterAll, expect, spyOn, test } from 'bun:test'
+import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { emptyEditorState, useGridStore } from '@/entities/workspace-grid/model'
@@ -6,9 +6,12 @@ import { backendClient } from '@/shared/api/client'
 import { eventSocket } from '@/shared/api/eventSocket'
 import { useDeadTerminalCleanup } from './useDeadTerminalCleanup'
 
-const teardown = registerDom()
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-afterAll(teardown)
+let teardown: () => Promise<void>
+beforeAll(() => {
+  teardown = registerDom()
+  ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+})
+afterAll(() => teardown())
 
 function Workspace() {
   useDeadTerminalCleanup()

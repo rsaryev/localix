@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createBashTool } from './bash'
 import type { SpawnTerminalJob, TerminalJobHandle } from '../terminal/terminal-job'
+import { FAST_SETTLE } from './test-settle'
 
 function fakeTerminalHost(url: string): { spawn: SpawnTerminalJob; commands: string[] } {
   const commands: string[] = []
@@ -26,6 +27,7 @@ describe('background bash on a terminal host', () => {
     const asked: (boolean | undefined)[] = []
     const host = fakeTerminalHost('http://localhost:5174')
     const tool = createBashTool(undefined, undefined, {
+      backgroundSettle: FAST_SETTLE,
       spawnTerminalJob: (input) => {
         asked.push(input.wakesAgent)
         return host.spawn(input)

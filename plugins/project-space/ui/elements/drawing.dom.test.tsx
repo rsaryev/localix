@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, beforeAll, expect, jest, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ElementViewProps } from './contract'
 import { contentOperation } from '../action-target'
@@ -147,7 +147,11 @@ test('rendered height follows content and width, and editing cancels a pending f
         resize={(size) => sizes.push(size)}
       />,
     )
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 280))
+  // Fake timers: the fit's settle delay is advanced past, not slept through.
+  jest.useFakeTimers()
+  const settle = async () => {
+    jest.advanceTimersByTime(280)
+  }
   try {
     await act(async () => render(240, 100))
     expect(observed).toBeDefined()
@@ -181,5 +185,6 @@ test('rendered height follows content and width, and editing cancels a pending f
     await act(async () => root.unmount())
     host.remove()
     globalThis.ResizeObserver = OriginalObserver
+    jest.useRealTimers()
   }
 })

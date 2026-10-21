@@ -3,6 +3,7 @@ import { createBashTool } from './bash'
 import { SSHEnvironment, DockerEnvironment, localEnvironment } from '../environments'
 import type { ExecutionEnvironment } from '../environment'
 import type { AsyncToolRegistry, ToolAction } from '@localixai/agent/agents'
+import { FAST_SETTLE } from './test-settle'
 
 /** A fake env whose foreground exec returns a fixed exit code (no real process). */
 function envWithExit(exitCode: number, stderr = ''): ExecutionEnvironment {
@@ -89,7 +90,7 @@ describe('createBashTool — error cases', () => {
   })
 
   it('background job accepts send_input and streams final output', async () => {
-    const tool = createBashTool(localEnvironment)
+    const tool = createBashTool(localEnvironment, undefined, { backgroundSettle: FAST_SETTLE })
     let actions: Record<string, ToolAction> | undefined
     const updates: Array<{ output: string; done: boolean; details?: Record<string, unknown> }> = []
     let resolveDone:

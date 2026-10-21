@@ -101,8 +101,11 @@ output. Staged files and affected packages must have no unstaged edits; stage or
 committing.
 
 Before every push, `.githooks/pre-push` runs the CI gates `check:release`, `type-check`,
-`check:tests`, and `test` over the whole tree; Turbo replays every unchanged package from its cache.
-The gates check the working tree, so commit or stash tracked changes before pushing.
+`check:tests`, and `test` for the packages that differ from `origin/main` and every package that
+depends on them (Turbo's `--affected`; a global input selects all of them), three tasks at a time.
+`TURBO_FILTER= git push` checks the whole tree. Pull-request CI runs the same selection against the
+pull request's base; the merge queue and `main` check the whole tree. The gates check the working
+tree, so commit or stash tracked changes before pushing.
 
 Hooks never pass git's repository variables (`GIT_DIR`, `GIT_INDEX_FILE` and the rest) to the tools
 and tests they start: a test that creates a scratch repository would otherwise act on this one,
@@ -132,16 +135,16 @@ desktop bundle. The other job scans the history for secrets with gitleaks, lints
 actionlint and zizmor, and checks the Rust shell. PRs can skip the Rust steps when the merge diff
 changes no desktop sources, root manifest, Bun lockfile, Node version, or shared CI setup.
 
-Trusted Linux jobs use the two self-hosted runners sharing the `localix-linux` label; fork checks
-use GitHub-hosted runners. The macOS release leg remains on `macos-15`. Workflows grant no default
-token permissions; each job names its own. Scanners are checksummed release binaries, and runner
-labels for actionlint live in `.github/actionlint.yaml`.
+Every job runs on a GitHub-hosted runner: `ubuntu-latest`, with the Rust job and the Linux release
+leg on `ubuntu-22.04` for an older glibc baseline, and the macOS release leg on `macos-15`.
+Workflows grant no default token permissions; each job names its own. Scanners are checksummed
+release binaries.
 
-Self-hosted runners keep the Bun package cache, the Turbo cache, and the Rust target directory on
-their own disks, so nothing is restored from GitHub cache archives and cargo builds incrementally.
-Hosted runners restore archives; only `main` saves the Rust archive. Dependencies are updated by
-hand: the repository has no Dependabot configuration, so no update pull requests queue behind the
-two self-hosted runners.
+The Bun package cache, the Turbo cache, and the Rust target are restored from GitHub cache archives.
+Only pushes to `main` save the Turbo and Rust archives, so pull requests restore them without
+evicting them. The Turbo archive drops entries untouched for two weeks before it is saved, so it
+stays bounded. Dependabot opens one grouped pull request a week for pinned GitHub Actions, only for
+releases at least a week old; workspace packages and crates are updated by hand.
 
 `check:bundle` starts the staged API outside the checkout during `Checks`. Release verification does
 not rerun the CI gates: it requires a successful `Checks` run for the tagged commit, then signs a

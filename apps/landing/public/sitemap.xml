@@ -88,5 +88,6 @@
   <url><loc>https://localix.ai/docs/internals--architecture</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/internals--environment</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/internals--contributing</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/internals--testing</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/internals--shared-view-state</loc><priority>0.7</priority></url>
 </urlset>

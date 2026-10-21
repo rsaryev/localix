@@ -53,30 +53,24 @@ function errors(steps: Step[]): string[] {
 }
 
 describe('CI minute budget contract', () => {
-  test('routes trusted Linux jobs to the dedicated runner and fork CI to hosted runners', () => {
-    for (const job of Object.values(ci.jobs)) {
-      expect(job['runs-on']).toContain("github.event_name == 'pull_request'")
-      expect(job['runs-on']).toContain(
-        'github.event.pull_request.head.repo.full_name != github.repository',
-      )
-      expect(job['runs-on']).toContain('ubuntu-')
-      expect(job['runs-on']).toContain('["self-hosted","Linux","X64","localix-linux"]')
+  test('runs every job on GitHub-hosted runners', () => {
+    for (const workflow of [ci, release, landing]) {
+      for (const job of Object.values(workflow.jobs)) {
+        expect(JSON.stringify(job['runs-on'])).not.toContain('self-hosted')
+      }
     }
+    expect(ci.jobs.app['runs-on']).toBe('ubuntu-latest')
+    expect(ci.jobs.desktop['runs-on']).toBe('ubuntu-22.04')
+    expect(landing.jobs.deploy['runs-on']).toBe('ubuntu-latest')
     for (const [name, job] of Object.entries(release.jobs)) {
-      if (name === 'build-desktop') continue
-      expect(job['runs-on']).toEqual(['self-hosted', 'Linux', 'X64', 'localix-linux'])
+      expect(job['runs-on']).toBe(name === 'build-desktop' ? '${{ matrix.os }}' : 'ubuntu-latest')
     }
-    expect(landing.jobs.deploy['runs-on']).toEqual(['self-hosted', 'Linux', 'X64', 'localix-linux'])
   })
 
-  test('keeps macOS packaging on its existing hosted runner', () => {
-    const selector = release.jobs['build-desktop']['runs-on']
-    expect(selector).toContain("matrix.name == 'linux-x64'")
-    expect(selector).toContain('fromJSON(\'["self-hosted","Linux","X64","localix-linux"]\')')
-    expect(selector).toContain('|| matrix.os')
-    expect(read('.github/workflows/release.yml')).toContain(
-      '{"os":"macos-15","name":"macos-arm64"}',
-    )
+  test('packages macOS on macos-15 and Linux on ubuntu-22.04', () => {
+    const workflow = read('.github/workflows/release.yml')
+    expect(workflow).toContain('{"os":"macos-15","name":"macos-arm64"}')
+    expect(workflow).toContain('{"os":"ubuntu-22.04","name":"linux-x64"')
   })
 
   test('shares pinned Node, Bun, dependencies, and Rust setup across workflows', () => {
@@ -87,7 +81,7 @@ describe('CI minute budget contract', () => {
       runs: { steps: Step[] }
     }
     const bun = workspace.runs.steps.find((step) => step.uses?.startsWith('oven-sh/setup-bun@'))
-    expect(bun?.with?.['no-cache']).toBe("${{ runner.environment == 'self-hosted' }}")
+    expect(bun?.with?.['no-cache']).toBeUndefined()
     expect(
       workspace.runs.steps.find((step) => step.name === 'Setup Node')?.with?.['node-version-file'],
     ).toBe('.nvmrc')
@@ -199,8 +193,6 @@ describe('CI minute budget contract', () => {
     }
     const rustCheck = steps.find((step) => step.run === 'bun run check:rust')
     expect(rustCheck?.if).toBe("steps.filter.outputs.rust == 'true'")
-    const setup = steps.find((step) => step.uses === './.github/actions/setup-desktop')
-    expect(setup?.with?.['persistent-target']).toBe('true')
   })
 
   test('requires every job through one status that fails on anything but success or skip', () => {
@@ -212,23 +204,54 @@ describe('CI minute budget contract', () => {
     expect(run).toContain('*) exit 1 ;;')
   })
 
-  test('self-hosted runners install from their own disk instead of a GitHub cache archive', () => {
+  test('restores dependencies from a GitHub cache archive keyed by the lockfile', () => {
     const workspace = Bun.YAML.parse(read('.github/actions/setup-workspace/action.yml')) as {
       runs: { steps: Step[] }
     }
-    const local = workspace.runs.steps.find((step) => step.name === "Use the runner's local caches")
-    expect(local?.run).toContain('BUN_INSTALL_CACHE_DIR=')
-    expect(local?.run).toContain('TURBO_CACHE_DIR=')
     const archive = workspace.runs.steps.find((step) => step.name === 'Cache dependencies')
-    expect(archive?.if).toContain("runner.environment != 'self-hosted'")
+    expect(archive?.if).toBe("inputs.install == 'true'")
+    expect(archive?.with?.path).toBe('~/.bun/install/cache')
+    expect(archive?.with?.key).toContain("hashFiles('bun.lock')")
+  })
+
+  test('bounds the Turbo archive before main saves it', () => {
+    const steps = ci.jobs.app.steps
+    const prune = steps.findIndex((step) => step.name === 'Prune Turbo cache')
+    const save = steps.findIndex((step) => step.name === 'Save Turbo cache')
+    expect(prune).toBeGreaterThan(-1)
+    expect(prune).toBeLessThan(save)
+    expect(steps[prune]?.run).toContain('-mtime +14 -delete')
+    expect(steps[save]?.if).toContain("github.ref == 'refs/heads/main'")
+  })
+
+  test('updates pinned actions through one weekly grouped Dependabot pull request', () => {
+    const config = Bun.YAML.parse(read('.github/dependabot.yml')) as {
+      updates: { 'package-ecosystem': string; directories: string[]; cooldown: object }[]
+    }
+    const [actions] = config.updates
+    expect(config.updates).toHaveLength(1)
+    expect(actions?.['package-ecosystem']).toBe('github-actions')
+    expect(actions?.directories).toContain('/.github/actions/*')
+    expect(actions?.cooldown).toEqual({ 'default-days': 7 })
   })
 
   test('runs the package and repository suites side by side', () => {
     const scripts = JSON.parse(read('package.json')).scripts as Record<string, string>
     expect(scripts.test).toBe('bun scripts/test-all.mjs')
     const runner = read('scripts/test-all.mjs')
-    expect(runner).toContain("args: ['turbo', 'test'")
+    expect(runner).toMatch(/args: \[\s*'turbo',\s*'test',/u)
     expect(runner).toContain("args: ['run', 'test:repo']")
+  })
+
+  test('a pull request checks what it changes; the merge queue and main check everything', () => {
+    expect(ci.jobs.app.env).toEqual({
+      TURBO_FILTER: "${{ github.event_name == 'pull_request' && '--affected' || '' }}",
+      TURBO_SCM_BASE: '${{ github.event.pull_request.base.sha }}',
+    })
+    const scripts = JSON.parse(read('package.json')).scripts as Record<string, string>
+    for (const gate of ['build', 'type-check', 'check:tests'])
+      expect(scripts[gate]).toContain('${TURBO_FILTER:-}')
+    expect(read('scripts/test-all.mjs')).toContain('...filter')
   })
 
   test('cancels superseded pushes without cancelling a manual run', () => {

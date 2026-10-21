@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
+// Enter through the store like the app does: the slices sit on an import cycle
+// (sessionSync -> store), so loading a slice first evaluates store.ts too early.
+import './store'
 
 import { backendClient } from '@/shared/api/client'
+import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 import { sessionRoute, type ReasoningEffort, type UiSession } from '@/shared/api/contracts'
 import { installTestLocalStorage, removeTestLocalStorage } from '@localixai/kit/testing/dom'
 import { createSessionActions } from './sessionActionsSlice'
@@ -43,8 +47,18 @@ const withParty = (
 const baseSession = withParty('connection-old', 'old/model')
 
 let updateSpy: { mockRestore: () => void } | undefined
+// A selection persists the choice through the settings store, which debounces the write. Leaving
+// that timer armed hands the next test file in the process a write to a server that is not there.
+let settingsBefore = useSettingsStore.getState()
+
+beforeEach(() => {
+  settingsBefore = useSettingsStore.getState()
+})
 
 afterEach(() => {
+  const timer = useSettingsStore.getState()._debounceTimer
+  if (timer && timer !== settingsBefore._debounceTimer) clearTimeout(timer)
+  useSettingsStore.setState(settingsBefore, true)
   updateSpy?.mockRestore()
   updateSpy = undefined
   try {

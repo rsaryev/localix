@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 // The CI gates, run before every push.
 //
-// A commit only checks what it stages (pre-commit.mjs) and stays a few seconds; the whole tree is
-// checked once per push instead of once per commit. The gates run on the working tree, so it must
+// A commit only checks what it stages (pre-commit.mjs) and stays a few seconds; a push checks the
+// packages it changes, and CI the whole tree. The gates run on the working tree, so it must
 // hold exactly what is pushed: uncommitted tracked changes are refused.
 //
 // Affected-package selection missed failures that only the whole tree shows: a docs edit breaking a
@@ -30,7 +30,16 @@ if (uncommitted.length) {
 }
 
 // Git exports GIT_DIR and friends to its hooks; nothing the gates start may inherit them.
-const env = scrubGitEnv({ ...process.env })
+// Only what this push changes is checked: Turbo's `--affected` selects the packages that differ from
+// the remote main and every package that depends on them (all of them when a global input changed).
+// CI checks the whole tree before anything reaches main. Three tasks at a time leave the machine
+// usable; set TURBO_FILTER= (empty) to check everything, or TURBO_CONCURRENCY to change the width.
+const env = scrubGitEnv({
+  TURBO_FILTER: '--affected',
+  TURBO_SCM_BASE: 'origin/main',
+  TURBO_CONCURRENCY: '3',
+  ...process.env,
+})
 
 for (const gate of GATES) {
   console.log(`[pre-push] bun run ${gate}`)
