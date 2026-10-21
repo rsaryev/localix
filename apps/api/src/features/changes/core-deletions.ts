@@ -7,36 +7,23 @@
  * deleted and the new one upserted together). A plugin storing the stable id must not unassign a
  * renamed agent, so an agent deletion is passed on only when no later notice brought its id back.
  */
-import { sql, type Kysely } from 'kysely'
 import type { CoreDeletion } from '@localixai/plugin-sdk/backend'
 import type { ConsumerHandlers } from '@localixai/change-feed'
-import type { AppDatabase } from '../../db/types'
-import { CORE_STREAM, type CoreCascades, type CoreChangeFeed, type CoreRefs } from './core-entities'
+import type { CoreCascades, CoreChangeFeed, CoreRefs } from './core-entities'
+
+/** Whether an agent's stable id was brought back after its latest deletion (a rename). */
+type LivesOn = (agentId: string) => Promise<boolean>
 
 type Handler = (deletion: CoreDeletion) => Promise<void> | void
 
-/** True when the agent's stable id was upserted after its latest deletion (a rename). */
-async function agentLivesOn(db: Kysely<AppDatabase>, agentId: string): Promise<boolean> {
-  const rows = await db
-    .selectFrom('change_events')
-    .select(['seq', 'op'])
-    .where('stream', '=', CORE_STREAM)
-    .where('entity', '=', 'agent')
-    .where(sql<string>`json_extract(ref_json, '$.agentId')`, '=', agentId)
-    .orderBy('seq', 'desc')
-    .limit(1)
-    .execute()
-  return rows[0]?.op === 'upserted'
-}
-
 export function coreDeletionHandlers(
-  db: Kysely<AppDatabase>,
+  agentLivesOn: LivesOn,
   handler: Handler,
 ): ConsumerHandlers<CoreRefs, CoreCascades> {
   return {
     agent: async (change) => {
       if (change.op !== 'deleted') return
-      if (change.ref.agentId && (await agentLivesOn(db, change.ref.agentId))) return
+      if (change.ref.agentId && (await agentLivesOn(change.ref.agentId))) return
       await handler({ entity: 'agent', ref: change.ref })
     },
     'chat.session': async (change) => {
@@ -58,17 +45,18 @@ export function coreDeletionHandlers(
 }
 
 /** One plugin's core consumers, named `plugin:<plugin>:<consumer>`; a re-subscribe replaces. */
-export function createCoreDeletionFollower(deps: {
-  db: Kysely<AppDatabase>
-  core: CoreChangeFeed
-}) {
+export function createCoreDeletionFollower(deps: { agentLivesOn: LivesOn; core: CoreChangeFeed }) {
   const running = new Map<string, () => Promise<void>>()
   return async (pluginName: string, consumer: string, handler: Handler) => {
     const name = `plugin:${pluginName}:${consumer}`
     await running.get(name)?.()
-    const started = await deps.core.subscribe(name, coreDeletionHandlers(deps.db, handler), {
-      kind: 'reactor',
-    })
+    const started = await deps.core.subscribe(
+      name,
+      coreDeletionHandlers(deps.agentLivesOn, handler),
+      {
+        kind: 'reactor',
+      },
+    )
     const stop = async () => {
       if (running.get(name) !== stop) return
       running.delete(name)

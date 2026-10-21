@@ -20,6 +20,7 @@ import type { AppDatabase } from '../../db/types'
 import { changeRetryDelayMs } from './retry'
 import type { CoreChangeFeed } from './core-entities'
 import { createCoreDeletionFollower } from './core-deletions'
+import { agentLivesOn } from './change-events-repository'
 
 const NAME = /^[a-z0-9][a-z0-9._-]{0,63}$/
 const ANY_REF = z.record(z.string(), z.unknown())
@@ -40,7 +41,10 @@ export function createPluginChangeHosts(deps: {
   core: CoreChangeFeed
   log?: Log
 }) {
-  const followCore = createCoreDeletionFollower({ db: deps.db, core: deps.core })
+  const followCore = createCoreDeletionFollower({
+    agentLivesOn: (agentId) => agentLivesOn(deps.db, agentId),
+    core: deps.core,
+  })
   const feeds = new Map<string, ChangeFeed<RefSchemas, Record<string, never>>>()
   const feedFor = (stream: string) => {
     let feed = feeds.get(stream)
