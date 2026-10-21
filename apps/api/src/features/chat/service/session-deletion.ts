@@ -23,8 +23,6 @@ export interface SessionDeletionContext {
   closeSessionTerminals?: (userId: string, sessionId: string) => void
   closeSessionPreview?: (userId: string, sessionId: string) => void
   releaseSessionWatch?: (sessionId: string) => void
-  /** Remove the session's scratch directory, if it had one of its own. */
-  discardSessionSandbox?: (userId: string, session: BaseCwdSession) => Promise<void>
   /**
    * Remove the data plugins keep for these sessions (`plugins/session-storage.ts`). Unlike the
    * sandbox it belongs to EVERY session in the tree — project sessions and sub-sessions too.
@@ -37,7 +35,7 @@ export async function deleteSession(
   userId: string,
   id: string,
 ): Promise<void> {
-  const session = await ctx.requireSession(userId, id)
+  await ctx.requireSession(userId, id)
   // Stop live work BEFORE deleting rows: child jobs/sub-agents first (their
   // kill actions), then the session's own run — otherwise the run keeps
   // streaming into deleted rows and background processes outlive the session.
@@ -73,9 +71,8 @@ export async function deleteSession(
     clearFileOpJournal(id)
     await ctx.repo.deleteSession(userId, id, orderedIds)
     ctx.onSessionsDeleted?.(userId, orderedIds)
-    // AFTER the rows are gone, and only then: a delete that failed above must leave the
-    // session's files exactly where the session still expects them.
-    await ctx.discardSessionSandbox?.(userId, session)
+    // Its scratch directory, monitors, loops and inbox rows go in the session-residue reactor
+    // (`session-residue.ts`), from the committed deletion of every id in the tree.
     // Every session of the tree, whatever its sandbox rules: a game played in a project chat or
     // a sub-session goes with it. After the rows, so no ownership check can write it back.
     await ctx.discardSessionData?.(orderedIds)

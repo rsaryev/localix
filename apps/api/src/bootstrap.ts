@@ -322,6 +322,9 @@ export async function bootstrap(
         userService,
         agentsService,
         secretsStore,
+        notifications,
+        sessionExists: async (...args) =>
+          Boolean(await bootRepo.getSession(...args).catch(() => true)),
         providerConditions: infra.providerConditions,
         triggerConditions,
         refreshPluginBackends: () => backendHost.refresh(),

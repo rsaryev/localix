@@ -87,7 +87,9 @@ export function createRouteRepair(ports: RouteRepairPorts) {
     for (const project of await ports.projects.routes(userId)) {
       if (!project.providerConnectionId) continue
       const to = rebindTo(project)
-      if (to) (await ports.projects.rebind(userId, project.id, to), changed.add('projects'))
+      if (!to) continue
+      await ports.projects.rebind(userId, project.id, to)
+      changed.add('projects')
     }
     const routing = await ports.routing.read(userId)
     if (routing) {
@@ -100,7 +102,10 @@ export function createRouteRepair(ports: RouteRepairPorts) {
           return [task, { ...route, providerConnectionId: to }]
         }),
       )
-      if (moved) (await ports.routing.write(userId, next), changed.add('profile'))
+      if (moved) {
+        await ports.routing.write(userId, next)
+        changed.add('profile')
+      }
     }
     const resources = [...changed]
     if (resources.length > 0) ports.publish(userId, resources)

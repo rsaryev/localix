@@ -32,6 +32,7 @@ type Op =
   | { kind: 'read_through'; seq: number }
   | { kind: 'remove'; key: string }
   | { kind: 'clear' }
+  | { kind: 'forget-session'; sessionId: string }
 
 interface Job {
   userId: string
@@ -113,6 +114,13 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
         if (change) changes.push(change)
         break
       }
+      case 'forget-session': {
+        for (const key of await repo.keysOfSession(trx, userId, op.sessionId)) {
+          const change = await repo.remove(trx, userId, source, key, at)
+          if (change) changes.push(change)
+        }
+        break
+      }
       case 'clear': {
         for (const entry of await repo.all(trx, userId)) {
           if (isPending(entry)) continue
@@ -179,6 +187,9 @@ export function createNotificationJournal(deps: NotificationJournalDeps): Notifi
     },
     settle(userId, fact) {
       enqueue({ userId, source: 'server', op: { kind: 'settle', fact } })
+    },
+    forgetSession(userId, sessionId) {
+      enqueue({ userId, source: 'server', op: { kind: 'forget-session', sessionId } })
     },
     apply(userId, ops) {
       return Promise.all(

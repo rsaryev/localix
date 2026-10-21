@@ -14,6 +14,10 @@ import type { AgentsService } from '../features/agents/service'
 import { createCapabilityCleanup } from '../features/capabilities/cleanup'
 import { mcpOAuthStore } from '../features/mcp/oauth/runtime'
 import type { SecretsStore } from '../features/secrets/store-contracts'
+import { createSessionResidue } from '../features/chat/session-residue'
+import { cancelSessionLoops } from '../features/chat/service/loop-ops'
+import { stopSessionMonitors } from '../features/chat/service/monitor-ops'
+import type { NotificationJournal } from '../features/notifications/journal-contracts'
 import { createRouteRepair } from '../features/chat/route-repair/route-repair'
 import { createRouteSeatsRepository } from '../features/chat/route-repair/seats-repository'
 import type { ProviderConditions } from '../features/notifications/conditions/providers'
@@ -34,6 +38,8 @@ export interface CoreReactorDeps {
   userService: Pick<UserService, 'getProfile' | 'updateProfile'>
   agentsService: Pick<AgentsService, 'listAgents'>
   secretsStore: Pick<SecretsStore, 'unbindConsumer'>
+  notifications: Pick<NotificationJournal, 'forgetSession' | 'repository'>
+  sessionExists(userId: string, sessionId: string): Promise<boolean>
   providerConditions: Pick<ProviderConditions, 'connectionRemoved' | 'connectionsRemaining'>
   triggerConditions: Pick<TriggerConditions, 'routeStranded'>
   publish(userId: string, resources: RealtimeResource[]): void
@@ -165,6 +171,19 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     unbindVaultConsumer: (...args) => deps.secretsStore.unbindConsumer(...args),
   })
   await deps.feed.subscribe('capability-cleanup', cleanup.handlers, { kind: 'reactor' })
+  const residue = createSessionResidue({
+    stopMonitors: stopSessionMonitors,
+    cancelLoops: cancelSessionLoops,
+    forgetNotifications: (...args) => deps.notifications.forgetSession(...args),
+    projectDirs: async (...args) =>
+      (await deps.projectsService.listProjects(...args)).projects.map((p) => p.workingDir),
+    inboxSessions: () => deps.notifications.repository.sessionsWithRows(),
+    sessionExists: deps.sessionExists,
+  })
+  await deps.feed.subscribe('session-residue', residue.handlers, {
+    kind: 'reactor',
+    reconcile: () => residue.reconcile(),
+  })
   await deps.feed.subscribe('plugin-backends', pluginBackendHandlers(deps.refreshPluginBackends), {
     kind: 'reactor',
     reconcile: () => deps.refreshPluginBackends(),
