@@ -9,6 +9,8 @@ export const STORE_FEED_WINDOW_MS = 50
  * One authenticated invalidation feed for JSON stores. Domain stores announce after commit;
  * the host's native watcher covers file tools, external editors and atomic replacements.
  * Liveness proves source coverage, rather than merely acknowledging the subscribe command.
+ * Deliberately not durable (unlike `host.changes`): a view reads again on reconnect, so a
+ * history would cost a database row per write and buy nothing.
  */
 export function createStoreChangeFeed(options: {
   plugin: string

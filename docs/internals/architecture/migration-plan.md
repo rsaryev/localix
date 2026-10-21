@@ -57,8 +57,10 @@ scheduling, terminal lifecycle and the session event stream.
 
 ## Plugins
 
-- [ ] Plugins can follow core deletions through a read-only subscription.
-- [ ] One plugin change mechanism instead of `host.changes` beside the store change feed.
+- [x] Plugins can follow core deletions through a read-only subscription.
+- [x] One plugin change mechanism instead of `host.changes` beside the store change feed: kept as
+      two with distinct jobs (durable backend feed, ephemeral view invalidation), documented in
+      `docs/extending/plugin-sync.md`.
 
 ## Dead code and legacy
 

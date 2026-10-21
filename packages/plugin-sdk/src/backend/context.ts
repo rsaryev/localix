@@ -272,6 +272,11 @@ export interface PluginContext {
    */
   sessionStorage?: {
     resolveDataDir(userId: string, sessionId: string): Promise<string>
+    /**
+     * Every session folder this plugin already has, without creating any — for cleanup that
+     * spans chats (a deleted agent unassigned from every board). Absent on hosts that cannot.
+     */
+    listDataDirs?(): Promise<readonly { sessionId: string; dir: string }[]>
   }
   /**
    * The agents a chat can name (see {@link PluginAgentDirectory}). Present on every load — the

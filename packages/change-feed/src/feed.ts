@@ -95,9 +95,18 @@ function feedOver<R extends RefSchemas, C extends Cascades<R>>(
         retryDelayMs: deps.retryDelayMs,
         log,
       })
-      consumers.set(name, consumer)
+      // A stopped consumer leaves, so its name can be subscribed again (a plugin reloaded).
+      const stop = consumer.stop
+      const handle: ChangeConsumer = {
+        ...consumer,
+        async stop() {
+          if (consumers.get(name) === handle) consumers.delete(name)
+          await stop()
+        },
+      }
+      consumers.set(name, handle)
       await consumer.ready
-      return consumer
+      return handle
     },
 
     /** Every consumer here, with how far it is behind the newest notice. */

@@ -83,6 +83,23 @@ internal callers must share that service instance or a shared publisher. Do not 
 HTTP verbs: a POST may generate a preview or perform a read. Notification failure cannot turn a
 successful committed write into a failed mutation.
 
+## Two change feeds
+
+The store change feed and `host.changes` do different jobs, so a plugin may use both:
+
+| Question          | Store change feed (`createStoreChangeFeed`)        | `host.changes`                                      |
+| ----------------- | -------------------------------------------------- | --------------------------------------------------- |
+| Who listens       | Open views over `/rpc/ws`                          | Backend consumers in the plugin                     |
+| What it covers    | Committed writes and external file edits (watcher) | Notices the plugin records; the core's deletions    |
+| Missed while away | Nothing kept: the view reads again on reconnect    | Kept in SQLite; a consumer catches up at its cursor |
+| Cost per write    | An in-memory nudge, coalesced per 50 ms            | One database row                                    |
+
+A view needs the newest state, not a history: a reconnect read already covers what it missed, and a
+file edited outside the app has no transaction to record. Recording every store write durably would
+add a database row per write and still not cover an edit made while the watcher was down. A backend
+consumer that builds derived data (an index, a digest, a cleanup) needs the opposite: every notice,
+across restarts. Keep store refreshes on the store feed and durable processing on `host.changes`.
+
 ## Read and recover
 
 `createResourceSync` from `ui/resource-sync` is shared with core. It coalesces invalidations,

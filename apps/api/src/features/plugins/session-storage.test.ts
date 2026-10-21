@@ -5,6 +5,7 @@ import { join } from 'node:path'
 
 import {
   discardSessionData,
+  listPluginSessionDataDirs,
   pluginSessionDataDir,
   resolvePluginSessionDataDir,
   sessionDataRoot,
@@ -154,5 +155,34 @@ describe('the startup sweep', () => {
     })
     expect(removed).toEqual([])
     expect(asked).toBe(false)
+  })
+})
+
+describe('listPluginSessionDataDirs', () => {
+  test("lists only the sessions holding this plugin's folder, creating nothing", async () => {
+    const root = tempRoot()
+    const allow = async () => {}
+    for (const sessionId of ['a/1', 'b'])
+      await resolvePluginSessionDataDir({
+        pluginName: 'board',
+        userId: 'u',
+        sessionId,
+        authorize: allow,
+        root,
+      })
+    await resolvePluginSessionDataDir({
+      pluginName: 'notes',
+      userId: 'u',
+      sessionId: 'c',
+      authorize: allow,
+      root,
+    })
+    const listed = await listPluginSessionDataDirs('board', root)
+    expect(listed.map((entry) => entry.sessionId).sort()).toEqual(['a/1', 'b'])
+    expect(listed.find((entry) => entry.sessionId === 'b')?.dir).toBe(
+      pluginSessionDataDir('board', 'b', root),
+    )
+    expect(existsSync(pluginSessionDataDir('board', 'c', root))).toBe(false)
+    expect(await listPluginSessionDataDirs('board', join(root, 'missing'))).toEqual([])
   })
 })

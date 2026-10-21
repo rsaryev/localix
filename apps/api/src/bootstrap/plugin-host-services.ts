@@ -3,7 +3,10 @@ import { agentTerminalOf } from '../features/terminal/agent-scope'
 import type { loadPluginBackends } from '../features/plugins/loader'
 import type { createPluginWakes } from '../features/plugins/plugin-wake'
 import { bindPluginMonitors } from '../features/plugins/monitor-arms'
-import { resolvePluginSessionDataDir } from '../features/plugins/session-storage'
+import {
+  listPluginSessionDataDirs,
+  resolvePluginSessionDataDir,
+} from '../features/plugins/session-storage'
 import { bootAgentDirectory } from './plugin-agent-directory'
 import { watchPathNative } from '../features/fs-watch/path-watch'
 import { openPath, openPathWith, revealPath } from '../features/projects/native-dialogs'
@@ -82,6 +85,7 @@ export function createPluginHostServices(deps: {
           authorize: (...authorizeArgs) =>
             hostRefs.chatService!.resolveSessionCwd(...authorizeArgs),
         }),
+      listDataDirs: () => listPluginSessionDataDirs(pluginName),
     },
     agents: bootAgentDirectory(hostRefs),
     // Confined to the plugin's own `plugin:<name>:*` collections.
@@ -90,7 +94,7 @@ export function createPluginHostServices(deps: {
     decisions: createPluginDecisionHost(deps.decisionService, pluginName, (...args) =>
       hostRefs.chatService!.resolveSessionCwd(...args),
     ),
-    // The plugin's own stream, `plugin:<name>`: record notices, read them at a durable cursor.
+    // The plugin's own stream, `plugin:<name>`, and the core's deletions, read-only.
     changes: deps.changes.forPlugin(pluginName),
     // The native watcher only the host bundles; a plugin's own `fs.watch` drops bursts on macOS.
     watchPath: watchPathNative,
