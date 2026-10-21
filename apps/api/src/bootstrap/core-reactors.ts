@@ -18,6 +18,8 @@ import { createSessionResidue } from '../features/chat/session-residue'
 import { cancelSessionLoops } from '../features/chat/service/loop-ops'
 import { stopSessionMonitors } from '../features/chat/service/monitor-ops'
 import type { NotificationJournal } from '../features/notifications/journal-contracts'
+import { createUsageLedgerProjector } from '../features/usage/ledger-projector'
+import { createUsageRepository } from '../features/usage/repository'
 import { createRouteRepair } from '../features/chat/route-repair/route-repair'
 import { createRouteSeatsRepository } from '../features/chat/route-repair/seats-repository'
 import type { ProviderConditions } from '../features/notifications/conditions/providers'
@@ -185,6 +187,11 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   await deps.feed.subscribe('session-residue', residue.handlers, {
     kind: 'reactor',
     reconcile: () => residue.reconcile(),
+  })
+  const ledger = createUsageLedgerProjector({ usage: createUsageRepository(deps.db) })
+  await deps.feed.subscribe('usage-ledger', ledger.handlers, {
+    kind: 'projector',
+    reconcile: ledger.reconcile,
   })
   await deps.feed.subscribe('plugin-backends', pluginBackendHandlers(deps.refreshPluginBackends), {
     kind: 'reactor',

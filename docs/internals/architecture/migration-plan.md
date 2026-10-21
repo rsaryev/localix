@@ -27,7 +27,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 
 - [ ] Relay from notices to client topics replaces the mutation wrappers in
       `apps/api/src/bootstrap/resource-sync.ts`.
-- [ ] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
+- [x] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
 - [ ] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule
       and `resolveLiveCatalogModel` are removed.
 

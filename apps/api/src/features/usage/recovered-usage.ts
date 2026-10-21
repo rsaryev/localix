@@ -54,13 +54,24 @@ export function recoveredUsage(payloadJson: string) {
     const from = jsonObject(payload.from)
     const timing = jsonObject(payload.timing)
     const modelMs = timing ? optionalFiniteNonnegative(timing, 'modelMs') : undefined
+    // The last turn's routing, stamped by the run (`payload.turnEnd`); absent on older messages.
+    const turnEnd = jsonObject(payload.turnEnd)
     return {
       ...values,
       costSource: costSourceValue as UsageEventInput['costSource'],
       providerId: optionalString(providerMeta, 'providerId'),
       modelId: optionalString(providerMeta, 'modelId'),
-      keyLabel: optionalString(providerMeta, 'keyLabel'),
-      keyMasked: optionalString(providerMeta, 'keyMasked'),
+      keyLabel: optionalString(providerMeta, 'keyLabel') ?? optionalString(turnEnd, 'keyLabel'),
+      keyMasked: optionalString(providerMeta, 'keyMasked') ?? optionalString(turnEnd, 'keyMasked'),
+      turnEnd: turnEnd
+        ? {
+            finishReason: optionalString(turnEnd, 'finishReason'),
+            keyId: optionalString(turnEnd, 'keyId'),
+            providerId: optionalString(turnEnd, 'providerId'),
+            modelId: optionalString(turnEnd, 'modelId'),
+            providerConnectionId: optionalString(turnEnd, 'providerConnectionId'),
+          }
+        : undefined,
       agentId: optionalString(from, 'agentId'),
       modelMs: modelMs === null ? undefined : modelMs,
     }

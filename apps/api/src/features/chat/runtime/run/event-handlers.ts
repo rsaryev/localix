@@ -13,7 +13,7 @@ import type { AgentEvent } from '@localixai/agent/agents'
 import type { LiveItemResolver } from '../agent-runner-state'
 
 import { calcUsageWithCost, classifyCostSource } from '../run-accounting'
-import { normalizeUsage, recordAssistantTurnUsage } from '../usage-normalize'
+import { normalizeUsage } from '../usage-normalize'
 import { publishSessionUsageSnapshot } from '../session-usage'
 import type { createItemAccumulator } from '../items'
 import type { RunHookContext } from './run-hook-context'
@@ -186,12 +186,27 @@ async function handleMessageEnd(ctx: TurnEventContext, event: EventOf<'message_e
   if (runUsage.costSource !== 'actual') {
     runUsage.costSource = classifyCostSource(usedKey?.authType, runUsage.costSource)
   }
+  const route = message.usage ? agentRoute(ctx.session, ctx.agentId) : undefined
   state.payload = {
     ...state.payload,
     content: text.trim() ? text : state.payload.content,
     items: acc.list(),
     reasoning: reasoning || undefined,
     ...(message.usage ? { usage: runUsage } : {}),
+    // What the usage ledger row is derived from: the turn's routing, on the message itself.
+    ...(route
+      ? {
+          turnEnd: {
+            finishReason: message.stopReason,
+            keyId: state.usedKeyId ?? undefined,
+            keyLabel: usedKey?.label || undefined,
+            keyMasked: maskKey(usedKey) ?? undefined,
+            providerId: ctx.providerId ?? undefined,
+            modelId: route.modelId,
+            providerConnectionId: route.providerConnectionId ?? undefined,
+          },
+        }
+      : {}),
     ...(ctx.cacheDiagnostics ? { cacheDiagnostics: ctx.cacheDiagnostics } : {}),
     timing: { ...state.timing, tools: [...state.timing.tools] },
   }
@@ -203,39 +218,16 @@ async function handleMessageEnd(ctx: TurnEventContext, event: EventOf<'message_e
     state.payload,
     state.assistantCreatedAt,
   )
-  // Append/replace this message's usage-ledger row (UPSERT by id, so the
-  // running total stays correct as the message is re-persisted).
-  if (state.payload.usage) {
-    const route = agentRoute(ctx.session, ctx.agentId)
-    if (!route) throw new Error(`Agent is no longer in the session: ${ctx.agentId}`)
-    recordAssistantTurnUsage({
+  // The message's usage changed, which announces it: the usage-ledger projector writes its row
+  // (`usage/ledger-projector.ts`). The session's total reads the messages, so it is told now.
+  if (state.payload.usage)
+    void publishSessionUsageSnapshot({
+      repo: env.repo,
       usageRepo: env.usageRepo,
-      base: {
-        messageId: ctx.assistantMessageId,
-        sessionId: ctx.session.id,
-        rootSessionId: ctx.session.rootSessionId,
-        userId: ctx.userId,
-        providerConnectionId: route.providerConnectionId,
-        providerId: ctx.providerId,
-        modelId: route.modelId,
-        agentId: route.agentId,
-      },
-      usage: state.payload.usage,
-      finishReason: message.stopReason,
-      durationMs: state.timing.modelMs,
-      keyId: state.usedKeyId ?? null,
-      keyLabel: usedKey?.label || null,
-      keyMasked: maskKey(usedKey) ?? null,
-      onRecorded: () =>
-        publishSessionUsageSnapshot({
-          repo: env.repo,
-          usageRepo: env.usageRepo,
-          streamRegistry: env.deps.streamRegistry,
-          userId: ctx.userId,
-          sessionId: ctx.session.id,
-        }),
+      streamRegistry: env.deps.streamRegistry,
+      userId: ctx.userId,
+      sessionId: ctx.session.id,
     })
-  }
 }
 
 /** Dispatch one agentLoop event to its handler. `error` events re-throw. */

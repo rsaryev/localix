@@ -3,43 +3,11 @@ import {
   buildUsageEvent,
   normalizeUsage,
   providerIdFromModel,
-  recordAssistantTurnUsage,
   recordAuxCallUsage,
   recordTitleGenUsage,
   usageEventFields,
   zeroUsageTotals,
 } from './usage-normalize'
-
-describe('recordAssistantTurnUsage', () => {
-  it('does not drop one-hour cache creation from the main run ledger', async () => {
-    const events: Array<Record<string, unknown>> = []
-    recordAssistantTurnUsage({
-      usageRepo: {
-        recordEvent: async (event: Record<string, unknown>) => {
-          events.push(event)
-        },
-      } as never,
-      base: {
-        messageId: 'm1',
-        sessionId: 's1',
-        userId: 'u1',
-        modelId: 'claude',
-      },
-      usage: {
-        inputTokens: 10,
-        outputTokens: 2,
-        cacheWriteTokens: 8,
-        cacheWrite1hTokens: 6,
-      },
-    })
-    await Promise.resolve()
-
-    expect(events[0]).toMatchObject({
-      cacheWriteTokens: 8,
-      cacheWrite1hTokens: 6,
-    })
-  })
-})
 
 describe('zeroUsageTotals', () => {
   it('returns the canonical zeroed usage aggregate', () => {

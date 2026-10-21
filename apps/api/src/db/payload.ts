@@ -250,6 +250,20 @@ export interface StoredMessagePayload extends AgentChatMessage {
   timing?: MessageTiming
   /** Which provider + API key produced this message (footer badge). */
   providerMeta?: MessageProviderMeta
+  /**
+   * How the last model turn of this message ran, stamped at each turn's end: what the usage
+   * ledger row is derived from (`usage/ledger-projector.ts`), so the ledger needs nothing but
+   * the message.
+   */
+  turnEnd?: {
+    finishReason?: string
+    keyId?: string
+    keyLabel?: string
+    keyMasked?: string
+    providerId?: string
+    modelId?: string
+    providerConnectionId?: string
+  }
 }
 
 // The codec — version, patch type, merge, serialize, deserialize — lives in `payload-codec.ts`

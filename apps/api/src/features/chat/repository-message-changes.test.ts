@@ -45,13 +45,23 @@ test('a message edit is announced; streaming checkpoints between are not', async
   expect(await count()).toBe(inserted + 1)
   const second = await repo.updateMessage('u1', 's1', 'm1', { content: 'Hello' }, at, first!)
   expect(await count()).toBe(inserted + 1)
+  // A turn's end moves the message's usage: the usage ledger hears of it.
+  const third = await repo.updateMessage(
+    'u1',
+    's1',
+    'm1',
+    { usage: { inputTokens: 3, outputTokens: 1 } as never },
+    at,
+    second!,
+  )
+  expect(await count()).toBe(inserted + 2)
   await repo.updateMessage(
     'u1',
     's1',
     'm1',
     { content: 'Hello.', providerMeta: { provider: 'x' } as never },
     at,
-    second!,
+    third!,
   )
-  expect(await count()).toBe(inserted + 2)
+  expect(await count()).toBe(inserted + 3)
 })
