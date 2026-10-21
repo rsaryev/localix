@@ -11,6 +11,7 @@
  * that CARRIES the current list, so the client replaces what it shows instead of keeping a
  * Continue that cannot work (the shape the plan decisions already use).
  */
+import { InvalidRequestError } from '../../lib/domain-errors'
 import { ApiError } from '../../lib/errors'
 import type { StoredSystemNotice } from '../../db/payload'
 import type { WakeRequest } from '../chat/contracts'
@@ -64,7 +65,8 @@ export function createResumeRegistry(deps: ResumeRegistryDeps) {
     async resume(owner: ResumeOwner, key: string): Promise<ResumeAnswer> {
       const kind = resumeKindOf(key)
       const producer = deps.producers().find((candidate) => candidate.kind === kind)
-      if (!producer) throw new ApiError(400, 'unknown_resume_kind', `Nothing can continue ${key}`)
+      if (!producer)
+        throw new InvalidRequestError('unknown_resume_kind', `Nothing can continue ${key}`)
       const action = await producer.take(owner, key)
       if (!action) throw new ResumeConflictError(await list(owner))
       await deps.notice(owner, action.notice).catch(() => undefined)

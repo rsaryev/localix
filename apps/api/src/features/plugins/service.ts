@@ -1,3 +1,10 @@
+import {
+  ConflictError,
+  InvalidRequestError,
+  NotFoundError,
+  UnavailableError,
+  UnprocessableError,
+} from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { pluginLoadBlockReason } from './loadable'
 import { isAbsolute } from 'node:path'
@@ -8,7 +15,7 @@ import {
 } from '../capabilities/source-repository'
 
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { ApiError, errorMessage } from '../../lib/errors'
+import { errorMessage } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
 import { createContributionKindRegistry } from '../ext/contribution-kinds'
 import { isGitSource } from '../ext/git-source'
@@ -78,14 +85,19 @@ function jsonValueWithinCap(value: unknown, label: string): unknown {
   try {
     encoded = JSON.stringify(value ?? null)
   } catch {
-    throw new ApiError(422, 'plugin_ui_action_invalid_json', `${label} must be JSON-serializable`)
+    throw new UnprocessableError(
+      'plugin_ui_action_invalid_json',
+      `${label} must be JSON-serializable`,
+    )
   }
   if (encoded === undefined) {
-    throw new ApiError(422, 'plugin_ui_action_invalid_json', `${label} must be JSON-serializable`)
+    throw new UnprocessableError(
+      'plugin_ui_action_invalid_json',
+      `${label} must be JSON-serializable`,
+    )
   }
   if (Buffer.byteLength(encoded) > PLUGIN_UI_ACTION_JSON_CAP_BYTES) {
-    throw new ApiError(
-      422,
+    throw new UnprocessableError(
       'plugin_ui_action_too_large',
       `${label} exceeds ${PLUGIN_UI_ACTION_JSON_CAP_BYTES} bytes`,
     )
@@ -226,7 +238,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     projectId: string,
   ): Promise<DiscoveredPlugin> => {
     const plugin = await findPlugin(userId, name, projectId)
-    if (!plugin) throw new ApiError(404, 'plugin_not_found', `Plugin "${name}" not found`)
+    if (!plugin) throw new NotFoundError('plugin_not_found', `Plugin "${name}" not found`)
     return plugin
   }
 
@@ -343,8 +355,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
      */
     async invokeUiAction(userId, input) {
       if (!deps.invokeUiAction) {
-        throw new ApiError(
-          503,
+        throw new UnavailableError(
           'plugin_ui_actions_unavailable',
           'Plugin UI actions are unavailable',
         )
@@ -355,8 +366,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         ({ plugin }) => plugin.manifest.name === input.pluginName && plugin.projectId === projectId,
       )
       if (!entry) {
-        throw new ApiError(
-          404,
+        throw new NotFoundError(
           'plugin_not_enabled',
           `Plugin "${input.pluginName}" is not enabled in this scope`,
         )
@@ -366,7 +376,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         ? await deps.resolveSessionCwd?.(userId, input.sessionId)
         : null
       if (input.sessionId && !sessionCwd) {
-        throw new ApiError(404, 'session_not_found', 'Session not found')
+        throw new NotFoundError('session_not_found', 'Session not found')
       }
       const projectCwd = projectId ? await cwdFor(userId, projectId) : null
       const payload = jsonValueWithinCap(input.payload, 'Plugin UI action payload')
@@ -387,13 +397,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       } catch (err) {
         const code = (err as { code?: unknown } | null)?.code
         if (code === 'not_available') {
-          throw new ApiError(404, 'plugin_ui_action_not_found', errorMessage(err))
+          throw new NotFoundError('plugin_ui_action_not_found', errorMessage(err))
         }
         if (code === 'ambiguous') {
-          throw new ApiError(409, 'plugin_ui_action_ambiguous', errorMessage(err))
+          throw new ConflictError('plugin_ui_action_ambiguous', errorMessage(err))
         }
         if (code === 'timeout') {
-          throw new ApiError(503, 'plugin_ui_action_timeout', errorMessage(err))
+          throw new UnavailableError('plugin_ui_action_timeout', errorMessage(err))
         }
         throw err
       }
@@ -546,8 +556,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       const projectId = input.projectId ?? ''
       const cwd = projectId ? await cwdFor(userId, projectId) : null
       if (scope === 'project' && !cwd) {
-        throw new ApiError(
-          400,
+        throw new InvalidRequestError(
           'plugin_no_project_dir',
           'This project has no folder of its own (chats without a project run in per-chat sandboxes). Install the plugin globally instead.',
         )
@@ -580,12 +589,12 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           if (imported) installNotes.push(...imported.notes.map((n) => `Claude Code import: ${n}`))
         } catch (error) {
           if (error instanceof ClaudeCodeImportError)
-            throw new ApiError(400, 'plugin_invalid', error.message)
+            throw new InvalidRequestError('plugin_invalid', error.message)
           throw error
         }
         if (resolvedMarket) await applyEntryManifestOverrides(directory, resolvedMarket.entry)
         const candidate = await loadManifest(directory, scope, projectId)
-        if (candidate.error) throw new ApiError(400, 'plugin_invalid', candidate.error)
+        if (candidate.error) throw new InvalidRequestError('plugin_invalid', candidate.error)
       }
       if (resolvedMarket) {
         const discovered = await discover({ cwd, projectId })
@@ -638,8 +647,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       const states = await repo.listForScope(userId, projectId)
       const state = states.find((s) => s.name === input.name)
       if (!state?.source || state.source === 'local') {
-        throw new ApiError(
-          400,
+        throw new InvalidRequestError(
           'plugin_no_source',
           `Plugin "${input.name}" has no recorded install source — drop in the updated folder manually.`,
         )
@@ -681,14 +689,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
     async addMarketplace(_userId, input) {
       const parsed = parseMarketplaceInput(input.source)
-      if ('error' in parsed) throw new ApiError(400, 'marketplace_bad_source', parsed.error)
+      if ('error' in parsed) throw new InvalidRequestError('marketplace_bad_source', parsed.error)
       try {
         return await addMarketplace(parsed, registryDeps)
       } catch (err) {
         // The raw text is an npm/git/HTTP failure, which on its own names no action at all —
         // "fetch failed" told the user nothing about what they had just clicked.
-        throw new ApiError(
-          400,
+        throw new InvalidRequestError(
           'marketplace_add_failed',
           `That marketplace could not be added (${errorMessage(err)})`,
         )
@@ -703,8 +710,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       try {
         await removeMarketplace(input.name, registryDeps)
       } catch (err) {
-        throw new ApiError(
-          400,
+        throw new InvalidRequestError(
           'marketplace_remove_failed',
           `"${input.name}" could not be removed (${errorMessage(err)})`,
         )

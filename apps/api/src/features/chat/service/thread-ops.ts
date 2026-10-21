@@ -1,8 +1,8 @@
+import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
 import { agentRoute, chosenRoute, sessionRoute } from '../session-route'
 import { participantAgentId } from '../../../db/participant'
 import { randomUUID } from 'node:crypto'
 
-import { ApiError } from '../../../lib/errors'
 import { sessionAgent, toPersistedMessage } from './message-builders'
 import * as sessionLifecycle from './session-lifecycle'
 import type { SessionLifecycleCtx } from './session-lifecycle-contracts'
@@ -40,15 +40,13 @@ export async function openMessageThread(
 
   const anchor = await ctx.repo.getMessage(userId, sessionId, messageId)
   if (!anchor) {
-    throw new ApiError(
-      404,
+    throw new NotFoundError(
       'message_not_found',
       `Message ${messageId} not found in session ${sessionId}`,
     )
   }
   if (anchor.payload.role !== 'assistant') {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'message_not_threadable',
       'Only assistant messages can be opened as threads',
     )

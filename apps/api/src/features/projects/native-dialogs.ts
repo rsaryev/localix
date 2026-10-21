@@ -1,10 +1,9 @@
+import { InternalError } from '../../lib/domain-errors'
 import os from 'node:os'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
 import { performHandoff, type Handoff } from '@localixai/os-open'
-
-import { ApiError } from '../../lib/errors'
 
 const execFilePromise = promisify(execFile)
 
@@ -190,7 +189,7 @@ const log = (line: string) => console.info(`[native-open] ${line}`)
 
 async function handoff(target: Handoff): Promise<{ opened: true }> {
   const result = await performHandoff(target, { log })
-  if (!result.ok) throw new ApiError(500, 'os_open_failed', result.reason)
+  if (!result.ok) throw new InternalError('os_open_failed', result.reason)
   return { opened: true }
 }
 

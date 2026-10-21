@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { NotFoundError } from '../../../lib/domain-errors'
 import { readAvailability } from '../../capabilities/availability'
 import { discardSessionData } from '../../plugins/session-storage'
 import { resolveDefaultProject } from '../../projects/default-project'
@@ -42,7 +42,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
   const requireSession = async (userId: string, id: string): Promise<SessionRecord> => {
     const session = await repo.getSession(userId, id)
     if (!session) {
-      throw new ApiError(404, 'session_not_found', 'Session not found')
+      throw new NotFoundError('session_not_found', 'Session not found')
     }
     return session
   }

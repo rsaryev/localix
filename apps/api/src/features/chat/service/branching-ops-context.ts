@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { NotFoundError } from '../../../lib/domain-errors'
 import {
   assertMutableChatSession,
   assertSessionNotBusy,
@@ -11,7 +11,7 @@ import type { AgentNotifications } from '../../notifications/producers'
 import type { SessionDetail } from '../contracts'
 
 /** Shared 404 raised when a referenced message id is absent from the session. */
-export const messageNotFound = () => new ApiError(404, 'message_not_found', 'Message not found')
+export const messageNotFound = () => new NotFoundError('message_not_found', 'Message not found')
 
 /** Closure values the branching operations need from createChatService. */
 export interface BranchingOpsContext {

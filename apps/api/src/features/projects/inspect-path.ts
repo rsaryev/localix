@@ -1,7 +1,7 @@
+import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import path from 'node:path'
 import { stat } from 'node:fs/promises'
 import { z } from 'zod'
-import { ApiError } from '../../lib/errors'
 
 /**
  * Classify a path WITHOUT creating or reviving a project. A file open uses this to decide whether
@@ -34,7 +34,7 @@ export const normalizeDir = (p: string): string => {
  */
 export function assertAbsolutePath(inputPath: string): void {
   if (!path.isAbsolute(inputPath.trim())) {
-    throw new ApiError(400, 'project_path_not_absolute', 'Project path must be absolute')
+    throw new InvalidRequestError('project_path_not_absolute', 'Project path must be absolute')
   }
 }
 
@@ -49,9 +49,12 @@ export async function inspectPath(inputPath: string): Promise<InspectPathRespons
   try {
     info = await stat(normalized)
   } catch {
-    throw new ApiError(404, 'project_path_not_found', 'Path does not exist or cannot be read')
+    throw new NotFoundError('project_path_not_found', 'Path does not exist or cannot be read')
   }
   if (info.isFile()) return { kind: 'file', path: normalized }
   if (info.isDirectory()) return { kind: 'directory', path: normalized }
-  throw new ApiError(400, 'project_path_not_regular', 'Path is neither a file nor a directory')
+  throw new InvalidRequestError(
+    'project_path_not_regular',
+    'Path is neither a file nor a directory',
+  )
 }

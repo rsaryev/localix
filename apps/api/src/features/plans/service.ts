@@ -28,7 +28,7 @@
  * Each operation reads in one order: validate the version and its state → decide (one guarded
  * write) → publish → say it (notice, attention) → reach the agent.
  */
-import { ApiError } from '../../lib/errors'
+import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
 import { agentParticipant } from '../../db/participant'
 import type { StoredSystemNotice } from '../../db/payload'
 import type { PermissionMode } from '../capabilities/permission-modes'
@@ -176,7 +176,10 @@ export function createPlanService(deps: PlanServiceDeps) {
       if (plan.status !== 'presented') await conflict(owner, plan)
       const comments = await deps.comments.takeOpen(owner.userId, planCommentScope(plan.id))
       if (!comments.length && !note)
-        throw new ApiError(400, 'review_empty', 'Add a comment or a note before requesting changes')
+        throw new InvalidRequestError(
+          'review_empty',
+          'Add a comment or a note before requesting changes',
+        )
       const round = await deps.repo.nextReviewRound(plan.id)
       const outcome =
         round === null
@@ -224,7 +227,7 @@ export function createPlanService(deps: PlanServiceDeps) {
     async complete(owner: PlanOwner, summary: string): Promise<SessionPlan> {
       const approved = await deps.repo.approved(owner)
       if (!approved)
-        throw new ApiError(409, 'no_approved_plan', 'This conversation has no approved plan')
+        throw new ConflictError('no_approved_plan', 'This conversation has no approved plan')
       const plan =
         (await deps.repo.complete(approved.id, summary, now())) ?? (await conflict(owner, approved))
       const done = await view(owner, plan)

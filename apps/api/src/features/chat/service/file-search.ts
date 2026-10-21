@@ -1,7 +1,8 @@
+import { InternalError, InvalidRequestError } from '../../../lib/domain-errors'
 import { shellQuote, interpretRipgrep } from '../../agent-core/tools/environment'
 import { includeIgnoredRgFlags, loadProjectFileIndex } from '../../agent-core/project-file-index'
 import { withPathLocks, workspaceLockPaths } from '../../agent-core/tools/file/file-utils'
-import { ApiError, errorMessage } from '../../../lib/errors'
+import { errorMessage } from '../../../lib/errors'
 import { commitReplacePlans, type ReplaceContentResult, type ReplacePlan } from './replace-commit'
 import { mapLimit } from '../../../lib/map-limit'
 import { searchToolMissing } from './search-tool-missing'
@@ -157,7 +158,7 @@ export async function searchContent(
   } catch (err) {
     throw (
       searchToolMissing(errorMessage(err)) ??
-      new ApiError(500, 'content_search_failed', errorMessage(err))
+      new InternalError('content_search_failed', errorMessage(err))
     )
   }
   const marker = /__RG_EXIT__(\d+)/.exec(res.stderr)
@@ -177,7 +178,9 @@ export async function searchContent(
   } catch (err) {
     throw (
       searchToolMissing(errorMessage(err), rgExit) ??
-      new ApiError(opts.regex ? 400 : 500, 'content_search_failed', errorMessage(err))
+      (opts.regex
+        ? new InvalidRequestError('content_search_failed', errorMessage(err))
+        : new InternalError('content_search_failed', errorMessage(err)))
     )
   }
 

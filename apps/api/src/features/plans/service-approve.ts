@@ -16,7 +16,7 @@
  *
  * The mode comes before the wake, so the turn the wake opens already runs under it.
  */
-import { ApiError } from '../../lib/errors'
+import { InvalidRequestError } from '../../lib/domain-errors'
 import {
   APPROVAL_TO_ALL,
   planApprovedKey,
@@ -52,7 +52,7 @@ export function createApproveOps(core: PlanServiceCore) {
     if (wanted === APPROVAL_TO_ALL) return { addressee: { all: true } as const, shared }
     const handle = handles.find((candidate) => candidate.toLowerCase() === wanted)
     if (!handle)
-      throw new ApiError(400, 'unknown_participant', `@${wanted} is not in this conversation`)
+      throw new InvalidRequestError('unknown_participant', `@${wanted} is not in this conversation`)
     return { addressee: { handle } as const, shared }
   }
 

@@ -1,4 +1,4 @@
-import { ApiError } from '../../lib/errors'
+import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import type { SystemToggleState } from './contracts'
 import type { SystemToggleDef } from './toggle'
 import { createKeepAwakeToggle } from './toggles/keep-awake'
@@ -52,10 +52,9 @@ export function createSystemService(deps: SystemServiceDeps = {}): SystemService
 
     async setToggle(id, next) {
       const def = defs.get(id)
-      if (!def) throw new ApiError(404, 'toggle_not_found', `Unknown system control "${id}"`)
+      if (!def) throw new NotFoundError('toggle_not_found', `Unknown system control "${id}"`)
       if (next && !def.isAvailable()) {
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'toggle_unavailable',
           `"${def.title}" is not supported on this system.`,
         )

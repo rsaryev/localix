@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { NotFoundError } from '../../../lib/domain-errors'
 import { previewBranchPayload, walkPathToRoot, indexMessageTree } from './branching'
 import {
   messageNotFound,
@@ -23,7 +23,7 @@ export async function switchBranch(
     const siblings = await repo.siblings(sessionId, messageId)
     const targetId = siblings[branchIndex]
     if (!targetId) {
-      throw new ApiError(404, 'branch_not_found', 'Branch not found')
+      throw new NotFoundError('branch_not_found', 'Branch not found')
     }
     const newLeaf = await repo.descendToLeaf(sessionId, targetId)
     await repo.setSessionLeaf(sessionId, newLeaf)

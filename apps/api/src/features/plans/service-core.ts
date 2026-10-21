@@ -7,7 +7,7 @@
  * the list `publish` pushed, and every conflict carries the list as it is now (`conflict`), so
  * there is one way to read the versions and every half of the service answers with it.
  */
-import { ApiError } from '../../lib/errors'
+import { NotFoundError } from '../../lib/domain-errors'
 import type { StoredSystemNotice } from '../../db/payload'
 import { PlanConflictError } from './conflict'
 import { toSessionPlan, type PlanRecord, type SessionPlan } from './contracts'
@@ -81,7 +81,7 @@ export function createPlanServiceCore(deps: PlanServiceDeps): PlanServiceCore {
     async requirePlan(owner, planId) {
       const plan = await deps.repo.get(owner.userId, planId)
       if (!plan || plan.sessionId !== owner.sessionId)
-        throw new ApiError(404, 'plan_not_found', 'No such plan in this conversation')
+        throw new NotFoundError('plan_not_found', 'No such plan in this conversation')
       return plan
     },
 

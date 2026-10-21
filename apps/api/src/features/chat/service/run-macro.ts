@@ -1,7 +1,7 @@
+import { InvalidRequestError } from '../../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
 import { USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
-import { ApiError } from '../../../lib/errors'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type {
   MessageBinding,
@@ -112,7 +112,10 @@ export function createRunMacroCommand(deps: RunMacroDeps) {
     // the whole "nobody can answer" check — and it runs before anything is written, so a command
     // nobody can answer never leaves a user row behind.
     if (!session.agents.length)
-      throw new ApiError(400, 'session_party_empty', 'Choose an agent before running a command')
+      throw new InvalidRequestError(
+        'session_party_empty',
+        'Choose an agent before running a command',
+      )
 
     const userPayload: StoredMessagePayload = {
       id: randomUUID(),

@@ -1,6 +1,6 @@
+import { NotFoundError } from '../../../lib/domain-errors'
 import type { ToolSurface } from '@localixai/agent/agents'
 import { USER_PARTICIPANT } from '../../../db'
-import { ApiError } from '../../../lib/errors'
 import type { MessageBinding, MessageMutationResponse, WakeSource } from '../contracts'
 import { setMessageReaction } from '../runtime/run/message-reactions'
 import { setMessagePinned } from './message-pins'
@@ -120,7 +120,7 @@ export function createChatMessageFacade({
     async reactToMessage(userId: string, sessionId: string, messageId: string, emoji: string) {
       await requireSession(userId, sessionId)
       const message = await repo.getMessage(userId, sessionId, messageId)
-      if (!message) throw new ApiError(404, 'message_not_found', 'Message not found')
+      if (!message) throw new NotFoundError('message_not_found', 'Message not found')
       const mine = (message.payload.reactions ?? []).some(
         (r) => r.from === USER_PARTICIPANT && r.emoji === emoji,
       )
@@ -155,7 +155,7 @@ export function createChatMessageFacade({
     async pinMessage(userId: string, sessionId: string, messageId: string, pinned: boolean) {
       await requireSession(userId, sessionId)
       const message = await repo.getMessage(userId, sessionId, messageId)
-      if (!message) throw new ApiError(404, 'message_not_found', 'Message not found')
+      if (!message) throw new NotFoundError('message_not_found', 'Message not found')
       await setMessagePinned(
         { repo, streamRegistry, now },
         { userId, sessionId, messageId, pinned },
@@ -173,7 +173,7 @@ export function createChatMessageFacade({
     ) {
       await requireSession(userId, sessionId)
       const message = await repo.getMessage(userId, sessionId, messageId)
-      if (!message) throw new ApiError(404, 'message_not_found', 'Message not found')
+      if (!message) throw new NotFoundError('message_not_found', 'Message not found')
       await setMessageTask(
         { repo, streamRegistry, now },
         { userId, sessionId, messageId, key, checked },

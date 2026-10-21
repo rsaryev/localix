@@ -1,7 +1,7 @@
+import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
 import { homedir } from 'node:os'
 import { basename, dirname } from 'node:path'
 
-import { ApiError } from '../../../lib/errors'
 import {
   discoverFilesystemSkills,
   writeSkillFile,
@@ -57,7 +57,7 @@ export async function getSkill(
 ): Promise<SkillRecord> {
   const { skills } = await listSkills(ctx, userId, opts)
   const skill = skills.find((entry) => entry.name === name)
-  if (!skill) throw new ApiError(404, 'skill_not_found', `Skill "${name}" not found`)
+  if (!skill) throw new NotFoundError('skill_not_found', `Skill "${name}" not found`)
   return skill
 }
 
@@ -70,7 +70,7 @@ export async function createSkill(
   const base = input.projectId
     ? await ctx.resolveProjectWorkingDir(userId, input.projectId)
     : homedir()
-  if (!base) throw new ApiError(400, 'no_project_dir', 'Project has no working directory')
+  if (!base) throw new InvalidRequestError('no_project_dir', 'Project has no working directory')
   const dir = await writeSkillFile(
     base,
     { name: input.name, description: input.description, content: input.content },
@@ -121,7 +121,7 @@ export async function updateSkill(
   input: Partial<SkillInput>,
 ): Promise<SkillRecord> {
   if (!input.name || !input.description || input.content === undefined) {
-    throw new ApiError(400, 'invalid_skill', 'name, description and content are required')
+    throw new InvalidRequestError('invalid_skill', 'name, description and content are required')
   }
   const record = await createSkill(ctx, userId, input as SkillInput)
   const oldName = skillNameFromId(id)

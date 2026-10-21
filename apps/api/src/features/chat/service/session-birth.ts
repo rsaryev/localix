@@ -13,7 +13,7 @@
  * allocate, then write. Nothing is allocated before every refusal has had its chance — a
  * session ref spent on a request that then fails leaves a hole in a sequence the user reads.
  */
-import { ApiError } from '../../../lib/errors'
+import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
 import type { SessionDetail } from '../contracts'
 import { toSessionSummary, type SessionRecord } from '../repository'
 import { resolveSessionRoot, sessionRootResolutionError } from '../session-ancestry'
@@ -60,8 +60,7 @@ export async function createSession(
     (sessionKind === 'subagent' || input.provenance?.kind === 'skill-fork') &&
     (!parent || !isDelegationParent(parent))
   ) {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'invalid_delegation_parent',
       'Only a root chat may delegate. Subsessions cannot create delegated work.',
     )
@@ -161,8 +160,7 @@ function assertDelegatedSession(
     input.provenance.parentSessionId !== input.parentSessionId ||
     input.provenance.toolCallId !== input.sourceToolCallId
   ) {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'invalid_subagent_origin',
       'A subagent requires a parent session and the delegating tool call.',
     )
@@ -185,7 +183,7 @@ async function assertStatedProjectExists(
   projectId: string,
 ): Promise<void> {
   if (!ctx.projectExists || (await ctx.projectExists(userId, projectId))) return
-  throw new ApiError(404, 'project_not_found', 'Project not found')
+  throw new NotFoundError('project_not_found', 'Project not found')
 }
 
 async function assertStatedConnectionExists(
@@ -195,8 +193,7 @@ async function assertStatedConnectionExists(
 ): Promise<void> {
   if (!connectionId || !ctx.connectionExists) return
   if (await ctx.connectionExists(userId, connectionId)) return
-  throw new ApiError(
-    404,
+  throw new NotFoundError(
     'provider_connection_not_found',
     'That provider connection no longer exists. Pick a provider in the model picker.',
   )

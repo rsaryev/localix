@@ -12,8 +12,8 @@
  * writer of its database, which is what makes an in-process queue a sufficient serialization.
  * The New chat gesture never comes through here — it always asks for a new conversation.
  */
+import { NotFoundError } from '../../../lib/domain-errors'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { ApiError } from '../../../lib/errors'
 import type { SessionDetail } from '../contracts'
 import { DEFAULT_TITLE } from './context'
 import { createSession } from './session-birth'
@@ -42,7 +42,7 @@ export function createDraftReuse(ctx: SessionLifecycleCtx) {
       const projectId = create.projectId ?? (await ctx.resolveDefaultProjectId(userId))
       // A soft-deleted project keeps its rows; never hand one of its drafts to a landing.
       if (create.projectId && ctx.projectExists && !(await ctx.projectExists(userId, projectId))) {
-        throw new ApiError(404, 'project_not_found', 'Project not found')
+        throw new NotFoundError('project_not_found', 'Project not found')
       }
       const existing = await findEmptyDraft(userId, projectId, agentId, DEFAULT_TITLE)
       if (existing) return ctx.getSessionDetail(userId, existing)

@@ -12,7 +12,7 @@
  * Every transition keeps the service's order: validate → decide (one guarded write) → snapshot →
  * publish → one conversation line → one attention item.
  */
-import { ApiError } from '../../lib/errors'
+import { InvalidRequestError } from '../../lib/domain-errors'
 import type { StoredSystemNotice } from '../../db/payload'
 import {
   PLAN_BODY_MAX,
@@ -86,14 +86,12 @@ export function createPresentOps(core: PlanServiceCore) {
     if (input.body !== undefined) await deps.files.writeDraft(owner, input.body)
     const draft = (input.body ?? (await deps.files.readDraft(owner)) ?? '').trim()
     if (!draft)
-      throw new ApiError(
-        400,
+      throw new InvalidRequestError(
         'plan_draft_missing',
         `There is no plan to present: write it to ${draftPath} first.`,
       )
     if (draft.length > PLAN_BODY_MAX)
-      throw new ApiError(
-        400,
+      throw new InvalidRequestError(
         'plan_too_long',
         `The plan is over ${PLAN_BODY_MAX} characters; shorten ${draftPath}.`,
       )

@@ -1,4 +1,4 @@
-import { ApiError } from '../../lib/errors'
+import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import type { MarketplaceEntry } from './marketplace'
 import type { DiscoveredPlugin } from './discovery'
 
@@ -135,16 +135,14 @@ export async function resolveDependencyPlan(
         const allow = await deps.getAllowList(from)
         chosen = allow.find((m) => hits.includes(m)) ?? null
         if (!chosen) {
-          throw new ApiError(
-            400,
+          throw new InvalidRequestError(
             'plugin_dependency_blocked',
             `Dependency "${dep.name}" is only available in marketplace(s) ${hits.map((h) => `"${h}"`).join(', ')}, but marketplace "${from}" does not allow cross-marketplace dependencies on ${allow.length ? `anything beyond ${allow.map((a) => `"${a}"`).join(', ')}` : 'any other marketplace'} (allowCrossMarketplaceDependenciesOn).`,
           )
         }
       }
       if (!chosen) {
-        throw new ApiError(
-          404,
+        throw new NotFoundError(
           'plugin_dependency_missing',
           `Dependency "${dep.name}" is not installed and was not found in marketplace "${from}" or any allowed marketplace. Nothing was installed.`,
         )

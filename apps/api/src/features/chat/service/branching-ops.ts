@@ -1,6 +1,6 @@
+import { ConflictError, InvalidRequestError } from '../../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
-import { ApiError } from '../../../lib/errors'
 import { participantAgentId, USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
 import { walkPathToRoot, indexMessageTree } from './branching'
 import {
@@ -86,7 +86,7 @@ export async function regenerate(
       .reverse()
       .findIndex((message) => message.payload.role === 'assistant')
     if (index === -1) {
-      throw new ApiError(409, 'assistant_message_not_found', 'No assistant message to regenerate')
+      throw new ConflictError('assistant_message_not_found', 'No assistant message to regenerate')
     }
     const assistantIndex = messages.length - 1 - index
     const assistant = messages[assistantIndex]
@@ -95,8 +95,8 @@ export async function regenerate(
     if (expectedMessageId && assistant.id !== expectedMessageId) {
       const stillThere = messages.some((message) => message.id === expectedMessageId)
       throw stillThere
-        ? new ApiError(409, 'regenerate_superseded', 'That reply is no longer the latest one')
-        : new ApiError(409, 'regenerate_no_reply', 'That run left no reply to regenerate')
+        ? new ConflictError('regenerate_superseded', 'That reply is no longer the latest one')
+        : new ConflictError('regenerate_no_reply', 'That run left no reply to regenerate')
     }
     const historyMessages = messages.slice(0, assistantIndex)
 
@@ -123,7 +123,7 @@ export async function regenerate(
       },
       runner.leadership(userId, session.projectId),
     )
-    if (!recipient) throw new ApiError(400, 'session_party_empty', 'Choose an agent first')
+    if (!recipient) throw new InvalidRequestError('session_party_empty', 'Choose an agent first')
     // The branch moved: anything still queued answers rows that are no longer on it.
     await runner.cancelAgentTurns(userId, sessionId)
 
@@ -181,7 +181,7 @@ export async function editMessage(
     const target = nodes.find((n) => n.message.id === messageId)
     if (!target) throw messageNotFound()
     if (target.message.payload.role !== 'user') {
-      throw new ApiError(409, 'edit_requires_user_message', 'Only user messages can be edited')
+      throw new ConflictError('edit_requires_user_message', 'Only user messages can be edited')
     }
 
     // Branch from the edited message's tree parent (its ancestor chain to root),
@@ -202,7 +202,7 @@ export async function editMessage(
       runner.floorAdvisor({ userId, sessionId, projectId: session.projectId }),
     )
     const first = recipients[0]
-    if (!first) throw new ApiError(400, 'session_party_empty', 'Choose an agent first')
+    if (!first) throw new InvalidRequestError('session_party_empty', 'Choose an agent first')
     // The branch moves: anything still queued answers rows that are no longer on it.
     await runner.cancelAgentTurns(userId, sessionId)
     await repo.setSessionLeaf(sessionId, parentId)
@@ -271,8 +271,7 @@ export async function rollback(
 
     const target = messages[index]
     if (target.payload.role !== 'user') {
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'rollback_requires_user_message',
         'Rollback is only available for user messages',
       )

@@ -1,7 +1,7 @@
+import { ConflictError, UnprocessableError } from '../../lib/domain-errors'
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
-import { ApiError } from '../../lib/errors'
 import { recordCoreChanges } from '../changes/core-entities'
 import { bumpCapabilityRevision } from './revision'
 import type { Effect, Rule, RuleOrigin } from './rule'
@@ -84,7 +84,7 @@ export function createCapabilityRuleRepository(
     if (expectedRevision !== undefined) claim = claim.where('revision', '=', expectedRevision)
     const updated = await claim.executeTakeFirst()
     if (updated.numUpdatedRows !== 1n)
-      throw new ApiError(409, 'policy_conflict', 'Policy changed; reload the rules before saving')
+      throw new ConflictError('policy_conflict', 'Policy changed; reload the rules before saving')
     await trx
       .deleteFrom('capability_rule')
       .where('user_id', '=', userId)
@@ -150,8 +150,7 @@ export function createCapabilityRuleRepository(
     },
     async publish(userId, agentId, rules, expectedRevision) {
       if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0)
-        throw new ApiError(
-          422,
+        throw new UnprocessableError(
           'invalid_revision',
           'Expected revision must be a non-negative integer',
         )

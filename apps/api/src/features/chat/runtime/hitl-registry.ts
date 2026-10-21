@@ -1,10 +1,10 @@
+import { ConflictError } from '../../../lib/domain-errors'
 import {
   createHumanInLoopController,
   HumanInLoopDismissedError,
   type HumanInLoopRequestBase,
 } from '@localixai/agent/agents'
 
-import { ApiError } from '../../../lib/errors'
 import type { PendingHitlInteraction } from '../contracts'
 import type { HitlLifecycleObserver } from '../../notifications/producers'
 import { isInteractAllowedForOwner } from './interact-ownership'
@@ -221,7 +221,7 @@ export function createHitlRegistry(opts: HitlRegistryOptions = {}) {
         !pending ||
         !isInteractAllowedForOwner(metaByRequestId.get(requestId)?.userId, callerUserId)
       ) {
-        throw new ApiError(409, 'hitl_request_not_active', 'HITL request is no longer active')
+        throw new ConflictError('hitl_request_not_active', 'HITL request is no longer active')
       }
 
       const accepted = controller.respond({
@@ -232,7 +232,7 @@ export function createHitlRegistry(opts: HitlRegistryOptions = {}) {
       })
 
       if (!accepted) {
-        throw new ApiError(409, 'hitl_request_not_active', 'HITL request is no longer active')
+        throw new ConflictError('hitl_request_not_active', 'HITL request is no longer active')
       }
 
       const userId = metaByRequestId.get(requestId)?.userId
@@ -245,7 +245,7 @@ export function createHitlRegistry(opts: HitlRegistryOptions = {}) {
 
     dismiss(requestId: string, callerUserId?: string) {
       if (!isInteractAllowedForOwner(metaByRequestId.get(requestId)?.userId, callerUserId)) {
-        throw new ApiError(409, 'hitl_request_not_active', 'HITL request is no longer active')
+        throw new ConflictError('hitl_request_not_active', 'HITL request is no longer active')
       }
       const accepted = controller.reject(requestId, new HumanInLoopDismissedError())
       if (!accepted) {

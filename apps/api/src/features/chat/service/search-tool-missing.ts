@@ -1,6 +1,7 @@
+import { UnavailableError } from '../../../lib/domain-errors'
 import { isMissingExecutable } from '@localixai/plugin-sdk/prerequisite'
 
-import { ApiError } from '../../../lib/errors'
+import type { ApiError } from '../../../lib/errors'
 
 /**
  * A content search that could not run because `rg` is not on this machine.
@@ -12,8 +13,7 @@ import { ApiError } from '../../../lib/errors'
  */
 export function searchToolMissing(raw: string, exitCode?: number): ApiError | null {
   if (exitCode !== 127 && !isMissingExecutable(raw)) return null
-  return new ApiError(
-    503,
+  return new UnavailableError(
     'tool_missing',
     'ripgrep (rg) is not installed, so file contents cannot be searched.',
     raw || undefined,

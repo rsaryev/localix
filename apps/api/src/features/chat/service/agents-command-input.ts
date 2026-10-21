@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { InvalidRequestError } from '../../../lib/domain-errors'
 import { tokenizeCommandText } from '../slash-command-tokens'
 import { isFlagToken } from '../slash-flag-args'
 
@@ -15,7 +15,7 @@ export interface AgentsCommandInput {
 function words(raw: string): string[] {
   const tokens = tokenizeCommandText(raw)
   if (tokens.some((token) => !token.closed))
-    throw new ApiError(400, 'agents_command_invalid', 'Close the quoted argument')
+    throw new InvalidRequestError('agents_command_invalid', 'Close the quoted argument')
   return tokens.map((token) => token.value)
 }
 
@@ -37,7 +37,8 @@ export function parseAgentsCommand(prompt: string): AgentsCommandInput {
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]!
     if (token === '--confirm') {
-      if (result.confirm) throw new ApiError(400, 'agents_command_invalid', 'Duplicate --confirm')
+      if (result.confirm)
+        throw new InvalidRequestError('agents_command_invalid', 'Duplicate --confirm')
       result.confirm = true
     } else if (isFlag[i]) {
       const field = token.slice(2)
@@ -47,17 +48,16 @@ export function parseAgentsCommand(prompt: string): AgentsCommandInput {
         field !== 'instructions' &&
         field !== 'priority'
       ) {
-        throw new ApiError(400, 'agents_command_invalid', `Unknown option ${token}`)
+        throw new InvalidRequestError('agents_command_invalid', `Unknown option ${token}`)
       }
       const value = tokens[++i]
       const key = field === 'priority' ? 'leadershipPriority' : field
       if (value === undefined || isFlag[i] || result.fields[key] !== undefined) {
-        throw new ApiError(400, 'agents_command_invalid', `Supply one value for ${token}`)
+        throw new InvalidRequestError('agents_command_invalid', `Supply one value for ${token}`)
       }
       if (field === 'priority') {
         if (!/^-?[0-2]$/.test(value))
-          throw new ApiError(
-            400,
+          throw new InvalidRequestError(
             'agents_command_invalid',
             'Priority must be a whole number from −2 to 2',
           )

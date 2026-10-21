@@ -1,6 +1,11 @@
+import {
+  ConflictError,
+  InternalError,
+  InvalidRequestError,
+  NotFoundError,
+} from '../../../lib/domain-errors'
 import path from 'node:path'
 
-import { ApiError } from '../../../lib/errors'
 import { assertNotIntoSelf, treeFsFor, type TreeFs } from './fs-mutations'
 import { recordFileOp, withFileOpJournalLock } from './file-op-journal'
 import { withPathLocks, workspaceLockPaths } from '../../agent-core/tools/file/file-utils'
@@ -29,23 +34,24 @@ export { deleteEntry, undoLastFileOp } from './file-tree-journal-ops'
  */
 const validateSegment = (name: string): string => {
   const trimmed = name.trim()
-  if (!trimmed) throw new ApiError(400, 'invalid_name', 'Name cannot be empty')
-  if (trimmed === '.' || trimmed === '..') throw new ApiError(400, 'invalid_name', 'Reserved name')
+  if (!trimmed) throw new InvalidRequestError('invalid_name', 'Name cannot be empty')
+  if (trimmed === '.' || trimmed === '..')
+    throw new InvalidRequestError('invalid_name', 'Reserved name')
   if (/[\\/]/.test(trimmed))
-    throw new ApiError(400, 'invalid_name', 'Name cannot contain a path separator')
+    throw new InvalidRequestError('invalid_name', 'Name cannot contain a path separator')
   // oxlint-disable-next-line no-control-regex -- reject control chars + Windows-illegal glyphs
   if (/[\x00-\x1f<>:"|?*]/.test(trimmed))
-    throw new ApiError(400, 'invalid_name', 'Name contains an illegal character')
+    throw new InvalidRequestError('invalid_name', 'Name contains an illegal character')
   if (/[. ]$/.test(trimmed))
-    throw new ApiError(400, 'invalid_name', 'Name cannot end with a space or dot')
-  if (trimmed.length > 255) throw new ApiError(400, 'invalid_name', 'Name is too long')
+    throw new InvalidRequestError('invalid_name', 'Name cannot end with a space or dot')
+  if (trimmed.length > 255) throw new InvalidRequestError('invalid_name', 'Name is too long')
   return trimmed
 }
 
 /** Throw a 409 if `target` (an absolute path) already exists. */
 const ensureAbsent = async (tree: TreeFs, target: string): Promise<void> => {
   if (await tree.exists(target))
-    throw new ApiError(409, 'already_exists', 'A file with that name already exists')
+    throw new ConflictError('already_exists', 'A file with that name already exists')
 }
 
 /**
@@ -174,7 +180,7 @@ export async function pasteEntry(
           // Revalidate source and destination only after their locks are held.
           const isFolder = (await requireKind(tree, source)) === 'dir'
           if (!(await tree.isDir(destDir)))
-            throw new ApiError(404, 'not_a_directory', `${destDir} is not a directory`)
+            throw new NotFoundError('not_a_directory', `${destDir} is not a directory`)
           assertNotIntoSelf(source, destDir, isFolder)
 
           // Same-directory move is a no-op (paste-cut back where it came from).
@@ -183,7 +189,7 @@ export async function pasteEntry(
 
           if (await tree.exists(candidate)) {
             if (mode === 'move')
-              throw new ApiError(409, 'already_exists', 'A file with that name already exists')
+              throw new ConflictError('already_exists', 'A file with that name already exists')
             return { collisionIsFolder: isFolder }
           }
 
@@ -205,7 +211,7 @@ export async function pasteEntry(
       if ('path' in result) return result
       name = incrementName(name, result.collisionIsFolder)
     }
-    throw new ApiError(500, 'paste_failed', 'Too many duplicate names')
+    throw new InternalError('paste_failed', 'Too many duplicate names')
   }
 
   return mode === 'move' ? withFileOpJournalLock(sessionId, run) : run()
@@ -242,6 +248,9 @@ export async function revealEntry(
 ): Promise<{ opened: true }> {
   const { session, dir } = await openSessionEnv(ctx, userId, sessionId)
   if (session.executionBackend && session.executionBackend !== 'local')
-    throw new ApiError(400, 'reveal_unsupported', 'Reveal is only available for local sessions')
+    throw new InvalidRequestError(
+      'reveal_unsupported',
+      'Reveal is only available for local sessions',
+    )
   return revealPath(resolveAgainst(dir, targetPath))
 }

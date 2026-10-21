@@ -1,6 +1,7 @@
+import { NotFoundError } from '../../../lib/domain-errors'
 import { agentAuthoredBlueprintSchema, agentHandleSchema } from '@localixai/agent/agents'
 import { localixUiUri } from '@localixai/plugin-sdk/navigation'
-import { ApiError, errorMessage } from '../../../lib/errors'
+import { errorMessage } from '../../../lib/errors'
 import { agentRecordInputSchema, type AgentSummary } from '../../agents/contracts'
 import { agentPolicy, canJoinConversation } from '../../agents/policy'
 import type { SessionRecord } from '../repository'
@@ -140,14 +141,14 @@ export async function handleAgentsControlCommand(
       const saved = member ? null : await service.getAgent(userId, args[0]!, session.projectId)
       const id = member?.agentId ?? saved?.record.id
       if (!id)
-        throw new ApiError(404, 'agent_not_found', 'Agent not found in this chat or registry')
+        throw new NotFoundError('agent_not_found', 'Agent not found in this chat or registry')
       await ctx.changeAgentMembership(userId, session.id, { remove: [id] })
       return directReply(
         `Removed @${member?.handle ?? saved!.record.handle} from this chat. Its definition is kept.`,
       )
     }
     const agent = await service.getAgent(userId, args[0]!, session.projectId)
-    if (!agent) throw new ApiError(404, 'agent_not_found', 'Agent not found in this registry')
+    if (!agent) throw new NotFoundError('agent_not_found', 'Agent not found in this registry')
     const id = agent.record.id
     if (action === 'show') {
       return directReply(

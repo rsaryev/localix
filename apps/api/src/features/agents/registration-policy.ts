@@ -1,8 +1,8 @@
+import { ConflictError, NotFoundError, UnprocessableError } from '../../lib/domain-errors'
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { stableStringify } from '@localixai/agent'
 import type { AppDatabase } from '../../db/types'
-import { ApiError } from '../../lib/errors'
 import { createContributionReader } from '../ext/contribution-reader'
 import { capabilityRuleSchema } from '../capabilities/rule-schema'
 import type { CapabilityStores } from '../capabilities/store-factory'
@@ -31,9 +31,9 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>, stores:
       projectId,
       id,
     )
-    if (!result) throw new ApiError(404, 'agent_not_found', 'Registered agent not found')
+    if (!result) throw new NotFoundError('agent_not_found', 'Registered agent not found')
     if ('error' in result)
-      throw new ApiError(422, 'invalid_contribution', 'The registered definition is invalid')
+      throw new UnprocessableError('invalid_contribution', 'The registered definition is invalid')
     return result.registration
   }
   const service = {
@@ -76,8 +76,7 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>, stores:
       return atomic(async (connection) => {
         const registration = await requireRegistration(connection, userId, projectId, id)
         if (registration.revision !== reviewed.expectedRegistrationRevision)
-          throw new ApiError(
-            409,
+          throw new ConflictError(
             'contribution_conflict',
             'The registered agent changed; review it again',
           )

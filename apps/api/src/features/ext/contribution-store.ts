@@ -1,8 +1,8 @@
+import { ConflictError, NotFoundError, UnprocessableError } from '../../lib/domain-errors'
 import { createHash, randomUUID } from 'node:crypto'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db/types'
 import type { ExtensionContributionTable } from '../../db/extension-types'
-import { ApiError } from '../../lib/errors'
 import type { ContributionInput, ContributionKindRegistry } from './contribution-kinds'
 
 export interface RegisteredContribution {
@@ -90,8 +90,7 @@ export function createContributionStore(
       inputs: readonly ContributionInput[],
     ): Promise<ContributionSnapshot> {
       if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
-        throw new ApiError(
-          422,
+        throw new UnprocessableError(
           'invalid_revision',
           'Expected revision must be a non-negative integer',
         )
@@ -106,7 +105,7 @@ export function createContributionStore(
           .where('id', '=', sourceId)
           .where('user_id', '=', userId)
           .executeTakeFirst()
-        if (!source) throw new ApiError(404, 'source_not_found', 'Contribution source not found')
+        if (!source) throw new NotFoundError('source_not_found', 'Contribution source not found')
         // Retrying an already published set is a no-op, including a lost success response.
         if (source.contribution_digest === digest)
           return (await current(transaction, userId, sourceId))!
@@ -119,8 +118,7 @@ export function createContributionStore(
           .where('contribution_revision', '=', expectedRevision)
           .executeTakeFirst()
         if (claimed.numUpdatedRows !== 1n) {
-          throw new ApiError(
-            409,
+          throw new ConflictError(
             'contribution_conflict',
             'Contribution publication changed; reload before retrying',
           )

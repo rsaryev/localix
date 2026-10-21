@@ -1,10 +1,11 @@
+import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
 import type { Kysely } from 'kysely'
 
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import type { AppDatabase } from '../../db'
-import { ApiError, errorMessage } from '../../lib/errors'
+import { errorMessage } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
 import { createMcpRepository, type McpRepository, type McpServerRecord } from './repository'
 import { probeMcpServer } from './client-manager'
@@ -149,7 +150,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
 
     async updateServer(userId, id, input) {
       const existing = await repo.getById(userId, id)
-      if (!existing) throw new ApiError(404, 'mcp_not_found', 'MCP server not found')
+      if (!existing) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       try {
         const record = await repo.updateById(userId, id, {
           name: input.name,
@@ -158,7 +159,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
           config: input.config as Record<string, unknown>,
           updatedAt: now(),
         })
-        if (!record) throw new ApiError(404, 'mcp_not_found', 'MCP server not found')
+        if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
         if (input.enabled !== undefined) {
           await availabilityWriter.set(userId, DEFAULT_AGENT_ID, 'mcp', [
             { name: record.name, enabled: input.enabled },
@@ -170,8 +171,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
         // Renaming onto a name that already exists in this scope violates the
         // (user, scope, name) unique index — surface it instead of a 500.
         if (/unique|constraint/i.test(errorMessage(err))) {
-          throw new ApiError(
-            409,
+          throw new ConflictError(
             'mcp_name_conflict',
             `An MCP server named "${input.name}" already exists in this scope.`,
           )
@@ -188,7 +188,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
 
     async setServerEnabled(userId, id, enabled, agentId) {
       const record = await repo.getById(userId, id)
-      if (!record) throw new ApiError(404, 'mcp_not_found', 'MCP server not found')
+      if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       await availabilityWriter.set(userId, agentId || DEFAULT_AGENT_ID, 'mcp', [
         { name: record.name, enabled },
       ])
@@ -198,14 +198,14 @@ export function createMcpService(deps: McpServiceDeps): McpService {
 
     async deleteServer(userId, id) {
       const existing = await repo.getById(userId, id)
-      if (!existing) throw new ApiError(404, 'mcp_not_found', 'MCP server not found')
+      if (!existing) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       await repo.delete(userId, id)
       deps.onChanged?.()
     },
 
     async testServer(userId, id) {
       const record = await repo.getById(userId, id)
-      if (!record) throw new ApiError(404, 'mcp_not_found', 'MCP server not found')
+      if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       const cwd = await cwdFor(userId, record.projectId)
       return probeMcpServer(record, cwd)
     },
@@ -247,10 +247,9 @@ export function createMcpService(deps: McpServiceDeps): McpService {
 
     async startServerOAuth(userId, id) {
       const record = await repo.getById(userId, id)
-      if (!record) throw new ApiError(404, 'mcp_not_found', 'MCP server not found')
+      if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       if (record.transport !== 'http') {
-        throw new ApiError(
-          400,
+        throw new InvalidRequestError(
           'mcp_oauth_unsupported',
           'OAuth is only supported for remote (http) MCP servers',
         )
@@ -258,8 +257,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
       try {
         return await startMcpOAuth(record)
       } catch (err) {
-        throw new ApiError(
-          400,
+        throw new InvalidRequestError(
           'mcp_oauth_failed',
           `Sign-in to "${record.name}" could not be started (${errorMessage(err)})`,
         )
@@ -276,7 +274,7 @@ export function createMcpService(deps: McpServiceDeps): McpService {
 
     async logoutServerOAuth(userId, id) {
       const record = await repo.getById(userId, id)
-      if (!record) throw new ApiError(404, 'mcp_not_found', 'MCP server not found')
+      if (!record) throw new NotFoundError('mcp_not_found', 'MCP server not found')
       await mcpOAuthStore.clear(userId, id)
       deps.onChanged?.()
     },

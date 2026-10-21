@@ -1,8 +1,8 @@
+import { InvalidRequestError, NotFoundError, UnavailableError } from '../../lib/domain-errors'
 import path from 'node:path'
 import { access, stat } from 'node:fs/promises'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
-import { ApiError } from '../../lib/errors'
 import type {
   CreateProjectRequest,
   ExpandRefsRequest,
@@ -74,7 +74,7 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
   const requireProject = async (userId: string, id: string): Promise<ProjectRecord> => {
     const project = await repo.getProject(userId, id)
     if (!project) {
-      throw new ApiError(404, 'project_not_found', 'Project not found')
+      throw new NotFoundError('project_not_found', 'Project not found')
     }
     return project
   }
@@ -253,7 +253,7 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
       let workingDir: string
       if (input.sessionId) {
         if (!deps.resolveSessionCwd)
-          throw new ApiError(503, 'session_scope_unavailable', 'Session scope is not wired')
+          throw new UnavailableError('session_scope_unavailable', 'Session scope is not wired')
         workingDir = await deps.resolveSessionCwd(userId, input.sessionId)
       } else if (input.projectId) {
         const project = await requireProject(userId, input.projectId)
@@ -263,7 +263,7 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
         // loaders, not the filesystem — such a batch needs no directory scope.
         workingDir = ''
       } else {
-        throw new ApiError(400, 'missing_scope', 'Either sessionId or projectId is required')
+        throw new InvalidRequestError('missing_scope', 'Either sessionId or projectId is required')
       }
       const expansions = await expandRefsWithin(userId, {
         workingDir,
@@ -289,7 +289,10 @@ export function createProjectsService(deps: ProjectsServiceDeps) {
       try {
         await access(project.workingDir)
       } catch {
-        throw new ApiError(400, 'project_directory_not_found', 'Project folder does not exist')
+        throw new InvalidRequestError(
+          'project_directory_not_found',
+          'Project folder does not exist',
+        )
       }
       return openDirectory(project.workingDir)
     },

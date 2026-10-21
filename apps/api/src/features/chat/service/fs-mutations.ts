@@ -1,8 +1,8 @@
+import { InvalidRequestError } from '../../../lib/domain-errors'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import { envString, localixHome } from '../../../lib/env'
-import { ApiError } from '../../../lib/errors'
 import { isPathWithin } from '../../../lib/path-containment'
 import { shellQuote as shq, type ExecutionEnvironment } from '../../agent-core/tools/environment'
 
@@ -23,8 +23,7 @@ import { shellQuote as shq, type ExecutionEnvironment } from '../../agent-core/t
  */
 export function assertNotIntoSelf(source: string, destDir: string, isFolder: boolean): void {
   if (isFolder && isPathWithin(source, destDir))
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'refused',
       'Cannot move or copy a folder into itself or one of its subfolders',
     )

@@ -1,7 +1,7 @@
+import { InvalidRequestError } from '../../lib/domain-errors'
 import path from 'node:path'
 import { mkdir } from 'node:fs/promises'
 
-import { ApiError } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
 import type { ProjectRecord, createProjectsRepository } from './repository'
 
@@ -51,8 +51,7 @@ export const isDefaultProject = (project: { workingDir: string }): boolean =>
  */
 export function assertProjectDeletable(project: { workingDir: string }): void {
   if (!isDefaultProject(project)) return
-  throw new ApiError(
-    400,
+  throw new InvalidRequestError(
     'project_default',
     'The default project cannot be deleted — it is where chats without a project live. Rename it, or open a real project instead.',
   )

@@ -1,4 +1,4 @@
-import { ApiError } from '../../lib/errors'
+import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import type {
   CreateSecretRequest,
   RotateSecretRequest,
@@ -38,8 +38,7 @@ export function createSecretsService(store: SecretsStore): SecretsService {
     async create(userId, request) {
       const item = await store.create(userId, request)
       if (!item) {
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'vault_alias_exists',
           `A Vault item already uses the alias "${request.key}". Rotate it explicitly instead.`,
         )
@@ -51,10 +50,9 @@ export function createSecretsService(store: SecretsStore): SecretsService {
       const result = await store.rotate(userId, key, request.value, request.expectedVersion)
       if (result.status === 'updated') return result.item
       if (result.status === 'missing') {
-        throw new ApiError(404, 'vault_item_not_found', 'Vault item not found')
+        throw new NotFoundError('vault_item_not_found', 'Vault item not found')
       }
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'vault_version_conflict',
         `Vault item changed (current version ${result.currentVersion}). Refresh before rotating.`,
       )
@@ -64,10 +62,9 @@ export function createSecretsService(store: SecretsStore): SecretsService {
       const result = await store.updateMetadata(userId, key, request)
       if (result.status === 'updated') return result.item
       if (result.status === 'missing') {
-        throw new ApiError(404, 'vault_item_not_found', 'Vault item not found')
+        throw new NotFoundError('vault_item_not_found', 'Vault item not found')
       }
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'vault_version_conflict',
         `Vault item changed (current version ${result.currentVersion}). Refresh before editing.`,
       )

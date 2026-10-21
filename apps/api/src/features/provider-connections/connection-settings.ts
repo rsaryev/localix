@@ -4,10 +4,9 @@
  * stored with each key's credential (`env`), where the engine reads them, and shown back in the
  * connection's settings, so they carry no secret: a name that reads like one is refused.
  */
+import { InvalidRequestError } from '../../lib/domain-errors'
 import { isSecretSettingName } from '@localixai/agent/catalog'
 import type { RuntimeApiKeyCredential } from '@localixai/agent/runtime'
-
-import { ApiError } from '../../lib/errors'
 
 const NAME = /^[A-Z][A-Z0-9_]{0,63}$/
 
@@ -24,15 +23,13 @@ export function cleanSettings(
   const settings: Record<string, string> = {}
   for (const [name, raw] of Object.entries(input)) {
     if (!NAME.test(name) || isSecretSettingName(name)) {
-      throw new ApiError(
-        400,
+      throw new InvalidRequestError(
         'provider_connection_bad_setting',
         `"${name}" cannot be a connection setting; secrets belong in the key`,
       )
     }
     if (allowed && !allowed.includes(name)) {
-      throw new ApiError(
-        400,
+      throw new InvalidRequestError(
         'provider_connection_bad_setting',
         `"${name}" is not a setting this provider uses`,
       )

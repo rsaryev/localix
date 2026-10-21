@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { ConflictError, NotFoundError } from '../../../lib/domain-errors'
 import type { SeatRouteFor } from './session-route-defaults'
 import { assetBindings, type MessageAttachment } from '@localixai/agent'
 import type { ResolveSessionAgent } from './session-agent-selection'
@@ -141,8 +141,7 @@ export async function resolveExternalSession(
   // so a retry reuses it rather than piling up empty conversations.
   const resolved = (await ctx.repo.getExternalSession(userId, input.key)) ?? created.session
   if (!sessionRoute(resolved).modelId) {
-    throw new ApiError(
-      409,
+    throw new ConflictError(
       'no_provider_connection',
       input.noProviderMessage ??
         'No provider connection available. Open the workspace and connect a provider first.',
@@ -227,15 +226,13 @@ export async function handleChannelInbound(
   if (named) {
     const pinned = named.trim() ? await ctx.repo.getSession(userId, named) : null
     if (!pinned) {
-      throw new ApiError(
-        404,
+      throw new NotFoundError(
         'channel_session_not_found',
         `The session this message names (${named}) does not exist; choose another session.`,
       )
     }
     if (pinned.sessionKind !== 'chat') {
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'channel_session_not_chat',
         `The session this message names (${named}) is not a chat and cannot take a message.`,
       )

@@ -1,3 +1,4 @@
+import { InvalidRequestError, UnprocessableError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
@@ -56,8 +57,7 @@ export function parseNpmEntrySource(
   if (!isNpm) return null
   const pkg = typeof obj.package === 'string' ? obj.package : (obj.npm as string | undefined)
   if (!pkg || !NPM_NAME_RE.test(pkg)) {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'plugin_npm_bad_source',
       `Entry "${entryName}" npm source needs a valid "package" name (got ${JSON.stringify(pkg ?? null)}).`,
     )
@@ -90,14 +90,16 @@ export function pickNpmVersion(pkg: string, meta: Packument, spec?: string): str
   const tags = meta['dist-tags'] ?? {}
   if (!spec) {
     if (tags.latest && meta.versions?.[tags.latest]) return tags.latest
-    throw new ApiError(400, 'plugin_npm_no_version', `npm package "${pkg}" has no latest version.`)
+    throw new InvalidRequestError(
+      'plugin_npm_no_version',
+      `npm package "${pkg}" has no latest version.`,
+    )
   }
   if (meta.versions?.[spec]) return spec
   if (tags[spec] && meta.versions?.[tags[spec]]) return tags[spec]
   const matches = versions.filter((v) => Bun.semver.satisfies(v, spec))
   if (matches.length === 0) {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'plugin_npm_no_version',
       `npm package "${pkg}" has no version satisfying "${spec}" (published: ${versions.slice(-5).join(', ') || 'none'}).`,
     )
@@ -144,8 +146,7 @@ function npmIntegrityCheck(dist: {
 
 function assertNpmIntegrity(pkg: string, expected: string, got: string): void {
   if (got !== expected) {
-    throw new ApiError(
-      422,
+    throw new UnprocessableError(
       'plugin_npm_integrity',
       `npm tarball for "${pkg}" failed integrity verification (expected ${expected}, got ${got}).`,
     )
@@ -162,15 +163,17 @@ export async function downloadNpmTarball(
 ): Promise<number> {
   const declared = Number(response.headers.get('content-length'))
   if (Number.isFinite(declared) && declared > maxBytes) {
-    throw new ApiError(
-      422,
+    throw new UnprocessableError(
       'plugin_npm_tarball_too_large',
       `npm tarball for "${pkg}" exceeds the ${maxBytes}-byte download limit.`,
     )
   }
   const reader = response.body?.getReader()
   if (!reader) {
-    throw new ApiError(400, 'plugin_npm_fetch_failed', `npm tarball for "${pkg}" had no body.`)
+    throw new InvalidRequestError(
+      'plugin_npm_fetch_failed',
+      `npm tarball for "${pkg}" had no body.`,
+    )
   }
   const check = npmIntegrityCheck(dist)
   const hash = check ? createHash(check.algorithm) : null
@@ -183,8 +186,7 @@ export async function downloadNpmTarball(
       total += value.byteLength
       if (total > maxBytes) {
         await reader.cancel().catch(() => {})
-        throw new ApiError(
-          422,
+        throw new UnprocessableError(
           'plugin_npm_tarball_too_large',
           `npm tarball for "${pkg}" exceeds the ${maxBytes}-byte download limit.`,
         )
@@ -216,10 +218,13 @@ async function fetchOk(url: string, what: string): Promise<Response> {
   try {
     res = await fetch(url)
   } catch (err) {
-    throw new ApiError(400, 'plugin_npm_fetch_failed', `${what} failed: ${errorMessage(err)}`)
+    throw new InvalidRequestError('plugin_npm_fetch_failed', `${what} failed: ${errorMessage(err)}`)
   }
   if (!res.ok) {
-    throw new ApiError(400, 'plugin_npm_fetch_failed', `${what} failed: HTTP ${res.status} ${url}`)
+    throw new InvalidRequestError(
+      'plugin_npm_fetch_failed',
+      `${what} failed: HTTP ${res.status} ${url}`,
+    )
   }
   return res
 }
@@ -239,8 +244,7 @@ export async function fetchNpmPlugin(src: NpmEntrySource, dest: string): Promise
   const version = pickNpmVersion(src.package, meta, src.version)
   const dist = meta.versions?.[version]?.dist
   if (!dist?.tarball) {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'plugin_npm_fetch_failed',
       `npm package "${src.package}@${version}" has no dist.tarball.`,
     )
@@ -261,8 +265,7 @@ export async function fetchNpmPlugin(src: NpmEntrySource, dest: string): Promise
   } catch (err) {
     await rmrf(dest)
     if (err instanceof ApiError) throw err
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'plugin_npm_extract_failed',
       `Extracting npm tarball for "${src.package}@${version}" failed: ${errorMessage(err)}`,
     )
