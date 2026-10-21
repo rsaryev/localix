@@ -135,6 +135,12 @@ export function notificationsCleanupHandlers(
     project: 'ignore',
     'capability.rule': 'ignore',
     'local.model': 'ignore',
+    'project.settings': 'ignore',
+    'user.profile': 'ignore',
+    'user.agent-settings': 'ignore',
+    'user.view-state': 'ignore',
+    secret: 'ignore',
+    'system.toggle': 'ignore',
     'provider.connection': (change) => {
       if (change.op === 'deleted') conditions.connectionRemoved(change.ref.userId, change.ref.id)
     },
@@ -155,6 +161,12 @@ export function pluginBackendHandlers(
     project: () => refresh(),
     'capability.rule': 'ignore',
     'local.model': 'ignore',
+    'project.settings': 'ignore',
+    'user.profile': 'ignore',
+    'user.agent-settings': 'ignore',
+    'user.view-state': 'ignore',
+    secret: 'ignore',
+    'system.toggle': 'ignore',
     'provider.connection': 'ignore',
   }
 }

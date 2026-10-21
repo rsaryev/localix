@@ -177,7 +177,7 @@ export async function bootstrap(
     warn: (message) => logger.warn({ event: 'storage.prune_failed', message }),
   })
   // The plugin hosts' late-bound references to chat, and the ONE wake delivery `wakes`.
-  const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications })
+  const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications, db })
 
   const { auxUsageRepo, startEngines, triggerConditions } = await createEnginesPhase({
     db,

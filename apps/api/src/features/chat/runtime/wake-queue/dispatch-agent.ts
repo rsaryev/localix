@@ -5,6 +5,7 @@ import { dispatchParams } from '../run-params'
 import type { RunCompletion, RunExecutionOutcome } from '../run-outcome'
 import type { WakeQueueContext } from '../wake-queue'
 import type { AgentTurnTicket } from '../agent-turn-ticket'
+import type { TurnStart } from '../wake-queue-store-contracts'
 import { withRoute } from '../../session-route'
 
 /** Execution consumer: every participant uses this path, irrespective of its producer. */
@@ -14,9 +15,10 @@ export async function dispatchAgentTicket(
     session: SessionRecord
     ticket: AgentTurnTicket
     completion?: RunCompletion
-    consume(): Promise<void>
+    /** Acknowledge the ticket; `starting` records the reply slot with the acknowledgement. */
+    consume(starting?: TurnStart): Promise<void>
   },
-  deps: Pick<WakeQueueContext, 'repo' | 'run' | 'streamRegistry' | 'now'>,
+  deps: Pick<WakeQueueContext, 'repo' | 'run' | 'streamRegistry' | 'now' | 'store'>,
 ): Promise<RunExecutionOutcome> {
   const { userId, session, ticket } = input
   const member = session.agents.find((entry) => entry.agentId === ticket.speakerAgentId)
@@ -61,32 +63,42 @@ export async function dispatchAgentTicket(
       message,
     })
   }
-  await input.consume()
+  // Acknowledged with the slot it fills: a crash before the run returns leaves that record for
+  // boot recovery (`turn-starts.ts`), so the placeholder is never left empty forever.
+  await input.consume({
+    assistantMessageId: ticket.assistantMessageId,
+    agentId: member.agentId,
+    at: deps.now(),
+  })
   const runSession = ticket.scope.modelOverride
     ? withRoute(session, { modelId: ticket.scope.modelOverride }, member.agentId)
     : session
-  return deps.run(
-    dispatchParams(
-      {
-        userId,
-        session: runSession,
-        assistantMessageId: ticket.assistantMessageId,
-        historyMessages: history.filter((message) => message.id !== ticket.assistantMessageId),
-      },
-      {
-        ...ticket.scope,
-        speakerAgentId: member.agentId,
-        ...(ticket.source === 'agent-request'
-          ? {
-              turnTrigger: {
-                kind: 'colleague-request' as const,
-                messageIds: ticket.triggerMessageIds,
-                ...(ticket.scope.turnTrigger?.report ? { report: true } : {}),
-              },
-            }
-          : {}),
-      },
-      input.completion,
-    ),
-  )
+  try {
+    return await deps.run(
+      dispatchParams(
+        {
+          userId,
+          session: runSession,
+          assistantMessageId: ticket.assistantMessageId,
+          historyMessages: history.filter((message) => message.id !== ticket.assistantMessageId),
+        },
+        {
+          ...ticket.scope,
+          speakerAgentId: member.agentId,
+          ...(ticket.source === 'agent-request'
+            ? {
+                turnTrigger: {
+                  kind: 'colleague-request' as const,
+                  messageIds: ticket.triggerMessageIds,
+                  ...(ticket.scope.turnTrigger?.report ? { report: true } : {}),
+                },
+              }
+            : {}),
+        },
+        input.completion,
+      ),
+    )
+  } finally {
+    await deps.store?.turnStarted?.(ticket.assistantMessageId).catch(() => undefined)
+  }
 }

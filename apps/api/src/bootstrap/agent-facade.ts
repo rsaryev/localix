@@ -1,4 +1,6 @@
 import { announceInterruptedRuns } from '../features/chat/runtime/interrupted-runs'
+import { createTurnStartRepository } from '../features/chat/runtime/turn-start-repository'
+import { settleUnstartedTurns } from '../features/chat/runtime/unstarted-turns'
 import { createChatRepository } from '../features/chat/repository'
 import type { WakeRequest } from '../features/chat/contracts'
 import type { createChatService } from '../features/chat/service'
@@ -163,5 +165,19 @@ export async function createAgentFacadePhase({
       `[boot] ${interruptedRuns.length} run(s) were interrupted before their transcript notice; announced ${announced}`,
     )
   }
+  // An agent turn acknowledged before its run record existed: say so instead of leaving an empty
+  // reply placeholder forever (`unstarted-turns.ts`).
+  const unstarted = await settleUnstartedTurns({
+    turnStarts: createTurnStartRepository(db),
+    repo: bootRepo,
+    streamRegistry: chatService.streamRegistry,
+    now: () => new Date().toISOString(),
+    logger: { warn: (msg) => logger.warn({ event: 'boot.unstarted_turn_failed', msg }) },
+  })
+  if (unstarted > 0) logger.info?.(`[boot] ${unstarted} agent turn(s) never started; announced`)
+  // Wakes a trigger, a plugin or a background job asked for that the previous process recorded
+  // and never handed to a session's queue (`features/triggers/delivery.ts`).
+  const redelivered = await wakes.redeliver()
+  if (redelivered > 0) logger.info?.(`[boot] ${redelivered} wake(s) redelivered`)
 }
 import { agentRunDefaults } from '../features/agents/run-defaults'

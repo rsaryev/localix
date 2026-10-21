@@ -3,10 +3,16 @@ import type { AppDatabase } from '../../db'
 import type { SecretCipher } from './cipher'
 import type { SecretMeta, UpdateSecretMetadataRequest } from './contracts'
 import type { VaultItemMetadata, VaultMutationResult, VaultUseContext } from './store-contracts'
-import { insertAudit, metadataFor, toMeta } from './store-metadata'
+import { announceVaultItem, insertAudit, metadataFor, toMeta } from './store-metadata'
 import { payloadContext, VaultPayloadError, type EncryptedPayloadV1 } from './store-payload'
 
-export { insertAudit, metadataFor, toMeta, type VaultItemRow } from './store-metadata'
+export {
+  announceVaultItem,
+  insertAudit,
+  metadataFor,
+  toMeta,
+  type VaultItemRow,
+} from './store-metadata'
 export { decryptItemValue, VaultPayloadError } from './store-payload'
 
 const isUniqueConstraint = (error: unknown): boolean => {
@@ -93,6 +99,7 @@ export const createItem = async (
         consumerId: metadata.audit?.consumerId,
         at: timestamp,
       })
+      await announceVaultItem(tx, userId, key, 'upserted')
       const row = await metadataFor(tx, userId, key)
       if (!row) throw new Error('Created Vault item could not be reloaded')
       return toMeta(row)
@@ -164,6 +171,7 @@ export const rotateItem = async (
       consumerId: audit?.consumerId,
       at: timestamp,
     })
+    await announceVaultItem(tx, userId, key, 'upserted')
     const row = await metadataFor(tx, userId, key)
     if (!row) throw new Error('Rotated Vault item could not be reloaded')
     return { status: 'updated', item: toMeta(row) }
@@ -269,6 +277,7 @@ export const updateItemMetadata = async (
       },
       at: timestamp,
     })
+    await announceVaultItem(tx, userId, key, 'upserted')
     const row = await metadataFor(tx, userId, key)
     if (!row) throw new Error('Updated Vault item could not be reloaded')
     return { status: 'updated', item: toMeta(row) }

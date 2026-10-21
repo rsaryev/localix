@@ -4,8 +4,8 @@
  * every surface of the user with `resources.changed`. The client re-reads from the owner.
  *
  * Each kind says its topics here, or why it has none: `satisfies` keeps the map whole, so a kind
- * added to the registry fails to compile until the relay answers for it. Entities whose owners
- * do not announce every change yet keep their mutation wrappers in `bootstrap/resource-sync.ts`.
+ * added to the registry fails to compile until the relay answers for it. Every owner of a client
+ * topic announces each of its changes, so the relay is the only path from a write to a poke.
  */
 import type { ConsumerHandlers, EntityKind } from '@localixai/change-feed'
 
@@ -17,6 +17,8 @@ interface Topics {
   resources: readonly RealtimeResource[]
   /** The capability revision moves too (a rule write has already moved it itself). */
   bumpsCapabilities?: boolean
+  /** What a `resync` of the kind invalidates, when less than a named change does. */
+  resync?: readonly RealtimeResource[]
 }
 
 export const RELAY_TOPICS = {
@@ -31,14 +33,29 @@ export const RELAY_TOPICS = {
   // Chats and messages reach clients through the session event stream, not topics.
   'chat.session': 'ignore',
   'chat.message': 'ignore',
-  // A project announces only scope changes; its settings writes are relayed by its wrapper.
-  project: 'ignore',
-  // File-owned capabilities announce `resync` after the revision bump their writer made, and
-  // their writers poke clients as they bump.
-  skill: 'ignore',
+  // A project's scope or settings: the project list, what the catalog offers in it, and its chats
+  // (their model and route defaults come from its settings).
+  project: { resources: ['projects', 'capabilities', 'sessions'], bumpsCapabilities: true },
+  'project.settings': {
+    resources: ['projects', 'capabilities', 'sessions'],
+    bumpsCapabilities: true,
+  },
+  'user.profile': { resources: ['profile'] },
+  // Agent settings route runs and pick per-agent models: chats show both.
+  'user.agent-settings': {
+    resources: ['profile', 'capabilities', 'sessions'],
+    bumpsCapabilities: true,
+  },
+  'user.view-state': { resources: ['view-state'] },
+  secret: { resources: ['vault'] },
+  'system.toggle': { resources: ['system'] },
+  // File-owned capabilities: their writers bump the revision as they write (so the relay never
+  // does — a bump announces `resync` for every capability kind), and the announcements poke.
+  // An agent's own change reaches its chats too; plugins and MCP servers poke as they converge.
+  agent: { resources: ['capabilities', 'sessions'], resync: ['capabilities'] },
+  skill: { resources: ['capabilities'] },
   plugin: 'ignore',
   mcp: 'ignore',
-  agent: 'ignore',
   // What the `local` provider lists reaches clients through the catalog's own refresh.
   'local.model': 'ignore',
 } as const satisfies Record<EntityKind<CoreRefs>, Topics | 'ignore'>
@@ -52,12 +69,12 @@ export function createRelay(deps: {
     handlers[kind] =
       topics === 'ignore'
         ? 'ignore'
-        : (change: { ref?: { userId?: unknown } }) => {
+        : (change: { op: string; ref?: { userId?: unknown } }) => {
             if (topics.bumpsCapabilities) capabilitiesChanged()
             const userId = change.ref?.userId
-            deps.publish(typeof userId === 'string' ? userId : deps.defaultUserId, [
-              ...topics.resources,
-            ])
+            const resources =
+              change.op === 'resync' ? (topics.resync ?? topics.resources) : topics.resources
+            deps.publish(typeof userId === 'string' ? userId : deps.defaultUserId, [...resources])
           }
   }
   return { handlers: handlers as ConsumerHandlers<CoreRefs, CoreCascades> }

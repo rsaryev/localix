@@ -32,8 +32,20 @@ export const CORE_REFS = {
   agent: z.object({ id: z.string(), scope, agentId: z.string().optional() }),
   // One agent's rule list, replaced as a whole (its key: the agent it belongs to).
   'capability.rule': z.object({ userId: z.string(), agentId: z.string() }),
-  // A project: created, moved, renamed, deleted or restored (settings-only writes are silent).
+  // A project: created, moved, renamed, deleted or restored.
   project: z.object({ id: z.string(), userId: z.string() }),
+  // A project's settings (its model, route, instructions…), written without a scope change.
+  'project.settings': z.object({ id: z.string(), userId: z.string() }),
+  // A person's profile: its interface settings…
+  'user.profile': z.object({ userId: z.string() }),
+  // …and its agent settings (model routing, per-agent models), which change what runs resolve.
+  'user.agent-settings': z.object({ userId: z.string() }),
+  // One saved piece of a person's view state (a draft, the open chat), by its kind and key.
+  'user.view-state': z.object({ userId: z.string(), kind: z.string(), key: z.string() }),
+  // A vault item: created, rotated, its metadata changed, or removed (by its key).
+  secret: z.object({ userId: z.string(), key: z.string() }),
+  // A host control (keep-awake…) switched on or off.
+  'system.toggle': z.object({ id: z.string() }),
   // A model installed on this computer (the `local` provider), by its id.
   'local.model': z.object({ id: z.string() }),
   // A provider account: created, signed in, a key enabled, or deleted.

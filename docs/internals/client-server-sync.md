@@ -31,7 +31,7 @@ flowchart LR
 | Event/RPC socket          | `shared/api/eventSocket/`                                               | Reference counted connection, reconnect backoff, cursor, scope declarations, frame batching and RPC correlation. |
 | Event delivery            | `chat/runtime/session-stream-registry.ts`                               | Serialize once; fan out by user and watched session; explicitly classify replay and delivery scope.              |
 | Shared resource changes   | `realtime/resources.ts`                                                 | `resources.changed` identifies read models, without transmitting private entity data.                            |
-| Mutation announcements    | `bootstrap/resource-sync.ts`                                            | Explicit typed service-method maps; successful mutations announce for HTTP and internal callers alike.           |
+| Mutation announcements    | `realtime/relay.ts`                                                     | Owners record a change notice in their transaction; the relay maps each notice kind to the topics it pokes.      |
 | Read coordination         | `shared/api/resourceSync.ts`                                            | Coalesce bursts; one read in flight per adapter; skip superseded results; bounded retries.                       |
 | Feature adapters          | `app/workspaceResourceSync.ts` and feature hooks                        | The application binds resources to their owning stores. Shared code never imports feature stores.                |
 | Notification delivery     | Server notification journal and `shared/lib/notifications/inboxSync.ts` | Durable journal cursor plus live `n` frames on the existing socket.                                              |
@@ -87,8 +87,9 @@ roster rows. Unsent text remains attached to its original chat.
 4. For an invalidated read model, schedule one refresh for a burst of changes. If another change
    arrives during its read, discard that result and perform one follow-up read.
 5. Reconcile on every connection, including the first one. Initial HTTP bootstrap can precede the
-   socket; the connected read closes that gap. Reconnect also repairs state beyond the bounded
-   replay ring or after a backend restart.
+   socket; the connected read closes that gap. A resumed connection trusts its replay unless the
+   server's first frame is a `transport.gap` marker (the cursor is from another boot, or the bounded
+   replay ring dropped frames after it); then every read model is read again.
 6. A disconnect or unmount invalidates outstanding results and aborts cancellable reads. Automatic
    resource reads retry at 1, 2 and 4 seconds, then report the failure; a subsequent invalidation or
    connection can retry. Existing bootstrap, capability and feature-specific retry policies remain

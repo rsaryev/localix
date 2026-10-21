@@ -26,6 +26,7 @@ export function createDrainOperations(
 ) {
   const {
     repo,
+    store,
     streamRegistry,
     now,
     run,
@@ -161,9 +162,9 @@ export function createDrainOperations(
                   session: latestSession,
                   ticket,
                   completion,
-                  consume: async () => {
+                  consume: async (starting) => {
                     stopRenewal()
-                    if (!(await leases.ack(next.userId, sessionId, bandIds)))
+                    if (!(await leases.ack(next.userId, sessionId, bandIds, starting)))
                       throw new Error('Agent ticket lost its lease')
                     deadLetter.delivered(bandIds)
                     for (const id of bandIds) q.remove(id)
@@ -172,7 +173,7 @@ export function createDrainOperations(
                     publishQueue(next.userId, sessionId)
                   },
                 },
-                { repo, run, streamRegistry, now },
+                { repo, run, streamRegistry, now, store },
               )
             } catch (error) {
               if (stillQueued()) throw error

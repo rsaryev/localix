@@ -130,9 +130,16 @@ keeps these rules:
   as failed in the queue snapshot, and waits for the person to retry or remove it.
 - An agent turn ticket is the documented exception. Its row is acknowledged **before** the run
   starts, so dispatch is at most once and a crash never replays tools. Once the run has started, the
-  boot sweep marks it `interrupted` and posts a notice in the transcript. A crash after the
-  acknowledgement but before the run record exists leaves an empty reply placeholder that is never
-  retried.
+  boot sweep marks it `interrupted` and posts a notice in the transcript. The acknowledgement
+  records the reply slot (`agent_turn_starts`) in its transaction and the dispatch clears it when
+  the run returns; a slot left at boot with no run record replaces its empty placeholder with a
+  notice that offers a retry (`runtime/unstarted-turns.ts`).
+
+A wake a trigger, a plugin or a background job asks for under a delivery key is recorded in
+`wake_outbox` before it is sent
+([`delivery.ts`](../../../apps/api/src/features/triggers/delivery.ts)). The queue's admission
+deletes the row in its own transaction; a boot redelivers what is left under the same key. A
+once-ever `receipt` delivery (a child's report) keeps its own recovery.
 
 ## Enforcement
 

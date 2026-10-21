@@ -91,17 +91,12 @@ function reportUnaddressable(): void {
 }
 
 /**
- * The server replays every frame after `since` from its ring, within one boot. An outage longer
- * than this may have outrun that ring, which sends no marker when it does, so the open is then
- * treated as a fresh stream.
+ * The server replays every frame after `since` from its ring. When it cannot — the cursor is from
+ * another boot, or the ring dropped frames after it — its first frame is an explicit gap marker
+ * (`transport.gap`), which withdraws the replay (`session-frames.ts`).
  */
-export const REPLAY_TRUST_MS = 30_000
-
 function markResumed(): void {
-  const cursor = conn.dialCursor ? parseSessionCursor(conn.dialCursor) : null
-  conn.openResumed =
-    cursor !== null && conn.lastDownAt !== null && Date.now() - conn.lastDownAt <= REPLAY_TRUST_MS
-  conn.verifyEpoch = conn.openResumed ? cursor!.epoch : null
+  conn.openResumed = conn.dialCursor !== null && parseSessionCursor(conn.dialCursor) !== null
 }
 
 export function connect(): void {
@@ -152,9 +147,7 @@ export function connect(): void {
     // socket, so stay completely inert.
     if (conn.socket !== ws) return
     conn.socket = null
-    conn.lastDownAt = Date.now()
     conn.openResumed = false
-    conn.verifyEpoch = null
     // Drop queued frames together with the requests rejected below. Sending a
     // stale queued frame after reconnect would double-apply a request whose
     // caller already saw a failure.

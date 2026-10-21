@@ -1,6 +1,7 @@
 import type { Kysely, Selectable, Updateable } from 'kysely'
 
 import type { AppDatabase, UserProfilesTable } from '../../db/types'
+import { recordCoreChanges } from '../changes/core-entities'
 
 /** The raw `user_profiles` row (snake_case). Callers map it to domain shapes. */
 export type UserProfileRow = Selectable<UserProfilesTable>
@@ -21,13 +22,28 @@ export function createUserProfileRepository(db: Kysely<AppDatabase>) {
       return row ?? null
     },
 
-    /** Insert the profile row, or update the given columns on conflict (user_id). */
+    /**
+     * Insert the profile row, or update the given columns on conflict (user_id), and announce
+     * what moved in the same transaction: `user.profile` for interface settings,
+     * `user.agent-settings` for agent settings.
+     */
     async upsert(userId: string, updates: Updateable<UserProfilesTable>): Promise<void> {
-      await db
-        .insertInto('user_profiles')
-        .values({ user_id: userId, ...updates })
-        .onConflict((oc) => oc.column('user_id').doUpdateSet(updates))
-        .execute()
+      await db.transaction().execute(async (trx) => {
+        await trx
+          .insertInto('user_profiles')
+          .values({ user_id: userId, ...updates })
+          .onConflict((oc) => oc.column('user_id').doUpdateSet(updates))
+          .execute()
+        const agentSettings = updates.agent_settings !== undefined
+        await recordCoreChanges(trx, [
+          ...(updates.ui_settings !== undefined || !agentSettings
+            ? [{ entity: 'user.profile' as const, op: 'upserted' as const, ref: { userId } }]
+            : []),
+          ...(agentSettings
+            ? [{ entity: 'user.agent-settings' as const, op: 'upserted' as const, ref: { userId } }]
+            : []),
+        ])
+      })
     },
   }
 }

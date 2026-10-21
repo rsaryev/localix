@@ -224,6 +224,7 @@ export function createDomainServicesPhase({
   const skillsCuratorService = createSkillsCuratorService({
     usageRepo: skillUsageRepo,
     resolveProjectCwd,
+    capabilitiesChanged: () => void capabilitiesChanged(),
     logger: {
       info: (msg) => logger.info({ event: 'skills_curator.info', msg }),
       warn: (msg) => logger.warn({ event: 'skills_curator.warn', msg }),

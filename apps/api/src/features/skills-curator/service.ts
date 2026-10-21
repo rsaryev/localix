@@ -39,6 +39,8 @@ export interface SkillsCuratorServiceDeps {
   stateFile?: string
   now?: () => Date
   logger?: { info?: (msg: string) => void; warn?: (msg: string) => void }
+  /** A skill moved or was pinned: the capability set changed (bootstrap bumps the revision). */
+  capabilitiesChanged?: () => void
 }
 
 export interface SkillsCuratorService {
@@ -145,6 +147,8 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       entry.skill.scope,
       archivedAt,
     )
+    // A skill's files moved: the capability set changed (the relay pokes clients on the bump).
+    deps.capabilitiesChanged?.()
     return toRecord({
       skill: withSkillDir(entry.skill, dir),
       usage,
@@ -170,6 +174,7 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       ])
       // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- inventory derives stale/active state from the newly persisted pin and must observe it
       const entries = await inventory(userId, workingDir, projectId)
+      deps.capabilitiesChanged?.()
       const entry = entries.find((e) => e.skill.name === input.name)
       if (entry) return toRecord({ ...entry, usage })
       return {
@@ -228,6 +233,7 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
         entry.skill.scope,
         null,
       )
+      deps.capabilitiesChanged?.()
       return toRecord({
         skill: withSkillDir(entry.skill, target),
         usage,

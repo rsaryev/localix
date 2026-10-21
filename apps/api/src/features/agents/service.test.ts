@@ -11,11 +11,7 @@ import { createCapabilitySourceRepository } from '../capabilities/source-reposit
 import { seedAgentPresets } from '../capabilities/seed-agent-presets'
 import { resolveCapabilities } from '../capabilities/resolve'
 import { createInvocationRegistry } from '../capabilities/invocation'
-import {
-  capabilitiesChanged,
-  capabilityRevision,
-  trackCapabilityChange,
-} from '../capabilities/revision'
+import { capabilityRevision } from '../capabilities/revision'
 
 const cleanup: Array<() => Promise<void>> = []
 afterEach(async () => {
@@ -139,12 +135,11 @@ describe('native agent registry', () => {
   // same tracked mutation, does not bump it again.
   test('switching an agent moves the capability revision once', async () => {
     const { service } = await fixture()
+    const start = capabilityRevision()
     const { record } = await service.createAgent('u', input())
+    expect(capabilityRevision()).toBeGreaterThan(start)
     const before = capabilityRevision()
-    await trackCapabilityChange(async () => {
-      await service.setAgentEnabled('u', record.id, false)
-      capabilitiesChanged()
-    })
+    await service.setAgentEnabled('u', record.id, false)
     expect(capabilityRevision()).toBe(before + 1)
     expect((await service.getAgent('u', record.id))?.enabled).toBe(false)
   })

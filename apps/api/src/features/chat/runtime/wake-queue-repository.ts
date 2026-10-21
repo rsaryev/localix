@@ -46,6 +46,7 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
             .executeTakeFirst()
           if (Number(receipt.numInsertedOrUpdatedRows) === 0) return false
         }
+        await trx.deleteFrom('wake_outbox').where('delivery_key', '=', item.deliveryKey).execute()
         await trx
           .insertInto('agent_queue_items')
           .values({
@@ -186,7 +187,7 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
         })
     },
 
-    async ack(userId, sessionId, ids, leaseOwner) {
+    async ack(userId, sessionId, ids, leaseOwner, starting) {
       if (ids.length === 0) return false
       return db
         .transaction()
@@ -210,12 +211,31 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
             .where('id', 'in', [...ids])
             .executeTakeFirst()
           if (Number(result.numDeletedRows) !== ids.length) throw leaseConflict
+          if (starting)
+            await trx
+              .insertInto('agent_turn_starts')
+              .values({
+                assistant_message_id: starting.assistantMessageId,
+                user_id: userId,
+                session_id: sessionId,
+                agent_id: starting.agentId,
+                created_at: starting.at,
+              })
+              .onConflict((oc) => oc.column('assistant_message_id').doNothing())
+              .execute()
           return true
         })
         .catch((error: unknown) => {
           if (error === leaseConflict) return false
           throw error
         })
+    },
+
+    async turnStarted(assistantMessageId) {
+      await db
+        .deleteFrom('agent_turn_starts')
+        .where('assistant_message_id', '=', assistantMessageId)
+        .execute()
     },
 
     async release(userId, sessionId, ids, leaseOwner) {

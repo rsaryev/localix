@@ -1,9 +1,14 @@
+import type { Kysely } from 'kysely'
+import type { AppDatabase } from '../../db/types'
 import { ApiError } from '../../lib/errors'
+import { recordCoreChanges } from '../changes/core-entities'
 import type { SystemToggleState } from './contracts'
 import type { SystemToggleDef } from './toggle'
 import { createKeepAwakeToggle } from './toggles/keep-awake'
 
 export interface SystemServiceDeps {
+  /** Where a switched control is announced (`system.toggle`); its state itself lives here. */
+  db?: Kysely<AppDatabase>
   logger?: { warn: (msg: string, meta?: unknown) => void }
   /**
    * Explicit toggle definitions to register. When omitted the service registers
@@ -64,6 +69,8 @@ export function createSystemService(deps: SystemServiceDeps = {}): SystemService
         if (next) await def.enable()
         else await def.disable()
         enabled.set(id, next)
+        if (deps.db)
+          await recordCoreChanges(deps.db, { entity: 'system.toggle', op: 'upserted', ref: { id } })
       }
       return toState(def)
     },

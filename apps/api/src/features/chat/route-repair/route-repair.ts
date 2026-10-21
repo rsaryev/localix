@@ -127,6 +127,12 @@ export function createRouteRepair(ports: RouteRepairPorts) {
     'capability.rule': 'ignore',
     // A model installed or removed here changes what the `local` provider can serve.
     'local.model': () => repairAll(),
+    'project.settings': 'ignore',
+    'user.profile': 'ignore',
+    'user.agent-settings': 'ignore',
+    'user.view-state': 'ignore',
+    secret: 'ignore',
+    'system.toggle': 'ignore',
     'provider.connection': async (change) => {
       if (change.op === 'resync') await repairAll()
       else await repairUser(change.ref.userId)

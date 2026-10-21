@@ -843,3 +843,38 @@ describe('ROSTER_EVENT_TYPES', () => {
     }
   })
 })
+
+describe('replay gap', () => {
+  const publishRuns = (registry: ReturnType<typeof createSessionStreamRegistry>, count: number) => {
+    for (let i = 0; i < count; i++)
+      registry.publish('u1', `s${i}`, { type: 'run.started', sessionId: `s${i}`, messageId: 'm' })
+  }
+
+  test('a cursor the ring still covers replays without a gap', () => {
+    const registry = createSessionStreamRegistry()
+    publishRuns(registry, 3)
+    const gaps: string[] = []
+    const ids: string[] = []
+    registry.subscribeScoped('u1', (frame) => void ids.push(frame.id), {
+      since: '1',
+      watching: new Set(),
+      onGap: (through) => void gaps.push(through),
+    })
+    expect(gaps).toEqual([])
+    expect(ids).toEqual(['2', '3'])
+  })
+
+  test('a cursor older than the trimmed ring reports the gap before the replay', () => {
+    const registry = createSessionStreamRegistry()
+    publishRuns(registry, 2005)
+    const order: string[] = []
+    registry.subscribeScoped('u1', (frame) => void order.push(frame.id), {
+      since: '1',
+      watching: new Set(),
+      onGap: (through) => void order.push(`gap:${through}`),
+    })
+    expect(order[0]).toBe('gap:5')
+    expect(order[1]).toBe('6')
+    expect(order).toHaveLength(2001)
+  })
+})

@@ -41,10 +41,11 @@ export const pushToRing = (
 ) => {
   const buffered = compactSnapshot(log.get(key) ?? [], event)
   buffered.push(envelope)
-  if (buffered.length > maxSize) {
-    buffered.splice(0, buffered.length - maxSize)
-  }
+  // The id of the newest frame trimmed off the front: a cursor older than it cannot be replayed.
+  const trimmed =
+    buffered.length > maxSize ? buffered.splice(0, buffered.length - maxSize).at(-1)!.id : null
   log.delete(key)
   log.set(key, buffered)
   evict()
+  return trimmed
 }

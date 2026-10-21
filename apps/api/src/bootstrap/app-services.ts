@@ -1,4 +1,3 @@
-import { installResourceSync } from './resource-sync'
 import { createAuxAssistServices } from '../boot/aux-assist'
 import { buildSearchService } from '../boot/search'
 import { createBootShellCommandService } from '../boot/shell-command'
@@ -99,7 +98,7 @@ export function createAppServicesPhase({
   semanticService,
 }: AppServicesPhaseInput): AppServicesPhase {
   // Host-level system controls (keep-awake, …) — process-wide, in-memory.
-  const systemService = createSystemService({ logger })
+  const systemService = createSystemService({ db, logger })
 
   // `localix` shell-command install ("install in PATH"). The launcher
   // execs the bundled CLI shim under this very Bun. The desktop shell sets
@@ -272,17 +271,6 @@ export function createAppServicesPhase({
     owner: env.LOCALIX_DEFAULT_USER_ID,
   })
   serviceRefs.globalSearch = searchService // the agent's `global_search`; chat is built first
-
-  installResourceSync({
-    chatService,
-    projectsService,
-    userService,
-    agentsService,
-    skillsCuratorService,
-    secretsService,
-    systemService,
-    defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
-  })
 
   return {
     systemService,

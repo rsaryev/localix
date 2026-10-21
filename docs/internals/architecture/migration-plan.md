@@ -26,13 +26,19 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 ## Stage 3: consumers replace writer-driven follow-ups
 
 - [x] Relay from notices to client topics replaces the mutation wrappers in
-      `apps/api/src/bootstrap/resource-sync.ts`: provider connections and capability rules. The
-      wrappers for projects (settings), profile, view state, agents, skills, the vault and system
-      toggles stay until those owners announce every change.
+      `apps/api/src/bootstrap/resource-sync.ts`: provider connections and capability rules.
+- [x] Projects (settings), profile and agent settings, view state, agents, skills, the vault and
+      system toggles announce every change; `bootstrap/resource-sync.ts` is gone.
 - [x] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
 - [x] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule
       is removed.
 - [ ] `resolveLiveCatalogModel` (UI and `@localixai/agent/catalog`) is replaced by `routeReadiness`.
+
+- [x] Keyed wakes from triggers, plugins and background jobs go through a durable outbox
+      (`wake_outbox`): the queue's admission removes the row in its transaction, and a boot
+      redelivers what a crash left under the same delivery key. Plan and delegation receipts stay.
+- [x] An agent turn acknowledged before its run record existed is settled at boot
+      (`agent_turn_starts`) instead of leaving an empty reply placeholder.
 
 Stays a command: plan approval, capability apply, stopping runs before a chat is deleted, trigger
 scheduling, terminal lifecycle and the session event stream.

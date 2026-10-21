@@ -24,8 +24,7 @@ import { removeAgentRecordFiles, writeAgentRecordFile } from './registry-files'
 import type { AgentRecord, AgentSummary } from './contracts'
 import type { AgentsService, AgentsServiceDeps } from './service-contract'
 import { BUILTIN_OVERRIDE_FIELD, builtinOverrideHash } from './builtin-override'
-import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/plugin-sdk/backend'
-import { recordCoreChanges, type CoreChange } from '../changes/core-entities'
+import { createAgentAnnouncer } from './announce'
 
 export type { AgentsService, AgentsServiceDeps } from './service-contract'
 
@@ -37,19 +36,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   )
   // The one writer of availability, shared with every other kind.
   const availabilityWriter = createAvailabilityWriter(deps.db)
-  /**
-   * Announce an agent's catalog keys by its stable id: the first key is gone (deleted or renamed
-   * away from), a second one is where it lives now. Its files are the truth, so there is no
-   * transaction to join; the feed's reconcile covers a lost notice.
-   */
-  const announceAgent = (projectId: string, agentId: string, [gone, now]: string[]) => {
-    const scope = projectId || SEMANTIC_GLOBAL_SCOPE
-    const changes: CoreChange[] = [
-      { entity: 'agent', op: 'deleted', ref: { id: gone!, scope, agentId } },
-    ]
-    if (now) changes.push({ entity: 'agent', op: 'upserted', ref: { id: now, scope, agentId } })
-    return recordCoreChanges(deps.db, changes)
-  }
+  const { keys: announceAgent, write: announced } = createAgentAnnouncer(deps.db)
   const ruleRepository = createCapabilityRuleRepository(deps.db)
   const invocations = deps.invocations ?? createInvocationRegistry()
   const serialize = createKeyedSerializer()
@@ -149,175 +136,184 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     // `_agentId` is the caller's idea of WHOSE rules to write, and it is no longer theirs to
     // choose: an `agent:<id>` rule belongs to that agent's own list, wherever the request
     // came from. Kept in the signature because the route still sends it.
-    async setAgentEnabled(userId, name, enabled, projectId, _agentId) {
-      const scope = projectId ?? ''
-      const catalog = await buildCatalog(userId, scope)
-      const entry = pickEntry(catalog, name, scope)
-      if (!entry) throw new ApiError(404, 'agent_not_found', 'Agent not found')
-      if (!enabled && !agentPolicy(entry).disable) {
-        throw new ApiError(
-          400,
-          'agent_always_enabled',
-          'This agent cannot be switched off — the app runs on it. Duplicate it to get one you own.',
+    setAgentEnabled: (userId, name, enabled, projectId, _agentId) =>
+      announced(async () => {
+        const scope = projectId ?? ''
+        const catalog = await buildCatalog(userId, scope)
+        const entry = pickEntry(catalog, name, scope)
+        if (!entry) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+        if (!enabled && !agentPolicy(entry).disable) {
+          throw new ApiError(
+            400,
+            'agent_always_enabled',
+            'This agent cannot be switched off — the app runs on it. Duplicate it to get one you own.',
+          )
+        }
+        // An `agent:<id>` rule lives in that agent's OWN list — "may this role be invoked" is a
+        // statement about the role, and keeping it beside the role's tool rules is what lets a
+        // delete drop both in one write.
+        // The rule write bumps the capability revision once; `announced` sees that bump.
+        await ruleRepository.mutate(userId, entry.record.id, (current) =>
+          applySwitches(current, 'agent', [{ name: entry.record.id, enabled }]),
         )
-      }
-      // An `agent:<id>` rule lives in that agent's OWN list — "may this role be invoked" is a
-      // statement about the role, and keeping it beside the role's tool rules is what lets a
-      // delete drop both in one write.
-      // The rule write bumps the capability revision once; the composition root's announcement
-      // for this method sees that bump and does not add another.
-      await ruleRepository.mutate(userId, entry.record.id, (current) =>
-        applySwitches(current, 'agent', [{ name: entry.record.id, enabled }]),
-      )
-      const refreshed = await buildCatalog(userId, scope)
-      return pickEntry(refreshed, name, entry.projectId)!
-    },
+        const refreshed = await buildCatalog(userId, scope)
+        return pickEntry(refreshed, name, entry.projectId)!
+      }),
 
     async getAgent(userId, name, projectId) {
       return (await findEntry(userId, name, projectId ?? '')) ?? null
     },
 
-    async createAgent(userId, input) {
-      return serialize(JSON.stringify([userId, input.projectId ?? '']), () =>
-        createNativeAgent(creationPorts, userId, input),
-      )
-    },
+    createAgent: (userId, input) =>
+      announced(() =>
+        serialize(JSON.stringify([userId, input.projectId ?? '']), () =>
+          createNativeAgent(creationPorts, userId, input),
+        ),
+      ),
 
-    async updateAgent(userId, name, input, projectId) {
-      return serialize(JSON.stringify([userId, projectId ?? '']), async () => {
+    updateAgent: (userId, name, input, projectId) =>
+      announced(() =>
+        serialize(JSON.stringify([userId, projectId ?? '']), async () => {
+          const scope = projectId ?? ''
+          const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
+          if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (existing.registration) {
+            throw new ApiError(
+              400,
+              'agent_extension_owned',
+              'Update this agent through its extension',
+            )
+          }
+          const { projectId: _omit, enabled: _state, ...definition } = input
+          const record: AgentRecord = { ...definition, id: existing.record.id }
+          // One diff against the policy, rather than a guard per field: what a class may not
+          // change is stated once, in `policy.ts`, and both this and the editor read it there.
+          const locked = lockedChanges(
+            agentPolicy(existing),
+            existing.record,
+            record as AgentRecord,
+          )
+          if (locked.length > 0) {
+            throw new ApiError(
+              400,
+              'agent_field_locked',
+              `This agent ships with the app: its ${locked
+                .map((field) => FIELD_LABELS[field])
+                .join(', ')} cannot be changed. Duplicate it to get one you own.`,
+            )
+          }
+          const owner = existing.projectId
+          const collision = await findEntry(userId, record.handle, owner)
+          if (collision && collision.record.id !== record.id) {
+            throw new ApiError(
+              409,
+              'agent_exists',
+              `An agent named "${record.handle}" already exists.`,
+            )
+          }
+          const dir = await dirFor(userId, owner)
+          await writeAgentRecordFile(dir, record)
+          if (record.handle !== existing.record.handle)
+            await removeAgentRecordFiles(dir, existing.record.handle)
+          if (existing.builtin && owner) {
+            await repo.patchConfig(userId, owner, record.id, {
+              [BUILTIN_OVERRIDE_FIELD]: builtinOverrideHash(record),
+            })
+          }
+          // A rename moves the agent's catalog key: the old one is gone, the new one exists.
+          if (record.handle !== existing.record.handle)
+            await announceAgent(owner, record.id, [existing.record.handle, record.handle])
+          return pickEntry(await buildCatalog(userId, scope), record.id, scope)!
+        }),
+      ),
+
+    deleteAgent: (userId, name, projectId) =>
+      announced(() =>
+        serialize(JSON.stringify([userId, projectId ?? '']), async () => {
+          const scope = projectId ?? ''
+          const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
+          if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (!agentPolicy(existing).delete) {
+            throw new ApiError(
+              400,
+              'agent_builtin',
+              'A system agent cannot be deleted. Restore its defaults or switch it off instead.',
+            )
+          }
+          await removeAgentRecordFiles(
+            await dirFor(userId, existing.projectId),
+            existing.record.handle,
+          )
+          await repo.remove(userId, existing.projectId, existing.record.id)
+          // The rule goes with it: a same-named file dropped in later must start inert rather
+          // than inherit the deleted agent's answer.
+          // The rules go with it. Nothing reads a deleted agent's list — ids are never reissued —
+          // but the rows outlived every other trace of the agent, so a policy export or a
+          // snapshot still listed a role no screen could reach. One statement covers both the
+          // `agent:<id>` switch and the role's own tool rules, because they are the same list now.
+          await ruleRepository.replace(userId, existing.record.id, [])
+          await announceAgent(existing.projectId, existing.record.id, [existing.record.handle])
+        }),
+      ),
+
+    resetAgent: (userId, name, projectId) =>
+      announced(() => {
         const scope = projectId ?? ''
-        const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-        if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
-        if (existing.registration) {
-          throw new ApiError(
-            400,
-            'agent_extension_owned',
-            'Update this agent through its extension',
+        return serialize(JSON.stringify([userId, scope]), async () => {
+          const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
+          if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (!existing.builtin) {
+            throw new ApiError(
+              400,
+              'agent_not_builtin',
+              'Only a system agent has a default to reset to.',
+            )
+          }
+          // Files only — the enable row is the user's on/off choice, not part of the definition.
+          await removeAgentRecordFiles(
+            await dirFor(userId, existing.projectId),
+            existing.record.handle,
           )
-        }
-        const { projectId: _omit, enabled: _state, ...definition } = input
-        const record: AgentRecord = { ...definition, id: existing.record.id }
-        // One diff against the policy, rather than a guard per field: what a class may not
-        // change is stated once, in `policy.ts`, and both this and the editor read it there.
-        const locked = lockedChanges(agentPolicy(existing), existing.record, record as AgentRecord)
-        if (locked.length > 0) {
-          throw new ApiError(
-            400,
-            'agent_field_locked',
-            `This agent ships with the app: its ${locked
-              .map((field) => FIELD_LABELS[field])
-              .join(', ')} cannot be changed. Duplicate it to get one you own.`,
-          )
-        }
-        const owner = existing.projectId
-        const collision = await findEntry(userId, record.handle, owner)
-        if (collision && collision.record.id !== record.id) {
-          throw new ApiError(
-            409,
-            'agent_exists',
-            `An agent named "${record.handle}" already exists.`,
-          )
-        }
-        const dir = await dirFor(userId, owner)
-        await writeAgentRecordFile(dir, record)
-        if (record.handle !== existing.record.handle)
-          await removeAgentRecordFiles(dir, existing.record.handle)
-        if (existing.builtin && owner) {
-          await repo.patchConfig(userId, owner, record.id, {
-            [BUILTIN_OVERRIDE_FIELD]: builtinOverrideHash(record),
-          })
-        }
-        // A rename moves the agent's catalog key: the old one is gone, the new one exists.
-        if (record.handle !== existing.record.handle)
-          await announceAgent(owner, record.id, [existing.record.handle, record.handle])
-        return pickEntry(await buildCatalog(userId, scope), record.id, scope)!
-      })
-    },
-
-    async deleteAgent(userId, name, projectId) {
-      return serialize(JSON.stringify([userId, projectId ?? '']), async () => {
-        const scope = projectId ?? ''
-        const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-        if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
-        if (!agentPolicy(existing).delete) {
-          throw new ApiError(
-            400,
-            'agent_builtin',
-            'A system agent cannot be deleted. Restore its defaults or switch it off instead.',
-          )
-        }
-        await removeAgentRecordFiles(
-          await dirFor(userId, existing.projectId),
-          existing.record.handle,
-        )
-        await repo.remove(userId, existing.projectId, existing.record.id)
-        // The rule goes with it: a same-named file dropped in later must start inert rather
-        // than inherit the deleted agent's answer.
-        // The rules go with it. Nothing reads a deleted agent's list — ids are never reissued —
-        // but the rows outlived every other trace of the agent, so a policy export or a
-        // snapshot still listed a role no screen could reach. One statement covers both the
-        // `agent:<id>` switch and the role's own tool rules, because they are the same list now.
-        await ruleRepository.replace(userId, existing.record.id, [])
-        await announceAgent(existing.projectId, existing.record.id, [existing.record.handle])
-      })
-    },
-
-    async resetAgent(userId, name, projectId) {
-      const scope = projectId ?? ''
-      return serialize(JSON.stringify([userId, scope]), async () => {
-        const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-        if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
-        if (!existing.builtin) {
-          throw new ApiError(
-            400,
-            'agent_not_builtin',
-            'Only a system agent has a default to reset to.',
-          )
-        }
-        // Files only — the enable row is the user's on/off choice, not part of the definition.
-        await removeAgentRecordFiles(
-          await dirFor(userId, existing.projectId),
-          existing.record.handle,
-        )
-        if (existing.projectId)
-          await repo.patchConfig(userId, existing.projectId, existing.record.id, {
-            [BUILTIN_OVERRIDE_FIELD]: null,
-          })
-        return pickEntry(await buildCatalog(userId, scope), name, scope)!
-      })
-    },
+          if (existing.projectId)
+            await repo.patchConfig(userId, existing.projectId, existing.record.id, {
+              [BUILTIN_OVERRIDE_FIELD]: null,
+            })
+          return pickEntry(await buildCatalog(userId, scope), name, scope)!
+        })
+      }),
 
     agentDefaults(name) {
       return builtinAgentRecord(name)
     },
 
-    async duplicateAgent(userId, name, newName, projectId) {
-      const scope = projectId ?? ''
-      return serialize(JSON.stringify([userId, scope]), async () => {
-        const catalog = await buildCatalog(userId, scope)
-        const source = pickEntry(catalog, name, scope)
-        if (!source) throw new ApiError(404, 'agent_not_found', 'Agent not found')
-        if (!agentPolicy(source).duplicate) {
-          throw new ApiError(400, 'agent_not_duplicable', 'This agent cannot be copied.')
-        }
-        if (pickInScope(catalog, newName, scope)) {
-          throw new ApiError(409, 'agent_exists', `An agent named "${newName}" already exists.`)
-        }
-        // A copy is the user's own: the import provenance describes the SOURCE file, not this one.
-        const { id: _origin, ...copied } = source.record
-        return createNativeAgent(
-          creationPorts,
-          userId,
-          {
-            ...copied,
-            handle: newName,
-            projectId: scope || null,
-            enabled: source.enabled,
-          },
-          { id: source.record.id, rules: await ruleRepository.read(userId, source.record.id) },
-        )
-      })
-    },
+    duplicateAgent: (userId, name, newName, projectId) =>
+      announced(() => {
+        const scope = projectId ?? ''
+        return serialize(JSON.stringify([userId, scope]), async () => {
+          const catalog = await buildCatalog(userId, scope)
+          const source = pickEntry(catalog, name, scope)
+          if (!source) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (!agentPolicy(source).duplicate) {
+            throw new ApiError(400, 'agent_not_duplicable', 'This agent cannot be copied.')
+          }
+          if (pickInScope(catalog, newName, scope)) {
+            throw new ApiError(409, 'agent_exists', `An agent named "${newName}" already exists.`)
+          }
+          // A copy is the user's own: the import provenance describes the SOURCE file, not this one.
+          const { id: _origin, ...copied } = source.record
+          return createNativeAgent(
+            creationPorts,
+            userId,
+            {
+              ...copied,
+              handle: newName,
+              projectId: scope || null,
+              enabled: source.enabled,
+            },
+            { id: source.record.id, rules: await ruleRepository.read(userId, source.record.id) },
+          )
+        })
+      }),
 
     async resolveEnabledAgent(userId, agentId, projectId) {
       const scope = projectId ?? ''

@@ -1,4 +1,4 @@
-import { isSessionCursorNewer, parseSessionCursor } from '@localixai/api/ws-frame'
+import { isSessionCursorNewer } from '@localixai/api/ws-frame'
 
 import type { AgentStreamEvent } from '../contracts'
 import { emitRealtimeDiagnostic, notifyReconnectHandlers, notifyResyncHandlers } from './observers'
@@ -155,6 +155,7 @@ function parseSessionEvent(json: string) {
     throw new Error('Invalid session event')
   }
   const transportEvent = parsed as { type: string; skipped?: unknown; eventType?: unknown }
+  if (transportEvent.type === 'transport.gap') return { lag: null }
   return transportEvent.type === 'transport.lagged'
     ? { lag: lagMarker(transportEvent) }
     : { event: parsed as AgentStreamEvent }
@@ -162,18 +163,9 @@ function parseSessionEvent(json: string) {
 
 /** The stream missed frames after all: nothing it replayed can be taken as complete. */
 function withdrawReplay(): void {
-  conn.verifyEpoch = null
   if (!conn.openResumed) return
   conn.openResumed = false
   notifyResyncHandlers()
-}
-
-/** A server restarted since the cursor replays its own boot from zero, not what was missed. */
-function checkResumedEpoch(cursor: string): void {
-  const epoch = parseSessionCursor(cursor)?.epoch
-  const expected = conn.verifyEpoch
-  conn.verifyEpoch = null
-  if (epoch !== expected) withdrawReplay()
 }
 
 function drainSessionFrames(): void {
@@ -184,7 +176,6 @@ function drainSessionFrames(): void {
   let pending: ParsedSessionFrame | null = null
   let sawTransportLag = false
   for (const frame of frames) {
-    if (conn.verifyEpoch !== null) checkResumedEpoch(frame.cursor)
     // Reconnect replay and a superseded transport can overlap at the boundary.
     // Filter before delta coalescing: merging a duplicate append first would make
     // the repeated text indistinguishable from a legitimate larger delta.
@@ -209,6 +200,7 @@ function drainSessionFrames(): void {
       pending = null
       // The marker acknowledges the omitted live-only cursors only after the
       // authoritative reconciliation path has been scheduled below.
+      // A gap marker (`lag: null`): the server no longer held every frame after the cursor.
       emitRealtimeDiagnostic({
         kind: 'stream.lagged',
         severity: 'warning',
@@ -216,7 +208,7 @@ function drainSessionFrames(): void {
         message:
           'Some live updates were skipped; authoritative state reconciliation was requested.',
         sessionId: frame.sessionId,
-        attributes: decoded.lag,
+        ...(decoded.lag ? { attributes: decoded.lag } : {}),
       })
       conn.lastCursor = frame.cursor
       sawTransportLag = true

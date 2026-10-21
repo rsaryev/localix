@@ -1,5 +1,6 @@
 import type { Kysely, Transaction } from 'kysely'
 import type { AppDatabase } from '../../db'
+import { recordCoreChanges } from '../changes/core-entities'
 import {
   secretKeySchema,
   toSecretHandle,
@@ -117,3 +118,11 @@ export const insertAudit = (
       created_at: input.at,
     })
     .execute()
+
+/** A vault item changed or went away: announced in the write's transaction, by its key. */
+export const announceVaultItem = (
+  tx: Transaction<AppDatabase>,
+  userId: string,
+  key: string,
+  op: 'upserted' | 'deleted',
+) => recordCoreChanges(tx, { entity: 'secret', op, ref: { userId, key } })
