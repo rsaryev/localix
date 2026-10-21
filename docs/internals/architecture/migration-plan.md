@@ -46,11 +46,11 @@ scheduling, terminal lifecycle and the session event stream.
 
 ## Client synchronization
 
-- [ ] One writer for connections; the duplicate SWR keys and manual refreshes go.
+- [x] One writer for connections; the duplicate SWR keys and manual refreshes go.
 - [ ] Session writes reach other surfaces through topics instead of `_replaceSession` patches.
-- [ ] Caches with no topic subscribe to one: the settings model field, settings project lists, the
+- [x] Caches with no topic subscribe to one: the settings model field, settings project lists, the
       model catalog, join routes and linked session previews.
-- [ ] The transport tells the scheduler when a reconnect replayed every missed frame.
+- [x] The transport tells the scheduler when a reconnect replayed every missed frame.
 
 ## Plugins
 
