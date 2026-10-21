@@ -164,25 +164,25 @@ describe('listPluginSessionDataDirs', () => {
     const allow = async () => {}
     for (const sessionId of ['a/1', 'b'])
       await resolvePluginSessionDataDir({
-        pluginName: 'kanban',
+        pluginName: 'board',
         userId: 'u',
         sessionId,
         authorize: allow,
         root,
       })
     await resolvePluginSessionDataDir({
-      pluginName: 'chess',
+      pluginName: 'notes',
       userId: 'u',
       sessionId: 'c',
       authorize: allow,
       root,
     })
-    const listed = await listPluginSessionDataDirs('kanban', root)
+    const listed = await listPluginSessionDataDirs('board', root)
     expect(listed.map((entry) => entry.sessionId).sort()).toEqual(['a/1', 'b'])
     expect(listed.find((entry) => entry.sessionId === 'b')?.dir).toBe(
-      pluginSessionDataDir('kanban', 'b', root),
+      pluginSessionDataDir('board', 'b', root),
     )
-    expect(existsSync(pluginSessionDataDir('kanban', 'c', root))).toBe(false)
-    expect(await listPluginSessionDataDirs('kanban', join(root, 'missing'))).toEqual([])
+    expect(existsSync(pluginSessionDataDir('board', 'c', root))).toBe(false)
+    expect(await listPluginSessionDataDirs('board', join(root, 'missing'))).toEqual([])
   })
 })
