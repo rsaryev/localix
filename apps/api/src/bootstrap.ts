@@ -322,6 +322,7 @@ export async function bootstrap(
         userService,
         providerConditions: infra.providerConditions,
         triggerConditions,
+        refreshPluginBackends: () => backendHost.refresh(),
         publish: (userId, resources) =>
           chatService.streamRegistry.publish(userId, '', { type: 'resources.changed', resources }),
       }).catch((err: unknown) =>

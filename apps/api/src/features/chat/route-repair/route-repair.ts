@@ -118,6 +118,7 @@ export function createRouteRepair(ports: RouteRepairPorts) {
     plugin: 'ignore',
     mcp: 'ignore',
     agent: 'ignore',
+    project: 'ignore',
     'provider.connection': async (change) => {
       if (change.op === 'resync') await repairAll()
       else await repairUser(change.ref.userId)

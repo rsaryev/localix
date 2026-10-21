@@ -29,6 +29,8 @@ export interface CoreReactorDeps {
   providerConditions: Pick<ProviderConditions, 'connectionRemoved' | 'connectionsRemaining'>
   triggerConditions: Pick<TriggerConditions, 'routeStranded'>
   publish(userId: string, resources: RealtimeResource[]): void
+  /** Re-converge the plugin backends (debounced by the host). */
+  refreshPluginBackends(): void
 }
 
 export function createRouteRepairReactor(deps: CoreReactorDeps) {
@@ -91,9 +93,26 @@ export function notificationsCleanupHandlers(
     plugin: 'ignore',
     mcp: 'ignore',
     agent: 'ignore',
+    project: 'ignore',
     'provider.connection': (change) => {
       if (change.op === 'deleted') conditions.connectionRemoved(change.ref.userId, change.ref.id)
     },
+  }
+}
+
+/** A project's scope moved: its plugin backends load from another folder, or not at all. */
+export function pluginBackendHandlers(
+  refresh: () => void,
+): ConsumerHandlers<CoreRefs, CoreCascades> {
+  return {
+    'chat.session': 'ignore',
+    'chat.message': 'ignore',
+    skill: 'ignore',
+    plugin: 'ignore',
+    mcp: 'ignore',
+    agent: 'ignore',
+    project: () => refresh(),
+    'provider.connection': 'ignore',
   }
 }
 
@@ -102,6 +121,10 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   await deps.feed.subscribe('route-repair', repair.handlers, {
     kind: 'reactor',
     reconcile: () => repair.repairAll(),
+  })
+  await deps.feed.subscribe('plugin-backends', pluginBackendHandlers(deps.refreshPluginBackends), {
+    kind: 'reactor',
+    reconcile: () => deps.refreshPluginBackends(),
   })
   await deps.feed.subscribe(
     'notifications-cleanup',
