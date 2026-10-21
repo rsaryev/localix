@@ -26,10 +26,13 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 ## Stage 3: consumers replace writer-driven follow-ups
 
 - [x] Relay from notices to client topics replaces the mutation wrappers in
-      `apps/api/src/bootstrap/resource-sync.ts`.
+      `apps/api/src/bootstrap/resource-sync.ts`: provider connections and capability rules. The
+      wrappers for projects (settings), profile, view state, agents, skills, the vault and system
+      toggles stay until those owners announce every change.
 - [x] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
-- [ ] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule
-      and `resolveLiveCatalogModel` are removed.
+- [x] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule
+      is removed.
+- [ ] `resolveLiveCatalogModel` (UI and `@localixai/agent/catalog`) is replaced by `routeReadiness`.
 
 Stays a command: plan approval, capability apply, stopping runs before a chat is deleted, trigger
 scheduling, terminal lifecycle and the session event stream.
