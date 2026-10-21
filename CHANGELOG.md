@@ -6,6 +6,18 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
+### Added
+
+- **Update dialog**: a newly found version is announced once, with what is new in it, before you
+  restart. Updates are found a few seconds after launch instead of thirty.
+- **Setup dialog**: setup opens over a new chat at launch, with the workspace tips and their
+  controls, until you close it once. Open it again from the command palette with **Set up Localix**.
+
+### Changed
+
+- **Launch** always opens a chat: the one you were in, or a new one. An empty editor group shows the
+  Localix bird instead of the workspace tips.
+
 ### Removed
 
 - Sign-in for Anthropic (Claude Pro/Max), Kimi Coding, Meta, xAI and Radius. A connection signed in

@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { TitlebarOverflowItems } from './TitlebarOverflowItems'
+import { UpdateAnnouncement } from './update-dialog/UpdateAnnouncement'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { CMD, useChordHint } from '@/shared/lib/keybindings'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
@@ -213,6 +214,8 @@ export function BreadcrumbTrailingActions({
         {/* A signed update is ready: offer it right beside the other always-relevant actions
             instead of only in the rail or the composer strip. Hidden otherwise. */}
         <UpdateActionButton />
+        {/* …and announces a newly found version once, in a dialog. */}
+        <UpdateAnnouncement />
       </div>
     </div>
   )

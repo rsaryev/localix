@@ -167,6 +167,13 @@ jobs:
           COMMIT: ${{ needs.prepare.outputs.commit }}
         run: bun scripts/require-green-ci.mjs
 
+      # The version's CHANGELOG section is what the GitHub release and the app's update dialog
+      # say is new. A release without one would announce itself with nothing to read.
+      - name: Require release notes in the changelog
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: bun scripts/assert-release-changelog.mjs
+
       # The private key is exposed only to the official Tauri signer invocation.
       - name: Sign updater probe
         shell: bash
@@ -641,6 +648,7 @@ jobs:
           RELEASE_SIGNATURE_DIR: ${{ github.workspace }}/updater/signatures
           RELEASE_ASSET_LIST: ${{ github.workspace }}/updater/assets.txt
           RELEASE_OUTPUT: ${{ github.workspace }}/updater/latest.json
+          RELEASE_CHANGELOG: ${{ github.workspace }}/CHANGELOG.md
         run: |
           set -euo pipefail
           mkdir -p "$RELEASE_SIGNATURE_DIR"

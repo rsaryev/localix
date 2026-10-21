@@ -26,23 +26,24 @@ content), **Tools** (utilities, Usage & Spend, Vault, and uncategorized plugins)
 or two pinned tools in a group keep their individual buttons; three or more share a category menu.
 Only pinned tools count toward this grouping. A category highlights when one of its views is active.
 
-At launch the workspace reopens the tabs you left. If no chat tab was open, or on a first run, no
-chat opens on its own.
+At launch the workspace reopens the tabs you left, and the selected chat always opens: the one you
+were in, or a new chat.
 
 A window that lands on the home view, including one whose remembered project was deleted, opens the
 default project's newest untouched chat instead of creating another empty one, so several windows
 landing at once share one chat. **New chat** always starts a new conversation.
 
 A first run, with no saved layout, starts calm: the chat sidebar is collapsed, no file, Browser or
-terminal tab is open, and the main column shows one empty group with the workspace tips centered.
-The left rail and top bar stay visible, and the default project is selected. Opening the sidebar or
-a tab works as usual and is remembered, so later launches restore the layout you left.
+terminal tab is open, a new chat fills the main column, and the setup dialog opens over it with the
+workspace tips. Setup opens at launch until you close it once on this device; open it again from the
+command palette with **Set up Localix**. The left rail and top bar stay visible, and the default
+project is selected. Opening the sidebar or a tab works as usual and is remembered, so later
+launches restore the layout you left.
 
-A new chat with no model selected, and any editor group with nothing open, shows a carousel of
-workspace tips in setup order: appearance, the agent island, connecting a model, connecting
-OpenRouter for decision models, approvals and permission modes, project folders, `@` references,
-base keymaps, the command palette, agents in one chat, and handing a whole goal to a team. Each tip
-animates the real surface; seven carry the control itself.
+The setup dialog pages through the workspace tips in setup order: appearance, the agent island,
+connecting a model, connecting OpenRouter for decision models, approvals and permission modes,
+project folders, `@` references, base keymaps, the command palette, agents in one chat, and handing
+a whole goal to a team. Each tip animates the real surface; seven carry the control itself.
 
 The OpenRouter tip opens the model picker on OpenRouter's **Sign in with OpenRouter**, the same
 sign-in the picker uses. With OpenRouter connected, Localix uses small, inexpensive decision models
@@ -51,8 +52,10 @@ exists, the tip shows **Connected**.
 
 The goal tip appears only while an enabled plugin features a command, such as the bundled
 `/workflows`, and shows that command. The agent island tip appears only in the macOS desktop app;
-its switch turns the island on or off at once, like the one in Settings. The carousel never takes
-focus and remembers the last tip you viewed on this device.
+its switch turns the island on or off at once, like the one in Settings. The dialog remembers the
+last tip you viewed on this device, and its last step, **Start chatting**, closes it onto the chat.
+
+An editor group with nothing open, such as one whose chat tab you closed, shows the Localix bird.
 
 Open **All tools** (**…**) to browse the complete catalog and toggle the pin beside each tool. Pin
 changes keep the menu open and persist on this device. Right-click an individual button to unpin or

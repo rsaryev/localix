@@ -19,7 +19,6 @@ import type { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import * as routed from './urlSessionSelection'
 import { useDeadProjectRoute } from './useDeadProjectRoute'
 import { scopedNewConversation } from '@/features/chat/model/conversationStartStrategy'
-import { cancelLaunchChatHold } from '@/widgets/editor-grid/model/launchChatHold'
 
 type Nav = ReturnType<typeof useRoutedNavigation>
 type ChatState = ReturnType<typeof useChatStore.getState>
@@ -154,8 +153,6 @@ export function useUrlStoreSync(opts: UrlStoreSyncOptions): void {
     },
     [],
   )
-  // A prompt deep link is addressed to the chat it lands in, so that chat must open.
-  if (promptDeepLink) cancelLaunchChatHold()
   useEffect(() => {
     if (!hasHydrated || launchSettled.current) return
     // Any URL other than a bare `/`, or an explicit new-chat deep link, is the user's own

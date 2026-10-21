@@ -115,9 +115,11 @@ describe('modal surface regions', () => {
     expect(dialogSource).toContain(
       '<ModalHeaderRegion slot="dialog" className={cn(\'pr-10\', className)}',
     )
-    expect(confirmSource).toContain('<div className={modalBody}>')
-    expect(confirmSource.indexOf('<div className={modalBody}>')).toBeLessThan(
-      confirmSource.indexOf('<ModalFooterRegion slot="alert-dialog"'),
+    expect(confirmSource).toContain(
+      '<div data-slot="alert-dialog-body" className={cn(modalBody, \'text-center\')}>',
+    )
+    expect(confirmSource.indexOf('data-slot="alert-dialog-body"')).toBeLessThan(
+      confirmSource.indexOf('<ModalFooterRegion'),
     )
   })
 

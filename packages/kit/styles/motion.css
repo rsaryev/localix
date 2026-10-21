@@ -301,3 +301,72 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* Modal arrival (`MODAL_ENTER_EXIT` in src/overlays/overlay-motion.ts): every dialog and
+   confirmation rises out of a blur and settles; its regions follow in order. The exit is shorter
+   and only dissolves — leaving should never hold the person up. `transform` is free here: the
+   card is centred with the `translate` property, which these keyframes leave alone. */
+.lx-modal-motion[data-state='open'] {
+  animation: lx-modal-in var(--dur-moderate) var(--ease-soft) both;
+}
+.lx-modal-motion[data-state='closed'] {
+  animation: lx-modal-out var(--dur-fast) var(--ease-exit) both;
+}
+.lx-modal-motion[data-state='open']
+  > :is(
+    [data-slot='dialog-hero'],
+    [data-slot$='-header'],
+    [data-slot$='-body'],
+    [data-slot$='-footer']
+  ) {
+  animation: lx-modal-region-in var(--dur-moderate) var(--ease-soft) both;
+}
+.lx-modal-motion[data-state='open'] > [data-slot$='-header'] {
+  animation-delay: 40ms;
+}
+.lx-modal-motion[data-state='open'] > [data-slot$='-body'] {
+  animation-delay: 80ms;
+}
+.lx-modal-motion[data-state='open'] > [data-slot$='-footer'] {
+  animation-delay: 120ms;
+}
+@keyframes lx-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.97);
+    filter: blur(6px);
+  }
+}
+@keyframes lx-modal-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+    filter: blur(4px);
+  }
+}
+@keyframes lx-modal-region-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+}
+/* Reduced motion keeps only the fade: the dialog still arrives, nothing travels or blurs. */
+@media (prefers-reduced-motion: reduce) {
+  .lx-modal-motion[data-state='open'],
+  .lx-modal-motion[data-state='open'] > * {
+    animation-name: lx-modal-fade-in;
+  }
+  .lx-modal-motion[data-state='closed'] {
+    animation-name: lx-modal-fade-out;
+  }
+}
+@keyframes lx-modal-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes lx-modal-fade-out {
+  to {
+    opacity: 0;
+  }
+}

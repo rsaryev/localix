@@ -39,6 +39,7 @@ import { installBrowserPageWindowTransfers } from '@/widgets/editor-grid/model/b
 import { installBrowserPageOwnership } from '@/widgets/editor-grid/model/browserPageOwnership'
 import { installWorkspaceDragPreviews } from '@/widgets/editor-grid/model/workspaceDragPreviews'
 import { AttentionDialog } from '@/features/chat/ui/attention/AttentionDialog'
+import { SetupAnnouncement } from '@/widgets/workspace-tips/ui/SetupAnnouncement'
 import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
@@ -638,6 +639,8 @@ export function ChatPage() {
           {/* Route-independent: what waits on the person in a chat they are not viewing — a
           request, a plan, a mention — raised one at a time from the shared attention roster. */}
           <AttentionDialog />
+          {/* Setup over the chat the launch opened: on a first run, and from the palette. */}
+          <SetupAnnouncement />
           <ConfirmDialog
             open={confirmKeepAwake}
             variant="default"

@@ -8,6 +8,7 @@ import { navigateBack, navigateForward } from '@/shared/lib/navHistory'
 import { focusPart } from '@/shared/lib/focusRing'
 import { jumpToPrompt } from '@/shared/lib/transcriptNavBus'
 import { cycleThemeMode } from '@/shared/theme/useTheme'
+import { openSetup } from '@/shared/lib/setupDialog'
 import { buildThirdPartyViewCommands } from '@/shared/contrib/thirdPartyViewCommands'
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
 import { setUiCommands, type PaletteCommand } from '@/shared/contrib/uiCommands'
@@ -221,6 +222,14 @@ export function useChatPagePalette({
         effect: 'read',
         keywords: ['preferences', 'config'],
         run: () => inspector.openSettings(),
+      },
+      {
+        id: 'view.setup',
+        label: 'Set up Localix',
+        group: 'View',
+        effect: 'read',
+        keywords: ['setup', 'onboarding', 'welcome', 'tips', 'getting started', 'tour'],
+        run: openSetup,
       },
       {
         id: 'view.stats',

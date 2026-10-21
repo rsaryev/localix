@@ -1,10 +1,13 @@
+import type { ReactNode } from 'react'
 import { AlertDialog } from 'radix-ui'
+import { CircleHelp, TriangleAlert } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { useOverlayFocus } from '@localixai/plugin-sdk/ui/focus'
 import { Button } from '../controls/button'
 import { modalBody, modalDescription, modalShell, modalSurface, modalTitle } from './modal-surface'
+import { DialogHero } from './dialog-hero'
 import { ModalFooterRegion, ModalHeaderRegion } from './modal-regions'
-import { OVERLAY_ENTER_EXIT, SCRIM_ENTER_EXIT } from './overlay-motion'
+import { MODAL_ENTER_EXIT, SCRIM_ENTER_EXIT } from './overlay-motion'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -13,6 +16,12 @@ interface ConfirmDialogProps {
   confirmLabel?: string
   cancelLabel?: string
   variant?: 'destructive' | 'default'
+  /**
+   * The mark the question opens with (a lucide icon). Defaults by `variant`: a warning for a
+   * destructive action, a question otherwise. Name the action when it has an icon of its own —
+   * a bin for a delete, a plug for a disconnect.
+   */
+  icon?: ReactNode
   onConfirm: () => void
   /** Owns the controlled `open` state for every dismissal path, including a decision. */
   onClose: () => void
@@ -25,6 +34,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   variant = 'destructive',
+  icon,
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
@@ -50,20 +60,34 @@ export function ConfirmDialog({
             modalSurface,
             modalShell,
             'fixed left-1/2 top-1/2 z-(--z-modal) max-h-[calc(100dvh-2rem)] w-[min(360px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-control-border p-0',
-            OVERLAY_ENTER_EXIT,
+            MODAL_ENTER_EXIT,
           )}
         >
-          <ModalHeaderRegion slot="alert-dialog">
+          {/* One centred column: the mark, the question, its detail, then the two answers side by
+              side at equal width — a decision reads top to bottom and ends on a choice. */}
+          <ModalHeaderRegion
+            slot="alert-dialog"
+            className="pt-6 pb-1.5 text-center [&>[data-slot=alert-dialog-header-main]]:items-center"
+          >
+            {/* Every confirmation arrives the same way: its mark, in the colour of what it does. */}
+            <DialogHero
+              tone={variant === 'destructive' ? 'danger' : 'accent'}
+              icon={icon ?? (variant === 'destructive' ? <TriangleAlert /> : <CircleHelp />)}
+            />
             <AlertDialog.Title className={modalTitle}>{title}</AlertDialog.Title>
           </ModalHeaderRegion>
           {description && (
-            <div className={modalBody}>
-              <AlertDialog.Description className={modalDescription}>
+            <div data-slot="alert-dialog-body" className={cn(modalBody, 'text-center')}>
+              <AlertDialog.Description className={cn(modalDescription, 'text-balance')}>
                 {description}
               </AlertDialog.Description>
             </div>
           )}
-          <ModalFooterRegion slot="alert-dialog" actionsLabel="Confirmation actions">
+          <ModalFooterRegion
+            slot="alert-dialog"
+            actionsLabel="Confirmation actions"
+            className="border-t-0 pt-1 pb-4 [&>[data-slot=alert-dialog-footer-actions]]:w-full [&>[data-slot=alert-dialog-footer-actions]]:flex-row [&>[data-slot=alert-dialog-footer-actions]>*]:flex-1"
+          >
             <AlertDialog.Cancel asChild>
               <Button variant="outline" className="text-text-soft">
                 {cancelLabel}

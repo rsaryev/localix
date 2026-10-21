@@ -21,6 +21,15 @@ export const OVERLAYS: readonly KitCatalogEntry[] = [
     not: 'Never radix-ui Dialog directly, never a width in className. A yes/no question is ConfirmDialog.',
   },
   {
+    specifier: k('dialog-hero'),
+    category: 'overlays',
+    provider: 'kit',
+    exports: ['DialogHero', 'DialogHeroTone'],
+    summary: 'The animated mark a dialog opens with: icon tile, drawn ring, glow, optional badge.',
+    use: 'The head of a dialog: `sm` before the title, `lg` as the stage of an announcement.',
+    not: 'Not an icon button or a status badge. ConfirmDialog already draws one; pass `icon` to it.',
+  },
+  {
     specifier: k('confirm-dialog'),
     category: 'overlays',
     provider: 'kit',

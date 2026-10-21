@@ -101,10 +101,10 @@ Linux, a left click opens Localix and a right click opens the app menu, without 
 
 ## Turn the island on or off
 
-The island is off by default. Turn it on from the agent island tip in the workspace tips, or open
-**Settings → Preferences → Agent island** and turn on **Show the agent island**; it appears at once.
-Turning it off in either place hides the island, its shortcut and the **Quick Chat** menu-bar item
-on this device until you turn it back on.
+The island is off by default. Turn it on from the agent island tip in setup (command palette → **Set
+up Localix**), or open **Settings → Preferences → Agent island** and turn on **Show the agent
+island**; it appears at once. Turning it off in either place hides the island, its shortcut and the
+**Quick Chat** menu-bar item on this device until you turn it back on.
 
 The top row holds session history, New session and the working folder. History resumes a
 conversation inside the island. Choosing a folder starts a new chat in that project; existing

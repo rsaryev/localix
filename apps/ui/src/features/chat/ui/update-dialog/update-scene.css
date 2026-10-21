@@ -1,0 +1,65 @@
+/* Under the update stage (`DialogHero` lg): the version rolls from the one running now to the new
+   one, like an odometer, as the ring closes. */
+.ud-version {
+  position: relative;
+  display: grid;
+  height: 1.25rem;
+  overflow: hidden;
+  padding: 0 0.625rem;
+  border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.125rem;
+  font-variant-numeric: tabular-nums;
+  animation: ud-rise 500ms var(--ease-soft) 120ms both;
+}
+.ud-version > * {
+  grid-area: 1 / 1;
+  text-align: center;
+}
+.ud-version-from {
+  color: var(--text-faint);
+  animation: ud-roll-out 420ms var(--ease-soft) 950ms forwards;
+}
+.ud-version-to {
+  color: var(--text-strong);
+  translate: 0 100%;
+  opacity: 0;
+  animation: ud-roll-in 480ms var(--ease-emphasized) 1s forwards;
+}
+
+@keyframes ud-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.94);
+    filter: blur(6px);
+  }
+}
+@keyframes ud-roll-out {
+  to {
+    translate: 0 -100%;
+    opacity: 0;
+  }
+}
+@keyframes ud-roll-in {
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+/* Reduced motion shows the new version at once. */
+@media (prefers-reduced-motion: reduce) {
+  .ud-version,
+  .ud-version > * {
+    animation: none !important;
+  }
+  .ud-version-from {
+    opacity: 0;
+  }
+  .ud-version-to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}

@@ -41,14 +41,15 @@ async function stubCommands(commands: unknown[]) {
   } as never)
 }
 
-test('the tips carousel pages by buttons and arrows, ends by starting a chat, and remembers the last tip seen', async () => {
+test('the tips carousel pages by buttons and arrows, ends by handing back to the chat, and remembers the last tip seen', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
   const { WorkspaceTipsCarousel } = await import('./WorkspaceTipsCarousel')
+  const finished: string[] = []
   const view = (
     <MemoryRouter>
-      <WorkspaceTipsCarousel />
+      <WorkspaceTipsCarousel onFinish={() => finished.push('done')} />
     </MemoryRouter>
   )
   const { visibleTips } = await import('./workspaceTips')
@@ -86,14 +87,10 @@ test('the tips carousel pages by buttons and arrows, ends by starting a chat, an
   const segments = host.querySelectorAll<HTMLButtonElement>('.wt-seg')
   await act(async () => segments[segments.length - 1]!.click())
   expect(title()).toBe(WORKSPACE_TIPS.at(-1)!.lead)
-  // The last step ends the tour by starting a chat instead of looping on.
-  const { subscribeChatChrome } = await import('@/shared/lib/chatChromeBus')
-  const chrome: string[] = []
-  const stop = subscribeChatChrome((event) => chrome.push(event))
+  // The last step ends the tour, handing back to the chat, instead of looping on.
   expect(button('Next')).toBeUndefined()
   await act(async () => button('Start chatting').click())
-  expect(chrome).toEqual(['new-chat'])
-  stop()
+  expect(finished).toEqual(['done'])
 
   await act(async () => button('Previous').click())
   await act(async () => button('Previous').click())
@@ -118,7 +115,7 @@ test('the goal slide appears only when a plugin features a command, and names it
   const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
   const view = (
     <MemoryRouter>
-      <WorkspaceTipsCarousel />
+      <WorkspaceTipsCarousel onFinish={() => {}} />
     </MemoryRouter>
   )
   const host = document.createElement('div')
@@ -179,7 +176,7 @@ test('the island slide shows only in the macOS desktop app, and its switch drive
   const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
   const view = (
     <MemoryRouter>
-      <WorkspaceTipsCarousel />
+      <WorkspaceTipsCarousel onFinish={() => {}} />
     </MemoryRouter>
   )
   const calls: [string, unknown][] = []

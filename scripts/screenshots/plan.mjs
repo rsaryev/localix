@@ -268,7 +268,7 @@ export const capturePlan = {
   'workspace/first-run': {
     guide: 'features/workspace.md',
     purpose:
-      'A first launch with no saved layout: panels collapsed and the workspace tips centered',
+      'A first launch with no saved layout: panels collapsed, a new chat open and setup over it',
     scenario: 'first-run',
     firstRun: true,
   },

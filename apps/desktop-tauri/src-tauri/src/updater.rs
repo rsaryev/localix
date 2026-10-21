@@ -87,6 +87,8 @@ pub(crate) struct UpdateStatus {
     available: bool,
     current_version: String,
     latest_version: Option<String>,
+    /// The release notes the feed carries for `latest_version`, when it has any.
+    notes: Option<String>,
 }
 
 /// Check the configured updater endpoint (the release overlay's `plugins.updater`)
@@ -108,12 +110,14 @@ pub(crate) async fn updater_check(app: AppHandle) -> Result<UpdateStatus, String
             // Stash the handle so updater_install can consume it without a second
             // check() (see PendingUpdate). Read the version out first, then move.
             let latest_version = Some(update.version.clone());
+            let notes = update.body.clone().filter(|body| !body.trim().is_empty());
             *app.state::<PendingUpdate>().0.lock().unwrap() = Some(update);
             report_check_success();
             Ok(UpdateStatus {
                 available: true,
                 current_version: current,
                 latest_version,
+                notes,
             })
         }
         Ok(None) => {
@@ -124,6 +128,7 @@ pub(crate) async fn updater_check(app: AppHandle) -> Result<UpdateStatus, String
                 available: false,
                 current_version: current,
                 latest_version: None,
+                notes: None,
             })
         }
         Err(e) => {

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { changelogSection } from './build-release-notes.mjs'
 import { parseReleaseTag } from './resolve-release-ref.mjs'
 
 // `linux-x86_64-deb` exists because a .deb install could otherwise never update. The updater
@@ -64,6 +65,7 @@ export function createUpdaterManifest({
   signatures,
   platforms: requiredPlatforms = EXPECTED_PLATFORMS,
   experimental = [],
+  notes = '',
 }) {
   const parsedTag = parseReleaseTag(tag)
   if (version !== parsedTag.version) {
@@ -122,7 +124,8 @@ export function createUpdaterManifest({
 
   return {
     version,
-    notes: `Localix ${version}`,
+    // What the app's update dialog shows under "What's new": the version's CHANGELOG section.
+    notes: notes.trim() || `Localix ${version}`,
     pub_date: new Date(publishedAt).toISOString(),
     platforms,
   }
@@ -144,6 +147,8 @@ if (import.meta.main) {
         signature: readFileSync(join(signatureDirectory, name), 'utf8'),
       }))
     const assets = readFileSync(assetListPath, 'utf8').split(/\r?\n/).filter(Boolean)
+    const changelogPath = process.env.RELEASE_CHANGELOG
+    const changelog = changelogPath ? readFileSync(changelogPath, 'utf8') : ''
     const manifest = createUpdaterManifest({
       repository: process.env.RELEASE_REPO,
       tag: process.env.RELEASE_TAG,
@@ -155,6 +160,7 @@ if (import.meta.main) {
       experimental: process.env.RELEASE_EXPERIMENTAL_PLATFORMS
         ? parsePlatformList(process.env.RELEASE_EXPERIMENTAL_PLATFORMS)
         : [],
+      notes: changelogSection(changelog, process.env.RELEASE_VERSION ?? ''),
     })
     writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`)
   } catch (error) {

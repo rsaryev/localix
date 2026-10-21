@@ -12,7 +12,12 @@ import {
   type ModalFooterRegionOwnerProps,
   type ModalHeaderRegionOwnerProps,
 } from './modal-regions'
-import { OVERLAY_ENTER_EXIT, OVERLAY_NO_MOTION, SCRIM_ENTER_EXIT } from './overlay-motion'
+import {
+  MODAL_ENTER_EXIT,
+  OVERLAY_ENTER_EXIT,
+  OVERLAY_NO_MOTION,
+  SCRIM_ENTER_EXIT,
+} from './overlay-motion'
 import { X } from 'lucide-react'
 
 /**
@@ -117,7 +122,10 @@ function DialogContent({
           // their internal viewport. `min-h-0` is required for nested flex scroll.
           'fixed top-1/2 left-1/2 z-(--z-modal) max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl p-0 text-xs/relaxed outline-none',
           appearance === 'surface' && 'border border-control-border',
-          appearance === 'surface' && OVERLAY_ENTER_EXIT,
+          // A working dialog arrives like every dialog; an edge-to-edge one (the command palette,
+          // a quick input) answers a keystroke and keeps the quick overlay entrance.
+          appearance === 'surface' &&
+            (layout === 'standard' ? MODAL_ENTER_EXIT : OVERLAY_ENTER_EXIT),
           DIALOG_CONTENT_SIZE[size],
           className,
         )}

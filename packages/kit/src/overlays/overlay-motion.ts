@@ -21,6 +21,15 @@
 export const OVERLAY_ENTER_EXIT =
   'duration-(--dur-instant) data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95'
 
+/**
+ * A modal card arriving: it rises a little out of a blur and settles, and its regions (hero,
+ * header, body, footer) follow in order. Slower than a popover on purpose — a dialog interrupts,
+ * and its arrival is the one moment the person is looking for it. Keyframes and timing live in
+ * `styles/motion.css` (`lx-modal-motion`). Keyboard-summoned surfaces (the command palette, a
+ * pane quick pick) keep `OVERLAY_ENTER_EXIT`: they answer a keystroke and must not lag it.
+ */
+export const MODAL_ENTER_EXIT = 'lx-modal-motion'
+
 /** Fade only — for a scrim, whose job is to dim, not to arrive from somewhere. */
 export const SCRIM_ENTER_EXIT =
   'duration-(--dur-instant) data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0'

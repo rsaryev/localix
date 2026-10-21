@@ -1,0 +1,221 @@
+/* DialogHero (`src/overlays/dialog-hero.tsx`) — the mark every dialog opens with: the tile rises,
+   the ring draws in the tone's colour, the glow settles, the badge lands, the halo breathes. */
+.lx-dialog-hero {
+  --hero-tone: var(--primary);
+  --hero-tone-ink: var(--primary-foreground);
+  --hero-line: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --hero-mark: 3.5rem;
+  --hero-tile: 2.375rem;
+  --hero-draw: 700ms;
+  --hero-draw-delay: 150ms;
+  position: relative;
+  pointer-events: none;
+  user-select: none;
+}
+.lx-dialog-hero[data-tone='danger'] {
+  --hero-tone: var(--destructive);
+  --hero-tone-ink: var(--destructive-foreground);
+}
+.lx-dialog-hero[data-tone='neutral'] {
+  --hero-tone: var(--text-soft);
+  --hero-tone-ink: var(--background);
+}
+
+/* sm: the head of a dialog's header, above the title; the header decides where it sits. */
+.lx-dialog-hero[data-size='sm'] {
+  display: flex;
+  width: var(--hero-mark);
+  height: var(--hero-mark);
+  margin-bottom: 0.625rem;
+}
+/* lg: a stage above the header that dissolves into the dialog. */
+.lx-dialog-hero[data-size='lg'] {
+  --hero-mark: 5.5rem;
+  --hero-tile: 3.75rem;
+  --hero-draw: 1100ms;
+  --hero-draw-delay: 300ms;
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  height: 11rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black 72%, transparent);
+  contain: layout paint;
+}
+/* A short window keeps its height for the dialog's content: the stage is decoration. */
+@media (max-height: 34rem) {
+  .lx-dialog-hero[data-size='lg'] {
+    display: none;
+  }
+}
+
+.lx-hero-glow {
+  position: absolute;
+  inset: -45%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--hero-tone) 20%, transparent),
+    transparent
+  );
+  animation: lx-hero-fade 900ms var(--ease-soft) both;
+}
+.lx-dialog-hero[data-size='lg'] .lx-hero-glow {
+  inset: -30% 10% 10%;
+}
+
+.lx-hero-spark {
+  position: absolute;
+  bottom: 0;
+  left: var(--x);
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--hero-tone);
+  opacity: 0;
+  animation: lx-hero-spark var(--t) var(--ease-soft) var(--d) infinite;
+}
+
+.lx-hero-mark {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: var(--hero-mark);
+  height: var(--hero-mark);
+}
+.lx-hero-tile {
+  display: grid;
+  place-items: center;
+  width: var(--hero-tile);
+  height: var(--hero-tile);
+  border: 1px solid var(--hero-line);
+  border-radius: calc(var(--hero-tile) * 0.27);
+  background: var(--card);
+  color: var(--hero-tone);
+  box-shadow: 0 14px 28px -16px color-mix(in oklab, black 60%, transparent);
+  animation: lx-hero-rise 520ms var(--ease-soft) both;
+}
+.lx-dialog-hero[data-tone='accent'] .lx-hero-tile {
+  color: var(--foreground);
+}
+.lx-hero-tile > svg {
+  width: 45%;
+  height: 45%;
+}
+
+.lx-hero-ring {
+  position: absolute;
+  inset: 0;
+  rotate: -90deg;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.lx-hero-ring-track {
+  stroke: var(--hero-line);
+  animation: lx-hero-fade 400ms var(--ease-soft) 100ms both;
+}
+.lx-hero-ring-fill {
+  stroke: var(--hero-tone);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: lx-hero-draw var(--hero-draw) var(--ease-emphasized) var(--hero-draw-delay) forwards;
+}
+
+/* After the ring closes, a ring of light breathes outward: for good on a stage, twice in a header. */
+.lx-hero-halo {
+  position: absolute;
+  inset: 0.25rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--hero-tone) 55%, transparent);
+  opacity: 0;
+  animation: lx-hero-halo 3.2s var(--ease-soft) calc(var(--hero-draw) + var(--hero-draw-delay)) 2;
+}
+.lx-dialog-hero[data-size='lg'] .lx-hero-halo {
+  animation-iteration-count: infinite;
+}
+
+.lx-hero-badge {
+  position: absolute;
+  right: 12%;
+  bottom: 12%;
+  display: grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 2px solid var(--background);
+  border-radius: 999px;
+  background: var(--hero-tone);
+  color: var(--hero-tone-ink);
+  animation: lx-hero-pop 520ms var(--ease-emphasized)
+    calc(var(--hero-draw) + var(--hero-draw-delay) - 150ms) both;
+}
+.lx-hero-badge > svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+@keyframes lx-hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes lx-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.92);
+    filter: blur(5px);
+  }
+}
+@keyframes lx-hero-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes lx-hero-halo {
+  0% {
+    opacity: 0.9;
+    scale: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+    scale: 1.45;
+  }
+}
+@keyframes lx-hero-pop {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+@keyframes lx-hero-spark {
+  0% {
+    opacity: 0;
+    translate: 0 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -9rem;
+  }
+}
+
+/* Reduced motion draws the finished mark: the closed ring, the tile, the badge, no halo or sparks. */
+@media (prefers-reduced-motion: reduce) {
+  .lx-dialog-hero * {
+    animation: none !important;
+  }
+  .lx-hero-ring-fill {
+    stroke-dashoffset: 0;
+  }
+  .lx-hero-halo,
+  .lx-hero-spark {
+    opacity: 0;
+  }
+}

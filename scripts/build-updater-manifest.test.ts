@@ -73,6 +73,20 @@ describe('updater manifest', () => {
     expect(manifest.platforms['windows-x86_64'].url).toEndWith('/Localix%201.2.3_x64-setup.exe')
   })
 
+  test('carries the version’s changelog section as the notes the update dialog shows', () => {
+    const manifest = createUpdaterManifest({
+      repository: 'rsaryev/localix',
+      tag: 'v1.2.3',
+      version: '1.2.3',
+      publishedAt: '2026-07-24T01:02:03Z',
+      assets,
+      signatures,
+      notes: '\n### Added\n\n- A dialog announces each new version.\n',
+    })
+
+    expect(manifest.notes).toBe('### Added\n\n- A dialog announces each new version.')
+  })
+
   test('gives a .deb install its own package instead of the AppImage fallback', () => {
     // The updater resolves `linux-x86_64-deb` before `linux-x86_64` for a deb install and its
     // installer rejects a payload that is not a Debian package, so the AppImage URL under the

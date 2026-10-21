@@ -148,12 +148,16 @@ can write to the release. The `legs` input can select only the platforms that ne
 
 To cut a release:
 
-1. Wait for `Checks` to pass on the `main` commit being released.
-2. Tag that commit with the next semantic version and push the tag:
+1. Write the version's `CHANGELOG.md` section as described under Releases in
+   [AGENTS.md](https://github.com/rsaryev/localix/blob/main/AGENTS.md#releases) and commit it to
+   `main`. It is the release's Highlights and the "What's new" of the app's update dialog; the
+   workflow refuses a version without one.
+2. Wait for `Checks` to pass on the `main` commit being released.
+3. Tag that commit with the next semantic version and push the tag:
    `git tag v0.1.0-beta.6 && git push origin v0.1.0-beta.6`.
-3. Start the release from `main`: `gh workflow run release.yml --ref main -f tag=v0.1.0-beta.6`.
-4. Approve the `release` environment deployment when GitHub asks.
-5. If one platform leg fails, rerun only that leg with `-f legs=<leg>`; the draft keeps the assets
+4. Start the release from `main`: `gh workflow run release.yml --ref main -f tag=v0.1.0-beta.6`.
+5. Approve the `release` environment deployment when GitHub asks.
+6. If one platform leg fails, rerun only that leg with `-f legs=<leg>`; the draft keeps the assets
    that the other legs already uploaded.
 
 Publication generates `latest.json`, `SHA256SUMS.txt` from the digests GitHub records for each

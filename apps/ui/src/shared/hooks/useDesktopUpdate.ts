@@ -19,6 +19,8 @@ export interface DesktopUpdateState {
   latestVersion: string | null
   /** The version running now, as the shell reports it. */
   currentVersion: string
+  /** Release notes for `latestVersion`, when the feed carries them. */
+  notes: string | null
   /**
    * An install is in flight (download, signature check, relaunch). Kept HERE and not in the
    * component that started it: that component can unmount mid-download (a different session's
@@ -38,8 +40,11 @@ declare global {
   }
 }
 
-/** Delay the first update request past startup, then check once per hour. */
-const FIRST_CHECK_DELAY_MS = 30 * 1000
+/**
+ * Ask a few seconds after launch, then once per hour. The check is one small request answered by
+ * the shell off the page's thread; the delay only keeps it out of the first paint.
+ */
+const FIRST_CHECK_DELAY_MS = 3 * 1000
 const POLL_MS = 60 * 60 * 1000
 
 /** Shape returned by the Tauri `updater_check` Rust command. */
@@ -47,9 +52,17 @@ interface TauriUpdateStatus {
   available: boolean
   currentVersion: string
   latestVersion: string | null
+  notes?: string | null
 }
 
 const availableMessage = (version: string | null) => `Update ${version} available`
+
+/** The feed's notes, or null when it has none: before releases carried their changelog section,
+ *  every manifest said only `Localix <version>`, which is no news. */
+function releaseNotes(s: TauriUpdateStatus): string | null {
+  const notes = s.notes?.trim()
+  return notes && notes !== `Localix ${s.latestVersion}` ? notes : null
+}
 
 function fromTauri(s: TauriUpdateStatus): DesktopUpdateState {
   return {
@@ -59,6 +72,7 @@ function fromTauri(s: TauriUpdateStatus): DesktopUpdateState {
     message: s.available ? availableMessage(s.latestVersion) : 'No newer version found',
     latestVersion: s.latestVersion,
     currentVersion: s.currentVersion,
+    notes: releaseNotes(s),
     installing: false,
   }
 }
@@ -214,8 +228,8 @@ export function useDesktopUpdate({ poll = true }: { poll?: boolean } = {}): Desk
 
   useEffect(() => {
     if (!poll || !hasDesktopUpdater()) return
-    // Nothing about an update is urgent at second zero, and the launch window is
-    // the one the user judges the app by — so the first check waits for it. A failed
+    // Nothing about an update is urgent at second zero, and the first paint is the
+    // one the user judges the app by — so the first check waits a moment. A failed
     // background check stays quiet: only a check the person asked for reports its error.
     let interval: number | undefined
     const first = window.setTimeout(() => {

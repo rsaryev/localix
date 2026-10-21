@@ -26,7 +26,7 @@
     "type-check": "bunx turbo type-check --concurrency=${TURBO_CONCURRENCY:-50%}",
     "check:compression": "bun apps/api/scripts/check-compression.ts",
     "check:ui-startup": "bun run --cwd apps/ui check:startup",
-    "check:release": "bun test scripts/ci-workflow.test.ts scripts/resolve-release-ref.test.ts scripts/build-updater-manifest.test.ts scripts/build-release-notes.test.ts scripts/verify-release-target.test.ts scripts/release-contract.test.ts scripts/build-stamp.test.ts scripts/stamp-version.test.ts scripts/assert-newest-release.test.ts scripts/require-green-ci.test.ts scripts/verify-updater-signature.test.ts",
+    "check:release": "bun test scripts/ci-workflow.test.ts scripts/resolve-release-ref.test.ts scripts/build-updater-manifest.test.ts scripts/build-release-notes.test.ts scripts/verify-release-target.test.ts scripts/release-contract.test.ts scripts/build-stamp.test.ts scripts/stamp-version.test.ts scripts/assert-newest-release.test.ts scripts/require-green-ci.test.ts scripts/verify-updater-signature.test.ts scripts/assert-release-changelog.test.ts",
     "check:tests": "bunx turbo type-check:tests --concurrency=${TURBO_CONCURRENCY:-50%}",
     "check:rust": "bunx turbo tauri:check",
     "check:bundle": "bun apps/desktop-tauri/scripts/prepare-sidecar.mjs && bun apps/desktop-tauri/scripts/smoke-bundle.mjs",

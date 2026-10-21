@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
-import { requestNewChat } from '@/shared/lib/chatChromeBus'
 import { useFeaturedCommand } from '@/shared/contrib/useFeaturedCommand'
 import { useIslandEnabled } from '@/shared/lib/islandSetting'
 // Shared scene styles first: each scene's own stylesheet overrides `.wt-pane` after it.
@@ -35,8 +34,8 @@ function loopMs(stage: HTMLElement | null): number {
 }
 
 /**
- * What an editor group with nothing open shows. It only fills the space: nothing here
- * takes focus or changes the workspace unless a control in it is used.
+ * The setup tour, shown in the setup dialog (`SetupDialog`). Nothing here changes the workspace
+ * unless a control in it is used; the last step hands back to the chat with `onFinish`.
  *
  * One column, one width: the scene, the sentence, the slide's control and the pager all
  * share the same edges, so nothing narrows as the eye moves down.
@@ -45,7 +44,7 @@ function loopMs(stage: HTMLElement | null): number {
  * crossfades content in place and nothing shifts. A scene plays one pass when it arrives
  * and keeps looping only while the pointer is on the carousel.
  */
-export function WorkspaceTipsCarousel() {
+export function WorkspaceTipsCarousel({ onFinish }: { onFinish: () => void }) {
   const featuredCommand = useFeaturedCommand() !== null
   // Null outside the macOS desktop app, and until the shell reports the switch.
   const island = useIslandEnabled() !== null
@@ -92,7 +91,7 @@ export function WorkspaceTipsCarousel() {
 
   return (
     <div
-      className="wt-root flex h-full w-full items-center justify-center overflow-y-auto px-8 py-10"
+      className="wt-root flex w-full justify-center"
       onPointerEnter={() => setEngaged(true)}
       onPointerLeave={() => setEngaged(false)}
     >
@@ -171,10 +170,10 @@ export function WorkspaceTipsCarousel() {
               />
             ))}
           </div>
-          {/* The tour ends where the work starts: the last step opens a chat (the warm
-              draft when there is one, as New chat does) instead of looping back. */}
+          {/* The tour ends where the work starts: the last step closes setup onto the chat the
+              launch opened, instead of looping back. */}
           {isLast ? (
-            <Button variant="mono" size="lg" className="justify-self-end" onClick={requestNewChat}>
+            <Button variant="mono" size="lg" className="justify-self-end" onClick={onFinish}>
               Start chatting
               <ArrowRight data-icon="inline-end" aria-hidden />
             </Button>

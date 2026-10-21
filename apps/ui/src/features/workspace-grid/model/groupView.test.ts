@@ -7,7 +7,6 @@ import {
   focusedVisibleTabId,
   openFilePaths,
   leafHasVisibleTab,
-  isScopeEmpty,
 } from './groupView'
 import { makeLeaf, insertSplit, leafIds } from './tree'
 import type { WorkItem } from './workItem'
@@ -110,27 +109,13 @@ describe('groupViewModel', () => {
   })
 })
 
-describe('leafHasVisibleTab / isScopeEmpty (shared visibility predicate)', () => {
+describe('leafHasVisibleTab (shared visibility predicate)', () => {
   test('leafHasVisibleTab: own-scope and GLOBAL tabs count, other sessions do not', () => {
     const reg = items(item('a', 'A'), item('b', 'B'), item('g', '@global'))
     expect(leafHasVisibleTab(makeLeaf('g1', ['a']), reg, 'A')).toBe(true) // own session
     expect(leafHasVisibleTab(makeLeaf('g1', ['g']), reg, 'A')).toBe(true) // global
     expect(leafHasVisibleTab(makeLeaf('g1', ['b']), reg, 'A')).toBe(false) // other session
     expect(leafHasVisibleTab(makeLeaf('g1', []), reg, 'A')).toBe(false) // empty
-  })
-
-  test('isScopeEmpty: true only when NO group shows a tab in the scope', () => {
-    const root = insertSplit(
-      makeLeaf('g1', ['a'], 'a'),
-      'g1',
-      'down',
-      makeLeaf('g2', ['b'], 'b'),
-      [0.5, 0.5],
-    )
-    const reg = items(item('a', 'A'), item('b', 'B'))
-    expect(isScopeEmpty(root, reg, 'A')).toBe(false) // g1 shows A's tab
-    expect(isScopeEmpty(root, reg, 'B')).toBe(false) // g2 shows B's tab
-    expect(isScopeEmpty(root, reg, 'Z')).toBe(true) // neither session is Z
   })
 })
 

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  MODAL_ENTER_EXIT,
   OVERLAY_ENTER_EXIT,
   OVERLAY_NO_MOTION,
   OVERLAY_SLIDE,
@@ -55,6 +56,18 @@ describe('overlay motion', () => {
     expect(TOOLTIP_ENTER_EXIT).not.toContain('data-open:')
     expect(OVERLAY_SLIDE.near).toContain('slide-in-from-top-1')
     expect(OVERLAY_SLIDE.far).toContain('slide-in-from-top-2')
+  })
+
+  test('every dialog and confirmation arrives the modal way; keyboard-summoned ones stay quick', () => {
+    expect(read('confirm-dialog.tsx')).toContain('MODAL_ENTER_EXIT,')
+    expect(read('confirm-dialog.tsx')).not.toContain('OVERLAY_ENTER_EXIT')
+    expect(read('dialog.tsx')).toContain(
+      "(layout === 'standard' ? MODAL_ENTER_EXIT : OVERLAY_ENTER_EXIT)",
+    )
+    const motion = readFileSync(resolve(import.meta.dir, '../../styles/motion.css'), 'utf8')
+    expect(motion).toContain(`.${MODAL_ENTER_EXIT}[data-state='open']`)
+    expect(motion).toContain(`.${MODAL_ENTER_EXIT}[data-state='closed']`)
+    expect(motion).toContain('prefers-reduced-motion')
   })
 
   test('media backdrops retain their explicit open and closed animation opt-out', () => {

@@ -36,7 +36,6 @@ export {
   adjacentGroupId,
   focusedFilePath,
   focusedVisibleTabId,
-  isScopeEmpty,
 } from './groupView'
 export { scopeKindOf } from './capabilities'
 export { roleForKind } from './placement'

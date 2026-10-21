@@ -63,7 +63,25 @@ Never commit secrets, `.env`, `.localix/`, generated output, private data, or lo
 Use `check:public` for suspicious files. Add migrations without editing existing ones. Document
 `vendor/` synchronizations. Report vulnerabilities via `SECURITY.md`.
 
-## Live session checks
+## Releases
+
+Before tagging, write what is new. The version's `CHANGELOG.md` section becomes the GitHub release's
+Highlights and the "What's new" of the app's update dialog, and the release workflow stops a version
+without one (`scripts/assert-release-changelog.mjs`). Then follow the steps in
+[docs/internals/contributing.md](docs/internals/contributing.md#workflows-and-releases).
+
+1. Collect: `git log <last-tag>..origin/main` with bodies, plus the entries under `## Unreleased`.
+   Read the diff where a subject does not say what a person would notice.
+2. Write `## v<version> — <YYYY-MM-DD>` above the previous version; move the `Unreleased` entries
+   into it and leave `## Unreleased` empty.
+3. Open with one or two sentences on what the release is about. Then `### Added`, `### Changed`,
+   `### Fixed`, `### Removed`, only the groups that have entries, most important entry first.
+4. Write for the person using the app: what they can now do or will notice, and where (Settings → …,
+   a command, a panel). Start an entry with the feature in bold. Merge commits that make one change
+   into one entry. Leave out refactors, tests, CI, internal docs and dependency bumps that change
+   nothing visible. No commit hashes, file paths or internal module names. Check each claim against
+   the code.
+5. Aim for at most about twelve entries; commit the section as `docs(changelog): v<version>`.
 
 For changes to how a run is assembled or routed (run policy axes in
 `apps/api/src/features/chat/policy`, prompt sections in `agent-core/prompt`, tool gating,

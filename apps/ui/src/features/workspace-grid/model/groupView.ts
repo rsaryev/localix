@@ -27,17 +27,6 @@ export function leafHasVisibleTab(
   return leaf.tabs.some((id) => isVisibleInScope(items[id]?.scope, scope))
 }
 
-/** Is the WHOLE workspace empty of tabs visible in `scope`? (No group shows
- *  anything → the chat greeting renders as the landing rather than a stray
- *  "Empty group".) */
-export function isScopeEmpty(
-  root: GridNode,
-  items: Record<string, WorkItem>,
-  scope: ScopeId,
-): boolean {
-  return leaves(root).every((l) => !leafHasVisibleTab(l, items, scope))
-}
-
 export interface GroupViewModel {
   /** Tabs shown in the strip: this scope's session tabs + GLOBAL tabs, in order. */
   visibleTabs: string[]

@@ -22,6 +22,7 @@ const available: DesktopUpdateState = {
   message: 'Update 0.2.0 available',
   latestVersion: '0.2.0',
   currentVersion: '0.1.0',
+  notes: null,
   installing: false,
 }
 

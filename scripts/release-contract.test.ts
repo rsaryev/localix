@@ -195,6 +195,16 @@ describe('release workflow contract', () => {
     expect(notes).toContain('docs/getting-started/installation.md')
   })
 
+  test('announces each version with its changelog section, and refuses one without', () => {
+    const verifyJob = release.slice(
+      release.indexOf('  verify:'),
+      release.indexOf('  draft-release:'),
+    )
+    expect(verifyJob).toContain('bun scripts/assert-release-changelog.mjs')
+    const manifestStep = release.slice(release.indexOf('- name: Generate updater latest.json'))
+    expect(manifestStep.slice(0, manifestStep.indexOf('run:'))).toContain('RELEASE_CHANGELOG:')
+  })
+
   test('rechecks mirrored tag provenance immediately before manifest generation and publish', () => {
     const publishStart = release.indexOf('  publish-desktop:')
     const publishJob = release.slice(publishStart)

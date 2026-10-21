@@ -19,9 +19,7 @@ import { revealInTree } from '@/shared/lib/explorerBus'
 import {
   useGridStore,
   isEphemeralItem,
-  isScopeEmpty,
   groupViewModel,
-  GLOBAL_SCOPE,
   activeWorkItemContribution,
   useWorkItemKindContributions,
   type LeafNode,
@@ -54,7 +52,6 @@ function tabVisual(item: WorkItem | undefined, id: string) {
   }
 }
 import { newTabActionFor, restartTabActionFor } from './tabActions'
-import { EmptyGroup } from './EmptyGroup'
 import { GroupActions } from './GroupActions'
 import { TabOverflowMenu } from './TabOverflowMenu'
 
@@ -104,14 +101,6 @@ export const GroupView = memo(function GroupView({
   // to exactly these kinds, or a plugin that registers after first paint keeps a generic icon.
   useWorkItemKindContributions(visibleTabs.flatMap((id) => (items[id] ? [items[id].kind] : [])))
 
-  // The chat greeting is the LANDING for a truly empty workspace; a secondary
-  // empty group (split / cleared while others hold tabs) gets a neutral
-  // placeholder so it never reads as a duplicate chat home screen. Emptiness is
-  // judged on what's VISIBLE in this scope, not hidden tabs of other sessions.
-  const workspaceEmpty = useGridStore((s) => isScopeEmpty(s.root, s.items, s.activeScope))
-  // Closing the active session's chat is an explicit layout action. Keep its session
-  // active but leave the editor group empty — never silently replace it with a new chat.
-  const sessionChatClosed = activeScope !== GLOBAL_SCOPE && !items[`chat:${activeScope}`]
   // A chat tab closes like every other workspace tab. The session is preserved in history and
   // can be deliberately reopened later; close must not create or navigate to a fresh chat.
   const closeOne = useCallback(
@@ -322,12 +311,10 @@ export const GroupView = memo(function GroupView({
               />
             </TabPanel>
           ))
-        ) : !sessionChatClosed && workspaceEmpty ? (
-          // The empty workspace belongs to no chat: its greeting must not route anything to the
-          // chat on screen.
-          <EmptyState />
         ) : (
-          <EmptyGroup />
+          // Nothing open in this group: a split left empty, or a chat tab closed on purpose (the
+          // session stays in history). It belongs to no chat, so it routes nothing to one.
+          <EmptyState />
         )}
       </div>
     </section>
