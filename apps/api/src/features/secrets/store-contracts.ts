@@ -91,4 +91,6 @@ export interface SecretsStore {
   resolve(userId: string, key: string, use?: VaultUseContext): Promise<string | null>
   listBindings(userId: string, key: string): Promise<VaultBinding[]>
   bind(userId: string, key: string, binding: VaultBinding): Promise<boolean>
+  /** A consumer is gone (a removed plugin): forget every binding it held. Returns the count. */
+  unbindConsumer(userId: string, consumerType: string, consumerId: string): Promise<number>
 }

@@ -4,6 +4,7 @@ import { sql, type Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import type { CapabilityKind } from './resolve'
+import { announceSourceRemoved } from './removal-notice'
 
 /**
  * The `capability_source` rows of ONE kind, read and written.
@@ -196,13 +197,20 @@ export function createCapabilitySourceRepository(
     },
 
     async remove(userId, projectId, name) {
-      await db
-        .deleteFrom('capability_source')
-        .where('kind', '=', kind)
-        .where('user_id', '=', userId)
-        .where('project_id', '=', projectId)
-        .where('name', '=', name)
-        .execute()
+      const remove = async (trx: Kysely<AppDatabase>) => {
+        const rows = await trx
+          .deleteFrom('capability_source')
+          .where('kind', '=', kind)
+          .where('user_id', '=', userId)
+          .where('project_id', '=', projectId)
+          .where('name', '=', name)
+          .returning(['id', 'name', 'project_id'])
+          .execute()
+        // An agent's removal is announced by the agents service, which knows its handle.
+        if (kind === 'plugin' || kind === 'mcp')
+          for (const row of rows) await announceSourceRemoved(trx, kind, row)
+      }
+      await (db.isTransaction ? remove(db) : db.transaction().execute(remove))
     },
   }
   return repo

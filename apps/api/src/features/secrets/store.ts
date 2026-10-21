@@ -148,6 +148,16 @@ export function createSecretsStore(options: {
       return true
     },
 
+    async unbindConsumer(userId, consumerType, consumerId) {
+      const result = await db
+        .deleteFrom('vault_item_bindings')
+        .where('user_id', '=', userId)
+        .where('consumer_type', '=', consumerType)
+        .where('consumer_id', '=', consumerId)
+        .executeTakeFirst()
+      return Number(result.numDeletedRows)
+    },
+
     async remove(userId, key, options = {}) {
       return db.transaction().execute(async (tx) => {
         const item = await metadataFor(tx, userId, key)

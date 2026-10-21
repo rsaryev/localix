@@ -11,6 +11,9 @@ import type { CoreCascades, CoreChangeFeed, CoreRefs } from '../features/changes
 import { createAgentSeats } from '../features/chat/agent-seats/agent-seats'
 import { createAgentSeatsRepository } from '../features/chat/agent-seats/seats-repository'
 import type { AgentsService } from '../features/agents/service'
+import { createCapabilityCleanup } from '../features/capabilities/cleanup'
+import { mcpOAuthStore } from '../features/mcp/oauth/runtime'
+import type { SecretsStore } from '../features/secrets/store-contracts'
 import { createRouteRepair } from '../features/chat/route-repair/route-repair'
 import { createRouteSeatsRepository } from '../features/chat/route-repair/seats-repository'
 import type { ProviderConditions } from '../features/notifications/conditions/providers'
@@ -30,6 +33,7 @@ export interface CoreReactorDeps {
   projectsService: Pick<ReturnType<typeof createProjectsService>, 'listProjects' | 'updateProject'>
   userService: Pick<UserService, 'getProfile' | 'updateProfile'>
   agentsService: Pick<AgentsService, 'listAgents'>
+  secretsStore: Pick<SecretsStore, 'unbindConsumer'>
   providerConditions: Pick<ProviderConditions, 'connectionRemoved' | 'connectionsRemaining'>
   triggerConditions: Pick<TriggerConditions, 'routeStranded'>
   publish(userId: string, resources: RealtimeResource[]): void
@@ -152,6 +156,13 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     kind: 'reactor',
     reconcile: () => agentSeats.reconcile(),
   })
+  const cleanup = createCapabilityCleanup({
+    db: deps.db,
+    userId: deps.defaultUserId,
+    clearMcpSignIn: (userId, serverId) => mcpOAuthStore.clear(userId, serverId),
+    unbindVaultConsumer: (...args) => deps.secretsStore.unbindConsumer(...args),
+  })
+  await deps.feed.subscribe('capability-cleanup', cleanup.handlers, { kind: 'reactor' })
   await deps.feed.subscribe('plugin-backends', pluginBackendHandlers(deps.refreshPluginBackends), {
     kind: 'reactor',
     reconcile: () => deps.refreshPluginBackends(),

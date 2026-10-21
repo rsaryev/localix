@@ -321,6 +321,7 @@ export async function bootstrap(
         projectsService,
         userService,
         agentsService,
+        secretsStore,
         providerConditions: infra.providerConditions,
         triggerConditions,
         refreshPluginBackends: () => backendHost.refresh(),
