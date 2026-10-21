@@ -392,6 +392,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       // Signing in again is the fix for a connection whose refresh stopped working.
       const signedIn = { userId: input.userId, connectionId, label: input.providerName, ok: true }
       deps.onCredentialRefresh?.(signedIn)
+      await repo.announceUpserted(input.userId, connectionId)
     } catch (error) {
       await Promise.allSettled([
         vault.delete(input.userId, vaultKey(key.id)),
@@ -451,6 +452,8 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       priority += 1
     }
 
+    // Announced once its keys can be read: a consumer re-reads the connection usable.
+    await repo.announceUpserted(userId, id)
     return loadDto(userId, id)
   }
 
@@ -542,6 +545,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       // A key added later reaches the same region, resource or project as the others.
       const settings = await settingsOfKeys(userId, existing.keys)
       await writeCredential(userId, key.id, apiKeyCredential(input.apiKey, settings))
+      await repo.announceUpserted(userId, id)
       return loadDto(userId, id)
     },
 
@@ -567,6 +571,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       }
 
       await repo.updateKey(userId, id, keyId, { ...patch, updatedAt: now() })
+      if (patch.enabled === true) await repo.announceUpserted(userId, id)
       return loadDto(userId, id)
     },
 

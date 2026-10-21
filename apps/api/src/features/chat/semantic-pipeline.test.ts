@@ -127,6 +127,7 @@ describe('semantic pipeline over chat', () => {
           plugin: 'ignore',
           mcp: 'ignore',
           agent: 'ignore',
+          'provider.connection': 'ignore',
         },
         {
           changed: (collection, keys) => store.enqueue(collection, keys),

@@ -61,6 +61,8 @@ export interface InfraPhase {
   env: ReturnType<typeof loadEnv>
   logger: ReturnType<typeof createLogger>
   db: ReturnType<typeof createDatabase>
+  /** The connection conditions: one instance, shared by the run producers and the reactors. */
+  providerConditions: ReturnType<typeof createProviderConditions>
   /** The provider adapter, chosen ONCE here; everything below is typed by its ports. */
   engine: AgentEngine
   agentRuntime: AgentRuntime
@@ -270,6 +272,7 @@ export async function createInfraPhase(
     env,
     logger,
     db,
+    providerConditions,
     engine,
     localModels,
     changes,

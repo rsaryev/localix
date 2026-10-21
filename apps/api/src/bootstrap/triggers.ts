@@ -106,5 +106,5 @@ export async function wireTriggers(input: TriggersWiringInput) {
     new Date().toISOString(),
     { warn: (msg) => logger.warn({ event: 'work.lost_item', msg }) },
   )
-  return { triggerEngine, loops }
+  return { triggerEngine, loops, triggerConditions }
 }

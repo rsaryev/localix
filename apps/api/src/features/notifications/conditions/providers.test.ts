@@ -170,3 +170,17 @@ describe('a connection whose account sign-in is gone', () => {
     expect((await openRows(test)).map((row) => row.title)).toEqual(['Anthropic needs an API key'])
   })
 })
+
+describe('a deleted provider connection', () => {
+  it('settles its rows, by notice and by the reconcile sweep', async () => {
+    const { test } = await setup()
+    const conditions = createProviderConditions(test.journal)
+    const failed = { userId: U, label: 'x', ok: false, error: 'invalid_grant' }
+    conditions.credentialRefreshed({ ...failed, connectionId: 'C1' })
+    conditions.credentialRefreshed({ ...failed, connectionId: 'C2' })
+    conditions.credentialRefreshed({ ...failed, connectionId: 'C3' })
+    conditions.connectionRemoved(U, 'C1')
+    await conditions.connectionsRemaining(U, new Set(['C3']))
+    expect((await openRows(test)).length).toBe(1)
+  })
+})

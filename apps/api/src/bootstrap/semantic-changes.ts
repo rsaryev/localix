@@ -26,6 +26,7 @@ export function coreSemanticTargets(db: Kysely<AppDatabase>) {
     plugin: pluginsSemanticTarget,
     mcp: mcpSemanticTarget,
     agent: agentsSemanticTarget,
+    'provider.connection': 'ignore',
   } satisfies SemanticTargets<CoreRefs>
 }
 

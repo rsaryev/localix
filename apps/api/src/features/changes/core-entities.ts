@@ -28,6 +28,8 @@ export const CORE_REFS = {
   plugin: z.object({ id: z.string(), scope }),
   mcp: z.object({ id: z.string(), scope }),
   agent: z.object({ id: z.string(), scope }),
+  // A provider account: created, signed in, a key enabled, or deleted.
+  'provider.connection': z.object({ id: z.string(), userId: z.string(), providerId: z.string() }),
 }
 
 export const CORE_CASCADES = {

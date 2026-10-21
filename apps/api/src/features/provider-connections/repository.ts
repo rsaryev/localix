@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase, KeyAuthType } from '../../db'
+import { recordCoreChanges } from '../changes/core-entities'
 
 export interface ProviderConnectionKeyRecord {
   id: string
@@ -187,12 +188,32 @@ export function createProviderConnectionsRepository(db: Kysely<AppDatabase>) {
         .execute()
     },
 
+    /** Delete the connection and announce it in the same transaction. */
     async delete(userId: string, id: string): Promise<void> {
-      await db
-        .deleteFrom('provider_connections')
+      await db.transaction().execute(async (trx) => {
+        const row = await trx
+          .deleteFrom('provider_connections')
+          .where('user_id', '=', userId)
+          .where('id', '=', id)
+          .returning('provider_id')
+          .executeTakeFirst()
+        if (!row) return
+        const ref = { id, userId, providerId: row.provider_id }
+        await recordCoreChanges(trx, { entity: 'provider.connection', op: 'deleted', ref })
+      })
+    },
+
+    /** Announce that the connection can serve differently now: created, signed in, key enabled. */
+    async announceUpserted(userId: string, id: string): Promise<void> {
+      const row = await db
+        .selectFrom('provider_connections')
+        .select('provider_id')
         .where('user_id', '=', userId)
         .where('id', '=', id)
-        .execute()
+        .executeTakeFirst()
+      if (!row) return
+      const ref = { id, userId, providerId: row.provider_id }
+      await recordCoreChanges(db, { entity: 'provider.connection', op: 'upserted', ref })
     },
 
     // ---- Keys --------------------------------------------------------------
